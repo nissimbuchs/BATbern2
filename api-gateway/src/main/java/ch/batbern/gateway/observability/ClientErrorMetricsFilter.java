@@ -56,6 +56,31 @@ import java.util.Locale;
  * access log at all, which is why a 4xx spike could not be attributed without an Insights
  * archaeology session over DEBUG filter-chain chatter.
  *
+ * <h2>Authenticated traffic only (#995)</h2>
+ *
+ * <p>A request that presented <b>no credentials</b> is excluded from BOTH metrics. A 401 with no
+ * {@code Authorization} header is the security boundary working correctly — it is not a defect and
+ * there is nothing to act on. A 401 on a request that <i>did</i> carry a token is the real signal:
+ * a broken deploy, a rotated key, a regressed JWT converter.
+ *
+ * <p>This was learned the hard way on 2026-08-24. Our own scheduled OWASP ZAP scan
+ * ({@code security-scan.yml}, Mondays, targeting api.batbern.ch) drove <b>59,039</b>
+ * unauthenticated 4xx between 03:35 and 03:50 UTC — a 5,000-line sample was 4,997× 401 — taking
+ * the ratio to 88% and paging at 03:49. ZAP builds its requests from our OpenAPI specs, which is
+ * why the logged paths carried unsubstituted placeholders like
+ * {@code /api/v1/events/eventCode/sessions/sessionSlug/timing}. Same category as the {@code .php}
+ * sweep that killed {@code alb-4xx}, only originating inside the house.
+ *
+ * <p><b>Both sides, not just the numerator.</b> Excluding credential-less requests from the error
+ * count while leaving them in the request count would drive the ratio toward zero during a scan
+ * and mask a genuine auth break happening at the same time — the alarm would go quiet exactly
+ * when it mattered most. A test pins this.
+ *
+ * <p><b>Accepted coverage loss.</b> Public endpoints ({@code /api/v1/public/*}, config,
+ * unsubscribe, verification) legitimately carry no credentials, so a 4xx regression on one is
+ * invisible to this alarm. Closing that needs a second, separate counter for public-path errors;
+ * deliberately not built until there is a reason to.
+ *
  * <h2>What counts as "ours"</h2>
  *
  * <p>A prefix list, not {@link ch.batbern.gateway.routing.DomainRouter}. The router looks
@@ -102,6 +127,8 @@ public class ClientErrorMetricsFilter extends OncePerRequestFilter {
     /** Field the error-counting MetricFilter discriminates on. */
     public static final String CLIENT_ERROR_FIELD = "clientError=true";
 
+    private static final String AUTHORIZATION_HEADER = "Authorization";
+
     private final MeterRegistry meterRegistry;
     private final List<String> servedPrefixes;
 
@@ -135,6 +162,11 @@ public class ClientErrorMetricsFilter extends OncePerRequestFilter {
             return;
         }
 
+        // #995: no credentials, no metric — neither side. See the class note.
+        if (!presentedCredentials(request)) {
+            return;
+        }
+
         int status = response.getStatus();
         boolean clientError = status >= 400 && status < 500;
 
@@ -152,6 +184,19 @@ public class ClientErrorMetricsFilter extends OncePerRequestFilter {
                 clientError,
                 LogSanitizer.sanitize(request.getMethod()),
                 LogSanitizer.sanitize(path));
+    }
+
+    /**
+     * Whether the caller presented credentials at all.
+     *
+     * <p>Only the presence of a non-blank {@code Authorization} header, deliberately: this asks
+     * "did someone claim an identity", not "was the claim any good". A malformed or expired token
+     * IS a credential — we were asked to authenticate it and refused, which is precisely the
+     * signal worth alarming on.
+     */
+    private boolean presentedCredentials(HttpServletRequest request) {
+        String authorization = request.getHeader(AUTHORIZATION_HEADER);
+        return authorization != null && !authorization.isBlank();
     }
 
     /** Path without its query string — see the class note on token-credentialed endpoints. */

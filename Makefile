@@ -257,7 +257,7 @@ docker-up: ## Start all services with Docker Compose (includes DB tunnel)
 	fi
 	@echo ""
 	@echo "→ Step 2: Starting Docker containers..."
-	@docker-compose up -d
+	@docker compose up -d
 	@echo ""
 	@echo "✓ All services started"
 	@echo ""
@@ -270,7 +270,7 @@ docker-up: ## Start all services with Docker Compose (includes DB tunnel)
 
 docker-down: ## Stop Docker services (keeps DB tunnel running)
 	@echo "🐳 Stopping Docker services..."
-	@docker-compose down
+	@docker compose down
 	@echo "✓ Docker services stopped"
 	@echo ""
 	@echo "💡 Database tunnel still running"

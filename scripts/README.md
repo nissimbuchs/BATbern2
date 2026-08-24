@@ -300,10 +300,10 @@ cd ..
 ./scripts/config/validate-backend-config.sh
 
 # 5. Start services
-docker-compose up -d
+docker compose up -d
 
 # 6. View logs
-docker-compose logs -f api-gateway
+docker compose logs -f api-gateway
 ```
 
 ---
@@ -320,7 +320,7 @@ cd ..
 ./scripts/config/sync-backend-config.sh development
 
 # 3. Restart services to pick up new config
-docker-compose restart
+docker compose restart
 ```
 
 ---

@@ -6,7 +6,7 @@ import * as path from 'path';
  * Integration Tests for Docker Compose Local Development Environment
  *
  * These tests validate AC6 (Startup Orchestration) and AC7 (Single Command Startup)
- * by testing docker-compose configuration and service startup behavior.
+ * by testing docker compose configuration and service startup behavior.
  */
 describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
   const projectRoot = path.resolve(__dirname, '../../..');
@@ -76,14 +76,20 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
     test('should_haveValidDockerComposeConfig_when_validated', () => {
       // Arrange & Act - Validate docker-compose.yml syntax
       try {
-        execSync('docker-compose config', {
+        execSync('docker compose config', {
           cwd: projectRoot,
           stdio: 'pipe',
           env: { ...process.env, SKIP_ENV_VALIDATION: 'true' }
         });
       } catch (error: any) {
-        // If config validation fails, it's a syntax error
-        fail(`docker-compose.yml has syntax errors: ${error.message}`);
+        // If config validation fails, it's a syntax error.
+        //
+        // #988: this was `fail(...)`, a Jest global removed in Jest 30 (this project is on
+        // ^30.4.2). The call sits in a catch block, so it only executed when `docker-compose
+        // config` ACTUALLY failed — and then threw `ReferenceError: fail is not defined`
+        // instead of the intended message. The assertion meant to report a broken compose file
+        // reported a broken test instead, indistinguishably.
+        throw new Error(`docker-compose.yml has syntax errors: ${error.message}`);
       }
 
       // Assert - If we reach here, config is valid

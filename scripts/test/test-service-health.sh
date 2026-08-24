@@ -61,28 +61,28 @@ fi
 
 # AC2: Local Redis Service Tests (Configuration Validation)
 test_start "should_defineRedisService_when_dockerComposeConfigured"
-if docker-compose config 2>/dev/null | grep -q "batbern-redis"; then
+if docker compose config 2>/dev/null | grep -q "batbern-redis"; then
     test_pass
 else
     test_fail "Redis service not defined in docker-compose.yml"
 fi
 
 test_start "should_configureRedisHealthCheck_when_serviceConfigured"
-if docker-compose config 2>/dev/null | grep -A 5 "redis:" | grep -q "healthcheck"; then
+if docker compose config 2>/dev/null | grep -A 5 "redis:" | grep -q "healthcheck"; then
     test_pass
 else
     test_fail "Redis health check not configured"
 fi
 
 test_start "should_useRedisPingCommand_when_healthCheckDefined"
-if docker-compose config 2>/dev/null | grep -A 10 "redis:" | grep -q "redis-cli"; then
+if docker compose config 2>/dev/null | grep -A 10 "redis:" | grep -q "redis-cli"; then
     test_pass
 else
     test_fail "Redis health check doesn't use redis-cli ping"
 fi
 
 test_start "should_configureRedisDataVolume_when_persistenceNeeded"
-if docker-compose config 2>/dev/null | grep -q "redis-data"; then
+if docker compose config 2>/dev/null | grep -q "redis-data"; then
     test_pass
 else
     test_fail "Redis data volume not configured"
@@ -90,28 +90,28 @@ fi
 
 # AC6: Startup Orchestration Tests (Health Check Configuration)
 test_start "should_configureAPIGatewayHealthCheck_when_serviceConfigured"
-if docker-compose config 2>/dev/null | grep -q "healthcheck"; then
+if docker compose config 2>/dev/null | grep -q "healthcheck"; then
     test_pass
 else
     test_fail "Health checks not configured"
 fi
 
 test_start "should_useActuatorHealthEndpoint_when_springBootConfigured"
-if docker-compose config 2>/dev/null | grep -q "/actuator/health"; then
+if docker compose config 2>/dev/null | grep -q "/actuator/health"; then
     test_pass
 else
     test_fail "API Gateway health check doesn't use /actuator/health"
 fi
 
 test_start "should_configureHealthCheckRetries_when_resilienceNeeded"
-if docker-compose config 2>/dev/null | grep -A 10 "redis:" | grep -q "retries"; then
+if docker compose config 2>/dev/null | grep -A 10 "redis:" | grep -q "retries"; then
     test_pass
 else
     test_fail "Health checks don't configure retries"
 fi
 
 test_start "should_configureHealthCheckInterval_when_monitoringNeeded"
-if docker-compose config 2>/dev/null | grep -A 10 "redis:" | grep -q "interval"; then
+if docker compose config 2>/dev/null | grep -A 10 "redis:" | grep -q "interval"; then
     test_pass
 else
     test_fail "Health checks don't configure interval"
@@ -124,7 +124,7 @@ echo "Integration Tests (Optional)"
 echo "========================================"
 echo ""
 echo -e "${YELLOW}Note: Integration tests require .env file and AWS connectivity${NC}"
-echo -e "${YELLOW}Skipping integration tests - run manually with 'docker-compose up -d'${NC}"
+echo -e "${YELLOW}Skipping integration tests - run manually with 'docker compose up -d'${NC}"
 echo ""
 
 # These would be actual integration tests if we wanted to start services:

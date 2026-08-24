@@ -59,43 +59,43 @@ fi
 
 # AC1: AWS Infrastructure Connection Tests (Configuration Validation)
 test_start "should_configureRDSConnection_when_databaseVariablesSet"
-if docker-compose config 2>/dev/null | grep -q "DB_HOST"; then
+if docker compose config 2>/dev/null | grep -q "DB_HOST"; then
     test_pass
 else
     test_fail "DB_HOST not configured in docker-compose.yml"
 fi
 
 test_start "should_configureDatabasePort_when_postgresUsed"
-if docker-compose config 2>/dev/null | grep -q "DB_PORT"; then
+if docker compose config 2>/dev/null | grep -q "DB_PORT"; then
     test_pass
 else
     test_fail "DB_PORT not configured"
 fi
 
 test_start "should_configureDatabaseCredentials_when_authNeeded"
-if docker-compose config 2>/dev/null | grep -q "DB_USER" && \
-   docker-compose config 2>/dev/null | grep -q "DB_PASSWORD"; then
+if docker compose config 2>/dev/null | grep -q "DB_USER" && \
+   docker compose config 2>/dev/null | grep -q "DB_PASSWORD"; then
     test_pass
 else
     test_fail "Database credentials not configured"
 fi
 
 test_start "should_configureCognitoUserPool_when_authenticationEnabled"
-if docker-compose config 2>/dev/null | grep -q "COGNITO_USER_POOL_ID"; then
+if docker compose config 2>/dev/null | grep -q "COGNITO_USER_POOL_ID"; then
     test_pass
 else
     test_fail "COGNITO_USER_POOL_ID not configured"
 fi
 
 test_start "should_configureCognitoClient_when_authenticationEnabled"
-if docker-compose config 2>/dev/null | grep -q "COGNITO_CLIENT_ID"; then
+if docker compose config 2>/dev/null | grep -q "COGNITO_CLIENT_ID"; then
     test_pass
 else
     test_fail "COGNITO_CLIENT_ID not configured"
 fi
 
 test_start "should_configureAWSRegion_when_servicesUsed"
-if docker-compose config 2>/dev/null | grep -q "AWS_REGION"; then
+if docker compose config 2>/dev/null | grep -q "AWS_REGION"; then
     test_pass
 else
     test_fail "AWS_REGION not configured"
@@ -103,7 +103,7 @@ fi
 
 # AC9: AWS Credentials Tests
 test_start "should_useEnvironmentVariables_when_credentialsNeeded"
-# Check that DB_PASSWORD is configured (docker-compose config resolves env vars, so we can't check for ${})
+# Check that DB_PASSWORD is configured (docker compose config resolves env vars, so we can't check for ${})
 # Instead, verify it exists in the raw file
 if grep -q "DB_PASSWORD=\${DB_PASSWORD}" docker-compose.yml; then
     test_pass

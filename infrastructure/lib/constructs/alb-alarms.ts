@@ -171,10 +171,19 @@ export class AlbAlarms extends Construct {
     // The replacement for the retired alb-4xx. Two things had to change: what is counted,
     // and how it is compared.
     //
-    // WHAT: not every 4xx reaching a target, only 4xx on paths the gateway serves.
-    // ClientErrorMetricsFilter emits one GATEWAY_API_REQUEST line per served request and
-    // nothing at all for the rest, so the PHP sweep that made alb-4xx useless never enters
-    // either side of this fraction.
+    // WHAT: not every 4xx reaching a target, only 4xx on paths the gateway serves, and only
+    // for callers that presented credentials. ClientErrorMetricsFilter emits one
+    // GATEWAY_API_REQUEST line per such request and nothing at all for the rest, so neither the
+    // PHP sweep that made alb-4xx useless nor our own OWASP ZAP scan enters either side of this
+    // fraction.
+    //
+    // #995: the credential gate was added after this alarm's first real firing. Our own weekly
+    // ZAP scan against api.batbern.ch drove 59,039 unauthenticated 4xx in fifteen minutes
+    // (2026-08-24 03:35-03:50 UTC), took the ratio to 88%, and paged. A 401 with no
+    // Authorization header is the security boundary working; a 401 on a request that carried a
+    // token is the regression this alarm exists for. Credential-less requests leave BOTH sides
+    // of the ratio — dropping them from the numerator alone would let a scan dilute the
+    // denominator and hide a real auth break happening at the same time.
     //
     // HOW: a ratio, because absolute request volume swings thirtyfold. Measured over the
     // 24h to 2026-08-23 15:00 UTC, /api/ requests per 5-minute window were 12-35 through
@@ -265,10 +274,10 @@ export class AlbAlarms extends Construct {
       apiClientErrors = new cloudwatch.Alarm(this, 'ApiClientErrors', {
         alarmName: `batbern-${env}-api-4xx-ratio`,
         alarmDescription:
-          `More than ${thresholds.apiClientErrorPercent}% of served API requests returned ` +
-          `4xx, sustained for 15 minutes, over at least ` +
+          `More than ${thresholds.apiClientErrorPercent}% of AUTHENTICATED API requests ` +
+          `returned 4xx, sustained for 15 minutes, over at least ` +
           `${thresholds.apiClientErrorMinRequests} requests per window (replaces alb-4xx, ` +
-          'which counted scanner 404s — see #986)',
+          'which counted scanner 404s — #986; credential-less traffic excluded — #995)',
         metric: new cloudwatch.MathExpression({
           // The IF guard is the same shape the latency alarm uses and matters for the same
           // reason: quiet windows carry a handful of requests, where a percentage is one

@@ -241,7 +241,7 @@ public boolean allowPasswordReset(String email, String ipAddress) {
 **Option 1: Manual reset (DevOps)**
 ```bash
 # Restart API Gateway to clear in-memory cache
-docker-compose restart api-gateway
+docker compose restart api-gateway
 
 # Or restart specific pod in Kubernetes
 kubectl rollout restart deployment api-gateway
@@ -366,7 +366,7 @@ done
 
 **Check logs:**
 ```bash
-docker-compose logs -f api-gateway | grep "Rate limit"
+docker compose logs -f api-gateway | grep "Rate limit"
 ```
 
 **Verify service is running:**

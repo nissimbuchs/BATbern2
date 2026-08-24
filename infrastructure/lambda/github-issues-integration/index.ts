@@ -1,8 +1,14 @@
 import { SNSEvent } from 'aws-lambda';
 import { SSMClient, GetParameterCommand } from '@aws-sdk/client-ssm';
+import {
+  CloudWatchClient,
+  DescribeAlarmsCommand,
+  GetMetricDataCommand,
+} from '@aws-sdk/client-cloudwatch';
 import { Octokit } from '@octokit/rest';
 
 const ssm = new SSMClient({});
+const cloudwatch = new CloudWatchClient({});
 
 interface CloudWatchAlarm {
   AlarmName: string;
@@ -77,7 +83,9 @@ async function createOrUpdateIssue(
   alarm: CloudWatchAlarm
 ): Promise<void> {
   const issueTitle = `🚨 [${alarm.AlarmName}] CloudWatch Alarm Triggered`;
-  const issueBody = formatIssueBody(alarm);
+  // Only for a NEW issue — a re-trigger comment does not need the table repeated.
+  const metricContext = await fetchMetricContext(alarm);
+  const issueBody = formatIssueBody(alarm, metricContext);
   const labels = getLabels(alarm);
 
   // Check if issue already exists
@@ -203,7 +211,7 @@ function regionCode(alarm: CloudWatchAlarm): string {
 /**
  * Format the issue body with alarm details.
  */
-function formatIssueBody(alarm: CloudWatchAlarm): string {
+function formatIssueBody(alarm: CloudWatchAlarm, metricContext = ''): string {
   const region = regionCode(alarm);
   const dashboardUrl = `https://console.aws.amazon.com/cloudwatch/home?region=${region}#alarmsV2:alarm/${encodeURIComponent(alarm.AlarmName)}`;
 
@@ -230,6 +238,7 @@ ${
     : ''
 }
 
+${metricContext}
 ### Actions
 - [ ] Investigate the root cause
 - [ ] Check CloudWatch dashboard
@@ -245,6 +254,92 @@ ${triageHandoff()}
 ---
 *This issue was automatically created by CloudWatch alarm integration.*
 `;
+}
+
+/**
+ * Recent datapoints for the alarm's own metric, rendered as a markdown table (#996).
+ *
+ * Why this exists: the '@claude' triage handoff works, but the workflow grants the agent no tool
+ * permissions and no AWS credentials, so on its first real firing (#993, #994) it could not query
+ * CloudWatch at all and said so — every conclusion was inference from repo code. The answer to
+ * #994 was only visible in the metrics. Embedding the numbers in the issue body means the
+ * triage has something real to work from regardless of what tools it is granted, and it helps a
+ * human reading the issue on a phone just as much.
+ *
+ * Works for metric-math alarms as well as plain ones: DescribeAlarms returns a `Metrics` array
+ * for math alarms, which GetMetricData accepts directly. That matters because
+ * batbern-{env}-api-4xx-ratio — the alarm most in need of context — is metric math.
+ *
+ * Strictly fail-open. Any error returns an empty string and the issue is filed without this
+ * section. An enrichment that can prevent an incident being recorded is worse than no enrichment.
+ */
+async function fetchMetricContext(alarm: CloudWatchAlarm): Promise<string> {
+  try {
+    const { MetricAlarms } = await cloudwatch.send(
+      new DescribeAlarmsCommand({ AlarmNames: [alarm.AlarmName] })
+    );
+    const definition = MetricAlarms?.[0];
+    if (!definition) {
+      return '';
+    }
+
+    const period = definition.Period ?? 300;
+    const queries =
+      definition.Metrics && definition.Metrics.length > 0
+        ? definition.Metrics
+        : [
+            {
+              Id: 'm1',
+              MetricStat: {
+                Metric: {
+                  Namespace: definition.Namespace,
+                  MetricName: definition.MetricName,
+                  Dimensions: definition.Dimensions,
+                },
+                Period: period,
+                Stat: definition.Statistic ?? definition.ExtendedStatistic ?? 'Sum',
+              },
+              ReturnData: true,
+            },
+          ];
+
+    // A window that brackets the transition: enough history to see the trend that caused it,
+    // and a little after so a self-healing blip is visible as one.
+    const stateChange = new Date(alarm.StateChangeTime).getTime();
+    const { MetricDataResults } = await cloudwatch.send(
+      new GetMetricDataCommand({
+        MetricDataQueries: queries,
+        StartTime: new Date(stateChange - 45 * 60 * 1000),
+        EndTime: new Date(stateChange + 5 * 60 * 1000),
+      })
+    );
+
+    const series = (MetricDataResults ?? []).filter(
+      (r) => (r.Timestamps ?? []).length > 0
+    );
+    if (series.length === 0) {
+      return '\n### Metric context\n\n_No datapoints in the 45 minutes before the transition._\n';
+    }
+
+    let out = '\n### Metric context (45 min before → 5 min after the transition)\n\n';
+    for (const r of series) {
+      const rows = (r.Timestamps ?? [])
+        .map((t, i) => ({ t: new Date(t as unknown as string).toISOString(), v: r.Values?.[i] }))
+        .sort((a, b) => a.t.localeCompare(b.t))
+        .slice(-14);
+      out += `**${r.Label ?? r.Id}**\n\n| time (UTC) | value |\n|---|---|\n`;
+      for (const row of rows) {
+        const v = typeof row.v === 'number' ? Math.round(row.v * 100) / 100 : '—';
+        out += `| ${row.t.slice(11, 16)} | ${v} |\n`;
+      }
+      out += '\n';
+    }
+    return out;
+  } catch (error) {
+    // Never let enrichment stop an incident from being filed.
+    console.warn('Could not fetch metric context; filing issue without it:', error);
+    return '';
+  }
 }
 
 /**

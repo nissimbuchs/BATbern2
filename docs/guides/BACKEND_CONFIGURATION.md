@@ -115,7 +115,7 @@ Sync script fetches outputs and generates `.env`:
 
 ```bash
 # Docker Compose reads .env and passes to containers
-docker-compose up api-gateway
+docker compose up api-gateway
 
 # Spring Boot JVM starts with environment variables
 # ${COGNITO_USER_POOL_ID} → actual value from .env
@@ -512,7 +512,7 @@ If you encounter issues:
 2. Validate configuration: `./scripts/config/validate-backend-config.sh`
 3. Check AWS resources are deployed: `aws cloudformation list-stacks --profile batbern-dev`
 4. Review generated .env file: `cat .env`
-5. Check Docker logs: `docker-compose logs -f`
+5. Check Docker logs: `docker compose logs -f`
 
 ---
 

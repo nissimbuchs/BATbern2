@@ -15,6 +15,7 @@ import type { SNSEvent } from 'aws-lambda';
 // ------------------------------------------------------------------
 
 const mockSsmSend = jest.fn<(...args: any[]) => Promise<any>>();
+const mockCwSend = jest.fn<(...args: any[]) => Promise<any>>();
 const mockIssuesCreate = jest.fn<(...args: any[]) => Promise<any>>();
 const mockIssuesUpdate = jest.fn<(...args: any[]) => Promise<any>>();
 const mockIssuesCreateComment = jest.fn<(...args: any[]) => Promise<any>>();
@@ -23,6 +24,12 @@ const mockSearchIssues = jest.fn<(...args: any[]) => Promise<any>>();
 jest.mock('@aws-sdk/client-ssm', () => ({
   SSMClient: jest.fn().mockImplementation(() => ({ send: mockSsmSend })),
   GetParameterCommand: jest.fn().mockImplementation((input) => input),
+}));
+
+jest.mock('@aws-sdk/client-cloudwatch', () => ({
+  CloudWatchClient: jest.fn().mockImplementation(() => ({ send: mockCwSend })),
+  DescribeAlarmsCommand: jest.fn().mockImplementation((input) => ({ __type: 'describe', input })),
+  GetMetricDataCommand: jest.fn().mockImplementation((input) => ({ __type: 'getdata', input })),
 }));
 
 jest.mock('@octokit/rest', () => ({
@@ -115,6 +122,32 @@ describe('github-issues Lambda handler', () => {
     mockIssuesCreate.mockResolvedValue({ data: { number: 42 } });
     mockIssuesUpdate.mockResolvedValue({ data: { number: 42 } });
     mockIssuesCreateComment.mockResolvedValue({ data: { id: 1 } });
+
+    // #996: metric context. Default is a metric-math alarm (api-4xx-ratio's shape), because
+    // that is the one whose numbers actually need explaining.
+    mockCwSend.mockImplementation((cmd: any) => {
+      if (cmd.__type === 'describe') {
+        return Promise.resolve({
+          MetricAlarms: [
+            {
+              AlarmName: cmd.input.AlarmNames[0],
+              Period: 300,
+              Metrics: [{ Id: 'ratio', Expression: 'errors / requests * 100', ReturnData: true }],
+            },
+          ],
+        });
+      }
+      return Promise.resolve({
+        MetricDataResults: [
+          {
+            Id: 'ratio',
+            Label: 'Served API 4xx %',
+            Timestamps: ['2026-08-24T03:40:00Z', '2026-08-24T03:45:00Z'],
+            Values: [88.4321, 81.2999],
+          },
+        ],
+      });
+    });
   });
 
   it('module loads without crashing', () => {
@@ -174,6 +207,72 @@ describe('github-issues Lambda handler', () => {
       const values = [...bodyOf().matchAll(/region=([^&#)\s]*)/g)].map((m) => m[1]);
       expect(values.length).toBeGreaterThanOrEqual(3);
       expect([...new Set(values)]).toEqual(['eu-central-1']);
+    });
+  });
+
+  describe('metric context (#996)', () => {
+    const bodyOf = () => (mockIssuesCreate.mock.calls[0][0] as { body: string }).body;
+
+    it('should_embedRecentDatapoints_when_issueIsCreated', async () => {
+      // On the alarm's first real firing the triage agent had no tools and no AWS credentials,
+      // so it could not query anything and said so. The numbers that explained #994 existed only
+      // in CloudWatch. Putting them in the body means the triage has real data regardless.
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      const body = bodyOf();
+      expect(body).toContain('Metric context');
+      expect(body).toContain('Served API 4xx %');
+      expect(body).toContain('88.43');
+      expect(body).toContain('03:40');
+    });
+
+    it('should_handleMetricMathAlarms_when_fetchingContext', async () => {
+      // api-4xx-ratio is metric math, so DescribeAlarms returns Metrics[] rather than a single
+      // MetricName. Those must be passed to GetMetricData verbatim.
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      const getData = mockCwSend.mock.calls.map((c) => c[0] as any).find((c) => c.__type === 'getdata');
+      expect(getData.input.MetricDataQueries).toEqual([
+        { Id: 'ratio', Expression: 'errors / requests * 100', ReturnData: true },
+      ]);
+    });
+
+    it('should_stillFileTheIssue_when_cloudWatchFails', async () => {
+      // Fail-open, and this is the property that matters most: an enrichment that can stop an
+      // incident from being recorded is worse than no enrichment.
+      mockCwSend.mockRejectedValue(new Error('AccessDenied'));
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      expect(mockIssuesCreate).toHaveBeenCalledTimes(1);
+      const body = bodyOf();
+      expect(body).toContain('## CloudWatch Alarm Details');
+      expect(body).toContain('@claude');
+      expect(body).not.toContain('Metric context');
+    });
+
+    it('should_saySoExplicitly_when_thereAreNoDatapoints', async () => {
+      // Silence and "no data" are different facts, and the difference matters to whoever reads
+      // the issue — an empty metric can itself be the finding.
+      mockCwSend.mockImplementation((cmd: any) =>
+        cmd.__type === 'describe'
+          ? Promise.resolve({ MetricAlarms: [{ AlarmName: 'a', Period: 300, Namespace: 'N', MetricName: 'M', Statistic: 'Sum' }] })
+          : Promise.resolve({ MetricDataResults: [{ Id: 'm1', Timestamps: [], Values: [] }] })
+      );
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      expect(bodyOf()).toContain('No datapoints in the 45 minutes');
+    });
+
+    it('should_notFetchContext_when_alarmMerelyRecovers', async () => {
+      // An OK transition closes the issue; there is no body to enrich, so no reason to spend a
+      // CloudWatch call on it.
+      mockSearchIssues.mockResolvedValue({ data: { items: [{ number: 42, state: 'open' }] } });
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'OK' })]));
+
+      expect(mockCwSend).not.toHaveBeenCalled();
     });
   });
 

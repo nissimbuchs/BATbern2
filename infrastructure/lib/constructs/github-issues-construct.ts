@@ -78,6 +78,19 @@ export class GitHubIssuesConstruct extends Construct {
       })
     );
 
+    // #996: read-only CloudWatch access so the Lambda can embed the alarm's own recent
+    // datapoints in the issue body. Read verbs only, enumerated rather than 'cloudwatch:*' —
+    // that would include DeleteAlarms, PutMetricAlarm and SetAlarmState, none of which a
+    // notification formatter has any business holding. Resource is * because GetMetricData is
+    // not resource-scopable and DescribeAlarms is queried by name at call time.
+    this.lambdaFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['cloudwatch:DescribeAlarms', 'cloudwatch:GetMetricData'],
+        resources: ['*'],
+      })
+    );
+
     // Subscribe Lambda to SNS alarm topic
     props.alarmTopic.addSubscription(new subscriptions.LambdaSubscription(this.lambdaFunction));
 

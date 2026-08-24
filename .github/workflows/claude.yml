@@ -60,8 +60,24 @@ jobs:
           # Optional: Give a custom prompt to Claude. If this is not specified, Claude will perform the instructions specified in the comment that tagged it.
           # prompt: 'Update the pull request description to include a summary of changes.'
 
-          # Optional: Add claude_args to customize behavior and configuration
-          # See https://github.com/anthropics/claude-code-action/blob/main/docs/usage.md
-          # or https://docs.claude.com/en/docs/claude-code/sdk#command-line for available options
-          # claude_args: '--model claude-opus-4-1-20250805 --allowed-tools Bash(gh pr:*)'
+          # #996: on the first real alarm triage (#993, #994) every Bash command came back
+          # "This command requires approval" — there is no human in a schedule/webhook run to
+          # grant it — so the agent could not query anything and its conclusions were inference
+          # from repo code alone. This grants a READ-ONLY GitHub allowlist so it can at least
+          # correlate an alarm against CI history.
+          #
+          # Verbs are enumerated, never `Bash(gh:*)`: that would include `gh pr merge`,
+          # `gh release create`, `gh secret set`, and `gh workflow run`. An agent reacting to a
+          # CloudWatch metric must not be able to merge, release, or start a workflow.
+          #
+          # DELIBERATELY ABSENT: AWS. The triage prompt asks the agent to read CloudWatch metrics
+          # and ECS log groups, and it still cannot — that needs both an allowlist and an OIDC
+          # role, and the log groups contain request paths and user identifiers. Granting an
+          # autonomous agent read access to production logs is a data-access decision with GDPR
+          # exposure, not a workflow tweak, so it is left for an explicit sign-off. Until then a
+          # triage run is enriched instead by the metric table the github-issues Lambda now
+          # embeds in the issue body (#996), which needs no agent credentials at all.
+          claude_args: >-
+            --allowed-tools
+            Bash(gh run list:*),Bash(gh run view:*),Bash(gh pr view:*),Bash(gh pr diff:*),Bash(gh issue view:*),Bash(gh issue list:*)
 

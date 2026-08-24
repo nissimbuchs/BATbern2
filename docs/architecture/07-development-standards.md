@@ -61,7 +61,7 @@ for service in event-management speaker-coordination partner-analytics attendee-
 done
 
 # Start local environment
-docker-compose up -d
+docker compose up -d
 ```
 
 #### Development Commands
