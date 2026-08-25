@@ -138,7 +138,8 @@ line 422 for `ApiGatewayServiceStack`).
 | Gateway API surface | `api-4xx-ratio` | `AlbAlarms`, fed by MetricFilters over the api-gateway log group |
 | ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-EventBridge-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
 | RDS | `database-connections`, `database-storage-low`, `database-cpu` | `AlarmConstruct`, in `MonitoringStack` |
-| SES reputation | `bounce-rate-warning`, `bounce-rate-critical`, `complaint-rate-critical` | `MonitoringStack` |
+| SES reputation | `bounce-rate-critical` (`Reputation.BounceRate` > 5%), `complaint-rate-critical` | `MonitoringStack` |
+| SES bounce volume | `bounce-rate-warning` — `Bounce` count > 5/hour, NOT the rolling rate (#984) | `MonitoringStack` |
 | Bounce processing | `bounce-processing-dlq` | `MonitoringStack` |
 | Cognito / user sync | 7 alarms | `UserSyncAlarms`, in `MonitoringStack` |
 | Inbound email abuse | `emails-rejected` | `InboundEmailStack` |
@@ -361,6 +362,42 @@ check it there once rather than trusting a green unit test. `alert-rules.test.ts
 specific dimension mistakes above, and no alarm anywhere may use `treatMissingData: BREACHING` — a
 permanently red alarm is worse than no alarm, because it teaches everyone to ignore the channel.
 
+### A sparse metric needs `NOT_BREACHING`, or the alarm flaps and mails on every recovery (#972)
+
+The rule, and it applies to every alarm added from here on: **if the metric is only published
+while something is happening, set `treatMissingData: NOT_BREACHING`.** A no-activity period means
+"nothing is wrong", and that is what `NOT_BREACHING` says. The CDK default is `MISSING`, which
+instead drops the alarm to `INSUFFICIENT_DATA` in every quiet window; the next datapoint returns it
+to `OK`, and because every alarm here registers `addOkAction` (see above, #956), that transition
+publishes to SNS. The result is a steady drip of "recovered" emails about a condition that never
+occurred.
+
+BATbern is unusually exposed to this because it sends about three emails a day (measured), so most
+5-minute windows on any SES metric carry no datapoint at all.
+
+`batbern-staging-complaint-rate-critical` did exactly this: 2-3 notification emails per day, every
+one reporting a recovery at a measured complaint rate of 0.0. It was the only one of the three SES
+alarms missing the setting, and its unit test asserted every property except `TreatMissingData` —
+mirroring the bug. Auditing the whole account for the same shape (metric published only during
+activity, no `NOT_BREACHING`) turned up two more, `bounce-processing-dlq` on
+`AWS/SQS ApproximateNumberOfMessagesVisible` and `emails-rejected` on
+`BATbern/EmailForwarder EmailsRejected`. All three were fixed in `3642d65e` with unit assertions
+added for each. `ecs-service-alarms.ts` (13 alarms) and `user-sync-alarms.ts` (7) were already
+correct.
+
+**`NOT_BREACHING` fixes flapping; it does not fix an alarm watching the wrong metric.** Where the
+underlying value is genuinely and permanently over the line, silencing the transitions just makes
+the alarm quietly useless instead of noisily useless. `bounce-rate-warning` was the case in point:
+it already had `NOT_BREACHING` and still fired, because `AWS/SES Reputation.BounceRate` is a
+volume-weighted *rolling* figure that at three sends a day is dominated for months by historical
+bursts — a flat 0.0413 against a 0.03 threshold, with zero bounces in the preceding seven weeks. It
+now watches the `Bounce` **count** (> 5 in one hour), which is a condition someone can act on;
+`Reputation.BounceRate` is kept on `bounce-rate-critical` at 5%, because that is the number AWS
+enforces on and crossing it pauses sending. See #984.
+
+So the ordering when an alarm is noisy: first ask whether the metric can answer the question at
+all, and only then tune `treatMissingData` and the evaluation windows.
+
 ### A declared subscription is not a working subscription (#1005)
 
 The next layer of the same mistake, found 2026-08-25. Seven identity alarms —
@@ -478,8 +515,27 @@ not paging on every deploy.
 level and produces a signal that looks like coverage and is not — the same failure as the dead alarms
 above. Change *when* it speaks, not *what it considers acceptable*.
 
-**The warmup itself is unfixed.** It is now quantified rather than invisible, and tracked separately.
-The alarm change buys quiet; it does not make the platform fast after a deploy.
+**The warmup is now mitigated, not solved (#982).** The gateway target group sets
+`slow_start.duration_seconds = 300` (`api-gateway-service-stack.ts`), which ramps a newly
+registered target's share of traffic linearly over five minutes instead of switching it on at a full
+round-robin share. That is the cheapest available intervention and it needs no application change.
+It addresses the mechanism directly: a target enters service the moment `/actuator/health` passes,
+and passing a liveness probe is not the same as being warm — the container health check carries a
+180 s `startPeriod` that admits as much. 300 s covers the steep part of the decay (4.71 s → ~0.43 s
+happens inside the first ten minutes) without holding a target at reduced share longer than needed;
+a longer ramp is not strictly better, because the JVM needs real traffic to JIT-compile at all.
+
+Two constraints worth knowing: AWS accepts 30–900 s and rejects anything outside that **at deploy
+time, not at synth time**, and slow start is refused outright on a target group using
+`least_outstanding_requests`. `test/unit/alb-warmup.test.ts` pins the value, the range, and the
+round-robin algorithm for that reason.
+
+**What is still open on #982** is the root cause. The mechanism has not been isolated — JVM
+JIT/class-loading, Hikari opening connections lazily on the first requests, and empty Caffeine caches
+are all plausible and none is confirmed. A JFR recording or `actuator/metrics` on a fresh task would
+separate them, and only then is it worth reaching for CDS/AppCDS or AOT. Note also that this is not
+only a deploy-window cost: 70% of capacity is FARGATE_SPOT, and a Spot reclaim produces the same
+profile unannounced during ordinary traffic.
 
 ## Cost Optimizations (2026-03)
 
