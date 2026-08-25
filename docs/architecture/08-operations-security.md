@@ -361,6 +361,83 @@ check it there once rather than trusting a green unit test. `alert-rules.test.ts
 specific dimension mistakes above, and no alarm anywhere may use `treatMissingData: BREACHING` — a
 permanently red alarm is worse than no alarm, because it teaches everyone to ignore the channel.
 
+### A declared subscription is not a working subscription (#1005)
+
+The next layer of the same mistake, found 2026-08-25. Seven identity alarms —
+`JIT-Provisioning-High-Failures`, `PreSignUp-Linking-Failures`, `PreTokenGeneration-High-Latency`,
+`PostConfirmation-High-Latency`, `User-Creation-High-Failures`, `User-Sync-High-Drift`,
+`Reconciliation-Orphaned-Users` — were live, evaluating, `ActionsEnabled`, and each carried an
+`AlarmAction`. They still reached nobody.
+
+`UserSyncAlarms` created its **own** topic, `batbern-user-sync-alarms-{env}`, and subscribed an
+email to it. The address came from `process.env.ALARM_EMAIL || 'admin@batbern.ch'`, and
+`ALARM_EMAIL` is set nowhere in CI, so the fallback is what shipped. **SNS email subscriptions
+must be confirmed by clicking a link, and unconfirmed ones are deleted after 3 days.** Nobody reads
+`admin@batbern.ch`, so it expired and the topic dropped to zero subscribers — while CloudFormation
+still held the subscription resource and therefore never recreated it.
+
+```sh
+aws sns list-subscriptions-by-topic \
+  --topic-arn arn:aws:sns:eu-central-1:188701360969:batbern-user-sync-alarms-staging
+# { "Subscriptions": [] }
+```
+
+The account-wide check that finds this class — every topic, with its subscriber count:
+
+```sh
+aws sns list-topics --query 'Topics[].TopicArn' --output text | tr '\t' '\n' | while read a; do
+  echo "$(aws sns list-subscriptions-by-topic --topic-arn "$a" --query 'length(Subscriptions)' --output text)  ${a##*:}"
+done | sort -n
+```
+
+**The fix was to stop creating a second topic.** `UserSyncAlarms` now takes the shared
+`batbern-{env}-alarms` topic as a prop. That removes the confirmation dependency permanently — the
+shared topic's primary subscriber is the `github-issues` Lambda, and **Lambda subscriptions need no
+confirmation**, which is exactly why the main alarm path never suffered this — and it puts identity
+failures into the same alarm → issue → triage loop as everything else. There is now **one** alarm
+topic per environment, asserted as such in `monitoring-stack.test.ts`.
+
+Two rules follow:
+
+- **An alarm action that resolves to a topic with no subscribers is not delivery.** Guarded
+  structurally in `monitoring-stack.test.ts`
+  (`should_routeEveryAlarmToASubscribedTopic_when_stackSynthesised`) and behaviourally in
+  `test/e2e/monitoring/incident-response.spec.ts`.
+- **Never point an SNS email subscription at a role mailbox** (`admin@`, `info@`, `noreply@`,
+  `support@`, `alerts@`). Nobody owns it, so nobody confirms it, so it silently expires.
+
+Related and still unmanaged: the shared topic's own email subscription to `nissim@buchs.be` was
+added by hand in the console — `monitoring-stack.ts` has it commented out. It works, but a stack
+rebuild would not recreate it.
+
+### The public @claude workflow needs an actor gate (#1002)
+
+`.github/workflows/claude.yml` triggers on `issue_comment`, and this repository is **public**. Its
+only condition was `contains(github.event.comment.body, '@claude')` — no actor check at all — so
+any GitHub account could start an agent run, spend the `CLAUDE_CODE_OAUTH_TOKEN` quota, and stand
+in the way of ever granting that workflow an AWS role.
+
+It now requires either an explicit login in the `CLAUDE_ALLOWED_ACTORS` repo variable or an
+`OWNER`/`COLLABORATOR` association. Three things about that gate are easy to get wrong:
+
+- `MEMBER` can never occur here. BATbern2 is owned by a **User**, not an organisation, so `OWNER`
+  and `COLLABORATOR` are the only real association values.
+- The association must be read from the **commenter**, not the issue author. On an `issue_comment`
+  event both `github.event.comment.author_association` and `github.event.issue.author_association`
+  exist; the `||` chain is ordered comment → review → issue for that reason.
+- The gate **fails closed**: deleting `CLAUDE_ALLOWED_ACTORS` does not open it, it narrows to
+  OWNER/COLLABORATOR. `format(',{0},', …)` is used rather than `fromJSON` so a malformed variable
+  degrades instead of throwing, and so `Dani` cannot match `Danikbek`.
+
+The alarm → triage handoff is unaffected: `batbern-{env}-github-issues` posts with a PAT and
+therefore authors its issues as `nissimbuchs` (`author_association=OWNER`, verified on #993/#994).
+It is not a bot account and needs no allowlist entry. That PAT lives in SSM at
+`/batbern/staging/github/token` and nothing tracks its expiry — if it lapses, alarms stop becoming
+issues.
+
+The deploy role's trust policy is a separate, unfinished piece of the same problem: it still trusts
+`repo:nissimbuchs/BATbern2:*` while holding CDK deploy rights (#998).
+
 ### The deploy warmup is real latency, and the latency alarm must outlast it
 
 `alb-latency-p95` gates its expression on request volume:

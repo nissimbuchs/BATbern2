@@ -1,339 +1,154 @@
-import { CloudWatchClient, DescribeAlarmsCommand, SetAlarmStateCommand, MetricAlarm } from '@aws-sdk/client-cloudwatch';
-import { SNSClient, PublishCommand, GetTopicAttributesCommand } from '@aws-sdk/client-sns';
-import { LambdaClient, InvokeCommand } from '@aws-sdk/client-lambda';
+import { CloudWatchClient, DescribeAlarmsCommand, MetricAlarm } from '@aws-sdk/client-cloudwatch';
+import { SNSClient, GetTopicAttributesCommand, ListSubscriptionsByTopicCommand } from '@aws-sdk/client-sns';
 
 /**
- * E2E Test for Incident Management and PagerDuty Integration
+ * E2E Test for Incident Response wiring.
  *
- * This test validates that incident management workflows are correctly configured,
- * including PagerDuty integration, runbook automation, and StatusPage updates.
+ * Requires real AWS resources; skipped unless TEST_E2E=true (deployed environments only).
  *
- * NOTE: These tests require actual AWS resources and will be skipped unless
- * TEST_E2E=true environment variable is set (for deployed environments only)
+ * #1003 (2026-08-25) — scope decision. This file used to carry four `describe.skip` blocks
+ * asserting infrastructure that was specified and never built:
+ *
+ *   AC13 PagerDuty          -> DROPPED. Single operator; a pager that wakes the only person who
+ *                              already gets the email adds nothing.
+ *   AC14 Runbook automation -> REPLACED by operator runbooks (docs/operations/runbooks.md),
+ *                              not auto-remediation Lambdas. A bot that restarts production
+ *                              services in response to a metric is a bigger risk than the
+ *                              incidents it handles. Guarded by
+ *                              test/unit/incident-response-docs.test.ts.
+ *   AC15 Post-mortem        -> REPLACED by docs/operations/post-mortem-template.md plus the
+ *                              Post-mortem issue form. Same unit guard.
+ *   AC16 StatusPage         -> DROPPED. No between-event audience watching a status page.
+ *
+ * Those blocks were also unfalsifiable: three `expect(true).toBe(true)` placeholders and an
+ * `expect(requiredSections.length).toBe(6)` against an array literal declared three lines above.
+ * Deleting them removes scaffolding that read as coverage.
+ *
+ * What remains below asserts the delivery path that actually exists, and is written so it FAILS
+ * when that path breaks — the previous version queried the prefix `batbern-{env}-critical-`,
+ * which matches zero alarms in the account, so its `if` body never ran and it passed
+ * unconditionally.
  */
 const describeE2E = process.env.TEST_E2E === 'true' ? describe : describe.skip;
 
 describeE2E('Incident Response E2E Tests', () => {
   let cloudwatchClient: CloudWatchClient;
   let snsClient: SNSClient;
-  let lambdaClient: LambdaClient;
   const environment = process.env.TEST_ENVIRONMENT || 'dev';
   const alarmPrefix = `batbern-${environment}`;
 
-  beforeAll(() => {
-    cloudwatchClient = new CloudWatchClient({
-      region: process.env.AWS_REGION || 'eu-central-1'
-    });
-    snsClient = new SNSClient({
-      region: process.env.AWS_REGION || 'eu-central-1'
-    });
-    lambdaClient = new LambdaClient({
-      region: process.env.AWS_REGION || 'eu-central-1'
-    });
+  let alarms: MetricAlarm[];
+
+  beforeAll(async () => {
+    const region = process.env.AWS_REGION || 'eu-central-1';
+    cloudwatchClient = new CloudWatchClient({ region });
+    snsClient = new SNSClient({ region });
+
+    alarms = [];
+    let token: string | undefined;
+    do {
+      const page: any = await cloudwatchClient.send(
+        new DescribeAlarmsCommand({ AlarmNamePrefix: `${alarmPrefix}-`, NextToken: token })
+      );
+      alarms.push(...(page.MetricAlarms ?? []));
+      token = page.NextToken;
+    } while (token);
   });
 
-  // #1001: SKIPPED — this asserts infrastructure that was specified and never built. Every
-  // assertion here fails with ResourceNotFoundException because the Lambda it looks for does not
-  // exist in the account. That is not a regression; the feature was never implemented.
-  //
-  // Skipped rather than deleted so the acceptance criterion is still visible to whoever decides
-  // whether to build it or drop it (tracked in #1003). Un-skip when the feature lands.
-  //
-  // This was invisible until now: the whole suite sat behind a TEST_E2E guard that nothing set,
-  // so it neither passed nor failed — it simply never ran.
-  describe.skip('PagerDuty Integration (AC13)', () => {
-    test('should_notifyPagerDuty_when_criticalAlertTriggered', async () => {
-      // This test verifies PagerDuty integration is configured
-      const command = new DescribeAlarmsCommand({
-        AlarmNamePrefix: `${alarmPrefix}-critical-`,
-      });
-
-      const response = await cloudwatchClient.send(command);
-
-      expect(response.MetricAlarms).toBeDefined();
-
-      if (response.MetricAlarms && response.MetricAlarms.length > 0) {
-        const criticalAlarm = response.MetricAlarms[0];
-
-        // Verify alarm actions point to PagerDuty integration
-        expect(criticalAlarm.AlarmActions).toBeDefined();
-        expect(criticalAlarm.AlarmActions!.length).toBeGreaterThan(0);
-
-        const alarmAction = criticalAlarm.AlarmActions![0];
-        // PagerDuty integration should be via SNS topic or Lambda
-        expect(alarmAction).toMatch(/arn:aws:(sns|lambda):/);
-      }
+  describe('Alarm delivery path', () => {
+    test('should_findAlarms_when_estateQueried', () => {
+      // Guards every assertion below: an empty estate would make them all vacuously true.
+      // That is exactly how the previous version of this file passed while proving nothing.
+      expect(alarms.length).toBeGreaterThan(20);
     });
 
-    test('should_configureOnCallRotation_when_pagerDutyIntegrated', async () => {
-      // This test verifies on-call rotation is configured in PagerDuty
-      // Note: This requires PagerDuty API access or mocking
+    test('should_haveAnAlarmAction_when_alarmDeclared', () => {
+      const silent = alarms
+        .filter((a) => (a.AlarmActions ?? []).length === 0)
+        .map((a) => a.AlarmName);
 
-      // Verify Lambda function exists for PagerDuty integration
-      const lambdaFunctionName = `${alarmPrefix}-pagerduty-integration`;
-
-      try {
-        const command = new InvokeCommand({
-          FunctionName: lambdaFunctionName,
-          InvocationType: 'DryRun', // Don't actually invoke
-          Payload: Buffer.from(JSON.stringify({
-            test: true,
-            alarm: 'test-alarm'
-          }))
-        });
-
-        const response = await lambdaClient.send(command);
-        expect(response.StatusCode).toBe(204); // DryRun returns 204
-      } catch (error: any) {
-        // Function should exist, even if we don't have invoke permissions
-        expect(error.name).not.toBe('ResourceNotFoundException');
-      }
+      // #971: emails-rejected once fired into the void with no actions at all.
+      expect(silent).toEqual([]);
     });
 
-    test('should_createIncidentInPagerDuty_when_highSeverityAlarmTriggered', async () => {
-      // This test verifies high severity alarms create PagerDuty incidents
-      const command = new DescribeAlarmsCommand({
-        AlarmNamePrefix: `${alarmPrefix}-high-severity-`,
-      });
+    test('should_haveActionsEnabled_when_alarmDeclared', () => {
+      const disabled = alarms.filter((a) => a.ActionsEnabled !== true).map((a) => a.AlarmName);
 
-      const response = await cloudwatchClient.send(command);
-
-      if (response.MetricAlarms && response.MetricAlarms.length > 0) {
-        response.MetricAlarms.forEach((alarm: MetricAlarm) => {
-          // Verify alarm has PagerDuty integration configured
-          expect(alarm.AlarmActions).toBeDefined();
-          expect(alarm.AlarmActions!.length).toBeGreaterThan(0);
-        });
-      }
-    });
-  });
-
-  // #1001: SKIPPED — this asserts infrastructure that was specified and never built. Every
-  // assertion here fails with ResourceNotFoundException because the Lambda it looks for does not
-  // exist in the account. That is not a regression; the feature was never implemented.
-  //
-  // Skipped rather than deleted so the acceptance criterion is still visible to whoever decides
-  // whether to build it or drop it (tracked in #1003). Un-skip when the feature lands.
-  //
-  // This was invisible until now: the whole suite sat behind a TEST_E2E guard that nothing set,
-  // so it neither passed nor failed — it simply never ran.
-  describe.skip('Runbook Automation (AC14)', () => {
-    test('should_executeRunbook_when_knownIssueDetected', async () => {
-      // This test verifies automated runbooks are configured
-      const runbookFunctionName = `${alarmPrefix}-runbook-automation`;
-
-      try {
-        const command = new InvokeCommand({
-          FunctionName: runbookFunctionName,
-          InvocationType: 'DryRun',
-          Payload: Buffer.from(JSON.stringify({
-            issue: 'high-memory-usage',
-            action: 'restart-service'
-          }))
-        });
-
-        const response = await lambdaClient.send(command);
-        expect(response.StatusCode).toBe(204);
-      } catch (error: any) {
-        // Function should exist
-        expect(error.name).not.toBe('ResourceNotFoundException');
-      }
+      expect(disabled).toEqual([]);
     });
 
-    test('should_haveRunbooksForCommonIssues_when_automationConfigured', async () => {
-      // This test verifies runbooks exist for common issues
-      const commonIssues = [
-        'high-cpu-usage',
-        'high-memory-usage',
-        'disk-full',
-        'service-unavailable',
-        'database-connection-failure'
-      ];
+    test('should_routeToATopicWithSubscribers_when_alarmFires', async () => {
+      const topics = [...new Set(alarms.flatMap((a) => a.AlarmActions ?? []))].filter((arn) =>
+        arn.startsWith('arn:aws:sns:')
+      );
+      expect(topics.length).toBeGreaterThan(0);
 
-      // Verify Lambda functions or SSM documents exist for each common issue
-      for (const issue of commonIssues) {
-        const functionName = `${alarmPrefix}-runbook-${issue}`;
-
-        try {
-          const command = new InvokeCommand({
-            FunctionName: functionName,
-            InvocationType: 'DryRun',
-            Payload: Buffer.from(JSON.stringify({ test: true }))
-          });
-
-          await lambdaClient.send(command);
-          // If we get here, function exists
-          expect(true).toBe(true);
-        } catch (error: any) {
-          // For now, we'll mark as pending implementation
-          // In production, all runbooks should exist
-          console.log(`Runbook for ${issue} not yet implemented`);
+      const unsubscribed: string[] = [];
+      for (const arn of topics) {
+        const subs = await snsClient.send(new ListSubscriptionsByTopicCommand({ TopicArn: arn }));
+        if ((subs.Subscriptions ?? []).length === 0) {
+          unsubscribed.push(arn);
         }
       }
+
+      // #1005: batbern-user-sync-alarms-staging has zero subscriptions, so seven identity
+      // alarms reach nobody. An alarm action that resolves to a silent topic is not delivery.
+      expect(unsubscribed).toEqual([]);
     });
 
-    test('should_logRunbookExecution_when_automatedRemediationRuns', async () => {
-      // This test verifies runbook execution is logged
-      const runbookFunctionName = `${alarmPrefix}-runbook-automation`;
+    test('should_reachTheTriageLambda_when_alarmPublishesToPrimaryTopic', async () => {
+      const primary = alarms
+        .flatMap((a) => a.AlarmActions ?? [])
+        .find((arn) => arn.endsWith(`:${alarmPrefix}-alarms`));
+      expect(primary).toBeDefined();
 
-      // Verify CloudWatch Logs group exists for runbook execution
-      // This would be verified by checking log group existence
-      expect(true).toBe(true); // Placeholder for actual log verification
-    });
-  });
+      const subs = await snsClient.send(new ListSubscriptionsByTopicCommand({ TopicArn: primary }));
+      const protocols = (subs.Subscriptions ?? []).map((s) => s.Protocol);
 
-  // #1001: SKIPPED — this asserts infrastructure that was specified and never built. Every
-  // assertion here fails with ResourceNotFoundException because the Lambda it looks for does not
-  // exist in the account. That is not a regression; the feature was never implemented.
-  //
-  // Skipped rather than deleted so the acceptance criterion is still visible to whoever decides
-  // whether to build it or drop it (tracked in #1003). Un-skip when the feature lands.
-  //
-  // This was invisible until now: the whole suite sat behind a TEST_E2E guard that nothing set,
-  // so it neither passed nor failed — it simply never ran.
-  describe.skip('Post-Mortem Process (AC15)', () => {
-    test('should_createPostMortem_when_incidentResolved', async () => {
-      // This test verifies post-mortem template creation
-      // Post-mortems are typically stored in S3 or a database
-
-      // Verify Lambda function exists for post-mortem creation
-      const postMortemFunctionName = `${alarmPrefix}-create-postmortem`;
-
-      try {
-        const command = new InvokeCommand({
-          FunctionName: postMortemFunctionName,
-          InvocationType: 'DryRun',
-          Payload: Buffer.from(JSON.stringify({
-            incidentId: 'test-incident-001',
-            severity: 'high',
-            resolvedAt: new Date().toISOString()
-          }))
-        });
-
-        const response = await lambdaClient.send(command);
-        expect(response.StatusCode).toBe(204);
-      } catch (error: any) {
-        // Function should exist
-        expect(error.name).not.toBe('ResourceNotFoundException');
-      }
+      // The alarm -> SNS -> github-issues Lambda -> GitHub issue -> triage handoff.
+      // Lambda subscriptions need no confirmation, which is why this path stays alive while
+      // an unconfirmed email subscription silently expires.
+      expect(protocols).toContain('lambda');
     });
 
-    test('should_includeRequiredSections_when_postMortemCreated', async () => {
-      // This test verifies post-mortem template includes required sections:
-      // - Incident summary
-      // - Timeline
-      // - Root cause analysis
-      // - Resolution steps
-      // - Action items
-      // - Lessons learned
+    test('should_beReachable_when_primaryTopicInspected', async () => {
+      const primary = alarms
+        .flatMap((a) => a.AlarmActions ?? [])
+        .find((arn) => arn.endsWith(`:${alarmPrefix}-alarms`))!;
 
-      // This would be verified by checking the post-mortem template structure
-      const requiredSections = [
-        'incident_summary',
-        'timeline',
-        'root_cause',
-        'resolution',
-        'action_items',
-        'lessons_learned'
-      ];
+      const attrs = await snsClient.send(new GetTopicAttributesCommand({ TopicArn: primary }));
 
-      // Verify template includes all required sections
-      expect(requiredSections.length).toBe(6);
+      expect(attrs.Attributes).toBeDefined();
+      expect(Number(attrs.Attributes!.SubscriptionsConfirmed)).toBeGreaterThan(0);
     });
   });
 
-  // #1001: SKIPPED — this asserts infrastructure that was specified and never built. Every
-  // assertion here fails with ResourceNotFoundException because the Lambda it looks for does not
-  // exist in the account. That is not a regression; the feature was never implemented.
-  //
-  // Skipped rather than deleted so the acceptance criterion is still visible to whoever decides
-  // whether to build it or drop it (tracked in #1003). Un-skip when the feature lands.
-  //
-  // This was invisible until now: the whole suite sat behind a TEST_E2E guard that nothing set,
-  // so it neither passed nor failed — it simply never ran.
-  describe.skip('StatusPage Integration (AC16)', () => {
-    test('should_updateStatusPage_when_serviceOutageOccurs', async () => {
-      // This test verifies StatusPage integration for public status updates
-      const statusPageFunctionName = `${alarmPrefix}-update-statuspage`;
+  describe('Alarm responsiveness', () => {
+    // DELIBERATELY NOT ASSERTED: detection speed.
+    //
+    // The original AC asserted `EvaluationPeriods <= 3`. Measured against the estate, that is
+    // wrong in both directions and cannot be repaired by picking a better number:
+    //
+    //   alb-latency-p95              5 of 6 periods = 25 min, ON PURPOSE (#982) so a deploy
+    //                                warmup does not page
+    //   Reconciliation-Orphaned-Users  24 h period — it watches a daily reconciliation job
+    //   User-Sync-High-Drift, emails-rejected   1 h — slow-moving aggregates where the window
+    //                                is the metric
+    //
+    // "How fast should this alarm detect" depends on what the metric measures, so any global
+    // ceiling is either vacuous or needs a hand-maintained exception list. Tuning a threshold
+    // until the estate goes green is how the unfalsifiable assertions removed from this file
+    // were written in the first place. Per-alarm intent belongs in the CDK next to the alarm,
+    // where alb-alarms.ts already documents it.
 
-      try {
-        const command = new InvokeCommand({
-          FunctionName: statusPageFunctionName,
-          InvocationType: 'DryRun',
-          Payload: Buffer.from(JSON.stringify({
-            component: 'api-gateway',
-            status: 'major_outage',
-            message: 'API Gateway experiencing high latency'
-          }))
-        });
+    test('should_closeTheIssue_when_alarmRecovers', () => {
+      // #956: alarms carry an OK action so the GitHub issue closes on recovery. Without it an
+      // operator has to close every issue by hand and the backlog fills with resolved incidents.
+      const noOkAction = alarms
+        .filter((a) => (a.OKActions ?? []).length === 0)
+        .map((a) => a.AlarmName);
 
-        const response = await lambdaClient.send(command);
-        expect(response.StatusCode).toBe(204);
-      } catch (error: any) {
-        // Function should exist
-        expect(error.name).not.toBe('ResourceNotFoundException');
-      }
-    });
-
-    test('should_communicateToStakeholders_when_incidentOccurs', async () => {
-      // This test verifies stakeholder communication is configured
-      // This includes StatusPage updates and notification channels
-
-      const command = new DescribeAlarmsCommand({
-        AlarmNamePrefix: `${alarmPrefix}-critical-`,
-      });
-
-      const response = await cloudwatchClient.send(command);
-
-      if (response.MetricAlarms && response.MetricAlarms.length > 0) {
-        response.MetricAlarms.forEach((alarm: MetricAlarm) => {
-          // Verify critical alarms have notification actions
-          expect(alarm.AlarmActions).toBeDefined();
-          expect(alarm.AlarmActions!.length).toBeGreaterThan(0);
-        });
-      }
-    });
-
-    test('should_trackIncidentMetrics_when_statusPageUpdated', async () => {
-      // This test verifies incident metrics are tracked
-      // - Mean time to detection (MTTD)
-      // - Mean time to resolution (MTTR)
-      // - Incident frequency
-      // - Impact duration
-
-      // These metrics should be published to CloudWatch
-      expect(true).toBe(true); // Placeholder for actual metric verification
-    });
-  });
-
-  describe('Incident Workflow Integration', () => {
-    test('should_coordinateFullIncidentResponse_when_criticalAlarmTriggered', async () => {
-      // This test verifies the full incident response workflow:
-      // 1. Alarm triggers
-      // 2. PagerDuty incident created
-      // 3. On-call engineer notified
-      // 4. Runbook executed if applicable
-      // 5. StatusPage updated
-      // 6. Stakeholders notified
-      // 7. Post-mortem created after resolution
-
-      const command = new DescribeAlarmsCommand({
-        AlarmNamePrefix: `${alarmPrefix}-critical-`,
-      });
-
-      const response = await cloudwatchClient.send(command);
-
-      if (response.MetricAlarms && response.MetricAlarms.length > 0) {
-        const criticalAlarm = response.MetricAlarms[0];
-
-        // Verify alarm has all required integrations
-        expect(criticalAlarm.AlarmActions).toBeDefined();
-        expect(criticalAlarm.AlarmActions!.length).toBeGreaterThan(0);
-
-        // Verify alarm is properly configured for incident response
-        expect(criticalAlarm.ActionsEnabled).toBe(true);
-        expect(criticalAlarm.EvaluationPeriods).toBeLessThanOrEqual(3);
-      }
+      expect(noOkAction).toEqual([]);
     });
   });
 });

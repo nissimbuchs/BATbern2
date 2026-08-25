@@ -24,11 +24,49 @@ on:
 
 jobs:
   claude:
-    if: |
-      (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
-      (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
-      (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+    # WHO may invoke Claude, and only then WHAT invokes it.
+    #
+    # #1002: this repository is PUBLIC and the trigger below is `issue_comment`, so before this
+    # gate existed *any* GitHub account on earth could start a run by writing '@claude' in a
+    # comment — spending the CLAUDE_CODE_OAUTH_TOKEN quota and, more importantly, standing in
+    # the way of ever granting this workflow an AWS role. There was no actor check at all.
+    #
+    # Two independent ways to pass:
+    #   1. an explicit login in the CLAUDE_ALLOWED_ACTORS repo variable (comma-separated, no
+    #      spaces, CASE-SENSITIVE — GitHub expressions have no lowercase function, so these must
+    #      be the canonical logins), or
+    #   2. OWNER / COLLABORATOR on this repo, which self-maintains as people are added.
+    #
+    # `format(',{0},', …)` wraps both sides in sentinel commas so 'Dani' cannot match
+    # 'Danikbek', and so an unset or malformed variable degrades to "nobody is allowed" rather
+    # than throwing a parse error the way fromJSON would. NOTE THE CONSEQUENCE: deleting
+    # CLAUDE_ALLOWED_ACTORS does not open the gate, it narrows it to OWNER/COLLABORATOR. That is
+    # deliberate — this fails closed.
+    #
+    # MEMBER is absent on purpose: BATbern2 is owned by a User, not an organisation, so the
+    # MEMBER association can never occur here. OWNER and COLLABORATOR are the only real values.
+    #
+    # The `||` chain is ordered comment -> review -> issue deliberately. On an `issue_comment`
+    # event BOTH github.event.comment.author_association and github.event.issue.author_association
+    # exist, and the one that matters is the COMMENTER's, not the issue author's.
+    #
+    # The alarm -> issue -> triage handoff is unaffected: batbern-{env}-github-issues posts with
+    # a PAT and therefore authors its issues as `nissimbuchs` (verified on #993/#994,
+    # author_association=OWNER), so it passes on both branches. It is not a bot account and needs
+    # no entry of its own.
+    if: >-
+      (
+        contains(format(',{0},', vars.CLAUDE_ALLOWED_ACTORS), format(',{0},', github.actor)) ||
+        contains(fromJSON('["OWNER","COLLABORATOR"]'),
+                 github.event.comment.author_association ||
+                 github.event.review.author_association ||
+                 github.event.issue.author_association)
+      ) && (
+        (github.event_name == 'issue_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review_comment' && contains(github.event.comment.body, '@claude')) ||
+        (github.event_name == 'pull_request_review' && contains(github.event.review.body, '@claude')) ||
+        (github.event_name == 'issues' && (contains(github.event.issue.body, '@claude') || contains(github.event.issue.title, '@claude')))
+      )
     runs-on: ubuntu-latest
     permissions:
       # read, NOT write - see the note at the top of this file. This is the control that
