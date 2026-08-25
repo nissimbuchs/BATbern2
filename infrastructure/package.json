@@ -93,6 +93,8 @@
     "roots": [
       "<rootDir>/test"
     ],
+    "globalSetup": "<rootDir>/test/global-setup.js",
+    "globalTeardown": "<rootDir>/test/global-teardown.js",
     "testMatch": [
       "**/*.test.ts",
       "**/*.spec.ts"
