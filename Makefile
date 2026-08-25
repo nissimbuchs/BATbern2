@@ -23,9 +23,10 @@ help: ## Show this help message
 	@echo "╚════════════════════════════════════════════════════════════╝"
 	@echo ""
 	@echo "📦 Setup & Installation:"
-	@echo "  make install          - Install all dependencies (Java + Node)"
+	@echo "  make install          - Install all dependencies (Java + Node) and git hooks"
 	@echo "  make install-java     - Install Java dependencies (Gradle)"
 	@echo "  make install-node     - Install Node.js dependencies (npm)"
+	@echo "  make install-hooks    - Install git hooks (pre-commit, commit-msg, pre-push)"
 	@echo ""
 	@echo "🔨 Build:"
 	@echo "  make build            - Build all projects"
@@ -94,7 +95,18 @@ help: ## Show this help message
 # INSTALLATION
 # ═══════════════════════════════════════════════════════════
 
-install: install-java install-node ## Install all dependencies
+# `install-hooks` runs LAST and deliberately runs on every `make install`: the installer is
+# idempotent, and `make install` is the one command CLAUDE.md tells a newcomer to run first.
+# Before #973 nothing invoked `.githooks/install-hooks.sh` at all, so a fresh clone committed
+# and pushed with no Checkstyle, no ESLint and no conventional-commit check, while the docs
+# asserted all three were enforced. The hooks must be wired by the documented setup command,
+# not by a README someone has to find.
+install: install-java install-node install-hooks ## Install all dependencies (incl. git hooks)
+
+install-hooks: ## Install git hooks from .githooks/ (pre-commit, commit-msg, pre-push)
+	@echo "🪝 Installing git hooks..."
+	@./.githooks/install-hooks.sh
+	@echo "✓ Git hooks installed"
 
 install-java: ## Install Java/Gradle dependencies
 	@echo "📦 Installing Java dependencies..."

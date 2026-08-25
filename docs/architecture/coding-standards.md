@@ -77,12 +77,21 @@ docs(api): update OpenAPI specification for partner analytics
 
 ### Pre-commit Hooks
 
-Hooks live in `.githooks/` and are NOT installed by `make install` — a fresh clone is
-ungated until you run the installer yourself:
+Hooks live in `.githooks/` and are installed by `make install` (#973). Verify with
+`git config core.hooksPath` — it should print `.githooks`.
 
 ```bash
-./.githooks/install-hooks.sh      # sets core.hooksPath=.githooks
+make install                      # installs deps AND hooks
+make install-hooks                # hooks only, if deps are already there
+./.githooks/install-hooks.sh      # the installer itself; sets core.hooksPath=.githooks
+npm install                       # root `prepare` runs the installer too
 ```
+
+Until #973 nothing invoked that installer. A fresh clone therefore committed and pushed
+with no Checkstyle, no ESLint and no conventional-commit check, while this document claimed
+all three were enforced — and the `--no-verify` warning below guarded a gate that was not
+there. `scripts/ci/verify-githooks.sh` now asserts the wiring on every PR (`verify-hooks`
+job in `build.yml`), so the promise and the mechanism cannot drift apart again silently.
 
 What actually runs (see `.githooks/pre-commit`), all scoped to staged files:
 - **Frontend** (anything under `web-frontend/`): `lint-staged`, which runs
@@ -102,8 +111,10 @@ What actually runs (see `.githooks/pre-commit`), all scoped to staged files:
 
 There is no Vitest or Spotless step — `pre-push` runs the full frontend suite, so running
 related tests again at commit time only slows down the hook people are most tempted to
-bypass. Previous instructions here said `npm run prepare`; no such script has ever existed
-in any `package.json`.
+bypass. This section used to give `npm run prepare` as the install command at a point when
+no `package.json` defined one; #973 added that script to the ROOT `package.json` (delegating
+to the same installer), so the command now works — but `make install` is the documented
+entry point and the one CLAUDE.md points a newcomer at.
 
 **Known gap:** `infrastructure/**/*.ts` gets no pre-commit linting at all — lint-staged is
 scoped to `web-frontend/`. Tracked separately.

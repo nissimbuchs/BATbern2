@@ -1,5 +1,8 @@
 {
   "devDependencies": {
     "shadcn": "^3.6.3"
+  },
+  "scripts": {
+    "prepare": "[ -n \"$CI\" ] || ! git rev-parse --git-dir > /dev/null 2>&1 || ./.githooks/install-hooks.sh"
   }
 }

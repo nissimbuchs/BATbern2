@@ -39,6 +39,24 @@ env:
 
 jobs:
   # ═══════════════════════════════════════════════════════════
+  # GUARD: the git-hook install path (#973)
+  # ═══════════════════════════════════════════════════════════
+  # Cheap (no toolchain, ~10s) and deliberately placed first. It does not gate anything —
+  # it is not one of the 8 required contexts on `develop` — but it makes divergence between
+  # "the docs say commits are checked" and "the setup command wires the checks" visible on
+  # the PR instead of on someone's first ungated push. #973 sat undetected precisely because
+  # nothing ever asserted the wiring.
+  verify-hooks:
+    name: Verify git-hook install path
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Verify hooks are wired into the setup path
+        run: ./scripts/ci/verify-githooks.sh
+
+  # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Shared Kernel (Foundation)
   # ═══════════════════════════════════════════════════════════
   build-shared-kernel:
