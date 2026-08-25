@@ -504,7 +504,18 @@ describe('MonitoringStack', () => {
 
   // Story 10.29 AC9: SES Bounce/Complaint Rate Alarms
   describe('SES Bounce Monitoring Alarms', () => {
-    test('should_createBounceRateWarningAlarm_when_monitoringStackDeployed', () => {
+    // Issue #984: the warning alarm watched Reputation.BounceRate, which is a volume-weighted
+    // ROLLING reputation figure. At ~3 sends/day it cannot distinguish "hundreds of addresses
+    // bounced weeks ago" from "something is bouncing right now", and only the second is
+    // actionable. Measured 2026-08-25: it read a flat 0.0413 across every hour, against a 0.03
+    // threshold, with ZERO bounces in the preceding 7 weeks — permanently over the line and
+    // permanently useless. It flapped (2 emails on 2026-08-20) only because the metric
+    // publishes sparsely, not because anything changed.
+    //
+    // It now watches the `Bounce` COUNT, which is the signal someone can act on.
+    // Reputation.BounceRate stays on bounce-rate-critical at 5% — that IS the number AWS
+    // enforces on, and crossing it pauses sending.
+    test('should_watchBounceCountNotRollingRate_when_bounceRateWarningCreated', () => {
       const app = new App();
       const stack = new MonitoringStack(app, 'TestMonitoringStack', {
         config: prodConfig,
@@ -514,14 +525,44 @@ describe('MonitoringStack', () => {
 
       template.hasResourceProperties('AWS::CloudWatch::Alarm', {
         AlarmName: Match.stringLikeRegexp('.*bounce-rate-warning'),
-        MetricName: 'Reputation.BounceRate',
+        MetricName: 'Bounce',
         Namespace: 'AWS/SES',
-        Threshold: 0.03,
-        EvaluationPeriods: 3,
-        DatapointsToAlarm: 2,
+        Statistic: 'Sum',
+        // > 5 bounces in one hour. Sized against the real history rather than picked:
+        //   normal          0/day for the 7 weeks to 2026-08-25
+        //   attrition       1-3/day  (people leaving jobs) -> must NOT fire
+        //   real bursts     43/h, 133/h, 45/h during 2026-07-01..02 -> must fire
+        // The three earlier bursts (462 on 2026-03-05, 465 on 2026-05-04, 772 on 2026-05-19)
+        // are all far above this too.
+        Threshold: 5,
+        EvaluationPeriods: 1,
+        Period: 3600,
+        // A quiet hour publishes no datapoint. Without this the alarm drops to
+        // INSUFFICIENT_DATA and flips back on the next send, firing the OK action each time —
+        // the #969 flapping shape, which is what the old alarm did.
         TreatMissingData: 'notBreaching',
-        Period: 300,
+        ComparisonOperator: 'GreaterThanThreshold',
       });
+    });
+
+    // Regression guard for the whole point of #984: if anyone re-points the WARNING back at
+    // the rolling rate, it becomes permanently-true noise again. Exactly one alarm may watch
+    // Reputation.BounceRate, and it is the critical one.
+    test('should_haveExactlyOneReputationBounceRateAlarm_when_monitoringStackDeployed', () => {
+      const app = new App();
+      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+        config: prodConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      const alarms = template.findResources('AWS::CloudWatch::Alarm');
+      const onRollingRate = Object.values(alarms).filter(
+        (a) => a.Properties?.MetricName === 'Reputation.BounceRate'
+      );
+
+      expect(onRollingRate).toHaveLength(1);
+      expect(onRollingRate[0].Properties.Threshold).toBe(0.05);
     });
 
     test('should_createBounceRateCriticalAlarm_when_monitoringStackDeployed', () => {
