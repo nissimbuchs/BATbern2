@@ -91,6 +91,21 @@ export class GitHubIssuesConstruct extends Construct {
       })
     );
 
+    // #1002: read the service log groups so the issue body can carry an AGGREGATED, REDACTED
+    // picture of what was happening — see fetchLogContext/redactPath in the handler. FilterLogEvents
+    // only; no logs:PutLogEvents to these groups, no DeleteLogGroup, and scoped to the
+    // /aws/ecs/BATbern-* prefix rather than '*' so it cannot read Cognito trigger or
+    // email-forwarder logs it has no business in.
+    this.lambdaFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['logs:FilterLogEvents'],
+        resources: [
+          `arn:aws:logs:${cdk.Stack.of(this).region}:${cdk.Stack.of(this).account}:log-group:/aws/ecs/BATbern-*`,
+        ],
+      })
+    );
+
     // Subscribe Lambda to SNS alarm topic
     props.alarmTopic.addSubscription(new subscriptions.LambdaSubscription(this.lambdaFunction));
 

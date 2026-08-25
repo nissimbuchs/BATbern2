@@ -16,6 +16,7 @@ import type { SNSEvent } from 'aws-lambda';
 
 const mockSsmSend = jest.fn<(...args: any[]) => Promise<any>>();
 const mockCwSend = jest.fn<(...args: any[]) => Promise<any>>();
+const mockLogsSend = jest.fn<(...args: any[]) => Promise<any>>();
 const mockIssuesCreate = jest.fn<(...args: any[]) => Promise<any>>();
 const mockIssuesUpdate = jest.fn<(...args: any[]) => Promise<any>>();
 const mockIssuesCreateComment = jest.fn<(...args: any[]) => Promise<any>>();
@@ -32,6 +33,11 @@ jest.mock('@aws-sdk/client-cloudwatch', () => ({
   GetMetricDataCommand: jest.fn().mockImplementation((input) => ({ __type: 'getdata', input })),
 }));
 
+jest.mock('@aws-sdk/client-cloudwatch-logs', () => ({
+  CloudWatchLogsClient: jest.fn().mockImplementation(() => ({ send: mockLogsSend })),
+  FilterLogEventsCommand: jest.fn().mockImplementation((input) => ({ __type: 'filter', input })),
+}));
+
 jest.mock('@octokit/rest', () => ({
   Octokit: jest.fn().mockImplementation(() => ({
     issues: {
@@ -45,7 +51,7 @@ jest.mock('@octokit/rest', () => ({
   })),
 }));
 
-import { handler } from '../../../lambda/github-issues-integration/index';
+import { handler, redactPath } from '../../../lambda/github-issues-integration/index';
 
 // ------------------------------------------------------------------
 // Helpers
@@ -122,6 +128,7 @@ describe('github-issues Lambda handler', () => {
     mockIssuesCreate.mockResolvedValue({ data: { number: 42 } });
     mockIssuesUpdate.mockResolvedValue({ data: { number: 42 } });
     mockIssuesCreateComment.mockResolvedValue({ data: { id: 1 } });
+    mockLogsSend.mockResolvedValue({ events: [] });
 
     // #996: metric context. Default is a metric-math alarm (api-4xx-ratio's shape), because
     // that is the one whose numbers actually need explaining.
@@ -273,6 +280,87 @@ describe('github-issues Lambda handler', () => {
       await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'OK' })]));
 
       expect(mockCwSend).not.toHaveBeenCalled();
+    });
+  });
+
+  describe('log context redaction (#1002)', () => {
+    const bodyOf = () => (mockIssuesCreate.mock.calls[0][0] as { body: string }).body;
+
+    // These issues are filed into a PUBLIC repository. Anything redactPath fails to strip is
+    // published to the internet, so this is a disclosure boundary, not formatting.
+    it.each([
+      ['/api/v1/users/john.doe', '/api/v1/users/{id}'],
+      ['/api/v1/users/nissim.buchs@elca.ch', '/api/v1/users/{email}'],
+      ['/api/v1/events/BATbern57/speakers/3f2504e0-4f89-11d3-9a0c-0305e82c3301', '/api/v1/events/BATbern57/speakers/{uuid}'],
+      ['/api/v1/registrations/12345', '/api/v1/registrations/{n}'],
+      ['/api/v1/events/BATbern142/agenda-config', '/api/v1/events/BATbern142/agenda-config'],
+      ['/api/v1/companies/GoogleZH', '/api/v1/companies/{id}'],
+    ])('should_redactIdentifiers_when_pathIs_%s', (input, expected) => {
+      expect(redactPath(input)).toBe(expected);
+    });
+
+    it('should_keepTheEventCode_when_redacting', () => {
+      // BATbernNN is public information and the single most useful thing to see in a failing
+      // route, so it deliberately survives.
+      expect(redactPath('/api/v1/events/BATbern57')).toContain('BATbern57');
+    });
+
+    it('should_aggregateFailingRoutes_when_logsContainErrors', async () => {
+      mockLogsSend.mockResolvedValue({
+        events: [
+          { message: 'GATEWAY_API_REQUEST status=401 clientError=true method=PUT path=/api/v1/events/BATbern142/agenda-config' },
+          { message: 'GATEWAY_API_REQUEST status=401 clientError=true method=PUT path=/api/v1/events/BATbern142/agenda-config' },
+          { message: 'GATEWAY_API_REQUEST status=200 clientError=false method=GET path=/api/v1/users/john.doe' },
+        ],
+      });
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      const body = bodyOf();
+      expect(body).toContain('Log context');
+      expect(body).toContain('| 401 | 2 |');
+      expect(body).toContain('PUT /api/v1/events/BATbern142/agenda-config');
+      // the 200 carried a username; it must not have been published
+      expect(body).not.toContain('john.doe');
+    });
+
+    it('should_neverPublishARawIdentifier_when_bodyIsRendered', async () => {
+      mockLogsSend.mockResolvedValue({
+        events: [
+          { message: 'GATEWAY_API_REQUEST status=403 clientError=true method=GET path=/api/v1/users/alice.smith@example.com' },
+          { message: 'GATEWAY_API_REQUEST status=404 clientError=true method=GET path=/api/v1/sessions/3f2504e0-4f89-11d3-9a0c-0305e82c3301' },
+        ],
+      });
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      const body = bodyOf();
+      expect(body).not.toContain('alice.smith');
+      expect(body).not.toContain('example.com');
+      expect(body).not.toContain('3f2504e0');
+      expect(body).toContain('{email}');
+      expect(body).toContain('{uuid}');
+    });
+
+    it('should_stillFileTheIssue_when_logsAreUnavailable', async () => {
+      // Fail-open, including when the lazily-imported SDK client or the permission is missing.
+      mockLogsSend.mockRejectedValue(new Error('AccessDeniedException'));
+
+      await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
+
+      expect(mockIssuesCreate).toHaveBeenCalledTimes(1);
+      expect(bodyOf()).toContain('## CloudWatch Alarm Details');
+      expect(bodyOf()).not.toContain('Log context —');
+    });
+
+    it('should_pickTheServiceLogGroup_when_alarmNamesAService', async () => {
+      await handler(makeSnsEvent([makeAlarmMessage({
+        NewStateValue: 'ALARM',
+        AlarmName: 'batbern-staging-EventManagement-High-Memory',
+      })]));
+
+      const filter = mockLogsSend.mock.calls.map((c) => c[0] as any).find((c) => c.__type === 'filter');
+      expect(filter.input.logGroupName).toBe('/aws/ecs/BATbern-staging/event-management');
     });
   });
 

@@ -33,6 +33,95 @@ env:
   COGNITO_CLIENT_ID: 1b53lci6qpqsmdn0u3e8s4knvv
 
 jobs:
+
+  # ── Infrastructure suites that nothing else runs (#1001) ─────────────────────────────
+  #
+  # Two directories under infrastructure/ were executed by nobody:
+  #
+  #   test/integration  — CI is scoped to `test/unit` (build.yml), pre-push skips
+  #                       infrastructure/* entirely. Only `make test` reached them.
+  #   test/e2e          — Layer 4 in the 4-layer framework (CDK / AWS resource validation).
+  #                       Every test sits behind a TEST_E2E guard, and the one invocation that
+  #                       set it is COMMENTED OUT in deploy-staging.yml:1220. 24 tests that
+  #                       neither passed nor failed for as long as they have existed.
+  #
+  # What that cost, concretely: test/integration called the v1 `docker-compose` binary, which is
+  # not installed anywhere in this estate, so it could not have passed on any current machine
+  # (#988). And test/e2e was hiding a live alarm — batbern-staging-emails-rejected had NO alarm
+  # actions and NO OK actions at all, so it could fire into complete silence (#1001).
+  #
+  # Nightly rather than per-PR on purpose: these shell out to `docker compose` and query the live
+  # AWS account, which is too heavy and too stateful for the per-PR gate. The nightly run is
+  # already the accepted health signal for exactly that class of check.
+  #
+  # This job does NOT block deploys. It fails the nightly, which is the alert.
+  infrastructure-tests:
+    name: Infrastructure integration + Layer 4 E2E
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: infrastructure/package-lock.json
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Install dependencies
+        working-directory: ./infrastructure
+        run: npm ci
+
+      # `docker compose` (v2 plugin) is preinstalled on ubuntu-latest. Asserted rather than
+      # assumed, because the defect these tests were hiding was precisely a call to a binary
+      # that did not exist (#988) — a missing plugin here would resurface as a confusing
+      # "compose file has syntax errors".
+      - name: Verify Docker Compose v2 is available
+        run: docker compose version
+
+      - name: Integration tests (docker compose config validation)
+        id: integration
+        working-directory: ./infrastructure
+        run: npx jest test/integration --ci
+
+      # Layer 4: asserts the alarms, dashboards and resources that are actually DEPLOYED, which
+      # is the half no unit test can cover — a CDK Template assertion proves the declaration, not
+      # that AWS accepted it or that it still exists.
+      - name: Layer 4 E2E against deployed staging
+        id: layer4
+        if: always()
+        working-directory: ./infrastructure
+        env:
+          TEST_E2E: 'true'
+          TEST_ENVIRONMENT: staging
+        run: npx jest test/e2e --ci
+
+      - name: Summarise
+        if: always()
+        run: |
+          {
+            echo "## Infrastructure suites"
+            echo ""
+            echo "| suite | result |"
+            echo "|---|---|"
+            echo "| test/integration | ${{ steps.integration.outcome }} |"
+            echo "| test/e2e (Layer 4) | ${{ steps.layer4.outcome }} |"
+          } >> "$GITHUB_STEP_SUMMARY"
+          if [ "${{ steps.integration.outcome }}" != "success" ] || [ "${{ steps.layer4.outcome }}" != "success" ]; then
+            echo "::error::An infrastructure suite regressed. These run nowhere else, so a failure here is the only signal."
+            exit 1
+          fi
+
   nightly-e2e:
     name: Nightly Playwright (@gate + @quarantine re-test)
     runs-on: ubuntu-latest

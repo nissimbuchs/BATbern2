@@ -149,7 +149,15 @@ describeE2E('Alert Scenarios E2E Tests', () => {
     test('should_alarmOnP95Latency_when_albAlarmsDeployed', async () => {
       const alarm = await byName(`${alarmPrefix}-alb-latency-p95`);
       expect(alarm).toBeDefined();
-      expect(alarm!.ExtendedStatistic).toBe('p95');
+      // #1001: this asserted `alarm.ExtendedStatistic === 'p95'`, which was right until #981
+      // converted the alarm to metric math (`IF(requests >= N, latency, 0)`) to gate it on
+      // traffic volume. For a math alarm the top-level ExtendedStatistic is null and the
+      // statistic lives inside Metrics[].MetricStat.Stat. The alarm was correct; the assertion
+      // predated the change and nobody noticed, because this whole suite was skipped behind a
+      // TEST_E2E guard that nothing ever set.
+      expect(alarm!.ExtendedStatistic ?? null).toBeNull();
+      const stats = (alarm!.Metrics ?? []).map((m) => m.MetricStat?.Stat).filter(Boolean);
+      expect(stats).toContain('p95');
       // SECONDS: AWS/ApplicationELB TargetResponseTime is in seconds, unlike the
       // AWS/ApiGateway Latency metric the old alarm used, which is milliseconds.
       expect(alarm!.Threshold).toBeLessThan(10);

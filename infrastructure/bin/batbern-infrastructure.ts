@@ -257,6 +257,8 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     lambdaSecurityGroup: networkStack.lambdaTriggersSecurityGroup,
     // ECS Service Connect DNS is not resolvable from Lambda; use the public API domain instead.
     apiGatewayPublicUrl: config.domain?.apiDomain ? `https://${config.domain.apiDomain}` : undefined,
+    // #1001: EmailsRejectedAlarm had no actions at all until this was passed.
+    alarmTopic: monitoringStack.alarmTopic,
   });
   inboundEmailStack.addDependency(sesStack);
   if (dnsStack) {
