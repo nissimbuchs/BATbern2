@@ -255,6 +255,36 @@ export class ApiGatewayServiceStack extends cdk.Stack {
       unhealthyThresholdCount: 3,
     });
 
+    // Issue #982: ramp traffic onto a newly registered target instead of switching it on at
+    // full rate.
+    //
+    // Every task replacement produced ~10-15 minutes of multi-second latency — about 800 real
+    // requests per replacement, against a measured 2-25 ms steady-state p95. Measured over two
+    // replacements on 2026-08-19, ALB TargetResponseTime p95 per 5-min window ran
+    // 4.71 s (35 requests) -> 1.17 s (220) -> 0.43 s (533) -> 0.0057 s (45). Volume ramps
+    // while latency decays, which is a JVM warming up under load rather than a slow
+    // dependency, and it tracks task registration exactly (18:48 target registered, 19:00
+    // p95 = 4.71 s).
+    //
+    // The cause is that a target enters service the moment `/actuator/health` passes, and
+    // passing a liveness probe is not the same as being warm — the container health check even
+    // carries a 180 s startPeriod, acknowledging as much. The ALB then sends it a full
+    // round-robin share immediately.
+    //
+    // 300 s covers the steep part of the decay (4.71 s -> ~0.43 s happens inside the first ten
+    // minutes) without holding a target at reduced share for the full window; the JVM needs
+    // real traffic to JIT-compile, so a longer ramp is not strictly better. AWS accepts
+    // 30-900 s. Requires the round_robin algorithm — slow start is refused on
+    // least_outstanding_requests; test/unit/alb-warmup.test.ts pins both.
+    //
+    // This is a MITIGATION, not a root cause fix, and it is the cheapest one available: no
+    // application change. #982 keeps the measurement work open — a JFR recording or
+    // actuator/metrics on a fresh task to separate JIT from Hikari pool fill from cold
+    // Caffeine caches, and only then CDS/AppCDS or AOT. It also matters outside deploy
+    // windows: 70% of capacity is FARGATE_SPOT, and a Spot reclaim produces the same profile
+    // unannounced during ordinary traffic.
+    this.service.targetGroup.setAttribute('slow_start.duration_seconds', '300');
+
     // Increase ALB idle timeout to 120s to avoid 60s timeout during cold starts
     (this.service.loadBalancer.node.defaultChild as cdk.CfnResource).addPropertyOverride(
       'LoadBalancerAttributes',
