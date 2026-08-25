@@ -134,11 +134,11 @@ describe('PreAuthentication Lambda Tests', () => {
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
         expect.objectContaining({
           MetricData: expect.arrayContaining([
-              expect.objectContaining({
-                MetricName: 'ActiveUserAllowed',
-                Value: 1,
-              }),
-            ]),
+            expect.objectContaining({
+              MetricName: 'ActiveUserAllowed',
+              Value: 1,
+            }),
+          ]),
         })
       );
 
@@ -173,11 +173,11 @@ describe('PreAuthentication Lambda Tests', () => {
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
         expect.objectContaining({
           MetricData: expect.arrayContaining([
-              expect.objectContaining({
-                MetricName: 'InactiveUserBlocked',
-                Value: 1,
-              }),
-            ]),
+            expect.objectContaining({
+              MetricName: 'InactiveUserBlocked',
+              Value: 1,
+            }),
+          ]),
         })
       );
 
@@ -232,11 +232,11 @@ describe('PreAuthentication Lambda Tests', () => {
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
         expect.objectContaining({
           MetricData: expect.arrayContaining([
-              expect.objectContaining({
-                MetricName: 'PreAuthFailure',
-                Value: 1,
-              }),
-            ]),
+            expect.objectContaining({
+              MetricName: 'PreAuthFailure',
+              Value: 1,
+            }),
+          ]),
         })
       );
     });
@@ -257,11 +257,11 @@ describe('PreAuthentication Lambda Tests', () => {
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
         expect.objectContaining({
           MetricData: expect.arrayContaining([
-              expect.objectContaining({
-                MetricName: 'PreAuthFailure',
-                Value: 1,
-              }),
-            ]),
+            expect.objectContaining({
+              MetricName: 'PreAuthFailure',
+              Value: 1,
+            }),
+          ]),
         })
       );
 
@@ -296,15 +296,14 @@ describe('PreAuthentication Lambda Tests', () => {
       // Then: UserNotFoundAllowed metric published
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
         expect.objectContaining({
-          
-            Namespace: 'BATbern/UserSync',
-            MetricData: expect.arrayContaining([
-              expect.objectContaining({
-                MetricName: 'UserNotFoundAllowed',
-                Value: 1,
-                Unit: 'Count',
-              }),
-            ]),
+          Namespace: 'BATbern/UserSync',
+          MetricData: expect.arrayContaining([
+            expect.objectContaining({
+              MetricName: 'UserNotFoundAllowed',
+              Value: 1,
+              Unit: 'Count',
+            }),
+          ]),
         })
       );
 
@@ -312,11 +311,11 @@ describe('PreAuthentication Lambda Tests', () => {
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
         expect.objectContaining({
           MetricData: expect.arrayContaining([
-              expect.objectContaining({
-                MetricName: 'PreAuthLatency',
-                Unit: 'Milliseconds',
-              }),
-            ]),
+            expect.objectContaining({
+              MetricName: 'PreAuthLatency',
+              Unit: 'Milliseconds',
+            }),
+          ]),
         })
       );
     });
@@ -336,11 +335,11 @@ describe('PreAuthentication Lambda Tests', () => {
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
         expect.objectContaining({
           MetricData: expect.arrayContaining([
-              expect.objectContaining({
-                MetricName: 'ActiveUserAllowed',
-                Value: 1,
-              }),
-            ]),
+            expect.objectContaining({
+              MetricName: 'ActiveUserAllowed',
+              Value: 1,
+            }),
+          ]),
         })
       );
     });
@@ -361,11 +360,11 @@ describe('PreAuthentication Lambda Tests', () => {
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
         expect.objectContaining({
           MetricData: expect.arrayContaining([
-              expect.objectContaining({
-                MetricName: 'InactiveUserBlocked',
-                Value: 1,
-              }),
-            ]),
+            expect.objectContaining({
+              MetricName: 'InactiveUserBlocked',
+              Value: 1,
+            }),
+          ]),
         })
       );
     });
@@ -410,10 +409,10 @@ describe('PreAuthentication Lambda Tests', () => {
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
         expect.objectContaining({
           MetricData: expect.arrayContaining([
-              expect.objectContaining({
-                MetricName: 'UserNotFoundAllowed',
-              }),
-            ]),
+            expect.objectContaining({
+              MetricName: 'UserNotFoundAllowed',
+            }),
+          ]),
         })
       );
     });
@@ -453,9 +452,7 @@ describe('PreAuthentication Lambda Tests', () => {
 
     test('should_notReleaseConnection_when_connectionFailsToEstablish', async () => {
       // Given: Database connection fails
-      (database.getDbClient as jest.Mock).mockRejectedValue(
-        new Error('Connection failed')
-      );
+      (database.getDbClient as jest.Mock).mockRejectedValue(new Error('Connection failed'));
 
       const event = createEvent();
 

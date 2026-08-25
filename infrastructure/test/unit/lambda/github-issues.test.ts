@@ -57,11 +57,13 @@ import { handler, redactPath } from '../../../lambda/github-issues-integration/i
 // Helpers
 // ------------------------------------------------------------------
 
-function makeAlarmMessage(overrides: Partial<{
-  AlarmName: string;
-  NewStateValue: 'ALARM' | 'OK' | 'INSUFFICIENT_DATA';
-  AlarmDescription: string;
-}> = {}) {
+function makeAlarmMessage(
+  overrides: Partial<{
+    AlarmName: string;
+    NewStateValue: 'ALARM' | 'OK' | 'INSUFFICIENT_DATA';
+    AlarmDescription: string;
+  }> = {}
+) {
   return {
     AlarmName: 'batbern-staging-EventManagement-High-Memory',
     AlarmDescription: 'Memory usage is high',
@@ -238,7 +240,9 @@ describe('github-issues Lambda handler', () => {
       // MetricName. Those must be passed to GetMetricData verbatim.
       await handler(makeSnsEvent([makeAlarmMessage({ NewStateValue: 'ALARM' })]));
 
-      const getData = mockCwSend.mock.calls.map((c) => c[0] as any).find((c) => c.__type === 'getdata');
+      const getData = mockCwSend.mock.calls
+        .map((c) => c[0] as any)
+        .find((c) => c.__type === 'getdata');
       expect(getData.input.MetricDataQueries).toEqual([
         { Id: 'ratio', Expression: 'errors / requests * 100', ReturnData: true },
       ]);
@@ -263,7 +267,11 @@ describe('github-issues Lambda handler', () => {
       // the issue — an empty metric can itself be the finding.
       mockCwSend.mockImplementation((cmd: any) =>
         cmd.__type === 'describe'
-          ? Promise.resolve({ MetricAlarms: [{ AlarmName: 'a', Period: 300, Namespace: 'N', MetricName: 'M', Statistic: 'Sum' }] })
+          ? Promise.resolve({
+              MetricAlarms: [
+                { AlarmName: 'a', Period: 300, Namespace: 'N', MetricName: 'M', Statistic: 'Sum' },
+              ],
+            })
           : Promise.resolve({ MetricDataResults: [{ Id: 'm1', Timestamps: [], Values: [] }] })
       );
 
@@ -291,7 +299,10 @@ describe('github-issues Lambda handler', () => {
     it.each([
       ['/api/v1/users/john.doe', '/api/v1/users/{id}'],
       ['/api/v1/users/nissim.buchs@elca.ch', '/api/v1/users/{email}'],
-      ['/api/v1/events/BATbern57/speakers/3f2504e0-4f89-11d3-9a0c-0305e82c3301', '/api/v1/events/BATbern57/speakers/{uuid}'],
+      [
+        '/api/v1/events/BATbern57/speakers/3f2504e0-4f89-11d3-9a0c-0305e82c3301',
+        '/api/v1/events/BATbern57/speakers/{uuid}',
+      ],
       ['/api/v1/registrations/12345', '/api/v1/registrations/{n}'],
       ['/api/v1/events/BATbern142/agenda-config', '/api/v1/events/BATbern142/agenda-config'],
       ['/api/v1/companies/GoogleZH', '/api/v1/companies/{id}'],
@@ -308,9 +319,18 @@ describe('github-issues Lambda handler', () => {
     it('should_aggregateFailingRoutes_when_logsContainErrors', async () => {
       mockLogsSend.mockResolvedValue({
         events: [
-          { message: 'GATEWAY_API_REQUEST status=401 clientError=true method=PUT path=/api/v1/events/BATbern142/agenda-config' },
-          { message: 'GATEWAY_API_REQUEST status=401 clientError=true method=PUT path=/api/v1/events/BATbern142/agenda-config' },
-          { message: 'GATEWAY_API_REQUEST status=200 clientError=false method=GET path=/api/v1/users/john.doe' },
+          {
+            message:
+              'GATEWAY_API_REQUEST status=401 clientError=true method=PUT path=/api/v1/events/BATbern142/agenda-config',
+          },
+          {
+            message:
+              'GATEWAY_API_REQUEST status=401 clientError=true method=PUT path=/api/v1/events/BATbern142/agenda-config',
+          },
+          {
+            message:
+              'GATEWAY_API_REQUEST status=200 clientError=false method=GET path=/api/v1/users/john.doe',
+          },
         ],
       });
 
@@ -327,8 +347,14 @@ describe('github-issues Lambda handler', () => {
     it('should_neverPublishARawIdentifier_when_bodyIsRendered', async () => {
       mockLogsSend.mockResolvedValue({
         events: [
-          { message: 'GATEWAY_API_REQUEST status=403 clientError=true method=GET path=/api/v1/users/alice.smith@example.com' },
-          { message: 'GATEWAY_API_REQUEST status=404 clientError=true method=GET path=/api/v1/sessions/3f2504e0-4f89-11d3-9a0c-0305e82c3301' },
+          {
+            message:
+              'GATEWAY_API_REQUEST status=403 clientError=true method=GET path=/api/v1/users/alice.smith@example.com',
+          },
+          {
+            message:
+              'GATEWAY_API_REQUEST status=404 clientError=true method=GET path=/api/v1/sessions/3f2504e0-4f89-11d3-9a0c-0305e82c3301',
+          },
         ],
       });
 
@@ -354,12 +380,18 @@ describe('github-issues Lambda handler', () => {
     });
 
     it('should_pickTheServiceLogGroup_when_alarmNamesAService', async () => {
-      await handler(makeSnsEvent([makeAlarmMessage({
-        NewStateValue: 'ALARM',
-        AlarmName: 'batbern-staging-EventManagement-High-Memory',
-      })]));
+      await handler(
+        makeSnsEvent([
+          makeAlarmMessage({
+            NewStateValue: 'ALARM',
+            AlarmName: 'batbern-staging-EventManagement-High-Memory',
+          }),
+        ])
+      );
 
-      const filter = mockLogsSend.mock.calls.map((c) => c[0] as any).find((c) => c.__type === 'filter');
+      const filter = mockLogsSend.mock.calls
+        .map((c) => c[0] as any)
+        .find((c) => c.__type === 'filter');
       expect(filter.input.logGroupName).toBe('/aws/ecs/BATbern-staging/event-management');
     });
   });
@@ -468,10 +500,12 @@ describe('github-issues Lambda handler', () => {
   });
 
   it('should_applyCorrectSeverityLabel_when_alarmNameContainsCriticalKeyword', async () => {
-    const event = makeSnsEvent([makeAlarmMessage({
-      AlarmName: 'batbern-staging-api-availability',
-      NewStateValue: 'ALARM',
-    })]);
+    const event = makeSnsEvent([
+      makeAlarmMessage({
+        AlarmName: 'batbern-staging-api-availability',
+        NewStateValue: 'ALARM',
+      }),
+    ]);
     await handler(event);
 
     const createArgs = mockIssuesCreate.mock.calls[0][0] as { labels: string[] };

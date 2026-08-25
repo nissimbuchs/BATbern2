@@ -48,8 +48,8 @@ function hasAction(template: Template, action: string): boolean {
     const resources = template.findResources(resourceType);
     for (const resource of Object.values(resources)) {
       const statements: unknown[] =
-        (resource as { Properties?: { PolicyDocument?: { Statement?: unknown[] } } })
-          .Properties?.PolicyDocument?.Statement ?? [];
+        (resource as { Properties?: { PolicyDocument?: { Statement?: unknown[] } } }).Properties
+          ?.PolicyDocument?.Statement ?? [];
       for (const stmt of statements) {
         const s = stmt as { Action?: unknown };
         const actions = Array.isArray(s.Action)
@@ -72,8 +72,8 @@ function hasAction(template: Template, action: string): boolean {
 function hasManagedPolicy(template: Template, nameSubstring: string): boolean {
   const policies = template.findResources('AWS::IAM::ManagedPolicy');
   for (const resource of Object.values(policies)) {
-    const name = (resource as { Properties?: { ManagedPolicyName?: unknown } })
-      .Properties?.ManagedPolicyName;
+    const name = (resource as { Properties?: { ManagedPolicyName?: unknown } }).Properties
+      ?.ManagedPolicyName;
     // The name may be a plain string or a CloudFormation Join/Sub token
     const nameStr = JSON.stringify(name ?? '');
     if (nameStr.includes(nameSubstring)) return true;
@@ -208,9 +208,9 @@ describe('CICDStack — GitHub Actions role permissions', () => {
   test('should_placeWorkflowRuntimeActions_in_WorkflowRuntimePolicy', () => {
     const policies = template.findResources('AWS::IAM::ManagedPolicy');
 
-    const runtimePolicy = Object.values(policies).find(p => {
+    const runtimePolicy = Object.values(policies).find((p) => {
       const nameStr = JSON.stringify(
-        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? '',
+        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? ''
       );
       return nameStr.includes('github-workflow-runtime');
     });
@@ -219,10 +219,10 @@ describe('CICDStack — GitHub Actions role permissions', () => {
 
     // Spot-check: a representative runtime action must appear in this policy
     const statements: unknown[] =
-      (runtimePolicy as { Properties?: { PolicyDocument?: { Statement?: unknown[] } } })
-        .Properties?.PolicyDocument?.Statement ?? [];
+      (runtimePolicy as { Properties?: { PolicyDocument?: { Statement?: unknown[] } } }).Properties
+        ?.PolicyDocument?.Statement ?? [];
 
-    const allActions = statements.flatMap(stmt => {
+    const allActions = statements.flatMap((stmt) => {
       const s = stmt as { Action?: unknown };
       return Array.isArray(s.Action)
         ? (s.Action as unknown[]).filter((a): a is string => typeof a === 'string')
@@ -241,9 +241,9 @@ describe('CICDStack — GitHub Actions role permissions', () => {
   test('should_notPlaceCdkDeployActions_in_WorkflowRuntimePolicy', () => {
     const policies = template.findResources('AWS::IAM::ManagedPolicy');
 
-    const runtimePolicy = Object.values(policies).find(p => {
+    const runtimePolicy = Object.values(policies).find((p) => {
       const nameStr = JSON.stringify(
-        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? '',
+        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? ''
       );
       return nameStr.includes('github-workflow-runtime');
     });
@@ -251,18 +251,18 @@ describe('CICDStack — GitHub Actions role permissions', () => {
     expect(runtimePolicy).toBeDefined();
 
     const statements: unknown[] =
-      (runtimePolicy as { Properties?: { PolicyDocument?: { Statement?: unknown[] } } })
-        .Properties?.PolicyDocument?.Statement ?? [];
+      (runtimePolicy as { Properties?: { PolicyDocument?: { Statement?: unknown[] } } }).Properties
+        ?.PolicyDocument?.Statement ?? [];
 
     const runtimeActions = new Set(
-      statements.flatMap(stmt => {
+      statements.flatMap((stmt) => {
         const s = stmt as { Action?: unknown };
         return Array.isArray(s.Action)
           ? (s.Action as unknown[]).filter((a): a is string => typeof a === 'string')
           : typeof s.Action === 'string'
             ? [s.Action]
             : [];
-      }),
+      })
     );
 
     // These are CDK-only actions — they must not appear in the runtime policy

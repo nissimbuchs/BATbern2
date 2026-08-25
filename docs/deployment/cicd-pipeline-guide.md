@@ -146,6 +146,44 @@ Practical consequences:
 - The `dependabot[bot]` exclusion is why dependency PRs are safe to accumulate — they never
   deploy — but merging them does, once each.
 
+#### Two concurrent PRs: the second one stalls (#976)
+
+`concurrency: deploy-staging` and `strict: true` branch protection are individually correct
+and jointly self-defeating. Serialisation guarantees PR B's deploy finishes *after* PR A
+merges; strictness then guarantees B is stale and refuses to merge. GitHub's auto-merge does
+not update the branch, so B sits armed forever. Of N queued PRs, N-1 land here after each
+merge.
+
+Measured with #972 / #974 on 2026-08-18:
+
+```
+10:09  #972 opened            -> build + deploy start
+10:43  #974 opened            -> builds pass in ~13 min, deploy job QUEUES behind #972
+12:05  #972 deploy finishes, auto-merge MERGES it, develop advances
+12:05  #974 deploy finally acquires the lock, runs, passes (20/20 checks green)
+12:28  auto-merge.yml arms auto-merge on #974
+ ...   nothing happens.  mergeable=MERGEABLE, mergeStateStatus=BEHIND
+```
+
+`gh pr checks` shows all green. **`mergeStateStatus=BEHIND` is the only signal**, and until
+#976 nothing surfaced it. `auto-merge.yml` now polls for it after the checks pass and, when it
+finds it, emits a `::warning::` annotation, a job-summary block, and a one-time PR comment
+carrying the recovery command:
+
+```bash
+gh pr update-branch <pr-number>
+```
+
+Recovery costs a full rebuild plus another production deploy of content that is already
+deployed. That is not automated, on purpose: `update-branch` commits as `GITHUB_TOKEN`, and
+GitHub suppresses workflow runs for GITHUB_TOKEN-generated events, so the new head SHA would
+carry no results for the 8 required contexts — the PR would go `BEHIND` → `BLOCKED` and stall
+just as silently, with an extra merge commit on top. Re-triggering the checks needs a PAT (the
+same recursion guard blocks `gh workflow run` with `GITHUB_TOKEN`), and no PAT secret exists in
+this repo. The real answers are a PAT or GitHub's merge queue; both remain open on #976.
+
+Until then: **work one PR to `develop` at a time.**
+
 **Jobs:**
 1. **Detect Changes**
    - Analyzes changed components via git diff

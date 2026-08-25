@@ -105,7 +105,7 @@ export async function resolveRecipients(toAddress: string): Promise<string[]> {
   const eventMatch = localPart.match(/^batbern(\d+)$/);
   if (eventMatch) {
     console.warn(
-      `Deprecated alias batbern${eventMatch[1]}@ used — forward to batbern${eventMatch[1]}-participants@ instead`,
+      `Deprecated alias batbern${eventMatch[1]}@ used — forward to batbern${eventMatch[1]}-participants@ instead`
     );
     return fetchEventDistributionList(`BATbern${eventMatch[1]}`, 'participants');
   }
@@ -202,7 +202,7 @@ async function fetchSupportContacts(): Promise<string[]> {
  */
 async function fetchEventDistributionList(
   eventCode: string,
-  kind: 'speakers' | 'moderator' | 'participants',
+  kind: 'speakers' | 'moderator' | 'participants'
 ): Promise<string[]> {
   const url = `${API_GATEWAY_URL}/api/v1/events/${eventCode}/distribution-list/${kind}`;
   const response = await fetch(url);
@@ -212,7 +212,7 @@ async function fetchEventDistributionList(
       console.warn(`Event not found: ${eventCode}`);
     } else {
       console.error(
-        `Failed to fetch ${kind} distribution list for ${eventCode}: ${response.status}`,
+        `Failed to fetch ${kind} distribution list for ${eventCode}: ${response.status}`
       );
     }
     return [];

@@ -134,9 +134,7 @@ describe('FrontendStack — variant canary (beta.batbern.ch)', () => {
       })
     ).toThrow();
     // ...and no stable-bucket export.
-    expect(() =>
-      template.hasOutput('StableBucketName', {})
-    ).toThrow();
+    expect(() => template.hasOutput('StableBucketName', {})).toThrow();
   });
 
   test('should_prefixCloudFrontResourceNames_when_variant', () => {
@@ -288,13 +286,11 @@ describe('FrontendStack — CSP allows the Cognito custom auth domain (SSO token
 
     for (const [logicalId, resource] of policyEntries) {
       const csp: string =
-        resource.Properties.ResponseHeadersPolicyConfig.SecurityHeadersConfig
-          .ContentSecurityPolicy.ContentSecurityPolicy;
+        resource.Properties.ResponseHeadersPolicyConfig.SecurityHeadersConfig.ContentSecurityPolicy
+          .ContentSecurityPolicy;
       // auth.batbern.ch must appear inside the connect-src directive itself,
       // not merely anywhere in the CSP string.
-      expect(`${logicalId}: ${csp}`).toMatch(
-        /connect-src [^;]*https:\/\/auth\.batbern\.ch/
-      );
+      expect(`${logicalId}: ${csp}`).toMatch(/connect-src [^;]*https:\/\/auth\.batbern\.ch/);
     }
   });
 });

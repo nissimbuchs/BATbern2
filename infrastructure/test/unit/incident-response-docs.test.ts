@@ -109,7 +109,10 @@ describe('Post-mortem process (AC15)', () => {
   test('should_documentAllRequiredSections_when_templateRead', () => {
     const template = fs.readFileSync(POST_MORTEM_MD, 'utf8');
     const headings = (template.match(/^##\s+(.+)$/gm) ?? []).map((h) =>
-      h.replace(/^##\s+/, '').toLowerCase().replace(/[^a-z]+/g, '_')
+      h
+        .replace(/^##\s+/, '')
+        .toLowerCase()
+        .replace(/[^a-z]+/g, '_')
     );
     const missing = REQUIRED_SECTIONS.filter((s) => !headings.some((h) => h.includes(s)));
 

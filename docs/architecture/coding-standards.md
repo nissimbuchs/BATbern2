@@ -77,12 +77,21 @@ docs(api): update OpenAPI specification for partner analytics
 
 ### Pre-commit Hooks
 
-Hooks live in `.githooks/` and are NOT installed by `make install` — a fresh clone is
-ungated until you run the installer yourself:
+Hooks live in `.githooks/` and are installed by `make install` (#973). Verify with
+`git config core.hooksPath` — it should print `.githooks`.
 
 ```bash
-./.githooks/install-hooks.sh      # sets core.hooksPath=.githooks
+make install                      # installs deps AND hooks
+make install-hooks                # hooks only, if deps are already there
+./.githooks/install-hooks.sh      # the installer itself; sets core.hooksPath=.githooks
+npm install                       # root `prepare` runs the installer too
 ```
+
+Until #973 nothing invoked that installer. A fresh clone therefore committed and pushed
+with no Checkstyle, no ESLint and no conventional-commit check, while this document claimed
+all three were enforced — and the `--no-verify` warning below guarded a gate that was not
+there. `scripts/ci/verify-githooks.sh` now asserts the wiring on every PR (`verify-hooks`
+job in `build.yml`), so the promise and the mechanism cannot drift apart again silently.
 
 What actually runs (see `.githooks/pre-commit`), all scoped to staged files:
 - **Frontend** (anything under `web-frontend/`): `lint-staged`, which runs
@@ -102,11 +111,35 @@ What actually runs (see `.githooks/pre-commit`), all scoped to staged files:
 
 There is no Vitest or Spotless step — `pre-push` runs the full frontend suite, so running
 related tests again at commit time only slows down the hook people are most tempted to
-bypass. Previous instructions here said `npm run prepare`; no such script has ever existed
-in any `package.json`.
+bypass. This section used to give `npm run prepare` as the install command at a point when
+no `package.json` defined one; #973 added that script to the ROOT `package.json` (delegating
+to the same installer), so the command now works — but `make install` is the documented
+entry point and the one CLAUDE.md points a newcomer at.
 
-**Known gap:** `infrastructure/**/*.ts` gets no pre-commit linting at all — lint-staged is
-scoped to `web-frontend/`. Tracked separately.
+**Infrastructure (CDK), added in #975.** `infrastructure/**/*.ts` had no formatting or lint
+check anywhere — not in the hook, not in `make format-check`, not in CI — which made the code
+that provisions production the least-checked code in the repo. 55 of its 93 tracked files had
+drifted. It now has:
+
+- a second `lint-staged` invocation in `.githooks/pre-commit`, run from `infrastructure/`
+  with its own `.lintstagedrc.json` (`*.ts -> prettier --write`). It cannot be folded into the
+  frontend one: lint-staged scopes to its cwd, and running it from the repo root would
+  `prettier --write` all of `docs/`.
+- `npm run format` / `format:check` in `infrastructure/package.json`, wired into
+  `make format` and `make format-check`.
+- **the authoritative gate:** a `Prettier format check` step in `build.yml`'s
+  `build-infrastructure` job. The hook warns and *skips* when `infrastructure/node_modules`
+  is absent rather than blocking, so CI is what actually enforces this.
+- `infrastructure/.prettierignore`, because prettier globs the filesystem rather than the git
+  index — without it `cdk.out` put ~1500 synthesised asset files in front of the 93 real ones.
+
+`prettier` and `lint-staged` are pinned to the same ranges as `web-frontend` on purpose: a
+different prettier major between the two trees would format the same file two ways depending
+on which subtree's binary ran.
+
+**Still a gap: no ESLint.** ESLint 10 requires flat config and `infrastructure/` has no
+`eslint.config.*`, so `npx eslint` exits 2 there. Authoring one catches real bugs rather than
+formatting and is tracked separately in #975.
 
 ### Code Review Checklist
 - [ ] **TDD Followed**: Tests were written before implementation

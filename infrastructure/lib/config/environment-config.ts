@@ -7,8 +7,8 @@ import * as cdk from 'aws-cdk-lib';
  * - CLOUD: Staging/Production runs everything in AWS
  */
 export enum DeploymentMode {
-  LOCAL = 'LOCAL',   // Development: Docker + AWS infrastructure
-  CLOUD = 'CLOUD',   // Staging/Production: Full AWS
+  LOCAL = 'LOCAL', // Development: Docker + AWS infrastructure
+  CLOUD = 'CLOUD', // Staging/Production: Full AWS
 }
 
 /**

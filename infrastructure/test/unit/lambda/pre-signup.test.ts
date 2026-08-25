@@ -37,7 +37,9 @@ jest.mock('@aws-sdk/client-cognito-identity-provider', () => ({
     __type: 'AdminLinkProviderForUser',
     ...input,
   })),
-  ListUsersCommand: jest.fn().mockImplementation((input: any) => ({ __type: 'ListUsers', ...input })),
+  ListUsersCommand: jest
+    .fn()
+    .mockImplementation((input: any) => ({ __type: 'ListUsers', ...input })),
 }));
 
 jest.mock('../../../lib/lambda/triggers/common/database', () => ({
@@ -229,12 +231,10 @@ describe('pre-signup Lambda handler', () => {
   it('should_linkViaAdditionalEmail_when_primaryMissesAndAdditionalEmailVerifiedAndIdpVerified', async () => {
     mockGetDbClient.mockResolvedValue(makeDbClient());
     // 1st query (primary user_profiles match) → empty; 2nd query (additional-email fallback) → hit.
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
-      .mockResolvedValueOnce({
-        rows: [{ cognito_user_id: 'owner-sub-uuid', username: 'jane.owner' }],
-        rowCount: 1,
-      });
+    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 }).mockResolvedValueOnce({
+      rows: [{ cognito_user_id: 'owner-sub-uuid', username: 'jane.owner' }],
+      rowCount: 1,
+    });
 
     const event = makeEvent(
       'PreSignUp_ExternalProvider',
@@ -321,12 +321,10 @@ describe('pre-signup Lambda handler', () => {
 
   it('should_treatEmailVerifiedCaseInsensitively_when_attributeIsUpperTrue', async () => {
     mockGetDbClient.mockResolvedValue(makeDbClient());
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
-      .mockResolvedValueOnce({
-        rows: [{ cognito_user_id: 'owner-sub-uuid', username: 'jane.owner' }],
-        rowCount: 1,
-      });
+    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 }).mockResolvedValueOnce({
+      rows: [{ cognito_user_id: 'owner-sub-uuid', username: 'jane.owner' }],
+      rowCount: 1,
+    });
 
     const event = makeEvent(
       'PreSignUp_ExternalProvider',
@@ -343,12 +341,10 @@ describe('pre-signup Lambda handler', () => {
 
   it('should_notLinkAndFallThrough_when_additionalEmailOwnerHasNoCognitoId', async () => {
     mockGetDbClient.mockResolvedValue(makeDbClient());
-    mockDbQuery
-      .mockResolvedValueOnce({ rows: [], rowCount: 0 })
-      .mockResolvedValueOnce({
-        rows: [{ cognito_user_id: null, username: 'jane.owner' }],
-        rowCount: 1,
-      });
+    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 }).mockResolvedValueOnce({
+      rows: [{ cognito_user_id: null, username: 'jane.owner' }],
+      rowCount: 1,
+    });
 
     const event = makeEvent(
       'PreSignUp_ExternalProvider',

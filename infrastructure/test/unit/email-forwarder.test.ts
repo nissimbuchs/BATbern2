@@ -97,9 +97,10 @@ describe('T6 — S3 event parsing and header extraction', () => {
   });
 
   test('should_extractAllAddresses_when_mixedFormats', () => {
-    expect(
-      extractAllAddresses('Partners <partner@batbern.ch>, OK Team <ok@batbern.ch>'),
-    ).toEqual(['partner@batbern.ch', 'ok@batbern.ch']);
+    expect(extractAllAddresses('Partners <partner@batbern.ch>, OK Team <ok@batbern.ch>')).toEqual([
+      'partner@batbern.ch',
+      'ok@batbern.ch',
+    ]);
   });
 
   test('should_extractAllAddresses_when_undefined', () => {
@@ -155,7 +156,10 @@ describe('T7 — Address resolution', () => {
     mockFetch({
       '"role":"ORGANIZER"': {
         status: 200,
-        body: { data: [{ email: 'org1@test.ch' }, { email: 'org2@test.ch' }], pagination: { totalPages: 1, page: 0 } },
+        body: {
+          data: [{ email: 'org1@test.ch' }, { email: 'org2@test.ch' }],
+          pagination: { totalPages: 1, page: 0 },
+        },
       },
     });
     const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
@@ -253,7 +257,9 @@ describe('T7 — Address resolution', () => {
       expect(result).toEqual(['att1@test.ch', 'att2@test.ch']);
       // Routes through the participants distribution-list, NOT the old /registrations endpoint.
       expect(calledUrls).toHaveLength(1);
-      expect(calledUrls[0]).toMatch(/\/api\/v1\/events\/BATbern58\/distribution-list\/participants$/);
+      expect(calledUrls[0]).toMatch(
+        /\/api\/v1\/events\/BATbern58\/distribution-list\/participants$/
+      );
       // Emits a deprecation warning so we can track residual use before retiring it.
       expect(warnSpy).toHaveBeenCalledWith(expect.stringContaining('Deprecated alias batbern58@'));
     } finally {
@@ -357,11 +363,7 @@ describe('T7 — Address resolution', () => {
     const { resolveRecipients } = await import('../../lambda/email-forwarder/address-resolver');
     const result = await resolveRecipients('ok@batbern.ch');
     // shared@example.com appears only once
-    expect(result.map(e => e.toLowerCase())).toEqual([
-      'a@x.ch',
-      'shared@example.com',
-      'b@x.ch',
-    ]);
+    expect(result.map((e) => e.toLowerCase())).toEqual(['a@x.ch', 'shared@example.com', 'b@x.ch']);
   });
 
   test('should_handleMissingAdditionalEmails_when_oldApiResponse_10_32', async () => {
@@ -572,7 +574,8 @@ describe('T8 — Sender authorization', () => {
 
   test('should_allowOrganizer_when_sendingToOk', async () => {
     mockOrganizerFetch(['org@test.ch']);
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('ok@batbern.ch', 'org@test.ch');
     expect(result).toBe(true);
@@ -580,7 +583,8 @@ describe('T8 — Sender authorization', () => {
 
   test('should_rejectNonOrganizer_when_sendingToOk', async () => {
     mockOrganizerFetch(['org@test.ch']);
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('ok@batbern.ch', 'random@test.ch');
     expect(result).toBe(false);
@@ -588,7 +592,8 @@ describe('T8 — Sender authorization', () => {
 
   test('should_rejectNonOrganizer_when_sendingToPartner', async () => {
     mockOrganizerFetch(['org@test.ch']);
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('partner@batbern.ch', 'random@test.ch');
     expect(result).toBe(false);
@@ -596,7 +601,8 @@ describe('T8 — Sender authorization', () => {
 
   test('should_rejectNonOrganizer_when_sendingToBatbern58', async () => {
     mockOrganizerFetch(['org@test.ch']);
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('batbern58@batbern.ch', 'random@test.ch');
     expect(result).toBe(false);
@@ -604,7 +610,8 @@ describe('T8 — Sender authorization', () => {
 
   test('should_rejectNonOrganizer_when_sendingToParticipantsAlias', async () => {
     mockOrganizerFetch(['org@test.ch']);
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('batbern59-participants@batbern.ch', 'random@test.ch');
     expect(result).toBe(false);
@@ -612,28 +619,32 @@ describe('T8 — Sender authorization', () => {
 
   test('should_allowOrganizer_when_sendingToParticipantsAlias', async () => {
     mockOrganizerFetch(['org@test.ch']);
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('batbern59-participants@batbern.ch', 'org@test.ch');
     expect(result).toBe(true);
   });
 
   test('should_allowAnyone_when_sendingToInfo', async () => {
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('info@batbern.ch', 'anyone@test.ch');
     expect(result).toBe(true);
   });
 
   test('should_allowAnyone_when_sendingToEvents', async () => {
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('events@batbern.ch', 'anyone@test.ch');
     expect(result).toBe(true);
   });
 
   test('should_allowAnyone_when_sendingToSupport', async () => {
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('support@batbern.ch', 'anyone@test.ch');
     expect(result).toBe(true);
@@ -641,7 +652,8 @@ describe('T8 — Sender authorization', () => {
 
   test('should_cacheOrganizerList_when_calledTwiceWithinTtl', async () => {
     mockOrganizerFetch(['org@test.ch']);
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     await isAuthorizedSender('ok@batbern.ch', 'org@test.ch');
     await isAuthorizedSender('ok@batbern.ch', 'org@test.ch');
@@ -674,7 +686,8 @@ describe('T8 — Sender authorization', () => {
       }),
     })) as jest.Mock;
 
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('ok@batbern.ch', 'info@berner-architekten-treffen.ch');
     expect(result).toBe(true);
@@ -685,14 +698,13 @@ describe('T8 — Sender authorization', () => {
       ok: true,
       status: 200,
       json: async () => ({
-        data: [
-          { email: 'a@x.ch', additionalEmails: [{ email: 'Shared@Example.com' }] },
-        ],
+        data: [{ email: 'a@x.ch', additionalEmails: [{ email: 'Shared@Example.com' }] }],
         pagination: { totalPages: 1, page: 0 },
       }),
     })) as jest.Mock;
 
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     expect(await isAuthorizedSender('ok@batbern.ch', 'SHARED@example.COM')).toBe(true);
   });
@@ -709,7 +721,8 @@ describe('T8 — Sender authorization', () => {
       }),
     })) as jest.Mock;
 
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     expect(await isAuthorizedSender('ok@batbern.ch', 'org@test.ch')).toBe(true);
     expect(await isAuthorizedSender('ok@batbern.ch', 'random@test.ch')).toBe(false);
@@ -723,7 +736,8 @@ describe('T8 — Sender authorization', () => {
     const fetchMock = jest.fn() as jest.Mock;
     global.fetch = fetchMock;
 
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('batbern99-moderator@batbern.ch', 'random@example.com');
 
@@ -741,7 +755,8 @@ describe('T8 — Sender authorization', () => {
       }),
     })) as jest.Mock;
 
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('batbern99-speaker@batbern.ch', 'org@test.ch');
     expect(result).toBe(true);
@@ -757,7 +772,8 @@ describe('T8 — Sender authorization', () => {
       }),
     })) as jest.Mock;
 
-    const { isAuthorizedSender, resetCache } = await import('../../lambda/email-forwarder/sender-auth');
+    const { isAuthorizedSender, resetCache } =
+      await import('../../lambda/email-forwarder/sender-auth');
     resetCache();
     const result = await isAuthorizedSender('batbern99-speaker@batbern.ch', 'random@test.ch');
     expect(result).toBe(false);
@@ -811,7 +827,7 @@ describe('T9 — Email rewriting and forwarding', () => {
   test('should_replaceExistingReplyTo_when_alreadyPresent', () => {
     const emailWithReplyTo = sampleEmail.replace(
       'Content-Type: text/plain',
-      'Reply-To: original@example.com\r\nContent-Type: text/plain',
+      'Reply-To: original@example.com\r\nContent-Type: text/plain'
     );
     const result = rewriteEmail(emailWithReplyTo, rewriteOptions);
     expect(result).toContain('Reply-To: john@example.com');
@@ -854,7 +870,7 @@ describe('T9 — Email rewriting and forwarding', () => {
   test('should_replaceExistingCc_when_ccRecipientsProvided', () => {
     const emailWithCc = sampleEmail.replace(
       'Subject: Test forwarding',
-      'Cc: someone@example.com\r\nSubject: Test forwarding',
+      'Cc: someone@example.com\r\nSubject: Test forwarding'
     );
     const result = rewriteEmail(emailWithCc, {
       ...rewriteOptions,
@@ -1092,9 +1108,7 @@ describe('T12 — handler sends one visible mail to speakers, moderator in Cc', 
 
   function s3Event(): unknown {
     return {
-      Records: [
-        { s3: { bucket: { name: 'inbound-bucket' }, object: { key: 'forwarding/abc' } } },
-      ],
+      Records: [{ s3: { bucket: { name: 'inbound-bucket' }, object: { key: 'forwarding/abc' } } }],
     };
   }
 
@@ -1126,7 +1140,7 @@ describe('T12 — handler sends one visible mail to speakers, moderator in Cc', 
         'Content-Type: text/plain',
         '',
         'Hello speakers',
-      ].join('\r\n'),
+      ].join('\r\n')
     );
 
     await forwarderHandler(s3Event() as never);
@@ -1138,7 +1152,7 @@ describe('T12 — handler sends one visible mail to speakers, moderator in Cc', 
     const input = calls[0].args[0].input;
     // Both speakers AND the moderator are actual SES destinations
     expect(input.Destinations).toEqual(
-      expect.arrayContaining(['alice@example.com', 'bob@example.com', 'mod@batbern.ch']),
+      expect.arrayContaining(['alice@example.com', 'bob@example.com', 'mod@batbern.ch'])
     );
     expect(input.Destinations).toHaveLength(3);
 
@@ -1165,7 +1179,7 @@ describe('T12 — handler sends one visible mail to speakers, moderator in Cc', 
         'Content-Type: text/plain',
         '',
         'Hello moderator',
-      ].join('\r\n'),
+      ].join('\r\n')
     );
 
     await forwarderHandler(s3Event() as never);
@@ -1190,7 +1204,7 @@ describe('T12 — handler sends one visible mail to speakers, moderator in Cc', 
         'Content-Type: text/plain',
         '',
         'Hello all',
-      ].join('\r\n'),
+      ].join('\r\n')
     );
 
     await forwarderHandler(s3Event() as never);
@@ -1201,7 +1215,7 @@ describe('T12 — handler sends one visible mail to speakers, moderator in Cc', 
     const dests = calls[0].args[0].input.Destinations as string[];
     // Each address appears once; moderator is not duplicated.
     expect(dests).toEqual(
-      expect.arrayContaining(['alice@example.com', 'bob@example.com', 'mod@batbern.ch']),
+      expect.arrayContaining(['alice@example.com', 'bob@example.com', 'mod@batbern.ch'])
     );
     expect(dests).toHaveLength(3);
     expect(dests.filter((d) => d === 'mod@batbern.ch')).toHaveLength(1);
@@ -1217,15 +1231,19 @@ describe('T12 — handler sends one visible mail to speakers, moderator in Cc', 
         'Content-Type: text/plain',
         '',
         'Hello',
-      ].join('\r\n'),
+      ].join('\r\n')
     );
     // ok@ resolves to organizers (one in this mock) → existing individual-send path
     global.fetch = jest.fn(async (url: string | URL | Request) => {
       const u = decodeURIComponent(url.toString());
       if (u.includes('"role":"ORGANIZER"')) {
         return {
-          ok: true, status: 200,
-          json: async () => ({ data: [{ email: 'org@test.ch' }, { email: 'org2@test.ch' }], pagination: { totalPages: 1, page: 0 } }),
+          ok: true,
+          status: 200,
+          json: async () => ({
+            data: [{ email: 'org@test.ch' }, { email: 'org2@test.ch' }],
+            pagination: { totalPages: 1, page: 0 },
+          }),
         } as Response;
       }
       return { ok: false, status: 404, json: async () => ({}) } as Response;

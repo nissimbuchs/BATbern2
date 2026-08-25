@@ -144,18 +144,61 @@ export class MonitoringStack extends cdk.Stack {
     // above threshold. Prevents a single transactional email from triggering the alarm when
     // the rolling reputation score is temporarily elevated (e.g. after a large newsletter blast
     // with stale addresses). treatMissingData=NOT_BREACHING: periods with no sends count as OK.
+    // Issue #984: this alarm used to watch `Reputation.BounceRate` at 3% and therefore fired
+    // forever. That metric is a volume-weighted ROLLING reputation figure, and at BATbern's
+    // send rate (~3/day, measured) a historical burst dominates it for months. Measured
+    // 2026-08-25: a flat 0.0413 in every hourly datapoint, against the 0.03 threshold, with
+    // ZERO bounces in the preceding seven weeks. Permanently over the line, permanently
+    // non-actionable. The two emails on 2026-08-20 (ALARM 10:39, OK 10:45) were not a change
+    // in conditions — Reputation.* publishes sparsely at this volume, so windows with two
+    // datapoints breached and windows with gaps read OK, on repeat.
+    //
+    // What actually poisoned the denominator, from CloudWatch `Bounce` (Mar-Aug 2026) rather
+    // than from the suppression list:
+    //
+    //   2026-03-05   462 bounces
+    //   2026-05-04   465
+    //   2026-05-19   772
+    //   2026-06-01..06-25  a sustained 6-9/day plateau
+    //   2026-07-01   181  (peaks of 43/h at 08:00 and 133/h at 22:00)
+    //   2026-07-02    49  (45/h at 07:00)
+    //   since then     0
+    //
+    // So FOUR bursts plus a month-long leak, not the single May event #984 inferred from the
+    // 416-entry suppression list (which holds unique addresses, not events). The 2026-07-01
+    // burst is the newsletter E2E incident.
+    //
+    // The fix is to watch the `Bounce` COUNT — new bounces in a window, which is the only
+    // form of this signal anyone can act on. `Reputation.BounceRate` is kept, correctly, on
+    // bounce-rate-critical below: 5% is the number AWS enforces on, and crossing it pauses
+    // sending, which would silently kill speaker invitations.
+    //
+    // Verified the metric is real before wiring an alarm to it (a dead alarm is exactly the
+    // #970 failure class): `AWS/SES` `Bounce` dimensionless does not appear in
+    // `list-metrics`, but only because that call hides metrics idle for two weeks, and there
+    // have been no bounces since 2026-07-02. `get-metric-statistics` over Mar-Aug returns the
+    // datapoints above.
+    //
+    // Threshold sized against that history, not picked: > 5 in one hour clears natural
+    // attrition (1-3/day) and catches every real burst within the hour it starts.
+    //
+    // NOT covered, deliberately: the slow leak. The June plateau of 6-9 bounces/day spread
+    // over 24h would not reach 5 in any single hour. It is a different detector and a
+    // different question (why is anything mailing real addresses nightly), and Reputation.
+    // BounceRate -> bounce-rate-critical is the long-run backstop for it. Noted on #984.
     const bounceRateWarning = new cloudwatch.Alarm(this, 'BounceRateWarning', {
       alarmName: `batbern-${props.config.envName}-bounce-rate-warning`,
-      alarmDescription: 'SES bounce rate exceeds 3% warning threshold',
+      alarmDescription:
+        'More than 5 SES bounces in one hour — a list or send path is bouncing NOW ' +
+        '(distinct from bounce-rate-critical, which watches the rolling reputation rate)',
       metric: new cloudwatch.Metric({
         namespace: 'AWS/SES',
-        metricName: 'Reputation.BounceRate',
-        statistic: 'Average',
-        period: cdk.Duration.minutes(5),
+        metricName: 'Bounce',
+        statistic: 'Sum',
+        period: cdk.Duration.hours(1),
       }),
-      threshold: 0.03,
-      evaluationPeriods: 3,
-      datapointsToAlarm: 2,
+      threshold: 5,
+      evaluationPeriods: 1,
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
     });

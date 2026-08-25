@@ -42,7 +42,12 @@ if echo "$COMMIT_MSG" | grep -qE "^Merge"; then
 fi
 
 # Check conventional commit format: type(scope): description
-if ! echo "$COMMIT_MSG" | grep -qE "^(feat|fix|docs|style|refactor|test|chore|perf|ci|build|revert)(\(.+\))?: .+"; then
+#
+# The type list MUST match `type-enum` in web-frontend/.commitlintrc.json, or the two
+# validation paths disagree and which one you get depends on whether node_modules happens to
+# be installed. `review` was missing here, so `review(x): ...` was accepted with commitlint
+# present and rejected without it. scripts/ci/verify-githooks.sh asserts they stay in sync.
+if ! echo "$COMMIT_MSG" | grep -qE "^(feat|fix|docs|style|refactor|review|test|chore|perf|ci|build|revert)(\(.+\))?: .+"; then
     echo -e "${RED}❌ Invalid commit message format!${NC}"
     echo ""
     echo "Commit message must follow conventional commits format:"

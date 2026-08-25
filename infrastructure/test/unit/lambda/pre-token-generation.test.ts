@@ -38,7 +38,9 @@ jest.mock('@aws-sdk/client-cloudwatch', () => {
 });
 
 // Test data builders
-function createPreTokenGenerationEvent(overrides: Partial<PreTokenGenerationTriggerEvent> = {}): PreTokenGenerationTriggerEvent {
+function createPreTokenGenerationEvent(
+  overrides: Partial<PreTokenGenerationTriggerEvent> = {}
+): PreTokenGenerationTriggerEvent {
   return {
     version: '1',
     triggerSource: 'TokenGeneration_Authentication',
@@ -74,7 +76,8 @@ function createLambdaContext(): Context {
   return {
     functionName: 'PreTokenGenerationTrigger',
     functionVersion: '1',
-    invokedFunctionArn: 'arn:aws:lambda:eu-central-1:123456789012:function:PreTokenGenerationTrigger',
+    invokedFunctionArn:
+      'arn:aws:lambda:eu-central-1:123456789012:function:PreTokenGenerationTrigger',
     memoryLimitInMB: '128',
     awsRequestId: 'test-request-id',
     logGroupName: '/aws/lambda/PreTokenGenerationTrigger',
@@ -118,17 +121,13 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
   // ============================================================================
 
   describe('Role Fetching', () => {
-
     it('should_fetchUserRoles_when_userExistsInDatabase', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [
-          { role: 'ORGANIZER' },
-          { role: 'SPEAKER' },
-        ],
+        rows: [{ role: 'ORGANIZER' }, { role: 'SPEAKER' }],
         command: 'SELECT',
         rowCount: 2,
         oid: 0,
@@ -144,7 +143,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
         expect.arrayContaining(['a1b2c3d4-5678-90ab-cdef-EXAMPLE11111'])
       );
       expect(mockDbClient.release).toHaveBeenCalled();
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBeDefined();
+      expect(
+        result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']
+      ).toBeDefined();
     });
 
     it('should_fetchActiveRoles_when_queryingDatabase', async () => {
@@ -180,7 +181,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Should handle gracefully with empty roles string
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBe('');
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBe(
+        ''
+      );
     });
 
     it('should_fetchRolesByEmailFallback_when_cognitoIdNotLinkedYet', async () => {
@@ -192,7 +195,11 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
             email: 'partner@sbb.ch',
             email_verified: 'true',
           },
-          groupConfiguration: { groupsToOverride: [], iamRolesToOverride: [], preferredRole: undefined },
+          groupConfiguration: {
+            groupsToOverride: [],
+            iamRolesToOverride: [],
+            preferredRole: undefined,
+          },
         },
       } as any);
       const context = createLambdaContext();
@@ -212,7 +219,8 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       expect(mockDbClient.query).toHaveBeenCalledTimes(2);
       const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
       expect(roles).toBe('PARTNER');
-      const username = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:username'];
+      const username =
+        result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:username'];
       expect(username).toBe('partner.sbb');
     });
 
@@ -242,10 +250,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [
-          { role: 'ORGANIZER' },
-          { role: 'SPEAKER' },
-        ],
+        rows: [{ role: 'ORGANIZER' }, { role: 'SPEAKER' }],
         rowCount: 2,
       } as any);
 
@@ -266,17 +271,13 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
   // ============================================================================
 
   describe('JWT Custom Claims', () => {
-
     it('should_addCustomRolesClaim_when_rolesExist', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [
-          { role: 'ORGANIZER' },
-          { role: 'SPEAKER' },
-        ],
+        rows: [{ role: 'ORGANIZER' }, { role: 'SPEAKER' }],
         rowCount: 2,
       } as any);
 
@@ -323,9 +324,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [
-          { role: 'ORGANIZER' },
-        ],
+        rows: [{ role: 'ORGANIZER' }],
         rowCount: 1,
       } as any);
 
@@ -365,10 +364,10 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
             sub: 'a1b2c3d4-5678-90ab-cdef-EXAMPLE11111', // Need sub for lookup
           },
           groupConfiguration: {
-        groupsToOverride: [],
-        iamRolesToOverride: [],
-        preferredRole: undefined,
-      },
+            groupsToOverride: [],
+            iamRolesToOverride: [],
+            preferredRole: undefined,
+          },
         },
       } as any);
       const context = createLambdaContext();
@@ -393,10 +392,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [
-          { role: 'ORGANIZER' },
-          { role: 'SPEAKER' },
-        ],
+        rows: [{ role: 'ORGANIZER' }, { role: 'SPEAKER' }],
         rowCount: 2,
       } as any);
 
@@ -417,7 +413,6 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
   // ============================================================================
 
   describe('Error Handling and Fallback', () => {
-
     it('should_fallbackToEmptyString_when_databaseUnavailable', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
@@ -429,7 +424,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Should not throw error, return empty roles string
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBe('');
+      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBe(
+        ''
+      );
     });
 
     it('should_logError_when_roleFetchFails', async () => {
@@ -534,7 +531,6 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
   // ============================================================================
 
   describe('Performance', () => {
-
     it('should_completeWithinFiveSeconds_when_databaseHealthy', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
@@ -598,7 +594,6 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
   // ============================================================================
 
   describe('Trigger Sources', () => {
-
     it('should_setGroups_when_triggerSourceIsAuthentication', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent({
@@ -615,8 +610,12 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBeDefined();
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toContain('ORGANIZER');
+      expect(
+        result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']
+      ).toBeDefined();
+      expect(
+        result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']
+      ).toContain('ORGANIZER');
     });
 
     it('should_setGroups_when_triggerSourceIsNewPasswordChallenge', async () => {
@@ -635,8 +634,12 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBeDefined();
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toContain('ORGANIZER');
+      expect(
+        result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']
+      ).toBeDefined();
+      expect(
+        result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']
+      ).toContain('ORGANIZER');
     });
 
     it('should_setGroups_when_triggerSourceIsAuthenticationRefresh', async () => {
@@ -655,7 +658,9 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const result = await handler(event, context, () => {});
 
       // Assert - Refresh should also get latest groups
-      expect(result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']).toBeDefined();
+      expect(
+        result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role']
+      ).toBeDefined();
       const roles = result.response.claimsOverrideDetails?.claimsToAddOrOverride?.['custom:role'];
       expect(roles).toContain('ORGANIZER');
     });
@@ -666,7 +671,6 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
   // ============================================================================
 
   describe('Metrics', () => {
-
     it('should_recordFetchLatency_when_operationCompletes', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
@@ -705,10 +709,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       const context = createLambdaContext();
 
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [
-          { role: 'ORGANIZER' },
-          { role: 'SPEAKER' },
-        ],
+        rows: [{ role: 'ORGANIZER' }, { role: 'SPEAKER' }],
         rowCount: 2,
       } as any);
 
@@ -726,7 +727,6 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
   // ============================================================================
 
   describe('Role Deduplication', () => {
-
     it('should_deduplicateRoles_when_multipleEntriesExist', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();
@@ -734,10 +734,7 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
 
       // SQL DISTINCT prevents duplicates - mock should reflect actual SQL behavior
       mockDbClient.query.mockResolvedValueOnce({
-        rows: [
-          { role: 'ORGANIZER' },
-          { role: 'SPEAKER' },
-        ],
+        rows: [{ role: 'ORGANIZER' }, { role: 'SPEAKER' }],
         rowCount: 2,
       } as any);
 

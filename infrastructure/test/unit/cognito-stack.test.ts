@@ -22,9 +22,7 @@ describe('CognitoStack Tests', () => {
     template.hasResourceProperties('AWS::Cognito::UserPool', {
       UserPoolName: 'batbern-development-user-pool',
       AccountRecoverySetting: {
-        RecoveryMechanisms: [
-          { Name: 'verified_email', Priority: 1 },
-        ],
+        RecoveryMechanisms: [{ Name: 'verified_email', Priority: 1 }],
       },
       AutoVerifiedAttributes: ['email'],
       MfaConfiguration: 'OPTIONAL',
@@ -36,7 +34,7 @@ describe('CognitoStack Tests', () => {
           RequireUppercase: true,
           RequireNumbers: true,
           RequireSymbols: true,
-          TemporaryPasswordValidityDays: 14,  // Story 11.E.1 / Resolved Q#4 — was 7
+          TemporaryPasswordValidityDays: 14, // Story 11.E.1 / Resolved Q#4 — was 7
         },
       },
     });
@@ -70,18 +68,13 @@ describe('CognitoStack Tests', () => {
     const readAttrs = new Capture();
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
       ClientName: 'batbern-development-web-client',
-      ExplicitAuthFlows: Match.arrayWith([
-        'ALLOW_USER_PASSWORD_AUTH',
-        'ALLOW_CUSTOM_AUTH',
-      ]),
+      ExplicitAuthFlows: Match.arrayWith(['ALLOW_USER_PASSWORD_AUTH', 'ALLOW_CUSTOM_AUTH']),
       GenerateSecret: false,
       RefreshTokenValidity: 5256000, // Actual value from stack
       AccessTokenValidity: 1440, // 24 hours in minutes
       IdTokenValidity: 1440, // 24 hours in minutes
       ReadAttributes: readAttrs,
-      WriteAttributes: Match.arrayWith([
-        'email',
-      ]),
+      WriteAttributes: Match.arrayWith(['email']),
     });
 
     // Story 12.1 AC5: 'custom:role' is dropped from the client readAttributes so the
@@ -178,9 +171,7 @@ describe('CognitoStack Tests', () => {
   // Test: ALLOW_ADMIN_USER_PASSWORD_AUTH required for server-side Cognito authentication (Story 11.E.1 / AR29)
   test('should_enableAdminUserPasswordAuth_when_appClientCreated', () => {
     template.hasResourceProperties('AWS::Cognito::UserPoolClient', {
-      ExplicitAuthFlows: Match.arrayWith([
-        'ALLOW_ADMIN_USER_PASSWORD_AUTH',
-      ]),
+      ExplicitAuthFlows: Match.arrayWith(['ALLOW_ADMIN_USER_PASSWORD_AUTH']),
     });
   });
 

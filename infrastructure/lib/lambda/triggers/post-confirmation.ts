@@ -33,7 +33,7 @@ const cognitoClient = new CognitoIdentityProviderClient({
  * Valid user roles in the system
  */
 const VALID_ROLES = ['ORGANIZER', 'SPEAKER', 'PARTNER', 'ATTENDEE'] as const;
-type UserRole = typeof VALID_ROLES[number];
+type UserRole = (typeof VALID_ROLES)[number];
 
 /**
  * User attributes from Cognito event
@@ -149,7 +149,9 @@ function parseUserPreferences(preferencesJson?: string): UserPreferences {
  * sync on collision behaviour.
  */
 async function resolveUniqueUsername(
-  client: { query: (text: string, params?: unknown[]) => Promise<{ rows: { username: string }[] }> },
+  client: {
+    query: (text: string, params?: unknown[]) => Promise<{ rows: { username: string }[] }>;
+  },
   base: string
 ): Promise<string> {
   const baseCheck = await client.query(
@@ -367,7 +369,12 @@ async function createUser(
       );
 
       userId = insertResult.rows[0].id;
-      console.log('New user created in database', { userId, cognitoId, email, username: finalUsername });
+      console.log('New user created in database', {
+        userId,
+        cognitoId,
+        email,
+        username: finalUsername,
+      });
 
       // Publish metric for new user creation
       await publishMetric('NewUserCreated', 1, 'Count');

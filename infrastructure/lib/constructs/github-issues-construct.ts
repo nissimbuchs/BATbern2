@@ -43,7 +43,8 @@ export class GitHubIssuesConstruct extends Construct {
     // always passes real values, which is why this never bit; it stays a trap regardless.
     const githubOwner = props.githubOwner || 'nissimbuchs';
     const githubRepo = props.githubRepo || 'BATbern2';
-    const githubTokenParam = props.githubTokenParamName || `/batbern/${props.environment}/github/token`;
+    const githubTokenParam =
+      props.githubTokenParamName || `/batbern/${props.environment}/github/token`;
 
     // Lambda function for GitHub Issues integration
     this.lambdaFunction = new nodejs.NodejsFunction(this, 'GitHubIssuesFunction', {

@@ -332,9 +332,11 @@ type(scope): description
 - Attendee Experience: `8005`, Frontend: `8100`
 
 ### Git Hooks (`.githooks/`)
-- **Not installed by `make install`.** A fresh clone has NO hooks — verify with
-  `git config core.hooksPath` (should print `.githooks`). Install:
-  `./.githooks/install-hooks.sh`
+- **Installed by `make install`** as of #973 (also by a root `npm install`, via the
+  `prepare` script; `make install-hooks` does hooks only). Verify with
+  `git config core.hooksPath` — should print `.githooks`. Before #973 nothing invoked the
+  installer, so a fresh clone was ungated while the docs claimed enforcement;
+  `scripts/ci/verify-githooks.sh` guards the wiring in CI now.
 - `pre-commit` runs, on staged files only: `lint-staged` when ANY `web-frontend/` file is
   staged (gated on the directory, not the extension — a locale `.json` or `.css`-only
   commit used to be skipped entirely), `npm run check:api-types` (only when `docs/api/`,

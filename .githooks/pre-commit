@@ -62,6 +62,40 @@ if [ -n "$FRONTEND_STAGED" ]; then
     fi
 fi
 
+# ── Infrastructure (CDK) formatting (#975) ───────────────────────────────────────
+#
+# The 93 tracked TypeScript files that provision production were the least-linted code in
+# the repo: nothing checked them at commit time, and `make format-check` ran only
+# `cd web-frontend && npm run format:check`. The frontend block above cannot cover them —
+# lint-staged scopes to its cwd and is invoked from web-frontend/ on purpose (from the repo
+# root its `*.{json,css,md}` glob would prettier --write the whole of docs/).
+#
+# So this is a SECOND lint-staged invocation, from infrastructure/, with its own
+# .lintstagedrc.json. Prettier only: ESLint cannot run there at all — ESLint 10 requires
+# flat config and infrastructure/ has no eslint.config.*, so `npx eslint` exits 2. Adding
+# one is tracked separately in #975; it is a real piece of work, not a config line.
+#
+# Deliberately warns and SKIPS rather than blocking when infrastructure/node_modules is
+# absent. The authoritative gate is the `Prettier format check` step in build.yml's
+# build-infrastructure job; this hook is convenience. A hook that blocks a commit because a
+# heavy dependency tree is not installed is a hook people learn to `--no-verify` past, and
+# then it never runs at all.
+INFRA_STAGED=$(echo "$STAGED_FILES" | grep -E '^infrastructure/.*\.ts$' || true)
+
+if [ -n "$INFRA_STAGED" ]; then
+    echo -e "${YELLOW}🏗️  Infrastructure TypeScript changed, running prettier via lint-staged...${NC}"
+
+    if [ -x "infrastructure/node_modules/.bin/lint-staged" ]; then
+        cd infrastructure
+        npx lint-staged || TESTS_FAILED=1
+        cd ..
+    else
+        echo -e "${YELLOW}  ⚠ infrastructure/node_modules not installed — skipping.${NC}"
+        echo -e "${YELLOW}    Run: cd infrastructure && npm ci${NC}"
+        echo -e "${YELLOW}    CI still checks this (build-infrastructure -> Prettier format check).${NC}"
+    fi
+fi
+
 # ── Generated API types must match the specs (#902) ──────────────────────────────
 #
 # `check:api-types` regenerates every OpenAPI-derived type file and fails if the result

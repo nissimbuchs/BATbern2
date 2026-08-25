@@ -69,7 +69,7 @@ export class EventManagementStack extends cdk.Stack {
     const serviceName = 'event-management';
 
     // Use batbern.ch when serving production traffic, batbern.ch otherwise (old domain retired).
-    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
+    const isProdTraffic = props.config.isProduction ?? envName === 'production';
     const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'batbern.ch';
 
     // AI / OpenAI secret (Story 10.16): look up from Secrets Manager when AI is enabled
@@ -78,7 +78,7 @@ export class EventManagementStack extends cdk.Stack {
       openAiSecret = secretsmanager.Secret.fromSecretNameV2(
         this,
         'OpenAiApiKeySecret',
-        `batbern/${envName}/openai/api-key`,
+        `batbern/${envName}/openai/api-key`
       );
     }
 
@@ -147,11 +147,15 @@ export class EventManagementStack extends cdk.Stack {
         },
         additionalSecrets: {
           ...(openAiSecret && { OPENAI_API_KEY: ecs.Secret.fromSecretsManager(openAiSecret) }),
-          ...(props.watchJwtSecret && { WATCH_JWT_SECRET: ecs.Secret.fromSecretsManager(props.watchJwtSecret) }),
+          ...(props.watchJwtSecret && {
+            WATCH_JWT_SECRET: ecs.Secret.fromSecretsManager(props.watchJwtSecret),
+          }),
           // JWT_SECRET provides a stable HMAC key for ConfirmationTokenService (registration email links).
           // Without it the service generates a random key on each start, invalidating all in-flight tokens
           // whenever ECS replaces a Fargate Spot task or a new deployment lands.
-          ...(props.watchJwtSecret && { JWT_SECRET: ecs.Secret.fromSecretsManager(props.watchJwtSecret) }),
+          ...(props.watchJwtSecret && {
+            JWT_SECRET: ecs.Secret.fromSecretsManager(props.watchJwtSecret),
+          }),
         },
       },
       cluster: props.cluster,
@@ -219,7 +223,9 @@ export class EventManagementStack extends cdk.Stack {
           // Configuration sets — required when configurationSetName is passed to SendRawEmail.
           // Wildcard covers both the newsletter and transactional sets (batbern-{env}-*).
           ...(props.sesConfigurationSetName || props.sesTransactionalConfigurationSetName
-            ? [`arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:configuration-set/batbern-${envName}-*`]
+            ? [
+                `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:configuration-set/batbern-${envName}-*`,
+              ]
             : []),
         ],
       })

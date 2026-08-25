@@ -49,13 +49,13 @@ describe('ses-event-logger handler', () => {
           recipients: ['sue.ajdini@enersuisse.ch', 'bob@example.com'],
           smtpResponse: '250 2.0.0 OK',
         },
-      }),
+      })
     );
 
     const recs = loggedRecipients();
     expect(recs).toHaveLength(2);
     expect(recs.map((r) => r.recipient)).toEqual(
-      expect.arrayContaining(['sue.ajdini@enersuisse.ch', 'bob@example.com']),
+      expect.arrayContaining(['sue.ajdini@enersuisse.ch', 'bob@example.com'])
     );
     expect(recs[0].eventType).toBe('delivery');
     expect(recs[0].messageId).toBe('msg-1');
@@ -73,7 +73,7 @@ describe('ses-event-logger handler', () => {
             { emailAddress: 'gone@example.com', diagnosticCode: 'smtp; 550 5.1.1 user unknown' },
           ],
         },
-      }),
+      })
     );
 
     const recs = loggedRecipients();
@@ -90,7 +90,7 @@ describe('ses-event-logger handler', () => {
         eventType: 'Complaint',
         mail: { messageId: 'msg-3', destination: ['angry@example.com'] },
         complaint: { complainedRecipients: [{ emailAddress: 'angry@example.com' }] },
-      }),
+      })
     );
 
     const recs = loggedRecipients();
@@ -105,7 +105,7 @@ describe('ses-event-logger handler', () => {
         eventType: 'Reject',
         mail: { messageId: 'msg-4', destination: ['virus@example.com'] },
         reject: { reason: 'Bad content' },
-      }),
+      })
     );
 
     const recs = loggedRecipients();

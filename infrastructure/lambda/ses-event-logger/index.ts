@@ -27,7 +27,10 @@ interface SesNotification {
   mail?: { messageId?: string; source?: string; destination?: string[] };
   delivery?: { recipients?: string[]; smtpResponse?: string };
   bounce?: { bounceType?: string; bounceSubType?: string; bouncedRecipients?: BouncedRecipient[] };
-  complaint?: { complainedRecipients?: Array<{ emailAddress?: string }>; complaintFeedbackType?: string };
+  complaint?: {
+    complainedRecipients?: Array<{ emailAddress?: string }>;
+    complaintFeedbackType?: string;
+  };
   reject?: { reason?: string };
 }
 
@@ -49,7 +52,11 @@ export const handler = async (event: SNSEvent): Promise<void> => {
       continue;
     }
 
-    const eventType = (notification.eventType ?? notification.notificationType ?? 'unknown').toLowerCase();
+    const eventType = (
+      notification.eventType ??
+      notification.notificationType ??
+      'unknown'
+    ).toLowerCase();
     const mail = notification.mail ?? {};
     const base = { eventType, messageId: mail.messageId, source: mail.source };
 
@@ -72,7 +79,7 @@ export const handler = async (event: SNSEvent): Promise<void> => {
 function perRecipientRows(
   eventType: string,
   n: SesNotification,
-  destination: string[],
+  destination: string[]
 ): PerRecipientRow[] {
   switch (eventType) {
     case 'delivery':

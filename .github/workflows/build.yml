@@ -39,6 +39,24 @@ env:
 
 jobs:
   # ═══════════════════════════════════════════════════════════
+  # GUARD: the git-hook install path (#973)
+  # ═══════════════════════════════════════════════════════════
+  # Cheap (no toolchain, ~10s) and deliberately placed first. It does not gate anything —
+  # it is not one of the 8 required contexts on `develop` — but it makes divergence between
+  # "the docs say commits are checked" and "the setup command wires the checks" visible on
+  # the PR instead of on someone's first ungated push. #973 sat undetected precisely because
+  # nothing ever asserted the wiring.
+  verify-hooks:
+    name: Verify git-hook install path
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Verify hooks are wired into the setup path
+        run: ./scripts/ci/verify-githooks.sh
+
+  # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Shared Kernel (Foundation)
   # ═══════════════════════════════════════════════════════════
   build-shared-kernel:
@@ -602,6 +620,19 @@ jobs:
         # docker-compose.test.ts failed in CI (`docker compose config` threw → its catch hit the
         # undefined global `fail()`). See Story 12.1.
         run: npm test -- --ci test/unit
+
+      # #975: until this step existed, infrastructure/**/*.ts had no formatting or lint check
+      # anywhere — not in the pre-commit hook, not in `make format-check`, not in CI. This is
+      # the authoritative gate; the pre-commit block added in the same PR warns-and-skips when
+      # infrastructure/node_modules is missing, so it cannot be relied on alone.
+      #
+      # Prettier only. ESLint cannot run in infrastructure/ at all: ESLint 10 requires flat
+      # config and there is no eslint.config.* there, so `npx eslint` exits 2. Adding one
+      # catches real bugs rather than formatting and is tracked separately in #975.
+      - name: Prettier format check
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
+        working-directory: ./infrastructure
+        run: npm run format:check
 
       - name: Type-check + compile
         if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'

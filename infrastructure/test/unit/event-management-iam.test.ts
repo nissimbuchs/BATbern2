@@ -27,7 +27,7 @@ const SES_CONFIG_SET = 'batbern-staging-newsletter';
 
 function buildTemplate(
   sesConfigurationSetName?: string,
-  sesTransactionalConfigurationSetName?: string,
+  sesTransactionalConfigurationSetName?: string
 ): Template {
   const app = new App();
   const parent = new Stack(app, 'Parent', {
@@ -51,7 +51,7 @@ function buildTemplate(
   const userPoolClient = cognito.UserPoolClient.fromUserPoolClientId(
     parent,
     'UPC',
-    'test-client-id',
+    'test-client-id'
   );
 
   const stack = new EventManagementStack(app, 'TestEMS', {
@@ -123,9 +123,7 @@ describe('EventManagementStack — SES IAM policy', () => {
           Statement: Match.arrayWith([
             Match.objectLike({
               Action: Match.arrayWith(['ses:SendRawEmail']),
-              Resource: Match.arrayWith([
-                Match.stringLikeRegexp(`identity/batbern\\.ch$`),
-              ]),
+              Resource: Match.arrayWith([Match.stringLikeRegexp(`identity/batbern\\.ch$`)]),
             }),
           ]),
         },
@@ -145,8 +143,14 @@ describe('EventManagementStack — SES IAM policy', () => {
         ContainerDefinitions: Match.arrayWith([
           Match.objectLike({
             Environment: Match.arrayWith([
-              { Name: 'BATBERN_SES_CONFIGURATION_SET_NAME', Value: 'batbern-staging-transactional' },
-              { Name: 'BATBERN_SES_NEWSLETTER_CONFIGURATION_SET_NAME', Value: 'batbern-staging-newsletter' },
+              {
+                Name: 'BATBERN_SES_CONFIGURATION_SET_NAME',
+                Value: 'batbern-staging-transactional',
+              },
+              {
+                Name: 'BATBERN_SES_NEWSLETTER_CONFIGURATION_SET_NAME',
+                Value: 'batbern-staging-newsletter',
+              },
             ]),
           }),
         ]),
@@ -175,8 +179,8 @@ describe('EventManagementStack — SES IAM policy', () => {
           const resources = Array.isArray(s.Resource) ? s.Resource : [s.Resource];
           configSetArns.push(
             ...resources.filter(
-              (r): r is string => typeof r === 'string' && r.includes('configuration-set/'),
-            ),
+              (r): r is string => typeof r === 'string' && r.includes('configuration-set/')
+            )
           );
         }
       }

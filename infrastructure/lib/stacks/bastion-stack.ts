@@ -50,9 +50,7 @@ export class BastionStack extends cdk.Stack {
     const bastionRole = new iam.Role(this, 'BastionRole', {
       assumedBy: new iam.ServicePrincipal('ec2.amazonaws.com'),
       description: 'IAM role for bastion host with SSM access',
-      managedPolicies: [
-        iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore'),
-      ],
+      managedPolicies: [iam.ManagedPolicy.fromAwsManagedPolicyName('AmazonSSMManagedInstanceCore')],
     });
 
     // Use latest Amazon Linux 2023 AMI (optimized for SSM)
@@ -107,7 +105,8 @@ export class BastionStack extends cdk.Stack {
     });
 
     new cdk.CfnOutput(this, 'BastionSetupInstructions', {
-      value: 'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html',
+      value:
+        'https://docs.aws.amazon.com/systems-manager/latest/userguide/session-manager-working-with-install-plugin.html',
       description: 'Install Session Manager plugin for port forwarding',
     });
   }

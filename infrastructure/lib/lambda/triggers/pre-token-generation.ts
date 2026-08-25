@@ -128,7 +128,6 @@ async function fetchUserData(cognitoId: string, email?: string): Promise<UserDat
   }
 }
 
-
 /**
  * Main Lambda handler for PreTokenGeneration trigger
  *
@@ -172,7 +171,7 @@ export const handler: PreTokenGenerationTriggerHandler = async (event) => {
     // Extract username and roles from fetched data
     // Username should be same for all rows (comes from user_profiles)
     const username = userData[0]?.username || '';
-    const roles = userData.map(r => r.role).filter(Boolean);
+    const roles = userData.map((r) => r.role).filter(Boolean);
 
     // ADR-001: Add username and roles as JWT custom claims (NO Cognito Groups)
     // Database is source of truth for user data

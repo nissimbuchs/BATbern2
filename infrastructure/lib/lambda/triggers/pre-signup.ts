@@ -98,7 +98,9 @@ async function handleFederated(event: PreSignUpTriggerEvent): Promise<PreSignUpT
     console.warn('Federated sign-in without an email — cannot link by email, skipping', {
       userName: event.userName,
     });
-    publishMetric('FederatedNoEmail', 1).catch((err) => console.error('Metric publish failed', err));
+    publishMetric('FederatedNoEmail', 1).catch((err) =>
+      console.error('Metric publish failed', err)
+    );
     return event;
   }
 
@@ -169,9 +171,12 @@ async function handleFederated(event: PreSignUpTriggerEvent): Promise<PreSignUpT
         );
       } else {
         // No verified additional-email owner either → genuinely a brand-new federated user.
-        console.log('New federated user (no native or additional-email account to link); JIT will provision', {
-          email,
-        });
+        console.log(
+          'New federated user (no native or additional-email account to link); JIT will provision',
+          {
+            email,
+          }
+        );
         publishMetric('FederatedNewUser', 1).catch((err) =>
           console.error('Metric publish failed', err)
         );
@@ -187,10 +192,13 @@ async function handleFederated(event: PreSignUpTriggerEvent): Promise<PreSignUpT
       // row on the federated user's first authenticated API call, when the sub IS in the JWT —
       // so the anonymous registration's history is preserved without a duplicate. Distinct
       // metric so this (rarer) adopt-pending case is observable separately from a true new user.
-      console.log('Federated email matches an anonymous (no-sub) row; JIT will adopt on first call', {
-        email,
-        username: existing.username,
-      });
+      console.log(
+        'Federated email matches an anonymous (no-sub) row; JIT will adopt on first call',
+        {
+          email,
+          username: existing.username,
+        }
+      );
       publishMetric('FederatedAnonymousPendingJit', 1).catch((err) =>
         console.error('Metric publish failed', err)
       );
@@ -216,7 +224,9 @@ async function handleFederated(event: PreSignUpTriggerEvent): Promise<PreSignUpT
       email,
       error: (error as Error).message,
     });
-    publishMetric('PreSignUpFailure', 1).catch((err) => console.error('Metric publish failed', err));
+    publishMetric('PreSignUpFailure', 1).catch((err) =>
+      console.error('Metric publish failed', err)
+    );
   } finally {
     if (client) {
       client.release();

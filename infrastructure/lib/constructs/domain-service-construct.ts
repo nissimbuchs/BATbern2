@@ -76,88 +76,88 @@ export function createDomainService(
   scope: Construct,
   props: DomainServiceConstructProps
 ): { service: ecs.FargateService } {
+  const envName = props.config.envName;
+  const isProd = props.config.isProduction ?? envName === 'production';
+  const { serviceName, componentTag, additionalEnvironment } = props.serviceConfig;
 
-    const envName = props.config.envName;
-    const isProd = props.config.isProduction ?? (envName === 'production');
-    const { serviceName, componentTag, additionalEnvironment } = props.serviceConfig;
+  // Common environment variables (non-sensitive)
+  const commonEnv = {
+    SPRING_PROFILES_ACTIVE: envName,
+    AWS_REGION: props.config.region,
+    LOG_LEVEL: isProd || envName === 'staging' ? 'INFO' : 'DEBUG',
+    SERVICE_NAME: serviceName,
+    ...(props.databaseEndpoint && {
+      DATABASE_URL: `jdbc:postgresql://${props.databaseEndpoint}:5432/batbern`,
+    }),
+    // Cognito configuration
+    COGNITO_USER_POOL_ID: props.userPool.userPoolId,
+    COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
+    // Merge any additional service-specific environment variables
+    ...(additionalEnvironment || {}),
+  };
 
-    // Common environment variables (non-sensitive)
-    const commonEnv = {
-      SPRING_PROFILES_ACTIVE: envName,
-      AWS_REGION: props.config.region,
-      LOG_LEVEL: (isProd || envName === 'staging') ? 'INFO' : 'DEBUG',
-      SERVICE_NAME: serviceName,
-      ...(props.databaseEndpoint && {
-        DATABASE_URL: `jdbc:postgresql://${props.databaseEndpoint}:5432/batbern`,
-      }),
-      // Cognito configuration
-      COGNITO_USER_POOL_ID: props.userPool.userPoolId,
-      COGNITO_CLIENT_ID: props.userPoolClient.userPoolClientId,
-      // Merge any additional service-specific environment variables
-      ...(additionalEnvironment || {}),
-    };
+  // Secrets from AWS Secrets Manager
+  const secrets: Record<string, ecs.Secret> = {};
+  if (props.databaseSecret) {
+    secrets.DATABASE_USERNAME = ecs.Secret.fromSecretsManager(props.databaseSecret, 'username');
+    secrets.DATABASE_PASSWORD = ecs.Secret.fromSecretsManager(props.databaseSecret, 'password');
+  }
+  if (props.serviceConfig.additionalSecrets) {
+    Object.assign(secrets, props.serviceConfig.additionalSecrets);
+  }
 
-    // Secrets from AWS Secrets Manager
-    const secrets: Record<string, ecs.Secret> = {};
-    if (props.databaseSecret) {
-      secrets.DATABASE_USERNAME = ecs.Secret.fromSecretsManager(props.databaseSecret, 'username');
-      secrets.DATABASE_PASSWORD = ecs.Secret.fromSecretsManager(props.databaseSecret, 'password');
-    }
-    if (props.serviceConfig.additionalSecrets) {
-      Object.assign(secrets, props.serviceConfig.additionalSecrets);
-    }
+  // Create stable log group
+  const logGroup = new logs.LogGroup(scope, 'LogGroup', {
+    logGroupName: `/aws/ecs/BATbern-${envName}/${serviceName}`,
+    retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
+    removalPolicy: cdk.RemovalPolicy.DESTROY,
+  });
 
-    // Create stable log group
-    const logGroup = new logs.LogGroup(scope, 'LogGroup', {
-      logGroupName: `/aws/ecs/BATbern-${envName}/${serviceName}`,
-      retention: isProd ? logs.RetentionDays.ONE_MONTH : logs.RetentionDays.ONE_WEEK,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
+  // Create task definition
+  const taskDefinition = new ecs.FargateTaskDefinition(scope, 'TaskDef', {
+    cpu: props.serviceConfig.cpu,
+    memoryLimitMiB: props.serviceConfig.memoryLimitMiB,
+    runtimePlatform: {
+      operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
+      cpuArchitecture: ecs.CpuArchitecture.ARM64,
+    },
+  });
 
-    // Create task definition
-    const taskDefinition = new ecs.FargateTaskDefinition(scope, 'TaskDef', {
-      cpu: props.serviceConfig.cpu,
-      memoryLimitMiB: props.serviceConfig.memoryLimitMiB,
-      runtimePlatform: {
-        operatingSystemFamily: ecs.OperatingSystemFamily.LINUX,
-        cpuArchitecture: ecs.CpuArchitecture.ARM64,
-      },
-    });
+  // Add container
+  const container = taskDefinition.addContainer('Container', {
+    image: createContainerImage(
+      scope,
+      'ServiceRepository',
+      `${serviceName}-service`,
+      envName,
+      `services/${serviceName}-service/Dockerfile`
+    ),
+    logging: ecs.LogDrivers.awsLogs({
+      logGroup,
+      streamPrefix: serviceName,
+    }),
+    environment: commonEnv,
+    secrets,
+    healthCheck: {
+      command: ['CMD-SHELL', 'curl -f http://localhost:8080/actuator/health || exit 1'],
+      interval: cdk.Duration.seconds(30),
+      timeout: cdk.Duration.seconds(5),
+      retries: 3,
+      // Default 300s: Spring Boot on 256 CPU takes 120s+ to start; 300s gives safe headroom
+      startPeriod: cdk.Duration.seconds(props.serviceConfig.healthCheckStartPeriodSeconds ?? 300),
+    },
+  });
 
-    // Add container
-    const container = taskDefinition.addContainer('Container', {
-      image: createContainerImage(
-        scope,
-        'ServiceRepository',
-        `${serviceName}-service`,
-        envName,
-        `services/${serviceName}-service/Dockerfile`
-      ),
-      logging: ecs.LogDrivers.awsLogs({
-        logGroup,
-        streamPrefix: serviceName,
-      }),
-      environment: commonEnv,
-      secrets,
-      healthCheck: {
-        command: ['CMD-SHELL', 'curl -f http://localhost:8080/actuator/health || exit 1'],
-        interval: cdk.Duration.seconds(30),
-        timeout: cdk.Duration.seconds(5),
-        retries: 3,
-        // Default 300s: Spring Boot on 256 CPU takes 120s+ to start; 300s gives safe headroom
-        startPeriod: cdk.Duration.seconds(props.serviceConfig.healthCheckStartPeriodSeconds ?? 300),
-      },
-    });
+  // Add named port mapping (required for Service Connect)
+  container.addPortMappings({
+    name: `${serviceName}-port`,
+    containerPort: 8080,
+    protocol: ecs.Protocol.TCP,
+  });
 
-    // Add named port mapping (required for Service Connect)
-    container.addPortMappings({
-      name: `${serviceName}-port`,
-      containerPort: 8080,
-      protocol: ecs.Protocol.TCP,
-    });
-
-    // Grant CloudWatch Logs permissions
-    taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+  // Grant CloudWatch Logs permissions
+  taskDefinition.taskRole.addToPrincipalPolicy(
+    new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
       actions: [
         'logs:CreateLogGroup',
@@ -166,195 +166,204 @@ export function createDomainService(
         'logs:DescribeLogStreams',
       ],
       resources: ['*'],
-    }));
+    })
+  );
 
-    // Grant CloudWatch Metrics permissions
-    taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+  // Grant CloudWatch Metrics permissions
+  taskDefinition.taskRole.addToPrincipalPolicy(
+    new iam.PolicyStatement({
       effect: iam.Effect.ALLOW,
-      actions: [
-        'cloudwatch:PutMetricData',
-      ],
+      actions: ['cloudwatch:PutMetricData'],
       resources: ['*'],
-    }));
+    })
+  );
 
-    // Grant EventBridge permissions to event-management service for publishing domain events
-    if (serviceName === 'event-management') {
-      taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
+  // Grant EventBridge permissions to event-management service for publishing domain events
+  if (serviceName === 'event-management') {
+    taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
         effect: iam.Effect.ALLOW,
         actions: ['events:PutEvents'],
-        resources: [`arn:aws:events:${props.config.region}:${cdk.Stack.of(scope).account}:event-bus/batbern-events`],
-      }));
-    }
-
-    // Grant Secrets Manager permissions to task execution role
-    if (props.databaseSecret) {
-      props.databaseSecret.grantRead(taskDefinition.executionRole!);
-    }
-
-    // Create explicit security group with restricted egress
-    const serviceSecurityGroup = new ec2.SecurityGroup(scope, 'ServiceSecurityGroup', {
-      vpc: props.vpc,
-      description: `Security group for ${serviceName} ECS service`,
-      allowAllOutbound: false, // Explicitly disable to avoid CDK warning
-    });
-
-    // Add only necessary egress rules
-    serviceSecurityGroup.addEgressRule(
-      props.databaseSecurityGroup,
-      ec2.Port.tcp(5432),
-      'Allow outbound to PostgreSQL database'
-    );
-
-    // IMPORTANT: Database security group ingress is configured in VPC construct
-    // to allow connections from private subnets, avoiding cyclic dependencies
-    // between Network stack and service stacks
-
-    // Allow HTTPS outbound for AWS API calls (Secrets Manager, CloudWatch, etc.)
-    serviceSecurityGroup.addEgressRule(
-      ec2.Peer.anyIpv4(),
-      ec2.Port.tcp(443),
-      'Allow HTTPS outbound for AWS API calls'
-    );
-
-    // Allow HTTP outbound for Service Connect inter-service communication
-    // Service Connect uses port 8080 for microservice-to-microservice calls
-    serviceSecurityGroup.addEgressRule(
-      ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
-      ec2.Port.tcp(8080),
-      'Allow HTTP outbound for Service Connect inter-service communication'
-    );
-
-    // Allow HTTP inbound for Service Connect inter-service communication
-    // This allows other services in the VPC to connect to this service via Service Connect
-    serviceSecurityGroup.addIngressRule(
-      ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
-      ec2.Port.tcp(8080),
-      'Allow HTTP inbound for Service Connect inter-service communication'
-    );
-
-    // Create service with Service Connect (no ALB needed)
-    const service = new ecs.FargateService(scope, 'Service', {
-      cluster: props.cluster,
-      taskDefinition,
-      desiredCount: props.serviceConfig.desiredCount ?? (isProd ? 2 : 1),
-      assignPublicIp: false,
-      vpcSubnets: {
-        subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
-      },
-      // minHealthyPercent lowered from 100 to 50: with desiredCount=2 and minHealthy=100,
-      // ECS must run 4 tasks simultaneously (2 old + 2 new) during deployment.
-      // Service Connect registration for 4 tasks frequently hangs, causing deployments
-      // to stay IN_PROGRESS indefinitely. With 50%, ECS can drain old tasks sooner,
-      // reducing the Service Connect registration window. Brief sub-second interruption
-      // during deploy is acceptable for ~300 users / 3 events per year.
-      minHealthyPercent: 50,
-      maxHealthyPercent: 200,
-      securityGroups: [serviceSecurityGroup], // Use explicit security group
-      enableExecuteCommand: true, // Allow ECS Exec for debugging
-      // Circuit breaker to fail fast on repeated task failures
-      // This prevents endless retry loops when images don't exist or tasks can't start
-      // After 3 consecutive failures, the deployment will roll back automatically
-      circuitBreaker: {
-        enable: true,
-        rollback: true,
-      },
-      // Deployment timeout to prevent hanging deployments
-      // CloudFormation will fail the stack update if service doesn't stabilize in 30 minutes
-      deploymentController: {
-        type: ecs.DeploymentControllerType.ECS,
-      },
-      // Use Fargate Spot for non-prod environments (70% Spot / 30% On-Demand)
-      // This provides ~20-30% cost savings with acceptable interruption risk
-      ...(!isProd && {
-        capacityProviderStrategies: [
-          {
-            capacityProvider: 'FARGATE_SPOT',
-            weight: 70,
-            base: 0,
-          },
-          {
-            capacityProvider: 'FARGATE',
-            weight: 30,
-            base: 1, // Ensure at least 1 task on On-Demand for stability
-          },
+        resources: [
+          `arn:aws:events:${props.config.region}:${cdk.Stack.of(scope).account}:event-bus/batbern-events`,
         ],
-      }),
-    });
+      })
+    );
+  }
 
-    // Enable Service Connect for service-to-service communication
-    // This provides automatic DNS-based discovery without requiring ALBs
-    // Using addPropertyOverride because L2 FargateService doesn't fully support Service Connect yet
-    const cfnService = service.node.defaultChild as ecs.CfnService;
-    cfnService.addPropertyOverride('ServiceConnectConfiguration', {
-      Enabled: true,
-      Namespace: 'batbern.local',
-      // Log the Envoy sidecar to the same log group for visibility during deployment issues
-      LogConfiguration: {
-        LogDriver: 'awslogs',
-        Options: {
-          'awslogs-group': logGroup.logGroupName,
-          'awslogs-region': props.config.region,
-          'awslogs-stream-prefix': `${serviceName}-envoy`,
+  // Grant Secrets Manager permissions to task execution role
+  if (props.databaseSecret) {
+    props.databaseSecret.grantRead(taskDefinition.executionRole!);
+  }
+
+  // Create explicit security group with restricted egress
+  const serviceSecurityGroup = new ec2.SecurityGroup(scope, 'ServiceSecurityGroup', {
+    vpc: props.vpc,
+    description: `Security group for ${serviceName} ECS service`,
+    allowAllOutbound: false, // Explicitly disable to avoid CDK warning
+  });
+
+  // Add only necessary egress rules
+  serviceSecurityGroup.addEgressRule(
+    props.databaseSecurityGroup,
+    ec2.Port.tcp(5432),
+    'Allow outbound to PostgreSQL database'
+  );
+
+  // IMPORTANT: Database security group ingress is configured in VPC construct
+  // to allow connections from private subnets, avoiding cyclic dependencies
+  // between Network stack and service stacks
+
+  // Allow HTTPS outbound for AWS API calls (Secrets Manager, CloudWatch, etc.)
+  serviceSecurityGroup.addEgressRule(
+    ec2.Peer.anyIpv4(),
+    ec2.Port.tcp(443),
+    'Allow HTTPS outbound for AWS API calls'
+  );
+
+  // Allow HTTP outbound for Service Connect inter-service communication
+  // Service Connect uses port 8080 for microservice-to-microservice calls
+  serviceSecurityGroup.addEgressRule(
+    ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
+    ec2.Port.tcp(8080),
+    'Allow HTTP outbound for Service Connect inter-service communication'
+  );
+
+  // Allow HTTP inbound for Service Connect inter-service communication
+  // This allows other services in the VPC to connect to this service via Service Connect
+  serviceSecurityGroup.addIngressRule(
+    ec2.Peer.ipv4(props.vpc.vpcCidrBlock),
+    ec2.Port.tcp(8080),
+    'Allow HTTP inbound for Service Connect inter-service communication'
+  );
+
+  // Create service with Service Connect (no ALB needed)
+  const service = new ecs.FargateService(scope, 'Service', {
+    cluster: props.cluster,
+    taskDefinition,
+    desiredCount: props.serviceConfig.desiredCount ?? (isProd ? 2 : 1),
+    assignPublicIp: false,
+    vpcSubnets: {
+      subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS,
+    },
+    // minHealthyPercent lowered from 100 to 50: with desiredCount=2 and minHealthy=100,
+    // ECS must run 4 tasks simultaneously (2 old + 2 new) during deployment.
+    // Service Connect registration for 4 tasks frequently hangs, causing deployments
+    // to stay IN_PROGRESS indefinitely. With 50%, ECS can drain old tasks sooner,
+    // reducing the Service Connect registration window. Brief sub-second interruption
+    // during deploy is acceptable for ~300 users / 3 events per year.
+    minHealthyPercent: 50,
+    maxHealthyPercent: 200,
+    securityGroups: [serviceSecurityGroup], // Use explicit security group
+    enableExecuteCommand: true, // Allow ECS Exec for debugging
+    // Circuit breaker to fail fast on repeated task failures
+    // This prevents endless retry loops when images don't exist or tasks can't start
+    // After 3 consecutive failures, the deployment will roll back automatically
+    circuitBreaker: {
+      enable: true,
+      rollback: true,
+    },
+    // Deployment timeout to prevent hanging deployments
+    // CloudFormation will fail the stack update if service doesn't stabilize in 30 minutes
+    deploymentController: {
+      type: ecs.DeploymentControllerType.ECS,
+    },
+    // Use Fargate Spot for non-prod environments (70% Spot / 30% On-Demand)
+    // This provides ~20-30% cost savings with acceptable interruption risk
+    ...(!isProd && {
+      capacityProviderStrategies: [
+        {
+          capacityProvider: 'FARGATE_SPOT',
+          weight: 70,
+          base: 0,
         },
+        {
+          capacityProvider: 'FARGATE',
+          weight: 30,
+          base: 1, // Ensure at least 1 task on On-Demand for stability
+        },
+      ],
+    }),
+  });
+
+  // Enable Service Connect for service-to-service communication
+  // This provides automatic DNS-based discovery without requiring ALBs
+  // Using addPropertyOverride because L2 FargateService doesn't fully support Service Connect yet
+  const cfnService = service.node.defaultChild as ecs.CfnService;
+  cfnService.addPropertyOverride('ServiceConnectConfiguration', {
+    Enabled: true,
+    Namespace: 'batbern.local',
+    // Log the Envoy sidecar to the same log group for visibility during deployment issues
+    LogConfiguration: {
+      LogDriver: 'awslogs',
+      Options: {
+        'awslogs-group': logGroup.logGroupName,
+        'awslogs-region': props.config.region,
+        'awslogs-stream-prefix': `${serviceName}-envoy`,
       },
-      Services: [{
+    },
+    Services: [
+      {
         PortName: `${serviceName}-port`,
         DiscoveryName: serviceName,
-        ClientAliases: [{
-          Port: 8080,
-          DnsName: serviceName,
-        }],
+        ClientAliases: [
+          {
+            Port: 8080,
+            DnsName: serviceName,
+          },
+        ],
         // NOTE: Service Connect Timeout is not supported for TCP protocol.
         // "Per request timeout can't be set for tcp application" — AWS rejects it.
         // Timeouts would require switching port mapping to appProtocol: http.
-      }],
+      },
+    ],
+  });
+
+  // NOTE: ECS Deployment Alarms (Change 5 from the plan) removed due to circular dependency:
+  // alarm needs service.serviceName dimension → service needs alarm name → circular.
+  // The remaining fixes (minHealthyPercent=50, Service Connect timeouts, auto-cleanup steps)
+  // address the root cause directly. Deployment alarms can be revisited with Container Insights
+  // metrics once Change 6 (Container Insights) is deployed.
+
+  // Configure auto-scaling.
+  //
+  // This, not desiredCount, decides how many tasks run a month from now: desiredCount
+  // applies at creation and the scaler owns it thereafter. EventManagement is the proof —
+  // created with desiredCount 2, it has run 1 task for months because its minCapacity is
+  // 1. A cost change that sets one without the other does nothing.
+  if (!props.serviceConfig.disableAutoScaling) {
+    const defaultMin = isProd ? 2 : 1;
+    const resolvedMin = props.serviceConfig.minCapacity ?? defaultMin;
+    const resolvedMax = props.serviceConfig.maxCapacity ?? resolvedMin * 4;
+    const scaling = service.autoScaleTaskCount({
+      minCapacity: resolvedMin,
+      maxCapacity: resolvedMax,
     });
 
-    // NOTE: ECS Deployment Alarms (Change 5 from the plan) removed due to circular dependency:
-    // alarm needs service.serviceName dimension → service needs alarm name → circular.
-    // The remaining fixes (minHealthyPercent=50, Service Connect timeouts, auto-cleanup steps)
-    // address the root cause directly. Deployment alarms can be revisited with Container Insights
-    // metrics once Change 6 (Container Insights) is deployed.
-
-    // Configure auto-scaling.
-    //
-    // This, not desiredCount, decides how many tasks run a month from now: desiredCount
-    // applies at creation and the scaler owns it thereafter. EventManagement is the proof —
-    // created with desiredCount 2, it has run 1 task for months because its minCapacity is
-    // 1. A cost change that sets one without the other does nothing.
-    if (!props.serviceConfig.disableAutoScaling) {
-      const defaultMin = isProd ? 2 : 1;
-      const resolvedMin = props.serviceConfig.minCapacity ?? defaultMin;
-      const resolvedMax = props.serviceConfig.maxCapacity ?? (resolvedMin * 4);
-      const scaling = service.autoScaleTaskCount({
-        minCapacity: resolvedMin,
-        maxCapacity: resolvedMax,
-      });
-
-      scaling.scaleOnCpuUtilization('CpuScaling', {
-        targetUtilizationPercent: 70,
-        scaleInCooldown: cdk.Duration.seconds(60),
-        scaleOutCooldown: cdk.Duration.seconds(60),
-      });
-    }
-
-    // Output Service Connect DNS name for debugging
-    new cdk.CfnOutput(scope, 'ServiceConnectDNS', {
-      value: `http://${serviceName}:8080`,
-      description: `${serviceName} Service Connect DNS endpoint (accessible within VPC)`,
-      exportName: `${envName}-${serviceName}-service-connect-dns`,
+    scaling.scaleOnCpuUtilization('CpuScaling', {
+      targetUtilizationPercent: 70,
+      scaleInCooldown: cdk.Duration.seconds(60),
+      scaleOutCooldown: cdk.Duration.seconds(60),
     });
+  }
 
-    new cdk.CfnOutput(scope, 'ServiceArn', {
-      value: service.serviceArn,
-      description: `${serviceName} ECS Service ARN`,
-      exportName: `${envName}-${serviceName}-service-arn`,
-    });
+  // Output Service Connect DNS name for debugging
+  new cdk.CfnOutput(scope, 'ServiceConnectDNS', {
+    value: `http://${serviceName}:8080`,
+    description: `${serviceName} Service Connect DNS endpoint (accessible within VPC)`,
+    exportName: `${envName}-${serviceName}-service-connect-dns`,
+  });
 
-    // Apply tags
-    cdk.Tags.of(scope).add('Environment', envName);
-    cdk.Tags.of(scope).add('Component', componentTag);
-    cdk.Tags.of(scope).add('Project', 'BATbern');
+  new cdk.CfnOutput(scope, 'ServiceArn', {
+    value: service.serviceArn,
+    description: `${serviceName} ECS Service ARN`,
+    exportName: `${envName}-${serviceName}-service-arn`,
+  });
 
-    return { service };
+  // Apply tags
+  cdk.Tags.of(scope).add('Environment', envName);
+  cdk.Tags.of(scope).add('Component', componentTag);
+  cdk.Tags.of(scope).add('Project', 'BATbern');
+
+  return { service };
 }

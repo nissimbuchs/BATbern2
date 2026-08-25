@@ -29,7 +29,9 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
       // Assert - Web Frontend depends on API Gateway
       expect(parsed.services['web-frontend'].depends_on).toBeDefined();
       expect(parsed.services['web-frontend'].depends_on['api-gateway']).toBeDefined();
-      expect(parsed.services['web-frontend'].depends_on['api-gateway'].condition).toBe('service_healthy');
+      expect(parsed.services['web-frontend'].depends_on['api-gateway'].condition).toBe(
+        'service_healthy'
+      );
     });
 
     test('should_waitForHealthCheck_when_dependentServiceStarting', () => {
@@ -40,7 +42,9 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
       // Assert - API Gateway health check configured
       expect(parsed.services['api-gateway'].healthcheck).toBeDefined();
       expect(parsed.services['api-gateway'].healthcheck.test).toContain('curl');
-      expect(parsed.services['api-gateway'].healthcheck.test.join(' ')).toContain('/actuator/health');
+      expect(parsed.services['api-gateway'].healthcheck.test.join(' ')).toContain(
+        '/actuator/health'
+      );
       expect(parsed.services['api-gateway'].healthcheck.start_period).toBe('60s');
     });
 
@@ -79,7 +83,7 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
         execSync('docker compose config', {
           cwd: projectRoot,
           stdio: 'pipe',
-          env: { ...process.env, SKIP_ENV_VALIDATION: 'true' }
+          env: { ...process.env, SKIP_ENV_VALIDATION: 'true' },
         });
       } catch (error: any) {
         // If config validation fails, it's a syntax error.

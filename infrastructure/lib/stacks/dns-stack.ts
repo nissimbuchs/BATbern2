@@ -46,7 +46,9 @@ export class DnsStack extends cdk.Stack {
     // Otherwise, create new certificates with automatic DNS validation.
     if (props.config.domain!.frontendCertificateArn) {
       this.certificate = certificatemanager.Certificate.fromCertificateArn(
-        this, 'Certificate', props.config.domain!.frontendCertificateArn,
+        this,
+        'Certificate',
+        props.config.domain!.frontendCertificateArn
       );
     } else {
       this.certificate = new certificatemanager.Certificate(this, 'Certificate', {
@@ -57,7 +59,9 @@ export class DnsStack extends cdk.Stack {
 
     if (props.config.domain!.cdnCertificateArn) {
       this.cdnCertificate = certificatemanager.Certificate.fromCertificateArn(
-        this, 'CdnCertificate', props.config.domain!.cdnCertificateArn,
+        this,
+        'CdnCertificate',
+        props.config.domain!.cdnCertificateArn
       );
     } else {
       this.cdnCertificate = new certificatemanager.Certificate(this, 'CdnCertificate', {
@@ -74,7 +78,9 @@ export class DnsStack extends cdk.Stack {
     // surfaces (Google's consent screen shows the redirect domain → now batbern.ch).
     if (props.config.domain!.authCertificateArn) {
       this.authCertificate = certificatemanager.Certificate.fromCertificateArn(
-        this, 'AuthCertificate', props.config.domain!.authCertificateArn,
+        this,
+        'AuthCertificate',
+        props.config.domain!.authCertificateArn
       );
     } else {
       this.authCertificate = new certificatemanager.Certificate(this, 'AuthCertificate', {

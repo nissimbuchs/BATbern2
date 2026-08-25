@@ -396,4 +396,3 @@ describe('Alarm actions (#1001)', () => {
     build(false).resourceCountIs('AWS::CloudWatch::Alarm', 1);
   });
 });
-

@@ -26,7 +26,9 @@ jest.mock('@aws-sdk/client-cloudwatch', () => ({
 const mockCognitoSend = jest.fn<(...args: any[]) => Promise<any>>();
 jest.mock('@aws-sdk/client-cognito-identity-provider', () => ({
   CognitoIdentityProviderClient: jest.fn().mockImplementation(() => ({ send: mockCognitoSend })),
-  AdminUpdateUserAttributesCommand: jest.fn().mockImplementation((input) => ({ __type: 'AdminUpdateUserAttributes', ...(input as object) })),
+  AdminUpdateUserAttributesCommand: jest
+    .fn()
+    .mockImplementation((input) => ({ __type: 'AdminUpdateUserAttributes', ...(input as object) })),
 }));
 
 jest.mock('../../../lib/lambda/triggers/common/database', () => ({
@@ -125,7 +127,10 @@ describe('post-authentication Lambda handler', () => {
     mockGetDbClient.mockResolvedValue(makeDbClient());
     mockDbQuery
       .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // restore-check: no row
-      .mockResolvedValueOnce({ rows: [{ id: 'id', username: 'u', cognito_user_id: null }], rowCount: 1 })
+      .mockResolvedValueOnce({
+        rows: [{ id: 'id', username: 'u', cognito_user_id: null }],
+        rowCount: 1,
+      })
       .mockResolvedValueOnce({ rows: [{ username: 'u' }], rowCount: 1 });
 
     const event = makeEvent();
@@ -147,7 +152,10 @@ describe('post-authentication Lambda handler', () => {
     mockGetDbClient.mockResolvedValue(makeDbClient());
     mockDbQuery
       .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // restore-check: no row
-      .mockResolvedValueOnce({ rows: [{ id: 'id', username: 'u', cognito_user_id: null }], rowCount: 1 })
+      .mockResolvedValueOnce({
+        rows: [{ id: 'id', username: 'u', cognito_user_id: null }],
+        rowCount: 1,
+      })
       .mockRejectedValueOnce(new Error('Deadlock'));
 
     const event = makeEvent();

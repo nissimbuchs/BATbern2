@@ -393,7 +393,9 @@ export const handler: Handler<CustomEmailSenderEvent, CustomEmailSenderEvent> = 
   // Only handle ForgotPassword and SignUp triggers
   const supportedTriggers = ['CustomEmailSender_ForgotPassword', 'CustomEmailSender_SignUp'];
   if (!supportedTriggers.includes(event.triggerSource)) {
-    console.log('Skipping unsupported trigger (not implemented yet)', { triggerSource: event.triggerSource });
+    console.log('Skipping unsupported trigger (not implemented yet)', {
+      triggerSource: event.triggerSource,
+    });
     // Return event without sending - Cognito won't send email for unsupported triggers
     return event;
   }
@@ -440,7 +442,10 @@ export const handler: Handler<CustomEmailSenderEvent, CustomEmailSenderEvent> = 
       // Signup verification link
       link = `${config.FRONTEND_DOMAIN}/auth/verify-email?code=${verificationCode}&email=${encodeURIComponent(email)}&lang=${language}`;
       htmlContent = getSignupEmailHtml(language, link, logoUrl);
-      subject = language === 'de' ? 'Willkommen bei BATbern - E-Mail bestätigen' : 'Welcome to BATbern - Verify Email';
+      subject =
+        language === 'de'
+          ? 'Willkommen bei BATbern - E-Mail bestätigen'
+          : 'Welcome to BATbern - Verify Email';
       plainText = `Verify your email: ${link}`;
 
       console.log('Signup verification link built', {
