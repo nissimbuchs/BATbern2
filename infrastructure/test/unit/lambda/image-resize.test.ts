@@ -22,7 +22,12 @@ function makeEvent(uri: string, querystring: string): CloudFrontRequestEvent {
     Records: [
       {
         cf: {
-          config: { distributionDomainName: 'd.cloudfront.net', distributionId: 'TEST', eventType: 'origin-request', requestId: '1' },
+          config: {
+            distributionDomainName: 'd.cloudfront.net',
+            distributionId: 'TEST',
+            eventType: 'origin-request',
+            requestId: '1',
+          },
           request: {
             clientIp: '1.2.3.4',
             headers: {},

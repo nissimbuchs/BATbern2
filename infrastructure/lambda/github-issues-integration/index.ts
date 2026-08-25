@@ -317,9 +317,7 @@ async function fetchMetricContext(alarm: CloudWatchAlarm): Promise<string> {
       })
     );
 
-    const series = (MetricDataResults ?? []).filter(
-      (r) => (r.Timestamps ?? []).length > 0
-    );
+    const series = (MetricDataResults ?? []).filter((r) => (r.Timestamps ?? []).length > 0);
     if (series.length === 0) {
       return '\n### Metric context\n\n_No datapoints in the 45 minutes before the transition._\n';
     }
@@ -384,7 +382,8 @@ export function redactPath(path: string): string {
       if (/^BATbern\d+$/i.test(segment)) return segment; // public event code, keep
       if (/^v\d+$/.test(segment)) return segment; // api version
       if (/^[a-z][a-z-]*$/.test(segment)) return segment; // fixed route word
-      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)) return '{uuid}';
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment))
+        return '{uuid}';
       if (/^\d+$/.test(segment)) return '{n}';
       if (segment.includes('@')) return '{email}';
       return '{id}';
@@ -419,9 +418,8 @@ async function fetchLogContext(alarm: CloudWatchAlarm): Promise<string> {
     // Runtime.ImportModuleError at cold start, which would take the whole alarm pipeline down —
     // no issues filed at all — to add an optional section. This way a missing module is just a
     // caught error and the issue is filed without log context.
-    const { CloudWatchLogsClient, FilterLogEventsCommand } = await import(
-      '@aws-sdk/client-cloudwatch-logs'
-    );
+    const { CloudWatchLogsClient, FilterLogEventsCommand } =
+      await import('@aws-sdk/client-cloudwatch-logs');
     const cloudwatchLogs = new CloudWatchLogsClient({});
 
     const logGroupName = logGroupForAlarm(alarm.AlarmName);
@@ -444,9 +442,10 @@ async function fetchLogContext(alarm: CloudWatchAlarm): Promise<string> {
     const byStatus = new Map<string, number>();
     const byRoute = new Map<string, number>();
     for (const event of events) {
-      const match = /GATEWAY_API_REQUEST status=(\d+) clientError=\w+ method=(\S+) path=([^\s"]+)/.exec(
-        event.message ?? ''
-      );
+      const match =
+        /GATEWAY_API_REQUEST status=(\d+) clientError=\w+ method=(\S+) path=([^\s"]+)/.exec(
+          event.message ?? ''
+        );
       if (!match) continue;
       const [, status, method, path] = match;
       byStatus.set(status, (byStatus.get(status) ?? 0) + 1);
@@ -557,11 +556,23 @@ function getLabels(alarm: CloudWatchAlarm): string[] {
 
   // Add severity label based on alarm name
   // Platform Stability Improvements (Phase 3): OOM kills are critical
-  if (alarm.AlarmName.includes('OOM-Kills') || alarm.AlarmName.includes('availability') || alarm.AlarmName.includes('high-errors')) {
+  if (
+    alarm.AlarmName.includes('OOM-Kills') ||
+    alarm.AlarmName.includes('availability') ||
+    alarm.AlarmName.includes('high-errors')
+  ) {
     labels.push('severity:critical');
-  } else if (alarm.AlarmName.includes('high-latency') || alarm.AlarmName.includes('high-cpu') || alarm.AlarmName.includes('High-Memory') || alarm.AlarmName.includes('Task-Failures')) {
+  } else if (
+    alarm.AlarmName.includes('high-latency') ||
+    alarm.AlarmName.includes('high-cpu') ||
+    alarm.AlarmName.includes('High-Memory') ||
+    alarm.AlarmName.includes('Task-Failures')
+  ) {
     labels.push('severity:high');
-  } else if (alarm.AlarmName.includes('budget') || alarm.AlarmName.includes('EventBridge-Failures')) {
+  } else if (
+    alarm.AlarmName.includes('budget') ||
+    alarm.AlarmName.includes('EventBridge-Failures')
+  ) {
     labels.push('severity:medium');
   } else {
     labels.push('severity:low');
@@ -573,7 +584,12 @@ function getLabels(alarm: CloudWatchAlarm): string[] {
     labels.push('component:database');
   } else if (alarm.AlarmName.includes('api')) {
     labels.push('component:api');
-  } else if (alarm.AlarmName.includes('High-Memory') || alarm.AlarmName.includes('OOM-Kills') || alarm.AlarmName.includes('Task-Failures') || alarm.AlarmName.includes('EventBridge-Failures')) {
+  } else if (
+    alarm.AlarmName.includes('High-Memory') ||
+    alarm.AlarmName.includes('OOM-Kills') ||
+    alarm.AlarmName.includes('Task-Failures') ||
+    alarm.AlarmName.includes('EventBridge-Failures')
+  ) {
     labels.push('component:ecs');
   } else {
     labels.push('component:infrastructure');
@@ -581,7 +597,9 @@ function getLabels(alarm: CloudWatchAlarm): string[] {
 
   // Platform Stability Improvements (Phase 3): Add service attribution label
   // Extract service name from alarm (e.g., "batbern-staging-EventManagement-High-Memory" → "service:event-management")
-  const serviceMatch = alarm.AlarmName.match(/-(EventManagement|SpeakerCoordination|PartnerCoordination|AttendeeExperience|CompanyManagement|ApiGatewayService)-/);
+  const serviceMatch = alarm.AlarmName.match(
+    /-(EventManagement|SpeakerCoordination|PartnerCoordination|AttendeeExperience|CompanyManagement|ApiGatewayService)-/
+  );
   if (serviceMatch) {
     const serviceName = serviceMatch[1]
       .replace(/([A-Z])/g, '-$1')

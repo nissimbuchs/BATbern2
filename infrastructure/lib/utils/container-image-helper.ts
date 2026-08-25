@@ -31,7 +31,7 @@ export function createContainerImage(
   if (isCI && !imageTag) {
     throw new Error(
       `IMAGE_TAG environment variable is required in CI/CD but not set for ${serviceName}. ` +
-      `This indicates the build pipeline did not run or the deployment workflow is misconfigured.`
+        `This indicates the build pipeline did not run or the deployment workflow is misconfigured.`
     );
   }
 

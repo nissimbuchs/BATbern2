@@ -57,8 +57,12 @@ export const handler: PreAuthenticationTriggerHandler = async (
       console.log('User not found in database, allowing JIT provisioning', { cognitoId });
 
       // Publish metrics without awaiting (fire and forget - non-blocking)
-      publishMetric('UserNotFoundAllowed', 1).catch(err => console.error('Metric publish failed', err));
-      publishMetric('PreAuthLatency', Date.now() - startTime).catch(err => console.error('Metric publish failed', err));
+      publishMetric('UserNotFoundAllowed', 1).catch((err) =>
+        console.error('Metric publish failed', err)
+      );
+      publishMetric('PreAuthLatency', Date.now() - startTime).catch((err) =>
+        console.error('Metric publish failed', err)
+      );
 
       callback(null, event);
       return event;
@@ -74,8 +78,12 @@ export const handler: PreAuthenticationTriggerHandler = async (
       });
 
       // Publish metrics without awaiting (fire and forget - non-blocking)
-      publishMetric('InactiveUserBlocked', 1).catch(err => console.error('Metric publish failed', err));
-      publishMetric('PreAuthLatency', Date.now() - startTime).catch(err => console.error('Metric publish failed', err));
+      publishMetric('InactiveUserBlocked', 1).catch((err) =>
+        console.error('Metric publish failed', err)
+      );
+      publishMetric('PreAuthLatency', Date.now() - startTime).catch((err) =>
+        console.error('Metric publish failed', err)
+      );
 
       // Call callback with error AND throw to block authentication
       const errorMessage = `User account is inactive. Reason: ${user.deactivation_reason || 'Account deactivated'}`;
@@ -87,8 +95,12 @@ export const handler: PreAuthenticationTriggerHandler = async (
     console.log('User active, allowing authentication', { cognitoId });
 
     // Publish metrics without awaiting (fire and forget - non-blocking)
-    publishMetric('ActiveUserAllowed', 1).catch(err => console.error('Metric publish failed', err));
-    publishMetric('PreAuthLatency', Date.now() - startTime).catch(err => console.error('Metric publish failed', err));
+    publishMetric('ActiveUserAllowed', 1).catch((err) =>
+      console.error('Metric publish failed', err)
+    );
+    publishMetric('PreAuthLatency', Date.now() - startTime).catch((err) =>
+      console.error('Metric publish failed', err)
+    );
 
     callback(null, event);
     return event;
@@ -107,8 +119,10 @@ export const handler: PreAuthenticationTriggerHandler = async (
     });
 
     // Publish metrics without awaiting (fire and forget - non-blocking)
-    publishMetric('PreAuthFailure', 1).catch(err => console.error('Metric publish failed', err));
-    publishMetric('PreAuthLatency', Date.now() - startTime).catch(err => console.error('Metric publish failed', err));
+    publishMetric('PreAuthFailure', 1).catch((err) => console.error('Metric publish failed', err));
+    publishMetric('PreAuthLatency', Date.now() - startTime).catch((err) =>
+      console.error('Metric publish failed', err)
+    );
 
     // Allow authentication even on error
     callback(null, event);

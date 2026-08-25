@@ -142,6 +142,8 @@ describe('custom-email-sender Lambda handler', () => {
   it('should_throwError_when_decryptFails', async () => {
     mockDecrypt.mockRejectedValue(new Error('KMS decryption failed'));
     const event = makeEvent('CustomEmailSender_ForgotPassword');
-    await expect((handler as Handler)(event, {} as any, jest.fn())).rejects.toThrow('KMS decryption failed');
+    await expect((handler as Handler)(event, {} as any, jest.fn())).rejects.toThrow(
+      'KMS decryption failed'
+    );
   });
 });

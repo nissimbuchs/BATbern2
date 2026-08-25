@@ -1,0 +1,12 @@
+# Prettier's globs walk the filesystem, not the git index, so cdk.out alone put ~1500
+# synthesised asset files in front of it — a `--check` over `**/*.ts` reported "1561 files"
+# and told you nothing about the 93 files anyone actually edits. Keep this list aligned with
+# what git tracks.
+node_modules/
+cdk.out/
+coverage/
+*.d.ts
+
+# Lambda bundles vendor their own node_modules (image-resize ships sharp), which are
+# third-party and must never be reformatted.
+lib/lambda/*/node_modules/

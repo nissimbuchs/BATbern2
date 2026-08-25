@@ -116,8 +116,30 @@ no `package.json` defined one; #973 added that script to the ROOT `package.json`
 to the same installer), so the command now works — but `make install` is the documented
 entry point and the one CLAUDE.md points a newcomer at.
 
-**Known gap:** `infrastructure/**/*.ts` gets no pre-commit linting at all — lint-staged is
-scoped to `web-frontend/`. Tracked separately.
+**Infrastructure (CDK), added in #975.** `infrastructure/**/*.ts` had no formatting or lint
+check anywhere — not in the hook, not in `make format-check`, not in CI — which made the code
+that provisions production the least-checked code in the repo. 55 of its 93 tracked files had
+drifted. It now has:
+
+- a second `lint-staged` invocation in `.githooks/pre-commit`, run from `infrastructure/`
+  with its own `.lintstagedrc.json` (`*.ts -> prettier --write`). It cannot be folded into the
+  frontend one: lint-staged scopes to its cwd, and running it from the repo root would
+  `prettier --write` all of `docs/`.
+- `npm run format` / `format:check` in `infrastructure/package.json`, wired into
+  `make format` and `make format-check`.
+- **the authoritative gate:** a `Prettier format check` step in `build.yml`'s
+  `build-infrastructure` job. The hook warns and *skips* when `infrastructure/node_modules`
+  is absent rather than blocking, so CI is what actually enforces this.
+- `infrastructure/.prettierignore`, because prettier globs the filesystem rather than the git
+  index — without it `cdk.out` put ~1500 synthesised asset files in front of the 93 real ones.
+
+`prettier` and `lint-staged` are pinned to the same ranges as `web-frontend` on purpose: a
+different prettier major between the two trees would format the same file two ways depending
+on which subtree's binary ran.
+
+**Still a gap: no ESLint.** ESLint 10 requires flat config and `infrastructure/` has no
+`eslint.config.*`, so `npx eslint` exits 2 there. Authoring one catches real bugs rather than
+formatting and is tracked separately in #975.
 
 ### Code Review Checklist
 - [ ] **TDD Followed**: Tests were written before implementation

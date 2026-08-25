@@ -48,7 +48,7 @@ export class CognitoStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: CognitoStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
+    const isProd = props.config.isProduction ?? props.config.envName === 'production';
     const envName = props.config.envName;
 
     // Story 12.6 (SSO Phase 2): the PreSignUp trigger is no longer an inline Lambda here.
@@ -85,12 +85,12 @@ export class CognitoStack extends cdk.Stack {
     });
 
     // Determine frontend domain based on environment
-    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
+    const isProdTraffic = props.config.isProduction ?? envName === 'production';
     const frontendDomain = isProdTraffic
       ? `https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}`
       : envName === 'staging'
-      ? 'https://www.batbern.ch'
-      : 'http://localhost:3000';
+        ? 'https://www.batbern.ch'
+        : 'http://localhost:3000';
 
     // FROM address must use a domain verified in SES for the environment
     const fromEmail = isProdTraffic
@@ -188,7 +188,7 @@ export class CognitoStack extends cdk.Stack {
         requireUppercase: true,
         requireDigits: true,
         requireSymbols: true,
-        tempPasswordValidity: cdk.Duration.days(14),  // Story 11.E.1 / Resolved Q#4 — 14-day window for invitation→first-login (was 7)
+        tempPasswordValidity: cdk.Duration.days(14), // Story 11.E.1 / Resolved Q#4 — 14-day window for invitation→first-login (was 7)
       },
       accountRecovery: cognito.AccountRecovery.EMAIL_ONLY,
       mfa: cognito.Mfa.OPTIONAL,
@@ -259,14 +259,14 @@ export class CognitoStack extends cdk.Stack {
     const callbackUrls = isProdTraffic
       ? [`https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}/auth/callback`]
       : envName === 'staging'
-      ? ['https://www.batbern.ch/auth/callback']
-      : ['http://localhost:3000/auth/callback'];
+        ? ['https://www.batbern.ch/auth/callback']
+        : ['http://localhost:3000/auth/callback'];
 
     const logoutUrls = isProdTraffic
       ? [`https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}/logout`]
       : envName === 'staging'
-      ? ['https://www.batbern.ch/logout']
-      : ['http://localhost:3000/logout'];
+        ? ['https://www.batbern.ch/logout']
+        : ['http://localhost:3000/logout'];
 
     // Create User Pool Client
     this.userPoolClient = new cognito.UserPoolClient(this, 'UserPoolClient', {
@@ -276,7 +276,7 @@ export class CognitoStack extends cdk.Stack {
         userPassword: true,
         custom: true,
         userSrp: true, // Enable SRP authentication for secure password flow
-        adminUserPassword: true,  // Story 11.E.1 / AR29 / cherry-pick d5cf0fcc — enables AdminInitiateAuth for the temp-password flow used at speaker provisioning (Story 11.E.2)
+        adminUserPassword: true, // Story 11.E.1 / AR29 / cherry-pick d5cf0fcc — enables AdminInitiateAuth for the temp-password flow used at speaker provisioning (Story 11.E.2)
       },
       generateSecret: false,
       refreshTokenValidity: cdk.Duration.days(3650), // 10 years for long-lived test tokens
@@ -286,11 +286,7 @@ export class CognitoStack extends cdk.Stack {
         flows: {
           authorizationCodeGrant: true,
         },
-        scopes: [
-          cognito.OAuthScope.EMAIL,
-          cognito.OAuthScope.OPENID,
-          cognito.OAuthScope.PROFILE,
-        ],
+        scopes: [cognito.OAuthScope.EMAIL, cognito.OAuthScope.OPENID, cognito.OAuthScope.PROFILE],
         callbackUrls,
         logoutUrls,
       },
@@ -308,7 +304,13 @@ export class CognitoStack extends cdk.Stack {
       // Story 12.12: profilePicture readable so the IdP-mapped `picture` claim lands in
       // issued ID tokens, where CUMS' avatar-import hook reads it.
       readAttributes: new cognito.ClientAttributes()
-        .withStandardAttributes({ email: true, emailVerified: true, givenName: true, familyName: true, profilePicture: true })
+        .withStandardAttributes({
+          email: true,
+          emailVerified: true,
+          givenName: true,
+          familyName: true,
+          profilePicture: true,
+        })
         .withCustomAttributes('companyId', 'preferences'),
       // Story 12.8 F1b fix: givenName/familyName MUST be writable here. AWS Cognito only
       // populates IdP-mapped attributes that the federating app client has WRITE access to
@@ -321,7 +323,12 @@ export class CognitoStack extends cdk.Stack {
       // Story 12.12: profilePicture writable for the same F1b reason — Cognito only
       // populates IdP-mapped attributes the federating app client has WRITE access to.
       writeAttributes: new cognito.ClientAttributes()
-        .withStandardAttributes({ email: true, givenName: true, familyName: true, profilePicture: true })
+        .withStandardAttributes({
+          email: true,
+          givenName: true,
+          familyName: true,
+          profilePicture: true,
+        })
         .withCustomAttributes('companyId', 'preferences'),
     });
 
@@ -384,7 +391,12 @@ export class CognitoStack extends cdk.Stack {
     // Only deploy if VPC and database are configured (not available in local development)
     // Must be created before BootstrapOrganizer so we can pass the PostConfirmation Lambda ARN
     let userSyncTriggers: CognitoUserSyncTriggers | undefined;
-    if (props.vpc && props.lambdaTriggersSecurityGroup && props.databaseSecret && props.databaseEndpoint) {
+    if (
+      props.vpc &&
+      props.lambdaTriggersSecurityGroup &&
+      props.databaseSecret &&
+      props.databaseEndpoint
+    ) {
       userSyncTriggers = new CognitoUserSyncTriggers(this, 'UserSyncTriggers', {
         userPool: this.userPool,
         vpc: props.vpc,

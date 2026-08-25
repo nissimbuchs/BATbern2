@@ -137,11 +137,15 @@ export class SesStack extends cdk.Stack {
       },
     });
 
-    const transactionalEventLoggerLogGroup = new logs.LogGroup(this, 'TransactionalEventLoggerLogGroup', {
-      logGroupName: `/aws/lambda/batbern-${envName}-transactional-event-logger`,
-      retention: logs.RetentionDays.THREE_MONTHS,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
-    });
+    const transactionalEventLoggerLogGroup = new logs.LogGroup(
+      this,
+      'TransactionalEventLoggerLogGroup',
+      {
+        logGroupName: `/aws/lambda/batbern-${envName}-transactional-event-logger`,
+        retention: logs.RetentionDays.THREE_MONTHS,
+        removalPolicy: cdk.RemovalPolicy.DESTROY,
+      }
+    );
 
     const transactionalEventLogger = new NodejsFunction(this, 'TransactionalEventLogger', {
       functionName: `batbern-${envName}-transactional-event-logger`,
@@ -160,7 +164,7 @@ export class SesStack extends cdk.Stack {
     });
 
     transactionalEventsTopic.addSubscription(
-      new subscriptions.LambdaSubscription(transactionalEventLogger),
+      new subscriptions.LambdaSubscription(transactionalEventLogger)
     );
 
     // CloudFormation outputs

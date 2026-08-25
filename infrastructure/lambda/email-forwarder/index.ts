@@ -54,8 +54,8 @@ export const handler = async (event: S3Event): Promise<void> => {
     const forwardingDomain = process.env.FORWARDING_DOMAIN ?? 'batbern.ch';
     const toAddresses = extractAllAddresses(headers.to);
     const ccAddresses = extractAllAddresses(headers.cc);
-    const allAddresses = [...toAddresses, ...ccAddresses].filter(
-      (addr) => addr.endsWith(`@${forwardingDomain}`),
+    const allAddresses = [...toAddresses, ...ccAddresses].filter((addr) =>
+      addr.endsWith(`@${forwardingDomain}`)
     );
     const senderEmail = extractSenderEmail(headers.from);
     const senderName = extractSenderName(headers.from);
@@ -72,8 +72,8 @@ export const handler = async (event: S3Event): Promise<void> => {
     // special-cased: a SINGLE visible mail to all speakers (To) with the event
     // moderator in Cc, so the moderator can verify the recipient list at a glance.
     // Every other alias keeps the one-copy-per-recipient (privacy-preserving) path.
-    const recipientSet = new Set<string>();   // individual-send recipients
-    const speakerToSet = new Set<string>();   // single-mail visible To (speakers)
+    const recipientSet = new Set<string>(); // individual-send recipients
+    const speakerToSet = new Set<string>(); // single-mail visible To (speakers)
     const moderatorCcSet = new Set<string>(); // single-mail Cc (event moderator)
     let anyAuthorized = false;
     let speakerMode = false;
@@ -148,7 +148,7 @@ export const handler = async (event: S3Event): Promise<void> => {
             Source: SES_SENDER,
             Destinations: [...toRecipients, ...ccRecipients],
             RawMessage: { Data: Buffer.from(rewrittenEmail) },
-          }),
+          })
         );
         console.log('Forwarded email', {
           addresses: allAddresses,
@@ -213,12 +213,15 @@ export const handler = async (event: S3Event): Promise<void> => {
             Source: SES_SENDER,
             Destinations: [recipient],
             RawMessage: { Data: Buffer.from(rewrittenEmail) },
-          }),
+          })
         );
         sentCount++;
       } catch (err) {
         failCount++;
-        console.error('Failed to send to recipient', { recipient: truncateEmail(recipient), error: err });
+        console.error('Failed to send to recipient', {
+          recipient: truncateEmail(recipient),
+          error: err,
+        });
       }
       if (sentCount + failCount < recipients.length) {
         await delay(RATE_DELAY_MS);
@@ -248,7 +251,7 @@ async function publishMetric(metricName: string): Promise<void> {
             Unit: 'Count',
           },
         ],
-      }),
+      })
     );
   } catch (err) {
     console.error('Failed to publish metric', { metricName, error: err });

@@ -37,9 +37,13 @@ describe('log level hygiene (#990)', () => {
         const full = path.join(dir, entry.name);
         // src/main only: build/ holds compiled copies and src/test is exempt by definition.
         if (entry.isDirectory()) {
-          if (entry.name === 'build' || entry.name === 'node_modules' || entry.name === 'test') continue;
+          if (entry.name === 'build' || entry.name === 'node_modules' || entry.name === 'test')
+            continue;
           walk(full);
-        } else if (/^application.*\.ya?ml$/.test(entry.name) && full.includes(`${path.sep}main${path.sep}`)) {
+        } else if (
+          /^application.*\.ya?ml$/.test(entry.name) &&
+          full.includes(`${path.sep}main${path.sep}`)
+        ) {
           found.push(full);
         }
       }
@@ -58,7 +62,11 @@ describe('log level hygiene (#990)', () => {
         const level = doc?.logging?.level?.['ch.batbern'];
         if (level === undefined) continue;
         const profile = doc?.spring?.config?.activate?.['on-profile'] ?? 'default';
-        out.push({ file: path.relative(ROOT, file), profile: String(profile), level: String(level) });
+        out.push({
+          file: path.relative(ROOT, file),
+          profile: String(profile),
+          level: String(level),
+        });
       }
     }
     return out;
@@ -87,7 +95,14 @@ describe('log level hygiene (#990)', () => {
     // The specific trap: a <logger name="ch.batbern"> element in logback-spring.xml is INERT,
     // because Spring applies logging.level.* afterwards. Leaving one there makes the wrong file
     // look authoritative and is how the first fix silently failed.
-    const logback = path.join(ROOT, 'api-gateway', 'src', 'main', 'resources', 'logback-spring.xml');
+    const logback = path.join(
+      ROOT,
+      'api-gateway',
+      'src',
+      'main',
+      'resources',
+      'logback-spring.xml'
+    );
     const xml = fs.readFileSync(logback, 'utf8');
     const withoutComments = xml.replace(/<!--[\s\S]*?-->/g, ''); // the explanation mentions it
     expect(withoutComments).not.toMatch(/<logger[^>]*name\s*=\s*"ch\.batbern"/);

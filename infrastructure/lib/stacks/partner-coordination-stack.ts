@@ -114,7 +114,7 @@ export class PartnerCoordinationStack extends cdk.Stack {
 
     // Grant SES permissions for sending emails (partner meeting invites with iCal attachments)
     // Uses SendRawEmail via shared-kernel EmailService.sendHtmlEmailWithAttachments()
-    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
+    const isProdTraffic = props.config.isProduction ?? envName === 'production';
     const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'batbern.ch';
     this.service.taskDefinition.taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
@@ -127,19 +127,19 @@ export class PartnerCoordinationStack extends cdk.Stack {
           // Configuration set — required when configurationSetName is attached to SendRawEmail
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:configuration-set/batbern-${envName}-*`,
         ],
-      }),
+      })
     );
 
     // Grant EventBridge permissions for domain events
     // Service publishes: PartnerCreatedEvent, PartnerUpdatedEvent, TopicVoteSubmittedEvent, TopicSuggestionSubmittedEvent
     if (props.eventBus) {
-      this.service.taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          'events:PutEvents',
-        ],
-        resources: [props.eventBus.eventBusArn],
-      }));
+      this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['events:PutEvents'],
+          resources: [props.eventBus.eventBusArn],
+        })
+      );
     }
   }
 }

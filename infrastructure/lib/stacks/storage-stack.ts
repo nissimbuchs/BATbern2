@@ -33,7 +33,7 @@ export class StorageStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: StorageStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
+    const isProd = props.config.isProduction ?? props.config.envName === 'production';
 
     // Logs bucket for CloudFront and application logs
     this.logsBucket = new s3.Bucket(this, 'LogsBucket', {
@@ -163,7 +163,8 @@ export class StorageStack extends cdk.Stack {
         bundling: {
           image: lambda.Runtime.NODEJS_24_X.bundlingImage,
           command: [
-            'bash', '-c',
+            'bash',
+            '-c',
             [
               // NOTE: the flags below are left exactly as deployed. `--platform`/`--arch` are not
               // npm's documented filters (`--os`/`--cpu` are), so they look wrong — but this
@@ -216,7 +217,7 @@ export class StorageStack extends cdk.Stack {
               if (process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test') {
                 require('fs').writeFileSync(
                   require('path').join(outputDir, 'index.js'),
-                  'exports.handler = async () => ({});',
+                  'exports.handler = async () => ({});'
                 );
                 return true;
               }

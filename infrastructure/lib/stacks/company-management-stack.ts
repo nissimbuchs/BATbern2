@@ -171,33 +171,31 @@ export class CompanyManagementStack extends cdk.Stack {
     if (props.contentBucket) {
       props.contentBucket.grantReadWrite(this.service.taskDefinition.taskRole);
       // Grant permissions for presigned URL generation
-      this.service.taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          's3:PutObject',
-          's3:GetObject',
-          's3:DeleteObject',
-        ],
-        resources: [`${props.contentBucket.bucketArn}/*`],
-      }));
+      this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['s3:PutObject', 's3:GetObject', 's3:DeleteObject'],
+          resources: [`${props.contentBucket.bucketArn}/*`],
+        })
+      );
     }
 
     // Grant EventBridge permissions for domain events
     if (props.eventBus) {
-      this.service.taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          'events:PutEvents',
-        ],
-        resources: [props.eventBus.eventBusArn],
-      }));
+      this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['events:PutEvents'],
+          resources: [props.eventBus.eventBusArn],
+        })
+      );
     }
 
     // Additional-email verification (v2): grant SES send permissions so the
     // shared-kernel EmailService can dispatch verification emails to additional
     // addresses. Mirrors the partner-coordination-stack SES grant (same
     // isProdTraffic domain selection + scoped identity ARNs).
-    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
+    const isProdTraffic = props.config.isProduction ?? envName === 'production';
     const sesFromDomain = isProdTraffic ? 'batbern.ch' : 'batbern.ch';
     this.service.taskDefinition.taskRole.addToPrincipalPolicy(
       new iam.PolicyStatement({
@@ -210,7 +208,7 @@ export class CompanyManagementStack extends cdk.Stack {
           // Configuration set — required when configurationSetName is attached to SendRawEmail
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:configuration-set/batbern-${envName}-*`,
         ],
-      }),
+      })
     );
 
     // Story 11.E.1 / AR30 / cherry-pick d5cf0fcc: Grant Cognito admin perms for speaker provisioning (Story 11.E.2).
@@ -223,18 +221,20 @@ export class CompanyManagementStack extends cdk.Stack {
     // (UserReconciliationService), which both page through the pool. ResendConfirmationCode is a
     // non-admin API but is still IAM-scoped to this pool; the SPA client has no secret so no
     // SecretHash is required.
-    this.service.taskDefinition.taskRole.addToPrincipalPolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'cognito-idp:AdminCreateUser',
-        'cognito-idp:AdminSetUserPassword',
-        'cognito-idp:AdminInitiateAuth',
-        'cognito-idp:AdminGetUser',
-        'cognito-idp:ListUsers',
-        'cognito-idp:ResendConfirmationCode',
-      ],
-      resources: [props.userPool.userPoolArn],
-    }));
+    this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: [
+          'cognito-idp:AdminCreateUser',
+          'cognito-idp:AdminSetUserPassword',
+          'cognito-idp:AdminInitiateAuth',
+          'cognito-idp:AdminGetUser',
+          'cognito-idp:ListUsers',
+          'cognito-idp:ResendConfirmationCode',
+        ],
+        resources: [props.userPool.userPoolArn],
+      })
+    );
 
     // Note: Cognito Lambda triggers (Story 1.2.5) are now created in CognitoStack
     // to avoid cyclic dependencies. Database tables are created by Flyway migrations

@@ -30,10 +30,7 @@ const PUBLIC_ADDRESSES = new Set(['info', 'events', 'support']);
  * alias like batbern{N}-participants@ is organizer-restricted WITHOUT needing its own
  * branch — never add such an alias to PUBLIC_ADDRESSES.
  */
-export async function isAuthorizedSender(
-  toAddress: string,
-  senderEmail: string,
-): Promise<boolean> {
+export async function isAuthorizedSender(toAddress: string, senderEmail: string): Promise<boolean> {
   const localPart = toAddress.split('@')[0]?.toLowerCase();
 
   if (!localPart) {

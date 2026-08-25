@@ -214,16 +214,24 @@ lint-node: ## Run Node.js linters
 	@cd web-frontend && npm run lint
 	@echo "✓ Node.js linting complete"
 
+# infrastructure/ was absent from both targets until #975, so the CDK code that provisions
+# production was the only tree in the repo with no formatting check anywhere — not in the
+# pre-commit hook (lint-staged is invoked from web-frontend/ and scopes to its cwd), and not
+# here. 55 of 93 tracked files had drifted.
 format: ## Format all code
 	@echo "✨ Formatting code..."
 	@echo "→ Formatting web-frontend..."
 	@cd web-frontend && npm run format
+	@echo "→ Formatting infrastructure..."
+	@cd infrastructure && npm run format
 	@echo "✓ Code formatting complete"
 
 format-check: ## Check code formatting
 	@echo "✨ Checking code formatting..."
 	@echo "→ Checking web-frontend..."
 	@cd web-frontend && npm run format:check
+	@echo "→ Checking infrastructure..."
+	@cd infrastructure && npm run format:check
 	@echo "✓ Format check complete"
 
 # ═══════════════════════════════════════════════════════════

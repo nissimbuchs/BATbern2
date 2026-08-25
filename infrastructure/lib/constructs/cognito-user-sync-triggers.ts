@@ -42,7 +42,7 @@ export class CognitoUserSyncTriggers extends Construct {
   constructor(scope: Construct, id: string, props: CognitoUserSyncTriggersProps) {
     super(scope, id);
 
-    const isProd = props.isProduction ?? (props.envName === 'production');
+    const isProd = props.isProduction ?? props.envName === 'production';
 
     // Common Lambda environment variables
     // Secrets are read dynamically at runtime, not at CDK synth time
@@ -51,7 +51,7 @@ export class CognitoUserSyncTriggers extends Construct {
       DB_HOST: props.databaseEndpoint,
       DB_NAME: 'batbern',
       DB_SECRET_ARN: props.databaseSecret.secretArn,
-      LOG_LEVEL: (isProd || props.envName === 'staging') ? 'INFO' : 'DEBUG',
+      LOG_LEVEL: isProd || props.envName === 'staging' ? 'INFO' : 'DEBUG',
     };
 
     // Common Lambda props
@@ -249,9 +249,6 @@ export class CognitoUserSyncTriggers extends Construct {
       cognito.UserPoolOperation.POST_AUTHENTICATION,
       this.postAuthenticationTrigger
     );
-    props.userPool.addTrigger(
-      cognito.UserPoolOperation.PRE_SIGN_UP,
-      this.preSignUpTrigger
-    );
+    props.userPool.addTrigger(cognito.UserPoolOperation.PRE_SIGN_UP, this.preSignUpTrigger);
   }
 }

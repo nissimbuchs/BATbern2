@@ -117,29 +117,25 @@ def handler(event, context):
     });
 
     // Grant permissions to scale ECS services
-    ecsScalerFunction.addToRolePolicy(new iam.PolicyStatement({
-      effect: iam.Effect.ALLOW,
-      actions: [
-        'ecs:ListServices',
-        'ecs:DescribeServices',
-        'ecs:UpdateService',
-      ],
-      resources: ['*'],
-    }));
+    ecsScalerFunction.addToRolePolicy(
+      new iam.PolicyStatement({
+        effect: iam.Effect.ALLOW,
+        actions: ['ecs:ListServices', 'ecs:DescribeServices', 'ecs:UpdateService'],
+        resources: ['*'],
+      })
+    );
 
     // Grant permissions to stop/start RDS
     if (props.rdsClusterIdentifier) {
-      ecsScalerFunction.addToRolePolicy(new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: [
-          'rds:StopDBInstance',
-          'rds:StartDBInstance',
-          'rds:DescribeDBInstances',
-        ],
-        resources: [
-          `arn:aws:rds:${props.config.region}:${cdk.Stack.of(this).account}:db:${props.rdsClusterIdentifier}`,
-        ],
-      }));
+      ecsScalerFunction.addToRolePolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['rds:StopDBInstance', 'rds:StartDBInstance', 'rds:DescribeDBInstances'],
+          resources: [
+            `arn:aws:rds:${props.config.region}:${cdk.Stack.of(this).account}:db:${props.rdsClusterIdentifier}`,
+          ],
+        })
+      );
     }
 
     // Schedule: Shutdown at 23:59 UTC Monday-Thursday
@@ -152,9 +148,11 @@ def handler(event, context):
       description: 'Shutdown dev environment at 23:59 UTC on weekdays',
     });
 
-    shutdownWeekdayRule.addTarget(new targets.LambdaFunction(ecsScalerFunction, {
-      event: events.RuleTargetInput.fromObject({ action: 'shutdown' }),
-    }));
+    shutdownWeekdayRule.addTarget(
+      new targets.LambdaFunction(ecsScalerFunction, {
+        event: events.RuleTargetInput.fromObject({ action: 'shutdown' }),
+      })
+    );
 
     // Schedule: Shutdown at 23:59 UTC on Friday to Sunday (early weekend start)
     const shutdownFridayRule = new events.Rule(this, 'ShutdownFridayRule', {
@@ -166,9 +164,11 @@ def handler(event, context):
       description: 'Shutdown dev environment at 23:59 UTC on Friday to Sunday',
     });
 
-    shutdownFridayRule.addTarget(new targets.LambdaFunction(ecsScalerFunction, {
-      event: events.RuleTargetInput.fromObject({ action: 'shutdown' }),
-    }));
+    shutdownFridayRule.addTarget(
+      new targets.LambdaFunction(ecsScalerFunction, {
+        event: events.RuleTargetInput.fromObject({ action: 'shutdown' }),
+      })
+    );
 
     // Schedule: Startup at 8 AM UTC Monday-Friday
     const startupRule = new events.Rule(this, 'StartupRule', {
@@ -180,9 +180,11 @@ def handler(event, context):
       description: 'Startup dev environment at 8 AM UTC on weekdays and weekends',
     });
 
-    startupRule.addTarget(new targets.LambdaFunction(ecsScalerFunction, {
-      event: events.RuleTargetInput.fromObject({ action: 'startup' }),
-    }));
+    startupRule.addTarget(
+      new targets.LambdaFunction(ecsScalerFunction, {
+        event: events.RuleTargetInput.fromObject({ action: 'startup' }),
+      })
+    );
 
     // Outputs
     new cdk.CfnOutput(this, 'ScalerFunctionArn', {

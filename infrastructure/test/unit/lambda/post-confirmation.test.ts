@@ -39,7 +39,9 @@ import { getDbClient, executeTransaction } from '../../../lib/lambda/triggers/co
 import { AdminUpdateUserAttributesCommand } from '@aws-sdk/client-cognito-identity-provider';
 
 // Test data builders
-function createPostConfirmationEvent(overrides: Partial<PostConfirmationTriggerEvent> = {}): PostConfirmationTriggerEvent {
+function createPostConfirmationEvent(
+  overrides: Partial<PostConfirmationTriggerEvent> = {}
+): PostConfirmationTriggerEvent {
   return {
     version: '1',
     triggerSource: 'PostConfirmation_ConfirmSignUp',
@@ -112,9 +114,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
 
     // Mock database functions
     (getDbClient as any).mockResolvedValue(mockDbClient);
-    (executeTransaction as any).mockResolvedValue([
-      { rows: [{ id: 'user-123' }], rowCount: 1 },
-    ]);
+    (executeTransaction as any).mockResolvedValue([{ rows: [{ id: 'user-123' }], rowCount: 1 }]);
   });
 
   afterEach(() => {
@@ -1220,7 +1220,15 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       // Assert - Should INSERT new user
       expect(mockDbClient.query).toHaveBeenCalledWith(
         expect.stringContaining('INSERT INTO user_profiles'),
-        expect.arrayContaining(['new-cognito-999', 'newuser@batbern.ch', 'new.user', 'New', 'User', 'de', true])
+        expect.arrayContaining([
+          'new-cognito-999',
+          'newuser@batbern.ch',
+          'new.user',
+          'New',
+          'User',
+          'de',
+          true,
+        ])
       );
 
       // Assert - Should publish metric for new user creation

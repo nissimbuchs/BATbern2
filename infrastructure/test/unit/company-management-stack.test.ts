@@ -47,12 +47,12 @@ function buildTemplate(): Template {
   const userPool = cognito.UserPool.fromUserPoolId(
     parent,
     'UP',
-    `${TEST_REGION}_test`,
+    `${TEST_REGION}_test`
   ) as unknown as cognito.UserPool;
   const userPoolClient = cognito.UserPoolClient.fromUserPoolClientId(
     parent,
     'UPC',
-    'test-client-id',
+    'test-client-id'
   );
 
   const stack = new CompanyManagementStack(app, 'TestCUMS', {
@@ -143,8 +143,8 @@ describe('CompanyManagementStack — Cognito admin IAM policy (Story 11.E.1)', (
     const standalonePolicies = template.findResources('AWS::IAM::Policy');
     for (const policy of Object.values(standalonePolicies)) {
       const statements: unknown[] =
-        (policy as { Properties?: { PolicyDocument?: { Statement?: unknown[] } } })
-          .Properties?.PolicyDocument?.Statement ?? [];
+        (policy as { Properties?: { PolicyDocument?: { Statement?: unknown[] } } }).Properties
+          ?.PolicyDocument?.Statement ?? [];
       collectFromStatements(statements);
     }
 
@@ -154,8 +154,8 @@ describe('CompanyManagementStack — Cognito admin IAM policy (Story 11.E.1)', (
         (role as { Properties?: { Policies?: unknown[] } }).Properties?.Policies ?? [];
       for (const policy of inlinePolicies) {
         const statements: unknown[] =
-          (policy as { PolicyDocument?: { Statement?: unknown[] } }).PolicyDocument
-            ?.Statement ?? [];
+          (policy as { PolicyDocument?: { Statement?: unknown[] } }).PolicyDocument?.Statement ??
+          [];
         collectFromStatements(statements);
       }
     }

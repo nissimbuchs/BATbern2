@@ -34,7 +34,7 @@ export class RdsCluster extends Construct {
   constructor(scope: Construct, id: string, props: RdsClusterProps) {
     super(scope, id);
 
-    const isProd = props.isProduction ?? (props.envName === 'production');
+    const isProd = props.isProduction ?? props.envName === 'production';
 
     // Create DB Subnet Group in isolated subnets
     this.subnetGroup = new rds.SubnetGroup(this, 'SubnetGroup', {
@@ -51,12 +51,12 @@ export class RdsCluster extends Construct {
         version: rds.PostgresEngineVersion.VER_15, // Use latest 15.x version available
       }),
       parameters: {
-        'shared_preload_libraries': 'pg_stat_statements',
-        'log_statement': 'all',
-        'log_duration': 'on',
-        'log_min_duration_statement': '1000', // Log queries > 1 second
-        'max_connections': isProd ? '200' : '100',
-        'work_mem': isProd ? '32768' : '16384', // In KB: 32MB = 32768 KB, 16MB = 16384 KB
+        shared_preload_libraries: 'pg_stat_statements',
+        log_statement: 'all',
+        log_duration: 'on',
+        log_min_duration_statement: '1000', // Log queries > 1 second
+        max_connections: isProd ? '200' : '100',
+        work_mem: isProd ? '32768' : '16384', // In KB: 32MB = 32768 KB, 16MB = 16384 KB
       },
       description: `PostgreSQL parameter group for ${props.envName}`,
     });
@@ -67,10 +67,7 @@ export class RdsCluster extends Construct {
         version: rds.PostgresEngineVersion.VER_15, // Use latest 15.x version available
       }),
       instanceIdentifier: props.instanceIdentifier,
-      instanceType: ec2.InstanceType.of(
-        props.instanceClass,
-        props.instanceSize
-      ),
+      instanceType: ec2.InstanceType.of(props.instanceClass, props.instanceSize),
       vpc: props.vpc,
       subnetGroup: this.subnetGroup,
       securityGroups: [props.securityGroup],
@@ -82,15 +79,11 @@ export class RdsCluster extends Construct {
       preferredBackupWindow: '03:00-04:00',
       preferredMaintenanceWindow: 'sun:04:00-sun:05:00',
       deletionProtection: props.deletionProtection,
-      removalPolicy: isProd
-        ? cdk.RemovalPolicy.SNAPSHOT
-        : cdk.RemovalPolicy.DESTROY,
+      removalPolicy: isProd ? cdk.RemovalPolicy.SNAPSHOT : cdk.RemovalPolicy.DESTROY,
       databaseName: 'batbern',
       parameterGroup,
       enablePerformanceInsights: isProd,
-      performanceInsightRetention: isProd
-        ? rds.PerformanceInsightRetention.DEFAULT
-        : undefined,
+      performanceInsightRetention: isProd ? rds.PerformanceInsightRetention.DEFAULT : undefined,
     });
 
     // Apply tags

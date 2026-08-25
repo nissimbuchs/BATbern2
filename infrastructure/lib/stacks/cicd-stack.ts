@@ -69,7 +69,7 @@ export class CICDStack extends cdk.Stack {
     // ECR REPOSITORIES
     // ═══════════════════════════════════════════════════════════
 
-    services.forEach(serviceName => {
+    services.forEach((serviceName) => {
       const repository = new ecr.Repository(this, `${serviceName}-repo`, {
         repositoryName: `batbern/${config.envName}/${serviceName}`,
         imageScanOnPush: true,
@@ -90,9 +90,10 @@ export class CICDStack extends cdk.Stack {
             rulePriority: 2,
           },
         ],
-        removalPolicy: (config.isProduction ?? (config.envName === 'production'))
-          ? cdk.RemovalPolicy.RETAIN
-          : cdk.RemovalPolicy.DESTROY,
+        removalPolicy:
+          (config.isProduction ?? config.envName === 'production')
+            ? cdk.RemovalPolicy.RETAIN
+            : cdk.RemovalPolicy.DESTROY,
       });
 
       cdk.Tags.of(repository).add('Service', serviceName);
@@ -124,17 +125,14 @@ export class CICDStack extends cdk.Stack {
     const githubActionsRole = new iam.Role(this, 'GitHubActionsRole', {
       roleName: `batbern-${config.envName}-github-actions-role`,
       description: `Role for GitHub Actions CI/CD pipeline - ${config.envName}`,
-      assumedBy: new iam.WebIdentityPrincipal(
-        githubOidcProviderArn,
-        {
-          StringEquals: {
-            'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
-          },
-          StringLike: {
-            'token.actions.githubusercontent.com:sub': `repo:${githubRepository}:*`,
-          },
-        }
-      ),
+      assumedBy: new iam.WebIdentityPrincipal(githubOidcProviderArn, {
+        StringEquals: {
+          'token.actions.githubusercontent.com:aud': 'sts.amazonaws.com',
+        },
+        StringLike: {
+          'token.actions.githubusercontent.com:sub': `repo:${githubRepository}:*`,
+        },
+      }),
       maxSessionDuration: cdk.Duration.hours(1),
     });
 
@@ -152,18 +150,17 @@ export class CICDStack extends cdk.Stack {
       description: 'GitHub Actions runtime — actions called directly by workflow YAML steps',
       document: new iam.PolicyDocument({
         statements: [
-
           // ECS — stabilize wait, stack-status checks, fast-path deploy, IAM simulation gate
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
             actions: [
-              'ecs:DescribeClusters',       // wait-for-stabilize guard, update-ecs-task.sh
-              'ecs:DescribeServices',       // wait-for-stabilize
+              'ecs:DescribeClusters', // wait-for-stabilize guard, update-ecs-task.sh
+              'ecs:DescribeServices', // wait-for-stabilize
               'ecs:DescribeTaskDefinition', // simulate-principal-policy gate
-              'ecs:ListServices',           // fast-path deployment
-              'ecs:ListTaskDefinitions',    // simulate-principal-policy gate
+              'ecs:ListServices', // fast-path deployment
+              'ecs:ListTaskDefinitions', // simulate-principal-policy gate
               'ecs:RegisterTaskDefinition', // fast-path deployment
-              'ecs:UpdateService',          // fast-path deployment
+              'ecs:UpdateService', // fast-path deployment
             ],
             resources: ['*'],
           }),
@@ -182,9 +179,9 @@ export class CICDStack extends cdk.Stack {
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
             actions: [
-              'cloudformation:DescribeStacks',          // deploy status checks, SES config resolution
-              'cloudformation:CancelUpdateStack',       // stuck-stack cleanup steps
-              'cloudformation:ContinueUpdateRollback',  // stuck-stack cleanup steps
+              'cloudformation:DescribeStacks', // deploy status checks, SES config resolution
+              'cloudformation:CancelUpdateStack', // stuck-stack cleanup steps
+              'cloudformation:ContinueUpdateRollback', // stuck-stack cleanup steps
             ],
             resources: [
               `arn:aws:cloudformation:*:${this.account}:stack/BATbern-${config.envName}-*/*`,
@@ -204,10 +201,7 @@ export class CICDStack extends cdk.Stack {
           // RDS — pre-deploy database snapshot backup
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
-            actions: [
-              'rds:CreateDBSnapshot',
-              'rds:DescribeDBInstances',
-            ],
+            actions: ['rds:CreateDBSnapshot', 'rds:DescribeDBInstances'],
             resources: [
               `arn:aws:rds:${this.region}:${this.account}:db:BATbern-${config.envName}-*`,
               `arn:aws:rds:${this.region}:${this.account}:snapshot:BATbern-${config.envName}-*`,
@@ -218,9 +212,7 @@ export class CICDStack extends cdk.Stack {
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
             actions: ['cognito-idp:InitiateAuth'],
-            resources: [
-              `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`,
-            ],
+            resources: [`arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`],
           }),
 
           // CloudFront — frontend rollback restore step invalidates the CDN after
@@ -242,7 +234,6 @@ export class CICDStack extends cdk.Stack {
             actions: ['cloudformation:ListExports'],
             resources: ['*'],
           }),
-
         ],
       }),
     });
@@ -261,7 +252,6 @@ export class CICDStack extends cdk.Stack {
       description: 'GitHub Actions CDK — core deploy mechanics (STS, CFN, S3, ECR, IAM, Lambda)',
       document: new iam.PolicyDocument({
         statements: [
-
           // STS — assume CDK bootstrap roles (deploy, cfn-exec, file/image publishing, lookup)
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
@@ -437,7 +427,6 @@ export class CICDStack extends cdk.Stack {
               `arn:aws:lambda:*:${this.account}:function:cdk-*`,
             ],
           }),
-
         ],
       }),
     });
@@ -452,10 +441,10 @@ export class CICDStack extends cdk.Stack {
 
     const cdkNetworkingPolicy = new iam.ManagedPolicy(this, 'CdkNetworkingPolicy', {
       managedPolicyName: `batbern-${config.envName}-github-cdk-networking`,
-      description: 'GitHub Actions CDK — network + data-store provisioning (EC2, RDS, ElastiCache, Cognito, CloudFront)',
+      description:
+        'GitHub Actions CDK — network + data-store provisioning (EC2, RDS, ElastiCache, Cognito, CloudFront)',
       document: new iam.PolicyDocument({
         statements: [
-
           // EC2 / VPC — network infrastructure provisioning
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
@@ -588,9 +577,7 @@ export class CICDStack extends cdk.Stack {
               'cognito-idp:TagResource',
               'cognito-idp:UntagResource',
             ],
-            resources: [
-              `arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`,
-            ],
+            resources: [`arn:aws:cognito-idp:${this.region}:${this.account}:userpool/*`],
           }),
 
           // CloudFront — CDN provisioning; no resource-level permissions supported
@@ -611,7 +598,6 @@ export class CICDStack extends cdk.Stack {
             ],
             resources: ['*'],
           }),
-
         ],
       }),
     });
@@ -626,10 +612,10 @@ export class CICDStack extends cdk.Stack {
 
     const cdkServicesPolicy = new iam.ManagedPolicy(this, 'CdkServicesPolicy', {
       managedPolicyName: `batbern-${config.envName}-github-cdk-services`,
-      description: 'GitHub Actions CDK — secrets, monitoring, DNS, scaling (SecretsManager, KMS, SSM, CW, ACM, R53, ECS, AS)',
+      description:
+        'GitHub Actions CDK — secrets, monitoring, DNS, scaling (SecretsManager, KMS, SSM, CW, ACM, R53, ECS, AS)',
       document: new iam.PolicyDocument({
         statements: [
-
           // Secrets Manager — create/manage secrets and read credentials
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
@@ -750,10 +736,7 @@ export class CICDStack extends cdk.Stack {
               'route53:ListResourceRecordSets',
               'route53:ChangeTagsForResource',
             ],
-            resources: [
-              'arn:aws:route53:::hostedzone/*',
-              'arn:aws:route53:::change/*',
-            ],
+            resources: ['arn:aws:route53:::hostedzone/*', 'arn:aws:route53:::change/*'],
           }),
 
           // ECS — cluster and service lifecycle management (provisioning, not runtime)
@@ -786,7 +769,6 @@ export class CICDStack extends cdk.Stack {
             ],
             resources: ['*'],
           }),
-
         ],
       }),
     });
@@ -804,9 +786,10 @@ export class CICDStack extends cdk.Stack {
 
     const pipelineLogGroup = new cdk.aws_logs.LogGroup(this, 'PipelineLogGroup', {
       logGroupName: `/aws/cicd/BATbern-${config.envName}/pipeline`,
-      retention: config.envName === 'production'
-        ? cdk.aws_logs.RetentionDays.ONE_MONTH
-        : cdk.aws_logs.RetentionDays.ONE_WEEK,
+      retention:
+        config.envName === 'production'
+          ? cdk.aws_logs.RetentionDays.ONE_MONTH
+          : cdk.aws_logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,
     });
 

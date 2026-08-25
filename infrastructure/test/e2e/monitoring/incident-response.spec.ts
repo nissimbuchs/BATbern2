@@ -1,5 +1,9 @@
 import { CloudWatchClient, DescribeAlarmsCommand, MetricAlarm } from '@aws-sdk/client-cloudwatch';
-import { SNSClient, GetTopicAttributesCommand, ListSubscriptionsByTopicCommand } from '@aws-sdk/client-sns';
+import {
+  SNSClient,
+  GetTopicAttributesCommand,
+  ListSubscriptionsByTopicCommand,
+} from '@aws-sdk/client-sns';
 
 /**
  * E2E Test for Incident Response wiring.

@@ -31,7 +31,8 @@ import { EnvironmentConfig, EnvironmentHelper } from '../lib/config/environment-
 const app = new cdk.App();
 
 // Get environment from context or environment variable
-const environmentName = app.node.tryGetContext('environment') || process.env.ENVIRONMENT || 'development';
+const environmentName =
+  app.node.tryGetContext('environment') || process.env.ENVIRONMENT || 'development';
 
 // Select configuration based on environment
 const configMap: { [key: string]: EnvironmentConfig } = {
@@ -42,7 +43,9 @@ const configMap: { [key: string]: EnvironmentConfig } = {
 
 const config = configMap[environmentName];
 if (!config) {
-  throw new Error(`Invalid environment: ${environmentName}. Must be one of: development, staging, production`);
+  throw new Error(
+    `Invalid environment: ${environmentName}. Must be one of: development, staging, production`
+  );
 }
 
 // Define environment
@@ -58,15 +61,15 @@ console.log(`AWS Account: ${env.account}, Region: ${env.region}`);
 if (env.account !== config.account) {
   throw new Error(
     `\n❌ ACCOUNT MISMATCH DETECTED!\n` +
-    `\n  Current AWS credentials point to account: ${env.account}` +
-    `\n  Expected account for ${config.envName}:     ${config.account}` +
-    `\n` +
-    `\n  This prevents accidental deployment to the wrong AWS account.` +
-    `\n` +
-    `\n  To fix:` +
-    `\n  - Use the npm scripts: npm run deploy:${config.envName}` +
-    `\n  - Or set correct profile: export AWS_PROFILE=batbern-${config.envName}` +
-    `\n`
+      `\n  Current AWS credentials point to account: ${env.account}` +
+      `\n  Expected account for ${config.envName}:     ${config.account}` +
+      `\n` +
+      `\n  This prevents accidental deployment to the wrong AWS account.` +
+      `\n` +
+      `\n  To fix:` +
+      `\n  - Use the npm scripts: npm run deploy:${config.envName}` +
+      `\n  - Or set correct profile: export AWS_PROFILE=batbern-${config.envName}` +
+      `\n`
   );
 }
 
@@ -166,7 +169,10 @@ const eventBusStack = new EventBusStack(app, `${stackPrefix}-EventBus`, {
 
 // 6. Monitoring Stack (CloudWatch, Alarms, Logs)
 // Extract GitHub owner and repo for issues integration
-const githubRepository = app.node.tryGetContext('githubRepository') || process.env.GITHUB_REPOSITORY || 'nissimbuchs/BATbern2';
+const githubRepository =
+  app.node.tryGetContext('githubRepository') ||
+  process.env.GITHUB_REPOSITORY ||
+  'nissimbuchs/BATbern2';
 const [githubOwner, githubRepo] = githubRepository.split('/');
 
 const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
@@ -256,7 +262,9 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     vpc: networkStack.vpc,
     lambdaSecurityGroup: networkStack.lambdaTriggersSecurityGroup,
     // ECS Service Connect DNS is not resolvable from Lambda; use the public API domain instead.
-    apiGatewayPublicUrl: config.domain?.apiDomain ? `https://${config.domain.apiDomain}` : undefined,
+    apiGatewayPublicUrl: config.domain?.apiDomain
+      ? `https://${config.domain.apiDomain}`
+      : undefined,
     // #1001: EmailsRejectedAlarm had no actions at all until this was passed.
     alarmTopic: monitoringStack.alarmTopic,
   });
@@ -308,33 +316,33 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   eventManagementStack.addDependency(secretsStack);
 
   // Grant EMS task role permissions on bounce queue (Story 10.29)
-  sesStack.bounceQueue.grantConsumeMessages(
-    eventManagementStack.service.taskDefinition.taskRole,
-  );
+  sesStack.bounceQueue.grantConsumeMessages(eventManagementStack.service.taskDefinition.taskRole);
 
   // Grant EMS task role permissions on inbound email resources (Story 10.17)
   inboundEmailStack.inboundQueue.grantConsumeMessages(
-    eventManagementStack.service.taskDefinition.taskRole,
+    eventManagementStack.service.taskDefinition.taskRole
   );
-  inboundEmailStack.inboundBucket.grantRead(
-    eventManagementStack.service.taskDefinition.taskRole,
-  );
+  inboundEmailStack.inboundBucket.grantRead(eventManagementStack.service.taskDefinition.taskRole);
 
   // 10b. Speaker Coordination Service
-  speakerCoordinationStack = new SpeakerCoordinationStack(app, `${stackPrefix}-SpeakerCoordination`, {
-    config,
-    cluster: clusterStack.cluster,
-    vpc: networkStack.vpc,
-    databaseSecurityGroup: networkStack.databaseSecurityGroup,
-    databaseEndpoint: databaseStack.databaseEndpoint,
-    databaseSecret: databaseStack.databaseSecret,
-    userPool: cognitoStack.userPool,
-    userPoolClient: cognitoStack.userPoolClient,
-    alarmTopic: monitoringStack.alarmTopic,
-    env,
-    description: `BATbern Speaker Coordination Service - ${config.envName}`,
-    tags: config.tags,
-  });
+  speakerCoordinationStack = new SpeakerCoordinationStack(
+    app,
+    `${stackPrefix}-SpeakerCoordination`,
+    {
+      config,
+      cluster: clusterStack.cluster,
+      vpc: networkStack.vpc,
+      databaseSecurityGroup: networkStack.databaseSecurityGroup,
+      databaseEndpoint: databaseStack.databaseEndpoint,
+      databaseSecret: databaseStack.databaseSecret,
+      userPool: cognitoStack.userPool,
+      userPoolClient: cognitoStack.userPoolClient,
+      alarmTopic: monitoringStack.alarmTopic,
+      env,
+      description: `BATbern Speaker Coordination Service - ${config.envName}`,
+      tags: config.tags,
+    }
+  );
   speakerCoordinationStack.addDependency(clusterStack);
   speakerCoordinationStack.addDependency(databaseStack);
   speakerCoordinationStack.addDependency(cicdStack);
@@ -342,22 +350,26 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   speakerCoordinationStack.addDependency(monitoringStack);
 
   // 10c. Partner Coordination Service
-  partnerCoordinationStack = new PartnerCoordinationStack(app, `${stackPrefix}-PartnerCoordination`, {
-    config,
-    cluster: clusterStack.cluster,
-    vpc: networkStack.vpc,
-    databaseSecurityGroup: networkStack.databaseSecurityGroup,
-    databaseEndpoint: databaseStack.databaseEndpoint,
-    databaseSecret: databaseStack.databaseSecret,
-    userPool: cognitoStack.userPool,
-    userPoolClient: cognitoStack.userPoolClient,
-    eventBus: eventBusStack.eventBus,
-    alarmTopic: monitoringStack.alarmTopic,
-    sesTransactionalConfigurationSetName: sesStack.transactionalConfigurationSetName,
-    env,
-    description: `BATbern Partner Coordination Service - ${config.envName}`,
-    tags: config.tags,
-  });
+  partnerCoordinationStack = new PartnerCoordinationStack(
+    app,
+    `${stackPrefix}-PartnerCoordination`,
+    {
+      config,
+      cluster: clusterStack.cluster,
+      vpc: networkStack.vpc,
+      databaseSecurityGroup: networkStack.databaseSecurityGroup,
+      databaseEndpoint: databaseStack.databaseEndpoint,
+      databaseSecret: databaseStack.databaseSecret,
+      userPool: cognitoStack.userPool,
+      userPoolClient: cognitoStack.userPoolClient,
+      eventBus: eventBusStack.eventBus,
+      alarmTopic: monitoringStack.alarmTopic,
+      sesTransactionalConfigurationSetName: sesStack.transactionalConfigurationSetName,
+      env,
+      description: `BATbern Partner Coordination Service - ${config.envName}`,
+      tags: config.tags,
+    }
+  );
   partnerCoordinationStack.addDependency(clusterStack);
   partnerCoordinationStack.addDependency(databaseStack);
   partnerCoordinationStack.addDependency(cicdStack);
@@ -525,7 +537,8 @@ if (clusterStack) {
   const autoShutdownStack = new AutoShutdownStack(app, `${stackPrefix}-AutoShutdown`, {
     config,
     clusterName: clusterStack.cluster.clusterName,
-    rdsClusterIdentifier: config.envName === 'development' ? `batbern-${config.envName}-postgres` : undefined,
+    rdsClusterIdentifier:
+      config.envName === 'development' ? `batbern-${config.envName}-postgres` : undefined,
     env,
     description: `BATbern Auto-Shutdown - ${config.envName} (Priority 5: Cost Optimization)`,
     tags: config.tags,

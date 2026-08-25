@@ -58,7 +58,7 @@ export class FrontendStack extends cdk.Stack {
   constructor(scope: Construct, id: string, props: FrontendStackProps) {
     super(scope, id, props);
 
-    const isProd = props.config.isProduction ?? (props.config.envName === 'production');
+    const isProd = props.config.isProduction ?? props.config.envName === 'production';
     const envName = props.config.envName;
     const variant = props.variant;
 
@@ -173,7 +173,8 @@ function handler(event) {
   return response;
 }
       `),
-      comment: 'Prevents browser caching of HTML responses to avoid stale JS references after deployments',
+      comment:
+        'Prevents browser caching of HTML responses to avoid stale JS references after deployments',
     });
 
     // Cache policy for static assets
@@ -449,14 +450,10 @@ function handler(event) {
       // Extract zone name from domain (e.g., staging.batbern.ch -> batbern.ch)
       const zoneName = props.domainName.split('.').slice(-2).join('.');
 
-      const hostedZone = route53.HostedZone.fromHostedZoneAttributes(
-        this,
-        'HostedZone',
-        {
-          hostedZoneId: props.hostedZoneId,
-          zoneName,
-        }
-      );
+      const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+        hostedZoneId: props.hostedZoneId,
+        zoneName,
+      });
 
       new route53.ARecord(this, 'AliasRecord', {
         zone: hostedZone,

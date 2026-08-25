@@ -256,7 +256,8 @@ export const handler: CustomMessageTriggerHandler = async (event) => {
 
     // Generate HTML email content
     const htmlContent = getEmailHtml(language, resetLink);
-    const subject = language === 'de' ? 'BATbern Passwort zurücksetzen' : 'Reset Your BATbern Password';
+    const subject =
+      language === 'de' ? 'BATbern Passwort zurücksetzen' : 'Reset Your BATbern Password';
 
     // Send email directly via SES
     const sesClient = new SESClient({ region: process.env.AWS_REGION || 'eu-central-1' });

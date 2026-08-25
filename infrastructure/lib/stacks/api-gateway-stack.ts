@@ -52,18 +52,14 @@ export class ApiGatewayStack extends cdk.Stack {
     // Validates: signature, issuer, audience (client_id), expiration, cognito:groups
     const issuerUrl = `https://cognito-idp.${region}.amazonaws.com/${props.userPool.userPoolId}`;
 
-    this.authorizer = new apigatewayv2_authorizers.HttpJwtAuthorizer(
-      'JwtAuthorizer',
-      issuerUrl,
-      {
-        jwtAudience: [props.userPoolClient.userPoolClientId],
-        authorizerName: `${envName}-jwt-authorizer`,
-        identitySource: ['$request.header.Authorization'],
-      }
-    );
+    this.authorizer = new apigatewayv2_authorizers.HttpJwtAuthorizer('JwtAuthorizer', issuerUrl, {
+      jwtAudience: [props.userPoolClient.userPoolClientId],
+      authorizerName: `${envName}-jwt-authorizer`,
+      identitySource: ['$request.header.Authorization'],
+    });
 
     // Determine allowed origins based on environment
-    const isProdTraffic = props.config.isProduction ?? (envName === 'production');
+    const isProdTraffic = props.config.isProduction ?? envName === 'production';
     const allowOrigins = isProdTraffic
       ? [
           `https://${props.config.domain?.frontendDomain ?? 'www.batbern.ch'}`,
@@ -75,8 +71,8 @@ export class ApiGatewayStack extends cdk.Stack {
           `https://beta.${props.config.domain?.zoneName ?? 'batbern.ch'}`,
         ]
       : envName === 'staging'
-      ? ['https://www.batbern.ch']
-      : ['http://localhost:3000'];
+        ? ['https://www.batbern.ch']
+        : ['http://localhost:3000'];
 
     // Create HTTP API Gateway (v2)
     this.api = new apigatewayv2.HttpApi(this, 'BATbernAPI', {
@@ -127,8 +123,8 @@ export class ApiGatewayStack extends cdk.Stack {
     });
 
     // Spring Boot API Gateway service URL
-    const apiGatewayServiceUrl = props.apiGatewayServiceUrl ||
-      `http://api-gateway-${envName}.internal`;
+    const apiGatewayServiceUrl =
+      props.apiGatewayServiceUrl || `http://api-gateway-${envName}.internal`;
 
     // HTTP Proxy Integration to Spring Boot API Gateway
     // Uses greedy path matching {proxy+} which captures full path (e.g., /api/v1/companies)
@@ -170,7 +166,9 @@ export class ApiGatewayStack extends cdk.Stack {
     // Custom domain (if provided)
     if (props.domainName && props.certificateArn) {
       const certificate = certificatemanager.Certificate.fromCertificateArn(
-        this, 'ApiCertificate', props.certificateArn
+        this,
+        'ApiCertificate',
+        props.certificateArn
       );
 
       const domainName = new apigatewayv2.DomainName(this, 'ApiDomainName', {
@@ -186,12 +184,10 @@ export class ApiGatewayStack extends cdk.Stack {
 
       // Create Route 53 record (if hosted zone provided)
       if (props.hostedZoneId && props.config.domain?.zoneName) {
-        const hostedZone = route53.HostedZone.fromHostedZoneAttributes(
-          this, 'HostedZone', {
-            hostedZoneId: props.hostedZoneId,
-            zoneName: props.config.domain.zoneName,
-          }
-        );
+        const hostedZone = route53.HostedZone.fromHostedZoneAttributes(this, 'HostedZone', {
+          hostedZoneId: props.hostedZoneId,
+          zoneName: props.config.domain.zoneName,
+        });
 
         new route53.ARecord(this, 'ApiARecord', {
           zone: hostedZone,

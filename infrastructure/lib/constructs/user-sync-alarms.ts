@@ -92,8 +92,7 @@ export class UserSyncAlarms extends Construct {
         }),
         threshold: thresholds.lambdaLatencyMs,
         evaluationPeriods: 1,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }
     );
@@ -119,8 +118,7 @@ export class UserSyncAlarms extends Construct {
         }),
         threshold: 500, // 500ms for PreTokenGeneration (stricter than PostConfirmation)
         evaluationPeriods: 1,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }
     );
@@ -128,29 +126,23 @@ export class UserSyncAlarms extends Construct {
     preTokenGenerationLatencyAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 3: User Creation Failures
-    const userCreationFailuresAlarm = new cloudwatch.Alarm(
-      this,
-      'UserCreationFailuresAlarm',
-      {
-        alarmName: `batbern-${props.environment}-User-Creation-High-Failures`,
-        alarmDescription:
-          'User creation failures exceed 5 per 5-minute window',
-        metric: new cloudwatch.Metric({
-          namespace: 'BATbern/UserSync',
-          metricName: 'SyncFailures',
-          dimensionsMap: {
-            SyncType: 'PostConfirmation',
-          },
-          statistic: 'Sum',
-          period: cdk.Duration.minutes(5),
-        }),
-        threshold: thresholds.userCreationFailures,
-        evaluationPeriods: 1,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
+    const userCreationFailuresAlarm = new cloudwatch.Alarm(this, 'UserCreationFailuresAlarm', {
+      alarmName: `batbern-${props.environment}-User-Creation-High-Failures`,
+      alarmDescription: 'User creation failures exceed 5 per 5-minute window',
+      metric: new cloudwatch.Metric({
+        namespace: 'BATbern/UserSync',
+        metricName: 'SyncFailures',
+        dimensionsMap: {
+          SyncType: 'PostConfirmation',
+        },
+        statistic: 'Sum',
+        period: cdk.Duration.minutes(5),
+      }),
+      threshold: thresholds.userCreationFailures,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
     userCreationFailuresAlarm.addAlarmAction(alarmAction);
     userCreationFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
@@ -160,8 +152,7 @@ export class UserSyncAlarms extends Construct {
       'JITProvisioningFailuresAlarm',
       {
         alarmName: `batbern-${props.environment}-JIT-Provisioning-High-Failures`,
-        alarmDescription:
-          'JIT provisioning failures exceed 5 per 5-minute window',
+        alarmDescription: 'JIT provisioning failures exceed 5 per 5-minute window',
         metric: new cloudwatch.Metric({
           namespace: 'BATbern/UserSync',
           metricName: 'SyncFailures',
@@ -173,8 +164,7 @@ export class UserSyncAlarms extends Construct {
         }),
         threshold: thresholds.userCreationFailures,
         evaluationPeriods: 1,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
         treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       }
     );
@@ -182,50 +172,38 @@ export class UserSyncAlarms extends Construct {
     jitProvisioningFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 5: Drift Detection (Reconciliation)
-    const driftDetectionAlarm = new cloudwatch.Alarm(
-      this,
-      'DriftDetectionAlarm',
-      {
-        alarmName: `batbern-${props.environment}-User-Sync-High-Drift`,
-        alarmDescription:
-          'User sync drift detected (Cognito vs Database mismatch)',
-        metric: new cloudwatch.Metric({
-          namespace: 'BATbern/UserSync',
-          metricName: 'DriftDetected',
-          statistic: 'Sum',
-          period: cdk.Duration.hours(1),
-        }),
-        threshold: thresholds.driftCount,
-        evaluationPeriods: 1,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
+    const driftDetectionAlarm = new cloudwatch.Alarm(this, 'DriftDetectionAlarm', {
+      alarmName: `batbern-${props.environment}-User-Sync-High-Drift`,
+      alarmDescription: 'User sync drift detected (Cognito vs Database mismatch)',
+      metric: new cloudwatch.Metric({
+        namespace: 'BATbern/UserSync',
+        metricName: 'DriftDetected',
+        statistic: 'Sum',
+        period: cdk.Duration.hours(1),
+      }),
+      threshold: thresholds.driftCount,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
     driftDetectionAlarm.addAlarmAction(alarmAction);
     driftDetectionAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
     // Alarm 6: Reconciliation Job Failures
-    const reconciliationFailuresAlarm = new cloudwatch.Alarm(
-      this,
-      'ReconciliationFailuresAlarm',
-      {
-        alarmName: `batbern-${props.environment}-Reconciliation-Orphaned-Users`,
-        alarmDescription:
-          'High number of orphaned users detected (Cognito users deleted)',
-        metric: new cloudwatch.Metric({
-          namespace: 'BATbern/UserSync',
-          metricName: 'ReconciliationOrphanedUsers',
-          statistic: 'Sum',
-          period: cdk.Duration.days(1),
-        }),
-        threshold: 5,
-        evaluationPeriods: 1,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
+    const reconciliationFailuresAlarm = new cloudwatch.Alarm(this, 'ReconciliationFailuresAlarm', {
+      alarmName: `batbern-${props.environment}-Reconciliation-Orphaned-Users`,
+      alarmDescription: 'High number of orphaned users detected (Cognito users deleted)',
+      metric: new cloudwatch.Metric({
+        namespace: 'BATbern/UserSync',
+        metricName: 'ReconciliationOrphanedUsers',
+        statistic: 'Sum',
+        period: cdk.Duration.days(1),
+      }),
+      threshold: 5,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
     reconciliationFailuresAlarm.addAlarmAction(alarmAction);
     reconciliationFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
@@ -235,26 +213,21 @@ export class UserSyncAlarms extends Construct {
     // ends up as an UNLINKED standalone identity (orphaned from the native sub) — visible ONLY
     // as this metric. The alarm makes that silent orphan actionable. Emitted (un-dimensioned)
     // by pre-signup.ts publishMetric('PreSignUpFailure'). threshold 0 → any failure pages.
-    const preSignUpFailuresAlarm = new cloudwatch.Alarm(
-      this,
-      'PreSignUpFailuresAlarm',
-      {
-        alarmName: `batbern-${props.environment}-PreSignUp-Linking-Failures`,
-        alarmDescription:
-          'PreSignUp federated account-linking failed (fail-open) — a federated user may be orphaned from its native sub',
-        metric: new cloudwatch.Metric({
-          namespace: 'BATbern/UserSync',
-          metricName: 'PreSignUpFailure',
-          statistic: 'Sum',
-          period: cdk.Duration.minutes(5),
-        }),
-        threshold: 0,
-        evaluationPeriods: 1,
-        comparisonOperator:
-          cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-      }
-    );
+    const preSignUpFailuresAlarm = new cloudwatch.Alarm(this, 'PreSignUpFailuresAlarm', {
+      alarmName: `batbern-${props.environment}-PreSignUp-Linking-Failures`,
+      alarmDescription:
+        'PreSignUp federated account-linking failed (fail-open) — a federated user may be orphaned from its native sub',
+      metric: new cloudwatch.Metric({
+        namespace: 'BATbern/UserSync',
+        metricName: 'PreSignUpFailure',
+        statistic: 'Sum',
+        period: cdk.Duration.minutes(5),
+      }),
+      threshold: 0,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
     preSignUpFailuresAlarm.addAlarmAction(alarmAction);
     preSignUpFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 

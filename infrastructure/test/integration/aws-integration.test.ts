@@ -61,8 +61,12 @@ describe('AWS Integration Configuration (AC1, AC4, AC9)', () => {
       // Assert - API Gateway has Cognito configuration
       const apiGatewayEnv = parsed.services['api-gateway'].environment;
 
-      const cognitoPoolVar = apiGatewayEnv.find((e: string) => e.startsWith('COGNITO_USER_POOL_ID='));
-      const cognitoClientVar = apiGatewayEnv.find((e: string) => e.startsWith('COGNITO_CLIENT_ID='));
+      const cognitoPoolVar = apiGatewayEnv.find((e: string) =>
+        e.startsWith('COGNITO_USER_POOL_ID=')
+      );
+      const cognitoClientVar = apiGatewayEnv.find((e: string) =>
+        e.startsWith('COGNITO_CLIENT_ID=')
+      );
 
       expect(cognitoPoolVar).toBeDefined();
       expect(cognitoClientVar).toBeDefined();
@@ -156,7 +160,9 @@ describe('AWS Integration Configuration (AC1, AC4, AC9)', () => {
       // Assert - API Gateway has Cognito configuration for JWT validation
       const apiGatewayEnv = parsed.services['api-gateway'].environment;
 
-      const enableCognitoVar = apiGatewayEnv.find((e: string) => e.startsWith('ENABLE_COGNITO_AUTH='));
+      const enableCognitoVar = apiGatewayEnv.find((e: string) =>
+        e.startsWith('ENABLE_COGNITO_AUTH=')
+      );
       expect(enableCognitoVar).toBeDefined();
     });
   });

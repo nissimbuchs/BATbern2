@@ -621,6 +621,19 @@ jobs:
         # undefined global `fail()`). See Story 12.1.
         run: npm test -- --ci test/unit
 
+      # #975: until this step existed, infrastructure/**/*.ts had no formatting or lint check
+      # anywhere — not in the pre-commit hook, not in `make format-check`, not in CI. This is
+      # the authoritative gate; the pre-commit block added in the same PR warns-and-skips when
+      # infrastructure/node_modules is missing, so it cannot be relied on alone.
+      #
+      # Prettier only. ESLint cannot run in infrastructure/ at all: ESLint 10 requires flat
+      # config and there is no eslint.config.* there, so `npx eslint` exits 2. Adding one
+      # catches real bugs rather than formatting and is tracked separately in #975.
+      - name: Prettier format check
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
+        working-directory: ./infrastructure
+        run: npm run format:check
+
       - name: Type-check + compile
         if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
         working-directory: ./infrastructure
