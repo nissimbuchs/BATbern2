@@ -11,6 +11,7 @@ import * as lambda from 'aws-cdk-lib/aws-lambda';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
+import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as route53 from 'aws-cdk-lib/aws-route53';
 import { NodejsFunction } from 'aws-cdk-lib/aws-lambda-nodejs';
 import * as path from 'path';
@@ -32,6 +33,17 @@ export interface InboundEmailStackProps extends cdk.StackProps {
    * which is not resolvable from VPC-native Lambda functions.
    */
   apiGatewayPublicUrl?: string;
+
+  /**
+   * SNS topic for alarm + recovery notifications.
+   *
+   * #1001: without this, EmailsRejectedAlarm below was created with NO AlarmActions and NO
+   * OKActions — verified live, both arrays empty. It could fire and nothing would happen: no
+   * mail, no GitHub issue, no record. A declared alarm is not a working alarm (#970), and this
+   * stack was missed by the #977 sweep because it defines its alarm locally rather than through
+   * MonitoringStack.
+   */
+  alarmTopic?: sns.ITopic;
 }
 
 /**
@@ -355,7 +367,7 @@ export class InboundEmailStack extends cdk.Stack {
     );
 
     // CloudWatch alarm for abuse detection (AC10)
-    new cloudwatch.Alarm(this, 'EmailsRejectedAlarm', {
+    const emailsRejectedAlarm = new cloudwatch.Alarm(this, 'EmailsRejectedAlarm', {
       alarmName: `batbern-${envName}-emails-rejected`,
       alarmDescription: 'Email forwarding: high rejection rate may indicate abuse',
       metric: new cloudwatch.Metric({
@@ -372,6 +384,15 @@ export class InboundEmailStack extends cdk.Stack {
       treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
     });
+
+    // #1001: both actions, not just ALARM. Without the OK action the github-issues Lambda can
+    // never close the issue it opened (#956), so a single abuse spike would leave an incident
+    // issue open forever. Guarded by a test that walks every alarm in this stack.
+    if (props.alarmTopic) {
+      const alarmAction = new cloudwatchActions.SnsAction(props.alarmTopic);
+      emailsRejectedAlarm.addAlarmAction(alarmAction);
+      emailsRejectedAlarm.addOkAction(alarmAction);
+    }
 
     // SES domain identity for the inbound domain — required for SES to accept inbound mail.
     // Without a verified identity for replyDomain, SES rejects with 550 5.1.1 mailbox unavailable.

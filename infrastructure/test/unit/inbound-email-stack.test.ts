@@ -2,6 +2,8 @@ import { App } from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as iam from 'aws-cdk-lib/aws-iam';
+import * as sns from 'aws-cdk-lib/aws-sns';
+import { Stack } from 'aws-cdk-lib';
 import { InboundEmailStack } from '../../lib/stacks/inbound-email-stack';
 import { stagingConfig } from '../../lib/config/staging-config';
 
@@ -346,3 +348,52 @@ describe('InboundEmailStack', () => {
     });
   });
 });
+
+describe('Alarm actions (#1001)', () => {
+  /**
+   * batbern-staging-emails-rejected was deployed with NO AlarmActions and NO OKActions —
+   * verified against the live account, both arrays empty. It could fire and nothing would
+   * happen: no mail, no GitHub issue, no record anywhere. "A declared alarm is not a working
+   * alarm" (#970), and this stack escaped the #977 sweep because it defines its alarm locally
+   * rather than through MonitoringStack.
+   *
+   * Found only because the dormant infrastructure/test/e2e suite was switched on (#1001) — the
+   * suite had been skipped behind a TEST_E2E guard that nothing set, so this had been silently
+   * true for as long as the alarm existed.
+   */
+  const build = (withTopic: boolean) => {
+    const app = new App();
+    const topicHost = new Stack(app, 'TopicHost', {
+      env: { account: '123456789012', region: 'eu-west-1' },
+    });
+    const stack = new InboundEmailStack(app, 'TestInboundEmailAlarms', {
+      config: stagingConfig,
+      env: { account: '123456789012', region: 'eu-west-1' },
+      alarmTopic: withTopic ? new sns.Topic(topicHost, 'AlarmTopic') : undefined,
+    });
+    return Template.fromStack(stack);
+  };
+
+  test('should_attachBothAlarmAndOkActions_when_alarmTopicProvided', () => {
+    // BOTH, not just ALARM. Without the OK action the github-issues Lambda can never close the
+    // issue it opened (#956), so one abuse spike leaves an incident issue open forever.
+    const alarms = build(true).findResources('AWS::CloudWatch::Alarm');
+    expect(Object.keys(alarms).length).toBeGreaterThan(0);
+
+    const missing = Object.entries(alarms)
+      .filter(([, r]) => {
+        const p = r.Properties as { AlarmActions?: unknown[]; OKActions?: unknown[] };
+        return !p?.AlarmActions?.length || !p?.OKActions?.length;
+      })
+      .map(([logicalId]) => logicalId);
+
+    expect(missing).toEqual([]);
+  });
+
+  test('should_stillCreateTheAlarm_when_noTopicProvided', () => {
+    // The topic is optional so the stack stays usable standalone, but the alarm must still
+    // exist — silently dropping it would trade one invisible failure for another.
+    build(false).resourceCountIs('AWS::CloudWatch::Alarm', 1);
+  });
+});
+
