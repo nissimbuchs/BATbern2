@@ -2,7 +2,6 @@ import * as cdk from 'aws-cdk-lib';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cloudwatch_actions from 'aws-cdk-lib/aws-cloudwatch-actions';
 import * as sns from 'aws-cdk-lib/aws-sns';
-import * as sns_subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import { Construct } from 'constructs';
 
 /**
@@ -21,9 +20,21 @@ import { Construct } from 'constructs';
  */
 export interface UserSyncAlarmsProps {
   /**
-   * Email address for alarm notifications
+   * The shared alarm topic to publish to.
+   *
+   * #1005: this construct used to create its OWN topic
+   * (`batbern-user-sync-alarms-{env}`) and subscribe an email to it. SNS email subscriptions
+   * must be confirmed by clicking a link and are deleted after 3 days if they are not, so the
+   * subscription silently expired and the topic ended up with ZERO subscribers — all seven
+   * alarms below fired into nothing, while CloudFormation still held the subscription resource
+   * and therefore never recreated it.
+   *
+   * Publishing to the shared `batbern-{env}-alarms` topic removes the confirmation dependency
+   * entirely (its primary subscriber is the github-issues Lambda, and Lambda subscriptions need
+   * no confirmation) and puts these alarms into the same
+   * `SNS -> issue -> @claude triage` loop as every other alarm in the estate.
    */
-  readonly alarmEmail: string;
+  readonly alarmTopic: sns.ITopic;
 
   /**
    * Environment name (dev, staging, prod)
@@ -41,7 +52,7 @@ export interface UserSyncAlarmsProps {
 }
 
 export class UserSyncAlarms extends Construct {
-  public readonly alarmTopic: sns.Topic;
+  public readonly alarmTopic: sns.ITopic;
 
   constructor(scope: Construct, id: string, props: UserSyncAlarmsProps) {
     super(scope, id);
@@ -53,16 +64,11 @@ export class UserSyncAlarms extends Construct {
       driftCount: props.thresholds?.driftCount ?? 10,
     };
 
-    // Create SNS topic for alarm notifications
-    this.alarmTopic = new sns.Topic(this, 'UserSyncAlarmTopic', {
-      displayName: `BATbern User Sync Alarms - ${props.environment}`,
-      topicName: `batbern-user-sync-alarms-${props.environment}`,
-    });
-
-    // Subscribe email to SNS topic
-    this.alarmTopic.addSubscription(
-      new sns_subscriptions.EmailSubscription(props.alarmEmail)
-    );
+    // #1005: publish to the shared alarm topic rather than a private one of our own. See the
+    // note on UserSyncAlarmsProps.alarmTopic for why the private topic was a delivery defect.
+    // Removing it deletes `batbern-user-sync-alarms-{env}`, which is intended — nothing else
+    // publishes to or subscribes to it.
+    this.alarmTopic = props.alarmTopic;
 
     // Create CloudWatch alarm action
     const alarmAction = new cloudwatch_actions.SnsAction(this.alarmTopic);

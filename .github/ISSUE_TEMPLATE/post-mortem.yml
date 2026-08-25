@@ -1,0 +1,76 @@
+name: Post-mortem
+description: Blameless write-up after a user-visible or long-running incident
+title: "post-mortem: <what broke>"
+labels: ["post-mortem", "ops"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Blameless: the unit of analysis is the system that allowed the mistake.
+        Full guidance in [`docs/operations/post-mortem-template.md`](../../blob/develop/docs/operations/post-mortem-template.md).
+
+        This post-mortem is not done until every action item has an issue and an owner.
+  - type: textarea
+    id: incident_summary
+    attributes:
+      label: Incident summary
+      description: One paragraph for someone who was not there — what broke, who was affected, how long, how it ended.
+    validations:
+      required: true
+  - type: input
+    id: impact_window
+    attributes:
+      label: Impact window (UTC)
+      placeholder: "detected 2026-08-24 03:47 · resolved 2026-08-24 04:31 · 44 min user impact"
+    validations:
+      required: true
+  - type: textarea
+    id: timeline
+    attributes:
+      label: Timeline
+      description: All times UTC. Include the wrong turns — that is usually where the missing signal is.
+      value: |
+        | Time | Event |
+        |---|---|
+        |  |  |
+    validations:
+      required: true
+  - type: textarea
+    id: root_cause
+    attributes:
+      label: Root cause
+      description: The mechanism, not the trigger. Mark clearly what was measured and what is inferred.
+    validations:
+      required: true
+  - type: textarea
+    id: resolution
+    attributes:
+      label: Resolution
+      description: What was changed to end it, and whether that was a fix or a mitigation.
+    validations:
+      required: true
+  - type: textarea
+    id: detection
+    attributes:
+      label: Detection
+      description: Which alarm caught it and how late? If none did, what signal would have — and does it exist now?
+    validations:
+      required: true
+  - type: textarea
+    id: action_items
+    attributes:
+      label: Action items
+      description: Every row needs a tracking issue and an owner.
+      value: |
+        | Action | Type (prevent/detect/mitigate/document) | Issue | Owner |
+        |---|---|---|---|
+        |  |  |  |  |
+    validations:
+      required: true
+  - type: textarea
+    id: lessons_learned
+    attributes:
+      label: Lessons learned
+      description: What generalises beyond this incident, phrased so it applies to a different subsystem.
+    validations:
+      required: true

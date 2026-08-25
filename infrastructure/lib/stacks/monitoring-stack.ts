@@ -106,11 +106,19 @@ export class MonitoringStack extends cdk.Stack {
     });
 
     // Story 1.2.5: User Sync Alarms and Dashboard (ADR-001: Unidirectional sync monitoring)
-    if (props.config.envName !== 'development') {
-      const alarmEmail = process.env.ALARM_EMAIL || `admin@batbern.ch`;
-
-      const userSyncAlarms = new UserSyncAlarms(this, 'UserSyncAlarms', {
-        alarmEmail,
+    //
+    // #1005: gated on `this.alarmTopic` as well as the environment. These seven identity alarms
+    // used to publish to a private topic of their own, subscribed only by an unconfirmed email
+    // to `admin@batbern.ch` — a mailbox nobody reads. SNS deletes unconfirmed subscriptions
+    // after 3 days, so the topic ended up with ZERO subscribers and every one of these alarms
+    // fired into nothing, while CloudFormation still held the subscription and therefore never
+    // recreated it. They now publish to the shared alarm topic, whose primary subscriber is the
+    // github-issues Lambda (no confirmation needed, ever) and which also carries the
+    // nissim@buchs.be email subscription. That puts identity failures into the same
+    // alarm -> issue -> @claude triage loop as the rest of the estate.
+    if (props.config.envName !== 'development' && this.alarmTopic) {
+      new UserSyncAlarms(this, 'UserSyncAlarms', {
+        alarmTopic: this.alarmTopic,
         environment: props.config.envName,
         thresholds: {
           userCreationFailures: props.config.envName === 'production' ? 5 : 10,

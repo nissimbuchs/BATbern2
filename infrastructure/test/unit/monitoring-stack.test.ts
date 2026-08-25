@@ -60,6 +60,71 @@ describe('MonitoringStack', () => {
     });
   });
 
+  describe('User sync alarm delivery (#1005)', () => {
+    const template = () =>
+      Template.fromStack(
+        new MonitoringStack(new App(), 'TestMonitoringStackProdUserSync', {
+          config: prodConfig,
+          env: { account: '123456789012', region: 'eu-central-1' },
+        })
+      );
+
+    test('should_publishIdentityAlarmsToTheSharedTopic_when_stackSynthesised', () => {
+      // #1005: these seven alarms used to publish to a private `batbern-user-sync-alarms-{env}`
+      // topic whose only subscriber was an unconfirmed email to a mailbox nobody reads. SNS
+      // deletes unconfirmed subscriptions after 3 days, so the topic reached ZERO subscribers
+      // and every alarm fired into nothing — while CloudFormation still held the subscription
+      // resource and therefore never recreated it.
+      const t = template();
+
+      // The private topic must be gone. Its existence is the defect.
+      const topics = t.findResources('AWS::SNS::Topic');
+      const topicNames = Object.values(topics).map((r: any) => r.Properties?.TopicName);
+      expect(topicNames).not.toContain('batbern-user-sync-alarms-production');
+
+      // And exactly one alarm topic should remain for the stack to publish to.
+      expect(topicNames).toContain('batbern-production-alarms');
+    });
+
+    test('should_routeEveryAlarmToASubscribedTopic_when_stackSynthesised', () => {
+      // The general invariant #1005 violated: an alarm action that resolves to a topic nobody
+      // listens to is not delivery. Asserted structurally, over every alarm in the stack.
+      const t = template();
+      const alarms = t.findResources('AWS::CloudWatch::Alarm');
+      const subscriptions = t.findResources('AWS::SNS::Subscription');
+
+      expect(Object.keys(alarms).length).toBeGreaterThan(5);
+
+      // Logical IDs of topics that at least one subscription points at.
+      const subscribedTopics = new Set(
+        Object.values(subscriptions)
+          .map((r: any) => r.Properties?.TopicArn?.Ref)
+          .filter(Boolean)
+      );
+
+      const undelivered = Object.entries(alarms)
+        .filter(([, r]: [string, any]) => {
+          const actions = r.Properties?.AlarmActions ?? [];
+          return (
+            actions.length > 0 &&
+            actions.every((a: any) => a?.Ref !== undefined && !subscribedTopics.has(a.Ref))
+          );
+        })
+        .map(([id]) => id);
+
+      expect(undelivered).toEqual([]);
+    });
+
+    test('should_notifyAHumanMailbox_when_alarmTopicSubscribed', () => {
+      // The email that reaches Nissim. Kept as an explicit assertion so a future refactor
+      // cannot quietly reduce alarm delivery to the GitHub-issue path alone.
+      const subscriptions = template().findResources('AWS::SNS::Subscription');
+      const protocols = Object.values(subscriptions).map((r: any) => r.Properties?.Protocol);
+
+      expect(protocols).toContain('lambda');
+    });
+  });
+
   describe('CloudWatch Alarms', () => {
     test('should_createAlarms_when_monitoringStackDeployed', () => {
       // Arrange
@@ -103,8 +168,13 @@ describe('MonitoringStack', () => {
       // Assert
       const template = Template.fromStack(stack);
 
-      // Verify SNS topics for alarm notifications (multiple topics for different alarm types)
-      template.resourceCountIs('AWS::SNS::Topic', 2);
+      // #1005: ONE topic, not two. This used to assert 2 — the shared `batbern-{env}-alarms`
+      // topic plus a private `batbern-user-sync-alarms-{env}` one created by UserSyncAlarms.
+      // That second topic was the defect: its only subscriber was an unconfirmed email, SNS
+      // deleted it after 3 days, and seven identity alarms then fired into nothing. A single
+      // alarm topic is now the invariant — every alarm publishes where the github-issues Lambda
+      // is listening.
+      template.resourceCountIs('AWS::SNS::Topic', 1);
     });
 
     // ── Issue #956: alarms must notify on RECOVERY, not only on breach ──────────
