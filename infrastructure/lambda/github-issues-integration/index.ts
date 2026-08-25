@@ -84,8 +84,11 @@ async function createOrUpdateIssue(
 ): Promise<void> {
   const issueTitle = `🚨 [${alarm.AlarmName}] CloudWatch Alarm Triggered`;
   // Only for a NEW issue — a re-trigger comment does not need the table repeated.
-  const metricContext = await fetchMetricContext(alarm);
-  const issueBody = formatIssueBody(alarm, metricContext);
+  const [metricContext, logContext] = await Promise.all([
+    fetchMetricContext(alarm),
+    fetchLogContext(alarm),
+  ]);
+  const issueBody = formatIssueBody(alarm, metricContext + logContext);
   const labels = getLabels(alarm);
 
   // Check if issue already exists
@@ -338,6 +341,140 @@ async function fetchMetricContext(alarm: CloudWatchAlarm): Promise<string> {
   } catch (error) {
     // Never let enrichment stop an incident from being filed.
     console.warn('Could not fetch metric context; filing issue without it:', error);
+    return '';
+  }
+}
+
+/**
+ * Which log group an alarm's failures would show up in. Defaults to api-gateway: it is the front
+ * door, so a platform-wide alarm is most likely explained there.
+ */
+function logGroupForAlarm(alarmName: string): string {
+  const env = getEnvironment(alarmName);
+  const service = [
+    ['EventManagement', 'event-management'],
+    ['SpeakerCoordination', 'speaker-coordination'],
+    ['PartnerCoordination', 'partner-coordination'],
+    ['AttendeeExperience', 'attendee-experience'],
+    ['CompanyManagement', 'company-user-management'],
+  ].find(([token]) => alarmName.includes(token));
+  return `/aws/ecs/BATbern-${env}/${service ? service[1] : 'api-gateway'}`;
+}
+
+/**
+ * Collapse a URL path to a shape, replacing anything that identifies a person or a record.
+ *
+ * THIS IS THE LOAD-BEARING PART OF THE LOG SUMMARY. Alarm issues are filed into a PUBLIC
+ * repository, so anything this function fails to redact is published to the internet. The
+ * gateway's access log carries real paths — `/api/v1/users/john.doe`,
+ * `/api/v1/events/BATbern57/speakers/<uuid>` — and quoting them verbatim would leak usernames and
+ * record ids into a public issue. Aggregated shapes answer the triage question ("which endpoints
+ * are failing") without carrying the identifiers.
+ *
+ * Deliberately allow-list-flavoured: a segment survives only if it looks like a fixed route word
+ * (lowercase letters and hyphens) or a BATbern event code, which is public information and is the
+ * single most useful thing to see. Everything else becomes a placeholder. An over-redacted path is
+ * a minor loss of detail; an under-redacted one is a disclosure.
+ */
+export function redactPath(path: string): string {
+  return path
+    .split('/')
+    .map((segment) => {
+      if (segment === '') return segment;
+      if (/^BATbern\d+$/i.test(segment)) return segment; // public event code, keep
+      if (/^v\d+$/.test(segment)) return segment; // api version
+      if (/^[a-z][a-z-]*$/.test(segment)) return segment; // fixed route word
+      if (/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(segment)) return '{uuid}';
+      if (/^\d+$/.test(segment)) return '{n}';
+      if (segment.includes('@')) return '{email}';
+      return '{id}';
+    })
+    .join('/');
+}
+
+/**
+ * An aggregated, redacted picture of what the service was doing around the transition (#1002).
+ *
+ * Why aggregate rather than quote: see redactPath. Raw excerpts in a public issue would publish
+ * production data, and this repository is public. Counts also happen to be more useful than
+ * twenty arbitrary lines — "412 requests to PUT /api/v1/events/{id}/agenda-config returned 401"
+ * is a diagnosis; twenty consecutive lines of the same thing is not.
+ *
+ * This exists so alarm triage has real evidence WITHOUT granting anything live AWS credentials.
+ * The alternative considered and rejected was giving the @claude workflow an AWS role: that
+ * workflow triggers on `issue_comment` in a public repo, so it can be started by anyone, and the
+ * account's existing GitHub role carries CDK deploy rights. Precomputing here keeps every
+ * credential inside infrastructure we control and makes the Lambda — not a model — the thing that
+ * decides what may be published (#1002).
+ *
+ * Fail-open, like the metric context: any error returns an empty string and the issue is filed
+ * without this section.
+ */
+async function fetchLogContext(alarm: CloudWatchAlarm): Promise<string> {
+  try {
+    // Imported lazily, INSIDE the try. @aws-sdk/client-cloudwatch is proven in this estate (six
+    // Cognito trigger Lambdas use it) but client-cloudwatch-logs is not, and it is marked
+    // external by the bundler (`externalModules: ['@aws-sdk/*']`) so it must come from the
+    // runtime. A static import of a module the runtime turns out not to carry is a
+    // Runtime.ImportModuleError at cold start, which would take the whole alarm pipeline down —
+    // no issues filed at all — to add an optional section. This way a missing module is just a
+    // caught error and the issue is filed without log context.
+    const { CloudWatchLogsClient, FilterLogEventsCommand } = await import(
+      '@aws-sdk/client-cloudwatch-logs'
+    );
+    const cloudwatchLogs = new CloudWatchLogsClient({});
+
+    const logGroupName = logGroupForAlarm(alarm.AlarmName);
+    const stateChange = new Date(alarm.StateChangeTime).getTime();
+
+    const { events } = await cloudwatchLogs.send(
+      new FilterLogEventsCommand({
+        logGroupName,
+        startTime: stateChange - 15 * 60 * 1000,
+        endTime: stateChange + 2 * 60 * 1000,
+        filterPattern: '"GATEWAY_API_REQUEST"',
+        limit: 400, // bounded: this runs inside a 30s Lambda
+      })
+    );
+
+    if (!events || events.length === 0) {
+      return `\n### Log context\n\n_No \`GATEWAY_API_REQUEST\` lines in \`${logGroupName}\` for the 15 minutes before the transition._\n`;
+    }
+
+    const byStatus = new Map<string, number>();
+    const byRoute = new Map<string, number>();
+    for (const event of events) {
+      const match = /GATEWAY_API_REQUEST status=(\d+) clientError=\w+ method=(\S+) path=([^\s"]+)/.exec(
+        event.message ?? ''
+      );
+      if (!match) continue;
+      const [, status, method, path] = match;
+      byStatus.set(status, (byStatus.get(status) ?? 0) + 1);
+      if (Number(status) >= 400) {
+        const route = `${method} ${redactPath(path)}`;
+        byRoute.set(route, (byRoute.get(route) ?? 0) + 1);
+      }
+    }
+
+    const top = (m: Map<string, number>, n: number) =>
+      [...m.entries()].sort((a, b) => b[1] - a[1]).slice(0, n);
+
+    let out = `\n### Log context — \`${logGroupName}\`, 15 min before → 2 min after\n\n`;
+    out += `Sampled ${events.length} request lines (capped). Paths are aggregated and redacted; `;
+    out += `identifiers are replaced with placeholders because this issue is public.\n\n`;
+    out += '| status | count |\n|---|---|\n';
+    for (const [status, count] of top(byStatus, 8)) {
+      out += `| ${status} | ${count} |\n`;
+    }
+    if (byRoute.size > 0) {
+      out += '\n**Failing routes (4xx/5xx)**\n\n| route | count |\n|---|---|\n';
+      for (const [route, count] of top(byRoute, 8)) {
+        out += `| \`${route}\` | ${count} |\n`;
+      }
+    }
+    return out + '\n';
+  } catch (error) {
+    console.warn('Could not fetch log context; filing issue without it:', error);
     return '';
   }
 }
