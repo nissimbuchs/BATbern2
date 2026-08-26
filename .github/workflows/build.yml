@@ -634,6 +634,14 @@ jobs:
         working-directory: ./infrastructure
         run: npm run format:check
 
+      # #975 follow-up. `--max-warnings 0`: the baseline is clean as of this change, so keep it
+      # clean. web-frontend carries `--max-warnings 50` because it inherited a backlog; there is
+      # no reason to import that allowance into a tree that starts at zero.
+      - name: ESLint
+        if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
+        working-directory: ./infrastructure
+        run: npm run lint
+
       - name: Type-check + compile
         if: steps.check-infra.outputs.exists == 'true' && steps.infra-changes.outputs.changed == 'true'
         working-directory: ./infrastructure

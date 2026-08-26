@@ -137,9 +137,44 @@ drifted. It now has:
 different prettier major between the two trees would format the same file two ways depending
 on which subtree's binary ran.
 
-**Still a gap: no ESLint.** ESLint 10 requires flat config and `infrastructure/` has no
-`eslint.config.*`, so `npx eslint` exits 2 there. Authoring one catches real bugs rather than
-formatting and is tracked separately in #975.
+**ESLint, added as the #975 follow-up.** `infrastructure/eslint.config.mjs` (flat config) runs
+`@eslint/js` recommended plus `typescript-eslint` recommended, wired into the same three places
+as prettier: the `infrastructure/` lint-staged invocation, `make lint-node`, and an `ESLint` step
+in `build-infrastructure` at `--max-warnings 0`. The baseline is clean, so it stays at zero —
+`web-frontend` allows 50 only because it inherited a backlog.
+
+**It is deliberately NOT type-aware, and that was measured rather than assumed.** Across all 93
+tracked files, `recommendedTypeChecked` reported 1609 problems while the rules that catch real
+bugs reported nothing at all:
+
+| rule | findings |
+|---|---|
+| `no-floating-promises` | 0 |
+| `no-misused-promises` | 0 |
+| `await-thenable` | 0 |
+| `no-base-to-string` (lib/+bin/) | 0 |
+
+Those were confirmed to be evaluated at severity 2 via `eslint --print-config`, not silently
+skipped. The 1609 were almost entirely `no-unsafe-*` cascading off `any`-typed Lambda mock events
+in tests. Type-aware linting would cost a second `tsconfig` and roughly 5× the runtime to buy 17
+`no-unnecessary-type-assertion` hits and no bugs. CDK stack construction is synchronous, which is
+precisely why the promise rules find nothing — **revisit this if genuinely async code lands in
+`infrastructure/`.**
+
+Two rule relaxations, both scoped:
+
+- `no-explicit-any` is **off under `test/**`**. Test files legitimately cast mock Cognito/SNS
+  events as `any`; building fully-typed trigger events adds no coverage and buries the assertion.
+  268 of the 274 hits were there, against 6 in `lib/`+`bin/`. Enforcing it would mean ~270 inline
+  disables or ~270 pointless type literals.
+- `no-require-imports` is off under `test/**` and the Lambda source trees, where `require()` sits
+  below a `jest.mock()` call or behind a try/catch for an optional native dep.
+
+`no-unused-vars` is the rule that earned its keep on adoption: `tsconfig.json` sets
+`noUnusedLocals` and `noUnusedParameters` to **false**, so `tsc` cannot see unused imports or
+parameters at all. It found 18 in `lib/`+`bin/` — six dead `ecsPatterns` imports left over from
+the move to Service Connect, an unused `subscriptions` import, and a `FORWARDING_DOMAIN` env read
+that nothing consumed.
 
 ### Code Review Checklist
 - [ ] **TDD Followed**: Tests were written before implementation

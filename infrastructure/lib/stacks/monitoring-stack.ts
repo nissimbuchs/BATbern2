@@ -3,7 +3,6 @@ import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
-import * as subscriptions from 'aws-cdk-lib/aws-sns-subscriptions';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
 import { MonitoringWidgetsConstruct } from '../constructs/monitoring-widgets-construct';
@@ -99,8 +98,10 @@ export class MonitoringStack extends cdk.Stack {
     // Add all widgets from the construct to the dashboard
     this.dashboard.addWidgets(...monitoringWidgets.widgets);
 
-    // Create CloudWatch Alarms using reusable construct
-    const alarms = new AlarmConstruct(this, 'Alarms', {
+    // Create CloudWatch Alarms using reusable construct.
+    // Not assigned: the construct is instantiated for its side effect (it adds the alarms to
+    // this stack) and nothing here reads it back.
+    new AlarmConstruct(this, 'Alarms', {
       environment: props.config.envName,
       alarmTopic: this.alarmTopic,
     });

@@ -27,7 +27,7 @@ jest.mock('../../../lib/lambda/triggers/common/database');
 // Mock CloudWatch client to avoid dynamic import issues
 jest.mock('@aws-sdk/client-cloudwatch', () => {
   const mockSend = jest.fn();
-  // @ts-ignore - Mock return value for CloudWatch metrics
+  // @ts-expect-error - Mock return value for CloudWatch metrics
   mockSend.mockResolvedValue({});
   return {
     CloudWatchClient: jest.fn().mockImplementation(() => ({

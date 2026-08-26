@@ -64,7 +64,6 @@ describe('Cost footprint (docs/plans/aws-cost-reduction.md)', () => {
       // Asserted through the config module rather than by synthesising the stack, because
       // AttendeeExperienceStack requires a Cognito user pool and a database secret that
       // are not worth constructing to check two numbers.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const source = require('fs').readFileSync(
         `${__dirname}/../../lib/stacks/attendee-experience-stack.ts`,
         'utf8'
@@ -89,7 +88,6 @@ describe('Cost footprint (docs/plans/aws-cost-reduction.md)', () => {
         // services run 70% on Fargate Spot, which already produces 4-5 minute silent
         // replacements. ApiGatewayService deliberately stays at 2 — it is the public
         // entry point and the one place a gap is visible to visitors.
-        // eslint-disable-next-line @typescript-eslint/no-var-requires
         const source = require('fs').readFileSync(
           `${__dirname}/../../lib/stacks/${stackFile}`,
           'utf8'
@@ -104,7 +102,6 @@ describe('Cost footprint (docs/plans/aws-cost-reduction.md)', () => {
     test('should_keepApiGatewayAtTwoTasks_when_configured', () => {
       // Explicitly NOT reduced. Asserted so a future cost sweep has to argue with this
       // comment rather than silently take the public entry point down to one task.
-      // eslint-disable-next-line @typescript-eslint/no-var-requires
       const source = require('fs').readFileSync(
         `${__dirname}/../../lib/stacks/api-gateway-service-stack.ts`,
         'utf8'

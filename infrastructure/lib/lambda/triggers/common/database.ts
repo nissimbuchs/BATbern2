@@ -6,7 +6,7 @@
  * (Lambda container reuse optimization)
  */
 
-import { Client, Pool, PoolClient } from 'pg';
+import { Client, Pool, PoolClient, QueryResult } from 'pg';
 import { SecretsManagerClient, GetSecretValueCommand } from '@aws-sdk/client-secrets-manager';
 
 // Connection pool persists across Lambda invocations (warm start optimization)
@@ -115,8 +115,8 @@ export async function closePool(): Promise<void> {
 export async function executeQuery(
   client: PoolClient | Client,
   query: string,
-  params: any[] = []
-): Promise<any> {
+  params: unknown[] = []
+): Promise<QueryResult> {
   try {
     const startTime = Date.now();
     const result = await client.query(query, params);
@@ -144,8 +144,8 @@ export async function executeQuery(
  * @returns Array of query results
  */
 export async function executeTransaction(
-  queries: Array<{ query: string; params: any[] }>
-): Promise<any[]> {
+  queries: Array<{ query: string; params: unknown[] }>
+): Promise<QueryResult[]> {
   const client = await getDbClient();
 
   try {

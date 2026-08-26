@@ -212,6 +212,8 @@ lint-node: ## Run Node.js linters
 	@echo "✨ Running Node.js linters..."
 	@echo "→ Linting web-frontend..."
 	@cd web-frontend && npm run lint
+	@echo "→ Linting infrastructure..."
+	@cd infrastructure && npm run lint
 	@echo "✓ Node.js linting complete"
 
 # infrastructure/ was absent from both targets until #975, so the CDK code that provisions

@@ -14,8 +14,8 @@
  */
 
 import { PostConfirmationTriggerEvent, PostConfirmationTriggerHandler } from 'aws-lambda';
-import { getDbClient, executeTransaction } from './common/database';
-import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
+import { getDbClient } from './common/database';
+import { CloudWatchClient, PutMetricDataCommand, StandardUnit } from '@aws-sdk/client-cloudwatch';
 import {
   CognitoIdentityProviderClient,
   AdminUpdateUserAttributesCommand,
@@ -211,7 +211,11 @@ function getDefaultRole(attributes: UserAttributes): UserRole {
 /**
  * Publish CloudWatch metric for sync operation
  */
-async function publishMetric(metricName: string, value: number, unit: string = 'None') {
+async function publishMetric(
+  metricName: string,
+  value: number,
+  unit: StandardUnit = StandardUnit.None
+) {
   try {
     await cloudWatchClient.send(
       new PutMetricDataCommand({
@@ -220,7 +224,7 @@ async function publishMetric(metricName: string, value: number, unit: string = '
           {
             MetricName: metricName,
             Value: value,
-            Unit: unit as any,
+            Unit: unit,
             Timestamp: new Date(),
           },
         ],

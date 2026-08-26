@@ -93,7 +93,9 @@ describe('Docker Compose Startup Orchestration (AC6, AC7)', () => {
         // config` ACTUALLY failed — and then threw `ReferenceError: fail is not defined`
         // instead of the intended message. The assertion meant to report a broken compose file
         // reported a broken test instead, indistinguishably.
-        throw new Error(`docker-compose.yml has syntax errors: ${error.message}`);
+        throw new Error(`docker-compose.yml has syntax errors: ${error.message}`, {
+          cause: error,
+        });
       }
 
       // Assert - If we reach here, config is valid

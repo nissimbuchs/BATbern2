@@ -95,7 +95,7 @@ export class MonitoringWidgetsConstruct extends Construct {
   /**
    * Create business metrics widgets
    */
-  private createBusinessMetricsWidgets(props: MonitoringWidgetsProps): cloudwatch.IWidget[] {
+  private createBusinessMetricsWidgets(_props: MonitoringWidgetsProps): cloudwatch.IWidget[] {
     const widgets: cloudwatch.IWidget[] = [];
 
     // Event Creation Metrics
@@ -135,7 +135,7 @@ export class MonitoringWidgetsConstruct extends Construct {
   /**
    * Create cost monitoring widgets
    */
-  private createCostMonitoringWidgets(props: MonitoringWidgetsProps): cloudwatch.IWidget[] {
+  private createCostMonitoringWidgets(_props: MonitoringWidgetsProps): cloudwatch.IWidget[] {
     const widgets: cloudwatch.IWidget[] = [];
 
     // AWS Cost Metrics
@@ -164,7 +164,7 @@ export class MonitoringWidgetsConstruct extends Construct {
   /**
    * Create security monitoring widgets
    */
-  private createSecurityWidgets(props: MonitoringWidgetsProps): cloudwatch.IWidget[] {
+  private createSecurityWidgets(_props: MonitoringWidgetsProps): cloudwatch.IWidget[] {
     const widgets: cloudwatch.IWidget[] = [];
 
     // Unauthorized Access Attempts
@@ -204,7 +204,7 @@ export class MonitoringWidgetsConstruct extends Construct {
   /**
    * Create X-Ray tracing widgets
    */
-  private createXRayTracingWidgets(props: MonitoringWidgetsProps): cloudwatch.IWidget[] {
+  private createXRayTracingWidgets(_props: MonitoringWidgetsProps): cloudwatch.IWidget[] {
     const widgets: cloudwatch.IWidget[] = [];
 
     // X-Ray Trace Count

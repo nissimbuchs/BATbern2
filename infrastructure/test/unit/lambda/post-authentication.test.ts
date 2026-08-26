@@ -64,7 +64,9 @@ function makeEvent(attributes: Record<string, string> = {}): PostAuthenticationT
   };
 }
 
-function makeDbClient(rows: Record<string, unknown>[] = []) {
+// `_rows` is unused: this mock is driven entirely by mockDbQuery's queued responses.
+// Kept in the signature because call sites pass it.
+function makeDbClient(_rows: Record<string, unknown>[] = []) {
   return {
     query: mockDbQuery,
     release: mockDbRelease,
