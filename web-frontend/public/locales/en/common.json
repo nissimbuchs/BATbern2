@@ -633,7 +633,8 @@
     },
     "photos": {
       "viewPhoto": "View photo"
-    }
+    },
+    "eventsProgress": "{{shown}} of {{total}} events"
   },
   "notifications": {
     "title": "Notifications",

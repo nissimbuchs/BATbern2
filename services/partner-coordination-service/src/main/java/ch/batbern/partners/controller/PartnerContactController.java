@@ -6,6 +6,7 @@ import ch.batbern.partners.service.PartnerContactService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.ResponseEntity;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
@@ -35,7 +36,11 @@ public class PartnerContactController implements PartnerContactsApi {
      * Returns all users from the User Service who have the PARTNER role
      * and belong to the given company.
      */
+    // #961: this returned contact PII (email, firstName, lastName, username) to ANY
+    // authenticated principal — it fell through to `.anyRequest().authenticated()` and carried
+    // no method-level rule. Same predicate PartnerAnalyticsController uses for attendance data.
     @Override
+    @PreAuthorize("hasRole('ORGANIZER') or @partnerSecurityService.isCurrentUserCompany(#companyName)")
     public ResponseEntity<List<PartnerContactResponse>> getPartnerContacts(String companyName) {
 
         log.debug("GET /partners/{}/contacts", companyName);

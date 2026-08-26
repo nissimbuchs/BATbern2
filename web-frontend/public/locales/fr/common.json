@@ -596,7 +596,8 @@
     },
     "photos": {
       "viewPhoto": "Voir la photo"
-    }
+    },
+    "eventsProgress": "{{shown}} sur {{total}} événements"
   },
   "notifications": {
     "title": "Notifications",

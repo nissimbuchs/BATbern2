@@ -596,7 +596,8 @@
     },
     "photos": {
       "viewPhoto": "Foto bekijken"
-    }
+    },
+    "eventsProgress": "{{shown}} van {{total}} evenementen"
   },
   "notifications": {
     "title": "Meldingen",

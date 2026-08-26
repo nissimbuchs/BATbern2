@@ -247,7 +247,9 @@ export default function ArchivePage() {
             {/* View Toggle (desktop only) */}
             <div className="flex justify-between items-center mb-6">
               <div className="text-sm text-zinc-400" data-testid="events-progress">
-                {!isLoading && totalCount > 0 && `${events.length} of ${totalCount} events`}
+                {!isLoading &&
+                  totalCount > 0 &&
+                  t('archive.eventsProgress', { shown: events.length, total: totalCount })}
               </div>
               {!isMobile && (
                 <div className="flex gap-2">

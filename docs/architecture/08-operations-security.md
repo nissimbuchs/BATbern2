@@ -70,6 +70,48 @@ This document consolidates security implementation, performance standards, acces
 
 ## Monitoring & Alerting
 
+### Authorization is two layers, and only one of them is testable (#961)
+
+The rule in `CLAUDE.md` — *"Role checks must happen server-side (Spring Security) AND client-side (UI
+hiding)"* — has a trap in how it is implemented here.
+
+Each service has a filter chain whose last rule is `.anyRequest().authenticated()`. An endpoint that
+nobody named explicitly lands there and is reachable by **any** authenticated principal. That is not
+theoretical: until #961, `POST/PATCH/DELETE /api/v1/partners`, `GET /api/v1/partners/statistics` and
+`GET /api/v1/partners/{name}/contacts` all fell through it, so an ATTENDEE — or a PARTNER of a
+different company — could deactivate a sponsor or read another sponsor's contact PII. The UI hid the
+Settings tab, which is exactly the protection that looks sufficient until someone calls the API
+directly.
+
+**Put the rule in `@PreAuthorize`, not only in the filter chain.** The `test` profile replaces the
+whole chain with `permitAll`, so a matcher-only rule cannot be covered by an integration test at all
+— an authorization regression is invisible to the suite. `@EnableMethodSecurity` is active in every
+profile, so `@PreAuthorize` is enforced in tests and in production alike. Add matchers too, for
+defence in depth and to reject before the controller runs, but treat method security as the layer
+that holds.
+
+Matcher ordering matters: broader patterns must sit **after** specific ones. Spring's `*` matches one
+path segment, so `/api/v1/partners/*` does not shadow `/api/v1/partners/topics/{id}`, but a careless
+`/**` would.
+
+**A `permitAll` endpoint can still leak, through its parameters.** `GET /api/v1/partners` is public on
+purpose — it backs the partner list on the homepage — but its `include` parameter reached contact
+enrichment unchecked, so `GET /api/v1/partners?include=contacts` returned email, firstName, lastName,
+username and profilePictureUrl for every partner contact **to anonymous callers**. Verified against
+production on 2026-08-26: HTTP 200, 9 partners, 10 contact objects. Without the parameter the field
+comes back empty, which is why nothing surfaced it for so long.
+
+So when auditing an endpoint, the question is not only *who may call this* but *what can its
+parameters be made to return*. Contact enrichment is now gated on ORGANIZER, or the partner's own
+company, via `PartnerSecurityService.canViewContacts`. It is **dropped** rather than 403'd, because
+the endpoint is public and a future public page adding the parameter should lose the enrichment
+instead of breaking the homepage.
+
+One more trap, from the tests written for that fix: a "must be empty" assertion against a mocked
+collaborator passes **vacuously**, because Mockito returns an empty list by default. Three of those
+tests passed with the leak fully intact until the mock was made to return a real contact. Assert the
+absence of something the system would otherwise produce, or the test cannot fail.
+
 ### Alarm → GitHub issue lifecycle
 
 CloudWatch alarms publish to the `batbern-{env}-alarms` SNS topic, which invokes the
