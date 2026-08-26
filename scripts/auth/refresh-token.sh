@@ -35,12 +35,48 @@ if [ ! -f "$local_config" ]; then
     exit 1
 fi
 
-# Check if token is expired or expiring soon (within 5 minutes)
+# ── Is the token expired? Ask the TOKEN, not the sidecar metadata. ──────────────
+#
+# This check used to be derived purely from the `retrievedAt` + `expiresIn` fields written
+# alongside the token, and never from the ID token's own `exp` claim. Those fields are
+# bookkeeping; `exp` is the thing Cognito and the API Gateway actually enforce. When the two
+# disagree the script reports "✓ Token still valid (86063s remaining)" about a token that
+# expired hours ago, then exits 0 — so every caller that relies on it to auto-refresh
+# (run-bruno-tests.sh, run-playwright-tests.sh, and now Playwright's global-setup.ts) proceeds
+# with a dead credential and the suite fails on 401s with no indication why.
+#
+# Same class of mistake as trusting a token file's NAME to tell you whose token it is: decode
+# it. `exp` is authoritative and is used whenever it can be read; the retrievedAt/expiresIn
+# path below remains as the fallback for a file that predates it or a host without python3.
+id_token=$(jq -r '.idToken // empty' "$local_config" 2>/dev/null)
+jwt_exp=""
+if [ -n "$id_token" ] && command -v python3 >/dev/null 2>&1; then
+    jwt_exp=$(printf '%s' "$id_token" | python3 -c '
+import base64, json, sys
+try:
+    payload = sys.stdin.read().strip().split(".")[1]
+    payload += "=" * (-len(payload) % 4)
+    exp = json.loads(base64.urlsafe_b64decode(payload)).get("exp")
+    print(int(exp) if exp is not None else "")
+except Exception:
+    print("")
+' 2>/dev/null)
+fi
+
 retrieved_at=$(jq -r '.retrievedAt' "$local_config" 2>/dev/null)
 expires_in=$(jq -r '.expiresIn' "$local_config" 2>/dev/null)
 
+if [ -n "$jwt_exp" ]; then
+    time_left=$((jwt_exp - $(date +%s)))
+    if [ "$time_left" -lt 300 ]; then
+        echo -e "${YELLOW}idToken exp reached (${time_left}s left), refreshing...${NC}"
+        needs_refresh=true
+    else
+        echo -e "${GREEN}✓ Token still valid (${time_left}s / ~$((time_left / 60))min remaining, from idToken exp)${NC}"
+        needs_refresh=false
+    fi
 # Calculate expiration time
-if [ -z "$retrieved_at" ] || [ "$retrieved_at" = "null" ]; then
+elif [ -z "$retrieved_at" ] || [ "$retrieved_at" = "null" ]; then
     echo -e "${YELLOW}WARNING: Cannot determine token age, refreshing anyway${NC}"
     needs_refresh=true
 else
