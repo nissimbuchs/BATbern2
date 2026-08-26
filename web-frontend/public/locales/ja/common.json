@@ -596,7 +596,8 @@
     },
     "photos": {
       "viewPhoto": "写真を見る"
-    }
+    },
+    "eventsProgress": "{{total}}件中{{shown}}件のイベント"
   },
   "notifications": {
     "title": "通知",

@@ -502,7 +502,8 @@
     },
     "photos": {
       "viewPhoto": "Foti aaluege"
-    }
+    },
+    "eventsProgress": "{{shown}} vo {{total}} Veranstaltige"
   },
   "notifications": {
     "title": "Benarichtigige",

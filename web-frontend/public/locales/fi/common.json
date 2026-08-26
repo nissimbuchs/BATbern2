@@ -596,7 +596,8 @@
     },
     "photos": {
       "viewPhoto": "Katso kuva"
-    }
+    },
+    "eventsProgress": "{{shown}} / {{total}} tapahtumaa"
   },
   "notifications": {
     "title": "Ilmoitukset",

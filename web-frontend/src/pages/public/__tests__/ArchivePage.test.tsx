@@ -33,9 +33,10 @@ vi.mock('@/services/topicService', () => ({
 // Mock i18n
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string) => {
+    t: (key: string, options?: Record<string, unknown>) => {
       const translations: Record<string, string> = {
         'archive.title': 'Event Archive',
+        'archive.eventsProgress': '{{shown}} of {{total}} events',
         'archive.description': 'Browse 20+ years of BATbern conferences',
         'archive.filters.topics': 'Topics',
         'archive.filters.search': 'Search events...',
@@ -51,7 +52,15 @@ vi.mock('react-i18next', () => ({
         'archive.noResults': 'No events found',
         'archive.errors.loadFailed': 'Failed to load events',
       };
-      return translations[key] || key;
+      const resolved = translations[key] ?? key;
+      if (!options) {
+        return resolved;
+      }
+      // Minimal i18next-style interpolation so counted keys (#959) can be asserted.
+      return Object.entries(options).reduce(
+        (acc, [name, value]) => acc.replace(new RegExp(`{{\\s*${name}\\s*}}`, 'g'), String(value)),
+        resolved
+      );
     },
   }),
 }));
