@@ -22,10 +22,20 @@ const cloudwatch = new CloudWatchClient({ region: process.env.AWS_REGION || 'eu-
  * - User not found: Allow authentication (JIT provisioning path)
  * - User inactive: Throw error to block authentication
  */
+// The third `callback` parameter is deliberately absent. AWS Lambda removed callback-based
+// handlers in Node.js 24, and it decides which style a handler is by its ARITY — declaring a
+// third parameter is enough to be rejected, even for an `async` function returning a Promise.
+// Bumping the runtime while it was still declared produced, on EVERY sign-in:
+//
+//   UserLambdaValidationException: PreAuthentication failed with error
+//   ERROR: AWS Lambda has removed support for callback-based function handlers starting with
+//   Node.js 24.
+//
+// Each call was immediately followed by `return event` or a `throw`, so they were redundant and
+// removing them preserves behaviour exactly. See #883.
 export const handler: PreAuthenticationTriggerHandler = async (
   event: PreAuthenticationTriggerEvent,
-  context,
-  callback
+  context
 ) => {
   // Don't wait for event loop to be empty before finishing - return immediately after callback
   context.callbackWaitsForEmptyEventLoop = false;
@@ -64,7 +74,6 @@ export const handler: PreAuthenticationTriggerHandler = async (
         console.error('Metric publish failed', err)
       );
 
-      callback(null, event);
       return event;
     }
 
@@ -85,9 +94,10 @@ export const handler: PreAuthenticationTriggerHandler = async (
         console.error('Metric publish failed', err)
       );
 
-      // Call callback with error AND throw to block authentication
+      // Throwing is how a PreAuthentication trigger BLOCKS a sign-in, and that is the intent
+      // here: an inactive account must not authenticate. This is the one deliberate throw in
+      // this handler; every other path returns the event so authentication proceeds.
       const errorMessage = `User account is inactive. Reason: ${user.deactivation_reason || 'Account deactivated'}`;
-      callback(errorMessage, event);
       throw new Error(errorMessage);
     }
 
@@ -102,7 +112,6 @@ export const handler: PreAuthenticationTriggerHandler = async (
       console.error('Metric publish failed', err)
     );
 
-    callback(null, event);
     return event;
   } catch (error) {
     const err = error as Error;
@@ -124,8 +133,8 @@ export const handler: PreAuthenticationTriggerHandler = async (
       console.error('Metric publish failed', err)
     );
 
-    // Allow authentication even on error
-    callback(null, event);
+    // Allow authentication even on error (fail open — a broken trigger must not lock every
+    // user out; see CLAUDE.md on Cognito triggers).
     return event;
   } finally {
     if (client) {
