@@ -46,6 +46,7 @@ import {
   type RegistrationEvent,
 } from '../helpers/event-fixture';
 import { cleanupByCode } from '../helpers/test-fixtures-cleanup';
+import { forceUserProfileLanguage } from '../helpers/mock-user-profile';
 
 interface EventTask {
   templateId: string | null;
@@ -85,6 +86,9 @@ test.describe('Event Tasks (Story 5.5)', { tag: '@gate' }, () => {
    * `EventTasksTab` (`task-template-<id>` rows + `task-assignee-<id>` selects).
    */
   async function openTasksTab(page: import('@playwright/test').Page) {
+    // #957: pin the UI to English before navigating — LanguageSync would otherwise apply the
+    // organizer profile's German and break the role-name selectors below.
+    await forceUserProfileLanguage(page, 'en');
     await page.goto(`/organizer/events/${fixtureEvent.eventCode}?tab=details`);
     await page.getByTestId('details-subtab-tasks').click();
     await expect(page.getByTestId('event-tasks-live-tab')).toBeVisible();

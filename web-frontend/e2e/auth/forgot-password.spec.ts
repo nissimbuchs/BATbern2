@@ -1,3 +1,13 @@
+// #958: tagged @quarantine, not @gate. This file carried NO tag at all, so it matched none of
+// the CI scopes (`--grep @smoke` per-deploy, `--grep @gate` nightly, `--grep @quarantine` nightly
+// re-test) and therefore never executed anywhere — it looked like coverage and was not.
+//
+// @quarantine rather than @gate deliberately: these specs assert heavily on translated UI copy,
+// so promoting them straight into the gate would very likely turn the nightly red on day one,
+// which is the mistake #1008 called out. @quarantine runs them nightly in the promotion re-test
+// where they cannot break the deploy gate, and the existing machinery promotes them once they
+// settle green. Retag to @gate at that point.
+
 /**
  * E2E Tests for Forgot Password Flow
  * Story 1.2.2: Implement Forgot Password Flow
@@ -122,7 +132,7 @@ function extractResetLinkFromEmail(emailContent: string): string {
 // TEST GROUP 1: Basic Forgot Password Flow
 // ============================================================================
 
-test.describe('Forgot Password - Basic Flow', () => {
+test.describe('Forgot Password - Basic Flow', { tag: '@quarantine' }, () => {
   test('should_renderForgotPasswordPage_when_navigated', async ({ page }) => {
     // AC1: Email input field should be visible
     await navigateToForgotPassword(page);
@@ -194,7 +204,7 @@ test.describe('Forgot Password - Basic Flow', () => {
 // TEST GROUP 2: Email Delivery & Templates
 // ============================================================================
 
-test.describe('Forgot Password - Email Delivery', () => {
+test.describe('Forgot Password - Email Delivery', { tag: '@quarantine' }, () => {
   // Skip entire group if email integration not available
   if (!HAS_EMAIL_INTEGRATION) {
     test.skip();
@@ -269,7 +279,7 @@ test.describe('Forgot Password - Email Delivery', () => {
 // TEST GROUP 3: Resend Functionality
 // ============================================================================
 
-test.describe('Forgot Password - Resend Functionality', () => {
+test.describe('Forgot Password - Resend Functionality', { tag: '@quarantine' }, () => {
   // Skip entire group if email integration not available
   if (!HAS_EMAIL_INTEGRATION) {
     test.skip();
@@ -344,7 +354,7 @@ test.describe('Forgot Password - Resend Functionality', () => {
 // TEST GROUP 4: Security - Email Enumeration Prevention
 // ============================================================================
 
-test.describe('Forgot Password - Security', () => {
+test.describe('Forgot Password - Security', { tag: '@quarantine' }, () => {
   // Skip entire group if email integration not available
   if (!HAS_EMAIL_INTEGRATION) {
     test.skip();
@@ -386,7 +396,7 @@ test.describe('Forgot Password - Security', () => {
 // TEST GROUP 5: Rate Limiting
 // ============================================================================
 
-test.describe('Forgot Password - Rate Limiting', () => {
+test.describe('Forgot Password - Rate Limiting', { tag: '@quarantine' }, () => {
   // Skip entire group if email integration not available
   if (!HAS_EMAIL_INTEGRATION) {
     test.skip();
@@ -428,7 +438,7 @@ test.describe('Forgot Password - Rate Limiting', () => {
 // TEST GROUP 6: Error Handling
 // ============================================================================
 
-test.describe('Forgot Password - Error Handling', () => {
+test.describe('Forgot Password - Error Handling', { tag: '@quarantine' }, () => {
   // Skip entire group if email integration not available
   if (!HAS_EMAIL_INTEGRATION) {
     test.skip();
@@ -477,7 +487,7 @@ test.describe('Forgot Password - Error Handling', () => {
 // TEST GROUP 7: Accessibility
 // ============================================================================
 
-test.describe('Forgot Password - Accessibility', () => {
+test.describe('Forgot Password - Accessibility', { tag: '@quarantine' }, () => {
   test('should_haveNoAccessibilityViolations_when_pageLoads', async ({ page }) => {
     // AC: Run accessibility audit (WCAG 2.1 AA)
     await navigateToForgotPassword(page);
@@ -541,7 +551,7 @@ test.describe('Forgot Password - Accessibility', () => {
 // TEST GROUP 8: Internationalization (i18n)
 // ============================================================================
 
-test.describe('Forgot Password - Internationalization', () => {
+test.describe('Forgot Password - Internationalization', { tag: '@quarantine' }, () => {
   test('should_displayGermanText_when_languageIsGerman', async ({ page }) => {
     // AC2: Multi-language support (German). LanguageSync applies the user's /users/me
     // preference on load (overriding any header/localStorage), so drive the language there.

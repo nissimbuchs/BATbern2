@@ -94,7 +94,7 @@ describe('CognitoUserSyncTriggers — PreSignUp account-linking trigger (Story 1
     // lambda.Code.fromInline trigger is gone (it moved here with DB access).
     template.hasResourceProperties('AWS::Lambda::Function', {
       FunctionName: 'batbern-staging-pre-signup-trigger',
-      Runtime: 'nodejs20.x',
+      Runtime: 'nodejs24.x',
       Handler: 'index.handler',
       Code: Match.objectLike({ S3Bucket: Match.anyValue() }),
     });
@@ -121,6 +121,27 @@ describe('CognitoUserSyncTriggers — PreSignUp account-linking trigger (Story 1
           }),
         ]),
       }),
+    });
+  });
+
+  // #883: no Lambda in this construct may sit on a deprecated runtime again.
+  //
+  // Asserting across EVERY function rather than spot-checking one: the single
+  // `Runtime: 'nodejs20.x'` assertion above passed happily for months while six trigger
+  // functions carried a runtime AWS had already scheduled for disablement — because it only
+  // ever looked at one of them. After 2027-03-03 a deploy touching any of these would start
+  // failing, including a hotfix to a Cognito trigger, which is the worst deploy to have blocked.
+  describe('Lambda runtimes (#883)', () => {
+    const RETIRED_OR_DEPRECATED = ['nodejs16.x', 'nodejs18.x', 'nodejs20.x'];
+
+    test('should_useOnlySupportedNodeRuntimes_when_triggersCreated', () => {
+      const fns = buildTemplate().findResources('AWS::Lambda::Function');
+
+      const offenders = Object.entries(fns)
+        .map(([id, fn]) => ({ id, runtime: fn.Properties?.Runtime as string | undefined }))
+        .filter((f) => f.runtime !== undefined && RETIRED_OR_DEPRECATED.includes(f.runtime));
+
+      expect(offenders).toEqual([]);
     });
   });
 });

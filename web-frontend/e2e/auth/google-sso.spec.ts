@@ -1,3 +1,13 @@
+// #958: tagged @quarantine, not @gate. This file carried NO tag at all, so it matched none of
+// the CI scopes (`--grep @smoke` per-deploy, `--grep @gate` nightly, `--grep @quarantine` nightly
+// re-test) and therefore never executed anywhere — it looked like coverage and was not.
+//
+// @quarantine rather than @gate deliberately: these specs assert heavily on translated UI copy,
+// so promoting them straight into the gate would very likely turn the nightly red on day one,
+// which is the mistake #1008 called out. @quarantine runs them nightly in the promotion re-test
+// where they cannot break the deploy gate, and the existing machinery promotes them once they
+// settle green. Retag to @gate at that point.
+
 /**
  * E2E smoke — "Continue with Google" SSO button (Story 12.9, SSO Phase 5)
  *
@@ -22,7 +32,7 @@ import { BASE_URL } from '../../playwright.config';
 
 const GOOGLE_BUTTON = /continue with google|mit google fortfahren/i;
 
-test.describe('SSO — Continue with Google button', () => {
+test.describe('SSO — Continue with Google button', { tag: '@quarantine' }, () => {
   test('renders the button and initiates the Cognito hosted-UI redirect when features.sso is on', async ({
     page,
   }) => {

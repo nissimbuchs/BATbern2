@@ -56,7 +56,18 @@ export class CognitoUserSyncTriggers extends Construct {
 
     // Common Lambda props
     const commonLambdaProps = {
-      runtime: lambda.Runtime.NODEJS_20_X,
+      // #883: nodejs20.x was deprecated 2026-04-30; AWS disables CREATION on 2027-02-01 and
+      // UPDATE on 2027-03-03. After that date a deploy touching this function fails — including
+      // a hotfix to a Cognito trigger, which is the worst thing to have blocked.
+      //
+      // These six triggers were deliberately left behind when the other ten Lambdas moved,
+      // because CLAUDE.md is explicit that a throw in a Cognito trigger 503s EVERY sign-in on
+      // the live pool at auth.batbern.ch. What makes the bump safe to make now rather than
+      // later: each trigger has a handler-level test that IMPORTS AND RUNS the module, so a
+      // runtime-incompatible dependency surfaces as a failed build rather than as a
+      // Runtime.ImportModuleError at cold start. Node 24 is also already proven in this
+      // account on ten other functions, including the image-resize Lambda@Edge.
+      runtime: lambda.Runtime.NODEJS_24_X,
       memorySize: 512,
       vpc: props.vpc,
       vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },

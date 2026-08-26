@@ -7,6 +7,11 @@ cdk.out/
 coverage/
 *.d.ts
 
+# tsc output (`npm run build` emits here). Gitignored, but prettier globs the filesystem,
+# so without this a `--check .` sweeps 58 compiled .js files and reports drift nobody can
+# act on — the same trap cdk.out set, missed for dist/ when this file was written.
+dist/
+
 # Lambda bundles vendor their own node_modules (image-resize ships sharp), which are
 # third-party and must never be reformatted.
 lib/lambda/*/node_modules/

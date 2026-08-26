@@ -11,6 +11,7 @@ This is the AWS CDK infrastructure-as-code for the BATbern platform, a multi-env
 ## Essential Commands
 
 ### Build and Test
+
 ```bash
 npm install                    # Install dependencies
 npm run build                  # Compile TypeScript
@@ -19,6 +20,7 @@ npm run test:watch             # Watch mode for tests
 ```
 
 ### Deployment Commands
+
 ```bash
 # Synthesize CloudFormation templates (preview changes)
 npm run synth:dev              # Development environment
@@ -56,6 +58,7 @@ npm run destroy:staging
 ```
 
 ### Running Single Tests
+
 ```bash
 # Run specific stack test
 npm test -- network-stack.test.ts
@@ -77,6 +80,7 @@ The deployment workflow has been optimized for speed and efficiency using a thre
 **Speed**: 90-95% faster than standard deployment
 
 The GitHub Actions workflow automatically detects code-only changes and uses the fast-path:
+
 ```bash
 # Conditions for fast-path:
 # 1. No infrastructure changes (lib/stacks, bin/, package.json)
@@ -86,6 +90,7 @@ The GitHub Actions workflow automatically detects code-only changes and uses the
 ```
 
 **Manual fast-path deployment** (emergency use only):
+
 ```bash
 ./scripts/ci/update-ecs-task.sh batbern-staging <service-name> <image-tag>
 ```
@@ -97,6 +102,7 @@ The GitHub Actions workflow automatically detects code-only changes and uses the
 **Speed**: 50-60% faster than standard deployment
 
 Automatically used by GitHub Actions when:
+
 - Service code changes detected
 - No infrastructure changes
 - Dockerfile or migrations present (prevents fast-path)
@@ -108,6 +114,7 @@ Automatically used by GitHub Actions when:
 **Speed**: 30-40% faster than sequential deployment
 
 Used by GitHub Actions for infrastructure changes:
+
 - Layer 0: Foundation (CICD, DNS, Monitoring, SES) - 4 concurrent
 - Layer 1: Infrastructure (Network, Secrets, EventBus) - 3 concurrent
 - Layer 2: Data (Database, Storage, Bastion) - 2 concurrent
@@ -148,6 +155,7 @@ Used by GitHub Actions for infrastructure changes:
 ### Testing Fast-Path Deployment
 
 To test fast-path locally:
+
 ```bash
 # Make code-only change to a service
 cd services/event-management-service/src/main/java/...
@@ -165,10 +173,10 @@ git push origin develop
 
 ### Stack Deployment Order
 
-**First Time Setup:**
-0. **CICD Stack** - GitHub Actions IAM roles and ECR repositories (deploy first for CI/CD)
+**First Time Setup:** 0. **CICD Stack** - GitHub Actions IAM roles and ECR repositories (deploy first for CI/CD)
 
 **Core Infrastructure:**
+
 1. **DNS Stack** - Route53 hosted zones, ACM certificates (staging/prod only, us-east-1 for CloudFront)
 2. **Network Stack** - VPC, subnets, security groups, NAT gateways
 3. **Secrets Stack** - Secrets Manager, KMS keys for database credentials
@@ -179,13 +187,7 @@ git push origin develop
 8. **Cognito Stack** - User pools with Lambda triggers (depends on Network + Database)
 9. **SES Stack** - Email templates for authentication workflows
 
-**Application Layer (staging/prod only):**
-10. **Cluster Stack** - Shared ECS Fargate cluster
-11. **Microservices Stacks** - Event Management, Speaker Coordination, Partner Coordination, Attendee Experience, Company Management
-12. **API Gateway Service Stack** - Spring Boot API Gateway on ECS with Service Connect
-13. **API Gateway Stack** - AWS API Gateway proxy to Spring Boot (depends on Cognito)
-14. **Frontend Stack** - React app on S3 + CloudFront (depends on DNS)
-15. **AutoShutdown Stack** - Development cost optimization (scales ECS to 0 outside business hours)
+**Application Layer (staging/prod only):** 10. **Cluster Stack** - Shared ECS Fargate cluster 11. **Microservices Stacks** - Event Management, Speaker Coordination, Partner Coordination, Attendee Experience, Company Management 12. **API Gateway Service Stack** - Spring Boot API Gateway on ECS with Service Connect 13. **API Gateway Stack** - AWS API Gateway proxy to Spring Boot (depends on Cognito) 14. **Frontend Stack** - React app on S3 + CloudFront (depends on DNS) 15. **AutoShutdown Stack** - Development cost optimization (scales ECS to 0 outside business hours)
 
 **Note**: CDK automatically handles dependencies when using `--all` flag.
 
@@ -201,6 +203,7 @@ This is controlled by `EnvironmentHelper.shouldDeployWebInfrastructure()` in `li
 ## Multi-Environment Configuration
 
 ### AWS Account Mapping (Consolidated)
+
 - **Development**: Local only (no AWS account; uses production Cognito/S3)
 - **Production**: 188701360969 (eu-central-1) — CDK `envName: 'staging'`, `isProduction: true`
 - **Management**: 510187933511 — domain registration only (profile `batbern-mgmt`)
@@ -208,13 +211,16 @@ This is controlled by `EnvironmentHelper.shouldDeployWebInfrastructure()` in `li
 > The former production account (422940799530) is decommissioned. CloudFormation stacks retain `BATbern-staging-*` names.
 
 ### Environment Configs
+
 - `dev-config.ts` - Local development (no AWS infrastructure deployed)
 - `staging-config.ts` - Production config (domains: batbern.ch, RDS deletion protection, 14-day backups)
 
 ### AWS Profile Setup
+
 The npm scripts use the `batbern-staging` profile for all deployments (production runs in the staging account):
 
 Configure profiles in `~/.aws/config`:
+
 ```ini
 [profile batbern-staging]
 role_arn = arn:aws:iam::188701360969:role/OrganizationAccountAccessRole
@@ -225,6 +231,7 @@ region = eu-central-1
 ## Key Architectural Patterns
 
 ### 1. DNS Architecture (Consolidated)
+
 - **Production (staging account)**: Owns `batbern.ch` hosted zone (migrated from former production account)
 - **Domains**: www.batbern.ch, api.batbern.ch, cdn.batbern.ch
 - **Certificates**: Created in us-east-1 (CloudFront requirement) via DnsStack
@@ -232,24 +239,29 @@ region = eu-central-1
 - **Domain Registration**: Managed in AWS management account (510187933511, profile `batbern-mgmt`)
 
 ### 2. ECS Service Connect (Microservices)
+
 - All microservices use **Service Connect** for service-to-service discovery
 - No ALB URLs needed for inter-service communication
 - DNS names: `{service-name}.batbern-{env}` (e.g., `event-management.batbern-staging`)
 - API Gateway Service uses Service Connect DNS to route to microservices
 
 ### 3. Cognito Lambda Triggers with Database Access
+
 Cognito Lambda triggers (post-confirmation, pre-authentication, pre-token-generation) require:
+
 - VPC access via `lambdaTriggersSecurityGroup` from NetworkStack
 - Database connection via `databaseSecret` and `databaseEndpoint` from DatabaseStack
 - This is why CognitoStack depends on both NetworkStack and DatabaseStack
 
 ### 4. Shared Resources
+
 - **ECS Cluster**: Single Fargate cluster shared by all microservices (ClusterStack)
 - **EventBridge**: Shared event bus for domain events (EventBusStack)
 - **S3 Content Bucket**: Shared by Event Management and Company Management for file uploads
 - **CloudFront Distribution**: Single CDN for all S3 content
 
 ### 5. GitHub Actions Integration
+
 - **CICD Stack** creates IAM role with OIDC provider for GitHub Actions
 - **ECR Repositories**: One per microservice (event-management, speaker-coordination, etc.)
 - **Role ARN**: `arn:aws:iam::188701360969:role/batbern-staging-github-actions-role`
@@ -257,7 +269,9 @@ Cognito Lambda triggers (post-confirmation, pre-authentication, pre-token-genera
 ## Critical Development Standards
 
 ### Stack Dependencies
+
 **ALWAYS** declare stack dependencies explicitly using `addDependency()`:
+
 ```typescript
 databaseStack.addDependency(networkStack);
 databaseStack.addDependency(secretsStack);
@@ -268,7 +282,9 @@ cognitoStack.addDependency(databaseStack);
 This ensures proper CloudFormation stack creation order.
 
 ### Environment Context
+
 **ALWAYS** pass environment via `--context environment={env}` flag:
+
 ```bash
 cdk synth --context environment=staging
 ```
@@ -276,16 +292,20 @@ cdk synth --context environment=staging
 The app validates that AWS credentials match expected account for environment to prevent accidental cross-environment deployments.
 
 ### Cross-Region References
+
 When referencing resources across regions (e.g., us-east-1 certificate in eu-central-1 stack):
+
 ```typescript
 new FrontendStack(app, `${stackPrefix}-Frontend`, {
   certificateArn: dnsStack?.certificate.certificateArn,
-  crossRegionReferences: true,  // Required for cross-region
+  crossRegionReferences: true, // Required for cross-region
 });
 ```
 
 ### Conditional Stack Deployment
+
 Use `EnvironmentHelper` for environment-specific stack creation:
+
 ```typescript
 if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   // Only create for staging/production
@@ -294,12 +314,15 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
 ```
 
 ### Testing Infrastructure
+
 **CRITICAL**: Follow TDD for infrastructure changes:
+
 1. Write test first in `test/unit/{stack-name}.test.ts`
 2. Implement stack changes
 3. Ensure tests pass
 
 All stacks should have:
+
 - Resource existence tests
 - Tag verification tests
 - Security configuration tests
@@ -350,29 +373,39 @@ infrastructure/
 ## Troubleshooting
 
 ### Account Mismatch Error
+
 If you see "ACCOUNT MISMATCH DETECTED":
+
 - Ensure you're using npm scripts: `npm run deploy:staging`
 - Or set correct profile: `export AWS_PROFILE=batbern-staging`
 
 ### CDK Bootstrap Required
+
 If deployment fails with toolkit stack error:
+
 ```bash
 AWS_PROFILE=batbern-staging cdk bootstrap aws://188701360969/eu-central-1
 ```
 
 ### Stack Dependencies Error
+
 If CloudFormation fails with "resource not found":
+
 - Check `addDependency()` calls in `bin/batbern-infrastructure.ts`
 - Ensure dependent stacks are deployed first
 
 ### Cross-Region Certificate Error
+
 If certificate reference fails:
+
 - Verify `crossRegionReferences: true` in stack props
 - Ensure DnsStack deployed in us-east-1
 - Confirm certificate ARN export exists
 
 ### Service Connect Not Working
+
 If microservices can't communicate:
+
 - Verify all services in same cluster
 - Check Service Connect namespace: `batbern-{env}`
 - Ensure security groups allow traffic within VPC
@@ -388,7 +421,7 @@ test('creates VPC with correct CIDR', () => {
   const template = Template.fromStack(stack);
 
   template.hasResourceProperties('AWS::EC2::VPC', {
-    CidrBlock: config.vpc.cidr
+    CidrBlock: config.vpc.cidr,
   });
 });
 
@@ -398,9 +431,7 @@ test('applies environment tags', () => {
   const template = Template.fromStack(stack);
 
   template.hasResourceProperties('AWS::EC2::VPC', {
-    Tags: Match.arrayWith([
-      { Key: 'Environment', Value: config.envName }
-    ])
+    Tags: Match.arrayWith([{ Key: 'Environment', Value: config.envName }]),
   });
 });
 ```

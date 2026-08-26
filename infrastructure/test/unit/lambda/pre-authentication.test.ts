@@ -24,7 +24,6 @@ import { handler } from '../../../lib/lambda/triggers/pre-authentication';
 
 describe('PreAuthentication Lambda Tests', () => {
   let mockDbClient: any;
-  let mockCallback: jest.Mock;
 
   beforeEach(() => {
     // Reset all mocks
@@ -39,7 +38,6 @@ describe('PreAuthentication Lambda Tests', () => {
     (database.getDbClient as jest.Mock).mockResolvedValue(mockDbClient);
 
     // Setup callback mock
-    mockCallback = jest.fn();
   });
 
   const createEvent = (cognitoId: string = 'test-cognito-id'): PreAuthenticationTriggerEvent => ({
@@ -71,10 +69,11 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      const result = await handler(event, {} as any, () => {});
 
       // Then: Authentication allowed
-      expect(mockCallback).toHaveBeenCalledWith(null, event);
+      // #883: the handler returns the event now instead of invoking a callback.
+      expect(result).toBe(event);
 
       // And: Correct query executed
       expect(mockDbClient.query).toHaveBeenCalledWith(
@@ -125,10 +124,11 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      const result = await handler(event, {} as any, () => {});
 
       // Then: Authentication allowed
-      expect(mockCallback).toHaveBeenCalledWith(null, event);
+      // #883: the handler returns the event now instead of invoking a callback.
+      expect(result).toBe(event);
 
       // And: CloudWatch metrics published
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
@@ -161,14 +161,9 @@ describe('PreAuthentication Lambda Tests', () => {
 
       // When: PreAuthentication trigger fires
       // Then: Should throw error to block authentication
-      await expect(handler(event, {} as any, mockCallback)).rejects.toThrow('inactive');
+      await expect(handler(event, {} as any, () => {})).rejects.toThrow('inactive');
 
       // And: Callback should have been called with error message
-      expect(mockCallback).toHaveBeenCalledWith(
-        'User account is inactive. Reason: User violated terms of service',
-        event
-      );
-
       // And: CloudWatch metrics published
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
         expect.objectContaining({
@@ -200,14 +195,9 @@ describe('PreAuthentication Lambda Tests', () => {
 
       // When: PreAuthentication trigger fires
       // Then: Should throw error to block authentication
-      await expect(handler(event, {} as any, mockCallback)).rejects.toThrow('inactive');
+      await expect(handler(event, {} as any, () => {})).rejects.toThrow('inactive');
 
       // And: Callback should have been called with default message
-      expect(mockCallback).toHaveBeenCalledWith(
-        'User account is inactive. Reason: Account deactivated',
-        event
-      );
-
       // And: Database connection released
       expect(mockDbClient.release).toHaveBeenCalled();
     });
@@ -223,10 +213,11 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      const result = await handler(event, {} as any, () => {});
 
       // Then: Authentication allowed (graceful degradation)
-      expect(mockCallback).toHaveBeenCalledWith(null, event);
+      // #883: the handler returns the event now instead of invoking a callback.
+      expect(result).toBe(event);
 
       // And: Failure metric published
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
@@ -248,10 +239,11 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      const result = await handler(event, {} as any, () => {});
 
       // Then: Authentication allowed (graceful degradation)
-      expect(mockCallback).toHaveBeenCalledWith(null, event);
+      // #883: the handler returns the event now instead of invoking a callback.
+      expect(result).toBe(event);
 
       // And: Failure metric published
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
@@ -276,7 +268,7 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      await handler(event, {} as any, () => {});
 
       // Then: Database connection released
       expect(mockDbClient.release).toHaveBeenCalled();
@@ -291,7 +283,7 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      await handler(event, {} as any, () => {});
 
       // Then: UserNotFoundAllowed metric published
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
@@ -329,7 +321,7 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      await handler(event, {} as any, () => {});
 
       // Then: ActiveUserAllowed metric published
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
@@ -354,7 +346,7 @@ describe('PreAuthentication Lambda Tests', () => {
 
       // When: PreAuthentication trigger fires
       // Then: Should throw error to block authentication
-      await expect(handler(event, {} as any, mockCallback)).rejects.toThrow('inactive');
+      await expect(handler(event, {} as any, () => {})).rejects.toThrow('inactive');
 
       // And: InactiveUserBlocked metric published
       expect(mockCloudWatchSend).toHaveBeenCalledWith(
@@ -379,10 +371,11 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      const result = await handler(event, {} as any, () => {});
 
       // Then: Authentication still allowed
-      expect(mockCallback).toHaveBeenCalledWith(null, event);
+      // #883: the handler returns the event now instead of invoking a callback.
+      expect(result).toBe(event);
     });
   });
 
@@ -394,10 +387,11 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent('new-cognito-user-123');
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      const result = await handler(event, {} as any, () => {});
 
       // Then: Authentication allowed for JIT provisioning
-      expect(mockCallback).toHaveBeenCalledWith(null, event);
+      // #883: the handler returns the event now instead of invoking a callback.
+      expect(result).toBe(event);
 
       // And: Correct cognito_user_id queried
       expect(mockDbClient.query).toHaveBeenCalledWith(
@@ -428,7 +422,7 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      await handler(event, {} as any, () => {});
 
       // Then: Database connection released
       expect(mockDbClient.release).toHaveBeenCalledTimes(1);
@@ -444,7 +438,7 @@ describe('PreAuthentication Lambda Tests', () => {
 
       // When: PreAuthentication trigger fires
       // Then: Should throw error to block authentication
-      await expect(handler(event, {} as any, mockCallback)).rejects.toThrow('inactive');
+      await expect(handler(event, {} as any, () => {})).rejects.toThrow('inactive');
 
       // And: Database connection released even when blocking
       expect(mockDbClient.release).toHaveBeenCalledTimes(1);
@@ -457,7 +451,7 @@ describe('PreAuthentication Lambda Tests', () => {
       const event = createEvent();
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      await handler(event, {} as any, () => {});
 
       // Then: Release not called (no connection to release)
       expect(mockDbClient.release).not.toHaveBeenCalled();
@@ -475,10 +469,11 @@ describe('PreAuthentication Lambda Tests', () => {
       event.triggerSource = 'PreAuthentication_Authentication' as any;
 
       // When: PreAuthentication trigger fires
-      await handler(event, {} as any, mockCallback);
+      const result = await handler(event, {} as any, () => {});
 
       // Then: Authentication allowed
-      expect(mockCallback).toHaveBeenCalledWith(null, event);
+      // #883: the handler returns the event now instead of invoking a callback.
+      expect(result).toBe(event);
     });
   });
 });
