@@ -146,6 +146,46 @@ Practical consequences:
 - The `dependabot[bot]` exclusion is why dependency PRs are safe to accumulate — they never
   deploy — but merging them does, once each.
 
+#### Three concurrent PRs: the middle deploy is silently cancelled (#967)
+
+`deploy-staging.yml` sets `concurrency: {group: deploy-staging, cancel-in-progress: false}`. The
+`false` is correct — a half-finished production deploy must not be interrupted — but it does **not**
+mean "queue indefinitely". GitHub Actions allows **one running plus one pending** run per concurrency
+group. When a third run joins, **the previously pending run is cancelled.**
+
+Because `build.yml` invokes the deploy on *every* PR targeting `develop`, three open PRs means three
+runs in that group, and the middle one dies. Its own build jobs all passed; only the queued deploy
+was killed.
+
+Then it looks like a failure. `auto-merge.yml` waits with `allowed-conclusions: success,skipped`, so a
+`cancelled` deploy fails the `auto-merge` check and the PR goes `UNSTABLE` with a red mark. Nothing
+was wrong with that PR.
+
+Measured 2026-08-26 across the last 100 `build.yml` runs: **7 runs carry this signature** (every
+`build-*` job green, `deploy-to-staging` cancelled), including run `31614489526` from the original
+report. The other 35 cancellations in that window are whole-run aborts, which is a different thing.
+
+Contributing factor worth knowing: **`build.yml` has no `concurrency` block at all.** Pushing a new
+commit to a PR does not cancel that PR's previous run, so two full pipelines for the same branch each
+hold a slot in the deploy group — which makes reaching the three-run threshold easier than it needs
+to be.
+
+**The operational rule: never have more than two PRs to `develop` in flight, and merge them strictly
+one at a time.** Combined with the `BEHIND` stall below, the honest summary is that this repo's CI
+supports exactly one PR at a time.
+
+Considered and not done (recorded so it is not re-derived):
+
+- **Accept `cancelled` as a non-failure in auto-merge.** Rejected on merit: the PR would then merge
+  having never actually deployed, which is worse than a false red.
+- **Re-dispatch the cancelled deploy.** Blocked by the same `GITHUB_TOKEN` recursion limit documented
+  under #976 — it needs a PAT this repo does not have.
+- **Add a `concurrency` block to `build.yml`** keyed on the PR, cancelling superseded PR builds.
+  Reduces contention but does not remove the three-run eviction.
+- **Deploy only on push to `develop`.** The real fix — it removes this, the `BEHIND` stall, and the
+  opening-a-PR-ships-to-production hazard together. Deliberately deferred: it costs pre-merge
+  validation on real infrastructure. See #967 and #976.
+
 #### Two concurrent PRs: the second one stalls (#976)
 
 `concurrency: deploy-staging` and `strict: true` branch protection are individually correct
