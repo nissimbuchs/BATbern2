@@ -1,3 +1,13 @@
+// #958: tagged @quarantine, not @gate. This file carried NO tag at all, so it matched none of
+// the CI scopes (`--grep @smoke` per-deploy, `--grep @gate` nightly, `--grep @quarantine` nightly
+// re-test) and therefore never executed anywhere — it looked like coverage and was not.
+//
+// @quarantine rather than @gate deliberately: these specs assert heavily on translated UI copy,
+// so promoting them straight into the gate would very likely turn the nightly red on day one,
+// which is the mistake #1008 called out. @quarantine runs them nightly in the promotion re-test
+// where they cannot break the deploy gate, and the existing machinery promotes them once they
+// settle green. Retag to @gate at that point.
+
 /**
  * E2E Tests for Events API Consolidation
  * Story 1.15a.1: Events API Consolidation
@@ -192,7 +202,7 @@ async function createTestEvent(page: Page, title: string = 'E2E Test Event'): Pr
 // TEST GROUP 1: Event Dashboard - List/Search with Filters (AC1)
 // ============================================================================
 
-test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
+test.describe('Events API Consolidation - Event Dashboard (AC1)', { tag: '@quarantine' }, () => {
   test('should_loadEventDashboard_when_usingNewListAPI', async ({ page }) => {
     // AC1 & AC17: Event dashboard loads using consolidated API
     // BEFORE: 30 API calls to load dashboard
@@ -278,7 +288,7 @@ test.describe('Events API Consolidation - Event Dashboard (AC1)', () => {
 // TEST GROUP 2: Event Detail with Resource Expansion (AC2)
 // ============================================================================
 
-test.describe('Events API Consolidation - Event Detail (AC2)', () => {
+test.describe('Events API Consolidation - Event Detail (AC2)', { tag: '@quarantine' }, () => {
   let testEvent: Event;
 
   test.beforeAll(async ({ browser }) => {
@@ -372,7 +382,7 @@ test.describe('Events API Consolidation - Event Detail (AC2)', () => {
 // TEST GROUP 3: Event CRUD Operations (AC3-6)
 // ============================================================================
 
-test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
+test.describe('Events API Consolidation - CRUD Operations (AC3-6)', { tag: '@quarantine' }, () => {
   test('should_createEvent_when_validDataProvided', async ({ page }) => {
     // AC3: Create event
     const eventNumber = Math.floor(Math.random() * 90000) + 10000; // reserved test range (>=10000), swept by ems/events_by_number
@@ -478,161 +488,181 @@ test.describe('Events API Consolidation - CRUD Operations (AC3-6)', () => {
 // TEST GROUP 4: Event Actions - Publish & Workflow (AC7-8)
 // ============================================================================
 
-test.describe.skip('Events API Consolidation - Event Actions (AC7-8)', () => {
-  test('should_publishEvent_when_validationPasses', async ({ page }) => {
-    // AC7: Publish event
-    const event = await createTestEvent(page, 'Event to Publish');
+test.describe.skip(
+  'Events API Consolidation - Event Actions (AC7-8)',
+  { tag: '@quarantine' },
+  () => {
+    test('should_publishEvent_when_validationPasses', async ({ page }) => {
+      // AC7: Publish event
+      const event = await createTestEvent(page, 'Event to Publish');
 
-    const response = await apiRequest(page, `/api/v1/events/${event.eventCode}/publish`, {
-      method: 'POST',
+      const response = await apiRequest(page, `/api/v1/events/${event.eventCode}/publish`, {
+        method: 'POST',
+      });
+
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.workflowState).toBe('PUBLISHED');
     });
 
-    expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(data.workflowState).toBe('PUBLISHED');
-  });
+    test('should_return422_when_validationFails', async ({ page }) => {
+      // AC7: Publish validation failure
+      const event = await createTestEvent(page, 'Incomplete Event');
+      // Event missing required fields for publishing
 
-  test('should_return422_when_validationFails', async ({ page }) => {
-    // AC7: Publish validation failure
-    const event = await createTestEvent(page, 'Incomplete Event');
-    // Event missing required fields for publishing
+      const response = await apiRequest(page, `/api/v1/events/${event.eventCode}/publish`, {
+        method: 'POST',
+      });
 
-    const response = await apiRequest(page, `/api/v1/events/${event.eventCode}/publish`, {
-      method: 'POST',
+      expect(response.status).toBe(422);
     });
 
-    expect(response.status).toBe(422);
-  });
+    test('should_advanceWorkflow_when_transitionValid', async ({ page }) => {
+      // AC8: Advance workflow to next state
+      const event = await createTestEvent(page, 'Workflow Event');
 
-  test('should_advanceWorkflow_when_transitionValid', async ({ page }) => {
-    // AC8: Advance workflow to next state
-    const event = await createTestEvent(page, 'Workflow Event');
+      const response = await apiRequest(
+        page,
+        `/api/v1/events/${event.eventCode}/workflow/advance`,
+        {
+          method: 'POST',
+        }
+      );
 
-    const response = await apiRequest(page, `/api/v1/events/${event.eventCode}/workflow/advance`, {
-      method: 'POST',
+      expect(response.status).toBe(200);
+      const data = await response.json();
+      expect(data.workflow).toBeDefined();
+      expect(data.workflow.currentStep).toBeGreaterThan(1);
     });
 
-    expect(response.status).toBe(200);
-    const data = await response.json();
-    expect(data.workflow).toBeDefined();
-    expect(data.workflow.currentStep).toBeGreaterThan(1);
-  });
+    test('should_return422_when_transitionInvalid', async ({ page }) => {
+      // AC8: Invalid workflow transition
+      const event = await createTestEvent(page, 'Invalid Workflow Event');
+      // Try to advance workflow when prerequisites not met
 
-  test('should_return422_when_transitionInvalid', async ({ page }) => {
-    // AC8: Invalid workflow transition
-    const event = await createTestEvent(page, 'Invalid Workflow Event');
-    // Try to advance workflow when prerequisites not met
+      const response = await apiRequest(
+        page,
+        `/api/v1/events/${event.eventCode}/workflow/advance`,
+        {
+          method: 'POST',
+        }
+      );
 
-    const response = await apiRequest(page, `/api/v1/events/${event.eventCode}/workflow/advance`, {
-      method: 'POST',
+      expect(response.status).toBe(422);
     });
-
-    expect(response.status).toBe(422);
-  });
-});
+  }
+);
 
 // ============================================================================
 // TEST GROUP 5: Performance & Caching (AC15-16)
 // ============================================================================
 
-test.describe.skip('Events API Consolidation - Performance (AC15-16)', () => {
-  let testEvent: Event;
+test.describe.skip(
+  'Events API Consolidation - Performance (AC15-16)',
+  { tag: '@quarantine' },
+  () => {
+    let testEvent: Event;
 
-  test.beforeAll(async ({ browser }) => {
-    const page = await browser.newPage();
-    await page.goto('/organizer/events');
-    testEvent = await createTestEvent(page);
-    await page.close();
-  });
+    test.beforeAll(async ({ browser }) => {
+      const page = await browser.newPage();
+      await page.goto('/organizer/events');
+      testEvent = await createTestEvent(page);
+      await page.close();
+    });
 
-  test('should_respondUnder500ms_when_fullIncludesRequested', async ({ page }) => {
-    // AC16: Performance requirement - event detail with all includes <500ms P95
-    const measurements: number[] = [];
+    test('should_respondUnder500ms_when_fullIncludesRequested', async ({ page }) => {
+      // AC16: Performance requirement - event detail with all includes <500ms P95
+      const measurements: number[] = [];
 
-    // Make 10 requests to measure P95
-    for (let i = 0; i < 10; i++) {
-      const startTime = Date.now();
-      const response = await apiRequest(
-        page,
-        `/api/v1/events/${testEvent.eventCode}?include=venue,speakers,sessions,topics,workflow,registrations,catering,team,publishing,notifications,analytics`
+      // Make 10 requests to measure P95
+      for (let i = 0; i < 10; i++) {
+        const startTime = Date.now();
+        const response = await apiRequest(
+          page,
+          `/api/v1/events/${testEvent.eventCode}?include=venue,speakers,sessions,topics,workflow,registrations,catering,team,publishing,notifications,analytics`
+        );
+        const endTime = Date.now();
+
+        expect(response.status).toBe(200);
+        measurements.push(endTime - startTime);
+      }
+
+      // Calculate P95
+      measurements.sort((a, b) => a - b);
+      const p95Index = Math.floor(measurements.length * 0.95);
+      const p95Latency = measurements[p95Index];
+
+      // AC16: P95 latency should be < 500ms
+      expect(p95Latency).toBeLessThan(500);
+
+      console.log(
+        `Event Detail API Latency - Min: ${Math.min(...measurements)}ms, Max: ${Math.max(...measurements)}ms, P95: ${p95Latency}ms`
       );
-      const endTime = Date.now();
+    });
 
-      expect(response.status).toBe(200);
-      measurements.push(endTime - startTime);
-    }
+    test('should_returnCached_when_withinTTL', async ({ page }) => {
+      // AC15: Caffeine in-memory caching for expanded resources
+      const firstResponse = await apiRequest(
+        page,
+        `/api/v1/events/${testEvent.eventCode}?include=venue,speakers,sessions`
+      );
+      expect(firstResponse.status).toBe(200);
+      const firstData = await firstResponse.json();
 
-    // Calculate P95
-    measurements.sort((a, b) => a - b);
-    const p95Index = Math.floor(measurements.length * 0.95);
-    const p95Latency = measurements[p95Index];
+      // Second request should be cached (faster)
+      const startTime = Date.now();
+      const cachedResponse = await apiRequest(
+        page,
+        `/api/v1/events/${testEvent.eventCode}?include=venue,speakers,sessions`
+      );
+      const cachedLatency = Date.now() - startTime;
 
-    // AC16: P95 latency should be < 500ms
-    expect(p95Latency).toBeLessThan(500);
+      expect(cachedResponse.status).toBe(200);
+      const cachedData = await cachedResponse.json();
 
-    console.log(
-      `Event Detail API Latency - Min: ${Math.min(...measurements)}ms, Max: ${Math.max(...measurements)}ms, P95: ${p95Latency}ms`
-    );
-  });
+      // Verify cached response matches original
+      expect(cachedData.id).toBe(firstData.id);
 
-  test('should_returnCached_when_withinTTL', async ({ page }) => {
-    // AC15: Caffeine in-memory caching for expanded resources
-    const firstResponse = await apiRequest(
-      page,
-      `/api/v1/events/${testEvent.eventCode}?include=venue,speakers,sessions`
-    );
-    expect(firstResponse.status).toBe(200);
-    const firstData = await firstResponse.json();
-
-    // Second request should be cached (faster)
-    const startTime = Date.now();
-    const cachedResponse = await apiRequest(
-      page,
-      `/api/v1/events/${testEvent.eventCode}?include=venue,speakers,sessions`
-    );
-    const cachedLatency = Date.now() - startTime;
-
-    expect(cachedResponse.status).toBe(200);
-    const cachedData = await cachedResponse.json();
-
-    // Verify cached response matches original
-    expect(cachedData.id).toBe(firstData.id);
-
-    // Cached response should be faster (< 50ms from dev notes)
-    expect(cachedLatency).toBeLessThan(100);
-  });
-});
+      // Cached response should be faster (< 50ms from dev notes)
+      expect(cachedLatency).toBeLessThan(100);
+    });
+  }
+);
 
 // ============================================================================
 // TEST GROUP 6: Wireframe Migration Validation (AC17)
 // ============================================================================
 
-test.describe.skip('Events API Consolidation - Wireframe Migration (AC17)', () => {
-  test('should_loadEventManagementDashboard_when_migratedToNewAPIs', async ({ page }) => {
-    // AC17: story-1.16-event-management-dashboard.md uses new APIs
-    await page.goto(`${BASE_URL}/organizer/events`);
+test.describe.skip(
+  'Events API Consolidation - Wireframe Migration (AC17)',
+  { tag: '@quarantine' },
+  () => {
+    test('should_loadEventManagementDashboard_when_migratedToNewAPIs', async ({ page }) => {
+      // AC17: story-1.16-event-management-dashboard.md uses new APIs
+      await page.goto(`${BASE_URL}/organizer/events`);
 
-    await expect(page.getByTestId('event-list-container')).toBeVisible();
-    await expect(page.getByTestId('event-search')).toBeVisible();
-    await expect(page.getByTestId('event-filters')).toBeVisible();
+      await expect(page.getByTestId('event-list-container')).toBeVisible();
+      await expect(page.getByTestId('event-search')).toBeVisible();
+      await expect(page.getByTestId('event-filters')).toBeVisible();
 
-    // Verify page loads successfully with consolidated APIs
-    const events = page.locator('[data-testid^="event-card-"]');
-    await expect(events.count()).resolves.toBeGreaterThan(0);
-  });
+      // Verify page loads successfully with consolidated APIs
+      const events = page.locator('[data-testid^="event-card-"]');
+      await expect(events.count()).resolves.toBeGreaterThan(0);
+    });
 
-  test('should_loadEventDetailEdit_when_migratedToNewAPIs', async ({ page }) => {
-    // AC17: story-1.16-event-detail-edit.md uses new APIs
-    const event = await createTestEvent(page);
+    test('should_loadEventDetailEdit_when_migratedToNewAPIs', async ({ page }) => {
+      // AC17: story-1.16-event-detail-edit.md uses new APIs
+      const event = await createTestEvent(page);
 
-    await page.goto(`${BASE_URL}/organizer/events/${event.id}/edit`);
+      await page.goto(`${BASE_URL}/organizer/events/${event.id}/edit`);
 
-    await expect(page.getByTestId('event-edit-form')).toBeVisible();
-    await expect(page.getByText(event.title)).toBeVisible();
+      await expect(page.getByTestId('event-edit-form')).toBeVisible();
+      await expect(page.getByText(event.title)).toBeVisible();
 
-    // Verify all sub-resources loaded via includes
-    await expect(page.getByTestId('event-venue-section')).toBeVisible();
-    await expect(page.getByTestId('event-speakers-section')).toBeVisible();
-    await expect(page.getByTestId('event-sessions-section')).toBeVisible();
-  });
-});
+      // Verify all sub-resources loaded via includes
+      await expect(page.getByTestId('event-venue-section')).toBeVisible();
+      await expect(page.getByTestId('event-speakers-section')).toBeVisible();
+      await expect(page.getByTestId('event-sessions-section')).toBeVisible();
+    });
+  }
+);

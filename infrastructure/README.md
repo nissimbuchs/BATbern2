@@ -16,10 +16,10 @@ This infrastructure implements a complete AWS-based multi-tier architecture with
 
 BATbern uses a **consolidated single-account** setup for production, with local-first development:
 
-| Environment | AWS Account ID | Purpose |
-|-------------|---------------|---------|
-| **Development** | N/A (local) | Local PostgreSQL + native services; uses production Cognito/S3 |
-| **Production** | 188701360969 | Single account serving www.batbern.ch (CDK `envName: 'staging'`, `isProduction: true`) |
+| Environment     | AWS Account ID | Purpose                                                                                |
+| --------------- | -------------- | -------------------------------------------------------------------------------------- |
+| **Development** | N/A (local)    | Local PostgreSQL + native services; uses production Cognito/S3                         |
+| **Production**  | 188701360969   | Single account serving www.batbern.ch (CDK `envName: 'staging'`, `isProduction: true`) |
 
 > **Note:** CloudFormation stacks retain `BATbern-staging-*` names to preserve existing infrastructure.
 > The `isProduction` flag in `staging-config.ts` controls production behavior (domains, email, scaling, RDS hardening).
@@ -148,6 +148,7 @@ AWS_PROFILE=batbern-prod npx cdk deploy BATbern-production-CICD --context enviro
 ```
 
 This creates:
+
 - GitHub Actions IAM role with full CDK deployment permissions
 - ECR repositories for all services
 - CloudWatch log groups for CI/CD pipeline logs
@@ -172,6 +173,7 @@ npm run diff:prod
 - **Pipeline Logs**: CloudWatch log groups for CI/CD pipeline tracking
 
 **GitHub Actions Role ARNs**:
+
 - Development: `arn:aws:iam::954163570305:role/batbern-development-github-actions-role`
 - Staging: `arn:aws:iam::188701360969:role/batbern-staging-github-actions-role`
 - Production: `arn:aws:iam::422940799530:role/batbern-production-github-actions-role`
@@ -181,6 +183,7 @@ npm run diff:prod
 ### 1. Network Stack
 
 Creates isolated VPC with:
+
 - Public subnets for load balancers
 - Private subnets with NAT for application tier
 - Isolated subnets for databases
@@ -191,6 +194,7 @@ Creates isolated VPC with:
 ### 2. Secrets Stack
 
 Manages sensitive credentials with:
+
 - Database credentials with automatic rotation (production)
 - JWT signing keys
 - KMS encryption for all secrets
@@ -200,6 +204,7 @@ Manages sensitive credentials with:
 ### 3. Database Stack
 
 Provides data persistence with:
+
 - RDS PostgreSQL with automated backups
 - Multi-AZ deployment for production
 - Automated snapshots and retention policies
@@ -211,6 +216,7 @@ Provides data persistence with:
 ### 4. Storage Stack
 
 Content delivery infrastructure:
+
 - S3 buckets for content, logs, and backups
 - CloudFront CDN distribution
 - Lifecycle policies for cost optimization
@@ -221,6 +227,7 @@ Content delivery infrastructure:
 ### 5. Monitoring Stack
 
 Observability and alerting:
+
 - CloudWatch dashboards per environment
 - Alarms for CPU, errors, and latency
 - Centralized log aggregation
@@ -231,11 +238,13 @@ Observability and alerting:
 ## Environment Configurations
 
 ### Development (Local)
+
 - **PostgreSQL**: Docker container (localhost:5432)
 - **Cognito/S3**: Shared with production (AWS)
 - **Services**: Native Java processes + Vite dev server
 
 ### Production (Account: 188701360969, CDK envName: `staging`)
+
 - **VPC CIDR**: 10.1.0.0/16
 - **RDS**: db.t4g.micro (ARM), Single-AZ
 - **NAT Gateways**: 1 (cost optimization)
@@ -269,24 +278,29 @@ npm run test:watch
 After deployment, each stack exports important values:
 
 ### Network Stack
+
 - VPC ID
 - Security Group IDs
 - Subnet IDs
 
 ### Secrets Stack
+
 - Database Secret ARN
 - JWT Secret ARN
 - KMS Key ID
 
 ### Database Stack
+
 - RDS Endpoint and Port
 
 ### Storage Stack
+
 - Content Bucket Name
 - CloudFront Distribution Domain
 - Logs Bucket Name
 
 ### Monitoring Stack
+
 - Dashboard URL
 - Application Log Group
 - Alarm Topic ARN (production)
@@ -303,6 +317,7 @@ After deployment, each stack exports important values:
 ## Cost Optimization
 
 Development environment optimized for cost:
+
 - Single NAT Gateway instead of per-AZ
 - Smaller instance types
 - Shorter backup retention
@@ -347,6 +362,7 @@ AWS_PROFILE=batbern-prod cdk bootstrap aws://422940799530/eu-central-1
 ### Insufficient Permissions
 
 Ensure your AWS credentials have permissions for:
+
 - VPC and EC2
 - RDS PostgreSQL
 - S3 and CloudFront
@@ -358,10 +374,10 @@ Ensure your AWS credentials have permissions for:
 
 Stacks should be deployed in this order:
 
-**First Time Setup:**
-0. CICD (creates GitHub Actions roles - deploy first for CI/CD integration)
+**First Time Setup:** 0. CICD (creates GitHub Actions roles - deploy first for CI/CD integration)
 
 **Core Infrastructure:**
+
 1. Network (VPC, subnets, security groups)
 2. Secrets (KMS keys, secrets for database credentials)
 3. Database (depends on Network + Secrets)
@@ -376,11 +392,13 @@ CDK automatically handles dependencies when deploying with `--all` flag.
 ## Contributing
 
 Follow the TDD workflow:
+
 1. Write tests first (RED phase)
 2. Implement infrastructure (GREEN phase)
 3. Refactor for optimization (REFACTOR phase)
 
 All infrastructure changes must:
+
 - Include comprehensive tests
 - Pass `npm test` with >90% coverage
 - Successfully synthesize with `npm run synth:dev`

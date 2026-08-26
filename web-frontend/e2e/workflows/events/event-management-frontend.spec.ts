@@ -1,3 +1,13 @@
+// #958: tagged @quarantine, not @gate. This file carried NO tag at all, so it matched none of
+// the CI scopes (`--grep @smoke` per-deploy, `--grep @gate` nightly, `--grep @quarantine` nightly
+// re-test) and therefore never executed anywhere — it looked like coverage and was not.
+//
+// @quarantine rather than @gate deliberately: these specs assert heavily on translated UI copy,
+// so promoting them straight into the gate would very likely turn the nightly red on day one,
+// which is the mistake #1008 called out. @quarantine runs them nightly in the promotion re-test
+// where they cannot break the deploy gate, and the existing machinery promotes them once they
+// settle green. Retag to @gate at that point.
+
 /**
  * E2E Tests for Event Management Frontend (Story 2.5.3)
  *
@@ -19,14 +29,21 @@
 
 import { test, expect } from '@playwright/test';
 import { BASE_URL } from '../../../playwright.config';
+import { forceUserProfileLanguage } from '../../helpers/mock-user-profile';
 
 // ============================================================================
 // TEST GROUP 1: Event Dashboard Display (AC: 1, 2)
 // Task 1.1: Event dashboard display
 // ============================================================================
 
-test.describe('Event Management Frontend - Dashboard Display', () => {
+test.describe('Event Management Frontend - Dashboard Display', { tag: '@quarantine' }, () => {
   test.beforeEach(async ({ page }) => {
+    // #957: LanguageSync applies the logged-in user's PROFILE language after login, which
+    // overwrites the `batbern-language` value global-setup plants in localStorage. The
+    // organizer test user's profile is German, so without this pin every assertion below that
+    // names English copy is at the mercy of that profile — and under a German UI a
+    // `toHaveCount(0)` style assertion passes VACUOUSLY, which is worse than failing.
+    await forceUserProfileLanguage(page, 'en');
     await page.goto('/organizer/events');
   });
 
@@ -210,8 +227,14 @@ test.describe('Event Management Frontend - Dashboard Display', () => {
 // Task 1.2: Event creation workflow
 // ============================================================================
 
-test.describe('Event Management Frontend - Create Event Workflow', () => {
+test.describe('Event Management Frontend - Create Event Workflow', { tag: '@quarantine' }, () => {
   test.beforeEach(async ({ page }) => {
+    // #957: LanguageSync applies the logged-in user's PROFILE language after login, which
+    // overwrites the `batbern-language` value global-setup plants in localStorage. The
+    // organizer test user's profile is German, so without this pin every assertion below that
+    // names English copy is at the mercy of that profile — and under a German UI a
+    // `toHaveCount(0)` style assertion passes VACUOUSLY, which is worse than failing.
+    await forceUserProfileLanguage(page, 'en');
     await page.goto('/organizer/events');
   });
 
@@ -391,8 +414,14 @@ test.describe('Event Management Frontend - Create Event Workflow', () => {
 // Task 1.3: Event edit workflow with auto-save
 // ============================================================================
 
-test.describe('Event Management Frontend - Edit Event Workflow', () => {
+test.describe('Event Management Frontend - Edit Event Workflow', { tag: '@quarantine' }, () => {
   test.beforeEach(async ({ page }) => {
+    // #957: LanguageSync applies the logged-in user's PROFILE language after login, which
+    // overwrites the `batbern-language` value global-setup plants in localStorage. The
+    // organizer test user's profile is German, so without this pin every assertion below that
+    // names English copy is at the mercy of that profile — and under a German UI a
+    // `toHaveCount(0)` style assertion passes VACUOUSLY, which is worse than failing.
+    await forceUserProfileLanguage(page, 'en');
     await page.goto('/organizer/events');
   });
 
@@ -604,8 +633,14 @@ test.describe('Event Management Frontend - Edit Event Workflow', () => {
 // Task 1.4: Workflow visualization
 // ============================================================================
 
-test.describe('Event Management Frontend - Workflow Visualization', () => {
+test.describe('Event Management Frontend - Workflow Visualization', { tag: '@quarantine' }, () => {
   test.beforeEach(async ({ page }) => {
+    // #957: LanguageSync applies the logged-in user's PROFILE language after login, which
+    // overwrites the `batbern-language` value global-setup plants in localStorage. The
+    // organizer test user's profile is German, so without this pin every assertion below that
+    // names English copy is at the mercy of that profile — and under a German UI a
+    // `toHaveCount(0)` style assertion passes VACUOUSLY, which is worse than failing.
+    await forceUserProfileLanguage(page, 'en');
     await page.goto('/organizer/events');
   });
 

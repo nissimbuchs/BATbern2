@@ -1,3 +1,13 @@
+// #958: tagged @quarantine, not @gate. This file carried NO tag at all, so it matched none of
+// the CI scopes (`--grep @smoke` per-deploy, `--grep @gate` nightly, `--grep @quarantine` nightly
+// re-test) and therefore never executed anywhere — it looked like coverage and was not.
+//
+// @quarantine rather than @gate deliberately: these specs assert heavily on translated UI copy,
+// so promoting them straight into the gate would very likely turn the nightly red on day one,
+// which is the mistake #1008 called out. @quarantine runs them nightly in the promotion re-test
+// where they cannot break the deploy gate, and the existing machinery promotes them once they
+// settle green. Retag to @gate at that point.
+
 /**
  * E2E Tests for Reset Password Confirmation Flow
  * Story 1.2.2a: Implement Reset Password Confirmation
@@ -62,7 +72,7 @@ async function submitResetPasswordForm(page: Page) {
 // TEST GROUP 1: Basic Reset Password Flow
 // ============================================================================
 
-test.describe('Reset Password - Basic Flow', () => {
+test.describe('Reset Password - Basic Flow', { tag: '@quarantine' }, () => {
   test('should_renderResetPasswordPage_when_navigated', async ({ page }) => {
     // AC1: Reset password page should display all required fields
     await navigateToResetPassword(page, TEST_EMAIL);
@@ -98,7 +108,7 @@ test.describe('Reset Password - Basic Flow', () => {
 // TEST GROUP 2: Form Validation
 // ============================================================================
 
-test.describe('Reset Password - Form Validation', () => {
+test.describe('Reset Password - Form Validation', { tag: '@quarantine' }, () => {
   test('should_showError_when_codeInvalid', async ({ page }) => {
     // AC9: Code must be exactly 6 digits
     await navigateToResetPassword(page, TEST_EMAIL);
@@ -158,7 +168,7 @@ test.describe('Reset Password - Form Validation', () => {
 // TEST GROUP 3: Password Strength Indicator
 // ============================================================================
 
-test.describe('Reset Password - Password Strength', () => {
+test.describe('Reset Password - Password Strength', { tag: '@quarantine' }, () => {
   test('should_showWeakStrength_when_simplePassword', async ({ page }) => {
     // AC5: Password strength indicator for weak password
     await navigateToResetPassword(page, TEST_EMAIL);
@@ -191,7 +201,7 @@ test.describe('Reset Password - Password Strength', () => {
 // TEST GROUP 4: Password Visibility Toggle
 // ============================================================================
 
-test.describe('Reset Password - Password Visibility', () => {
+test.describe('Reset Password - Password Visibility', { tag: '@quarantine' }, () => {
   test('should_togglePasswordVisibility_when_iconClicked', async ({ page }) => {
     // Test password visibility toggle
     await navigateToResetPassword(page, TEST_EMAIL);
@@ -219,7 +229,7 @@ test.describe('Reset Password - Password Visibility', () => {
 // TEST GROUP 5: Accessibility
 // ============================================================================
 
-test.describe('Reset Password - Accessibility', () => {
+test.describe('Reset Password - Accessibility', { tag: '@quarantine' }, () => {
   test('should_haveProperLabels_when_rendered', async ({ page }) => {
     // WCAG 2.1 AA: All form fields should have accessible labels
     await navigateToResetPassword(page, TEST_EMAIL);
@@ -268,7 +278,7 @@ test.describe('Reset Password - Accessibility', () => {
 // TEST GROUP 6: Integration with Forgot Password Flow
 // ============================================================================
 
-test.describe('Reset Password - Integration', () => {
+test.describe('Reset Password - Integration', { tag: '@quarantine' }, () => {
   // Skip entire group if Cognito integration not available
   if (!HAS_COGNITO_INTEGRATION) {
     test.skip();
@@ -290,7 +300,7 @@ test.describe('Reset Password - Integration', () => {
 // TEST GROUP 7: Error Handling (Skipped - requires real Cognito integration)
 // ============================================================================
 
-test.describe('Reset Password - Error Handling', () => {
+test.describe('Reset Password - Error Handling', { tag: '@quarantine' }, () => {
   // Skip entire group if Cognito integration not available
   if (!HAS_COGNITO_INTEGRATION) {
     test.skip();
