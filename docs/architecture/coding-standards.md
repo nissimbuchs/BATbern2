@@ -116,6 +116,32 @@ no `package.json` defined one; #973 added that script to the ROOT `package.json`
 to the same installer), so the command now works — but `make install` is the documented
 entry point and the one CLAUDE.md points a newcomer at.
 
+**Prettier is enforced in CI for BOTH trees as of #1008.** This is worth stating explicitly
+because the obvious assumption is wrong: the pre-commit hook runs `prettier --write` on *staged*
+files and re-stages them, so it prevents new drift and is structurally incapable of noticing an
+existing backlog. Until #1008 nothing in CI ran prettier on `web-frontend` at all —
+`build-frontend` ran `lint:ci` and the tests — so 12 files under `src/` had drifted and
+`make format-check` had been red on `develop` with nobody looking.
+
+| tree | pre-commit | CI gate |
+|---|---|---|
+| `web-frontend` | `lint-staged` (eslint --fix, prettier --write) | `Prettier format check` + `lint:ci` in `build-frontend` |
+| `infrastructure` | `lint-staged` (eslint --fix, prettier --write) | `Prettier format check` + `ESLint` in `build-infrastructure` |
+
+Two scope corrections landed with it, both of which had made the check narrower than it looked:
+
+- `format`/`format:check` in `web-frontend` were scoped to `src/**`, leaving **220 tracked files**
+  outside — all of `e2e/`, the root configs, and the 110 locale bundles. They now run against `.`
+  and rely on `.prettierignore`, which is the honest scope.
+- `.prettierignore` gained `playwright-report`, `test-results`, `blob-report` and
+  `.playwright-auth-*.json`. All are gitignored, but prettier globs the **filesystem** rather
+  than the git index, so without them anyone who had run the E2E suite locally got
+  `format:check` failures on generated report HTML — a gate that fails for reasons nobody can act
+  on is a gate people stop believing.
+
+`lint:ci` also went from `--max-warnings 50` to `0`. Measured first: the tree produced 0 errors
+and 0 warnings, so the allowance was pure headroom for silent accumulation.
+
 **Infrastructure (CDK), added in #975.** `infrastructure/**/*.ts` had no formatting or lint
 check anywhere — not in the hook, not in `make format-check`, not in CI — which made the code
 that provisions production the least-checked code in the repo. 55 of its 93 tracked files had

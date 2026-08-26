@@ -88,7 +88,7 @@ ffmpeg -i narration-elevenlabs.mp3 -c:a aac -b:a 128k narration-raw-de.m4a
 ### Pricing:
 
 - WaveNet voices: $16 per 1 million characters
-- For 43-minute video (~8,500 words = ~60,000 characters): **~$0.96**
+- For 43-minute video (~8,500 words = ~~60,000 characters): **~~$0.96**
 
 ### Setup:
 

@@ -488,6 +488,15 @@ jobs:
         working-directory: ./web-frontend
         run: npm run lint:ci
 
+      # #1008: prettier was enforced ONLY by the pre-commit hook, which --write/--fixes staged
+      # files and therefore cannot see a backlog. Nothing in CI ran it, so 12 files under src/
+      # had drifted and `make format-check` was red on develop with nobody looking. Mirrors the
+      # `Prettier format check` step in build-infrastructure added by #1007.
+      - name: Prettier format check
+        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
+        working-directory: ./web-frontend
+        run: npm run format:check
+
       - name: Run tests with coverage
         if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         working-directory: ./web-frontend

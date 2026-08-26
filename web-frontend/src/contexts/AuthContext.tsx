@@ -27,9 +27,7 @@ import { hasCognitoSession } from '@/utils/auth/cognitoSession';
  * "set new password" panel when `requires-new-password` is signalled.
  */
 export type SignInOutcome =
-  | { kind: 'success' }
-  | { kind: 'requires-new-password' }
-  | { kind: 'failed' };
+  { kind: 'success' } | { kind: 'requires-new-password' } | { kind: 'failed' };
 
 interface UseAuthReturn extends AuthenticationState {
   refreshToken: () => Promise<boolean>;

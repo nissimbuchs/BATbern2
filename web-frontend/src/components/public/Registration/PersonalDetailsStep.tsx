@@ -29,8 +29,7 @@ export interface PersonalDetailsStepProps {
   /** Form data update handler */
   setFormData: (
     data:
-      | CreateRegistrationRequest
-      | ((prev: CreateRegistrationRequest) => CreateRegistrationRequest)
+      CreateRegistrationRequest | ((prev: CreateRegistrationRequest) => CreateRegistrationRequest)
   ) => void;
 }
 

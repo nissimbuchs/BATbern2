@@ -106,8 +106,7 @@ describe('useFileUpload Hook', () => {
     await act(async () => {
       const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
       const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
-        | (() => void)
-        | undefined;
+        (() => void) | undefined;
       if (loadListener) {
         loadListener();
       }
@@ -193,8 +192,7 @@ describe('useFileUpload Hook', () => {
     await act(async () => {
       const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
       const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
-        | (() => void)
-        | undefined;
+        (() => void) | undefined;
       if (loadListener) {
         loadListener();
       }
@@ -416,8 +414,7 @@ describe('useFileUpload Hook', () => {
     await act(async () => {
       const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
       const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
-        | (() => void)
-        | undefined;
+        (() => void) | undefined;
       if (loadListener) {
         loadListener();
       }
@@ -516,8 +513,7 @@ describe('useFileUpload Hook', () => {
     await act(async () => {
       const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
       const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
-        | (() => void)
-        | undefined;
+        (() => void) | undefined;
       if (loadListener) {
         loadListener();
       }
@@ -627,8 +623,7 @@ describe('useFileUpload Hook', () => {
     await act(async () => {
       const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
       const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
-        | (() => void)
-        | undefined;
+        (() => void) | undefined;
       if (loadListener) {
         loadListener();
       }
