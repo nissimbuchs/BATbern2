@@ -23,7 +23,7 @@
  */
 
 import { App } from 'aws-cdk-lib';
-import { Template, Match } from 'aws-cdk-lib/assertions';
+import { Template } from 'aws-cdk-lib/assertions';
 
 import { stagingConfig } from '../../lib/config/staging-config';
 import { CICDStack } from '../../lib/stacks/cicd-stack';

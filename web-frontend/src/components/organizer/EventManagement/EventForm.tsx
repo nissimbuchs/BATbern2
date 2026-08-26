@@ -432,8 +432,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
       // Check if workflowState changed - handle separately via workflow transition API
       const workflowStateChanged = 'workflowState' in changedFields;
       const newWorkflowState = changedFields.workflowState as
-        | components['schemas']['EventWorkflowState']
-        | undefined;
+        components['schemas']['EventWorkflowState'] | undefined;
 
       // Remove workflowState from patch data - it goes through separate API
       const patchFields = { ...changedFields };

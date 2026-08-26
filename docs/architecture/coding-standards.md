@@ -116,6 +116,32 @@ no `package.json` defined one; #973 added that script to the ROOT `package.json`
 to the same installer), so the command now works — but `make install` is the documented
 entry point and the one CLAUDE.md points a newcomer at.
 
+**Prettier is enforced in CI for BOTH trees as of #1008.** This is worth stating explicitly
+because the obvious assumption is wrong: the pre-commit hook runs `prettier --write` on *staged*
+files and re-stages them, so it prevents new drift and is structurally incapable of noticing an
+existing backlog. Until #1008 nothing in CI ran prettier on `web-frontend` at all —
+`build-frontend` ran `lint:ci` and the tests — so 12 files under `src/` had drifted and
+`make format-check` had been red on `develop` with nobody looking.
+
+| tree | pre-commit | CI gate |
+|---|---|---|
+| `web-frontend` | `lint-staged` (eslint --fix, prettier --write) | `Prettier format check` + `lint:ci` in `build-frontend` |
+| `infrastructure` | `lint-staged` (eslint --fix, prettier --write) | `Prettier format check` + `ESLint` in `build-infrastructure` |
+
+Two scope corrections landed with it, both of which had made the check narrower than it looked:
+
+- `format`/`format:check` in `web-frontend` were scoped to `src/**`, leaving **220 tracked files**
+  outside — all of `e2e/`, the root configs, and the 110 locale bundles. They now run against `.`
+  and rely on `.prettierignore`, which is the honest scope.
+- `.prettierignore` gained `playwright-report`, `test-results`, `blob-report` and
+  `.playwright-auth-*.json`. All are gitignored, but prettier globs the **filesystem** rather
+  than the git index, so without them anyone who had run the E2E suite locally got
+  `format:check` failures on generated report HTML — a gate that fails for reasons nobody can act
+  on is a gate people stop believing.
+
+`lint:ci` also went from `--max-warnings 50` to `0`. Measured first: the tree produced 0 errors
+and 0 warnings, so the allowance was pure headroom for silent accumulation.
+
 **Infrastructure (CDK), added in #975.** `infrastructure/**/*.ts` had no formatting or lint
 check anywhere — not in the hook, not in `make format-check`, not in CI — which made the code
 that provisions production the least-checked code in the repo. 55 of its 93 tracked files had
@@ -137,9 +163,44 @@ drifted. It now has:
 different prettier major between the two trees would format the same file two ways depending
 on which subtree's binary ran.
 
-**Still a gap: no ESLint.** ESLint 10 requires flat config and `infrastructure/` has no
-`eslint.config.*`, so `npx eslint` exits 2 there. Authoring one catches real bugs rather than
-formatting and is tracked separately in #975.
+**ESLint, added as the #975 follow-up.** `infrastructure/eslint.config.mjs` (flat config) runs
+`@eslint/js` recommended plus `typescript-eslint` recommended, wired into the same three places
+as prettier: the `infrastructure/` lint-staged invocation, `make lint-node`, and an `ESLint` step
+in `build-infrastructure` at `--max-warnings 0`. The baseline is clean, so it stays at zero —
+`web-frontend` allows 50 only because it inherited a backlog.
+
+**It is deliberately NOT type-aware, and that was measured rather than assumed.** Across all 93
+tracked files, `recommendedTypeChecked` reported 1609 problems while the rules that catch real
+bugs reported nothing at all:
+
+| rule | findings |
+|---|---|
+| `no-floating-promises` | 0 |
+| `no-misused-promises` | 0 |
+| `await-thenable` | 0 |
+| `no-base-to-string` (lib/+bin/) | 0 |
+
+Those were confirmed to be evaluated at severity 2 via `eslint --print-config`, not silently
+skipped. The 1609 were almost entirely `no-unsafe-*` cascading off `any`-typed Lambda mock events
+in tests. Type-aware linting would cost a second `tsconfig` and roughly 5× the runtime to buy 17
+`no-unnecessary-type-assertion` hits and no bugs. CDK stack construction is synchronous, which is
+precisely why the promise rules find nothing — **revisit this if genuinely async code lands in
+`infrastructure/`.**
+
+Two rule relaxations, both scoped:
+
+- `no-explicit-any` is **off under `test/**`**. Test files legitimately cast mock Cognito/SNS
+  events as `any`; building fully-typed trigger events adds no coverage and buries the assertion.
+  268 of the 274 hits were there, against 6 in `lib/`+`bin/`. Enforcing it would mean ~270 inline
+  disables or ~270 pointless type literals.
+- `no-require-imports` is off under `test/**` and the Lambda source trees, where `require()` sits
+  below a `jest.mock()` call or behind a try/catch for an optional native dep.
+
+`no-unused-vars` is the rule that earned its keep on adoption: `tsconfig.json` sets
+`noUnusedLocals` and `noUnusedParameters` to **false**, so `tsc` cannot see unused imports or
+parameters at all. It found 18 in `lib/`+`bin/` — six dead `ecsPatterns` imports left over from
+the move to Service Connect, an unused `subscriptions` import, and a `FORWARDING_DOMAIN` env read
+that nothing consumed.
 
 ### Code Review Checklist
 - [ ] **TDD Followed**: Tests were written before implementation

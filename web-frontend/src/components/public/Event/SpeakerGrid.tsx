@@ -88,10 +88,8 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
                   bio: speaker.bio,
                   speakerRole:
                     (speaker.speakerRole as
-                      | 'PRIMARY_SPEAKER'
-                      | 'CO_SPEAKER'
-                      | 'MODERATOR'
-                      | 'PANELIST') || 'PRIMARY_SPEAKER',
+                      'PRIMARY_SPEAKER' | 'CO_SPEAKER' | 'MODERATOR' | 'PANELIST') ||
+                    'PRIMARY_SPEAKER',
                   presentationTitle: undefined,
                   isConfirmed: true,
                 }}

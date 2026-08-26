@@ -74,12 +74,7 @@ export interface BatchImportSessionRequest {
  * Import status for each session during batch import
  */
 export type SessionImportStatus =
-  | 'pending'
-  | 'importing'
-  | 'success'
-  | 'updated'
-  | 'error'
-  | 'skipped';
+  'pending' | 'importing' | 'success' | 'updated' | 'error' | 'skipped';
 
 /**
  * Candidate for import with transformation and status tracking

@@ -71,19 +71,23 @@ fi
 # root its `*.{json,css,md}` glob would prettier --write the whole of docs/).
 #
 # So this is a SECOND lint-staged invocation, from infrastructure/, with its own
-# .lintstagedrc.json. Prettier only: ESLint cannot run there at all — ESLint 10 requires
-# flat config and infrastructure/ has no eslint.config.*, so `npx eslint` exits 2. Adding
-# one is tracked separately in #975; it is a real piece of work, not a config line.
+# .lintstagedrc.json — `eslint --fix` then `prettier --write`, mirroring web-frontend.
+#
+# ESLint arrived later than prettier: until #975's follow-up there was no eslint.config.* in
+# infrastructure/ at all, so `npx eslint` exited 2 there. The config is deliberately
+# NON-type-aware; see the rationale in infrastructure/eslint.config.mjs, which records that
+# recommendedTypeChecked found zero floating promises, zero misused promises and zero
+# await-thenable violations across all 93 files.
 #
 # Deliberately warns and SKIPS rather than blocking when infrastructure/node_modules is
-# absent. The authoritative gate is the `Prettier format check` step in build.yml's
-# build-infrastructure job; this hook is convenience. A hook that blocks a commit because a
-# heavy dependency tree is not installed is a hook people learn to `--no-verify` past, and
-# then it never runs at all.
+# absent. The authoritative gates are the `Prettier format check` and `ESLint` steps in
+# build.yml's build-infrastructure job; this hook is convenience. A hook that blocks a commit
+# because a heavy dependency tree is not installed is a hook people learn to `--no-verify`
+# past, and then it never runs at all.
 INFRA_STAGED=$(echo "$STAGED_FILES" | grep -E '^infrastructure/.*\.ts$' || true)
 
 if [ -n "$INFRA_STAGED" ]; then
-    echo -e "${YELLOW}🏗️  Infrastructure TypeScript changed, running prettier via lint-staged...${NC}"
+    echo -e "${YELLOW}🏗️  Infrastructure TypeScript changed, running eslint + prettier via lint-staged...${NC}"
 
     if [ -x "infrastructure/node_modules/.bin/lint-staged" ]; then
         cd infrastructure

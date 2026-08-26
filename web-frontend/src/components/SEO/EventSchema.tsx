@@ -13,9 +13,7 @@ export interface EventSchemaProps {
   endDate?: string; // ISO 8601 format
   eventStatus?: 'EventScheduled' | 'EventPostponed' | 'EventCancelled' | 'EventRescheduled';
   eventAttendanceMode?:
-    | 'OfflineEventAttendanceMode'
-    | 'OnlineEventAttendanceMode'
-    | 'MixedEventAttendanceMode';
+    'OfflineEventAttendanceMode' | 'OnlineEventAttendanceMode' | 'MixedEventAttendanceMode';
   venue?: {
     name: string;
     address: string;

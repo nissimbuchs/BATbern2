@@ -104,11 +104,7 @@ const AboutPage = () => {
                     logoUrl={partner.company?.logoUrl}
                     partnershipLevel={
                       partner.partnershipLevel as
-                        | 'STRATEGIC'
-                        | 'PLATINUM'
-                        | 'GOLD'
-                        | 'SILVER'
-                        | 'BRONZE'
+                        'STRATEGIC' | 'PLATINUM' | 'GOLD' | 'SILVER' | 'BRONZE'
                     }
                     partnershipStartDate={partner.partnershipStartDate}
                     website={partner.company?.website}

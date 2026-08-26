@@ -19,7 +19,6 @@
  */
 
 const API_GATEWAY_URL = process.env.API_GATEWAY_URL ?? 'http://localhost:8000';
-const FORWARDING_DOMAIN = process.env.FORWARDING_DOMAIN ?? 'batbern.ch';
 
 interface AdditionalEmail {
   email?: string;

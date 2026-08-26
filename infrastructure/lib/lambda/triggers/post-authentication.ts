@@ -18,7 +18,7 @@
  */
 
 import { PostAuthenticationTriggerEvent, PostAuthenticationTriggerHandler } from 'aws-lambda';
-import { getDbClient, executeTransaction } from './common/database';
+import { getDbClient } from './common/database';
 import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
 import {
   CognitoIdentityProviderClient,

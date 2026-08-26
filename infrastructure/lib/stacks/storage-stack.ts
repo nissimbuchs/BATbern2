@@ -7,6 +7,7 @@ import * as route53 from 'aws-cdk-lib/aws-route53';
 import * as targets from 'aws-cdk-lib/aws-route53-targets';
 import * as certificatemanager from 'aws-cdk-lib/aws-certificatemanager';
 import { Construct } from 'constructs';
+import * as fs from 'fs';
 import * as path from 'path';
 import { EnvironmentConfig } from '../config/environment-config';
 
@@ -215,8 +216,8 @@ export class StorageStack extends cdk.Stack {
             // correct Linux x64 sharp binary — the local esbuild path never copies node_modules/sharp.
             tryBundle(outputDir: string): boolean {
               if (process.env.JEST_WORKER_ID || process.env.NODE_ENV === 'test') {
-                require('fs').writeFileSync(
-                  require('path').join(outputDir, 'index.js'),
+                fs.writeFileSync(
+                  path.join(outputDir, 'index.js'),
                   'exports.handler = async () => ({});'
                 );
                 return true;

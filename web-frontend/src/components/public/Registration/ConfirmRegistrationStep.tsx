@@ -17,8 +17,7 @@ export interface ConfirmRegistrationStepProps {
   /** Form data update handler */
   setFormData: (
     data:
-      | CreateRegistrationRequest
-      | ((prev: CreateRegistrationRequest) => CreateRegistrationRequest)
+      CreateRegistrationRequest | ((prev: CreateRegistrationRequest) => CreateRegistrationRequest)
   ) => void;
   /** Handler to edit personal details (go back to Step 1) */
   onEdit: () => void;

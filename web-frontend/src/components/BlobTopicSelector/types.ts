@@ -6,12 +6,7 @@
 import type * as d3 from 'd3';
 
 export type BlobType =
-  | 'blue'
-  | 'green'
-  | 'ghost-backlog'
-  | 'ghost-partner'
-  | 'ghost-trend'
-  | 'red-star';
+  'blue' | 'green' | 'ghost-backlog' | 'ghost-partner' | 'ghost-trend' | 'red-star';
 
 export interface PartnerTopicItem {
   title: string;

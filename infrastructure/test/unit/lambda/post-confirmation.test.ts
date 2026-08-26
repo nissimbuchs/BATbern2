@@ -101,9 +101,9 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
     // Reset mocks before each test
     jest.clearAllMocks();
 
-    // @ts-ignore - jest mock type inference issue
+    // @ts-expect-error - jest mock type inference issue
     mockCloudWatchSend.mockResolvedValue({});
-    // @ts-ignore - jest mock type inference issue
+    // @ts-expect-error - jest mock type inference issue
     mockCognitoSend.mockResolvedValue({});
 
     // Create mock database client
@@ -919,7 +919,7 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
       const event = createPostConfirmationEvent();
       const context = createLambdaContext();
       happyPathDbMocks();
-      // @ts-ignore - jest mock type inference issue
+      // @ts-expect-error - jest mock type inference issue
       mockCognitoSend.mockRejectedValueOnce(new Error('Cognito unavailable'));
 
       // Act

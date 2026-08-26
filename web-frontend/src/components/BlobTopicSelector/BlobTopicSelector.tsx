@@ -667,8 +667,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
         const red = node as RedStarNode;
         if (red.orbiting) {
           const blue = nodesRef.current.find((n) => n.id === red.orbiting) as
-            | BlueBlobNode
-            | undefined;
+            BlueBlobNode | undefined;
           if (blue) {
             red.orbitAngle = (red.orbitAngle ?? 0) + 0.007;
             const orbitRadius = blue.r + red.r + 20;
@@ -763,8 +762,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
       const red = node as RedStarNode;
       if (!red.attractedToBlueId || red.absorbed || red.orbiting) return;
       const blue = nodesRef.current.find((n) => n.id === red.attractedToBlueId) as
-        | BlueBlobNode
-        | undefined;
+        BlueBlobNode | undefined;
       if (!blue) return;
       const dx = (blue.x ?? 0) - (red.x ?? 0);
       const dy = (blue.y ?? 0) - (red.y ?? 0);
@@ -1808,8 +1806,7 @@ const BlobTopicSelector: React.FC<BlobTopicSelectorProps> = ({ eventCode, sessio
   const removeBlueBlobById = useCallback(
     (targetId: string) => {
       const removedBlob = nodesRef.current.find((n) => n.id === targetId) as
-        | BlueBlobNode
-        | undefined;
+        BlueBlobNode | undefined;
       const removedRelated = removedBlob?.relatedPastEventNumbers ?? [];
 
       // Respawn absorbed logos/ghosts as ghost nodes of their original type

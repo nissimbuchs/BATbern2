@@ -50,6 +50,101 @@ async function globalSetup() {
   const fs = await import('fs');
   const os = await import('os');
   const path = await import('path');
+  const { execFileSync } = await import('child_process');
+
+  /**
+   * Refresh a role's token if it is expired or about to be, then report whether it is usable.
+   *
+   * Why this exists. `scripts/ci/run-bruno-tests.sh` and `scripts/ci/run-playwright-tests.sh`
+   * both call `scripts/auth/refresh-token.sh` before loading tokens. This file did not — it
+   * checked only that the token FILE existed and that idToken/accessToken/refreshToken were
+   * present, never that any of them was still valid. So `cd web-frontend && npm run test:e2e`
+   * (the command CLAUDE.md documents) went straight here, injected a stale idToken into
+   * localStorage, and the specs failed with 401s and onboarding redirects — with nothing
+   * anywhere saying "your token expired 11 days ago". Observed 2026-08-26: every file in
+   * ~/.batbern/ had lapsed on 2026-08-15 and the only symptom was a 401.
+   *
+   * Cognito ID tokens live 24h; the refresh tokens outlive them by weeks, so this almost always
+   * succeeds with no credentials. Failure is non-fatal: the caller still gets a clear message
+   * naming the actual expiry, which is the part that was missing.
+   */
+  function ensureFreshToken(role: string, tokenFile: string): boolean {
+    const readExp = (): number | null => {
+      try {
+        const { idToken } = JSON.parse(fs.readFileSync(tokenFile, 'utf8'));
+        if (!idToken) return null;
+        const claims = JSON.parse(Buffer.from(idToken.split('.')[1], 'base64url').toString());
+        return typeof claims.exp === 'number' ? claims.exp : null;
+      } catch {
+        return null;
+      }
+    };
+
+    const now = Math.floor(Date.now() / 1000);
+    const exp = readExp();
+
+    // Unreadable or unparseable: leave it to the caller's existing validation.
+    if (exp === null) return true;
+
+    // 120s of slack so a token that expires mid-suite is renewed up front rather than
+    // half-way through a spec.
+    if (exp - now > 120) return true;
+
+    const ago = Math.round((now - exp) / 3600);
+    console.log(
+      `[Global Setup] Token for role=${role} ${exp < now ? `expired ~${ago}h ago` : 'expires imminently'} — refreshing...`
+    );
+
+    // Locate the repo root by walking up for the script itself. NOT `__dirname`: this module is
+    // loaded as ESM, where __dirname is undefined — the first version of this used it and the
+    // refresh silently failed with "__dirname is not defined" while the detection above still
+    // reported the token as expired, which looked like a broken refresh script. And NOT a fixed
+    // `../..` from cwd either, since Playwright can be invoked from the repo root or from
+    // web-frontend/.
+    const findRepoRoot = (): string | null => {
+      let dir = process.cwd();
+      for (let i = 0; i < 6; i++) {
+        if (fs.existsSync(path.join(dir, 'scripts', 'auth', 'refresh-token.sh'))) return dir;
+        const parent = path.dirname(dir);
+        if (parent === dir) break;
+        dir = parent;
+      }
+      return null;
+    };
+
+    try {
+      const repoRoot = findRepoRoot();
+      if (!repoRoot) {
+        throw new Error('could not locate scripts/auth/refresh-token.sh from ' + process.cwd());
+      }
+      execFileSync(path.join(repoRoot, 'scripts', 'auth', 'refresh-token.sh'), [tokenEnv, role], {
+        cwd: repoRoot,
+        stdio: 'pipe',
+        timeout: 60_000,
+      });
+    } catch (err) {
+      console.log(
+        `[Global Setup] ⚠️  refresh-token.sh failed for role=${role}: ${err instanceof Error ? err.message.split('\n')[0] : String(err)}`
+      );
+    }
+
+    const after = readExp();
+    if (after !== null && after - now > 120) {
+      console.log(`[Global Setup] ✓ Token for role=${role} refreshed`);
+      return true;
+    }
+
+    // The message that was missing. Say WHEN it expired, not just that auth failed.
+    console.log(
+      `[Global Setup] ❌ Token for role=${role} is EXPIRED and could not be refreshed` +
+        (after !== null ? ` (exp ${new Date(after * 1000).toISOString()})` : '')
+    );
+    console.log(
+      `[Global Setup]    Re-authenticate: ./scripts/auth/get-token.sh ${tokenEnv} <email> <password> ${role}`
+    );
+    console.log(`[Global Setup]    Or all roles at once: make setup-test-users ENV=${tokenEnv}`);
+    return false;
+  }
 
   /**
    * Inject tokens for a specific role into a fresh browser context and save the storage state.
@@ -80,6 +175,10 @@ async function globalSetup() {
       }
       return '';
     }
+
+    // Refresh before reading, so an expired-but-refreshable token is a non-event rather than a
+    // wall of 401s (see ensureFreshToken).
+    ensureFreshToken(role, resolvedTokenFile);
 
     const tokenData = JSON.parse(fs.readFileSync(resolvedTokenFile, 'utf8'));
     const { idToken, accessToken, refreshToken } = tokenData;

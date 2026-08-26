@@ -79,11 +79,7 @@ export const TestimonialSection = ({ skipPhotoRow = false }: TestimonialSectionP
                   logoUrl={item.partner.company?.logoUrl}
                   partnershipLevel={
                     item.partner.partnershipLevel as
-                      | 'STRATEGIC'
-                      | 'PLATINUM'
-                      | 'GOLD'
-                      | 'SILVER'
-                      | 'BRONZE'
+                      'STRATEGIC' | 'PLATINUM' | 'GOLD' | 'SILVER' | 'BRONZE'
                   }
                   partnershipStartDate={item.partner.partnershipStartDate}
                   website={item.partner.company?.website}

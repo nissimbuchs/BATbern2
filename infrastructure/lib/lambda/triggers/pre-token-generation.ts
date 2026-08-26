@@ -13,9 +13,9 @@
  * - NO Cognito Groups used (ADR-001: Database is source of truth)
  */
 
-import { PreTokenGenerationTriggerEvent, PreTokenGenerationTriggerHandler } from 'aws-lambda';
+import { PreTokenGenerationTriggerHandler } from 'aws-lambda';
 import { getDbClient } from './common/database';
-import { CloudWatchClient, PutMetricDataCommand } from '@aws-sdk/client-cloudwatch';
+import { CloudWatchClient, PutMetricDataCommand, StandardUnit } from '@aws-sdk/client-cloudwatch';
 
 // CloudWatch client for metrics
 const cloudWatchClient = new CloudWatchClient({ region: process.env.AWS_REGION || 'eu-central-1' });
@@ -31,7 +31,11 @@ interface UserData {
 /**
  * Publish CloudWatch metric for fetch operation
  */
-async function publishMetric(metricName: string, value: number, unit: string = 'None') {
+async function publishMetric(
+  metricName: string,
+  value: number,
+  unit: StandardUnit = StandardUnit.None
+) {
   try {
     await cloudWatchClient.send(
       new PutMetricDataCommand({
@@ -40,7 +44,7 @@ async function publishMetric(metricName: string, value: number, unit: string = '
           {
             MetricName: metricName,
             Value: value,
-            Unit: unit as any,
+            Unit: unit,
             Timestamp: new Date(),
           },
         ],

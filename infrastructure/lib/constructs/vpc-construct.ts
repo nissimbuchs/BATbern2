@@ -29,8 +29,9 @@ export class VpcConstruct extends Construct {
   constructor(scope: Construct, id: string, props: VpcConstructProps) {
     super(scope, id);
 
-    // Create log group for VPC custom resource Lambda
-    const customResourceLogGroup = new logs.LogGroup(this, 'CustomResourceLogGroup', {
+    // Log group for the VPC custom-resource Lambda. Not assigned: it exists so the group is
+    // created with a known name and retention, and nothing wires it to anything explicitly.
+    new logs.LogGroup(this, 'CustomResourceLogGroup', {
       logGroupName: `/aws/lambda/BATbern-${props.envName}/vpc-restrict-default-sg`,
       retention: logs.RetentionDays.ONE_WEEK,
       removalPolicy: cdk.RemovalPolicy.DESTROY,

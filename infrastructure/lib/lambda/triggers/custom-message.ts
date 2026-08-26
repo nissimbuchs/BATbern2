@@ -12,7 +12,7 @@
  * - Sends email directly via SES (bypasses Cognito's default email)
  */
 
-import { CustomMessageTriggerEvent, CustomMessageTriggerHandler } from 'aws-lambda';
+import { CustomMessageTriggerHandler } from 'aws-lambda';
 import { SESClient, SendEmailCommand } from '@aws-sdk/client-ses';
 
 /**
