@@ -113,6 +113,31 @@ public class SecurityConfig {
                 // would let ANY authenticated principal — attendee or speaker — flip a
                 // partnership back on.
                 .requestMatchers(HttpMethod.POST, "/api/v1/partners/*/reactivate").hasRole("ORGANIZER")
+
+                // #961: partner MUTATIONS had no role rule and fell through to
+                // .anyRequest().authenticated() below, so any authenticated principal — an
+                // ATTENDEE, a SPEAKER, a PARTNER of a different company — could create,
+                // re-level or DEACTIVATE a partnership. Only the client-side half of the
+                // "check server-side AND client-side" rule existed: the Settings tab is
+                // organizer-only in the UI, which holds right up until someone calls the API
+                // directly.
+                //
+                // These sit AFTER the /topics and /notes matchers above on purpose — a
+                // broader `/api/v1/partners/*` pattern placed earlier would shadow them.
+                //
+                // Belt and braces with @PreAuthorize on the controller methods, which is the
+                // layer that actually gets tested: this chain is replaced by permitAll under
+                // the `test` profile, so a matcher-only rule would be unverifiable.
+                .requestMatchers(HttpMethod.POST, "/api/v1/partners").hasRole("ORGANIZER")
+                .requestMatchers(HttpMethod.PATCH, "/api/v1/partners/*").hasRole("ORGANIZER")
+                .requestMatchers(HttpMethod.DELETE, "/api/v1/partners/*").hasRole("ORGANIZER")
+                .requestMatchers(HttpMethod.GET, "/api/v1/partners/statistics").hasRole("ORGANIZER")
+
+                // Contact PII: organizer, or the partner's own company (enforced precisely by
+                // @PreAuthorize on the controller; this is the coarse first gate).
+                .requestMatchers(HttpMethod.GET, "/api/v1/partners/*/contacts")
+                        .hasAnyRole("ORGANIZER", "PARTNER")
+
                 .anyRequest().authenticated()
             )
             .oauth2ResourceServer(oauth2 -> oauth2.jwt(jwt -> jwt

@@ -7,6 +7,7 @@ import ch.batbern.partners.dto.generated.PartnerListResponse;
 import ch.batbern.partners.dto.generated.PartnerResponse;
 import ch.batbern.partners.dto.generated.PartnerStatistics;
 import ch.batbern.partners.dto.generated.UpdatePartnerRequest;
+import ch.batbern.partners.security.PartnerSecurityService;
 import ch.batbern.partners.service.PartnerContactService;
 import ch.batbern.partners.service.PartnerService;
 import ch.batbern.shared.api.PaginationMetadata;
@@ -36,6 +37,7 @@ public class PartnerController implements PartnersApi {
 
     private final PartnerService partnerService;
     private final PartnerContactService partnerContactService;
+    private final PartnerSecurityService partnerSecurityService;
 
     @Override
     public ResponseEntity<PartnerListResponse> listPartners(
@@ -46,7 +48,8 @@ public class PartnerController implements PartnersApi {
 
         log.debug("GET /partners - filter: {}, include: {}, page: {}, size: {}", filter, include, page, size);
 
-        Set<String> includes = parseIncludes(include);
+        // #961: the LIST spans companies, so only an organizer may expand contacts here.
+        Set<String> includes = withContactsAuthorized(parseIncludes(include), null);
         List<PartnerResponse> partners = partnerService.listPartners(filter, null, page, size, includes);
 
         // Create pagination metadata
@@ -72,13 +75,19 @@ public class PartnerController implements PartnersApi {
 
         log.debug("GET /partners/{} - include: {}", companyName, include);
 
-        Set<String> includes = parseIncludes(include);
+        // #961: organizer, or the partner's own company.
+        Set<String> includes = withContactsAuthorized(parseIncludes(include), companyName);
         PartnerResponse partner = partnerService.getPartnerByCompanyName(companyName, includes);
 
         return ResponseEntity.ok(partner);
     }
 
     @Override
+    // #961: previously fell through to `.anyRequest().authenticated()` with no method-level
+    // rule, so ANY authenticated principal could call this. Method security is what makes it
+    // testable: the `test` profile filter chain is permitAll, so a matcher-only fix could not
+    // be covered by an integration test at all.
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<PartnerResponse> createPartner(CreatePartnerRequest createPartnerRequest) {
         log.info("POST /partners - companyName: {}", createPartnerRequest.getCompanyName());
 
@@ -88,6 +97,11 @@ public class PartnerController implements PartnersApi {
     }
 
     @Override
+    // #961: previously fell through to `.anyRequest().authenticated()` with no method-level
+    // rule, so ANY authenticated principal could call this. Method security is what makes it
+    // testable: the `test` profile filter chain is permitAll, so a matcher-only fix could not
+    // be covered by an integration test at all.
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<PartnerResponse> updatePartner(
             String companyName,
             UpdatePartnerRequest updatePartnerRequest) {
@@ -100,6 +114,11 @@ public class PartnerController implements PartnersApi {
     }
 
     @Override
+    // #961: previously fell through to `.anyRequest().authenticated()` with no method-level
+    // rule, so ANY authenticated principal could call this. Method security is what makes it
+    // testable: the `test` profile filter chain is permitAll, so a matcher-only fix could not
+    // be covered by an integration test at all.
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Void> deletePartner(String companyName) {
         log.info("DELETE /partners/{}", companyName);
 
@@ -109,6 +128,11 @@ public class PartnerController implements PartnersApi {
     }
 
     @Override
+    // #961: previously fell through to `.anyRequest().authenticated()` with no method-level
+    // rule, so ANY authenticated principal could call this. Method security is what makes it
+    // testable: the `test` profile filter chain is permitAll, so a matcher-only fix could not
+    // be covered by an integration test at all.
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<PartnerResponse> reactivatePartner(String companyName) {
         log.info("POST /partners/{}/reactivate", companyName);
 
@@ -118,6 +142,11 @@ public class PartnerController implements PartnersApi {
     }
 
     @Override
+    // #961: previously fell through to `.anyRequest().authenticated()` with no method-level
+    // rule, so ANY authenticated principal could call this. Method security is what makes it
+    // testable: the `test` profile filter chain is permitAll, so a matcher-only fix could not
+    // be covered by an integration test at all.
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<PartnerStatistics> getPartnerStatistics() {
         log.debug("GET /partners/statistics");
 
@@ -151,4 +180,35 @@ public class PartnerController implements PartnersApi {
         }
         return includes;
     }
+
+    /**
+     * Drop {@code contacts} from the requested includes unless the caller is entitled to it.
+     *
+     * Issue #961. `GET /api/v1/partners` is permitAll on purpose (it backs the public partner
+     * list on the homepage), but `include` reached contact enrichment unchecked, so
+     * {@code ?include=contacts} returned email, firstName, lastName, username and
+     * profilePictureUrl for every partner contact to ANONYMOUS callers. Verified against
+     * production 2026-08-26: HTTP 200, 9 partners, 10 contact objects, 10 real addresses.
+     *
+     * Dropped rather than rejected with 403 on purpose: this sits on a public endpoint, so a
+     * future public page that adds the parameter should lose the enrichment, not break the
+     * homepage. The organizer UI (partnerApi.ts hardcodes {@code include=company,contacts})
+     * is unaffected.
+     *
+     * @param includes    parsed include set, never null
+     * @param companyName the single company being requested, or null for a cross-company list
+     */
+    private Set<String> withContactsAuthorized(Set<String> includes, String companyName) {
+        if (!includes.contains("contacts")) {
+            return includes;
+        }
+        if (partnerSecurityService.canViewContacts(companyName)) {
+            return includes;
+        }
+        log.debug("Dropping 'contacts' include for unauthorized caller (company={})", companyName);
+        Set<String> filtered = new HashSet<>(includes);
+        filtered.remove("contacts");
+        return filtered;
+    }
+
 }
