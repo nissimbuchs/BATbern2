@@ -40,9 +40,18 @@ export function useNewsletterSubscribe(): UseMutationResult<
   Error,
   NewsletterSubscribeMutationVars
 > {
+  const queryClient = useQueryClient();
   return useMutation({
     mutationFn: ({ request, turnstileToken }) =>
       newsletterService.subscribe(request, turnstileToken),
+    // #818 defect 1: subscribing while logged in was not reflected on My Profile -> Consent.
+    // This is the PUBLIC subscribe endpoint and it had no onSuccess at all, so the
+    // `mySubscription` query that ProfilePage reads kept serving its cached "not subscribed"
+    // answer for the full 5-minute staleTime. Invalidate rather than setQueryData: this
+    // endpoint returns void, so the authoritative state has to be re-fetched.
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.mySubscription });
+    },
   });
 }
 
@@ -66,11 +75,18 @@ export function useUnsubscribeByToken(): UseMutationResult<void, Error, string> 
 }
 
 /** Get authenticated user's subscription status. */
-export function useMySubscription(): UseQueryResult<NewsletterSubscriptionStatusResponse, Error> {
+export function useMySubscription(options?: {
+  enabled?: boolean;
+}): UseQueryResult<NewsletterSubscriptionStatusResponse, Error> {
   return useQuery({
     queryKey: NEWSLETTER_QUERY_KEYS.mySubscription,
     queryFn: newsletterService.getMySubscription,
     staleTime: 5 * 60 * 1000,
+    // Defaults to enabled so existing callers (ProfilePage) are unchanged. The public
+    // NewsletterSubscribeWidget passes `enabled: isAuthenticated` because this endpoint requires
+    // auth — querying it for anonymous visitors would fire a guaranteed 401 on every public page
+    // view (#818).
+    enabled: options?.enabled ?? true,
   });
 }
 

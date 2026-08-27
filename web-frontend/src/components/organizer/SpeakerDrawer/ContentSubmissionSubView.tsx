@@ -60,7 +60,11 @@ interface ContentSubmissionSubViewProps {
   embedded?: boolean;
 }
 
-const MAX_ABSTRACT_LENGTH = 1000;
+// #662: 5000, matching the OpenAPI request schemas (ContentSubmitRequest.contentAbstract,
+// SubmitContentRequest.presentationAbstract) and SelfNominateSpeakerRequest.abstract, which was
+// already 5000. Before this the client blocked at 1000 while the backend had NO cap at all, so an
+// organizer typing 1200 chars was refused while a direct API caller could store any length.
+const MAX_ABSTRACT_LENGTH = 5000;
 
 export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> = ({
   speaker,

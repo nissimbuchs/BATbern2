@@ -2314,6 +2314,7 @@ components:
           type: string
           description: Session abstract/description
           example: Discussion on modern UI patterns
+          maxLength: 5000
         pdf:
           type: string
           description: 'Legacy PDF filename for reference (appended to description). Deprecated

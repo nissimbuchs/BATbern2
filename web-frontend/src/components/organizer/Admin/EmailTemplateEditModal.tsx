@@ -86,6 +86,27 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
     template?.layoutKey ?? cloneFrom?.layoutKey ?? 'batbern-default'
   );
   const [error, setError] = useState<string | null>(null);
+  // #823: scroll the dialog body back to the top when an error appears. The Save button is at
+  // the bottom of a long scrolling form, so a top-positioned Alert would still be off-screen at
+  // the moment it matters.
+  const contentRef = useRef<HTMLDivElement>(null);
+  useEffect(() => {
+    if (!error) {
+      return;
+    }
+    const el = contentRef.current;
+    if (!el) {
+      return;
+    }
+    // jsdom implements neither scrollTo nor smooth behaviour, so calling it unguarded throws
+    // "scrollTo is not a function" and takes the whole effect — and the render — down in tests.
+    // scrollTop is supported everywhere and is the correct fallback.
+    if (typeof el.scrollTo === 'function') {
+      el.scrollTo({ top: 0, behavior: 'smooth' });
+    } else {
+      el.scrollTop = 0;
+    }
+  }, [error]);
 
   // Track TinyMCE content in a ref to avoid re-renders on every keystroke
   // (re-renders cause cursor to jump to top). Sync to state on blur for validation.
@@ -211,7 +232,22 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
       data-testid="email-template-modal"
     >
       <DialogTitle>{title}</DialogTitle>
-      <DialogContent dividers>
+      <DialogContent dividers ref={contentRef}>
+        {/*
+          #823: this Alert used to sit at the BOTTOM of this scrolling DialogContent, after the
+          rich-text editor and the preview box. On a validation failure the message was rendered
+          below the fold, so the user saw nothing and Save looked like it did nothing — pressing
+          it repeatedly with no feedback.
+
+          Two changes: it renders FIRST, and setting an error scrolls the content back to the top
+          (see the effect above), because the user is necessarily near the bottom when they press
+          Save. Position alone is not enough for that reason.
+        */}
+        {error && (
+          <Alert severity="error" sx={{ mb: 2 }} data-testid="email-template-error">
+            {error}
+          </Alert>
+        )}
         {/* Metadata chips (edit mode) */}
         {template && (
           <Box sx={{ mb: 2, display: 'flex', gap: 1, flexWrap: 'wrap' }}>
@@ -356,12 +392,6 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
               </Box>
             )}
           </Box>
-        )}
-
-        {error && (
-          <Alert severity="error" sx={{ mt: 2 }}>
-            {error}
-          </Alert>
         )}
       </DialogContent>
       <DialogActions>

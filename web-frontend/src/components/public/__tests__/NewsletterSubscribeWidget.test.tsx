@@ -7,8 +7,16 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NewsletterSubscribeWidget } from '../NewsletterSubscribeWidget';
 
 // Mock the newsletter hook
+// #818: the widget consults the caller's own subscription state, so useAuth is now in its
+// module graph. This file stubs axios without a `.create`, which useAuth's graph needs at import
+// time — mock the hook itself rather than widening the axios stub.
+const mockUseAuth = vi.fn(() => ({ isAuthenticated: false }));
+const mockUseMySubscription = vi.fn((_o?: { enabled?: boolean }) => ({ data: undefined }));
+vi.mock('@/hooks/useAuth/useAuth', () => ({ useAuth: () => mockUseAuth() }));
+
 vi.mock('@/hooks/useNewsletter/useNewsletter', () => ({
   useNewsletterSubscribe: vi.fn(),
+  useMySubscription: (o?: { enabled?: boolean }) => mockUseMySubscription(o),
 }));
 
 // Mock useTurnstile
@@ -281,6 +289,42 @@ describe('NewsletterSubscribeWidget', () => {
 
     await waitFor(() => {
       expect(screen.getByText('Something went wrong. Please try again.')).toBeInTheDocument();
+    });
+  });
+
+  // ── #818 defect 2: already-subscribed users were still shown the form ──────────────
+  //
+  // The widget could only learn 'already-subscribed' by SUBMITTING and having the server say
+  // so. It now consults the caller's own subscription state first.
+  describe('#818 — existing subscription state', () => {
+    it('should_hideTheForm_when_authenticatedUserIsAlreadySubscribed', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true });
+      mockUseMySubscription.mockReturnValue({ data: { subscribed: true } });
+
+      renderWidget();
+
+      await waitFor(() => {
+        expect(screen.queryByRole('button', { name: /subscribe/i })).not.toBeInTheDocument();
+      });
+    });
+
+    it('should_showTheForm_when_authenticatedUserIsNotSubscribed', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: true });
+      mockUseMySubscription.mockReturnValue({ data: { subscribed: false } });
+
+      renderWidget();
+
+      expect(await screen.findByRole('button', { name: /subscribe/i })).toBeInTheDocument();
+    });
+
+    it('should_notQueryTheAuthenticatedEndpoint_when_visitorIsAnonymous', async () => {
+      mockUseAuth.mockReturnValue({ isAuthenticated: false });
+
+      renderWidget();
+
+      expect(await screen.findByRole('button', { name: /subscribe/i })).toBeInTheDocument();
+      // Querying it anonymously would fire a guaranteed 401 on every public page view.
+      expect(mockUseMySubscription).toHaveBeenCalledWith({ enabled: false });
     });
   });
 });

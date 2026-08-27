@@ -1001,7 +1001,7 @@ components:
         presentationAbstract:
           type: string
           description: Presentation abstract (becomes session.description). Max 1000 characters.
-          maxLength: 1000
+          maxLength: 5000
           example: "This talk explores the implementation of Zero Trust security principles in large enterprise environments, covering identity verification, micro-segmentation, and continuous monitoring strategies."
         bio:
           type: string
@@ -1112,7 +1112,7 @@ components:
           example: "Zero Trust Security in Enterprise Environments"
         contentAbstract:
           type: string
-          maxLength: 1000
+          maxLength: 5000
           description: Presentation abstract.
           example: "This talk explores Zero Trust principles..."
         bio:
