@@ -10,7 +10,8 @@ import { useTranslation } from 'react-i18next';
 import axios from 'axios';
 import { Input } from '@/components/public/ui/input';
 import { Button } from '@/components/public/ui/button';
-import { useNewsletterSubscribe } from '@/hooks/useNewsletter/useNewsletter';
+import { useNewsletterSubscribe, useMySubscription } from '@/hooks/useNewsletter/useNewsletter';
+import { useAuth } from '@/hooks/useAuth/useAuth';
 import { useTurnstile } from '@/hooks/useTurnstile';
 
 type WidgetState = 'idle' | 'submitting' | 'success' | 'already-subscribed' | 'error';
@@ -22,6 +23,19 @@ export function NewsletterSubscribeWidget() {
   const [widgetState, setWidgetState] = useState<WidgetState>('idle');
 
   const subscribeMutation = useNewsletterSubscribe();
+
+  // #818 defect 2: an already-subscribed, logged-in visitor was still shown the subscribe form.
+  // The widget only ever learned 'already-subscribed' by SUBMITTING and having the server say so.
+  //
+  // `useMySubscription` hits an authenticated endpoint, so it must stay disabled for anonymous
+  // visitors — otherwise every public page view fires a guaranteed 401. Anonymous visitors keep
+  // the old behaviour, which is correct: we cannot know whether they are subscribed.
+  //
+  // useAuth is already used by other components under src/components/public (RegistrationWizard,
+  // SessionQnaThread) and pulls no MUI, so this does not breach the Tailwind-only bundle boundary
+  // for public routes.
+  const { isAuthenticated } = useAuth();
+  const { data: mySubscription } = useMySubscription({ enabled: isAuthenticated });
   const { getToken, resetWidget, widgetRef } = useTurnstile();
 
   function validateEmail(value: string): boolean {
@@ -70,6 +84,15 @@ export function NewsletterSubscribeWidget() {
     return (
       <div className="py-4 text-center text-sm text-green-700 dark:text-green-400">
         {t('newsletter.widget.success')}
+      </div>
+    );
+  }
+
+  // Known-subscribed authenticated visitor: never show the form.
+  if (isAuthenticated && mySubscription?.subscribed) {
+    return (
+      <div className="py-4 text-center text-sm text-muted-foreground">
+        {t('newsletter.widget.alreadySubscribed')}
       </div>
     );
   }

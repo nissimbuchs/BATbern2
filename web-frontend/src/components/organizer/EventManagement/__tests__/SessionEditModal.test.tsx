@@ -619,9 +619,10 @@ describe('SessionEditModal - Form Validation', () => {
       />
     );
 
-    // Set abstract to exceed 1000 characters using paste (faster than typing 1001 chars)
+    // #662: the cap is 5000 now (was 1000), matching the OpenAPI request schemas. Paste rather
+    // than type — 5001 keypresses would be glacial.
     const abstractInput = screen.getByLabelText(/session abstract/i) as HTMLTextAreaElement;
-    const longText = 'a'.repeat(1001);
+    const longText = 'a'.repeat(5001);
 
     // Use fireEvent for fast text input instead of user.type (which simulates individual keypresses)
     await user.click(abstractInput);
@@ -633,10 +634,48 @@ describe('SessionEditModal - Form Validation', () => {
 
     // Should show validation error
     await waitFor(() => {
-      expect(screen.getByText(/abstract must be 1000 characters or less/i)).toBeInTheDocument();
+      expect(screen.getByText(/abstract must be 5000 characters or less/i)).toBeInTheDocument();
     });
 
     expect(mockOnSave).not.toHaveBeenCalled();
+  });
+
+  // #662: the point of raising the cap. Before this an organizer typing 1200 characters was
+  // blocked client-side while a direct API caller could store any length, because the backend
+  // had no validation at all.
+  it('should_acceptAbstract_when_lengthBetweenOldAndNewLimit', async () => {
+    const mockOnSave = vi.fn().mockResolvedValue(undefined);
+    const user = userEvent.setup();
+
+    render(
+      <SessionEditModal
+        open={true}
+        onClose={vi.fn()}
+        session={{
+          sessionSlug: 'test-session',
+          title: 'Test Session',
+          description: '',
+          startTime: null,
+          endTime: null,
+          durationMinutes: 60,
+          slotNumber: 1,
+          materialsStatus: 'pending',
+        }}
+        eventDate="2024-12-15"
+        onSave={mockOnSave}
+      />
+    );
+
+    const abstractInput = screen.getByLabelText(/session abstract/i) as HTMLTextAreaElement;
+    await user.click(abstractInput);
+    await user.paste('a'.repeat(1200));
+
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() => {
+      expect(mockOnSave).toHaveBeenCalled();
+    });
+    expect(screen.queryByText(/characters or less/i)).not.toBeInTheDocument();
   });
 });
 

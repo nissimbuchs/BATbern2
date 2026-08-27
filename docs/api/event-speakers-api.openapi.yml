@@ -1902,7 +1902,7 @@ components:
           example: Zero Trust Security in Enterprise Environments
         presentationAbstract:
           type: string
-          maxLength: 1000
+          maxLength: 5000
           description: Presentation abstract (becomes session.description).
           example: A field report on implementing Zero Trust in large enterprises.
         bio:
@@ -2776,7 +2776,7 @@ components:
         contentAbstract:
           type: string
           minLength: 1
-          maxLength: 1000
+          maxLength: 5000
         bio:
           type: string
           maxLength: 5000
