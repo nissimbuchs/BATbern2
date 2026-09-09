@@ -4,6 +4,28 @@ meta {
   seq: 25
 }
 
+script:pre-request {
+  // Precondition (added 2026-09-09). This request targets `{{testUsername}}`, the throwaway user
+  // created by 04-create-user. That var used to have a committed default of `batbern.organizer`
+  // in the environment files, so whenever 04 failed (e.g. 403 on a non-organizer env) this
+  // request silently retargeted the REAL authenticated organizer. Here that means PATCH /users/{username}/profile would have overwritten the organizer's own profile fields.
+  // The default is gone and this check refuses to run rather than resolve to anything else.
+  // Staging IS production, so the account at stake is a live organizer.
+  const target = bru.getVar("testUsername");
+  if (!target) {
+    throw new Error(
+      "Precondition: runtime var `testUsername` is unset — 04-create-user must succeed first. " +
+      "Refusing to issue this request without an explicit throwaway target."
+    );
+  }
+  if (target === bru.getEnvVar("organizerUsername") || target === bru.getEnvVar("testOrganizerUsername")) {
+    throw new Error(
+      "Precondition: `testUsername` resolved to the organizer account (" + target + "). " +
+      "Refusing to mutate it."
+    );
+  }
+}
+
 patch {
   url: {{baseUrl}}/users/{{testUsername}}/profile
   body: json

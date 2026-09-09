@@ -43,7 +43,7 @@ tests {
   test("should find companies matching search query (Story 1.16.2: lookup by name)", function() {
     const body = res.getBody();
     // If testCompanyName is set and company exists, verify we can find it
-    const testCompanyName = bru.getEnvVar("testCompanyName");
+    const testCompanyName = bru.getVar("testCompanyName");
     if (testCompanyName) {
       const foundCompany = body.find(c => c.name === testCompanyName);
       if (foundCompany) {

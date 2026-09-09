@@ -55,7 +55,7 @@ tests {
     const body = res.getBody();
     expect(body).to.be.an('object');
     expect(body.companyName).to.exist;
-    expect(body.companyName).to.equal(bru.getEnvVar("testPartnerCompanyName"));
+    expect(body.companyName).to.equal(bru.getVar("testPartnerCompanyName"));
   });
 
   test("should return partner with all fields", function() {

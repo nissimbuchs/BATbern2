@@ -33,7 +33,7 @@ tests {
 
   test("should return the correct company (Story 1.16.2: use name as identifier)", function() {
     const body = res.getBody();
-    const expectedName = bru.getEnvVar("testCompanyName");
+    const expectedName = bru.getVar("testCompanyName");
     expect(body.name).to.equal(expectedName);
   });
 
