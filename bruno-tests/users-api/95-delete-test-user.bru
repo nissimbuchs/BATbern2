@@ -24,9 +24,9 @@ script:pre-request {
   // `disposableUsername` is set ONLY by `04-create-user` post-response —
   // if test 04 failed (e.g. 403 on non-organizer envs), bail out here
   // instead of fall-back-deleting whatever shape `testUsername` has.
-  const disposable = bru.getEnvVar("disposableUsername");
+  const disposable = bru.getVar("disposableUsername");
   if (!disposable) {
-    throw new Error("Precondition: env var `disposableUsername` is unset — test 04 (create-user) must succeed first. Refusing to issue DELETE against fallback username (which would target the auth user).");
+    throw new Error("Precondition: runtime var `disposableUsername` is unset — test 04 (create-user) must succeed first. Refusing to issue DELETE against fallback username (which would target the auth user).");
   }
   // Accept `bruno.test` (first run, no collision) AND `bruno.test.N` (subsequent
   // runs, where the username service appends a numeric suffix). REJECT

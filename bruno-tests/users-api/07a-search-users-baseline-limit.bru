@@ -1,0 +1,51 @@
+meta {
+  name: Search Users - baseline limit=20
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/users/search?query=a&limit=20
+  body: none
+  auth: bearer
+}
+
+params:query {
+  query: a
+  limit: 20
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should return at most the requested limit", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('array');
+    expect(body.length).to.be.at.most(20);
+    bru.setVar("searchCountAt20", body.length);
+  });
+}
+
+docs {
+  Records how many users a broad query returns at limit=20, for 07b to compare against.
+
+  Paired with 07b-search-users-honours-limit.bru, this is the layer-2 guard for the
+  2026-09-09 autocomplete bug: UserSearchServiceImpl capped every search at 20 results
+  INSIDE the service, before the controller applied the caller's `limit`, so `limit=50`
+  was silently ignored. Combined with a query that had no ORDER BY, a user ranked past
+  position 20 was unreachable in the promote-speaker dropdown: 32 production users matched
+  "Matthias" and the one being looked for ranked 29th.
+
+  Read-only GET. No outbound communication, no data written, nothing to clean up.
+}

@@ -202,7 +202,8 @@
       "errorAlreadyPromoted": "Puhuja on jo tilassa {{currentState}}; ylennys onnistuu vain tilasta Contacted.",
       "errorStillIdentified": "Puhuja on ensin otettava yhteyttä — kirjaa yhteydenotto ennen ylennystä.",
       "errorDeclined": "Puhuja on kieltäytynyt — luo uusi merkintä ylennyksen sijaan.",
-      "errorAlreadyReady": "Puhuja on jo valmis — lähetä kutsu READY-väylältä."
+      "errorAlreadyReady": "Puhuja on jo valmis — lähetä kutsu READY-väylältä.",
+      "ambiguousPrefill": "Useita käyttäjiä vastaa hakua \"{{name}}\". Valitse oikea henkilö, tai luo uusi käyttäjä."
     },
     "workflowState": {
       "IDENTIFIED": "Tunnistettu",

@@ -169,14 +169,92 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     List<User> findByRolesContaining(@Param("role") Role role);
 
     /**
-     * Find users by name (first or last name, case-insensitive)
-     * AC8: User search functionality
+     * Autocomplete search across username, email, first name, last name and the full name,
+     * relevance-ranked and limited in the DATABASE.
      *
-     * @param firstName Partial first name
-     * @param lastName Partial last name
-     * @return List of matching users
+     * <p>Bug fix 2026-09-09. This replaces the derived query
+     * {@code findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase}, which had three
+     * defects that combined into "the speaker cannot be selected in the promote dropdown":
+     * <ul>
+     *   <li><b>No ordering.</b> Rows came back in plan-dependent order and the service truncated
+     *       them in memory at a hard 20. On production 32 users matched "Matthias" and
+     *       {@code matthias.stuermer} sat at position 29, so he was never in the window.</li>
+     *   <li><b>No full-name match.</b> {@code firstName} and {@code lastName} were matched
+     *       separately, so "Matthias Stürmer" — exactly what {@code speaker_pool.speaker_name}
+     *       holds — could not match anybody.</li>
+     *   <li><b>Name-only.</b> {@code users-api.openapi.yml} documents "Search users by name or
+     *       email", and callers legitimately expect a username to resolve too.</li>
+     * </ul>
+     *
+     * <p>Ranking: exact full name, then an exact single field, then a prefix match, then any
+     * substring; {@code lastName, firstName, username} break ties so the order is stable across
+     * identical calls (the autocomplete is cached, and a wobbling order would make the cache
+     * look broken).
+     *
+     * @param query Search term, matched case-insensitively as a substring
+     * @param pageable Pagination — the caller's limit is applied by the database
+     * @return Matching users, most relevant first
      */
-    List<User> findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(String firstName, String lastName);
+    @Query("""
+        SELECT u FROM User u
+        WHERE LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%'))
+        OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
+        OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%'))
+        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%'))
+        OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :query, '%'))
+        ORDER BY
+        CASE
+            WHEN LOWER(CONCAT(u.firstName, ' ', u.lastName)) = LOWER(:query) THEN 0
+            WHEN LOWER(u.lastName) = LOWER(:query) THEN 1
+            WHEN LOWER(u.firstName) = LOWER(:query) THEN 1
+            WHEN LOWER(u.username) = LOWER(:query) THEN 1
+            WHEN LOWER(u.email) = LOWER(:query) THEN 1
+            WHEN LOWER(u.lastName) LIKE LOWER(CONCAT(:query, '%')) THEN 2
+            WHEN LOWER(u.firstName) LIKE LOWER(CONCAT(:query, '%')) THEN 2
+            ELSE 3
+        END,
+        u.lastName, u.firstName, u.username
+        """)
+    List<User> searchByNameOrEmail(@Param("query") String query, Pageable pageable);
+
+    /**
+     * Same as {@link #searchByNameOrEmail(String, Pageable)} with a role requirement applied
+     * in SQL, i.e. BEFORE the limit.
+     *
+     * <p>The autocomplete used to filter by role in Java (and in the React component) after the
+     * result had already been truncated, so a SPEAKER filter filtered an arbitrary page rather
+     * than the best matches and could come back empty while matching speakers existed.
+     *
+     * @param query Search term, matched case-insensitively as a substring
+     * @param role Role the user must hold
+     * @param pageable Pagination — the caller's limit is applied by the database
+     * @return Matching users holding {@code role}, most relevant first
+     */
+    @Query("""
+        SELECT u FROM User u
+        WHERE (LOWER(u.username) LIKE LOWER(CONCAT('%', :query, '%'))
+        OR LOWER(u.email) LIKE LOWER(CONCAT('%', :query, '%'))
+        OR LOWER(u.firstName) LIKE LOWER(CONCAT('%', :query, '%'))
+        OR LOWER(u.lastName) LIKE LOWER(CONCAT('%', :query, '%'))
+        OR LOWER(CONCAT(u.firstName, ' ', u.lastName)) LIKE LOWER(CONCAT('%', :query, '%')))
+        AND :role MEMBER OF u.roles
+        ORDER BY
+        CASE
+            WHEN LOWER(CONCAT(u.firstName, ' ', u.lastName)) = LOWER(:query) THEN 0
+            WHEN LOWER(u.lastName) = LOWER(:query) THEN 1
+            WHEN LOWER(u.firstName) = LOWER(:query) THEN 1
+            WHEN LOWER(u.username) = LOWER(:query) THEN 1
+            WHEN LOWER(u.email) = LOWER(:query) THEN 1
+            WHEN LOWER(u.lastName) LIKE LOWER(CONCAT(:query, '%')) THEN 2
+            WHEN LOWER(u.firstName) LIKE LOWER(CONCAT(:query, '%')) THEN 2
+            ELSE 3
+        END,
+        u.lastName, u.firstName, u.username
+        """)
+    List<User> searchByNameOrEmailAndRole(
+            @Param("query") String query,
+            @Param("role") Role role,
+            Pageable pageable);
 
     /**
      * Find users by active status

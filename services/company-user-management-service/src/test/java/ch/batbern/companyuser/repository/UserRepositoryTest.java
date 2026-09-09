@@ -254,7 +254,8 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         createAndSaveUser("max.smith", "max@example.com", "Max", "Smith");
 
         // When
-        List<User> doeUsers = userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase("Doe", "Doe");
+        List<User> doeUsers = userRepository.searchByNameOrEmail(
+                "Doe", org.springframework.data.domain.PageRequest.of(0, 20));
 
         // Then
         assertThat(doeUsers).hasSize(2);
@@ -333,6 +334,121 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     }
 
     // Helper methods
+
+    // ------------------------------------------------------------------------
+    // Ordered, limited name/email search (bug fix 2026-09-09)
+    //
+    // The previous derived query
+    //   findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(q, q)
+    // had NO ORDER BY, and the service truncated the result in memory at a hard 20. On
+    // production 32 users matched "Matthias" and `matthias.stuermer` sat at position 29 of an
+    // arbitrary plan-dependent order, so he could never be picked in the promote dropdown.
+    // ------------------------------------------------------------------------
+
+    @Test
+    @DisplayName("should_rankExactSurnameFirst_when_manyNamesakesMatch")
+    void should_rankExactSurnameFirst_when_manyNamesakesMatch() {
+        // Given: 30 "Matthias" namesakes saved BEFORE the target, so an unordered query would
+        // push the target past any sane limit (this is the production shape).
+        for (int i = 0; i < 30; i++) {
+            createAndSaveUser("matthias.filler." + i, "matthias.filler" + i + "@example.com",
+                    "Matthias", "Filler" + i);
+        }
+        createAndSaveUser("matthias.stuermer", "matthias.stuermer@bfh.ch", "Matthias", "Stuermer");
+
+        // When: searching the surname, limited to 5
+        List<User> results = userRepository.searchByNameOrEmail(
+                "Stuermer", org.springframework.data.domain.PageRequest.of(0, 5));
+
+        // Then: the exact surname match is first, not lost in the namesakes
+        assertThat(results).isNotEmpty();
+        assertThat(results.get(0).getUsername()).isEqualTo("matthias.stuermer");
+    }
+
+    @Test
+    @DisplayName("should_honourTheRequestedLimit_when_moreRowsMatch")
+    void should_honourTheRequestedLimit_when_moreRowsMatch() {
+        for (int i = 0; i < 30; i++) {
+            createAndSaveUser("matthias.filler." + i, "matthias.filler" + i + "@example.com",
+                    "Matthias", "Filler" + i);
+        }
+
+        List<User> capped = userRepository.searchByNameOrEmail(
+                "Matthias", org.springframework.data.domain.PageRequest.of(0, 7));
+        List<User> wide = userRepository.searchByNameOrEmail(
+                "Matthias", org.springframework.data.domain.PageRequest.of(0, 25));
+
+        assertThat(capped).hasSize(7);
+        assertThat(wide).hasSize(25);
+    }
+
+    @Test
+    @DisplayName("should_returnAStableOrder_when_theSameQueryRunsTwice")
+    void should_returnAStableOrder_when_theSameQueryRunsTwice() {
+        for (int i = 0; i < 12; i++) {
+            createAndSaveUser("matthias.filler." + i, "matthias.filler" + i + "@example.com",
+                    "Matthias", "Filler" + i);
+        }
+
+        var first = userRepository.searchByNameOrEmail(
+                "Matthias", org.springframework.data.domain.PageRequest.of(0, 10))
+                .stream().map(User::getUsername).toList();
+        var second = userRepository.searchByNameOrEmail(
+                "Matthias", org.springframework.data.domain.PageRequest.of(0, 10))
+                .stream().map(User::getUsername).toList();
+
+        assertThat(first).isEqualTo(second);
+    }
+
+    @Test
+    @DisplayName("should_matchTheFullName_when_firstAndLastNameAreQueriedTogether")
+    void should_matchTheFullName_when_firstAndLastNameAreQueriedTogether() {
+        createAndSaveUser("matthias.stuermer", "matthias.stuermer@bfh.ch", "Matthias", "Stuermer");
+        createAndSaveUser("matthias.germann", "matthias.germann@dvbern.ch", "Matthias", "Germann");
+
+        // The old query matched firstName OR lastName separately, so a full name — exactly what
+        // `speaker_pool.speaker_name` holds — could never match anybody.
+        List<User> results = userRepository.searchByNameOrEmail(
+                "Matthias Stuermer", org.springframework.data.domain.PageRequest.of(0, 20));
+
+        assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
+    }
+
+    @Test
+    @DisplayName("should_matchTheEmail_when_theQueryIsAnEmailFragment")
+    void should_matchTheEmail_when_theQueryIsAnEmailFragment() {
+        createAndSaveUser("matthias.stuermer", "matthias.stuermer@bfh.ch", "Matthias", "Stuermer");
+        createAndSaveUser("matthias.germann", "matthias.germann@dvbern.ch", "Matthias", "Germann");
+
+        // users-api.openapi.yml documents "Search users by name or email"; only name was implemented.
+        List<User> results = userRepository.searchByNameOrEmail(
+                "bfh.ch", org.springframework.data.domain.PageRequest.of(0, 20));
+
+        assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
+    }
+
+    @Test
+    @DisplayName("should_filterByRoleInTheDatabase_when_roleProvided")
+    void should_filterByRoleInTheDatabase_when_roleProvided() {
+        // Given: 30 ATTENDEE namesakes and one SPEAKER, the SPEAKER saved last.
+        for (int i = 0; i < 30; i++) {
+            User filler = createTestUser("matthias.filler." + i,
+                    "matthias.filler" + i + "@example.com", "Matthias", "Filler" + i);
+            filler.addRole(Role.ATTENDEE);
+            userRepository.saveAndFlush(filler);
+        }
+        User speaker = createTestUser("matthias.stuermer", "matthias.stuermer@bfh.ch",
+                "Matthias", "Stuermer");
+        speaker.addRole(Role.SPEAKER);
+        userRepository.saveAndFlush(speaker);
+
+        // When: role filtering happens in SQL, before the limit. Filtering in Java after a
+        // 20-row truncation (the old behaviour) would return nothing here.
+        List<User> results = userRepository.searchByNameOrEmailAndRole(
+                "Matthias", Role.SPEAKER, org.springframework.data.domain.PageRequest.of(0, 20));
+
+        assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
+    }
 
     private User createTestUser(String username, String email, String firstName, String lastName) {
         User user = User.builder()

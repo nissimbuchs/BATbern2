@@ -35,7 +35,9 @@ in subtle ways (Pattern 3b silently re-hydrates the user on the next authed
 call, so symptoms cascade unpredictably — see plan §F2).
 
 **Fix:**
-- `04-create-user` ALSO sets a new env var `disposableUsername` (set only on 201).
+- `04-create-user` ALSO sets a new RUNTIME var `disposableUsername` (set only on 201).
+  Runtime, not environment: `bru.setEnvVar` persists into the tracked `environments/*.bru`
+  file, which would leave it "set" from a previous run and defeat the guard below.
 - `14-delete-test-user` uses `disposableUsername` and has a hard precondition
   check: if it's unset OR doesn't match `^bruno\.test\.`, the test throws
   before issuing the DELETE.

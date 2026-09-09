@@ -202,7 +202,8 @@
       "errorAlreadyPromoted": "Il referent è gia en {{currentState}}; il promover è mo valid dal stadi Contactà.",
       "errorStillIdentified": "Il referent sto pli baud vegnir contactà — registra il contact avant da promover.",
       "errorDeclined": "Il referent ha refusà — crea ina nova endataziun empè dal promover.",
-      "errorAlreadyReady": "Il referent è gia pront — trametta l'invit dapertut la colonna READY."
+      "errorAlreadyReady": "Il referent è gia pront — trametta l'invit dapertut la colonna READY.",
+      "ambiguousPrefill": "Plirs utilisaders correspundan a \"{{name}}\". Tscherna la persuna correcta, u fa in nov utilisader."
     },
     "workflowState": {
       "IDENTIFIED": "Identifitgà",

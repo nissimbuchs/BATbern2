@@ -23,7 +23,8 @@
       "errorAlreadyPromoted": "Speaker isch scho i {{currentState}}; promote isch nume vo Kontaktiert us mögli.",
       "errorStillIdentified": "Speaker muess zerscht kontaktiert wärde — Outreach erfasse, dänn promote.",
       "errorDeclined": "Speaker het abgseit — mach e neue Pool-Iitrag schtatt z'promote.",
-      "errorAlreadyReady": "Speaker isch scho parat — schick d'Iladig us de READY-Spaltä."
+      "errorAlreadyReady": "Speaker isch scho parat — schick d'Iladig us de READY-Spaltä.",
+      "ambiguousPrefill": "Es passe mehreri Benutzer zu \"{{name}}\". Wähl di richtigi Person us, oder mach en nöie Benutzer."
     },
     "workflowState": {
       "IDENTIFIED": "Identifiziert",

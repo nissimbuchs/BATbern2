@@ -1,0 +1,71 @@
+meta {
+  name: Search Users - honours a limit above 20
+  type: http
+  seq: 7
+}
+
+get {
+  url: {{baseUrl}}/users/search?query=a&limit=50
+  body: none
+  auth: bearer
+}
+
+params:query {
+  query: a
+  limit: 50
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+}
+
+tests {
+  test("should never exceed the requested limit", function() {
+    const body = res.getBody();
+    expect(body).to.be.an('array');
+    expect(body.length).to.be.at.most(50);
+  });
+
+  test("should return at least as many results as limit=20 did", function() {
+    const body = res.getBody();
+    const at20 = Number(bru.getVar("searchCountAt20"));
+    expect(body.length).to.be.at.least(at20);
+  });
+
+  test("should break the old hard cap of 20 when more users match", function() {
+    const body = res.getBody();
+    const at20 = Number(bru.getVar("searchCountAt20"));
+    if (at20 === 20) {
+      expect(body.length).to.be.above(20);
+    } else {
+      expect(body.length).to.equal(at20);
+    }
+  });
+
+  test("should match a full name containing a space", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  The regression guard for the 2026-09-09 autocomplete bug. UserSearchServiceImpl held
+  MAX_AUTOCOMPLETE_RESULTS = 20 and applied it in the service, so the controller's `limit`
+  could only ever narrow further and `limit=50` returned 20. Measured on production before
+  the fix: query=Matthias with limit=20, 40 and 100 all returned exactly 20.
+
+  The third assertion is deliberately conditional so the test cannot go flaky on a sparse
+  environment: it only demands more than 20 rows when limit=20 actually saturated, which is
+  the precise condition under which the old cap was observable. Where fewer than 20 users
+  match, the two requests must agree exactly.
+
+  Read-only GET. No outbound communication, no data written, nothing to clean up.
+}

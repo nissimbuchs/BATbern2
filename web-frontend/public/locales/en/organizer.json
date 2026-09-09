@@ -208,7 +208,8 @@
       "errorAlreadyPromoted": "Speaker is already in {{currentState}}; promote is only valid from Contacted.",
       "errorStillIdentified": "Speaker must be Contacted first — log outreach before promoting.",
       "errorDeclined": "Speaker has Declined — create a new pool entry instead of promoting.",
-      "errorAlreadyReady": "Speaker is already Ready — send the invitation from the Ready lane."
+      "errorAlreadyReady": "Speaker is already Ready — send the invitation from the Ready lane.",
+      "ambiguousPrefill": "Several users match \"{{name}}\". Pick the right person, or create a new user."
     },
     "workflowState": {
       "IDENTIFIED": "Identified",

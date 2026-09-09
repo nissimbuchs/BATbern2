@@ -314,6 +314,52 @@ describe('UserManagementApi', () => {
 
       expect(result).toHaveLength(0);
     });
+
+    // Bug fix 2026-09-09: `searchUsers` used to call `encodeURIComponent(query)` and hand the
+    // result to axios `params`, which percent-encodes again. A query with a non-ASCII character
+    // or a space therefore reached the backend as a literal `St%C3%BCrmer` and matched nothing:
+    // typing the surname "Stürmer" returned 0 results while ASCII surnames worked, which is why
+    // the promote-speaker picker looked intermittently broken. axios owns the encoding.
+    it('should_sendQueryUnencoded_when_queryContainsUmlaut', async () => {
+      mock
+        .onGet('/users/search', { params: { query: 'Stürmer', limit: 20 } })
+        .reply(200, [{ id: 'matthias.stuermer', email: 'matthias.stuermer@bfh.ch' }]);
+
+      const result = await searchUsers('Stürmer', 20);
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('matthias.stuermer');
+    });
+
+    it('should_sendQueryUnencoded_when_queryContainsSpace', async () => {
+      mock
+        .onGet('/users/search', { params: { query: 'Matthias Stürmer', limit: 20 } })
+        .reply(200, [{ id: 'matthias.stuermer', email: 'matthias.stuermer@bfh.ch' }]);
+
+      const result = await searchUsers('Matthias Stürmer', 20);
+
+      expect(result).toHaveLength(1);
+    });
+
+    it('should_passRoleToBackend_when_roleFilterProvided', async () => {
+      mock
+        .onGet('/users/search', { params: { query: 'Doe', limit: 20, role: 'SPEAKER' } })
+        .reply(200, [{ id: 'jane.doe', roles: ['SPEAKER'] }]);
+
+      const result = await searchUsers('Doe', 20, 'SPEAKER');
+
+      expect(result).toHaveLength(1);
+      expect(result[0].id).toBe('jane.doe');
+    });
+
+    it('should_omitRoleParam_when_noRoleFilterProvided', async () => {
+      mock.onGet('/users/search').reply((config) => {
+        expect(config.params).not.toHaveProperty('role');
+        return [200, []];
+      });
+
+      await searchUsers('Doe', 20);
+    });
   });
 
   describe('getUserById', () => {

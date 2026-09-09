@@ -202,7 +202,8 @@
       "errorAlreadyPromoted": "登壇者はすでに {{currentState}} 状態です。昇格は「連絡済み」状態からのみ可能です。",
       "errorStillIdentified": "登壇者をまず連絡済みにする必要があります — 昇格の前にコンタクトを記録してください。",
       "errorDeclined": "登壇者は辞退しました — 昇格ではなく新規エントリを作成してください。",
-      "errorAlreadyReady": "登壇者はすでに準備完了です — READY レーンから招待を送信してください。"
+      "errorAlreadyReady": "登壇者はすでに準備完了です — READY レーンから招待を送信してください。",
+      "ambiguousPrefill": "「{{name}}」に一致するユーザーが複数あります。正しい人物を選択するか、新しいユーザーを作成してください。"
     },
     "workflowState": {
       "IDENTIFIED": "特定済み",

@@ -202,7 +202,8 @@
       "errorAlreadyPromoted": "Spreker is al in {{currentState}}; promotie is alleen geldig vanaf Gecontacteerd.",
       "errorStillIdentified": "Spreker moet eerst worden gecontacteerd — registreer het contact voor promotie.",
       "errorDeclined": "Spreker heeft geweigerd — maak een nieuwe entry aan in plaats van te promoveren.",
-      "errorAlreadyReady": "Spreker is al klaar — verstuur de uitnodiging vanuit de READY-baan."
+      "errorAlreadyReady": "Spreker is al klaar — verstuur de uitnodiging vanuit de READY-baan.",
+      "ambiguousPrefill": "Meerdere gebruikers komen overeen met \"{{name}}\". Kies de juiste persoon, of maak een nieuwe gebruiker aan."
     },
     "workflowState": {
       "IDENTIFIED": "Geïdentificeerd",
