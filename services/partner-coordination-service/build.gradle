@@ -38,7 +38,7 @@ dependencies {
     // Service-specific: Monitoring
     implementation 'io.micrometer:micrometer-core'
     implementation 'io.micrometer:micrometer-registry-cloudwatch2'
-    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+    implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
 
     // Service-specific: Testing libraries
     testImplementation 'io.rest-assured:rest-assured:5.5.6'
