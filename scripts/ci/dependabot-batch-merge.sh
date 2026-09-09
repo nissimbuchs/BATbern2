@@ -5,16 +5,18 @@ set -euo pipefail
 # Automatically merges open dependabot PRs in batches to avoid conflicts
 #
 # Usage:
-#   # A PR armed for auto-merge this long without merging means the required checks
-# are not completing. Override with STALLED_AFTER_DAYS=n.
-STALLED_AFTER_DAYS="${STALLED_AFTER_DAYS:-3}"
-
-DRY_RUN=false ./scripts/ci/dependabot-batch-merge.sh
-#   DRY_RUN=true ./scripts/ci/dependabot-batch-merge.sh  # Test mode
+#   DRY_RUN=false ./scripts/ci/dependabot-batch-merge.sh
+#   DRY_RUN=true  ./scripts/ci/dependabot-batch-merge.sh  # Test mode
 #
 # Environment variables:
-#   GH_TOKEN - GitHub token with PR write permissions (required)
-#   DRY_RUN  - Set to 'true' to preview actions without executing (default: false)
+#   GH_TOKEN            - GitHub token with PR write permissions (required)
+#   DRY_RUN             - Set to 'true' to preview actions without executing (default: false)
+#   STALLED_AFTER_DAYS  - A PR armed for auto-merge this long without merging means the
+#                         required checks are not completing (default: 3)
+
+# A PR armed for auto-merge this long without merging means the required checks are not
+# completing. Override with STALLED_AFTER_DAYS=n.
+STALLED_AFTER_DAYS="${STALLED_AFTER_DAYS:-3}"
 
 # Configuration
 DRY_RUN="${DRY_RUN:-false}"
@@ -41,24 +43,35 @@ init_summary() {
 EOF
 }
 
-# Log to both console and summary
+# Log to both console and summary.
+#
+# Console output goes to STDERR on purpose. These helpers are called from inside functions
+# whose stdout is captured by command substitution — `local pr_count=$(get_dependabot_prs)` —
+# so logging to stdout put the log text INTO the captured value. The workflow summary then
+# read:
+#
+#   - **Total PRs processed**: ℹ️  Fetching open dependabot PRs...
+#     ℹ️  Found 17 open dependabot PRs
+#     17
+#
+# Keep every log_* on stderr so a function's stdout carries only its return value.
 log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}"
+    echo -e "${BLUE}ℹ️  $1${NC}" >&2
     echo "$1" >> "$SUMMARY_FILE"
 }
 
 log_success() {
-    echo -e "${GREEN}✅ $1${NC}"
+    echo -e "${GREEN}✅ $1${NC}" >&2
     echo "✅ $1" >> "$SUMMARY_FILE"
 }
 
 log_warn() {
-    echo -e "${YELLOW}⚠️  $1${NC}"
+    echo -e "${YELLOW}⚠️  $1${NC}" >&2
     echo "⚠️ $1" >> "$SUMMARY_FILE"
 }
 
 log_error() {
-    echo -e "${RED}❌ $1${NC}"
+    echo -e "${RED}❌ $1${NC}" >&2
     echo "❌ $1" >> "$SUMMARY_FILE"
 }
 
