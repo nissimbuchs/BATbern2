@@ -32,13 +32,13 @@ dependencies {
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
 
     // Service-specific: AWS SDK
-    implementation platform('software.amazon.awssdk:bom:2.39.0')
+    implementation platform('software.amazon.awssdk:bom:2.54.7')
     implementation 'software.amazon.awssdk:eventbridge'
 
     // Service-specific: Monitoring
     implementation 'io.micrometer:micrometer-core'
     implementation 'io.micrometer:micrometer-registry-cloudwatch2'
-    implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
+    implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
 
     // Service-specific: Testing libraries
     testImplementation 'io.rest-assured:rest-assured:5.5.6'
