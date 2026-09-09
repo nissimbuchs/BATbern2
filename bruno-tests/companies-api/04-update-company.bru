@@ -44,7 +44,7 @@ tests {
 
   test("should preserve company name (Story 1.16.2: name is identifier)", function() {
     const body = res.getBody();
-    const expectedName = bru.getEnvVar("testCompanyName");
+    const expectedName = bru.getVar("testCompanyName");
     expect(body.name).to.equal(expectedName);
   });
 

@@ -44,7 +44,7 @@ assert {
 script:post-response {
   if (res.getStatus() === 201) {
     const body = res.getBody();
-    bru.setEnvVar("testCreatedTopicId", body.id);
+    bru.setVar("testCreatedTopicId", body.id);
     console.log("Created test topic:", body.id);
   }
 }

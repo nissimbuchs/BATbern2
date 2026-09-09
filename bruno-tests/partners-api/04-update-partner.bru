@@ -51,7 +51,7 @@ tests {
 
   test("should return full partner response", function() {
     const body = res.getBody();
-    expect(body.companyName).to.equal(bru.getEnvVar("testPartnerCompanyName"));
+    expect(body.companyName).to.equal(bru.getVar("testPartnerCompanyName"));
     expect(body.partnershipStartDate).to.exist;
     expect(body.isActive).to.exist;
   });

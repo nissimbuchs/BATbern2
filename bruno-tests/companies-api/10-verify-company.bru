@@ -16,7 +16,7 @@ headers {
 
 script:pre-request {
   // This test requires a company to exist
-  const testCompanyName = bru.getEnvVar("testCompanyName");
+  const testCompanyName = bru.getVar("testCompanyName");
   if (!testCompanyName) {
     throw new Error("testCompanyName not set. Run 01-create-company first.");
   }
@@ -34,7 +34,7 @@ tests {
   });
 
   test("should return company data (Story 1.16.2: uses name as identifier)", function() {
-    expect(res.body.name).to.equal(bru.getEnvVar("testCompanyName"));
+    expect(res.body.name).to.equal(bru.getVar("testCompanyName"));
     expect(res.body.id).to.be.undefined; // Story 1.16.2: no id field
   });
 

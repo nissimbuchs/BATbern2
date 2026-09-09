@@ -4,6 +4,18 @@ meta {
   seq: 5
 }
 
+script:pre-request {
+  // Precondition (added 2026-09-09). Read-only, but it must not silently report on the
+  // authenticated organizer when 04-create-user failed — that turned a missing throwaway user
+  // into a green assertion about the wrong account. See 06-update-user-roles for the mutating
+  // case that made this dangerous.
+  if (!bru.getVar("testUsername")) {
+    throw new Error(
+      "Precondition: runtime var `testUsername` is unset — 04-create-user must succeed first."
+    );
+  }
+}
+
 get {
   url: {{baseUrl}}/users/{{testUsername}}
   body: none

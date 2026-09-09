@@ -40,7 +40,7 @@ script:post-response {
   // Story 1.16.2: Store company name (not ID) for use in subsequent tests
   if (res.getStatus() === 201) {
     const company = res.getBody();
-    bru.setEnvVar("testCompanyName", company.name);
+    bru.setVar("testCompanyName", company.name);
     console.log("Created company with name:", company.name);
   }
 }

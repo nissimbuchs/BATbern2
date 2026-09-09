@@ -34,7 +34,7 @@ tests {
 
   test("should return partner by company name (ADR-003)", function() {
     const body = res.getBody();
-    expect(body.companyName).to.equal(bru.getEnvVar("testPartnerCompanyName"));
+    expect(body.companyName).to.equal(bru.getVar("testPartnerCompanyName"));
   });
 
   test("should have partnership details", function() {

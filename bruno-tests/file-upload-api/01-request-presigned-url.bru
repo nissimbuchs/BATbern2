@@ -40,9 +40,9 @@ script:post-response {
   // Store uploadId for subsequent tests
   if (res.getStatus() === 200) {
     const response = res.getBody();
-    bru.setEnvVar("testUploadId", response.fileId);
-    bru.setEnvVar("testFileExtension", response.fileExtension);
-    bru.setEnvVar("testUploadUrl", response.uploadUrl);
+    bru.setVar("testUploadId", response.fileId);
+    bru.setVar("testFileExtension", response.fileExtension);
+    bru.setVar("testUploadUrl", response.uploadUrl);
     console.log("Generated presigned URL for upload ID:", response.fileId);
   }
 }
