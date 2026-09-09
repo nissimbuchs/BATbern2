@@ -208,7 +208,8 @@
       "errorAlreadyPromoted": "Referent ist bereits in {{currentState}}; Beförderung ist nur aus „Kontaktiert“ möglich.",
       "errorStillIdentified": "Referent muss zuerst kontaktiert werden — Outreach erfassen, dann befördern.",
       "errorDeclined": "Referent hat abgelehnt — bitte einen neuen Pool-Eintrag erstellen statt zu befördern.",
-      "errorAlreadyReady": "Referent ist bereits bereit — Einladung aus der READY-Spur versenden."
+      "errorAlreadyReady": "Referent ist bereits bereit — Einladung aus der READY-Spur versenden.",
+      "ambiguousPrefill": "Mehrere Benutzer passen zu \"{{name}}\". Wählen Sie die richtige Person, oder erstellen Sie einen neuen Benutzer."
     },
     "workflowState": {
       "IDENTIFIED": "Identifiziert",

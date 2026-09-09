@@ -64,6 +64,11 @@ Focus on unobvious details that agents otherwise miss._
 - **Database storage**: `lowercase_snake_case` (e.g., `'speaker_brainstorming'`)
 - Conversion: JPA `AttributeConverter` handles Java ↔ DB. Jackson default handles Java ↔ JSON.
 - Do NOT add `@JsonValue`/`@JsonProperty` to enums — the default serialisation is correct.
+- **Exception: `role_assignments.role` is stored UPPER_CASE**, not lowercase. Its
+  `role_assignments_role_check` constraint accepts only `ORGANIZER|SPEAKER|PARTNER|ATTENDEE`, so a
+  hand-written `INSERT … 'speaker'` is rejected. Verified 2026-09-09 by measurement:
+  `events.workflow_state` (`archived`, `slot_assignment`) and `speaker_pool.status` (`contacted`,
+  `quality_reviewed`) do follow the lowercase rule — `role` is the one that does not.
 
 ### Java (Backend)
 - Java 21 — use text blocks, records, pattern matching, and sealed classes where appropriate

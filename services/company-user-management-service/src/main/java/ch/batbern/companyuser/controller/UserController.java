@@ -101,6 +101,9 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     /** Lenient parser for the JSON {@code filter} query param (ADR-013 §3). */
     private static final ObjectMapper LIST_FILTER_MAPPER = new ObjectMapper();
 
+    /** Default autocomplete page size, matching {@code default: 20} in users-api.openapi.yml. */
+    private static final int DEFAULT_SEARCH_LIMIT = 20;
+
     // ------------------------------------------------------------------------
     // UserManagementApi
     // ------------------------------------------------------------------------
@@ -263,12 +266,15 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
         log.debug("Searching users with query: {}, role: {}, limit: {}", query, role, limit);
 
         Role roleFilter = role != null ? Role.valueOf(role.toUpperCase()) : null;
-        int effectiveLimit = limit != null ? limit : 20;
+        int effectiveLimit = limit != null ? limit : DEFAULT_SEARCH_LIMIT;
 
-        List<UserSearchResponse> results = userSearchService.searchUsers(query, roleFilter).stream()
-                .limit(effectiveLimit)
-                .map(UserController::toSearchResponse)
-                .toList();
+        // The service clamps and applies the limit in SQL. It used to cap at 20 internally, so
+        // this stream `.limit(...)` could only ever narrow further and `limit` above 20 was
+        // silently ignored (bug fix 2026-09-09).
+        List<UserSearchResponse> results =
+                userSearchService.searchUsers(query, roleFilter, effectiveLimit).stream()
+                        .map(UserController::toSearchResponse)
+                        .toList();
 
         return ResponseEntity.ok(results);
     }

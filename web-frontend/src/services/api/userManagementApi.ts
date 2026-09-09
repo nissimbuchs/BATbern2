@@ -89,15 +89,26 @@ export const listUsers = async (
 /**
  * Search users with autocomplete (300ms debouncing should be handled by the hook/component)
  * AC6: Search & Autocomplete
+ *
+ * The query is passed to axios RAW. Do NOT call `encodeURIComponent` on it: axios
+ * percent-encodes `params` itself, so pre-encoding double-encodes and the backend receives a
+ * literal `St%C3%BCrmer`. That silently broke every query containing a non-ASCII character or a
+ * space — searching the surname "Stürmer" returned 0 results while ASCII surnames worked
+ * (bug fix 2026-09-09). Path segments still need `encodeURIComponent`; query params never do.
+ *
+ * `role` is a SERVER-side filter (users-api.openapi.yml `/users/search`). Filtering by role in
+ * the client would filter the already-truncated page rather than the best matches.
  */
 export const searchUsers = async (
   query: string,
-  limit: number = 10
+  limit: number = 10,
+  role?: string
 ): Promise<UserSearchResponse[]> => {
   const response = await apiClient.get<UserSearchResponse[]>(`${USER_API_PATH}/search`, {
     params: {
-      query: encodeURIComponent(query),
+      query,
       limit,
+      ...(role ? { role } : {}),
     },
   });
   return response.data;

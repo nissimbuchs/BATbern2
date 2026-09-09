@@ -202,7 +202,8 @@
       "errorAlreadyPromoted": "Il relatore è già in {{currentState}}; la promozione è valida solo dallo stato Contattato.",
       "errorStillIdentified": "Il relatore deve essere prima contattato — registra il contatto prima di promuovere.",
       "errorDeclined": "Il relatore ha rifiutato — crea una nuova voce invece di promuovere.",
-      "errorAlreadyReady": "Il relatore è già pronto — invia l'invito dalla corsia READY."
+      "errorAlreadyReady": "Il relatore è già pronto — invia l'invito dalla corsia READY.",
+      "ambiguousPrefill": "Più utenti corrispondono a \"{{name}}\". Scegliere la persona giusta, o creare un nuovo utente."
     },
     "workflowState": {
       "IDENTIFIED": "Identificato",

@@ -8,10 +8,12 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.cache.Cache;
+import org.springframework.data.domain.Pageable;
 import org.springframework.cache.CacheManager;
 
 import java.time.Instant;
@@ -23,6 +25,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.atLeastOnce;
@@ -133,17 +137,17 @@ class UserSearchServiceTest {
         // Given
         String query = "doe";
         List<User> users = Arrays.asList(testUser1, testUser2);
-        when(userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query))
+        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
-        List<UserResponse> results = userSearchService.searchUsers(query, null);
+        List<UserResponse> results = userSearchService.searchUsers(query, null, 20);
 
         // Then
         assertThat(results).hasSize(2);
         assertThat(results.get(0).getFirstName()).isEqualTo("John");
         assertThat(results.get(1).getFirstName()).isEqualTo("Jane");
-        verify(userRepository).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
+        verify(userRepository).searchByNameOrEmail(eq(query), any(Pageable.class));
     }
 
     @Test
@@ -153,16 +157,18 @@ class UserSearchServiceTest {
         String query = "doe";
         Role roleFilter = Role.ORGANIZER;
         List<User> users = Collections.singletonList(testUser1);
-        when(userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query))
+        when(userRepository.searchByNameOrEmailAndRole(eq(query), eq(roleFilter), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
-        List<UserResponse> results = userSearchService.searchUsers(query, roleFilter);
+        List<UserResponse> results = userSearchService.searchUsers(query, roleFilter, 20);
 
         // Then
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getRoles()).contains(UserResponse.RolesEnum.ORGANIZER);
-        verify(userRepository).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
+        // The role filter is applied by the DATABASE now, not by streaming over a truncated page.
+        verify(userRepository).searchByNameOrEmailAndRole(eq(query), eq(roleFilter), any(Pageable.class));
+        verify(userRepository, never()).searchByNameOrEmail(eq(query), any(Pageable.class));
     }
 
     @Test
@@ -171,33 +177,81 @@ class UserSearchServiceTest {
         // Given
         String partialQuery = "jo";
         List<User> users = Collections.singletonList(testUser1);
-        when(userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(partialQuery, partialQuery))
+        when(userRepository.searchByNameOrEmail(eq(partialQuery), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
-        List<UserResponse> results = userSearchService.searchUsers(partialQuery, null);
+        List<UserResponse> results = userSearchService.searchUsers(partialQuery, null, 20);
 
         // Then
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getFirstName().toLowerCase()).contains(partialQuery);
-        verify(userRepository).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(partialQuery, partialQuery);
+        verify(userRepository).searchByNameOrEmail(eq(partialQuery), any(Pageable.class));
     }
 
     @Test
-    @DisplayName("Test 4.4: should_limitAutocompleteResults_when_maxResultsExceeded")
-    void should_limitAutocompleteResults_when_maxResultsExceeded() {
+    @DisplayName("Test 4.4: should_pushTheRequestedLimitToTheDatabase_when_searching")
+    void should_pushTheRequestedLimitToTheDatabase_when_searching() {
         // Given
         String query = "user";
-        List<User> manyUsers = createManyUsers(25);
-        when(userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query))
-                .thenReturn(manyUsers);
+        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+                .thenReturn(createManyUsers(7));
 
         // When
-        List<UserResponse> results = userSearchService.searchUsers(query, null);
+        List<UserResponse> results = userSearchService.searchUsers(query, null, 7);
 
-        // Then - Max 20 autocomplete results per design
-        assertThat(results).hasSizeLessThanOrEqualTo(20);
-        verify(userRepository).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
+        // Then: the limit is the DB's page size, not an in-memory truncation of an unordered set
+        assertThat(results).hasSize(7);
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(userRepository).searchByNameOrEmail(eq(query), captor.capture());
+        assertThat(captor.getValue().getPageSize()).isEqualTo(7);
+    }
+
+    @Test
+    @DisplayName("Test 4.6: should_honourALimitAboveTwenty_when_callerAsksForMore")
+    void should_honourALimitAboveTwenty_when_callerAsksForMore() {
+        // Regression guard for the 2026-09-09 bug: MAX_AUTOCOMPLETE_RESULTS was 20 and was
+        // applied INSIDE the service, so `limit=50` was silently capped at 20 and the caller
+        // could not widen the window to reach a user ranked past position 20.
+        String query = "matthias";
+        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+                .thenReturn(createManyUsers(50));
+
+        List<UserResponse> results = userSearchService.searchUsers(query, null, 50);
+
+        assertThat(results).hasSize(50);
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(userRepository).searchByNameOrEmail(eq(query), captor.capture());
+        assertThat(captor.getValue().getPageSize()).isEqualTo(50);
+    }
+
+    @Test
+    @DisplayName("Test 4.7: should_clampTheLimit_when_callerExceedsTheSpecMaximum")
+    void should_clampTheLimit_when_callerExceedsTheSpecMaximum() {
+        String query = "matthias";
+        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+                .thenReturn(Collections.emptyList());
+
+        userSearchService.searchUsers(query, null, 5000);
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(userRepository).searchByNameOrEmail(eq(query), captor.capture());
+        // users-api.openapi.yml declares `maximum: 100`
+        assertThat(captor.getValue().getPageSize()).isEqualTo(100);
+    }
+
+    @Test
+    @DisplayName("Test 4.8: should_fallBackToTheDefaultLimit_when_limitIsNotPositive")
+    void should_fallBackToTheDefaultLimit_when_limitIsNotPositive() {
+        String query = "matthias";
+        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+                .thenReturn(Collections.emptyList());
+
+        userSearchService.searchUsers(query, null, 0);
+
+        ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
+        verify(userRepository).searchByNameOrEmail(eq(query), captor.capture());
+        assertThat(captor.getValue().getPageSize()).isEqualTo(20);
     }
 
     @Test
@@ -205,15 +259,15 @@ class UserSearchServiceTest {
     void should_returnEmptyList_when_noMatchesFound() {
         // Given
         String query = "nonexistent";
-        when(userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query))
+        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
                 .thenReturn(Collections.emptyList());
 
         // When
-        List<UserResponse> results = userSearchService.searchUsers(query, null);
+        List<UserResponse> results = userSearchService.searchUsers(query, null, 20);
 
         // Then
         assertThat(results).isEmpty();
-        verify(userRepository).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
+        verify(userRepository).searchByNameOrEmail(eq(query), any(Pageable.class));
     }
 
     // AC13 Tests: Caffeine Caching
@@ -224,12 +278,12 @@ class UserSearchServiceTest {
         // Given
         String query = "doe";
         List<User> users = Arrays.asList(testUser1, testUser2);
-        when(userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query))
+        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
-        List<UserResponse> firstCall = userSearchService.searchUsers(query, null);
-        List<UserResponse> secondCall = userSearchService.searchUsers(query, null);
+        List<UserResponse> firstCall = userSearchService.searchUsers(query, null, 20);
+        List<UserResponse> secondCall = userSearchService.searchUsers(query, null, 20);
 
         // Then - With unit tests, caching may not be active (requires Spring context)
         // This test verifies the service works correctly when called multiple times
@@ -238,7 +292,7 @@ class UserSearchServiceTest {
         assertThat(secondCall).hasSize(2);
         // Note: In unit tests without Spring context, cache annotations don't work
         // We verify the method returns correct results - caching verified in integration tests
-        verify(userRepository, atLeastOnce()).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
+        verify(userRepository, atLeastOnce()).searchByNameOrEmail(eq(query), any(Pageable.class));
     }
 
     @Test
@@ -264,20 +318,20 @@ class UserSearchServiceTest {
         List<User> doeUsers = Arrays.asList(testUser1, testUser2);
         List<User> smithUsers = Collections.singletonList(testUser3);
 
-        when(userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query1, query1))
+        when(userRepository.searchByNameOrEmail(eq(query1), any(Pageable.class)))
                 .thenReturn(doeUsers);
-        when(userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query2, query2))
+        when(userRepository.searchByNameOrEmail(eq(query2), any(Pageable.class)))
                 .thenReturn(smithUsers);
 
         // When
-        List<UserResponse> results1 = userSearchService.searchUsers(query1, null);
-        List<UserResponse> results2 = userSearchService.searchUsers(query2, null);
+        List<UserResponse> results1 = userSearchService.searchUsers(query1, null, 20);
+        List<UserResponse> results2 = userSearchService.searchUsers(query2, null, 20);
 
         // Then - Each query should hit the repository once
         assertThat(results1).hasSize(2);
         assertThat(results2).hasSize(1);
-        verify(userRepository).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query1, query1);
-        verify(userRepository).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query2, query2);
+        verify(userRepository).searchByNameOrEmail(eq(query1), any(Pageable.class));
+        verify(userRepository).searchByNameOrEmail(eq(query2), any(Pageable.class));
     }
 
     @Test
@@ -288,20 +342,20 @@ class UserSearchServiceTest {
         List<User> initialUsers = Collections.singletonList(testUser1);
         List<User> updatedUsers = Arrays.asList(testUser1, testUser2);
 
-        when(userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query))
+        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
                 .thenReturn(initialUsers)
                 .thenReturn(updatedUsers);
         when(cacheManager.getCache("userSearch")).thenReturn(cache);
 
         // When
-        List<UserResponse> firstCall = userSearchService.searchUsers(query, null);
+        List<UserResponse> firstCall = userSearchService.searchUsers(query, null, 20);
         userSearchService.invalidateCache(); // Invalidate cache
-        List<UserResponse> secondCall = userSearchService.searchUsers(query, null);
+        List<UserResponse> secondCall = userSearchService.searchUsers(query, null, 20);
 
         // Then
         assertThat(firstCall).hasSize(1);
         assertThat(secondCall).hasSize(2); // Fresh data after cache invalidation
-        verify(userRepository, times(2)).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
+        verify(userRepository, times(2)).searchByNameOrEmail(eq(query), any(Pageable.class));
     }
 
     // AC14 Tests: Cache Performance (<100ms P95)
@@ -313,18 +367,19 @@ class UserSearchServiceTest {
         String query = "doe";
         Role roleFilter = Role.SPEAKER;
         List<User> users = Collections.singletonList(testUser2);
-        when(userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query))
+        when(userRepository.searchByNameOrEmailAndRole(eq(query), eq(roleFilter), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
-        List<UserResponse> results1 = userSearchService.searchUsers(query, roleFilter);
-        List<UserResponse> results2 = userSearchService.searchUsers(query, roleFilter);
+        List<UserResponse> results1 = userSearchService.searchUsers(query, roleFilter, 20);
+        List<UserResponse> results2 = userSearchService.searchUsers(query, roleFilter, 20);
 
         // Then - Verify correct filtering
         assertThat(results1).hasSize(1);
         assertThat(results2).hasSize(1);
         assertThat(results1.get(0).getRoles()).contains(UserResponse.RolesEnum.SPEAKER);
-        verify(userRepository, atLeastOnce()).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
+        verify(userRepository, atLeastOnce())
+                .searchByNameOrEmailAndRole(eq(query), eq(roleFilter), any(Pageable.class));
     }
 
     @Test
@@ -333,15 +388,15 @@ class UserSearchServiceTest {
         // Given
         String query = "doe";
         List<User> users = Arrays.asList(testUser1, testUser2);
-        when(userRepository.findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query))
+        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
-        List<UserResponse> results = userSearchService.searchUsers(query, null);
+        List<UserResponse> results = userSearchService.searchUsers(query, null, 20);
 
         // Then - Should return all matching users without role filter
         assertThat(results).hasSize(2);
-        verify(userRepository).findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(query, query);
+        verify(userRepository).searchByNameOrEmail(eq(query), any(Pageable.class));
     }
 
     // Helper Methods

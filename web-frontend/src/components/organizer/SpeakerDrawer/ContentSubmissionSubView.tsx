@@ -39,7 +39,8 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { speakerContentService } from '@/services/speakerContentService';
 import { sessionApiClient } from '@/services/api/sessionApiClient';
 import { speakerPoolKeys } from '@/hooks/useSpeakerPool';
-import { getUserByUsername, searchUsers, updateUserRoles } from '@/services/api/userManagementApi';
+import { getUserByUsername, updateUserRoles } from '@/services/api/userManagementApi';
+import { resolveSpeakerUserByName } from './resolveSpeakerUserByName';
 import { UserAutocomplete } from '@/components/shared/UserAutocomplete';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import UserCreateEditModal from '@/components/organizer/UserManagement/UserCreateEditModal';
@@ -162,15 +163,13 @@ export const ContentSubmissionSubView: React.FC<ContentSubmissionSubViewProps> =
             }
           }
           if (!resolved) {
-            let users = await searchUsers(speaker.speakerName, 20);
-            if (users.length === 0 && speaker.speakerName.includes(' ')) {
-              const firstName = speaker.speakerName.split(' ')[0];
-              users = await searchUsers(firstName, 20);
-            }
-            const candidates = users.filter((u) => u.roles?.includes('SPEAKER'));
-            if (candidates.length > 0) {
-              resolved = candidates[0];
-            }
+            // Only an UNAMBIGUOUS name match is offered. Taking `candidates[0]` off an
+            // arbitrary page of namesakes used to prefill the wrong person
+            // (bug fix 2026-09-09 — see `resolveSpeakerUserByName`).
+            const { user } = await resolveSpeakerUserByName(speaker.speakerName, {
+              requireRole: 'SPEAKER',
+            });
+            resolved = user;
           }
           if (resolved) {
             setSelectedUser(resolved);

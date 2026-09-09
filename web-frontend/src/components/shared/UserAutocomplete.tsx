@@ -5,10 +5,17 @@
  * Features:
  * - Debounced search (300ms)
  * - Min 2 characters to trigger search
- * - Filter by role
+ * - Filter by role (SERVER-side)
  * - Display user name, email, and company
  * - Loading states
  * - Error handling
+ *
+ * Bug fixes 2026-09-09:
+ * - The `role` filter used to run client-side (`allUsers.filter(...)`) on the page the server
+ *   had already truncated, so it filtered arbitrary rows instead of the best matches. It is now
+ *   passed to the backend, which filters before limiting.
+ * - The text field showed `option.id` (the username, e.g. `matthias.stuermer`). It now shows the
+ *   person's real name (`userDisplayName`, which falls back to the username when unnamed).
  */
 
 import React, { useState, useCallback } from 'react';
@@ -19,6 +26,7 @@ import { searchUsers } from '@/services/api/userManagementApi';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import type { UserSearchResponse } from '@/types/user.types';
 import { useDebounce } from '@/hooks/useDebounce';
+import { userDisplayName } from '@/utils/userDisplayName';
 
 interface UserAutocompleteProps {
   value: UserSearchResponse | null;
@@ -48,14 +56,14 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
   // Sync inputValue when value prop changes
   React.useEffect(() => {
     if (value) {
-      setInputValue(value.id); // id is the username
+      setInputValue(userDisplayName(value));
     } else {
       setInputValue('');
     }
   }, [value]);
 
   // Only search if input is at least 2 characters
-  const isValueSelected = value && debouncedInputValue === value.id;
+  const isValueSelected = value && debouncedInputValue === userDisplayName(value);
   const shouldSearch = debouncedInputValue.length >= 2 && !isValueSelected;
 
   // Query for user search
@@ -65,11 +73,9 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
     isError,
   } = useQuery({
     queryKey: ['users', 'search', debouncedInputValue, role],
-    queryFn: async () => {
-      const allUsers = await searchUsers(debouncedInputValue, 20);
-      // Filter by role if specified
-      return role ? allUsers.filter((u) => u.roles?.includes(role)) : allUsers;
-    },
+    // The backend applies the role filter BEFORE limiting (users-api.openapi.yml
+    // `/users/search`), so no client-side re-filtering here.
+    queryFn: () => searchUsers(debouncedInputValue, 20, role),
     enabled: shouldSearch,
   });
 
@@ -94,7 +100,7 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
       inputValue={inputValue}
       onInputChange={handleInputChange}
       options={optionsWithValue}
-      getOptionLabel={(option) => option.id} // id is the username
+      getOptionLabel={userDisplayName}
       isOptionEqualToValue={(option, value) => option.id === value.id}
       disabled={disabled}
       loading={isLoading}

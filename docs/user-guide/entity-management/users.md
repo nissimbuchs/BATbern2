@@ -414,8 +414,21 @@ Future releases will include:
 Searches across:
 - First name
 - Last name
+- Full name ("Hans Müller" as typed, not only the parts)
+- Username
 - Email address
 - Company name
+
+Results are relevance-ranked: an exact full-name match first, then an exact single field, then a
+prefix match, then any substring, with name as the tie-break so repeated searches give the same
+order.
+
+**Autocomplete pickers** (for example "Find existing user" when promoting a speaker) request the
+20 best-ranked matches and can ask for up to 100. Before 2026-09-09 the autocomplete returned an
+unordered result set truncated at a hard 20, so a person could be genuinely unreachable when many
+namesakes existed: 32 users matched "Matthias", and the one being looked for ranked 29th. If a
+picker seems not to contain someone you know exists, type their **surname** rather than their
+first name; it is by far the more selective field.
 
 ### Advanced Filters
 

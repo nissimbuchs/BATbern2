@@ -353,9 +353,22 @@ export interface paths {
     };
     /**
      * Search users with autocomplete
-     * @description Search users by name or email with autocomplete functionality.
+     * @description Search users by name, username or email with autocomplete functionality.
      *
      *     **Acceptance Criteria**: AC4, AC11
+     *
+     *     **Matched fields**: `username`, `email`, `firstName`, `lastName`, and the concatenated
+     *     full name (`firstName + ' ' + lastName`), each as a case-insensitive substring. The full
+     *     name is matched so that a stored display name such as `speaker_pool.speaker_name`
+     *     ("Matthias Stürmer") resolves.
+     *
+     *     **Ranking** (applied in SQL, before the limit): exact full-name match, then an exact
+     *     single-field match, then a prefix match, then any substring; ties broken by
+     *     `lastName, firstName, username` so the order is stable across identical requests.
+     *
+     *     **Filtering**: `role` is applied in the database BEFORE the limit, so a role-filtered
+     *     search returns the best matching users holding that role rather than the subset of an
+     *     arbitrary page.
      *
      *     **Caching**:
      *     - Caffeine in-memory cache with 10-minute TTL
@@ -366,7 +379,7 @@ export interface paths {
      *     - Cached response: <50ms (P95)
      *     - Cache miss: <100ms (P95)
      *
-     *     **Default Results**: 20 users (configurable via limit parameter)
+     *     **Default Results**: 20 users (configurable via limit parameter, maximum 100)
      */
     get: operations['searchUsers'];
     put?: never;

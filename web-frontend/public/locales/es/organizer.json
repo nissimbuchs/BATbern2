@@ -202,7 +202,8 @@
       "errorAlreadyPromoted": "El ponente ya está en {{currentState}}; la promoción solo es válida desde Contactado.",
       "errorStillIdentified": "El ponente debe ser contactado primero — registra el contacto antes de promover.",
       "errorDeclined": "El ponente ha rechazado — crea una nueva entrada en vez de promover.",
-      "errorAlreadyReady": "El ponente ya está listo — envía la invitación desde el carril READY."
+      "errorAlreadyReady": "El ponente ya está listo — envía la invitación desde el carril READY.",
+      "ambiguousPrefill": "Varios usuarios coinciden con \"{{name}}\". Elija a la persona correcta, o cree un usuario nuevo."
     },
     "workflowState": {
       "IDENTIFIED": "Identificado",

@@ -35,7 +35,8 @@ import type { AxiosError } from 'axios';
 import { UserAutocomplete } from '@/components/shared/UserAutocomplete';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import UserCreateEditModal from '@/components/organizer/UserManagement/UserCreateEditModal';
-import { getUserByUsername, searchUsers } from '@/services/api/userManagementApi';
+import { getUserByUsername } from '@/services/api/userManagementApi';
+import { resolveSpeakerUserByName } from './resolveSpeakerUserByName';
 import { usePromoteSpeakerToReady } from '@/hooks/useSpeakerPool';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 import type { UserSearchResponse, User } from '@/types/user.types';
@@ -66,6 +67,7 @@ export const PromoteSpeakerSubView: React.FC<PromoteSpeakerSubViewProps> = ({
   const promoteMutation = usePromoteSpeakerToReady();
 
   const [selectedUser, setSelectedUser] = useState<UserSearchResponse | null>(null);
+  const [prefillAmbiguous, setPrefillAmbiguous] = useState(false);
   const [userPickerError, setUserPickerError] = useState<string | undefined>(undefined);
   const [userModalOpen, setUserModalOpen] = useState(false);
   // Holds the FULL `User` (UserResponse) shape — UserSearchResponse omits `bio` and
@@ -102,15 +104,14 @@ export const PromoteSpeakerSubView: React.FC<PromoteSpeakerSubViewProps> = ({
           }
         }
         // Organizer-sourced candidate: best-effort match by the brainstorm name. No SPEAKER-role
-        // filter (see above) — the first match is offered and the organizer can change it.
-        let users = await searchUsers(speaker.speakerName, 20);
-        if (users.length === 0 && speaker.speakerName.includes(' ')) {
-          const firstName = speaker.speakerName.split(' ')[0];
-          users = await searchUsers(firstName, 20);
+        // filter (see above). Only an UNAMBIGUOUS match is offered — see
+        // `resolveSpeakerUserByName`; pre-selecting `users[0]` used to hand the organizer the
+        // wrong namesake (bug fix 2026-09-09).
+        const { user, ambiguous } = await resolveSpeakerUserByName(speaker.speakerName);
+        if (user) {
+          setSelectedUser(user);
         }
-        if (users.length > 0) {
-          setSelectedUser(users[0]);
-        }
+        setPrefillAmbiguous(ambiguous);
       } catch (error) {
         console.error('PromoteSpeakerSubView: failed to prefill speaker', error);
       }
@@ -284,6 +285,16 @@ export const PromoteSpeakerSubView: React.FC<PromoteSpeakerSubViewProps> = ({
               disabled={promoteMutation.isPending}
               data-testid="promote-speaker-search-field"
             />
+
+            {prefillAmbiguous && !selectedUser && (
+              <Alert severity="info" sx={{ mt: 2 }} data-testid="promote-ambiguous-hint">
+                {t(
+                  'organizer:speakerBrainstorm.promoteDialog.ambiguousPrefill',
+                  'Several users match "{{name}}". Pick the right person, or create a new user.',
+                  { name: speaker.speakerName }
+                )}
+              </Alert>
+            )}
 
             {selectedUser && (
               <Box sx={{ mt: 2, p: 2, bgcolor: 'action.hover', borderRadius: 1 }}>
