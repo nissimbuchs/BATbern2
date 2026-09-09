@@ -20,7 +20,7 @@ gitProperties {
 
 dependencies {
     // Service-specific: AWS SDK (S3, Cognito, EventBridge)
-    implementation platform('software.amazon.awssdk:bom:2.39.0')
+    implementation platform('software.amazon.awssdk:bom:2.54.7')
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:url-connection-client'
     implementation 'software.amazon.awssdk:eventbridge'
@@ -37,8 +37,8 @@ dependencies {
     // Service-specific: Monitoring
     implementation 'io.micrometer:micrometer-core'
     implementation 'io.micrometer:micrometer-registry-cloudwatch2'
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-spring:2.15.1'
-    implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2:2.15.1'
+    implementation 'com.amazonaws:aws-xray-recorder-sdk-spring:2.21.1'
+    implementation 'com.amazonaws:aws-xray-recorder-sdk-aws-sdk-v2:2.21.1'
     implementation 'net.logstash.logback:logstash-logback-encoder:7.4'
 
     // Additional-email verification (v2): JWT for stateless signed verification tokens
