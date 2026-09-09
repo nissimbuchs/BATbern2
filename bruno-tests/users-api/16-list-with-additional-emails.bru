@@ -32,7 +32,7 @@ tests {
 
   test("should include the email created in test 15", function() {
     const body = res.getBody();
-    const added = bru.getEnvVar("additionalEmail");
+    const added = bru.getVar("additionalEmail");
     if (added) {
       const found = body.additionalEmails.find(e => e.email === added);
       expect(found).to.exist;

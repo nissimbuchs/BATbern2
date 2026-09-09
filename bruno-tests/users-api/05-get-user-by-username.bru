@@ -31,13 +31,13 @@ tests {
 
   test("should return user with correct username", function() {
     const body = res.getBody();
-    const testUsername = bru.getEnvVar("testUsername");
+    const testUsername = bru.getVar("testUsername");
     expect(body.id).to.equal(testUsername);
   });
 
   test("should return test user created in previous step", function() {
     const body = res.getBody();
-    const testEmail = bru.getEnvVar("testUserEmail");
+    const testEmail = bru.getVar("testUserEmail");
     expect(body.email).to.equal(testEmail);
     expect(body.firstName).to.equal("Bruno");
     // Plan §F2: 04-create-user sets lastName='Test' so the derived username

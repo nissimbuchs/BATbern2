@@ -28,6 +28,22 @@ body:json {
   }
 }
 
+script:pre-request {
+  // Mirror 03's gate: if the update was skipped there is nothing to restore, and sending the
+  // captured blanks would 400. Belt-and-braces re-check of the captured values themselves, so
+  // this request can never be the thing that blanks or renames a real profile.
+  const first = bru.getVar("originalFirstName");
+  const last = bru.getVar("originalLastName");
+  const usable =
+    bru.getVar("profileRestorable") === true &&
+    typeof first === 'string' && first.trim().length > 0 &&
+    typeof last === 'string' && last.trim().length > 0;
+  if (!usable) {
+    console.log("Skipping profile restore: nothing was updated, or the captured original is blank.");
+    bru.runner.skipRequest();
+  }
+}
+
 assert {
   res.status: eq 200
   res.body.firstName: eq {{originalFirstName}}
@@ -52,19 +68,39 @@ tests {
 
   test("should restore original firstName", function() {
     const body = res.getBody();
-    const expected = bru.getEnvVar("originalFirstName");
+    const expected = bru.getVar("originalFirstName");
     expect(body.firstName).to.equal(expected);
   });
 
   test("should restore original lastName", function() {
     const body = res.getBody();
-    const expected = bru.getEnvVar("originalLastName");
+    const expected = bru.getVar("originalLastName");
     expect(body.lastName).to.equal(expected);
   });
 
   test("should restore original bio", function() {
     const body = res.getBody();
-    const expected = bru.getEnvVar("originalBio");
+    const expected = bru.getVar("originalBio");
     expect(body.bio).to.equal(expected);
   });
+}
+
+docs {
+  Restores the profile that 03-update-current-user overwrote.
+
+  Hardened 2026-09-09. Previously this pair was unconditionally destructive: 01 captured
+  `user.firstName || ""`, 03 overwrote the profile with "Updated"/"User", and 03b PATCHed the
+  captured values back. When the account's firstName/lastName were already blank, the restore
+  sent empty strings, PATCH /users/me rejected them with 400, and the account was left named
+  "Updated User" with "Updated bio via Bruno API test - <epoch>" as its bio. Since this
+  collection also runs against staging, and staging IS production, the account at risk is a
+  live organizer.
+
+  Both 03 and 03b now skip via bru.runner.skipRequest() unless 01 confirmed the original
+  profile is restorable (both names non-blank). Skipped renders distinctly from failed in the
+  runner summary, so the guard is visible rather than silent.
+
+  The captured values are RUNTIME vars, not env vars: bru.setEnvVar wrote them back into the
+  tracked bruno-tests/environments/*.bru file, so every run left captured profile data — and
+  after a failed restore, the "Updated"/"User" placeholders — in the working tree.
 }

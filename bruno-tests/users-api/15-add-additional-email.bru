@@ -35,7 +35,7 @@ assert {
 
 script:post-response {
   if (res.getStatus() === 201) {
-    bru.setEnvVar("additionalEmail", res.getBody().email);
+    bru.setVar("additionalEmail", res.getBody().email);
     console.log("Created additional email:", res.getBody().email);
   }
 }

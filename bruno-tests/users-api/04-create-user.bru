@@ -40,15 +40,32 @@ script:post-response {
   // Store created user for subsequent tests
   if (res.getStatus() === 201) {
     const user = res.getBody();
-    bru.setEnvVar("testUsername", user.id);
-    bru.setEnvVar("testUserEmail", user.email);
+    // All RUNTIME vars (bru.setVar), never bru.setEnvVar, which persists into the TRACKED
+    // environment file. That mattered twice:
+    //   1. It defeated the precondition guards below. Once written, `disposableUsername` stays
+    //      "set" on every later run even when THIS request fails, so 95-delete-test-user's
+    //      "fail loud instead of nuking the auth user" check would pass on a stale value and
+    //      issue a real DELETE.
+    //   2. Every run left test residue in the working tree, which is how a run's captured
+    //      values nearly got committed on 2026-09-09.
+    // `testUsername` used to be an env var because tasks-api read it across a separate
+    // `bru run` invocation; tasks-api/04-create-ad-hoc-task.bru now uses the static
+    // `{{organizerUsername}}`, which is what `assignedOrganizerUsername` should be anyway,
+    // so that coupling is gone.
+    bru.setVar("testUsername", user.id);
+    // Note: bru.setEnvVar persists into the TRACKED environment file, which
+    // defeats the very precondition guards below. Once written, `disposableUsername` stays "set"
+    // on every later run even when this request fails, so 95-delete-test-user's "fail loud
+    // instead of nuking the auth user" check would pass on a stale value and issue a real
+    // DELETE. Runtime scope restores the intended semantics: unset unless THIS run set it.
+    bru.setVar("testUserEmail", user.email);
     // Plan §F2 fix: 14-delete-test-user previously reused `testUsername` which
     // also resolves to the AUTH user (`batbern.organizer`) via development.bru
     // when this 04 step fails (e.g. 403 on non-organizer envs). The new
     // `disposableUsername` var is set ONLY by this step, so test 14 can use it
     // safely — if 04 didn't succeed, 14's precondition check will fail loud
     // instead of nuking the auth user.
-    bru.setEnvVar("disposableUsername", user.id);
+    bru.setVar("disposableUsername", user.id);
     console.log("Created test user:", user.id);
     console.log("Test user email:", user.email);
   }

@@ -26,28 +26,53 @@ assert {
 }
 
 script:post-response {
-  // Store current user data for subsequent tests
+  // Store current user data for subsequent tests.
+  //
+  // These are RUNTIME vars (bru.setVar), not env vars. bru.setEnvVar writes back into the
+  // tracked environment file, so every run dirtied bruno-tests/environments/*.bru and left
+  // captured profile values in the working tree — including, after a failed restore, the
+  // literal "Updated"/"User" placeholders. All of these vars are consumed only inside the
+  // users-api collection, which is a single `bru run` invocation, so runtime scope is enough.
+  // (`testUsername` in 04-create-user.bru deliberately stays an env var: tasks-api reads it
+  // from a SEPARATE invocation and depends on it being persisted.)
   if (res.getStatus() === 200) {
     const user = res.getBody();
-    bru.setEnvVar("currentUsername", user.id);
-    bru.setEnvVar("currentUserEmail", user.email);
+    bru.setVar("currentUsername", user.id);
+    bru.setVar("currentUserEmail", user.email);
     // Plan §F1 fix: 18-add-additional-email-duplicate reads {{authUserEmail}};
-    // earlier this env var was never defined so the body sent the literal
+    // earlier this var was never defined so the body sent the literal
     // string "{{authUserEmail}}" and the server rejected it with 400. Setting
     // the alias here keeps test 18 self-contained without altering its body.
-    bru.setEnvVar("authUserEmail", user.email);
+    bru.setVar("authUserEmail", user.email);
 
     // Store original profile data for restoration after update tests
-    bru.setEnvVar("originalFirstName", user.firstName || "");
-    bru.setEnvVar("originalLastName", user.lastName || "");
-    bru.setEnvVar("originalBio", user.bio || "");
-    bru.setEnvVar("originalProfilePictureUrl", user.profilePictureUrl || "");
+    bru.setVar("originalFirstName", user.firstName || "");
+    bru.setVar("originalLastName", user.lastName || "");
+    bru.setVar("originalBio", user.bio || "");
+    bru.setVar("originalProfilePictureUrl", user.profilePictureUrl || "");
+
+    // Gate for the destructive 03 → 03b pair. PATCH /users/me rejects a blank firstName or
+    // lastName with 400, so a profile whose name is already blank CANNOT be restored: 03
+    // would set it to "Updated"/"User" and 03b's restore would 400, permanently renaming a
+    // real account. On staging — which IS production — that account is a live organizer.
+    // Observed 2026-09-09 against local dev, where the anonymized organizer has empty names.
+    const restorable =
+      typeof user.firstName === 'string' && user.firstName.trim().length > 0 &&
+      typeof user.lastName === 'string' && user.lastName.trim().length > 0;
+    bru.setVar("profileRestorable", restorable);
+    if (!restorable) {
+      console.log(
+        "SKIPPING the update/restore pair: firstName/lastName are blank, so the original " +
+        "profile cannot be restored. Refusing to mutate a profile we cannot put back."
+      );
+    }
 
     console.log("Current user username:", user.id);
     console.log("Stored original profile:", {
       firstName: user.firstName,
       lastName: user.lastName,
-      bio: user.bio
+      bio: user.bio,
+      restorable: restorable
     });
   }
 }

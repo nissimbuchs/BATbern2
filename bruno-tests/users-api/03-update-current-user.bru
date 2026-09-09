@@ -28,6 +28,17 @@ body:json {
   }
 }
 
+script:pre-request {
+  // Do not mutate a profile we cannot put back. 01 sets `profileRestorable` false when the
+  // account's firstName/lastName are blank, because PATCH /users/me rejects blanks with 400
+  // and 03b's restore would therefore fail, leaving a REAL account named "Updated User" with
+  // a Bruno test string as its bio. Staging IS production, so that account is a live organizer.
+  if (bru.getVar("profileRestorable") !== true) {
+    console.log("Skipping profile update: 01 reported the original profile is not restorable.");
+    bru.runner.skipRequest();
+  }
+}
+
 assert {
   res.status: eq 200
   res.body.firstName: eq Updated
