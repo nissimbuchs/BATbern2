@@ -29,7 +29,7 @@ assert {
 }
 
 script:post-response {
-  console.log("Deleted test topic:", bru.getEnvVar("testCreatedTopicId"), "status:", res.getStatus());
+  console.log("Deleted test topic:", bru.getVar("testCreatedTopicId"), "status:", res.getStatus());
 }
 
 tests {

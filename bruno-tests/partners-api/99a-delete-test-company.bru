@@ -29,7 +29,7 @@ assert {
 
 script:post-response {
   if (res.getStatus() === 204) {
-    console.log("Successfully deleted test company:", bru.getEnvVar("testPartnerCompanyName"));
+    console.log("Successfully deleted test company:", bru.getVar("testPartnerCompanyName"));
   }
 }
 

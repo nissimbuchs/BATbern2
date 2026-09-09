@@ -44,7 +44,7 @@ script:post-response {
   // Store company name for partner creation
   if (res.getStatus() === 201) {
     const company = res.getBody();
-    bru.setEnvVar("testPartnerCompanyName", company.name);
+    bru.setVar("testPartnerCompanyName", company.name);
     console.log("Created test company for partner:", company.name);
   }
 }
