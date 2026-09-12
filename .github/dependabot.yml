@@ -90,6 +90,47 @@ updates:
           - "org.assertj:*"
           - "org.testcontainers:*"
           - "org.awaitility:*"
+          # rest-assured is a test-only library and lives in 3 directories. Ungrouped it
+          # produced one PR per directory — see the block below.
+          - "io.rest-assured:*"
+      # ── Groups added 2026-09-12 to stop ungrouped multi-directory duplicates ──────────
+      #
+      # `directories` lists "/" alongside "/api-gateway", "/shared-kernel" and "/services/*",
+      # and the ROOT settings.gradle is a multi-project build that already includes all of
+      # them. So every service build.gradle is in scope twice.
+      #
+      # For a GROUPED dependency that is harmless: dependabot collapses it into a single
+      # "across N directories" PR. For an UNGROUPED one it opens a separate PR per directory
+      # context. shedlock produced three PRs for one bump on 2026-09-12 — #1050 spanning both
+      # services (the "/" scan), plus #1052 and #1054 for the same two services individually.
+      #
+      # Removing "/" is NOT the fix: the gradle-wrapper lives at the root and needs it.
+      # Grouping is. A sweep of all 8 build.gradle files found 13 ungrouped coordinates
+      # present in more than one directory, i.e. 13 future instances of the same defect;
+      # the groups below cover all of them.
+      shedlock:
+        patterns:
+          - "net.javacrumbs.shedlock:*"
+      resilience4j:
+        patterns:
+          - "io.github.resilience4j:*"
+      jwt:
+        patterns:
+          - "io.jsonwebtoken:*"
+          - "com.auth0:*"
+      mail:
+        patterns:
+          - "jakarta.mail:*"
+          - "org.eclipse.angus:*"
+      poi:
+        patterns:
+          - "org.apache.poi:*"
+      database-driver:
+        patterns:
+          - "org.postgresql:*"
+      springdoc:
+        patterns:
+          - "org.springdoc:*"
     reviewers:
       - "nissimbuchs"
     labels:
