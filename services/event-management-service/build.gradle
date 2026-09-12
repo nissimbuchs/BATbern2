@@ -39,7 +39,7 @@ dependencies {
     testImplementation testFixtures(project(':shared-kernel'))
 
     // Service-specific: Caching (Caffeine in-memory cache)
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.4'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
     // Service-specific: AWS SDK for EventBridge, S3, CloudFront, and SES
