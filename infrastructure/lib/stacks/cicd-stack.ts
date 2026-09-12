@@ -696,16 +696,41 @@ export class CICDStack extends cdk.Stack {
               'logs:UntagLogGroup',
               'cloudwatch:PutMetricAlarm',
               'cloudwatch:DeleteAlarms',
-              'cloudwatch:DescribeAlarms',
               'cloudwatch:PutDashboard',
               'cloudwatch:GetDashboard',
               'cloudwatch:DeleteDashboards',
-              'cloudwatch:ListDashboards',
             ],
             resources: [
               `arn:aws:logs:${this.region}:${this.account}:log-group:*`,
               `arn:aws:cloudwatch:${this.region}:${this.account}:alarm:BATbern-${config.envName}-*`,
             ],
+          }),
+
+          // CloudWatch LIST-style reads. These MUST be granted on '*': neither
+          // cloudwatch:DescribeAlarms nor cloudwatch:ListDashboards supports resource-level
+          // permissions, so IAM evaluates them against every alarm/dashboard in the account
+          // regardless of any AlarmNamePrefix the caller passes.
+          //
+          // They used to sit in the statement above, scoped to
+          // `...:alarm:BATbern-${envName}-*`, which could therefore only ever DENY. That is
+          // why the nightly "Infrastructure integration + Layer 4 E2E" job failed every night
+          // with 19/19 monitoring tests red:
+          //
+          //   AccessDenied: ...assumed-role/batbern-staging-github-actions-role is not
+          //   authorized to perform: cloudwatch:DescribeAlarms on resource:
+          //   arn:aws:cloudwatch:eu-central-1:188701360969:alarm:*
+          //
+          // Note the resource in that message is `alarm:*`, not a named alarm. Confirmed with
+          // `aws iam simulate-principal-policy` on 2026-09-12: DescribeAlarms against a NAMED
+          // alarm ARN evaluated as "allowed" (which is why the old statement looked correct),
+          // but against `alarm:*` it evaluated as "implicitDeny" — and ListDashboards was
+          // implicitDeny against every resource, i.e. silently dead as well.
+          //
+          // Read-only verbs, enumerated rather than 'cloudwatch:*'.
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['cloudwatch:DescribeAlarms', 'cloudwatch:ListDashboards'],
+            resources: ['*'],
           }),
 
           // ACM — SSL/TLS certificates; no resource-level permissions for some actions
