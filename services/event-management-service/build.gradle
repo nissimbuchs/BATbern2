@@ -71,8 +71,8 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
     // Service-specific: ShedLock for distributed scheduled tasks (GAP-2)
-    implementation 'net.javacrumbs.shedlock:shedlock-spring:5.10.0'
-    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.10.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-spring:7.10.1'
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.10.1'
 
     // Story 10.17: Spring Cloud AWS SQS for inbound email @SqsListener
     // Epic 13 (SB4): 3.3.0 targets Spring Boot 3.x and crashes on SB4 — its SqsAutoConfiguration
