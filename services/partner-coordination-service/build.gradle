@@ -41,8 +41,8 @@ dependencies {
     implementation 'net.logstash.logback:logstash-logback-encoder:9.0'
 
     // Service-specific: Testing libraries
-    testImplementation 'io.rest-assured:rest-assured:5.5.6'
-    testImplementation 'org.awaitility:awaitility:4.2.0'
+    testImplementation 'io.rest-assured:rest-assured:6.0.1'
+    testImplementation 'org.awaitility:awaitility:4.3.0'
     // Epic 13 (SB4): @RestClientTest moved to the spring-boot-restclient-test module.
     testImplementation 'org.springframework.boot:spring-boot-restclient-test'
 
