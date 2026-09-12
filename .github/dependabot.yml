@@ -128,6 +128,25 @@ updates:
         dependency-type: "development"
         exclude-patterns:
           - "@aws-sdk/*"
+    ignore:
+      # TypeScript 7 is the native (Go) compiler. It deliberately no longer exposes the
+      # JavaScript compiler API that ts-jest compiles through, so ts-jest cannot run at all
+      # under it — every suite dies with "The TypeScript compiler \"typescript\" (version
+      # 7.x) does not expose the JavaScript compiler API required by ts-jest".
+      #
+      # This is NOT a peer-range quibble that a ts-jest release fixes: 29.4.12 IS the latest
+      # ts-jest, its typescript peer is ">=4.3 <7", and the only other dist-tag is
+      # 29.0.0-next.1, an older prerelease. ts-jest's own guidance is to install TS7 as
+      # `@typescript/native` and alias `@typescript/typescript6` as `typescript`, but
+      # `@typescript/native` is NOT PUBLISHED — only `@typescript/native-preview`, as a dated
+      # dev build. Measured 2026-09-12: forcing typescript@7.0.2 with --legacy-peer-deps lets
+      # `tsc --noEmit` pass but fails 33/33 jest suites, 0 tests run.
+      #
+      # Dependabot reopened this bump as #1024 and then #1042; both failed CI identically.
+      # Revisit when @typescript/native reaches a real release — at which point it is a
+      # deliberate repo-wide TypeScript 7 migration, not a dependency bump.
+      - dependency-name: "typescript"
+        update-types: ["version-update:semver-major"]
     reviewers:
       - "nissimbuchs"
     labels:
