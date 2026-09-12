@@ -1,0 +1,21 @@
+{
+  // Test-only compiler settings for ts-jest.
+  //
+  // The base tsconfig.json EXCLUDES `test/**`, so `tsc --noEmit` never type-checks the test
+  // tree — it passes while ts-jest, which compiles the same files through the base
+  // compilerOptions, fails. That split is why `build-infrastructure` stayed green while the
+  // nightly "Infrastructure integration + Layer 4 E2E" job died every night on:
+  //
+  //   test/integration/docker-compose.test.ts:96 - error TS2554: Expected 0-1 arguments, but got 2.
+  //     throw new Error(`docker-compose.yml has syntax errors: ${error.message}`, { cause: error });
+  //
+  // `new Error(msg, { cause })` needs the ES2022 `ErrorOptions` type; the base lib is ES2020.
+  // Tests run on the CI Node runtime (20+), which supports ES2022 natively, so widening `lib`
+  // here is safe and does NOT change what CDK or the bundled Lambdas emit.
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "lib": ["ES2022"],
+    "types": ["node", "jest"]
+  },
+  "include": ["test/**/*.ts", "lib/**/*.ts", "bin/**/*.ts"]
+}
