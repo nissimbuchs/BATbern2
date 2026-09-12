@@ -13,9 +13,9 @@ buildscript {
         // pins, so a chore/Dependabot bump of the one coordinate moves the whole estate).
 
         // Flyway
-        classpath 'org.flywaydb:flyway-gradle-plugin:13.4.0'
+        classpath 'org.flywaydb:flyway-gradle-plugin:13.5.0'
         classpath 'org.postgresql:postgresql:42.7.7'
-        classpath 'org.flywaydb:flyway-database-postgresql:13.4.0'
+        classpath 'org.flywaydb:flyway-database-postgresql:13.5.0'
 
         // OpenAPI Generator
         classpath 'org.openapitools:openapi-generator-gradle-plugin:7.14.0'
