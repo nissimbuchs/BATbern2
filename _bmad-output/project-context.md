@@ -441,6 +441,17 @@ type(scope): description
   mock the service layer instead.
 
 ### Build & CI Gotchas
+
+- **Do NOT upgrade `typescript` to 7.x in `infrastructure/`.** TypeScript 7 is the native (Go)
+  compiler and no longer exposes the JavaScript compiler API that `ts-jest` compiles through, so
+  every jest suite dies at load: *"The TypeScript compiler ... does not expose the JavaScript
+  compiler API required by ts-jest"*. Measured 2026-09-12 by forcing `typescript@7.0.2` with
+  `--legacy-peer-deps`: `tsc --noEmit` passes, then **33/33 suites fail, 0 tests run**. It is not a
+  peer-range quibble — 29.4.12 IS the latest ts-jest (peer `>=4.3 <7`), and ts-jest's documented
+  workaround needs `@typescript/native`, which is **not published** (only `@typescript/native-preview`,
+  a dated dev build). Dependabot reopened this bump as #1024 then #1042; both failed CI identically,
+  and `.github/dependabot.yml` now ignores typescript majors for `/infrastructure`.
+
 - **Opening a PR against `develop` deploys to production** — see the CI/CD section above.
   This is the single most surprising rule in the repo; it is not in most people's mental model.
 - Build pipeline does NOT reliably trigger on `develop` push after squash merges —
