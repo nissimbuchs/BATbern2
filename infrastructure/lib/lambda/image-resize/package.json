@@ -9,7 +9,7 @@
     "sharp": "^0.35.4"
   },
   "devDependencies": {
-    "@types/aws-lambda": "^8.10.145",
+    "@types/aws-lambda": "^8.10.163",
     "esbuild": "^0.28.2"
   }
 }
