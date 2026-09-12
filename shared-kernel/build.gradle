@@ -52,7 +52,7 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-jackson2'
 
     // AWS SDK for EventBridge, CloudWatch, Cognito, and SES
-    implementation platform('software.amazon.awssdk:bom:2.54.7')
+    implementation platform('software.amazon.awssdk:bom:2.54.14')
     implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'

@@ -32,7 +32,7 @@ dependencies {
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
 
     // Service-specific: AWS SDK
-    implementation platform('software.amazon.awssdk:bom:2.54.7')
+    implementation platform('software.amazon.awssdk:bom:2.54.14')
     implementation 'software.amazon.awssdk:eventbridge'
 
     // Service-specific: Monitoring
