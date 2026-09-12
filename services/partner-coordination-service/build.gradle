@@ -20,7 +20,7 @@ gitProperties {
 
 dependencies {
     // Service-specific: Caching
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.4'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
     // Service-specific: Resilience4j for circuit breaker
