@@ -108,7 +108,10 @@ jobs:
   # ═══════════════════════════════════════════════════════════
   build-services:
     needs: build-shared-kernel
-    runs-on: ubuntu-latest
+    # Native arm64 runner: the images target Fargate ARM64, so `buildx --platform linux/arm64`
+    # runs without QEMU. On x86 ubuntu-latest the Docker step took 20-29 min per service
+    # (PR #1072). Free and unlimited for public repositories.
+    runs-on: ubuntu-24.04-arm
     permissions:
       id-token: write  # Required for OIDC authentication
       contents: read   # Required for checkout
