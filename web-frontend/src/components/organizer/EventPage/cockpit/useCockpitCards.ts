@@ -20,6 +20,7 @@ import { useEventTasks } from '@/hooks/useEventTasks';
 import { useSpeakerPool } from '@/hooks/useSpeakerPool';
 import { useEventType } from '@/hooks/useEventTypes';
 import { buildAttentionList, type CockpitCard, type CockpitCardCtx } from './cockpitCards';
+import { isStructuralSession } from '@/utils/sessionTypes';
 
 type EventType = components['schemas']['EventType'];
 
@@ -52,11 +53,8 @@ export function useCockpitCards(
     const sessions = e.sessions ?? [];
     // Structural sessions (moderation/break/lunch) are not speaker slots — exclude them
     // so the "needs a slot" card counts only speaker sessions still missing a start time
-    // (mirrors the Agenda metric tile + DragDropSlotAssignment's STRUCTURAL_TYPES).
-    const STRUCTURAL_SESSION_TYPES = ['moderation', 'break', 'lunch', 'aperitif'];
-    const speakerSessions = sessions.filter(
-      (s) => !STRUCTURAL_SESSION_TYPES.includes((s.sessionType ?? '').toLowerCase())
-    );
+    // (structural = utils/sessionTypes, shared with the Agenda metric tile and slot assignment).
+    const speakerSessions = sessions.filter((s) => !isStructuralSession(s.sessionType));
     const num = (v: unknown) => (typeof v === 'number' ? v : 0);
     return {
       eventCode: eventCode ?? '',

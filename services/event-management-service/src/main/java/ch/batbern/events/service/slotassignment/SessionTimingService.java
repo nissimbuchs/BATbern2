@@ -43,9 +43,6 @@ import java.util.UUID;
 @Transactional
 public class SessionTimingService {
 
-    private static final List<String> STRUCTURAL_TYPES =
-            List.of("moderation", "break", "lunch", "aperitif");
-
     private final SessionRepository sessionRepository;
     private final SessionTimingHistoryRepository sessionTimingHistoryRepository;
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
@@ -171,7 +168,7 @@ public class SessionTimingService {
         List<Session> assignedSessions = sessionRepository.findByEventId(eventId).stream()
                 .filter(session -> session.getStartTime() != null)
                 .filter(session -> session.getSessionType() == null
-                        || !STRUCTURAL_TYPES.contains(session.getSessionType()))
+                        || !Session.isStructuralType(session.getSessionType()))
                 .toList();
 
         log.info("Found {} sessions with timing to clear", assignedSessions.size());
@@ -261,7 +258,7 @@ public class SessionTimingService {
     public List<Session> getUnassignedSessions(String eventCode) {
         log.info("Fetching unassigned sessions for event: {}", eventCode);
         return sessionRepository.findByEventCodeAndStartTimeIsNull(eventCode).stream()
-                .filter(s -> s.getSessionType() == null || !STRUCTURAL_TYPES.contains(s.getSessionType()))
+                .filter(s -> !Session.isStructuralType(s.getSessionType()))
                 .toList();
     }
 
@@ -272,7 +269,7 @@ public class SessionTimingService {
     public List<Session> getUnassignedSessionsByEventId(UUID eventId) {
         log.info("Fetching unassigned sessions for event ID: {}", eventId);
         return sessionRepository.findByEventIdAndStartTimeIsNull(eventId).stream()
-                .filter(s -> s.getSessionType() == null || !STRUCTURAL_TYPES.contains(s.getSessionType()))
+                .filter(s -> !Session.isStructuralType(s.getSessionType()))
                 .toList();
     }
 

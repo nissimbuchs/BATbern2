@@ -423,6 +423,7 @@ export interface SessionTimingRequest {
     | 'lunch'
     | 'moderation';
   changeReason?:
+    | 'aperitif'
     | 'initial_assignment'
     | 'drag_drop_reassignment'
     | 'conflict_resolution'
