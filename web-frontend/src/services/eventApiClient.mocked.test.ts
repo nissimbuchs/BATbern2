@@ -150,39 +150,79 @@ describe('EventApiClient — mocked', () => {
     });
   });
 
-  // ── getCurrentEvent ───────────────────────────────────────────────────────────
+  // ── Public Events read model (2026-10-07) ────────────────────────────────────
 
-  describe('getCurrentEvent', () => {
-    it('should return event on success', async () => {
-      const mockEvent = { eventCode: 'BATbern142', title: 'BATbern #142' };
-      mockApiClient.get.mockResolvedValue({ data: mockEvent });
+  describe('getPublicCurrentEvent', () => {
+    it('should call the public current endpoint and return the event', async () => {
+      mockApiClient.get.mockResolvedValue({ data: { eventCode: 'BATbern142' } });
 
-      const result = await eventApiClient.getCurrentEvent();
+      const result = await eventApiClient.getPublicCurrentEvent();
 
+      expect(mockApiClient.get).toHaveBeenCalledWith('/public/events/current');
       expect(result?.eventCode).toBe('BATbern142');
     });
 
     it('should return null on 404', async () => {
       mockApiClient.get.mockRejectedValue(axiosErr(404));
 
-      const result = await eventApiClient.getCurrentEvent();
-
-      expect(result).toBeNull();
+      expect(await eventApiClient.getPublicCurrentEvent()).toBeNull();
     });
 
     it('should throw transformed error on non-404', async () => {
       mockApiClient.get.mockRejectedValue(axiosErr(500));
 
-      await expect(eventApiClient.getCurrentEvent()).rejects.toThrow('Server Error');
+      await expect(eventApiClient.getPublicCurrentEvent()).rejects.toThrow('Server Error');
+    });
+  });
+
+  describe('getPublicEvent', () => {
+    it('should call the public event endpoint by code', async () => {
+      mockApiClient.get.mockResolvedValue({ data: { eventCode: 'BATbern60' } });
+
+      const result = await eventApiClient.getPublicEvent('BATbern60');
+
+      expect(mockApiClient.get).toHaveBeenCalledWith('/public/events/BATbern60');
+      expect(result.eventCode).toBe('BATbern60');
     });
 
-    it('should append include param when expand provided', async () => {
-      mockApiClient.get.mockResolvedValue({ data: {} });
+    it('should throw transformed error on 404 (event not public)', async () => {
+      mockApiClient.get.mockRejectedValue(axiosErr(404));
 
-      await eventApiClient.getCurrentEvent({ expand: ['sessions'] });
+      await expect(eventApiClient.getPublicEvent('BATbern99')).rejects.toThrow();
+    });
+  });
+
+  describe('getPublicEvents', () => {
+    it('should send scope, paging and the archive narrowing as query params', async () => {
+      mockApiClient.get.mockResolvedValue({ data: { data: [], pagination: {} } });
+
+      await eventApiClient.getPublicEvents({
+        scope: 'archive',
+        page: 2,
+        limit: 20,
+        search: 'cloud native',
+        topicCodes: ['cloud', 'ai'],
+        sort: 'date',
+      });
 
       const url: string = mockApiClient.get.mock.calls[0][0] as string;
-      expect(url).toContain('include=sessions');
+      const params = new URLSearchParams(url.split('?')[1]);
+      expect(url.startsWith('/public/events?')).toBe(true);
+      expect(params.get('scope')).toBe('archive');
+      expect(params.get('page')).toBe('2');
+      expect(params.get('limit')).toBe('20');
+      expect(params.get('search')).toBe('cloud native');
+      expect(params.get('topicCodes')).toBe('cloud,ai');
+      expect(params.get('sort')).toBe('date');
+    });
+
+    it('should omit optional params for the upcoming scope', async () => {
+      mockApiClient.get.mockResolvedValue({ data: { data: [], pagination: {} } });
+
+      await eventApiClient.getPublicEvents({ scope: 'upcoming' });
+
+      const url: string = mockApiClient.get.mock.calls[0][0] as string;
+      expect(url).toBe('/public/events?scope=upcoming&page=1&limit=20');
     });
   });
 

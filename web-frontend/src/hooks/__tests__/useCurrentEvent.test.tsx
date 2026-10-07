@@ -16,7 +16,7 @@ import type { EventDetail } from '@/types/event.types';
 // Mock the eventApiClient
 vi.mock('@/services/eventApiClient', () => ({
   eventApiClient: {
-    getCurrentEvent: vi.fn(),
+    getPublicCurrentEvent: vi.fn(),
   },
 }));
 
@@ -56,7 +56,7 @@ describe('useCurrentEvent Hook', () => {
       updatedAt: '2024-01-01T00:00:00Z',
     };
 
-    vi.mocked(eventApiClient.getCurrentEvent).mockResolvedValue(mockEvent);
+    vi.mocked(eventApiClient.getPublicCurrentEvent).mockResolvedValue(mockEvent);
 
     const { result } = renderHook(() => useCurrentEvent(), { wrapper });
 
@@ -65,13 +65,12 @@ describe('useCurrentEvent Hook', () => {
     });
 
     expect(result.current.data).toEqual(mockEvent);
-    expect(eventApiClient.getCurrentEvent).toHaveBeenCalledWith({
-      expand: ['topics', 'venue', 'speakers', 'sessions', 'registrations'],
-    });
+    // Public Events read model: no expand options, the server shapes the payload
+    expect(eventApiClient.getPublicCurrentEvent).toHaveBeenCalledWith();
   });
 
   test('should_returnNull_when_noCurrentEvent', async () => {
-    vi.mocked(eventApiClient.getCurrentEvent).mockResolvedValue(null);
+    vi.mocked(eventApiClient.getPublicCurrentEvent).mockResolvedValue(null);
 
     const { result } = renderHook(() => useCurrentEvent(), { wrapper });
 
@@ -84,7 +83,7 @@ describe('useCurrentEvent Hook', () => {
 
   test('should_handleError_when_apiCallFails', async () => {
     const mockError = new Error('Failed to fetch current event');
-    vi.mocked(eventApiClient.getCurrentEvent).mockRejectedValue(mockError);
+    vi.mocked(eventApiClient.getPublicCurrentEvent).mockRejectedValue(mockError);
 
     const { result } = renderHook(() => useCurrentEvent({ retry: false }), { wrapper });
 
@@ -96,17 +95,19 @@ describe('useCurrentEvent Hook', () => {
   });
 
   test('should_useCorrectQueryKey_when_hookCalled', () => {
-    vi.mocked(eventApiClient.getCurrentEvent).mockResolvedValue(null);
+    vi.mocked(eventApiClient.getPublicCurrentEvent).mockResolvedValue(null);
 
     renderHook(() => useCurrentEvent(), { wrapper });
 
     // Query key is accessible via the query cache
-    const query = queryClient.getQueryCache().findAll({ queryKey: ['events', 'current'] });
+    const query = queryClient
+      .getQueryCache()
+      .findAll({ queryKey: ['events', 'public', 'current'] });
     expect(query).toHaveLength(1);
   });
 
   test('should_haveCorrectCacheConfig_when_hookInitialized', async () => {
-    vi.mocked(eventApiClient.getCurrentEvent).mockResolvedValue(null);
+    vi.mocked(eventApiClient.getPublicCurrentEvent).mockResolvedValue(null);
 
     const { result } = renderHook(() => useCurrentEvent(), { wrapper });
 
@@ -115,7 +116,7 @@ describe('useCurrentEvent Hook', () => {
     });
 
     // Verify staleTime is configured (data doesn't refetch immediately)
-    const query = queryClient.getQueryCache().find({ queryKey: ['events', 'current'] });
+    const query = queryClient.getQueryCache().find({ queryKey: ['events', 'public', 'current'] });
     expect(query?.options.staleTime).toBe(5 * 60 * 1000); // 5 minutes
   });
 });

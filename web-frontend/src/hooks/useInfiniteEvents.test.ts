@@ -15,14 +15,14 @@ import React from 'react';
 
 vi.mock('@/services/eventApiClient', () => ({
   eventApiClient: {
-    getEvents: vi.fn(),
+    getPublicEvents: vi.fn(),
   },
 }));
 
 import { eventApiClient } from '@/services/eventApiClient';
 import { useInfiniteEvents } from './useInfiniteEvents';
 
-const mockGetEvents = vi.mocked(eventApiClient.getEvents);
+const mockGetEvents = vi.mocked(eventApiClient.getPublicEvents);
 
 const createQC = () =>
   new QueryClient({
@@ -55,9 +55,7 @@ describe('useInfiniteEvents', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(mockGetEvents).toHaveBeenCalledWith(
-      { page: 1, limit: 20 },
-      expect.objectContaining({ includeArchived: true, workflowState: ['ARCHIVED'] }),
-      expect.objectContaining({ expand: ['topics', 'sessions', 'speakers'] })
+      expect.objectContaining({ scope: 'archive', page: 1, limit: 20 })
     );
   });
 
@@ -71,9 +69,7 @@ describe('useInfiniteEvents', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(mockGetEvents).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ topicCode: ['cloud-native', 'devops'] }),
-      expect.anything()
+      expect.objectContaining({ topicCodes: ['cloud-native', 'devops'] })
     );
   });
 
@@ -86,11 +82,7 @@ describe('useInfiniteEvents', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockGetEvents).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.objectContaining({ search: 'kubernetes' }),
-      expect.anything()
-    );
+    expect(mockGetEvents).toHaveBeenCalledWith(expect.objectContaining({ search: 'kubernetes' }));
   });
 
   it('should expose hasNextPage=true when more pages exist', async () => {
@@ -120,11 +112,8 @@ describe('useInfiniteEvents', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockGetEvents).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.anything(),
-      expect.objectContaining({ sort: '+date' })
-    );
+    // '+date' (ascending) maps to the public API's 'date'
+    expect(mockGetEvents).toHaveBeenCalledWith(expect.objectContaining({ sort: 'date' }));
   });
 
   it('should set isError on fetch failure', async () => {
@@ -145,9 +134,7 @@ describe('useInfiniteEvents', () => {
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
     expect(mockGetEvents).toHaveBeenCalledWith(
-      expect.anything(),
-      expect.not.objectContaining({ topicCode: expect.anything() }),
-      expect.anything()
+      expect.not.objectContaining({ topicCodes: expect.arrayContaining([expect.anything()]) })
     );
   });
 });

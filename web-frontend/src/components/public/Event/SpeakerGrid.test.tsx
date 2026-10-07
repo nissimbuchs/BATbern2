@@ -1,15 +1,17 @@
 /**
  * SpeakerGrid Component Tests (Story 4.1.4)
- * Tests for speaker grid display functionality
+ *
+ * Since the Public Events read model (2026-10-07) the grid renders the `speakers` the server
+ * delivers. Which speakers and whether talk titles are shown is decided by the server per
+ * publishing phase (SPEAKERS phase: no titles), not by this component.
  */
 
 import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { SpeakerGrid } from './SpeakerGrid';
-import type { Session } from '@/types/event.types';
+import type { PublicSpeaker } from '@/types/event.types';
 
-// Mock API clients
 vi.mock('@/services/companyApiClient', () => ({
   companyApiClient: {
     getCompany: vi.fn(() => Promise.resolve({ name: 'Test Company', logoUrl: null })),
@@ -19,16 +21,12 @@ vi.mock('@/services/companyApiClient', () => ({
 describe('SpeakerGrid', () => {
   let queryClient: QueryClient;
 
-  const renderWithProviders = (ui: React.ReactElement) => {
-    return render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
-  };
+  const renderWithProviders = (ui: React.ReactElement) =>
+    render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 
   beforeEach(() => {
     queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false },
-        mutations: { retry: false },
-      },
+      defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
     });
   });
 
@@ -36,183 +34,98 @@ describe('SpeakerGrid', () => {
     queryClient.clear();
   });
 
-  const mockSessions: Session[] = [
+  const agendaSpeakers: PublicSpeaker[] = [
     {
+      username: 'john.doe',
+      firstName: 'John',
+      lastName: 'Doe',
+      company: 'GoogleZH',
+      profilePictureUrl: 'https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg',
+      speakerRole: 'PRIMARY_SPEAKER',
+      bio: 'Architect and author.',
+      talkTitle: 'Opening Keynote: Future of Architecture',
       sessionSlug: 'keynote-session',
-      eventCode: 'BATbern142',
-      title: 'Opening Keynote: Future of Architecture',
-      description:
-        'An inspiring look at the future of Swiss architecture and sustainable building practices.',
-      sessionType: 'keynote',
-      startTime: '2025-05-15T09:00:00Z',
-      endTime: '2025-05-15T10:30:00Z',
-      room: 'Main Hall',
-      capacity: 200,
-      language: 'de',
-      speakers: [
-        {
-          username: 'john.doe',
-          firstName: 'John',
-          lastName: 'Doe',
-          company: 'GoogleZH',
-          profilePictureUrl: 'https://cdn.batbern.ch/logos/2025/users/john.doe/profile.jpg',
-          speakerRole: 'PRIMARY_SPEAKER',
-          isConfirmed: true,
-        },
-      ],
     },
     {
+      username: 'jane.smith',
+      firstName: 'Jane',
+      lastName: 'Smith',
+      company: 'AcmeCorp',
+      profilePictureUrl: 'https://cdn.batbern.ch/logos/2025/users/jane.smith/profile.jpg',
+      speakerRole: 'PRIMARY_SPEAKER',
+      talkTitle: 'Green Building Innovations',
       sessionSlug: 'workshop-sustainable',
-      eventCode: 'BATbern142',
-      title: 'Workshop: Sustainable Materials',
-      description:
-        'Hands-on workshop exploring sustainable building materials and their applications.',
-      sessionType: 'workshop',
-      startTime: '2025-05-15T11:00:00Z',
-      endTime: '2025-05-15T12:30:00Z',
-      room: 'Workshop Room A',
-      capacity: 50,
-      language: 'de',
-      speakers: [
-        {
-          username: 'jane.smith',
-          firstName: 'Jane',
-          lastName: 'Smith',
-          company: 'AcmeCorp',
-          profilePictureUrl: 'https://cdn.batbern.ch/logos/2025/users/jane.smith/profile.jpg',
-          speakerRole: 'PRIMARY_SPEAKER',
-          presentationTitle: 'Green Building Innovations',
-          isConfirmed: true,
-        },
-      ],
     },
   ];
 
-  it('should_displaySpeakerGrid_when_sessionsWithSpeakersProvided', () => {
-    renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
+  const lineupOnly: PublicSpeaker[] = agendaSpeakers.map(
+    ({ talkTitle: _t, sessionSlug: _s, ...rest }) => rest
+  );
 
-    // Check heading
-    expect(screen.getByText('Speakers')).toBeInTheDocument();
+  it('should_renderOneCardPerSpeaker_when_speakersProvided', () => {
+    renderWithProviders(<SpeakerGrid speakers={agendaSpeakers} />);
 
-    // Check speaker names
+    expect(screen.getByTestId('speaker-grid')).toBeInTheDocument();
+    expect(screen.getAllByTestId('speaker-card')).toHaveLength(2);
     expect(screen.getByText('John Doe')).toBeInTheDocument();
     expect(screen.getByText('Jane Smith')).toBeInTheDocument();
   });
 
   it('should_displayCompanyNames_when_speakersHaveCompanies', () => {
-    renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
+    renderWithProviders(<SpeakerGrid speakers={agendaSpeakers} />);
 
     expect(screen.getByText('GoogleZH')).toBeInTheDocument();
     expect(screen.getByText('AcmeCorp')).toBeInTheDocument();
   });
 
-  it('should_displaySessionTitles_when_speakersAssignedToSessions', () => {
-    renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
+  it('should_displayTalkTitles_when_serverDeliversThem', () => {
+    renderWithProviders(<SpeakerGrid speakers={agendaSpeakers} />);
 
-    expect(screen.getByText('Opening Keynote: Future of Architecture')).toBeInTheDocument();
-    expect(screen.getByText('Green Building Innovations')).toBeInTheDocument(); // presentationTitle
-  });
-
-  it('should_hideSessionTitles_when_showSessionTitlesIsFalse', () => {
-    renderWithProviders(<SpeakerGrid sessions={mockSessions} showSessionTitles={false} />);
-
-    expect(screen.getAllByTestId('speaker-card').length).toBeGreaterThan(0);
-    expect(screen.queryByText('Opening Keynote: Future of Architecture')).not.toBeInTheDocument();
-    expect(screen.queryByText('Green Building Innovations')).not.toBeInTheDocument();
-  });
-
-  it('should_storeSessionDescription_when_sessionHasDescription', () => {
-    // Session description is stored in speaker data but not displayed in card
-    // Only session title and speaker bio are shown
-    renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
-
-    // Verify session titles are displayed
     expect(screen.getByText('Opening Keynote: Future of Architecture')).toBeInTheDocument();
     expect(screen.getByText('Green Building Innovations')).toBeInTheDocument();
+  });
 
-    // Session descriptions are not rendered in the UI (kept minimal)
-    expect(
-      screen.queryByText(/An inspiring look at the future of Swiss architecture/i)
-    ).not.toBeInTheDocument();
+  it('should_showNoTalkTitles_when_serverDeliversLineupOnly', () => {
+    renderWithProviders(<SpeakerGrid speakers={lineupOnly} />);
+
+    expect(screen.getAllByTestId('speaker-card')).toHaveLength(2);
+    expect(screen.queryByTestId('speaker-talk-title')).not.toBeInTheDocument();
+  });
+
+  it('should_displayBio_when_speakerHasBio', () => {
+    renderWithProviders(<SpeakerGrid speakers={agendaSpeakers} />);
+
+    expect(screen.getByText('Architect and author.')).toBeInTheDocument();
   });
 
   it('should_displayInitials_when_noProfilePictureProvided', () => {
-    const sessionsWithoutPhotos: Session[] = [
-      {
-        ...mockSessions[0],
-        speakers: [
-          {
-            username: 'test.user',
-            firstName: 'Test',
-            lastName: 'User',
-            speakerRole: 'PRIMARY_SPEAKER',
-            isConfirmed: true,
-          },
-        ],
-      },
-    ];
+    renderWithProviders(
+      <SpeakerGrid speakers={[{ ...lineupOnly[0], profilePictureUrl: undefined }]} />
+    );
 
-    renderWithProviders(<SpeakerGrid sessions={sessionsWithoutPhotos} />);
-
-    expect(screen.getByText('TU')).toBeInTheDocument(); // Initials
+    expect(screen.getByText('JD')).toBeInTheDocument();
   });
 
-  it('should_renderNull_when_noSpeakersInSessions', () => {
-    const sessionsWithoutSpeakers: Session[] = [
-      {
-        sessionSlug: 'empty-session',
-        eventCode: 'BATbern142',
-        title: 'Empty Session',
-        description: 'A session without speakers',
-        sessionType: 'keynote',
-        startTime: '2025-05-15T09:00:00Z',
-        endTime: '2025-05-15T10:30:00Z',
-        room: 'Main Hall',
-        capacity: 200,
-        language: 'de',
-        speakers: [],
-      },
-    ];
-
-    const { container } = renderWithProviders(<SpeakerGrid sessions={sessionsWithoutSpeakers} />);
+  it('should_renderNull_when_noSpeakers', () => {
+    const { container } = renderWithProviders(<SpeakerGrid speakers={[]} />);
 
     expect(container.firstChild).toBeNull();
   });
 
-  it('should_dedupeSpeakers_when_speakerAppearsInMultipleSessions', () => {
-    const sessionsWithDuplicateSpeaker: Session[] = [
-      mockSessions[0],
-      {
-        ...mockSessions[0],
-        sessionSlug: 'another-session',
-        title: 'Another Session',
-      },
-    ];
-
-    renderWithProviders(<SpeakerGrid sessions={sessionsWithDuplicateSpeaker} />);
-
-    // Should only appear once despite being in 2 sessions
-    const speakerCards = screen.getAllByText('John Doe');
-    expect(speakerCards).toHaveLength(1);
-  });
-
   it('should_useGridLayout_when_rendered', () => {
-    const { container } = renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
+    renderWithProviders(<SpeakerGrid speakers={agendaSpeakers} />);
 
-    // Check for responsive grid classes
-    const gridContainer = container.querySelector('.grid');
-    expect(gridContainer).toBeInTheDocument();
-    expect(gridContainer).toHaveClass('grid-cols-1', 'md:grid-cols-2', 'lg:grid-cols-3');
+    expect(screen.getByTestId('speaker-grid').querySelector('.grid')).toHaveClass(
+      'grid-cols-1',
+      'md:grid-cols-2',
+      'lg:grid-cols-3'
+    );
   });
 
   it('should_applyHoverStyles_when_cardHovered', () => {
-    const { container } = renderWithProviders(<SpeakerGrid sessions={mockSessions} />);
+    renderWithProviders(<SpeakerGrid speakers={agendaSpeakers} />);
 
-    const cards = container.querySelectorAll('.group');
-    expect(cards.length).toBeGreaterThan(0);
-
-    // Check for hover transition class
-    cards.forEach((card) => {
+    screen.getAllByTestId('speaker-card').forEach((card) => {
       expect(card).toHaveClass('hover:border-blue-400', 'transition-colors');
     });
   });

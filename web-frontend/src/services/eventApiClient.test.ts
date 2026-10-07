@@ -420,16 +420,8 @@ describe('Event API Client (RED Phase)', () => {
   });
 
   describe('Public API Methods', () => {
-    it('should_returnNull_when_getCurrentEventReturns404', async () => {
-      // getCurrentEvent should return null for 404, not throw
-      // This tests the special 404 handling in getCurrentEvent
-      const promise = eventApiClient.getCurrentEvent().catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
-    });
-
-    it('should_supportExpansion_when_getCurrentEventCalled', async () => {
-      const options = { expand: ['sessions', 'speakers'] };
-      const promise = eventApiClient.getCurrentEvent(options).catch(() => {});
+    it('should_returnPromise_when_getPublicCurrentEventCalled', async () => {
+      const promise = eventApiClient.getPublicCurrentEvent().catch(() => {});
       expect(promise).toBeInstanceOf(Promise);
     });
 

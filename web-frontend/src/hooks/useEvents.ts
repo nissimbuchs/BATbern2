@@ -243,7 +243,7 @@ export const useUpdateEvent = (): UseMutationResult<
       }
 
       // 3. Current event cache (in case updated event is the current published one)
-      queryClient.invalidateQueries({ queryKey: ['events', 'current'] });
+      queryClient.invalidateQueries({ queryKey: ['events', 'public'] });
     },
   });
 };
