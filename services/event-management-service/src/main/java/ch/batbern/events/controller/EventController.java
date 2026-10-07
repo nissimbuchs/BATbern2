@@ -41,6 +41,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.LogoRepository;
 import ch.batbern.events.service.EventSearchService;
 import ch.batbern.events.service.EventWorkflowStateMachine;
+import ch.batbern.events.service.publishing.PublicSessionVisibilityService;
 import jakarta.validation.Valid;
 import ch.batbern.shared.dto.PaginatedResponse;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -129,6 +130,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     private final ch.batbern.events.service.WaitlistPromotionService waitlistPromotionService;
     private final ch.batbern.events.service.EventTeaserImageService eventTeaserImageService;
     private final ch.batbern.events.service.EventTimeResolver eventTimeResolver;
+    private final PublicSessionVisibilityService publicSessionVisibilityService;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String appBaseUrl;
@@ -204,8 +206,10 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     ) {
         log.debug("GET /api/v1/events/{} - include: {}", eventCode, include);
 
-        // Generate cache key
-        String cacheKey = eventCode + "_" + (include != null ? include : "none");
+        // Generate cache key. Organizer and public responses differ in which sessions they carry
+        // (PublicSessionVisibilityService), so they must never share an entry.
+        String cacheKey = eventCode + "_" + (include != null ? include : "none")
+                + publicSessionVisibilityService.audienceCacheSuffix();
 
         // Check cache first
         Cache cache = cacheManager.getCache(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
@@ -335,9 +339,11 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
             List<ch.batbern.events.domain.Session> allSessions =
                     sessionRepository.findByEventIdInWithSpeakers(eventIds);
 
-            // Group sessions by event ID
-            Map<UUID, List<ch.batbern.events.domain.Session>> sessionsByEventId = allSessions.stream()
-                    .collect(Collectors.groupingBy(ch.batbern.events.domain.Session::getEventId));
+            // Group sessions by event ID, then keep only what the caller may see (public visibility
+            // per published phase; organizers see everything)
+            Map<UUID, List<ch.batbern.events.domain.Session>> sessionsByEventId =
+                    publicSessionVisibilityService.visibleSessions(events, allSessions.stream()
+                            .collect(Collectors.groupingBy(ch.batbern.events.domain.Session::getEventId)));
 
             // Query 4 (intentional architecture break): cross-service join into user_profiles
             // (owned by company-user-management-service) to get portrait URLs and company names.
@@ -638,7 +644,8 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      */
     private java.util.List<Map<String, Object>> expandSessions(Event event) {
         // Find all sessions for this event with speakers eagerly loaded (Story 5.5)
-        List<ch.batbern.events.domain.Session> sessions = sessionRepository.findByEventIdWithSpeakers(event.getId());
+        List<ch.batbern.events.domain.Session> sessions = publicSessionVisibilityService.visibleSessions(
+                event, sessionRepository.findByEventIdWithSpeakers(event.getId()));
 
         // Convert to response format using SessionService (includes materials - Story 5.9)
         return sessions.stream()

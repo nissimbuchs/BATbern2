@@ -1,6 +1,7 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.events.config.CacheConfig;
+import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.mapper.SessionMapper;
@@ -10,6 +11,7 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.SessionBatchImportService;
 import ch.batbern.events.service.SessionService;
 import ch.batbern.events.service.StructuralSessionService;
+import ch.batbern.events.service.publishing.PublicSessionVisibilityService;
 import ch.batbern.events.sessions.api.generated.SessionsApi;
 import ch.batbern.events.sessions.dto.generated.BatchImportSessionRequest;
 import ch.batbern.events.sessions.dto.generated.BatchImportSessionResult;
@@ -28,6 +30,7 @@ import ch.batbern.shared.service.SlugGenerationService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageImpl;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.domain.Specification;
@@ -79,6 +82,9 @@ public class SessionController implements SessionsApi {
     @Autowired
     private StructuralSessionService structuralSessionService;
 
+    @Autowired
+    private PublicSessionVisibilityService publicSessionVisibilityService;
+
     /**
      * AC9: List sessions for an event with optional filtering.
      * GET /api/v1/events/{eventCode}/sessions?filter={}&page={}&limit={}
@@ -91,9 +97,9 @@ public class SessionController implements SessionsApi {
             Integer limit) {
 
         // Find event by eventCode
-        UUID eventId = eventRepository.findByEventCode(eventCode)
-                .map(event -> event.getId())
+        Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+        UUID eventId = event.getId();
 
         try {
             // Parse pagination parameters (1-indexed page)
@@ -112,9 +118,19 @@ public class SessionController implements SessionsApi {
                 spec = spec.and(filterSpec);
             }
 
-            // Apply pagination
+            // Apply pagination. Non-organizers only see the sessions the published phase allows, so
+            // for them the filter runs before paging (an event has a few dozen sessions at most).
             Pageable pageable = PageRequest.of(pageNum - 1, pageSize); // Convert to 0-indexed
-            Page<Session> sessionsPage = sessionRepository.findAll(spec, pageable);
+            Page<Session> sessionsPage;
+            if (publicSessionVisibilityService.callerIsOrganizer()) {
+                sessionsPage = sessionRepository.findAll(spec, pageable);
+            } else {
+                List<Session> visible = publicSessionVisibilityService.visibleSessions(
+                        event, sessionRepository.findAll(spec));
+                int from = Math.min((int) pageable.getOffset(), visible.size());
+                int to = Math.min(from + pageSize, visible.size());
+                sessionsPage = new PageImpl<>(visible.subList(from, to), pageable, visible.size());
+            }
 
             // Map entities to the generated SessionResponse via the pure mapper (no speaker
             // enrichment — list payloads stay lean, matching prior raw-entity behaviour).
@@ -158,6 +174,16 @@ public class SessionController implements SessionsApi {
         // Find session by slug (globally unique, no need for eventCode in query)
         Session session = sessionRepository.findBySessionSlug(sessionSlug)
                 .orElseThrow(() -> new EventNotFoundException("Session not found: " + sessionSlug));
+
+        // Non-organizers only see sessions the published phase allows; anything else is a 404 so
+        // the response does not reveal that an unpublished session exists.
+        if (!publicSessionVisibilityService.callerIsOrganizer()) {
+            Event event = eventRepository.findById(session.getEventId())
+                    .orElseThrow(() -> new EventNotFoundException("Session not found: " + sessionSlug));
+            if (publicSessionVisibilityService.visibleSessions(event, List.of(session)).isEmpty()) {
+                throw new EventNotFoundException("Session not found: " + sessionSlug);
+            }
+        }
 
         // Convert to SessionResponse with speakers (Story 1.15a.1b)
         SessionResponse response = sessionService.toSessionResponse(session, eventCode);

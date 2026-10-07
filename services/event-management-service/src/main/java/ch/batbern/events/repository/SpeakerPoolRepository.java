@@ -5,6 +5,7 @@ import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -23,6 +24,14 @@ public interface SpeakerPoolRepository extends JpaRepository<SpeakerPool, UUID> 
      * @return list of speaker pool entries
      */
     List<SpeakerPool> findByEventId(UUID eventId);
+
+    /**
+     * Find all speaker pool entries for several events (batch, for public session visibility).
+     *
+     * @param eventIds the event IDs
+     * @return list of speaker pool entries
+     */
+    List<SpeakerPool> findByEventIdIn(Collection<UUID> eventIds);
 
     /**
      * Find speaker pool entries assigned to a specific organizer.

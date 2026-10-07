@@ -351,7 +351,7 @@ const HomePage = () => {
           />
         )}
 
-        {/* Session Cards (list) — SPEAKERS phase, POST_EVENT, ARCHIVE */}
+        {/* Session Cards (list) — POST_EVENT, ARCHIVE */}
         {vis.sessionCards && hasSessions && (
           <SessionCards
             sessions={event.sessions!}
@@ -362,7 +362,9 @@ const HomePage = () => {
         )}
 
         {/* Speaker Grid — SPEAKERS phase onward, POST_EVENT, ARCHIVE */}
-        {vis.speakerGrid && hasSessions && <SpeakerGrid sessions={event.sessions!} />}
+        {vis.speakerGrid && hasSessions && (
+          <SpeakerGrid sessions={event.sessions!} showSessionTitles={vis.speakerSessionTitles} />
+        )}
 
         {/* Venue Map — hidden in POST_EVENT and ARCHIVE */}
         {vis.venueMap && event.venueName && event.venueAddress && (

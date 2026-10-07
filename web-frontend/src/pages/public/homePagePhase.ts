@@ -11,6 +11,10 @@
  * |--------------|-----------------------------------------------------------|
  * | COMING_SOON  | currentPublishedPhase is null (event not yet published)   |
  * | PRE_EVENT    | currentPublishedPhase is TOPIC / SPEAKERS / AGENDA        |
+ *
+ * Which sessions and speakers exist in the payload is decided server-side
+ * (PublicSessionVisibilityPolicy): SPEAKERS carries accepted-or-later speakers only, AGENDA only
+ * slotted sessions whose speaker is quality-reviewed.
  * | POST_EVENT   | workflowState === EVENT_COMPLETED (≤14 days after event)  |
  * | ARCHIVE      | URL path starts with /archive                             |
  */
@@ -78,8 +82,13 @@ export interface SectionVisibility {
   venueMap: boolean;
   /** Shown from SPEAKERS phase onward, and in POST_EVENT / ARCHIVE */
   speakerGrid: boolean;
-  /** Shown in SPEAKERS phase, POST_EVENT, and ARCHIVE; replaced by EventProgram in AGENDA */
+  /** Shown in POST_EVENT and ARCHIVE; replaced by EventProgram in AGENDA; hidden in SPEAKERS */
   sessionCards: boolean;
+  /**
+   * Talk titles on the speaker cards. Hidden in the SPEAKERS phase, which publishes the lineup
+   * only (2026-10-07: talks are not reviewed yet at that point).
+   */
+  speakerSessionTitles: boolean;
   /** Shown only in AGENDA phase */
   eventProgram: boolean;
   /** Shown in POST_EVENT and ARCHIVE when event has its own photos */
@@ -123,9 +132,9 @@ export function showSessionQna(
     case 'ARCHIVE':
       return true;
     case 'PRE_EVENT':
-      // SPEAKERS renders SessionCards, AGENDA renders the EventProgram timeline — both mount
-      // the Q&A thread, so pre-event Q&A stays visible across both published phases.
-      return phase.sub === 'SPEAKERS' || phase.sub === 'AGENDA';
+      // Only AGENDA renders session cards (the EventProgram timeline). The SPEAKERS phase shows
+      // the lineup without sessions (2026-10-07), so there is nothing to mount a thread on.
+      return phase.sub === 'AGENDA';
     default:
       return false;
   }
@@ -162,6 +171,7 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
         venueMap: true,
         speakerGrid: false,
         sessionCards: false,
+        speakerSessionTitles: false,
         eventProgram: false,
         eventPhotosMarquee: false,
         testimonials: true,
@@ -179,7 +189,9 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
         eventLogistics: true,
         venueMap: true,
         speakerGrid: showSpeakers,
-        sessionCards: phase.sub === 'SPEAKERS',
+        // SPEAKERS publishes the lineup only: no session list, no talk titles (2026-10-07).
+        sessionCards: false,
+        speakerSessionTitles: phase.sub === 'AGENDA',
         eventProgram: phase.sub === 'AGENDA',
         eventPhotosMarquee: false,
         testimonials: true,
@@ -198,6 +210,7 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
         venueMap: false,
         speakerGrid: true,
         sessionCards: true,
+        speakerSessionTitles: true,
         eventProgram: false,
         eventPhotosMarquee: phase.hasEventPhotos,
         testimonials: true,
@@ -215,6 +228,7 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
         venueMap: false,
         speakerGrid: true,
         sessionCards: true,
+        speakerSessionTitles: true,
         eventProgram: false,
         eventPhotosMarquee: phase.hasEventPhotos,
         testimonials: true,
