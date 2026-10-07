@@ -11,6 +11,7 @@ import { useTranslation } from 'react-i18next';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/public/ui/card';
 import { Badge } from '@/components/public/ui/badge';
 import { SpeakerDisplay } from './Event/SpeakerDisplay';
+import { isStructuralSession } from '@/utils/sessionTypes';
 import { SpeakerSelfNominatePanel } from '@/components/attendee/SpeakerSelfNominatePanel';
 import { buildCdnImageUrl, buildCdnImageSrcSet } from '@/utils/cdnImage';
 import { canOfferSelfNomination } from '@/utils/eventPublication';
@@ -56,12 +57,14 @@ export function EventCard({
   // the button itself is additionally login-gated.
   const showSelfNominate = enableSelfNomination && canOfferSelfNomination(event);
 
-  const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch', 'aperitif']);
-
-  // Get non-structural sessions only (moderation/break/lunch don't belong on a card)
+  // Talks only (moderation/break/lunch/aperitif don't belong on a card)
   const sessions = (event.sessions || []).filter(
-    (s) => !STRUCTURAL_TYPES.has(s.sessionType ?? '')
+    (s) => !isStructuralSession(s.sessionType)
   ) as SessionUI[];
+
+  // Public Events read model (2026-10-07): in the SPEAKERS phase the server sends the lineup
+  // (`speakers`, no titles) and no sessions; the card then shows the lineup alone.
+  const lineup = sessions.length === 0 ? (event.speakers ?? []) : [];
 
   // Show all sessions (no limit)
   const displayedSessions = sessions;
@@ -190,6 +193,33 @@ export function EventCard({
                     </div>
                   ))}
                 </div>
+              </div>
+            )}
+
+            {/* Lineup - SPEAKERS phase: who speaks, no talk titles yet */}
+            {lineup.length > 0 && (
+              <div
+                className={`grid gap-6 ${viewMode === 'list' ? 'grid-cols-2' : 'grid-cols-1'}`}
+                data-testid="event-card-lineup"
+              >
+                {lineup.map((speaker) => (
+                  <SpeakerDisplay
+                    key={speaker.username}
+                    speaker={{
+                      username: speaker.username,
+                      firstName: speaker.firstName ?? '',
+                      lastName: speaker.lastName ?? '',
+                      company: speaker.company ?? undefined,
+                      companyDisplayName: speaker.companyDisplayName ?? undefined,
+                      companyLogoUrl: speaker.companyLogoUrl ?? undefined,
+                      profilePictureUrl: speaker.profilePictureUrl ?? undefined,
+                      speakerRole: 'PRIMARY_SPEAKER',
+                      isConfirmed: true,
+                    }}
+                    size="small"
+                    showProfilePicture={true}
+                  />
+                ))}
               </div>
             )}
 

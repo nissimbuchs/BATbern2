@@ -24,6 +24,7 @@ import ch.batbern.events.mapper.EventMapper;
 import ch.batbern.events.mapper.EventGeneratedMapper;
 import ch.batbern.events.core.api.generated.EventsApi;
 import ch.batbern.events.core.api.generated.EventActionsApi;
+import ch.batbern.events.core.api.generated.PublicEventsApi;
 import ch.batbern.events.core.dto.generated.EventDetail;
 import ch.batbern.events.core.dto.generated.ListEvents200Response;
 import ch.batbern.events.analytics.api.generated.EventReportingApi;
@@ -41,7 +42,10 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.LogoRepository;
 import ch.batbern.events.service.EventSearchService;
 import ch.batbern.events.service.EventWorkflowStateMachine;
+import ch.batbern.events.service.publishing.PublicEventShaper;
+import ch.batbern.events.service.publishing.PublicSessionVisibilityPolicy;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityService;
+import ch.batbern.shared.exception.ValidationException;
 import jakarta.validation.Valid;
 import ch.batbern.shared.dto.PaginatedResponse;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -56,6 +60,8 @@ import java.time.ZoneOffset;
 import java.time.temporal.ChronoUnit;
 import java.util.Optional;
 import java.util.Set;
+import com.fasterxml.jackson.core.JsonProcessingException;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.Cache;
@@ -78,7 +84,10 @@ import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
@@ -101,7 +110,7 @@ import java.util.stream.Collectors;
 @RequiredArgsConstructor
 @Slf4j
 @Tag(name = "Events", description = "Event management API - consolidated endpoints")
-public class EventController implements EventsApi, EventActionsApi, EventReportingApi {
+public class EventController implements EventsApi, EventActionsApi, EventReportingApi, PublicEventsApi {
 
     private final EventSearchService eventSearchService;
     private final EventRepository eventRepository;
@@ -131,6 +140,19 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     private final ch.batbern.events.service.EventTeaserImageService eventTeaserImageService;
     private final ch.batbern.events.service.EventTimeResolver eventTimeResolver;
     private final PublicSessionVisibilityService publicSessionVisibilityService;
+    private final PublicSessionVisibilityPolicy publicSessionVisibilityPolicy;
+    private final PublicEventShaper publicEventShaper;
+
+    /**
+     * Which sessions a read returns. ALL: organizer surfaces. PUBLIC: by publishing state only
+     * (website read model, Watch public zone). NONE: non-organizers on the organizer endpoints.
+     */
+    private enum SessionView { ALL, PUBLIC, NONE }
+
+    /** Organizer endpoints (/events/{code}, /events): sessions and speakers for organizers only. */
+    private SessionView organizerEndpointView() {
+        return publicSessionVisibilityService.callerIsOrganizer() ? SessionView.ALL : SessionView.NONE;
+    }
 
     @Value("${app.base-url:https://batbern.ch}")
     private String appBaseUrl;
@@ -168,7 +190,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         // When includes are requested, use batch loading to avoid N+1 queries
         List<EventResponse> eventResponses;
         if (include != null && !include.trim().isEmpty()) {
-            eventResponses = buildBatchExpandedResponses(result.getData(), include);
+            eventResponses = buildBatchExpandedResponses(result.getData(), include, organizerEndpointView());
         } else {
             eventResponses = result.getData().stream()
                     .map(eventMapper::toDto)
@@ -241,7 +263,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
 
             // Apply resource expansions if requested
             if (include != null && !include.trim().isEmpty()) {
-                applyResourceExpansionsToDTO(event, include, response);
+                applyResourceExpansionsToDTO(event, include, response, organizerEndpointView());
             }
 
             // Store in cache
@@ -273,7 +295,8 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      * (populated during assignment, V38 migration). profilePictureUrl is intentionally omitted
      * from list responses; the frontend lazy-loads portraits via GET /api/v1/speakers/{username}.
      */
-    private List<EventResponse> buildBatchExpandedResponses(List<Event> events, String include) {
+    private List<EventResponse> buildBatchExpandedResponses(List<Event> events, String include,
+            SessionView view) {
         Set<String> includes = java.util.Arrays.stream(include.split(","))
                 .map(String::trim)
                 .collect(Collectors.toSet());
@@ -330,7 +353,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         }
 
         // --- BATCH 3+4+5: Sessions + session_users + user_portraits + materials (3 queries) ---
-        if (includes.contains("sessions") || includes.contains("speakers")) {
+        if (view != SessionView.NONE && (includes.contains("sessions") || includes.contains("speakers"))) {
             Set<UUID> eventIds = events.stream()
                     .map(Event::getId)
                     .collect(Collectors.toSet());
@@ -339,11 +362,12 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
             List<ch.batbern.events.domain.Session> allSessions =
                     sessionRepository.findByEventIdInWithSpeakers(eventIds);
 
-            // Group sessions by event ID, then keep only what the caller may see (public visibility
-            // per published phase; organizers see everything)
-            Map<UUID, List<ch.batbern.events.domain.Session>> sessionsByEventId =
-                    publicSessionVisibilityService.visibleSessions(events, allSessions.stream()
-                            .collect(Collectors.groupingBy(ch.batbern.events.domain.Session::getEventId)));
+            // Group sessions by event ID; the public view keeps only what the publishing state allows
+            Map<UUID, List<ch.batbern.events.domain.Session>> grouped = allSessions.stream()
+                    .collect(Collectors.groupingBy(ch.batbern.events.domain.Session::getEventId));
+            Map<UUID, List<ch.batbern.events.domain.Session>> sessionsByEventId = view == SessionView.PUBLIC
+                    ? publicSessionVisibilityService.publicSessions(events, grouped)
+                    : grouped;
 
             // Query 4 (intentional architecture break): cross-service join into user_profiles
             // (owned by company-user-management-service) to get portrait URLs and company names.
@@ -495,7 +519,8 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      * Story BAT-109: Archive browsing with resource expansion
      * Populates optional fields (topic, sessions, venue) when requested via ?include parameter
      */
-    private void applyResourceExpansionsToDTO(Event event, String include, EventResponse response) {
+    private void applyResourceExpansionsToDTO(Event event, String include, EventResponse response,
+            SessionView view) {
         String[] includes = include.split(",");
         for (String resource : includes) {
             String trimmed = resource.trim();
@@ -509,7 +534,9 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
                 case "sessions":
                 case "speakers":
                     // Sessions include speakers automatically
-                    response.setSessions(expandSessions(event));
+                    if (view != SessionView.NONE) {
+                        response.setSessions(expandSessions(event, view));
+                    }
                     break;
                 case "metrics":
                     // Add speaker metrics (BAT-91 Phase 3)
@@ -566,14 +593,13 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         // Story 5.9: Calculate session materials metrics
         // Total = speaker sessions with a timeslot assigned (excludes structural: moderation/break/lunch)
         List<ch.batbern.events.domain.Session> allSessions = sessionRepository.findByEventId(eventId);
-        Set<String> structuralTypes = Set.of("moderation", "break", "lunch");
         long totalSessions = allSessions.stream()
                 .filter(session -> session.getStartTime() != null)
-                .filter(session -> !structuralTypes.contains(session.getSessionType()))
+                .filter(session -> !ch.batbern.events.domain.Session.isStructuralType(session.getSessionType()))
                 .count();
         long sessionsWithMaterials = allSessions.stream()
                 .filter(session -> session.getStartTime() != null)
-                .filter(session -> !structuralTypes.contains(session.getSessionType()))
+                .filter(session -> !ch.batbern.events.domain.Session.isStructuralType(session.getSessionType()))
                 .filter(session -> {
                     // Count sessions with materialsStatus = COMPLETE
                     List<ch.batbern.events.sessions.dto.generated.SessionMaterialResponse> materials =
@@ -642,10 +668,12 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      * @param event The event to expand sessions for
      * @return List of session maps with public fields and speakers
      */
-    private java.util.List<Map<String, Object>> expandSessions(Event event) {
+    private java.util.List<Map<String, Object>> expandSessions(Event event, SessionView view) {
         // Find all sessions for this event with speakers eagerly loaded (Story 5.5)
-        List<ch.batbern.events.domain.Session> sessions = publicSessionVisibilityService.visibleSessions(
-                event, sessionRepository.findByEventIdWithSpeakers(event.getId()));
+        List<ch.batbern.events.domain.Session> all = sessionRepository.findByEventIdWithSpeakers(event.getId());
+        List<ch.batbern.events.domain.Session> sessions = view == SessionView.PUBLIC
+                ? publicSessionVisibilityService.publicSessions(event, all)
+                : all;
 
         // Convert to response format using SessionService (includes materials - Story 5.9)
         return sessions.stream()
@@ -773,6 +801,37 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         // Precedence is afterglow-first (changed 2026-06-20): BATbern is quarterly, so a completed
         // event ≤14 days old can never coexist with a live/upcoming event within 14 days.
         // 8-State Model (V82): AGENDA_FINALIZED removed, scheduler transitions AGENDA_PUBLISHED → EVENT_LIVE
+        Event currentEvent = findCurrentEvent();
+        if (currentEvent == null) {
+            return ResponseEntity.notFound().build();
+        }
+
+        // Build response using EventMapper (BAT-91 Phase 3)
+        EventResponse response = eventMapper.toDto(currentEvent);
+        enrichWithRegistrationCounts(response, currentEvent.getId());
+        enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, currentEvent);
+
+        // Apply resource expansions if requested
+        if (include != null && !include.trim().isEmpty()) {
+            // Apple Watch (#1070): the organizer zone sees every session, the public zone the
+            // public view by publishing state
+            SessionView view = publicSessionVisibilityService.callerIsOrganizer()
+                    ? SessionView.ALL
+                    : SessionView.PUBLIC;
+            applyResourceExpansionsToDTO(currentEvent, include, response, view);
+        }
+
+        return ResponseEntity.ok(eventGeneratedMapper.toEventDetail(response));
+    }
+
+    /**
+     * The event the homepage features. Afterglow takes precedence: a completed event within its
+     * 14-day post-event window; otherwise the next upcoming event with a published phase.
+     *
+     * @return the event, or {@code null} if none qualifies
+     */
+    private Event findCurrentEvent() {
         List<EventWorkflowState> activeWorkflowStates = List.of(
                 EventWorkflowState.SPEAKER_IDENTIFICATION,
                 EventWorkflowState.SLOT_ASSIGNMENT,
@@ -806,25 +865,100 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
 
         if (currentEvent == null) {
             log.debug("No current event found with workflow states: {}", activeWorkflowStates);
-            return ResponseEntity.notFound().build();
+            return null;
         }
 
         log.debug("Found current event: {} with workflowState: {}",
                 currentEvent.getEventCode(), currentEvent.getWorkflowState());
-
-        // Build response using EventMapper (BAT-91 Phase 3)
-        EventResponse response = eventMapper.toDto(currentEvent);
-        enrichWithRegistrationCounts(response, currentEvent.getId());
-        enrichWithTeaserImages(response);
-        enrichWithEventTimes(response, currentEvent);
-
-        // Apply resource expansions if requested
-        if (include != null && !include.trim().isEmpty()) {
-            applyResourceExpansionsToDTO(currentEvent, include, response);
-        }
-
-        return ResponseEntity.ok(eventGeneratedMapper.toEventDetail(response));
+        return currentEvent;
     }
+
+    // ============================================================================================
+    // Public Events read model (website, 2026-10-07): shaped by publishing state, never by caller
+    // ============================================================================================
+
+    private static final String PUBLIC_DETAIL_INCLUDES = "topics,venue,sessions,registrations";
+    private static final String PUBLIC_LIST_INCLUDES = "topics,sessions";
+
+    @Override
+    public ResponseEntity<EventDetail> getPublicCurrentEvent() {
+        Event event = findCurrentEvent();
+        if (event == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(publicDetail(event));
+    }
+
+    @Override
+    public ResponseEntity<EventDetail> getPublicEvent(String eventCode) {
+        Event event = eventRepository.findByEventCode(eventCode)
+                .filter(publicSessionVisibilityPolicy::isPubliclyVisible)
+                .orElseThrow(() -> new EventNotFoundException("Event not found with code: " + eventCode));
+        return ResponseEntity.ok(publicDetail(event));
+    }
+
+    @Override
+    public ResponseEntity<ListEvents200Response> listPublicEvents(
+            String scope, String search, String topicCodes, String sort, Integer page, Integer limit) {
+        PaginatedResponse<Event> result = switch (scope == null ? "" : scope) {
+            case "upcoming" -> eventSearchService.searchUpcomingPublicEvents(page, limit);
+            case "archive" -> eventSearchService.searchEvents(
+                    archiveFilter(search, topicCodes), archiveSort(sort), page, limit, true);
+            default -> throw new ValidationException("scope must be 'upcoming' or 'archive'");
+        };
+
+        List<Event> events = result.getData();
+        List<EventResponse> responses = buildBatchExpandedResponses(events, PUBLIC_LIST_INCLUDES, SessionView.PUBLIC);
+        List<ch.batbern.events.core.dto.generated.Event> data = new ArrayList<>();
+        for (int i = 0; i < events.size(); i++) {
+            data.add(publicEventShaper.shape(eventGeneratedMapper.toEvent(responses.get(i)), events.get(i)));
+        }
+        return ResponseEntity.ok(new ListEvents200Response().data(data).pagination(result.getPagination()));
+    }
+
+    private EventDetail publicDetail(Event event) {
+        EventResponse response = eventMapper.toDto(event);
+        enrichWithRegistrationCounts(response, event.getId());
+        enrichWithTeaserImages(response);
+        enrichWithEventTimes(response, event);
+        applyResourceExpansionsToDTO(event, PUBLIC_DETAIL_INCLUDES, response, SessionView.PUBLIC);
+        return publicEventShaper.shape(eventGeneratedMapper.toEventDetail(response), event);
+    }
+
+    /** Server-built archive filter: archived events only, optionally by title/speaker and topics. */
+    private String archiveFilter(String search, String topicCodes) {
+        Map<String, Object> filter = new LinkedHashMap<>();
+        filter.put("workflowState", Map.of("$in", List.of("ARCHIVED")));
+        if (search != null && !search.isBlank()) {
+            filter.put("title", Map.of("$contains", search.trim()));
+        }
+        if (topicCodes != null && !topicCodes.isBlank()) {
+            List<String> codes = Arrays.stream(topicCodes.split(","))
+                    .map(String::trim)
+                    .filter(c -> !c.isEmpty())
+                    .toList();
+            if (!codes.isEmpty()) {
+                filter.put("topicCode", Map.of("$in", codes));
+            }
+        }
+        try {
+            return ARCHIVE_FILTER_MAPPER.writeValueAsString(filter);
+        } catch (JsonProcessingException e) {
+            throw new ValidationException("Invalid archive filter");
+        }
+    }
+
+    private static String archiveSort(String sort) {
+        if (sort == null || sort.isBlank()) {
+            return "-date";
+        }
+        if (!sort.equals("-date") && !sort.equals("date")) {
+            throw new ValidationException("sort must be '-date' or 'date'");
+        }
+        return sort;
+    }
+
+    private static final ObjectMapper ARCHIVE_FILTER_MAPPER = new ObjectMapper();
 
     /**
      * Create Event (AC3)

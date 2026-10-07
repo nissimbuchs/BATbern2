@@ -50,11 +50,8 @@ public class TimetableService {
 
     private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
 
-    private static final Set<String> STRUCTURAL_TYPES =
-            Set.of("moderation", "break", "lunch", "aperitif");
-
     private static boolean isStructural(String sessionType) {
-        return sessionType != null && STRUCTURAL_TYPES.contains(sessionType);
+        return Session.isStructuralType(sessionType);
     }
 
     private final EventRepository eventRepository;

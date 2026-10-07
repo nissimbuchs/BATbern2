@@ -82,7 +82,9 @@ public class SecurityConfig {
                 .requestMatchers("/api/v1/watch/ws").permitAll()
 
                 // Story 4.1.3: Public event discovery endpoints
-                .requestMatchers(HttpMethod.GET, "/api/v1/events/current").permitAll()
+                // /events/current: Watch app only (#1070). /public/events*: website read model (2026-10-07)
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/current", "/api/v1/public/events",
+                        "/api/v1/public/events/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()

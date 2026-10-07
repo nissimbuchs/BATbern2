@@ -7,10 +7,10 @@
  */
 
 import { useTranslation } from 'react-i18next';
-import { useEvents } from '@/hooks/useEvents';
+import { useQuery } from '@tanstack/react-query';
+import { eventApiClient } from '@/services/eventApiClient';
 import { useMyRegistration } from '@/hooks/useMyRegistration';
 import { EventCard } from '@/components/public/EventCard';
-import { isPublishedPhase } from '@/utils/eventPublication';
 import type { EventDetailUI } from '@/types/event.types';
 
 interface UpcomingEventsSectionProps {
@@ -40,27 +40,19 @@ function UpcomingEventCardWithStatus({ event }: { event: EventDetailUI }) {
 export function UpcomingEventsSection({ currentEventCode }: UpcomingEventsSectionProps) {
   const { t } = useTranslation('events');
 
-  const { data, isLoading } = useEvents({ page: 1, limit: 5 }, undefined, {
-    expand: ['topics', 'sessions', 'speakers'],
+  // Public Events read model (2026-10-07): the server selects published events from today on,
+  // nearest first, and shapes sessions/speakers by phase. Only the event already featured in the
+  // hero is skipped here (a layout concern).
+  const { data, isLoading } = useQuery({
+    queryKey: ['events', 'public', 'upcoming'],
+    queryFn: () => eventApiClient.getPublicEvents({ scope: 'upcoming', page: 1, limit: 5 }),
+    staleTime: 5 * 60 * 1000,
   });
 
   if (isLoading) return null;
 
-  const now = new Date();
   const upcomingEvents = (data?.data ?? [])
-    .filter(
-      (e) =>
-        e.eventCode !== currentEventCode &&
-        new Date(e.date) > now &&
-        // Only surface events the organizer has actively published. The generic
-        // GET /events list returns every event regardless of publication, so an
-        // unpublished CREATED event (currentPublishedPhase NONE/null) would otherwise
-        // leak onto the public homepage (mirrors the backend /events/current gate).
-        // currentPublishedPhase rides in the list payload at runtime but isn't on the
-        // narrower list-item type — read it through EventDetailUI (the cast used below too).
-        isPublishedPhase((e as EventDetailUI).currentPublishedPhase)
-    )
-    .sort((a, b) => new Date(a.date).getTime() - new Date(b.date).getTime())
+    .filter((e) => e.eventCode !== currentEventCode)
     .slice(0, 4);
 
   if (upcomingEvents.length === 0) return null;

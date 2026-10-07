@@ -34,7 +34,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Set;
 import java.util.stream.Collectors;
 
 /**
@@ -297,9 +296,8 @@ public class PublishingService {
         }
 
         // Sessions validation - all speaker sessions must have timing (excludes structural: moderation/break/lunch)
-        Set<String> structuralSessionTypes = Set.of("moderation", "break", "lunch");
         List<Session> allSessions = sessionRepository.findByEventId(event.getId()).stream()
-                .filter(s -> !structuralSessionTypes.contains(s.getSessionType()))
+                .filter(s -> !Session.isStructuralType(s.getSessionType()))
                 .collect(Collectors.toList());
         List<Session> unassignedSessions = allSessions.stream()
                 .filter(s -> s.getStartTime() == null || s.getEndTime() == null)

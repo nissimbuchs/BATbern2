@@ -13,6 +13,7 @@ import { Box, Paper, ButtonBase, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { Event, EventDetailUI } from '@/types/event.types';
 import type { CardTarget } from './cockpitCards';
+import { isStructuralSession } from '@/utils/sessionTypes';
 
 interface MetricTilesProps {
   event: Event | EventDetailUI;
@@ -49,14 +50,10 @@ export const MetricTiles: React.FC<MetricTilesProps> = ({ event, onNavigate }) =
   // Agenda tile = speaker sessions that have a start time, out of the event's max
   // speaker slots. Structural sessions (moderation/break/lunch) are NOT speaker slots,
   // so they must be excluded — counting them inflated the fraction (e.g. 8/8 for an
-  // event with 5 talks slotted + 2 moderation + 1 break). The structural set mirrors
-  // STRUCTURAL_TYPES in DragDropSlotAssignment (the timetable's non-SPEAKER_SLOT types).
-  const STRUCTURAL_SESSION_TYPES = ['moderation', 'break', 'lunch', 'aperitif'];
+  // event with 5 talks slotted + 2 moderation + 1 break). Structural = utils/sessionTypes.
   const sessionsArr =
     (e.sessions as { startTime?: string | null; sessionType?: string | null }[] | undefined) ?? [];
-  const speakerSessions = sessionsArr.filter(
-    (s) => !STRUCTURAL_SESSION_TYPES.includes((s.sessionType ?? '').toLowerCase())
-  );
+  const speakerSessions = sessionsArr.filter((s) => !isStructuralSession(s.sessionType));
   const sessionsSlotted = speakerSessions.filter((s) => !!s.startTime).length;
   // Denominator = max speaker slots (the agenda capacity); fall back to the count of
   // speaker sessions, then the metric, when maxSpeakerSlots isn't hydrated.

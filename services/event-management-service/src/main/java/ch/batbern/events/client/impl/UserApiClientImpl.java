@@ -452,73 +452,7 @@ public class UserApiClientImpl implements UserApiClient {
 
     @Override
     public java.util.List<String> getOrganizerUsernames() {
-        log.debug("Fetching organizer usernames");
-
-        // ADR-013 §3: role is expressed via the JSON `filter` vocabulary (not an ad-hoc ?role= param).
-        // A fully-encoded URI keeps RestTemplate from re-expanding the {,},",: in the filter value.
-        URI url = UriComponentsBuilder
-                .fromUriString(userServiceBaseUrl + "/api/v1/users")
-                .queryParam("filter", "{\"role\":\"ORGANIZER\"}")
-                .build()
-                .encode()
-                .toUri();
-
-        try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            ResponseEntity<PaginatedUserResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    PaginatedUserResponse.class
-            );
-
-            PaginatedUserResponse body = response.getBody();
-            if (body == null || body.getData() == null) {
-                log.debug("No organizers found");
-                return java.util.List.of();
-            }
-
-            java.util.List<String> usernames = body.getData().stream()
-                    .map(UserResponse::getId)  // 'id' field contains the username
-                    .collect(java.util.stream.Collectors.toList());
-
-            log.debug("Successfully fetched {} organizer usernames", usernames.size());
-            return usernames;
-
-        } catch (HttpClientErrorException e) {
-            log.error("Client error fetching organizer list: {} - {}", e.getStatusCode(), e.getMessage());
-            throw new UserServiceException(
-                    "Client error fetching organizer list",
-                    e.getStatusCode().value(),
-                    e
-            );
-
-        } catch (HttpServerErrorException e) {
-            log.error("Server error from User Management Service for organizer list: {} - {}",
-                    e.getStatusCode(), e.getMessage());
-            throw new UserServiceException(
-                    "User Management Service error fetching organizer list",
-                    e.getStatusCode().value(),
-                    e
-            );
-
-        } catch (ResourceAccessException e) {
-            log.error("Network error connecting to User Management Service for organizer list: {}",
-                    e.getMessage());
-            throw new UserServiceException(
-                    "Failed to connect to User Management Service for organizer list",
-                    e
-            );
-
-        } catch (Exception e) {
-            log.error("Unexpected error fetching organizer list: {}", e.getMessage(), e);
-            throw new UserServiceException(
-                    "Unexpected error fetching organizer list",
-                    e
-            );
-        }
+        return fetchUsernamesByRole("ORGANIZER", "organizer");
     }
 
     /**
@@ -773,72 +707,71 @@ public class UserApiClientImpl implements UserApiClient {
      */
     @Override
     public java.util.List<String> getPartnerUsernames() {
-        log.debug("Fetching partner usernames");
+        return fetchUsernamesByRole("PARTNER", "partner");
+    }
 
-        // ADR-013 §3: role is expressed via the JSON `filter` vocabulary (not an ad-hoc ?role= param).
-        URI url = UriComponentsBuilder
-                .fromUriString(userServiceBaseUrl + "/api/v1/users")
-                .queryParam("filter", "{\"role\":\"PARTNER\"}")
-                .queryParam("limit", 1000)
-                .build()
-                .encode()
-                .toUri();
+    /** CUMS caps list pages at 100 (users-api / companies-api {@code maximum: 100}). */
+    private static final int MAX_PAGE_SIZE = 100;
 
+    /** Upper bound on pages read, so a misbehaving hasNext can never loop forever. */
+    private static final int MAX_PAGES = 100;
+
+    /**
+     * All usernames holding {@code role}, read page by page.
+     *
+     * <p>Bug 2026-10-07: since PR #825 CUMS enforces {@code limit <= 100} from its contract. The
+     * partner list asked for 1000 and got a 400, so new events were created without their partners
+     * enrolled; the organizer list sent no limit and received only the first 20.
+     */
+    private java.util.List<String> fetchUsernamesByRole(String role, String label) {
+        log.debug("Fetching {} usernames", label);
+        java.util.List<String> usernames = new java.util.ArrayList<>();
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            ResponseEntity<PaginatedUserResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    PaginatedUserResponse.class
-            );
-
-            PaginatedUserResponse body = response.getBody();
-            if (body == null || body.getData() == null) {
-                log.debug("No partners found");
-                return java.util.List.of();
+            HttpEntity<Void> request = new HttpEntity<>(createHeadersWithJwtToken());
+            for (int page = 1; page <= MAX_PAGES; page++) {
+                // ADR-013 §3: role is expressed via the JSON `filter` vocabulary. A fully-encoded
+                // URI keeps RestTemplate from re-expanding the {,},",: in the filter value.
+                URI url = UriComponentsBuilder
+                        .fromUriString(userServiceBaseUrl + "/api/v1/users")
+                        .queryParam("filter", "{\"role\":\"" + role + "\"}")
+                        .queryParam("page", page)
+                        .queryParam("limit", MAX_PAGE_SIZE)
+                        .build()
+                        .encode()
+                        .toUri();
+                PaginatedUserResponse body = restTemplate.exchange(
+                        url, HttpMethod.GET, request, PaginatedUserResponse.class).getBody();
+                if (body == null || body.getData() == null) {
+                    break;
+                }
+                body.getData().stream().map(UserResponse::getId).forEach(usernames::add);
+                if (body.getPagination() == null || !body.getPagination().isHasNext()) {
+                    break;
+                }
             }
-
-            java.util.List<String> usernames = body.getData().stream()
-                    .map(UserResponse::getId)
-                    .collect(java.util.stream.Collectors.toList());
-
-            log.debug("Successfully fetched {} partner usernames", usernames.size());
+            log.debug("Successfully fetched {} {} usernames", usernames.size(), label);
             return usernames;
 
         } catch (HttpClientErrorException e) {
-            log.error("Client error fetching partner list: {} - {}", e.getStatusCode(), e.getMessage());
-            throw new UserServiceException(
-                    "Client error fetching partner list",
-                    e.getStatusCode().value(),
-                    e
-            );
+            log.error("Client error fetching {} list: {} - {}", label, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException("Client error fetching " + label + " list",
+                    e.getStatusCode().value(), e);
 
         } catch (HttpServerErrorException e) {
-            log.error("Server error from User Management Service for partner list: {} - {}",
-                    e.getStatusCode(), e.getMessage());
-            throw new UserServiceException(
-                    "User Management Service error fetching partner list",
-                    e.getStatusCode().value(),
-                    e
-            );
+            log.error("Server error from User Management Service for {} list: {} - {}",
+                    label, e.getStatusCode(), e.getMessage());
+            throw new UserServiceException("User Management Service error fetching " + label + " list",
+                    e.getStatusCode().value(), e);
 
         } catch (ResourceAccessException e) {
-            log.error("Network error connecting to User Management Service for partner list: {}",
-                    e.getMessage());
+            log.error("Network error connecting to User Management Service for {} list: {}",
+                    label, e.getMessage());
             throw new UserServiceException(
-                    "Failed to connect to User Management Service for partner list",
-                    e
-            );
+                    "Failed to connect to User Management Service for " + label + " list", e);
 
         } catch (Exception e) {
-            log.error("Unexpected error fetching partner list: {}", e.getMessage(), e);
-            throw new UserServiceException(
-                    "Unexpected error fetching partner list",
-                    e
-            );
+            log.error("Unexpected error fetching {} list: {}", label, e.getMessage(), e);
+            throw new UserServiceException("Unexpected error fetching " + label + " list", e);
         }
     }
 
@@ -850,37 +783,32 @@ public class UserApiClientImpl implements UserApiClient {
     public java.util.List<CompanyBasicDto> getAllCompanies() {
         log.debug("Fetching all companies for legacy export");
 
-        String url = userServiceBaseUrl + "/api/v1/companies?limit=1000";
-
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            ResponseEntity<String> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    String.class
-            );
-
-            String body = response.getBody();
-            if (body == null || body.isBlank()) {
-                log.debug("No companies found");
-                return java.util.List.of();
-            }
-
-            // Parse paginated response: { "data": [...], "pagination": {...} }
-            com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(body);
-            com.fasterxml.jackson.databind.JsonNode dataNode = root.path("data");
-
-            if (dataNode.isMissingNode() || !dataNode.isArray()) {
-                log.debug("No companies data in response");
-                return java.util.List.of();
-            }
-
             CollectionType listType = objectMapper.getTypeFactory()
                     .constructCollectionType(java.util.List.class, CompanyBasicDto.class);
-            java.util.List<CompanyBasicDto> companies = objectMapper.convertValue(dataNode, listType);
+            java.util.List<CompanyBasicDto> companies = new java.util.ArrayList<>();
+
+            // Page by page within the companies-api limit (max 100); limit=1000 was rejected (#825)
+            for (int page = 1; page <= MAX_PAGES; page++) {
+                String url = userServiceBaseUrl + "/api/v1/companies?page=" + page + "&limit=" + MAX_PAGE_SIZE;
+                String body = restTemplate.exchange(url, HttpMethod.GET, request, String.class).getBody();
+                if (body == null || body.isBlank()) {
+                    break;
+                }
+
+                // Parse paginated response: { "data": [...], "pagination": {...} }
+                com.fasterxml.jackson.databind.JsonNode root = objectMapper.readTree(body);
+                com.fasterxml.jackson.databind.JsonNode dataNode = root.path("data");
+                if (dataNode.isMissingNode() || !dataNode.isArray()) {
+                    break;
+                }
+                companies.addAll(objectMapper.convertValue(dataNode, listType));
+                if (!root.path("pagination").path("hasNext").asBoolean(false)) {
+                    break;
+                }
+            }
 
             log.debug("Successfully fetched {} companies", companies.size());
             return companies;

@@ -23,10 +23,9 @@ import { useTranslation } from 'react-i18next';
 import { SpeakerDisplay } from './SpeakerDisplay';
 import { SessionQnaThread } from './SessionQnaThread';
 import { eventApiClient } from '@/services/eventApiClient';
+import { isStructuralSession } from '@/utils/sessionTypes';
 
-const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch', 'aperitif']);
-
-const isStructuralSession = (session: SessionUI) => STRUCTURAL_TYPES.has(session.sessionType ?? '');
+const isStructural = (session: SessionUI) => isStructuralSession(session.sessionType);
 
 const StructuralIcon = ({ sessionType }: { sessionType: string | null | undefined }) => {
   switch (sessionType) {
@@ -211,7 +210,7 @@ export const EventProgram = ({
                 {/* Sessions at this time */}
                 <div className="flex-1 pt-2 space-y-4">
                   {slot.sessions.map((session) =>
-                    isStructuralSession(session) ? (
+                    isStructural(session) ? (
                       /* Structural session — compact icon strip */
                       <div
                         key={session.sessionSlug}

@@ -23,7 +23,7 @@ vi.mock('@/services/timetableService/timetableService', () => ({
 }));
 
 vi.mock('@/services/eventApiClient', () => ({
-  eventApiClient: { getCurrentEvent: vi.fn() },
+  eventApiClient: { getPublicCurrentEvent: vi.fn() },
 }));
 
 import { publicOrganizerService } from '@/services/publicOrganizerService';
@@ -35,7 +35,7 @@ import { useCurrentEvent } from './useCurrentEvent';
 
 const mockGetOrganizers = vi.mocked(publicOrganizerService.getPublicOrganizers);
 const mockGetTimetable = vi.mocked(timetableService.getTimetable);
-const mockGetCurrentEvent = vi.mocked(eventApiClient.getCurrentEvent);
+const mockGetCurrentEvent = vi.mocked(eventApiClient.getPublicCurrentEvent);
 
 // ── Test helpers ──────────────────────────────────────────────────────────────
 
@@ -182,9 +182,7 @@ describe('useCurrentEvent', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockGetCurrentEvent).toHaveBeenCalledWith({
-      expand: ['topics', 'venue', 'speakers', 'sessions', 'registrations'],
-    });
+    expect(mockGetCurrentEvent).toHaveBeenCalledWith();
     expect(result.current.data).toEqual(event);
   });
 
@@ -208,7 +206,7 @@ describe('useCurrentEvent', () => {
     expect(result.current.data).toBeNull();
   });
 
-  it('should use events:current query key', async () => {
+  it('should use the events:public:current query key', async () => {
     mockGetCurrentEvent.mockResolvedValue(null as never);
 
     renderHook(() => useCurrentEvent(), { wrapper: wrapper(qc) });
@@ -219,7 +217,10 @@ describe('useCurrentEvent', () => {
         .findAll()
         .some(
           (q) =>
-            Array.isArray(q.queryKey) && q.queryKey[0] === 'events' && q.queryKey[1] === 'current'
+            Array.isArray(q.queryKey) &&
+            q.queryKey[0] === 'events' &&
+            q.queryKey[1] === 'public' &&
+            q.queryKey[2] === 'current'
         );
     });
 
@@ -228,7 +229,10 @@ describe('useCurrentEvent', () => {
       .findAll()
       .find(
         (q) =>
-          Array.isArray(q.queryKey) && q.queryKey[0] === 'events' && q.queryKey[1] === 'current'
+          Array.isArray(q.queryKey) &&
+          q.queryKey[0] === 'events' &&
+          q.queryKey[1] === 'public' &&
+          q.queryKey[2] === 'current'
       );
     expect(query).toBeDefined();
   });

@@ -236,9 +236,8 @@ describe('getSectionVisibility — PRE_EVENT SPEAKERS', () => {
   const vis = getSectionVisibility(phase);
 
   it('shows speaker grid', () => expect(vis.speakerGrid).toBe(true));
-  // 2026-10-07: SPEAKERS phase publishes the lineup only. No session list, no talk titles.
+  // 2026-10-07: SPEAKERS phase publishes the lineup only (the server sends no sessions).
   it('hides session cards', () => expect(vis.sessionCards).toBe(false));
-  it('hides talk titles on speaker cards', () => expect(vis.speakerSessionTitles).toBe(false));
   it('hides event program', () => expect(vis.eventProgram).toBe(false));
   it('hides session materials', () => expect(vis.showSessionMaterials).toBe(false));
 });
@@ -253,7 +252,6 @@ describe('getSectionVisibility — PRE_EVENT AGENDA', () => {
 
   it('shows speaker grid', () => expect(vis.speakerGrid).toBe(true));
   it('hides session cards (replaced by timetable)', () => expect(vis.sessionCards).toBe(false));
-  it('shows talk titles on speaker cards', () => expect(vis.speakerSessionTitles).toBe(true));
   it('shows event program', () => expect(vis.eventProgram).toBe(true));
   it('hides session materials', () => expect(vis.showSessionMaterials).toBe(false));
 });

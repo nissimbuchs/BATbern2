@@ -51,6 +51,7 @@ import { UnassignedSpeakersList } from '../UnassignedSpeakersList/UnassignedSpea
 import { SpeakerPreferencePanel } from '../SpeakerPreferencePanel/SpeakerPreferencePanel';
 import { ConflictDetectionAlert } from '../ConflictDetectionAlert/ConflictDetectionAlert';
 import type { Session } from '@/types/event.types';
+import { isStructuralSession, type StructuralSessionType } from '@/utils/sessionTypes';
 
 export interface DragDropSlotAssignmentProps {
   eventCode: string;
@@ -65,8 +66,7 @@ export interface DragDropSlotAssignmentProps {
 // Story 5.7: Single conference room (Main Hall)
 const ROOMS = ['Main Hall'];
 
-const STRUCTURAL_TYPES = ['moderation', 'break', 'lunch', 'aperitif'] as const;
-type StructuralType = (typeof STRUCTURAL_TYPES)[number];
+type StructuralType = StructuralSessionType;
 
 const STRUCTURAL_STYLES: Record<
   StructuralType,
@@ -104,7 +104,7 @@ const toTimeStr = (d: Date) =>
 /** Resolve the structural session type from a TimetableSlot.type string. */
 const timetableTypeToStructural = (type: TimetableSlot['type']): StructuralType | null => {
   const lower = type.toLowerCase();
-  if (lower === 'moderation' || lower === 'break' || lower === 'lunch' || lower === 'aperitif') {
+  if (isStructuralSession(lower)) {
     return lower as StructuralType;
   }
   return null;
@@ -164,10 +164,7 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
 
   // Assigned (non-structural) speaker sessions — for display in timeline cells
   const assignedSessions = useMemo(
-    () =>
-      allTimedSessions.filter(
-        (s) => s.room && !STRUCTURAL_TYPES.includes(s.sessionType as StructuralType)
-      ),
+    () => allTimedSessions.filter((s) => s.room && !isStructuralSession(s.sessionType)),
     [allTimedSessions]
   );
 

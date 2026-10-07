@@ -112,7 +112,7 @@ The homepage has three display phases plus an archive mode. All section visibili
 | EventLogistics | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
 | VenueMap | ✅ | ✅ | ✅ | ✅ | ❌ | ❌ |
 | SpeakerGrid | ❌ | ❌ | ✅ | ✅ | ✅ | ✅ |
-| SessionCards | ❌ | ❌ | ✅ | ❌ | ✅ | ✅ |
+| SessionCards | ❌ | ❌ | ❌ | ❌ | ✅ | ✅ |
 | EventProgram (timetable) | ❌ | ❌ | ❌ | ✅ | ❌ | ❌ |
 | EventPhotosMarquee | ❌ | ❌ | ❌ | ❌ | if photos | if photos |
 | TestimonialSection | ✅ | ✅ | ✅ | ✅ | ✅ | ✅ |
@@ -121,7 +121,9 @@ The homepage has three display phases plus an archive mode. All section visibili
 
 **Register CTA** is controlled by `vis.registrationEnabled` in `homePagePhase.ts` — hidden for COMING_SOON, POST_EVENT, and ARCHIVE. Registration banner and deregistration link are additionally gated by `workflowState ∈ {AGENDA_PUBLISHED, EVENT_LIVE}`.
 
-After 14 days a nightly scheduler auto-archives the event and `/api/v1/events/current` returns 404 until the next event is active.
+After 14 days a nightly scheduler auto-archives the event and `/api/v1/public/events/current` returns 404 until the next event is active.
+
+**Data source (2026-10-07):** the homepage, event pages, upcoming list and archive read only the Public Events endpoints (`/api/v1/public/events*`). The backend decides what is public, so the response is identical for visitors and logged-in organizers. In the SPEAKERS phase it returns the confirmed speakers (`speakers[]`) without talk titles and without a session list; the SpeakerGrid renders from `speakers[]`. Rules: `docs/architecture/06-backend-architecture.md` → "Public Events read model".
 
 ---
 

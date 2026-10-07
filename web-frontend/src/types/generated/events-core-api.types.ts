@@ -57,6 +57,66 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/public/events/current': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Current event for the public homepage
+     * @description The event the public homepage features (afterglow of a completed event within 14 days first, else the next published event), with topic, venue, sessions and speakers shaped by the publishing phase. Anonymous; the same answer for every caller.
+     */
+    get: operations['getPublicCurrentEvent'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/public/events/{eventCode}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One event as the public website shows it
+     * @description For /events/{code} and /archive/{code} on the website. 404 unless the event is publicly visible (a published phase, or completed/archived). Sessions and speakers are shaped by the publishing phase; anonymous, the same answer for every caller.
+     */
+    get: operations['getPublicEvent'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/public/events': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Events for the public website (upcoming or archive)
+     * @description upcoming: published events from today on, nearest first. archive: archived events, newest first, optionally narrowed by a title/speaker search and topic codes. The selection is fixed server-side; unpublished events are never listed. Sessions and speakers are shaped by the publishing phase.
+     */
+    get: operations['listPublicEvents'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/current': {
     parameters: {
       query?: never;
@@ -65,7 +125,7 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Get current event for the public homepage
+     * Get the current event (Apple Watch app only)
      * @description Retrieve the event the public homepage should feature. No authentication required.
      *
      *     **Story**: 4.1.3 - Public event landing page hero section
@@ -80,6 +140,13 @@ export interface paths {
      *        (currentPublishedPhase != null).
      *
      *     If neither exists, returns 404.
+     *
+     *     **Consumer (2026-10-07)**: kept ONLY for the Apple Watch app
+     *     (`apps/BATbern-watch`, both zones), which ships as an installed binary and calls this
+     *     path directly. The public website uses `GET /public/events/current` instead.
+     *     Sessions/speakers depend on the caller: organizers (Watch organizer zone) see every
+     *     session; everyone else gets the public view by publishing state. Retire this endpoint once
+     *     a Watch release has switched to `/public/events/current` (GitHub issue #1070).
      *
      *     **Performance**: <150ms (P95)
      */
@@ -938,6 +1005,24 @@ export interface components {
        */
       s3Key: string;
     };
+    /** @description A speaker as the public website shows it (Public Events). */
+    PublicSpeaker: {
+      /** @example john.doe */
+      username: string;
+      firstName?: string;
+      lastName?: string;
+      company?: string | null;
+      companyDisplayName?: string | null;
+      companyLogoUrl?: string | null;
+      profilePictureUrl?: string | null;
+      bio?: string | null;
+      /** @example PRIMARY_SPEAKER */
+      speakerRole?: string | null;
+      /** @description Only once the agenda is published (AGENDA phase, completed, archived). */
+      talkTitle?: string | null;
+      /** @description Only together with talkTitle. */
+      sessionSlug?: string | null;
+    };
     Event: {
       /**
        * @description Human-readable event identifier in format "BATbern{number}".
@@ -1119,6 +1204,8 @@ export interface components {
        *     Story BAT-109: Archive browsing with session expansion
        */
       sessions?: components['schemas']['Session'][] | null;
+      /** @description Public read model only (GET /public/events/*): the speakers the website may show for the published phase. SPEAKERS phase: accepted-or-later speakers without talk title; AGENDA and later: with talk title. Never set by the organizer endpoints. */
+      speakers?: components['schemas']['PublicSpeaker'][] | null;
       /** @description Organizer's free-text note on topic selection (Story 5.2). */
       topicSelectionNote?: string;
       /** @description Username of the creator (audit). */
@@ -2080,6 +2167,84 @@ export interface operations {
       };
       400: components['responses']['BadRequest'];
       500: components['responses']['InternalServerError'];
+    };
+  };
+  getPublicCurrentEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Current event for the website */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventDetail'];
+        };
+      };
+      404: components['responses']['NotFound'];
+    };
+  };
+  getPublicEvent: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Event for the website */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['EventDetail'];
+        };
+      };
+      404: components['responses']['NotFound'];
+    };
+  };
+  listPublicEvents: {
+    parameters: {
+      query: {
+        scope: 'upcoming' | 'archive';
+        /** @description Archive only. Title (and speaker name) contains this text. */
+        search?: string;
+        /** @description Archive only. Comma-separated topic codes. */
+        topicCodes?: string;
+        /** @description Archive only: -date (newest first, default) or date. Upcoming is always nearest first. */
+        sort?: '-date' | 'date';
+        page?: number;
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Page of events for the website */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': {
+            data?: components['schemas']['Event'][];
+            pagination?: components['schemas']['PaginationMetadata'];
+          };
+        };
+      };
+      400: components['responses']['BadRequest'];
     };
   };
   getCurrentEvent: {

@@ -7,26 +7,7 @@
 
 import { useInfiniteQuery } from '@tanstack/react-query';
 import { eventApiClient } from '@/services/eventApiClient';
-import type { ArchiveFilters, EventFilters } from '@/types/event.types';
-
-/**
- * Convert ArchiveFilters to EventFilters for API
- * Story BAT-109: Archive browsing filter conversion
- */
-function convertToEventFilters(archiveFilters: ArchiveFilters): EventFilters {
-  const eventFilters: EventFilters = {
-    includeArchived: true, // Archive page shows archived events
-    workflowState: ['ARCHIVED'], // Only show archived events
-    search: archiveFilters.search,
-  };
-
-  // Topic filter - filter by topicCode
-  if (archiveFilters.topics && archiveFilters.topics.length > 0) {
-    eventFilters.topicCode = archiveFilters.topics;
-  }
-
-  return eventFilters;
-}
+import type { ArchiveFilters } from '@/types/event.types';
 
 /**
  * Infinite scroll hook for events archive
@@ -37,14 +18,19 @@ function convertToEventFilters(archiveFilters: ArchiveFilters): EventFilters {
  */
 export function useInfiniteEvents(filters: ArchiveFilters = {}, sort: string = '-date') {
   // Convert ArchiveFilters to EventFilters for API
-  const eventFilters = convertToEventFilters(filters);
-
   return useInfiniteQuery({
     queryKey: ['events', 'archive', filters, sort],
     queryFn: async ({ pageParam = 1 }) => {
-      const result = await eventApiClient.getEvents({ page: pageParam, limit: 20 }, eventFilters, {
-        expand: ['topics', 'sessions', 'speakers'],
-        sort,
+      // Public Events read model (2026-10-07): the server restricts the archive scope to archived
+      // events and shapes sessions/speakers; the client only passes search, topics and sort.
+      const result = await eventApiClient.getPublicEvents({
+        scope: 'archive',
+        page: pageParam,
+        limit: 20,
+        search: filters.search,
+        topicCodes: filters.topics,
+        // Oldest first for 'date' / '+date'; newest first otherwise (the archive default)
+        sort: sort === 'date' || sort === '+date' ? 'date' : '-date',
       });
       return result;
     },

@@ -12,6 +12,7 @@ import ch.batbern.shared.api.SortCriteria;
 import ch.batbern.shared.api.SortDirection;
 import ch.batbern.shared.api.SortParser;
 import ch.batbern.shared.dto.PaginatedResponse;
+import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
@@ -23,6 +24,8 @@ import org.springframework.stereotype.Service;
 
 import jakarta.persistence.criteria.Expression;
 import java.time.Instant;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -92,6 +95,33 @@ public class EventSearchService {
                 .pagination(metadata)
                 .build();
     }
+
+    /**
+     * Upcoming events the public website may list: a published phase (topic, speakers, agenda),
+     * not archived, and not before today (Bern), nearest first. The selection is fixed here so a
+     * public caller can never widen it to unpublished drafts (Public Events, 2026-10-07).
+     */
+    public PaginatedResponse<Event> searchUpcomingPublicEvents(Integer page, Integer limit) {
+        PaginationParams paginationParams = PaginationUtils.parseParams(page, limit);
+        int pageNum = paginationParams.getPage();
+        int pageSize = paginationParams.getLimit();
+
+        ZoneId bern = ZoneId.of("Europe/Zurich");
+        Instant startOfToday = LocalDate.now(bern).atStartOfDay(bern).toInstant();
+        Specification<Event> spec = (root, query, cb) -> cb.and(
+                cb.greaterThanOrEqualTo(root.get("date"), startOfToday),
+                cb.notEqual(root.get("workflowState"), EventWorkflowState.ARCHIVED),
+                cb.lower(root.get("currentPublishedPhase")).in(PUBLISHED_PHASES));
+
+        Page<Event> eventPage = eventRepository.findAll(
+                spec, PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.ASC, "date")));
+        return PaginatedResponse.<Event>builder()
+                .data(eventPage.getContent())
+                .pagination(PaginationUtils.generateMetadata(pageNum, pageSize, eventPage.getTotalElements()))
+                .build();
+    }
+
+    private static final List<String> PUBLISHED_PHASES = List.of("topic", "speakers", "agenda");
 
     /**
      * Parse sort string using SortParser
