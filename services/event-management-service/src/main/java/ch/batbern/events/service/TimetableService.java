@@ -53,22 +53,6 @@ public class TimetableService {
     private static final Set<String> STRUCTURAL_TYPES =
             Set.of("moderation", "break", "lunch", "aperitif");
 
-    /**
-     * Conventional start time per event type, used only when the agenda config has none.
-     * Bug 2026-10-07: a single 09:00 fallback put BATbern60 (evening) at 09:00 after the evening
-     * template had lost its start time in production.
-     */
-    static LocalTime defaultStartTime(EventType eventType) {
-        if (eventType == null) {
-            return LocalTime.of(9, 0);
-        }
-        return switch (eventType) {
-            case EVENING -> LocalTime.of(16, 0);
-            case AFTERNOON -> LocalTime.of(13, 0);
-            default -> LocalTime.of(9, 0);
-        };
-    }
-
     private static boolean isStructural(String sessionType) {
         return sessionType != null && STRUCTURAL_TYPES.contains(sessionType);
     }
@@ -109,7 +93,8 @@ public class TimetableService {
         // Read config with safe defaults
         LocalTime startTime = config.getTypicalStartTime();
         if (startTime == null) {
-            startTime = defaultStartTime(eventType);
+            // Bug 2026-10-07: a fixed 09:00 here put BATbern60 (evening) at 09:00
+            startTime = EventTypeDefaults.startTime(eventType);
             log.warn("Agenda config for event type {} has no typical start time, using default {}",
                     eventType, startTime);
         }
