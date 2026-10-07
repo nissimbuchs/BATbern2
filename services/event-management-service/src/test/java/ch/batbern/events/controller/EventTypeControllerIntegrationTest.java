@@ -183,6 +183,28 @@ class EventTypeControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
+     * Regression 2026-10-07: saving a template without a start time wrote NULL, and the evening
+     * timetable then started at 09:00. The start time is required.
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_return400_when_typicalStartTimeMissing() throws Exception {
+        UpdateEventSlotConfigurationRequest request = new UpdateEventSlotConfigurationRequest()
+                .minSlots(3)
+                .maxSlots(4)
+                .slotDuration(45)
+                .theoreticalSlotsAM(false)
+                .breakSlots(1)
+                .lunchSlots(0)
+                .defaultCapacity(200);
+
+        mockMvc.perform(put("/api/v1/events/types/{type}", EventType.EVENING)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    /**
      * Test 8.2: should_return400_when_slotDurationBelowMinimum
      * Verifies validation: slotDuration must be >= 15 minutes.
      */

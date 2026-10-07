@@ -597,7 +597,8 @@
     "maxSlotsRequired": "El número máximo de espacios es obligatorio",
     "slotDurationMinimum": "La duración del espacio debe ser de al menos 15 minutos",
     "minSlotsLessThanMax": "El número mínimo de espacios debe ser menor o igual al máximo",
-    "defaultCapacityPositive": "La capacidad predeterminada debe ser un número positivo"
+    "defaultCapacityPositive": "La capacidad predeterminada debe ser un número positivo",
+    "typicalStartTimeRequired": "La hora de inicio es obligatoria."
   },
   "errors": {
     "loadFailed": "Error al cargar eventos",

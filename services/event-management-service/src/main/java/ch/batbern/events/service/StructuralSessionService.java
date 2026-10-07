@@ -85,7 +85,7 @@ public class StructuralSessionService {
 
         // 4. Delegate timeline computation to TimetableService
         LocalDate eventDate = LocalDate.ofInstant(event.getDate(), ZoneOffset.UTC);
-        List<TimetableSlot> timeline = timetableService.computeTimeline(config, eventDate);
+        List<TimetableSlot> timeline = timetableService.computeTimeline(config, eventDate, event.getEventType());
 
         // 5. Persist structural slots (skip SPEAKER_SLOT — those are implicit gaps)
         String organizerUsername = event.getOrganizerUsername();

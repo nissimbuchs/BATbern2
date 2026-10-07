@@ -597,7 +597,8 @@
     "maxSlotsRequired": "Il numer maximal da slots è obligatori",
     "slotDurationMinimum": "La durada dal slot sto esser almain 15 minutas",
     "minSlotsLessThanMax": "Il numer minim da slots sto esser minor u egual al maximal",
-    "defaultCapacityPositive": "La capacitad standard sto esser in numer positiv"
+    "defaultCapacityPositive": "La capacitad standard sto esser in numer positiv",
+    "typicalStartTimeRequired": "L'ura da cumenzament è obligatorica."
   },
   "errors": {
     "loadFailed": "Chargiar eveniments fallì",

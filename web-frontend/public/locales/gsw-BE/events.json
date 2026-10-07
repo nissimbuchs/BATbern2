@@ -600,7 +600,8 @@
     "maxSlotsRequired": "Maximalslots isch Pflicht",
     "slotDurationMinimum": "Slotdauer mues mindestens 15 Minute si",
     "minSlotsLessThanMax": "Mindestslots mues chliiner oder gliich wie Maximalslots si",
-    "defaultCapacityPositive": "Standardkapazität mues e positivi Zahl si"
+    "defaultCapacityPositive": "Standardkapazität mues e positivi Zahl si",
+    "typicalStartTimeRequired": "D Startzyt bruucht's."
   },
   "errors": {
     "loadFailed": "Veranstaltigen chöne nid gglade werde",

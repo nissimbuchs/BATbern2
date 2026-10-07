@@ -611,7 +611,8 @@
     "maxSlotsRequired": "Maximale Slot-Anzahl ist erforderlich",
     "slotDurationMinimum": "Slot-Dauer muss mindestens 15 Minuten betragen",
     "minSlotsLessThanMax": "Minimale Slot-Anzahl muss kleiner oder gleich der maximalen Slot-Anzahl sein",
-    "defaultCapacityPositive": "Standardkapazität muss eine positive Zahl sein"
+    "defaultCapacityPositive": "Standardkapazität muss eine positive Zahl sein",
+    "typicalStartTimeRequired": "Startzeit ist erforderlich."
   },
   "errors": {
     "loadFailed": "Fehler beim Laden der Veranstaltungen",

@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -118,9 +119,10 @@ class StructuralSessionServiceTest {
         // generateStructuralSessions (e.g. EventNotFoundException, NotFoundException).
         TimetableService realTimetableService = new TimetableService(null, null, null, null);
         org.mockito.Mockito.lenient()
-                .when(timetableService.computeTimeline(any(AgendaConfig.class), any(LocalDate.class)))
+                .when(timetableService.computeTimeline(
+                        any(AgendaConfig.class), any(LocalDate.class), nullable(EventType.class)))
                 .thenAnswer(inv -> realTimetableService.computeTimeline(
-                        inv.getArgument(0), inv.getArgument(1)));
+                        inv.getArgument(0), inv.getArgument(1), inv.getArgument(2)));
 
         fullDayConfig = EventTypeConfiguration.builder()
                 .id(UUID.randomUUID())

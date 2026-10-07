@@ -597,7 +597,8 @@
     "maxSlotsRequired": "Le nombre maximum de créneaux est requis",
     "slotDurationMinimum": "La durée des créneaux doit être d'au moins 15 minutes",
     "minSlotsLessThanMax": "Le nombre minimum de créneaux doit être inférieur ou égal au maximum",
-    "defaultCapacityPositive": "La capacité par défaut doit être un nombre positif"
+    "defaultCapacityPositive": "La capacité par défaut doit être un nombre positif",
+    "typicalStartTimeRequired": "L'heure de début est obligatoire."
   },
   "errors": {
     "loadFailed": "Échec du chargement des événements",

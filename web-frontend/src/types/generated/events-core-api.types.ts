@@ -1410,10 +1410,10 @@ export interface components {
       defaultCapacity: number;
       /**
        * Format: time
-       * @description Typical start time for this event type
+       * @description Typical start time for this event type. Required: the timetable is anchored to it (2026-10-07, a NULL here put an evening event at 09:00).
        * @example 09:00
        */
-      typicalStartTime?: string | null;
+      typicalStartTime: string;
       /**
        * Format: time
        * @description Typical end time for this event type

@@ -22,6 +22,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventTypeConfigurationForm } from './EventTypeConfigurationForm';
+import { useEventType } from '@/hooks/useEventTypes';
 import { computeScheduleEndTime } from './scheduleTimeline';
 import type { components } from '@/types/generated/events-core-api.types';
 
@@ -329,6 +330,59 @@ describe('EventTypeConfigurationForm Component', () => {
     await waitFor(() => {
       expect(mockOnSave).not.toHaveBeenCalled();
     });
+  });
+
+  // Regression 2026-10-07: the production EVENING template had lost its start time and the slot
+  // grid fell back to 09:00. The form now pre-fills the event type's conventional start time and
+  // refuses to save without one (the API requires it).
+  it('should_prefillEveningDefaultStartTime_when_templateHasNoStartTime', async () => {
+    vi.mocked(useEventType).mockReturnValue({
+      data: { ...mockEventTypeData, type: 'EVENING', typicalStartTime: undefined },
+      isLoading: false,
+      error: null,
+    } as unknown as ReturnType<typeof useEventType>);
+    const user = userEvent.setup();
+
+    render(
+      <EventTypeConfigurationForm
+        eventType="EVENING"
+        onSave={mockOnSave}
+        onCancel={mockOnCancel}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    expect(screen.getByLabelText(/typical start time/i)).toHaveValue('16:00');
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() =>
+      expect(mockOnSave).toHaveBeenCalledWith(
+        expect.objectContaining({ typicalStartTime: '16:00' })
+      )
+    );
+    vi.mocked(useEventType).mockReturnValue({
+      data: mockEventTypeData,
+      isLoading: false,
+      error: null,
+    } as unknown as ReturnType<typeof useEventType>);
+  });
+
+  it('should_preventSave_when_startTimeCleared', async () => {
+    const user = userEvent.setup();
+
+    render(
+      <EventTypeConfigurationForm
+        eventType={mockEventType}
+        onSave={mockOnSave}
+        onCancel={mockOnCancel}
+      />,
+      { wrapper: createWrapper() }
+    );
+
+    fireEvent.change(screen.getByLabelText(/typical start time/i), { target: { value: '' } });
+    await user.click(screen.getByRole('button', { name: /save/i }));
+
+    await waitFor(() => expect(mockOnSave).not.toHaveBeenCalled());
+    expect(await screen.findByText(/start time is required/i)).toBeInTheDocument();
   });
 
   /**
