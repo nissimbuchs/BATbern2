@@ -223,6 +223,13 @@
         "closeNow": "Q&A nu sluiten",
         "reopen": "Q&A openen",
         "saved": "Q&A-instellingen opgeslagen"
+      },
+      "workflowState": {
+        "title": "Evenementstatus",
+        "description": "Wijzig de status van het evenement handmatig. Zonder overschrijving gelden de normale overgangsregels.",
+        "apply": "Status wijzigen",
+        "success": "Evenementstatus gewijzigd.",
+        "error": "De evenementstatus kon niet worden gewijzigd."
       }
     },
     "speakers": {
@@ -697,7 +704,11 @@
       },
       "accessibility": {
         "publishingPhase": "{{phase}} publiceren"
-      }
+      },
+      "revertPhase": "Publicatie {{phase}} terugdraaien",
+      "revertConfirmTitle": "Publicatie {{phase}} terugdraaien?",
+      "revertConfirmText": "De openbare website gaat terug naar de vorige fase. Wat {{phase}} toonde, is niet meer zichtbaar voor bezoekers.",
+      "revertConfirmButton": "Terugdraaien"
     },
     "validation": {
       "readyToPublish": "Klaar om te publiceren",

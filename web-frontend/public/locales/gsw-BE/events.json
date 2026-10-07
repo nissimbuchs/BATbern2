@@ -228,6 +228,13 @@
         "closeNow": "Q&A jetz zuemache",
         "reopen": "Q&A ufmache",
         "saved": "Q&A-Iistellige gspeicheret"
+      },
+      "workflowState": {
+        "title": "Event-Status",
+        "description": "Dr Event-Status vo Hand ändere. Ohni Übersteuerig gälte di normale Übergangsregle.",
+        "apply": "Status ändere",
+        "success": "Event-Status g'änderet.",
+        "error": "Dr Event-Status het nid chönne g'änderet wärde."
       }
     },
     "speakers": {
@@ -700,7 +707,11 @@
       },
       "accessibility": {
         "publishingPhase": "{{phase}} veröffentliche"
-      }
+      },
+      "revertPhase": "Veröffentlechig {{phase}} zrüggnä",
+      "revertConfirmTitle": "Veröffentlechig {{phase}} zrüggnä?",
+      "revertConfirmText": "D'öffentlechi Websyte geit uf di vorderi Phase zrügg. Was mit {{phase}} sichtbar isch gsi, gseh d'Bsuecher nümm.",
+      "revertConfirmButton": "Zrüggnä"
     },
     "validation": {
       "readyToPublish": "Beriit zum Veröffentliche",

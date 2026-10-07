@@ -180,6 +180,13 @@
         "closeNow": "Q&A jetzt schließen",
         "reopen": "Q&A öffnen",
         "saved": "Q&A-Einstellungen gespeichert"
+      },
+      "workflowState": {
+        "title": "Event-Status",
+        "description": "Den Event-Status von Hand ändern. Ohne Übersteuerung gelten die normalen Übergangsregeln.",
+        "apply": "Status ändern",
+        "success": "Event-Status geändert.",
+        "error": "Der Event-Status konnte nicht geändert werden."
       }
     },
     "participantTable": {
@@ -711,7 +718,11 @@
       },
       "accessibility": {
         "publishingPhase": "Veröffentliche {{phase}}"
-      }
+      },
+      "revertPhase": "Veröffentlichung {{phase}} zurücknehmen",
+      "revertConfirmTitle": "Veröffentlichung {{phase}} zurücknehmen?",
+      "revertConfirmText": "Die öffentliche Website fällt auf die vorherige Phase zurück. Was mit {{phase}} sichtbar war, sehen Besucher nicht mehr.",
+      "revertConfirmButton": "Zurücknehmen"
     },
     "validation": {
       "readyToPublish": "Bereit zur Veröffentlichung",

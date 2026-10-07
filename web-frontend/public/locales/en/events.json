@@ -180,6 +180,13 @@
         "closeNow": "Close Q&A now",
         "reopen": "Open Q&A",
         "saved": "Q&A settings saved"
+      },
+      "workflowState": {
+        "title": "Event state",
+        "description": "Change the event state by hand. Without override, the normal transition rules apply.",
+        "apply": "Change state",
+        "success": "Event state changed.",
+        "error": "The event state could not be changed."
       }
     },
     "participantTable": {
@@ -711,7 +718,11 @@
       },
       "accessibility": {
         "publishingPhase": "Publishing {{phase}}"
-      }
+      },
+      "revertPhase": "Revert {{phase}} publication",
+      "revertConfirmTitle": "Revert the {{phase}} publication?",
+      "revertConfirmText": "The public website goes back to the previous phase. What {{phase}} showed is no longer visible to visitors.",
+      "revertConfirmButton": "Revert"
     },
     "validation": {
       "readyToPublish": "Ready to Publish",
