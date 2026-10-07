@@ -20,6 +20,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.test.context.transaction.TestTransaction;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -29,6 +30,7 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
@@ -36,6 +38,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -74,6 +77,9 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
     @MockitoBean
     private UserApiClient userApiClient;
 
+    @Autowired
+    private org.springframework.cache.CacheManager cacheManager;
+
     private static final String EVENT_CODE = "BATbern888";
     private static final String ORGANIZER = "organizer.user";
     private static final String SPEAKER_USERNAME = "jane.smith";
@@ -83,6 +89,7 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
         statusHistoryRepository.deleteAll();
         speakerPoolRepository.deleteAll();
         eventRepository.deleteAll();
@@ -163,6 +170,46 @@ class SpeakerPromoteControllerIntegrationTest extends AbstractIntegrationTest {
         assertThat(history.get(0).getPreviousStatus()).isEqualTo(SpeakerWorkflowState.CONTACTED);
         assertThat(history.get(0).getNewStatus()).isEqualTo(SpeakerWorkflowState.READY);
         assertThat(history.get(0).getChangedByUsername()).isEqualTo(ORGANIZER);
+    }
+
+    // -------- Cache coherence (bug 2026-10-07) --------
+
+    @Test
+    @WithMockUser(username = ORGANIZER, roles = {"ORGANIZER"})
+    @DisplayName("should_showNewSession_when_eventWithSessionsWasCachedBeforePromote")
+    void should_showNewSession_when_eventWithSessionsWasCachedBeforePromote() throws Exception {
+        // Promote creates the speaker's session (Story 11.E.8). The organizer's Speakers & Agenda
+        // tab reads GET /events/{code}?include=sessions, which is cached for 15 minutes; promote
+        // did not evict it, so a freshly promoted speaker was missing from the agenda.
+        // The eviction runs after commit, so this test commits for real (the class default is a
+        // rolled-back test transaction) and removes its data afterwards.
+        SpeakerPool speaker = createSpeaker(SpeakerWorkflowState.CONTACTED);
+        TestTransaction.flagForCommit();
+        TestTransaction.end();
+        try {
+            mockMvc.perform(get("/api/v1/events/{code}", EVENT_CODE).param("include", "sessions"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sessions", hasSize(0)));
+
+            mockMvc.perform(post("/api/v1/events/{code}/speakers/{id}/promote", EVENT_CODE, speaker.getId())
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("""
+                                    { "email": "%s", "firstName": "Jane", "lastName": "Smith" }
+                                    """.formatted(SPEAKER_EMAIL)))
+                    .andExpect(status().isOk());
+
+            mockMvc.perform(get("/api/v1/events/{code}", EVENT_CODE).param("include", "sessions"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.sessions", hasSize(1)));
+        } finally {
+            // Committed data: remove it (FKs from events cascade) and leave a fresh test
+            // transaction for the framework to roll back.
+            TestTransaction.start();
+            eventRepository.deleteById(testEvent.getId());
+            TestTransaction.flagForCommit();
+            TestTransaction.end();
+            TestTransaction.start();
+        }
     }
 
     // -------- AC2: 400 paths --------

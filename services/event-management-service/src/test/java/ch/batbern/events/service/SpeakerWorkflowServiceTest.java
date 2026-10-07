@@ -104,6 +104,11 @@ class SpeakerWorkflowServiceTest {
     private static final UUID EVENT_ID = UUID.randomUUID();
     private static final String ORGANIZER = "organizer.user";
 
+    // Real in-memory cache manager: lets tests assert that a transition clears the event cache.
+    private final org.springframework.cache.concurrent.ConcurrentMapCacheManager cacheManager =
+            new org.springframework.cache.concurrent.ConcurrentMapCacheManager(
+                    ch.batbern.events.config.CacheConfig.EVENT_WITH_INCLUDES_CACHE);
+
     @BeforeEach
     void setUp() {
         service = new SpeakerWorkflowService(
@@ -123,7 +128,8 @@ class SpeakerWorkflowServiceTest {
                 applicationEventPublisher,
                 domainEventPublisher,
                 primarySpeakerResolver,
-                speakerAutoRegistrationService
+                speakerAutoRegistrationService,
+                cacheManager
         );
         // Story 11.E.9: every transition that publishes SpeakerPromotedToReadyEvent or
         // calls requireUsername now goes through the resolver. Default stub matches
@@ -274,6 +280,23 @@ class SpeakerWorkflowServiceTest {
 
         verify(applicationEventPublisher, never()).publishEvent(any(SpeakerPromotedToReadyEvent.class));
         verify(applicationEventPublisher, never()).publishEvent(any(SpeakerAcceptedEvent.class));
+    }
+
+    @Test
+    @DisplayName("should_clearEventWithIncludesCache_when_speakerStateChanges")
+    void should_clearEventWithIncludesCache_when_speakerStateChanges() {
+        // Bug 2026-10-07: a promoted speaker's new session was missing from the organizer's
+        // agenda for up to 15 minutes, and public visibility now depends on the speaker state.
+        var cache = cacheManager.getCache(ch.batbern.events.config.CacheConfig.EVENT_WITH_INCLUDES_CACHE);
+        cache.put("BATbern60_sessions_organizer", "stale");
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.IDENTIFIED);
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
+
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.CONTACTED, ORGANIZER, null);
+
+        assertThat(cache.get("BATbern60_sessions_organizer")).isNull();
     }
 
     @Test

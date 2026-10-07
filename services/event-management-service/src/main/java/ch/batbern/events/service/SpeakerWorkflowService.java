@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionContentVersion;
@@ -34,9 +35,13 @@ import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
 import java.util.Locale;
@@ -121,6 +126,9 @@ public class SpeakerWorkflowService {
     // Spec: auto-participant-email-aliases-excel-export F1 — auto-register accepted speakers
     // as event participants at the two hook points exercised by this service.
     private final SpeakerAutoRegistrationService speakerAutoRegistrationService;
+    // Event reads with ?include=sessions are cached for 15 minutes; a state change alters which
+    // sessions exist (READY creates one) and which the public may see (bug fix 2026-10-07).
+    private final CacheManager cacheManager;
 
     // Story 11.E.2: speaker-portal login URL embedded in the Cognito-flow invitation email.
     // The fallback default is the production URL — keep for backward compatibility but warn
@@ -192,6 +200,7 @@ public class SpeakerWorkflowService {
         // 6. Persist new state — the ONLY production-code call to SpeakerPool#setStatus.
         speaker.setStatus(target);
         SpeakerPool persisted = speakerPoolRepository.save(speaker);
+        evictEventReadCacheAfterCommit();
 
         // 7. Write status-history row (skip when the caller's own audit log already captures
         //    this change — e.g. SpeakerOutreachService writes an OutreachHistory row and asks
@@ -207,6 +216,31 @@ public class SpeakerWorkflowService {
         publishStateSpecificEvents(persisted, event, current, target, username);
 
         return new TransitionResult(persisted, historyRow);
+    }
+
+    /**
+     * Clear the event-with-includes cache once the transition is committed. Clearing earlier would
+     * let a concurrent read re-cache the pre-commit state. Every status change runs through
+     * {@link #transition}, so this one hook covers promote, kanban moves, speaker responses and
+     * content review alike.
+     */
+    private void evictEventReadCacheAfterCommit() {
+        Runnable evict = () -> {
+            Cache cache = cacheManager.getCache(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
+            if (cache != null) {
+                cache.clear();
+            }
+        };
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    evict.run();
+                }
+            });
+        } else {
+            evict.run();
+        }
     }
 
     private boolean isAllowed(SpeakerWorkflowState from, SpeakerWorkflowState to) {
