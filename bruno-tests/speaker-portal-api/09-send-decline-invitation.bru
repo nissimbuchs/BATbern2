@@ -14,9 +14,14 @@ auth:bearer {
   token: {{authToken}}
 }
 
+script:pre-request {
+  const d = new Date(Date.now() + 30 * 24 * 3600 * 1000);
+  bru.setVar("inviteResponseDeadline", d.toISOString().slice(0, 10));
+}
+
 body:json {
   {
-    "responseDeadline": "2026-07-01"
+    "responseDeadline": "{{inviteResponseDeadline}}"
   }
 }
 
@@ -26,4 +31,10 @@ tests {
     const body = res.getBody();
     expect(body.status).to.equal('INVITED');
   });
+}
+
+docs {
+  2026-10-07: the response deadline was hard-coded to 2026-07-01 and has been
+  rejected ("Response deadline must be in the future") since that date. It is
+  now computed 30 days ahead in script:pre-request.
 }
