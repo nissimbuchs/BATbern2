@@ -20,6 +20,7 @@ import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.ApplicationContext;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -684,6 +685,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_includeSessions_when_includeSessionsRequested")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // sessions on /events*: organizers only
     void should_includeSessions_when_includeSessionsRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
@@ -701,6 +703,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_includeMultiple_when_multipleIncludesRequested")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // sessions on /events*: organizers only
     void should_includeMultiple_when_multipleIncludesRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
@@ -1403,6 +1406,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_cacheExpanded_when_includesUsed")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // sessions on /events*: organizers only
     void should_cacheExpanded_when_includesUsed() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 

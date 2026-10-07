@@ -8,6 +8,7 @@ import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.EnumSource;
 import org.junit.jupiter.params.provider.NullSource;
 import org.junit.jupiter.params.provider.ValueSource;
@@ -217,6 +218,62 @@ class PublicSessionVisibilityPolicyTest {
                 List.of(pool(talk, SpeakerWorkflowState.INVITED)), NOW);
 
         assertThat(visible).isEmpty();
+    }
+
+    // ----------------------------------------------------------------------------------------
+    // Public read model decisions (2026-10-07)
+    // ----------------------------------------------------------------------------------------
+
+    @ParameterizedTest
+    @ValueSource(strings = {"topic", "speakers", "agenda", "SPEAKERS"})
+    @DisplayName("should_bePubliclyVisible_when_phasePublished")
+    void should_bePubliclyVisible_when_phasePublished(String phase) {
+        assertThat(policy.isPubliclyVisible(upcomingEvent(phase))).isTrue();
+    }
+
+    @ParameterizedTest
+    @NullSource
+    @ValueSource(strings = {"none", ""})
+    @DisplayName("should_notBePubliclyVisible_when_unpublished")
+    void should_notBePubliclyVisible_when_unpublished(String phase) {
+        assertThat(policy.isPubliclyVisible(upcomingEvent(phase))).isFalse();
+    }
+
+    @ParameterizedTest
+    @EnumSource(value = EventWorkflowState.class, names = {"EVENT_COMPLETED", "ARCHIVED"})
+    @DisplayName("should_bePubliclyVisible_when_completedOrArchivedWithoutPhase")
+    void should_bePubliclyVisible_when_completedOrArchivedWithoutPhase(EventWorkflowState state) {
+        Event event = upcomingEvent(null);
+        event.setWorkflowState(state);
+
+        assertThat(policy.isPubliclyVisible(event)).isTrue();
+    }
+
+    @ParameterizedTest
+    @CsvSource({"topic,false", "speakers,false", "agenda,true"})
+    @DisplayName("should_publishSessionDetailsOnlyFromAgenda_when_eventUpcoming")
+    void should_publishSessionDetailsOnlyFromAgenda_when_eventUpcoming(String phase, boolean expected) {
+        assertThat(policy.sessionDetailsPublic(upcomingEvent(phase), NOW)).isEqualTo(expected);
+    }
+
+    @Test
+    @DisplayName("should_publishSessionDetails_when_eventInThePast")
+    void should_publishSessionDetails_when_eventInThePast() {
+        Event event = upcomingEvent("speakers");
+        event.setDate(NOW.minus(30, ChronoUnit.DAYS));
+
+        assertThat(policy.sessionDetailsPublic(event, NOW)).isTrue();
+    }
+
+    @Test
+    @DisplayName("should_treatNetworkingAsSpeakerSession_when_filtering")
+    void should_treatNetworkingAsSpeakerSession_when_filtering() {
+        // networking is not structural (owner decision 2026-10-07): without a reviewed speaker it
+        // stays hidden in the AGENDA phase, unlike lunch
+        Event event = upcomingEvent("agenda");
+        Session networking = structural("networking", true);
+
+        assertThat(policy.filterForPublic(event, List.of(networking), List.of(), NOW)).isEmpty();
     }
 
     // ----------------------------------------------------------------------------------------

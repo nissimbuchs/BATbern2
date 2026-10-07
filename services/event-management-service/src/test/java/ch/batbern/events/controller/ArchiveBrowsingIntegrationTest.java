@@ -16,6 +16,7 @@ import ch.batbern.shared.types.EventWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
@@ -278,6 +279,7 @@ public class ArchiveBrowsingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // sessions on /events*: organizers only
     void should_expandSessions_when_includeSessionsRequested() throws Exception {
         // RED PHASE: This test MUST FAIL
         // Expected failure: Sessions not loaded in response
@@ -298,6 +300,7 @@ public class ArchiveBrowsingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // sessions on /events*: organizers only
     void should_expandSpeakers_when_includeSpeakersRequested() throws Exception {
         // RED PHASE: This test MUST FAIL
         // Expected failure: Speakers not loaded in sessions
@@ -317,6 +320,7 @@ public class ArchiveBrowsingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // sessions on /events*: organizers only
     void should_expandAllResources_when_multipleIncludesRequested() throws Exception {
         // RED PHASE: This test MUST FAIL
         // Expected failure: Combined expansion not implemented
@@ -516,6 +520,7 @@ public class ArchiveBrowsingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // sessions on /events*: organizers only
     void should_preventNPlusOneQueries_when_expandingSessionsAndSpeakers() throws Exception {
         // RED PHASE: This test will FAIL or PASS depending on implementation
         // CRITICAL: Validates that sessions and speakers are loaded efficiently

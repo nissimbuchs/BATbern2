@@ -208,8 +208,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/v1/config").permitAll()
 
                         // Story 4.1.3: Public event discovery endpoints (no auth required)
-                        .requestMatchers(HttpMethod.GET, "/api/v1/events/current").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/current", "/api/v1/public/events").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/v1/events/*", "/api/v1/public/events/*").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/*").permitAll()
 

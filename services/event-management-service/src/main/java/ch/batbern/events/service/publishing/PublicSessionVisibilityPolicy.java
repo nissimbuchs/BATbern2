@@ -28,7 +28,7 @@ import java.util.UUID;
  *   <li>SPEAKERS: sessions whose speaker is ACCEPTED or later. The session list itself is not
  *       rendered publicly in this phase; the sessions carry the speakers for the speaker grid.</li>
  *   <li>AGENDA: sessions with an assigned slot whose speaker is QUALITY_REVIEWED, plus slotted
- *       structural sessions (moderation, breaks, lunch, aperitif, networking).</li>
+ *       structural sessions (moderation, break, lunch, aperitif; {@link Session#isStructuralType}).</li>
  * </ul>
  * Completed, archived and past events are returned unfiltered (archive).
  *
@@ -38,9 +38,6 @@ import java.util.UUID;
  */
 @Component
 public class PublicSessionVisibilityPolicy {
-
-    static final Set<String> STRUCTURAL_SESSION_TYPES =
-            Set.of("moderation", "break", "lunch", "aperitif", "networking");
 
     private static final Set<SpeakerWorkflowState> SPEAKERS_PHASE_VISIBLE = EnumSet.of(
             SpeakerWorkflowState.ACCEPTED,
@@ -85,6 +82,27 @@ public class PublicSessionVisibilityPolicy {
     }
 
     /**
+     * Whether the public website may show this event at all: it has a published phase, or it is
+     * completed or archived (archive). Unpublished drafts are never public.
+     */
+    public boolean isPubliclyVisible(Event event) {
+        if (UNFILTERED_STATES.contains(event.getWorkflowState())) {
+            return true;
+        }
+        String phase = normalizedPhase(event);
+        return phase.equals("topic") || phase.equals("speakers") || phase.equals("agenda");
+    }
+
+    /**
+     * Whether the public may see sessions and talk titles, not just who speaks. From the AGENDA
+     * phase on, and for past/completed/archived events. In the SPEAKERS phase only the lineup is
+     * public (owner decision 2026-10-07: no session list, no talk titles).
+     */
+    public boolean sessionDetailsPublic(Event event, Instant now) {
+        return !isFiltered(event, now) || normalizedPhase(event).equals("agenda");
+    }
+
+    /**
      * Whether {@link #filterForPublic} restricts this event at all. Callers use it to keep
      * the organizer-independent cache key stable for archive events.
      */
@@ -105,8 +123,7 @@ public class PublicSessionVisibilityPolicy {
     }
 
     private static boolean isStructural(Session session) {
-        return session.getSessionType() != null
-                && STRUCTURAL_SESSION_TYPES.contains(session.getSessionType().toLowerCase(Locale.ROOT));
+        return Session.isStructuralType(session.getSessionType());
     }
 
     /**
