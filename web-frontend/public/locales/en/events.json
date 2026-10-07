@@ -180,6 +180,13 @@
         "closeNow": "Close Q&A now",
         "reopen": "Open Q&A",
         "saved": "Q&A settings saved"
+      },
+      "workflowState": {
+        "title": "Event state",
+        "description": "Change the event state by hand. Without override, the normal transition rules apply.",
+        "apply": "Change state",
+        "success": "Event state changed.",
+        "error": "The event state could not be changed."
       }
     },
     "participantTable": {
@@ -604,7 +611,8 @@
     "maxSlotsRequired": "Maximum slots is required",
     "slotDurationMinimum": "Slot duration must be at least 15 minutes",
     "minSlotsLessThanMax": "Minimum slots must be less than or equal to maximum slots",
-    "defaultCapacityPositive": "Default capacity must be a positive number"
+    "defaultCapacityPositive": "Default capacity must be a positive number",
+    "typicalStartTimeRequired": "Start time is required."
   },
   "errors": {
     "loadFailed": "Failed to load events",
@@ -711,7 +719,11 @@
       },
       "accessibility": {
         "publishingPhase": "Publishing {{phase}}"
-      }
+      },
+      "revertPhase": "Revert {{phase}} publication",
+      "revertConfirmTitle": "Revert the {{phase}} publication?",
+      "revertConfirmText": "The public website goes back to the previous phase. What {{phase}} showed is no longer visible to visitors.",
+      "revertConfirmButton": "Revert"
     },
     "validation": {
       "readyToPublish": "Ready to Publish",

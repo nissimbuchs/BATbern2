@@ -113,6 +113,14 @@ describe('SpeakerGrid', () => {
     expect(screen.getByText('Green Building Innovations')).toBeInTheDocument(); // presentationTitle
   });
 
+  it('should_hideSessionTitles_when_showSessionTitlesIsFalse', () => {
+    renderWithProviders(<SpeakerGrid sessions={mockSessions} showSessionTitles={false} />);
+
+    expect(screen.getAllByTestId('speaker-card').length).toBeGreaterThan(0);
+    expect(screen.queryByText('Opening Keynote: Future of Architecture')).not.toBeInTheDocument();
+    expect(screen.queryByText('Green Building Innovations')).not.toBeInTheDocument();
+  });
+
   it('should_storeSessionDescription_when_sessionHasDescription', () => {
     // Session description is stored in speaker data but not displayed in card
     // Only session title and speaker bio are shown

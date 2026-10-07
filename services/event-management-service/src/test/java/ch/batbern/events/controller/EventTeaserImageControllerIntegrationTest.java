@@ -81,11 +81,13 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
         teaserImageRepository.deleteAll();
         eventRepository.deleteAll();
         createTestEvent();
-        // Evict event cache so GET tests see fresh DB state (cache is shared across test methods)
+        // Clear event caches so GET tests see fresh DB state (cache is shared across test methods).
+        // Clear rather than evict one key: the event cache key carries an audience suffix
+        // (organizer vs public), so a hand-built key no longer matches.
         cacheManager.getCacheNames().forEach(name -> {
             var cache = cacheManager.getCache(name);
             if (cache != null) {
-                cache.evict(EVENT_CODE + "_none");
+                cache.clear();
             }
         });
     }

@@ -223,6 +223,13 @@
         "closeNow": "Cerrar Q&A ahora",
         "reopen": "Abrir Q&A",
         "saved": "Ajustes de Q&A guardados"
+      },
+      "workflowState": {
+        "title": "Estado del evento",
+        "description": "Cambia manualmente el estado del evento. Sin anulación se aplican las reglas de transición habituales.",
+        "apply": "Cambiar estado",
+        "success": "Estado del evento cambiado.",
+        "error": "No se pudo cambiar el estado del evento."
       }
     },
     "speakers": {
@@ -590,7 +597,8 @@
     "maxSlotsRequired": "El número máximo de espacios es obligatorio",
     "slotDurationMinimum": "La duración del espacio debe ser de al menos 15 minutos",
     "minSlotsLessThanMax": "El número mínimo de espacios debe ser menor o igual al máximo",
-    "defaultCapacityPositive": "La capacidad predeterminada debe ser un número positivo"
+    "defaultCapacityPositive": "La capacidad predeterminada debe ser un número positivo",
+    "typicalStartTimeRequired": "La hora de inicio es obligatoria."
   },
   "errors": {
     "loadFailed": "Error al cargar eventos",
@@ -697,7 +705,11 @@
       },
       "accessibility": {
         "publishingPhase": "Publicando {{phase}}"
-      }
+      },
+      "revertPhase": "Revertir publicación de {{phase}}",
+      "revertConfirmTitle": "¿Revertir la publicación de {{phase}}?",
+      "revertConfirmText": "El sitio web público vuelve a la fase anterior. Lo que mostraba {{phase}} deja de ser visible para los visitantes.",
+      "revertConfirmButton": "Revertir"
     },
     "validation": {
       "readyToPublish": "Listo para publicar",

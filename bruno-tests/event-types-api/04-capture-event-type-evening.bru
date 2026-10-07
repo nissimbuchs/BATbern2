@@ -21,13 +21,18 @@ tests {
 
   test("save EVENING baseline for the next two PUT tests", function() {
     const body = res.getBody();
-    bru.setVar("eveningMinSlots", body.minSlots);
-    bru.setVar("eveningMaxSlots", body.maxSlots);
-    bru.setVar("eveningSlotDuration", body.slotDuration);
-    bru.setVar("eveningTheoreticalSlotsAM", body.theoreticalSlotsAM);
-    bru.setVar("eveningBreakSlots", body.breakSlots);
-    bru.setVar("eveningLunchSlots", body.lunchSlots);
-    bru.setVar("eveningDefaultCapacity", body.defaultCapacity);
+    const fields = ["minSlots", "maxSlots", "slotDuration", "theoreticalSlotsAM", "breakSlots", "lunchSlots", "defaultCapacity", "typicalStartTime", "typicalEndTime", "moderationStartDuration", "moderationEndDuration", "breakDuration", "lunchDuration", "aperitifSlots", "aperitifDuration", "aperitifPosition"];
+    const baseline = {};
+    fields.forEach((f) => {
+      if (body[f] !== undefined) {
+        baseline[f] = body[f];
+      }
+    });
+    bru.setVar("eveningBaseline", JSON.stringify(baseline));
+  });
+
+  test("EVENING template has a start time (the timetable is anchored to it)", function() {
+    expect(res.getBody().typicalStartTime).to.be.a("string");
   });
 }
 

@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.dto.TimetableResponse;
@@ -77,12 +78,26 @@ public class TimetableService {
      * @return Ordered list of {@link TimetableSlot} covering the full event day
      */
     public List<TimetableSlot> computeTimeline(AgendaConfig config, LocalDate eventDate) {
+        return computeTimeline(config, eventDate, null);
+    }
+
+    /**
+     * Same as {@link #computeTimeline(AgendaConfig, LocalDate)}, falling back to the event type's
+     * conventional start time when the config has none.
+     *
+     * @param eventType the event's type, used only when {@code config} has no typical start time
+     */
+    public List<TimetableSlot> computeTimeline(AgendaConfig config, LocalDate eventDate, EventType eventType) {
         List<TimetableSlot> slots = new ArrayList<>();
 
         // Read config with safe defaults
-        LocalTime startTime = config.getTypicalStartTime() != null
-                ? config.getTypicalStartTime()
-                : LocalTime.of(9, 0);
+        LocalTime startTime = config.getTypicalStartTime();
+        if (startTime == null) {
+            // Bug 2026-10-07: a fixed 09:00 here put BATbern60 (evening) at 09:00
+            startTime = EventTypeDefaults.startTime(eventType);
+            log.warn("Agenda config for event type {} has no typical start time, using default {}",
+                    eventType, startTime);
+        }
         int maxSlots = config.getMaxSlots() != null ? config.getMaxSlots() : 0;
         int slotDuration = config.getSlotDuration() != null ? config.getSlotDuration() : 45;
         int breakSlots = config.getBreakSlots() != null ? config.getBreakSlots() : 0;
@@ -245,7 +260,7 @@ public class TimetableService {
         LocalDate eventDate = event.getDate()
                 .atZone(ZURICH)
                 .toLocalDate();
-        List<TimetableSlot> virtualSlots = computeTimeline(config, eventDate);
+        List<TimetableSlot> virtualSlots = computeTimeline(config, eventDate, event.getEventType());
 
         // Load all DB sessions for this event
         List<Session> allSessions = sessionRepository.findByEventId(event.getId());

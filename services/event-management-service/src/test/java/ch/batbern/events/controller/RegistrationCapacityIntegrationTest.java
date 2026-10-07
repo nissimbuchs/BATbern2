@@ -24,6 +24,7 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Map;
 
@@ -78,8 +79,8 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
                 .eventCode(EVENT_CODE)
                 .title("Capacity Test Event")
                 .eventNumber(9001)
-                .date(Instant.parse("2026-09-15T18:00:00Z"))
-                .registrationDeadline(Instant.parse("2026-09-10T23:59:00Z"))
+                .date(Instant.now().plus(60, ChronoUnit.DAYS))
+                .registrationDeadline(Instant.now().plus(55, ChronoUnit.DAYS))
                 .venueName("Test Venue")
                 .venueAddress("Teststrasse 1, Bern")
                 .venueCapacity(200)
@@ -96,8 +97,8 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
                 .eventCode(EVENT_CODE_UNLIMITED)
                 .title("Unlimited Event")
                 .eventNumber(9002)
-                .date(Instant.parse("2026-10-15T18:00:00Z"))
-                .registrationDeadline(Instant.parse("2026-10-10T23:59:00Z"))
+                .date(Instant.now().plus(90, ChronoUnit.DAYS))
+                .registrationDeadline(Instant.now().plus(85, ChronoUnit.DAYS))
                 .venueName("Big Hall")
                 .venueAddress("Grossstrasse 99, Bern")
                 .venueCapacity(500)

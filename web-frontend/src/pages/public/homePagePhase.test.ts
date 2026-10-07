@@ -159,8 +159,10 @@ describe('showSessionQna', () => {
   it('mounts in ARCHIVE when Q&A enabled', () =>
     expect(showSessionQna({ kind: 'ARCHIVE', hasEventPhotos: false }, enabled)).toBe(true));
 
-  it('mounts PRE_EVENT in the SPEAKERS sub-phase (pre-event Q&A / manual open)', () =>
-    expect(showSessionQna({ kind: 'PRE_EVENT', sub: 'SPEAKERS' }, enabled)).toBe(true));
+  // 2026-10-07: the SPEAKERS phase shows no sessions, so there is no card to hang a thread on.
+  // Pre-event Q&A becomes visible with the AGENDA timeline.
+  it('does NOT mount PRE_EVENT in the SPEAKERS sub-phase (no session cards in that phase)', () =>
+    expect(showSessionQna({ kind: 'PRE_EVENT', sub: 'SPEAKERS' }, enabled)).toBe(false));
 
   it('does NOT mount PRE_EVENT in the TOPIC sub-phase (no session cards)', () =>
     expect(showSessionQna({ kind: 'PRE_EVENT', sub: 'TOPIC' }, enabled)).toBe(false));
@@ -234,7 +236,9 @@ describe('getSectionVisibility — PRE_EVENT SPEAKERS', () => {
   const vis = getSectionVisibility(phase);
 
   it('shows speaker grid', () => expect(vis.speakerGrid).toBe(true));
-  it('shows session cards', () => expect(vis.sessionCards).toBe(true));
+  // 2026-10-07: SPEAKERS phase publishes the lineup only. No session list, no talk titles.
+  it('hides session cards', () => expect(vis.sessionCards).toBe(false));
+  it('hides talk titles on speaker cards', () => expect(vis.speakerSessionTitles).toBe(false));
   it('hides event program', () => expect(vis.eventProgram).toBe(false));
   it('hides session materials', () => expect(vis.showSessionMaterials).toBe(false));
 });
@@ -249,6 +253,7 @@ describe('getSectionVisibility — PRE_EVENT AGENDA', () => {
 
   it('shows speaker grid', () => expect(vis.speakerGrid).toBe(true));
   it('hides session cards (replaced by timetable)', () => expect(vis.sessionCards).toBe(false));
+  it('shows talk titles on speaker cards', () => expect(vis.speakerSessionTitles).toBe(true));
   it('shows event program', () => expect(vis.eventProgram).toBe(true));
   it('hides session materials', () => expect(vis.showSessionMaterials).toBe(false));
 });

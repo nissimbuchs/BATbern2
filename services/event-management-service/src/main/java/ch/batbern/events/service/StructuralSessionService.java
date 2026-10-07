@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -84,8 +84,10 @@ public class StructuralSessionService {
         }
 
         // 4. Delegate timeline computation to TimetableService
-        LocalDate eventDate = LocalDate.ofInstant(event.getDate(), ZoneOffset.UTC);
-        List<TimetableSlot> timeline = timetableService.computeTimeline(config, eventDate);
+        // Calendar day in Bern time, as TimetableService.getTimetable does. UTC put an event stored
+        // between 00:00 and 02:00 Bern time on the previous day (fix 2026-10-07).
+        LocalDate eventDate = LocalDate.ofInstant(event.getDate(), ZoneId.of("Europe/Zurich"));
+        List<TimetableSlot> timeline = timetableService.computeTimeline(config, eventDate, event.getEventType());
 
         // 5. Persist structural slots (skip SPEAKER_SLOT — those are implicit gaps)
         String organizerUsername = event.getOrganizerUsername();

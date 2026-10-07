@@ -181,6 +181,17 @@ class AgendaConfigControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("should_return400_when_typicalStartTimeMissing")
+    @WithMockUser(username = "marco.organizer", roles = {"ORGANIZER"})
+    void should_return400_when_typicalStartTimeMissing() throws Exception {
+        saveEvent("BATbern89", 9089, EventType.EVENING);
+        mockMvc.perform(put("/api/v1/events/BATbern89/agenda-config")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(VALID_BODY.replace("\"typicalStartTime\":\"13:00\",", "")))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
     @DisplayName("should_return400_when_malformedTime")
     @WithMockUser(username = "marco.organizer", roles = {"ORGANIZER"})
     void should_return400_when_malformedTime() throws Exception {

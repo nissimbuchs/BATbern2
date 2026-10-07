@@ -2,28 +2,27 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.entity.EventTypeConfiguration;
-import ch.batbern.events.repository.EventTypeRepository;
+import ch.batbern.events.entity.AgendaConfig;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
-import java.util.Optional;
 import java.util.Set;
 
 /**
  * Resolves event start/end times with cascading priority:
  * 1. Session times (earliest start / latest end) — only when agenda is published
- * 2. EventTypeConfiguration (typicalStartTime / typicalEndTime)
- * 3. Fallback: 16:00 Swiss time + 3 hours (standard BATbern event start)
+ * 2. Agenda config: the per-event override (Story 15.2) if present, else the event-type template,
+ *    resolved by {@link AgendaConfigResolver} exactly as the slot grid does
+ * 3. Fallback: the event type's conventional start ({@link EventTypeDefaults}) + 3 hours
  *
  * Shared by RegistrationEmailService and event API responses.
  */
@@ -41,7 +40,7 @@ public class EventTimeResolver {
             EventWorkflowState.ARCHIVED
     );
 
-    private final EventTypeRepository eventTypeRepository;
+    private final AgendaConfigResolver agendaConfigResolver;
     private final SessionRepository sessionRepository;
 
     public record TimeRange(ZonedDateTime start, ZonedDateTime end) {}
@@ -72,25 +71,28 @@ public class EventTimeResolver {
             }
         }
 
-        // Priority 2: Event type configuration
-        if (event.getEventType() != null) {
-            Optional<EventTypeConfiguration> config = eventTypeRepository.findByType(event.getEventType());
-            if (config.isPresent()) {
-                LocalTime startTime = config.get().getTypicalStartTime();
-                LocalTime endTime = config.get().getTypicalEndTime();
-                if (startTime != null) {
-                    ZonedDateTime start = eventDate.atTime(startTime).atZone(SWISS_ZONE);
-                    ZonedDateTime end = endTime != null
-                            ? eventDate.atTime(endTime).atZone(SWISS_ZONE)
-                            : start.plusHours(4);
-                    return new TimeRange(start, end);
-                }
-            }
+        // Priority 2: agenda config (per-event override, else template), same source as the slot grid
+        AgendaConfig config = resolveConfig(event);
+        if (config != null && config.getTypicalStartTime() != null) {
+            ZonedDateTime start = eventDate.atTime(config.getTypicalStartTime()).atZone(SWISS_ZONE);
+            ZonedDateTime end = config.getTypicalEndTime() != null
+                    ? eventDate.atTime(config.getTypicalEndTime()).atZone(SWISS_ZONE)
+                    : start.plusHours(4);
+            return new TimeRange(start, end);
         }
 
-        // Priority 3: Fallback — 16:00 Swiss time (standard BATbern event start)
-        ZonedDateTime start = eventDate.atTime(LocalTime.of(16, 0)).atZone(SWISS_ZONE);
+        // Priority 3: Fallback — the event type's conventional start time
+        ZonedDateTime start = eventDate.atTime(EventTypeDefaults.startTime(event.getEventType()))
+                .atZone(SWISS_ZONE);
         return new TimeRange(start, start.plusHours(3));
+    }
+
+    private AgendaConfig resolveConfig(Event event) {
+        try {
+            return agendaConfigResolver.resolve(event);
+        } catch (NotFoundException e) {
+            return null;
+        }
     }
 
     /**

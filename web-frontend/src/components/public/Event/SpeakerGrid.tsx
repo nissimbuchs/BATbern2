@@ -25,11 +25,13 @@ interface SpeakerWithSession {
 
 interface SpeakerGridProps {
   sessions: Session[];
+  /** Show the talk title on each card. False in the SPEAKERS phase (lineup only). */
+  showSessionTitles?: boolean;
 }
 
 const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch', 'aperitif']);
 
-export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
+export const SpeakerGrid = ({ sessions, showSessionTitles = true }: SpeakerGridProps) => {
   const { t } = useTranslation('events');
 
   // Aggregate speakers from non-structural sessions only
@@ -99,7 +101,9 @@ export const SpeakerGrid = ({ sessions }: SpeakerGridProps) => {
             </CardHeader>
             <CardContent className="pt-0">
               <div className="border-t border-zinc-800 pt-4">
-                <p className="text-sm font-medium text-blue-400 mb-2">{speaker.sessionTitle}</p>
+                {showSessionTitles && (
+                  <p className="text-sm font-medium text-blue-400 mb-2">{speaker.sessionTitle}</p>
+                )}
                 {speaker.bio && <p className="text-sm text-zinc-400 mt-2">{speaker.bio}</p>}
               </div>
             </CardContent>

@@ -339,6 +339,9 @@ describe('usePromoteSpeakerToReady', () => {
     });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['speakerPool', 'list', 'BAT142'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['speakerStatusSummary', 'BAT142'] });
+    // Promote creates the speaker's session: the Speakers & Agenda tab reads it from the event
+    // query, which must refetch (bug 2026-10-07: new session missing from the agenda).
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['event', 'BAT142'] });
   });
 
   it('should expose the error when the API returns 409 INVALID_PROMOTION_STATE', async () => {

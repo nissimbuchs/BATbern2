@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.entity.EventTypeConfiguration;
+import ch.batbern.events.repository.EventAgendaConfigRepository;
 import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -71,6 +72,9 @@ class RegistrationEmailServiceTest {
     @Mock
     private SessionRepository sessionRepository;
 
+    @Mock
+    private EventAgendaConfigRepository eventAgendaConfigRepository;
+
     private EventTimeResolver eventTimeResolver;
 
     @InjectMocks
@@ -91,7 +95,10 @@ class RegistrationEmailServiceTest {
     @BeforeEach
     void setUp() {
         // Create EventTimeResolver with mocked repos and inject into service
-        eventTimeResolver = new EventTimeResolver(eventTypeRepository, sessionRepository);
+        // Real resolver over mocked repositories: no per-event override (Mockito returns
+        // Optional.empty), so times come from the eventTypeRepository stubs below.
+        eventTimeResolver = new EventTimeResolver(
+                new AgendaConfigResolver(eventAgendaConfigRepository, eventTypeRepository), sessionRepository);
         ReflectionTestUtils.setField(registrationEmailService, "eventTimeResolver", eventTimeResolver);
 
         // Set configuration values

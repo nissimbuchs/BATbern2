@@ -137,6 +137,51 @@ describe('PublishingControls', () => {
     });
   });
 
+  describe('Revert Phase', () => {
+    const withPublished = (publishedPhases: string[]) =>
+      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
+        ...mockUsePublishing,
+        publishingStatus: { ...mockUsePublishing.publishingStatus, publishedPhases },
+      });
+
+    it('should not offer a revert when nothing is published', () => {
+      withPublished([]);
+      render(<PublishingControls eventCode="BATbern60" currentPhase="topic" />);
+
+      expect(screen.queryByTestId('revert-phase-button')).not.toBeInTheDocument();
+    });
+
+    it('should offer to revert the most recently published phase', () => {
+      withPublished(['topic', 'speakers']);
+      render(<PublishingControls eventCode="BATbern60" currentPhase="speakers" />);
+
+      expect(screen.getByTestId('revert-phase-button')).toHaveTextContent(
+        'publishing.controls.revertPhase'
+      );
+    });
+
+    it('should unpublish the latest phase only after the organizer confirms', async () => {
+      withPublished(['topic', 'speakers']);
+      render(<PublishingControls eventCode="BATbern60" currentPhase="speakers" />);
+
+      fireEvent.click(screen.getByTestId('revert-phase-button'));
+      expect(mockUsePublishing.unpublishPhase).not.toHaveBeenCalled();
+
+      fireEvent.click(await screen.findByTestId('confirm-revert-phase-button'));
+      expect(mockUsePublishing.unpublishPhase).toHaveBeenCalledWith('speakers');
+    });
+
+    it('should not unpublish when the organizer cancels the confirmation', async () => {
+      withPublished(['topic', 'speakers', 'agenda']);
+      render(<PublishingControls eventCode="BATbern60" currentPhase="agenda" />);
+
+      fireEvent.click(screen.getByTestId('revert-phase-button'));
+      fireEvent.click(await screen.findByTestId('cancel-revert-phase-button'));
+
+      expect(mockUsePublishing.unpublishPhase).not.toHaveBeenCalled();
+    });
+  });
+
   describe('Progressive Phase Ordering', () => {
     it('should disable speakers publish when topic not yet published', () => {
       render(<PublishingControls eventCode="BATbern142" currentPhase="speakers" />);

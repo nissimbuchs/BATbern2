@@ -35,6 +35,7 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -118,9 +119,10 @@ class StructuralSessionServiceTest {
         // generateStructuralSessions (e.g. EventNotFoundException, NotFoundException).
         TimetableService realTimetableService = new TimetableService(null, null, null, null);
         org.mockito.Mockito.lenient()
-                .when(timetableService.computeTimeline(any(AgendaConfig.class), any(LocalDate.class)))
+                .when(timetableService.computeTimeline(
+                        any(AgendaConfig.class), any(LocalDate.class), nullable(EventType.class)))
                 .thenAnswer(inv -> realTimetableService.computeTimeline(
-                        inv.getArgument(0), inv.getArgument(1)));
+                        inv.getArgument(0), inv.getArgument(1), inv.getArgument(2)));
 
         fullDayConfig = EventTypeConfiguration.builder()
                 .id(UUID.randomUUID())
@@ -283,5 +285,30 @@ class StructuralSessionServiceTest {
         assertThat(modStart.getStartTime().toString()).contains("2025-06-15T07:00:00Z");
         // endTime = start + 5 min
         assertThat(modStart.getEndTime().toString()).contains("2025-06-15T07:05:00Z");
+    }
+
+    @Test
+    @DisplayName("should_generateOnBernCalendarDay_when_eventInstantFallsOnPreviousDayInUtc")
+    void should_generateOnBernCalendarDay_when_eventInstantFallsOnPreviousDayInUtc() {
+        // 2025-06-15 00:30 in Bern (CEST) is 2025-06-14T22:30Z. Reading the calendar day in UTC
+        // put every structural session on June 14; TimetableService uses Bern time.
+        testEvent.setDate(Instant.parse("2025-06-14T22:30:00Z"));
+        when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(testEvent));
+        when(agendaConfigResolver.resolve(testEvent)).thenReturn(fullDayConfig);
+        when(sessionRepository.findByEventIdAndSessionTypeIn(any(), anyList())).thenReturn(List.of());
+
+        ArgumentCaptor<Session> sessionCaptor = ArgumentCaptor.forClass(Session.class);
+        when(slugGenerationService.generateSessionSlug(anyString())).thenReturn("test-slug");
+        when(slugGenerationService.ensureUniqueSlug(anyString(), any())).thenAnswer(
+                inv -> inv.getArgument(0, String.class) + "-1");
+        when(sessionRepository.save(sessionCaptor.capture())).thenAnswer(inv -> inv.getArgument(0));
+        when(sessionService.toSessionResponse(any(Session.class), anyString()))
+                .thenReturn(new SessionResponse());
+
+        structuralSessionService.generateStructuralSessions(EVENT_CODE, false);
+
+        // 09:00 CEST on June 15 = 07:00 UTC on June 15
+        assertThat(sessionCaptor.getAllValues().get(0).getStartTime().toString())
+                .isEqualTo("2025-06-15T07:00:00Z");
     }
 }

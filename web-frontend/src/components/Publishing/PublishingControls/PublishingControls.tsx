@@ -1,11 +1,25 @@
 import React, { useState } from 'react';
-import { Box, Button, Alert, Typography, CircularProgress, Stack, Tooltip } from '@mui/material';
+import {
+  Box,
+  Button,
+  Alert,
+  Typography,
+  CircularProgress,
+  Stack,
+  Tooltip,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogContentText,
+  DialogActions,
+} from '@mui/material';
 import {
   Error as ErrorIcon,
   CheckCircle as CheckIcon,
   Topic as TopicIcon,
   People as PeopleIcon,
   EventNote as AgendaIcon,
+  Undo as UndoIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
@@ -22,7 +36,9 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
   validationErrors = [],
 }) => {
   const { t } = useTranslation('events');
-  const { publishPhase, isPublishing, publishingStatus } = usePublishing(eventCode);
+  const { publishPhase, unpublishPhase, isPublishing, isUnpublishing, publishingStatus } =
+    usePublishing(eventCode);
+  const [revertDialogOpen, setRevertDialogOpen] = useState(false);
 
   const [isAnnouncingPublish, setIsAnnouncingPublish] = useState(false);
   const [publishingPhase, setPublishingPhase] = useState<PublishingPhase | null>(null);
@@ -116,6 +132,18 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
     return t(`publishing.controls.phase.${phase}`);
   };
 
+  // Only the most recently published phase can be reverted (agenda → speakers → topic → none).
+  const latestPublishedPhase: PublishingPhase | undefined = (
+    ['agenda', 'speakers', 'topic'] as PublishingPhase[]
+  ).find((phase) => isPhasePublished(phase));
+
+  const handleConfirmRevert = () => {
+    setRevertDialogOpen(false);
+    if (latestPublishedPhase) {
+      unpublishPhase(latestPublishedPhase);
+    }
+  };
+
   return (
     <Box>
       {/* Screen reader announcement for publish action */}
@@ -193,6 +221,55 @@ export const PublishingControls: React.FC<PublishingControlsProps> = ({
           );
         })}
       </Stack>
+
+      {/* Revert the latest publication, e.g. after an unintended auto-publish */}
+      {latestPublishedPhase && (
+        <>
+          <Button
+            variant="text"
+            color="warning"
+            size="small"
+            startIcon={isUnpublishing ? <CircularProgress size={20} /> : <UndoIcon />}
+            onClick={() => setRevertDialogOpen(true)}
+            disabled={isPublishing || isUnpublishing}
+            data-testid="revert-phase-button"
+          >
+            {t('publishing.controls.revertPhase', {
+              phase: getPhaseLabel(latestPublishedPhase),
+            })}
+          </Button>
+          <Dialog open={revertDialogOpen} onClose={() => setRevertDialogOpen(false)}>
+            <DialogTitle>
+              {t('publishing.controls.revertConfirmTitle', {
+                phase: getPhaseLabel(latestPublishedPhase),
+              })}
+            </DialogTitle>
+            <DialogContent>
+              <DialogContentText>
+                {t('publishing.controls.revertConfirmText', {
+                  phase: getPhaseLabel(latestPublishedPhase),
+                })}
+              </DialogContentText>
+            </DialogContent>
+            <DialogActions>
+              <Button
+                onClick={() => setRevertDialogOpen(false)}
+                data-testid="cancel-revert-phase-button"
+              >
+                {t('common:actions.cancel')}
+              </Button>
+              <Button
+                color="warning"
+                variant="contained"
+                onClick={handleConfirmRevert}
+                data-testid="confirm-revert-phase-button"
+              >
+                {t('publishing.controls.revertConfirmButton')}
+              </Button>
+            </DialogActions>
+          </Dialog>
+        </>
+      )}
     </Box>
   );
 };
