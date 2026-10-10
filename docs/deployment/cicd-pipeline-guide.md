@@ -147,7 +147,9 @@ Practical consequences:
 - Treat opening a PR as a production action. Draft PRs still fire it.
 - Merging N queued PRs means N sequential production deploys.
 - The `dependabot[bot]` exclusion is why dependency PRs are safe to accumulate — they never
-  deploy — but merging them does, once each.
+  deploy — but merging them does, once each. That is why they are not merged individually: the
+  monthly batch (`dependabot-batch-merge.yml`, #1076) collects the green ones into
+  `deps/batch-YYYY-MM`, and one person-opened PR from that branch is the month's single deploy.
 
 #### Three concurrent PRs: the middle deploy is silently cancelled (#967)
 

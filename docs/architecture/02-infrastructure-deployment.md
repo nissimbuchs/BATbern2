@@ -820,7 +820,7 @@ The `develop` branch has GitHub branch protection rules to prevent broken code f
 | `build-services (partner-coordination-service)` | Partner Coordination build and tests |
 | `build-services (attendee-experience-service)` | Attendee Experience build and tests |
 
-**Why this matters for Dependabot:** The monthly batch-merge workflow (`dependabot-batch-merge.yml`) uses `gh pr merge --auto --squash`. The `--auto` flag makes GitHub wait for all required status checks to pass before merging. Without required checks, PRs merge immediately — even if the Build Pipeline later fails.
+**Why this matters for Dependabot:** the monthly batch (`dependabot-batch-merge.yml`, #1076) includes a Dependabot PR only when these required checks are green on it, and the resulting batch PR merges through `auto-merge.yml` (`gh pr merge --auto --squash`), which waits for the same checks. A required check that never *runs* blocks exactly like a failing one, which is why nothing may push to a Dependabot branch with `GITHUB_TOKEN` (the runs would sit at `action_required`).
 
 **Managing protection rules** (API-only, not file-configurable):
 ```bash

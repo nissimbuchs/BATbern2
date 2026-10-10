@@ -743,44 +743,31 @@ make test  # Run all tests with coverage reports
 
 ### Automated Dependabot Updates
 
-Dependencies are automatically updated monthly by Dependabot with zero maintenance required.
+Dependabot opens grouped PRs monthly; **one batch a month** reaches production, not one deploy per PR.
 
-**Schedule**: First Monday of each month
-- 3:00-4:30 AM: Dependabot creates grouped PRs
-- 10:00 AM: Automated batch merge workflow processes PRs
+**Configuration**: `.github/dependabot.yml`: monthly, grouped, 2-5 open PRs per ecosystem. Dependabot PRs
+target `develop` and get full CI there, but never deploy (`build.yml`) and never auto-merge (`auto-merge.yml`).
 
-**Configuration**: `.github/dependabot.yml`
-- **Frequency**: Monthly (reduced from weekly to prevent PR accumulation)
-- **Grouping**: Related dependencies bundled together (AWS SDK, Spring Boot, Vitest, etc.)
-- **PR Limit**: 3-5 PRs per ecosystem (reduced from 10+ to minimize conflicts)
+**Monthly batch** (`.github/workflows/dependabot-batch-merge.yml`, first Monday 10:36 UTC, #1076):
+1. Closes Dependabot PRs whose update is already on `develop` (included in last month's batch).
+2. Builds `deps/batch-YYYY-MM` from `develop` and merges in every Dependabot PR whose **required checks are
+   green**, one merge commit per PR. Conflicting PRs wait for next month.
+3. PRs whose CI never ran or was cancelled get `@dependabot recreate`, so Dependabot pushes as itself.
+4. Pushes the branch and opens an issue "Dependabot batch YYYY-MM ready" with the link.
 
-**Automated Merge**: `.github/workflows/dependabot-batch-merge.yml`
-- Automatically rebases and merges non-conflicting PRs
-- Closes conflicting PRs (will be recreated next month with latest versions)
-- Runs full CI before merge (tests, lint, security scans)
-- Zero manual intervention required
+**The one manual step: open the batch PR from that issue.** That is the sign-off, and opening it is the one
+production deploy. A PR opened by the workflow token would trigger no CI, so it cannot be automated away.
 
-**Manual Intervention**:
+**Never rebase or push to a Dependabot branch with `GITHUB_TOKEN`** (`gh pr update-branch` included): the
+commit gets `github-actions[bot]` as committer, every run on it lands at `action_required`, and the required
+checks never run. That is how 14 PRs stalled in October 2026 (#1076, same class as #991).
+
 ```bash
-# Trigger batch merge manually (dry-run)
-gh workflow run dependabot-batch-merge.yml -f dry_run=true
-
-# Trigger batch merge manually (live)
-gh workflow run dependabot-batch-merge.yml -f dry_run=false
-
-# Check dependabot PRs status
-gh pr list --label dependencies
-
-# Manually merge a specific PR (if needed)
-gh pr merge <PR_NUMBER> --auto --squash
+gh workflow run dependabot-batch-merge.yml -f dry_run=true    # preview: builds the batch locally only
+gh workflow run dependabot-batch-merge.yml -f dry_run=false   # live, outside the monthly schedule
+gh pr list --author app/dependabot                            # open Dependabot PRs
 ```
 
-**Monitoring**:
-- Workflow runs: [Actions → Dependabot Batch Merge](../../actions/workflows/dependabot-batch-merge.yml)
-- PR summary: Check workflow run output for merge statistics
-- Failed runs: Review workflow logs, may require manual intervention
-
-**Expected PR Volume**: ~10-15 PRs per month (down from 40+ with weekly schedule)
 
 ## Troubleshooting
 
