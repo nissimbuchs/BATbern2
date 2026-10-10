@@ -752,7 +752,10 @@ target `develop` and get full CI there, but never deploy (`build.yml`) and never
 1. Closes Dependabot PRs whose update is already on `develop` (included in last month's batch).
 2. Builds `deps/batch-YYYY-MM` from `develop` and merges in every Dependabot PR whose **required checks are
    green**, one merge commit per PR. Conflicting PRs wait for next month.
-3. PRs whose CI never ran or was cancelled get `@dependabot recreate`, so Dependabot pushes as itself.
+3. PRs whose CI never ran or was cancelled are listed with a ready-to-paste `@dependabot recreate`
+   command. **A person has to send it**: Dependabot refuses the command from the workflow token. Never approve
+   the stuck runs instead: their actor is `github-actions[bot]`, which the deploy guard does not exclude.
+   Re-running the workflow within a month rebuilds an unopened batch branch.
 4. Pushes the branch and opens an issue "Dependabot batch YYYY-MM ready" with the link.
 
 **The one manual step: open the batch PR from that issue.** That is the sign-off, and opening it is the one

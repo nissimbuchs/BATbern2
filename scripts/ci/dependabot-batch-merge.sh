@@ -12,13 +12,15 @@ set -euo pipefail
 #   2. Creates deps/batch-YYYY-MM from develop and merges every open Dependabot PR whose
 #      REQUIRED checks are green into it (one merge commit per PR, so a failing bump is
 #      attributable). PRs that conflict with an earlier PR of the batch wait for next month.
-#   3. Pushes that branch and opens an issue with the link to open the batch PR.
+#   3. Pushes that branch and opens an issue with the link to open the batch PR (and the
+#      one-liner to recreate any stuck PRs).
 #
 # What it deliberately does NOT do:
 #   - Rebase or push to Dependabot's branches. A commit pushed with GITHUB_TOKEN has
 #     github-actions[bot] as committer, and every run on it lands at `action_required`, so
 #     the required checks never run (#1076, #991). PRs stuck that way (or with cancelled
-#     checks) get an `@dependabot recreate` comment instead: Dependabot then pushes as itself.
+#     checks) are listed for a person to comment `@dependabot recreate`: Dependabot ignores
+#     that command from this workflow's token, and then pushes as itself.
 #   - Open the batch PR. A PR opened with GITHUB_TOKEN triggers no workflows at all, so it
 #     could never build. A human opens it from the issue link. That is also the sign-off
 #     before the production deploy.
@@ -63,6 +65,7 @@ run() {
 INCLUDED=()
 EXCLUDED=()
 CLOSED=()
+NEEDS_RECREATE=()
 
 check_prerequisites() {
     if [ -z "${GH_TOKEN:-}" ]; then
@@ -146,14 +149,17 @@ process_pr() {
             return
             ;;
         none|cancelled)
-            # `@dependabot recreate`, not `rebase`: Dependabot refuses to rebase a PR that
-            # someone else pushed to, which is exactly the state the old job left behind.
+            # These need `@dependabot recreate`, and only a person can send it: Dependabot answers
+            # this workflow's token with "only users with push access can use that command"
+            # (measured 2026-10-10). Do NOT approve the stuck runs instead: their actor is
+            # github-actions[bot], which the deploy guard does not exclude, so an approved run
+            # would deploy a Dependabot branch to production.
             if awaits_approval "$branch" "$head_sha"; then
-                EXCLUDED+=("#$number: CI never ran (runs awaited approval); asked Dependabot to recreate, joins next batch")
+                EXCLUDED+=("#$number: CI never ran (runs awaited approval); needs \`@dependabot recreate\`")
             else
-                EXCLUDED+=("#$number: required checks $status; asked Dependabot to recreate, joins next batch")
+                EXCLUDED+=("#$number: required checks $status; needs \`@dependabot recreate\`")
             fi
-            run gh pr comment "$number" --repo "$REPO" --body "@dependabot recreate"
+            NEEDS_RECREATE+=("$number")
             return
             ;;
         *)
@@ -184,9 +190,27 @@ write_summary() {
         echo "## Not included (${#EXCLUDED[@]})"
         if [ ${#EXCLUDED[@]} -gt 0 ]; then printf -- '- %s\n' "${EXCLUDED[@]}"; else echo "_none_"; fi
         echo ""
+        if [ ${#NEEDS_RECREATE[@]} -gt 0 ]; then
+            echo "**To get the stuck PRs into a batch**, a person with push access runs this, then re-runs the workflow once their CI is green (or waits for next month):"
+            echo ""
+            echo "\`for n in ${NEEDS_RECREATE[*]}; do gh pr comment \$n --body \"@dependabot recreate\"; done\`"
+            echo ""
+        fi
         echo "## Closed, already on \`$BASE_BRANCH\` (${#CLOSED[@]})"
         if [ ${#CLOSED[@]} -gt 0 ]; then printf -- '- %s\n' "${CLOSED[@]}"; else echo "_none_"; fi
     } > "$SUMMARY_FILE"
+}
+
+# Close the "batch ready" issues that point at a batch branch being rebuilt.
+supersede_ready_issues() {
+    local issues
+    issues=$(gh issue list --repo "$REPO" --state open --author "app/github-actions" \
+        --search "\"$BATCH_BRANCH\" in:body" --json number,title \
+        --jq '.[] | select(.title | startswith("Dependabot batch")) | .number')
+    for issue in $issues; do
+        log_info "Closing superseded batch issue #$issue"
+        run gh issue close "$issue" --repo "$REPO" --comment "Superseded: \`$BATCH_BRANCH\` was rebuilt by a later run, see the newer batch issue."
+    done
 }
 
 open_ready_issue() {
@@ -221,8 +245,12 @@ main() {
             log_info "Batch PR #$open_pr for $BATCH_BRANCH is already open, nothing to do"
             exit 0
         fi
-        log_error "$BATCH_BRANCH already exists without an open PR. Open the PR from it, or delete the branch to rebuild the batch."
-        exit 1
+        # Nobody has opened a PR from it, so it is this job's own unopened batch from an earlier
+        # run this month (re-runs are normal: the first run after a stall only asks Dependabot to
+        # recreate PRs). Rebuild it from scratch so it carries every PR that is green NOW.
+        log_warn "$BATCH_BRANCH exists without an open PR: rebuilding it"
+        run git push --quiet origin --delete "$BATCH_BRANCH"
+        supersede_ready_issues
     fi
 
     git -c advice.detachedHead=false checkout --quiet --detach "origin/$BASE_BRANCH"
@@ -242,6 +270,12 @@ main() {
 
     if [ ${#INCLUDED[@]} -eq 0 ]; then
         log_info "Nothing to batch this month"
+        if [ ${#NEEDS_RECREATE[@]} -gt 0 ]; then
+            # Stay visible: stuck PRs never become green on their own.
+            run gh issue create --repo "$REPO" --assignee "$OWNER" \
+                --title "Dependabot: ${#NEEDS_RECREATE[@]} PR(s) need @dependabot recreate" \
+                --body "$(sed '1,2d' "$SUMMARY_FILE")"
+        fi
         exit 0
     fi
 
