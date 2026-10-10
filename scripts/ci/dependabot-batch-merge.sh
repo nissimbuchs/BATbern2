@@ -38,6 +38,8 @@ set -euo pipefail
 DRY_RUN="${DRY_RUN:-false}"
 BASE_BRANCH="${BASE_BRANCH:-develop}"
 BATCH_BRANCH="${BATCH_BRANCH:-deps/batch-$(date -u +%Y-%m)}"
+# Conventional type first: the Doc Drift Check skips chore PRs by title.
+PR_TITLE="chore(deps): Dependabot batch $(date -u +%Y-%m)"
 SUMMARY_FILE="/tmp/dependabot-batch-merge-summary.md"
 
 RED='\033[0;31m'
@@ -67,6 +69,7 @@ EXCLUDED=()
 CLOSED=()
 NEEDS_RECREATE=()
 DISARMED=()
+VERSIONS_SYNCED=false
 
 check_prerequisites() {
     if [ -z "${GH_TOKEN:-}" ]; then
@@ -212,9 +215,26 @@ write_summary() {
             printf -- '- %s\n' "${DISARMED[@]}"
             echo ""
         fi
+        if [ "$VERSIONS_SYNCED" = "true" ]; then
+            echo "**docs/versions.json** was regenerated in a separate commit on the batch branch."
+            echo ""
+        fi
         echo "## Closed, already on \`$BASE_BRANCH\` (${#CLOSED[@]})"
         if [ ${#CLOSED[@]} -gt 0 ]; then printf -- '- %s\n' "${CLOSED[@]}"; else echo "_none_"; fi
     } > "$SUMMARY_FILE"
+}
+
+# A version bump in the batch can drift docs/versions.json, which the required
+# "Verify versions.json" check rejects (vitest 4 -> 5 failed #1089). Regenerate it on top.
+sync_versions_json() {
+    node scripts/update-versions.js >&2
+    if git diff --quiet -- docs/versions.json; then
+        log_info "docs/versions.json already in sync"
+        return
+    fi
+    git commit --quiet -m "chore(deps): sync docs/versions.json" -- docs/versions.json
+    VERSIONS_SYNCED=true
+    log_info "docs/versions.json regenerated and committed"
 }
 
 # Close the "batch ready" issues that point at a batch branch being rebuilt.
@@ -230,7 +250,9 @@ supersede_ready_issues() {
 }
 
 open_ready_issue() {
-    local compare="https://github.com/$REPO/compare/$BASE_BRANCH...$BATCH_BRANCH?expand=1"
+    # Prefill the title in the browser path too: without it GitHub uses the branch name, which
+    # carries no commit type, and the Doc Drift Check fails the batch PR as type 'unknown'.
+    local compare="https://github.com/$REPO/compare/$BASE_BRANCH...$BATCH_BRANCH?expand=1&title=$(jq -rn --arg t "$PR_TITLE" '$t|@uri')"
     local body
     body=$(cat <<EOF
 The monthly Dependabot batch is ready on \`$BATCH_BRANCH\`: ${#INCLUDED[@]} update(s), each green on its own CI.
@@ -238,7 +260,7 @@ The monthly Dependabot batch is ready on \`$BATCH_BRANCH\`: ${#INCLUDED[@]} upda
 **Open the batch PR (this is the sign-off; opening it deploys to production once):**
 
 - In the browser: $compare
-- Or: \`gh pr create --base $BASE_BRANCH --head $BATCH_BRANCH --title "chore(deps): monthly Dependabot batch $(date -u +%Y-%m)" --body "Batch of the updates listed in the tracking issue."\`
+- Or: \`gh pr create --base $BASE_BRANCH --head $BATCH_BRANCH --title "$PR_TITLE" --body "Batch of the updates listed in the tracking issue."\`
 
 It must be opened by a person: a PR opened by the workflow token triggers no CI. After it merges, the next run closes the included Dependabot PRs.
 
@@ -280,6 +302,8 @@ main() {
         [ -n "$number" ] || continue
         process_pr "$number" "$branch" "$is_draft" "$auto_merge" "$title"
     done <<< "$prs"
+
+    if [ ${#INCLUDED[@]} -gt 0 ]; then sync_versions_json; fi
 
     write_summary
     cat "$SUMMARY_FILE" >&2
