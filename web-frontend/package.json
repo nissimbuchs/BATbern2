@@ -155,7 +155,7 @@
     "postcss": "^8.5.13",
     "prettier": "^3.9.6",
     "shadcn": "^4.16.0",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.5",
     "tailwindcss": "^4.1.14",
     "typescript": "^6.0.3",
     "typescript-eslint": "^8.65.0",
