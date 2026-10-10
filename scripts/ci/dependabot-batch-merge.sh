@@ -66,6 +66,7 @@ INCLUDED=()
 EXCLUDED=()
 CLOSED=()
 NEEDS_RECREATE=()
+DISARMED=()
 
 check_prerequisites() {
     if [ -z "${GH_TOKEN:-}" ]; then
@@ -80,11 +81,12 @@ check_prerequisites() {
     OWNER="${REPO%%/*}"
 }
 
-# Open Dependabot PRs against BASE_BRANCH, oldest first: number<TAB>headRefName<TAB>isDraft<TAB>title
+# Open Dependabot PRs against BASE_BRANCH, oldest first:
+# number<TAB>headRefName<TAB>isDraft<TAB>autoMergeArmed<TAB>title
 list_dependabot_prs() {
     gh pr list --repo "$REPO" --author "app/dependabot" --base "$BASE_BRANCH" --state open \
-        --limit 100 --json number,headRefName,isDraft,title,createdAt \
-        --jq 'sort_by(.createdAt) | .[] | [.number, .headRefName, .isDraft, .title] | @tsv'
+        --limit 100 --json number,headRefName,isDraft,autoMergeRequest,title,createdAt \
+        --jq 'sort_by(.createdAt) | .[] | [.number, .headRefName, .isDraft, (.autoMergeRequest != null), .title] | @tsv'
 }
 
 # True when merging the PR head into BASE_BRANCH would change nothing: its update is already
@@ -118,8 +120,17 @@ required_status() {
 }
 
 process_pr() {
-    local number=$1 branch=$2 is_draft=$3 title=$4
+    local number=$1 branch=$2 is_draft=$3 auto_merge=$4 title=$5
     log_info "PR #$number: $title"
+
+    # A Dependabot PR must never merge on its own: each merge to develop is a release, which
+    # is what this batch exists to avoid. The pre-#1077 job armed auto-merge on every PR, and
+    # an armed PR merges the moment its checks turn green (#1044 did, 2026-10-10).
+    if [ "$auto_merge" = "true" ]; then
+        log_warn "#$number has auto-merge armed, disarming"
+        run gh pr merge "$number" --repo "$REPO" --disable-auto
+        DISARMED+=("#$number")
+    fi
 
     if [ "$is_draft" = "true" ]; then
         EXCLUDED+=("#$number: draft")
@@ -196,6 +207,11 @@ write_summary() {
             echo "\`for n in ${NEEDS_RECREATE[*]}; do gh pr comment \$n --body \"@dependabot recreate\"; done\`"
             echo ""
         fi
+        if [ ${#DISARMED[@]} -gt 0 ]; then
+            echo "## Auto-merge disarmed (${#DISARMED[@]})"
+            printf -- '- %s\n' "${DISARMED[@]}"
+            echo ""
+        fi
         echo "## Closed, already on \`$BASE_BRANCH\` (${#CLOSED[@]})"
         if [ ${#CLOSED[@]} -gt 0 ]; then printf -- '- %s\n' "${CLOSED[@]}"; else echo "_none_"; fi
     } > "$SUMMARY_FILE"
@@ -260,9 +276,9 @@ main() {
     local prs
     prs=$(list_dependabot_prs)
     log_info "Found $(printf '%s' "$prs" | grep -c . || true) open Dependabot PR(s) against $BASE_BRANCH"
-    while IFS=$'\t' read -r number branch is_draft title; do
+    while IFS=$'\t' read -r number branch is_draft auto_merge title; do
         [ -n "$number" ] || continue
-        process_pr "$number" "$branch" "$is_draft" "$title"
+        process_pr "$number" "$branch" "$is_draft" "$auto_merge" "$title"
     done <<< "$prs"
 
     write_summary
