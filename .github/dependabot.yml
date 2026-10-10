@@ -8,7 +8,8 @@
 # - Keep dependencies up to date with monthly batched updates
 #
 # Schedule: Monthly on first Monday at 3:00-4:30 AM
-# Automated merge: dependabot-batch-merge.yml workflow runs at 10:36 AM the same day
+# Monthly batch: dependabot-batch-merge.yml (first Monday 10:36 UTC) collects the green PRs into
+# deps/batch-YYYY-MM for one batch PR, so a month of updates is one production deploy (#1076).
 #
 # ── Why `directories:` (plural) and not one entry per manifest (issue #930) ──
 # `groups:` only groups dependencies WITHIN a single update entry. With one entry
