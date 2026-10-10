@@ -223,6 +223,13 @@
         "closeNow": "Serrar uss las Q&A",
         "reopen": "Avrir las Q&A",
         "saved": "Preferenzas da Q&A memorisadas"
+      },
+      "workflowState": {
+        "title": "Status da l'eveniment",
+        "description": "Midar il status da l'eveniment a maun. Senza surpassar valan las reglas da transiziun normalas.",
+        "apply": "Midar il status",
+        "success": "Status da l'eveniment midà.",
+        "error": "Il status da l'eveniment n'ha betg pudì vegnir midà."
       }
     },
     "speakers": {
@@ -590,7 +597,8 @@
     "maxSlotsRequired": "Il numer maximal da slots è obligatori",
     "slotDurationMinimum": "La durada dal slot sto esser almain 15 minutas",
     "minSlotsLessThanMax": "Il numer minim da slots sto esser minor u egual al maximal",
-    "defaultCapacityPositive": "La capacitad standard sto esser in numer positiv"
+    "defaultCapacityPositive": "La capacitad standard sto esser in numer positiv",
+    "typicalStartTimeRequired": "L'ura da cumenzament è obligatorica."
   },
   "errors": {
     "loadFailed": "Chargiar eveniments fallì",
@@ -697,7 +705,11 @@
       },
       "accessibility": {
         "publishingPhase": "Publicar {{phase}}"
-      }
+      },
+      "revertPhase": "Revocar la publicaziun {{phase}}",
+      "revertConfirmTitle": "Revocar la publicaziun {{phase}}?",
+      "revertConfirmText": "La website publica turna a la fasa precedenta. Quai che {{phase}} mussava n'è betg pli visibel per ils visitaders.",
+      "revertConfirmButton": "Revocar"
     },
     "validation": {
       "readyToPublish": "Pronto per la publicaziun",

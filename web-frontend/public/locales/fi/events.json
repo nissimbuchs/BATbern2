@@ -223,6 +223,13 @@
         "closeNow": "Sulje Q&A nyt",
         "reopen": "Avaa Q&A",
         "saved": "Q&A-asetukset tallennettu"
+      },
+      "workflowState": {
+        "title": "Tapahtuman tila",
+        "description": "Muuta tapahtuman tilaa käsin. Ilman ohitusta normaalit siirtymäsäännöt ovat voimassa.",
+        "apply": "Muuta tilaa",
+        "success": "Tapahtuman tila muutettu.",
+        "error": "Tapahtuman tilaa ei voitu muuttaa."
       }
     },
     "speakers": {
@@ -590,7 +597,8 @@
     "maxSlotsRequired": "Enimmäispaikkamäärä on pakollinen",
     "slotDurationMinimum": "Paikan keston on oltava vähintään 15 minuuttia",
     "minSlotsLessThanMax": "Vähimmäispaikkamäärän on oltava pienempi tai yhtä suuri kuin enimmäismäärä",
-    "defaultCapacityPositive": "Oletuskapasiteetin on oltava positiivinen luku"
+    "defaultCapacityPositive": "Oletuskapasiteetin on oltava positiivinen luku",
+    "typicalStartTimeRequired": "Alkamisaika on pakollinen."
   },
   "errors": {
     "loadFailed": "Tapahtumien lataaminen epäonnistui",
@@ -697,7 +705,11 @@
       },
       "accessibility": {
         "publishingPhase": "Julkaistaan {{phase}}"
-      }
+      },
+      "revertPhase": "Peru julkaisu: {{phase}}",
+      "revertConfirmTitle": "Perutaanko julkaisu: {{phase}}?",
+      "revertConfirmText": "Julkinen verkkosivusto palaa edelliseen vaiheeseen. Vaiheen {{phase}} sisältö ei enää näy vierailijoille.",
+      "revertConfirmButton": "Peru julkaisu"
     },
     "validation": {
       "readyToPublish": "Valmis julkaistavaksi",

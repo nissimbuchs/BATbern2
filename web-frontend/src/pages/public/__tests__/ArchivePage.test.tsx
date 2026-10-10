@@ -19,7 +19,7 @@ import type { EventListResponse } from '@/types/event.types';
 // Mock eventApiClient
 vi.mock('@/services/eventApiClient', () => ({
   eventApiClient: {
-    getEvents: vi.fn(),
+    getPublicEvents: vi.fn(),
   },
 }));
 
@@ -222,7 +222,7 @@ describe('ArchivePage Component', () => {
 
   describe('AC1: Event Cards with Session Preview', () => {
     test('should_renderEventCards_when_eventsLoaded', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
@@ -233,7 +233,7 @@ describe('ArchivePage Component', () => {
     });
 
     test('should_displayEventImage_when_themeImageUrlProvided', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
@@ -245,7 +245,7 @@ describe('ArchivePage Component', () => {
     });
 
     test('should_displayEventTitle_when_rendered', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
@@ -256,7 +256,7 @@ describe('ArchivePage Component', () => {
     });
 
     test('should_displayFirst3Sessions_when_eventHasManySessions', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
@@ -269,7 +269,7 @@ describe('ArchivePage Component', () => {
     });
 
     test('should_displaySpeakerNamesAndCompanies_when_sessionsHaveSpeakers', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
@@ -282,7 +282,7 @@ describe('ArchivePage Component', () => {
 
   describe('AC2: Grid/List View Toggle', () => {
     test('should_renderGridView_when_defaultLoaded', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
@@ -293,7 +293,7 @@ describe('ArchivePage Component', () => {
     });
 
     test('should_switchToListView_when_listToggleClicked', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
       const user = userEvent.setup();
 
       renderWithProviders();
@@ -312,7 +312,7 @@ describe('ArchivePage Component', () => {
     });
 
     test('should_persistViewMode_when_pageReloaded', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
       const user = userEvent.setup();
 
       // First render - switch to list view
@@ -364,7 +364,7 @@ describe('ArchivePage Component', () => {
         },
       };
 
-      vi.mocked(eventApiClient.getEvents)
+      vi.mocked(eventApiClient.getPublicEvents)
         .mockResolvedValueOnce(mockEventsPage1)
         .mockResolvedValueOnce(mockEventsPage2);
 
@@ -380,15 +380,13 @@ describe('ArchivePage Component', () => {
     });
 
     test('should_show20EventsPerPage_when_loading', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledWith(
-          { page: 1, limit: 20 },
-          expect.any(Object),
-          expect.objectContaining({ expand: ['topics', 'sessions', 'speakers'] })
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
+          expect.objectContaining({ page: 1, limit: 20 })
         );
       });
     });
@@ -396,7 +394,7 @@ describe('ArchivePage Component', () => {
 
   describe('AC5: Load Indicator with Progress', () => {
     test('should_displayLoadingIndicator_when_initialLoad', () => {
-      vi.mocked(eventApiClient.getEvents).mockImplementation(
+      vi.mocked(eventApiClient.getPublicEvents).mockImplementation(
         () => new Promise(() => {}) // Never resolves
       );
 
@@ -406,7 +404,7 @@ describe('ArchivePage Component', () => {
     });
 
     test('should_displayProgress_when_eventsLoaded', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
@@ -418,7 +416,7 @@ describe('ArchivePage Component', () => {
     });
 
     test('should_displayLoadingMore_when_fetchingNextPage', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
@@ -433,7 +431,7 @@ describe('ArchivePage Component', () => {
 
   describe('AC6-7: Filter Panel (Sidebar/Sheet)', () => {
     test('should_renderFilterSidebar_when_desktopView', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       // Mock window width for desktop
       Object.defineProperty(window, 'innerWidth', {
@@ -450,7 +448,7 @@ describe('ArchivePage Component', () => {
     });
 
     test('should_renderFilterSheet_when_mobileView', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       // Mock window width for mobile
       Object.defineProperty(window, 'innerWidth', {
@@ -469,7 +467,7 @@ describe('ArchivePage Component', () => {
 
   describe('AC8: Topic Filter with Counts', () => {
     test('should_displayTopicCheckboxes_when_filtersRendered', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
@@ -482,7 +480,7 @@ describe('ArchivePage Component', () => {
 
   describe('AC9: Search with Debouncing', () => {
     test('should_debounceSearch_when_userTyping', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
       const user = userEvent.setup();
 
       renderWithProviders();
@@ -497,10 +495,8 @@ describe('ArchivePage Component', () => {
       // Should debounce for 300ms before triggering search
       await waitFor(
         () => {
-          expect(eventApiClient.getEvents).toHaveBeenCalledWith(
-            expect.any(Object),
-            expect.objectContaining({ search: 'Cloud' }),
-            expect.any(Object)
+          expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
+            expect.objectContaining({ search: 'Cloud' })
           );
         },
         { timeout: 500 }
@@ -510,7 +506,7 @@ describe('ArchivePage Component', () => {
 
   describe('AC10: Filter Persistence in URL', () => {
     test('should_updateURLParams_when_filtersApplied', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
       const user = userEvent.setup();
 
       renderWithProviders();
@@ -521,7 +517,7 @@ describe('ArchivePage Component', () => {
       });
 
       // Clear previous API calls
-      vi.mocked(eventApiClient.getEvents).mockClear();
+      vi.mocked(eventApiClient.getPublicEvents).mockClear();
 
       // Wait for topics to load and find the "Cloud Architecture" checkbox
       const cloudCheckbox = await screen.findByLabelText(/Cloud Architecture/i);
@@ -530,31 +526,21 @@ describe('ArchivePage Component', () => {
       // Verify filters were applied by checking API call (URL params drive API calls)
       // Note: Topics filtering not yet implemented - hook converts to EventFilters with workflowState
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledWith(
-          expect.any(Object),
-          expect.objectContaining({
-            workflowState: ['ARCHIVED'],
-            includeArchived: true,
-          }),
-          expect.any(Object)
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
+          expect.objectContaining({ scope: 'archive' })
         );
       });
     });
 
     test('should_loadFiltersFromURL_when_pageLoaded', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders('/archive?topics=Cloud&sort=-date');
 
       // Hook converts ArchiveFilters to EventFilters format with workflowState
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledWith(
-          expect.any(Object),
-          expect.objectContaining({
-            workflowState: ['ARCHIVED'],
-            includeArchived: true,
-          }),
-          expect.any(Object)
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
+          expect.objectContaining({ scope: 'archive' })
         );
       });
     });
@@ -562,7 +548,7 @@ describe('ArchivePage Component', () => {
 
   describe('AC11: Clear All Filters', () => {
     test('should_clearFilters_when_clearButtonClicked', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
       const user = userEvent.setup();
 
       renderWithProviders('/archive?topics=Cloud');
@@ -572,22 +558,20 @@ describe('ArchivePage Component', () => {
       });
 
       // Clear previous mock calls
-      vi.mocked(eventApiClient.getEvents).mockClear();
+      vi.mocked(eventApiClient.getPublicEvents).mockClear();
 
       const clearButton = screen.getByTestId('clear-filters');
       await user.click(clearButton);
 
       // Wait for new query to trigger with cleared filters
-      // Hook converts to EventFilters format
+      // Cleared filters: archive scope, empty search, no topics
       await waitFor(
         () => {
-          const calls = vi.mocked(eventApiClient.getEvents).mock.calls;
+          const calls = vi.mocked(eventApiClient.getPublicEvents).mock.calls;
           const lastCall = calls[calls.length - 1];
-          expect(lastCall[1]).toEqual({
-            includeArchived: true,
-            workflowState: ['ARCHIVED'],
-            search: '',
-          });
+          expect(lastCall[0]).toEqual(
+            expect.objectContaining({ scope: 'archive', search: '', topicCodes: [] })
+          );
         },
         { timeout: 2000 }
       );
@@ -596,21 +580,19 @@ describe('ArchivePage Component', () => {
 
   describe('AC12: Sort Options', () => {
     test('should_sortByNewest_when_defaultLoaded', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledWith(
-          expect.any(Object),
-          expect.any(Object),
-          expect.objectContaining({ sort: '-date' }) // Default: newest first
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
+          expect.objectContaining({ sort: '-date' })
         );
       });
     });
 
     test('should_sortByOldest_when_oldestSelected', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
       const user = userEvent.setup();
 
       renderWithProviders();
@@ -623,9 +605,7 @@ describe('ArchivePage Component', () => {
       await user.selectOptions(sortSelect, 'date');
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledWith(
-          expect.any(Object),
-          expect.any(Object),
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
           expect.objectContaining({ sort: 'date' })
         );
       });
@@ -634,7 +614,7 @@ describe('ArchivePage Component', () => {
 
   describe('Error Handling', () => {
     test('should_displayErrorMessage_when_loadFails', async () => {
-      vi.mocked(eventApiClient.getEvents).mockRejectedValue(new Error('Network error'));
+      vi.mocked(eventApiClient.getPublicEvents).mockRejectedValue(new Error('Network error'));
 
       renderWithProviders();
 
@@ -644,7 +624,7 @@ describe('ArchivePage Component', () => {
     });
 
     test('should_displayNoResults_when_noEventsMatch', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue({
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue({
         data: [],
         pagination: { page: 1, pages: 0, limit: 20, totalItems: 0 },
       });
@@ -659,7 +639,7 @@ describe('ArchivePage Component', () => {
 
   describe('PublicLayout Integration', () => {
     test('should_renderWithinPublicLayout_when_mounted', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
@@ -671,7 +651,7 @@ describe('ArchivePage Component', () => {
 
   describe('API Contract (AC23)', () => {
     test('should_callAPIWithResourceExpansion_when_loading', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockEventsPage1);
 
       renderWithProviders();
 
@@ -681,13 +661,8 @@ describe('ArchivePage Component', () => {
       });
 
       // Then verify API was called correctly
-      expect(eventApiClient.getEvents).toHaveBeenCalledWith(
-        { page: 1, limit: 20 },
-        expect.any(Object),
-        expect.objectContaining({
-          expand: ['topics', 'sessions', 'speakers'],
-          sort: '-date',
-        })
+      expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
+        expect.objectContaining({ page: 1, limit: 20, sort: '-date' })
       );
     });
   });

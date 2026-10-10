@@ -49,6 +49,7 @@ import type { SessionUI, SessionMaterial } from '@/types/event.types';
 import { FileUpload, type UploadedFile } from '@/components/shared/FileUpload/FileUpload';
 import { sessionApiClient } from '@/services/api/sessionApiClient';
 import { SessionSpeakersTab } from './SessionSpeakersTab';
+import { isStructuralSession } from '@/utils/sessionTypes';
 
 // Helper function to get file type icon based on mime type
 const getFileTypeIcon = (mimeType: string | undefined): React.ReactNode => {
@@ -231,9 +232,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
   const validateForm = (): boolean => {
     const newErrors: typeof errors = {};
 
-    const isStructural = ['moderation', 'break', 'lunch', 'aperitif'].includes(
-      session?.sessionType ?? ''
-    );
+    const isStructural = isStructuralSession(session?.sessionType);
     const minDuration = isStructural ? 1 : MIN_SESSION_DURATION;
 
     if (!title.trim()) {

@@ -64,11 +64,14 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
    - Duration: ~2-3 minutes
 
 2. **Build Services (Parallel Matrix)**
-   - Builds all microservices in parallel
-   - Creates Docker images using Spring Boot buildpacks
-   - Pushes images to AWS ECR (on push events only)
+   - Builds all microservices in parallel, on a native arm64 runner (`ubuntu-24.04-arm`)
+   - Creates `linux/arm64` Docker images from each service's `Dockerfile` (`docker buildx`),
+     matching ECS Fargate ARM64. The Gradle build stage uses `--platform=$BUILDPLATFORM`, so a
+     build on an x86 machine compiles natively too and only the runtime stage targets arm64
+   - Pushes images to AWS ECR (on push and pull-request events; not on `workflow_dispatch`)
    - Services: event-management, speaker-coordination, partner-coordination, attendee-experience, company-management, api-gateway
-   - Duration: ~5-7 minutes per service (parallel)
+   - Until 2026-10-07 this job ran on x86 `ubuntu-latest`, and the whole Docker build ran under
+     QEMU: 20-29 minutes per changed service for the image step alone (PR #1072)
 
 3. **Build Frontend**
    - Installs npm dependencies with caching
@@ -144,7 +147,9 @@ Practical consequences:
 - Treat opening a PR as a production action. Draft PRs still fire it.
 - Merging N queued PRs means N sequential production deploys.
 - The `dependabot[bot]` exclusion is why dependency PRs are safe to accumulate — they never
-  deploy — but merging them does, once each.
+  deploy — but merging them does, once each. That is why they are not merged individually: the
+  monthly batch (`dependabot-batch-merge.yml`, #1076) collects the green ones into
+  `deps/batch-YYYY-MM`, and one person-opened PR from that branch is the month's single deploy.
 
 #### Three concurrent PRs: the middle deploy is silently cancelled (#967)
 

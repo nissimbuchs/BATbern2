@@ -1,6 +1,11 @@
 name: Dependabot Batch Merge
 
-# Automatically batch-merge dependabot PRs on a monthly schedule.
+# Monthly Dependabot batch (#1076): collects every green Dependabot PR into ONE branch,
+# deps/batch-YYYY-MM, and opens an issue with the link to open the batch PR. That single PR
+# is built, tested and deployed once, instead of one production deploy per Dependabot PR.
+# The batch PR is opened by a person on purpose: it is the sign-off, and a PR opened with
+# GITHUB_TOKEN would trigger no CI. Details: scripts/ci/dependabot-batch-merge.sh.
+#
 # Runs on the first Monday of each month at 10:36 UTC (dependabot opens its PRs at 3-4 AM).
 # The schedule is expressed as a days-1-7 cron plus a weekday gate in the job — see below.
 
@@ -18,7 +23,7 @@ on:
   workflow_dispatch:
     inputs:
       dry_run:
-        description: 'Dry run mode (do not actually merge)'
+        description: 'Dry run (build the batch locally; push, comment, close and open nothing)'
         required: false
         default: 'false'
         type: choice
@@ -27,8 +32,9 @@ on:
           - 'false'
 
 permissions:
-  contents: write
-  pull-requests: write
+  contents: write       # push the deps/batch-YYYY-MM branch
+  pull-requests: write  # close already-included PRs, comment `@dependabot recreate`
+  issues: write         # open the "batch ready" issue
 
 jobs:
   batch-merge:

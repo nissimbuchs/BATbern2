@@ -52,6 +52,7 @@ import {
 import type { Event, EventDetailUI } from '@/types/event.types';
 import type { components } from '@/types/generated/events-core-api.types';
 import { OrganizerSelect } from '@/components/shared/OrganizerSelect/OrganizerSelect';
+import { EventWorkflowStateSection } from './EventWorkflowStateSection';
 
 type TeaserImageItem = components['schemas']['TeaserImageItem'];
 
@@ -274,6 +275,9 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
         '& > .MuiPaper-root': { breakInside: 'avoid', mb: 3, display: 'block' },
       }}
     >
+      {/* Event state: manual change + validation override (restored after PR #788) */}
+      <EventWorkflowStateSection eventCode={eventCode} workflowState={event.workflowState} />
+
       {/* Event Moderator */}
       <Paper sx={{ p: 3 }}>
         <Stack direction="row" spacing={1} alignItems="center" mb={2}>

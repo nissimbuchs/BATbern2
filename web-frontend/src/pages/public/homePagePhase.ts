@@ -11,6 +11,11 @@
  * |--------------|-----------------------------------------------------------|
  * | COMING_SOON  | currentPublishedPhase is null (event not yet published)   |
  * | PRE_EVENT    | currentPublishedPhase is TOPIC / SPEAKERS / AGENDA        |
+ *
+ * This file decides LAYOUT only. Which sessions and speakers exist in the payload, and whether
+ * talk titles are included, is decided server-side by the Public Events read model
+ * (GET /public/events/*, PublicSessionVisibilityPolicy): SPEAKERS phase brings accepted-or-later
+ * speakers without titles and no sessions; AGENDA brings slotted, quality-reviewed sessions.
  * | POST_EVENT   | workflowState === EVENT_COMPLETED (≤14 days after event)  |
  * | ARCHIVE      | URL path starts with /archive                             |
  */
@@ -78,7 +83,7 @@ export interface SectionVisibility {
   venueMap: boolean;
   /** Shown from SPEAKERS phase onward, and in POST_EVENT / ARCHIVE */
   speakerGrid: boolean;
-  /** Shown in SPEAKERS phase, POST_EVENT, and ARCHIVE; replaced by EventProgram in AGENDA */
+  /** Shown in POST_EVENT and ARCHIVE; replaced by EventProgram in AGENDA; hidden in SPEAKERS */
   sessionCards: boolean;
   /** Shown only in AGENDA phase */
   eventProgram: boolean;
@@ -123,9 +128,9 @@ export function showSessionQna(
     case 'ARCHIVE':
       return true;
     case 'PRE_EVENT':
-      // SPEAKERS renders SessionCards, AGENDA renders the EventProgram timeline — both mount
-      // the Q&A thread, so pre-event Q&A stays visible across both published phases.
-      return phase.sub === 'SPEAKERS' || phase.sub === 'AGENDA';
+      // Only AGENDA renders session cards (the EventProgram timeline). The SPEAKERS phase shows
+      // the lineup without sessions (2026-10-07), so there is nothing to mount a thread on.
+      return phase.sub === 'AGENDA';
     default:
       return false;
   }
@@ -179,7 +184,8 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
         eventLogistics: true,
         venueMap: true,
         speakerGrid: showSpeakers,
-        sessionCards: phase.sub === 'SPEAKERS',
+        // SPEAKERS publishes the lineup only; the server sends no sessions then (2026-10-07).
+        sessionCards: false,
         eventProgram: phase.sub === 'AGENDA',
         eventPhotosMarquee: false,
         testimonials: true,

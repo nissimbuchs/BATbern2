@@ -68,11 +68,38 @@ The following endpoints are accessible without any token at the domain-service l
 |---|---|
 | `/actuator/health`, `/actuator/info` | Health probes |
 | `/swagger-ui/**`, `/v3/api-docs/**` | API documentation |
-| `GET /api/v1/events/**` | Event details, including `/current` |
-| `GET /api/v1/events/{code}/sessions/**` | Session listings |
+| `GET /api/v1/public/events`, `/public/events/current`, `/public/events/{code}` | Public Events read model, the website's only event source (see below) |
+| `GET /api/v1/events/current` | Apple Watch app only. Retirement tracked in #1070 |
+| `GET /api/v1/events/**` | Event details. Sessions and speakers are returned to organizers only |
+| `GET /api/v1/events/{code}/sessions/**` | Session listings, filtered by `PublicSessionVisibilityPolicy` for non-organizers |
 | `GET /api/v1/events/{code}/speakers/**` | Speaker listings (read-only) |
 | `POST /api/v1/events/{code}/registrations` | Attendee registration creation |
 | `POST /api/v1/events/{code}/registrations/confirm` | Registration confirmation |
+
+#### Public Events read model (2026-10-07)
+
+The public website reads events only through `GET /api/v1/public/events*` (tag "Public Events" in
+`events-core-api.openapi.yml`). The response is the same for every caller, anonymous or organizer,
+so the website never shows an organizer something a visitor would not see.
+
+- **Which sessions:** `PublicSessionVisibilityPolicy` is the single rule. Unpublished or TOPIC phase:
+  none. SPEAKERS phase: sessions whose speaker is ACCEPTED, CONTENT_SUBMITTED or QUALITY_REVIEWED.
+  AGENDA phase: slotted sessions whose speaker is QUALITY_REVIEWED, plus slotted structural
+  sessions. Completed, archived and past events: unfiltered.
+- **What shape:** `PublicEventShaper` derives `speakers[]` from the visible sessions. In the SPEAKERS
+  phase it empties the session list and omits talk titles, so the lineup is public before the
+  programme is.
+- `GET /public/events/{code}` returns 404 unless the event is publicly visible.
+  `GET /public/events?scope=upcoming|archive` serves the upcoming list and the archive (search,
+  topic filter and sort apply to `archive` only).
+- **Structural sessions** (moderation, break, lunch, aperitif) have one definition per tier:
+  `Session.isStructuralType` in the backend, `web-frontend/src/utils/sessionTypes.ts` in the
+  frontend. Networking is deliberately not structural.
+
+The older `GET /api/v1/events` and `/events/{code}` return sessions and speakers to organizers only.
+`GET /api/v1/events/current` is unchanged for the Apple Watch, an installed binary that calls the
+path directly: organizers see every session, everyone else gets the public view. It is retired once
+a Watch release has switched to `/public/events/current` (#1070).
 
 **VPC-Internal Endpoints (no JWT required):**
 

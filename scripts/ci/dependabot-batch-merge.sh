@@ -1,298 +1,327 @@
 #!/bin/bash
 set -euo pipefail
 
-# Dependabot Batch Merge Script
-# Automatically merges open dependabot PRs in batches to avoid conflicts
+# Dependabot monthly batch (#1076)
+#
+# Collects every green Dependabot PR into ONE branch, so a month of dependency updates is
+# built, tested and deployed once instead of once per PR. A pull request to `develop` IS a
+# production deploy (CLAUDE.md), so N individual merges meant N releases.
+#
+# What it does:
+#   1. Closes Dependabot PRs whose change is already on develop (included in a previous batch).
+#   2. Creates deps/batch-YYYY-MM from develop and merges every open Dependabot PR whose
+#      REQUIRED checks are green into it (one merge commit per PR, so a failing bump is
+#      attributable). PRs that conflict with an earlier PR of the batch wait for next month.
+#   3. Pushes that branch and opens an issue with the link to open the batch PR (and the
+#      one-liner to recreate any stuck PRs).
+#
+# What it deliberately does NOT do:
+#   - Rebase or push to Dependabot's branches. A commit pushed with GITHUB_TOKEN has
+#     github-actions[bot] as committer, and every run on it lands at `action_required`, so
+#     the required checks never run (#1076, #991). PRs stuck that way (or with cancelled
+#     checks) are listed for a person to comment `@dependabot recreate`: Dependabot ignores
+#     that command from this workflow's token, and then pushes as itself.
+#   - Open the batch PR. A PR opened with GITHUB_TOKEN triggers no workflows at all, so it
+#     could never build. A human opens it from the issue link. That is also the sign-off
+#     before the production deploy.
 #
 # Usage:
+#   DRY_RUN=true  ./scripts/ci/dependabot-batch-merge.sh   # preview, changes nothing remote
 #   DRY_RUN=false ./scripts/ci/dependabot-batch-merge.sh
-#   DRY_RUN=true  ./scripts/ci/dependabot-batch-merge.sh  # Test mode
 #
 # Environment variables:
-#   GH_TOKEN            - GitHub token with PR write permissions (required)
-#   DRY_RUN             - Set to 'true' to preview actions without executing (default: false)
-#   STALLED_AFTER_DAYS  - A PR armed for auto-merge this long without merging means the
-#                         required checks are not completing (default: 3)
+#   GH_TOKEN      - token with contents/pull-requests/issues write (required)
+#   DRY_RUN       - 'true' to preview without pushing, commenting, closing or opening (default: false)
+#   BASE_BRANCH   - default: develop
+#   BATCH_BRANCH  - default: deps/batch-YYYY-MM (UTC)
 
-# A PR armed for auto-merge this long without merging means the required checks are not
-# completing. Override with STALLED_AFTER_DAYS=n.
-STALLED_AFTER_DAYS="${STALLED_AFTER_DAYS:-3}"
-
-# Configuration
 DRY_RUN="${DRY_RUN:-false}"
+BASE_BRANCH="${BASE_BRANCH:-develop}"
+BATCH_BRANCH="${BATCH_BRANCH:-deps/batch-$(date -u +%Y-%m)}"
+# Conventional type first: the Doc Drift Check skips chore PRs by title.
+PR_TITLE="chore(deps): Dependabot batch $(date -u +%Y-%m)"
 SUMMARY_FILE="/tmp/dependabot-batch-merge-summary.md"
-MAX_CONFLICTS=3  # Close PRs with more than this many conflicts
 
-# Colors for output
 RED='\033[0;31m'
 GREEN='\033[0;32m'
 YELLOW='\033[1;33m'
 BLUE='\033[0;34m'
-NC='\033[0m' # No Color
+NC='\033[0m'
 
-# Initialize summary
-init_summary() {
-    cat > "$SUMMARY_FILE" <<EOF
-# 🤖 Dependabot Batch Merge Summary
+# Console output goes to STDERR: these helpers are called inside functions whose stdout is
+# captured by command substitution, and logging to stdout put the log text into the value.
+log_info() { echo -e "${BLUE}ℹ️  $1${NC}" >&2; }
+log_success() { echo -e "${GREEN}✅ $1${NC}" >&2; }
+log_warn() { echo -e "${YELLOW}⚠️  $1${NC}" >&2; }
+log_error() { echo -e "${RED}❌ $1${NC}" >&2; }
 
-**Run Date**: $(date '+%Y-%m-%d %H:%M:%S')
-**Mode**: $([ "$DRY_RUN" = "true" ] && echo "DRY RUN 🧪" || echo "LIVE 🔴")
-
----
-
-EOF
-}
-
-# Log to both console and summary.
-#
-# Console output goes to STDERR on purpose. These helpers are called from inside functions
-# whose stdout is captured by command substitution — `local pr_count=$(get_dependabot_prs)` —
-# so logging to stdout put the log text INTO the captured value. The workflow summary then
-# read:
-#
-#   - **Total PRs processed**: ℹ️  Fetching open dependabot PRs...
-#     ℹ️  Found 17 open dependabot PRs
-#     17
-#
-# Keep every log_* on stderr so a function's stdout carries only its return value.
-log_info() {
-    echo -e "${BLUE}ℹ️  $1${NC}" >&2
-    echo "$1" >> "$SUMMARY_FILE"
-}
-
-log_success() {
-    echo -e "${GREEN}✅ $1${NC}" >&2
-    echo "✅ $1" >> "$SUMMARY_FILE"
-}
-
-log_warn() {
-    echo -e "${YELLOW}⚠️  $1${NC}" >&2
-    echo "⚠️ $1" >> "$SUMMARY_FILE"
-}
-
-log_error() {
-    echo -e "${RED}❌ $1${NC}" >&2
-    echo "❌ $1" >> "$SUMMARY_FILE"
-}
-
-# Check prerequisites
-check_prerequisites() {
-    log_info "Checking prerequisites..."
-
-    if ! command -v gh &> /dev/null; then
-        log_error "GitHub CLI (gh) not found. Please install it."
-        exit 1
+run() {
+    # Executes a remote-changing command, or prints it in dry-run mode.
+    if [ "$DRY_RUN" = "true" ]; then
+        log_warn "[DRY RUN] would run: $*"
+        return 0
     fi
+    "$@"
+}
 
+INCLUDED=()
+EXCLUDED=()
+CLOSED=()
+NEEDS_RECREATE=()
+DISARMED=()
+VERSIONS_SYNCED=false
+
+check_prerequisites() {
     if [ -z "${GH_TOKEN:-}" ]; then
         log_error "GH_TOKEN environment variable not set"
         exit 1
     fi
-
-    log_success "Prerequisites check passed"
+    for tool in gh git jq; do
+        command -v "$tool" >/dev/null || { log_error "$tool not installed"; exit 1; }
+    done
+    git rev-parse --git-dir >/dev/null 2>&1 || { log_error "not inside a git repository"; exit 1; }
+    REPO="${GITHUB_REPOSITORY:-$(gh repo view --json nameWithOwner -q .nameWithOwner)}"
+    OWNER="${REPO%%/*}"
 }
 
-# Get all open dependabot PRs
-get_dependabot_prs() {
-    log_info "Fetching open dependabot PRs..."
-
-    gh pr list \
-        --label dependencies \
-        --state open \
-        --json number,title,headRefName,updatedAt,mergeable,autoMergeRequest \
-        --jq 'sort_by(.updatedAt) | .[]' \
-        > /tmp/dependabot-prs.json
-
-    local pr_count=$(jq -s 'length' /tmp/dependabot-prs.json)
-    log_info "Found $pr_count open dependabot PRs"
-
-    echo "$pr_count"
+# Open Dependabot PRs against BASE_BRANCH, oldest first:
+# number<TAB>headRefName<TAB>isDraft<TAB>autoMergeArmed<TAB>title
+list_dependabot_prs() {
+    gh pr list --repo "$REPO" --author "app/dependabot" --base "$BASE_BRANCH" --state open \
+        --limit 100 --json number,headRefName,isDraft,autoMergeRequest,title,createdAt \
+        --jq 'sort_by(.createdAt) | .[] | [.number, .headRefName, .isDraft, (.autoMergeRequest != null), .title] | @tsv'
 }
 
-# Attempt to update PR branch (rebase onto develop)
-update_pr() {
-    local pr_number=$1
-    local pr_title=$2
-
-    log_info "Updating branch for PR #$pr_number: $pr_title"
-
-    if [ "$DRY_RUN" = "true" ]; then
-        log_warn "[DRY RUN] Would rebase PR #$pr_number onto develop"
-        return 0
-    fi
-
-    # Actually rebase the PR branch onto the base branch
-    if gh pr update-branch "$pr_number" --rebase 2>/dev/null; then
-        log_success "PR #$pr_number branch rebased onto develop"
-        # Allow a moment for GitHub to register the update
-        sleep 5
-        local mergeable=$(gh pr view "$pr_number" --json mergeable --jq '.mergeable')
-        if [ "$mergeable" = "MERGEABLE" ]; then
-            return 0
-        else
-            log_warn "PR #$pr_number still has conflicts after rebase"
-            return 1
-        fi
-    else
-        log_warn "Failed to rebase PR #$pr_number — checking for merge conflicts"
-        local mergeable=$(gh pr view "$pr_number" --json mergeable --jq '.mergeable')
-        if [ "$mergeable" = "CONFLICTING" ]; then
-            return 1
-        fi
-        # UNKNOWN state means CI hasn't run yet — treat as updatable
-        return 0
-    fi
+# True when merging the PR head into BASE_BRANCH would change nothing: its update is already
+# on develop (typically via last month's batch, which is squash-merged).
+already_on_base() {
+    local head_sha=$1
+    local merged_tree
+    merged_tree=$(git merge-tree --write-tree "origin/$BASE_BRANCH" "$head_sha" 2>/dev/null) || return 1
+    [ "$merged_tree" = "$(git rev-parse "origin/$BASE_BRANCH^{tree}")" ]
 }
 
-# Enable auto-merge for PR
-enable_auto_merge() {
-    local pr_number=$1
-
-    if [ "$DRY_RUN" = "true" ]; then
-        log_warn "[DRY RUN] Would enable auto-merge for PR #$pr_number"
-        return 0
-    fi
-
-    log_info "Enabling auto-merge for PR #$pr_number"
-
-    if gh pr merge "$pr_number" --auto --squash; then
-        log_success "Auto-merge enabled for PR #$pr_number"
-        return 0
-    else
-        log_error "Failed to enable auto-merge for PR #$pr_number"
-        return 1
-    fi
+# Did the runs on the PR's current head wait for approval? (#1076: bot-pushed commits)
+awaits_approval() {
+    local branch=$1 head_sha=$2
+    gh run list --repo "$REPO" --branch "$branch" --limit 30 --json headSha,conclusion \
+        --jq "[.[] | select(.headSha == \"$head_sha\" and .conclusion == \"action_required\")] | length" \
+        | grep -qv '^0$'
 }
 
-# Close PR with comment
-close_pr() {
-    local pr_number=$1
-    local reason=$2
-
-    if [ "$DRY_RUN" = "true" ]; then
-        log_warn "[DRY RUN] Would close PR #$pr_number: $reason"
-        return 0
-    fi
-
-    log_info "Closing PR #$pr_number: $reason"
-
-    if gh pr close "$pr_number" --comment "🤖 Closing PR: $reason"; then
-        log_success "Closed PR #$pr_number"
-        return 0
-    else
-        log_error "Failed to close PR #$pr_number"
-        return 1
-    fi
+# green | pending | failed | cancelled | none, over the PR's REQUIRED checks.
+required_status() {
+    local number=$1 json
+    json=$(gh pr checks "$number" --repo "$REPO" --required --json bucket 2>/dev/null || echo '[]')
+    jq -r '
+        if length == 0 then "none"
+        elif any(.[]; .bucket == "fail") then "failed"
+        elif any(.[]; .bucket == "cancel") then "cancelled"
+        elif any(.[]; .bucket == "pending") then "pending"
+        elif all(.[]; .bucket == "pass" or .bucket == "skipping") then "green"
+        else "failed" end' <<< "$json"
 }
 
-# Process a single PR
 process_pr() {
-    local pr_data=$1
-    local pr_number=$(echo "$pr_data" | jq -r '.number')
-    local pr_title=$(echo "$pr_data" | jq -r '.title')
-    local mergeable=$(echo "$pr_data" | jq -r '.mergeable')
-    local armed_at=$(echo "$pr_data" | jq -r '.autoMergeRequest.enabledAt // empty')
+    local number=$1 branch=$2 is_draft=$3 auto_merge=$4 title=$5
+    log_info "PR #$number: $title"
 
-    echo "" >> "$SUMMARY_FILE"
-    log_info "Processing PR #$pr_number: $pr_title"
-
-    # A PR that has been armed for auto-merge for days and is STILL open means the
-    # required checks are not completing — arming is not merging. Surface it loudly:
-    # reporting "merged" for these is what hid a 22-PR jam for six weeks (issue #877).
-    if [ -n "$armed_at" ]; then
-        local armed_epoch=$(date -d "$armed_at" +%s 2>/dev/null || echo 0)
-        local now_epoch=$(date +%s)
-        local age_days=$(( (now_epoch - armed_epoch) / 86400 ))
-        if [ "$armed_epoch" -gt 0 ] && [ "$age_days" -ge "$STALLED_AFTER_DAYS" ]; then
-            log_error "PR #$pr_number has had auto-merge armed since $armed_at ($age_days days) and is still open"
-            echo "- ⚠️ **#$pr_number stalled**: auto-merge armed $age_days days ago, still not merged" >> "$SUMMARY_FILE"
-            return 2
-        fi
+    # A Dependabot PR must never merge on its own: each merge to develop is a release, which
+    # is what this batch exists to avoid. The pre-#1077 job armed auto-merge on every PR, and
+    # an armed PR merges the moment its checks turn green (#1044 did, 2026-10-10).
+    if [ "$auto_merge" = "true" ]; then
+        log_warn "#$number has auto-merge armed, disarming"
+        run gh pr merge "$number" --repo "$REPO" --disable-auto
+        DISARMED+=("#$number")
     fi
 
-    if [ "$mergeable" = "CONFLICTING" ]; then
-        close_pr "$pr_number" "Merge conflicts detected. Will be recreated in next dependabot run."
-        return 1
+    if [ "$is_draft" = "true" ]; then
+        EXCLUDED+=("#$number: draft")
+        return
     fi
 
-    # Always rebase onto develop first so CI re-runs with up-to-date base
-    # (branch protection has strict:true — PRs behind develop won't auto-merge)
-    if ! update_pr "$pr_number" "$pr_title"; then
-        close_pr "$pr_number" "Merge conflicts after rebase. Will be recreated in next dependabot run."
-        return 1
+    git fetch --quiet origin "pull/$number/head"
+    local head_sha
+    head_sha=$(git rev-parse FETCH_HEAD)
+
+    if already_on_base "$head_sha"; then
+        log_success "#$number is already on $BASE_BRANCH, closing"
+        run gh pr close "$number" --repo "$REPO" \
+            --comment "This update is already on \`$BASE_BRANCH\` (included in a monthly Dependabot batch, #1076). Closing."
+        CLOSED+=("#$number")
+        return
     fi
 
-    # Propagate the result. This used to be `enable_auto_merge ...; return 0`, so a
-    # FAILED arming was still counted as a success — e.g. `gh pr merge --auto` refuses
-    # draft PRs, and every one of them would have been reported as fine.
-    if enable_auto_merge "$pr_number"; then
-        return 0
+    # Judge the REQUIRED checks by their buckets, not by the exit code: `gh pr checks` exits 0
+    # when checks are CANCELLED (measured on #1067, 2026-10-10), so the exit code is no gate.
+    local status
+    status=$(required_status "$number")
+    case "$status" in
+        green) ;;
+        pending)
+            EXCLUDED+=("#$number: required checks still running")
+            return
+            ;;
+        none|cancelled)
+            # These need `@dependabot recreate`, and only a person can send it: Dependabot answers
+            # this workflow's token with "only users with push access can use that command"
+            # (measured 2026-10-10). Do NOT approve the stuck runs instead: their actor is
+            # github-actions[bot], which the deploy guard does not exclude, so an approved run
+            # would deploy a Dependabot branch to production.
+            if awaits_approval "$branch" "$head_sha"; then
+                EXCLUDED+=("#$number: CI never ran (runs awaited approval); needs \`@dependabot recreate\`")
+            else
+                EXCLUDED+=("#$number: required checks $status; needs \`@dependabot recreate\`")
+            fi
+            NEEDS_RECREATE+=("$number")
+            return
+            ;;
+        *)
+            EXCLUDED+=("#$number: a required check failed")
+            return
+            ;;
+    esac
+
+    if git merge --no-ff --quiet -m "chore(deps): include #$number ($title)" "$head_sha" >/dev/null 2>&1; then
+        log_success "#$number merged into $BATCH_BRANCH"
+        INCLUDED+=("#$number $title")
+    else
+        git merge --abort
+        log_warn "#$number conflicts with an earlier PR of this batch"
+        EXCLUDED+=("#$number: conflicts with an earlier PR of this batch, next month")
     fi
-    return 3
 }
 
-# Main execution
+write_summary() {
+    {
+        echo "# Dependabot monthly batch"
+        echo ""
+        echo "**Run**: $(date -u '+%Y-%m-%d %H:%M UTC') · **Mode**: $([ "$DRY_RUN" = "true" ] && echo "dry run" || echo "live") · **Branch**: \`$BATCH_BRANCH\`"
+        echo ""
+        echo "## Included (${#INCLUDED[@]})"
+        if [ ${#INCLUDED[@]} -gt 0 ]; then printf -- '- %s\n' "${INCLUDED[@]}"; else echo "_none_"; fi
+        echo ""
+        echo "## Not included (${#EXCLUDED[@]})"
+        if [ ${#EXCLUDED[@]} -gt 0 ]; then printf -- '- %s\n' "${EXCLUDED[@]}"; else echo "_none_"; fi
+        echo ""
+        if [ ${#NEEDS_RECREATE[@]} -gt 0 ]; then
+            echo "**To get the stuck PRs into a batch**, a person with push access runs this, then re-runs the workflow once their CI is green (or waits for next month):"
+            echo ""
+            echo "\`for n in ${NEEDS_RECREATE[*]}; do gh pr comment \$n --body \"@dependabot recreate\"; done\`"
+            echo ""
+        fi
+        if [ ${#DISARMED[@]} -gt 0 ]; then
+            echo "## Auto-merge disarmed (${#DISARMED[@]})"
+            printf -- '- %s\n' "${DISARMED[@]}"
+            echo ""
+        fi
+        if [ "$VERSIONS_SYNCED" = "true" ]; then
+            echo "**docs/versions.json** was regenerated in a separate commit on the batch branch."
+            echo ""
+        fi
+        echo "## Closed, already on \`$BASE_BRANCH\` (${#CLOSED[@]})"
+        if [ ${#CLOSED[@]} -gt 0 ]; then printf -- '- %s\n' "${CLOSED[@]}"; else echo "_none_"; fi
+    } > "$SUMMARY_FILE"
+}
+
+# A version bump in the batch can drift docs/versions.json, which the required
+# "Verify versions.json" check rejects (vitest 4 -> 5 failed #1089). Regenerate it on top.
+sync_versions_json() {
+    node scripts/update-versions.js >&2
+    if git diff --quiet -- docs/versions.json; then
+        log_info "docs/versions.json already in sync"
+        return
+    fi
+    git commit --quiet -m "chore(deps): sync docs/versions.json" -- docs/versions.json
+    VERSIONS_SYNCED=true
+    log_info "docs/versions.json regenerated and committed"
+}
+
+# Close the "batch ready" issues that point at a batch branch being rebuilt.
+supersede_ready_issues() {
+    local issues
+    issues=$(gh issue list --repo "$REPO" --state open --author "app/github-actions" \
+        --search "\"$BATCH_BRANCH\" in:body" --json number,title \
+        --jq '.[] | select(.title | startswith("Dependabot batch")) | .number')
+    for issue in $issues; do
+        log_info "Closing superseded batch issue #$issue"
+        run gh issue close "$issue" --repo "$REPO" --comment "Superseded: \`$BATCH_BRANCH\` was rebuilt by a later run, see the newer batch issue."
+    done
+}
+
+open_ready_issue() {
+    # Prefill the title in the browser path too: without it GitHub uses the branch name, which
+    # carries no commit type, and the Doc Drift Check fails the batch PR as type 'unknown'.
+    local compare="https://github.com/$REPO/compare/$BASE_BRANCH...$BATCH_BRANCH?expand=1&title=$(jq -rn --arg t "$PR_TITLE" '$t|@uri')"
+    local body
+    body=$(cat <<EOF
+The monthly Dependabot batch is ready on \`$BATCH_BRANCH\`: ${#INCLUDED[@]} update(s), each green on its own CI.
+
+**Open the batch PR (this is the sign-off; opening it deploys to production once):**
+
+- In the browser: $compare
+- Or: \`gh pr create --base $BASE_BRANCH --head $BATCH_BRANCH --title "$PR_TITLE" --body "Batch of the updates listed in the tracking issue."\`
+
+It must be opened by a person: a PR opened by the workflow token triggers no CI. After it merges, the next run closes the included Dependabot PRs.
+
+$(sed '1,2d' "$SUMMARY_FILE")
+EOF
+)
+    run gh issue create --repo "$REPO" --title "Dependabot batch $(date -u +%Y-%m) ready: ${#INCLUDED[@]} update(s)" \
+        --assignee "$OWNER" --body "$body"
+}
+
 main() {
-    log_info "Starting Dependabot Batch Merge"
-    echo "========================================"
-
-    init_summary
+    log_info "Dependabot monthly batch, base=$BASE_BRANCH branch=$BATCH_BRANCH dry_run=$DRY_RUN"
     check_prerequisites
+    git fetch --quiet origin "$BASE_BRANCH"
 
-    local pr_count=$(get_dependabot_prs)
+    if git ls-remote --exit-code --heads origin "$BATCH_BRANCH" >/dev/null 2>&1; then
+        local open_pr
+        open_pr=$(gh pr list --repo "$REPO" --head "$BATCH_BRANCH" --state open --json number -q '.[0].number')
+        if [ -n "$open_pr" ]; then
+            log_info "Batch PR #$open_pr for $BATCH_BRANCH is already open, nothing to do"
+            exit 0
+        fi
+        # Nobody has opened a PR from it, so it is this job's own unopened batch from an earlier
+        # run this month (re-runs are normal: the first run after a stall only asks Dependabot to
+        # recreate PRs). Rebuild it from scratch so it carries every PR that is green NOW.
+        log_warn "$BATCH_BRANCH exists without an open PR: rebuilding it"
+        run git push --quiet origin --delete "$BATCH_BRANCH"
+        supersede_ready_issues
+    fi
 
-    if [ "$pr_count" -eq 0 ]; then
-        log_success "No dependabot PRs to process"
+    git -c advice.detachedHead=false checkout --quiet --detach "origin/$BASE_BRANCH"
+    git config user.name "github-actions[bot]"
+    git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+    local prs
+    prs=$(list_dependabot_prs)
+    log_info "Found $(printf '%s' "$prs" | grep -c . || true) open Dependabot PR(s) against $BASE_BRANCH"
+    while IFS=$'\t' read -r number branch is_draft auto_merge title; do
+        [ -n "$number" ] || continue
+        process_pr "$number" "$branch" "$is_draft" "$auto_merge" "$title"
+    done <<< "$prs"
+
+    if [ ${#INCLUDED[@]} -gt 0 ]; then sync_versions_json; fi
+
+    write_summary
+    cat "$SUMMARY_FILE" >&2
+
+    if [ ${#INCLUDED[@]} -eq 0 ]; then
+        log_info "Nothing to batch this month"
+        if [ ${#NEEDS_RECREATE[@]} -gt 0 ]; then
+            # Stay visible: stuck PRs never become green on their own.
+            run gh issue create --repo "$REPO" --assignee "$OWNER" \
+                --title "Dependabot: ${#NEEDS_RECREATE[@]} PR(s) need @dependabot recreate" \
+                --body "$(sed '1,2d' "$SUMMARY_FILE")"
+        fi
         exit 0
     fi
 
-    # Process each PR
-    local armed=0
-    local closed=0
-    local stalled=0
-    local failed=0
-
-    while IFS= read -r pr_data; do
-        process_pr "$pr_data"
-        case $? in
-            0) ((armed++))   || true ;;
-            2) ((stalled++)) || true ;;
-            3) ((failed++))  || true ;;
-            *) ((closed++))  || true ;;
-        esac
-
-        # Brief delay between PRs to avoid rate limiting
-        sleep 3
-    done < /tmp/dependabot-prs.json
-
-    # Final summary
-    echo "" >> "$SUMMARY_FILE"
-    echo "---" >> "$SUMMARY_FILE"
-    echo "" >> "$SUMMARY_FILE"
-    echo "## 📊 Final Statistics" >> "$SUMMARY_FILE"
-    echo "" >> "$SUMMARY_FILE"
-    echo "- **Total PRs processed**: $pr_count" >> "$SUMMARY_FILE"
-    echo "- **Auto-merge ARMED (not merged — merges when required checks pass)**: $armed" >> "$SUMMARY_FILE"
-    echo "- **STALLED (armed >= ${STALLED_AFTER_DAYS}d, still open)**: $stalled" >> "$SUMMARY_FILE"
-    echo "- **Failed to arm**: $failed" >> "$SUMMARY_FILE"
-    echo "- **PRs closed (conflicts)**: $closed" >> "$SUMMARY_FILE"
-    echo "" >> "$SUMMARY_FILE"
-
-    log_info "Processed: $pr_count | Armed: $armed | Stalled: $stalled | Failed: $failed | Closed: $closed"
-
-    if [ "$stalled" -gt 0 ] || [ "$failed" -gt 0 ]; then
-        echo "> **$stalled PR(s) have had auto-merge armed for >= ${STALLED_AFTER_DAYS} days and have still not merged.**" >> "$SUMMARY_FILE"
-        echo "> Arming is not merging: GitHub merges only once every REQUIRED check reports." >> "$SUMMARY_FILE"
-        echo "> Check that Dependabot's workflow runs are not sitting at \`action_required\` — see issue #877." >> "$SUMMARY_FILE"
-        log_error "$stalled PR(s) stalled — failing so this is visible instead of reported as success"
-        cat "$SUMMARY_FILE"
-        exit 1
-    fi
-
-    log_success "Batch merge completed!"
-
-    cat "$SUMMARY_FILE"
+    run git push --quiet origin "HEAD:refs/heads/$BATCH_BRANCH"
+    open_ready_issue
+    log_success "Batch branch $BATCH_BRANCH prepared with ${#INCLUDED[@]} update(s)"
 }
 
-# Run main
 main "$@"

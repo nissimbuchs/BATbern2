@@ -223,6 +223,13 @@
         "closeNow": "今すぐQ&Aを閉じる",
         "reopen": "Q&Aを開く",
         "saved": "Q&A設定を保存しました"
+      },
+      "workflowState": {
+        "title": "イベントの状態",
+        "description": "イベントの状態を手動で変更します。上書きしない場合は通常の遷移ルールが適用されます。",
+        "apply": "状態を変更",
+        "success": "イベントの状態を変更しました。",
+        "error": "イベントの状態を変更できませんでした。"
       }
     },
     "speakers": {
@@ -590,7 +597,8 @@
     "maxSlotsRequired": "最大スロット数は必須です",
     "slotDurationMinimum": "スロット時間は最低15分でなければなりません",
     "minSlotsLessThanMax": "最小スロット数は最大スロット数以下でなければなりません",
-    "defaultCapacityPositive": "デフォルト定員は正の数でなければなりません"
+    "defaultCapacityPositive": "デフォルト定員は正の数でなければなりません",
+    "typicalStartTimeRequired": "開始時刻は必須です。"
   },
   "errors": {
     "loadFailed": "イベントの読み込みに失敗しました",
@@ -697,7 +705,11 @@
       },
       "accessibility": {
         "publishingPhase": "{{phase}}を公開中"
-      }
+      },
+      "revertPhase": "{{phase}}の公開を取り消す",
+      "revertConfirmTitle": "{{phase}}の公開を取り消しますか？",
+      "revertConfirmText": "公開ウェブサイトは前のフェーズに戻ります。{{phase}}で表示されていた内容は訪問者に表示されなくなります。",
+      "revertConfirmButton": "取り消す"
     },
     "validation": {
       "readyToPublish": "公開準備完了",

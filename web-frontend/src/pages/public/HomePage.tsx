@@ -85,10 +85,9 @@ const HomePage = () => {
     queryKey: ['events', eventCode, { preview: isPreview, phase: previewPhase, mode: previewMode }],
     queryFn: () => {
       if (!eventCode) return Promise.reject(new Error('Event code is required'));
-      // TODO: Add preview support to API - for now just fetches published data
-      return eventApiClient.getEvent(eventCode, {
-        expand: ['topics', 'venue', 'speakers', 'sessions'],
-      });
+      // Public Events read model (2026-10-07): 404 for unpublished events; sessions/speakers are
+      // shaped by the publishing phase on the server, the same for every visitor.
+      return eventApiClient.getPublicEvent(eventCode);
     },
     enabled: !!eventCode,
     staleTime: 5 * 60 * 1000,
@@ -175,6 +174,7 @@ const HomePage = () => {
   const eventUrl = typeof window !== 'undefined' ? window.location.href : '';
   const eventDescription = event.description || `Join us for ${eventTitle} in ${eventLocation}`;
   const hasSessions = !!(event.sessions && event.sessions.length > 0);
+  const hasSpeakers = !!(event.speakers && event.speakers.length > 0);
 
   const backToArchiveUrl = isArchiveMode
     ? location.search
@@ -351,7 +351,7 @@ const HomePage = () => {
           />
         )}
 
-        {/* Session Cards (list) — SPEAKERS phase, POST_EVENT, ARCHIVE */}
+        {/* Session Cards (list) — POST_EVENT, ARCHIVE */}
         {vis.sessionCards && hasSessions && (
           <SessionCards
             sessions={event.sessions!}
@@ -362,7 +362,7 @@ const HomePage = () => {
         )}
 
         {/* Speaker Grid — SPEAKERS phase onward, POST_EVENT, ARCHIVE */}
-        {vis.speakerGrid && hasSessions && <SpeakerGrid sessions={event.sessions!} />}
+        {vis.speakerGrid && hasSpeakers && <SpeakerGrid speakers={event.speakers!} />}
 
         {/* Venue Map — hidden in POST_EVENT and ARCHIVE */}
         {vis.venueMap && event.venueName && event.venueAddress && (

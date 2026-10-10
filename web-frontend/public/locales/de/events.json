@@ -180,6 +180,13 @@
         "closeNow": "Q&A jetzt schließen",
         "reopen": "Q&A öffnen",
         "saved": "Q&A-Einstellungen gespeichert"
+      },
+      "workflowState": {
+        "title": "Event-Status",
+        "description": "Den Event-Status von Hand ändern. Ohne Übersteuerung gelten die normalen Übergangsregeln.",
+        "apply": "Status ändern",
+        "success": "Event-Status geändert.",
+        "error": "Der Event-Status konnte nicht geändert werden."
       }
     },
     "participantTable": {
@@ -604,7 +611,8 @@
     "maxSlotsRequired": "Maximale Slot-Anzahl ist erforderlich",
     "slotDurationMinimum": "Slot-Dauer muss mindestens 15 Minuten betragen",
     "minSlotsLessThanMax": "Minimale Slot-Anzahl muss kleiner oder gleich der maximalen Slot-Anzahl sein",
-    "defaultCapacityPositive": "Standardkapazität muss eine positive Zahl sein"
+    "defaultCapacityPositive": "Standardkapazität muss eine positive Zahl sein",
+    "typicalStartTimeRequired": "Startzeit ist erforderlich."
   },
   "errors": {
     "loadFailed": "Fehler beim Laden der Veranstaltungen",
@@ -711,7 +719,11 @@
       },
       "accessibility": {
         "publishingPhase": "Veröffentliche {{phase}}"
-      }
+      },
+      "revertPhase": "Veröffentlichung {{phase}} zurücknehmen",
+      "revertConfirmTitle": "Veröffentlichung {{phase}} zurücknehmen?",
+      "revertConfirmText": "Die öffentliche Website fällt auf die vorherige Phase zurück. Was mit {{phase}} sichtbar war, sehen Besucher nicht mehr.",
+      "revertConfirmButton": "Zurücknehmen"
     },
     "validation": {
       "readyToPublish": "Bereit zur Veröffentlichung",

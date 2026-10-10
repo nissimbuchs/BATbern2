@@ -34,6 +34,11 @@ tags:
 - name: Teaser Images
   description: Event-specific and global teaser image management (EventTeaserImageController).
     eventCode "_global" maps to images shown on all event presentations.
+- name: Public Events
+  description: 'Public read model for the website (2026-10-07). Sessions and speakers are shaped
+    by the publishing phase only, never by the caller: unpublished/TOPIC none, SPEAKERS
+    accepted-or-later speakers without talk titles, AGENDA slotted quality-reviewed sessions.
+    The single rule lives in PublicSessionVisibilityPolicy.'
 paths:
   /events:
     get:
@@ -223,12 +228,130 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '500':
           $ref: '#/components/responses/InternalServerError'
+  /public/events/current:
+    get:
+      tags:
+      - Public Events
+      summary: Current event for the public homepage
+      description: 'The event the public homepage features (afterglow of a completed event within
+        14 days first, else the next published event), with topic, venue, sessions and speakers
+        shaped by the publishing phase. Anonymous; the same answer for every caller.'
+      operationId: getPublicCurrentEvent
+      responses:
+        '200':
+          description: Current event for the website
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /public/events/{eventCode}:
+    get:
+      tags:
+      - Public Events
+      summary: One event as the public website shows it
+      description: 'For /events/{code} and /archive/{code} on the website. 404 unless the event is
+        publicly visible (a published phase, or completed/archived). Sessions and speakers are
+        shaped by the publishing phase; anonymous, the same answer for every caller.'
+      operationId: getPublicEvent
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          pattern: ^BATbern[0-9]+$
+          example: BATbern60
+      responses:
+        '200':
+          description: Event for the website
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventDetail'
+        '404':
+          $ref: '#/components/responses/NotFound'
+  /public/events:
+    get:
+      tags:
+      - Public Events
+      summary: Events for the public website (upcoming or archive)
+      description: 'upcoming: published events from today on, nearest first. archive: archived
+        events, newest first, optionally narrowed by a title/speaker search and topic codes.
+        The selection is fixed server-side; unpublished events are never listed. Sessions and
+        speakers are shaped by the publishing phase.'
+      operationId: listPublicEvents
+      parameters:
+      - name: scope
+        in: query
+        required: true
+        schema:
+          type: string
+          enum:
+          - upcoming
+          - archive
+      - name: search
+        in: query
+        required: false
+        description: Archive only. Title (and speaker name) contains this text.
+        schema:
+          type: string
+          maxLength: 200
+      - name: topicCodes
+        in: query
+        required: false
+        description: Archive only. Comma-separated topic codes.
+        schema:
+          type: string
+          maxLength: 500
+      - name: sort
+        in: query
+        required: false
+        description: 'Archive only: -date (newest first, default) or date. Upcoming is always
+          nearest first.'
+        schema:
+          type: string
+          enum:
+          - -date
+          - date
+      - name: page
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          default: 1
+      - name: limit
+        in: query
+        required: false
+        schema:
+          type: integer
+          minimum: 1
+          maximum: 100
+          default: 20
+      responses:
+        '200':
+          description: Page of events for the website
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  data:
+                    type: array
+                    items:
+                      $ref: '#/components/schemas/Event'
+                  pagination:
+                    $ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'
+        '400':
+          $ref: '#/components/responses/BadRequest'
   /events/current:
     get:
       tags:
       - Events
-      summary: Get current event for the public homepage
-      description: "Retrieve the event the public homepage should feature. No authentication required.\n\n**Story**: 4.1.3 - Public event landing page hero section\n**Public Access**: No authentication required\n\nTwo-phase selection (afterglow takes precedence):\n1. **Afterglow**: the most recently completed event still inside its 14-day post-event\n   window (EVENT_COMPLETED, date within the last 14 days). It keeps featuring on the\n   homepage so attendees get the post-event experience, even if the next event has\n   already published its topic/speakers/agenda. The scheduler auto-archives after 14 days.\n2. **Upcoming**: otherwise, the earliest upcoming published event by date\n   (currentPublishedPhase != null).\n\nIf neither exists, returns 404.\n\n**Performance**: <150ms (P95)\n"
+      summary: Get the current event (Apple Watch app only)
+      description: "Retrieve the event the public homepage should feature. No authentication required.\n\n**Story**: 4.1.3 - Public event landing page hero section\n**Public Access**: No authentication required\n\nTwo-phase selection (afterglow takes precedence):\n1. **Afterglow**: the most recently completed event still inside its 14-day post-event\n   window (EVENT_COMPLETED, date within the last 14 days). It keeps featuring on the\n   homepage so attendees get the post-event experience, even if the next event has\n   already published its topic/speakers/agenda. The scheduler auto-archives after 14 days.\n2. **Upcoming**: otherwise, the earliest upcoming published event by date\n   (currentPublishedPhase != null).\n\nIf neither exists, returns 404.\n\n**Consumer (2026-10-07)**: kept ONLY for the Apple Watch app\n(`apps/BATbern-watch`, both zones), which ships as an installed binary and calls this\npath directly. The public website uses `GET /public/events/current` instead.\nSessions/speakers depend on the caller: organizers (Watch organizer zone) see every\nsession; everyone else gets the public view by publishing state. Retire this endpoint once\na Watch release has switched to `/public/events/current` (GitHub issue #1070).\n\n**Performance**: <150ms (P95)\n"
       operationId: getCurrentEvent
       parameters:
       - name: include
@@ -2123,6 +2246,46 @@ components:
           type: string
           description: S3 object key returned by the upload-url step.
           example: events/BATbern57/teaser/abc123-def456.jpg
+    PublicSpeaker:
+      type: object
+      description: A speaker as the public website shows it (Public Events).
+      required:
+      - username
+      properties:
+        username:
+          type: string
+          example: john.doe
+        firstName:
+          type: string
+        lastName:
+          type: string
+        company:
+          type: string
+          nullable: true
+        companyDisplayName:
+          type: string
+          nullable: true
+        companyLogoUrl:
+          type: string
+          nullable: true
+        profilePictureUrl:
+          type: string
+          nullable: true
+        bio:
+          type: string
+          nullable: true
+        speakerRole:
+          type: string
+          nullable: true
+          example: PRIMARY_SPEAKER
+        talkTitle:
+          type: string
+          nullable: true
+          description: Only once the agenda is published (AGENDA phase, completed, archived).
+        sessionSlug:
+          type: string
+          nullable: true
+          description: Only together with talkTitle.
     Event:
       type: object
       x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
@@ -2382,6 +2545,14 @@ components:
             '
           items:
             $ref: ./event-sessions-api.openapi.yml#/components/schemas/Session
+        speakers:
+          type: array
+          nullable: true
+          description: 'Public read model only (GET /public/events/*): the speakers the website may
+            show for the published phase. SPEAKERS phase: accepted-or-later speakers without talk
+            title; AGENDA and later: with talk title. Never set by the organizer endpoints.'
+          items:
+            $ref: '#/components/schemas/PublicSpeaker'
         topicSelectionNote:
           type: string
           description: "Organizer's free-text note on topic selection (Story 5.2)."
@@ -2796,6 +2967,7 @@ components:
       - breakSlots
       - lunchSlots
       - defaultCapacity
+      - typicalStartTime
       properties:
         minSlots:
           type: integer
@@ -2834,9 +3006,9 @@ components:
         typicalStartTime:
           type: string
           format: time
-          description: Typical start time for this event type
+          description: 'Typical start time for this event type. Required: the timetable is anchored
+            to it (2026-10-07, a NULL here put an evening event at 09:00).'
           example: 09:00
-          nullable: true
         typicalEndTime:
           type: string
           format: time

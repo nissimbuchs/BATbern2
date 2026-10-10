@@ -479,7 +479,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         queryClient.invalidateQueries({ queryKey: ['events'] });
         queryClient.invalidateQueries({ queryKey: ['event', event.eventCode] });
         queryClient.invalidateQueries({ queryKey: ['eventWorkflow', event.eventCode] });
-        queryClient.invalidateQueries({ queryKey: ['events', 'current'] });
+        queryClient.invalidateQueries({ queryKey: ['events', 'public'] });
       }
 
       // Create tasks from selected templates (Story 5.5 AC21)

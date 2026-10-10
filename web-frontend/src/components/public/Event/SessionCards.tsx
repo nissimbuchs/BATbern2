@@ -28,10 +28,9 @@ import { useTranslation } from 'react-i18next';
 import { SessionQnaThread } from '@/components/public/Event/SessionQnaThread';
 import { SpeakerDisplay } from './SpeakerDisplay';
 import { eventApiClient } from '@/services/eventApiClient';
+import { isStructuralSession } from '@/utils/sessionTypes';
 
-const STRUCTURAL_TYPES = new Set(['moderation', 'break', 'lunch', 'aperitif']);
-
-const isStructuralSession = (session: SessionUI) => STRUCTURAL_TYPES.has(session.sessionType ?? '');
+const isStructural = (session: SessionUI) => isStructuralSession(session.sessionType);
 
 interface Topic {
   id: string;
@@ -67,10 +66,7 @@ export const SessionCards = ({
   const [downloadingMaterials, setDownloadingMaterials] = useState<Set<string>>(new Set());
 
   // Exclude structural sessions (moderation, break, lunch)
-  const contentSessions = useMemo(
-    () => sessions.filter((s) => !isStructuralSession(s)),
-    [sessions]
-  );
+  const contentSessions = useMemo(() => sessions.filter((s) => !isStructural(s)), [sessions]);
 
   // Filter by selected topics
   const filteredSessions = useMemo(() => {

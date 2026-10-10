@@ -2650,6 +2650,7 @@ components:
       - aperitifSlots
       - aperitifDuration
       - aperitifPosition
+      - typicalStartTime
       properties:
         minSlots:
           type: integer
@@ -2711,7 +2712,7 @@ components:
         typicalStartTime:
           type: string
           format: time
-          nullable: true
+          description: 'Required: the timetable is anchored to it.'
           example: '13:00'
         typicalEndTime:
           type: string

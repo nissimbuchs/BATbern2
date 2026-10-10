@@ -141,6 +141,9 @@ export function usePromoteSpeakerToReady() {
       queryClient.invalidateQueries({
         queryKey: ['speakerStatusHistory', variables.eventCode, variables.speakerId],
       });
+      // Promote creates the speaker's session (Story 11.E.8); the Speakers & Agenda tab reads
+      // sessions from the event query (bug 2026-10-07: new session missing from the agenda).
+      queryClient.invalidateQueries({ queryKey: ['event', variables.eventCode] });
     },
   });
 }

@@ -1,16 +1,17 @@
 /**
  * UpcomingEventsSection Component Tests
  *
- * Regression (2026-06-11, Epic 7 testing): the section filtered only by date +
- * currentEventCode and rendered events that are NOT published (e.g. a CREATED event with
- * currentPublishedPhase NONE/null). The public homepage must only surface events the
- * organizer has actively published — mirror the published-phase whitelist EventCard uses.
+ * History: 2026-06-11 the section rendered unpublished events because the generic GET /events
+ * list returned every event and the component filtered client-side. Since the Public Events read
+ * model (2026-10-07) the server selects published upcoming events (scope=upcoming) and shapes
+ * their sessions/speakers; the component only skips the event already featured in the hero.
  */
 
-import { describe, test, expect, vi } from 'vitest';
-import { screen } from '@testing-library/react';
+import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
 import { render } from '@/test/test-utils';
 import { UpcomingEventsSection } from '../UpcomingEventsSection';
+import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetailUI } from '@/types/event.types';
 
 vi.mock('react-i18next', () => ({
@@ -24,60 +25,90 @@ vi.mock('@/hooks/useMyRegistration', () => ({
   useMyRegistration: () => ({ data: undefined }),
 }));
 
-// A published card mounts SpeakerSelfNominatePanel, which calls useAuth; stub it
-// (this suite exercises the section's publication filter, not the nomination panel).
+// A TOPIC-phase card mounts SpeakerSelfNominatePanel, which calls useAuth; stub it.
 vi.mock('@/hooks/useAuth/useAuth', () => ({
   useAuth: () => ({ isAuthenticated: false }),
 }));
 
-const useEventsMock = vi.fn();
-vi.mock('@/hooks/useEvents', () => ({
-  useEvents: () => useEventsMock(),
+vi.mock('@/services/eventApiClient', () => ({
+  eventApiClient: { getPublicEvents: vi.fn() },
 }));
 
-// One year out, so both events are unambiguously "upcoming".
 const FUTURE_DATE = '2099-07-10T00:00:00Z';
 
-function makeEvent(
-  eventCode: string,
-  currentPublishedPhase: EventDetailUI['currentPublishedPhase'] | 'NONE'
-): EventDetailUI {
+function makeEvent(eventCode: string): EventDetailUI {
   return {
     eventCode,
     title: `${eventCode} title`,
     date: FUTURE_DATE,
-    currentPublishedPhase: currentPublishedPhase as EventDetailUI['currentPublishedPhase'],
+    currentPublishedPhase: 'SPEAKERS',
     topic: { name: 'Architecture' },
     sessions: [],
+    speakers: [{ username: 'jane.doe', firstName: 'Jane', lastName: 'Doe' }],
   } as unknown as EventDetailUI;
 }
 
-describe('UpcomingEventsSection — publication filter', () => {
-  test('renders published events and hides unpublished (CREATED / NONE phase) ones', () => {
-    useEventsMock.mockReturnValue({
-      data: {
-        data: [
-          makeEvent('BATbern73', 'SPEAKERS'), // published → shown
-          makeEvent('BATbern55', 'NONE'), // created, not published → hidden
-        ],
+describe('UpcomingEventsSection', () => {
+  beforeEach(() => {
+    vi.mocked(eventApiClient.getPublicEvents).mockReset();
+  });
+
+  test('should request the upcoming scope from the public read model', async () => {
+    vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue({
+      data: [makeEvent('BATbern73')],
+      pagination: {
+        page: 1,
+        limit: 5,
+        totalItems: 1,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
       },
-      isLoading: false,
-    });
+    } as never);
 
     render(<UpcomingEventsSection currentEventCode="BATbern00" />);
 
-    expect(screen.getByTestId('event-card-BATbern73')).toBeInTheDocument();
-    expect(screen.queryByTestId('event-card-BATbern55')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('event-card-BATbern73')).toBeInTheDocument();
+    expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
+      expect.objectContaining({ scope: 'upcoming' })
+    );
   });
 
-  test('hides the whole section when no published upcoming events remain', () => {
-    useEventsMock.mockReturnValue({
-      data: { data: [makeEvent('BATbern55', 'NONE')] },
-      isLoading: false,
-    });
+  test('should skip the event already featured in the hero', async () => {
+    vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue({
+      data: [makeEvent('BATbern60'), makeEvent('BATbern61')],
+      pagination: {
+        page: 1,
+        limit: 5,
+        totalItems: 2,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      },
+    } as never);
+
+    render(<UpcomingEventsSection currentEventCode="BATbern60" />);
+
+    expect(await screen.findByTestId('event-card-BATbern61')).toBeInTheDocument();
+    expect(screen.queryByTestId('event-card-BATbern60')).not.toBeInTheDocument();
+  });
+
+  test('should render nothing when no upcoming events are published', async () => {
+    vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue({
+      data: [],
+      pagination: {
+        page: 1,
+        limit: 5,
+        totalItems: 0,
+        totalPages: 0,
+        hasNext: false,
+        hasPrev: false,
+      },
+    } as never);
 
     const { container } = render(<UpcomingEventsSection currentEventCode="BATbern00" />);
 
-    expect(container).toBeEmptyDOMElement();
+    await waitFor(() => expect(eventApiClient.getPublicEvents).toHaveBeenCalled());
+    await waitFor(() => expect(container).toBeEmptyDOMElement());
   });
 });

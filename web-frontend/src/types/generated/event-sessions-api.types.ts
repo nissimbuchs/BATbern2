@@ -1401,9 +1401,10 @@ export interface components {
       aperitifPosition: 'start' | 'end';
       /**
        * Format: time
+       * @description Required: the timetable is anchored to it.
        * @example 13:00
        */
-      typicalStartTime?: string | null;
+      typicalStartTime: string;
       /**
        * Format: time
        * @example 19:00

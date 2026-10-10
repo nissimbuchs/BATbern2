@@ -108,7 +108,10 @@ jobs:
   # ═══════════════════════════════════════════════════════════
   build-services:
     needs: build-shared-kernel
-    runs-on: ubuntu-latest
+    # Native arm64 runner: the images target Fargate ARM64, so `buildx --platform linux/arm64`
+    # runs without QEMU. On x86 ubuntu-latest the Docker step took 20-29 min per service
+    # (PR #1072). Free and unlimited for public repositories.
+    runs-on: ubuntu-24.04-arm
     permissions:
       id-token: write  # Required for OIDC authentication
       contents: read   # Required for checkout
@@ -905,11 +908,17 @@ jobs:
     # still run; the real deploy gate runs once on the push-to-develop after
     # merge, where secrets exist. (Root-caused 2026-06-01: monthly dependabot
     # batch left 18 PRs unmergeable + thrashed prod with concurrent deploys.)
+    #
+    # The PR-author check matters as much as the actor check: a commit pushed to a
+    # Dependabot branch with GITHUB_TOKEN makes github-actions[bot] the actor, and
+    # approving those action_required runs would otherwise deploy a Dependabot
+    # branch to production (#1076).
     if: |
       (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
       (github.event_name == 'pull_request' &&
        github.event.pull_request.base.ref == 'develop' &&
-       github.actor != 'dependabot[bot]')
+       github.actor != 'dependabot[bot]' &&
+       github.event.pull_request.user.login != 'dependabot[bot]')
     uses: ./.github/workflows/deploy-staging.yml
     secrets: inherit
     permissions:

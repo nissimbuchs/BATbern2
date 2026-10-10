@@ -15,7 +15,7 @@ import type { EventListResponse, ArchiveFilters } from '@/types/event.types';
 // Mock eventApiClient
 vi.mock('@/services/eventApiClient', () => ({
   eventApiClient: {
-    getEvents: vi.fn(),
+    getPublicEvents: vi.fn(),
   },
 }));
 
@@ -115,7 +115,7 @@ describe('useInfiniteEvents Hook', () => {
 
   describe('Initial Load', () => {
     test('should_fetchFirstPage_when_mounted', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       const { result } = renderHook(() => useInfiniteEvents({}), { wrapper });
 
@@ -125,15 +125,13 @@ describe('useInfiniteEvents Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(eventApiClient.getEvents).toHaveBeenCalledWith(
-        { page: 1, limit: 20 },
-        { includeArchived: true, workflowState: ['ARCHIVED'] },
-        { expand: ['topics', 'sessions', 'speakers'], sort: '-date' }
+      expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
+        expect.objectContaining({ scope: 'archive', page: 1, limit: 20, sort: '-date' })
       );
     });
 
     test('should_returnFirstPageData_when_loaded', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       const { result } = renderHook(() => useInfiniteEvents({}), { wrapper });
 
@@ -146,7 +144,7 @@ describe('useInfiniteEvents Hook', () => {
     });
 
     test('should_setTotalCount_when_loaded', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       const { result } = renderHook(() => useInfiniteEvents({}), { wrapper });
 
@@ -159,7 +157,7 @@ describe('useInfiniteEvents Hook', () => {
     });
 
     test('should_calculateLoadedCount_when_loaded', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       const { result } = renderHook(() => useInfiniteEvents({}), { wrapper });
 
@@ -175,7 +173,7 @@ describe('useInfiniteEvents Hook', () => {
 
   describe('Infinite Scroll - Fetching Next Page', () => {
     test('should_haveNextPage_when_moreEventsAvailable', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       const { result } = renderHook(() => useInfiniteEvents({}), { wrapper });
 
@@ -187,7 +185,7 @@ describe('useInfiniteEvents Hook', () => {
     });
 
     test('should_fetchNextPage_when_fetchNextPageCalled', async () => {
-      vi.mocked(eventApiClient.getEvents)
+      vi.mocked(eventApiClient.getPublicEvents)
         .mockResolvedValueOnce(mockPage1)
         .mockResolvedValueOnce(mockPage2);
 
@@ -204,15 +202,13 @@ describe('useInfiniteEvents Hook', () => {
         expect(result.current.data?.pages.length).toBe(2);
       });
 
-      expect(eventApiClient.getEvents).toHaveBeenCalledWith(
-        { page: 2, limit: 20 },
-        { includeArchived: true, workflowState: ['ARCHIVED'] },
-        { expand: ['topics', 'sessions', 'speakers'], sort: '-date' }
+      expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
+        expect.objectContaining({ scope: 'archive', page: 2, limit: 20, sort: '-date' })
       );
     });
 
     test('should_appendNextPageData_when_fetchedNextPage', async () => {
-      vi.mocked(eventApiClient.getEvents)
+      vi.mocked(eventApiClient.getPublicEvents)
         .mockResolvedValueOnce(mockPage1)
         .mockResolvedValueOnce(mockPage2);
 
@@ -263,7 +259,7 @@ describe('useInfiniteEvents Hook', () => {
         resolveSecondPage = resolve;
       });
 
-      vi.mocked(eventApiClient.getEvents)
+      vi.mocked(eventApiClient.getPublicEvents)
         .mockResolvedValueOnce(mockPage1)
         .mockReturnValueOnce(secondPagePromise);
 
@@ -296,7 +292,7 @@ describe('useInfiniteEvents Hook', () => {
     });
 
     test('should_NOT_haveNextPage_when_lastPageReached', async () => {
-      vi.mocked(eventApiClient.getEvents)
+      vi.mocked(eventApiClient.getPublicEvents)
         .mockResolvedValueOnce(mockPage1)
         .mockResolvedValueOnce(mockPage2)
         .mockResolvedValueOnce(mockPage3);
@@ -331,26 +327,26 @@ describe('useInfiniteEvents Hook', () => {
         search: 'Architecture',
       };
 
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       renderHook(() => useInfiniteEvents(filters), { wrapper });
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledWith(
-          { page: 1, limit: 20 },
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
           expect.objectContaining({
-            includeArchived: true,
-            workflowState: ['ARCHIVED'],
-            topicCode: ['cloud'],
+            scope: 'archive',
+            page: 1,
+            limit: 20,
             search: 'Architecture',
-          }),
-          { expand: ['topics', 'sessions', 'speakers'], sort: '-date' }
+            topicCodes: ['cloud'],
+            sort: '-date',
+          })
         );
       });
     });
 
     test('should_refetch_when_filtersChange', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       const { rerender } = renderHook(
         ({ filters }: { filters: ArchiveFilters }) => useInfiniteEvents(filters),
@@ -361,7 +357,7 @@ describe('useInfiniteEvents Hook', () => {
       );
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledTimes(1);
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledTimes(1);
       });
 
       // Change filters
@@ -373,22 +369,16 @@ describe('useInfiniteEvents Hook', () => {
       rerender({ filters: newFilters });
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledTimes(2);
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledTimes(2);
       });
 
-      expect(eventApiClient.getEvents).toHaveBeenLastCalledWith(
-        { page: 1, limit: 20 },
-        expect.objectContaining({
-          includeArchived: true,
-          workflowState: ['ARCHIVED'],
-          search: '',
-        }),
-        { expand: ['topics', 'sessions', 'speakers'], sort: '-date' }
+      expect(eventApiClient.getPublicEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({ scope: 'archive', page: 1, limit: 20, search: '', sort: '-date' })
       );
     });
 
     test('should_resetPagination_when_filtersChange', async () => {
-      vi.mocked(eventApiClient.getEvents)
+      vi.mocked(eventApiClient.getPublicEvents)
         .mockResolvedValueOnce(mockPage1)
         .mockResolvedValueOnce(mockPage2)
         .mockResolvedValueOnce(mockPage1); // After filter change
@@ -428,24 +418,19 @@ describe('useInfiniteEvents Hook', () => {
 
   describe('Sort Integration', () => {
     test('should_passSortToAPI_when_sortProvided', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       renderHook(() => useInfiniteEvents({}, '-date'), { wrapper });
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledWith(
-          { page: 1, limit: 20 },
-          { includeArchived: true, workflowState: ['ARCHIVED'] },
-          expect.objectContaining({
-            expand: ['topics', 'sessions', 'speakers'],
-            sort: '-date',
-          })
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledWith(
+          expect.objectContaining({ scope: 'archive', page: 1, limit: 20, sort: '-date' })
         );
       });
     });
 
     test('should_refetch_when_sortChanges', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       const { rerender } = renderHook(({ sort }: { sort: string }) => useInfiniteEvents({}, sort), {
         wrapper,
@@ -453,27 +438,25 @@ describe('useInfiniteEvents Hook', () => {
       });
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledTimes(1);
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledTimes(1);
       });
 
       // Change sort
       rerender({ sort: 'date' });
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledTimes(2);
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledTimes(2);
       });
 
-      expect(eventApiClient.getEvents).toHaveBeenLastCalledWith(
-        { page: 1, limit: 20 },
-        { includeArchived: true, workflowState: ['ARCHIVED'] },
-        expect.objectContaining({ sort: 'date' })
+      expect(eventApiClient.getPublicEvents).toHaveBeenLastCalledWith(
+        expect.objectContaining({ scope: 'archive', page: 1, limit: 20, sort: 'date' })
       );
     });
   });
 
   describe('Caching (React Query)', () => {
     test('should_cacheResults_when_dataLoaded', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       const { result, unmount } = renderHook(() => useInfiniteEvents({}), { wrapper });
 
@@ -481,7 +464,7 @@ describe('useInfiniteEvents Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(eventApiClient.getEvents).toHaveBeenCalledTimes(1);
+      expect(eventApiClient.getPublicEvents).toHaveBeenCalledTimes(1);
 
       // Unmount and remount (simulate navigation)
       unmount();
@@ -494,12 +477,12 @@ describe('useInfiniteEvents Hook', () => {
     });
 
     test('should_setStaleTime_when_configured', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       renderHook(() => useInfiniteEvents({}), { wrapper });
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalled();
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalled();
       });
 
       // Verify query options include staleTime
@@ -511,7 +494,7 @@ describe('useInfiniteEvents Hook', () => {
   describe('Error Handling', () => {
     test('should_setError_when_apiFails', async () => {
       const error = new Error('Network error');
-      vi.mocked(eventApiClient.getEvents).mockRejectedValue(error);
+      vi.mocked(eventApiClient.getPublicEvents).mockRejectedValue(error);
 
       const { result } = renderHook(() => useInfiniteEvents({}), { wrapper });
 
@@ -523,7 +506,7 @@ describe('useInfiniteEvents Hook', () => {
     });
 
     test('should_NOT_setData_when_apiFails', async () => {
-      vi.mocked(eventApiClient.getEvents).mockRejectedValue(new Error('Network error'));
+      vi.mocked(eventApiClient.getPublicEvents).mockRejectedValue(new Error('Network error'));
 
       const { result } = renderHook(() => useInfiniteEvents({}), { wrapper });
 
@@ -536,7 +519,7 @@ describe('useInfiniteEvents Hook', () => {
 
     test('should_retryFailedRequest_when_retryEnabled', async () => {
       // First call fails, second succeeds
-      vi.mocked(eventApiClient.getEvents)
+      vi.mocked(eventApiClient.getPublicEvents)
         .mockRejectedValueOnce(new Error('Network error'))
         .mockResolvedValueOnce(mockPage1);
 
@@ -559,7 +542,7 @@ describe('useInfiniteEvents Hook', () => {
         { timeout: 3000 } // Longer timeout for retry
       );
 
-      expect(eventApiClient.getEvents).toHaveBeenCalledTimes(2);
+      expect(eventApiClient.getPublicEvents).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -570,12 +553,12 @@ describe('useInfiniteEvents Hook', () => {
         search: '',
       };
 
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       renderHook(() => useInfiniteEvents(filters), { wrapper });
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalled();
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalled();
       });
 
       // Query key should include filters for proper caching
@@ -583,12 +566,12 @@ describe('useInfiniteEvents Hook', () => {
     });
 
     test('should_includeSortInQueryKey_when_sortProvided', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       renderHook(() => useInfiniteEvents({}, '-date'), { wrapper });
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalled();
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalled();
       });
 
       // Query key should include sort
@@ -596,7 +579,7 @@ describe('useInfiniteEvents Hook', () => {
     });
 
     test('should_cacheSeprately_when_filtersDifferent', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       const filters1: ArchiveFilters = {
         topics: ['cloud'],
@@ -611,7 +594,7 @@ describe('useInfiniteEvents Hook', () => {
       const { unmount } = renderHook(() => useInfiniteEvents(filters1), { wrapper });
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledTimes(1);
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledTimes(1);
       });
 
       unmount();
@@ -620,7 +603,7 @@ describe('useInfiniteEvents Hook', () => {
       renderHook(() => useInfiniteEvents(filters2), { wrapper });
 
       await waitFor(() => {
-        expect(eventApiClient.getEvents).toHaveBeenCalledTimes(2);
+        expect(eventApiClient.getPublicEvents).toHaveBeenCalledTimes(2);
       });
     });
   });
@@ -637,7 +620,7 @@ describe('useInfiniteEvents Hook', () => {
         },
       };
 
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(emptyPage);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(emptyPage);
 
       const { result } = renderHook(() => useInfiniteEvents({}), { wrapper });
 
@@ -660,7 +643,7 @@ describe('useInfiniteEvents Hook', () => {
         },
       };
 
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(singlePage);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(singlePage);
 
       const { result } = renderHook(() => useInfiniteEvents({}), { wrapper });
 
@@ -672,7 +655,7 @@ describe('useInfiniteEvents Hook', () => {
     });
 
     test('should_handleManyPages_when_54Events', async () => {
-      vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockPage1);
+      vi.mocked(eventApiClient.getPublicEvents).mockResolvedValue(mockPage1);
 
       const { result } = renderHook(() => useInfiniteEvents({}), { wrapper });
 

@@ -46,13 +46,28 @@ interface EventTypeConfigurationFormProps {
   onCancel: () => void;
 }
 
-type FormData = UpdateEventSlotConfigurationRequest;
+// The start time may be empty while editing; validateForm enforces it before save.
+type FormData = Omit<UpdateEventSlotConfigurationRequest, 'typicalStartTime'> & {
+  typicalStartTime?: string;
+};
+
+/**
+ * Conventional start time per event type, pre-filled when a template has none. Mirrors the
+ * backend fallback in TimetableService.defaultStartTime (bug 2026-10-07: the evening template had
+ * lost its start time and the slot grid started at 09:00).
+ */
+const DEFAULT_START_TIME: Record<EventType, string> = {
+  FULL_DAY: '09:00',
+  AFTERNOON: '13:00',
+  EVENING: '16:00',
+};
 
 interface ValidationErrors {
   minSlots?: string;
   maxSlots?: string;
   slotDuration?: string;
   defaultCapacity?: string;
+  typicalStartTime?: string;
   general?: string;
 }
 
@@ -106,7 +121,8 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
         breakSlots: currentConfig.breakSlots,
         lunchSlots: currentConfig.lunchSlots,
         defaultCapacity: currentConfig.defaultCapacity,
-        typicalStartTime: currentConfig.typicalStartTime ?? undefined,
+        typicalStartTime:
+          currentConfig.typicalStartTime ?? (eventType ? DEFAULT_START_TIME[eventType] : undefined),
         typicalEndTime: currentConfig.typicalEndTime ?? undefined,
         moderationStartDuration: currentConfig.moderationStartDuration ?? 5,
         moderationEndDuration: currentConfig.moderationEndDuration ?? 5,
@@ -117,7 +133,7 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
         aperitifPosition: currentConfig.aperitifPosition ?? 'end',
       });
     }
-  }, [currentConfig]);
+  }, [currentConfig, eventType]);
 
   const validateForm = (): boolean => {
     const newErrors: ValidationErrors = {};
@@ -147,6 +163,11 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
       newErrors.defaultCapacity = t('validation.defaultCapacityPositive');
     }
 
+    // Start time is required: the timetable is anchored to it
+    if (!formData.typicalStartTime) {
+      newErrors.typicalStartTime = t('validation.typicalStartTimeRequired');
+    }
+
     setErrors(newErrors);
     return Object.keys(newErrors).length === 0;
   };
@@ -154,7 +175,7 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
 
-    if (!validateForm()) {
+    if (!validateForm() || !formData.typicalStartTime) {
       return;
     }
 
@@ -162,7 +183,11 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
     try {
       // Persist the derived end time so downstream consumers (public event logistics,
       // EventTimeResolver) read the same value the organizer sees in the preview.
-      await onSave({ ...formData, typicalEndTime: computedEndTime });
+      await onSave({
+        ...formData,
+        typicalStartTime: formData.typicalStartTime,
+        typicalEndTime: computedEndTime,
+      });
     } catch {
       setErrors({ general: t('form.eventTypeConfig.saveFailed') });
     } finally {
@@ -280,14 +305,16 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
         </Stack>
 
         {/* Row 2b: Typical Start Time | Typical End Time
-            Editing these here is what keeps the values from being nulled on save
-            (an empty string is normalised to undefined below so the API leaves it unset). */}
+            The start time is required (the API rejects a save without it); the end time is
+            derived from the schedule. */}
         <Stack direction="row" spacing={2}>
           <TextField
             label={t('form.eventTypeConfig.typicalStartTime')}
             type="time"
             value={formData.typicalStartTime ?? ''}
             onChange={(e) => handleChange('typicalStartTime', e.target.value || undefined)}
+            error={!!errors.typicalStartTime}
+            helperText={errors.typicalStartTime}
             fullWidth
             InputLabelProps={{ shrink: true }}
             inputProps={{ step: 300 }}

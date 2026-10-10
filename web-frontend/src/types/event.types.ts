@@ -23,6 +23,8 @@ import type { components as analyticsComponents } from './generated/event-analyt
 
 export type Event = coreComponents['schemas']['Event'];
 export type EventDetail = coreComponents['schemas']['EventDetail'];
+/** A speaker as the public website shows it (Public Events read model, 2026-10-07). */
+export type PublicSpeaker = coreComponents['schemas']['PublicSpeaker'];
 export type Venue = coreComponents['schemas']['Venue'];
 export type Session = sessionsComponents['schemas']['Session'];
 export type SessionSpeaker = sessionsComponents['schemas']['SessionSpeaker'];
@@ -421,6 +423,7 @@ export interface SessionTimingRequest {
     | 'networking'
     | 'break'
     | 'lunch'
+    | 'aperitif'
     | 'moderation';
   changeReason?:
     | 'initial_assignment'

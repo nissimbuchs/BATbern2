@@ -58,6 +58,21 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("event-management-service");
     }
 
+    // Public Events read model (2026-10-07) lives in EMS. Without its own route it would fall into
+    // the generic /api/v1/public prefix, which belongs to company-user-management-service.
+    @Test
+    @DisplayName("should_routeToEventService_when_publicEventsEndpointCalled")
+    void should_routeToEventService_when_publicEventsEndpointCalled() {
+        assertThat(domainRouter.determineTargetService("/api/v1/public/events/current"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/public/events/BATbern60"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/public/events"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/public/users/jane.smith"))
+                .isEqualTo("company-user-management-service");
+    }
+
     // Regression: /api/v1/event-types must route to EMS. There was NO route for it
     // (it doesn't match the /api/v1/events prefix — the hyphen breaks it), so the
     // gateway threw RoutingException → 500. The event-types-api Bruno suite had been

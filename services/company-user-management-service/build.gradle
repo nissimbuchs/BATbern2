@@ -20,19 +20,19 @@ gitProperties {
 
 dependencies {
     // Service-specific: AWS SDK (S3, Cognito, EventBridge)
-    implementation platform('software.amazon.awssdk:bom:2.54.7')
+    implementation platform('software.amazon.awssdk:bom:2.55.12')
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:url-connection-client'
     implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
 
     // Service-specific: Caching
-    implementation 'com.github.ben-manes.caffeine:caffeine:3.2.3'
+    implementation 'com.github.ben-manes.caffeine:caffeine:3.3.0'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
     // Service-specific: ShedLock for distributed scheduled tasks
-    implementation 'net.javacrumbs.shedlock:shedlock-spring:5.10.0'
-    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:5.10.0'
+    implementation 'net.javacrumbs.shedlock:shedlock-spring:7.10.1'
+    implementation 'net.javacrumbs.shedlock:shedlock-provider-jdbc-template:7.10.1'
 
     // Service-specific: Monitoring
     implementation 'io.micrometer:micrometer-core'
@@ -47,8 +47,8 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
     // Service-specific: Testing
-    testImplementation 'io.rest-assured:rest-assured:5.5.6'
-    testImplementation 'org.awaitility:awaitility:4.2.0'
+    testImplementation 'io.rest-assured:rest-assured:6.0.1'
+    testImplementation 'org.awaitility:awaitility:4.3.0'
 
     // Service-specific: DevTools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'

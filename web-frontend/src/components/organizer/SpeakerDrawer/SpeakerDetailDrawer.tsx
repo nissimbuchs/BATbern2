@@ -211,6 +211,9 @@ export const SpeakerDetailDrawer: React.FC<SpeakerDetailDrawerProps> = ({
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['speakerStatusSummary', eventCode] });
       queryClient.invalidateQueries({ queryKey: speakerPoolKeys.list(eventCode) });
+      // A state override can create (READY) or re-scope a session; keep the agenda in step,
+      // as SpeakerStatusLanes does for kanban moves.
+      queryClient.invalidateQueries({ queryKey: ['event', eventCode] });
     },
     onError: (err: unknown) => {
       const message =

@@ -606,4 +606,66 @@ class TimetableServiceTest {
         event.setDate(Instant.parse(dateIso));
         return event;
     }
+
+    // ─────────────────────────────────────────────────────────────────────────
+    // Start-time fallback per event type (bug 2026-10-07: the evening template had lost its
+    // start time in production and BATbern60's slot grid started at 09:00 instead of 16:00)
+    // ─────────────────────────────────────────────────────────────────────────
+
+    private EventTypeConfiguration configWithoutStartTime(EventType type) {
+        return EventTypeConfiguration.builder()
+                .id(UUID.randomUUID())
+                .type(type)
+                .minSlots(3)
+                .maxSlots(3)
+                .slotDuration(45)
+                .theoreticalSlotsAM(false)
+                .breakSlots(0)
+                .lunchSlots(0)
+                .defaultCapacity(200)
+                .build();
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.CsvSource({
+        "EVENING,   2025-06-15T14:00:00Z",
+        "AFTERNOON, 2025-06-15T11:00:00Z",
+        "FULL_DAY,  2025-06-15T07:00:00Z"
+    })
+    @DisplayName("should_startAtEventTypeDefault_when_configHasNoStartTime")
+    void should_startAtEventTypeDefault_when_configHasNoStartTime(EventType type, String expectedStartUtc) {
+        List<TimetableSlot> slots = timetableService.computeTimeline(
+                configWithoutStartTime(type), EVENT_DATE, type);
+
+        assertThat(slots.get(0).getStartTime().toString()).isEqualTo(expectedStartUtc);
+    }
+
+    @Test
+    @DisplayName("should_useConfiguredStartTime_when_configHasStartTime")
+    void should_useConfiguredStartTime_when_configHasStartTime() {
+        EventTypeConfiguration config = configWithoutStartTime(EventType.EVENING);
+        config.setTypicalStartTime(LocalTime.of(17, 30));
+
+        List<TimetableSlot> slots = timetableService.computeTimeline(config, EVENT_DATE, EventType.EVENING);
+
+        assertThat(slots.get(0).getStartTime().toString()).isEqualTo("2025-06-15T15:30:00Z");
+    }
+
+    @Test
+    @DisplayName("should_startEveningTimetableAt1600_when_templateLostItsStartTime")
+    void should_startEveningTimetableAt1600_when_templateLostItsStartTime() {
+        Event event = Event.builder()
+                .id(UUID.randomUUID())
+                .eventCode("BATbern60")
+                .eventType(EventType.EVENING)
+                .date(Instant.parse("2025-06-15T14:00:00Z"))
+                .build();
+        when(eventRepository.findByEventCode("BATbern60")).thenReturn(Optional.of(event));
+        when(agendaConfigResolver.resolve(event)).thenReturn(configWithoutStartTime(EventType.EVENING));
+        when(sessionRepository.findByEventId(event.getId())).thenReturn(List.of());
+
+        TimetableResponse response = timetableService.getTimetable("BATbern60");
+
+        assertThat(response.getSlots().get(0).getStartTime().toString()).isEqualTo("2025-06-15T14:00:00Z");
+    }
 }

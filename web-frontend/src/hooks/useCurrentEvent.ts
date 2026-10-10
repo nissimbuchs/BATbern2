@@ -18,11 +18,10 @@ import type { EventDetail } from '@/types/event.types';
  */
 export const useCurrentEvent = (options?: { retry?: number | false }) => {
   return useQuery<EventDetail | null, Error>({
-    queryKey: ['events', 'current'],
-    queryFn: () =>
-      eventApiClient.getCurrentEvent({
-        expand: ['topics', 'venue', 'speakers', 'sessions', 'registrations'],
-      }),
+    queryKey: ['events', 'public', 'current'],
+    // Public Events read model (2026-10-07): sessions/speakers are shaped by the publishing
+    // phase on the server, the same for anonymous visitors and logged-in organizers.
+    queryFn: () => eventApiClient.getPublicCurrentEvent(),
     staleTime: 5 * 60 * 1000, // 5 minutes (event data doesn't change frequently)
     retry: options?.retry ?? 2, // Default to 2 retries, but allow override for testing
     refetchOnWindowFocus: false,

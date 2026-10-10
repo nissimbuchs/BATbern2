@@ -223,6 +223,13 @@
         "closeNow": "Chiudi le Q&A ora",
         "reopen": "Apri le Q&A",
         "saved": "Impostazioni Q&A salvate"
+      },
+      "workflowState": {
+        "title": "Stato dell'evento",
+        "description": "Modifica manualmente lo stato dell'evento. Senza deroga si applicano le normali regole di transizione.",
+        "apply": "Cambia stato",
+        "success": "Stato dell'evento modificato.",
+        "error": "Impossibile modificare lo stato dell'evento."
       }
     },
     "speakers": {
@@ -590,7 +597,8 @@
     "maxSlotsRequired": "Il numero massimo di slot è obbligatorio",
     "slotDurationMinimum": "La durata degli slot deve essere di almeno 15 minuti",
     "minSlotsLessThanMax": "Il numero minimo di slot deve essere inferiore o uguale al massimo",
-    "defaultCapacityPositive": "La capienza predefinita deve essere un numero positivo"
+    "defaultCapacityPositive": "La capienza predefinita deve essere un numero positivo",
+    "typicalStartTimeRequired": "L'orario di inizio è obbligatorio."
   },
   "errors": {
     "loadFailed": "Caricamento eventi fallito",
@@ -697,7 +705,11 @@
       },
       "accessibility": {
         "publishingPhase": "Pubblicazione {{phase}}"
-      }
+      },
+      "revertPhase": "Annulla pubblicazione {{phase}}",
+      "revertConfirmTitle": "Annullare la pubblicazione {{phase}}?",
+      "revertConfirmText": "Il sito pubblico torna alla fase precedente. Ciò che {{phase}} mostrava non è più visibile ai visitatori.",
+      "revertConfirmButton": "Annulla pubblicazione"
     },
     "validation": {
       "readyToPublish": "Pronto per la pubblicazione",

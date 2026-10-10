@@ -58,6 +58,7 @@ import { useTranslation } from 'react-i18next';
 import { UserAvatar } from '@/components/shared/UserAvatar';
 import { SessionEditModal, type SessionUpdateData } from './SessionEditModal';
 import type { SessionUI } from '@/types/event.types';
+import { isStructuralSession, type StructuralSessionType } from '@/utils/sessionTypes';
 
 interface SpeakersSessionsTableProps {
   sessions: SessionUI[];
@@ -90,8 +91,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
   const [sessionToDelete, setSessionToDelete] = useState<SessionUI | null>(null);
   const [deleteLoading, setDeleteLoading] = useState(false);
 
-  const STRUCTURAL_TYPES = ['moderation', 'break', 'lunch', 'aperitif'] as const;
-  type StructuralType = (typeof STRUCTURAL_TYPES)[number];
+  type StructuralType = StructuralSessionType;
 
   const STRUCTURAL_CHIP: Record<
     StructuralType,
@@ -123,8 +123,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
     },
   };
 
-  const isStructural = (session: SessionUI) =>
-    STRUCTURAL_TYPES.includes(session.sessionType as StructuralType);
+  const isStructural = (session: SessionUI) => isStructuralSession(session.sessionType);
 
   // Sort sessions by start time (unassigned sessions go to the end)
   const sortedSessions = React.useMemo(() => {

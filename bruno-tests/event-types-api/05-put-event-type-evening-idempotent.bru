@@ -15,15 +15,11 @@ auth:bearer {
 }
 
 body:json {
-  {
-    "minSlots": {{eveningMinSlots}},
-    "maxSlots": {{eveningMaxSlots}},
-    "slotDuration": {{eveningSlotDuration}},
-    "theoreticalSlotsAM": {{eveningTheoreticalSlotsAM}},
-    "breakSlots": {{eveningBreakSlots}},
-    "lunchSlots": {{eveningLunchSlots}},
-    "defaultCapacity": {{eveningDefaultCapacity}}
-  }
+  {}
+}
+
+script:pre-request {
+  req.setBody(JSON.parse(bru.getVar("eveningBaseline")));
 }
 
 tests {
@@ -31,16 +27,13 @@ tests {
     expect(res.getStatus()).to.equal(200);
   });
 
-  test("response echoes the captured baseline (round-trip integrity)", function() {
+  test("response echoes the full captured baseline, start and end time included", function() {
     const body = res.getBody();
+    const baseline = JSON.parse(bru.getVar("eveningBaseline"));
     expect(body.type).to.equal("EVENING");
-    expect(body.minSlots).to.equal(Number(bru.getVar("eveningMinSlots")));
-    expect(body.maxSlots).to.equal(Number(bru.getVar("eveningMaxSlots")));
-    expect(body.slotDuration).to.equal(Number(bru.getVar("eveningSlotDuration")));
-    expect(body.theoreticalSlotsAM).to.equal(bru.getVar("eveningTheoreticalSlotsAM") === "true" || bru.getVar("eveningTheoreticalSlotsAM") === true);
-    expect(body.breakSlots).to.equal(Number(bru.getVar("eveningBreakSlots")));
-    expect(body.lunchSlots).to.equal(Number(bru.getVar("eveningLunchSlots")));
-    expect(body.defaultCapacity).to.equal(Number(bru.getVar("eveningDefaultCapacity")));
+    Object.keys(baseline).forEach((f) => {
+      expect(body[f], f).to.deep.equal(baseline[f]);
+    });
   });
 }
 

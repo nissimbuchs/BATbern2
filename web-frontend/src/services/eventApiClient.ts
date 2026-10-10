@@ -41,6 +41,18 @@ type TeaserImageUpdateRequest = coreComponents['schemas']['TeaserImageUpdateRequ
 
 // API base path for event endpoints
 const EVENT_API_PATH = '/events';
+/** Public Events read model for the website (2026-10-07). */
+const PUBLIC_EVENT_API_PATH = '/public/events';
+
+/** Query for {@link EventApiClient.getPublicEvents}. */
+export interface PublicEventsQuery {
+  scope: 'upcoming' | 'archive';
+  search?: string;
+  topicCodes?: string[];
+  sort?: '-date' | 'date';
+  page?: number;
+  limit?: number;
+}
 
 // Import types from event.types.ts to avoid duplication
 import type { EventListResponse, EventFilters, PaginationParams } from '@/types/event.types';
@@ -247,32 +259,66 @@ class EventApiClient {
   }
 
   /**
-   * Get current published event (PUBLIC ACCESS - Story 4.1.3)
+   * Current event for the public homepage (Public Events read model, 2026-10-07).
    *
-   * Retrieves the next upcoming published event for the public website.
-   * This method works with or without authentication (public endpoint).
+   * GET /public/events/current. Sessions and speakers are already shaped by the publishing
+   * phase on the server: SPEAKERS phase brings `speakers` without talk titles and no `sessions`;
+   * the answer is the same whether or not the visitor is logged in.
    *
-   * @param options Optional configuration for resource expansion
-   * @returns Current published event or null if none exists
+   * @returns the event, or null if none is featured (404)
    */
-  async getCurrentEvent(options?: { expand?: string[] }): Promise<EventDetail | null> {
+  async getPublicCurrentEvent(): Promise<EventDetail | null> {
     try {
-      const params = new URLSearchParams();
-      if (options?.expand && options.expand.length > 0) {
-        params.append('include', options.expand.join(','));
-      }
-
-      const url = params.toString()
-        ? `${EVENT_API_PATH}/current?${params.toString()}`
-        : `${EVENT_API_PATH}/current`;
-
-      const response = await apiClient.get<EventDetail>(url);
+      const response = await apiClient.get<EventDetail>(`${PUBLIC_EVENT_API_PATH}/current`);
       return response.data;
     } catch (error) {
-      // Return null if no current event exists (404)
       if (this.isAxiosError(error) && error.response?.status === 404) {
         return null;
       }
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * One event as the public website shows it (/events/:code, /archive/:code).
+   * GET /public/events/{code}; 404 unless the event is publicly visible.
+   */
+  async getPublicEvent(eventCode: string): Promise<EventDetail> {
+    try {
+      const response = await apiClient.get<EventDetail>(
+        `${PUBLIC_EVENT_API_PATH}/${encodeURIComponent(eventCode)}`
+      );
+      return response.data;
+    } catch (error) {
+      throw this.transformError(error);
+    }
+  }
+
+  /**
+   * Events for the public website. `upcoming`: published events from today on, nearest first.
+   * `archive`: archived events, optionally narrowed by search text and topic codes. The selection
+   * is fixed on the server, so unpublished events can never appear.
+   */
+  async getPublicEvents(query: PublicEventsQuery): Promise<EventListResponse> {
+    try {
+      const params = new URLSearchParams();
+      params.append('scope', query.scope);
+      params.append('page', String(query.page ?? 1));
+      params.append('limit', String(query.limit ?? 20));
+      if (query.search) {
+        params.append('search', query.search);
+      }
+      if (query.topicCodes && query.topicCodes.length > 0) {
+        params.append('topicCodes', query.topicCodes.join(','));
+      }
+      if (query.sort) {
+        params.append('sort', query.sort);
+      }
+      const response = await apiClient.get<EventListResponse>(
+        `${PUBLIC_EVENT_API_PATH}?${params.toString()}`
+      );
+      return response.data;
+    } catch (error) {
       throw this.transformError(error);
     }
   }

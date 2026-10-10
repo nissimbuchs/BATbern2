@@ -18,7 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDate;
-import java.time.ZoneOffset;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -39,7 +39,12 @@ import java.util.List;
 @Slf4j
 public class StructuralSessionService {
 
-    static final List<String> STRUCTURAL_TYPES = List.of("moderation", "break", "lunch", "aperitif");
+    /**
+     * The types this generator creates and, with overwrite, deletes and re-creates. Deliberately its
+     * own list, not {@link Session#isStructuralType}: it names what the generator owns, so an
+     * overwrite can never delete a session type the generator does not produce.
+     */
+    static final List<String> GENERATED_TYPES = List.of("moderation", "break", "lunch", "aperitif");
 
     private final EventRepository eventRepository;
     private final AgendaConfigResolver agendaConfigResolver;
@@ -72,20 +77,22 @@ public class StructuralSessionService {
 
         // 3. Check for existing structural sessions
         List<Session> existing = sessionRepository.findByEventIdAndSessionTypeIn(
-                event.getId(), STRUCTURAL_TYPES);
+                event.getId(), GENERATED_TYPES);
         if (!existing.isEmpty()) {
             if (!overwrite) {
                 throw new StructuralSessionsAlreadyExistException(eventCode);
             }
             log.info("Overwriting {} existing structural sessions for event '{}'",
                     existing.size(), eventCode);
-            sessionRepository.deleteByEventIdAndSessionTypeIn(event.getId(), STRUCTURAL_TYPES);
+            sessionRepository.deleteByEventIdAndSessionTypeIn(event.getId(), GENERATED_TYPES);
             sessionRepository.flush();
         }
 
         // 4. Delegate timeline computation to TimetableService
-        LocalDate eventDate = LocalDate.ofInstant(event.getDate(), ZoneOffset.UTC);
-        List<TimetableSlot> timeline = timetableService.computeTimeline(config, eventDate);
+        // Calendar day in Bern time, as TimetableService.getTimetable does. UTC put an event stored
+        // between 00:00 and 02:00 Bern time on the previous day (fix 2026-10-07).
+        LocalDate eventDate = LocalDate.ofInstant(event.getDate(), ZoneId.of("Europe/Zurich"));
+        List<TimetableSlot> timeline = timetableService.computeTimeline(config, eventDate, event.getEventType());
 
         // 5. Persist structural slots (skip SPEAKER_SLOT — those are implicit gaps)
         String organizerUsername = event.getOrganizerUsername();

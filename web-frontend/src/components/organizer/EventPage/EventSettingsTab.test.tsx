@@ -155,3 +155,16 @@ describe('EventSettingsTab — Moderator Section', () => {
     expect(screen.queryByText('Event Information')).not.toBeInTheDocument();
   });
 });
+
+describe('EventSettingsTab — Event state section (regression: PR #788 lost the state override)', () => {
+  it('should render the event state section with the current state when the settings tab opens', () => {
+    renderWithProviders(
+      <EventSettingsTab
+        event={{ ...mockEvent, workflowState: 'SLOT_ASSIGNMENT' } as never}
+        eventCode="BAT-2024-01"
+      />
+    );
+    expect(screen.getByTestId('workflow-state-section')).toBeInTheDocument();
+    expect(screen.getByTestId('apply-workflow-state-button')).toBeDisabled();
+  });
+});
