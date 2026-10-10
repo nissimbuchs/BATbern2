@@ -756,7 +756,8 @@ target `develop` and get full CI there, but never deploy (`build.yml`) and never
    command. **A person has to send it**: Dependabot refuses the command from the workflow token. Never approve
    the stuck runs instead: their actor is `github-actions[bot]`, which the deploy guard does not exclude.
    Re-running the workflow within a month rebuilds an unopened batch branch.
-4. Pushes the branch and opens an issue "Dependabot batch YYYY-MM ready" with the link.
+4. Regenerates `docs/versions.json` if a bump drifted it, then pushes the branch and opens an issue
+   "Dependabot batch YYYY-MM ready" whose link prefills a `chore(deps):` title (the Doc Drift Check skips `chore`).
 
 **The one manual step: open the batch PR from that issue.** That is the sign-off, and opening it is the one
 production deploy. A PR opened by the workflow token would trigger no CI, so it cannot be automated away.
