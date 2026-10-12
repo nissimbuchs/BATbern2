@@ -6,7 +6,8 @@
  *   - `useEventTasks`     → open backend task cards (this event only; `useMyTasks`
  *                           is deliberately NOT merged — it spans other events).
  *   - `useSpeakerPool`    → awaiting-review count (entries CONTENT_SUBMITTED).
- *   - `useEventType`      → minSlots for the "fill the pool" threshold.
+ *   - `useAgendaConfig`   → minSlots for the "fill the pool" threshold (per-event
+ *                           override if present, else the event-type template).
  *   - the `event` payload → metrics / sessions / registration counts.
  *
  * The registry (`cockpitCards.ts`) owns the completion-signal model; this hook
@@ -15,14 +16,11 @@
 
 import { useMemo } from 'react';
 import type { Event, EventDetailUI } from '@/types/event.types';
-import type { components } from '@/types/generated/events-core-api.types';
 import { useEventTasks } from '@/hooks/useEventTasks';
 import { useSpeakerPool } from '@/hooks/useSpeakerPool';
-import { useEventType } from '@/hooks/useEventTypes';
+import { useAgendaConfig } from '@/hooks/useAgendaConfig/useAgendaConfig';
 import { buildAttentionList, type CockpitCard, type CockpitCardCtx } from './cockpitCards';
 import { isStructuralSession } from '@/utils/sessionTypes';
-
-type EventType = components['schemas']['EventType'];
 
 export interface UseCockpitCardsResult {
   cards: CockpitCard[];
@@ -40,9 +38,8 @@ export function useCockpitCards(
   const tasksQuery = useEventTasks(eventCode);
   const poolQuery = useSpeakerPool(eventCode ?? '');
 
-  // useEventType guards with `enabled: !!type`, so an empty fallback never fetches.
-  const eventType = (event as { eventType?: EventType } | undefined)?.eventType;
-  const eventTypeQuery = useEventType((eventType ?? '') as EventType);
+  // Resolved agenda config: per-event override wins over the event-type template.
+  const agendaConfigQuery = useAgendaConfig(eventCode);
 
   const tasks = tasksQuery.data;
 
@@ -64,7 +61,7 @@ export function useCockpitCards(
       moderatorUsername: (e.organizerUsername as string | null | undefined) ?? null,
       eventDate: (e.date as string | null | undefined) ?? null,
       topicCode: (e.topicCode as string | null | undefined) ?? null,
-      minSlots: eventTypeQuery.data?.minSlots ?? 0,
+      minSlots: agendaConfigQuery.data?.minSlots ?? 0,
       confirmedSpeakersCount: num(e.confirmedSpeakersCount),
       sessionsNeedingSlot: speakerSessions.filter((s) => !s.startTime).length,
       sessionsWithMaterialsCount: num(e.sessionsWithMaterialsCount),
@@ -76,7 +73,7 @@ export function useCockpitCards(
       registrationCapacity:
         typeof e.registrationCapacity === 'number' ? e.registrationCapacity : null,
     };
-  }, [event, eventCode, eventTypeQuery.data, poolQuery.data]);
+  }, [event, eventCode, agendaConfigQuery.data, poolQuery.data]);
 
   // Computed each render (not memoized): buildAttentionList is cheap over a handful
   // of cards, and this keeps `Date.now()` fresh so due-date chips don't freeze when

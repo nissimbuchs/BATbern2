@@ -122,7 +122,7 @@ IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTE
 ```
 
 - **CONTACTED → READY** is the **provisioning gate** — promoting a speaker to `READY` looks up or creates the User, grants the SPEAKER role, and provisions the AWS Cognito account. This step is **organizer-only**, via the promote action (`POST /api/v1/events/{code}/speakers/{speakerId}/promote`).
-- **READY → INVITED** sends the formal invitation email (login link + temporary password). It is blocked by a **slot-capacity gate**: `READY → INVITED` is rejected when `count(ACCEPTED) + count(INVITED) >= max_slots` (this replaces the removed `overflow` parking state).
+- **READY → INVITED** sends the formal invitation email (login link + temporary password). It is blocked by a **slot-capacity gate**: `READY → INVITED` is rejected when accepted-track speakers (`ACCEPTED`, `CONTENT_SUBMITTED`, `QUALITY_REVIEWED`) plus `INVITED` reach `max_slots` (this replaces the removed `overflow` parking state). `max_slots` is the event's own agenda setting if edited, else the event type's.
 - **DECLINED** is the single terminal "not happening" state, reachable from any non-terminal state. It covers a lead that didn't pan out, a refusal to an invitation, and a speaker who accepted then dropped out (the previous state and reason are recorded in `speaker_status_history`). This replaces the removed `withdrew` state.
 
 ### State Definitions

@@ -6,7 +6,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
-import ch.batbern.events.core.dto.generated.EventSlotConfigurationResponse;
+import ch.batbern.events.entity.EventAgendaConfig;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
 import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
@@ -39,6 +39,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Stream;
@@ -78,7 +79,7 @@ class SpeakerWorkflowServiceTest {
     @Mock
     private ch.batbern.events.repository.SessionContentHistoryRepository sessionContentHistoryRepository;
     @Mock
-    private EventTypeService eventTypeService;
+    private AgendaConfigResolver agendaConfigResolver;
     @Mock
     private UserApiClient userApiClient;
     @Mock
@@ -119,7 +120,7 @@ class SpeakerWorkflowServiceTest {
                 statusHistoryRepository,
                 sessionProposalRepository,
                 sessionContentHistoryRepository,
-                eventTypeService,
+                agendaConfigResolver,
                 userApiClient,
                 speakerProvisioningHook,
                 invitationEmailService,
@@ -189,8 +190,9 @@ class SpeakerWorkflowServiceTest {
         lenient().when(statusHistoryRepository.save(any(SpeakerStatusHistory.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
         lenient().when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
-        lenient().when(eventTypeService.getEventType(any())).thenReturn(slotConfig(8));
+        lenient().when(agendaConfigResolver.resolve(any())).thenReturn(slotConfig(8));
         lenient().when(speakerPoolRepository.countByEventIdAndStatus(any(), any())).thenReturn(0L);
+        lenient().when(speakerPoolRepository.countByEventIdAndStatusIn(any(), any())).thenReturn(0L);
         lenient().when(userApiClient.provisionUserWithRole(any())).thenReturn(stubUser());
         // Story 11.E.8: READY hook provisions Session + SessionUser. Stub save() to populate
         // ids so downstream code (speaker.setSessionId(session.getId())) doesn't NPE on mocks.
@@ -346,8 +348,11 @@ class SpeakerWorkflowServiceTest {
         SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.READY);
         when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
-        when(eventTypeService.getEventType(any())).thenReturn(slotConfig(3));
-        when(speakerPoolRepository.countByEventIdAndStatus(EVENT_ID, SpeakerWorkflowState.ACCEPTED))
+        when(agendaConfigResolver.resolve(any())).thenReturn(slotConfig(3));
+        when(speakerPoolRepository.countByEventIdAndStatusIn(EVENT_ID, List.of(
+                SpeakerWorkflowState.ACCEPTED,
+                SpeakerWorkflowState.CONTENT_SUBMITTED,
+                SpeakerWorkflowState.QUALITY_REVIEWED)))
                 .thenReturn(2L);
         when(speakerPoolRepository.countByEventIdAndStatus(EVENT_ID, SpeakerWorkflowState.INVITED))
                 .thenReturn(1L);
@@ -777,11 +782,8 @@ class SpeakerWorkflowServiceTest {
         return event;
     }
 
-    private EventSlotConfigurationResponse slotConfig(int max) {
-        EventSlotConfigurationResponse cfg = new EventSlotConfigurationResponse();
-        cfg.setMinSlots(1);
-        cfg.setMaxSlots(max);
-        return cfg;
+    private EventAgendaConfig slotConfig(int max) {
+        return EventAgendaConfig.builder().minSlots(1).maxSlots(max).build();
     }
 
     private ProvisionUserResponse stubUser() {

@@ -3,7 +3,6 @@ package ch.batbern.events.service.publishing;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.PublishingConfig;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.entity.EventTypeConfiguration;
 import ch.batbern.events.core.dto.generated.AutoPublishScheduleRequest;
 import ch.batbern.events.core.dto.generated.AutoPublishScheduleResponse;
 import ch.batbern.events.core.dto.generated.PublishPhaseResponse;
@@ -18,10 +17,10 @@ import ch.batbern.events.core.dto.generated.ValidationStatus;
 import ch.batbern.events.dto.PublishValidationError;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.PublishingConfigRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.events.service.AgendaConfigResolver;
 import ch.batbern.events.service.CdnInvalidationService;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
@@ -57,7 +56,7 @@ public class PublishingService {
     private final SessionRepository sessionRepository;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final PublishingConfigRepository publishingConfigRepository;
-    private final EventTypeRepository eventTypeRepository;
+    private final AgendaConfigResolver agendaConfigResolver;
     private final CacheManager cacheManager;
     private final CdnInvalidationService cdnInvalidationService;
     private final org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
@@ -279,13 +278,9 @@ public class PublishingService {
 
         // Speakers validation - minimum number of sessions based on event type
         // Sessions are created when speakers submit material, so session count correlates with speaker submissions
-        // Get event type configuration for minimum slot requirements
-        EventTypeConfiguration typeConfig = eventTypeRepository.findByType(event.getEventType())
-                .orElseThrow(() -> new RuntimeException(
-                        "Event type configuration not found for type: " + event.getEventType()));
-
+        // Minimum from the effective agenda config (per-event override, else event-type template)
         long sessionCount = sessionRepository.findByEventId(event.getId()).size();
-        int minSlotsRequired = typeConfig.getMinSlots();
+        int minSlotsRequired = agendaConfigResolver.resolve(event).getMinSlots();
         boolean speakersValid = sessionCount >= minSlotsRequired;
 
         List<String> speakersErrors = new ArrayList<>();

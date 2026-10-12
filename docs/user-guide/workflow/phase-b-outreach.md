@@ -117,7 +117,7 @@ Once you've decided who will actually speak, **promote** the chosen candidate fr
 
 ![All Speakers Ready](../assets/screenshots/workflow/phase-b-outreach/b-13-all-speakers-ready.png)
 
-Then send the formal invitation to move the speaker from `READY` to `INVITED`. The invitation email carries a login link + temporary password. The `READY → INVITED` step is subject to the **slot-capacity gate** — it is blocked when `count(ACCEPTED) + count(INVITED) >= max_slots`, so you cannot over-invite beyond the available slots (this replaces the old `overflow` parking state).
+Then send the formal invitation to move the speaker from `READY` to `INVITED`. The invitation email carries a login link + temporary password. The `READY → INVITED` step is subject to the **slot-capacity gate** — it is blocked when accepted speakers (`ACCEPTED`, `CONTENT_SUBMITTED`, `QUALITY_REVIEWED`) plus `INVITED` reach `max_slots`, so you cannot over-invite beyond the available slots (this replaces the old `overflow` parking state). `max_slots` comes from the event's own agenda settings when they have been edited, otherwise from the event type.
 
 When speakers respond via the portal, their card moves from `INVITED` to `ACCEPTED` (or to `DECLINED`).
 
@@ -196,7 +196,7 @@ graph LR
 
 > **READY state (provisioning gate)**: `CONTACTED → READY` is **organizer-only** (the *Promote* action). It looks up or creates the User, grants the SPEAKER role, and provisions the AWS Cognito account. No email is sent at this step.
 >
-> **INVITED state**: `READY → INVITED` sends the invitation email (login link + temporary password) and is gated by slot capacity — blocked when `count(ACCEPTED) + count(INVITED) >= max_slots`.
+> **INVITED state**: `READY → INVITED` sends the invitation email (login link + temporary password) and is gated by slot capacity — blocked when accepted-track speakers plus `INVITED` reach the event's `max_slots` (event agenda override, else event type).
 >
 > **DECLINED is terminal and reachable from every non-terminal state.** It covers a lead that didn't pan out, a refusal to an invitation, and a speaker who accepted then dropped out — replacing the old `withdrew` state. The previous state and reason are recorded in `speaker_status_history`.
 >

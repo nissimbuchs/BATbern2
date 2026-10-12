@@ -40,11 +40,13 @@ import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.exception.RegistrationNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.LogoRepository;
+import ch.batbern.events.service.AgendaConfigResolver;
 import ch.batbern.events.service.EventSearchService;
 import ch.batbern.events.service.EventWorkflowStateMachine;
 import ch.batbern.events.service.publishing.PublicEventShaper;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityPolicy;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityService;
+import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
 import jakarta.validation.Valid;
 import ch.batbern.shared.dto.PaginatedResponse;
@@ -134,7 +136,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     private final ch.batbern.events.repository.SessionUserRepository sessionUserRepository;
     private final ch.batbern.events.repository.SessionMaterialsRepository sessionMaterialsRepository;
     private final ch.batbern.events.repository.SpeakerPoolRepository speakerPoolRepository;
-    private final ch.batbern.events.repository.EventTypeRepository eventTypeRepository;
+    private final AgendaConfigResolver agendaConfigResolver;
     private final ch.batbern.events.service.SessionService sessionService;
     private final ch.batbern.events.service.WaitlistPromotionService waitlistPromotionService;
     private final ch.batbern.events.service.EventTeaserImageService eventTeaserImageService;
@@ -582,12 +584,12 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         // Pending materials = accepted but haven't submitted content yet
         long pendingMaterials = acceptedCount;
 
-        // Get max speaker slots from event type configuration
+        // Max speaker slots from the effective agenda config (per-event override, else template)
         Integer maxSpeakerSlots = null;
-        if (event.getEventType() != null) {
-            maxSpeakerSlots = eventTypeRepository.findByType(event.getEventType())
-                    .map(ch.batbern.events.entity.EventTypeConfiguration::getMaxSlots)
-                    .orElse(null);
+        try {
+            maxSpeakerSlots = agendaConfigResolver.resolve(event).getMaxSlots();
+        } catch (NotFoundException e) {
+            log.debug("No agenda config for event {}: {}", event.getEventCode(), e.getMessage());
         }
 
         // Story 5.9: Calculate session materials metrics

@@ -770,6 +770,32 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.pendingMaterialsCount").value(2)); // 2 ACCEPTED (haven't submitted content)
     }
 
+    @Test
+    @DisplayName("should_reportOverrideMaxSpeakerSlots_when_agendaConfigSavedAfterMetricsCached")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
+    void should_reportOverrideMaxSpeakerSlots_when_agendaConfigSavedAfterMetricsCached() throws Exception {
+        Event savedEvent = eventRepository.findAll().get(0);
+        String url = "/api/v1/events/" + savedEvent.getEventCode();
+
+        mockMvc.perform(get(url).param("include", "metrics"))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put(url + "/agenda-config")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"minSlots":3,"maxSlots":13,"slotDuration":35,"theoreticalSlotsAM":false,
+                                 "breakSlots":1,"lunchSlots":0,"defaultCapacity":200,
+                                 "moderationStartDuration":5,"moderationEndDuration":5,
+                                 "breakDuration":20,"lunchDuration":60,
+                                 "aperitifSlots":1,"aperitifDuration":90,"aperitifPosition":"end",
+                                 "typicalStartTime":"16:00","typicalEndTime":"20:20"}"""))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get(url).param("include", "metrics"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.maxSpeakerSlots").value(13));
+    }
+
     // ============================================================================
     // AC3: Create Event
     // ============================================================================

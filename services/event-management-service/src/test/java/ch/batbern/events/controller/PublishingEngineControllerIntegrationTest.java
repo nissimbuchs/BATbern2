@@ -4,6 +4,8 @@ import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.entity.EventAgendaConfig;
+import ch.batbern.events.repository.EventAgendaConfigRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -60,6 +62,9 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
 
     @Autowired
     private SpeakerPoolRepository speakerPoolRepository;
+
+    @Autowired
+    private EventAgendaConfigRepository agendaConfigRepository;
 
     private Event testEvent;
     private String eventCode;
@@ -418,6 +423,27 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
                 .andExpect(jsonPath("$.sessions.assignedCount").value(6))
                 .andExpect(jsonPath("$.sessions.totalCount").value(6))
                 .andExpect(jsonPath("$.sessions.unassignedSessions").isEmpty());
+    }
+
+    /**
+     * The minimum-sessions check must read the event's effective agenda config: a per-event
+     * override (event_agenda_config) wins over the event-type template.
+     */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_requireOverrideMinSlots_when_perEventAgendaOverrideExists() throws Exception {
+        agendaConfigRepository.save(EventAgendaConfig.builder()
+                .eventId(testEvent.getId())
+                .minSlots(7)
+                .maxSlots(9)
+                .slotDuration(45)
+                .defaultCapacity(300)
+                .build());
+
+        mockMvc.perform(get("/api/v1/events/{eventCode}/publish/status", eventCode))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.speakers.isValid").value(false))
+                .andExpect(jsonPath("$.speakers.errors[0]", containsString("At least 7 sessions")));
     }
 
     /**

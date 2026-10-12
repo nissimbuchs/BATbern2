@@ -242,6 +242,37 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
     }
 
     /**
+     * The slot gate in the organizer UI reads min/max from this summary. A per-event agenda
+     * override (event_agenda_config) must win over the event-type template, and saving the
+     * override must evict the cached summary so the new limits show up immediately.
+     */
+    @Test
+    @DisplayName("Should report per-event agenda override slots, also right after the override is saved")
+    void should_reportOverrideSlots_when_agendaConfigSavedAfterSummaryCached() throws Exception {
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/status-summary", TEST_EVENT_CODE)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(put("/api/v1/events/{code}/agenda-config", TEST_EVENT_CODE)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"minSlots":3,"maxSlots":11,"slotDuration":35,"theoreticalSlotsAM":false,
+                                 "breakSlots":1,"lunchSlots":0,"defaultCapacity":200,
+                                 "moderationStartDuration":5,"moderationEndDuration":5,
+                                 "breakDuration":20,"lunchDuration":60,
+                                 "aperitifSlots":1,"aperitifDuration":90,"aperitifPosition":"end",
+                                 "typicalStartTime":"16:00","typicalEndTime":"20:20"}"""))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get("/api/v1/events/{code}/speakers/status-summary", TEST_EVENT_CODE)
+                        .with(user(ORGANIZER_USERNAME).roles("ORGANIZER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.minSlotsRequired", is(3)))
+                .andExpect(jsonPath("$.maxSlotsAllowed", is(11)));
+    }
+
+    /**
      * AC10-12: should_return422_when_invalidStateTransition_attempted
      * Story 5.4 AC12: Enforce valid state transitions (cannot un-accept)
      */

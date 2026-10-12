@@ -56,6 +56,11 @@ DECLINED          → (terminal — no outbound transitions)
 Notes:
 - `READY → INVITED` is blocked when `count(ACCEPTED) + count(INVITED) >= max_slots`
   for the event (slot-capacity gate; replaces the removed `OVERFLOW` state).
+  *Amended 2026-10-12:* "accepted" means the whole accepted track (`ACCEPTED`,
+  `CONTENT_SUBMITTED`, `QUALITY_REVIEWED`), and `max_slots` is the event's effective agenda
+  config (per-event `event_agenda_config` override, else the event-type template, via
+  `AgendaConfigResolver`). The same applies to on-behalf `READY → ACCEPTED`. Before this the
+  backend counted `ACCEPTED` only and read the template, so a per-event override was ignored.
 - `CONTACTED → READY` is the User-and-Cognito provisioning seam. `email`, `firstName`,
   and `lastName` are all required on the `POST /promote` request (PromoteSpeakerRequest;
   tightened from optional to required by Story 11.E.4 AC4).

@@ -9,7 +9,7 @@ import ch.batbern.events.speakers.dto.generated.SpeakerStatusResponse;
 import ch.batbern.events.speakers.dto.generated.StatusHistoryItem;
 import ch.batbern.events.speakers.dto.generated.StatusSummaryResponse;
 import ch.batbern.events.speakers.dto.generated.UpdateStatusRequest;
-import ch.batbern.events.core.dto.generated.EventSlotConfigurationResponse;
+import ch.batbern.events.entity.EventAgendaConfig;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
@@ -59,7 +59,7 @@ public class SpeakerStatusServiceTest {
     private EventRepository eventRepository;
 
     @Mock
-    private EventTypeService eventTypeService;
+    private AgendaConfigResolver agendaConfigResolver;
 
     @Mock
     private SpeakerWorkflowService speakerWorkflowService;
@@ -75,7 +75,7 @@ public class SpeakerStatusServiceTest {
                 repository,
                 speakerPoolRepository,
                 eventRepository,
-                eventTypeService,
+                agendaConfigResolver,
                 speakerWorkflowService,
                 sessionContentHistoryRepository
         );
@@ -162,12 +162,10 @@ public class SpeakerStatusServiceTest {
         event.setEventCode(eventCode);
         event.setEventType(EventType.FULL_DAY);
 
-        EventSlotConfigurationResponse slotConfig = new EventSlotConfigurationResponse();
-        slotConfig.setMinSlots(6);
-        slotConfig.setMaxSlots(8);
+        EventAgendaConfig slotConfig = EventAgendaConfig.builder().minSlots(6).maxSlots(8).build();
 
         when(eventRepository.findByEventCode(eventCode)).thenReturn(Optional.of(event));
-        when(eventTypeService.getEventType(EventType.FULL_DAY)).thenReturn(slotConfig);
+        when(agendaConfigResolver.resolve(event)).thenReturn(slotConfig);
         when(speakerPoolRepository.findByEventId(event.getId())).thenReturn(new ArrayList<>());
 
         StatusSummaryResponse response = service.getStatusSummary(eventCode);
