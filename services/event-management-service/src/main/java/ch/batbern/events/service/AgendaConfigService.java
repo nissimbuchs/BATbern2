@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.sessions.dto.generated.AgendaConfigSource;
 import ch.batbern.events.sessions.dto.generated.EventAgendaConfigResponse;
@@ -10,8 +11,12 @@ import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventAgendaConfigRepository;
 import ch.batbern.events.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.cache.Cache;
+import org.springframework.cache.CacheManager;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionSynchronization;
+import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.LocalTime;
 import java.time.format.DateTimeParseException;
@@ -30,6 +35,7 @@ public class AgendaConfigService {
     private final EventRepository eventRepository;
     private final EventAgendaConfigRepository overrideRepository;
     private final AgendaConfigResolver agendaConfigResolver;
+    private final CacheManager cacheManager;
 
     /**
      * Return the resolved effective agenda config for an event.
@@ -67,10 +73,38 @@ public class AgendaConfigService {
                 .orElseGet(() -> EventAgendaConfig.builder().eventId(event.getId()).build());
         apply(entity, request);
         EventAgendaConfig saved = overrideRepository.save(entity);
+        evictSlotLimitCachesAfterCommit(eventCode);
         return toResponse(saved, AgendaConfigSource.EVENT_OVERRIDE);
     }
 
     // ─────────────────────────────────────────────────────────────────────────
+
+    /**
+     * Min/max slots surface in the speaker status summary (the organizer UI's slot gate) and in
+     * the event metrics. Evict both now and again after commit, so a concurrent read cannot
+     * re-cache the pre-commit limits (same reasoning as {@code SpeakerWorkflowService}).
+     */
+    private void evictSlotLimitCachesAfterCommit(String eventCode) {
+        Runnable evict = () -> {
+            Cache summary = cacheManager.getCache(CacheConfig.STATUS_SUMMARY_CACHE);
+            if (summary != null) {
+                summary.evict(eventCode);
+            }
+            Cache eventWithIncludes = cacheManager.getCache(CacheConfig.EVENT_WITH_INCLUDES_CACHE);
+            if (eventWithIncludes != null) {
+                eventWithIncludes.clear();
+            }
+        };
+        evict.run();
+        if (TransactionSynchronizationManager.isSynchronizationActive()) {
+            TransactionSynchronizationManager.registerSynchronization(new TransactionSynchronization() {
+                @Override
+                public void afterCommit() {
+                    evict.run();
+                }
+            });
+        }
+    }
 
     private Event loadEvent(String eventCode) {
         return eventRepository.findByEventCode(eventCode)

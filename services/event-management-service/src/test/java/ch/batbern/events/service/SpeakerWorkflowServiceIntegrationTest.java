@@ -11,8 +11,11 @@ import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
 import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
+import ch.batbern.events.entity.EventAgendaConfig;
 import ch.batbern.events.exception.SlotCapacityReachedException;
+import ch.batbern.events.repository.EventAgendaConfigRepository;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
@@ -78,6 +81,10 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
     private SpeakerStatusHistoryRepository statusHistoryRepository;
     @Autowired
     private UserApiClient userApiClient;
+    @Autowired
+    private EventTypeRepository eventTypeRepository;
+    @Autowired
+    private EventAgendaConfigRepository agendaConfigRepository;
 
     @MockitoBean
     private SpeakerInvitationEmailService invitationEmailService;
@@ -372,6 +379,39 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         verify(invitationEmailService).sendInvitationEmail(any(), any(), any(), any(), any());
     }
 
+    @Test
+    @DisplayName("INVITED: per-event agenda override raises maxSlots above the event-type template")
+    void should_allowInvite_when_perEventOverrideRaisesMaxSlotsAboveTemplate() {
+        int templateMax = templateMaxSlots();
+        for (int i = 0; i < templateMax; i++) {
+            createSpeaker(SpeakerWorkflowState.ACCEPTED);
+        }
+        saveAgendaOverride(templateMax + 1);
+        SpeakerPool candidate = createSpeaker(SpeakerWorkflowState.READY);
+
+        workflowService.transition(
+                candidate.getId(), SpeakerWorkflowState.INVITED, ORGANIZER, TransitionPayload.builder().build());
+
+        assertThat(speakerPoolRepository.findById(candidate.getId()).orElseThrow().getStatus())
+                .isEqualTo(SpeakerWorkflowState.INVITED);
+    }
+
+    @Test
+    @DisplayName("INVITED: speakers past ACCEPTED (content submitted / reviewed) still occupy a slot")
+    void should_throwSlotCapacityReached_when_contentLifecycleSpeakersFillSlots() {
+        int templateMax = templateMaxSlots();
+        for (int i = 0; i < templateMax; i++) {
+            createSpeaker(i % 2 == 0
+                    ? SpeakerWorkflowState.CONTENT_SUBMITTED
+                    : SpeakerWorkflowState.QUALITY_REVIEWED);
+        }
+        SpeakerPool candidate = createSpeaker(SpeakerWorkflowState.READY);
+
+        assertThatThrownBy(() -> workflowService.transition(
+                candidate.getId(), SpeakerWorkflowState.INVITED, ORGANIZER, TransitionPayload.builder().build()))
+                .isInstanceOf(SlotCapacityReachedException.class);
+    }
+
     // ---- Story 11.E.2 AC11 #9: runInvitedHook calls issueInvitationCredentials ----
 
     @Test
@@ -459,6 +499,20 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     // ---- helpers ----
+
+    private int templateMaxSlots() {
+        return eventTypeRepository.findByType(EventType.EVENING).orElseThrow().getMaxSlots();
+    }
+
+    private void saveAgendaOverride(int maxSlots) {
+        agendaConfigRepository.save(EventAgendaConfig.builder()
+                .eventId(testEventId)
+                .minSlots(1)
+                .maxSlots(maxSlots)
+                .slotDuration(35)
+                .defaultCapacity(200)
+                .build());
+    }
 
     private SpeakerPool createSpeaker(SpeakerWorkflowState status) {
         SpeakerPool speaker = new SpeakerPool();

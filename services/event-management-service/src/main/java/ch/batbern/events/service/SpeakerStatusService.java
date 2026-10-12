@@ -10,7 +10,7 @@ import ch.batbern.events.speakers.dto.generated.SpeakerStatusResponse;
 import ch.batbern.events.speakers.dto.generated.StatusHistoryItem;
 import ch.batbern.events.speakers.dto.generated.StatusSummaryResponse;
 import ch.batbern.events.speakers.dto.generated.UpdateStatusRequest;
-import ch.batbern.events.core.dto.generated.EventSlotConfigurationResponse;
+import ch.batbern.events.entity.AgendaConfig;
 import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
@@ -56,7 +56,7 @@ public class SpeakerStatusService {
     private final SpeakerStatusHistoryRepository repository;
     private final SpeakerPoolRepository speakerPoolRepository;
     private final EventRepository eventRepository;
-    private final EventTypeService eventTypeService;
+    private final AgendaConfigResolver agendaConfigResolver;
     private final SpeakerWorkflowService speakerWorkflowService;
     private final SessionContentHistoryRepository sessionContentHistoryRepository;
 
@@ -179,9 +179,11 @@ public class SpeakerStatusService {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new NotFoundException("Event not found: " + eventCode));
 
-        EventSlotConfigurationResponse typeConfig = eventTypeService.getEventType(event.getEventType());
-        int minSlots = typeConfig.getMinSlots();
-        int maxSlots = typeConfig.getMaxSlots();
+        // Per-event agenda override wins over the event-type template (Story 15.2). The
+        // organizer UI's slot-capacity gate reads maxSlotsAllowed from this response.
+        AgendaConfig slotConfig = agendaConfigResolver.resolve(event);
+        int minSlots = slotConfig.getMinSlots();
+        int maxSlots = slotConfig.getMaxSlots();
 
         log.debug("Event {} type {} has slot config: min={}, max={}",
                 eventCode, event.getEventType(), minSlots, maxSlots);

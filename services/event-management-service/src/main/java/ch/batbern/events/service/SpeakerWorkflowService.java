@@ -44,6 +44,7 @@ import org.springframework.transaction.support.TransactionSynchronization;
 import org.springframework.transaction.support.TransactionSynchronizationManager;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -106,6 +107,12 @@ public class SpeakerWorkflowService {
             // DECLINED → terminal (no outgoing transitions)
     );
 
+    /** Speakers holding a slot for the slot-capacity gate, alongside INVITED. */
+    private static final List<SpeakerWorkflowState> ACCEPTED_TRACK = List.of(
+            SpeakerWorkflowState.ACCEPTED,
+            SpeakerWorkflowState.CONTENT_SUBMITTED,
+            SpeakerWorkflowState.QUALITY_REVIEWED);
+
     private final SpeakerPoolRepository speakerPoolRepository;
     private final SessionRepository sessionRepository;
     private final SessionUserRepository sessionUserRepository;
@@ -114,7 +121,7 @@ public class SpeakerWorkflowService {
     // Story 7.2 / ADR-012: carry a self-nomination pitch into the canonical session at READY.
     private final SessionProposalRepository sessionProposalRepository;
     private final SessionContentHistoryRepository sessionContentHistoryRepository;
-    private final EventTypeService eventTypeService;
+    private final AgendaConfigResolver agendaConfigResolver;
     private final UserApiClient userApiClient;
     private final SpeakerProvisioningHook speakerProvisioningHook;
     private final SpeakerInvitationEmailService invitationEmailService;
@@ -335,10 +342,16 @@ public class SpeakerWorkflowService {
                                 + "Re-run the CONTACTED → READY transition before promoting to INVITED."));
     }
 
+    /**
+     * Slot-capacity gate. {@code maxSlots} comes from the event's effective agenda config
+     * (per-event override, else the event-type template), and every speaker on the accepted
+     * track occupies a slot: ACCEPTED, CONTENT_SUBMITTED and QUALITY_REVIEWED. This matches
+     * the organizer UI's {@code computeSlotCapacity} and the status summary.
+     */
     private void enforceSlotCapacity(Event event) {
-        int maxSlots = eventTypeService.getEventType(event.getEventType()).getMaxSlots();
-        long acceptedCount = speakerPoolRepository.countByEventIdAndStatus(
-                event.getId(), SpeakerWorkflowState.ACCEPTED);
+        int maxSlots = agendaConfigResolver.resolve(event).getMaxSlots();
+        long acceptedCount = speakerPoolRepository.countByEventIdAndStatusIn(
+                event.getId(), ACCEPTED_TRACK);
         long invitedCount = speakerPoolRepository.countByEventIdAndStatus(
                 event.getId(), SpeakerWorkflowState.INVITED);
         if (acceptedCount + invitedCount >= maxSlots) {
