@@ -44,7 +44,8 @@
     "goToPortal": "Ir al portal",
     "registration": {
       "errors": {
-        "alreadyRegistered": "Ya estás inscrito en este evento."
+        "alreadyRegistered": "Ya estás inscrito en este evento.",
+        "emailLinkedToAccount": "Esta dirección de correo electrónico ya está vinculada a una cuenta existente. Inicia sesión para inscribirte en este evento."
       }
     },
     "registrationClosed": "La inscripción para este evento está cerrada."

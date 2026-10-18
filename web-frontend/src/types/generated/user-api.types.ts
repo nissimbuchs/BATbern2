@@ -916,6 +916,11 @@ export interface paths {
      *
      *     **Idempotency**: Safe to call multiple times with same email
      *
+     *     **Additional emails**: an email that is another user's *verified* additional
+     *     email resolves to that user (`created: false`). An *unverified* additional
+     *     email cannot be attributed and cannot become a primary email, so a create
+     *     request for it returns 409 `EMAIL_LINKED_TO_ACCOUNT`.
+     *
      *     **Cognito Sync**: Optionally creates Cognito user if createIfMissing=true
      *
      *     **Performance**: <200ms (P95)
@@ -3032,6 +3037,7 @@ export interface operations {
       };
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
+      409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
     };
   };

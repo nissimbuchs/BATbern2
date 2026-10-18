@@ -12,6 +12,7 @@ import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
+import ch.batbern.shared.utils.LoggingUtils;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.type.CollectionType;
 import lombok.RequiredArgsConstructor;
@@ -52,6 +53,9 @@ import java.net.URI;
 @RequiredArgsConstructor
 @Slf4j
 public class UserApiClientImpl implements UserApiClient {
+
+    /** CUMS error code: get-or-create email is another user's unverified additional email. */
+    public static final String EMAIL_LINKED_TO_ACCOUNT = "EMAIL_LINKED_TO_ACCOUNT";
 
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
@@ -205,6 +209,16 @@ public class UserApiClientImpl implements UserApiClient {
             return result;
 
         } catch (HttpClientErrorException e) {
+            // CUMS: the email is another user's unverified additional email. Keep the code at the
+            // start of the message so the registration form can ask the visitor to sign in.
+            if (e.getStatusCode().value() == 409
+                    && e.getResponseBodyAsString().contains(EMAIL_LINKED_TO_ACCOUNT)) {
+                log.warn("Get-or-create refused, email is linked to another account: {}",
+                        LoggingUtils.maskEmail(request.getEmail()));
+                throw new UserServiceException(
+                        EMAIL_LINKED_TO_ACCOUNT + ": this email is linked to an existing account, please sign in",
+                        409, e);
+            }
             log.error("Client error getting/creating user for email {}: {} - {}",
                     request.getEmail(), e.getStatusCode(), e.getMessage());
             throw new UserServiceException(

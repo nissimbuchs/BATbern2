@@ -566,6 +566,44 @@ describe('RegistrationWizard Component', () => {
       });
     });
 
+    test('should_askToSignIn_when_emailIsLinkedToAnotherAccount', async () => {
+      // Backend 409: the address is another account's unverified additional email
+      vi.mocked(eventApiClient.createRegistration).mockRejectedValue(
+        new Error(
+          'EMAIL_LINKED_TO_ACCOUNT: this email is linked to an existing account, please sign in (ID: abc)'
+        )
+      );
+
+      renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
+
+      fireEvent.change(screen.getByPlaceholderText('John'), { target: { value: 'John' } });
+      fireEvent.change(screen.getByPlaceholderText('Smith'), { target: { value: 'Doe' } });
+      fireEvent.change(screen.getByPlaceholderText('john.smith@company.ch'), {
+        target: { value: 'john@example.com' },
+      });
+      await selectCompany('Acme Inc');
+      fireEvent.change(screen.getByPlaceholderText('Senior Developer'), {
+        target: { value: 'Developer' },
+      });
+      fireEvent.click(screen.getByTestId('registration-wizard-next-btn'));
+
+      await waitFor(() => {
+        const termsCheckbox = screen.getByRole('checkbox', { name: /agree to the/i });
+        fireEvent.click(termsCheckbox);
+      });
+
+      await waitFor(() => {
+        fireEvent.click(screen.getByTestId('registration-wizard-submit-btn'));
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.getByText('common:public.registration.errors.emailLinkedToAccount')
+        ).toBeInTheDocument();
+      });
+      expect(screen.queryByText(/EMAIL_LINKED_TO_ACCOUNT/)).not.toBeInTheDocument();
+    });
+
     test('should_passTurnstileToken_to_createRegistration_when_enabled (AC9)', async () => {
       const mockGetToken = vi.fn().mockResolvedValue('cf-turnstile-token-xyz');
       mockUseTurnstile.mockReturnValue({

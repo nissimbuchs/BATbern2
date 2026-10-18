@@ -44,7 +44,8 @@
     "goToPortal": "Zum Portal",
     "registration": {
       "errors": {
-        "alreadyRegistered": "Du bisch scho für die Veranstautig amäldet."
+        "alreadyRegistered": "Du bisch scho für die Veranstautig amäldet.",
+        "emailLinkedToAccount": "Die E-Mail-Adrässe ghört scho zu emne bestehende Konto. Bitte mäld di a, für di für d Veranstautig z registriere."
       }
     },
     "registrationClosed": "D Aamäldig für dä Event isch zue."

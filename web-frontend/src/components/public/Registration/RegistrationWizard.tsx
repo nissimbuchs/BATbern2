@@ -225,6 +225,14 @@ export const RegistrationWizard = ({
         return;
       }
 
+      // 409 EMAIL_LINKED_TO_ACCOUNT: the address belongs to an existing account (stored there as
+      // an unverified additional email), so it cannot register anonymously. Ask to sign in.
+      if (err instanceof Error && err.message.includes('EMAIL_LINKED_TO_ACCOUNT')) {
+        setError(t('common:public.registration.errors.emailLinkedToAccount'));
+        setIsSubmitting(false);
+        return;
+      }
+
       // Handle duplicate registration (409 Conflict)
       // Backend returns 409 only for confirmed/cancelled registrations
       // For pending registrations, backend returns 200 OK (reuses existing)
