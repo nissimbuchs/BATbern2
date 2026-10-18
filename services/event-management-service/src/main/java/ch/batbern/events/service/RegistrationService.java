@@ -12,6 +12,7 @@ import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse;
 import ch.batbern.events.registrations.dto.generated.MyRegistrationResponse.StatusEnum;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.exception.RegistrationCapacityExceededException;
@@ -60,7 +61,6 @@ public class RegistrationService {
     private final RegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
     private final UserApiClient userApiClient;
-    @SuppressWarnings("unused") // Story 2.2a Task B12 - Will be used when email confirmation is implemented
     private final RegistrationEmailService registrationEmailService;
     private final NewsletterSubscriberService newsletterSubscriberService;
     private final WaitlistPromotionEmailService waitlistPromotionEmailService; // Story 10.11
@@ -491,6 +491,28 @@ public class RegistrationService {
     }
 
     /**
+     * Send the "registration confirmed" mail (with the calendar invite) for a registration that has
+     * just moved from pending to confirmed. Called by both confirmation paths: the confirmation link
+     * and the ACCEPT email reply. Never throws: a failed lookup or send must not undo the
+     * confirmation, which is already persisted.
+     *
+     * @param registration the confirmed registration
+     * @param event        the registration's event
+     */
+    public void notifyRegistrationConfirmed(Registration registration, Event event) {
+        try {
+            UserResponse user = userApiClient.getUserByUsername(registration.getAttendeeUsername());
+            String pref = userApiClient.getPreferredLanguage(registration.getAttendeeUsername());
+            Locale locale = (pref == null || pref.toLowerCase(Locale.ROOT).startsWith("de"))
+                    ? Locale.GERMAN : Locale.ENGLISH;
+            registrationEmailService.sendRegistrationConfirmed(registration, user, event, locale);
+        } catch (Exception e) {
+            log.error("Could not send registration-confirmed email for registration {}",
+                    registration.getRegistrationCode(), e);
+        }
+    }
+
+    /**
      * Confirm a registration by email address and event code.
      * Called when an attendee replies with an ACCEPT keyword (Story 10.17).
      * Replicates the same status change as clicking the confirmation link in the email.
@@ -512,6 +534,8 @@ public class RegistrationService {
                             registrationRepository.save(registration);
                             log.info("Registration confirmed via email reply: {} for event: {}",
                                     registration.getRegistrationCode(), eventCode);
+                            eventRepository.findByEventCode(eventCode)
+                                    .ifPresent(event -> notifyRegistrationConfirmed(registration, event));
                         },
                         () -> log.info("confirmByEmail: no active registration found for {}*** / {}",
                                 email.substring(0, Math.min(5, email.length())), eventCode)

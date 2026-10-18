@@ -1,0 +1,34 @@
+<!-- subject: Registration confirmed - {{eventCode}} - {{eventTitle}} -->
+<p class="lbl lbl-blue">Registration</p>
+<h2>Registration Confirmed</h2>
+<p class="sub">Your place is reserved</p>
+
+<p>Hello {{attendeeFirstName}} {{attendeeLastName}},</p>
+<p>Thank you for confirming. <strong>Your registration is now valid</strong>, there is nothing else you need to do.</p>
+
+<div class="event-card">
+  <h3>{{eventTitle}}</h3>
+  <table class="detail-table">
+    <tr>
+      <td class="detail-label">Date</td>
+      <td class="detail-value">{{eventDate}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Time</td>
+      <td class="detail-value">{{eventTime}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Venue</td>
+      <td class="detail-value">{{venueName}}<br>{{venueAddress}}</td>
+    </tr>
+  </table>
+</div>
+
+<a href="{{eventUrl}}" class="btn btn-primary">View event page</a>
+
+<p>The calendar entry (.ics file) is attached to this email.</p>
+<p>We look forward to seeing you at the event!</p>
+<p>Best regards,<br><strong>The BATbern Team</strong></p>
+
+<hr class="divider">
+<p class="gdpr">Can't make it after all? <a href="{{deregistrationUrl}}">Cancel your registration</a></p>

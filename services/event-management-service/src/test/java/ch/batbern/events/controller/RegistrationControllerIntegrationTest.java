@@ -12,6 +12,7 @@ import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.service.ConfirmationTokenService;
+import ch.batbern.events.service.RegistrationEmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
@@ -30,7 +31,10 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
+import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -77,6 +81,9 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @MockitoBean
     private UserApiClient userApiClient;
 
+    @MockitoBean
+    private RegistrationEmailService registrationEmailService;
+
     private Event testEvent;
     private UserResponse mockUserProfile;
     private GetOrCreateUserResponse mockCreateResponse;
@@ -84,7 +91,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @BeforeEach
     void setUp() {
         // Reset mocks to prevent test pollution
-        reset(userApiClient);
+        reset(userApiClient, registrationEmailService);
 
         // Clean database before each test
         registrationRepository.deleteAll();
@@ -687,6 +694,11 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         // Verify status was updated in database
         Registration confirmedRegistration = registrationRepository.findById(registration.getId()).orElseThrow();
         assertThat(confirmedRegistration.getStatus()).isEqualTo("confirmed");
+
+        // The "registration confirmed" mail (with the calendar invite) goes out exactly once
+        verify(registrationEmailService).sendRegistrationConfirmed(
+                any(Registration.class), any(UserResponse.class), any(Event.class), any());
+        verify(userApiClient).getUserByUsername(eq("john.doe"));
     }
 
     @Test
@@ -712,6 +724,9 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
         // Verify status is still confirmed
         Registration stillConfirmed = registrationRepository.findById(registration.getId()).orElseThrow();
         assertThat(stillConfirmed.getStatus()).isEqualTo("confirmed");
+
+        // A second click must not mail the calendar invite again
+        verify(registrationEmailService, never()).sendRegistrationConfirmed(any(), any(), any(), any());
     }
 
     @Test
