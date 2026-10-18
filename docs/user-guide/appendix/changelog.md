@@ -45,6 +45,11 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fixes — Registration Confirmation Mails (2026-10-18)**:
+- ✅ The "please confirm your registration" email no longer attaches the calendar invite, and its subject now reads **"Bitte bestätigen: Ihre Anmeldung …"** / **"Please confirm your registration …"** instead of "Registrierungsbestätigung". At the last event about 30 attendees took the attached invite (with its "Accept" button) for the confirmation, never clicked the link, and lost their registration.
+- ✅ New **"Anmeldung bestätigt" / "Registration confirmed"** email, sent as soon as the attendee confirms (link or reply). It carries the calendar invite and the cancel link.
+- ✅ Automatic confirmation reminders are unchanged (same schedule); they send the updated "please confirm" email.
+
 **Bug Fixes — Organizer Partner Settings (2026-08-12)**:
 - ✅ The **Active partnership** toggle (Partners → open a partner → Settings) now works. It previously appeared to switch but saved nothing — the control was rendered without a handler, so every flip was silently discarded. Deactivating ends the partnership as of today; re-activating restores it to open-ended.
 - ⚠️ The **Auto-renewal** switch and the "renewal date" line have been **removed** from that tab. Neither field has ever existed in the partner API, so the switch could never save and the date was always blank — it only looked like a setting. Nothing was lost, because nothing was ever stored. If automatic renewal is wanted as a real feature, it needs an API and a database column first.

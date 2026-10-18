@@ -2333,6 +2333,9 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
 
             log.info("Registration confirmed: {} for event: {}", registrationId, eventCode);
 
+            // The pending mail carries no calendar invite; it comes with the confirmed mail.
+            registrationService.notifyRegistrationConfirmed(registration, event);
+
             // Return success response
             return ResponseEntity.ok(new ConfirmRegistration200Response()
                     .message("Registration confirmed successfully!")

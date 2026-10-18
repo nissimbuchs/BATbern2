@@ -26,11 +26,15 @@ import java.util.Optional;
 /**
  * Service for sending registration confirmation emails.
  *
+ * Double opt-in: the mail sent on registration ({@link #sendRegistrationConfirmation}) only asks
+ * the attendee to confirm and carries NO calendar invite, because an inline .ics renders an
+ * "Accept" button that attendees took for the confirmation and never clicked the link. The
+ * calendar invite goes out with {@link #sendRegistrationConfirmed}, once the place is valid.
+ *
  * Features:
  * - i18n support (German/English)
  * - HTML email templates
- * - Calendar file (.ics) attachment
- * - QR code ticket link
+ * - Calendar file (.ics) attachment on confirmed registrations only
  * - Async sending (non-blocking)
  *
  * Story 2.2a Task B12: Email confirmation for anonymous registrations
@@ -65,7 +69,9 @@ public class RegistrationEmailService {
     private static final java.time.ZoneId SWISS_ZONE = java.time.ZoneId.of("Europe/Zurich");
 
     /**
-     * Send registration confirmation email asynchronously with i18n support.
+     * Send the "please confirm your registration" email asynchronously with i18n support.
+     * Also used for the automatic and organizer-triggered resends. Carries no calendar invite:
+     * the registration is not valid until confirmed.
      *
      * @param registration     Registration entity
      * @param userProfile      User profile DTO
@@ -100,29 +106,17 @@ public class RegistrationEmailService {
             EmailContent content = loadEmailTemplate(emailLocale, registration, userProfile, event,
                 eventDateTime, tokens);
 
-            // Generate calendar file (.ics)
-            byte[] icsFile = generateCalendarFile(event, eventDateTime);
-
-            // Send email with attachment
-            EmailService.EmailAttachment calendarAttachment = new EmailService.EmailAttachment(
-                    "event.ics",
-                    icsFile,
-                    "text/calendar; charset=utf-8; method=REQUEST",
-                    true  // inline → accept/decline in Apple Mail, Outlook, Gmail
-            );
-
             // Story 10.32: CC the registrant's additional emails (if any) so
             // a single registration confirmation reaches every address they
             // declared on their profile. Anonymous registrants (no user_profiles
             // link) have an empty list and behave unchanged.
             List<String> cc = additionalEmailsFor(userProfile);
 
-            emailService.sendHtmlEmailWithAttachments(
+            emailService.sendHtmlEmail(
                     userProfile.getEmail(),
                     cc,
                     content.subject(),
-                    content.html(),
-                    List.of(calendarAttachment)
+                    content.html()
             );
 
             if (!cc.isEmpty()) {
@@ -165,50 +159,8 @@ public class RegistrationEmailService {
             log.info("Sending organizer-added confirmation email to: {} for event: {}",
                     LoggingUtils.maskEmail(userProfile.getEmail()), event.getEventCode());
 
-            Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
-            String localeStr = emailLocale.getLanguage().equals("de") ? "de" : "en";
-            ZonedDateTime eventDateTime = resolveEventDateTime(event);
-
-            String template = loadHtmlContent("registration-organizer-added", localeStr,
-                    "email-templates/registration-organizer-added-" + localeStr + ".html");
-
-            String deregistrationUrl = registration.getDeregistrationToken() != null
-                    ? baseUrl + "/deregister?token=" + registration.getDeregistrationToken()
-                    : baseUrl + "/events";
-
-            Map<String, String> variables = Map.ofEntries(
-                    Map.entry("attendeeFirstName",
-                            userProfile.getFirstName() != null ? userProfile.getFirstName() : ""),
-                    Map.entry("attendeeLastName",
-                            userProfile.getLastName() != null ? userProfile.getLastName() : ""),
-                    Map.entry("eventCode", event.getEventCode()),
-                    Map.entry("eventTitle", event.getTitle()),
-                    Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
-                    Map.entry("eventTime",
-                            eventDateTime.format(TIME_FORMATTER) + (localeStr.equals("de") ? " Uhr" : "")),
-                    Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
-                    Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
-                    Map.entry("deregistrationUrl", deregistrationUrl),
-                    Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
-                    Map.entry("supportUrl", baseUrl + "/support"),
-                    Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
-                    Map.entry("logoUrl", baseUrl + "/BATbern_white_logo.png")
-            );
-
-            String html = emailService.replaceVariables(template, variables);
-            String subject = emailTemplateService.resolveSubject("registration-organizer-added", localeStr)
-                    .map(s -> emailService.replaceVariables(s, variables))
-                    .orElseGet(() -> localeStr.equals("de")
-                            ? "Anmeldebestätigung – " + event.getTitle()
-                            : "Registration confirmed – " + event.getTitle());
-
-            byte[] icsFile = generateCalendarFile(event, eventDateTime);
-            EmailService.EmailAttachment calendarAttachment = new EmailService.EmailAttachment(
-                    "event.ics", icsFile, "text/calendar; charset=utf-8; method=REQUEST", true);
-
-            List<String> cc = additionalEmailsFor(userProfile);
-            emailService.sendHtmlEmailWithAttachments(
-                    userProfile.getEmail(), cc, subject, html, List.of(calendarAttachment));
+            sendPlaceConfirmedEmail("registration-organizer-added", registration, userProfile, event, locale,
+                    "Anmeldebestätigung – ", "Registration confirmed – ");
 
             log.info("Organizer-added confirmation email sent successfully to: {}",
                     LoggingUtils.maskEmail(userProfile.getEmail()));
@@ -217,6 +169,95 @@ public class RegistrationEmailService {
                     LoggingUtils.maskEmail(userProfile.getEmail()), e);
             // Don't re-throw — email failure must not block the add.
         }
+    }
+
+    /**
+     * Send the "registration confirmed" email once an attendee has confirmed a pending registration
+     * (confirmation link or ACCEPT reply). This is the mail that carries the calendar invite, so it
+     * is the attendee's signal that the place is booked. No confirmation CTA, no registration code.
+     *
+     * @param registration the registration that was just confirmed
+     * @param userProfile  the attendee's profile
+     * @param event        the event
+     * @param locale       the attendee's locale (DE → German, anything else → English fallback)
+     */
+    @Async
+    public void sendRegistrationConfirmed(
+            Registration registration,
+            UserResponse userProfile,
+            Event event,
+            Locale locale
+    ) {
+        try {
+            log.info("Sending registration-confirmed email to: {} for event: {}",
+                    LoggingUtils.maskEmail(userProfile.getEmail()), event.getEventCode());
+
+            sendPlaceConfirmedEmail("registration-confirmed", registration, userProfile, event, locale,
+                    "Anmeldung bestätigt - " + event.getEventCode() + " - ",
+                    "Registration confirmed - " + event.getEventCode() + " - ");
+
+            log.info("Registration-confirmed email sent successfully to: {}",
+                    LoggingUtils.maskEmail(userProfile.getEmail()));
+        } catch (Exception e) {
+            log.error("Failed to send registration-confirmed email to: {}",
+                    LoggingUtils.maskEmail(userProfile.getEmail()), e);
+            // Don't re-throw — the registration is confirmed regardless of the mail.
+        }
+    }
+
+    /**
+     * Render and send a "your place is confirmed" mail with the event details, the calendar invite
+     * and the self-service deregistration link. Shared by the organizer-added and the
+     * registration-confirmed mails; the fallback subject prefixes are followed by the event title.
+     */
+    private void sendPlaceConfirmedEmail(String templateKey, Registration registration,
+            UserResponse userProfile, Event event, Locale locale,
+            String fallbackSubjectPrefixDe, String fallbackSubjectPrefixEn) {
+        Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
+        String localeStr = emailLocale.getLanguage().equals("de") ? "de" : "en";
+        ZonedDateTime eventDateTime = resolveEventDateTime(event);
+
+        String template = loadHtmlContent(templateKey, localeStr,
+                "email-templates/" + templateKey + "-" + localeStr + ".html");
+
+        String deregistrationUrl = registration.getDeregistrationToken() != null
+                ? baseUrl + "/deregister?token=" + registration.getDeregistrationToken()
+                : baseUrl + "/events";
+
+        Map<String, String> variables = Map.ofEntries(
+                Map.entry("attendeeFirstName",
+                        userProfile.getFirstName() != null ? userProfile.getFirstName() : ""),
+                Map.entry("attendeeLastName",
+                        userProfile.getLastName() != null ? userProfile.getLastName() : ""),
+                Map.entry("eventCode", event.getEventCode()),
+                Map.entry("eventTitle", event.getTitle()),
+                Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
+                Map.entry("eventTime",
+                        eventDateTime.format(TIME_FORMATTER) + (localeStr.equals("de") ? " Uhr" : "")),
+                Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
+                Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
+                Map.entry("deregistrationUrl", deregistrationUrl),
+                Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
+                Map.entry("supportUrl", baseUrl + "/support"),
+                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
+                Map.entry("logoUrl", baseUrl + "/BATbern_white_logo.png")
+        );
+
+        String html = emailService.replaceVariables(template, variables);
+        String subject = emailTemplateService.resolveSubject(templateKey, localeStr)
+                .map(s -> emailService.replaceVariables(s, variables))
+                .orElseGet(() -> localeStr.equals("de")
+                        ? fallbackSubjectPrefixDe + event.getTitle()
+                        : fallbackSubjectPrefixEn + event.getTitle());
+
+        // inline → accept/decline in Apple Mail, Outlook, Gmail
+        byte[] icsFile = generateCalendarFile(event, eventDateTime);
+        EmailService.EmailAttachment calendarAttachment = new EmailService.EmailAttachment(
+                "event.ics", icsFile, "text/calendar; charset=utf-8; method=REQUEST", true);
+
+        List<String> cc = additionalEmailsFor(userProfile);
+        emailService.sendHtmlEmailWithAttachments(
+                userProfile.getEmail(), cc, subject, html, List.of(calendarAttachment));
     }
 
     /**
@@ -286,8 +327,8 @@ public class RegistrationEmailService {
         String subject = emailTemplateService.resolveSubject("registration-confirmation", localeStr)
                 .map(s -> emailService.replaceVariables(s, variables))
                 .orElseGet(() -> localeStr.equals("de")
-                        ? "Registrierungsbestätigung - " + event.getEventCode() + " - " + event.getTitle()
-                        : "Registration Confirmation - " + event.getEventCode() + " - " + event.getTitle());
+                        ? "Bitte bestätigen: Ihre Anmeldung - " + event.getEventCode() + " - " + event.getTitle()
+                        : "Please confirm your registration - " + event.getEventCode() + " - " + event.getTitle());
         return new EmailContent(html, subject);
     }
 

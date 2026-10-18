@@ -45,7 +45,12 @@ Three-tier escalation triggered automatically before the content submission dead
 
 ### Registration Confirmation Emails (Epic 4)
 
-Sent automatically when an attendee completes event registration. Includes event details (including the event's start and end times), a QR code for day-of check-in, and an `.ics` calendar attachment so attendees can add the event to their calendar with accurate times.
+Registration is double opt-in, and the attendee receives two emails:
+
+1. **"Please confirm your registration"** (template `registration-confirmation`), sent when the attendee registers. It contains the event details and the confirmation link, and states that the registration only becomes valid once confirmed. It deliberately carries **no calendar invite**: an inline `.ics` shows an "Accept" button in Outlook / Apple Mail, which attendees mistook for the confirmation. If the attendee does not confirm, the same email is re-sent automatically (default: after 48 h, at most twice), and unconfirmed registrations are deleted after the cleanup window (default 120 h).
+2. **"Registration confirmed"** (template `registration-confirmed`), sent once the attendee confirms, either via the link or by replying "bestätigen" / "accept". It contains the event details (with the resolved start and end times), the `.ics` calendar attachment and the self-service cancel link. It is sent in the attendee's preferred language (DE, otherwise EN) and CCs their additional email addresses.
+
+Participants added by an organizer are confirmed immediately and receive the `registration-organizer-added` email (with calendar invite) instead.
 
 ### Partner Calendar Invites (Epic 8)
 
