@@ -100,6 +100,19 @@ describe('post-authentication Lambda handler', () => {
     expect(result).toEqual(event);
   });
 
+  it('should_matchAnonymousUserCaseInsensitively_when_linking (#1099)', async () => {
+    mockGetDbClient.mockResolvedValue(makeDbClient());
+    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+    mockDbQuery.mockResolvedValueOnce({ rows: [], rowCount: 0 });
+
+    await handler(makeEvent(), {} as any, jest.fn() as any);
+
+    const findCall = mockDbQuery.mock.calls.find(
+      ([sql]) => typeof sql === 'string' && sql.includes('cognito_user_id IS NULL')
+    ) as [string, string[]];
+    expect(findCall[0]).toMatch(/lower\(\s*(u\.)?email\s*\)\s*=\s*lower\(\s*\$1\s*\)/i);
+  });
+
   it('should_linkAnonymousUser_when_matchingEmailFound', async () => {
     mockGetDbClient.mockResolvedValue(makeDbClient());
     // Restore-check query: no row -> no drift handling

@@ -579,6 +579,22 @@ The platform maintains user data across AWS Cognito (authentication) and Postgre
 
 **See [User Lifecycle Sync Patterns](./06b-user-lifecycle-sync.md) for complete implementation details.**
 
+### Email Address Matching (case-insensitive)
+
+An email address identifies a person regardless of capitalisation. Every lookup by email is
+case-insensitive (`…IgnoreCase` finders, `LOWER(x) = LOWER(:email)` in JPQL, `lower(email) = lower($1)`
+in the Cognito Lambdas), and addresses written by the platform are stored trimmed and lower-cased.
+Case-sensitive email finders were removed so they cannot be reused by accident.
+
+This covers user get-or-create and creation (CUMS), the PostConfirmation / PostAuthentication /
+PreTokenGeneration Lambdas, newsletter subscribe / unsubscribe / bounce / complaint handling,
+registration lookup by email (deregistration by email, ACCEPT replies) and partner-meeting RSVPs.
+Unique indexes on `lower(email)` back this for `user_profiles` and `newsletter_subscribers`.
+
+**Why:** case-sensitive matching created duplicate users and subscribers (5 people and one
+double newsletter subscription in production, merged 2026-10-18) and made by-email actions
+silently miss their target (issue #1099).
+
 ## Role Management Service
 
 Handles user role promotion, demotion, and approval workflows while enforcing business rules.

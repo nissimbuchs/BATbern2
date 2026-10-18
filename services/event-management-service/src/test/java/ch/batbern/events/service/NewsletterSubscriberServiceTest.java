@@ -72,7 +72,7 @@ class NewsletterSubscriberServiceTest {
 
     @Test
     void unsubscribeByEmail_withKnownActiveEmail_setsUnsubscribedAt() {
-        when(subscriberRepository.findByEmail("active@example.com"))
+        when(subscriberRepository.findByEmailIgnoreCase("active@example.com"))
                 .thenReturn(Optional.of(activeSubscriber));
         when(subscriberRepository.save(any(NewsletterSubscriber.class)))
                 .thenAnswer(inv -> inv.getArgument(0));
@@ -85,7 +85,7 @@ class NewsletterSubscriberServiceTest {
 
     @Test
     void unsubscribeByEmail_withUnknownEmail_silentNoOp() {
-        when(subscriberRepository.findByEmail("unknown@example.com"))
+        when(subscriberRepository.findByEmailIgnoreCase("unknown@example.com"))
                 .thenReturn(Optional.empty());
 
         newsletterSubscriberService.unsubscribeByEmail("unknown@example.com");
@@ -115,7 +115,7 @@ class NewsletterSubscriberServiceTest {
                     .subscribe(email, "Test", "de", "explicit", null))
                     .isInstanceOf(ReservedEmailDomainException.class);
 
-            verify(subscriberRepository, never()).findByEmail(any());
+            verify(subscriberRepository, never()).findByEmailIgnoreCase(any());
             verify(subscriberRepository, never()).save(any());
         }
 
@@ -128,7 +128,7 @@ class NewsletterSubscriberServiceTest {
             "user@example.ch"
         })
         void subscribe_validDomain_doesNotThrow(String email) {
-            when(subscriberRepository.findByEmail(email)).thenReturn(Optional.empty());
+            when(subscriberRepository.findByEmailIgnoreCase(email)).thenReturn(Optional.empty());
             when(subscriberRepository.save(any(NewsletterSubscriber.class)))
                     .thenAnswer(inv -> inv.getArgument(0));
 
@@ -140,7 +140,7 @@ class NewsletterSubscriberServiceTest {
 
     @Test
     void unsubscribeByEmail_withAlreadyUnsubscribedEmail_silentNoOp() {
-        when(subscriberRepository.findByEmail("gone@example.com"))
+        when(subscriberRepository.findByEmailIgnoreCase("gone@example.com"))
                 .thenReturn(Optional.of(alreadyUnsubscribedSubscriber));
 
         Instant originalUnsubscribedAt = alreadyUnsubscribedSubscriber.getUnsubscribedAt();

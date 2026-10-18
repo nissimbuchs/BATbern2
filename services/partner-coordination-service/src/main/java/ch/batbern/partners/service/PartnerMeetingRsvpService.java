@@ -18,6 +18,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 import java.util.stream.Collectors;
@@ -50,20 +51,22 @@ public class PartnerMeetingRsvpService {
         if (!meetingRepository.existsById(meetingId)) {
             throw new PartnerNotFoundException("Partner meeting not found: " + meetingId);
         }
+        // One RSVP per person regardless of how the mail client capitalises ATTENDEE (#1099)
+        String normalizedEmail = attendeeEmail.trim().toLowerCase(Locale.ROOT);
 
         try {
-            return doUpsert(meetingId, attendeeEmail, status);
+            return doUpsert(meetingId, normalizedEmail, status);
         } catch (DataIntegrityViolationException e) {
             // Concurrent insert by a second SQS delivery won the race — retry as update.
             log.debug("Concurrent RSVP insert detected for meeting={}, email prefix={} — retrying as update",
-                    meetingId, emailPrefix(attendeeEmail));
-            return doUpsert(meetingId, attendeeEmail, status);
+                    meetingId, emailPrefix(normalizedEmail));
+            return doUpsert(meetingId, normalizedEmail, status);
         }
     }
 
     private PartnerMeetingRsvp doUpsert(UUID meetingId, String attendeeEmail, RsvpStatus status) {
         Optional<PartnerMeetingRsvp> existing =
-                rsvpRepository.findByMeetingIdAndAttendeeEmail(meetingId, attendeeEmail);
+                rsvpRepository.findByMeetingIdAndAttendeeEmailIgnoreCase(meetingId, attendeeEmail);
 
         PartnerMeetingRsvp rsvp;
         if (existing.isPresent()) {

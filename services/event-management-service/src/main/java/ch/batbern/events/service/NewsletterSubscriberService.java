@@ -89,10 +89,14 @@ public class NewsletterSubscriberService {
             log.warn("Rejected newsletter subscribe for reserved domain: {}", email);
             throw new ReservedEmailDomainException(email);
         }
+        // Addresses are stored lower-cased and matched case-insensitively (#1099): "X@ace.ch" and
+        // "x@ace.ch" are one subscriber, not two rows that each get the newsletter.
+        email = email.trim().toLowerCase(Locale.ROOT);
+
         // Infer name from email when not provided (e.g. "david.baumgartner@ace.ch" → "David Baumgartner")
         String resolvedName = (firstName != null && !firstName.isBlank()) ? firstName : inferNameFromEmail(email);
 
-        Optional<NewsletterSubscriber> existing = subscriberRepository.findByEmail(email);
+        Optional<NewsletterSubscriber> existing = subscriberRepository.findByEmailIgnoreCase(email);
 
         if (existing.isPresent()) {
             NewsletterSubscriber sub = existing.get();
@@ -178,7 +182,7 @@ public class NewsletterSubscriberService {
                     .build();
         }
         // Fallback: look up by email
-        Optional<NewsletterSubscriber> byEmail = subscriberRepository.findByEmail(email);
+        Optional<NewsletterSubscriber> byEmail = subscriberRepository.findByEmailIgnoreCase(email);
         if (byEmail.isPresent()) {
             NewsletterSubscriber sub = byEmail.get();
             return NewsletterSubscriptionStatusResponse.builder()
@@ -215,7 +219,7 @@ public class NewsletterSubscriberService {
             // Unsubscribe by token or by email lookup
             Optional<NewsletterSubscriber> sub = subscriberRepository.findByUsername(username);
             if (sub.isEmpty()) {
-                sub = subscriberRepository.findByEmail(email);
+                sub = subscriberRepository.findByEmailIgnoreCase(email);
             }
             sub.ifPresent(s -> {
                 s.setUnsubscribedAt(Instant.now());
@@ -244,7 +248,7 @@ public class NewsletterSubscriberService {
      */
     @Transactional
     public void unsubscribeByEmail(String email) {
-        subscriberRepository.findByEmail(email)
+        subscriberRepository.findByEmailIgnoreCase(email)
                 .filter(sub -> sub.getUnsubscribedAt() == null)
                 .ifPresent(sub -> {
                     sub.setUnsubscribedAt(Instant.now());

@@ -117,7 +117,7 @@ public class BounceProcessingService {
 
     void handleHardBounce(String email, UUID sendId) {
         log.info("Hard bounce for {}", email);
-        Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmail(email);
+        Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmailIgnoreCase(email);
         if (optSub.isEmpty()) {
             log.warn("Hard bounce for unknown subscriber: {}", email);
             return;
@@ -140,7 +140,7 @@ public class BounceProcessingService {
 
     void handleSoftBounce(String email, UUID sendId) {
         log.info("Soft bounce for {}", email);
-        Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmail(email);
+        Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmailIgnoreCase(email);
         if (optSub.isEmpty()) {
             log.warn("Soft bounce for unknown subscriber: {}", email);
             return;
@@ -180,7 +180,7 @@ public class BounceProcessingService {
 
     void handleComplaintForEmail(String email, UUID sendId) {
         log.info("Complaint for {}", email);
-        Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmail(email);
+        Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmailIgnoreCase(email);
         if (optSub.isEmpty()) {
             log.warn("Complaint for unknown subscriber: {}", email);
             return;

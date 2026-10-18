@@ -253,7 +253,7 @@ async function createUser(
     const existingUserResult = await client.query(
       `SELECT id, cognito_user_id, username, first_name, last_name, is_active
        FROM user_profiles
-       WHERE email = $1`,
+       WHERE lower(email) = lower($1)`,
       [email]
     );
 

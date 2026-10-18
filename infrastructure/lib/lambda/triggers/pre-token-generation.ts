@@ -104,7 +104,7 @@ async function fetchUserData(cognitoId: string, email?: string): Promise<UserDat
         `SELECT u.username, ra.role
          FROM user_profiles u
          LEFT JOIN role_assignments ra ON ra.user_id = u.id
-         WHERE u.email = $1
+         WHERE lower(u.email) = lower($1)
          ${roleOrderSql}`,
         [email]
       );

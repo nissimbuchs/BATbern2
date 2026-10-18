@@ -19,12 +19,11 @@ import org.springframework.data.domain.Pageable;
 @Repository
 public interface NewsletterSubscriberRepository extends JpaRepository<NewsletterSubscriber, UUID> {
 
-    Optional<NewsletterSubscriber> findByEmail(String email);
-
     /**
-     * Story 7.3: case-insensitive email lookup used by the slides-online send to check
-     * whether a registrant's email carries a global newsletter opt-out (unsubscribed/suppressed).
-     * Registrant emails and subscriber emails may differ in case, so the match is folded.
+     * Case-insensitive email lookup: the only email finder on purpose (#1099). Subscribe, bounce /
+     * complaint handling and the slides-online opt-out check all match through it, because
+     * registrant, SES and subscriber addresses may differ in case. Backed by the unique index on
+     * {@code lower(email)} (V125).
      */
     Optional<NewsletterSubscriber> findByEmailIgnoreCase(String email);
 
