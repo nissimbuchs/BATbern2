@@ -44,7 +44,8 @@
     "goToPortal": "ポータルへ",
     "registration": {
       "errors": {
-        "alreadyRegistered": "このイベントにはすでに登録済みです。"
+        "alreadyRegistered": "このイベントにはすでに登録済みです。",
+        "emailLinkedToAccount": "このメールアドレスは既存のアカウントに登録されています。このイベントに登録するにはログインしてください。"
       }
     },
     "registrationClosed": "このイベントの登録は締め切られました。"

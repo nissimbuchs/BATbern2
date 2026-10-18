@@ -3,6 +3,7 @@ package ch.batbern.companyuser.controller;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
+import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
@@ -18,9 +19,11 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -758,6 +761,66 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.user.email").value("brand.new@example.com"))
                 .andExpect(jsonPath("$.user.firstName").value("Brand"))
                 .andExpect(jsonPath("$.user.lastName").value("New"));
+    }
+
+    // An anonymous registration with an address that is stored as another user's ADDITIONAL email
+    // must not try to create a second user: the DB trigger enforce_primary_email_not_other_additional
+    // rejects that insert, which surfaced as a 500 on the public registration form (2026-10-18).
+
+    private void addAdditionalEmail(String email, Instant verifiedAt) {
+        User owner = userRepository.findByUsername("john.doe").orElseThrow();
+        owner.addAdditionalEmail(UserAdditionalEmail.builder()
+                .email(email)
+                .label("Work")
+                .verifiedAt(verifiedAt)
+                .build());
+        userRepository.saveAndFlush(owner);
+    }
+
+    @Test
+    @DisplayName("should_returnOwner_when_emailIsVerifiedAdditionalEmailOfExistingUser")
+    void should_returnOwner_when_emailIsVerifiedAdditionalEmailOfExistingUser() throws Exception {
+        addAdditionalEmail("john.work@example.com", Instant.now());
+        long usersBefore = userRepository.count();
+
+        mockMvc.perform(post("/api/v1/users/get-or-create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "email": "John.Work@Example.com",
+                                    "firstName": "John",
+                                    "lastName": "Doe",
+                                    "createIfMissing": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("john.doe"))
+                .andExpect(jsonPath("$.created").value(false))
+                .andExpect(jsonPath("$.user.email").value("john.doe@example.com"));
+
+        assertThat(userRepository.count()).isEqualTo(usersBefore);
+    }
+
+    @Test
+    @DisplayName("should_return409_when_emailIsUnverifiedAdditionalEmailOfExistingUser")
+    void should_return409_when_emailIsUnverifiedAdditionalEmailOfExistingUser() throws Exception {
+        addAdditionalEmail("john.pending@example.com", null);
+        long usersBefore = userRepository.count();
+
+        mockMvc.perform(post("/api/v1/users/get-or-create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "email": "john.pending@example.com",
+                                    "firstName": "Someone",
+                                    "lastName": "Else",
+                                    "createIfMissing": true
+                                }
+                                """))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("EMAIL_LINKED_TO_ACCOUNT"));
+
+        assertThat(userRepository.count()).isEqualTo(usersBefore);
     }
 
     // AC4: GET /api/v1/users/search (autocomplete with caching)

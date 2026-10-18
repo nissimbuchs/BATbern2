@@ -44,7 +44,8 @@
     "goToPortal": "Naar portaal",
     "registration": {
       "errors": {
-        "alreadyRegistered": "U bent al geregistreerd voor dit evenement."
+        "alreadyRegistered": "U bent al geregistreerd voor dit evenement.",
+        "emailLinkedToAccount": "Dit e-mailadres is al gekoppeld aan een bestaand account. Log in om u voor dit evenement te registreren."
       }
     },
     "registrationClosed": "De registratie voor dit evenement is gesloten."

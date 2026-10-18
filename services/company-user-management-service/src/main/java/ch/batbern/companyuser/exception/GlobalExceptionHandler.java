@@ -81,6 +81,24 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 
+    @ExceptionHandler(EmailLinkedToAccountException.class)
+    public ResponseEntity<ErrorResponse> handleEmailLinkedToAccountException(
+            EmailLinkedToAccountException ex,
+            HttpServletRequest request) {
+        log.warn("Email linked to account: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .errorCode("EMAIL_LINKED_TO_ACCOUNT")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.current())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
     @ExceptionHandler(AdditionalEmailLimitReachedException.class)
     public ResponseEntity<ErrorResponse> handleAdditionalEmailLimitReachedException(
             AdditionalEmailLimitReachedException ex,

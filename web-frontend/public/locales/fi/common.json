@@ -44,7 +44,8 @@
     "goToPortal": "Siirry portaaliin",
     "registration": {
       "errors": {
-        "alreadyRegistered": "Olet jo ilmoittautunut tähän tapahtumaan."
+        "alreadyRegistered": "Olet jo ilmoittautunut tähän tapahtumaan.",
+        "emailLinkedToAccount": "Tämä sähköpostiosoite on jo liitetty olemassa olevaan tiliin. Kirjaudu sisään ilmoittautuaksesi tähän tapahtumaan."
       }
     },
     "registrationClosed": "Ilmoittautuminen tähän tapahtumaan on suljettu."

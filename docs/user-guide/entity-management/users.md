@@ -296,6 +296,7 @@ Any user (primarily organizers) can register **additional email addresses** on t
 - Each address can carry an optional free-text **label** (e.g. "Hostpoint shared") as a reminder.
 - Up to **5** additional addresses per user.
 - Addresses must be **globally unique** across all users' primary and additional emails; a collision is rejected.
+- **Public event registration** with an additional address: a *verified* address registers the owning account (no second account is created); an *unverified* address is refused with "this address is linked to an existing account, please sign in" (CUMS `get-or-create` → 409 `EMAIL_LINKED_TO_ACCOUNT`). Before 2026-10-18 both cases failed with a generic server error.
 
 <div class="alert info">
 ℹ️ <strong>Note:</strong> v1 does not verify ownership of an added address (no confirmation email yet). Newsletter delivery to additional addresses is also out of scope (the newsletter keeps its own subscriber list).

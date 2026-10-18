@@ -45,6 +45,9 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fixes — Registration with an Additional Email Address (2026-10-18)**:
+- ✅ Registering for an event with an address that is stored as another account's **additional email** no longer fails with "Server Error". A verified address registers the owning account; an unverified one shows "this address is linked to an existing account, please sign in" (all 10 languages).
+
 **Bug Fixes — Registration Confirmation Mails (2026-10-18)**:
 - ✅ The "please confirm your registration" email no longer attaches the calendar invite, and its subject now reads **"Bitte bestätigen: Ihre Anmeldung …"** / **"Please confirm your registration …"** instead of "Registrierungsbestätigung". At the last event about 30 attendees took the attached invite (with its "Accept" button) for the confirmation, never clicked the link, and lost their registration.
 - ✅ New **"Anmeldung bestätigt" / "Registration confirmed"** email, sent as soon as the attendee confirms (link or reply). It carries the calendar invite and the cancel link.

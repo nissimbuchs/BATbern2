@@ -45,7 +45,8 @@
     "goToPortal": "Zum Portal",
     "registration": {
       "errors": {
-        "alreadyRegistered": "Sie sind bereits für diese Veranstaltung registriert."
+        "alreadyRegistered": "Sie sind bereits für diese Veranstaltung registriert.",
+        "emailLinkedToAccount": "Diese E-Mail-Adresse ist bereits einem bestehenden Konto zugeordnet. Bitte melden Sie sich an, um sich für die Veranstaltung zu registrieren."
       }
     },
     "registrationClosed": "Die Anmeldung für diesen Event ist geschlossen."

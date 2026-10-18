@@ -44,7 +44,8 @@
     "goToPortal": "Ir al portal",
     "registration": {
       "errors": {
-        "alreadyRegistered": "Vus essas gia inscrit per quest event."
+        "alreadyRegistered": "Vus essas gia inscrit per quest event.",
+        "emailLinkedToAccount": "Questa adressa d'e-mail è gia attribuida ad in conto existent. Per plaschair s'annunziai per s'inscriver per quest event."
       }
     },
     "registrationClosed": "L’annunzia per quest eveniment è serrada."

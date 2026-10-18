@@ -23,6 +23,7 @@ import ch.batbern.companyuser.exception.AdditionalEmailAlreadyVerifiedException;
 import ch.batbern.companyuser.exception.AdditionalEmailDuplicateException;
 import ch.batbern.companyuser.exception.AdditionalEmailLimitReachedException;
 import ch.batbern.companyuser.exception.AdditionalEmailNotFoundException;
+import ch.batbern.companyuser.exception.EmailLinkedToAccountException;
 import ch.batbern.companyuser.exception.UnprocessableInvitationStateException;
 import ch.batbern.companyuser.exception.VerificationTokenExpiredException;
 import ch.batbern.companyuser.exception.VerificationTokenInvalidException;
@@ -571,6 +572,12 @@ public class UserService {
      * not, create a new account with a deduplicated username (handled by
      * {@link SlugGenerationService#ensureUniqueUsername}).
      *
+     * An email that is another user's VERIFIED additional email resolves to that
+     * user (same rule as the JIT duplicate guard). An UNVERIFIED additional email
+     * cannot be attributed and cannot become a new primary email (DB trigger
+     * {@code enforce_primary_email_not_other_additional}), so creating is refused
+     * with {@link EmailLinkedToAccountException} (409) instead of failing with a 500.
+     *
      * History: a former name-based fallback existed for the historical batch
      * import flow (Story 3.2). It was removed on 2026-05-18 because it caused
      * cross-account email leakage when a person re-registered after a job
@@ -583,7 +590,9 @@ public class UserService {
         log.info("Get-or-create user for email: {}, name: {} {}, company: {}",
                 request.getEmail(), request.getFirstName(), request.getLastName(), request.getCompanyId());
 
-        Optional<User> userByEmail = userRepository.findByEmail(request.getEmail());
+        Optional<User> userByEmail = userRepository.findByEmail(request.getEmail())
+                .or(() -> additionalEmailRepository.findVerifiedByEmailIgnoreCase(request.getEmail())
+                        .map(UserAdditionalEmail::getUser));
         if (userByEmail.isPresent()) {
             User existingUser = userByEmail.get();
             log.debug("User found by email: {}", existingUser.getUsername());
@@ -600,6 +609,9 @@ public class UserService {
         }
 
         if (request.getCreateIfMissing() != null && request.getCreateIfMissing()) {
+            if (additionalEmailRepository.existsByEmailIgnoreCase(request.getEmail())) {
+                throw new EmailLinkedToAccountException(request.getEmail());
+            }
             log.info("Creating new user: {} (name: {} {})",
                     request.getEmail(), request.getFirstName(), request.getLastName());
             User newUser = createNewUser(request);
