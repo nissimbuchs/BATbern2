@@ -45,6 +45,12 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fixes — Any Name and Every Deliverable Email Address Can Register (2026-10-23)**:
+- ✅ Names with a space in the first or last name (`Hông Ân`, `van der Berg`, `Maria José`) or in a non-Latin script no longer fail registration with "Server Error". One attendee had to misspell their own name to get through on 2026-10-22 (#1102).
+- ✅ Account sign-up accepts every name: typographic apostrophes (`O’Neill`, as typed on iPhone), single-character surnames (`王`), Devanagari, decomposed Vietnamese, digits and parentheses.
+- ✅ Email addresses are accepted whenever our mail service can deliver to them, including internationalised domains (`name@müller.ch`), long domain endings and the full set of RFC characters before the `@`. An address with accented characters **before** the `@` (`jürg@…`) is refused with an explanation, because no confirmation mail could ever reach it.
+- ✅ Usernames stay readable ASCII and are now derived the same way on every path (`Jürg Müller → juerg.mueller`, previously sometimes `jrg.mller`).
+
 **Bug Fixes — Registration with an Additional Email Address (2026-10-18)**:
 - ✅ Registering for an event with an address that is stored as another account's **additional email** no longer fails with "Server Error". A verified address registers the owning account; an unverified one shows "this address is linked to an existing account, please sign in" (all 10 languages).
 

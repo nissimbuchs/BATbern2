@@ -24,6 +24,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
+import { EMAIL_MAX_LENGTH, emailProblem } from '@/utils/validation/email';
 import type { AxiosError } from 'axios';
 import { usePromoteSpeakerToReady } from '@/hooks/useSpeakerPool';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
@@ -79,8 +80,19 @@ export const PromoteSpeakerDialog: React.FC<PromoteSpeakerDialogProps> = ({
         email: z
           .string()
           .min(1, t('speakerBrainstorm.promoteDialog.errorEmailRequired', 'Email is required'))
-          .email(t('speakerBrainstorm.promoteDialog.errorEmailInvalid', 'Email must be valid'))
-          .max(320),
+          .superRefine((value, ctx) => {
+            const problem = emailProblem(value);
+            if (problem) {
+              ctx.addIssue({
+                code: 'custom',
+                message:
+                  problem === 'nonAsciiLocalPart'
+                    ? t('validation:email.nonAsciiLocalPart')
+                    : t('speakerBrainstorm.promoteDialog.errorEmailInvalid', 'Email must be valid'),
+              });
+            }
+          })
+          .max(EMAIL_MAX_LENGTH),
         // Story 11.E.4 AC4: firstName + lastName tightened from optional to required —
         // the backend's @NotBlank validation rejects blank values with 400; surface this
         // at the form layer so the submit button is disabled until both are populated.

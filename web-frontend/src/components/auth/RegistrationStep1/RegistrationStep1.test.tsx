@@ -105,8 +105,8 @@ describe('RegistrationStep1 Component', () => {
     });
   });
 
-  // Test 1.2: should_validateGivenName_when_invalidInput
-  it('should_showError_when_givenNameTooShort', async () => {
+  // Test 1.2: should_validateGivenName_when_invalidInput (#1102: names are free text)
+  it('should_showError_when_givenNameHasNoLetter', async () => {
     const user = userEvent.setup();
 
     await act(async () => {
@@ -120,14 +120,40 @@ describe('RegistrationStep1 Component', () => {
     const nameInput = screen.getByLabelText(/given name/i);
 
     await act(async () => {
-      await user.type(nameInput, 'A');
+      await user.type(nameInput, '123');
       await user.tab();
     });
 
     await waitFor(() => {
-      expect(screen.getByText(/given name must be at least 2 characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/given name contains invalid characters/i)).toBeInTheDocument();
     });
   });
+
+  it.each(['王', 'O’Neill', 'Hông Ân', 'Mary (Molly)', 'देवनागरी'])(
+    'should_acceptGivenName_when_nameIs_%s',
+    async (name) => {
+      const user = userEvent.setup();
+
+      await act(async () => {
+        render(
+          <FormWrapper>
+            <RegistrationStep1 onContinue={mockOnContinue} />
+          </FormWrapper>
+        );
+      });
+
+      await act(async () => {
+        await user.type(screen.getByLabelText(/given name/i), name);
+        await user.tab();
+      });
+
+      await waitFor(() => {
+        expect(
+          screen.queryByText(/given name contains invalid characters/i)
+        ).not.toBeInTheDocument();
+      });
+    }
+  );
 
   // Test 1.2b: should_validateName_when_invalidCharacters
   it('should_showError_when_familyNameHasInvalidCharacters', async () => {
@@ -144,7 +170,8 @@ describe('RegistrationStep1 Component', () => {
     const nameInput = screen.getByLabelText(/family name/i);
 
     await act(async () => {
-      await user.type(nameInput, 'Doe123');
+      // No letter at all is rejected; digits next to letters ('Brontë 2nd') are fine (#1102).
+      await user.type(nameInput, '123');
       await user.tab();
     });
 

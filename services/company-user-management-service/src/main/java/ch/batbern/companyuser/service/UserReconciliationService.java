@@ -4,6 +4,7 @@ import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.repository.UserRepository;
+import ch.batbern.shared.service.SlugGenerationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.Getter;
@@ -51,6 +52,7 @@ import java.util.Set;
 public class UserReconciliationService {
 
     private final UserRepository userRepository;
+    private final SlugGenerationService slugService;
     private final CognitoIdentityProviderClient cognitoClient;
     private final Optional<UserSyncMetricsService> metricsService;
     private final String userPoolId;
@@ -59,8 +61,10 @@ public class UserReconciliationService {
             UserRepository userRepository,
             CognitoIdentityProviderClient cognitoClient,
             Optional<UserSyncMetricsService> metricsService,
+            SlugGenerationService slugService,
             @Value("${aws.cognito.user-pool-id}") String userPoolId) {
         this.userRepository = userRepository;
+        this.slugService = slugService;
         this.cognitoClient = cognitoClient;
         this.metricsService = metricsService;
         this.userPoolId = userPoolId;
@@ -457,7 +461,9 @@ public class UserReconciliationService {
      * Format: firstname.lastname (lowercase, required by chk_username_format constraint)
      * Example: John Doe -> john.doe
      * Example: John Doe (duplicate) -> john.doe.2
-     * Example: e2e-test@batbern.ch (no names) -> user.e2etest
+     * Example: e2e-test@batbern.ch (no names) -> ee.test
+     * Example: Hông Ân Meier -> hongan.meier; 太郎 山田 + taro.yamada@… -> taro.yamada
+     * Rules: {@link SlugGenerationService#generateUsername(String, String, String)} (#1102)
      *
      * @param firstName User first name from Cognito (given_name)
      * @param lastName  User last name from Cognito (family_name)
@@ -465,42 +471,10 @@ public class UserReconciliationService {
      * @return Generated username matching pattern ^[a-z]+\.[a-z]+(\.[0-9]+)?$
      */
     private String generateUsername(String firstName, String lastName, String email) {
-        String username;
-
-        // Prefer first.last name if both available
-        if (firstName != null && !firstName.isEmpty() && lastName != null && !lastName.isEmpty()) {
-            username = firstName.toLowerCase().replaceAll("[^a-z]", "")
-                       + "."
-                       + lastName.toLowerCase().replaceAll("[^a-z]", "");
-        } else if (email != null && !email.isEmpty()) {
-            // Fall back to email local part if it contains a dot
-            String emailLocal = email.split("@")[0].toLowerCase().replaceAll("[^a-z.]", "");
-            if (emailLocal.contains(".")) {
-                username = emailLocal;
-            } else {
-                // Email doesn't contain dot, prepend "user."
-                username = "user." + emailLocal;
-            }
-        } else {
-            // Last resort: generate timestamp-based username
-            username = "user." + System.currentTimeMillis();
-        }
-
-        // Ensure username matches required pattern
-        if (!username.matches("^[a-z]+\\.[a-z]+(\\.[0-9]+)?$")) {
-            log.warn("Generated username '{}' doesn't match pattern, using fallback", username);
-            username = "user.unknown";
-        }
-
-        // Check if username exists, add numeric suffix if needed
-        String finalUsername = username;
-        int suffix = 2;
-        while (userRepository.existsByUsername(finalUsername)) {
-            finalUsername = username + "." + suffix;
-            suffix++;
-        }
-
-        return finalUsername;
+        // #1102: one generator for every creation path; it is total, so the result always
+        // satisfies chk_username_format whatever the person is called.
+        String base = slugService.generateUsername(firstName, lastName, email);
+        return slugService.ensureUniqueUsername(base, userRepository::existsByUsername);
     }
 
     // Map helper

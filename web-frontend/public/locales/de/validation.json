@@ -2,7 +2,8 @@
   "email": {
     "required": "E-Mail ist erforderlich",
     "invalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
-    "tooLong": "E-Mail-Adresse ist zu lang (max. 255 Zeichen)"
+    "tooLong": "E-Mail-Adresse ist zu lang (max. 254 Zeichen)",
+    "nonAsciiLocalPart": "Vor dem @ sind nur Buchstaben ohne Akzente, Ziffern und . _ + - ' möglich. An andere Zeichen kann unser Mailversand nicht zustellen."
   },
   "password": {
     "required": "Passwort ist erforderlich",

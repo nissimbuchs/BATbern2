@@ -5,6 +5,7 @@ import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.event.UserCreatedEvent;
+import ch.batbern.shared.service.SlugGenerationService;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -13,6 +14,7 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
+import org.mockito.Spy;
 import org.mockito.junit.jupiter.MockitoExtension;
 import org.springframework.context.ApplicationEventPublisher;
 import org.springframework.security.core.Authentication;
@@ -60,6 +62,10 @@ class JITUserProvisioningInterceptorTest {
 
     @Mock
     private ApplicationEventPublisher eventPublisher;
+
+    // Real generator, never a mock: a mocked generator is what hid #1102.
+    @Spy
+    private SlugGenerationService slugService = new SlugGenerationService();
 
     @Mock
     private HttpServletRequest request;

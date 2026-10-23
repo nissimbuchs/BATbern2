@@ -6,6 +6,7 @@
 
 import React, { useState, useEffect } from 'react';
 import { useTranslation } from 'react-i18next';
+import { looksLikeEmail } from '@/utils/validation/email';
 import { useForm } from 'react-hook-form';
 import { Box, TextField, Button, Typography, Link, Alert, CircularProgress } from '@mui/material';
 import { ArrowBack, Refresh } from '@mui/icons-material';
@@ -135,12 +136,11 @@ export const ForgotPasswordForm: React.FC = () => {
         <TextField
           {...register('email', {
             required: t('auth:forgot.errors.emailRequired'),
-            pattern: {
-              value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-              message: t('auth:forgot.errors.emailInvalid'),
-            },
+            // Looks up an existing account: loose shape check only (#1102).
+            validate: (value: string) =>
+              looksLikeEmail(value) || t('auth:forgot.errors.emailInvalid'),
             maxLength: {
-              value: 255,
+              value: 254,
               message: t('auth:forgot.errors.emailTooLong'),
             },
           })}

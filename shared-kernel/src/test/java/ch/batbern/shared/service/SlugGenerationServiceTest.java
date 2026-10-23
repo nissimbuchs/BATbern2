@@ -3,8 +3,18 @@ package ch.batbern.shared.service;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
+import org.junit.jupiter.params.provider.MethodSource;
 
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+
+import java.io.IOException;
+import java.io.InputStream;
 import java.util.function.Function;
+import java.util.stream.Stream;
+import java.util.stream.StreamSupport;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -49,8 +59,59 @@ class SlugGenerationServiceTest {
         // When
         String username = slugService.generateUsername(firstName, lastName);
 
-        // Then - should convert spaces to dots and lowercase
-        assertThat(username).isEqualTo("mary.jane.smith.watson");
+        // Then - inner spaces are collapsed, not dotted: chk_username_format allows one dot (#1102)
+        assertThat(username).isEqualTo("maryjane.smithwatson");
+    }
+
+    /**
+     * #1102: any name a person can have must produce a username that passes
+     * {@code chk_username_format}. These are the names that failed in production or would have.
+     */
+    /**
+     * #1102: any name a person can have must produce a username that passes
+     * {@code chk_username_format}. The cases live in a golden file shared with the PostConfirmation
+     * Lambda's TypeScript generator, so the two implementations cannot drift apart.
+     */
+    @ParameterizedTest(name = "[{index}] \"{0}\" \"{1}\" <{2}> -> {3}")
+    @MethodSource("goldenUsernameCases")
+    void should_produceValidUsername_when_nameIsAnythingAPersonCanBeCalled(
+            String firstName, String lastName, String email, String expected) {
+        String username = slugService.generateUsername(firstName, lastName, email);
+
+        assertThat(username).isEqualTo(expected);
+        assertThat(username).matches(SlugGenerationService.USERNAME_PATTERN);
+    }
+
+    static Stream<Arguments> goldenUsernameCases() throws IOException {
+        try (InputStream in = SlugGenerationServiceTest.class.getResourceAsStream("/username-generation-cases.json")) {
+            JsonNode cases = new ObjectMapper().readTree(in).get("cases");
+            return StreamSupport.stream(cases.spliterator(), false).map(c -> Arguments.of(
+                textOrNull(c, "firstName"), textOrNull(c, "lastName"), textOrNull(c, "email"), c.get("expected").asText()));
+        }
+    }
+
+    private static String textOrNull(JsonNode node, String field) {
+        return node.get(field).isNull() ? null : node.get(field).asText();
+    }
+
+    @Test
+    void should_alwaysSatisfyDbConstraint_when_inputIsHostile() {
+        String[] names = {"", " ", "-", "'", "...", "123", "😀", "​", "a\u0000b", "<script>", "ⅷ",
+            "Ǆemal", "ﬁona", "Χριστίνα", "محمد", "김민준", "ᚠᛁᚾᚾ", "x".repeat(500)};
+        String[] emails = {"x@example.com", "123@example.com", "a.b.c.d@example.com", "-@example.com"};
+        for (String first : names) {
+            for (String last : names) {
+                for (String email : emails) {
+                    String username = slugService.generateUsername(first, last, email);
+                    String unique = slugService.ensureUniqueUsername(username, candidate -> !candidate.endsWith(".7"));
+                    assertThat(username)
+                        .as("first=%s last=%s email=%s", first, last, email)
+                        .matches(SlugGenerationService.USERNAME_PATTERN)
+                        .hasSizeLessThanOrEqualTo(SlugGenerationService.MAX_BASE_USERNAME_LENGTH);
+                    assertThat(unique).matches(SlugGenerationService.USERNAME_PATTERN);
+                }
+            }
+        }
     }
 
     @Test

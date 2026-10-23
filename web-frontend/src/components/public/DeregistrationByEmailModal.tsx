@@ -11,6 +11,7 @@
 import React, { useState } from 'react';
 import { Loader2 } from 'lucide-react';
 import { useTranslation } from 'react-i18next';
+import { looksLikeEmail } from '@/utils/validation/email';
 import {
   Dialog,
   DialogContent,
@@ -41,12 +42,9 @@ export const DeregistrationByEmailModal: React.FC<DeregistrationByEmailModalProp
 
   const mutation = useDeregistrationByEmail();
 
-  const validateEmail = (value: string): boolean => {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  };
-
   const handleSubmit = () => {
-    if (!validateEmail(email)) {
+    // Looks up an existing registration: loose shape check only (#1102).
+    if (!looksLikeEmail(email)) {
       setEmailError(t('deregistration.modal.emailError'));
       return;
     }

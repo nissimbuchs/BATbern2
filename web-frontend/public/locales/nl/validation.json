@@ -2,7 +2,8 @@
   "email": {
     "required": "E-mailadres is verplicht",
     "invalid": "Voer een geldig e-mailadres in",
-    "tooLong": "E-mailadres is te lang (max. 255 tekens)"
+    "tooLong": "E-mailadres is te lang (max. 254 tekens)",
+    "nonAsciiLocalPart": "Vóór de @ zijn alleen letters zonder accenten, cijfers en . _ + - ' mogelijk. Onze maildienst kan niet bezorgen bij andere tekens."
   },
   "password": {
     "required": "Wachtwoord is verplicht",

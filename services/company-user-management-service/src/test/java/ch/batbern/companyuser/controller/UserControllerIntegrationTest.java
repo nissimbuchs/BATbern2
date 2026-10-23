@@ -10,6 +10,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -738,6 +741,65 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.created").value(false))
                 .andExpect(jsonPath("$.user.id").value("john.doe"))
                 .andExpect(jsonPath("$.user.email").value("john.doe@example.com"));
+    }
+
+    /**
+     * #1102: production rejected "Hông Ân" with a 500 (chk_username_format). Names are free text;
+     * whatever a person is called, registration must succeed and keep the name as entered.
+     */
+    @ParameterizedTest(name = "[{index}] {0} {1} -> {3}")
+    @CsvSource(delimiter = '|', value = {
+        "Hông Ân    | Meier        | h.meier.1102@example.com     | hongan.meier",
+        "Jan        | van der Berg | jvdb.1102@example.com        | jan.vanderberg",
+        "Maria José | García       | mjg.1102@example.com         | mariajose.garcia",
+        "太郎        | 山田          | taro.yamada.1102@example.com | taro.yamada",
+        "Владимир   | Petrov       | 1102@example.com             | user.petrov",
+    })
+    void should_createUserWithValidUsername_when_nameHasSpacesOrNonLatinScript(
+            String firstName, String lastName, String email, String expectedUsername) throws Exception {
+        String body = """
+                {"email": "%s", "firstName": "%s", "lastName": "%s", "createIfMissing": true}
+                """.formatted(email, firstName, lastName);
+
+        mockMvc.perform(post("/api/v1/users/get-or-create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created").value(true))
+                .andExpect(jsonPath("$.username").value(expectedUsername))
+                .andExpect(jsonPath("$.user.firstName").value(firstName))
+                .andExpect(jsonPath("$.user.lastName").value(lastName));
+
+        // The class is @Transactional, so without a flush chk_username_format never runs and a 200
+        // proves nothing. A JPQL query auto-flushes the insert: this is where production failed.
+        assertThat(userRepository.findByUsername(expectedUsername)).isPresent();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"o'neill+batbern@example.ie", "x@müller.ch", "x@example.engineering"})
+    void should_acceptEmail_when_sesCanDeliverToIt(String email) throws Exception {
+        String body = """
+                {"email": "%s", "firstName": "Valid", "lastName": "Address", "createIfMissing": true}
+                """.formatted(email);
+
+        mockMvc.perform(post("/api/v1/users/get-or-create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.user.email").value(email));
+    }
+
+    @Test
+    void should_return400_when_emailLocalPartIsNotAscii() throws Exception {
+        // SES has no SMTPUTF8: a Unicode local part can never receive the confirmation mail.
+        String body = """
+                {"email": "jürg@example.ch", "firstName": "Jürg", "lastName": "Muster", "createIfMissing": true}
+                """;
+
+        mockMvc.perform(post("/api/v1/users/get-or-create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body))
+                .andExpect(status().isBadRequest());
     }
 
     @Test

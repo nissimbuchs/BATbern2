@@ -2290,6 +2290,9 @@ components:
         email:
           type: string
           format: email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
           # RFC 5321 §4.5.3.1.3 — practical maximum for a valid mailbox path
           # is 254 characters. Without this cap, a 256+ char value passes
           # bean validation and crashes at INSERT into VARCHAR(255) → 500.
@@ -2431,15 +2434,19 @@ components:
       properties:
         firstName:
           type: string
-          minLength: 2
+          minLength: 1
           maxLength: 100
         lastName:
           type: string
-          minLength: 2
+          minLength: 1
           maxLength: 100
         email:
           type: string
           format: email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
         bio:
           type: string
           maxLength: 5000
@@ -2505,6 +2512,10 @@ components:
         email:
           type: string
           format: email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
           description: User email address (must be unique)
           example: anna.mueller@example.com
         firstName:
@@ -2549,6 +2560,10 @@ components:
         email:
           type: string
           format: email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
           description: Required. Lookup key for the existing-user path (case-insensitive).
           example: jane.smith@example.com
         firstName:
@@ -2661,14 +2676,20 @@ components:
         email:
           type: string
           format: email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
           description: User email address. Used as unique identifier for anonymous users and for account linking.
           example: john.doe@example.com
         firstName:
           type: string
+          maxLength: 100
           description: User first name
           example: John
         lastName:
           type: string
+          maxLength: 100
           description: User last name
           example: Doe
         companyId:

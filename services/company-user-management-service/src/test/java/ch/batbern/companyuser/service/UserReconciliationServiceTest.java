@@ -3,6 +3,7 @@ package ch.batbern.companyuser.service;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.UserRepository;
+import ch.batbern.shared.service.SlugGenerationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
@@ -66,6 +67,7 @@ class UserReconciliationServiceTest {
                 userRepository,
                 cognitoClient,
                 Optional.of(metricsService),
+                new SlugGenerationService(), // real generator, never a mock (#1102)
                 USER_POOL_ID
         );
     }
@@ -411,7 +413,8 @@ class UserReconciliationServiceTest {
         assertThat(saved.getFirstName()).isEqualTo("Tom");
         assertThat(saved.getLastName()).isEqualTo("Müller");
         // Username derived from firstname.lastname, not the email-fallback `user.tom`.
-        assertThat(saved.getUsername()).isEqualTo("tom.mller");
+        // ü is transliterated to ue by the shared generator (#1102); it used to be dropped ("tom.mller").
+        assertThat(saved.getUsername()).isEqualTo("tom.mueller");
     }
 
     @Test

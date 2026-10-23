@@ -2,7 +2,8 @@
   "email": {
     "required": "Sähköpostiosoite on pakollinen",
     "invalid": "Anna kelvollinen sähköpostiosoite",
-    "tooLong": "Sähköpostiosoite on liian pitkä (enintään 255 merkkiä)"
+    "tooLong": "Sähköpostiosoite on liian pitkä (enintään 254 merkkiä)",
+    "nonAsciiLocalPart": "Ennen @-merkkiä voi käyttää vain aksentittomia kirjaimia, numeroita ja merkkejä . _ + - '. Sähköpostipalvelumme ei voi toimittaa muihin merkkeihin."
   },
   "password": {
     "required": "Salasana on pakollinen",

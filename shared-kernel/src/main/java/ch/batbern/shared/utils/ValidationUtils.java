@@ -7,10 +7,6 @@ import java.util.regex.Pattern;
 public class ValidationUtils {
 
     private static final Pattern SWISS_UID_PATTERN = Pattern.compile("^CHE-\\d{3}\\.\\d{3}\\.\\d{3}$");
-    private static final Pattern EMAIL_PATTERN = Pattern.compile(
-        "^[a-zA-Z0-9_+&*-]+(?:\\.[a-zA-Z0-9_+&*-]+)*@"
-        + "(?:[a-zA-Z0-9-]+\\.)+[a-zA-Z]{2,7}$"
-    );
 
     private ValidationUtils() {
         // Utility class, prevent instantiation
@@ -35,7 +31,7 @@ public class ValidationUtils {
         if (email.trim().isEmpty()) {
             throw new ValidationException("Email cannot be empty");
         }
-        if (!EMAIL_PATTERN.matcher(email).matches()) {
+        if (!EmailAddresses.isAcceptable(email)) {
             throw new ValidationException("Invalid email format: " + email);
         }
     }

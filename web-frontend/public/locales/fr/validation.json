@@ -2,7 +2,8 @@
   "email": {
     "required": "L'adresse e-mail est obligatoire",
     "invalid": "Veuillez saisir une adresse e-mail valide",
-    "tooLong": "L'adresse e-mail est trop longue (max. 255 caractères)"
+    "tooLong": "L'adresse e-mail est trop longue (max. 254 caractères)",
+    "nonAsciiLocalPart": "Avant le @, seuls les lettres sans accents, les chiffres et . _ + - ' sont possibles. Notre service d'envoi ne peut pas livrer à d'autres caractères."
   },
   "password": {
     "required": "Le mot de passe est obligatoire",

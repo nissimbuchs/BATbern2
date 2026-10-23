@@ -2,7 +2,8 @@
   "email": {
     "required": "El correo electrónico es obligatorio",
     "invalid": "Por favor, introduce una dirección de correo electrónico válida",
-    "tooLong": "La dirección de correo electrónico es demasiado larga (máx. 255 caracteres)"
+    "tooLong": "La dirección de correo electrónico es demasiado larga (máx. 254 caracteres)",
+    "nonAsciiLocalPart": "Antes de la @ solo se admiten letras sin acentos, dígitos y . _ + - '. Nuestro servicio de correo no puede entregar a otros caracteres."
   },
   "password": {
     "required": "La contraseña es obligatoria",

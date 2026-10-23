@@ -166,6 +166,10 @@ paths:
                   email:
                     type: string
                     format: email
+                    # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+                    # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+                    pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+                    maxLength: 254
                     example: john.doe@example.com
                   companyUpdated:
                     type: boolean
@@ -452,6 +456,10 @@ paths:
                   email:
                     type: string
                     format: email
+                    # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+                    # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+                    pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+                    maxLength: 254
                     example: john.doe@example.com
         '401':
           $ref: '#/components/responses/Unauthorized'
@@ -1376,19 +1384,22 @@ components:
         email:
           type: string
           format: email
-          maxLength: 255
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
           description: Email address for registration and confirmation
           example: john.doe@example.com
         firstName:
           type: string
           minLength: 1
-          maxLength: 255
+          maxLength: 100
           description: First name
           example: John
         lastName:
           type: string
           minLength: 1
-          maxLength: 255
+          maxLength: 100
           description: Last name
           example: Doe
         company:
@@ -1488,7 +1499,10 @@ components:
         participantEmail:
           type: string
           format: email
-          maxLength: 255
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
           description: Participant email (used for user lookup/creation)
           example: adrian.buerki@centrisag.ch
         firstName:
@@ -1633,6 +1647,10 @@ components:
         email:
           type: string
           format: email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
           description: Email address of the registrant
           example: max.muster@example.com
         eventCode:

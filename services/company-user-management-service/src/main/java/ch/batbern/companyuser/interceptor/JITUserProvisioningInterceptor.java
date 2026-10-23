@@ -7,6 +7,7 @@ import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.event.UserCreatedEvent;
 import ch.batbern.shared.utils.LoggingUtils;
+import ch.batbern.shared.service.SlugGenerationService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.servlet.http.HttpServletRequest;
@@ -65,6 +66,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
 
     private final UserRepository userRepository;
     private final UserAdditionalEmailRepository userAdditionalEmailRepository;
+    private final SlugGenerationService slugService;
     private final ApplicationEventPublisher eventPublisher;
 
     /** For parsing the `custom:preferences` JSON blob set by the signup form. */
@@ -312,6 +314,8 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
      * Example: John Doe -> john.doe
      * Example: John Doe (duplicate) -> john.doe.2
      * Example: nissim@buchs.be (no names) -> user.nissim
+     * Example: Hông Ân Meier -> hongan.meier; 太郎 山田 + taro.yamada@… -> taro.yamada
+     * Rules: {@link SlugGenerationService#generateUsername(String, String, String)} (#1102)
      *
      * @param firstName User first name from JWT (given_name)
      * @param lastName  User last name from JWT (family_name)
@@ -319,37 +323,10 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
      * @return Generated username matching pattern ^[a-z]+\.[a-z]+(\.[0-9]+)?$
      */
     private String generateUsername(String firstName, String lastName, String email) {
-        String username;
-
-        // Prefer first.last name if both available
-        if (firstName != null && !firstName.isEmpty() && lastName != null && !lastName.isEmpty()) {
-            username = firstName.toLowerCase().replaceAll("[^a-z]", "")
-                       + "."
-                       + lastName.toLowerCase().replaceAll("[^a-z]", "");
-        } else if (email != null && !email.isEmpty()) {
-            // Fall back to email local part if it contains a dot
-            String emailLocal = email.split("@")[0].toLowerCase().replaceAll("[^a-z.]", "");
-            if (emailLocal.contains(".")) {
-                username = emailLocal;
-            } else {
-                // Email doesn't contain dot, prepend "user."
-                username = "user." + emailLocal;
-            }
-        } else {
-            // Last resort: no name or email available — use 'user.unknown' base; uniqueness enforced below
-            log.warn("No first name, last name, or email available during JIT provisioning; using 'user.unknown' base");
-            username = "user.unknown";
-        }
-
-        // Check if username exists, add numeric suffix if needed
-        String finalUsername = username;
-        int suffix = 2;
-        while (userRepository.existsByUsername(finalUsername)) {
-            finalUsername = username + "." + suffix;
-            suffix++;
-        }
-
-        return finalUsername;
+        // #1102: one generator for every creation path; it is total, so the result always
+        // satisfies chk_username_format whatever the person is called.
+        String base = slugService.generateUsername(firstName, lastName, email);
+        return slugService.ensureUniqueUsername(base, userRepository::existsByUsername);
     }
 
     /**

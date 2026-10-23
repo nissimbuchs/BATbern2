@@ -34,6 +34,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -204,7 +205,7 @@ class UserServiceTest {
 
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
         when(cognitoService.createCognitoUser(request)).thenReturn("cognito-123");
-        when(slugService.generateUsername("New", "User")).thenReturn("new.user");
+        when(slugService.generateUsername(eq("New"), eq("User"), anyString())).thenReturn("new.user");
         when(slugService.ensureUniqueUsername(eq("new.user"), any())).thenReturn("new.user");
 
         ch.batbern.companyuser.domain.Company mockCompany = ch.batbern.companyuser.domain.Company.builder()
@@ -247,7 +248,7 @@ class UserServiceTest {
         assertThat(response.getUser().getCompanyId()).isEqualTo("TechCorp");
 
         verify(cognitoService).createCognitoUser(request);
-        verify(slugService).generateUsername("New", "User");
+        verify(slugService).generateUsername(eq("New"), eq("User"), anyString());
         verify(slugService).ensureUniqueUsername(eq("new.user"), any());
         verify(userRepository).save(any(User.class));
         verify(eventPublisher).publish(any(UserCreatedEvent.class));
@@ -282,7 +283,7 @@ class UserServiceTest {
 
         when(userRepository.findByEmail("daniel.berger@mobi.ch")).thenReturn(Optional.empty());
         when(cognitoService.createCognitoUser(request)).thenReturn("cognito-mobi");
-        when(slugService.generateUsername("Daniel", "Berger")).thenReturn("daniel.berger");
+        when(slugService.generateUsername(eq("Daniel"), eq("Berger"), anyString())).thenReturn("daniel.berger");
         when(slugService.ensureUniqueUsername(eq("daniel.berger"), any())).thenReturn("daniel.berger.2");
 
         ch.batbern.companyuser.domain.Company mockCompany = ch.batbern.companyuser.domain.Company.builder()
@@ -520,7 +521,7 @@ class UserServiceTest {
 
         when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
         when(cognitoService.createCognitoUser(request)).thenReturn("cognito-123");
-        when(slugService.generateUsername("New", "User")).thenReturn("new.user");
+        when(slugService.generateUsername(eq("New"), eq("User"), anyString())).thenReturn("new.user");
         when(slugService.ensureUniqueUsername(eq("new.user"), any())).thenReturn("new.user");
 
         ch.batbern.companyuser.domain.Company mockCompany = ch.batbern.companyuser.domain.Company.builder()
@@ -724,7 +725,7 @@ class UserServiceTest {
         request.setInitialRoles(List.of(CreateUserRequest.InitialRolesEnum.SPEAKER));
 
         when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
-        when(slugService.generateUsername("New", "User")).thenReturn("new.user");
+        when(slugService.generateUsername(eq("New"), eq("User"), anyString())).thenReturn("new.user");
         when(slugService.ensureUniqueUsername(eq("new.user"), any())).thenReturn("new.user");
         when(securityContext.getCurrentUsername()).thenReturn("admin.user");
 
@@ -753,7 +754,7 @@ class UserServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getId()).isEqualTo("new.user");
 
-        verify(slugService).generateUsername("New", "User");
+        verify(slugService).generateUsername(eq("New"), eq("User"), anyString());
         verify(slugService).ensureUniqueUsername(eq("new.user"), any());
         verify(userRepository).save(any(User.class));
 
@@ -780,7 +781,7 @@ class UserServiceTest {
         // No initial roles specified
 
         when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
-        when(slugService.generateUsername("Jane", "Attendee")).thenReturn("jane.attendee");
+        when(slugService.generateUsername(eq("Jane"), eq("Attendee"), anyString())).thenReturn("jane.attendee");
         when(slugService.ensureUniqueUsername(eq("jane.attendee"), any())).thenReturn("jane.attendee");
         when(securityContext.getCurrentUsername()).thenReturn("admin.user");
 

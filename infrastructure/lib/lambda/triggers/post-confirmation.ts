@@ -15,6 +15,7 @@
 
 import { PostConfirmationTriggerEvent, PostConfirmationTriggerHandler } from 'aws-lambda';
 import { getDbClient } from './common/database';
+import { generateUsername } from './common/username';
 import { CloudWatchClient, PutMetricDataCommand, StandardUnit } from '@aws-sdk/client-cloudwatch';
 import {
   CognitoIdentityProviderClient,
@@ -172,26 +173,6 @@ async function resolveUniqueUsername(
 }
 
 /**
- * Generate unique username from first and last name
- * Format: firstname.lastname or firstname.lastname.N for duplicates
- * Story 1.16.2: Username is public meaningful identifier
- */
-function generateUsername(firstName: string, lastName: string): string {
-  // Normalize to lowercase, remove special characters, replace spaces with nothing
-  const normalizeNamePart = (name: string) =>
-    name
-      .toLowerCase()
-      .normalize('NFD')
-      .replace(/[\u0300-\u036f]/g, '') // Remove diacritics
-      .replace(/[^a-z]/g, ''); // Keep only letters
-
-  const first = normalizeNamePart(firstName || 'user');
-  const last = normalizeNamePart(lastName || 'user');
-
-  return `${first}.${last}`;
-}
-
-/**
  * Get initial role for a user.
  * Story 1.2.6: ADR-001 Database-centric architecture
  *
@@ -260,7 +241,9 @@ async function createUser(
   const firstName = preferences.firstName || 'User';
   const lastName = preferences.lastName || 'User';
   const language = preferences.language || 'de';
-  const username = generateUsername(firstName, lastName);
+  // #1102: derive from the names as entered (any script), falling back to the email; the 'User'
+  // defaults above are for the name columns only and must not turn into `user.user`.
+  const username = generateUsername(preferences.firstName, preferences.lastName, email);
 
   const client = await getDbClient();
   try {
