@@ -832,7 +832,11 @@ const SpeakerCard: React.FC<SpeakerCardProps> = ({
     }
   };
 
-  const session = speaker.sessionId ? sessions.find((s) => s.id === speaker.sessionId) : null;
+  // Match on the slug: event sessions are addressed by `sessionSlug` and carry no UUID `id`
+  // (ADR-003), so an id match never succeeded and every slotted speaker read as unslotted.
+  const session = speaker.sessionSlug
+    ? sessions.find((s) => s.sessionSlug === speaker.sessionSlug)
+    : null;
 
   // Time-in-state chip.
   const statusChangedAt = getStatusChangedAt(speaker);
