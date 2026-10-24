@@ -66,7 +66,8 @@ export interface SessionMaterial {
  * Adds frontend-specific fields to the base Session type from API
  */
 export interface SessionUI extends Session {
-  // UUID id for speaker pool matching (Story 5.6)
+  // Not returned by the API (sessions are addressed by sessionSlug, ADR-003). Match speakers
+  // to sessions on sessionSlug, never on this field.
   id?: string;
   sessionId?: string; // UUID identifier for session (Story 4.2)
   // UI-only fields for session management (Phase 2 features)

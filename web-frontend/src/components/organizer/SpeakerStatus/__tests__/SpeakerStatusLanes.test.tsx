@@ -311,8 +311,10 @@ describe('SpeakerStatusLanes — 4-phase kanban (Story 14.C.2)', () => {
   });
 
   it('should_showSlotAssignedTime_forQualityReviewedWithSlot', () => {
+    // Shape of GET /events/{code}?include=sessions: sessions carry `sessionSlug`, never a
+    // UUID `id` (ADR-003), so the card must match on the speaker's `sessionSlug`.
     const session = {
-      id: 'sess-1',
+      sessionSlug: 'batbern60-a-talk',
       title: 'A talk',
       startTime: '2026-06-01T13:30:00Z',
       speakers: [],
@@ -320,7 +322,8 @@ describe('SpeakerStatusLanes — 4-phase kanban (Story 14.C.2)', () => {
     const speaker = makeSpeaker('QUALITY_REVIEWED', {
       id: 's-slotted',
       isSlotAssigned: true,
-      sessionId: 'sess-1',
+      sessionId: '6f0f8ca1-0000-0000-0000-000000000001',
+      sessionSlug: 'batbern60-a-talk',
     });
     renderLanes([speaker], { sessions: [session] });
     expect(screen.getByTestId(`slot-assigned-${speaker.id}`)).toBeInTheDocument();
@@ -331,12 +334,16 @@ describe('SpeakerStatusLanes — 4-phase kanban (Story 14.C.2)', () => {
     // A READY speaker can be slotted from the Agenda — the time must show on the card
     // even though they are not yet QUALITY_REVIEWED.
     const session = {
-      id: 'sess-rd',
+      sessionSlug: 'batbern60-ready-talk',
       title: 'Ready talk',
       startTime: '2026-06-01T09:15:00Z',
       speakers: [],
     } as never;
-    const speaker = makeSpeaker('READY', { id: 's-ready-slot', sessionId: 'sess-rd' });
+    const speaker = makeSpeaker('READY', {
+      id: 's-ready-slot',
+      sessionId: '6f0f8ca1-0000-0000-0000-000000000002',
+      sessionSlug: 'batbern60-ready-talk',
+    });
     renderLanes([speaker], { sessions: [session], maxSlots: 8 });
     expect(screen.getByTestId(`slot-assigned-${speaker.id}`)).toBeInTheDocument();
     // No "needs a slot" nudge for a non-confirmed speaker.

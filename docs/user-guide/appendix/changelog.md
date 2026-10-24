@@ -45,6 +45,9 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fixes — Speaker Cards Show the Assigned Slot (2026-10-24)**:
+- ✅ In the speaker pool, a confirmed speaker who already has a slot now shows the slot time instead of "⚠ Needs a slot". The card looked the session up by an identifier the agenda data does not carry, so every confirmed speaker appeared unslotted, even with the agenda published (BATbern60: 3 speakers).
+
 **Bug Fixes — Organizer Tasks Appear on Time (2026-10-24)**:
 - ✅ Tasks now become active when the event reaches their trigger, however the event got there. Until now the automatic agenda publication, changing the status in the event settings, and finishing the last session on the Watch skipped this step, so tasks such as Catering and the Final Agenda newsletter stayed "pending" (BATbern60, 23 October).
 - ✅ A task also becomes active a set number of days before it is due (14 by default), even if its trigger has not happened yet, so no task can be born overdue. A daily check at 05:30 applies both rules.
