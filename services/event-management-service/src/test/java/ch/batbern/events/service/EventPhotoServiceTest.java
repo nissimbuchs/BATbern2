@@ -367,7 +367,7 @@ class EventPhotoServiceTest {
             List<Event> recentEvents = buildEvents(5);
             List<EventPhoto> allPhotos = buildPhotos(recentEvents, 5);
 
-            when(eventRepository.findAllByOrderByDateDesc(any())).thenReturn(recentEvents);
+            when(eventRepository.findByDateBeforeOrderByDateDesc(any(), any())).thenReturn(recentEvents);
             when(photoRepository.findByEventCodeIn(any())).thenReturn(allPhotos);
 
             // When
@@ -384,7 +384,7 @@ class EventPhotoServiceTest {
             List<Event> recentEvents = buildEvents(1);
             List<EventPhoto> photos = buildPhotos(recentEvents, 3);
 
-            when(eventRepository.findAllByOrderByDateDesc(any())).thenReturn(recentEvents);
+            when(eventRepository.findByDateBeforeOrderByDateDesc(any(), any())).thenReturn(recentEvents);
             when(photoRepository.findByEventCodeIn(any())).thenReturn(photos);
 
             // When
@@ -398,7 +398,7 @@ class EventPhotoServiceTest {
         @DisplayName("should return empty list when no recent events - AC5")
         void shouldReturnEmptyWhenNoEvents() {
             // Given
-            when(eventRepository.findAllByOrderByDateDesc(any())).thenReturn(List.of());
+            when(eventRepository.findByDateBeforeOrderByDateDesc(any(), any())).thenReturn(List.of());
 
             // When
             List<EventPhotoResponse> result = service.getRecentPhotos(20, 5);

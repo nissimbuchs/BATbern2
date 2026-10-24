@@ -203,13 +203,13 @@ public class EventPhotoService {
     }
 
     /**
-     * Return up to {@code limit} randomly-sampled photos from the last {@code lastNEvents} events.
-     * AC5 — Recent photos endpoint (homepage use)
+     * Return up to {@code limit} randomly-sampled photos from the last {@code lastNEvents} events
+     * that have already taken place. AC5 — Recent photos endpoint (homepage use)
      */
     @Transactional(readOnly = true)
     public List<EventPhotoResponse> getRecentPhotos(int limit, int lastNEvents) {
         List<Event> recentEvents = eventRepository
-                .findAllByOrderByDateDesc(PageRequest.of(0, lastNEvents));
+                .findByDateBeforeOrderByDateDesc(Instant.now(), PageRequest.of(0, lastNEvents));
 
         if (recentEvents.isEmpty()) {
             return List.of();

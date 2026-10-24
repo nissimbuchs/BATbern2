@@ -1509,7 +1509,7 @@ The homepage `TestimonialSection` currently shows 20 hardcoded fake testimonials
   - `POST /api/v1/events/{eventCode}/photos/upload-url` → presigned S3 upload URL + `photoId` (organizer)
   - `POST /api/v1/events/{eventCode}/photos/confirm` (body: `photoId`) → marks upload complete, stores `display_url` (organizer)
   - `DELETE /api/v1/events/{eventCode}/photos/{photoId}` → deletes DB record + S3 object (organizer)
-- New endpoint for homepage use: `GET /api/v1/events/recent-photos?limit=20&lastNEvents=5` → returns up to `limit` photo URLs randomly sampled from the last `lastNEvents` events (by event date)
+- New endpoint for homepage use: `GET /api/v1/events/recent-photos?limit=20&lastNEvents=5` → returns up to `limit` photo URLs randomly sampled from the last `lastNEvents` events that have already taken place (by event date; future events are excluded, fix 2026-10-24)
 
 **Frontend — Organizer Event Page: Photos Tab:**
 - New tab "Photos" added to `EventPage.tsx` tab list (after existing tabs)

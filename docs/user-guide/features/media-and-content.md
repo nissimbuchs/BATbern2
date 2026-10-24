@@ -26,7 +26,7 @@ The photos are also surfaced publicly:
 - **Homepage marquee** — the homepage shows real, recent event photos (sampled from the last few events), replacing the previous placeholder testimonials; it falls back to testimonials if too few photos exist.
 - **Archive pages** — each archived event's detail page shows that event's own photos in a marquee below the sessions (hidden if the event has no photos).
 
-Public photo listing endpoints (`GET /api/v1/events/{eventCode}/photos` and `GET /api/v1/events/recent-photos`) require no authentication.
+Public photo listing endpoints (`GET /api/v1/events/{eventCode}/photos` and `GET /api/v1/events/recent-photos`) require no authentication. The homepage photo row (`recent-photos`) samples from the most recent events that have already taken place; events created ahead of time do not count.
 
 ## Event Teaser Images (Story 10.22)
 

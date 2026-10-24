@@ -45,6 +45,9 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fixes — Photo Row Back on the Homepage (2026-10-24)**:
+- ✅ The homepage shows the photo row from recent events again. It took its photos from the five events with the latest date, and once BATbern61–66 had been created ahead of time those were all future events without photos, so the row disappeared. Only events that have already taken place count now.
+
 **Bug Fixes — Speaker Cards Show the Assigned Slot (2026-10-24)**:
 - ✅ In the speaker pool, a confirmed speaker who already has a slot now shows the slot time instead of "⚠ Needs a slot". The card looked the session up by an identifier the agenda data does not carry, so every confirmed speaker appeared unslotted, even with the agenda published (BATbern60: 3 speakers).
 
