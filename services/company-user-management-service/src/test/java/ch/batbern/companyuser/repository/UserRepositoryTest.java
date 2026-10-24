@@ -159,7 +159,7 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         createAndSaveUser("test.user", "unique@example.com");
 
         // When
-        Optional<User> found = userRepository.findByEmail("unique@example.com");
+        Optional<User> found = userRepository.findByEmailIgnoreCase("unique@example.com");
 
         // Then
         assertThat(found).isPresent();
@@ -173,8 +173,8 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         createAndSaveUser("test.user", "test@example.com");
 
         // When
-        boolean exists = userRepository.existsByEmail("test@example.com");
-        boolean notExists = userRepository.existsByEmail("other@example.com");
+        boolean exists = userRepository.existsByEmailIgnoreCase("test@example.com");
+        boolean notExists = userRepository.existsByEmailIgnoreCase("other@example.com");
 
         // Then
         assertThat(exists).isTrue();

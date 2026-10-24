@@ -153,7 +153,7 @@ class JITProvisioningIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk());
 
         // Same row now carries the Cognito sub — linked, not duplicated.
-        User linked = userRepository.findByEmail(email).orElseThrow();
+        User linked = userRepository.findByEmailIgnoreCase(email).orElseThrow();
         assertThat(linked.getCognitoUserId()).isEqualTo(freshSub);
         // Existing username + roles preserved.
         assertThat(linked.getUsername()).isEqualTo("pre.invited");

@@ -583,7 +583,10 @@ The platform maintains user data across AWS Cognito (authentication) and Postgre
 
 An email address identifies a person regardless of capitalisation. Every lookup by email is
 case-insensitive (`…IgnoreCase` finders, `LOWER(x) = LOWER(:email)` in JPQL, `lower(email) = lower($1)`
-in the Cognito Lambdas), and addresses written by the platform are stored trimmed and lower-cased.
+in the Cognito Lambdas). CUMS stores the primary address trimmed and lower-cased on every write
+through the `User` entity (`@PrePersist`/`@PreUpdate`), and the newsletter and partner RSVPs store
+theirs lower-cased; the PostConfirmation Lambda inserts via SQL as typed, so there only the unique
+index guarantees uniqueness.
 Case-sensitive email finders were removed so they cannot be reused by accident.
 
 This covers user get-or-create and creation (CUMS), the PostConfirmation / PostAuthentication /

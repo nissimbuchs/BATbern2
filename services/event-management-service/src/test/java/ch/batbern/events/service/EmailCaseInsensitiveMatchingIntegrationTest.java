@@ -97,7 +97,8 @@ class EmailCaseInsensitiveMatchingIntegrationTest extends AbstractIntegrationTes
         subscriberRepository.saveAndFlush(subscriber("db.case@batbern.ch"));
 
         assertThatThrownBy(() -> subscriberRepository.saveAndFlush(subscriber("DB.Case@batbern.ch")))
-                .isInstanceOf(DataIntegrityViolationException.class);
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("uq_newsletter_subscribers_email_lower");
     }
 
     @Test

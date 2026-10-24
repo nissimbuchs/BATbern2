@@ -46,12 +46,12 @@ class UserProvisioningCognitoRollbackIntegrationTest extends AbstractIntegration
     void setUp() {
         Mockito.reset(cognitoIntegrationService);
         // Defensive: ensure no leftover row from a previous run by this test class.
-        userRepository.findByEmail("rollback.victim@example.com").ifPresent(userRepository::delete);
+        userRepository.findByEmailIgnoreCase("rollback.victim@example.com").ifPresent(userRepository::delete);
     }
 
     @AfterEach
     void tearDown() {
-        userRepository.findByEmail("rollback.victim@example.com").ifPresent(userRepository::delete);
+        userRepository.findByEmailIgnoreCase("rollback.victim@example.com").ifPresent(userRepository::delete);
     }
 
     @Test
@@ -74,7 +74,7 @@ class UserProvisioningCognitoRollbackIntegrationTest extends AbstractIntegration
                 .isInstanceOf(CognitoOperationException.class);
 
         // After the exception propagates, the @Transactional rolls back: no User row persists.
-        assertThat(userRepository.findByEmail("rollback.victim@example.com")).isEmpty();
+        assertThat(userRepository.findByEmailIgnoreCase("rollback.victim@example.com")).isEmpty();
         // Confirm the surrounding state is clean: only roles in the repo are seeded data, if any.
         Mockito.verify(cognitoIntegrationService).adminCreateUserSilently(anyString(), anyString(), anyString());
     }

@@ -23,7 +23,7 @@ public interface NewsletterSubscriberRepository extends JpaRepository<Newsletter
      * Case-insensitive email lookup: the only email finder on purpose (#1099). Subscribe, bounce /
      * complaint handling and the slides-online opt-out check all match through it, because
      * registrant, SES and subscriber addresses may differ in case. Backed by the unique index on
-     * {@code lower(email)} (V125).
+     * {@code lower(email)} (V126).
      */
     Optional<NewsletterSubscriber> findByEmailIgnoreCase(String email);
 

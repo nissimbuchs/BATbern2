@@ -1,4 +1,4 @@
--- V125__newsletter_subscriber_email_case_insensitive_unique.sql
+-- V126__newsletter_subscriber_email_case_insensitive_unique.sql
 -- One newsletter subscriber per address regardless of capitalisation (#1099). Production had a
 -- person subscribed twice ("x@…" and "X@…") and receiving every newsletter twice; that pair was
 -- merged by hand on 2026-10-18 and the service now stores addresses lower-cased and matches them
