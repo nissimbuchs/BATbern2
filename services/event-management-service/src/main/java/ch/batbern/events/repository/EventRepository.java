@@ -259,10 +259,11 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
     }
 
     /**
-     * Find the N most recent events ordered by event date descending.
-     * Used by EventPhotoService.getRecentPhotos() for homepage marquee.
-     * Story 10.21
+     * Find the N most recent events that took place before {@code before}, latest first.
+     * Used by EventPhotoService.getRecentPhotos() for homepage marquee (Story 10.21).
+     * Past events only: events created ahead of time have no photos and would otherwise fill
+     * the window (bug 2026-10-24, BATbern61–66 emptied the homepage photo row).
      */
     // Note: do NOT use findTopBy — Top without a number means 1, overriding Pageable.
-    List<Event> findAllByOrderByDateDesc(org.springframework.data.domain.Pageable pageable);
+    List<Event> findByDateBeforeOrderByDateDesc(Instant before, org.springframework.data.domain.Pageable pageable);
 }
