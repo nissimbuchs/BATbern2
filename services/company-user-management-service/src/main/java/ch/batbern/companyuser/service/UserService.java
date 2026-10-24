@@ -1085,7 +1085,8 @@ public class UserService {
         // TODO: Implement invitation system (generate token, send email, registration page validation)
 
         // Story 1.16.2: Generate username from first/last name
-        String baseUsername = slugService.generateUsername(request.getFirstName(), request.getLastName());
+        String baseUsername = slugService.generateUsername(
+                request.getFirstName(), request.getLastName(), request.getEmail());
         String username = slugService.ensureUniqueUsername(baseUsername, userRepository::existsByUsername);
 
         // Determine initial roles (default to ATTENDEE if not specified)
@@ -1136,7 +1137,8 @@ public class UserService {
                 : null;
 
         // Story 1.16.2: Generate username from first/last name
-        String baseUsername = slugService.generateUsername(request.getFirstName(), request.getLastName());
+        String baseUsername = slugService.generateUsername(
+                request.getFirstName(), request.getLastName(), request.getEmail());
         String username = slugService.ensureUniqueUsername(baseUsername, userRepository::existsByUsername);
 
         // Get or create company if display name provided (for anonymous registrations)

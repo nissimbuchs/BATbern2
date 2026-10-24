@@ -2,7 +2,6 @@ package ch.batbern.companyuser.config;
 
 import ch.batbern.companyuser.service.CognitoIntegrationService;
 import ch.batbern.shared.service.EmailService;
-import ch.batbern.shared.service.SlugGenerationService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.databind.SerializationFeature;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
@@ -28,10 +27,8 @@ import java.net.URL;
 import java.net.http.HttpClient;
 import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
-import java.util.function.Function;
 
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 
 /**
@@ -157,38 +154,7 @@ public class TestAwsConfig {
         return mockEmailService;
     }
 
-    /**
-     * Mock SlugGenerationService for testing username generation
-     * Story 1.16.2: Username generation from first/last name
-     */
-    @Bean
-    @Primary
-    public SlugGenerationService slugGenerationService() {
-        SlugGenerationService mockService = Mockito.mock(SlugGenerationService.class);
-
-        // Mock generateUsername to return a predictable username format
-        when(mockService.generateUsername(anyString(), anyString()))
-                .thenAnswer(invocation -> {
-                    String firstName = invocation.getArgument(0);
-                    String lastName = invocation.getArgument(1);
-                    return firstName.toLowerCase() + "." + lastName.toLowerCase();
-                });
-
-        // Mock ensureUniqueUsername to return the base username (assume unique in tests)
-        when(mockService.ensureUniqueUsername(anyString(), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        // Mock generateCompanyName to return a predictable company slug format
-        when(mockService.generateCompanyName(anyString()))
-                .thenAnswer(invocation -> {
-                    String displayName = invocation.getArgument(0);
-                    return displayName.toLowerCase().replaceAll("[^a-z0-9]", "");
-                });
-
-        // Mock ensureUniqueSlug to return the base slug (assume unique in tests)
-        when(mockService.ensureUniqueSlug(anyString(), any(Function.class)))
-                .thenAnswer(invocation -> invocation.getArgument(0));
-
-        return mockService;
-    }
+    // No SlugGenerationService mock (#1102): it is a pure function, and the mock it replaced
+    // (first.toLowerCase() + "." + last.toLowerCase()) hid that real names produced usernames
+    // violating chk_username_format. Integration tests use the real generator.
 }

@@ -96,7 +96,7 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
 
   try {
     // Generate username from name (e.g., john.doe)
-    const username = generateUsername(given_name, family_name);
+    const username = generateUsername(given_name, family_name, email);
 
     // 1. Create user_profiles record
     await client.query(
@@ -153,14 +153,8 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
   return event; // Must return event to Cognito
 };
 
-function generateUsername(firstName: string, lastName: string): string {
-  // Convert to lowercase, remove special chars
-  const first = firstName.toLowerCase().replace(/[^a-z]/g, '');
-  const last = lastName.toLowerCase().replace(/[^a-z]/g, '');
-  return `${first}.${last}`;
-  // Note: Duplicate username handling via suffix (e.g., john.doe.2)
-  // is done in the service layer when username conflicts occur
-}
+// Username: lib/lambda/triggers/common/username.ts — a 1:1 port of the Java generator, see
+// "Names, emails and usernames" below. Duplicates get a numeric suffix (john.doe.2).
 ```
 
 **Key Characteristics**:
@@ -689,7 +683,7 @@ attribute in the token. Everything else is resolved from the DB via the user-api
 **Pattern 1b** _(Story 12.3, SSO PR 1 — Part B)_: `JITUserProvisioningInterceptor` runs on every authenticated `/api/**` request and is the **single, provider-agnostic create path** for any first-request identity — **native OR federated**. If a valid JWT is present but no DB user record is found (`findByCognitoUserId()` returns empty), the interceptor reconciles the DB from the JWT, reading exactly what `post-confirmation.ts` reads so federated and native users converge on identical rows.
 
 **What it captures on create** (mirrors `post-confirmation.ts`):
-- **firstName / lastName** — from standard `given_name`/`family_name`, falling back to the `custom:preferences` JSON (the signup form packs names there per ADR-001). Username is derived as `firstname.lastname`.
+- **firstName / lastName** — from standard `given_name`/`family_name`, falling back to the `custom:preferences` JSON (the signup form packs names there per ADR-001). Username is derived by the shared generator (see **Names, emails and usernames**).
 - **language** — from the `language` field of `custom:preferences`, normalized to a supported 2-char code (primary subtag, lowercased — `fr-CH → fr`; unsupported/over-length tags like `gsw-BE` fall back to the embeddable default `"de"`, since `pref_language` is `VARCHAR(2)`). When absent/malformed, the row also falls back to `"de"` (`UserPreferences`). _This closed the `custom:preferences` language divergence vs. PostConfirmation **on the create path** (Story 12.3); before it, a Swiss-French / EN signup reaching JIT silently lost its chosen language. Residual: the email-**link** branch (existing-anonymous-by-email) does not re-capture language, where `post-confirmation.ts` `COALESCE`s it — accepted as low-value (linked rows already carry a language); see Story 12.3 Dev Agent Record._
 - **roles** — from the JWT `GrantedAuthority` list; no roles → defaults to `ATTENDEE`. Multi-role JWTs produce multi-role DB entries.
 
@@ -887,6 +881,37 @@ failed) → **fail-open**, never lock users out on a transient `/users/me` failu
 `/users/me`) reads `null` and gates everyone; consent saves are absorbed by the old DTO and
 lost. The window is minutes (same pipeline) and self-heals on backend rollout — users
 re-accept once. Do not deploy the frontend bundle alone ahead of CUMS.
+
+## Names, emails and usernames (#1102)
+
+**Names are free text; emails follow one rule; the username is a derived ASCII slug.** These rules are
+identical on every path that creates a user: get-or-create (registration, speaker promote), JIT,
+reconciliation, and the PostConfirmation Lambda.
+
+| | Rule | Enforced in |
+|---|---|---|
+| **First / last name** | Anything a person is called: any script, combining marks, apostrophes of any kind, digits, parentheses. Limits: not blank, ≤ 100 characters (`user_profiles` column), the frontend also requires at least one letter and no control characters. | OpenAPI `maxLength: 100`, `web-frontend/src/utils/validation/personName.ts` |
+| **Email** | Every address Amazon SES can deliver to: RFC 5322 dot-atom local part in **ASCII** (`+`, `'` etc. included), any domain including internationalised ones (`müller.ch`), ≤ 254 characters. **Unicode local parts (`jürg@…`) are rejected with a specific message**: SES does not implement SMTPUTF8, so such a mailbox can never receive a confirmation. Addresses are stored as entered; `EmailService` converts the domain to Punycode just before the SES call and drops an undeliverable CC rather than failing the send. | `shared-kernel/.../utils/EmailAddresses`, `pattern:` on the 14 request email fields in `docs/api/` (drift-guarded by `EmailAddressesTest`), `web-frontend/src/utils/validation/email.ts` |
+| **Username** | Public meaningful ID (ADR-003), unchanged format `^[a-z]+\.[a-z]+(\.[0-9]+)?$` (`chk_username_format`, CUMS V4). The generator is **total**: whatever the name, it returns a valid username. | `shared-kernel/.../SlugGenerationService.generateUsername(first, last, email)` and its port `infrastructure/lib/lambda/triggers/common/username.ts` |
+
+**Username derivation**, in order:
+1. Both name parts spell something in ASCII → `first.last`. German umlauts become `ae/oe/ue/ss`, other Latin letters are transliterated (`ø→o`, `ł→l`, `þ→th`, …), accents are stripped, **inner spaces and punctuation are dropped, not dotted**: `Hông Ân Meier → hongan.meier`, `Jan van der Berg → jan.vanderberg`.
+2. Otherwise (a name in a non-Latin script) the email local part without `+tag`: `taro.yamada@… → taro.yamada`, `tyamada@… → user.tyamada`.
+3. Otherwise `user.<the part that did spell>`, finally `user.unknown`. Collisions get `.2`, `.3`, ….
+
+Each name part is capped at 40 characters so the suffix still fits `VARCHAR(100)`. The Java and TypeScript
+generators are pinned to one golden file, `shared-kernel/src/test/resources/username-generation-cases.json`;
+change both together.
+
+**Why the username stays ASCII**: it appears in URLs, S3 keys (`profile-pictures/{year}/{username}/`) and as
+the cross-service reference. Unicode there means percent-encoding everywhere, case-folding ambiguity and
+homoglyph spoofing, for no gain to the person, whose name is displayed as entered.
+
+**Before #1102** four separate generators existed and disagreed: the shared one turned spaces into dots
+(`hong.an.meier`, rejected by the constraint → HTTP 500 at registration, seen in production on
+2026-10-22); JIT and the Lambda dropped accented letters (`Hông → hng`, `ä → a`, `ß` dropped) and produced
+`.` for CJK names; reconciliation's fallback `user.<timestamp>` always violated the constraint. The CUMS
+integration tests had mocked the generator, which is why none of this surfaced in CI.
 
 ## Database Schema
 

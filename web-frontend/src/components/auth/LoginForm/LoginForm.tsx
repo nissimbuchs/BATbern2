@@ -25,6 +25,7 @@ import { useForm, Controller } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useTranslation } from 'react-i18next';
+import { looksLikeEmail } from '@/utils/validation/email';
 import { useSearchParams } from 'react-router-dom';
 import { useAuth } from '@hooks/useAuth';
 import { useFeature } from '@/contexts/useFeature';
@@ -51,8 +52,9 @@ const createLoginSchema = (t: (key: string) => string) =>
     email: z
       .string()
       .min(1, t('validation:email.required'))
-      .email(t('validation:email.invalid'))
-      .max(255, t('validation:email.tooLong')),
+      // Loose shape check: an account created under an older rule must still sign in (#1102).
+      .refine(looksLikeEmail, t('validation:email.invalid'))
+      .max(254, t('validation:email.tooLong')),
     password: z
       .string()
       .min(1, t('validation:password.required'))

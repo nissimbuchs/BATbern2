@@ -501,6 +501,32 @@ class EmailServiceTest {
         }
 
         @Test
+        void should_sendPunycodeDomain_when_recipientHasInternationalisedDomain() {
+            // #1102: SES has no SMTPUTF8; Unicode domains must reach it in Punycode.
+            emailService.sendHtmlEmailSync("max@müller.ch", List.of("anna@zürich.ch", "jürg@example.ch"),
+                    "subj", "<p>body</p>", null);
+
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
+            assertThat(captor.getValue().destination().toAddresses()).containsExactly("max@xn--mller-kva.ch");
+            // An undeliverable CC (Unicode local part) is dropped; the primary recipient still gets the mail.
+            assertThat(captor.getValue().destination().ccAddresses()).containsExactly("anna@xn--zrich-kva.ch");
+        }
+
+        @Test
+        void should_sendPunycodeDomain_when_rawSendToInternationalisedDomain() throws Exception {
+            emailService.sendHtmlEmailWithAttachments(
+                    "max@müller.ch", "subj", "<p>body</p>",
+                    List.of(new EmailService.EmailAttachment("event.ics",
+                            "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(), "text/calendar", true)));
+
+            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
+            verify(sesClient).sendRawEmail(captor.capture());
+            String raw = captor.getValue().rawMessage().data().asUtf8String();
+            assertThat(raw).contains("To: max@xn--mller-kva.ch").doesNotContain("müller");
+        }
+
+        @Test
         @DisplayName("should_omitConfigurationSet_when_propertyNotConfigured")
         void should_omitConfigurationSet_when_propertyNotConfigured() {
             ReflectionTestUtils.setField(emailService, "configurationSetName", null);

@@ -7,6 +7,7 @@
 
 import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { emailProblem } from '@/utils/validation/email';
 import axios from 'axios';
 import { Input } from '@/components/public/ui/input';
 import { Button } from '@/components/public/ui/button';
@@ -38,15 +39,16 @@ export function NewsletterSubscribeWidget() {
   const { data: mySubscription } = useMySubscription({ enabled: isAuthenticated });
   const { getToken, resetWidget, widgetRef } = useTurnstile();
 
-  function validateEmail(value: string): boolean {
-    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(value);
-  }
-
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setEmailError('');
 
-    if (!validateEmail(email)) {
+    const problem = emailProblem(email);
+    if (problem === 'nonAsciiLocalPart') {
+      setEmailError(t('validation:email.nonAsciiLocalPart'));
+      return;
+    }
+    if (problem) {
       setEmailError(t('newsletter.widget.emailInvalid', 'Please enter a valid email address.'));
       return;
     }

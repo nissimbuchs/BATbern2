@@ -11,6 +11,8 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useImperativeHandle, forwardRef } from 'react';
 import { useTranslation } from 'react-i18next';
+import { emailProblem } from '@/utils/validation/email';
+import { isValidPersonName } from '@/utils/validation/personName';
 import {
   Form,
   FormControl,
@@ -54,9 +56,25 @@ export const PersonalDetailsStep = forwardRef<PersonalDetailsStepRef, PersonalDe
     const personalDetailsSchema = useMemo(
       () =>
         z.object({
-          firstName: z.string().min(1, t('personalDetails.validation.firstNameRequired')),
-          lastName: z.string().min(1, t('personalDetails.validation.lastNameRequired')),
-          email: z.string().email(t('personalDetails.validation.invalidEmail')),
+          // #1102: names are free text, any script; the backend derives a valid username.
+          firstName: z
+            .string()
+            .refine(isValidPersonName, t('personalDetails.validation.firstNameRequired')),
+          lastName: z
+            .string()
+            .refine(isValidPersonName, t('personalDetails.validation.lastNameRequired')),
+          email: z.string().superRefine((value, ctx) => {
+            const problem = emailProblem(value);
+            if (problem) {
+              ctx.addIssue({
+                code: 'custom',
+                message:
+                  problem === 'nonAsciiLocalPart'
+                    ? t('validation:email.nonAsciiLocalPart')
+                    : t('personalDetails.validation.invalidEmail'),
+              });
+            }
+          }),
           company: z.string().min(1, t('personalDetails.validation.companyRequired')),
           role: z.string().min(1, t('personalDetails.validation.roleRequired')),
         }),

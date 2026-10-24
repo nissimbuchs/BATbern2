@@ -12,6 +12,8 @@
 
 import React, { useState } from 'react';
 import { useTranslation } from 'react-i18next';
+import { EMAIL_MAX_LENGTH, emailProblem } from '@/utils/validation/email';
+import { isValidPersonName } from '@/utils/validation/personName';
 import { useFormContext } from 'react-hook-form';
 import {
   Box,
@@ -111,23 +113,15 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
       key="firstName"
       {...register('firstName', {
         required: t('register.errors.givenNameRequired'),
-        minLength: {
-          value: 2,
-          message: t('register.errors.givenNameTooShort'),
-        },
         maxLength: {
           value: 100,
           message: t('register.errors.givenNameTooLong'),
         },
-        pattern: {
-          // Accept any Unicode letter (handles é, è, à, ç, ñ, ş, ø, ł, …) plus
-          // whitespace, dot, apostrophe, and hyphen. The backend slug service
-          // normalises diacritics for the generated username; rejecting them
-          // here used to silently strip required form fields (2026-05-18
-          // incident: "René Strauss" / "Renée Gressly").
-          value: /^[\p{L}\s.'-]+$/u,
-          message: t('register.errors.givenNameInvalid'),
-        },
+        // #1102: names are free text in any script (O’Neill, decomposed Vietnamese,
+        // Devanagari, single-character surnames like 王). The backend derives a valid
+        // username from whatever is entered.
+        validate: (value: string) =>
+          isValidPersonName(value) || t('register.errors.givenNameInvalid'),
       })}
       label={t('register.step1.givenNameLabel')}
       placeholder={t('register.step1.givenNamePlaceholder')}
@@ -143,23 +137,15 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
       key="lastName"
       {...register('lastName', {
         required: t('register.errors.familyNameRequired'),
-        minLength: {
-          value: 2,
-          message: t('register.errors.familyNameTooShort'),
-        },
         maxLength: {
           value: 100,
           message: t('register.errors.familyNameTooLong'),
         },
-        pattern: {
-          // Accept any Unicode letter (handles é, è, à, ç, ñ, ş, ø, ł, …) plus
-          // whitespace, dot, apostrophe, and hyphen. The backend slug service
-          // normalises diacritics for the generated username; rejecting them
-          // here used to silently strip required form fields (2026-05-18
-          // incident: "René Strauss" / "Renée Gressly").
-          value: /^[\p{L}\s.'-]+$/u,
-          message: t('register.errors.familyNameInvalid'),
-        },
+        // #1102: names are free text in any script (O’Neill, decomposed Vietnamese,
+        // Devanagari, single-character surnames like 王). The backend derives a valid
+        // username from whatever is entered.
+        validate: (value: string) =>
+          isValidPersonName(value) || t('register.errors.familyNameInvalid'),
       })}
       label={t('register.step1.familyNameLabel')}
       placeholder={t('register.step1.familyNamePlaceholder')}
@@ -209,12 +195,15 @@ export const RegistrationStep1: React.FC<RegistrationStep1Props> = ({ onContinue
       <TextField
         {...register('email', {
           required: t('register.errors.emailRequired'),
-          pattern: {
-            value: /^[^\s@]+@[^\s@]+\.[^\s@]+$/,
-            message: t('register.errors.emailInvalid'),
+          validate: (value: string) => {
+            const problem = emailProblem(value);
+            if (problem === 'nonAsciiLocalPart') {
+              return t('validation:email.nonAsciiLocalPart');
+            }
+            return problem === null || t('register.errors.emailInvalid');
           },
           maxLength: {
-            value: 255,
+            value: EMAIL_MAX_LENGTH,
             message: t('register.errors.emailTooLong'),
           },
         })}

@@ -2,7 +2,8 @@
   "email": {
     "required": "L'adressa dad e-mail è obligatorica",
     "invalid": "Endatrai per plaschair ina adressa dad e-mail valida",
-    "tooLong": "L'adressa dad e-mail è memia lunga (max. 255 caracters)"
+    "tooLong": "L'adressa dad e-mail è memia lunga (max. 254 caracters)",
+    "nonAsciiLocalPart": "Avant il @ èn pussaivels mo bustabs senza accents, cifras e . _ + - '. Noss servetsch d'e-mail na po betg consegnar ad auters caracters."
   },
   "password": {
     "required": "La pled-clav è obligatorica",

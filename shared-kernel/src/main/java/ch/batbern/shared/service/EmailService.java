@@ -2,6 +2,7 @@ package ch.batbern.shared.service;
 
 import ch.batbern.shared.util.EmailContentTestMarker;
 import ch.batbern.shared.util.ReservedEmailDomain;
+import ch.batbern.shared.utils.EmailAddresses;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -183,9 +184,10 @@ public class EmailService {
                     LoggingUtils.maskEmail(to), ccClean.size(), subject, configurationSetName,
                     LoggingUtils.maskEmail(effectiveReplyTo));
 
-            Destination.Builder destBuilder = Destination.builder().toAddresses(to);
-            if (!ccClean.isEmpty()) {
-                destBuilder.ccAddresses(ccClean);
+            List<String> ccSes = toDeliveryForm(ccClean);
+            Destination.Builder destBuilder = Destination.builder().toAddresses(EmailAddresses.toDeliveryForm(to));
+            if (!ccSes.isEmpty()) {
+                destBuilder.ccAddresses(ccSes);
             }
 
             SendEmailRequest.Builder requestBuilder = SendEmailRequest.builder()
@@ -286,12 +288,13 @@ public class EmailService {
 
             // Set headers
             message.setFrom(new InternetAddress(fromEmail, fromName));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(EmailAddresses.toDeliveryForm(to)));
             // Story 10.32: CC additional emails (if any) — list normalised at method top.
-            if (!ccClean.isEmpty()) {
+            List<String> ccSes = toDeliveryForm(ccClean);
+            if (!ccSes.isEmpty()) {
                 message.setRecipients(
                         Message.RecipientType.CC,
-                        InternetAddress.parse(String.join(",", ccClean)));
+                        InternetAddress.parse(String.join(",", ccSes)));
             }
             message.setSubject(subject, "UTF-8");
             message.setReplyTo(InternetAddress.parse(replyToEmail));
@@ -387,7 +390,7 @@ public class EmailService {
             Session session = Session.getInstance(new Properties());
             MimeMessage message = new MimeMessage(session);
             message.setFrom(new InternetAddress(fromEmail, fromName));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(to));
+            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(EmailAddresses.toDeliveryForm(to)));
             message.setSubject(subject, "UTF-8");
             message.setReplyTo(InternetAddress.parse(replyToEmail));
 
@@ -573,6 +576,24 @@ public class EmailService {
                     }
                     return true;
                 })
+                .toList();
+    }
+
+    /**
+     * #1102: SES has no SMTPUTF8, so addresses go out with the domain in Punycode
+     * ({@link EmailAddresses#toDeliveryForm}). A CC that cannot be delivered at all (Unicode local
+     * part) is dropped with a warning so the primary recipient still gets the mail.
+     */
+    private static List<String> toDeliveryForm(List<String> cc) {
+        return cc.stream()
+                .filter(s -> {
+                    if (!EmailAddresses.isAcceptable(s)) {
+                        log.warn("Dropping undeliverable CC entry: {}", LoggingUtils.maskEmail(s));
+                        return false;
+                    }
+                    return true;
+                })
+                .map(EmailAddresses::toDeliveryForm)
                 .toList();
     }
 

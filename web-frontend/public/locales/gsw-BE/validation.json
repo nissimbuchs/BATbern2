@@ -1,1 +1,5 @@
-{}
+{
+  "email": {
+    "nonAsciiLocalPart": "Vor em @ si nume Buechstabe ohni Akzänt, Zahle und . _ + - ' müglech. A anderi Zeiche cha üse Mailversand nid zuestelle."
+  }
+}

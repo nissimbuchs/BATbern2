@@ -869,6 +869,10 @@ components:
         email:
           type: string
           format: email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
         firstName:
           type: string
           maxLength: 100

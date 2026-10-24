@@ -1715,7 +1715,10 @@ components:
         email:
           type: string
           format: email
-          maxLength: 320
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
           description: 'Required. Speaker email — becomes the User lookup key (case-insensitive) in
 
             CUMS and the Cognito username on first provisioning. Post Story 11.E.9 (V103)
@@ -2327,6 +2330,10 @@ components:
         email:
           type: string
           format: email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
           description: Speaker's email address
           example: jane.smith@example.com
         firstName:
@@ -2519,6 +2526,10 @@ components:
         email:
           type: string
           format: email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
           nullable: true
           description: Override email address (for speakers without email in database)
           example: jane.smith@example.com

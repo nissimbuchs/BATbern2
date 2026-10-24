@@ -35,6 +35,7 @@ import {
   Delete as DeleteIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { emailProblem } from '@/utils/validation/email';
 import { useCreateUser, useUpdateUser } from '../../../hooks/useUserManagement';
 import { CompanyAutocomplete } from '../PartnerManagement/CompanyAutocomplete';
 import { uploadProfilePictureForUser } from '@/services/api/userAccountApi';
@@ -133,9 +134,12 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [open, user]);
 
-  const validateEmail = (email: string): boolean => {
-    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
-    return emailRegex.test(email);
+  const emailError = (email: string): string | undefined => {
+    const problem = emailProblem(email);
+    if (problem === 'nonAsciiLocalPart') {
+      return t('validation:email.nonAsciiLocalPart');
+    }
+    return problem ? t('error.email.invalid') : undefined;
   };
 
   const validateForm = (): boolean => {
@@ -153,8 +157,8 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
       // Email required only for create mode
       if (!formData.email.trim()) {
         newErrors.email = t('error.required');
-      } else if (!validateEmail(formData.email)) {
-        newErrors.email = t('error.email.invalid');
+      } else if (emailError(formData.email)) {
+        newErrors.email = emailError(formData.email);
       }
 
       // Roles required only for create mode
@@ -449,10 +453,11 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
               value={formData.email}
               onChange={handleInputChange('email')}
               onBlur={() => {
-                if (formData.email && !validateEmail(formData.email)) {
+                const error = formData.email ? emailError(formData.email) : undefined;
+                if (error) {
                   setErrors((prev) => ({
                     ...prev,
-                    email: t('error.email.invalid'),
+                    email: error,
                   }));
                 }
               }}

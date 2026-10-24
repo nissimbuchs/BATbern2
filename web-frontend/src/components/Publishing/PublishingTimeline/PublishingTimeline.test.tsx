@@ -218,8 +218,9 @@ describe('PublishingTimeline', () => {
     });
 
     it('should show countdown for upcoming auto-publish', () => {
-      const tomorrow = new Date();
-      tomorrow.setDate(tomorrow.getDate() + 1);
+      // Exactly 24 h, not setDate(+1): across a DST change a calendar day is 23 or 25 h, and the
+      // component's Math.ceil turned 25 h into "2 days" (failed on 2026-10-24, the eve of CEST->CET).
+      const tomorrow = new Date(Date.now() + 24 * 60 * 60 * 1000);
 
       render(
         <PublishingTimeline

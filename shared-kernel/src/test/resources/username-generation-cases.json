@@ -1,0 +1,149 @@
+{
+  "_comment": "#1102 golden cases for username generation. Shared by shared-kernel SlugGenerationServiceTest (Java) and infrastructure username.test.ts (PostConfirmation Lambda): both generators must produce exactly these.",
+  "cases": [
+    {
+      "firstName": "Hông Ân",
+      "lastName": "Meier",
+      "email": "x@example.com",
+      "expected": "hongan.meier"
+    },
+    {
+      "firstName": "Hong An",
+      "lastName": "Meier",
+      "email": "x@example.com",
+      "expected": "hongan.meier"
+    },
+    {
+      "firstName": "Jan",
+      "lastName": "van der Berg",
+      "email": "x@example.com",
+      "expected": "jan.vanderberg"
+    },
+    {
+      "firstName": "Maria José",
+      "lastName": "García",
+      "email": "x@example.com",
+      "expected": "mariajose.garcia"
+    },
+    {
+      "firstName": "Anna",
+      "lastName": "Müller",
+      "email": "x@example.com",
+      "expected": "anna.mueller"
+    },
+    {
+      "firstName": "Anne-Marie",
+      "lastName": "Müller",
+      "email": "x@example.com",
+      "expected": "annemarie.mueller"
+    },
+    {
+      "firstName": "Jean-Luc",
+      "lastName": "O’Neill",
+      "email": "x@example.com",
+      "expected": "jeanluc.oneill"
+    },
+    {
+      "firstName": "Søren",
+      "lastName": "Kierkegaard",
+      "email": "x@example.com",
+      "expected": "soren.kierkegaard"
+    },
+    {
+      "firstName": "Łukasz",
+      "lastName": "Żółć",
+      "email": "x@example.com",
+      "expected": "lukasz.zolc"
+    },
+    {
+      "firstName": "Æsa",
+      "lastName": "Œuvre",
+      "email": "x@example.com",
+      "expected": "aesa.oeuvre"
+    },
+    {
+      "firstName": "Þóra",
+      "lastName": "Đurić",
+      "email": "x@example.com",
+      "expected": "thora.duric"
+    },
+    {
+      "firstName": "İlker",
+      "lastName": "Straße",
+      "email": "x@example.com",
+      "expected": "ilker.strasse"
+    },
+    {
+      "firstName": "John  (Jr.)",
+      "lastName": "Doe 3rd",
+      "email": "x@example.com",
+      "expected": "johnjr.doerd"
+    },
+    {
+      "firstName": "Владимир",
+      "lastName": "Petrov",
+      "email": "v.petrov@example.com",
+      "expected": "v.petrov"
+    },
+    {
+      "firstName": "太郎",
+      "lastName": "山田",
+      "email": "taro.yamada@example.com",
+      "expected": "taro.yamada"
+    },
+    {
+      "firstName": "太郎",
+      "lastName": "山田",
+      "email": "tyamada@example.com",
+      "expected": "user.tyamada"
+    },
+    {
+      "firstName": "Владимир",
+      "lastName": "Petrov",
+      "email": "12345@example.com",
+      "expected": "user.petrov"
+    },
+    {
+      "firstName": "太郎",
+      "lastName": "山田",
+      "email": "12345@example.com",
+      "expected": "user.unknown"
+    },
+    {
+      "firstName": null,
+      "lastName": null,
+      "email": "john.doe@example.com",
+      "expected": "john.doe"
+    },
+    {
+      "firstName": null,
+      "lastName": null,
+      "email": "first.middle.last@x.ch",
+      "expected": "first.middlelast"
+    },
+    {
+      "firstName": null,
+      "lastName": null,
+      "email": "John_Doe+batbern@x.ch",
+      "expected": "john.doe"
+    },
+    {
+      "firstName": null,
+      "lastName": null,
+      "email": "jdoe@x.ch",
+      "expected": "user.jdoe"
+    },
+    {
+      "firstName": null,
+      "lastName": null,
+      "email": "e2e-test@x.ch",
+      "expected": "ee.test"
+    },
+    {
+      "firstName": null,
+      "lastName": null,
+      "email": "john.doe2@x.ch",
+      "expected": "john.doe"
+    }
+  ]
+}
