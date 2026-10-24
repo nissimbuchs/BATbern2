@@ -486,7 +486,7 @@ describe('EventManagementDashboard Component', () => {
     it('should_displayCriticalTasksSection_when_tasksExist', () => {
       render(<EventManagementDashboard />, { wrapper: createWrapper() });
 
-      expect(screen.getByText(/critical tasks/i)).toBeInTheDocument();
+      expect(screen.getByText(/my open tasks/i)).toBeInTheDocument();
     });
 
     it('should_displayTaskCount_when_tasksLoaded', async () => {
@@ -607,7 +607,7 @@ describe('EventManagementDashboard Component', () => {
       render(<EventManagementDashboard />, { wrapper: createWrapper() });
 
       expect(screen.getByText(/active events/i)).toBeInTheDocument();
-      expect(screen.getByText(/critical tasks/i)).toBeInTheDocument();
+      expect(screen.getByText(/my open tasks/i)).toBeInTheDocument();
       expect(screen.getByText(/team activity/i)).toBeInTheDocument();
     });
   });

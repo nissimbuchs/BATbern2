@@ -46,3 +46,42 @@ describe('AttentionCard — event-day due chip', () => {
     expect(screen.getByText(/event is live/i)).toBeInTheDocument();
   });
 });
+
+describe('AttentionCard — overdue cards without a due date and notes', () => {
+  it('shows "Overdue" (not "Upcoming") for an overdue card with no day count', () => {
+    renderCard({
+      id: 'speakers-not-reviewed',
+      labelKey: 'speakersNotReviewed',
+      labelVars: { content: 1, review: 0 },
+      severity: 'overdue',
+      target: { kind: 'tab', tab: 'speakers', view: 'pool' },
+    });
+    expect(screen.getByText(/^Overdue$/i)).toBeInTheDocument();
+    expect(screen.queryByText(/Upcoming/i)).not.toBeInTheDocument();
+  });
+
+  it('renders the "trigger not reached" note on a safety-net task card', () => {
+    renderCard({
+      id: 'task:cat',
+      labelKey: '',
+      labelVars: { name: 'Catering Coordination' },
+      severity: 'overdue',
+      dueDays: -17,
+      taskBacked: true,
+      noteKey: 'triggerNotReached',
+    });
+    expect(screen.getByText(/trigger not reached/i)).toBeInTheDocument();
+  });
+
+  it('renders no note on a regular card', () => {
+    renderCard({
+      id: 'task:x',
+      labelKey: '',
+      labelVars: { name: 'Partner Meeting' },
+      severity: 'upcoming',
+      dueDays: 9,
+      taskBacked: true,
+    });
+    expect(screen.queryByText(/trigger not reached/i)).not.toBeInTheDocument();
+  });
+});

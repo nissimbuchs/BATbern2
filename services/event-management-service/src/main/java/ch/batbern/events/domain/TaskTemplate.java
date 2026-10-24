@@ -59,6 +59,17 @@ public class TaskTemplate {
      * Whether this is a system-provided default template (read-only).
      * Default templates cannot be edited or deleted by organizers.
      */
+    /**
+     * Days before the due date at which a pending task activates even if its trigger state
+     * was not reached. {@code null} = trigger state only (post-event templates).
+     */
+    @Column(name = "activation_lead_days")
+    private Integer activationLeadDays;
+
+    /** Stable key for default templates the code recognises (e.g. newsletter supersession). */
+    @Column(name = "system_key", length = 50)
+    private String systemKey;
+
     @Column(name = "is_default", nullable = false)
     private Boolean isDefault = false;
 
@@ -118,6 +129,22 @@ public class TaskTemplate {
 
     public void setDueDateOffsetDays(Integer dueDateOffsetDays) {
         this.dueDateOffsetDays = dueDateOffsetDays;
+    }
+
+    public Integer getActivationLeadDays() {
+        return activationLeadDays;
+    }
+
+    public void setActivationLeadDays(Integer activationLeadDays) {
+        this.activationLeadDays = activationLeadDays;
+    }
+
+    public String getSystemKey() {
+        return systemKey;
+    }
+
+    public void setSystemKey(String systemKey) {
+        this.systemKey = systemKey;
     }
 
     public Boolean getIsDefault() {

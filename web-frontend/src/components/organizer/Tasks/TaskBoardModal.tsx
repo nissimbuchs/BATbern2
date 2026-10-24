@@ -86,7 +86,7 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
     isError,
   } = useQuery({
     queryKey: ['tasks', 'my-tasks', organizerUsername],
-    queryFn: () => taskService.getMyTasks(false),
+    queryFn: () => taskService.getMyTasks(),
     enabled: open,
   });
 

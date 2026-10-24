@@ -27,10 +27,12 @@
         "go": "Open →",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
-        "allCaught": "You're all caught up — nothing needs your attention right now."
+        "allCaught": "You're all caught up — nothing needs your attention right now.",
+        "triggerNotReached": "Trigger anc betg cuntanschì"
       },
       "due": {
         "overdue": "Overdue · {{days}} days",
+        "overdueNow": "Surpassà",
         "dueSoon": "Due in {{days}} days",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
@@ -43,7 +45,8 @@
         "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
         "needsSlot": "{{count}} sessions still need a slot",
         "reviewSubmissions": "Review speaker submissions",
-        "outstandingPresentations": "Collect outstanding presentations",
+        "speakersNotReviewed": "Referents anc betg controllads: {{content}} spetgan sin cuntegns, {{review}} sin la controlla",
+        "outstandingPresentations": "Rimnar las preschentaziuns ({{collected}} da {{total}})",
         "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
         "startPresentation": "🔴 Start the presentation",
         "openLiveControl": "📡 Open Live Control"
@@ -58,6 +61,11 @@
       },
       "atAGlance": {
         "title": "At a glance"
+      },
+      "rehearsal": {
+        "title": "Emprova:",
+        "presentation": "Preschentaziun",
+        "liveControl": "Live Control"
       }
     },
     "tabs": {
@@ -438,8 +446,8 @@
     "tasks": "Incumbensas"
   },
   "tasks": {
-    "criticalTasks": "Incumbensas criticas",
-    "noCriticalTasks": "Naginas incumbensas criticas",
+    "myOpenTasks": "Mias incumbensas avertas",
+    "noOpenTasks": "Naginas incumbensas avertas",
     "greatJob": "Bravo lavur!",
     "errorLoadingTasks": "Chargiar incumbensas fallì",
     "viewAllTasks": "Mussar tut las incumbensas",
@@ -501,7 +509,7 @@
       "updateTaskFailed": "Actualisar incumbensa fallì",
       "createTaskFailed": "Crear incumbensa fallì"
     },
-    "criticalTasksWidget": "Incumbensas criticas",
+    "myOpenTasksWidget": "Widget da mias incumbensas avertas",
     "task": "task",
     "tasks": "tasks",
     "activeAriaLabel": "{{count}} active {{taskLabel}}",

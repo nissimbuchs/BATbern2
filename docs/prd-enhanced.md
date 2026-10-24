@@ -1,6 +1,6 @@
 # BATbern Event Management Platform - Enhanced PRD
 
-**Last Updated:** 2026-02-23
+**Last Updated:** 2026-10-24 (FR2: 8 states, task activation and supersession rules, current default tasks)
 
 ## 1. Project Analysis and Context
 
@@ -14,7 +14,7 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 ✅ **Revolutionary Impact** (complete architectural transformation)
 
 ### Goals
-- Automate event planning through a 9-state event workflow with parallel speaker coordination and configurable task management
+- Automate event planning through an 8-state event workflow with parallel speaker coordination and configurable task management
 - Eliminate manual speaker coordination and material collection via self-service workflows
 - Provide real-time ROI analytics for partners
 - Provide searchable content archive across 20+ years of conference content
@@ -32,10 +32,11 @@ Complete rewrite of BATbern as a comprehensive event management platform using R
 
 **FR1**: The platform shall provide role-based authentication with distinct interfaces for organizers, speakers, partners, and attendees
 
-**FR2**: Event organizers shall manage events through a 9-state workflow with parallel speaker coordination and configurable task management, including automated deadline tracking, stakeholder coordination, and real-time progress dashboards with cross-role visibility
+**FR2**: Event organizers shall manage events through an 8-state workflow with parallel speaker coordination and configurable task management, including automated deadline tracking, stakeholder coordination, and real-time progress dashboards with cross-role visibility
 
-**Event Workflow (9-State State Machine):**
-The event progresses through high-level states while speakers progress individually in parallel:
+**Event Workflow (8-State State Machine):**
+The event progresses through high-level states while speakers progress individually in parallel.
+`AGENDA_FINALIZED` was removed (V82/V84); the agenda goes from published straight to the event.
 
 | State | Description | Entry Condition | Exit Condition |
 |-------|-------------|-----------------|----------------|
@@ -43,11 +44,14 @@ The event progresses through high-level states while speakers progress individua
 | **TOPIC_SELECTION** | Topic selected, brainstorming speakers | Topic selected | Minimum speakers in pool |
 | **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach in progress | Min speakers in pool | All slots filled |
 | **SLOT_ASSIGNMENT** | Speakers assigned to time slots | All slots filled | Agenda published |
-| **AGENDA_PUBLISHED** | Agenda public, accepting registrations | Agenda published | Manually finalized (2 weeks before) |
-| **AGENDA_FINALIZED** | Agenda locked for printing | Manually finalized | Event day |
-| **EVENT_LIVE** | Event currently happening | Event day | Manual trigger after event |
-| **EVENT_COMPLETED** | Event finished, post-processing | After event | Manual trigger |
+| **AGENDA_PUBLISHED** | Agenda public, accepting registrations | Agenda published (manually, when all sessions are timed, or by auto-publish 14 days before) | Event day (scheduler) |
+| **EVENT_LIVE** | Event currently happening | Event day | All sessions done (Watch) or scheduler |
+| **EVENT_COMPLETED** | Event finished, post-processing | After event | Archival |
 | **ARCHIVED** | Event archived | Archival trigger | Terminal state |
+
+Every state change goes through the workflow state machine, so that tasks, Q&A windows and
+archival cleanup react to it, whether the change comes from an organizer, the auto-publish job,
+an event edit or the Watch.
 
 **Speaker Workflow (Parallel Per-Speaker Progression):**
 Per ADR-009, each speaker progresses independently through an 8-state machine:
@@ -61,19 +65,27 @@ Per ADR-009, each speaker progresses independently through an 8-state machine:
 - Content versioning lives on **`session_content_history`** keyed by `(session_id, submission_version)` and is **inserted only by `ContentSubmissionService.submit()`** — a pure audit log of *speaker* submissions. The **canonical current title and abstract live on `sessions.title` / `sessions.description`** (Story 11.E.8 §2.9); every surface (public archive, organizer kanban, organizer session-edit modal, speaker portal form) reads from there, ensuring an edit on any surface is immediately visible to the others. `speaker_pool` carries only workflow state, no denormalized content fields. The legacy `speaker_pool.content_status` string is now derived at read time via `ContentStatusDeriver` (PENDING / SUBMITTED / REVISION_NEEDED / APPROVED) from the latest history row's `reviewer_feedback` + workflow state — JSON shape preserved for the frontend, source of truth moved. Speaker-portal drafts live in browser `localStorage`; the backend `/content/draft` endpoint was retired
 
 **Task Management System (Configurable Work Items):**
-Tasks are NOT workflow states - they are assignable work items with due dates triggered by workflow transitions:
+Tasks are NOT workflow states - they are assignable work items with due dates. A task is created
+`pending` and becomes active at whichever comes first: its trigger (a workflow state, or the
+speakers being published), or a configurable number of days before its due date (default 14;
+none for post-event tasks). A daily job re-checks both rules, so a missed transition can no
+longer leave a task invisible. A newsletter task is cancelled automatically once a later
+announcement has gone out.
 
-| Default Task | Trigger State | Due Date |
-|--------------|---------------|----------|
+| Default Task | Trigger | Due Date |
+|--------------|---------|----------|
 | Venue Booking | TOPIC_SELECTION | 90 days before event |
 | Partner Meeting | TOPIC_SELECTION | Same day as event |
 | Moderator Assignment | TOPIC_SELECTION | 14 days before event |
-| Newsletter: Topic | TOPIC_SELECTION | Immediate |
-| Newsletter: Speakers | AGENDA_PUBLISHED | 30 days before event |
-| Newsletter: Final | AGENDA_FINALIZED | 14 days before event |
-| Catering | AGENDA_FINALIZED | 30 days before event |
+| Newsletter: Topic | TOPIC_SELECTION | Immediate; cancelled once speakers or agenda are published |
+| Newsletter: Speakers | Speakers published | 30 days before event; cancelled once the agenda is published |
+| Newsletter: Final | AGENDA_PUBLISHED | 14 days before event |
+| Catering (final headcount) | AGENDA_PUBLISHED | 5 days before event |
+| Namensschilder (name tags) | AGENDA_PUBLISHED | 2 days before event |
+| Wein (wine) | AGENDA_PUBLISHED | Event day |
+| Newsletter: Slides Are Online | EVENT_COMPLETED | 1 day after event |
 
-Custom tasks can be created with configurable trigger states, due dates, and assigned organizers.
+Custom tasks can be created with configurable triggers, due dates, activation lead days, and assigned organizers.
 
 See [Workflow State Machines](./architecture/06a-workflow-state-machines.md) for detailed implementation.
 

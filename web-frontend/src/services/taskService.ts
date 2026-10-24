@@ -5,7 +5,7 @@
  * Features:
  * - List/create/update/delete task templates
  * - List/create/complete/reassign event tasks
- * - Get critical tasks (overdue + due soon)
+ * - Get my tasks / all tasks (filtering is client-side)
  * - JWT authentication via interceptors
  * - Error handling with correlation IDs
  */
@@ -188,16 +188,14 @@ class TaskService {
   /**
    * Get my tasks (AC24)
    *
-   * Retrieves tasks assigned to current organizer
+   * Retrieves all tasks assigned to current organizer, in every status. Callers filter
+   * (the server-side `critical` filter was removed, organizer cockpit plan #11).
    *
-   * @param critical If true, returns only critical tasks (overdue + due soon)
    * @returns List of assigned tasks
    * @throws Error if unauthorized (401, 403)
    */
-  async getMyTasks(critical: boolean = false): Promise<EventTaskResponse[]> {
-    const response = await apiClient.get<EventTaskResponse[]>(`${TASKS_API_PATH}/my-tasks`, {
-      params: { critical },
-    });
+  async getMyTasks(): Promise<EventTaskResponse[]> {
+    const response = await apiClient.get<EventTaskResponse[]>(`${TASKS_API_PATH}/my-tasks`);
 
     return response.data;
   }
@@ -206,14 +204,11 @@ class TaskService {
    * Get all tasks (for all organizers)
    * Story 5.5: Task dashboard with "All Tasks" filter
    *
-   * @param critical If true, returns only critical tasks (overdue + due soon)
    * @returns List of all tasks
    * @throws Error if unauthorized (401, 403)
    */
-  async getAllTasks(critical: boolean = false): Promise<EventTaskResponse[]> {
-    const response = await apiClient.get<EventTaskResponse[]>(`${TASKS_API_PATH}/all-tasks`, {
-      params: { critical },
-    });
+  async getAllTasks(): Promise<EventTaskResponse[]> {
+    const response = await apiClient.get<EventTaskResponse[]>(`${TASKS_API_PATH}/all-tasks`);
 
     return response.data;
   }

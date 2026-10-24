@@ -121,7 +121,10 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
                 .orElseThrow(() -> new AssertionError("slides-online task was not auto-created"));
 
         assertThat(slidesTask.getTriggerState()).isEqualTo("event_completed");
-        assertThat(slidesTask.getStatus()).isEqualTo("pending");
+        // The fixture event is already EVENT_COMPLETED, so the task starts as todo: since the
+        // organizer cockpit plan (T1) a task created after its trigger was reached is active at
+        // once instead of waiting for a transition that will never come again.
+        assertThat(slidesTask.getStatus()).isEqualTo("todo");
         assertThat(slidesTask.getDueDate())
                 .isEqualTo(event.getDate().plus(1, ChronoUnit.DAYS)); // +1 day AFTER the event
     }

@@ -45,7 +45,7 @@ describe('Event API Client (RED Phase)', () => {
       expect(eventApiClient).toHaveProperty('patchEvent');
       expect(eventApiClient).toHaveProperty('deleteEvent');
       expect(eventApiClient).toHaveProperty('getEventWorkflow');
-      expect(eventApiClient).toHaveProperty('getCriticalTasks');
+      expect(eventApiClient).not.toHaveProperty('getCriticalTasks');
       expect(eventApiClient).toHaveProperty('getTeamActivity');
     });
 
@@ -313,14 +313,6 @@ describe('Event API Client (RED Phase)', () => {
       // Expect network/server error (not API structure error)
       // Error is transformed to user-friendly message by transformError()
       await expect(eventApiClient.getEventWorkflow('BATbern56')).rejects.toThrow(
-        /(Network Error|Not Found|Server Error|timeout)/
-      );
-    });
-
-    it('should_getCriticalTasks_when_eventCodeProvided', async () => {
-      // Expect network/server error (not API structure error)
-      // Error is transformed to user-friendly message by transformError()
-      await expect(eventApiClient.getCriticalTasks('BATbern56')).rejects.toThrow(
         /(Network Error|Not Found|Server Error|timeout)/
       );
     });

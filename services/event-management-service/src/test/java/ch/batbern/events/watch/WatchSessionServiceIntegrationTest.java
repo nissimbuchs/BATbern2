@@ -2,10 +2,12 @@ package ch.batbern.events.watch;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.EventTask;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.EventTaskRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.DisplayName;
@@ -40,6 +42,9 @@ class WatchSessionServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private EventRepository eventRepository;
+
+    @Autowired
+    private EventTaskRepository eventTaskRepository;
 
     /** Prevents STOMP broadcast from failing — no running WebSocket broker in tests. */
     @MockitoBean
@@ -168,5 +173,29 @@ class WatchSessionServiceIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(targeted.getCompletedByUsername()).isEqualTo("marco.organizer");
         assertThat(untouched.getCompletedByUsername()).isNull();
+    }
+
+    // MARK: - Organizer cockpit plan T1: Watch completion must fire the workflow transition
+
+    @Test
+    @DisplayName("should_activateEventCompletedTasks_when_lastSessionEndedViaWatch")
+    void should_activateEventCompletedTasks_when_lastSessionEndedViaWatch() {
+        Event event = saveEvent("BATbern9941", 9941);
+        event.setWorkflowState(EventWorkflowState.EVENT_LIVE);
+        eventRepository.save(event);
+        saveSession(event.getId(), event.getEventCode(), "only-talk", Instant.now());
+        EventTask slidesOnline = new EventTask();
+        slidesOnline.setEventId(event.getId());
+        slidesOnline.setTaskName("Newsletter: Slides Are Online");
+        slidesOnline.setTriggerState("event_completed");
+        slidesOnline.setStatus("pending");
+        slidesOnline = eventTaskRepository.save(slidesOnline);
+
+        watchSessionService.endSession(event.getEventCode(), "only-talk", "test.organizer");
+
+        assertThat(eventRepository.findById(event.getId()).orElseThrow().getWorkflowState())
+                .isEqualTo(EventWorkflowState.EVENT_COMPLETED);
+        assertThat(eventTaskRepository.findById(slidesOnline.getId()).orElseThrow().getStatus())
+                .isEqualTo("todo");
     }
 }

@@ -14,6 +14,7 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Service for task template management (Story 5.5 AC19-27).
@@ -41,9 +42,17 @@ public class TaskTemplateService {
     private final TaskTemplateRepository taskTemplateRepository;
 
     // Valid event workflow states for trigger (lowercase_snake_case per coding-standards.md)
-    private static final Set<String> VALID_TRIGGER_STATES = Arrays.stream(EventWorkflowState.values())
-            .map(state -> state.name().toLowerCase())
+    // Plus speakers_published (organizer cockpit plan T5), the one trigger that is not a state.
+    private static final Set<String> VALID_TRIGGER_STATES = Stream.concat(
+                    Arrays.stream(EventWorkflowState.values()).map(state -> state.name().toLowerCase()),
+                    Stream.of(EventTaskService.TRIGGER_SPEAKERS_PUBLISHED))
             .collect(Collectors.toSet());
+
+    /** Default activation lead (plan T4, Nissim 2026-10-24). */
+    static final int DEFAULT_ACTIVATION_LEAD_DAYS = 14;
+
+    /** Triggers at or after the event: a date fallback would surface them before the event. */
+    private static final Set<String> POST_EVENT_TRIGGERS = Set.of("event_live", "event_completed", "archived");
 
     // Valid due date types
     private static final Set<String> VALID_DUE_DATE_TYPES = Set.of(
@@ -105,6 +114,24 @@ public class TaskTemplateService {
             Integer dueDateOffsetDays,
             String createdByUsername
     ) {
+        return createTemplate(name, triggerState, dueDateType, dueDateOffsetDays, null, createdByUsername);
+    }
+
+    /**
+     * Create a custom task template with an explicit activation lead (plan T4).
+     *
+     * @param activationLeadDays days before due at which a pending task activates; null = default
+     *                           (14 before the event, none for post-event triggers)
+     */
+    @Transactional
+    public TaskTemplate createTemplate(
+            String name,
+            String triggerState,
+            String dueDateType,
+            Integer dueDateOffsetDays,
+            Integer activationLeadDays,
+            String createdByUsername
+    ) {
         log.info("Creating custom task template: {} by user: {}", name, createdByUsername);
 
         // Validation
@@ -112,6 +139,7 @@ public class TaskTemplateService {
         validateTriggerState(triggerState);
         validateDueDateType(dueDateType);
         validateOffsetDays(dueDateType, dueDateOffsetDays);
+        validateActivationLeadDays(activationLeadDays);
 
         // Create template
         TaskTemplate template = new TaskTemplate();
@@ -119,6 +147,7 @@ public class TaskTemplateService {
         template.setTriggerState(triggerState);
         template.setDueDateType(dueDateType);
         template.setDueDateOffsetDays(dueDateOffsetDays);
+        template.setActivationLeadDays(resolveActivationLeadDays(triggerState, activationLeadDays));
         template.setIsDefault(false);
         template.setCreatedByUsername(createdByUsername);
 
@@ -150,6 +179,23 @@ public class TaskTemplateService {
             String dueDateType,
             Integer dueDateOffsetDays
     ) {
+        return updateTemplate(templateId, name, triggerState, dueDateType, dueDateOffsetDays, null);
+    }
+
+    /**
+     * Update a custom task template including its activation lead (plan T4).
+     *
+     * @param activationLeadDays days before due at which a pending task activates; null = default
+     */
+    @Transactional
+    public TaskTemplate updateTemplate(
+            UUID templateId,
+            String name,
+            String triggerState,
+            String dueDateType,
+            Integer dueDateOffsetDays,
+            Integer activationLeadDays
+    ) {
         log.info("Updating custom task template: {}", templateId);
 
         // Find template
@@ -166,12 +212,14 @@ public class TaskTemplateService {
         validateTriggerState(triggerState);
         validateDueDateType(dueDateType);
         validateOffsetDays(dueDateType, dueDateOffsetDays);
+        validateActivationLeadDays(activationLeadDays);
 
         // Update fields
         template.setName(name);
         template.setTriggerState(triggerState);
         template.setDueDateType(dueDateType);
         template.setDueDateOffsetDays(dueDateOffsetDays);
+        template.setActivationLeadDays(resolveActivationLeadDays(triggerState, activationLeadDays));
 
         TaskTemplate updated = taskTemplateRepository.save(template);
         log.info("Updated custom task template: {}", templateId);
@@ -241,6 +289,19 @@ public class TaskTemplateService {
                     "Invalid due date type: " + dueDateType + ". Must be one of: " + VALID_DUE_DATE_TYPES
             );
         }
+    }
+
+    private void validateActivationLeadDays(Integer activationLeadDays) {
+        if (activationLeadDays != null && activationLeadDays < 0) {
+            throw new IllegalArgumentException("Activation lead days must be 0 or more");
+        }
+    }
+
+    private static Integer resolveActivationLeadDays(String triggerState, Integer activationLeadDays) {
+        if (activationLeadDays != null) {
+            return activationLeadDays;
+        }
+        return triggerState != null && POST_EVENT_TRIGGERS.contains(triggerState) ? null : DEFAULT_ACTIVATION_LEAD_DAYS;
     }
 
     private void validateOffsetDays(String dueDateType, Integer offsetDays) {

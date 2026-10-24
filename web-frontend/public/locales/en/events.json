@@ -27,10 +27,12 @@
         "go": "Open →",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
-        "allCaught": "You're all caught up — nothing needs your attention right now."
+        "allCaught": "You're all caught up — nothing needs your attention right now.",
+        "triggerNotReached": "Trigger not reached yet"
       },
       "due": {
         "overdue": "Overdue · {{days}} days",
+        "overdueNow": "Overdue",
         "dueSoon": "Due in {{days}} days",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
@@ -43,7 +45,8 @@
         "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
         "needsSlot": "{{count}} sessions still need a slot",
         "reviewSubmissions": "Review speaker submissions",
-        "outstandingPresentations": "Collect outstanding presentations",
+        "speakersNotReviewed": "Speakers not yet quality-reviewed: {{content}} waiting for content, {{review}} waiting for review",
+        "outstandingPresentations": "Collect presentations ({{collected}} of {{total}})",
         "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
         "startPresentation": "🔴 Start the presentation",
         "openLiveControl": "📡 Open Live Control"
@@ -58,6 +61,11 @@
       },
       "atAGlance": {
         "title": "At a glance"
+      },
+      "rehearsal": {
+        "title": "Rehearsal:",
+        "presentation": "Presentation",
+        "liveControl": "Live Control"
       }
     },
     "tabs": {
@@ -452,8 +460,8 @@
     "tasks": "Tasks"
   },
   "tasks": {
-    "criticalTasks": "Critical Tasks",
-    "noCriticalTasks": "No critical tasks",
+    "myOpenTasks": "My open tasks",
+    "noOpenTasks": "No open tasks",
     "greatJob": "Great job!",
     "errorLoadingTasks": "Failed to load tasks",
     "viewAllTasks": "View All Tasks",
@@ -515,7 +523,7 @@
       "updateTaskFailed": "Failed to update task",
       "createTaskFailed": "Failed to create task"
     },
-    "criticalTasksWidget": "Critical tasks widget",
+    "myOpenTasksWidget": "My open tasks widget",
     "task": "task",
     "tasks": "tasks",
     "activeAriaLabel": "{{count}} active {{taskLabel}}",

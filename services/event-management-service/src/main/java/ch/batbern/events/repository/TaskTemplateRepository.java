@@ -5,6 +5,7 @@ import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -37,6 +38,14 @@ public interface TaskTemplateRepository extends JpaRepository<TaskTemplate, UUID
      * @return list of templates matching the flag
      */
     List<TaskTemplate> findByIsDefault(Boolean isDefault);
+
+    /**
+     * Find a default template by its stable system key (V125), independent of its display name.
+     *
+     * @param systemKey e.g. {@code newsletter_topic}, {@code newsletter_speakers}
+     * @return the template, if seeded
+     */
+    Optional<TaskTemplate> findBySystemKey(String systemKey);
 
     /**
      * Find task templates by trigger state.

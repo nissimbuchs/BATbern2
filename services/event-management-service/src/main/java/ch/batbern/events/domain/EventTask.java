@@ -51,6 +51,10 @@ public class EventTask {
     @Column(name = "due_date")
     private Instant dueDate;
 
+    /** Copied from the template; see {@link TaskTemplate#getActivationLeadDays()}. */
+    @Column(name = "activation_lead_days")
+    private Integer activationLeadDays;
+
     @Column(name = "assigned_organizer_username", length = 100)
     private String assignedOrganizerUsername;
 
@@ -145,6 +149,14 @@ public class EventTask {
 
     public void setDueDate(Instant dueDate) {
         this.dueDate = dueDate;
+    }
+
+    public Integer getActivationLeadDays() {
+        return activationLeadDays;
+    }
+
+    public void setActivationLeadDays(Integer activationLeadDays) {
+        this.activationLeadDays = activationLeadDays;
     }
 
     public String getAssignedOrganizerUsername() {

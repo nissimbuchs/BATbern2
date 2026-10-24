@@ -1132,9 +1132,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         if (request.getEventType() != null) {
             event.setEventType(ch.batbern.events.core.dto.generated.EventType.fromValue(request.getEventType()));
         }
-        if (request.getWorkflowState() != null) {
-            event.setWorkflowState(request.getWorkflowState());
-        }
+        // workflowState is applied after save via applyWorkflowStateChange (organizer cockpit plan T1)
         event.setRegistrationCapacity(request.getRegistrationCapacity()); // null = unlimited
 
         // Set theme image upload ID before save (Story 2.5.3a)
@@ -1144,6 +1142,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
 
         // Save updated event
         Event updatedEvent = eventRepository.save(event);
+        updatedEvent = applyWorkflowStateChange(updatedEvent, request.getWorkflowState());
 
         // Associate theme image if new uploadId provided (Story 2.5.3a)
         // Must be done after save to ensure event has persisted eventCode
@@ -1238,6 +1237,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
 
         // Save patched event
         Event patchedEvent = eventRepository.save(event);
+        patchedEvent = applyWorkflowStateChange(patchedEvent, request.getWorkflowState());
 
         // Handle theme image changes (Story 2.5.3a)
         // Check if themeImageUploadId was provided in the request (including null to clear it)
@@ -1566,6 +1566,25 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         response.setTypicalEndTime(eventTimeResolver.formatEndTime(event));
     }
 
+    /**
+     * Apply a workflow state requested through PUT/PATCH via the state machine, so that
+     * {@code EventWorkflowTransitionEvent} fires (task activation, Q&amp;A windows, archival cleanup).
+     * Setting the field directly skipped all listeners (organizer cockpit plan T1).
+     * Override = true keeps the previous behaviour of these endpoints: organizers use them to
+     * correct a state by hand, which never went through transition validation.
+     */
+    private Event applyWorkflowStateChange(Event saved, EventWorkflowState requested) {
+        if (requested == null || requested == saved.getWorkflowState()) {
+            return saved;
+        }
+        return eventWorkflowStateMachine.transitionToState(
+                saved.getEventCode(),
+                requested,
+                securityContextHelper.getCurrentUsername(),
+                true,
+                "Workflow state set via event update (PUT/PATCH)");
+    }
+
     private void applyPatchUpdates(Event event, PatchEventRequest request) {
         if (request.getTitle() != null) {
             event.setTitle(request.getTitle());
@@ -1632,10 +1651,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         if (request.getThemeImageUploadId() != null && !request.getThemeImageUploadId().isBlank()) {
             event.setThemeImageUploadId(request.getThemeImageUploadId());
         }
-        // Update workflowState if provided
-        if (request.getWorkflowState() != null) {
-            event.setWorkflowState(request.getWorkflowState());
-        }
+        // workflowState is applied after save via applyWorkflowStateChange (organizer cockpit plan T1)
         // Story 10.4: Set topicCode directly via PATCH (blob selector accept flow)
         if (request.getTopicCode() != null) {
             event.setTopicCode(request.getTopicCode());

@@ -15,8 +15,16 @@
  *        trigger TOPIC_SELECTION, −90d; hidden when its status is completed).
  *   (b) Data-derived virtual cards — computed from event metrics / sessions /
  *        speaker-pool / registrations; each carries a named `isDone` predicate.
- *   (c) Event-day virtual cards — gated `>= AGENDA_PUBLISHED`, pinned top, urgent,
- *        no done-state (live actions, not tasks).
+ *   (c) Event-day virtual cards — shown only ON the event day (Zurich calendar day)
+ *        or while the event is EVENT_LIVE; pinned top, urgent, no done-state (live
+ *        actions, not tasks). Before the day the Cockpit offers a small rehearsal
+ *        link group instead (`showRehearsal`). See docs/plans/organizer-cockpit-attention-cards.md #4.
+ *
+ * Backend tasks follow one visibility rule (`isTaskVisible`, #2), shared with the
+ * Events-overview "My open tasks" widget: completed / cancelled / not-yet-triggered
+ * (`pending`) tasks are hidden — except a `pending` task already past its due date,
+ * which stays visible flagged "trigger not reached" so a missed workflow trigger can
+ * never silently hide overdue work.
  *
  * No backend change — all inputs come from existing client data (NFR9/AR9).
  */
@@ -67,6 +75,10 @@ export interface CockpitCardCtx {
   totalSessionsCount: number;
   /** Speaker-pool entries that submitted content but are not yet quality-reviewed. */
   awaitingReviewCount: number;
+  /** Speaker-pool entries that accepted but have not submitted content yet (ACCEPTED). */
+  awaitingContentCount: number;
+  /** Speaker names are public (published phase SPEAKERS or AGENDA). */
+  speakersPublic: boolean;
   confirmedCount: number;
   waitlistCount: number;
   registrationCapacity: number | null;
@@ -90,6 +102,8 @@ export interface CockpitCard {
   assignee?: string | null;
   /** True for real backend tasks (drives data-testid + completion semantics). */
   taskBacked?: boolean;
+  /** Optional note under the label — i18n key suffix under `eventPage.cockpit.attention`. */
+  noteKey?: string;
 }
 
 /* ------------------------------------------------------------------ *
@@ -99,12 +113,6 @@ export interface CockpitCard {
 const stepOf = (s: string) => getWorkflowStepNumber(s); // 0 if invalid
 const isState = (s: string, ...names: WorkflowStateType[]) =>
   names.includes(s as WorkflowStateType);
-/** state >= ref in the linear 8-step order (both must be valid). */
-const stateGte = (s: string, ref: WorkflowStateType) => {
-  const a = stepOf(s);
-  const b = stepOf(ref);
-  return a > 0 && a >= b;
-};
 
 /* ------------------------------------------------------------------ *
  * Due-date classification (shared by task cards)
@@ -154,6 +162,8 @@ const TASK_TARGET_RULES: Array<{ re: RegExp; target: CardTarget }> = [
     target: { kind: 'tab', tab: 'speakers', view: 'agenda' },
   },
   { re: /speaker|referent|pool|line.?up/i, target: { kind: 'tab', tab: 'speakers', view: 'pool' } },
+  // Name tags → Participants tab, which hosts the name-badge export (#688).
+  { re: /namensschild|name.?tag|badge/i, target: { kind: 'tab', tab: 'registrations' } },
   // Communications catch-alls (newsletter / registrant notice / venue & caterer / partner / slides)
   {
     re: /newsletter|registrant|notice|kommunikat|teilnehmer|catering|caterer|venue|location|booking|partner|slides|präsentation online/i,
@@ -167,6 +177,86 @@ export function resolveTaskTarget(task: EventTaskResponse): CardTarget | undefin
 }
 
 /* ------------------------------------------------------------------ *
+ * Task visibility (#2) — shared by the Cockpit and the my-tasks widget
+ * ------------------------------------------------------------------ */
+
+const isPastDue = (task: EventTaskResponse, now: number) => {
+  if (!task.dueDate) return false;
+  const due = new Date(task.dueDate).getTime();
+  return !Number.isNaN(due) && due < now;
+};
+
+/** A `pending` task (trigger not reached yet) whose due date has already passed. */
+export function isTriggerPendingOverdue(task: EventTaskResponse, now: number): boolean {
+  return task.status === 'pending' && isPastDue(task, now);
+}
+
+/**
+ * Should an organizer see this task as open work right now?
+ * Hidden: completed, cancelled, and `pending` (trigger not reached) unless overdue.
+ */
+export function isTaskVisible(task: EventTaskResponse, now: number): boolean {
+  // `cancelled` is a backend status not (yet) in the client TaskStatus union.
+  const status = task.status as string;
+  if (status === 'completed' || status === 'cancelled') return false;
+  if (status === 'pending') return isPastDue(task, now);
+  return true;
+}
+
+/** Sort tasks by due date ascending (overdue first since they are earliest); undated last. */
+export function sortTasksByDue<T extends EventTaskResponse>(tasks: T[]): T[] {
+  const key = (t: T) => {
+    const due = t.dueDate ? new Date(t.dueDate).getTime() : NaN;
+    return Number.isNaN(due) ? Infinity : due;
+  };
+  return [...tasks].sort((a, b) => key(a) - key(b));
+}
+
+/* ------------------------------------------------------------------ *
+ * Event day (Europe/Zurich calendar day)
+ * ------------------------------------------------------------------ */
+
+const zurichDay = (ms: number) =>
+  new Intl.DateTimeFormat('en-CA', {
+    timeZone: 'Europe/Zurich',
+    year: 'numeric',
+    month: '2-digit',
+    day: '2-digit',
+  }).format(new Date(ms));
+
+/** Is `now` on the event's calendar day in Bern? */
+export function isEventDay(eventDate: string | null | undefined, now: number): boolean {
+  if (!eventDate) return false;
+  const ms = new Date(eventDate).getTime();
+  if (Number.isNaN(ms)) return false;
+  return zurichDay(ms) === zurichDay(now);
+}
+
+/** Event-day cards: on the event day once the agenda is out, and throughout EVENT_LIVE. */
+const inEventDayWindow = (c: CockpitCardCtx, now: number) =>
+  isState(c.workflowState, 'EVENT_LIVE') ||
+  (isState(c.workflowState, 'AGENDA_PUBLISHED') && isEventDay(c.eventDate, now));
+
+/** Before the event day (agenda public), the Cockpit offers rehearsal links instead of cards. */
+export function showRehearsal(ctx: CockpitCardCtx, now: number): boolean {
+  return isState(ctx.workflowState, 'AGENDA_PUBLISHED') && !inEventDayWindow(ctx, now);
+}
+
+export const presentationTarget = (eventCode: string): CardTarget => ({
+  kind: 'route',
+  path: `/present/${eventCode}`,
+  newTab: true,
+});
+
+export const liveControlTarget = (eventCode: string): CardTarget => ({
+  kind: 'route',
+  path: `/organizer/events/${eventCode}/live-control`,
+});
+
+/** 90 % of capacity triggers the registrations card (#5). */
+export const REGISTRATION_ALERT_RATIO = 0.9;
+
+/* ------------------------------------------------------------------ *
  * Data-derived + workflow-action + event-day virtual cards
  * ------------------------------------------------------------------ */
 
@@ -177,7 +267,9 @@ interface VirtualCardDef {
   pinned?: boolean;
   target: CardTarget | ((ctx: CockpitCardCtx) => CardTarget);
   /** State-window membership — the card only exists for these states. */
-  appliesTo: (ctx: CockpitCardCtx) => boolean;
+  appliesTo: (ctx: CockpitCardCtx, now: number) => boolean;
+  /** Optional real due date — when set, severity + day count come from `classifyDue`. */
+  dueDate?: (ctx: CockpitCardCtx) => string | null | undefined;
   /** Completion detector — `true` hides the card (FR10). */
   isDone: (ctx: CockpitCardCtx) => boolean;
   labelVars?: (ctx: CockpitCardCtx) => Record<string, string | number>;
@@ -237,21 +329,40 @@ const VIRTUAL_CARDS: VirtualCardDef[] = [
     labelKey: 'reviewSubmissions',
     severity: 'dueSoon',
     target: { kind: 'tab', tab: 'speakers', view: 'agenda' },
-    appliesTo: (c) => isState(c.workflowState, 'SPEAKER_IDENTIFICATION', 'SLOT_ASSIGNMENT'),
+    // Once speaker names are public, `speakers-not-reviewed` takes over (it includes
+    // the awaiting-review count), so the two cards never count the same speaker twice.
+    appliesTo: (c) =>
+      isState(c.workflowState, 'SPEAKER_IDENTIFICATION', 'SLOT_ASSIGNMENT') && !c.speakersPublic,
     // Real signal from the speaker pool: any entry awaiting quality review.
     isDone: (c) => c.awaitingReviewCount === 0,
     labelVars: (c) => ({ count: c.awaitingReviewCount }),
   },
   {
+    id: 'speakers-not-reviewed',
+    labelKey: 'speakersNotReviewed',
+    // Names are already public, so anything not quality-reviewed is overdue (#6b).
+    severity: 'overdue',
+    target: { kind: 'tab', tab: 'speakers', view: 'pool' },
+    appliesTo: (c) =>
+      c.speakersPublic &&
+      stepOf(c.workflowState) > 0 &&
+      stepOf(c.workflowState) <= stepOf('EVENT_LIVE'),
+    isDone: (c) => c.awaitingContentCount + c.awaitingReviewCount === 0,
+    labelVars: (c) => ({ content: c.awaitingContentCount, review: c.awaitingReviewCount }),
+  },
+  {
     id: 'outstanding-presentations',
     labelKey: 'outstandingPresentations',
-    severity: 'dueSoon',
+    severity: 'upcoming',
     target: { kind: 'tab', tab: 'speakers', view: 'agenda' },
     appliesTo: (c) => isState(c.workflowState, 'AGENDA_PUBLISHED'),
+    // Slides are needed on the event day at the latest (USB stick), not before (#6a).
+    dueDate: (c) => c.eventDate,
     // Done when every session has materials — OR when there are no sessions at all
     // (nothing to collect), so the card never lingers for a session-less event.
     isDone: (c) =>
       c.totalSessionsCount === 0 || c.sessionsWithMaterialsCount >= c.totalSessionsCount,
+    labelVars: (c) => ({ collected: c.sessionsWithMaterialsCount, total: c.totalSessionsCount }),
   },
   {
     id: 'watch-registrations',
@@ -259,7 +370,13 @@ const VIRTUAL_CARDS: VirtualCardDef[] = [
     severity: 'upcoming',
     target: { kind: 'tab', tab: 'registrations' },
     appliesTo: (c) => isState(c.workflowState, 'AGENDA_PUBLISHED'),
-    isDone: () => false, // ongoing — no done state
+    // Only when there is something to do (#5): nearly full, or anyone waiting.
+    // The plain count lives in the "At a glance" registrations tile.
+    isDone: (c) => {
+      if (c.waitlistCount > 0) return false;
+      if (!c.registrationCapacity) return true;
+      return c.confirmedCount < c.registrationCapacity * REGISTRATION_ALERT_RATIO;
+    },
     labelVars: (c) => ({
       confirmed: c.confirmedCount,
       capacity: c.registrationCapacity ?? '∞',
@@ -271,10 +388,8 @@ const VIRTUAL_CARDS: VirtualCardDef[] = [
     labelKey: 'startPresentation',
     severity: 'live',
     pinned: true,
-    target: (c) => ({ kind: 'route', path: `/present/${c.eventCode}`, newTab: true }),
-    appliesTo: (c) =>
-      stateGte(c.workflowState, 'AGENDA_PUBLISHED') &&
-      stepOf(c.workflowState) <= stepOf('EVENT_LIVE'),
+    target: (c) => presentationTarget(c.eventCode),
+    appliesTo: inEventDayWindow,
     isDone: () => false,
   },
   {
@@ -282,31 +397,33 @@ const VIRTUAL_CARDS: VirtualCardDef[] = [
     labelKey: 'openLiveControl',
     severity: 'live',
     pinned: true,
-    target: (c) => ({ kind: 'route', path: `/organizer/events/${c.eventCode}/live-control` }),
-    appliesTo: (c) =>
-      stateGte(c.workflowState, 'AGENDA_PUBLISHED') &&
-      stepOf(c.workflowState) <= stepOf('EVENT_LIVE'),
+    target: (c) => liveControlTarget(c.eventCode),
+    appliesTo: inEventDayWindow,
     isDone: () => false,
   },
 ];
 
 /** Build the OPEN virtual cards for a state (data-derived + workflow-action + event-day). */
-export function getVirtualCards(ctx: CockpitCardCtx): CockpitCard[] {
-  return VIRTUAL_CARDS.filter((d) => d.appliesTo(ctx) && !d.isDone(ctx)).map((d) => ({
-    id: d.id,
-    labelKey: d.labelKey,
-    labelVars: d.labelVars?.(ctx),
-    target: typeof d.target === 'function' ? d.target(ctx) : d.target,
-    severity: d.severity,
-    pinned: d.pinned,
-    // Event-day cards are due on the event date — carry it so the chip shows the
-    // real day ("Event day · 18 Sep") rather than a blanket "Now · event is live"
-    // weeks ahead (they appear from AGENDA_PUBLISHED for rehearsal).
-    dueDate: d.severity === 'live' ? (ctx.eventDate ?? undefined) : undefined,
-    // Virtual cards aren't task-backed, so they have no assignee of their own —
-    // the event moderator owns them by default (the avatar matches task cards).
-    assignee: ctx.moderatorUsername ?? null,
-  }));
+export function getVirtualCards(ctx: CockpitCardCtx, now: number = Date.now()): CockpitCard[] {
+  return VIRTUAL_CARDS.filter((d) => d.appliesTo(ctx, now) && !d.isDone(ctx)).map((d) => {
+    const dueDate = d.dueDate?.(ctx) ?? undefined;
+    const due = d.dueDate ? classifyDue(dueDate, now) : undefined;
+    return {
+      id: d.id,
+      labelKey: d.labelKey,
+      labelVars: d.labelVars?.(ctx),
+      target: typeof d.target === 'function' ? d.target(ctx) : d.target,
+      severity: due?.severity ?? d.severity,
+      dueDays: due?.days,
+      pinned: d.pinned,
+      // Event-day cards are due on the event date — carry it so the chip shows the
+      // real day; date-driven cards carry their own due date.
+      dueDate: d.severity === 'live' ? (ctx.eventDate ?? undefined) : dueDate,
+      // Virtual cards aren't task-backed, so they have no assignee of their own —
+      // the event moderator owns them by default (the avatar matches task cards).
+      assignee: ctx.moderatorUsername ?? null,
+    };
+  });
 }
 
 /** Map an OPEN backend task to a card (callers filter completed tasks out first). */
@@ -321,6 +438,7 @@ export function taskToCard(task: EventTaskResponse, now: number): CockpitCard {
     dueDays: due.days,
     assignee: task.assignedOrganizerUsername,
     taskBacked: true,
+    noteKey: isTriggerPendingOverdue(task, now) ? 'triggerNotReached' : undefined,
   };
 }
 
@@ -345,8 +463,8 @@ export function buildAttentionList(
   ctx: CockpitCardCtx,
   now: number
 ): CockpitCard[] {
-  const taskCards = tasks.filter((t) => t.status !== 'completed').map((t) => taskToCard(t, now));
-  const cards = [...getVirtualCards(ctx), ...taskCards];
+  const taskCards = tasks.filter((t) => isTaskVisible(t, now)).map((t) => taskToCard(t, now));
+  const cards = [...getVirtualCards(ctx, now), ...taskCards];
 
   return cards.sort((a, b) => {
     if (!!a.pinned !== !!b.pinned) return a.pinned ? -1 : 1;

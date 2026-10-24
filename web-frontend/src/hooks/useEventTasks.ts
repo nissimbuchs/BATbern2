@@ -25,16 +25,13 @@ export const useEventTasks = (
 };
 
 /**
- * Fetch the current organizer's tasks (`GET /tasks/my-tasks?critical=`).
+ * Fetch the current organizer's tasks (`GET /tasks/my-tasks`), all statuses.
  * Cache: 3 minutes.
  */
-export const useMyTasks = (
-  options: { critical?: boolean } = {}
-): UseQueryResult<EventTaskResponse[], Error> => {
-  const critical = options.critical ?? false;
+export const useMyTasks = (): UseQueryResult<EventTaskResponse[], Error> => {
   return useQuery({
-    queryKey: ['myTasks', { critical }],
-    queryFn: () => taskService.getMyTasks(critical),
+    queryKey: ['myTasks'],
+    queryFn: () => taskService.getMyTasks(),
     staleTime: 3 * 60 * 1000,
   });
 };

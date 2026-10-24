@@ -106,8 +106,7 @@ const TaskBoardPage: React.FC = () => {
     isError,
   } = useQuery({
     queryKey: ['tasks', filter, organizerUsername],
-    queryFn: () =>
-      filter === 'mine' ? taskService.getMyTasks(false) : taskService.getAllTasks(false),
+    queryFn: () => (filter === 'mine' ? taskService.getMyTasks() : taskService.getAllTasks()),
   });
 
   // Complete task mutation
