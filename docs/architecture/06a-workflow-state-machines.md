@@ -409,136 +409,75 @@ All direct `speaker.setStatus(...)` calls are deleted. `StatusTransitionValidato
 
 ### Task Types
 
-**Default Task Templates (7):**
-1. **Venue Booking**: Triggered at TOPIC_SELECTION, due 90 days before event
-2. **Partner Meeting Coordination**: Triggered at TOPIC_SELECTION, due same day as event
-3. **Moderator Assignment**: Triggered at TOPIC_SELECTION, due 14 days before event
-4. **Newsletter: Topic Announcement**: Triggered at TOPIC_SELECTION, due immediately
-5. **Newsletter: Speaker Lineup**: Triggered at AGENDA_PUBLISHED, due 30 days before event
-6. **Newsletter: Final Agenda**: Triggered at AGENDA_PUBLISHED, due 14 days before event
-7. **Catering**: Triggered at AGENDA_PUBLISHED, due 30 days before event
+**Default Task Templates (10)** — current values after V125 (organizer cockpit review, 2026-10-24):
 
-> **Note:** Template names match exactly what is seeded by the V22 Flyway migration. Default templates are immutable — update and delete operations on them throw an `IllegalStateException` (HTTP 400).
+| Template | Trigger | Due | Activation lead |
+|---|---|---|---|
+| Venue Booking | `topic_selection` | −90 days | 14 |
+| Partner Meeting Coordination | `topic_selection` | event day | 14 |
+| Moderator Assignment | `topic_selection` | −14 days | 14 |
+| Newsletter: Topic Announcement | `topic_selection` | immediate | 14 |
+| Newsletter: Speaker Lineup | `speakers_published` | −30 days | 14 |
+| Newsletter: Final Agenda | `agenda_published` | −14 days | 14 |
+| Catering Coordination | `agenda_published` | **−5 days** (final headcount; was −30) | 14 |
+| Namensschilder (name tags) | `agenda_published` | −2 days | 14 |
+| Wein (wine) | `agenda_published` | event day | 14 |
+| Newsletter: Slides Are Online | `event_completed` | +1 day | none |
 
-> **Default template immutability:** Attempting to update or delete any default template (those seeded by migration) throws `IllegalStateException("Cannot modify/delete default template")`.
+> **Note:** Default templates are seeded and changed only by Flyway migrations (V22, V84, V110,
+> V125). They are immutable through the API: update and delete throw `IllegalStateException`
+> (HTTP 400). An organizer-requested change to a default (e.g. the catering deadline) therefore
+> needs a migration, not an admin action.
+
+**Triggers.** A trigger is either an event workflow state in lowercase (`topic_selection` …
+`archived`) or `speakers_published` — the speakers phase was published
+(`SpeakersPhasePublishedEvent`), which can happen before the agenda. `TaskTemplateService`
+rejects anything else, including removed legacy states such as `speaker_outreach`.
 
 **Custom Tasks:**
 Organizers can create custom tasks with:
 - Task name (free text)
-- Trigger state (any EventWorkflowState)
+- Trigger (any EventWorkflowState, or `speakers_published`)
 - Due date (immediate, relative to event, absolute)
+- Activation lead days (optional; default 14, none for `event_live`/`event_completed`/`archived`)
 - Assigned organizer
 
 ### Data Model
 
 **task_templates** table:
-- id, name, trigger_state, due_date_type, due_date_offset_days, is_default, created_by_username
+- id, name, trigger_state, due_date_type, due_date_offset_days, activation_lead_days, system_key, is_default, created_by_username
+- `system_key` (V125): stable identifier for default templates the code must recognise
+  (`newsletter_topic`, `newsletter_speakers`), so renaming a template cannot disable supersession.
 
 **event_tasks** table:
-- id, event_id, template_id, task_name, trigger_state, due_date, assigned_organizer_username, status (`pending`/`todo`/`in_progress`/`completed`), notes, completed_date, completed_by_username
+- id, event_id, template_id, task_name, trigger_state, due_date, activation_lead_days, assigned_organizer_username, status (`pending`/`todo`/`in_progress`/`completed`/`cancelled`), notes, completed_date, completed_by_username, cancelled_reason, cancelled_at
 
-**Two-phase task lifecycle:**
-- Tasks are created with `status="pending"` at event creation time (covering all future trigger states).
-- When an `EventWorkflowTransitionEvent` fires, tasks whose `trigger_state` matches the new state are activated: their status moves from `"pending"` → `"todo"`.
-- This ensures tasks are always pre-created (idempotent) and only become actionable when the event reaches the relevant state.
+### Task Lifecycle
 
-### Auto-Creation on Workflow Transitions
-
-```java
-@Service
-@Slf4j
-public class EventTaskService implements ApplicationListener<EventWorkflowTransitionEvent> {
-
-    private final TaskTemplateRepository templateRepository;
-    private final EventTaskRepository eventTaskRepository;
-
-    @Override
-    @Transactional
-    public void onApplicationEvent(EventWorkflowTransitionEvent event) {
-        String triggeredState = event.getNewState().name().toLowerCase();
-
-        // Find all templates that should be triggered by this state transition
-        List<TaskTemplate> templates = templateRepository.findByTriggerState(triggeredState);
-
-        for (TaskTemplate template : templates) {
-            createTaskFromTemplate(event.getEventId(), template, event.getEvent().getEventDate());
-        }
-
-        log.info("Created {} tasks for event {} on transition to {}",
-                 templates.size(), event.getEventId(), triggeredState);
-    }
-
-    private void createTaskFromTemplate(String eventId, TaskTemplate template, LocalDateTime eventDate) {
-        LocalDateTime dueDate = calculateDueDate(template, eventDate);
-
-        EventTask task = EventTask.builder()
-            .eventId(UUID.fromString(eventId))
-            .templateId(template.getId())
-            .taskName(template.getName())
-            .triggerState(template.getTriggerState())
-            .dueDate(dueDate)
-            .assignedOrganizerUsername(template.getDefaultAssignee())
-            .status("pending") // Tasks start as "pending"; activated to "todo" when event reaches trigger state
-            .build();
-
-        eventTaskRepository.save(task);
-
-        log.info("Created task '{}' for event {} with due date {}",
-                 template.getName(), eventId, dueDate);
-    }
-
-    private LocalDateTime calculateDueDate(TaskTemplate template, LocalDateTime eventDate) {
-        return switch (template.getDueDateType()) {
-            case "immediate" -> LocalDateTime.now();
-            case "relative_to_event" -> eventDate.plusDays(template.getDueDateOffsetDays());
-            case "absolute" -> template.getAbsoluteDueDate();
-            default -> throw new IllegalArgumentException("Unknown due date type: " + template.getDueDateType());
-        };
-    }
-
-    /**
-     * Mark task as complete
-     */
-    @Transactional
-    public EventTask completeTask(String taskId, String notes, String completedBy) {
-        EventTask task = eventTaskRepository.findById(UUID.fromString(taskId))
-            .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
-
-        task.setStatus("completed");
-        task.setNotes(notes);
-        task.setCompletedDate(LocalDateTime.now());
-        task.setCompletedByUsername(completedBy);
-
-        return eventTaskRepository.save(task);
-    }
-
-    /**
-     * Delete a task (ORGANIZER only).
-     * Default template tasks cannot be deleted — throws IllegalStateException (HTTP 400).
-     * Custom tasks are permanently removed.
-     */
-    @Transactional
-    public void deleteTask(UUID taskId, String deletedBy) {
-        EventTask task = eventTaskRepository.findById(taskId)
-            .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
-
-        if (task.getTemplateId() != null && taskTemplateRepository.findById(task.getTemplateId())
-                .map(TaskTemplate::isDefault).orElse(false)) {
-            throw new IllegalStateException("Cannot delete default template task");
-        }
-
-        eventTaskRepository.delete(task);
-        log.info("Task '{}' deleted by {}", task.getTaskName(), deletedBy);
-    }
-
-    /**
-     * Get tasks for organizer
-     */
-    public List<EventTask> getTasksForOrganizer(String username) {
-        return eventTaskRepository.findByAssignedOrganizerUsername(username);
-    }
-}
-```
+- **Creation.** Tasks are created from templates with `status="pending"`. If the event is
+  already past the trigger when the task is created (e.g. a template added late), it starts
+  as `todo` instead — no future transition would ever activate it.
+- **Activation (`pending → todo`)** happens at whichever comes first:
+  1. the event reaches the trigger (state ≥ trigger state, or speakers phase published), or
+  2. `now ≥ due_date − activation_lead_days`.
+- **Edge-triggered path.** `EventWorkflowTransitionListener` handles every
+  `EventWorkflowTransitionEvent` and every `SpeakersPhasePublishedEvent`. **Every** state change
+  goes through `EventWorkflowStateMachine`, including the auto-publish of the agenda
+  (`PublishingService`), the event PUT/PATCH and the Watch "all sessions done" path — those
+  three used to set the state directly, so no event fired and tasks stayed `pending`
+  (BATbern60, 2026-10-23). They use the state machine's override mode, preserving their
+  previous (unvalidated) behaviour; publishing the agenda never moves a live or completed
+  event backwards.
+- **Level-triggered safety net.** `TaskActivationScheduler` (daily 05:30 Europe/Zurich,
+  ShedLock, cron `batbern.task-activation.cron`) calls `EventTaskService.reconcileOpenTasks`,
+  which applies both activation rules to every pending task and the supersession rule to
+  every event with open tasks, regardless of whether an event fired. Archived events are
+  skipped.
+- **Supersession (`→ cancelled`).** A newsletter is obsolete once a later announcement went
+  out: open *Topic Announcement* tasks are cancelled when the speakers or the agenda are
+  public; open *Speaker Lineup* tasks when the agenda is public (phase `agenda` or state ≥
+  `AGENDA_PUBLISHED`). `cancelled_reason` records why. Completed tasks are never touched.
+- **Archival** cancels all open tasks (Story 10.18).
 
 ### Task Dashboard
 
@@ -547,7 +486,7 @@ Organizers see tasks grouped by status:
 - **IN_PROGRESS**: Currently working on
 - **COMPLETED**: Finished tasks with completion notes
 
-**Critical tasks filter:** `getCriticalTasksForOrganizer()` returns only tasks that are overdue or due within the next 3 days. This is separate from the status-based grouping above.
+**My tasks / all tasks:** `GET /tasks/my-tasks` and `GET /tasks/all-tasks` return tasks in every status. The former `critical` (overdue + due within 3 days) filter was removed 2026-10-24; clients filter, using the same visibility rule as the event cockpit.
 
 **Task reassignment:** `reassignTask(taskId, newOrganizerUsername)` allows changing the assigned organizer on any open task.
 

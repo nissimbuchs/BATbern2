@@ -27,10 +27,12 @@
         "go": "Öffnen →",
         "retry": "Erneut versuchen",
         "loadError": "Aufgaben konnten nicht geladen werden.",
-        "allCaught": "Alles erledigt — im Moment ist nichts zu tun."
+        "allCaught": "Alles erledigt — im Moment ist nichts zu tun.",
+        "triggerNotReached": "Trigger noch nicht erreicht"
       },
       "due": {
         "overdue": "Überfällig · {{days}} Tage",
+        "overdueNow": "Überfällig",
         "dueSoon": "Fällig in {{days}} Tagen",
         "upcoming": "Demnächst",
         "live": "Jetzt · Anlass ist live",
@@ -43,7 +45,8 @@
         "fillPool": "Referenten-Pool füllen — {{confirmed}} / {{min}} bestätigt",
         "needsSlot": "{{count}} Sessions benötigen noch einen Slot",
         "reviewSubmissions": "Referenten-Einreichungen prüfen",
-        "outstandingPresentations": "Ausstehende Präsentationen einsammeln",
+        "speakersNotReviewed": "Speaker noch nicht qualitätsgeprüft: {{content}} warten auf Inhalte, {{review}} auf Prüfung",
+        "outstandingPresentations": "Präsentationen einsammeln ({{collected}} von {{total}})",
         "watchRegistrations": "Anmeldungen {{confirmed}} / {{capacity}} — Kapazität & Warteliste beobachten",
         "startPresentation": "🔴 Präsentation starten",
         "openLiveControl": "📡 Live-Steuerung öffnen"
@@ -58,6 +61,11 @@
       },
       "atAGlance": {
         "title": "Auf einen Blick"
+      },
+      "rehearsal": {
+        "title": "Probelauf:",
+        "presentation": "Präsentation",
+        "liveControl": "Live Control"
       }
     },
     "tabs": {
@@ -452,8 +460,8 @@
     "tasks": "Aufgaben"
   },
   "tasks": {
-    "criticalTasks": "Kritische Aufgaben",
-    "noCriticalTasks": "Keine kritischen Aufgaben",
+    "myOpenTasks": "Meine offenen Aufgaben",
+    "noOpenTasks": "Keine offenen Aufgaben",
     "greatJob": "Gute Arbeit!",
     "errorLoadingTasks": "Fehler beim Laden der Aufgaben",
     "viewAllTasks": "Alle Aufgaben anzeigen",
@@ -515,7 +523,7 @@
       "updateTaskFailed": "Aufgabe konnte nicht aktualisiert werden",
       "createTaskFailed": "Aufgabe konnte nicht erstellt werden"
     },
-    "criticalTasksWidget": "Kritische Aufgaben",
+    "myOpenTasksWidget": "Widget meine offenen Aufgaben",
     "task": "task",
     "tasks": "tasks",
     "activeAriaLabel": "{{count}} active {{taskLabel}}",

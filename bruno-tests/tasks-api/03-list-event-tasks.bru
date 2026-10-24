@@ -37,7 +37,7 @@ tests {
       expect(task.eventId).to.be.a('string');
       expect(task.taskName).to.be.a('string');
       expect(task.triggerState).to.be.a('string');
-      expect(task.status).to.be.oneOf(['pending', 'todo', 'in_progress', 'completed']);
+      expect(task.status).to.be.oneOf(['pending', 'todo', 'in_progress', 'completed', 'cancelled']);
     }
   });
 }

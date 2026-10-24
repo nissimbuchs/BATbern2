@@ -27,10 +27,12 @@
         "go": "Open →",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
-        "allCaught": "You're all caught up — nothing needs your attention right now."
+        "allCaught": "You're all caught up — nothing needs your attention right now.",
+        "triggerNotReached": "トリガー未到達"
       },
       "due": {
         "overdue": "Overdue · {{days}} days",
+        "overdueNow": "期限超過",
         "dueSoon": "Due in {{days}} days",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
@@ -43,7 +45,8 @@
         "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
         "needsSlot": "{{count}} sessions still need a slot",
         "reviewSubmissions": "Review speaker submissions",
-        "outstandingPresentations": "Collect outstanding presentations",
+        "speakersNotReviewed": "品質レビュー未完了の登壇者：内容待ち{{content}}名、レビュー待ち{{review}}名",
+        "outstandingPresentations": "発表資料を回収（{{total}}件中{{collected}}件）",
         "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
         "startPresentation": "🔴 Start the presentation",
         "openLiveControl": "📡 Open Live Control"
@@ -58,6 +61,11 @@
       },
       "atAGlance": {
         "title": "At a glance"
+      },
+      "rehearsal": {
+        "title": "リハーサル：",
+        "presentation": "プレゼンテーション",
+        "liveControl": "Live Control"
       }
     },
     "tabs": {
@@ -438,8 +446,8 @@
     "tasks": "タスク"
   },
   "tasks": {
-    "criticalTasks": "重要タスク",
-    "noCriticalTasks": "重要なタスクはありません",
+    "myOpenTasks": "自分の未完了タスク",
+    "noOpenTasks": "未完了のタスクはありません",
     "greatJob": "素晴らしい！",
     "errorLoadingTasks": "タスクの読み込みに失敗しました",
     "viewAllTasks": "すべてのタスクを表示",
@@ -501,7 +509,7 @@
       "updateTaskFailed": "タスクの更新に失敗しました",
       "createTaskFailed": "タスクの作成に失敗しました"
     },
-    "criticalTasksWidget": "重要タスク",
+    "myOpenTasksWidget": "自分の未完了タスクウィジェット",
     "task": "task",
     "tasks": "tasks",
     "activeAriaLabel": "{{count}} active {{taskLabel}}",

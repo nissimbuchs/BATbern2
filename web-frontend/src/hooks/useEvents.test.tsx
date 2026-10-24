@@ -38,7 +38,6 @@ vi.mock('@/services/eventApiClient', () => ({
     getEvents: vi.fn(),
     getEvent: vi.fn(),
     getEventWorkflow: vi.fn(),
-    getCriticalTasks: vi.fn(),
     getTeamActivity: vi.fn(),
     createEvent: vi.fn(),
     updateEvent: vi.fn(),
@@ -352,64 +351,13 @@ describe('Event Management React Query Hooks', () => {
   });
 
   describe('useCriticalTasks Hook', () => {
-    const mockTasks = {
-      data: [
-        {
-          id: 'task-1',
-          eventCode: 'BATbern56',
-          type: 'overdue_materials',
-          priority: 'critical',
-          title: 'Overdue speaker materials',
-          description: '3 speakers have not submitted materials',
-          dueDate: '2025-03-01T23:59:59Z',
-          assignedTo: 'john.doe',
-          actions: [],
-          createdAt: '2025-01-15T10:00:00Z',
-        },
-      ],
-      total: 1,
-    };
-
-    // SKIPPED: Backend API not implemented yet (useEvents.ts lines 104-114 return TODO empty response)
-    // TODO: Unskip when backend implements GET /api/events/critical-tasks?organizerUsername={username}
-    it.skip('should_fetchCriticalTasks_when_organizerUsernameProvided', async () => {
-      vi.mocked(eventApiClient.getCriticalTasks).mockResolvedValue(mockTasks);
-
-      const { result } = renderHook(() => useCriticalTasks('john.doe'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(eventApiClient.getCriticalTasks).toHaveBeenCalledWith('john.doe', 10);
-      expect(result.current.data).toEqual(mockTasks);
-    });
-
     it('should_notFetchTasks_when_usernameUndefined', () => {
       const { result } = renderHook(() => useCriticalTasks(undefined as unknown as string), {
         wrapper: createWrapper(),
       });
 
       expect(result.current.isLoading).toBe(false);
-      expect(eventApiClient.getCriticalTasks).not.toHaveBeenCalled();
-    });
-
-    // SKIPPED: Backend API not implemented yet (useEvents.ts lines 104-114 return TODO empty response)
-    // TODO: Unskip when backend implements GET /api/events/critical-tasks?organizerUsername={username}
-    it.skip('should_cacheResultsFor3Minutes_when_staleTimeSet', async () => {
-      vi.mocked(eventApiClient.getCriticalTasks).mockResolvedValue(mockTasks);
-
-      const { result } = renderHook(() => useCriticalTasks('john.doe'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(eventApiClient.getCriticalTasks).toHaveBeenCalledTimes(1);
+      expect(result.current.fetchStatus).toBe('idle');
     });
   });
 

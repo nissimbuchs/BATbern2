@@ -4,6 +4,7 @@ import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.exception.SessionNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.events.service.EventWorkflowStateMachine;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -38,6 +39,7 @@ public class WatchSessionService {
     private final EventRepository eventRepository;
     private final WatchPresenceService watchPresenceService;
     private final CacheManager cacheManager;
+    private final EventWorkflowStateMachine eventWorkflowStateMachine;
 
     /**
      * Marks a session as completed by the given organizer.
@@ -102,8 +104,16 @@ public class WatchSessionService {
         if (allComplete) {
             eventRepository.findByEventCode(eventCode).ifPresent(event -> {
                 if (event.getWorkflowState() != EventWorkflowState.EVENT_COMPLETED) {
-                    event.setWorkflowState(EventWorkflowState.EVENT_COMPLETED);
-                    eventRepository.save(event);
+                    // Through the state machine so EventWorkflowTransitionEvent fires (event_completed
+                    // tasks, Q&A windows). Override: the Watch may finish the event before the 00:01
+                    // EVENT_LIVE scheduler has run, and this path never validated before
+                    // (organizer cockpit plan T1).
+                    eventWorkflowStateMachine.transitionToState(
+                            eventCode,
+                            EventWorkflowState.EVENT_COMPLETED,
+                            completedByUsername,
+                            true,
+                            "All sessions completed via Watch");
                     log.info("Event {} transitioned to EVENT_COMPLETED — all {} completeable sessions done",
                             eventCode, completeableSessions.size());
                 }

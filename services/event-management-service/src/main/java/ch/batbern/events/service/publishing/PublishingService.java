@@ -22,6 +22,8 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.AgendaConfigResolver;
 import ch.batbern.events.service.CdnInvalidationService;
+import ch.batbern.events.service.EventWorkflowStateMachine;
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -58,6 +60,8 @@ public class PublishingService {
     private final PublishingConfigRepository publishingConfigRepository;
     private final AgendaConfigResolver agendaConfigResolver;
     private final CacheManager cacheManager;
+    private final EventWorkflowStateMachine eventWorkflowStateMachine;
+    private final SecurityContextHelper securityContextHelper;
     private final CdnInvalidationService cdnInvalidationService;
     private final org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
 
@@ -77,12 +81,24 @@ public class PublishingService {
         event.setCurrentPublishedPhase(phase.toLowerCase());
         event.setLastPublishedAt(Instant.now());
 
-        // If publishing agenda, transition workflow state
-        if ("agenda".equals(phase)) {
-            event.setWorkflowState(EventWorkflowState.AGENDA_PUBLISHED);
-        }
-
         eventRepository.save(event);
+
+        // If publishing agenda, transition workflow state through the state machine so that
+        // EventWorkflowTransitionEvent fires and the agenda_published tasks activate. Setting the
+        // state directly here left BATbern60's tasks pending on 2026-10-23 (organizer cockpit
+        // plan T1). Override = true: this path never ran transition/business-rule validation
+        // (validatePhaseContent above is its gate), and the auto-publish job must not start
+        // failing on rules it previously bypassed. Never move an event backwards: re-publishing
+        // the agenda of a live or completed event leaves its state alone.
+        if ("agenda".equals(phase) && isBefore(event.getWorkflowState(), EventWorkflowState.AGENDA_PUBLISHED)) {
+            String actor = securityContextHelper.getCurrentUsernameOrNull();
+            event = eventWorkflowStateMachine.transitionToState(
+                    eventCode,
+                    EventWorkflowState.AGENDA_PUBLISHED,
+                    actor != null ? actor : "system",
+                    true,
+                    "Agenda phase published");
+        }
 
         // Evict cache for this event
         evictEventCache(event.getEventCode());
@@ -388,6 +404,10 @@ public class PublishingService {
                 );
             }
         }
+    }
+
+    private static boolean isBefore(EventWorkflowState state, EventWorkflowState reference) {
+        return state == null || state.ordinal() < reference.ordinal();
     }
 
     /**

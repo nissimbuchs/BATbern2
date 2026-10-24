@@ -27,10 +27,12 @@
         "go": "Open →",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
-        "allCaught": "You're all caught up — nothing needs your attention right now."
+        "allCaught": "You're all caught up — nothing needs your attention right now.",
+        "triggerNotReached": "Déclencheur pas encore atteint"
       },
       "due": {
         "overdue": "Overdue · {{days}} days",
+        "overdueNow": "En retard",
         "dueSoon": "Due in {{days}} days",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
@@ -43,7 +45,8 @@
         "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
         "needsSlot": "{{count}} sessions still need a slot",
         "reviewSubmissions": "Review speaker submissions",
-        "outstandingPresentations": "Collect outstanding presentations",
+        "speakersNotReviewed": "Intervenants pas encore relus : {{content}} en attente de contenu, {{review}} en attente de relecture",
+        "outstandingPresentations": "Collecter les présentations ({{collected}} sur {{total}})",
         "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
         "startPresentation": "🔴 Start the presentation",
         "openLiveControl": "📡 Open Live Control"
@@ -58,6 +61,11 @@
       },
       "atAGlance": {
         "title": "At a glance"
+      },
+      "rehearsal": {
+        "title": "Répétition :",
+        "presentation": "Présentation",
+        "liveControl": "Live Control"
       }
     },
     "tabs": {
@@ -438,8 +446,8 @@
     "tasks": "Tâches"
   },
   "tasks": {
-    "criticalTasks": "Tâches critiques",
-    "noCriticalTasks": "Aucune tâche critique",
+    "myOpenTasks": "Mes tâches ouvertes",
+    "noOpenTasks": "Aucune tâche ouverte",
     "greatJob": "Excellent travail !",
     "errorLoadingTasks": "Échec du chargement des tâches",
     "viewAllTasks": "Voir toutes les tâches",
@@ -501,7 +509,7 @@
       "updateTaskFailed": "Échec de la mise à jour de la tâche",
       "createTaskFailed": "Échec de la création de la tâche"
     },
-    "criticalTasksWidget": "Tâches critiques",
+    "myOpenTasksWidget": "Widget de mes tâches ouvertes",
     "task": "task",
     "tasks": "tasks",
     "activeAriaLabel": "{{count}} active {{taskLabel}}",

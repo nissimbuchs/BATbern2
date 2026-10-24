@@ -5,7 +5,8 @@
  * attention" list — frontend only, no backend change (NFR9):
  *   - `useEventTasks`     → open backend task cards (this event only; `useMyTasks`
  *                           is deliberately NOT merged — it spans other events).
- *   - `useSpeakerPool`    → awaiting-review count (entries CONTENT_SUBMITTED).
+ *   - `useSpeakerPool`    → awaiting-review (CONTENT_SUBMITTED) and awaiting-content
+ *                           (ACCEPTED) counts, by pool status.
  *   - `useAgendaConfig`   → minSlots for the "fill the pool" threshold (per-event
  *                           override if present, else the event-type template).
  *   - the `event` payload → metrics / sessions / registration counts.
@@ -19,7 +20,12 @@ import type { Event, EventDetailUI } from '@/types/event.types';
 import { useEventTasks } from '@/hooks/useEventTasks';
 import { useSpeakerPool } from '@/hooks/useSpeakerPool';
 import { useAgendaConfig } from '@/hooks/useAgendaConfig/useAgendaConfig';
-import { buildAttentionList, type CockpitCard, type CockpitCardCtx } from './cockpitCards';
+import {
+  buildAttentionList,
+  showRehearsal,
+  type CockpitCard,
+  type CockpitCardCtx,
+} from './cockpitCards';
 import { isStructuralSession } from '@/utils/sessionTypes';
 
 export interface UseCockpitCardsResult {
@@ -29,6 +35,8 @@ export interface UseCockpitCardsResult {
   /** The task fetch failed — show an inline error + retry; the rest still renders. */
   isError: boolean;
   refetch: () => void;
+  /** Agenda is public but it is not the event day yet → offer rehearsal links. */
+  showRehearsal: boolean;
 }
 
 export function useCockpitCards(
@@ -68,6 +76,11 @@ export function useCockpitCards(
       totalSessionsCount: num(e.totalSessionsCount) || sessions.length,
       awaitingReviewCount:
         poolQuery.data?.filter((p) => p.status === 'CONTENT_SUBMITTED').length ?? 0,
+      awaitingContentCount: poolQuery.data?.filter((p) => p.status === 'ACCEPTED').length ?? 0,
+      // Speaker names go public with the SPEAKERS phase (and stay public with AGENDA).
+      speakersPublic: ['SPEAKERS', 'AGENDA'].includes(
+        String(e.currentPublishedPhase ?? '').toUpperCase()
+      ),
       confirmedCount: num(e.confirmedCount),
       waitlistCount: num(e.waitlistCount),
       registrationCapacity:
@@ -78,10 +91,12 @@ export function useCockpitCards(
   // Computed each render (not memoized): buildAttentionList is cheap over a handful
   // of cards, and this keeps `Date.now()` fresh so due-date chips don't freeze when
   // the Cockpit stays open across a day boundary.
-  const cards = buildAttentionList(tasks ?? [], ctx, Date.now());
+  const now = Date.now();
+  const cards = buildAttentionList(tasks ?? [], ctx, now);
 
   return {
     cards,
+    showRehearsal: showRehearsal(ctx, now),
     isLoading: tasksQuery.isLoading,
     isError: tasksQuery.isError,
     refetch: () => {

@@ -27,10 +27,12 @@
         "go": "Open →",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
-        "allCaught": "You're all caught up — nothing needs your attention right now."
+        "allCaught": "You're all caught up — nothing needs your attention right now.",
+        "triggerNotReached": "Trigger no nid erreicht"
       },
       "due": {
         "overdue": "Overdue · {{days}} days",
+        "overdueNow": "Überfällig",
         "dueSoon": "Due in {{days}} days",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
@@ -43,7 +45,8 @@
         "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
         "needsSlot": "{{count}} sessions still need a slot",
         "reviewSubmissions": "Review speaker submissions",
-        "outstandingPresentations": "Collect outstanding presentations",
+        "speakersNotReviewed": "Speaker no nid qualitätsprüeft: {{content}} warte uf Inhalt, {{review}} uf d Prüefig",
+        "outstandingPresentations": "Präsentatione ysammle ({{collected}} vo {{total}})",
         "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
         "startPresentation": "🔴 Start the presentation",
         "openLiveControl": "📡 Open Live Control"
@@ -58,6 +61,11 @@
       },
       "atAGlance": {
         "title": "At a glance"
+      },
+      "rehearsal": {
+        "title": "Probelouf:",
+        "presentation": "Präsentation",
+        "liveControl": "Live Control"
       }
     },
     "tabs": {
@@ -444,8 +452,8 @@
     "tasks": "Ufgabe"
   },
   "tasks": {
-    "criticalTasks": "Kritischi Ufgabe",
-    "noCriticalTasks": "Kei kritischi Ufgabe",
+    "myOpenTasks": "Mini offete Ufgabe",
+    "noOpenTasks": "Keni offete Ufgabe",
     "greatJob": "Gueti Arbet!",
     "errorLoadingTasks": "Ufgabe chöne nid gglade werde",
     "viewAllTasks": "Alli Ufgabe aluege",
@@ -511,7 +519,8 @@
     "tasks": "tasks",
     "activeAriaLabel": "{{count}} active {{taskLabel}}",
     "deleteConfirmTitle": "Die Ufgab lösche?",
-    "deleteConfirmBody": "«{{name}}» lösche? Das cha nid rückgängig gmacht wärde."
+    "deleteConfirmBody": "«{{name}}» lösche? Das cha nid rückgängig gmacht wärde.",
+    "myOpenTasksWidget": "Widget mini offete Ufgabe"
   },
   "form": {
     "createEvent": "Neui Veranstatig erstelle",

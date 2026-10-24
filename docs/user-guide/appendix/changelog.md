@@ -45,6 +45,13 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fixes — Organizer Tasks Appear on Time (2026-10-24)**:
+- ✅ Tasks now become active when the event reaches their trigger, however the event got there. Until now the automatic agenda publication, changing the status in the event settings, and finishing the last session on the Watch skipped this step, so tasks such as Catering and the Final Agenda newsletter stayed "pending" (BATbern60, 23 October).
+- ✅ A task also becomes active a set number of days before it is due (14 by default), even if its trigger has not happened yet, so no task can be born overdue. A daily check at 05:30 applies both rules.
+- ✅ The Speaker Lineup newsletter task now starts when the speakers are published, not when the agenda is.
+- ✅ Newsletter tasks that a later announcement has replaced are closed automatically: Topic Announcement once the speakers or the agenda are public, Speaker Lineup once the agenda is public.
+- ✅ Catering is now due **5 days** before the event (final headcount), and two new standard tasks exist: **Namensschilder** (2 days before) and **Wein** (event day). For an existing event, add them from the event's task templates.
+
 **Bug Fixes — Any Name and Every Deliverable Email Address Can Register (2026-10-23)**:
 - ✅ Names with a space in the first or last name (`Hông Ân`, `van der Berg`, `Maria José`) or in a non-Latin script no longer fail registration with "Server Error". One attendee had to misspell their own name to get through on 2026-10-22 (#1102).
 - ✅ Account sign-up accepts every name: typographic apostrophes (`O’Neill`, as typed on iPhone), single-character surnames (`王`), Devanagari, decomposed Vietnamese, digits and parentheses.

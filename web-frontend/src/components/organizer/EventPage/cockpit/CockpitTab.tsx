@@ -4,14 +4,16 @@
  * The task-driven Cockpit landing — three stacked regions:
  *   1. lifecycle spine ("where is this event")
  *   2. "Needs your attention" (sorted, only-open cards + ＋Add task)
- *   3. "At a glance" metric tiles (clickable deep-links)
+ *   3. "At a glance" metric tiles (clickable deep-links), plus — once the agenda is
+ *      public but before the event day — small rehearsal links to the presentation
+ *      and Live Control (the event-day cards themselves only appear on the day).
  *
  * No event-identity block here — identity lives in Details; orientation is the
  * persistent header title + the spine (FR7). Replaces the interim Overview mount.
  */
 
 import React from 'react';
-import { Stack, Typography } from '@mui/material';
+import { Button, Stack, Typography } from '@mui/material';
 import { useTranslation } from 'react-i18next';
 import type { Event, EventDetailUI } from '@/types/event.types';
 import { useAuth } from '@/hooks/useAuth';
@@ -21,7 +23,7 @@ import { LifecycleSpine } from './LifecycleSpine';
 import { AttentionList } from './AttentionList';
 import { MetricTiles } from './MetricTiles';
 import { useCockpitCards } from './useCockpitCards';
-import type { CardTarget } from './cockpitCards';
+import { liveControlTarget, presentationTarget, type CardTarget } from './cockpitCards';
 
 interface CockpitTabProps {
   event: Event | EventDetailUI;
@@ -35,7 +37,7 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({ event, eventCode, onNavi
   const { user } = useAuth();
   const { isMobile } = useBreakpoints();
   const workflowState = (event as { workflowState?: string }).workflowState ?? '';
-  const { cards, isLoading, isError, refetch } = useCockpitCards(event, eventCode);
+  const { cards, isLoading, isError, refetch, showRehearsal } = useCockpitCards(event, eventCode);
 
   const emphasis = WORKFLOW_RELEVANCE[workflowState as WorkflowStateType]?.cockpitEmphasis;
 
@@ -69,6 +71,27 @@ export const CockpitTab: React.FC<CockpitTabProps> = ({ event, eventCode, onNavi
           {t('eventPage.cockpit.atAGlance.title', 'At a glance')}
         </Typography>
         <MetricTiles event={event} onNavigate={onNavigate} />
+        {showRehearsal && (
+          <Stack
+            direction="row"
+            spacing={1}
+            alignItems="center"
+            flexWrap="wrap"
+            useFlexGap
+            sx={{ mt: 1.5 }}
+            data-testid="cockpit-rehearsal"
+          >
+            <Typography variant="body2" color="text.secondary">
+              {t('eventPage.cockpit.rehearsal.title', 'Rehearsal:')}
+            </Typography>
+            <Button size="small" onClick={() => onNavigate(presentationTarget(eventCode))}>
+              {t('eventPage.cockpit.rehearsal.presentation', 'Presentation')}
+            </Button>
+            <Button size="small" onClick={() => onNavigate(liveControlTarget(eventCode))}>
+              {t('eventPage.cockpit.rehearsal.liveControl', 'Live Control')}
+            </Button>
+          </Stack>
+        )}
       </div>
     </Stack>
   );

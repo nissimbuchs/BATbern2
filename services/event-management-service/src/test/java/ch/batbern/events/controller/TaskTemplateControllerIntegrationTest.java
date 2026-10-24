@@ -105,6 +105,29 @@ class TaskTemplateControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
+     * Organizer cockpit plan T4: activationLeadDays round-trips through the API.
+     */
+    @Test
+    @WithMockUser(username = "alice.organizer", roles = "ORGANIZER")
+    void should_returnActivationLeadDays_when_templateCreatedWithIt() throws Exception {
+        String requestBody = """
+                {
+                    "name": "Custom Task: Print programme",
+                    "triggerState": "agenda_published",
+                    "dueDateType": "relative_to_event",
+                    "dueDateOffsetDays": -3,
+                    "activationLeadDays": 10
+                }
+                """;
+
+        mockMvc.perform(post("/api/v1/tasks/templates")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(requestBody))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.activationLeadDays").value(10));
+    }
+
+    /**
      * Test: POST /api/v1/tasks/templates validates required fields
      */
     @Test

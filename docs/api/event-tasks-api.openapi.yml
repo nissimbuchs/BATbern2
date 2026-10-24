@@ -241,14 +241,6 @@ paths:
       summary: List tasks assigned to the current organizer
       description: 'Story 5.5 AC24. ORGANIZER role required.'
       operationId: getMyTasks
-      parameters:
-        - name: critical
-          in: query
-          required: false
-          description: When true, return only critical (overdue + due-soon) tasks
-          schema:
-            type: boolean
-            default: false
       responses:
         '200':
           description: Tasks for the current organizer
@@ -270,14 +262,6 @@ paths:
       summary: List all tasks across all organizers
       description: 'Story 5.5. ORGANIZER role required.'
       operationId: getAllTasks
-      parameters:
-        - name: critical
-          in: query
-          required: false
-          description: When true, return only critical (overdue + due-soon) tasks
-          schema:
-            type: boolean
-            default: false
       responses:
         '200':
           description: All tasks
@@ -471,13 +455,24 @@ components:
           type: string
         triggerState:
           type: string
-          description: Event workflow state that triggers this task (e.g. topic_selection)
+          description: >-
+            What activates this task: an event workflow state in lowercase_snake_case
+            (e.g. topic_selection, agenda_published), or speakers_published (the speakers
+            phase was published).
         dueDateType:
           type: string
           description: 'Due date type: immediate, relative_to_event, or absolute'
         dueDateOffsetDays:
           type: integer
           description: Offset days for relative due dates (negative = before event, positive = after)
+        activationLeadDays:
+          type: integer
+          minimum: 0
+          nullable: true
+          description: >-
+            A pending task activates at whichever comes first: its trigger, or this many days
+            before its due date. Null = trigger only (post-event templates).
+          example: 14
         isDefault:
           type: boolean
           description: Whether this is a default (non-editable) template
@@ -513,6 +508,14 @@ components:
         dueDateOffsetDays:
           type: integer
           description: Offset days for relative due dates (required when dueDateType is relative_to_event)
+        activationLeadDays:
+          type: integer
+          minimum: 0
+          description: >-
+            Days before the due date at which a pending task activates even if its trigger was
+            not reached. Omitted = 14 for triggers before the event, none for event_live,
+            event_completed and archived.
+          example: 14
         saveAsTemplate:
           type: boolean
           description: '"Save as template" flag (AC22)'
@@ -539,6 +542,14 @@ components:
         dueDateOffsetDays:
           type: integer
           description: Offset days for relative due dates
+        activationLeadDays:
+          type: integer
+          minimum: 0
+          description: >-
+            Days before the due date at which a pending task activates even if its trigger was
+            not reached. Omitted = 14 for triggers before the event, none for event_live,
+            event_completed and archived.
+          example: 14
     EventTaskResponse:
       type: object
       description: An event-planning task instance (Story 5.5)
@@ -574,7 +585,9 @@ components:
           type: string
         status:
           type: string
-          description: 'Task status: pending, todo, in_progress, or completed'
+          description: >-
+            Task status: pending (trigger not reached yet), todo, in_progress, completed, or
+            cancelled (event archived, or the newsletter was superseded by a later one)
         notes:
           type: string
         completedDate:

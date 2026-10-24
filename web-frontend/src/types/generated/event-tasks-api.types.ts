@@ -237,12 +237,17 @@ export interface components {
       /** Format: uuid */
       id: string;
       name: string;
-      /** @description Event workflow state that triggers this task (e.g. topic_selection) */
+      /** @description What activates this task: an event workflow state in lowercase_snake_case (e.g. topic_selection, agenda_published), or speakers_published (the speakers phase was published). */
       triggerState: string;
       /** @description Due date type: immediate, relative_to_event, or absolute */
       dueDateType: string;
       /** @description Offset days for relative due dates (negative = before event, positive = after) */
       dueDateOffsetDays?: number;
+      /**
+       * @description A pending task activates at whichever comes first: its trigger, or this many days before its due date. Null = trigger only (post-event templates).
+       * @example 14
+       */
+      activationLeadDays?: number | null;
       /** @description Whether this is a default (non-editable) template */
       isDefault: boolean;
       /** @description Canonical username of the organizer who created the template (null for defaults) */
@@ -262,6 +267,11 @@ export interface components {
       dueDateType: string;
       /** @description Offset days for relative due dates (required when dueDateType is relative_to_event) */
       dueDateOffsetDays?: number;
+      /**
+       * @description Days before the due date at which a pending task activates even if its trigger was not reached. Omitted = 14 for triggers before the event, none for event_live, event_completed and archived.
+       * @example 14
+       */
+      activationLeadDays?: number;
       /** @description "Save as template" flag (AC22) */
       saveAsTemplate?: boolean;
     };
@@ -275,6 +285,11 @@ export interface components {
       dueDateType: string;
       /** @description Offset days for relative due dates */
       dueDateOffsetDays?: number;
+      /**
+       * @description Days before the due date at which a pending task activates even if its trigger was not reached. Omitted = 14 for triggers before the event, none for event_live, event_completed and archived.
+       * @example 14
+       */
+      activationLeadDays?: number;
     };
     /** @description An event-planning task instance (Story 5.5) */
     EventTaskResponse: {
@@ -294,7 +309,7 @@ export interface components {
       /** Format: date-time */
       dueDate?: string;
       assignedOrganizerUsername?: string;
-      /** @description Task status: pending, todo, in_progress, or completed */
+      /** @description Task status: pending (trigger not reached yet), todo, in_progress, completed, or cancelled (event archived, or the newsletter was superseded by a later one) */
       status: string;
       notes?: string;
       /** Format: date-time */
@@ -639,10 +654,7 @@ export interface operations {
   };
   getMyTasks: {
     parameters: {
-      query?: {
-        /** @description When true, return only critical (overdue + due-soon) tasks */
-        critical?: boolean;
-      };
+      query?: never;
       header?: never;
       path?: never;
       cookie?: never;
@@ -664,10 +676,7 @@ export interface operations {
   };
   getAllTasks: {
     parameters: {
-      query?: {
-        /** @description When true, return only critical (overdue + due-soon) tasks */
-        critical?: boolean;
-      };
+      query?: never;
       header?: never;
       path?: never;
       cookie?: never;

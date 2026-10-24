@@ -27,10 +27,12 @@
         "go": "Open →",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
-        "allCaught": "You're all caught up — nothing needs your attention right now."
+        "allCaught": "You're all caught up — nothing needs your attention right now.",
+        "triggerNotReached": "Trigger non ancora raggiunto"
       },
       "due": {
         "overdue": "Overdue · {{days}} days",
+        "overdueNow": "In ritardo",
         "dueSoon": "Due in {{days}} days",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
@@ -43,7 +45,8 @@
         "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
         "needsSlot": "{{count}} sessions still need a slot",
         "reviewSubmissions": "Review speaker submissions",
-        "outstandingPresentations": "Collect outstanding presentations",
+        "speakersNotReviewed": "Relatori non ancora revisionati: {{content}} in attesa di contenuti, {{review}} in attesa di revisione",
+        "outstandingPresentations": "Raccogliere le presentazioni ({{collected}} di {{total}})",
         "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
         "startPresentation": "🔴 Start the presentation",
         "openLiveControl": "📡 Open Live Control"
@@ -58,6 +61,11 @@
       },
       "atAGlance": {
         "title": "At a glance"
+      },
+      "rehearsal": {
+        "title": "Prova:",
+        "presentation": "Presentazione",
+        "liveControl": "Live Control"
       }
     },
     "tabs": {
@@ -438,8 +446,8 @@
     "tasks": "Attività"
   },
   "tasks": {
-    "criticalTasks": "Attività critiche",
-    "noCriticalTasks": "Nessuna attività critica",
+    "myOpenTasks": "Le mie attività aperte",
+    "noOpenTasks": "Nessuna attività aperta",
     "greatJob": "Ottimo lavoro!",
     "errorLoadingTasks": "Caricamento attività fallito",
     "viewAllTasks": "Visualizza tutte le attività",
@@ -501,7 +509,7 @@
       "updateTaskFailed": "Aggiornamento attività fallito",
       "createTaskFailed": "Creazione attività fallita"
     },
-    "criticalTasksWidget": "Attività critiche",
+    "myOpenTasksWidget": "Widget delle mie attività aperte",
     "task": "task",
     "tasks": "tasks",
     "activeAriaLabel": "{{count}} active {{taskLabel}}",

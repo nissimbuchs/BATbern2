@@ -262,42 +262,6 @@ class EventTaskServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * AC24: Get overdue and due soon tasks
-     */
-    @Test
-    void should_returnOverdueAndDueSoonTasks_when_gettingCriticalTasks() {
-        // Given: Event with tasks having different due dates
-        Event event = createEvent(Instant.now().plus(90, ChronoUnit.DAYS));
-
-        // Overdue task (due 2 days ago)
-        TaskTemplate overdueTemplate = createCustomTemplate("Overdue Task", "topic_selection", "relative_to_event", -92);
-
-        // Due soon task (due tomorrow)
-        TaskTemplate dueSoonTemplate = createCustomTemplate("Due Soon Task", "topic_selection", "relative_to_event", -89);
-
-        // Not critical task (due in 10 days)
-        TaskTemplate futureTemplate = createCustomTemplate("Future Task", "topic_selection", "relative_to_event", -80);
-
-        eventTaskService.createTasksForEvent(event.getId(), List.of(overdueTemplate, dueSoonTemplate, futureTemplate));
-
-        // Activate all tasks
-        List<EventTask> tasks = eventTaskRepository.findByEventId(event.getId());
-        tasks.forEach(task -> {
-            task.setStatus("todo");
-            task.setAssignedOrganizerUsername(TEST_ORGANIZER);
-        });
-        eventTaskRepository.saveAll(tasks);
-
-        // When: Getting critical tasks (overdue + due soon < 3 days)
-        List<EventTask> criticalTasks = eventTaskService.getCriticalTasksForOrganizer(TEST_ORGANIZER);
-
-        // Then: Only overdue and due soon tasks returned (not the future task)
-        assertThat(criticalTasks).hasSize(2);
-        assertThat(criticalTasks).extracting("taskName")
-                .containsExactlyInAnyOrder("Overdue Task", "Due Soon Task");
-    }
-
-    /**
      * AC27: Task assignment flexibility - can be unassigned
      */
     @Test

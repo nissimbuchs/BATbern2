@@ -204,31 +204,30 @@ class EventTaskControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * Test: GET /api/v1/tasks/my-tasks returns critical tasks (overdue + due soon)
+     * Test: GET /api/v1/tasks/my-tasks returns all of the organizer's tasks regardless of due
+     * date. The `critical` filter was removed (organizer cockpit plan #9/#11): the widget now
+     * shows all open tasks and filters client-side.
      */
     @Test
     @WithMockUser(username = "alice.organizer", roles = "ORGANIZER")
-    void should_returnCriticalTasks_when_queryingMyTasks() throws Exception {
-        // Given: Tasks with different due dates
+    void should_returnAllMyTasks_when_queryingMyTasks() throws Exception {
+        // Given: Tasks with different due dates, one belonging to someone else
         EventTask overdue = createTask(testEvent.getId(), "Overdue Task", "alice.organizer", "todo");
         overdue.setDueDate(Instant.now().minus(2, ChronoUnit.DAYS));
         eventTaskRepository.save(overdue);
-
-        EventTask dueSoon = createTask(testEvent.getId(), "Due Soon Task", "alice.organizer", "todo");
-        dueSoon.setDueDate(Instant.now().plus(2, ChronoUnit.DAYS));
-        eventTaskRepository.save(dueSoon);
 
         EventTask farFuture = createTask(testEvent.getId(), "Future Task", "alice.organizer", "todo");
         farFuture.setDueDate(Instant.now().plus(30, ChronoUnit.DAYS));
         eventTaskRepository.save(farFuture);
 
-        // When: GET /api/v1/tasks/my-tasks?critical=true
-        mockMvc.perform(get("/api/v1/tasks/my-tasks?critical=true"))
-                // Then: Returns only overdue and due soon tasks
+        createTask(testEvent.getId(), "Bob Task", "bob.organizer", "todo");
+
+        // When: GET /api/v1/tasks/my-tasks
+        mockMvc.perform(get("/api/v1/tasks/my-tasks"))
+                // Then: Returns both of alice's tasks, not bob's
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$").isArray())
                 .andExpect(jsonPath("$", hasSize(2)))
-                .andExpect(jsonPath("$[*].taskName", containsInAnyOrder("Overdue Task", "Due Soon Task")));
+                .andExpect(jsonPath("$[*].taskName", containsInAnyOrder("Overdue Task", "Future Task")));
     }
 
     /**

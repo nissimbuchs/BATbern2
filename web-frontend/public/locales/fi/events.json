@@ -27,10 +27,12 @@
         "go": "Open →",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
-        "allCaught": "You're all caught up — nothing needs your attention right now."
+        "allCaught": "You're all caught up — nothing needs your attention right now.",
+        "triggerNotReached": "Laukaisinta ei ole vielä saavutettu"
       },
       "due": {
         "overdue": "Overdue · {{days}} days",
+        "overdueNow": "Myöhässä",
         "dueSoon": "Due in {{days}} days",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
@@ -43,7 +45,8 @@
         "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
         "needsSlot": "{{count}} sessions still need a slot",
         "reviewSubmissions": "Review speaker submissions",
-        "outstandingPresentations": "Collect outstanding presentations",
+        "speakersNotReviewed": "Puhujia ei vielä laaduntarkastettu: {{content}} odottaa sisältöä, {{review}} odottaa tarkastusta",
+        "outstandingPresentations": "Kerää esitykset ({{collected}}/{{total}})",
         "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
         "startPresentation": "🔴 Start the presentation",
         "openLiveControl": "📡 Open Live Control"
@@ -58,6 +61,11 @@
       },
       "atAGlance": {
         "title": "At a glance"
+      },
+      "rehearsal": {
+        "title": "Harjoitus:",
+        "presentation": "Esitys",
+        "liveControl": "Live Control"
       }
     },
     "tabs": {
@@ -438,8 +446,8 @@
     "tasks": "Tehtävät"
   },
   "tasks": {
-    "criticalTasks": "Kriittiset tehtävät",
-    "noCriticalTasks": "Ei kriittisiä tehtäviä",
+    "myOpenTasks": "Avoimet tehtäväni",
+    "noOpenTasks": "Ei avoimia tehtäviä",
     "greatJob": "Hyvää työtä!",
     "errorLoadingTasks": "Tehtävien lataaminen epäonnistui",
     "viewAllTasks": "Näytä kaikki tehtävät",
@@ -501,7 +509,7 @@
       "updateTaskFailed": "Tehtävän päivittäminen epäonnistui",
       "createTaskFailed": "Tehtävän luominen epäonnistui"
     },
-    "criticalTasksWidget": "Kriittiset tehtävät",
+    "myOpenTasksWidget": "Avoimet tehtäväni -widget",
     "task": "task",
     "tasks": "tasks",
     "activeAriaLabel": "{{count}} active {{taskLabel}}",

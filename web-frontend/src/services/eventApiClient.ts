@@ -19,7 +19,6 @@ import type {
   UpdateEventRequest,
   PatchEventRequest,
   WorkflowState,
-  CriticalTask,
   TeamActivity,
   CreateRegistrationRequest,
   Registration,
@@ -223,20 +222,6 @@ class EventApiClient {
     try {
       const response = await apiClient.get<WorkflowState>(
         `${EVENT_API_PATH}/${eventCode}/workflow`
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  /**
-   * Get critical tasks for an event
-   */
-  async getCriticalTasks(eventCode: string): Promise<CriticalTask[]> {
-    try {
-      const response = await apiClient.get<CriticalTask[]>(
-        `${EVENT_API_PATH}/${eventCode}/tasks/critical`
       );
       return response.data;
     } catch (error) {

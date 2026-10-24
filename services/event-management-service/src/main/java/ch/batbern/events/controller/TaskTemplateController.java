@@ -76,6 +76,7 @@ public class TaskTemplateController implements TaskTemplatesApi {
                 request.getTriggerState(),
                 request.getDueDateType(),
                 request.getDueDateOffsetDays(),
+                request.getActivationLeadDays(),
                 createdByUsername
         );
 
@@ -100,7 +101,8 @@ public class TaskTemplateController implements TaskTemplatesApi {
                     request.getName(),
                     request.getTriggerState(),
                     request.getDueDateType(),
-                    request.getDueDateOffsetDays()
+                    request.getDueDateOffsetDays(),
+                    request.getActivationLeadDays()
             );
 
             return ResponseEntity.ok(toResponse(template));
@@ -145,6 +147,7 @@ public class TaskTemplateController implements TaskTemplatesApi {
                 .triggerState(template.getTriggerState())
                 .dueDateType(template.getDueDateType())
                 .dueDateOffsetDays(template.getDueDateOffsetDays())
+                .activationLeadDays(template.getActivationLeadDays())
                 .isDefault(template.getIsDefault())
                 .createdByUsername(template.getCreatedByUsername())
                 .createdAt(toOffset(template.getCreatedAt()))

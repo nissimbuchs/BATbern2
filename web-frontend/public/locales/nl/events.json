@@ -27,10 +27,12 @@
         "go": "Open →",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
-        "allCaught": "You're all caught up — nothing needs your attention right now."
+        "allCaught": "You're all caught up — nothing needs your attention right now.",
+        "triggerNotReached": "Trigger nog niet bereikt"
       },
       "due": {
         "overdue": "Overdue · {{days}} days",
+        "overdueNow": "Achterstallig",
         "dueSoon": "Due in {{days}} days",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
@@ -43,7 +45,8 @@
         "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
         "needsSlot": "{{count}} sessions still need a slot",
         "reviewSubmissions": "Review speaker submissions",
-        "outstandingPresentations": "Collect outstanding presentations",
+        "speakersNotReviewed": "Sprekers nog niet beoordeeld: {{content}} wachten op inhoud, {{review}} op beoordeling",
+        "outstandingPresentations": "Presentaties verzamelen ({{collected}} van {{total}})",
         "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
         "startPresentation": "🔴 Start the presentation",
         "openLiveControl": "📡 Open Live Control"
@@ -58,6 +61,11 @@
       },
       "atAGlance": {
         "title": "At a glance"
+      },
+      "rehearsal": {
+        "title": "Generale repetitie:",
+        "presentation": "Presentatie",
+        "liveControl": "Live Control"
       }
     },
     "tabs": {
@@ -438,8 +446,8 @@
     "tasks": "Taken"
   },
   "tasks": {
-    "criticalTasks": "Kritieke taken",
-    "noCriticalTasks": "Geen kritieke taken",
+    "myOpenTasks": "Mijn open taken",
+    "noOpenTasks": "Geen open taken",
     "greatJob": "Goed gedaan!",
     "errorLoadingTasks": "Laden van taken mislukt",
     "viewAllTasks": "Alle taken bekijken",
@@ -501,7 +509,7 @@
       "updateTaskFailed": "Bijwerken van taak mislukt",
       "createTaskFailed": "Aanmaken van taak mislukt"
     },
-    "criticalTasksWidget": "Kritieke taken",
+    "myOpenTasksWidget": "Widget mijn open taken",
     "task": "task",
     "tasks": "tasks",
     "activeAriaLabel": "{{count}} active {{taskLabel}}",

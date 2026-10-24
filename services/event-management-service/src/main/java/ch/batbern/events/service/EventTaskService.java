@@ -16,9 +16,11 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Service for event task management and auto-creation (Story 5.5 AC19-27).
@@ -52,6 +54,19 @@ public class EventTaskService {
     private final EventTaskRepository eventTaskRepository;
     private final TaskTemplateRepository taskTemplateRepository;
     private final EventRepository eventRepository;
+
+    /**
+     * Trigger value that is not a workflow state: the speakers phase has been published
+     * ({@code SpeakersPhasePublishedEvent}). Organizer cockpit plan T5.
+     */
+    public static final String TRIGGER_SPEAKERS_PUBLISHED = "speakers_published";
+
+    /** Default-template keys (V125) used for newsletter supersession (plan T7). */
+    static final String KEY_NEWSLETTER_TOPIC = "newsletter_topic";
+    static final String KEY_NEWSLETTER_SPEAKERS = "newsletter_speakers";
+
+    private static final List<String> OPEN_STATUSES = List.of("pending", "todo", "in_progress");
+    private static final Set<String> PUBLISHED_SPEAKERS_PHASES = Set.of("speakers", "agenda");
 
     /**
      * Create tasks for an event from a list of templates (AC21, AC23).
@@ -88,7 +103,10 @@ public class EventTaskService {
             task.setTaskName(template.getName());
             task.setTriggerState(template.getTriggerState());
             task.setDueDate(calculateDueDate(template, event.getDate()));
-            task.setStatus("pending"); // AC21 - tasks start as pending
+            task.setActivationLeadDays(template.getActivationLeadDays());
+            // AC21: tasks start as pending — unless the event is already past the trigger,
+            // in which case no future transition would ever activate them.
+            task.setStatus(initialStatus(template.getTriggerState(), event));
             task.setAssignedOrganizerUsername(null); // No default assignment
 
             EventTask saved = eventTaskRepository.save(task);
@@ -97,6 +115,7 @@ public class EventTaskService {
         }
 
         log.info("Created {} tasks for event {}", createdTasks.size(), eventId);
+        supersedeNewsletterTasks(event);
         return createdTasks;
     }
 
@@ -121,55 +140,176 @@ public class EventTaskService {
     ) {
         log.info("Activating pending tasks for event {} at state: {}", eventId, triggeredState);
 
-        // Find all pending tasks for this event
-        List<EventTask> pendingTasks = eventTaskRepository.findByEventIdAndStatus(eventId, "pending");
-
-        // Convert triggered state to enum for comparison (lowercase_snake_case -> UPPERCASE)
-        EventWorkflowState currentState;
-        try {
-            currentState = EventWorkflowState.valueOf(triggeredState.toUpperCase());
-        } catch (IllegalArgumentException e) {
+        EventWorkflowState currentState = parseState(triggeredState);
+        if (currentState == null) {
             log.warn("Invalid workflow state: {}, cannot activate tasks", triggeredState);
             return List.of();
         }
+        Event event = eventRepository.findById(eventId).orElse(null);
+        String publishedPhase = event != null ? event.getCurrentPublishedPhase() : null;
 
-        int currentStateOrdinal = currentState.ordinal();
+        // Trigger states <= current state are activated too (handles state skipping), e.g.
+        // CREATED -> SPEAKER_IDENTIFICATION activates CREATED, TOPIC_SELECTION and
+        // SPEAKER_IDENTIFICATION tasks.
+        List<EventTask> activated = activate(
+                eventTaskRepository.findByEventIdAndStatus(eventId, "pending").stream()
+                        .filter(task -> isTriggerReached(task.getTriggerState(), currentState, publishedPhase))
+                        .toList(),
+                "state " + triggeredState);
 
-        // Filter tasks with trigger states <= current state (handles state skipping)
-        // e.g., if jumping CREATED -> SPEAKER_BRAINSTORMING, activate tasks for:
-        // CREATED, TOPIC_SELECTION, and SPEAKER_BRAINSTORMING
-        List<EventTask> tasksToActivate = pendingTasks.stream()
-                .filter(task -> {
-                    try {
-                        EventWorkflowState taskTriggerState = EventWorkflowState.valueOf(
-                                task.getTriggerState().toUpperCase()
-                        );
-                        return taskTriggerState.ordinal() <= currentStateOrdinal;
-                    } catch (IllegalArgumentException e) {
-                        log.warn("Invalid trigger state on task {}: {}", task.getId(), task.getTriggerState());
-                        return false;
-                    }
-                })
-                .toList();
+        if (event != null) {
+            supersedeNewsletterTasks(event);
+        }
+        return activated;
+    }
 
-        if (tasksToActivate.isEmpty()) {
-            log.debug("No pending tasks found for event {} with trigger state <= {}", eventId, triggeredState);
+    /**
+     * Speakers phase published (plan T5 + T7): activates {@code speakers_published} tasks and
+     * cancels the then-obsolete Topic Announcement newsletter task.
+     *
+     * @param eventCode the event whose speakers phase was just published
+     * @return list of activated tasks
+     */
+    @Transactional
+    public List<EventTask> onSpeakersPhasePublished(String eventCode) {
+        Event event = eventRepository.findByEventCode(eventCode).orElse(null);
+        if (event == null) {
+            log.warn("Speakers phase published for unknown event {}", eventCode);
             return List.of();
         }
+        List<EventTask> activated = activate(
+                eventTaskRepository.findByEventIdAndStatus(event.getId(), "pending").stream()
+                        .filter(task -> isTriggerReached(task.getTriggerState(), event))
+                        .toList(),
+                "speakers phase published");
+        supersedeNewsletterTasks(event);
+        return activated;
+    }
 
-        // Activate tasks: change status from "pending" to "todo"
-        tasksToActivate.forEach(task -> {
-            task.setStatus("todo");
-            log.info("Activated task: {} (trigger: {} <= current: {})",
-                    task.getTaskName(), task.getTriggerState(), triggeredState);
+    /**
+     * Level-triggered safety net (plan T1 + T4), run daily by {@code TaskActivationScheduler}.
+     *
+     * <p>Activates every pending task whose trigger has been reached — whether or not a
+     * transition event fired — or whose due date is within its activation lead days. Then
+     * applies newsletter supersession to every event with open tasks. Idempotent.
+     *
+     * @param now the reference time (injected for tests)
+     * @return number of tasks activated
+     */
+    @Transactional
+    public int reconcileOpenTasks(Instant now) {
+        List<EventTask> openTasks = eventTaskRepository.findByStatusIn(OPEN_STATUSES);
+        Map<UUID, Event> events = new HashMap<>();
+        openTasks.stream().map(EventTask::getEventId).distinct()
+                .forEach(id -> eventRepository.findById(id)
+                        .filter(e -> e.getWorkflowState() != EventWorkflowState.ARCHIVED)
+                        .ifPresent(e -> events.put(id, e)));
+
+        List<EventTask> toActivate = openTasks.stream()
+                .filter(task -> "pending".equals(task.getStatus()))
+                .filter(task -> events.containsKey(task.getEventId()))
+                .filter(task -> isTriggerReached(task.getTriggerState(), events.get(task.getEventId()))
+                        || isWithinLeadDays(task, now))
+                .toList();
+        List<EventTask> activated = activate(toActivate, "reconcile");
+
+        events.values().forEach(this::supersedeNewsletterTasks);
+        return activated.size();
+    }
+
+    /**
+     * Newsletter supersession (plan T7, Nissim 2026-10-24): an announcement is obsolete once a
+     * later one has gone out. Topic Announcement once the speakers or the agenda are public;
+     * Speaker Lineup once the agenda is public. Identified by template {@code system_key}
+     * (V125), not by name, so renaming a template cannot silently disable the rule.
+     */
+    private void supersedeNewsletterTasks(Event event) {
+        boolean agendaPublic = "agenda".equals(event.getCurrentPublishedPhase())
+                || isStateAtLeast(event.getWorkflowState(), EventWorkflowState.AGENDA_PUBLISHED);
+        boolean speakersPublic = agendaPublic || isSpeakersPhasePublished(event.getCurrentPublishedPhase());
+        if (speakersPublic) {
+            cancelOpenTasksFromTemplate(event, KEY_NEWSLETTER_TOPIC,
+                    "Newsletter superseded: speakers published");
+        }
+        if (agendaPublic) {
+            cancelOpenTasksFromTemplate(event, KEY_NEWSLETTER_SPEAKERS,
+                    "Newsletter superseded: agenda published");
+        }
+    }
+
+    private void cancelOpenTasksFromTemplate(Event event, String systemKey, String reason) {
+        taskTemplateRepository.findBySystemKey(systemKey).ifPresent(template -> {
+            List<EventTask> open = eventTaskRepository.findByEventIdAndTemplateIdInAndStatusIn(
+                    event.getId(), List.of(template.getId()), OPEN_STATUSES);
+            Instant now = Instant.now();
+            open.forEach(task -> {
+                task.setStatus("cancelled");
+                task.setCancelledReason(reason);
+                task.setCancelledAt(now);
+                log.info("Cancelled task {} ({}) for event {}: {}",
+                        task.getId(), task.getTaskName(), event.getEventCode(), reason);
+            });
+            eventTaskRepository.saveAll(open);
         });
+    }
 
-        // Save all activated tasks
-        List<EventTask> activatedTasks = eventTaskRepository.saveAll(tasksToActivate);
+    private List<EventTask> activate(List<EventTask> tasks, String cause) {
+        if (tasks.isEmpty()) {
+            return List.of();
+        }
+        tasks.forEach(task -> {
+            task.setStatus("todo");
+            log.info("Activated task {} ({}, trigger {}) via {}",
+                    task.getId(), task.getTaskName(), task.getTriggerState(), cause);
+        });
+        return eventTaskRepository.saveAll(tasks);
+    }
 
-        log.info("Activated {} tasks for event {} at state {} (including skipped states)",
-                activatedTasks.size(), eventId, triggeredState);
-        return activatedTasks;
+    private String initialStatus(String triggerState, Event event) {
+        return isTriggerReached(triggerState, event) ? "todo" : "pending";
+    }
+
+    private boolean isTriggerReached(String triggerState, Event event) {
+        return isTriggerReached(triggerState, event.getWorkflowState(), event.getCurrentPublishedPhase());
+    }
+
+    private boolean isTriggerReached(String triggerState, EventWorkflowState currentState, String publishedPhase) {
+        if (triggerState == null || currentState == null) {
+            return false;
+        }
+        if (TRIGGER_SPEAKERS_PUBLISHED.equals(triggerState)) {
+            return isSpeakersPhasePublished(publishedPhase)
+                    || isStateAtLeast(currentState, EventWorkflowState.AGENDA_PUBLISHED);
+        }
+        EventWorkflowState trigger = parseState(triggerState);
+        if (trigger == null) {
+            log.warn("Invalid trigger state on task: {}", triggerState);
+            return false;
+        }
+        return isStateAtLeast(currentState, trigger);
+    }
+
+    private static boolean isSpeakersPhasePublished(String publishedPhase) {
+        // Set.of(...).contains(null) throws — unpublished events carry a null phase
+        return publishedPhase != null && PUBLISHED_SPEAKERS_PHASES.contains(publishedPhase);
+    }
+
+    private static boolean isWithinLeadDays(EventTask task, Instant now) {
+        return task.getActivationLeadDays() != null
+                && task.getDueDate() != null
+                && !now.isBefore(task.getDueDate().minus(task.getActivationLeadDays(), ChronoUnit.DAYS));
+    }
+
+    private static boolean isStateAtLeast(EventWorkflowState state, EventWorkflowState reference) {
+        return state != null && state.ordinal() >= reference.ordinal();
+    }
+
+    private static EventWorkflowState parseState(String state) {
+        try {
+            return EventWorkflowState.valueOf(state.toUpperCase());
+        } catch (IllegalArgumentException | NullPointerException e) {
+            return null;
+        }
     }
 
     /**
@@ -260,29 +400,6 @@ public class EventTaskService {
     public List<EventTask> getTasksForOrganizer(String username) {
         log.debug("Fetching tasks for organizer: {}", username);
         return eventTaskRepository.findByAssignedOrganizerUsername(username);
-    }
-
-    /**
-     * Get critical tasks for an organizer (overdue + due soon < 3 days) (AC24).
-     *
-     * @param username the organizer's username
-     * @return list of critical tasks
-     */
-    public List<EventTask> getCriticalTasksForOrganizer(String username) {
-        log.debug("Fetching critical tasks for organizer: {}", username);
-
-        // Get all tasks for organizer (all statuses)
-        List<EventTask> allTasks = eventTaskRepository.findByAssignedOrganizerUsername(username);
-
-        // Filter for non-completed tasks with overdue or due soon (< 3 days)
-        Instant now = Instant.now();
-        Instant dueSoonThreshold = now.plus(3, ChronoUnit.DAYS);
-
-        return allTasks.stream()
-                .filter(task -> !"completed".equals(task.getStatus()))
-                .filter(task -> task.getDueDate() != null)
-                .filter(task -> task.getDueDate().isBefore(dueSoonThreshold))
-                .collect(Collectors.toList());
     }
 
     /**
@@ -420,7 +537,9 @@ public class EventTaskService {
             task.setTaskName(template.getName());
             task.setTriggerState(template.getTriggerState());
             task.setDueDate(calculateDueDate(template, event.getDate()));
-            task.setStatus("pending"); // AC21 - tasks start as pending
+            task.setActivationLeadDays(template.getActivationLeadDays());
+            // AC21: pending until triggered — todo straight away if the event is already past it
+            task.setStatus(initialStatus(template.getTriggerState(), event));
             task.setAssignedOrganizerUsername(config.assignedOrganizerUsername()); // Set assignee from config
 
             EventTask saved = eventTaskRepository.save(task);
@@ -430,6 +549,7 @@ public class EventTaskService {
         }
 
         log.info("Created {} tasks for event {}", createdTasks.size(), eventId);
+        supersedeNewsletterTasks(event);
         return createdTasks;
     }
 

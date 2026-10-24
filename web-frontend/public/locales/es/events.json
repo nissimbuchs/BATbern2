@@ -27,10 +27,12 @@
         "go": "Open →",
         "retry": "Retry",
         "loadError": "Couldn't load your tasks.",
-        "allCaught": "You're all caught up — nothing needs your attention right now."
+        "allCaught": "You're all caught up — nothing needs your attention right now.",
+        "triggerNotReached": "Disparador aún no alcanzado"
       },
       "due": {
         "overdue": "Overdue · {{days}} days",
+        "overdueNow": "Vencido",
         "dueSoon": "Due in {{days}} days",
         "upcoming": "Upcoming",
         "live": "Now · event is live",
@@ -43,7 +45,8 @@
         "fillPool": "Fill the speaker pool — {{confirmed}} / {{min}} confirmed",
         "needsSlot": "{{count}} sessions still need a slot",
         "reviewSubmissions": "Review speaker submissions",
-        "outstandingPresentations": "Collect outstanding presentations",
+        "speakersNotReviewed": "Ponentes aún sin revisar: {{content}} esperando contenido, {{review}} esperando revisión",
+        "outstandingPresentations": "Recopilar presentaciones ({{collected}} de {{total}})",
         "watchRegistrations": "Registrations {{confirmed}} / {{capacity}} — watch capacity & waitlist",
         "startPresentation": "🔴 Start the presentation",
         "openLiveControl": "📡 Open Live Control"
@@ -58,6 +61,11 @@
       },
       "atAGlance": {
         "title": "At a glance"
+      },
+      "rehearsal": {
+        "title": "Ensayo:",
+        "presentation": "Presentación",
+        "liveControl": "Live Control"
       }
     },
     "tabs": {
@@ -438,8 +446,8 @@
     "tasks": "Tareas"
   },
   "tasks": {
-    "criticalTasks": "Tareas críticas",
-    "noCriticalTasks": "No hay tareas críticas",
+    "myOpenTasks": "Mis tareas abiertas",
+    "noOpenTasks": "No hay tareas abiertas",
     "greatJob": "¡Buen trabajo!",
     "errorLoadingTasks": "Error al cargar tareas",
     "viewAllTasks": "Ver todas las tareas",
@@ -501,7 +509,7 @@
       "updateTaskFailed": "Error al actualizar la tarea",
       "createTaskFailed": "Error al crear la tarea"
     },
-    "criticalTasksWidget": "Tareas críticas",
+    "myOpenTasksWidget": "Widget de mis tareas abiertas",
     "task": "task",
     "tasks": "tasks",
     "activeAriaLabel": "{{count}} active {{taskLabel}}",

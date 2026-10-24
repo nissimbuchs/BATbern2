@@ -76,8 +76,9 @@ class TaskTemplateServiceIntegrationTest extends AbstractIntegrationTest {
         List<TaskTemplate> defaultTemplates = taskTemplateService.listDefaultTemplates();
 
         // Then: Only default templates returned. (8 since Story 7.3 / V110 seeded the
-        // "Newsletter: Slides Are Online" default template.)
-        assertThat(defaultTemplates).hasSize(8);
+        // "Newsletter: Slides Are Online" default template; 10 since V125 seeded
+        // "Namensschilder" and "Wein", organizer cockpit plan #7.)
+        assertThat(defaultTemplates).hasSize(10);
         assertThat(defaultTemplates).allMatch(TaskTemplate::getIsDefault);
         assertThat(defaultTemplates).extracting("name").containsExactlyInAnyOrder(
             "Venue Booking",
@@ -87,7 +88,9 @@ class TaskTemplateServiceIntegrationTest extends AbstractIntegrationTest {
             "Newsletter: Speaker Lineup",
             "Newsletter: Final Agenda",
             "Catering Coordination",
-            "Newsletter: Slides Are Online"
+            "Newsletter: Slides Are Online",
+            "Namensschilder",
+            "Wein"
         );
     }
 
@@ -323,5 +326,59 @@ class TaskTemplateServiceIntegrationTest extends AbstractIntegrationTest {
         template.setIsDefault(false);
         template.setCreatedByUsername(TEST_USERNAME);
         return taskTemplateRepository.save(template);
+    }
+
+    // ------------------------------------------------------------------
+    // Organizer cockpit plan T4 + T5: activation lead days, speakers trigger
+    // ------------------------------------------------------------------
+
+    @Test
+    void should_acceptSpeakersPublishedTrigger_when_creatingTemplate() {
+        TaskTemplate created = taskTemplateService.createTemplate(
+            "Lineup social post", "speakers_published", "relative_to_event", -25, null, TEST_USERNAME);
+
+        assertThat(created.getTriggerState()).isEqualTo("speakers_published");
+    }
+
+    @Test
+    void should_defaultActivationLeadDaysTo14_when_notProvidedForPreEventTrigger() {
+        TaskTemplate created = taskTemplateService.createTemplate(
+            "Print programme", "agenda_published", "relative_to_event", -3, null, TEST_USERNAME);
+
+        assertThat(created.getActivationLeadDays()).isEqualTo(14);
+    }
+
+    @Test
+    void should_leaveActivationLeadDaysEmpty_when_notProvidedForPostEventTrigger() {
+        TaskTemplate created = taskTemplateService.createTemplate(
+            "Thank-you mail", "event_completed", "relative_to_event", 2, null, TEST_USERNAME);
+
+        assertThat(created.getActivationLeadDays()).isNull();
+    }
+
+    @Test
+    void should_storeExplicitActivationLeadDays_when_provided() {
+        TaskTemplate created = taskTemplateService.createTemplate(
+            "Book photographer", "topic_selection", "relative_to_event", -30, 45, TEST_USERNAME);
+
+        assertThat(created.getActivationLeadDays()).isEqualTo(45);
+    }
+
+    @Test
+    void should_throwException_when_activationLeadDaysNegative() {
+        assertThatThrownBy(() -> taskTemplateService.createTemplate(
+            "Bad lead", "topic_selection", "relative_to_event", -30, -1, TEST_USERNAME))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Activation lead days");
+    }
+
+    @Test
+    void should_throwException_when_triggerStateIsRemovedLegacyState() {
+        // The production "Eigener" template carries 'speaker_outreach', a state removed long ago;
+        // such values must stay impossible to save.
+        assertThatThrownBy(() -> taskTemplateService.createTemplate(
+            "Legacy", "speaker_outreach", "relative_to_event", -30, null, TEST_USERNAME))
+            .isInstanceOf(IllegalArgumentException.class)
+            .hasMessageContaining("Invalid trigger state");
     }
 }

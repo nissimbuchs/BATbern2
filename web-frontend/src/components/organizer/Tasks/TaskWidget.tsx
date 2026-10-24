@@ -1,11 +1,13 @@
 /**
  * TaskWidget Component (Story 5.5 Phase 6 - Modified for routing)
  *
- * AC24: Critical tasks widget for dashboard sidebar
+ * AC24: Tasks widget for the Events-overview sidebar
  * Wireframe: docs/wireframes/5.5-content-review-task-system-ux-flow.md
  *
  * Features:
- * - Displays all active tasks (pending, todo, in_progress)
+ * - Displays ALL of my open tasks across events (not only those due within 3 days),
+ *   using the Cockpit visibility rule (`isTaskVisible`) and sorted by due date —
+ *   docs/plans/organizer-cockpit-attention-cards.md #9
  * - Shows task name, event, due date, assignee
  * - "View All Tasks" button navigates to /organizer/tasks page
  * - Auto-refreshes on task completion
@@ -19,6 +21,10 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useNavigate } from 'react-router-dom';
 import { de, enUS } from 'date-fns/locale';
 import { taskService, type EventTaskResponse } from '@/services/taskService';
+import {
+  isTaskVisible,
+  sortTasksByDue,
+} from '@/components/organizer/EventPage/cockpit/cockpitCards';
 import { TaskCard } from './TaskCard';
 import { CustomTaskModal } from './CustomTaskModal';
 
@@ -33,14 +39,14 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
   const locale = i18n.language === 'de' ? de : enUS;
   const [editingTask, setEditingTask] = useState<EventTaskResponse | null>(null);
 
-  // Fetch critical tasks
+  // Fetch all of my tasks; visibility + order are decided client-side below
   const {
-    data: criticalTasks = [],
+    data: myTasks = [],
     isLoading,
     isError,
   } = useQuery({
-    queryKey: ['tasks', 'critical', organizerUsername],
-    queryFn: () => taskService.getMyTasks(true),
+    queryKey: ['tasks', 'my-open', organizerUsername],
+    queryFn: () => taskService.getMyTasks(),
     refetchInterval: 60000, // Auto-refresh every 60 seconds
   });
 
@@ -49,9 +55,8 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
     mutationFn: ({ taskId, notes }: { taskId: string; notes?: string }) =>
       taskService.completeTask(taskId, { notes }),
     onSuccess: () => {
-      // Invalidate critical tasks query to refresh the list
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'critical'] });
-      queryClient.invalidateQueries({ queryKey: ['tasks', 'my-tasks'] });
+      // Refresh every task list (this widget, the board, the Cockpit)
+      queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },
   });
 
@@ -63,15 +68,16 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
     navigate('/organizer/tasks');
   };
 
-  // Show all non-completed tasks (backend already filters)
-  const activeTasks = criticalTasks.filter((task) => task.status !== 'completed');
+  // Same rule as the Cockpit cards: hide completed / cancelled / not-yet-triggered
+  const now = Date.now();
+  const activeTasks = sortTasksByDue(myTasks.filter((task) => isTaskVisible(task, now)));
 
   // Loading state
   if (isLoading) {
     return (
       <Box>
         <Typography variant="h6" gutterBottom>
-          {t('tasks.criticalTasks', 'Critical Tasks')}
+          {t('tasks.myOpenTasks', 'My open tasks')}
         </Typography>
         <List>
           {[1, 2, 3].map((index) => (
@@ -89,7 +95,7 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
     return (
       <Box textAlign="center" py={4}>
         <Typography variant="h6" gutterBottom>
-          {t('tasks.criticalTasks', 'Critical Tasks')}
+          {t('tasks.myOpenTasks', 'My open tasks')}
         </Typography>
         <Typography variant="body2" color="error">
           {t('tasks.errorLoadingTasks', 'Failed to load tasks')}
@@ -103,11 +109,11 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
     return (
       <Box textAlign="center" py={4}>
         <Typography variant="h6" gutterBottom>
-          {t('tasks.criticalTasks', 'Critical Tasks')}
+          {t('tasks.myOpenTasks', 'My open tasks')}
         </Typography>
         <CheckCircleIcon color="success" sx={{ fontSize: 48, mb: 2 }} />
         <Typography variant="body2" color="text.secondary">
-          {t('tasks.noCriticalTasks', 'No critical tasks')}
+          {t('tasks.noOpenTasks', 'No open tasks')}
         </Typography>
         <Typography variant="body2" color="text.secondary" gutterBottom>
           {t('tasks.greatJob', 'Great job!')}
@@ -126,9 +132,9 @@ export const TaskWidget: React.FC<TaskWidgetProps> = ({ organizerUsername }) => 
   }
 
   return (
-    <Box aria-label={t('tasks.criticalTasksWidget', 'Critical tasks widget')}>
+    <Box aria-label={t('tasks.myOpenTasksWidget', 'My open tasks widget')}>
       <Stack direction="row" justifyContent="space-between" alignItems="center" mb={2}>
-        <Typography variant="h6">{t('tasks.criticalTasks', 'Critical Tasks')}</Typography>
+        <Typography variant="h6">{t('tasks.myOpenTasks', 'My open tasks')}</Typography>
         <Chip
           label={`${activeTasks.length} ${activeTasks.length === 1 ? t('tasks.task', 'task') : t('tasks.tasks', 'tasks')}`}
           size="small"

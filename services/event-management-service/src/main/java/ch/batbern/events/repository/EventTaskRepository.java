@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.UUID;
 
@@ -60,6 +61,12 @@ public interface EventTaskRepository extends JpaRepository<EventTask, UUID> {
      * @return list of tasks
      */
     List<EventTask> findByAssignedOrganizerUsernameAndStatus(String username, String status);
+
+    /** Tasks in any of the given statuses (task activation reconcile, organizer cockpit plan T4). */
+    List<EventTask> findByStatusIn(Collection<String> statuses);
+
+    List<EventTask> findByEventIdAndTemplateIdInAndStatusIn(
+            UUID eventId, Collection<UUID> templateIds, Collection<String> statuses);
 
     /**
      * Check if a task already exists for an event from a specific template.

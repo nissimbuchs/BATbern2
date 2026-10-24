@@ -71,7 +71,12 @@ export const AttentionCard: React.FC<AttentionCardProps> = ({ card, onNavigate }
       dueText = t('eventPage.cockpit.due.live', 'Now · event is live');
     }
   } else if (card.dueDays === undefined) {
-    dueText = t('eventPage.cockpit.due.upcoming', 'Upcoming');
+    // Undated virtual cards: an overdue one (e.g. speakers already public but not
+    // reviewed) must not read "Upcoming".
+    dueText =
+      card.severity === 'overdue'
+        ? t('eventPage.cockpit.due.overdueNow', 'Overdue')
+        : t('eventPage.cockpit.due.upcoming', 'Upcoming');
   } else if (card.severity === 'overdue') {
     dueText = t('eventPage.cockpit.due.overdue', 'Overdue · {{days}} days', {
       days: Math.abs(card.dueDays),
@@ -130,6 +135,12 @@ export const AttentionCard: React.FC<AttentionCardProps> = ({ card, onNavigate }
       <Typography variant="body1" fontWeight={card.pinned ? 700 : 600}>
         {label}
       </Typography>
+
+      {card.noteKey && (
+        <Typography variant="caption" color="text.secondary">
+          {t(`eventPage.cockpit.attention.${card.noteKey}`)}
+        </Typography>
+      )}
 
       <Box sx={{ display: 'flex', flexWrap: 'wrap', alignItems: 'center', gap: 1 }}>
         <Chip size="small" color={CHIP_COLOR[card.severity]} variant="outlined" label={dueText} />

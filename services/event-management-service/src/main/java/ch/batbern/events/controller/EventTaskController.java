@@ -159,19 +159,16 @@ public class EventTaskController implements EventTasksApi {
      * Get tasks assigned to current organizer.
      * Story 5.5 AC24: List tasks for current organizer
      *
-     * @param critical if true, return only critical tasks (overdue + due soon)
      * @return list of tasks
      */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<EventTaskResponse>> getMyTasks(Boolean critical) {
+    public ResponseEntity<List<EventTaskResponse>> getMyTasks() {
 
         String username = securityContextHelper.getCurrentUsername();
-        log.info("GET /api/v1/tasks/my-tasks - username: {}, critical: {}", username, critical);
+        log.info("GET /api/v1/tasks/my-tasks - username: {}", username);
 
-        List<EventTask> tasks = critical
-                ? eventTaskService.getCriticalTasksForOrganizer(username)
-                : eventTaskService.getTasksForOrganizer(username);
+        List<EventTask> tasks = eventTaskService.getTasksForOrganizer(username);
 
         // Fetch event codes for all tasks
         java.util.Map<UUID, String> eventCodeMap = tasks.stream()
@@ -195,14 +192,13 @@ public class EventTaskController implements EventTasksApi {
      * Get all tasks (for all organizers).
      * Story 5.5: Task dashboard with "All Tasks" filter
      *
-     * @param critical if true, return only critical tasks (overdue + due soon)
      * @return list of all tasks
      */
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<List<EventTaskResponse>> getAllTasks(Boolean critical) {
+    public ResponseEntity<List<EventTaskResponse>> getAllTasks() {
 
-        log.info("GET /api/v1/tasks/all-tasks - critical: {}", critical);
+        log.info("GET /api/v1/tasks/all-tasks");
 
         // Get all tasks from the service
         List<EventTask> tasks = eventTaskService.getAllTasks();

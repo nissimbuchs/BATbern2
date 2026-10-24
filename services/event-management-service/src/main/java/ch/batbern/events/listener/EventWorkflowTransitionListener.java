@@ -1,6 +1,7 @@
 package ch.batbern.events.listener;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.event.SpeakersPhasePublishedEvent;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.service.EventTaskService;
 import ch.batbern.shared.events.EventWorkflowTransitionEvent;
@@ -19,6 +20,10 @@ import org.springframework.stereotype.Component;
  * 2. Activates them by changing status from "pending" to "todo"
  *
  * This enables task automation while maintaining idempotency (AC36).
+ *
+ * <p>It also handles {@link SpeakersPhasePublishedEvent}: tasks with the
+ * {@code speakers_published} trigger activate, and superseded newsletter tasks are cancelled
+ * (organizer cockpit plan T5 + T7).
  */
 @Component
 @Slf4j
@@ -65,6 +70,22 @@ public class EventWorkflowTransitionListener {
             // Task activation failures should not prevent event state changes
             log.error("Failed to activate tasks for event {} transitioning to state {}: {}",
                     event.getEventCode(), event.getToState(), e.getMessage(), e);
+        }
+    }
+
+    /**
+     * Activate {@code speakers_published} tasks and cancel superseded newsletter tasks when the
+     * speakers phase is published. Non-blocking, like the transition handler.
+     *
+     * @param event the speakers-phase-published signal
+     */
+    @EventListener
+    public void handleSpeakersPhasePublished(SpeakersPhasePublishedEvent event) {
+        try {
+            eventTaskService.onSpeakersPhasePublished(event.eventCode());
+        } catch (Exception e) {
+            log.error("Failed to activate tasks for event {} after speakers publish: {}",
+                    event.eventCode(), e.getMessage(), e);
         }
     }
 }

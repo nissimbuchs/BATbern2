@@ -42,10 +42,10 @@ tests {
     }
   });
 
-  test("should include 8 default templates - Story 5.5 AC19 (+ 7.3 slides-online)", function() {
+  test("should include 10 default templates - Story 5.5 AC19 (+ 7.3 slides-online, + name tags & wine)", function() {
     const response = res.getBody();
     const defaultTemplates = response.filter(t => t.isDefault === true);
-    expect(defaultTemplates.length).to.equal(8);
+    expect(defaultTemplates.length).to.equal(10); // V125 adds Namensschilder + Wein
 
     const expectedNames = [
       'Venue Booking',
@@ -55,7 +55,9 @@ tests {
       'Newsletter: Speaker Lineup',
       'Newsletter: Final Agenda',
       'Catering Coordination',
-      'Newsletter: Slides Are Online'
+      'Newsletter: Slides Are Online',
+      'Namensschilder',
+      'Wein'
     ];
 
     defaultTemplates.forEach(template => {

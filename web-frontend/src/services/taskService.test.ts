@@ -2,7 +2,7 @@
  * Task Service Tests (Story 5.5 Phase 6)
  *
  * Comprehensive tests for taskService HTTP client
- * Tests all API methods: template CRUD, event task management, critical tasks
+ * Tests all API methods: template CRUD, event task management, my/all tasks
  *
  * Coverage:
  * - API request formatting (task templates, event tasks, status updates)
@@ -591,42 +591,10 @@ describe('taskService', () => {
 
       vi.mocked(apiClient.get).mockResolvedValue({ data: mockTasks });
 
-      const result = await taskService.getMyTasks(false);
+      const result = await taskService.getMyTasks();
 
-      expect(apiClient.get).toHaveBeenCalledWith('/tasks/my-tasks', {
-        params: { critical: false },
-      });
+      expect(apiClient.get).toHaveBeenCalledWith('/tasks/my-tasks');
       expect(result).toEqual(mockTasks);
-    });
-
-    it('should fetch critical tasks only when critical=true', async () => {
-      const mockCriticalTasks: EventTaskResponse[] = [
-        {
-          id: 'task-critical-1',
-          eventId: 'event-123',
-          eventCode: 'BATbern56',
-          templateId: 'template-1',
-          taskName: 'Urgent Task',
-          triggerState: 'SPEAKER_CONFIRMED',
-          dueDate: '2025-12-21T00:00:00Z',
-          assignedOrganizerUsername: 'john.doe',
-          status: 'todo',
-          notes: null,
-          completedDate: null,
-          completedByUsername: null,
-          createdAt: '2025-12-20T10:00:00Z',
-          updatedAt: '2025-12-20T10:00:00Z',
-        },
-      ];
-
-      vi.mocked(apiClient.get).mockResolvedValue({ data: mockCriticalTasks });
-
-      const result = await taskService.getMyTasks(true);
-
-      expect(apiClient.get).toHaveBeenCalledWith('/tasks/my-tasks', {
-        params: { critical: true },
-      });
-      expect(result).toEqual(mockCriticalTasks);
     });
   });
 
@@ -669,43 +637,11 @@ describe('taskService', () => {
 
       vi.mocked(apiClient.get).mockResolvedValue({ data: mockTasks });
 
-      const result = await taskService.getAllTasks(false);
+      const result = await taskService.getAllTasks();
 
-      expect(apiClient.get).toHaveBeenCalledWith('/tasks/all-tasks', {
-        params: { critical: false },
-      });
+      expect(apiClient.get).toHaveBeenCalledWith('/tasks/all-tasks');
       expect(result).toEqual(mockTasks);
       expect(result).toHaveLength(2);
-    });
-
-    it('should fetch critical tasks for all organizers when critical=true', async () => {
-      const mockCriticalTasks: EventTaskResponse[] = [
-        {
-          id: 'task-critical-1',
-          eventId: 'event-123',
-          eventCode: 'BATbern56',
-          templateId: 'template-1',
-          taskName: 'Urgent Task',
-          triggerState: 'SPEAKER_CONFIRMED',
-          dueDate: '2025-12-21T00:00:00Z',
-          assignedOrganizerUsername: 'john.doe',
-          status: 'todo',
-          notes: null,
-          completedDate: null,
-          completedByUsername: null,
-          createdAt: '2025-12-20T10:00:00Z',
-          updatedAt: '2025-12-20T10:00:00Z',
-        },
-      ];
-
-      vi.mocked(apiClient.get).mockResolvedValue({ data: mockCriticalTasks });
-
-      const result = await taskService.getAllTasks(true);
-
-      expect(apiClient.get).toHaveBeenCalledWith('/tasks/all-tasks', {
-        params: { critical: true },
-      });
-      expect(result).toEqual(mockCriticalTasks);
     });
   });
 
@@ -1190,90 +1126,6 @@ describe('taskService', () => {
         await expect(taskService.reassignTask('task-1', request)).rejects.toThrow(
           'organizer not assigned to this event'
         );
-      });
-    });
-
-    describe('Edge Cases for Critical Tasks', () => {
-      it('should filter critical tasks correctly', async () => {
-        const mockCriticalTasks: EventTaskResponse[] = [
-          {
-            id: 'task-overdue',
-            eventId: 'event-123',
-            eventCode: 'BATbern56',
-            templateId: 'template-1',
-            taskName: 'Overdue Task',
-            triggerState: 'SPEAKER_CONFIRMED',
-            dueDate: '2025-12-19T00:00:00Z', // Past date
-            assignedOrganizerUsername: 'john.doe',
-            status: 'todo',
-            notes: null,
-            completedDate: null,
-            completedByUsername: null,
-            createdAt: '2025-12-20T10:00:00Z',
-            updatedAt: '2025-12-20T10:00:00Z',
-          },
-          {
-            id: 'task-due-soon',
-            eventId: 'event-123',
-            eventCode: 'BATbern56',
-            templateId: 'template-2',
-            taskName: 'Due Soon Task',
-            triggerState: 'SLOT_ASSIGNED',
-            dueDate: '2025-12-22T00:00:00Z', // Within 3 days
-            assignedOrganizerUsername: 'john.doe',
-            status: 'in_progress',
-            notes: null,
-            completedDate: null,
-            completedByUsername: null,
-            createdAt: '2025-12-20T10:00:00Z',
-            updatedAt: '2025-12-20T10:00:00Z',
-          },
-        ];
-
-        vi.mocked(apiClient.get).mockResolvedValue({ data: mockCriticalTasks });
-
-        const result = await taskService.getMyTasks(true);
-
-        expect(result).toHaveLength(2);
-        expect(result[0].taskName).toBe('Overdue Task');
-        expect(result[1].taskName).toBe('Due Soon Task');
-      });
-
-      it('should return empty array when no critical tasks exist', async () => {
-        vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
-
-        const result = await taskService.getMyTasks(true);
-
-        expect(result).toEqual([]);
-        expect(result).toHaveLength(0);
-      });
-
-      it('should handle tasks with null due dates in critical filter', async () => {
-        const mockTasks: EventTaskResponse[] = [
-          {
-            id: 'task-no-due-date',
-            eventId: 'event-123',
-            eventCode: 'BATbern56',
-            templateId: 'template-1',
-            taskName: 'No Due Date Task',
-            triggerState: 'SPEAKER_CONFIRMED',
-            dueDate: null,
-            assignedOrganizerUsername: 'john.doe',
-            status: 'todo',
-            notes: null,
-            completedDate: null,
-            completedByUsername: null,
-            createdAt: '2025-12-20T10:00:00Z',
-            updatedAt: '2025-12-20T10:00:00Z',
-          },
-        ];
-
-        vi.mocked(apiClient.get).mockResolvedValue({ data: mockTasks });
-
-        const result = await taskService.getMyTasks(true);
-
-        // Tasks with null due dates should be excluded from critical filter (backend logic)
-        expect(result).toEqual(mockTasks);
       });
     });
   });

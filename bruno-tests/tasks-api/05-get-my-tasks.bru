@@ -14,9 +14,6 @@ auth:bearer {
   token: {{authToken}}
 }
 
-params:query {
-  critical: false
-}
 
 assert {
   res.status: eq 200
@@ -40,7 +37,7 @@ tests {
       expect(task.id).to.be.a('string');
       expect(task.taskName).to.be.a('string');
       expect(task.assignedOrganizerUsername).to.be.a('string');
-      expect(task.status).to.be.oneOf(['pending', 'todo', 'in_progress', 'completed']);
+      expect(task.status).to.be.oneOf(['pending', 'todo', 'in_progress', 'completed', 'cancelled']);
     }
   });
 }
