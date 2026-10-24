@@ -203,7 +203,7 @@ class UserServiceTest {
         request.setCompanyId("TechCorp");
         request.setCreateIfMissing(true);
 
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.empty());
         when(cognitoService.createCognitoUser(request)).thenReturn("cognito-123");
         when(slugService.generateUsername(eq("New"), eq("User"), anyString())).thenReturn("new.user");
         when(slugService.ensureUniqueUsername(eq("new.user"), any())).thenReturn("new.user");
@@ -281,7 +281,7 @@ class UserServiceTest {
                 .companyId("Mobiliar")
                 .createIfMissing(true);
 
-        when(userRepository.findByEmail("daniel.berger@mobi.ch")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("daniel.berger@mobi.ch")).thenReturn(Optional.empty());
         when(cognitoService.createCognitoUser(request)).thenReturn("cognito-mobi");
         when(slugService.generateUsername(eq("Daniel"), eq("Berger"), anyString())).thenReturn("daniel.berger");
         when(slugService.ensureUniqueUsername(eq("daniel.berger"), any())).thenReturn("daniel.berger.2");
@@ -336,7 +336,7 @@ class UserServiceTest {
                 .lastName("Berger")
                 .createIfMissing(false);
 
-        when(userRepository.findByEmail("nobody@example.com")).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase("nobody@example.com")).thenReturn(Optional.empty());
 
         assertThatThrownBy(() -> userService.getOrCreateUser(request))
                 .isInstanceOf(UserNotFoundException.class);
@@ -363,7 +363,7 @@ class UserServiceTest {
                 .companyId("TechCorp")
                 .build();
 
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.of(existingUser));
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId("existing.user");
@@ -406,7 +406,7 @@ class UserServiceTest {
                 .lastName("User")
                 .companyId("oldco")
                 .build();
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.of(existingUser));
 
         ch.batbern.companyuser.domain.Company newCompany = ch.batbern.companyuser.domain.Company.builder()
                 .name("newco")
@@ -453,7 +453,7 @@ class UserServiceTest {
                 .lastName("User")
                 .companyId("newco")
                 .build();
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.of(existingUser));
 
         ch.batbern.companyuser.domain.Company sameCompany = ch.batbern.companyuser.domain.Company.builder()
                 .name("newco")
@@ -491,7 +491,7 @@ class UserServiceTest {
                 .lastName("User")
                 .companyId("oldco")
                 .build();
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.of(existingUser));
+        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.of(existingUser));
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId("existing.user");
@@ -519,7 +519,7 @@ class UserServiceTest {
                 .companyId("CompanyX")
                 .createIfMissing(true);
 
-        when(userRepository.findByEmail(request.getEmail())).thenReturn(Optional.empty());
+        when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.empty());
         when(cognitoService.createCognitoUser(request)).thenReturn("cognito-123");
         when(slugService.generateUsername(eq("New"), eq("User"), anyString())).thenReturn("new.user");
         when(slugService.ensureUniqueUsername(eq("new.user"), any())).thenReturn("new.user");
@@ -724,7 +724,7 @@ class UserServiceTest {
         request.setBio("Software engineer");
         request.setInitialRoles(List.of(CreateUserRequest.InitialRolesEnum.SPEAKER));
 
-        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase(request.getEmail())).thenReturn(false);
         when(slugService.generateUsername(eq("New"), eq("User"), anyString())).thenReturn("new.user");
         when(slugService.ensureUniqueUsername(eq("new.user"), any())).thenReturn("new.user");
         when(securityContext.getCurrentUsername()).thenReturn("admin.user");
@@ -780,7 +780,7 @@ class UserServiceTest {
         request.setCompanyId("FinanceCorp");
         // No initial roles specified
 
-        when(userRepository.existsByEmail(request.getEmail())).thenReturn(false);
+        when(userRepository.existsByEmailIgnoreCase(request.getEmail())).thenReturn(false);
         when(slugService.generateUsername(eq("Jane"), eq("Attendee"), anyString())).thenReturn("jane.attendee");
         when(slugService.ensureUniqueUsername(eq("jane.attendee"), any())).thenReturn("jane.attendee");
         when(securityContext.getCurrentUsername()).thenReturn("admin.user");
@@ -819,7 +819,7 @@ class UserServiceTest {
         request.setFirstName("Existing");
         request.setLastName("User");
 
-        when(userRepository.existsByEmail(request.getEmail())).thenReturn(true);
+        when(userRepository.existsByEmailIgnoreCase(request.getEmail())).thenReturn(true);
 
         // When / Then
         assertThatThrownBy(() -> userService.createUser(request))

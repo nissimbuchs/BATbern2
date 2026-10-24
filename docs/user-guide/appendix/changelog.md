@@ -48,6 +48,11 @@ Each release includes:
 **Bug Fixes — Speaker Cards Show the Assigned Slot (2026-10-24)**:
 - ✅ In the speaker pool, a confirmed speaker who already has a slot now shows the slot time instead of "⚠ Needs a slot". The card looked the session up by an identifier the agenda data does not carry, so every confirmed speaker appeared unslotted, even with the agenda published (BATbern60: 3 speakers).
 
+**Bug Fixes — Email Addresses Are Matched Regardless of Capitalisation (2026-10-24)**:
+- ✅ `Jane.Doe@x.ch` and `jane.doe@x.ch` are now always the same person. Previously a different capitalisation created a second user (5 people were affected and have been merged), a second newsletter subscription (one person received every newsletter twice), or a second partner-meeting RSVP.
+- ✅ Unsubscribing, deregistering or confirming by email reply, and SES bounce/complaint handling, now work even when the address is capitalised differently. Before, they silently did nothing.
+- ✅ New addresses are stored lower-case; the database now rejects case-duplicates for users and newsletter subscribers.
+
 **Bug Fixes — Organizer Tasks Appear on Time (2026-10-24)**:
 - ✅ Tasks now become active when the event reaches their trigger, however the event got there. Until now the automatic agenda publication, changing the status in the event settings, and finishing the last session on the Watch skipped this step, so tasks such as Catering and the Final Agenda newsletter stayed "pending" (BATbern60, 23 October).
 - ✅ A task also becomes active a set number of days before it is due (14 by default), even if its trigger has not happened yet, so no task can be born overdue. A daily check at 05:30 applies both rules.

@@ -542,7 +542,7 @@ public class NewsletterEmailService {
                 String email = failed.getId().getEmail();
                 String deliveryStatus = "sent";
                 try {
-                    String unsubToken = subscriberRepository.findByEmail(email)
+                    String unsubToken = subscriberRepository.findByEmailIgnoreCase(email)
                             .map(NewsletterSubscriber::getUnsubscribeToken)
                             .orElse("");
                     String unsubLink = baseUrl + "/unsubscribe?token=" + unsubToken;

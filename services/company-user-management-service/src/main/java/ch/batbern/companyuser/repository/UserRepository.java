@@ -69,15 +69,6 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
     boolean existsByUsername(String username);
 
     /**
-     * Find user by email address
-     * AC4: Email-based user lookup
-     *
-     * @param email User's email
-     * @return Optional user
-     */
-    Optional<User> findByEmail(String email);
-
-    /**
      * Find user by email address (case-insensitive).
      * Story 11.C.2 review: provisionUserWithRole + getOrCreateUser idempotency requires
      * "Jane@x.com" and "jane@x.com" to resolve to the same row.
@@ -86,15 +77,6 @@ public interface UserRepository extends JpaRepository<User, UUID>, JpaSpecificat
      * @return Optional user
      */
     Optional<User> findByEmailIgnoreCase(String email);
-
-    /**
-     * Check if user exists by email
-     * AC4: Duplicate email validation
-     *
-     * @param email User's email
-     * @return true if exists, false otherwise
-     */
-    boolean existsByEmail(String email);
 
     /**
      * Check if user exists by email (case-insensitive).

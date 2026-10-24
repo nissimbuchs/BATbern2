@@ -210,12 +210,12 @@ public interface RegistrationRepository
      * Find a registration by attendee email and event code.
      * Story 10.12 (T4.2): Used for the by-email deregistration flow.
      *
-     * @param email     Attendee email (denormalized search field)
+     * @param email     Attendee email (denormalized search field), matched case-insensitively (#1099)
      * @param eventCode Event code (joined from events table)
      * @return Registration if found for this email and event
      */
     @Query("SELECT r FROM Registration r JOIN Event e ON r.eventId = e.id "
-            + "WHERE r.attendeeEmail = :email AND e.eventCode = :eventCode")
+            + "WHERE LOWER(r.attendeeEmail) = LOWER(:email) AND e.eventCode = :eventCode")
     Optional<Registration> findByAttendeeEmailAndEventCode(
             @Param("email") String email,
             @Param("eventCode") String eventCode);

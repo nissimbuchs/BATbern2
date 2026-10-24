@@ -89,7 +89,7 @@ class JITAdditionalEmailGuardIntegrationTest extends AbstractIntegrationTest {
         // No row carries the unlinked sub.
         assertThat(userRepository.findByCognitoUserId(unlinkedSub)).isEmpty();
         // No row exists for the additional email as a PRIMARY email.
-        assertThat(userRepository.findByEmail(additionalEmail)).isEmpty();
+        assertThat(userRepository.findByEmailIgnoreCase(additionalEmail)).isEmpty();
         // The owner's cognito_user_id is untouched.
         User reloaded = userRepository.findByCognitoUserId(ownerSub).orElseThrow();
         assertThat(reloaded.getCognitoUserId()).isEqualTo(ownerSub);

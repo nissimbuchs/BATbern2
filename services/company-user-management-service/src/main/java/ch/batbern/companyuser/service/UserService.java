@@ -590,7 +590,7 @@ public class UserService {
         log.info("Get-or-create user for email: {}, name: {} {}, company: {}",
                 request.getEmail(), request.getFirstName(), request.getLastName(), request.getCompanyId());
 
-        Optional<User> userByEmail = userRepository.findByEmail(request.getEmail())
+        Optional<User> userByEmail = userRepository.findByEmailIgnoreCase(request.getEmail().trim())
                 .or(() -> additionalEmailRepository.findVerifiedByEmailIgnoreCase(request.getEmail())
                         .map(UserAdditionalEmail::getUser));
         if (userByEmail.isPresent()) {
@@ -1075,7 +1075,7 @@ public class UserService {
         log.info("Creating new user: {}", request.getEmail());
 
         // Check if user already exists
-        if (userRepository.existsByEmail(request.getEmail())) {
+        if (userRepository.existsByEmailIgnoreCase(request.getEmail().trim())) {
             throw new UserValidationException("User with email " + request.getEmail() + " already exists");
         }
 

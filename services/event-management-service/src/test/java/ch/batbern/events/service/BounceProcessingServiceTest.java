@@ -85,7 +85,7 @@ class BounceProcessingServiceTest {
     @DisplayName("should_suppressSubscriber_when_hardBounceReceived")
     void should_suppressSubscriber_when_hardBounceReceived() {
         NewsletterSubscriber sub = createSubscriber(TEST_EMAIL);
-        when(subscriberRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(sub));
+        when(subscriberRepository.findByEmailIgnoreCase(TEST_EMAIL)).thenReturn(Optional.of(sub));
 
         service.handleBounceNotification(buildSnsEnvelope("Bounce", "Permanent", TEST_EMAIL, null));
 
@@ -103,7 +103,7 @@ class BounceProcessingServiceTest {
     @DisplayName("should_incrementBounceCount_when_softBounceReceived")
     void should_incrementBounceCount_when_softBounceReceived() {
         NewsletterSubscriber sub = createSubscriber(TEST_EMAIL);
-        when(subscriberRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(sub));
+        when(subscriberRepository.findByEmailIgnoreCase(TEST_EMAIL)).thenReturn(Optional.of(sub));
 
         service.handleBounceNotification(buildSnsEnvelope("Bounce", "Transient", TEST_EMAIL, null));
 
@@ -122,7 +122,7 @@ class BounceProcessingServiceTest {
         NewsletterSubscriber sub = createSubscriber(TEST_EMAIL);
         sub.setBounceCount(2); // Already 2 bounces
         sub.setBounceType("soft");
-        when(subscriberRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(sub));
+        when(subscriberRepository.findByEmailIgnoreCase(TEST_EMAIL)).thenReturn(Optional.of(sub));
 
         service.handleBounceNotification(buildSnsEnvelope("Bounce", "Transient", TEST_EMAIL, null));
 
@@ -163,7 +163,7 @@ class BounceProcessingServiceTest {
     void should_suppressSubscriber_when_configSetEventDestinationHardBounceReceived() {
         // Configuration Set Event Destinations send "eventType" rather than "notificationType".
         NewsletterSubscriber sub = createSubscriber(TEST_EMAIL);
-        when(subscriberRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(sub));
+        when(subscriberRepository.findByEmailIgnoreCase(TEST_EMAIL)).thenReturn(Optional.of(sub));
 
         service.handleBounceNotification(
                 buildConfigSetEventEnvelope("Bounce", "Permanent", TEST_EMAIL, null));
@@ -178,7 +178,7 @@ class BounceProcessingServiceTest {
     @DisplayName("should_suppressSubscriber_when_configSetEventDestinationComplaintReceived")
     void should_suppressSubscriber_when_configSetEventDestinationComplaintReceived() {
         NewsletterSubscriber sub = createSubscriber(TEST_EMAIL);
-        when(subscriberRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(sub));
+        when(subscriberRepository.findByEmailIgnoreCase(TEST_EMAIL)).thenReturn(Optional.of(sub));
 
         service.handleBounceNotification(
                 buildConfigSetEventEnvelope("Complaint", null, TEST_EMAIL, null));
@@ -193,7 +193,7 @@ class BounceProcessingServiceTest {
     @DisplayName("should_suppressSubscriber_when_complaintReceived")
     void should_suppressSubscriber_when_complaintReceived() {
         NewsletterSubscriber sub = createSubscriber(TEST_EMAIL);
-        when(subscriberRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(sub));
+        when(subscriberRepository.findByEmailIgnoreCase(TEST_EMAIL)).thenReturn(Optional.of(sub));
 
         service.handleBounceNotification(buildSnsEnvelope("Complaint", null, TEST_EMAIL, null));
 
@@ -209,7 +209,7 @@ class BounceProcessingServiceTest {
     @DisplayName("should_updateRecipient_when_sendIdInMessageTags")
     void should_updateRecipient_when_sendIdInMessageTags() {
         NewsletterSubscriber sub = createSubscriber(TEST_EMAIL);
-        when(subscriberRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(sub));
+        when(subscriberRepository.findByEmailIgnoreCase(TEST_EMAIL)).thenReturn(Optional.of(sub));
 
         NewsletterRecipient recipient = NewsletterRecipient.builder()
                 .id(new NewsletterRecipientId(TEST_SEND_ID, TEST_EMAIL))
@@ -231,7 +231,7 @@ class BounceProcessingServiceTest {
         sub.setSuppressedAt(originalSuppression); // Already suppressed
         sub.setBounceType("hard");
         sub.setBounceCount(1);
-        when(subscriberRepository.findByEmail(TEST_EMAIL)).thenReturn(Optional.of(sub));
+        when(subscriberRepository.findByEmailIgnoreCase(TEST_EMAIL)).thenReturn(Optional.of(sub));
 
         service.handleBounceNotification(buildSnsEnvelope("Bounce", "Permanent", TEST_EMAIL, null));
 

@@ -123,6 +123,29 @@ class PartnerMeetingRsvpControllerIntegrationTest extends AbstractIntegrationTes
     }
 
     @Test
+    void should_updateSameRsvp_when_attendeeEmailDiffersOnlyInCase() throws Exception {
+        // Mail clients may send the iMIP REPLY with a differently capitalised ATTENDEE (#1099)
+        mockMvc.perform(post(INTERNAL_BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                rsvpRequest(savedMeetingId, "Alice@Partner.com", "ACCEPTED"))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(post(INTERNAL_BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                rsvpRequest(savedMeetingId, "alice@partner.com", "DECLINED"))))
+                .andExpect(status().isOk());
+
+        mockMvc.perform(get(API_BASE + "/" + savedMeetingId + "/rsvps")
+                        .with(user("organizer").roles("ORGANIZER")))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.rsvps.length()").value(1))
+                .andExpect(jsonPath("$.rsvps[0].attendeeEmail").value("alice@partner.com"))
+                .andExpect(jsonPath("$.rsvps[0].status").value("DECLINED"));
+    }
+
+    @Test
     void should_return404_when_meetingIdNotFound() throws Exception {
         Map<String, Object> req = rsvpRequest(UUID.randomUUID(), "alice@partner.com", "ACCEPTED");
 

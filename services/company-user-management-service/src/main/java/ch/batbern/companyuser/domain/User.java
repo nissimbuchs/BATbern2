@@ -30,6 +30,7 @@ import java.time.Instant;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
 
@@ -244,6 +245,7 @@ public class User {
     public void onCreate() {
         createdAt = Instant.now();
         updatedAt = Instant.now();
+        normalizeEmail();
 
         // Initialize preferences and settings with defaults if null
         if (preferences == null) {
@@ -260,6 +262,18 @@ public class User {
     @PreUpdate
     public void onUpdate() {
         updatedAt = Instant.now();
+        normalizeEmail();
+    }
+
+    /**
+     * Store the primary email trimmed and lower-cased on every write path (create, update, JIT,
+     * reconciliation), so one person cannot end up as two users through capitalisation (#1099).
+     * Backed by the unique index on {@code lower(email)} (V21).
+     */
+    private void normalizeEmail() {
+        if (email != null) {
+            email = email.trim().toLowerCase(Locale.ROOT);
+        }
     }
 
     // Business methods

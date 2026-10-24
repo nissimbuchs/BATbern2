@@ -224,6 +224,24 @@ describe('PreTokenGeneration Lambda Trigger - Unit Tests', () => {
       expect(username).toBe('partner.sbb');
     });
 
+    it('should_matchEmailCaseInsensitively_when_fallingBackToEmail (#1099)', async () => {
+      const event = createPreTokenGenerationEvent();
+      const context = createLambdaContext();
+      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 } as any);
+      mockDbClient.query.mockResolvedValueOnce({ rows: [], rowCount: 0 } as any);
+
+      await handler(event, context, () => {});
+
+      const emailCall = mockDbClient.query.mock.calls.find(
+        ([sql]: unknown[]) =>
+          typeof sql === 'string' &&
+          /email/i.test(sql) &&
+          /WHERE/i.test(sql) &&
+          !/cognito_user_id =/i.test(sql)
+      ) as unknown as [string, string[]];
+      expect(emailCall[0]).toMatch(/lower\(\s*(u\.)?email\s*\)\s*=\s*lower\(\s*\$1\s*\)/i);
+    });
+
     it('should_joinWithUsers_when_fetchingRoles', async () => {
       // Arrange
       const event = createPreTokenGenerationEvent();

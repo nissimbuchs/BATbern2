@@ -88,7 +88,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 // (credential issuance moved to the sibling /issue-invitation-credentials endpoint).
                 .andExpect(jsonPath("$.temporaryPassword").doesNotExist());
 
-        User created = userRepository.findByEmail("newspeaker@example.com").orElseThrow();
+        User created = userRepository.findByEmailIgnoreCase("newspeaker@example.com").orElseThrow();
         org.assertj.core.api.Assertions.assertThat(created.getRoles()).contains(Role.SPEAKER);
     }
 
@@ -118,7 +118,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.created", is(false)));
 
         // User row still exists exactly once; role granted exactly once (Set semantics).
-        User user = userRepository.findByEmail("idempotent@example.com").orElseThrow();
+        User user = userRepository.findByEmailIgnoreCase("idempotent@example.com").orElseThrow();
         org.assertj.core.api.Assertions.assertThat(user.getRoles()).contains(Role.SPEAKER);
     }
 
@@ -150,7 +150,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.username", is(existing.getUsername())))
                 .andExpect(jsonPath("$.created", is(false)));
 
-        User reloaded = userRepository.findByEmail("jane@example.com").orElseThrow();
+        User reloaded = userRepository.findByEmailIgnoreCase("jane@example.com").orElseThrow();
         org.assertj.core.api.Assertions.assertThat(reloaded.getRoles()).contains(Role.SPEAKER, Role.ATTENDEE);
     }
 
@@ -500,7 +500,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
         // Story 11.E.2 review patch (P11 / B21): pin the third arg (appUsername) to the
         // actually-persisted username so a regression that passes the wrong identifier
         // (e.g. email instead of username) is caught.
-        String createdUsername = userRepository.findByEmail("cognito.new@example.com")
+        String createdUsername = userRepository.findByEmailIgnoreCase("cognito.new@example.com")
                 .orElseThrow()
                 .getUsername();
         // Exactly one AdminCreateUser silent call with the expected args.
@@ -543,7 +543,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.created", is(false)));
 
         // Role granted...
-        User reloaded = userRepository.findByEmail("existing.alice@example.com").orElseThrow();
+        User reloaded = userRepository.findByEmailIgnoreCase("existing.alice@example.com").orElseThrow();
         org.assertj.core.api.Assertions.assertThat(reloaded.getRoles()).contains(Role.SPEAKER);
 
         // ... and Cognito IS called — the existing-user branch now self-heals the
@@ -599,7 +599,7 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.created", is(true)));
 
         // User + role persist after a normal Cognito call return.
-        User created = userRepository.findByEmail("race.bob@example.com").orElseThrow();
+        User created = userRepository.findByEmailIgnoreCase("race.bob@example.com").orElseThrow();
         org.assertj.core.api.Assertions.assertThat(created.getRoles()).contains(Role.SPEAKER);
     }
 }

@@ -126,6 +126,26 @@ describe('PostConfirmation Lambda Trigger - Unit Tests', () => {
   // ============================================================================
 
   describe('User Creation', () => {
+    it('should_matchExistingUserCaseInsensitively_when_checkingForDuplicate (#1099)', async () => {
+      const event = createPostConfirmationEvent();
+      const context = createLambdaContext();
+      mockDbClient.query
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // BEGIN
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // SELECT existing user by email
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // username collision check
+        .mockResolvedValueOnce({ rows: [{ id: 'user-123' }], rowCount: 1 }) // INSERT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }) // COMMIT
+        .mockResolvedValueOnce({ rows: [], rowCount: 0 }); // role check
+
+      await handler(event, context, {} as any);
+
+      const existingCall = mockDbClient.query.mock.calls.find(
+        ([sql]: unknown[]) =>
+          typeof sql === 'string' && /SELECT[\s\S]*FROM user_profiles[\s\S]*email/i.test(sql)
+      ) as unknown as [string, string[]];
+      expect(existingCall[0]).toMatch(/lower\(\s*(u\.)?email\s*\)\s*=\s*lower\(\s*\$1\s*\)/i);
+    });
+
     it('should_createUserInDatabase_when_cognitoPostConfirmationFires', async () => {
       // Arrange
       const event = createPostConfirmationEvent();

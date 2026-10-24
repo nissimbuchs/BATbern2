@@ -14,5 +14,6 @@ public interface PartnerMeetingRsvpRepository extends JpaRepository<PartnerMeeti
 
     List<PartnerMeetingRsvp> findByMeetingId(UUID meetingId);
 
-    Optional<PartnerMeetingRsvp> findByMeetingIdAndAttendeeEmail(UUID meetingId, String attendeeEmail);
+    /** Case-insensitive on purpose (#1099): mail clients vary the capitalisation of ATTENDEE. */
+    Optional<PartnerMeetingRsvp> findByMeetingIdAndAttendeeEmailIgnoreCase(UUID meetingId, String attendeeEmail);
 }

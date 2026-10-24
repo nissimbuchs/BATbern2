@@ -81,7 +81,7 @@ async function linkAnonymousUserProfile(
     const findResult = await client.query(
       `SELECT id, username, cognito_user_id
        FROM user_profiles
-       WHERE email = $1 AND cognito_user_id IS NULL
+       WHERE lower(email) = lower($1) AND cognito_user_id IS NULL
        LIMIT 1`,
       [email]
     );

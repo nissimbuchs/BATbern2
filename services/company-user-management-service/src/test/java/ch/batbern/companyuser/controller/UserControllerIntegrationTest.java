@@ -17,7 +17,9 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.MediaType;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +29,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -60,6 +63,9 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private UserRepository userRepository;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
 
     private User testUser;
 
@@ -883,6 +889,85 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.errorCode").value("EMAIL_LINKED_TO_ACCOUNT"));
 
         assertThat(userRepository.count()).isEqualTo(usersBefore);
+    }
+
+    // Email addresses identify a person regardless of capitalisation (#1099): production had 5
+    // people stored twice because get-or-create compared case-sensitively.
+
+    @Test
+    @DisplayName("should_returnExistingUser_when_emailDiffersOnlyInCase")
+    void should_returnExistingUser_when_emailDiffersOnlyInCase() throws Exception {
+        long usersBefore = userRepository.count();
+
+        mockMvc.perform(post("/api/v1/users/get-or-create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "email": "John.Doe@EXAMPLE.com",
+                                    "firstName": "John",
+                                    "lastName": "Doe",
+                                    "createIfMissing": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.username").value("john.doe"))
+                .andExpect(jsonPath("$.created").value(false));
+
+        assertThat(userRepository.count()).isEqualTo(usersBefore);
+    }
+
+    @Test
+    @DisplayName("should_storeLowerCasedEmail_when_creatingUserViaGetOrCreate")
+    void should_storeLowerCasedEmail_when_creatingUserViaGetOrCreate() throws Exception {
+        mockMvc.perform(post("/api/v1/users/get-or-create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "email": "Mixed.Case@Example.com",
+                                    "firstName": "Mixed",
+                                    "lastName": "Case",
+                                    "createIfMissing": true
+                                }
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created").value(true))
+                .andExpect(jsonPath("$.user.email").value("mixed.case@example.com"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_rejectCreateUser_when_emailExistsWithDifferentCase")
+    void should_rejectCreateUser_when_emailExistsWithDifferentCase() throws Exception {
+        long usersBefore = userRepository.count();
+
+        mockMvc.perform(post("/api/v1/users")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {
+                                    "email": "JOHN.DOE@example.com",
+                                    "firstName": "John",
+                                    "lastName": "Doe"
+                                }
+                                """))
+                .andExpect(status().isBadRequest());
+
+        assertThat(userRepository.count()).isEqualTo(usersBefore);
+    }
+
+    @Test
+    @DisplayName("should_rejectAtDatabaseLevel_when_emailsDifferOnlyInCase")
+    void should_rejectAtDatabaseLevel_when_emailsDifferOnlyInCase() {
+        // Native inserts bypass the entity normalisation (and the unflushed setUp row): the index
+        // must hold on its own
+        String insert = """
+                INSERT INTO user_profiles (id, username, email, first_name, last_name, created_at, updated_at)
+                VALUES (gen_random_uuid(), ?, ?, 'Case', 'Twin', now(), now())
+                """;
+        jdbcTemplate.update(insert, "case.twin", "case.twin@example.com");
+
+        assertThatThrownBy(() -> jdbcTemplate.update(insert, "case.twinb", "Case.Twin@Example.com"))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("uq_user_profiles_email_lower");
     }
 
     // AC4: GET /api/v1/users/search (autocomplete with caching)
