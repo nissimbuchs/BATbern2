@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
@@ -53,14 +54,18 @@ import java.util.List;
 @Slf4j
 public class SlotAssignmentController implements SlotAssignmentApi {
 
-    private static final String ACTOR = "organizer"; // TODO: resolve from security context
-
     private final SessionTimingService sessionTimingService;
     private final SlotReorderService slotReorderService;
     private final ConflictDetectionService conflictDetectionService;
     private final EventRepository eventRepository;
     private final SessionService sessionService;
     private final TimetableMapper timetableMapper;
+    private final SecurityContextHelper securityContextHelper;
+
+    /** The organizer making the change, for the timing audit row and the notification (#1068). */
+    private String actor() {
+        return securityContextHelper.getCurrentUsername();
+    }
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
@@ -103,7 +108,7 @@ public class SlotAssignmentController implements SlotAssignmentApi {
 
         Session updated = sessionTimingService.assignTiming(
                 sessionSlug, startTime, endTime, request.getRoom(),
-                request.getChangeReason() != null ? request.getChangeReason() : "manual_adjustment", ACTOR);
+                request.getChangeReason() != null ? request.getChangeReason() : "manual_adjustment", actor());
         updated.setEventCode(eventCode);
         return ResponseEntity.ok(sessionService.toSessionResponse(updated, eventCode));
     }
@@ -118,7 +123,7 @@ public class SlotAssignmentController implements SlotAssignmentApi {
 
         TimetableResponse timetable = slotReorderService.assignToSlot(
                 eventCode, sessionSlug, request.getTargetSlotKey(),
-                SlotAssignmentMode.valueOf(request.getMode().name()), ACTOR);
+                SlotAssignmentMode.valueOf(request.getMode().name()), actor());
         return ResponseEntity.ok(timetableMapper.toWire(timetable));
     }
 
@@ -131,7 +136,7 @@ public class SlotAssignmentController implements SlotAssignmentApi {
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
         sessionTimingService.validateSessionExists(eventCode, sessionSlug);
 
-        Session updated = sessionTimingService.unassignTiming(sessionSlug, ACTOR);
+        Session updated = sessionTimingService.unassignTiming(sessionSlug, actor());
         updated.setEventCode(eventCode);
         return ResponseEntity.ok(sessionService.toSessionResponse(updated, eventCode));
     }
@@ -168,7 +173,7 @@ public class SlotAssignmentController implements SlotAssignmentApi {
                             toInstant(assignment.getEndTime()),
                             assignment.getRoom(),
                             request.getChangeReason() != null ? request.getChangeReason() : "bulk_assignment",
-                            ACTOR);
+                            actor());
                     session.setEventCode(eventCode);
                     return sessionService.toSessionResponse(session, eventCode);
                 })
@@ -196,7 +201,7 @@ public class SlotAssignmentController implements SlotAssignmentApi {
         log.info("DELETE /api/v1/events/{}/sessions/timing", eventCode);
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
-        int clearedCount = sessionTimingService.clearAllTimings(event.getId(), ACTOR);
+        int clearedCount = sessionTimingService.clearAllTimings(event.getId(), actor());
         return ResponseEntity.ok(ClearTimingsResponse.builder()
                 .message("All session timings cleared successfully")
                 .clearedCount(clearedCount)
@@ -210,7 +215,7 @@ public class SlotAssignmentController implements SlotAssignmentApi {
         log.info("POST /api/v1/events/{}/sessions/auto-assign", eventCode);
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException(eventCode));
-        int assignedCount = sessionTimingService.autoAssignTimings(event, ACTOR);
+        int assignedCount = sessionTimingService.autoAssignTimings(event, actor());
         return ResponseEntity.ok(AutoAssignResponse.builder()
                 .message("Sessions auto-assigned successfully")
                 .assignedCount(assignedCount)

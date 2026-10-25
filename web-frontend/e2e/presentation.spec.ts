@@ -65,6 +65,8 @@ test.describe('Moderator Presentation Page', { tag: '@gate' }, () => {
 
     await advanceToAgendaPreview(page);
     await expect(flip(page, 'center')).toBeVisible(); // agenda-preview: agenda is centered
+    // #1112: the agenda must list sessions, not just its title.
+    await expect(flip(page, 'center').getByTestId('agenda-session-row').first()).toBeVisible();
     await page.keyboard.press('ArrowRight'); // → first session slide
 
     // The agenda FLIPs into the sidebar layout.

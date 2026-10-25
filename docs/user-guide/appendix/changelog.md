@@ -45,6 +45,22 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**New Feature — Next BAT Dates on the Homepage (2026-10-25)**:
+- ✅ Below the venue map, the homepage shows the next three BAT dates after the featured event: one card each with date and title (#1110). The list includes events that are planned but not yet published.
+
+**Bug Fixes — BATbern60 Website Batch (2026-10-25)**:
+- ✅ Presenter view: the agenda slide and the session slides are filled again. The presenter read the event through the organizer endpoint, which since 7 October returns no sessions to a visitor who is not logged in. It now uses the public event, so it shows exactly what the public agenda shows (#1112).
+- ✅ Newsletter: "Weitere BAT-Termine" lists only the next three events, nearest first, instead of every planned event in random order (#1111).
+- ✅ Past events: session cards no longer show when a speaker presented (#1114), and a long material file name wraps inside the card instead of making it wider than a phone screen (#1113).
+- ✅ Partner row at the bottom of the website: all logos load right away. Before, each logo only started loading once it scrolled into view, so the row filled in over tens of seconds (#1115).
+
+**Bug Fixes — Logged-in Registration Sends the Confirmation and Calendar Invite (2026-10-25)**:
+- ✅ Attendees who register with one click while logged in now receive the "Anmeldung bestätigt / Registration confirmed" mail with the calendar invite, like everyone else. Before, they got no mail and no calendar entry (#1097). A waitlisted registration still gets no mail.
+
+**Bug Fixes — Notifications: No Test Noise, and Who Did It (2026-10-25)**:
+- ✅ Notifications from automated test runs no longer pile up in organizers' lists (#1068). Deleting an event now deletes its notifications, and the nightly test run removes notifications of all test events, including the backlog from earlier runs (6,365 for the test organizer alone).
+- ✅ Every notification names who made the change, for example "nissim.buchs moved BATbern60 to Agenda Published" or "nissim.buchs moved a speaker of BATbern60 from Contacted to Ready". Slot changes showed the placeholder "organizer" instead of the real person; the slot audit history now records the real person too.
+
 **Bug Fixes — Photo Row Back on the Homepage (2026-10-24)**:
 - ✅ The homepage shows the photo row from recent events again. It took its photos from the five events with the latest date, and once BATbern61–66 had been created ahead of time those were all future events without photos, so the row disappeared. Only events that have already taken place count now.
 

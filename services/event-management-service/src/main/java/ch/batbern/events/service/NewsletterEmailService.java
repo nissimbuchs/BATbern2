@@ -41,6 +41,7 @@ import java.time.OffsetDateTime;
 import java.time.ZoneId;
 import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
+import java.util.Comparator;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
@@ -87,6 +88,8 @@ public class NewsletterEmailService {
     private static final String DEFAULT_TEMPLATE_KEY = "newsletter-event";
     private static final String LAYOUT_KEY = "batbern-default";
     private static final int SEND_PAGE_SIZE = 50;
+    /** The newsletter lists only the next few events, not the whole future calendar (#1111). */
+    private static final int UPCOMING_EVENTS_LIMIT = 3;
     /** Base for the calendar SEQUENCE: 2020-01-01T00:00:00Z in epoch seconds. */
     private static final long SEQUENCE_EPOCH_BASE_SECONDS = 1_577_836_800L;
     /**
@@ -921,6 +924,8 @@ public class NewsletterEmailService {
         List<Event> future = eventRepository.findByDateAfter(now).stream()
                 .filter(e -> !e.getId().equals(excludeEventId))
                 .filter(e -> e.getWorkflowState() != EventWorkflowState.ARCHIVED)
+                .sorted(Comparator.comparing(Event::getDate))
+                .limit(UPCOMING_EVENTS_LIMIT)
                 .toList();
         if (future.isEmpty()) {
             return "";

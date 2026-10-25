@@ -845,6 +845,9 @@
     },
     "upcomingEvents": {
       "title": "Wytere komendi Veranstaltigen"
+    },
+    "upcomingDates": {
+      "title": "Nächschti BAT-Termin"
     }
   },
   "sessionEdit": {

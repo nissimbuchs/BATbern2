@@ -24,6 +24,23 @@ describe('PartnerShowcaseCard', () => {
     expect(logo.getAttribute('src')).toBe('https://example.com/logo.png');
   });
 
+  // #1115: the card lives in an overflow-hidden, translating marquee. A lazy image there only
+  // starts loading once it drifts into the visible strip, so logos appeared one by one.
+  it('should_loadLogoEagerlyAtLowPriority_when_shownInMarquee', () => {
+    render(
+      <PartnerShowcaseCard
+        companyName="Test Company"
+        logoUrl="https://example.com/logo.png"
+        partnershipLevel="GOLD"
+        partnershipStartDate="2023-01-15"
+      />
+    );
+
+    const logo = screen.getByAltText('Test Company');
+    expect(logo.getAttribute('loading')).toBe('eager');
+    expect(logo.getAttribute('fetchpriority')).toBe('low');
+  });
+
   it('should_renderInitials_when_noLogoProvided', () => {
     render(
       <PartnerShowcaseCard

@@ -214,7 +214,9 @@ export interface paths {
      * Quick registration for authenticated attendee
      * @description Creates a confirmed registration for the currently authenticated user without
      *     requiring form input or email confirmation. User profile data is read from the
-     *     session (JWT). No confirmation email is sent.
+     *     session (JWT). No confirmation step: a confirmed registration receives the
+     *     registration-confirmed email with the calendar invite (#1097); a waitlisted one
+     *     receives no email.
      *
      *     **Security**: Requires Bearer JWT authentication.
      */

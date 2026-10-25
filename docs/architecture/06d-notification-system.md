@@ -70,6 +70,22 @@ CREATE INDEX idx_notifications_recipient_status ON notifications(recipient_usern
 - Query when user opens app: "Show events published since last login"
 - Storage: Zero rows for in-app (computed dynamically)
 
+> **Correction (2026-10-25, #1068):** the organizer activity feed does NOT follow the lazy model
+> above. `OrganizerNotificationListener` (event-management) writes one `IN_APP` row **per
+> organizer per domain event**. On production that reached 6,365 rows for a single test organizer,
+> almost all from nightly E2E runs. Rules for these rows:
+> - **Initiator in every body.** `"{username} moved BATbern60 to Agenda Published"`, `"{username}
+>   moved a speaker of BATbern60 from Contacted to Ready"`, `"{username} - Speaker Accepted"`.
+>   Actors come from the security context (`SlotAssignmentController` used a literal `"organizer"`).
+> - **Scoped to the event by `event_code`** (no FK, ADR-003). `SpeakerWorkflowStateChange` puts
+>   the code into the domain event's metadata so it is scoped too.
+> - **Deleted with the event.** `DELETE /events/{code}` deletes the event's notifications in the
+>   same transaction, and the async listener skips events that no longer exist.
+> - **Test runs sweep them.** `POST /api/v1/admin/test-fixtures/ems/cleanup` with `entityType=notifications`
+>   deletes rows of every test event code (`BATbern{N>=10000}`, `BRUNO-TEST-*`) whatever their age,
+>   plus pre-fix `SpeakerWorkflowStateChange` rows whose speaker_pool row is gone. The Playwright
+>   global teardown and the Bruno `99d-posttest-cleanup-notifications` requests call it.
+
 ### Implementation
 
 ```java

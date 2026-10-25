@@ -60,4 +60,12 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
     @Query("UPDATE Notification n SET n.status = 'READ' WHERE n.eventCode = :eventCode "
             + "AND n.status != 'READ'")
     int dismissNotificationsForEvent(@Param("eventCode") String eventCode);
+
+    /**
+     * Delete every notification of an event. Called when the event is deleted: notifications
+     * reference the event by code without a foreign key, so nothing cascades (#1068).
+     */
+    @Modifying(clearAutomatically = true)
+    @Query("DELETE FROM Notification n WHERE n.eventCode = :eventCode")
+    int deleteByEventCode(@Param("eventCode") String eventCode);
 }

@@ -9,6 +9,9 @@ import ch.batbern.events.dto.TestFixtureCleanupRequest;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.notification.Notification;
 import ch.batbern.events.notification.NotificationRepository;
+import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.TopicRepository;
@@ -28,6 +31,7 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Map;
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
@@ -92,6 +96,9 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
 
     @Autowired
     private NotificationRepository notificationRepository;
+
+    @Autowired
+    private SpeakerPoolRepository speakerPoolRepository;
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -554,6 +561,48 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
                     "SELECT COUNT(*) FROM notifications WHERE event_code = 'BATbern99999999999'",
                     Integer.class);
             assertThat(pathological).isEqualTo(1);
+        }
+
+        // #1068: before the fix, SpeakerWorkflowStateChange notifications carried no event_code,
+        // so test runs left them behind with nothing to match on. Their speaker_pool row (the
+        // aggregate) is gone once the test event is deleted; a real speaker's row still exists.
+        @Test
+        @DisplayName("deletes speaker state-change notifications whose speaker no longer exists")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesOrphanSpeakerStateChangeNotifications_preservesLiveOnes() throws Exception {
+            Event event = eventRepository.save(buildEvent("BATbern56"));
+            SpeakerPool liveSpeaker = speakerPoolRepository.save(SpeakerPool.builder()
+                    .eventId(event.getId())
+                    .speakerName("Live Speaker")
+                    .status(SpeakerWorkflowState.CONTACTED)
+                    .build());
+            notificationRepository.save(speakerStateChange(UUID.randomUUID().toString()));
+            notificationRepository.save(speakerStateChange(liveSpeaker.getId().toString()));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("notifications")
+                    .prefix("BRUNO-TEST-")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.notifications").value(1));
+
+            Integer remaining = jdbcTemplate.queryForObject(
+                    "SELECT COUNT(*) FROM notifications WHERE metadata->>'aggregateId' = ?",
+                    Integer.class, liveSpeaker.getId().toString());
+            assertThat(remaining).isEqualTo(1);
+        }
+
+        private Notification speakerStateChange(String speakerPoolId) {
+            Notification notification = buildNotification(
+                    "real.organizer", null, "Speaker Workflow State Change",
+                    "Event - Speaker workflow activity");
+            notification.setNotificationType("SpeakerWorkflowStateChange");
+            notification.setMetadata(Map.of("aggregateId", speakerPoolId));
+            return notification;
         }
 
         @Test

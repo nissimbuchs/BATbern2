@@ -302,6 +302,23 @@ class SpeakerWorkflowServiceTest {
     }
 
     @Test
+    @DisplayName("#1068: the state-change event carries the event code, so its notification is event-scoped")
+    void should_carryEventCodeInMetadata_when_publishingStateChangeEvent() {
+        SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.IDENTIFIED);
+        Event event = seedEvent();
+        when(speakerPoolRepository.findById(SPEAKER_ID)).thenReturn(Optional.of(speaker));
+        when(speakerPoolRepository.save(any(SpeakerPool.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+
+        service.transition(SPEAKER_ID, SpeakerWorkflowState.CONTACTED, ORGANIZER, null);
+
+        ArgumentCaptor<SpeakerWorkflowStateChangeEvent> captor =
+                ArgumentCaptor.forClass(SpeakerWorkflowStateChangeEvent.class);
+        verify(domainEventPublisher).publish(captor.capture());
+        assertThat(captor.getValue().getMetadata()).containsEntry("eventCode", event.getEventCode());
+    }
+
+    @Test
     @DisplayName("suppressHistoryRow=true skips status_history write but still transitions + publishes event")
     void should_skipStatusHistoryWrite_when_suppressHistoryRowTrue() {
         SpeakerPool speaker = seedSpeaker(SpeakerWorkflowState.IDENTIFIED);

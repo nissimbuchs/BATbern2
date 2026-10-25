@@ -17,12 +17,14 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -151,6 +153,38 @@ class RegistrationServiceAuthenticatedTest {
                 .doesNotThrowAnyException();
 
         verify(registrationRepository).save(any());
+    }
+
+    // #1097: a logged-in quick registration is confirmed immediately, so it gets the same
+    // registration-confirmed mail (with the calendar invite) as every other confirmed attendee.
+    @Test
+    void should_sendRegistrationConfirmedMail_when_quickRegistrationIsConfirmed() {
+        UserResponse u = profile("Tom", "Smith");
+        when(userApiClient.getUserByUsername("user.tom")).thenReturn(u);
+        when(registrationRepository.findByEventIdAndAttendeeUsername(any(), any()))
+                .thenReturn(Optional.empty());
+        when(registrationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var registration = registrationService.createRegistrationForAuthenticatedUser(
+                "BATbern59", "user.tom", "tom@windshop.ch");
+
+        verify(registrationEmailService).sendRegistrationConfirmed(
+                eq(registration), eq(u), eq(event), eq(Locale.GERMAN));
+    }
+
+    @Test
+    void should_notSendConfirmedMail_when_quickRegistrationIsWaitlisted() {
+        event.setRegistrationCapacity(1);
+        when(userApiClient.getUserByUsername("user.tom")).thenReturn(profile("Tom", "Smith"));
+        when(registrationRepository.findByEventIdAndAttendeeUsername(any(), any()))
+                .thenReturn(Optional.empty());
+        when(registrationRepository.countByEventIdAndStatusIn(any(), any())).thenReturn(1L);
+        when(registrationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        registrationService.createRegistrationForAuthenticatedUser(
+                "BATbern59", "user.tom", "tom@windshop.ch");
+
+        verify(registrationEmailService, never()).sendRegistrationConfirmed(any(), any(), any(), any());
     }
 
     @Test

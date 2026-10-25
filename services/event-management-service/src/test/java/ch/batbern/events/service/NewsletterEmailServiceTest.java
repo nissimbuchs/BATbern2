@@ -861,4 +861,37 @@ class NewsletterEmailServiceTest {
         verify(icsCalendarService, never()).generateMultiEventIcsFile(any(), any(), any());
     }
 
+    // ── buildUpcomingEventsSection: next three by date (#1111) ────────────────
+
+    @Test
+    @DisplayName("buildUpcomingEventsSection: lists only the next three events, nearest first, current excluded")
+    void should_listNextThreeEventsByDate_when_moreFutureEventsExist() {
+        UUID currentId = UUID.randomUUID();
+        Event current = futureEvent(currentId, "BATbern60", "2026-11-06T00:00:00Z");
+        // Repository order is unspecified — deliberately shuffled here.
+        when(eventRepository.findByDateAfter(any())).thenReturn(List.of(
+                futureEvent(UUID.randomUUID(), "BATbern64", "2028-03-03T00:00:00Z"),
+                current,
+                futureEvent(UUID.randomUUID(), "BATbern62", "2027-06-25T00:00:00Z"),
+                futureEvent(UUID.randomUUID(), "BATbern65", "2028-06-16T00:00:00Z"),
+                futureEvent(UUID.randomUUID(), "BATbern61", "2027-03-05T00:00:00Z"),
+                futureEvent(UUID.randomUUID(), "BATbern63", "2027-11-05T00:00:00Z")));
+
+        String html = newsletterEmailService.buildUpcomingEventsSection(currentId, true);
+
+        assertThat(html).doesNotContain("BATbern60", "BATbern64", "BATbern65");
+        assertThat(html.indexOf("BATbern61")).isPositive();
+        assertThat(html.indexOf("BATbern62")).isGreaterThan(html.indexOf("BATbern61"));
+        assertThat(html.indexOf("BATbern63")).isGreaterThan(html.indexOf("BATbern62"));
+    }
+
+    private static Event futureEvent(UUID id, String code, String date) {
+        Event event = new Event();
+        event.setId(id);
+        event.setEventCode(code);
+        event.setTitle("Title " + code);
+        event.setDate(Instant.parse(date));
+        return event;
+    }
+
 }

@@ -208,7 +208,7 @@ export const EventProgram = ({
                 </div>
 
                 {/* Sessions at this time */}
-                <div className="flex-1 pt-2 space-y-4">
+                <div className="flex-1 min-w-0 pt-2 space-y-4">
                   {slot.sessions.map((session) =>
                     isStructural(session) ? (
                       /* Structural session — compact icon strip */
@@ -308,8 +308,10 @@ export const EventProgram = ({
                                             className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 no-underline w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
                                           >
                                             {getMaterialTypeIcon(material.materialType)}
-                                            <span className="flex-1">{material.fileName}</span>
-                                            <span className="text-xs text-zinc-500">
+                                            <span className="flex-1 min-w-0 wrap-anywhere">
+                                              {material.fileName}
+                                            </span>
+                                            <span className="text-xs text-zinc-500 shrink-0">
                                               {formatFileSize(material.fileSize)}
                                             </span>
                                             {isDownloading ? (

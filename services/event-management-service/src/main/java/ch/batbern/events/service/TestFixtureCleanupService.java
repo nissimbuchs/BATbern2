@@ -99,9 +99,12 @@ public class TestFixtureCleanupService {
          * (validated by {@code ^BRUNO-TEST-$}); the actual delete is a composite predicate
          * (see {@code TestFixtureCleanupRepository#deleteTestNotifications}) that also reaches
          * server-coded {@code BATbern{N}} (N &gt;= {@link #TEST_EVENT_NUMBER_THRESHOLD}),
-         * {@code bruno.test.*} recipient rows, AND rows carrying a {@code BRUNO-TEST-} marker in
+         * {@code bruno.test.*} recipient rows, rows carrying a {@code BRUNO-TEST-} marker in
          * their {@code subject}/{@code body} (which catches test notifications with a NULL
-         * {@code event_code}) — none of which the bare event_code sentinel can reach.
+         * {@code event_code}), AND {@code SpeakerWorkflowStateChange} rows with a NULL
+         * {@code event_code} whose speaker_pool row no longer exists (#1068) — none of which
+         * the bare event_code sentinel can reach. The Playwright global teardown and the Bruno
+         * {@code 99d-posttest-cleanup-notifications} requests call this sweep.
          */
         NOTIFICATIONS(Pattern.compile("^BRUNO-TEST-$")),
         /**

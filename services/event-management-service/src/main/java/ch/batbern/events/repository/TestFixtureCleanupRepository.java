@@ -181,7 +181,13 @@ public interface TestFixtureCleanupRepository extends JpaRepository<Event, UUID>
                     + "AND CAST(SUBSTRING(event_code FROM 8) AS INTEGER) >= :numberThreshold) "
                     + "OR recipient_username LIKE :recipientPattern "
                     + "OR subject LIKE :subjectPattern "
-                    + "OR body LIKE :bodyPattern",
+                    + "OR body LIKE :bodyPattern "
+                    // #1068: speaker state changes written before they carried an event_code;
+                    // orphaned once their speaker_pool row (the aggregate) was deleted.
+                    + "OR (event_code IS NULL "
+                    + "AND notification_type = 'SpeakerWorkflowStateChange' "
+                    + "AND NOT EXISTS (SELECT 1 FROM speaker_pool sp "
+                    + "WHERE CAST(sp.id AS TEXT) = notifications.metadata->>'aggregateId'))",
             nativeQuery = true
     )
     int deleteTestNotifications(
