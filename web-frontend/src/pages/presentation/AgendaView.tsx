@@ -62,9 +62,11 @@ export function AgendaView({
       {layout === 'center' && <h2 className={styles.agendaTitle}>Agenda</h2>}
       {visible.map((s) => {
         if (s.sessionType && BREAK_SESSION_TYPES.has(s.sessionType)) {
+          // The session's own title, as on the public agenda: a coffee break and the apéro
+          // must not both read "Pause" (#1117).
           return (
-            <div key={s.sessionSlug} className={styles.breakRow}>
-              ─── Pause ─── {s.startTime ? formatTime(s.startTime) : ''}
+            <div key={s.sessionSlug} className={styles.breakRow} data-testid="agenda-break-row">
+              ─── {s.title?.trim() || 'Pause'} ─── {s.startTime ? formatTime(s.startTime) : ''}
             </div>
           );
         }
