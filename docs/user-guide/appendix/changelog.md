@@ -54,6 +54,9 @@ Each release includes:
 - ✅ Past events: session cards no longer show when a speaker presented (#1114), and a long material file name wraps inside the card instead of making it wider than a phone screen (#1113).
 - ✅ Partner row at the bottom of the website: all logos load right away. Before, each logo only started loading once it scrolled into view, so the row filled in over tens of seconds (#1115).
 
+**Bug Fixes — Logged-in Registration Sends the Confirmation and Calendar Invite (2026-10-25)**:
+- ✅ Attendees who register with one click while logged in now receive the "Anmeldung bestätigt / Registration confirmed" mail with the calendar invite, like everyone else. Before, they got no mail and no calendar entry (#1097). A waitlisted registration still gets no mail.
+
 **Bug Fixes — Photo Row Back on the Homepage (2026-10-24)**:
 - ✅ The homepage shows the photo row from recent events again. It took its photos from the five events with the latest date, and once BATbern61–66 had been created ahead of time those were all future events without photos, so the row disappeared. Only events that have already taken place count now.
 

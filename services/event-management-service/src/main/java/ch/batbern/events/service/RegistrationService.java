@@ -708,7 +708,8 @@ public class RegistrationService {
      * Differs from {@link #createRegistration} in that:
      * - The user profile is fetched by username (user already exists in the system)
      * - Non-waitlist registrations start as "confirmed" (no email confirmation step)
-     * - No email is sent (user is already identified via their Cognito session)
+     * - A confirmed registration gets the registration-confirmed mail with the calendar invite,
+     *   like every other confirmed attendee (#1097); a waitlisted one gets no mail
      * - Capacity/waitlist logic still applies
      *
      * @param eventCode event code (e.g., "BATbern42")
@@ -807,6 +808,9 @@ public class RegistrationService {
         Registration saved = registrationRepository.save(registration);
         log.info("Created authenticated registration: {} for user: {} at event: {} (status={})",
                 registrationCode, username, eventCode, registrationStatus);
+        if ("confirmed".equals(registrationStatus)) {
+            notifyRegistrationConfirmed(saved, event);
+        }
         return saved;
     }
 
