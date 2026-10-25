@@ -57,6 +57,10 @@ Each release includes:
 **Bug Fixes — Logged-in Registration Sends the Confirmation and Calendar Invite (2026-10-25)**:
 - ✅ Attendees who register with one click while logged in now receive the "Anmeldung bestätigt / Registration confirmed" mail with the calendar invite, like everyone else. Before, they got no mail and no calendar entry (#1097). A waitlisted registration still gets no mail.
 
+**Bug Fixes — Notifications: No Test Noise, and Who Did It (2026-10-25)**:
+- ✅ Notifications from automated test runs no longer pile up in organizers' lists (#1068). Deleting an event now deletes its notifications, and the nightly test run removes notifications of all test events, including the backlog from earlier runs (6,365 for the test organizer alone).
+- ✅ Every notification names who made the change, for example "nissim.buchs moved BATbern60 to Agenda Published" or "nissim.buchs moved a speaker of BATbern60 from Contacted to Ready". Slot changes showed the placeholder "organizer" instead of the real person; the slot audit history now records the real person too.
+
 **Bug Fixes — Photo Row Back on the Homepage (2026-10-24)**:
 - ✅ The homepage shows the photo row from recent events again. It took its photos from the five events with the latest date, and once BATbern61–66 had been created ahead of time those were all future events without photos, so the row disappeared. Only events that have already taken place count now.
 

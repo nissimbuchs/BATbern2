@@ -217,7 +217,7 @@ public class SpeakerWorkflowService {
                 : writeHistoryRow(persisted, current, target, username, safePayload);
 
         // 8. Publish SpeakerWorkflowStateChangeEvent (best-effort — failure does NOT roll back)
-        publishWorkflowStateChangeEvent(persisted, current, target, username);
+        publishWorkflowStateChangeEvent(persisted, event.getEventCode(), current, target, username);
 
         // 9. State-specific domain events
         publishStateSpecificEvents(persisted, event, current, target, username);
@@ -263,7 +263,10 @@ public class SpeakerWorkflowService {
     ) {
         // Preconditions, side-effects, and state-specific events are all SKIPPED on same-state.
         SpeakerStatusHistory historyRow = writeHistoryRow(speaker, state, state, username, payload);
-        publishWorkflowStateChangeEvent(speaker, state, state, username);
+        String eventCode = eventRepository.findById(speaker.getEventId())
+                .map(Event::getEventCode)
+                .orElse(null);
+        publishWorkflowStateChangeEvent(speaker, eventCode, state, state, username);
         return new TransitionResult(speaker, historyRow);
     }
 
@@ -763,6 +766,7 @@ public class SpeakerWorkflowService {
 
     private void publishWorkflowStateChangeEvent(
             SpeakerPool speaker,
+            String eventCode,
             SpeakerWorkflowState from,
             SpeakerWorkflowState to,
             String username
@@ -775,6 +779,11 @@ public class SpeakerWorkflowService {
                     to,
                     username
             );
+            // The organizer notification is scoped to the event by code, so it is deleted with
+            // the event (#1068). Without it, state changes of deleted test events lingered.
+            if (eventCode != null) {
+                event.getMetadata().put("eventCode", eventCode);
+            }
             domainEventPublisher.publish(event);
             log.info("Published SpeakerWorkflowStateChangeEvent: {} -> {} for speaker {}",
                     from, to, speaker.getId());

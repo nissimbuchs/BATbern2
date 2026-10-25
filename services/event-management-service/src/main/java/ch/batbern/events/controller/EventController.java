@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.notification.NotificationRepository;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Logo;
@@ -66,6 +67,7 @@ import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.transaction.annotation.Transactional;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.CacheEvict;
@@ -116,6 +118,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
 
     private final EventSearchService eventSearchService;
     private final EventRepository eventRepository;
+    private final NotificationRepository notificationRepository;
     private final EventMapper eventMapper;
     private final EventGeneratedMapper eventGeneratedMapper;
     private final LogoRepository logoRepository;
@@ -1318,6 +1321,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      * DELETE /api/v1/events/{eventCode}
      */
     @Override
+    @Transactional
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     public ResponseEntity<Void> deleteEvent(String eventCode) {
         log.debug("DELETE /api/v1/events/{}", eventCode);
@@ -1336,7 +1340,9 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
             throw new EventHasRealRegistrationsException(eventCode, realAttendees);
         }
 
-        // Delete event (cascades programmatic registrations, sessions, etc. via FK ON DELETE CASCADE)
+        // Delete event (cascades programmatic registrations, sessions, etc. via FK ON DELETE CASCADE).
+        // Notifications reference the event by code without a FK, so they go explicitly (#1068).
+        notificationRepository.deleteByEventCode(eventCode);
         eventRepository.deleteById(event.getId());
 
         return ResponseEntity.noContent().build();

@@ -1,7 +1,10 @@
 package ch.batbern.events.notification;
 
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.events.DomainEvent;
+import ch.batbern.shared.events.EventWorkflowTransitionEvent;
+import ch.batbern.shared.events.SpeakerWorkflowStateChangeEvent;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.event.EventListener;
@@ -11,6 +14,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.HashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -35,6 +39,7 @@ public class OrganizerNotificationListener {
     private final NotificationRepository notificationRepository;
     private final UserApiClient userApiClient;
     private final NotificationService notificationService;
+    private final EventRepository eventRepository;
 
     /**
      * Listen to ALL domain events and create in-app notifications for organizers
@@ -45,6 +50,16 @@ public class OrganizerNotificationListener {
     public void onAnyDomainEvent(DomainEvent<?> event) {
         try {
             log.debug("Received domain event: {} (type: {})", event.getEventId(), event.getEventType());
+
+            // This listener is @Async: when the event was deleted in the meantime (E2E/Bruno
+            // create and delete within seconds), its notifications are already gone and a late
+            // one would linger forever (#1068).
+            String eventCode = extractEventCode(event);
+            if (eventCode != null && !eventRepository.existsByEventCode(eventCode)) {
+                log.debug("Skipping notification for {}: event {} no longer exists",
+                        event.getEventType(), eventCode);
+                return;
+            }
 
             // Fetch all organizers
             List<String> organizers;
@@ -211,8 +226,17 @@ public class OrganizerNotificationListener {
         String eventType = event.getEventType();
         String eventCode = extractEventCode(event);
 
-        // Create contextual message based on event type
-        if (eventType.contains("Published")) {
+        // Every message names who caused it (#1068); transitions also say where to.
+        if (event instanceof EventWorkflowTransitionEvent transition) {
+            return String.format("%s moved %s to %s",
+                username, transition.getEventCode(), formatState(transition.getToState().name()));
+        } else if (event instanceof SpeakerWorkflowStateChangeEvent change) {
+            return String.format("%s moved a speaker%s from %s to %s",
+                username,
+                eventCode != null ? " of " + eventCode : "",
+                formatState(change.getFromState().name()),
+                formatState(change.getToState().name()));
+        } else if (eventType.contains("Published")) {
             return String.format("%s published%s",
                 username,
                 eventCode != null ? " event " + eventCode : " an event");
@@ -228,18 +252,28 @@ public class OrganizerNotificationListener {
             return String.format("%s deleted%s",
                 username,
                 eventCode != null ? " event " + eventCode : " an event");
-        } else if (eventType.contains("Speaker")) {
-            return String.format("%s - Speaker workflow activity",
-                eventCode != null ? eventCode : "Event");
-        } else if (eventType.contains("Task")) {
-            return String.format("%s - Task activity",
-                eventCode != null ? eventCode : "Event");
         } else {
             // Generic fallback
             return String.format("%s - %s",
                 username,
                 formatEventName(event.getEventName()));
         }
+    }
+
+    /**
+     * Format an enum state for display (e.g., "AGENDA_PUBLISHED" -> "Agenda Published")
+     */
+    private String formatState(String state) {
+        StringBuilder sb = new StringBuilder();
+        for (String word : state.toLowerCase(Locale.ROOT).split("_")) {
+            if (!word.isEmpty()) {
+                if (sb.length() > 0) {
+                    sb.append(' ');
+                }
+                sb.append(Character.toUpperCase(word.charAt(0))).append(word.substring(1));
+            }
+        }
+        return sb.toString();
     }
 
     /**

@@ -65,6 +65,11 @@ const SWEEP_TARGETS: SweepTarget[] = [
   { service: 'ems', entityType: 'events', prefix: 'BRUNO-TEST-' },
   { service: 'ems', entityType: 'sessions', prefix: 'bruno-test-session-' },
   { service: 'ems', entityType: 'topics', prefix: 'bruno-test-topic-' },
+  // Notifications LAST, after the events are gone (#1068). They reference events by code with
+  // no FK, so no event delete reaches them. The sweep matches every test event code
+  // (BATbern{N>=10000}, BRUNO-TEST-*), whatever its age, plus speaker state changes whose
+  // speaker no longer exists. `prefix` is the bound sentinel "BRUNO-TEST-".
+  { service: 'ems', entityType: 'notifications', prefix: 'BRUNO-TEST-' },
   // PCS
   { service: 'pcs', entityType: 'partners', prefix: 'brtest' },
 ];

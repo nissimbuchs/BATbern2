@@ -8,6 +8,8 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.core.dto.generated.EventType;
+import ch.batbern.events.domain.SessionTimingHistory;
+import ch.batbern.events.repository.SessionTimingHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
@@ -24,9 +26,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.UUID;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThan;
@@ -70,6 +74,9 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
 
     @Autowired
     private SessionRepository sessionRepository;
+
+    @Autowired
+    private SessionTimingHistoryRepository sessionTimingHistoryRepository;
 
     @Autowired
     private SpeakerPoolRepository speakerPoolRepository;
@@ -229,6 +236,39 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1))) // Only 1 unassigned now
                 .andExpect(jsonPath("$[0].sessionSlug").value("jane-smith-datainc"));
+    }
+
+    /**
+     * #1068: the timing audit row and the organizer notification name the organizer who made
+     * the change, not the placeholder "organizer".
+     */
+    @Test
+    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
+    void should_recordActingOrganizer_when_timingAssigned() throws Exception {
+        String timingRequest = """
+                {
+                  "startTime": "%s",
+                  "endTime": "%s",
+                  "room": "Main Hall",
+                  "sessionType": "PRESENTATION",
+                  "changeReason": "drag_drop_reassignment"
+                }
+                """.formatted(
+                eventDate.plus(3, ChronoUnit.HOURS).toString(),
+                eventDate.plus(3, ChronoUnit.HOURS).plus(45, ChronoUnit.MINUTES).toString()
+        );
+
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/sessions/{sessionSlug}/timing",
+                        eventCode, "john-doe-techcorp")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(timingRequest))
+                .andExpect(status().isOk());
+
+        UUID sessionId = sessionRepository.findBySessionSlug("john-doe-techcorp").orElseThrow().getId();
+        assertThat(sessionTimingHistoryRepository.findBySessionIdOrderByChangedAtDesc(sessionId))
+                .first()
+                .extracting(SessionTimingHistory::getChangedBy)
+                .isEqualTo("test.organizer");
     }
 
     /**

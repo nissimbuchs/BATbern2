@@ -1,6 +1,8 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.events.notification.Notification;
+import ch.batbern.events.notification.NotificationRepository;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
@@ -80,6 +82,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private RegistrationRepository registrationRepository;
+
+    @Autowired
+    private NotificationRepository notificationRepository;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -912,6 +917,40 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/events/" + eventCode)
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isNotFound());
+    }
+
+    // #1068: notifications reference the event by code (no FK), so deleting an event used to leave
+    // them behind — every nightly E2E run left thousands of notifications for deleted test events.
+    @Test
+    @DisplayName("should_deleteEventNotifications_when_eventDeleted")
+    void should_deleteEventNotifications_when_eventDeleted() throws Exception {
+        Event event = createTestEvent("BATbern Notif-Cleanup", "2027-05-15T09:00:00Z", "CREATED");
+        Event other = createTestEvent("BATbern Notif-Keep", "2027-06-15T09:00:00Z", "CREATED");
+        notificationRepository.save(notification(event.getEventCode()));
+        notificationRepository.save(notification(event.getEventCode()));
+        notificationRepository.save(notification(other.getEventCode()));
+
+        mockMvc.perform(delete("/api/v1/events/" + event.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        assertThat(notificationRepository.findAll())
+                .extracting(Notification::getEventCode)
+                .doesNotContain(event.getEventCode())
+                .contains(other.getEventCode());
+    }
+
+    private Notification notification(String eventCode) {
+        return Notification.builder()
+                .recipientUsername("test.organizer")
+                .eventCode(eventCode)
+                .notificationType("EventCreated")
+                .channel("IN_APP")
+                .priority("NORMAL")
+                .subject(eventCode + " - Event Created")
+                .body("test.organizer created event " + eventCode)
+                .status("UNREAD")
+                .build();
     }
 
     @Test
