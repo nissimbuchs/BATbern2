@@ -14,7 +14,6 @@ import { Badge } from '@/components/public/ui/badge';
 import {
   LayoutGrid,
   List,
-  Clock,
   MapPin,
   Users,
   FileText,
@@ -23,7 +22,6 @@ import {
   Download,
 } from 'lucide-react';
 import type { SessionUI, SessionMaterial } from '@/types/event.types';
-import { format } from 'date-fns';
 import { useTranslation } from 'react-i18next';
 import { SessionQnaThread } from '@/components/public/Event/SessionQnaThread';
 import { SpeakerDisplay } from './SpeakerDisplay';
@@ -80,18 +78,6 @@ export const SessionCards = ({
     setSelectedTopics((prev) =>
       prev.includes(topicId) ? prev.filter((id) => id !== topicId) : [...prev, topicId]
     );
-  };
-
-  const formatSessionTime = (
-    startTime: string | null | undefined,
-    endTime: string | null | undefined
-  ) => {
-    if (!startTime || !endTime) return '';
-    try {
-      return `${format(new Date(startTime), 'HH:mm')} - ${format(new Date(endTime), 'HH:mm')}`;
-    } catch {
-      return '';
-    }
   };
 
   // Materials helpers (mirrors EventProgram)
@@ -210,7 +196,7 @@ export const SessionCards = ({
           <Card
             key={session.sessionSlug}
             data-testid="session-card"
-            className="group bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors"
+            className="group min-w-0 bg-zinc-700 border-zinc-600 hover:border-zinc-500 transition-colors"
           >
             <CardHeader>
               <div className="flex items-start justify-between gap-4">
@@ -235,13 +221,9 @@ export const SessionCards = ({
                 </p>
               )}
 
+              {/* No slot time: this is the past-event view, and when a speaker presented is not
+                  shown there (#1114). */}
               <div className="flex flex-wrap gap-4 text-sm text-zinc-400">
-                {session.startTime && session.endTime && (
-                  <span className="flex items-center gap-1.5">
-                    <Clock className="h-4 w-4" />
-                    {formatSessionTime(session.startTime, session.endTime)}
-                  </span>
-                )}
                 {session.room && (
                   <span className="flex items-center gap-1.5">
                     <MapPin className="h-4 w-4" />
@@ -306,8 +288,10 @@ export const SessionCards = ({
                                   className="flex items-center gap-2 p-2 rounded bg-zinc-800/50 hover:bg-zinc-800 transition-colors text-sm text-zinc-300 hover:text-blue-400 no-underline w-full text-left disabled:opacity-50 disabled:cursor-not-allowed"
                                 >
                                   {getMaterialTypeIcon(material.materialType)}
-                                  <span className="flex-1">{material.fileName}</span>
-                                  <span className="text-xs text-zinc-500">
+                                  <span className="flex-1 min-w-0 wrap-anywhere">
+                                    {material.fileName}
+                                  </span>
+                                  <span className="text-xs text-zinc-500 shrink-0">
                                     {formatFileSize(material.fileSize)}
                                   </span>
                                   {isDownloading ? (

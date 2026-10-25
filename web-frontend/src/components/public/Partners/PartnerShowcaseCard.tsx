@@ -45,7 +45,10 @@ export const PartnerShowcaseCard = ({
             <img
               src={buildCdnImageUrl(logoUrl, { h: 256, fit: 'inside' }) ?? logoUrl}
               alt={companyName}
-              loading="lazy"
+              // Eager, low priority: inside the clipped, moving marquee a lazy image only starts
+              // loading once it drifts into view, so logos trickled in over tens of seconds (#1115).
+              loading="eager"
+              fetchPriority="low"
               className="max-w-full max-h-32 object-contain"
             />
           ) : (

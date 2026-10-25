@@ -842,6 +842,9 @@
     },
     "upcomingEvents": {
       "title": "Autres événements à venir"
+    },
+    "upcomingDates": {
+      "title": "Prochaines dates BAT"
     }
   },
   "sessionEdit": {

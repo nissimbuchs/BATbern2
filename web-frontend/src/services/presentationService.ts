@@ -33,13 +33,14 @@ const SKIP_AUTH = { headers: { 'Skip-Auth': 'true' } };
 
 /**
  * Fetches the event detail including topic, venue and sessions.
- * Public endpoint — no auth required.
+ * Public read model — no auth required. Not the organizer endpoint /events/{code}: that one
+ * returns no sessions to anonymous callers, which left the agenda slide empty (#1112).
  */
 export const getPresentationData = async (eventCode: string): Promise<PresentationEventDetail> => {
-  const response = await apiClient.get<PresentationEventDetail>(`/events/${eventCode}`, {
-    params: { include: 'topics,venue,sessions,speakers' },
-    ...SKIP_AUTH,
-  });
+  const response = await apiClient.get<PresentationEventDetail>(
+    `/public/events/${eventCode}`,
+    SKIP_AUTH
+  );
   return response.data;
 };
 

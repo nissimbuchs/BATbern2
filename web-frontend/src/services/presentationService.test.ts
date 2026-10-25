@@ -32,14 +32,15 @@ describe('presentationService', () => {
   });
 
   describe('getPresentationData', () => {
-    it('should fetch event data with topics,venue,sessions,speakers include', async () => {
+    // #1112: the organizer endpoint /events/{code} returns no sessions to anonymous callers
+    // (since #1072), which left the agenda slide empty. The public read model carries them.
+    it('should fetch event data from the public read model so sessions are included', async () => {
       const mockEvent = { eventCode: 'BATbern142', title: 'BATbern #142' };
       mockApiClient.get.mockResolvedValue({ data: mockEvent });
 
       const result = await getPresentationData('BATbern142');
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/events/BATbern142', {
-        params: { include: 'topics,venue,sessions,speakers' },
+      expect(mockApiClient.get).toHaveBeenCalledWith('/public/events/BATbern142', {
         headers: { 'Skip-Auth': 'true' },
       });
       expect(result).toEqual(mockEvent);

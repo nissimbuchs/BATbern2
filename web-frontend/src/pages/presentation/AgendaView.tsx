@@ -81,7 +81,7 @@ export function AgendaView({
           .join(' ');
 
         return (
-          <div key={s.sessionSlug} className={rowClass}>
+          <div key={s.sessionSlug} className={rowClass} data-testid="agenda-session-row">
             <span className={styles.sessionTime}>{formatTime(s.startTime)}</span>
             <span className={styles.sessionTitle}>{s.title}</span>
           </div>

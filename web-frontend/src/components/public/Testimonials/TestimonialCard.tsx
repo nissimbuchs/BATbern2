@@ -51,7 +51,10 @@ export const TestimonialCard = ({
             <img
               src={buildCdnImageUrl(companyLogoUrl, { h: 64, fit: 'inside' }) ?? companyLogoUrl}
               alt={company ?? ''}
-              loading="lazy"
+              // Eager, low priority: inside the clipped, moving marquee a lazy image only starts
+              // loading once it drifts into view, so logos trickled in over tens of seconds (#1115).
+              loading="eager"
+              fetchPriority="low"
               className="max-h-6 max-w-[7rem] flex-shrink-0 object-contain"
             />
           ) : company ? (

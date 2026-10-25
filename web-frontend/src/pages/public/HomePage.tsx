@@ -34,6 +34,7 @@ import { OpenGraphTags } from '@/components/SEO/OpenGraphTags';
 import { TestimonialSection } from '@/components/public/Testimonials/TestimonialSection';
 import { EventPhotosMarquee } from '@/components/public/EventPhotos/EventPhotosMarquee';
 import { UpcomingEventsSection } from '@/components/public/UpcomingEventsSection';
+import { UpcomingEventDatesSection } from '@/components/public/UpcomingEventDatesSection';
 import { SpeakerSelfNominatePanel } from '@/components/attendee/SpeakerSelfNominatePanel';
 import { canOfferSelfNomination } from '@/utils/eventPublication';
 // Below-the-fold + backend/Turnstile-dependent → lazy-loaded so it stays off the eager
@@ -375,6 +376,9 @@ const HomePage = () => {
             }}
           />
         )}
+
+        {/* Next BAT dates (#1110) — date + title per event, not on archive pages */}
+        {!isArchiveMode && <UpcomingEventDatesSection currentEventCode={event.eventCode} />}
 
         {/* Social Sharing — always shown */}
         <SocialSharing eventTitle={eventTitle} eventUrl={eventUrl} />

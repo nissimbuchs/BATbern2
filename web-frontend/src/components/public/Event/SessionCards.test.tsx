@@ -183,12 +183,12 @@ describe('SessionCards', () => {
     expect(screen.getByText('workshop')).toBeInTheDocument();
   });
 
-  it('should_formatTime_when_sessionTimesProvided', () => {
+  // #1114: SessionCards is the past-event view (POST_EVENT / ARCHIVE); the slot a speaker
+  // presented in is not shown there.
+  it('should_notShowPresentationTime_when_sessionTimesProvided', () => {
     renderWithProviders(<SessionCards sessions={mockSessions} />);
 
-    // Check for formatted times (09:00 - 10:00 and 11:00 - 12:30)
-    const timeElements = screen.getAllByText(/\d{2}:\d{2}\s*-\s*\d{2}:\d{2}/);
-    expect(timeElements.length).toBeGreaterThan(0);
+    expect(screen.queryByText(/\d{2}:\d{2}\s*-\s*\d{2}:\d{2}/)).not.toBeInTheDocument();
   });
 
   it('should_renderNull_when_noSessionsProvided', () => {
@@ -299,6 +299,34 @@ describe('SessionCards', () => {
 
     expect(screen.getByText('slides.pdf')).toBeInTheDocument();
     expect(screen.getByText('2.0 MB')).toBeInTheDocument();
+  });
+
+  // #1113: a long file name must wrap inside the card instead of widening it (mobile layout).
+  it('should_wrapLongMaterialFileName_when_fileNameHasNoBreaks', () => {
+    const longName =
+      'BATbern57_Praesentation_Digitale_Souveraenitaet_in_der_Bundesverwaltung_final_v3.pdf';
+    const material: SessionMaterial = {
+      id: 'mat-long',
+      uploadId: 'up-long',
+      cloudFrontUrl: 'https://cdn.example.com/long.pdf',
+      fileName: longName,
+      fileSize: 2097152,
+      materialType: 'PRESENTATION',
+      uploadedBy: 'john.doe',
+      createdAt: '2025-05-15T10:00:00Z',
+    };
+
+    renderWithProviders(
+      <SessionCards
+        sessions={[{ ...mockSessions[0], materials: [material] }]}
+        showMaterials={true}
+        eventCode="BATbern142"
+      />
+    );
+
+    expect(screen.getByText(longName)).toHaveClass('min-w-0', 'wrap-anywhere');
+    // Grid items default to min-width:auto, so the card itself must be allowed to shrink too.
+    expect(screen.getByTestId('session-card')).toHaveClass('min-w-0');
   });
 
   it('should_hideMaterials_when_showMaterialsFalse', () => {

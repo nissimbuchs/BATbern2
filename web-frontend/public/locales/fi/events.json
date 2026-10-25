@@ -842,6 +842,9 @@
     },
     "upcomingEvents": {
       "title": "Lisää tulevia tapahtumia"
+    },
+    "upcomingDates": {
+      "title": "Tulevat BAT-päivämäärät"
     }
   },
   "sessionEdit": {

@@ -34,6 +34,9 @@ describe('TestimonialCard', () => {
     expect(logo.getAttribute('src')).toBeTruthy();
     // The plain company-name text is replaced by the logo when a logo is present.
     expect(screen.queryByText('Acme Corp')).not.toBeInTheDocument();
+    // #1115: marquee card — eager, low priority (lazy waits until the card drifts into view).
+    expect(logo.getAttribute('loading')).toBe('eager');
+    expect(logo.getAttribute('fetchpriority')).toBe('low');
   });
 
   it('should render the company name as text when no logo is provided', () => {
