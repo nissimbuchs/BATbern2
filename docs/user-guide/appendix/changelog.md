@@ -50,6 +50,7 @@ Each release includes:
 
 **Bug Fixes — BATbern60 Website Batch (2026-10-25)**:
 - ✅ Presenter view: the agenda slide and the session slides are filled again. The presenter read the event through the organizer endpoint, which since 7 October returns no sessions to a visitor who is not logged in. It now uses the public event, so it shows exactly what the public agenda shows (#1112).
+- ✅ Presenter agenda: each break row carries its own title, as on the public agenda. Before, the coffee break and the apéro both read "Pause" (#1117).
 - ✅ Newsletter: "Weitere BAT-Termine" lists only the next three events, nearest first, instead of every planned event in random order (#1111).
 - ✅ Past events: session cards no longer show when a speaker presented (#1114), and a long material file name wraps inside the card instead of making it wider than a phone screen (#1113).
 - ✅ Partner row at the bottom of the website: all logos load right away. Before, each logo only started loading once it scrolled into view, so the row filled in over tens of seconds (#1115).
