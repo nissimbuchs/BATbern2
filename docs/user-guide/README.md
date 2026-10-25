@@ -47,7 +47,7 @@ New to BATbern? Start here:
 Manage core platform entities:
 
 - [Companies](entity-management/companies.md) <span class="feature-status implemented">Implemented</span>
-  - Swiss UID validation, logo upload, search/autocomplete
+  - Logo upload, search/autocomplete
 - [Users](entity-management/users.md) <span class="feature-status implemented">Implemented</span>
   - 4 roles (Organizer, Speaker, Attendee, Partner), GDPR compliance
 - [Events](entity-management/events.md) <span class="feature-status implemented">Implemented</span>

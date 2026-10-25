@@ -3,7 +3,6 @@ package ch.batbern.companyuser.service;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.dto.generated.CompanyLogo;
 import ch.batbern.companyuser.dto.generated.CompanyResponse;
-import ch.batbern.companyuser.dto.generated.CompanyStatistics;
 import ch.batbern.companyuser.dto.generated.PaginatedCompanyResponse;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.specification.CompanySpecification;
@@ -36,7 +35,7 @@ import java.util.stream.Collectors;
 /**
  * Advanced query service for companies with filter, sort, pagination, and resource expansion
  * AC14: Filter, sort, pagination, field selection
- * AC15: Resource expansion (include=statistics,logo)
+ * AC15: Resource expansion (include=logo)
  */
 @Service
 @Transactional(readOnly = true)
@@ -130,7 +129,6 @@ public class CompanyQueryService {
         CompanyResponse.Builder builder = CompanyResponse.builder()
                 .name(company.getName())  // Story 1.16.2: name is the unique identifier
                 .displayName(company.getDisplayName())
-                .swissUID(company.getSwissUID())
                 .website(company.getWebsite())
                 .industry(company.getIndustry())
                 .description(company.getDescription())
@@ -177,9 +175,6 @@ public class CompanyQueryService {
         if (selectedFields.contains("displayName")) {
             filteredBuilder.displayName(tempResponse.getDisplayName());
         }
-        if (selectedFields.contains("swissUID")) {
-            filteredBuilder.swissUID(tempResponse.getSwissUID());
-        }
         if (selectedFields.contains("website")) {
             filteredBuilder.website(tempResponse.getWebsite());
         }
@@ -206,20 +201,10 @@ public class CompanyQueryService {
     }
 
     /**
-     * Apply resource expansion (include=statistics,logo)
+     * Apply resource expansion (include=logo)
      * Mutates response object to add expanded resources
      */
     private void applyResourceExpansion(CompanyResponse response, Company company, Set<String> includes) {
-        // Include statistics
-        if (includes.contains("statistics")) {
-            CompanyStatistics statistics = CompanyStatistics.builder()
-                    .totalEvents(0) // TODO: Query actual count when event management is integrated
-                    .totalSpeakers(0) // TODO: Query actual count when speaker coordination is integrated
-                    .totalPartners(0) // TODO: Query actual count when partner coordination is integrated
-                    .build();
-            response.setStatistics(statistics);
-        }
-
         // Include logo
         if (includes.contains("logo")) {
             if (company.getLogoUrl() != null) {

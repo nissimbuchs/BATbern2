@@ -173,59 +173,6 @@ export interface WorkflowBlocker {
   blockedSince: string;
 }
 
-// Critical Tasks (Dashboard UI - not in OpenAPI)
-export type TaskPriority = 'warning' | 'critical';
-export type TaskType =
-  | 'overdue_materials'
-  | 'venue_confirmation'
-  | 'abstracts_moderation'
-  | 'speaker_assignment'
-  | 'deadline_approaching';
-
-export interface CriticalTask {
-  id: string;
-  eventCode: string;
-  type: TaskType;
-  priority: TaskPriority;
-  title: string;
-  description: string;
-  dueDate: string;
-  assignedTo?: string; // username
-  actions: TaskAction[];
-  createdAt: string;
-}
-
-export interface TaskAction {
-  id: string;
-  label: string;
-  type: 'contact' | 'extend_deadline' | 'confirm' | 'assign';
-  requiresConfirmation: boolean;
-}
-
-// Team Activity Feed (Dashboard UI - not in OpenAPI)
-export type ActivityType =
-  | 'event_created'
-  | 'event_updated'
-  | 'speaker_assigned'
-  | 'speaker_invited'
-  | 'materials_uploaded'
-  | 'workflow_advanced'
-  | 'task_completed'
-  | 'notification_sent'
-  | 'event_published';
-
-export interface TeamActivity {
-  id: string;
-  eventCode: string;
-  type: ActivityType;
-  actorUsername: string; // username or 'System'
-  actorName: string;
-  action: string;
-  targetDescription: string;
-  timestamp: string;
-  metadata?: Record<string, unknown>;
-}
-
 // Form State (UI-only)
 export interface EventFormData {
   title: string;
@@ -387,21 +334,6 @@ export interface EventListResponse {
     totalItems: number; // Backend returns totalItems
     hasNext: boolean; // Backend provides hasNext flag
     hasPrev: boolean; // Backend provides hasPrev flag
-  };
-}
-
-export interface CriticalTasksResponse {
-  data: CriticalTask[];
-  total: number;
-}
-
-export interface TeamActivityResponse {
-  data: TeamActivity[];
-  pagination: {
-    page: number;
-    limit: number;
-    totalItems: number;
-    hasNext: boolean;
   };
 }
 

@@ -2,12 +2,9 @@ package ch.batbern.companyuser.service;
 
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
-// TODO: Create UserRoleChangedEvent in future story (Task 6 deferred)
-// import ch.batbern.companyuser.events.UserRoleChangedEvent;
 import ch.batbern.companyuser.exception.MinimumOrganizersException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.shared.events.DomainEventPublisher;
 import io.micrometer.core.annotation.Counted;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -36,8 +33,6 @@ public class RoleService {
     private static final int MINIMUM_ORGANIZERS = 2;
 
     private final UserRepository userRepository;
-    @SuppressWarnings("unused") // TODO: Will be used when UserRoleChangedEvent is implemented (Task 6 deferred)
-    private final DomainEventPublisher eventPublisher;
 
     /**
      * Get all roles for a user
@@ -78,7 +73,7 @@ public class RoleService {
 
         // Only publish event if role was actually added
         if (roleAdded) {
-            publishRoleChangedEvent(user, "Role added: " + role);
+            logRoleChange(user, "Role added: " + role);
             log.info("Role {} added to user: {}", role, username);
         } else {
             log.debug("Role {} already exists for user: {}", role, username);
@@ -116,7 +111,7 @@ public class RoleService {
 
         // Only publish event if role was actually removed
         if (roleRemoved) {
-            publishRoleChangedEvent(user, "Role removed: " + role);
+            logRoleChange(user, "Role removed: " + role);
             log.info("Role {} removed from user: {}", role, username);
         } else {
             log.debug("Role {} was not present for user: {}", role, username);
@@ -157,7 +152,7 @@ public class RoleService {
 
         // Publish event if roles actually changed
         if (!oldRoles.equals(newRoles)) {
-            publishRoleChangedEvent(user, "Roles updated from " + oldRoles + " to " + newRoles);
+            logRoleChange(user, "Roles updated from " + oldRoles + " to " + newRoles);
             log.info("Roles updated for user: {}", username);
         } else {
             log.debug("Roles unchanged for user: {}", username);
@@ -194,23 +189,12 @@ public class RoleService {
     }
 
     /**
-     * Publish UserRoleChangedEvent to EventBridge
+     * Log a role change. No domain event: nothing consumes one.
      *
      * @param user User whose roles changed
      * @param description Description of the change
      */
-    private void publishRoleChangedEvent(User user, String description) {
-        // TODO: Implement UserRoleChangedEvent in future story
-        // For now, we just log the event
-        log.info("Publishing UserRoleChangedEvent for user {}: {}", user.getUsername(), description);
-
-        // Story 1.16.2: Event would use username as aggregateId (String), not UUID
-        // UserRoleChangedEvent event = new UserRoleChangedEvent(
-        //     user.getUsername(),  // aggregateId
-        //     user.getRoles(),
-        //     description,
-        //     currentUsername  // userId from SecurityContext
-        // );
-        // eventPublisher.publish(event);
+    private void logRoleChange(User user, String description) {
+        log.info("Roles changed for user {}: {}", user.getUsername(), description);
     }
 }

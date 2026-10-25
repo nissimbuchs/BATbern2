@@ -294,23 +294,6 @@ public class GlobalExceptionHandler {
         return ResponseEntity.status(HttpStatus.UNPROCESSABLE_ENTITY).body(error);
     }
 
-    @ExceptionHandler(InvalidUIDException.class)
-    public ResponseEntity<ErrorResponse> handleInvalidUIDException(
-            InvalidUIDException ex,
-            HttpServletRequest request) {
-        log.error("Invalid Swiss UID: {}", ex.getMessage());
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
-                .build();
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-    }
-
     @ExceptionHandler(CompanyValidationException.class)
     public ResponseEntity<ErrorResponse> handleCompanyValidationException(
             CompanyValidationException ex,

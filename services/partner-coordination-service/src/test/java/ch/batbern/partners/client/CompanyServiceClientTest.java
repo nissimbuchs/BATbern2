@@ -95,7 +95,6 @@ class CompanyServiceClientTest {
                                 "name": "GoogleZH",
                                 "displayName": "Google Schweiz GmbH",
                                 "industry": "Technology",
-                                "swissUID": "CHE-123.456.789",
                                 "isVerified": true
                             }
                             """));

@@ -734,7 +734,7 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
     expect(screen.getByTestId('file-dropzone')).toBeInTheDocument();
   });
 
-  it('should_saveUploadedMaterials_when_modalSaved', async () => {
+  it('should_save_when_savedFromMaterialsTab', async () => {
     const user = userEvent.setup();
     render(
       <SessionEditModal
@@ -750,8 +750,7 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
     const materialsTab = screen.getByRole('tab', { name: /materials/i });
     await user.click(materialsTab);
 
-    // TODO: Simulate file upload (requires mocking FileUpload component)
-    // For now, we'll verify the Materials tab can be saved
+    // No upload is simulated here: this only checks that saving works from the Materials tab
 
     // Save the modal
     const saveButton = screen.getByRole('button', { name: /save/i });

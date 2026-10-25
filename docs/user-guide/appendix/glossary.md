@@ -104,7 +104,6 @@ A person who has opted in to receive BATbern newsletters. Subscribers need not h
 ### Company
 Organization associated with users, speakers, or partners. Includes:
 - **Name** (official company name)
-- **Swiss UID** (Swiss business identifier, if applicable)
 - **Logo** (brand image)
 - **Address** (headquarters location)
 
@@ -538,7 +537,6 @@ See [Partner Portal documentation](../partner-portal/README.md) for full details
 | **SSO** | Single Sign-On | "Continue with Google" federated login (Epic 12, live) |
 | **TDD** | Test-Driven Development | Development methodology |
 | **UI/UX** | User Interface / User Experience | Design domains |
-| **UID** | Unique Identifier | Swiss business ID number |
 | **URL** | Uniform Resource Locator | Web address |
 | **UUID** | Universally Unique Identifier | Database ID format |
 | **WCAG** | Web Content Accessibility Guidelines | Accessibility standard (2.1 AA) |
@@ -548,16 +546,6 @@ See [Partner Portal documentation](../partner-portal/README.md) for full details
 ---
 
 ## Swiss-Specific Terms
-
-### Swiss UID (Unternehmens-Identifikationsnummer)
-Swiss business identification number. Format: `CHE-XXX.XXX.XXX`
-
-**Validation Rules**:
-- Must start with "CHE-"
-- Followed by 9 digits (3 groups of 3, separated by periods)
-- Last digit is check digit (validated by algorithm)
-
-**Example**: CHE-123.456.788 (788 is check digit)
 
 ### Berner Architekten Treffen (BATbern)
 "Bern Architects' Meeting" - quarterly professional development events for architects, engineers, and building professionals in Bern region.

@@ -651,8 +651,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     }
 
     /**
-     * Expand venue data for an event
-     * TODO: Replace with actual service call when Company Management Service is available
+     * Expand venue data for an event (venue fields live on the event itself)
      */
     private Map<String, Object> expandVenue(Event event) {
         // Use venue data stored directly on the Event entity

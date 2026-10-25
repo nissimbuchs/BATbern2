@@ -47,7 +47,6 @@ class CompanyRepositoryTest extends AbstractIntegrationTest {
         // Given
         Company company = Company.builder()
                 .name("Test Company AG")
-                .swissUID("CHE-123.456.789")
                 .displayName("Test Company")
                 .isVerified(false)
                 .createdBy("user-123")
@@ -61,7 +60,6 @@ class CompanyRepositoryTest extends AbstractIntegrationTest {
         // Then
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getName()).isEqualTo("Test Company AG");
-        assertThat(saved.getSwissUID()).isEqualTo("CHE-123.456.789");
     }
 
     @Test
@@ -190,24 +188,6 @@ class CompanyRepositoryTest extends AbstractIntegrationTest {
                 .containsExactly("infowellgmbh");
         // Sanity: the legacy slug-only search would miss the spaced display name
         assertThat(companyRepository.findByNameContainingIgnoreCase("Infowell GmbH")).isEmpty();
-    }
-
-    @Test
-    @DisplayName("should_findBySwissUID_when_uidProvided")
-    void should_findBySwissUID_when_uidProvided() {
-        // Given
-        String uid = "CHE-111.222.333";
-        Company company = createAndSaveCompany("UID Test Company");
-        company.setSwissUID(uid);
-        companyRepository.save(company);
-        entityManager.flush();
-
-        // When
-        Optional<Company> found = companyRepository.findBySwissUID(uid);
-
-        // Then
-        assertThat(found).isPresent();
-        assertThat(found.get().getSwissUID()).isEqualTo(uid);
     }
 
     @Test

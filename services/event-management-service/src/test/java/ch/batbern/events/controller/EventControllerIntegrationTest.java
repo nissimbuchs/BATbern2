@@ -31,6 +31,7 @@ import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -1889,20 +1890,22 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_ignoreNonActiveStatuses_when_gettingCurrentEvent")
-    @org.junit.jupiter.api.Disabled("TODO: Fix 500 error - root cause unclear, likely null-safety issue")
     void should_ignoreNonActiveStatuses_when_gettingCurrentEvent() throws Exception {
         // Given - clean all and create events with different statuses
         eventRepository.deleteAll();
 
-        // Create events with non-active statuses (should be ignored)
-        createTestEvent("Planning Event", "2025-07-01T09:00:00Z", "CREATED");
-        createTestEvent("Archived Event", "2025-06-15T09:00:00Z", "ARCHIVED");
-        createTestEvent("Cancelled Event", "2025-06-20T09:00:00Z", "cancelled");
+        // Non-active events dated BEFORE the active one, so the test proves they are skipped rather
+        // than merely later. Dates are relative to today: fixed dates expire (this test was disabled
+        // for months after its 2025 dates passed).
+        Instant now = Instant.now();
+        createTestEvent("Planning Event", now.plus(Duration.ofDays(20)).toString(), "CREATED");
+        createTestEvent("Archived Event", now.plus(Duration.ofDays(30)).toString(), "ARCHIVED");
 
         // Create one active event (should be returned)
-        Event activeEvent = createTestEvent("Active Event", "2025-12-01T09:00:00Z", "AGENDA_PUBLISHED");
+        Event activeEvent = createTestEvent(
+                "Active Event", now.plus(Duration.ofDays(60)).toString(), "AGENDA_PUBLISHED", "agenda");
 
-        // When/Then - should return the active event, ignoring CREATED/ARCHIVED/cancelled
+        // When/Then - should return the active event, ignoring CREATED and ARCHIVED (there is no cancelled state)
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.eventCode").value(activeEvent.getEventCode()))

@@ -162,7 +162,6 @@
     "fields": {
       "name": "Bedrijfsnaam",
       "displayName": "Weergavenaam (indien anders dan juridische naam)",
-      "swissUID": "Zwitsers UID (CHE-XXX.XXX.XXX)",
       "website": "Website",
       "industry": "Branche",
       "description": "Beschrijving",
@@ -170,7 +169,6 @@
       "logo": "Bedrijfslogo"
     },
     "placeholders": {
-      "swissUID": "CHE-123.456.789",
       "website": "https://example.com"
     },
     "industries": {
@@ -194,9 +192,6 @@
       "saveChanges": "Wijzigingen opslaan",
       "unsavedChanges": "U heeft niet-opgeslagen wijzigingen. Weet u zeker dat u wilt sluiten?",
       "characterCount": "{{count}}/{{max}} tekens",
-      "helpText": {
-        "swissUID": "Optioneel - voor automatische verificatie"
-      },
       "errors": {
         "noPermission": "U heeft geen toestemming om dit bedrijf te bewerken. Sprekers kunnen alleen hun eigen bedrijf bewerken."
       }

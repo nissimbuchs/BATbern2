@@ -26,8 +26,6 @@ import {
   useCreateEvent,
   useUpdateEvent,
   useDeleteEvent,
-  useCriticalTasks,
-  useTeamActivity,
 } from '@/hooks/useEvents';
 import { useNotifications } from '@/hooks/useNotifications';
 import { taskService } from '@/services/taskService';
@@ -42,8 +40,6 @@ vi.mock('@/hooks/useEvents', () => ({
   useCreateEvent: vi.fn(),
   useUpdateEvent: vi.fn(),
   useDeleteEvent: vi.fn(),
-  useCriticalTasks: vi.fn(),
-  useTeamActivity: vi.fn(),
 }));
 
 // Mock useNotifications
@@ -257,21 +253,6 @@ describe('EventManagementDashboard Component', () => {
     },
   ];
 
-  const mockTeamActivityData = [
-    {
-      id: 'activity-1',
-      eventCode: 'BATbern56',
-      actorUsername: 'john.doe',
-      actorDisplayName: 'John Doe',
-      actionType: 'speaker_assigned',
-      entityType: 'speaker',
-      entityId: 'speaker-1',
-      description: 'assigned speaker for topic AI trends',
-      timestamp: '2025-01-15T10:00:00Z',
-      metadata: {},
-    },
-  ];
-
   beforeEach(() => {
     vi.clearAllMocks();
 
@@ -316,22 +297,6 @@ describe('EventManagementDashboard Component', () => {
     } as any);
 
     vi.mocked(useEventWorkflow).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isSuccess: false,
-      isError: false,
-      error: null,
-    } as any);
-
-    vi.mocked(useCriticalTasks).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isSuccess: false,
-      isError: false,
-      error: null,
-    } as any);
-
-    vi.mocked(useTeamActivity).mockReturnValue({
       data: undefined,
       isLoading: false,
       isSuccess: false,
@@ -387,16 +352,6 @@ describe('EventManagementDashboard Component', () => {
         isError: true,
         error: new Error('Failed to load events'),
       } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useCriticalTasks).mockReturnValue({
-        data: mockCriticalTasksData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useTeamActivity).mockReturnValue({
-        data: mockTeamActivityData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
 
       render(<EventManagementDashboard />, { wrapper: createWrapper() });
 
@@ -411,16 +366,6 @@ describe('EventManagementDashboard Component', () => {
         isLoading: false,
         isSuccess: true,
         isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useCriticalTasks).mockReturnValue({
-        data: mockCriticalTasksData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useTeamActivity).mockReturnValue({
-        data: mockTeamActivityData,
-        isLoading: false,
-        isSuccess: true,
       } as Partial<UseQueryResult<EventListResponse, Error>>);
     });
 
@@ -469,16 +414,7 @@ describe('EventManagementDashboard Component', () => {
         isSuccess: true,
         isError: false,
       } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useCriticalTasks).mockReturnValue({
-        data: mockCriticalTasksData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useTeamActivity).mockReturnValue({
-        data: mockTeamActivityData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
+
       // Mock taskService for TaskWidget
       vi.mocked(taskService.getMyTasks).mockResolvedValue(mockCriticalTasksData);
     });
@@ -514,16 +450,7 @@ describe('EventManagementDashboard Component', () => {
         isSuccess: true,
         isError: false,
       } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useCriticalTasks).mockReturnValue({
-        data: mockCriticalTasksData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useTeamActivity).mockReturnValue({
-        data: mockTeamActivityData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
+
       vi.mocked(useNotifications).mockReturnValue({
         data: { data: mockNotificationsData },
         isLoading: false,
@@ -554,16 +481,6 @@ describe('EventManagementDashboard Component', () => {
         isSuccess: true,
         isError: false,
       } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useCriticalTasks).mockReturnValue({
-        data: mockCriticalTasksData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useTeamActivity).mockReturnValue({
-        data: mockTeamActivityData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
     });
 
     it('should_displayNewEventButton_when_dashboardLoaded', () => {
@@ -581,16 +498,6 @@ describe('EventManagementDashboard Component', () => {
         isLoading: false,
         isSuccess: true,
         isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useCriticalTasks).mockReturnValue({
-        data: mockCriticalTasksData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useTeamActivity).mockReturnValue({
-        data: mockTeamActivityData,
-        isLoading: false,
-        isSuccess: true,
       } as Partial<UseQueryResult<EventListResponse, Error>>);
     });
 
@@ -619,16 +526,6 @@ describe('EventManagementDashboard Component', () => {
         isLoading: false,
         isSuccess: true,
         isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useCriticalTasks).mockReturnValue({
-        data: mockCriticalTasksData,
-        isLoading: false,
-        isSuccess: true,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-      vi.mocked(useTeamActivity).mockReturnValue({
-        data: mockTeamActivityData,
-        isLoading: false,
-        isSuccess: true,
       } as Partial<UseQueryResult<EventListResponse, Error>>);
     });
 

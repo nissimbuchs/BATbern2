@@ -162,13 +162,11 @@ public class UserService {
 
         // NOTE: Cognito sync removed - DB is source of truth for user data
         // Cognito is only used for authentication (JWT tokens)
-        // TODO: If needed, user can update email via Cognito pre-token-generation hook
 
         // Invalidate search cache
         searchService.invalidateCache();
 
         // Publish domain event (Story 1.16.2: String IDs)
-        // TODO: Track updated fields and previous values for better event audit trail
         java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
         if (request.getFirstName() != null) {
             updatedFields.put("firstName", request.getFirstName());
@@ -189,7 +187,7 @@ public class UserService {
         UserUpdatedEvent event = new UserUpdatedEvent(
             updatedUser.getUsername(),  // aggregateId = username
             updatedFields,
-            null,  // previousValues - TODO: implement in future
+            null,  // previousValues: not tracked
             updatedUser.getUsername()  // userId = username (who performed the update)
         );
         eventPublisher.publish(event);
@@ -258,7 +256,7 @@ public class UserService {
         UserUpdatedEvent event = new UserUpdatedEvent(
             updatedUser.getUsername(),  // aggregateId = username
             updatedFields,
-            null,  // previousValues - TODO: implement in future
+            null,  // previousValues: not tracked
             updatedBy  // userId = admin/organizer who performed the update
         );
         eventPublisher.publish(event);
@@ -545,9 +543,8 @@ public class UserService {
         User user = userRepository.findByUsername(username)
                 .orElseThrow(() -> new UserNotFoundException(username));
 
-        // TODO: Check business rules (e.g., last organizer) in future task
-        // TODO: Cascade delete across domain services in future task
-        // TODO: Audit logging in future task
+        // Deletes the CUMS row only: no other service consumes UserDeletedEvent, and there is no
+        // last-organizer guard (#1120).
 
         userRepository.delete(user);
 
@@ -1082,7 +1079,6 @@ public class UserService {
         // NOTE: No longer creating user in Cognito - invitation-based flow
         // Organizer creates DB record → Send invitation email → User signs up via registration page
         // → Cognito pre-token-generation hook will populate cognitoUserId on first login
-        // TODO: Implement invitation system (generate token, send email, registration page validation)
 
         // Story 1.16.2: Generate username from first/last name
         String baseUsername = slugService.generateUsername(

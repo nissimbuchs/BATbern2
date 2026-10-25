@@ -49,7 +49,6 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
         CreateCompanyRequest request = CreateCompanyRequest.builder()
             .name("Test Company Auth")
             .displayName("Test Company Authentication")
-            .swissUID("CHE-123.456.789")
             .website("https://testcompany.ch")
             .industry("Technology")
             .description("Test company for authentication integration")

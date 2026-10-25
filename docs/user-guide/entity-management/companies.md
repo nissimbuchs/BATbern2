@@ -12,9 +12,8 @@ Companies represent architectural firms in Switzerland and internationally that 
 
 ## Key Features
 
-- ✅ **Swiss UID Validation** - Real-time validation of Swiss company identifiers
 - ✅ **Logo Upload** - Direct S3 uploads using presigned URLs
-- ✅ **Search & Autocomplete** - Fast company lookup by name or UID
+- ✅ **Search & Autocomplete** - Fast company lookup by name
 - ✅ **Employee Tracking** - Link users to their companies
 - ✅ **Location Management** - Canton, city, address information
 
@@ -43,7 +42,6 @@ Complete the company creation form:
 **Basic Information**:
 - **Name*** - Legal name (e.g., "Müller Architekten AG") - used as internal identifier
 - **Display Name** - Optional public-facing name (defaults to Name if not provided)
-- **Swiss UID*** - CHE-xxx.xxx.xxx format (Swiss companies only)
 - **Country*** - Switzerland or international
 - **Canton** - For Swiss companies (ZH, BE, VD, etc.)
 - **City** - Headquarters location
@@ -81,51 +79,6 @@ Click **Save** to create the company.
 
 Success message appears: "Company 'Müller Architekten AG' created successfully"
 </div>
-
-## Swiss UID Validation
-
-<span class="feature-status implemented">Implemented</span>
-
-Swiss companies must provide a valid **UID (Unternehmens-Identifikationsnummer)** - the official Swiss business identifier.
-
-### Format Requirements
-
-**Valid Format**: `CHE-XXX.XXX.XXX`
-
-Where:
-- `CHE` = Swiss prefix (constant)
-- `XXX.XXX.XXX` = 9-digit number with dots
-
-**Examples**:
-- ✅ Valid: `CHE-123.456.789`
-- ✅ Valid: `CHE-100.000.001`
-- ❌ Invalid: `CHE123456789` (missing dots)
-- ❌ Invalid: `CHE-123456789` (missing dots)
-- ❌ Invalid: `ABC-123.456.789` (wrong prefix)
-- ❌ Invalid: `CHE-12.345.678` (wrong digit count)
-
-### Real-Time Validation
-
-The Swiss UID field validates as you type:
-
-```
-Swiss UID *
-[CHE-123.456.789    ] ✅ Valid Swiss UID
-```
-
-```
-Swiss UID *
-[CHE123456789       ] ❌ Invalid format. Use CHE-XXX.XXX.XXX
-```
-
-### UID Registry
-
-<span class="feature-status planned">Planned</span>
-
-Future releases will integrate with the Swiss UID Registry API to:
-- Verify UID exists in official registry
-- Auto-populate company name and address
-- Check UID status (active, dissolved, etc.)
 
 ## Logo Upload
 
@@ -185,7 +138,6 @@ Use the search box at the top of the company list:
 
 Searches across:
 - Company name (both internal name and display name)
-- Swiss UID
 - City
 - Canton
 
@@ -219,8 +171,8 @@ When creating users or speakers, company fields provide autocomplete:
 ```
 Company
 [Mül____________]
-   Müller Architekten AG (CHE-123.456.789)
-   Müller & Partner GmbH (CHE-987.654.321)
+   Müller Architekten AG
+   Müller & Partner GmbH
 ```
 
 Type 2+ characters to trigger suggestions.
@@ -246,7 +198,6 @@ Click the **📝 Edit** icon in the company row.
 **Modify Fields**
 
 Update any editable fields. Note:
-- Swiss UID cannot be changed once set (prevents fraud)
 - Logo can be replaced (old logo deleted from S3)
 
 </div>
@@ -369,33 +320,14 @@ Bulk import from CSV:
 [📤 Import Companies]
 
 Upload CSV file with columns:
-- name, swiss_uid, country, canton, city, email
+- name, country, canton, city, email
 
 Validation:
-- Duplicate UIDs rejected
 - Invalid formats flagged
 - Success rate shown (e.g., "185/200 imported")
 ```
 
 ## Common Issues
-
-### "Invalid Swiss UID format"
-
-**Problem**: UID doesn't match CHE-XXX.XXX.XXX format.
-
-**Solution**:
-- Ensure dots are included: `CHE-123.456.789`
-- Verify 9 digits total (3 groups of 3)
-- Use uppercase CHE prefix
-
-### "Swiss UID already exists"
-
-**Problem**: Another company has the same UID.
-
-**Solution**:
-- UIDs must be unique in the system
-- Check if company already exists (use search)
-- Contact support if you believe this is an error
 
 ### "Logo upload failed"
 
@@ -436,7 +368,6 @@ GET /api/companies/123?expand=employees
 {
   "id": "123",
   "name": "Müller Architekten AG",
-  "swissUid": "CHE-123.456.789",
   "employees": [
     { "id": "456", "name": "Hans Müller", "role": "ORGANIZER" },
     { "id": "789", "name": "Anna Schmidt", "role": "SPEAKER" }

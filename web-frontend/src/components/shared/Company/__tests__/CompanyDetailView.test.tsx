@@ -24,12 +24,6 @@ vi.mock('../AssociatedUsersPanel', () => ({
 
 // PartnerInfoPanel removed - isPartner field no longer supported by backend
 
-vi.mock('../CompanyStatistics', () => ({
-  CompanyStatistics: ({ statistics }: { statistics?: { totalEvents?: number } }) => (
-    <div data-testid="company-statistics">Statistics: {statistics?.totalEvents}</div>
-  ),
-}));
-
 vi.mock('../ActivityTimeline', () => ({
   ActivityTimeline: ({ companyId }: { companyId: string }) => (
     <div data-testid="activity-timeline">ActivityTimeline-{companyId}</div>
@@ -41,7 +35,6 @@ const mockCompany = {
   id: 'company-123',
   name: 'TestCompanyAG',
   displayName: 'Test Company AG',
-  swissUID: 'CHE-123.456.789',
   website: 'https://test-company.ch',
   industry: 'Cloud Computing',
   description: 'A test company for unit testing',
@@ -53,11 +46,6 @@ const mockCompany = {
     url: 'https://cdn.example.com/logos/test-company.png',
     s3Key: 'logos/test-company.png',
     fileId: 'file-123',
-  },
-  statistics: {
-    totalEvents: 5,
-    totalSpeakers: 12,
-    totalPartners: 3,
   },
 };
 
@@ -96,7 +84,6 @@ describe('CompanyDetailView Component', () => {
       expect(screen.getByRole('heading', { name: 'Test Company AG' })).toBeInTheDocument();
 
       // Verify company details are displayed
-      expect(screen.getByText(/CHE-123.456.789/)).toBeInTheDocument();
       expect(screen.getByText(/Cloud Computing/)).toBeInTheDocument();
       // Location removed - no longer supported by backend
 

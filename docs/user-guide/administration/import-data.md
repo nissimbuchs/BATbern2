@@ -40,7 +40,7 @@ Import company records in bulk.
 
 **Use case**: Initial data load from spreadsheets or a previous system.
 
-**Fields**: company name, Swiss UID (CHE-XXX.XXX.XXX), tier, website, address
+**Fields**: company name, tier, website, address
 
 ### Speakers
 
@@ -79,7 +79,7 @@ Each import modal follows the same multi-step flow:
 After uploading, the platform validates every row before importing anything:
 
 - **Required fields** — missing mandatory values are flagged
-- **Format checks** — Swiss UID format, date format, valid email syntax
+- **Format checks** — date format, valid email syntax
 - **Duplicate detection** — records that already exist in the database are identified
 
 If validation finds errors, a summary is shown and no data is imported. You can download an **error export** (CSV) listing each invalid row and the reason.

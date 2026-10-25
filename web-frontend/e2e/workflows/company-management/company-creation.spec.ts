@@ -66,7 +66,6 @@ test.describe('Company Creation', { tag: '@gate' }, () => {
     await expect(page.getByTestId('company-form-dialog')).toBeVisible();
     await expect(page.getByTestId('company-name-field')).toBeVisible();
     await expect(page.getByTestId('company-display-name-field')).toBeVisible();
-    await expect(page.getByTestId('company-swiss-uid-field')).toBeVisible();
     await expect(page.getByTestId('company-website-field')).toBeVisible();
     await expect(page.getByTestId('company-industry-field')).toBeVisible();
     await expect(page.getByTestId('company-description-field')).toBeVisible();

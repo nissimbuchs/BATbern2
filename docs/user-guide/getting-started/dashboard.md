@@ -253,7 +253,7 @@ See [Phase D: Assignment](../workflow/phase-d-assignment.md) for details.
 ### Use Global Search
 
 The global search (top-center) searches across:
-- Company names and Swiss UIDs
+- Company names
 - User names and email addresses
 - Event names and topics
 - Speaker names and expertise

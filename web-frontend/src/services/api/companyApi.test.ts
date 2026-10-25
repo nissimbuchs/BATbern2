@@ -37,7 +37,6 @@ describe('companyApiClient', () => {
           {
             id: 'company-1',
             name: 'TechCorp AG',
-            swissUID: 'CHE-123.456.789',
             industry: 'Technology',
           },
         ],
@@ -142,12 +141,11 @@ describe('companyApiClient', () => {
       vi.mocked(apiClient.get).mockResolvedValue({ data: mockResponse });
 
       await companyApiClient.getCompanies({ page: 1, limit: 20 }, undefined, {
-        expand: ['logo', 'statistics'],
+        expand: ['logo'],
       });
 
       const call = vi.mocked(apiClient.get).mock.calls[0][0];
-      // URLSearchParams encodes comma as %2C
-      expect(call).toContain('include=logo%2Cstatistics');
+      expect(call).toContain('include=logo');
     });
   });
 
@@ -156,7 +154,6 @@ describe('companyApiClient', () => {
       const mockCompany = {
         id: 'company-1',
         name: 'TechCorp AG',
-        swissUID: 'CHE-123.456.789',
         industry: 'Technology',
       };
 
@@ -259,7 +256,6 @@ describe('companyApiClient', () => {
     it('should create company with valid data', async () => {
       const request: CreateCompanyRequest = {
         name: 'NewCorp AG',
-        swissUID: 'CHE-111.222.333',
         industry: 'Technology',
         location: {
           city: 'Bern',
@@ -281,26 +277,7 @@ describe('companyApiClient', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('should reject invalid Swiss UID format', async () => {
-      const request: CreateCompanyRequest = {
-        name: 'InvalidCorp',
-        swissUID: 'INVALID-FORMAT',
-        industry: 'Technology',
-        location: {
-          city: 'Bern',
-          canton: 'BE',
-          country: 'Switzerland',
-        },
-      };
-
-      await expect(companyApiClient.createCompany(request)).rejects.toThrow(
-        'Invalid Swiss UID format'
-      );
-
-      expect(apiClient.post).not.toHaveBeenCalled();
-    });
-
-    it('should create company without Swiss UID', async () => {
+    it('should create company with minimal fields', async () => {
       const request: CreateCompanyRequest = {
         name: 'NoCorp',
         industry: 'Technology',
@@ -323,7 +300,6 @@ describe('companyApiClient', () => {
     it('should update company with valid data', async () => {
       const updates: UpdateCompanyRequest = {
         industry: 'Finance',
-        swissUID: 'CHE-999.888.777',
       };
 
       const mockResponse = {
@@ -340,19 +316,7 @@ describe('companyApiClient', () => {
       expect(result).toEqual(mockResponse);
     });
 
-    it('should reject invalid Swiss UID in update', async () => {
-      const updates: UpdateCompanyRequest = {
-        swissUID: 'INVALID',
-      };
-
-      await expect(companyApiClient.updateCompany('TechCorp AG', updates)).rejects.toThrow(
-        'Invalid Swiss UID format'
-      );
-
-      expect(apiClient.patch).not.toHaveBeenCalled();
-    });
-
-    it('should update company without Swiss UID', async () => {
+    it('should update company with partial fields', async () => {
       const updates: UpdateCompanyRequest = {
         industry: 'Healthcare',
       };
@@ -395,49 +359,6 @@ describe('companyApiClient', () => {
       vi.mocked(apiClient.get).mockRejectedValue(error);
 
       await expect(companyApiClient.getCompany('NonExistent')).rejects.toThrow();
-    });
-  });
-
-  describe('Swiss UID Validation', () => {
-    const validUIDs = ['CHE-123.456.789', 'CHE-999.888.777', 'CHE-111.222.333'];
-
-    const invalidUIDs = [
-      'INVALID',
-      'CHE123456789',
-      'CHE-1234567',
-      '123.456.789',
-      'CHE-ABC.DEF.GHI',
-    ];
-
-    validUIDs.forEach((uid) => {
-      it(`should accept valid UID: ${uid}`, async () => {
-        const request: CreateCompanyRequest = {
-          name: 'TestCorp',
-          swissUID: uid,
-          industry: 'Technology',
-          location: { city: 'Bern', canton: 'BE', country: 'Switzerland' },
-        };
-
-        vi.mocked(apiClient.post).mockResolvedValue({ data: { id: 'test', ...request } });
-
-        await companyApiClient.createCompany(request);
-
-        expect(apiClient.post).toHaveBeenCalled();
-      });
-    });
-
-    invalidUIDs.forEach((uid) => {
-      it(`should reject invalid UID: ${uid}`, async () => {
-        const request: CreateCompanyRequest = {
-          name: 'TestCorp',
-          swissUID: uid,
-          industry: 'Technology',
-          location: { city: 'Bern', canton: 'BE', country: 'Switzerland' },
-        };
-
-        await expect(companyApiClient.createCompany(request)).rejects.toThrow();
-        expect(apiClient.post).not.toHaveBeenCalled();
-      });
     });
   });
 

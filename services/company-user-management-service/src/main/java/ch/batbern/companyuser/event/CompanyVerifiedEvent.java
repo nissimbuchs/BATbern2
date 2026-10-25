@@ -22,20 +22,17 @@ import java.time.Instant;
 public class CompanyVerifiedEvent extends DomainEvent<String> {
 
     private final String name;
-    private final String swissUID;
     private final boolean isVerified;
     private final Instant verifiedAt;
 
     public CompanyVerifiedEvent(
             String companyName,
             String name,
-            String swissUID,
             boolean isVerified,
             Instant verifiedAt,
             String username) {
         super(companyName, "CompanyVerified", username);
         this.name = name;
-        this.swissUID = swissUID;
         this.isVerified = isVerified;
         this.verifiedAt = verifiedAt;
     }

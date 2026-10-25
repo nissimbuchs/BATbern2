@@ -526,14 +526,6 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
                 )}
 
                 <Grid container spacing={2} component="div">
-                  {company.swissUID && (
-                    <Grid size={{ xs: 12, sm: 6 }}>
-                      <Typography variant="body2" color="text.secondary">
-                        Swiss UID
-                      </Typography>
-                      <Typography variant="body1">{company.swissUID}</Typography>
-                    </Grid>
-                  )}
                   {company.industry && (
                     <Grid size={{ xs: 12, sm: 6 }}>
                       <Typography variant="body2" color="text.secondary">

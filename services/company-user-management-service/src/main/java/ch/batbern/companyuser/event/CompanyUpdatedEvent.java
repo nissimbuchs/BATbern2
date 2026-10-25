@@ -23,7 +23,6 @@ public class CompanyUpdatedEvent extends DomainEvent<String> {
 
     private final String name;
     private final String displayName;
-    private final String swissUID;
     private final String website;
     private final String industry;
     private final String description;
@@ -33,7 +32,6 @@ public class CompanyUpdatedEvent extends DomainEvent<String> {
             String companyName,
             String name,
             String displayName,
-            String swissUID,
             String website,
             String industry,
             String description,
@@ -42,7 +40,6 @@ public class CompanyUpdatedEvent extends DomainEvent<String> {
         super(companyName, "CompanyUpdated", username);
         this.name = name;
         this.displayName = displayName;
-        this.swissUID = swissUID;
         this.website = website;
         this.industry = industry;
         this.description = description;

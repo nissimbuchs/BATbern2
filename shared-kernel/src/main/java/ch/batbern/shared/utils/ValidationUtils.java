@@ -6,22 +6,8 @@ import java.util.regex.Pattern;
 
 public class ValidationUtils {
 
-    private static final Pattern SWISS_UID_PATTERN = Pattern.compile("^CHE-\\d{3}\\.\\d{3}\\.\\d{3}$");
-
     private ValidationUtils() {
         // Utility class, prevent instantiation
-    }
-
-    public static void validateSwissUID(String uid) throws ValidationException {
-        if (uid == null) {
-            throw new ValidationException("Swiss UID cannot be null");
-        }
-        if (uid.isEmpty()) {
-            throw new ValidationException("Swiss UID cannot be empty");
-        }
-        if (!SWISS_UID_PATTERN.matcher(uid).matches()) {
-            throw new ValidationException("Invalid Swiss UID format: " + uid + ". Expected format: CHE-XXX.XXX.XXX");
-        }
     }
 
     public static void validateEmail(String email) throws ValidationException {

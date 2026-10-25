@@ -12,7 +12,6 @@ import ch.batbern.companyuser.event.CompanyUpdatedEvent;
 import ch.batbern.companyuser.event.CompanyVerifiedEvent;
 import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
-import ch.batbern.companyuser.exception.InvalidUIDException;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.repository.LogoRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
@@ -45,7 +44,6 @@ public class CompanyService {
 
     private final CompanyRepository companyRepository;
     private final LogoRepository logoRepository;
-    private final SwissUIDValidationService uidValidationService;
     private final DomainEventPublisher eventPublisher;
     private final CompanySearchService searchService;
     private final SecurityContextHelper securityContextHelper;
@@ -61,13 +59,6 @@ public class CompanyService {
     public CompanyResponse createCompany(CreateCompanyRequest request) {
         log.info("Creating company: {}", request.getName());
 
-        // Validate Swiss UID if provided (AC3)
-        if (request.getSwissUID() != null) {
-            if (!uidValidationService.isValidUID(request.getSwissUID())) {
-                throw new InvalidUIDException(request.getSwissUID());
-            }
-        }
-
         // Check for duplicate company name (AC3)
         if (companyRepository.existsByName(request.getName())) {
             throw new CompanyValidationException("Company with name '" + request.getName() + "' already exists");
@@ -80,7 +71,6 @@ public class CompanyService {
         Company company = Company.builder()
                 .name(request.getName())
                 .displayName(request.getDisplayName() != null ? request.getDisplayName() : request.getName())
-                .swissUID(request.getSwissUID())
                 .website(request.getWebsite())
                 .industry(request.getIndustry())
                 .description(request.getDescription())
@@ -123,7 +113,6 @@ public class CompanyService {
             savedCompany.getName(),  // companyName as aggregate ID
             savedCompany.getName(),
             savedCompany.getDisplayName(),
-            savedCompany.getSwissUID(),
             savedCompany.getWebsite(),
             savedCompany.getIndustry(),
             savedCompany.getDescription(),
@@ -195,7 +184,6 @@ public class CompanyService {
             savedCompany.getName(),
             savedCompany.getName(),
             savedCompany.getDisplayName(),
-            savedCompany.getSwissUID(),
             savedCompany.getWebsite(),
             savedCompany.getIndustry(),
             savedCompany.getDescription(),
@@ -313,7 +301,6 @@ public class CompanyService {
             updatedCompany.getName(),  // companyName as aggregate ID
             updatedCompany.getName(),
             updatedCompany.getDisplayName(),
-            updatedCompany.getSwissUID(),
             updatedCompany.getWebsite(),
             updatedCompany.getIndustry(),
             updatedCompany.getDescription(),
@@ -377,7 +364,6 @@ public class CompanyService {
         CompanyVerifiedEvent event = new CompanyVerifiedEvent(
             verifiedCompany.getName(),  // companyName as aggregate ID
             verifiedCompany.getName(),
-            verifiedCompany.getSwissUID(),
             verifiedCompany.isVerified(),
             verifiedCompany.getUpdatedAt(),
             securityContextHelper.getCurrentUserId()  // username as String
@@ -417,7 +403,6 @@ public class CompanyService {
         return CompanyResponse.builder()
                 .name(company.getName())  // Story 1.16.2: name is the unique identifier
                 .displayName(company.getDisplayName())
-                .swissUID(company.getSwissUID())
                 .website(company.getWebsite())
                 .industry(company.getIndustry())
                 .description(company.getDescription())

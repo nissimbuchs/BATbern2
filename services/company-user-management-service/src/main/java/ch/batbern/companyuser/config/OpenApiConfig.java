@@ -38,7 +38,6 @@ public class OpenApiConfig {
                                 - Company CRUD operations
                                 - Company search with autocomplete (Caffeine-cached)
                                 - Company logo management via S3 presigned URLs
-                                - Swiss UID validation
                                 - Company verification workflow
                                 - Domain event publishing via EventBridge
 

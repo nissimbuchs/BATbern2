@@ -5,7 +5,6 @@ import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.exception.MinimumOrganizersException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.shared.events.DomainEventPublisher;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,9 +40,6 @@ class RoleServiceTest {
 
     @Mock
     private UserRepository userRepository;
-
-    @Mock
-    private DomainEventPublisher eventPublisher;
 
     @InjectMocks
     private RoleService roleService;
@@ -111,13 +107,11 @@ class RoleServiceTest {
         assertThat(updatedRoles).containsExactlyInAnyOrder(Role.ATTENDEE, Role.SPEAKER);
         verify(userRepository).findByUsername(testUsername);
         verify(userRepository).save(testUser);
-        // TODO: Restore when UserRoleChangedEvent is implemented
-        // verify(eventPublisher).publish(any());  // Should publish UserRoleChangedEvent
     }
 
     @Test
-    @DisplayName("should_notPublishEvent_when_roleAlreadyExists")
-    void should_notPublishEvent_when_roleAlreadyExists() {
+    @DisplayName("should_keepRoles_when_roleAlreadyExists")
+    void should_keepRoles_when_roleAlreadyExists() {
         // Given
         testUser.getRoles().add(Role.SPEAKER);
         when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
@@ -130,7 +124,6 @@ class RoleServiceTest {
         assertThat(updatedRoles).containsExactlyInAnyOrder(Role.ATTENDEE, Role.SPEAKER);
         verify(userRepository).findByUsername(testUsername);
         verify(userRepository).save(testUser);
-        verify(eventPublisher, never()).publish(any());  // Should NOT publish event if role already exists
     }
 
     @Test
@@ -149,8 +142,6 @@ class RoleServiceTest {
         assertThat(updatedRoles).containsExactly(Role.ATTENDEE);
         verify(userRepository).findByUsername(testUsername);
         verify(userRepository).save(testUser);
-        // TODO: Restore when UserRoleChangedEvent is implemented
-        // verify(eventPublisher).publish(any());  // Should publish UserRoleChangedEvent
     }
 
     @Test
@@ -172,7 +163,6 @@ class RoleServiceTest {
         verify(userRepository).findByUsername(testUsername);
         verify(userRepository).findByRolesContaining(Role.ORGANIZER);
         verify(userRepository, never()).save(any());
-        verify(eventPublisher, never()).publish(any());
     }
 
     @Test
@@ -207,13 +197,11 @@ class RoleServiceTest {
         verify(userRepository).findByUsername(testUsername);
         verify(userRepository).findByRolesContaining(Role.ORGANIZER);
         verify(userRepository).save(testUser);
-        // TODO: Restore when UserRoleChangedEvent is implemented
-        // verify(eventPublisher).publish(any());  // Should publish UserRoleChangedEvent
     }
 
     @Test
-    @DisplayName("should_notPublishEvent_when_roleNotPresent")
-    void should_notPublishEvent_when_roleNotPresent() {
+    @DisplayName("should_keepRoles_when_roleNotPresent")
+    void should_keepRoles_when_roleNotPresent() {
         // Given
         when(userRepository.findByUsername(testUsername)).thenReturn(Optional.of(testUser));
         when(userRepository.save(any(User.class))).thenReturn(testUser);
@@ -225,7 +213,6 @@ class RoleServiceTest {
         assertThat(updatedRoles).containsExactly(Role.ATTENDEE);
         verify(userRepository).findByUsername(testUsername);
         verify(userRepository).save(testUser);
-        verify(eventPublisher, never()).publish(any());  // Should NOT publish event if role wasn't present
     }
 
     @Test
@@ -245,8 +232,6 @@ class RoleServiceTest {
         assertThat(updatedRoles).containsExactlyInAnyOrder(Role.SPEAKER, Role.PARTNER);
         verify(userRepository).findByUsername(testUsername);
         verify(userRepository).save(testUser);
-        // TODO: Restore when UserRoleChangedEvent is implemented
-        // verify(eventPublisher).publish(any());  // Should publish UserRoleChangedEvent
     }
 
     @Test
@@ -270,6 +255,5 @@ class RoleServiceTest {
         verify(userRepository).findByUsername(testUsername);
         verify(userRepository).findByRolesContaining(Role.ORGANIZER);
         verify(userRepository, never()).save(any());
-        verify(eventPublisher, never()).publish(any());
     }
 }

@@ -6,12 +6,11 @@ info:
     Consolidated Companies API for BATbern Event Management Platform.
 
     This API provides comprehensive company management capabilities with:
-    - **Resource Expansion**: `?include=` parameter for statistics and logos
+    - **Resource Expansion**: `?include=logo` for the company logo
     - **Advanced Filtering**: MongoDB-style JSON filter syntax for complex queries
     - **Field Selection**: Sparse fieldsets to reduce payload size
     - **Pagination**: Standard page/limit parameters
     - **Caching**: Caffeine in-memory cache (15min TTL)
-    - **Swiss UID Validation**: Validates Swiss company registration numbers
 
     **Story**: 1.14 - Company Management Service Foundation
     **Story 1.16.2**: Eliminate UUIDs from API - Use company name as identifier
@@ -44,7 +43,7 @@ tags:
   - name: Company Search
     description: Company search and autocomplete with caching
   - name: Company Verification
-    description: Company verification and UID validation
+    description: Company verification
   - name: Presentation Settings
     description: Moderator presentation page settings (Story 10.8a)
   - name: Logos
@@ -258,9 +257,7 @@ paths:
         - All fields: omit `fields` parameter
 
         **Resource Expansion**:
-        - Statistics: `?include=statistics` (totalEvents, totalSpeakers, totalPartners)
         - Logo: `?include=logo` (url, s3Key, fileId)
-        - Multiple: `?include=statistics,logo`
 
         **Performance**:
         - Basic query: <100ms (P95)
@@ -312,7 +309,7 @@ paths:
           required: false
           schema:
             type: string
-            example: 'statistics,logo'
+            example: 'logo'
       responses:
         '200':
           description: Successful response with paginated companies
@@ -345,7 +342,7 @@ paths:
                       hasNext: false
                       hasPrev: false
                 expandedList:
-                  summary: Company list with statistics and logo
+                  summary: Company list with logo
                   value:
                     data:
                       - name: SwissITSolutionsAG
@@ -354,10 +351,6 @@ paths:
                         isVerified: true
                         createdAt: 2025-01-15T10:00:00Z
                         updatedAt: 2025-01-15T10:00:00Z
-                        statistics:
-                          totalEvents: 12
-                          totalSpeakers: 8
-                          totalPartners: 5
                         logo:
                           url: https://cdn.batbern.ch/logos/swiss-it-solutions-ag/logo.png
                           s3Key: logos/swiss-it-solutions-ag/logo.png
@@ -387,7 +380,6 @@ paths:
 
         **Validation Rules**:
         - Company name must be unique
-        - Swiss UID format (if provided): CHE-XXX.XXX.XXX
         - Website must be valid URL (if provided)
 
         **Events Published**: CompanyCreatedEvent to EventBridge
@@ -410,13 +402,6 @@ paths:
                   industry: Technology
                   website: https://swiss-it.ch
                   description: Leading Swiss IT consulting firm
-              withSwissUID:
-                summary: Company with Swiss UID
-                value:
-                  name: Bern Tech GmbH
-                  swissUID: CHE-123.456.789
-                  industry: Technology
-                  website: https://berntech.ch
       responses:
         '201':
           description: Company created successfully
@@ -473,7 +458,6 @@ paths:
                   value:
                     name: SwissITSolutionsAG
                     displayName: Swiss IT Solutions AG
-                    swissUID: CHE-123.456.789
                     industry: Technology
                     website: https://swiss-it.ch
                     description: Leading Swiss IT consulting firm
@@ -502,7 +486,6 @@ paths:
 
         **Validation Rules**:
         - Company name must be unique
-        - Swiss UID format (if provided): CHE-XXX.XXX.XXX
 
         **Events Published**: CompanyUpdatedEvent to EventBridge
 
@@ -654,77 +637,12 @@ paths:
                   value:
                     - name: SwissITSolutionsAG
                       displayName: Swiss IT Solutions AG
-                      swissUID: CHE-123.456.789
                       industry: Technology
                       isVerified: true
                     - name: Swiss Bank Corp
                       displayName: Swiss Bank
-                      swissUID: CHE-987.654.321
                       industry: Finance
                       isVerified: true
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-  /companies/validate-uid:
-    get:
-      tags:
-        - Company Verification
-      summary: Validate Swiss UID format
-      description: |
-        Validates Swiss company UID (Unternehmens-Identifikationsnummer) format.
-
-        **Acceptance Criteria**: AC12
-
-        **Expected Format**: CHE-XXX.XXX.XXX
-
-        **Validation Rules**:
-        - Must start with "CHE-"
-        - Followed by 9 digits in XXX.XXX.XXX format
-        - Total length: 15 characters
-
-        **Future Enhancement**: Integration with Swiss Business Registry for real-time validation
-
-      operationId: validateUID
-      parameters:
-        - name: uid
-          in: query
-          description: Swiss UID to validate
-          required: true
-          schema:
-            type: string
-            # No `pattern` here: this endpoint's whole purpose is to report whether an arbitrary
-            # input is a valid UID (returns {valid:false,...} for malformed input — see the
-            # invalidUID example below). A @Pattern on the query param would 400 every malformed
-            # UID before the handler runs, making valid:false unreachable and breaking the deployed
-            # behaviour (the hand-rolled controller accepted any string). Format check lives in the
-            # handler (SwissUIDValidationService), not in request validation.
-            example: 'CHE-123.456.789'
-      responses:
-        '200':
-          description: Validation result returned
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/UIDValidationResponse'
-              examples:
-                validUID:
-                  summary: Valid Swiss UID
-                  value:
-                    valid: true
-                    uid: CHE-123.456.789
-                    message: Valid Swiss UID format
-                invalidUID:
-                  summary: Invalid Swiss UID
-                  value:
-                    valid: false
-                    uid: CHE-123456789
-                    message: 'Invalid Swiss UID format. Expected: CHE-XXX.XXX.XXX'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1093,10 +1011,6 @@ components:
           type: string
           maxLength: 255
           example: Swiss IT Solutions AG
-        swissUID:
-          type: string
-          pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
-          example: CHE-123.456.789
         website:
           # Modelled as a plain string (NOT `format: uri`) so the Spring generator's Bean
           # Validation @Size(max=500) applies cleanly — @Size has no validator for java.net.URI,
@@ -1129,27 +1043,8 @@ components:
           description: Username of the user who created this company (Story 1.16.2)
           example: john.doe
           pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
-        statistics:
-          $ref: '#/components/schemas/CompanyStatistics'
         logo:
           $ref: '#/components/schemas/CompanyLogo'
-
-    CompanyStatistics:
-      type: object
-      description: Company statistics (included when ?include=statistics)
-      properties:
-        totalEvents:
-          type: integer
-          description: Total number of events the company participated in
-          example: 12
-        totalSpeakers:
-          type: integer
-          description: Total number of speakers from this company
-          example: 8
-        totalPartners:
-          type: integer
-          description: Total number of partnership engagements
-          example: 5
 
     CompanyLogo:
       type: object
@@ -1189,9 +1084,6 @@ components:
         displayName:
           type: string
           example: Swiss IT Solutions AG
-        swissUID:
-          type: string
-          example: CHE-123.456.789
         industry:
           type: string
           example: Technology
@@ -1220,10 +1112,6 @@ components:
           type: string
           maxLength: 255
           example: Swiss IT Solutions AG
-        swissUID:
-          type: string
-          pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
-          example: CHE-123.456.789
         website:
           # Modelled as a plain string (NOT `format: uri`) so the Spring generator's Bean
           # Validation @Size(max=500) applies cleanly — @Size has no validator for java.net.URI,
@@ -1260,10 +1148,6 @@ components:
           type: string
           maxLength: 255
           example: Swiss IT Solutions AG
-        swissUID:
-          type: string
-          pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
-          example: CHE-123.456.789
         website:
           # Modelled as a plain string (NOT `format: uri`) so the Spring generator's Bean
           # Validation @Size(max=500) applies cleanly — @Size has no validator for java.net.URI,
@@ -1300,23 +1184,6 @@ components:
           maxLength: 255
           example: Test Co
 
-    UIDValidationResponse:
-      type: object
-      required:
-        - valid
-        - uid
-        - message
-      properties:
-        valid:
-          type: boolean
-          example: true
-        uid:
-          type: string
-          example: CHE-123.456.789
-        message:
-          type: string
-          example: Valid Swiss UID format
-
     PaginatedCompanyResponse:
       type: object
       required:
@@ -1347,12 +1214,6 @@ components:
                 error: VALIDATION_ERROR
                 errorCode: BAD_REQUEST
                 message: Invalid filter syntax
-                timestamp: 2025-01-15T10:30:00Z
-            invalidUID:
-              value:
-                error: VALIDATION_ERROR
-                errorCode: BAD_REQUEST
-                message: Invalid Swiss UID format
                 timestamp: 2025-01-15T10:30:00Z
 
     Unauthorized:

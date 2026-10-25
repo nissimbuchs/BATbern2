@@ -12,20 +12,18 @@ import static org.assertj.core.api.Assertions.assertThat;
 @DisplayName("Company Domain Model Tests")
 class CompanyTest {
 
-    // AC1 Tests: Company Entity Creation and Swiss UID Validation
+    // AC1 Tests: Company Entity Creation
 
     @Test
     @DisplayName("Test 1.1: should_createCompany_when_validDataProvided")
     void should_createCompany_when_validDataProvided() {
         // Given
         String name = "Swiss Tech AG";
-        String swissUID = "CHE-123.456.789";
         String createdBy = "user-123";
 
         // When
         Company company = Company.builder()
                 .name(name)
-                .swissUID(swissUID)
                 .isVerified(false)
                 .createdBy(createdBy)
                 .build();
@@ -34,46 +32,10 @@ class CompanyTest {
         // Then
         assertThat(company).isNotNull();
         assertThat(company.getName()).isEqualTo(name);
-        assertThat(company.getSwissUID()).isEqualTo(swissUID);
         assertThat(company.isVerified()).isFalse();
         assertThat(company.getCreatedAt()).isNotNull();
         assertThat(company.getUpdatedAt()).isNotNull();
         assertThat(company.getCreatedBy()).isEqualTo(createdBy);
-    }
-
-    @Test
-    @DisplayName("Test 1.2: should_validateSwissUID_when_companyCreated")
-    void should_validateSwissUID_when_companyCreated() {
-        // Given
-        String validUID = "CHE-123.456.789";
-
-        // When
-        Company company = Company.builder()
-                .name("Test Company")
-                .swissUID(validUID)
-                .createdBy("user-123")
-                .build();
-
-        // Then
-        assertThat(company.getSwissUID()).matches("CHE-\\d{3}\\.\\d{3}\\.\\d{3}");
-    }
-
-    @Test
-    @DisplayName("Test 1.3: should_throwValidationException_when_invalidUIDProvided")
-    void should_throwValidationException_when_invalidUIDProvided() {
-        // Note: This test expects validation to happen at service layer
-        // Domain model just stores the UID, validation happens in SwissUIDValidationService
-        // This test documents the expected UID format
-        String invalidUID = "INVALID-UID";
-
-        Company company = Company.builder()
-                .name("Test Company")
-                .swissUID(invalidUID)
-                .createdBy("user-123")
-                .build();
-
-        // UID format validation should happen at service layer
-        assertThat(company.getSwissUID()).isEqualTo(invalidUID);
     }
 
     // AC2 Tests: Company Profiles and Metadata
@@ -126,7 +88,6 @@ class CompanyTest {
 
         // Then
         assertThat(company.getName()).isEqualTo("Minimal Company");
-        assertThat(company.getSwissUID()).isNull();
         assertThat(company.getWebsite()).isNull();
         assertThat(company.getIndustry()).isNull();
         assertThat(company.getDescription()).isNull();

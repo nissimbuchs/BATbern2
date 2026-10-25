@@ -162,7 +162,6 @@
     "fields": {
       "name": "Yrityksen nimi",
       "displayName": "Näyttönimi (jos eri kuin juridinen nimi)",
-      "swissUID": "Sveitsin UID (CHE-XXX.XXX.XXX)",
       "website": "Verkkosivusto",
       "industry": "Toimiala",
       "description": "Kuvaus",
@@ -170,7 +169,6 @@
       "logo": "Yrityksen logo"
     },
     "placeholders": {
-      "swissUID": "CHE-123.456.789",
       "website": "https://example.com"
     },
     "industries": {
@@ -194,9 +192,6 @@
       "saveChanges": "Tallenna muutokset",
       "unsavedChanges": "Sinulla on tallentamattomia muutoksia. Haluatko varmasti sulkea?",
       "characterCount": "{{count}}/{{max}} merkkiä",
-      "helpText": {
-        "swissUID": "Valinnainen - automaattista vahvistusta varten"
-      },
       "errors": {
         "noPermission": "Sinulla ei ole oikeutta muokata tätä yritystä. Puhujat voivat muokata vain omaa yritystään."
       }

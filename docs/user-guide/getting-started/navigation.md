@@ -220,7 +220,7 @@ Persistent alerts for important information:
 </div>
 
 <div class="alert error">
-❌ <strong>Error:</strong> Swiss UID validation failed. Please check the format.
+❌ <strong>Error:</strong> Email address is invalid. Please check the format.
 </div>
 
 <div class="alert success">
@@ -233,9 +233,9 @@ Persistent alerts for important information:
 
 Every table row includes action buttons:
 
-| Company Name | Swiss UID | Employees | Actions |
-|--------------|-----------|-----------|---------|
-| Müller Architekten AG | CHE-123.456.789 | 45 | 👁️ 📝 🗑️ |
+| Company Name | Employees | Actions |
+|--------------|-----------|---------|
+| Müller Architekten AG | 45 | 👁️ 📝 🗑️ |
 
 - **👁️ View** - Read-only details
 - **📝 Edit** - Modify entity

@@ -144,14 +144,13 @@ describe('useCompany', () => {
   it('should fetch with expand options', async () => {
     mockGetCompany.mockResolvedValue(MOCK_COMPANY as never);
 
-    const { result } = renderHook(
-      () => useCompany('GoogleZH', { expand: ['logo', 'statistics'] }),
-      { wrapper: wrapper(qc) }
-    );
+    const { result } = renderHook(() => useCompany('GoogleZH', { expand: ['logo'] }), {
+      wrapper: wrapper(qc),
+    });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockGetCompany).toHaveBeenCalledWith('GoogleZH', { expand: ['logo', 'statistics'] });
+    expect(mockGetCompany).toHaveBeenCalledWith('GoogleZH', { expand: ['logo'] });
   });
 
   it('should not fetch when name is empty string', () => {

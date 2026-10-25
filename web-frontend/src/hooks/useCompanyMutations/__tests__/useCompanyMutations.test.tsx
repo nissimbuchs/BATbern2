@@ -262,9 +262,7 @@ describe('useCompanyMutations Hooks', () => {
       expect(result.current.data).toEqual(updatedCompany);
     });
 
-    // TODO: Fix flaky test - fails intermittently in CI due to race condition
-    // Issue: Cache data not available when onMutate reads it in CI environment
-    it.skip('should_applyOptimisticUpdate_when_mutationCalled', async () => {
+    it('should_applyOptimisticUpdate_when_mutationCalled', async () => {
       // Arrange
       const existingCompany: Company = {
         id: 'company-123',
@@ -282,21 +280,15 @@ describe('useCompanyMutations Hooks', () => {
         name: 'Optimistic Name',
       };
 
-      const updatedCompany: Company = {
-        ...existingCompany,
-        name: 'Optimistic Name',
-        updatedAt: '2024-01-02T00:00:00Z',
-      };
-
-      // Mock returns updated company after a delay to test optimistic update
-      vi.mocked(companyApiClient.updateCompany).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(updatedCompany), 100))
-      );
+      // The request never settles, so the cache can only hold the optimistic value.
+      vi.mocked(companyApiClient.updateCompany).mockImplementation(() => new Promise(() => {}));
 
       // Act - Create wrapper and initialize queryClient
       createWrapper();
 
-      // Pre-populate cache BEFORE creating hook
+      // The seeded entry has no observer; with the suite's gcTime: 0 it could be collected
+      // before onMutate reads it, which made this test flaky. Keep company entries alive here.
+      queryClient.setQueryDefaults(['company'], { gcTime: Infinity });
       queryClient.setQueryData(['company', 'company-123', undefined], existingCompany);
 
       // Now create the hook

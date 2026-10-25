@@ -5,8 +5,6 @@
  * - useEvents: paginated list with optional filters/expand
  * - useEvent: detail with eventCode guard + include
  * - useEventWorkflow: workflow state with guard
- * - useCriticalTasks: stub returning empty list, guard
- * - useTeamActivity: stub returning empty list, guard
  * - useCreateEvent: mutation + cache invalidation
  * - useUpdateEvent: mutation + invalidation
  * - useDeleteEvent: mutation + cache invalidation
@@ -33,8 +31,6 @@ import {
   useEvents,
   useEvent,
   useEventWorkflow,
-  useCriticalTasks,
-  useTeamActivity,
   useCreateEvent,
   useUpdateEvent,
   useDeleteEvent,
@@ -185,69 +181,6 @@ describe('useEventWorkflow', () => {
 
     expect(result.current.isLoading).toBe(false);
     expect(mockGetEventWorkflow).not.toHaveBeenCalled();
-  });
-});
-
-// ── useCriticalTasks ──────────────────────────────────────────────────────────
-
-describe('useCriticalTasks', () => {
-  let qc: QueryClient;
-
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should return empty data stub when organizerUsername is provided', async () => {
-    const { result } = renderHook(() => useCriticalTasks('alice'), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.data).toEqual({ data: [], total: 0 });
-  });
-
-  it('should not fetch when organizerUsername is undefined', () => {
-    const { result } = renderHook(() => useCriticalTasks(undefined), { wrapper: wrapper(qc) });
-
-    expect(result.current.isLoading).toBe(false);
-  });
-
-  it('should use custom limit in query key', async () => {
-    const { result } = renderHook(() => useCriticalTasks('alice', 5), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    const query = qc
-      .getQueryCache()
-      .findAll()
-      .find((q) => Array.isArray(q.queryKey) && q.queryKey[0] === 'criticalTasks');
-    expect(query?.queryKey).toContain(5);
-  });
-});
-
-// ── useTeamActivity ───────────────────────────────────────────────────────────
-
-describe('useTeamActivity', () => {
-  let qc: QueryClient;
-
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should return empty data stub when organizerUsername is provided', async () => {
-    const { result } = renderHook(() => useTeamActivity('alice'), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(result.current.data?.data).toEqual([]);
-    expect(result.current.data?.pagination.totalItems).toBe(0);
-  });
-
-  it('should not fetch when organizerUsername is undefined', () => {
-    const { result } = renderHook(() => useTeamActivity(undefined), { wrapper: wrapper(qc) });
-
-    expect(result.current.isLoading).toBe(false);
   });
 });
 

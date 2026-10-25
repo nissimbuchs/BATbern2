@@ -113,9 +113,6 @@ public class SpeakerOutreachService {
             LOG.info("Transitioned speaker {} from IDENTIFIED to CONTACTED", speakerId);
         }
 
-        // TODO: Publish SpeakerContactedEvent to EventBridge
-        // Will be implemented when domain event publishing is added
-
         return savedOutreach;
     }
 

@@ -174,50 +174,6 @@ public class EventWorkflowStateMachine {
     }
 
     /**
-     * Validates that minimum number of speakers have been identified.
-     *
-     * Required for transition to SPEAKER_OUTREACH.
-     *
-     * NOTE: This is a placeholder implementation for Story 5.1a.
-     * Full implementation depends on Session/Speaker entities which will be
-     * implemented in subsequent stories (5.3, 5.4).
-     *
-     * For now, this always throws an exception to satisfy TDD tests.
-     * The exception will be removed once session/speaker tracking is implemented.
-     *
-     * @param event Event being validated
-     * @throws WorkflowValidationException if insufficient speakers identified
-     */
-    private void validateMinimumSpeakersIdentified(Event event) {
-        // Placeholder: Always fail validation for TDD tests
-        // TODO Story 5.3: Replace with actual speaker count validation
-        throw new WorkflowValidationException(
-            "Insufficient speakers identified",
-            Map.of("required", 6, "identified", 0, "placeholder", true)
-        );
-    }
-
-    /**
-     * Validates that all content has been submitted by speakers.
-     *
-     * Required for transition to QUALITY_REVIEW.
-     *
-     * NOTE: This is a placeholder implementation for Story 5.1a.
-     * Full implementation depends on content submission tracking (Story 5.6).
-     *
-     * @param event Event being validated
-     * @throws WorkflowValidationException if content not submitted
-     */
-    private void validateAllContentSubmitted(Event event) {
-        // Placeholder: Always fail validation for TDD tests
-        // TODO Story 5.6: Replace with actual content submission validation
-        throw new WorkflowValidationException(
-            "Not all content submitted",
-            Map.of("submitted", 0, "required", 1, "placeholder", true)
-        );
-    }
-
-    /**
      * Validates that minimum speaker threshold has been met.
      *
      * Required for transition to SLOT_ASSIGNMENT.

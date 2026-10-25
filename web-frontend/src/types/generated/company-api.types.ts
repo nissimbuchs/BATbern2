@@ -179,9 +179,7 @@ export interface paths {
      *     - All fields: omit `fields` parameter
      *
      *     **Resource Expansion**:
-     *     - Statistics: `?include=statistics` (totalEvents, totalSpeakers, totalPartners)
      *     - Logo: `?include=logo` (url, s3Key, fileId)
-     *     - Multiple: `?include=statistics,logo`
      *
      *     **Performance**:
      *     - Basic query: <100ms (P95)
@@ -197,7 +195,6 @@ export interface paths {
      *
      *     **Validation Rules**:
      *     - Company name must be unique
-     *     - Swiss UID format (if provided): CHE-XXX.XXX.XXX
      *     - Website must be valid URL (if provided)
      *
      *     **Events Published**: CompanyCreatedEvent to EventBridge
@@ -256,7 +253,6 @@ export interface paths {
      *
      *     **Validation Rules**:
      *     - Company name must be unique
-     *     - Swiss UID format (if provided): CHE-XXX.XXX.XXX
      *
      *     **Events Published**: CompanyUpdatedEvent to EventBridge
      *
@@ -293,37 +289,6 @@ export interface paths {
      *     - Logo: `?include=logo` (logoUrl field included in response)
      */
     get: operations['searchCompanies'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/companies/validate-uid': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Validate Swiss UID format
-     * @description Validates Swiss company UID (Unternehmens-Identifikationsnummer) format.
-     *
-     *     **Acceptance Criteria**: AC12
-     *
-     *     **Expected Format**: CHE-XXX.XXX.XXX
-     *
-     *     **Validation Rules**:
-     *     - Must start with "CHE-"
-     *     - Followed by 9 digits in XXX.XXX.XXX format
-     *     - Total length: 15 characters
-     *
-     *     **Future Enhancement**: Integration with Swiss Business Registry for real-time validation
-     */
-    get: operations['validateUID'];
     put?: never;
     post?: never;
     delete?: never;
@@ -556,8 +521,6 @@ export interface components {
       name: string;
       /** @example Swiss IT Solutions AG */
       displayName?: string;
-      /** @example CHE-123.456.789 */
-      swissUID?: string;
       /** @example https://swiss-it.ch */
       website?: string;
       /** @example Technology */
@@ -581,26 +544,7 @@ export interface components {
        * @example john.doe
        */
       createdBy?: string;
-      statistics?: components['schemas']['CompanyStatistics'];
       logo?: components['schemas']['CompanyLogo'];
-    };
-    /** @description Company statistics (included when ?include=statistics) */
-    CompanyStatistics: {
-      /**
-       * @description Total number of events the company participated in
-       * @example 12
-       */
-      totalEvents?: number;
-      /**
-       * @description Total number of speakers from this company
-       * @example 8
-       */
-      totalSpeakers?: number;
-      /**
-       * @description Total number of partnership engagements
-       * @example 5
-       */
-      totalPartners?: number;
     };
     /** @description Company logo details (included when ?include=logo) */
     CompanyLogo: {
@@ -633,8 +577,6 @@ export interface components {
       name: string;
       /** @example Swiss IT Solutions AG */
       displayName?: string;
-      /** @example CHE-123.456.789 */
-      swissUID?: string;
       /** @example Technology */
       industry?: string;
       /** @example true */
@@ -649,8 +591,6 @@ export interface components {
       name: string;
       /** @example Swiss IT Solutions AG */
       displayName?: string;
-      /** @example CHE-123.456.789 */
-      swissUID?: string;
       /** @example https://swiss-it.ch */
       website?: string;
       /** @example Technology */
@@ -671,8 +611,6 @@ export interface components {
       name?: string;
       /** @example Swiss IT Solutions AG */
       displayName?: string;
-      /** @example CHE-123.456.789 */
-      swissUID?: string;
       /** @example https://swiss-it.ch */
       website?: string;
       /** @example Technology */
@@ -695,14 +633,6 @@ export interface components {
        * @example Test Co
        */
       displayName: string;
-    };
-    UIDValidationResponse: {
-      /** @example true */
-      valid: boolean;
-      /** @example CHE-123.456.789 */
-      uid: string;
-      /** @example Valid Swiss UID format */
-      message: string;
     };
     PaginatedCompanyResponse: {
       data: components['schemas']['CompanyResponse'][];
@@ -1203,32 +1133,6 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['CompanySearchResponse'][];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  validateUID: {
-    parameters: {
-      query: {
-        /** @description Swiss UID to validate */
-        uid: string;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Validation result returned */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['UIDValidationResponse'];
         };
       };
       400: components['responses']['BadRequest'];
