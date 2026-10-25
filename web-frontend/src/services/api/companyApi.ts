@@ -68,7 +68,7 @@ class CompanyApiClient {
         params.append('filter', JSON.stringify(filterObj));
       }
 
-      // Add include parameter for resource expansion (e.g., ?include=logo,statistics)
+      // Add include parameter for resource expansion (e.g., ?include=logo)
       // Backend uses 'include' not 'expand' for resource expansion
       if (options?.expand && options.expand.length > 0) {
         params.append('include', options.expand.join(','));
@@ -180,11 +180,6 @@ class CompanyApiClient {
    */
   async createCompany(data: CreateCompanyRequest): Promise<Company> {
     try {
-      // Client-side validation for Swiss UID format
-      if (data.swissUID && !this.isValidSwissUID(data.swissUID)) {
-        throw new Error('Invalid Swiss UID format. Expected format: CHE-XXX.XXX.XXX');
-      }
-
       const response = await apiClient.post<Company>(COMPANY_API_PATH, data);
       return response.data;
     } catch (error) {
@@ -217,11 +212,6 @@ class CompanyApiClient {
    */
   async updateCompany(name: string, data: UpdateCompanyRequest): Promise<Company> {
     try {
-      // Client-side validation for Swiss UID format
-      if (data.swissUID && !this.isValidSwissUID(data.swissUID)) {
-        throw new Error('Invalid Swiss UID format. Expected format: CHE-XXX.XXX.XXX');
-      }
-
       const response = await apiClient.patch<Company>(`${COMPANY_API_PATH}/${name}`, data);
       return response.data;
     } catch (error) {
@@ -254,15 +244,6 @@ class CompanyApiClient {
 
   // async requestLogoUploadUrl(...) - REMOVED - Use generic file upload API
   // async confirmLogoUpload(...) - REMOVED - Use generic file upload API
-
-  /**
-   * Validate Swiss UID format
-   * @private
-   */
-  private isValidSwissUID(uid: string): boolean {
-    const pattern = /^CHE-\d{3}\.\d{3}\.\d{3}$/;
-    return pattern.test(uid.trim());
-  }
 
   /**
    * Transform axios errors into standardized error format

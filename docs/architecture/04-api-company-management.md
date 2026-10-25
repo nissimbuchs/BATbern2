@@ -4,7 +4,7 @@
 **ADR Reference**: [ADR-003: Meaningful Identifiers in Public APIs](./ADR-003-meaningful-identifiers-public-apis.md)
 
 
-This document outlines the Company Management Service API, which handles centralized company entity management with Swiss business validation, advanced querying capabilities, and verification workflows.
+This document outlines the Company Management Service API, which handles centralized company entity management, advanced querying capabilities, and verification workflows.
 
 ## Overview
 
@@ -12,7 +12,6 @@ The Company Management API provides endpoints for:
 - Company CRUD operations with full lifecycle management
 - Advanced query patterns (filter, sort, pagination, field selection, resource expansion)
 - Company search with autocomplete and Caffeine caching
-- Swiss UID (Unternehmens-Identifikationsnummer) validation
 - Company verification workflows
 - Event-driven architecture with EventBridge integration
 
@@ -139,7 +138,6 @@ description: |
 
   **Validation Rules**:
   - Company name must be unique
-  - Swiss UID format (if provided): CHE-XXX.XXX.XXX
   - Website must be valid URL (if provided)
 
   **Events Published**: CompanyCreatedEvent to EventBridge
@@ -235,49 +233,6 @@ responses:
     description: Internal server error
 ```
 
-#### Validate Swiss UID
-
-```yaml
-GET /api/v1/companies/validate-uid
-tags: [Company Verification]
-summary: Validate Swiss UID format
-operationId: validateUID
-description: |
-  Validates Swiss company UID (Unternehmens-Identifikationsnummer) format.
-
-  **Expected Format**: CHE-XXX.XXX.XXX
-
-  **Validation Rules**:
-  - Must start with "CHE-"
-  - Followed by 9 digits in XXX.XXX.XXX format
-  - Total length: 15 characters
-
-  **Future Enhancement**: Integration with Swiss Business Registry for real-time validation
-
-parameters:
-  - name: uid
-    in: query
-    description: Swiss UID to validate
-    required: true
-    schema:
-      type: string
-      pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
-      example: 'CHE-123.456.789'
-responses:
-  '200':
-    description: Validation result returned
-    content:
-      application/json:
-        schema:
-          $ref: '#/components/schemas/UIDValidationResponse'
-  '400':
-    description: Bad request - missing UID parameter
-  '401':
-    description: Unauthorized
-  '500':
-    description: Internal server error
-```
-
 #### Verify Company
 
 ```yaml
@@ -348,10 +303,6 @@ CompanyResponse:
       type: string
       maxLength: 255
       example: Swiss IT Solutions
-    swissUID:
-      type: string
-      pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
-      example: CHE-123.456.789
     website:
       type: string
       format: uri
@@ -450,9 +401,6 @@ CompanySearchResponse:
     displayName:
       type: string
       example: Swiss IT Solutions
-    swissUID:
-      type: string
-      example: CHE-123.456.789
     industry:
       type: string
       example: Technology
@@ -478,10 +426,6 @@ CreateCompanyRequest:
       type: string
       maxLength: 255
       example: Swiss IT Solutions
-    swissUID:
-      type: string
-      pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
-      example: CHE-123.456.789
     website:
       type: string
       format: uri
@@ -511,10 +455,6 @@ UpdateCompanyRequest:
       type: string
       maxLength: 255
       example: Swiss IT Solutions
-    swissUID:
-      type: string
-      pattern: '^CHE-\d{3}\.\d{3}\.\d{3}$'
-      example: CHE-123.456.789
     website:
       type: string
       format: uri
@@ -528,27 +468,6 @@ UpdateCompanyRequest:
       type: string
       maxLength: 5000
       example: Leading Swiss IT consulting firm
-```
-
-### UIDValidationResponse
-
-```yaml
-UIDValidationResponse:
-  type: object
-  required:
-    - valid
-    - uid
-    - message
-  properties:
-    valid:
-      type: boolean
-      example: true
-    uid:
-      type: string
-      example: CHE-123.456.789
-    message:
-      type: string
-      example: Valid Swiss UID format
 ```
 
 ### PaginatedCompanyResponse
@@ -718,7 +637,6 @@ CREATE TABLE companies (
     id UUID PRIMARY KEY,
     name VARCHAR(255) NOT NULL UNIQUE,
     display_name VARCHAR(255),
-    swiss_uid VARCHAR(20),
     website VARCHAR(500),
     industry VARCHAR(100),
     description TEXT,
@@ -733,7 +651,6 @@ CREATE TABLE companies (
 
 -- Performance Indexes
 CREATE INDEX idx_company_name ON companies(name);
-CREATE INDEX idx_company_swiss_uid ON companies(swiss_uid);
 CREATE INDEX idx_company_is_verified ON companies(is_verified);
 CREATE INDEX idx_company_created_at ON companies(created_at DESC);
 ```

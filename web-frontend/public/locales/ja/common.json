@@ -162,7 +162,6 @@
     "fields": {
       "name": "会社名",
       "displayName": "表示名（法人名と異なる場合）",
-      "swissUID": "スイスUID (CHE-XXX.XXX.XXX)",
       "website": "ウェブサイト",
       "industry": "業種",
       "description": "説明",
@@ -170,7 +169,6 @@
       "logo": "企業ロゴ"
     },
     "placeholders": {
-      "swissUID": "CHE-123.456.789",
       "website": "https://example.com"
     },
     "industries": {
@@ -194,9 +192,6 @@
       "saveChanges": "変更を保存",
       "unsavedChanges": "保存されていない変更があります。本当に閉じますか？",
       "characterCount": "{{count}}/{{max}}文字",
-      "helpText": {
-        "swissUID": "任意 - 自動検証用"
-      },
       "errors": {
         "noPermission": "この企業を編集する権限がありません。スピーカーは自分の会社のみ編集できます。"
       }

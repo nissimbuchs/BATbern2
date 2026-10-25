@@ -123,7 +123,6 @@ public class CompanySearchService {
         return CompanySearchResponse.builder()
                 .name(company.getName())
                 .displayName(company.getDisplayName())
-                .swissUID(company.getSwissUID())
                 .industry(company.getIndustry())
                 .isVerified(company.isVerified())
                 .build();
@@ -140,7 +139,6 @@ public class CompanySearchService {
         CompanySearchResponse.Builder builder = CompanySearchResponse.builder()
                 .name(company.getName())
                 .displayName(company.getDisplayName())
-                .swissUID(company.getSwissUID())
                 .industry(company.getIndustry())
                 .isVerified(company.isVerified());
 

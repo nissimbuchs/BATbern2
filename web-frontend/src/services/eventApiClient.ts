@@ -19,7 +19,6 @@ import type {
   UpdateEventRequest,
   PatchEventRequest,
   WorkflowState,
-  TeamActivity,
   CreateRegistrationRequest,
   Registration,
 } from '@/types/event.types';
@@ -222,20 +221,6 @@ class EventApiClient {
     try {
       const response = await apiClient.get<WorkflowState>(
         `${EVENT_API_PATH}/${eventCode}/workflow`
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  /**
-   * Get team activity for an event
-   */
-  async getTeamActivity(eventCode: string): Promise<TeamActivity[]> {
-    try {
-      const response = await apiClient.get<TeamActivity[]>(
-        `${EVENT_API_PATH}/${eventCode}/activity`
       );
       return response.data;
     } catch (error) {

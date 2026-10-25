@@ -6,7 +6,6 @@ import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
 import ch.batbern.companyuser.dto.generated.CompanyResponse;
 import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.exception.CompanyValidationException;
-import ch.batbern.companyuser.exception.InvalidUIDException;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
@@ -50,9 +49,6 @@ class CompanyServiceTest {
     private CompanyRepository companyRepository;
 
     @Mock
-    private SwissUIDValidationService uidValidationService;
-
-    @Mock
     private DomainEventPublisher eventPublisher;
 
     @Mock
@@ -87,7 +83,6 @@ class CompanyServiceTest {
         createRequest = CreateCompanyRequest.builder()
                 .name("Test Company AG")
                 .displayName("Test Company")
-                .swissUID("CHE-123.456.789")
                 .website("https://testcompany.ch")
                 .industry("Technology")
                 .description("Test company description")
@@ -105,7 +100,6 @@ class CompanyServiceTest {
                 .id(UUID.randomUUID())  // Internal DB uses UUID
                 .name("Test Company AG")
                 .displayName("Test Company")
-                .swissUID("CHE-123.456.789")
                 .website("https://testcompany.ch")
                 .industry("Technology")
                 .description("Test company description")
@@ -124,7 +118,6 @@ class CompanyServiceTest {
         // Given
         // Story 1.16.2: Use getCurrentUsername() instead of getCurrentUserId()
         when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
-        when(uidValidationService.isValidUID(createRequest.getSwissUID())).thenReturn(true);
         when(companyRepository.existsByName(createRequest.getName())).thenReturn(false);
         when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
 
@@ -134,7 +127,6 @@ class CompanyServiceTest {
         // Then
         assertThat(response).isNotNull();
         assertThat(response.getName()).isEqualTo("Test Company AG");
-        assertThat(response.getSwissUID()).isEqualTo("CHE-123.456.789");
         assertThat(response.getIsVerified()).isFalse();
 
         verify(securityContextHelper).getCurrentUsername();
@@ -144,25 +136,9 @@ class CompanyServiceTest {
     }
 
     @Test
-    @DisplayName("Test 4.2: should_throwInvalidUIDException_when_invalidSwissUIDProvided")
-    void should_throwInvalidUIDException_when_invalidSwissUIDProvided() {
-        // Given
-        when(uidValidationService.isValidUID(createRequest.getSwissUID())).thenReturn(false);
-
-        // When / Then
-        assertThatThrownBy(() -> companyService.createCompany(createRequest))
-                .isInstanceOf(InvalidUIDException.class)
-                .hasMessageContaining(createRequest.getSwissUID());
-
-        verify(companyRepository, never()).save(any(Company.class));
-        verify(eventPublisher, never()).publish(any());
-    }
-
-    @Test
     @DisplayName("Test 4.3: should_throwCompanyValidationException_when_duplicateNameExists")
     void should_throwCompanyValidationException_when_duplicateNameExists() {
         // Given
-        when(uidValidationService.isValidUID(createRequest.getSwissUID())).thenReturn(true);
         when(companyRepository.existsByName(createRequest.getName())).thenReturn(true);
 
         // When / Then
@@ -175,8 +151,8 @@ class CompanyServiceTest {
     }
 
     @Test
-    @DisplayName("Test 4.4: should_createCompany_when_swissUIDNotProvided")
-    void should_createCompany_when_swissUIDNotProvided() {
+    @DisplayName("Test 4.4: should_createCompany_when_onlyNameProvided")
+    void should_createCompany_when_onlyNameProvided() {
         // Given
         CreateCompanyRequest requestWithoutUID = CreateCompanyRequest.builder()
                 .name("Test Company AG")
@@ -204,9 +180,7 @@ class CompanyServiceTest {
         // Then
         assertThat(response).isNotNull();
         assertThat(response.getName()).isEqualTo("Test Company AG");
-        assertThat(response.getSwissUID()).isNull();
 
-        verify(uidValidationService, never()).isValidUID(anyString());
         verify(companyRepository).save(any(Company.class));
     }
 

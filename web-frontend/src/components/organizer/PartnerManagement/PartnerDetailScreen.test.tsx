@@ -74,7 +74,6 @@ const mockPartnerDetail = {
     website: 'https://google.com',
     location: 'Zurich, Switzerland',
     logoUrl: 'https://cdn.batbern.ch/logos/google.png',
-    swissUID: 'CHE-123.456.789',
     taxStatus: 'Standard',
   },
   statistics: {

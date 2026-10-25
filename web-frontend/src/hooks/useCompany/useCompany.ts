@@ -17,14 +17,14 @@ interface UseCompanyOptions {
  *
  * Features:
  * - 10 minute stale time (AC 10 - Performance)
- * - Resource expansion support (?expand=statistics,logo)
+ * - Resource expansion support (?expand=logo)
  * - Disabled query when name is empty/undefined
  * - Unique cache keys based on name + expansion options
  *
  * Story 1.16.2: Uses company name as identifier instead of UUID
  *
  * @param name - Company name (unique identifier)
- * @param options - Optional expansion parameters (statistics, logo, etc.)
+ * @param options - Optional expansion parameters (e.g. logo)
  * @returns React Query result with company detail data
  */
 export const useCompany = (name: string, options?: UseCompanyOptions) => {

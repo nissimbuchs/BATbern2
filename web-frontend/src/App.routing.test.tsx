@@ -53,7 +53,6 @@ const mockPartnerDetail = {
     industry: 'Technology',
     website: 'https://www.google.ch',
     location: 'Zurich, Switzerland',
-    swissUid: 'CHE-123.456.789',
     taxStatus: 'VAT Registered',
   },
   statistics: {

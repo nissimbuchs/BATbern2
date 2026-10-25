@@ -48,12 +48,7 @@ const CompanyDetailWrapper: React.FC<{
   onEdit: (company: Company) => void;
 }> = ({ onBack, onEdit }) => {
   const { id } = useParams<{ id: string }>();
-  const {
-    data: company,
-    isLoading,
-    error,
-    refetch,
-  } = useCompany(id || '', { expand: ['statistics'] });
+  const { data: company, isLoading, error, refetch } = useCompany(id || '');
 
   return (
     <CompanyDetailView

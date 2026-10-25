@@ -42,7 +42,6 @@ This document outlines the comprehensive data model and database design for the 
 interface Company {
   name: string;  // Same as id - kept for backwards compatibility
   displayName: string;
-  swissUID?: string;  // Swiss business ID (CHE-XXX.XXX.XXX)
   website?: string;
   industry?: string;
   description?: string;
@@ -1620,7 +1619,6 @@ CREATE TABLE companies (
     id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
     name VARCHAR(255) NOT NULL,
     display_name VARCHAR(255) NOT NULL,
-    swiss_uid VARCHAR(20),
     website VARCHAR(500),
     industry VARCHAR(100),
     description TEXT,
@@ -1677,7 +1675,6 @@ CREATE TABLE logos (
 
 -- Indexes
 CREATE INDEX idx_companies_name ON companies(name);
-CREATE INDEX idx_companies_swiss_uid ON companies(swiss_uid);
 CREATE INDEX idx_companies_is_verified ON companies(is_verified);
 CREATE INDEX idx_companies_logo_file_id ON companies(logo_file_id);
 
@@ -2058,7 +2055,6 @@ interface CompanyCreatedEvent extends DomainEvent {
   data: {
     companyId: string;
     name: string;
-    swissUID?: string;
     isVerified: boolean;
   };
 }

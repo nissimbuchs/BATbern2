@@ -105,10 +105,6 @@ describe('PublicNavigation', () => {
     expect(portalButtons.length).toBeGreaterThan(0);
   });
 
-  // Note: Mobile menu toggle not yet implemented in simplified navigation
-  // Component currently uses md:flex to hide nav on mobile
-  // TODO: Add mobile hamburger menu in future iteration
-
   // 2026-06-05: "My Profile" must be visible to EVERY authenticated user (the
   // role-neutral /profile page serves all roles since Story 12.11), not just speakers.
   describe('My Profile dropdown entry', () => {

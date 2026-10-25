@@ -8,12 +8,10 @@ import ch.batbern.companyuser.dto.generated.CompanySearchResponse;
 import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateCompanyRequest;
 import ch.batbern.companyuser.dto.generated.PaginatedCompanyResponse;
-import ch.batbern.companyuser.dto.generated.UIDValidationResponse;
 import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
 import ch.batbern.companyuser.service.CompanyQueryService;
 import ch.batbern.companyuser.service.CompanySearchService;
 import ch.batbern.companyuser.service.CompanyService;
-import ch.batbern.companyuser.service.SwissUIDValidationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -48,7 +46,6 @@ public class CompanyController implements CompaniesApi, CompanySearchApi, Compan
 
     private final CompanyService companyService;
     private final CompanySearchService searchService;
-    private final SwissUIDValidationService uidValidationService;
     private final CompanyQueryService queryService;
 
     /** Create a new company. Requires ORGANIZER, SPEAKER, or PARTNER role. */
@@ -133,26 +130,6 @@ public class CompanyController implements CompaniesApi, CompanySearchApi, Compan
         log.info("Deleting company: {}", name);
         companyService.deleteCompany(name);
         return ResponseEntity.noContent().build();
-    }
-
-    /** Validate Swiss UID format (CHE-XXX.XXX.XXX). Requires authentication. AC12. */
-    @Override
-    @PreAuthorize("isAuthenticated()")
-    public ResponseEntity<UIDValidationResponse> validateUID(String uid) {
-        log.debug("Validating Swiss UID: {}", uid);
-
-        boolean isValid = uidValidationService.isValidUID(uid);
-        String message = isValid
-                ? "Valid Swiss UID format"
-                : "Invalid Swiss UID format. Expected: CHE-XXX.XXX.XXX";
-
-        UIDValidationResponse response = UIDValidationResponse.builder()
-                .valid(isValid)
-                .uid(uid)
-                .message(message)
-                .build();
-
-        return ResponseEntity.ok(response);
     }
 
     /**

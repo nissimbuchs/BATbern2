@@ -62,7 +62,6 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
         testCompany = Company.builder()
                 .name("Test Company")
                 .displayName("Test Co")
-                .swissUID("CHE-123.456.789")
                 .website("https://test.example.com")
                 .industry("Technology")
                 .description("A test company")
@@ -84,7 +83,6 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
         CreateCompanyRequest request = CreateCompanyRequest.builder()
                 .name("New Company")
                 .displayName("New Co")
-                .swissUID("CHE-987.654.321")
                 .website("https://new.example.com")
                 .industry("Finance")
                 .description("A new company")
@@ -98,7 +96,6 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 // Story 1.16.2: use company name instead of UUID - removed id field
                 .andExpect(jsonPath("$.name").value("New Company"))
                 .andExpect(jsonPath("$.displayName").value("New Co"))
-                .andExpect(jsonPath("$.swissUID").value("CHE-987.654.321"))
                 .andExpect(jsonPath("$.website").value("https://new.example.com"))
                 .andExpect(jsonPath("$.industry").value("Finance"))
                 .andExpect(jsonPath("$.description").value("A new company"))
@@ -257,23 +254,6 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /companies - should return 400 when Swiss UID format is invalid")
-    @WithMockUser(roles = {"ORGANIZER"})
-    void shouldReturn400_whenSwissUIDFormatInvalid() throws Exception {
-        // Given
-        CreateCompanyRequest request = CreateCompanyRequest.builder()
-                .name("New Company")
-                .swissUID("INVALID-UID")
-                .build();
-
-        // When & Then
-        mockMvc.perform(post("/api/v1/companies")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(request)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
     @DisplayName("POST /companies - should return 409 when company name already exists")
     @WithMockUser(roles = {"ORGANIZER"})
     void shouldReturn409_whenCompanyNameAlreadyExists() throws Exception {
@@ -301,7 +281,6 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.name").value(testCompany.getName()))
                 .andExpect(jsonPath("$.displayName").value(testCompany.getDisplayName()))
-                .andExpect(jsonPath("$.swissUID").value(testCompany.getSwissUID()))
                 .andExpect(jsonPath("$.website").value(testCompany.getWebsite()))
                 .andExpect(jsonPath("$.industry").value(testCompany.getIndustry()))
                 .andExpect(jsonPath("$.description").value(testCompany.getDescription()))
@@ -593,33 +572,6 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest())
                 .andExpect(jsonPath("$.status").value(400))
                 .andExpect(jsonPath("$.message").value(org.hamcrest.Matchers.containsString("limit")));
-    }
-
-    // SWISS UID VALIDATION TESTS (AC12)
-    // (migrated from the former CompanyControllerTest @WebMvcTest slice — see CompanyVerificationApi)
-
-    @Test
-    @DisplayName("GET /companies/validate-uid - returns valid=true for a well-formed Swiss UID")
-    @WithMockUser(roles = {"ORGANIZER"})
-    void shouldValidateUID_whenValidUIDProvided() throws Exception {
-        mockMvc.perform(get("/api/v1/companies/validate-uid")
-                        .param("uid", "CHE-123.456.789"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valid").value(true))
-                .andExpect(jsonPath("$.uid").value("CHE-123.456.789"))
-                .andExpect(jsonPath("$.message").value("Valid Swiss UID format"));
-    }
-
-    @Test
-    @DisplayName("GET /companies/validate-uid - returns valid=false for a malformed Swiss UID")
-    @WithMockUser(roles = {"ORGANIZER"})
-    void shouldReturnInvalid_whenInvalidUIDProvided() throws Exception {
-        mockMvc.perform(get("/api/v1/companies/validate-uid")
-                        .param("uid", "INVALID-UID"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valid").value(false))
-                .andExpect(jsonPath("$.uid").value("INVALID-UID"))
-                .andExpect(jsonPath("$.message").value("Invalid Swiss UID format. Expected: CHE-XXX.XXX.XXX"));
     }
 
     // COMPANY VERIFICATION TESTS (AC13)

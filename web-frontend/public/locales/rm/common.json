@@ -162,7 +162,6 @@
     "fields": {
       "name": "Num d'empresa",
       "displayName": "Num da visualisaziun (sch'el è different dal num legal)",
-      "swissUID": "UID svizzer (CHE-XXX.XXX.XXX)",
       "website": "Lieu web",
       "industry": "Sectur",
       "description": "Descripziun",
@@ -170,7 +169,6 @@
       "logo": "Logo d'empresa"
     },
     "placeholders": {
-      "swissUID": "CHE-123.456.789",
       "website": "https://example.com"
     },
     "industries": {
@@ -194,9 +192,6 @@
       "saveChanges": "Guardar midadas",
       "unsavedChanges": "Avais midadas betg guardadas. Essas vus segirs da volair serrar?",
       "characterCount": "{{count}}/{{max}} characters",
-      "helpText": {
-        "swissUID": "Opziunal - per la verificaziun automatica"
-      },
       "errors": {
         "noPermission": "Vus n'avais betg la permissiun da modifitgar questa empresa. Referents pon mo modifitgar lur atgna empresa."
       }

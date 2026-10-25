@@ -32,11 +32,6 @@ public class CompanyCreatedEvent extends DomainEvent<String> {
     private final String displayName;
 
     /**
-     * Swiss UID (optional)
-     */
-    private final String swissUID;
-
-    /**
      * Company website (optional)
      */
     private final String website;
@@ -65,7 +60,6 @@ public class CompanyCreatedEvent extends DomainEvent<String> {
             String companyName,
             String name,
             String displayName,
-            String swissUID,
             String website,
             String industry,
             String description,
@@ -75,7 +69,6 @@ public class CompanyCreatedEvent extends DomainEvent<String> {
         super(companyName, "CompanyCreated", username);
         this.name = name;
         this.displayName = displayName;
-        this.swissUID = swissUID;
         this.website = website;
         this.industry = industry;
         this.description = description;

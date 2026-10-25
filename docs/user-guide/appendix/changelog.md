@@ -62,6 +62,11 @@ Each release includes:
 - ✅ Notifications from automated test runs no longer pile up in organizers' lists (#1068). Deleting an event now deletes its notifications, and the nightly test run removes notifications of all test events, including the backlog from earlier runs (6,365 for the test organizer alone).
 - ✅ Every notification names who made the change, for example "nissim.buchs moved BATbern60 to Agenda Published" or "nissim.buchs moved a speaker of BATbern60 from Contacted to Ready". Slot changes showed the placeholder "organizer" instead of the real person; the slot audit history now records the real person too.
 
+**Cleanup — Company Swiss UID Removed, Stale Placeholders Gone (2026-10-25)**:
+- 🗑️ Companies no longer have a Swiss UID field (#1119). It was never used (0 of 691 companies had one), so the field, its format check and the `GET /companies/validate-uid` endpoint are gone, and the database column is dropped. Company verification by an organizer is unchanged.
+- 🗑️ The company `?include=statistics` expansion is gone: it always returned zeros and no screen showed it.
+- 🧹 Code cleanup with no behaviour change: placeholder code that was never called, outdated TODO notes, and tests that had been switched off. Tests that still made sense were repaired and switched back on.
+
 **Bug Fixes — Photo Row Back on the Homepage (2026-10-24)**:
 - ✅ The homepage shows the photo row from recent events again. It took its photos from the five events with the latest date, and once BATbern61–66 had been created ahead of time those were all future events without photos, so the row disappeared. Only events that have already taken place count now.
 

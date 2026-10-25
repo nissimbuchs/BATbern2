@@ -19,7 +19,6 @@ BATbern organizes information into five core entity types:
 Architectural firms participating in BATbern conferences.
 
 **Key Features**:
-- Swiss UID validation (CHE-xxx.xxx.xxx format)
 - Company logo upload to S3
 - Employee tracking
 - Location and contact information
@@ -135,9 +134,9 @@ Click "Save" or "Save & Continue" to create the entity.
 ────────────────────────────────────────────
 [🔍 Search companies...                   ]
 
-Company Name          | Swiss UID    | Actions
-───────────────────────────────────────────
-Müller Architekten AG | CHE-123.456  | 👁️ 📝 🗑️
+Company Name          | Actions
+──────────────────────────────
+Müller Architekten AG | 👁️ 📝 🗑️
 ```
 
 **Detail View**: View complete entity information
@@ -229,21 +228,6 @@ Returns event with embedded speaker and partner data in a single request, reduci
 ## Data Validation
 
 All entities enforce validation rules:
-
-### Swiss UID Format
-
-<span class="feature-status implemented">Implemented</span>
-
-Companies must provide a valid Swiss UID:
-
-- **Format**: `CHE-123.456.789`
-- **Validation**: Real-time format checking
-- **Required**: Yes for Swiss companies
-
-**Example**:
-- ✅ Valid: `CHE-123.456.789`
-- ❌ Invalid: `CHE123456789` (missing dots)
-- ❌ Invalid: `ABC-123.456.789` (wrong prefix)
 
 ### Email Validation
 
@@ -345,7 +329,7 @@ Future releases will support:
 
 ## Related Topics
 
-- [Companies Management →](companies.md) - Swiss UID validation, logo upload
+- [Companies Management →](companies.md) - Logo upload, search
 - [Users Management →](users.md) - Roles, permissions, GDPR
 - [Events Management →](events.md) - Event types, timeline, workflow
 - [Partners Management →](partners.md) - Partner directory and coordination

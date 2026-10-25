@@ -71,7 +71,7 @@ export function transformCompanyForApi(source: SourceCompany): CreateCompanyRequ
     displayName: displayName || undefined,
     website: isValidUrl(source.url) ? source.url! : undefined,
     industry: source.industry || undefined,
-    // swissUID, description not available in source data
+    // description not available in source data
   };
 }
 

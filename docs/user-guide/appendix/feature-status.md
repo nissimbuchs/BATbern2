@@ -98,7 +98,6 @@ This page tracks implementation status of all BATbern features. Use this to unde
 | Feature | Status | Notes | Documentation |
 |---------|--------|-------|---------------|
 | CRUD Operations | ✅ `[IMPLEMENTED]` | Create, Read, Update, Delete | [Company Management](../entity-management/companies.md) |
-| Swiss UID Validation | ✅ `[IMPLEMENTED]` | CHE-XXX.XXX.XXX format with check digit | [Companies](../entity-management/companies.md#swiss-uid-validation) |
 | Logo Upload | ✅ `[IMPLEMENTED]` | Presigned S3 URLs, max 5 MB | [File Uploads](../features/file-uploads.md) |
 | Search & Autocomplete | ✅ `[IMPLEMENTED]` | Full-text search, instant results | [Companies](../entity-management/companies.md#search) |
 | Duplicate Detection | 🔨 `[IN PROGRESS]` | Fuzzy matching, 80% complete | Auto-suggest merges |

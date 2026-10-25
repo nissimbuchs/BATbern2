@@ -17,7 +17,7 @@ describe('PartnerOverviewStats', () => {
           totalPartners: 24,
           activePartners: 18,
           engagementRate: 75.5,
-          tierDistribution: {
+          tierCounts: {
             STRATEGIC: 3,
             PLATINUM: 5,
             GOLD: 8,
@@ -43,7 +43,7 @@ describe('PartnerOverviewStats', () => {
           totalPartners: 24,
           activePartners: 18,
           engagementRate: 75.5,
-          tierDistribution: {
+          tierCounts: {
             STRATEGIC: 3,
             PLATINUM: 5,
             GOLD: 8,
@@ -70,7 +70,7 @@ describe('PartnerOverviewStats', () => {
           totalPartners: 24,
           activePartners: 18,
           engagementRate: 75.5,
-          tierDistribution: {
+          tierCounts: {
             STRATEGIC: 3,
             PLATINUM: 5,
             GOLD: 8,
@@ -90,15 +90,14 @@ describe('PartnerOverviewStats', () => {
       expect(screen.getByText(/Active Partners/i)).toBeInTheDocument();
     });
 
-    // TODO: Fix tier distribution test - component might render as separate elements
-    it.skip('should_displayTierDistribution_when_statisticsProvided', () => {
+    it('should_displayTierDistribution_when_statisticsProvided', () => {
       // Arrange
       vi.mocked(usePartnerStatistics).mockReturnValue({
         data: {
           totalPartners: 24,
           activePartners: 18,
           engagementRate: 75.5,
-          tierDistribution: {
+          tierCounts: {
             STRATEGIC: 3,
             PLATINUM: 5,
             GOLD: 8,
@@ -233,7 +232,7 @@ describe('PartnerOverviewStats', () => {
           totalPartners: 24,
           activePartners: 18,
           engagementRate: 75.5,
-          tierDistribution: {
+          tierCounts: {
             STRATEGIC: 3,
             PLATINUM: 5,
             GOLD: 8,
@@ -260,7 +259,7 @@ describe('PartnerOverviewStats', () => {
           totalPartners: 24,
           activePartners: 18,
           engagementRate: 75.5,
-          tierDistribution: {
+          tierCounts: {
             STRATEGIC: 3,
             PLATINUM: 5,
             GOLD: 8,

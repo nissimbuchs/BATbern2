@@ -3,7 +3,7 @@
  *
  * Tests for company creation and editing modal form
  * - Create and edit modes
- * - Form validation (Swiss UID, required fields)
+ * - Form validation (required fields)
  * - Duplicate name detection
  * - Unsaved changes warning
  *
@@ -36,7 +36,6 @@ const mockCompany: Company = {
   id: 'company-123',
   name: 'Acme Corporation',
   displayName: 'ACME Corp',
-  swissUID: 'CHE-123.456.789',
   website: 'https://acme.com',
   industry: 'Technology',
   description: 'A leading tech company',
@@ -66,7 +65,6 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
 
       // Optional fields
       expect(screen.getByLabelText(/display name/i)).toBeInTheDocument();
-      expect(screen.getByLabelText(/swiss uid/i)).toBeInTheDocument();
       expect(screen.getByLabelText(/website/i)).toBeInTheDocument();
       expect(screen.getAllByLabelText(/industry/i)[0]).toBeInTheDocument();
       expect(screen.getByLabelText(/description/i)).toBeInTheDocument();
@@ -134,44 +132,8 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
     });
   });
 
-  describe('Swiss UID Validation', () => {
-    it('should_validateSwissUIDFormat_when_uidEntered', async () => {
-      // AC3 Test 3.3: Swiss UID format validation (CHE-XXX.XXX.XXX)
-      const user = userEvent.setup();
-
-      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
-
-      const uidField = screen.getByLabelText(/swiss uid/i);
-
-      // Test invalid format
-      await user.type(uidField, 'CHE-123');
-      await user.tab(); // Trigger blur event
-
-      await waitFor(() => {
-        expect(screen.getByText(/invalid swiss uid format/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should_acceptValidSwissUID_when_correctFormatEntered', async () => {
-      // Test valid Swiss UID format
-      const user = userEvent.setup();
-
-      render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
-
-      const uidField = screen.getByLabelText(/swiss uid/i);
-
-      // Enter valid Swiss UID
-      await user.type(uidField, 'CHE-123.456.789');
-      await user.tab();
-
-      // Should not show error
-      await waitFor(() => {
-        expect(screen.queryByText(/invalid swiss uid format/i)).not.toBeInTheDocument();
-      });
-    });
-
-    it('should_allowEmptySwissUID_when_optional', async () => {
-      // Swiss UID is optional, so empty should be valid
+  describe('Optional fields', () => {
+    it('should_submit_when_onlyNameEntered', async () => {
       const user = userEvent.setup();
       const onSubmit = vi.fn();
 
@@ -180,7 +142,7 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       // Fill only required field (name only, all others optional)
       await user.type(screen.getByLabelText(/company name/i), 'TestCompany');
 
-      // Submit should succeed without Swiss UID (and without any other fields)
+      // Submit should succeed without any optional field
       await user.click(screen.getByRole('button', { name: /save & create/i }));
 
       await waitFor(() => {
@@ -296,7 +258,6 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
       // Fill all fields (name is required, others optional)
       await user.type(screen.getByLabelText(/company name/i), 'NewCompany');
       await user.type(screen.getByLabelText(/display name/i), 'New Company');
-      await user.type(screen.getByLabelText(/swiss uid/i), 'CHE-987.654.321');
       await user.type(screen.getByLabelText(/website/i), 'https://newco.com');
       await user.type(screen.getByLabelText(/description/i), 'A new company');
 
@@ -316,7 +277,6 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
           expect.objectContaining({
             name: 'NewCompany',
             displayName: 'New Company',
-            swissUID: 'CHE-987.654.321',
             website: 'https://newco.com',
             industry: 'IT Consulting',
             description: 'A new company',
@@ -349,7 +309,6 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
       // Verify fields are pre-filled (only fields that exist in backend schema)
       expect(screen.getByDisplayValue('Acme Corporation')).toBeInTheDocument();
       expect(screen.getByDisplayValue('ACME Corp')).toBeInTheDocument();
-      expect(screen.getByDisplayValue('CHE-123.456.789')).toBeInTheDocument();
       expect(screen.getByDisplayValue('https://acme.com')).toBeInTheDocument();
       expect(screen.getByDisplayValue('A leading tech company')).toBeInTheDocument();
       // Removed: Bern, BE, Switzerland (location removed from schema)
@@ -639,32 +598,6 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
       // Should show validation error
       await waitFor(() => {
         expect(screen.getByText(/company name is required/i)).toBeInTheDocument();
-      });
-    });
-
-    it('should_validateSwissUID_when_editingCompany', async () => {
-      // Edit mode should validate Swiss UID format
-      const user = userEvent.setup();
-
-      render(
-        <CompanyForm
-          open={true}
-          mode="edit"
-          initialData={mockCompany}
-          onClose={vi.fn()}
-          onSubmit={vi.fn()}
-        />
-      );
-
-      // Enter invalid Swiss UID
-      const uidField = screen.getByLabelText(/swiss uid/i);
-      await user.clear(uidField);
-      await user.type(uidField, 'INVALID-UID');
-      await user.tab();
-
-      // Should show validation error
-      await waitFor(() => {
-        expect(screen.getByText(/invalid swiss uid format/i)).toBeInTheDocument();
       });
     });
   });

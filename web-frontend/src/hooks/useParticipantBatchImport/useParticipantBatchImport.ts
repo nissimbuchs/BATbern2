@@ -1,9 +1,9 @@
 /**
  * Business logic hook for participant batch import
  *
- * Handles sequential processing of batch registration requests with:
- * - Progress tracking
- * - Rate limiting (10 requests/second)
+ * Processes batch registration requests in parallel batches of 10 with:
+ * - Progress tracking (one callback per batch)
+ * - Rate limiting (100 ms pause between batches)
  * - Real-time status updates
  * - Error handling
  */

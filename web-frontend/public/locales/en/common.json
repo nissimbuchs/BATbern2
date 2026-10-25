@@ -199,7 +199,6 @@
     "fields": {
       "name": "Company Name",
       "displayName": "Display Name (if different from legal name)",
-      "swissUID": "Swiss UID (CHE-XXX.XXX.XXX)",
       "website": "Website",
       "industry": "Industry",
       "description": "Description",
@@ -207,7 +206,6 @@
       "logo": "Company Logo"
     },
     "placeholders": {
-      "swissUID": "CHE-123.456.789",
       "website": "https://example.com"
     },
     "industries": {
@@ -231,9 +229,6 @@
       "saveChanges": "Save Changes",
       "unsavedChanges": "You have unsaved changes. Are you sure you want to close?",
       "characterCount": "{{count}}/{{max}} characters",
-      "helpText": {
-        "swissUID": "Optional - for automatic verification"
-      },
       "errors": {
         "noPermission": "You don't have permission to edit this company. Speakers can only edit their own company."
       }

@@ -20,15 +20,13 @@ import java.util.UUID;
 
 /**
  * Company aggregate root
- * Represents a company entity with Swiss business validation
- * AC1: Company Entity with Swiss UID validation
+ * Represents a company entity
  * AC2: Company Profiles with metadata support
  * AC3: Data Validation and business rules
  */
 @Entity
 @Table(name = "companies", indexes = {
-    @Index(name = "idx_company_name", columnList = "name"),
-    @Index(name = "idx_company_uid", columnList = "swiss_uid")
+    @Index(name = "idx_company_name", columnList = "name")
 })
 @Getter
 @Setter
@@ -47,9 +45,6 @@ public class Company {
 
     @Column(name = "display_name", length = 255)
     private String displayName;
-
-    @Column(name = "swiss_uid", length = 20)
-    private String swissUID;
 
     @Column(name = "website", length = 500)
     private String website;

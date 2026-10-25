@@ -59,15 +59,6 @@ public interface CompanyRepository extends JpaRepository<Company, UUID>, JpaSpec
     List<Company> searchByNameOrDisplayName(@Param("query") String query);
 
     /**
-     * Find company by Swiss UID
-     * AC1: Swiss UID validation and company lookup
-     *
-     * @param swissUID Swiss company UID
-     * @return Optional company
-     */
-    Optional<Company> findBySwissUID(String swissUID);
-
-    /**
      * Check if company exists by name
      * AC3: Duplicate name validation
      *

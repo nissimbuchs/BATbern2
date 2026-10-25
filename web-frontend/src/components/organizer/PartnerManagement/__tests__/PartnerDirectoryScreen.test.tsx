@@ -145,28 +145,6 @@ describe('PartnerDirectoryScreen - Main Screen Component', () => {
       );
     });
 
-    // TODO: Enable when usePartnerStatistics is implemented in component
-    it.skip('should_loadStatisticsOnMount_when_hookCalled', () => {
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      const useStatisticsSpy = vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
-
-      // Should call usePartnerStatistics hook
-      expect(useStatisticsSpy).toHaveBeenCalled();
-    });
-
     it('should_updatePartnersOnFilterChange_when_filtersChanged', async () => {
       const usePartnersSpy = vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
         data: { partners: mockPartners, pagination: mockPagination },

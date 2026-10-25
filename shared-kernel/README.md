@@ -13,7 +13,7 @@ The Shared Kernel provides common Domain-Driven Design (DDD) building blocks tha
 - **Domain Value Objects**: Strongly-typed identifiers (EventId, SpeakerId, CompanyId, UserId)
 - **Domain Events**: Event sourcing support with EventBridge integration
 - **Common Utilities**: Validation, error handling, logging, and date/time utilities
-- **Swiss Compliance**: Built-in support for Swiss UID validation and Swiss timezone handling
+- **Swiss Compliance**: Built-in Swiss timezone handling
 
 ## Requirements
 
@@ -49,9 +49,6 @@ import ch.batbern.shared.types.*;
 // Create strongly-typed identifiers
 EventId eventId = EventId.generate();
 EventId fromString = EventId.from("550e8400-e29b-41d4-a716-446655440000");
-
-// Company ID with Swiss UID validation
-CompanyId companyId = CompanyId.from("CHE-123.456.789");
 
 // User ID from AWS Cognito
 UserId userId = UserId.from("cognito-user-id-123");
@@ -95,13 +92,6 @@ eventPublisher.publishBatch(events);
 ```java
 import ch.batbern.shared.utils.ValidationUtils;
 import ch.batbern.shared.exceptions.ValidationException;
-
-// Validate Swiss UID
-try {
-    ValidationUtils.validateSwissUID("CHE-123.456.789");
-} catch (ValidationException e) {
-    // Handle validation error
-}
 
 // Validate email
 ValidationUtils.validateEmail("user@batbern.ch");

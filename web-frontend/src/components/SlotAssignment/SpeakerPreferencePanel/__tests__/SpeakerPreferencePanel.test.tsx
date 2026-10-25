@@ -171,12 +171,6 @@ describe('SpeakerPreferencePanel Component (Story 5.7 - Task 4a RED Phase)', () 
   });
 
   describe('Dynamic Match Scoring', () => {
-    it.skip('should_displayMatchScore_when_hoveringOverSlot', () => {
-      // TODO: Implement match score calculation and display
-      // AC11: Dynamic match score - Shows % match when hovering over session slot
-      // Currently shows indicator but match calculation logic not implemented
-    });
-
     it('should_showGreenIndicator_when_highMatch', () => {
       // AC11: Color-coded match indicators (Green 80-100%)
       // Given: Slot matches speaker preference 90%
@@ -235,20 +229,6 @@ describe('SpeakerPreferencePanel Component (Story 5.7 - Task 4a RED Phase)', () 
     });
   });
 
-  describe('Action Buttons', () => {
-    it.skip('should_assignToCurrentSlot_when_buttonClicked', () => {
-      // TODO: Implement "Assign to Current Slot" action button
-      // AC11: Button to assign speaker to hovered slot
-      // Feature not yet implemented in component
-    });
-
-    it.skip('should_findBestMatch_when_buttonClicked', () => {
-      // TODO: Implement "Find Best Match" action button
-      // AC11: Button to auto-find best matching slot for speaker
-      // Feature not yet implemented in component
-    });
-  });
-
   describe('Panel Closure', () => {
     it('should_closePanel_when_closeButtonClicked', () => {
       // Given: Panel is open
@@ -269,12 +249,6 @@ describe('SpeakerPreferencePanel Component (Story 5.7 - Task 4a RED Phase)', () 
 
       // Then: Close callback is triggered
       expect(onClose).toHaveBeenCalled();
-    });
-
-    it.skip('should_closePanel_when_clickedOutside', () => {
-      // TODO: Test backdrop click behavior
-      // MUI Drawer backdrop click behavior is complex to test
-      // Requires simulation of backdrop element click which varies by MUI version
     });
   });
 });

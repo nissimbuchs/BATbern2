@@ -317,8 +317,7 @@ describe('PartnerCreateEditModal', () => {
       expect(container.firstChild).toBeNull();
     });
 
-    // TODO: Fix loading state test - button might have different name or not render in pending state
-    it.skip('should_showLoadingState_when_submitting', async () => {
+    it('should_showLoadingState_when_submitting', async () => {
       vi.mocked(partnerMutations.useCreatePartner).mockReturnValue({
         mutate: mockCreatePartner,
         isPending: true,
@@ -328,8 +327,8 @@ describe('PartnerCreateEditModal', () => {
 
       render(<PartnerCreateEditModal />, { wrapper: createWrapper() });
 
-      // Save button should show loading state
-      const saveButton = screen.getByRole('button', { name: /save/i });
+      // Save button is disabled and labelled "saving" while the mutation is pending
+      const saveButton = screen.getByTestId('save-partner-button');
       expect(saveButton).toBeDisabled();
 
       // Should show loading spinner

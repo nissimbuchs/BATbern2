@@ -5,8 +5,6 @@
  * - useEvents: List query with filters, sort, pagination (cache 5min)
  * - useEvent: Detail query with resource expansion (cache 15min)
  * - useEventWorkflow: Workflow state query (cache 10min)
- * - useCriticalTasks: Critical tasks query (cache 3min)
- * - useTeamActivity: Activity feed query (cache 2min)
  * - useCreateEvent: Create mutation
  * - useUpdateEvent: Update mutation with optimistic updates
  * - useDeleteEvent: Delete mutation
@@ -28,8 +26,6 @@ import type {
   EventFilters,
   EventListResponse,
   WorkflowState,
-  CriticalTasksResponse,
-  TeamActivityResponse,
   CreateEventRequest,
   PatchEventRequest,
   PaginationParams,
@@ -98,63 +94,6 @@ export const useEventWorkflow = (
     queryFn: () => eventApiClient.getEventWorkflow(eventCode!),
     enabled: !!eventCode,
     staleTime: 10 * 60 * 1000, // 10 minutes
-  });
-};
-
-/**
- * useCriticalTasks - Fetch critical tasks for organizer
- * Cache: 3 minutes (tasks are more volatile)
- *
- * @param organizerUsername - Username of organizer (e.g., "john.doe")
- * @param limit - Number of tasks to fetch (default: 10)
- */
-export const useCriticalTasks = (
-  organizerUsername: string | undefined,
-  limit: number = 10
-): UseQueryResult<CriticalTasksResponse, Error> => {
-  return useQuery({
-    queryKey: ['criticalTasks', organizerUsername, limit],
-    queryFn: async () => {
-      // TODO: API needs to be updated to support organizerUsername filter
-      // For now, returning empty response until backend implements this endpoint
-      return {
-        data: [],
-        total: 0,
-      };
-    },
-    enabled: !!organizerUsername,
-    staleTime: 3 * 60 * 1000, // 3 minutes
-  });
-};
-
-/**
- * useTeamActivity - Fetch team activity feed
- * Cache: 2 minutes (activity feed is very volatile)
- *
- * @param organizerUsername - Username of organizer (e.g., "john.doe")
- * @param limit - Number of activity items to fetch (default: 20)
- */
-export const useTeamActivity = (
-  organizerUsername: string | undefined,
-  limit: number = 20
-): UseQueryResult<TeamActivityResponse, Error> => {
-  return useQuery({
-    queryKey: ['teamActivity', organizerUsername, limit],
-    queryFn: async () => {
-      // TODO: API needs to be updated to support organizerUsername filter
-      // For now, returning empty response until backend implements this endpoint
-      return {
-        data: [],
-        pagination: {
-          page: 1,
-          limit,
-          totalItems: 0,
-          hasNext: false,
-        },
-      };
-    },
-    enabled: !!organizerUsername,
-    staleTime: 2 * 60 * 1000, // 2 minutes
   });
 };
 

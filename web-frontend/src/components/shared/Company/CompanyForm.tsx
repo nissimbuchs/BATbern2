@@ -3,7 +3,7 @@
  *
  * Modal form for creating and editing companies
  * - Create and edit modes with pre-filled data
- * - Form validation (Swiss UID, required fields, URL, character limits)
+ * - Form validation (required fields, URL, character limits)
  * - Duplicate name detection from backend
  * - Unsaved changes warning
  * - Draft save support for create mode
@@ -54,13 +54,6 @@ const companySchema = z.object({
     .max(255, 'Display name must be at most 255 characters')
     .optional()
     .or(z.literal('')),
-  swissUID: z
-    .string()
-    .optional()
-    .or(z.literal(''))
-    .refine((val) => !val || /^CHE-\d{3}\.\d{3}\.\d{3}$/.test(val), {
-      message: 'Invalid Swiss UID format (CHE-XXX.XXX.XXX)',
-    }),
   website: z
     .string()
     .optional()
@@ -143,7 +136,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       ? {
           name: initialData.name,
           displayName: initialData.displayName || '',
-          swissUID: initialData.swissUID || '',
           website: initialData.website || '',
           industry: initialData.industry || '',
           description: initialData.description || '',
@@ -151,7 +143,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       : {
           name: '',
           displayName: '',
-          swissUID: '',
           website: '',
           industry: '',
           description: '',
@@ -164,7 +155,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       reset({
         name: initialData.name,
         displayName: initialData.displayName || '',
-        swissUID: initialData.swissUID || '',
         website: initialData.website || '',
         industry: initialData.industry || '',
         description: initialData.description || '',
@@ -181,7 +171,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       reset({
         name: '',
         displayName: '',
-        swissUID: '',
         website: '',
         industry: '',
         description: '',
@@ -212,7 +201,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       const cleanedData = {
         ...data,
         displayName: data.displayName || undefined,
-        swissUID: data.swissUID || undefined,
         website: data.website || undefined,
         industry: data.industry || undefined,
         description: data.description || undefined,
@@ -283,7 +271,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
       const cleanedData = {
         ...formData,
         displayName: formData.displayName || undefined,
-        swissUID: formData.swissUID || undefined,
         website: formData.website || undefined,
         industry: formData.industry || undefined,
         description: formData.description || undefined,
@@ -402,28 +389,6 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
                 inputProps={{
                   'aria-label': t('company.fields.displayName'),
                   'data-testid': 'company-display-name-field',
-                }}
-              />
-            )}
-          />
-
-          {/* Swiss UID - Optional */}
-          <Controller
-            name="swissUID"
-            control={control}
-            render={({ field }) => (
-              <TextField
-                {...field}
-                label={t('company.fields.swissUID')}
-                fullWidth
-                margin="normal"
-                error={!!errors.swissUID}
-                helperText={errors.swissUID?.message || t('company.form.helpText.swissUID')}
-                disabled={!hasEditPermission}
-                placeholder={t('company.placeholders.swissUID')}
-                inputProps={{
-                  'aria-label': t('company.fields.swissUID'),
-                  'data-testid': 'company-swiss-uid-field',
                 }}
               />
             )}

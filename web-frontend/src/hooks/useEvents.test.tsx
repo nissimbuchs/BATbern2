@@ -8,8 +8,6 @@
  * - useEvents: List query with filters, sort, pagination (cache 5min)
  * - useEvent: Detail query with resource expansion (cache 15min)
  * - useEventWorkflow: Workflow state query (cache 10min)
- * - useCriticalTasks: Critical tasks query (cache 3min)
- * - useTeamActivity: Activity feed query (cache 2min)
  * - useCreateEvent: Create mutation
  * - useUpdateEvent: Update mutation with optimistic updates
  * - useDeleteEvent: Delete mutation
@@ -23,8 +21,6 @@ import {
   useEvents,
   useEvent,
   useEventWorkflow,
-  useCriticalTasks,
-  useTeamActivity,
   useCreateEvent,
   useUpdateEvent,
   useDeleteEvent,
@@ -347,82 +343,6 @@ describe('Event Management React Query Hooks', () => {
       });
 
       expect(eventApiClient.getEventWorkflow).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('useCriticalTasks Hook', () => {
-    it('should_notFetchTasks_when_usernameUndefined', () => {
-      const { result } = renderHook(() => useCriticalTasks(undefined as unknown as string), {
-        wrapper: createWrapper(),
-      });
-
-      expect(result.current.isLoading).toBe(false);
-      expect(result.current.fetchStatus).toBe('idle');
-    });
-  });
-
-  describe('useTeamActivity Hook', () => {
-    const mockActivity = {
-      data: [
-        {
-          id: 'activity-1',
-          eventCode: 'BATbern56',
-          type: 'speaker_assigned',
-          actorUsername: 'john.doe',
-          actorName: 'John Doe',
-          action: 'assigned speaker',
-          targetDescription: 'Jane Smith to session 1',
-          timestamp: '2025-01-15T10:00:00Z',
-        },
-      ],
-      pagination: {
-        page: 1,
-        limit: 20,
-        totalItems: 1,
-        hasNext: false,
-      },
-    };
-
-    // SKIPPED: Backend API not implemented yet (useEvents.ts lines 130-145 return TODO empty response)
-    // TODO: Unskip when backend implements GET /api/events/team-activity?organizerUsername={username}
-    it.skip('should_fetchTeamActivity_when_organizerUsernameProvided', async () => {
-      vi.mocked(eventApiClient.getTeamActivity).mockResolvedValue(mockActivity);
-
-      const { result } = renderHook(() => useTeamActivity('john.doe', 20), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(eventApiClient.getTeamActivity).toHaveBeenCalledWith('john.doe', 20);
-      expect(result.current.data).toEqual(mockActivity);
-    });
-
-    it('should_notFetchActivity_when_usernameUndefined', () => {
-      const { result } = renderHook(() => useTeamActivity(undefined as unknown as string), {
-        wrapper: createWrapper(),
-      });
-
-      expect(result.current.isLoading).toBe(false);
-      expect(eventApiClient.getTeamActivity).not.toHaveBeenCalled();
-    });
-
-    // SKIPPED: Backend API not implemented yet (useEvents.ts lines 130-145 return TODO empty response)
-    // TODO: Unskip when backend implements GET /api/events/team-activity?organizerUsername={username}
-    it.skip('should_cacheResultsFor2Minutes_when_staleTimeSet', async () => {
-      vi.mocked(eventApiClient.getTeamActivity).mockResolvedValue(mockActivity);
-
-      const { result } = renderHook(() => useTeamActivity('john.doe'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(eventApiClient.getTeamActivity).toHaveBeenCalledTimes(1);
     });
   });
 

@@ -37,7 +37,8 @@ echo ""
 
 # Get Cognito configuration based on environment
 # NOTE: Development environment deleted - using staging Cognito for both staging and development
-if [ "$ENVIRONMENT" = "staging" ]; then
+# staging IS production (account 188701360969); "production" is accepted as an alias.
+if [ "$ENVIRONMENT" = "staging" ] || [ "$ENVIRONMENT" = "production" ]; then
     AWS_PROFILE="batbern-staging"
     REGION="eu-central-1"
     USER_POOL_ID="eu-central-1_FtgfxgQRF"
@@ -47,12 +48,6 @@ elif [ "$ENVIRONMENT" = "development" ]; then
     REGION="eu-central-1"
     USER_POOL_ID="eu-central-1_FtgfxgQRF"
     CLIENT_ID="1b53lci6qpqsmdn0u3e8s4knvv"
-elif [ "$ENVIRONMENT" = "production" ]; then
-    AWS_PROFILE="batbern-prod"
-    REGION="eu-central-1"
-    # TODO: Add production Cognito details
-    echo -e "${RED}ERROR: Production configuration not yet implemented${NC}"
-    exit 1
 else
     echo -e "${RED}ERROR: Unknown environment: $ENVIRONMENT${NC}"
     echo "Supported environments: development, staging, production"

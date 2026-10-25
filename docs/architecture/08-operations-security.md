@@ -589,7 +589,7 @@ The following cost optimizations were applied to the production (staging) enviro
 | **RDS backup retention reduced** 14 → 7 days | ~$4/month | 7 days sufficient for a low-traffic community platform |
 | **Bastion auto-stop on tunnel close** | ~$2/month | `start-db-tunnel.sh` now automatically stops the bastion EC2 instance when the SSH tunnel is closed |
 
-**`isProd` bug fix (2026-03-22):** The `cluster-stack.ts` and `incident-management-stack.ts` stacks were incorrectly using `envName === 'production'` to determine production behavior. Since the consolidated environment uses `envName: 'staging'` but serves production traffic, this was changed to use `config.isProduction` (which is `true`). This ensures production-grade behavior (alerts, scaling) is correctly applied.
+**`isProd` bug fix (2026-03-22):** The `cluster-stack.ts` and `incident-management-stack.ts` (the latter never deployed, deleted 2026-10-25 in #1119) stacks were incorrectly using `envName === 'production'` to determine production behavior. Since the consolidated environment uses `envName: 'staging'` but serves production traffic, this was changed to use `config.isProduction` (which is `true`). This ensures production-grade behavior (alerts, scaling) is correctly applied.
 
 ## CDN Image Resizing (Lambda@Edge)
 

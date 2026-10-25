@@ -162,7 +162,6 @@
     "fields": {
       "name": "Nom de l'entreprise",
       "displayName": "Nom d'affichage (si différent du nom légal)",
-      "swissUID": "UID suisse (CHE-XXX.XXX.XXX)",
       "website": "Site web",
       "industry": "Secteur d'activité",
       "description": "Description",
@@ -170,7 +169,6 @@
       "logo": "Logo de l'entreprise"
     },
     "placeholders": {
-      "swissUID": "CHE-123.456.789",
       "website": "https://example.com"
     },
     "industries": {
@@ -194,9 +192,6 @@
       "saveChanges": "Enregistrer les modifications",
       "unsavedChanges": "Vous avez des modifications non enregistrées. Êtes-vous sûr de vouloir fermer ?",
       "characterCount": "{{count}}/{{max}} caractères",
-      "helpText": {
-        "swissUID": "Optionnel - pour la vérification automatique"
-      },
       "errors": {
         "noPermission": "Vous n'avez pas la permission de modifier cette entreprise. Les intervenants ne peuvent modifier que leur propre entreprise."
       }

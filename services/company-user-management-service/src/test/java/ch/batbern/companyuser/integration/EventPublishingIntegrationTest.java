@@ -51,7 +51,6 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         testCompany = Company.builder()
                 .name("Test Company")
                 .displayName("Test Co")
-                .swissUID("CHE-123.456.789")
                 .isVerified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
@@ -69,7 +68,6 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         CreateCompanyRequest request = CreateCompanyRequest.builder()
                 .name("New Company")
                 .displayName("New Co")
-                .swissUID("CHE-987.654.321")
                 .website("https://new.example.com")
                 .industry("Technology")
                 .description("A new company")
@@ -143,7 +141,6 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         CreateCompanyRequest request = CreateCompanyRequest.builder()
                 .name("Event Test Company")
                 .displayName("Event Test Co")
-                .swissUID("CHE-111.222.333")
                 .website("https://event.example.com")
                 .industry("Testing")
                 .description("Testing events")
@@ -158,7 +155,6 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         assertThat(response.getName()).isNotNull();
         assertThat(response.getName()).isEqualTo("Event Test Company");
         assertThat(response.getDisplayName()).isEqualTo("Event Test Co");
-        assertThat(response.getSwissUID()).isEqualTo("CHE-111.222.333");
         assertThat(response.getWebsite()).isEqualTo("https://event.example.com");
         assertThat(response.getIndustry()).isEqualTo("Testing");
         assertThat(response.getDescription()).isEqualTo("Testing events");
@@ -188,7 +184,6 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         assertThat(response.getName()).isEqualTo(originalName); // Name unchanged
         assertThat(response.getDisplayName()).isEqualTo("Changed Display Name");
         assertThat(response.getIndustry()).isEqualTo("Changed Industry");
-        assertThat(response.getSwissUID()).isEqualTo(testCompany.getSwissUID()); // Unchanged
     }
 
     // IDEMPOTENCY TESTS

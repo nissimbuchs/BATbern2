@@ -58,9 +58,9 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("GET /api/v1/companies/search - should return search results when query provided")
     void shouldReturnSearchResults_whenQueryProvided() throws Exception {
         // Given - Create test companies
-        createTestCompany("Swisscom AG", "CHE-123.456.789");
-        createTestCompany("Swiss Post", "CHE-987.654.321");
-        createTestCompany("Credit Suisse", "CHE-111.222.333");
+        createTestCompany("Swisscom AG");
+        createTestCompany("Swiss Post");
+        createTestCompany("Credit Suisse");
 
         // When & Then
         mockMvc.perform(get("/api/v1/companies/search")
@@ -77,7 +77,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     void shouldLimitResults_whenLimitParameterProvided() throws Exception {
         // Given - Create 10 test companies
         for (int i = 0; i < 10; i++) {
-            createTestCompany("Company " + i, "CHE-10" + i + ".000.00" + i);
+            createTestCompany("Company " + i);
         }
 
         // When & Then - Request with limit of 5
@@ -94,7 +94,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("GET /api/v1/companies/search - should return cached results on second request")
     void shouldReturnCachedResults_whenSearchExecutedTwice() throws Exception {
         // Given - Create test company
-        createTestCompany("Swisscom AG", "CHE-123.456.789");
+        createTestCompany("Swisscom AG");
 
         // When - First request (cache miss)
         mockMvc.perform(get("/api/v1/companies/search")
@@ -120,7 +120,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("GET /api/v1/companies/search - should allow SPEAKER role")
     void shouldAllowSpeakerRole_whenSearching() throws Exception {
         // Given
-        createTestCompany("Test Company", "CHE-123.456.789");
+        createTestCompany("Test Company");
 
         // When & Then
         mockMvc.perform(get("/api/v1/companies/search")
@@ -145,7 +145,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("GET /api/v1/companies/search - should return empty array when no matches found")
     void shouldReturnEmptyArray_whenNoMatchesFound() throws Exception {
         // Given - Create company with different name
-        createTestCompany("Different Company", "CHE-123.456.789");
+        createTestCompany("Different Company");
 
         // When & Then
         mockMvc.perform(get("/api/v1/companies/search")
@@ -155,82 +155,6 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$", hasSize(0)));
     }
 
-    // ==================== AC12: Swiss UID Validation Endpoint Tests ====================
-
-    @Test
-    @WithMockUser(roles = {"ORGANIZER"})
-    @DisplayName("GET /api/v1/companies/validate-uid - should return valid for correct UID format")
-    void shouldReturnValid_whenValidSwissUIDProvided() throws Exception {
-        mockMvc.perform(get("/api/v1/companies/validate-uid")
-                        .param("uid", "CHE-123.456.789")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valid", is(true)))
-                .andExpect(jsonPath("$.uid", is("CHE-123.456.789")));
-    }
-
-    @Test
-    @WithMockUser(roles = {"ORGANIZER"})
-    @DisplayName("GET /api/v1/companies/validate-uid - should return invalid for incorrect UID format")
-    void shouldReturnInvalid_whenInvalidUIDFormat() throws Exception {
-        mockMvc.perform(get("/api/v1/companies/validate-uid")
-                        .param("uid", "INVALID-UID")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valid", is(false)))
-                .andExpect(jsonPath("$.uid", is("INVALID-UID")));
-    }
-
-    @Test
-    @WithMockUser(roles = {"ORGANIZER"})
-    @DisplayName("GET /api/v1/companies/validate-uid - should return invalid for missing UID parameter")
-    void shouldReturn400_whenUIDParameterMissing() throws Exception {
-        mockMvc.perform(get("/api/v1/companies/validate-uid")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @WithMockUser(roles = {"SPEAKER"})
-    @DisplayName("GET /api/v1/companies/validate-uid - should allow SPEAKER role")
-    void shouldAllowSpeakerRole_whenValidatingUID() throws Exception {
-        mockMvc.perform(get("/api/v1/companies/validate-uid")
-                        .param("uid", "CHE-123.456.789")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
-    }
-
-    @Test
-    @DisplayName("GET /api/v1/companies/validate-uid - should return 401 when unauthenticated")
-    void shouldReturn401_whenValidatingUIDUnauthenticated() throws Exception {
-        mockMvc.perform(get("/api/v1/companies/validate-uid")
-                        .param("uid", "CHE-123.456.789")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
-    @WithMockUser(roles = {"ORGANIZER"})
-    @DisplayName("GET /api/v1/companies/validate-uid - should return invalid for all-zero UID")
-    void shouldReturnInvalid_whenAllZeroUID() throws Exception {
-        mockMvc.perform(get("/api/v1/companies/validate-uid")
-                        .param("uid", "CHE-000.000.000")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valid", is(false)));
-    }
-
-    @Test
-    @WithMockUser(roles = {"ORGANIZER"})
-    @DisplayName("GET /api/v1/companies/validate-uid - should trim whitespace from UID")
-    void shouldTrimWhitespace_whenValidatingUID() throws Exception {
-        mockMvc.perform(get("/api/v1/companies/validate-uid")
-                        .param("uid", "  CHE-123.456.789  ")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.valid", is(true)));
-    }
-
     // ==================== AC13: Verification Workflow Endpoint Tests ====================
 
     @Test
@@ -238,7 +162,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("POST /api/v1/companies/{name}/verify - should verify company when requested by ORGANIZER")
     void shouldVerifyCompany_whenRequestedByOrganizer() throws Exception {
         // Given - Create unverified company
-        var company = createTestCompany("Test Company", "CHE-123.456.789");
+        var company = createTestCompany("Test Company");
 
         // When & Then - Story 1.16.2: use company name in path instead of UUID
         mockMvc.perform(post("/api/v1/companies/" + company.getName() + "/verify")
@@ -253,7 +177,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("POST /api/v1/companies/{name}/verify - should return 403 when SPEAKER attempts verification")
     void shouldReturn403_whenSpeakerAttemptsVerification() throws Exception {
         // Given
-        var company = createTestCompany("Test Company", "CHE-123.456.789");
+        var company = createTestCompany("Test Company");
 
         // When & Then - Story 1.16.2: use company name in path instead of UUID
         mockMvc.perform(post("/api/v1/companies/" + company.getName() + "/verify")
@@ -266,7 +190,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("POST /api/v1/companies/{name}/verify - should return 403 when PARTNER attempts verification")
     void shouldReturn403_whenPartnerAttemptsVerification() throws Exception {
         // Given
-        var company = createTestCompany("Test Company", "CHE-123.456.789");
+        var company = createTestCompany("Test Company");
 
         // When & Then - Story 1.16.2: use company name in path instead of UUID
         mockMvc.perform(post("/api/v1/companies/" + company.getName() + "/verify")
@@ -301,7 +225,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("POST /api/v1/companies/{name}/verify - should be idempotent when verifying already verified company")
     void shouldBeIdempotent_whenVerifyingAlreadyVerifiedCompany() throws Exception {
         // Given - Create and verify company
-        var company = createTestCompany("Test Company", "CHE-123.456.789");
+        var company = createTestCompany("Test Company");
 
         // First verification - Story 1.16.2: use company name in path instead of UUID
         mockMvc.perform(post("/api/v1/companies/" + company.getName() + "/verify")
@@ -321,7 +245,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("POST /api/v1/companies/{name}/verify - should update updatedAt timestamp when verified")
     void shouldUpdateTimestamp_whenCompanyVerified() throws Exception {
         // Given
-        var company = createTestCompany("Test Company", "CHE-123.456.789");
+        var company = createTestCompany("Test Company");
         var originalUpdatedAt = company.getUpdatedAt();
 
         // Wait a bit to ensure timestamp difference
@@ -339,11 +263,10 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
 
     // ==================== Helper Methods ====================
 
-    private Company createTestCompany(String name, String swissUID) {
+    private Company createTestCompany(String name) {
         Company company = Company.builder()
                 .name(name)
                 .displayName(name)
-                .swissUID(swissUID)
                 .isVerified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())

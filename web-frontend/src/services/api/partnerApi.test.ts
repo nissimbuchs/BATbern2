@@ -17,13 +17,6 @@ import {
   createPartner,
   updatePartner,
   getPartnerContacts,
-  // TODO: Uncomment when implemented in partnerApi.ts
-  // getPartnerMeetings,
-  // getPartnerActivity,
-  // getPartnerNotes,
-  // createPartnerNote,
-  // updatePartnerNote,
-  // deletePartnerNote,
 } from '@/services/api/partnerApi';
 import apiClient from '@/services/api/apiClient';
 import { AxiosError } from 'axios';
@@ -375,111 +368,17 @@ describe('Partner API Client - Story 2.8.2 (Partner Detail View)', () => {
     });
   });
 
-  // TODO: Uncomment these tests when functions are implemented in partnerApi.ts
-  describe.skip('getPartnerMeetings (NOT YET IMPLEMENTED)', () => {
-    // Test 5: should_fetchMeetings_when_meetingsTabActivated
-    it('should_fetchMeetings_when_meetingsTabActivated', async () => {
-      // const companyName = 'GoogleZH';
-      // await expect(getPartnerMeetings(companyName)).rejects.toThrow(
-      //   /(Network Error|status code 500|timeout|Not implemented)/
-      // );
-    });
-  });
-
-  describe.skip('getPartnerActivity (NOT YET IMPLEMENTED)', () => {
-    // Test 6: should_fetchActivity_when_activityTabActivated
-    it('should_fetchActivity_when_activityTabActivated', async () => {
-      // const companyName = 'GoogleZH';
-      // await expect(getPartnerActivity(companyName)).rejects.toThrow(
-      //   /(Network Error|status code 500|timeout|Not implemented)/
-      // );
-    });
-
-    // Test 6b: should_fetchFilteredActivity_when_filterApplied
-    it('should_fetchFilteredActivity_when_filterApplied', async () => {
-      // const companyName = 'GoogleZH';
-      // const filters = { type: 'VOTE_CAST' };
-      // await expect(getPartnerActivity(companyName, filters)).rejects.toThrow(
-      //   /(Network Error|status code 500|timeout|Not implemented)/
-      // );
-    });
-  });
-
-  describe.skip('getPartnerNotes (NOT YET IMPLEMENTED)', () => {
-    // Test 7: should_fetchNotes_when_notesTabActivated
-    it('should_fetchNotes_when_notesTabActivated', async () => {
-      // const companyName = 'GoogleZH';
-      // await expect(getPartnerNotes(companyName)).rejects.toThrow(
-      //   /(Network Error|status code 500|timeout|Not implemented)/
-      // );
-    });
-  });
-
-  describe.skip('createPartnerNote (NOT YET IMPLEMENTED)', () => {
-    // Test 8: should_createNote_when_noteSubmitted
-    it('should_createNote_when_noteSubmitted', async () => {
-      // const companyName = 'GoogleZH';
-      // const note = {
-      //   title: 'Test Note',
-      //   content: 'Test note content',
-      // };
-      // await expect(createPartnerNote(companyName, note)).rejects.toThrow(
-      //   /(Network Error|status code 500|timeout|Not implemented)/
-      // );
-    });
-  });
-
-  describe.skip('updatePartnerNote (NOT YET IMPLEMENTED)', () => {
-    // Test 9: should_updateNote_when_editSubmitted
-    it('should_updateNote_when_editSubmitted', async () => {
-      // const companyName = 'GoogleZH';
-      // const noteId = 'test-note-id';
-      // const note = {
-      //   title: 'Updated Note',
-      //   content: 'Updated note content',
-      // };
-      // await expect(updatePartnerNote(companyName, noteId, note)).rejects.toThrow(
-      //   /(Network Error|status code 500|timeout|Not implemented)/
-      // );
-    });
-  });
-
-  describe.skip('deletePartnerNote (NOT YET IMPLEMENTED)', () => {
-    // Test 10: should_deleteNote_when_deleteConfirmed
-    it('should_deleteNote_when_deleteConfirmed', async () => {
-      // const companyName = 'GoogleZH';
-      // const noteId = 'test-note-id';
-      // await expect(deletePartnerNote(companyName, noteId)).rejects.toThrow(
-      //   /(Network Error|status code 500|timeout|Not implemented)/
-      // );
-    });
-  });
-
   describe('API Structure', () => {
     it('should_haveAllRequiredMethods_when_apiImported', () => {
       // Verify currently implemented API methods exist
       expect(getPartnerDetail).toBeDefined();
-      // TODO: Uncomment when implemented
-      // expect(getPartnerMeetings).toBeDefined();
-      // expect(getPartnerActivity).toBeDefined();
-      // expect(getPartnerNotes).toBeDefined();
-      // expect(createPartnerNote).toBeDefined();
-      // expect(updatePartnerNote).toBeDefined();
-      // expect(deletePartnerNote).toBeDefined();
     });
 
     it('should_returnPromises_when_methodsCalled', () => {
       // All methods should be async functions - catch errors to prevent unhandled rejections
       const promise1 = getPartnerDetail('test').catch(() => {});
-      // TODO: Uncomment when implemented
-      // const promise3 = getPartnerMeetings('test').catch(() => {});
-      // const promise4 = getPartnerActivity('test').catch(() => {});
-      // const promise5 = getPartnerNotes('test').catch(() => {});
 
       expect(promise1).toBeInstanceOf(Promise);
-      // expect(promise3).toBeInstanceOf(Promise);
-      // expect(promise4).toBeInstanceOf(Promise);
-      // expect(promise5).toBeInstanceOf(Promise);
     });
   });
 });

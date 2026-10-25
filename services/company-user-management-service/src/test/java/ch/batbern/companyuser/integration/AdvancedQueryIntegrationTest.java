@@ -42,18 +42,17 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         companyRepository.deleteAll();
 
         // Create test companies with varied data
-        createCompany("Acme Corp", "CHE-123.456.789", "Technology", true, 100);
-        createCompany("Beta AG", "CHE-111.222.333", "Finance", false, 50);
-        createCompany("Gamma GmbH", "CHE-444.555.666", "Technology", true, 200);
-        createCompany("Delta SA", "CHE-777.888.999", "Healthcare", false, 30);
-        createCompany("Epsilon LLC", "CHE-100.200.300", "Technology", true, 150);
+        createCompany("Acme Corp", "Technology", true, 100);
+        createCompany("Beta AG", "Finance", false, 50);
+        createCompany("Gamma GmbH", "Technology", true, 200);
+        createCompany("Delta SA", "Healthcare", false, 30);
+        createCompany("Epsilon LLC", "Technology", true, 150);
     }
 
-    private void createCompany(String name, String swissUID, String industry, boolean verified, int employeeCount) {
+    private void createCompany(String name, String industry, boolean verified, int employeeCount) {
         Company company = Company.builder()
                 .name(name)
                 .displayName(name)
-                .swissUID(swissUID)
                 .industry(industry)
                 .isVerified(verified)
                 .website("https://" + name.toLowerCase().replace(" ", "") + ".ch")
@@ -295,7 +294,6 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         JsonNode firstCompany = data.get(0);
         assertThat(firstCompany.has("name")).isTrue();
         assertThat(firstCompany.has("industry")).isTrue();
-        assertThat(firstCompany.has("swissUID")).isFalse(); // Not selected
         assertThat(firstCompany.has("website")).isFalse(); // Not selected
     }
 
@@ -312,7 +310,6 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         JsonNode firstCompany = data.get(0);
         // Story 1.16.2: use company name instead of UUID - removed id field
         assertThat(firstCompany.has("name")).isTrue();
-        assertThat(firstCompany.has("swissUID")).isTrue();
         assertThat(firstCompany.has("industry")).isTrue();
         assertThat(firstCompany.has("website")).isTrue();
     }
@@ -348,28 +345,6 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
-    void should_includeStatistics_when_includeParameterContainsStatistics() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/v1/companies")
-                        .param("include", "statistics"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
-        JsonNode data = response.get("data");
-
-        assertThat(data).isNotNull();
-        assertThat(data.size()).isEqualTo(5);
-
-        JsonNode firstCompany = data.get(0);
-        assertThat(firstCompany.has("statistics")).isTrue();
-        JsonNode statistics = firstCompany.get("statistics");
-        assertThat(statistics.has("totalEvents")).isTrue();
-        assertThat(statistics.has("totalSpeakers")).isTrue();
-        assertThat(statistics.has("totalPartners")).isTrue();
-    }
-
-    @Test
-    @WithMockUser(roles = "ORGANIZER")
     void should_includeLogo_when_includeParameterContainsLogo() throws Exception {
         MvcResult result = mockMvc.perform(get("/api/v1/companies")
                         .param("include", "logo"))
@@ -392,31 +367,11 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
-    void should_includeMultipleResources_when_multipleIncludesProvided() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/v1/companies")
-                        .param("include", "statistics,logo"))
-                .andExpect(status().isOk())
-                .andReturn();
-
-        JsonNode response = objectMapper.readTree(result.getResponse().getContentAsString());
-        JsonNode data = response.get("data");
-
-        assertThat(data).isNotNull();
-        assertThat(data.size()).isEqualTo(5);
-
-        JsonNode firstCompany = data.get(0);
-        assertThat(firstCompany.has("statistics")).isTrue(); // Always included
-        // Logo is null for test companies, excluded by @JsonInclude(NON_NULL)
-        assertThat(firstCompany.has("logo")).isFalse();
-    }
-
-    @Test
-    @WithMockUser(roles = "ORGANIZER")
     void should_meetPerformanceTarget_when_allResourcesIncluded() throws Exception {
         long startTime = System.currentTimeMillis();
 
         mockMvc.perform(get("/api/v1/companies")
-                        .param("include", "statistics,logo"))
+                        .param("include", "logo"))
                 .andExpect(status().isOk());
 
         long duration = System.currentTimeMillis() - startTime;
@@ -437,7 +392,6 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         JsonNode data = response.get("data");
 
         JsonNode firstCompany = data.get(0);
-        assertThat(firstCompany.has("statistics")).isFalse();
         assertThat(firstCompany.has("logo")).isFalse();
     }
 }

@@ -25,10 +25,8 @@ import java.time.ZoneOffset;
  * - NoSuchElementException → 404
  * - IllegalStateException  → 409
  * <p>
- * Rate limiting: No rate limiting infrastructure (bucket4j) exists in this service.
- * TODO: add per-IP rate limiting to /by-email to prevent email spam abuse.
- * Per-IP throttle: max 5 requests/hour per source IP (bucket4j or Spring rate-limiter).
- * Track in backlog as "Rate-limit deregistration-by-email endpoint"
+ * Rate limiting: the API gateway limits POST /registrations/deregister/by-email to 3 requests per
+ * 5 minutes per IP ({@code RateLimiter.ANON_PATH_POLICIES}), with AWS WAF in front.
  * <p>
  * {@code implements} the generated {@link DeregistrationApi} interface (event-registrations
  * spec, ADR-006 contract-first). The interface supplies the verb/path/param mapping and the
