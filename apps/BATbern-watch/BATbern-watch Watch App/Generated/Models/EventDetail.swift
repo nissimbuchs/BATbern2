@@ -12,14 +12,16 @@ import AnyCodable
 
 public struct EventDetail: Codable, JSONEncodable, Hashable {
 
-    public enum QnaOpenTrigger: String, Codable, CaseIterable {
+    public enum QnaOpenTrigger: String, Codable, CaseIterable, CaseIterableDefaultsLast {
         case eventCompleted = "EVENT_COMPLETED"
         case speakersPublished = "SPEAKERS_PUBLISHED"
+        case unknownDefaultOpenApi = "unknown_default_open_api"
     }
-    public enum CurrentPublishedPhase: String, Codable, CaseIterable {
+    public enum CurrentPublishedPhase: String, Codable, CaseIterable, CaseIterableDefaultsLast {
         case topic = "TOPIC"
         case speakers = "SPEAKERS"
         case agenda = "AGENDA"
+        case unknownDefaultOpenApi = "unknown_default_open_api"
     }
     public static let eventCodeRule = StringRule(minLength: nil, maxLength: nil, pattern: "^BATbern[0-9]+$")
     public static let titleRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)
@@ -253,3 +255,13 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
     }
 }
 
+
+extension EventDetail: UnknownCaseCheckable {
+    public var containsUnknownDefaultOpenApiCase: Bool {
+        if qnaOpenTrigger == .unknownDefaultOpenApi { return true }
+        if eventType == .unknownDefaultOpenApi { return true }
+        if workflowState == .unknownDefaultOpenApi { return true }
+        if currentPublishedPhase == .unknownDefaultOpenApi { return true }
+        return false
+    }
+}

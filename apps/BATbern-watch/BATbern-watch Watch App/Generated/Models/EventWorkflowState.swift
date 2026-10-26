@@ -11,7 +11,7 @@ import AnyCodable
 #endif
 
 /** Event workflow state for 8-step consolidated workflow (V82: AGENDA_FINALIZED removed). Defines the current state of an event in the organizer workflow. The scheduler transitions AGENDA_PUBLISHED directly to EVENT_LIVE on event day.  */
-public enum EventWorkflowState: String, Codable, CaseIterable {
+public enum EventWorkflowState: String, Codable, CaseIterable, CaseIterableDefaultsLast {
     case created = "CREATED"
     case topicSelection = "TOPIC_SELECTION"
     case speakerIdentification = "SPEAKER_IDENTIFICATION"
@@ -20,4 +20,11 @@ public enum EventWorkflowState: String, Codable, CaseIterable {
     case eventLive = "EVENT_LIVE"
     case eventCompleted = "EVENT_COMPLETED"
     case archived = "ARCHIVED"
+    case unknownDefaultOpenApi = "unknown_default_open_api"
+}
+
+extension EventWorkflowState: UnknownCaseCheckable {
+    public var containsUnknownDefaultOpenApiCase: Bool {
+        self == .unknownDefaultOpenApi
+    }
 }

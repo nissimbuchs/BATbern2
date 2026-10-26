@@ -49,7 +49,7 @@ struct PublicEventServiceTests {
             eventCode: "BATbern57",
             title: "Opening Keynote",
             description: "Welcome to BATbern",
-            sessionType: "keynote",
+            sessionType: .keynote,
             startTime: Date(timeIntervalSince1970: 1742040000),
             endTime: Date(timeIntervalSince1970: 1742043600),
             speakers: [
@@ -98,8 +98,8 @@ struct PublicEventServiceTests {
 /// Synthetic payload with the exact shape `GET /api/v1/public/events/current` returns in
 /// production (captured from BATbern60, 2026-10-26; names and text replaced). Keeps the traits
 /// that matter for decoding: fractional-second timestamps, top-level `speakers[]` (PublicSpeaker
-/// with `talkTitle`), `materials: []`, null logo URLs, and the `aperitif` session type that the
-/// old closed enum could not decode.
+/// with `talkTitle`), `materials: []`, null logo URLs, and the apéro as `networking` (V127, #1123;
+/// before that production sent `aperitif`, which the 2.3 closed enum could not decode).
 private let publicCurrentEventJSON = """
 {
   "eventCode": "BATbern60", "title": "Digital Sovereignty", "eventNumber": 60,
@@ -156,7 +156,7 @@ private let publicCurrentEventJSON = """
      "createdAt": "2026-09-09T17:49:40.756177Z", "updatedAt": "2026-10-12T19:05:17Z",
      "materialsStatus": "NONE", "materials": [], "materialsCount": 0, "speakers": []},
     {"sessionSlug": "apero-1", "eventCode": "BATbern60", "title": "Apéro",
-     "sessionType": "aperitif", "startTime": "2026-11-06T17:50:00Z", "endTime": "2026-11-06T19:00:00Z",
+     "sessionType": "networking", "startTime": "2026-11-06T17:50:00Z", "endTime": "2026-11-06T19:00:00Z",
      "room": null, "capacity": null, "language": "de",
      "createdAt": "2026-09-09T17:49:40.756177Z", "updatedAt": "2026-10-12T19:05:17Z",
      "materialsStatus": "NONE", "materials": [], "materialsCount": 0, "speakers": []}
@@ -183,7 +183,7 @@ struct PublicEventServicePublicReadModelTests {
         #expect(requests.first?.url?.query == nil)
     }
 
-    @Test("fetchCurrentEvent decodes the production-shaped payload, including the aperitif slot")
+    @Test("fetchCurrentEvent decodes the production-shaped payload, including the apéro slot")
     func test_fetchCurrentEvent_decodesProductionShapedPayload() async throws {
         let host = "current-decode.test"
         let service = PublicEventService(
@@ -204,9 +204,9 @@ struct PublicEventServicePublicReadModelTests {
         #expect(talk.speakers[0].profilePictureUrl == "https://cdn.example.com/anna.png")
     }
 
-    @Test("an aperitif slot counts as a break so the break card and gong show for it")
-    func test_aperitifSession_isBreak() async throws {
-        let host = "aperitif-break.test"
+    @Test("the apéro (networking) slot counts as a break so the break card and gong show for it")
+    func test_aperoSession_isBreak() async throws {
+        let host = "apero-break.test"
         let service = PublicEventService(
             baseURL: "https://\(host)",
             session: StubURLProtocol.session(host: host, body: publicCurrentEventJSON)
@@ -221,7 +221,7 @@ struct PublicEventServicePublicReadModelTests {
     @Test("an unknown session type keeps the session (timed, as a talk) instead of dropping it")
     func test_unknownSessionType_keepsSession() async throws {
         let host = "unknown-type.test"
-        let body = publicCurrentEventJSON.replacingOccurrences(of: "\"sessionType\": \"aperitif\"", with: "\"sessionType\": \"fireside_chat\"")
+        let body = publicCurrentEventJSON.replacingOccurrences(of: "\"sessionType\": \"networking\"", with: "\"sessionType\": \"fireside_chat\"")
         let service = PublicEventService(
             baseURL: "https://\(host)",
             session: StubURLProtocol.session(host: host, body: body)
@@ -231,6 +231,20 @@ struct PublicEventServicePublicReadModelTests {
 
         let slot = try #require(event.sessions.first { $0.id == "apero-1" })
         #expect(slot.sessionType == .presentation)
+    }
+
+    @Test("an unknown materials status does not fail the event decode (#1126)")
+    func test_unknownMaterialsStatus_stillDecodes() async throws {
+        let host = "unknown-materials.test"
+        let body = publicCurrentEventJSON.replacingOccurrences(of: "\"materialsStatus\": \"NONE\"", with: "\"materialsStatus\": \"FUTURE_STATE\"")
+        let service = PublicEventService(
+            baseURL: "https://\(host)",
+            session: StubURLProtocol.session(host: host, body: body)
+        )
+
+        let event = try await service.fetchCurrentEvent()
+
+        #expect(event.sessions.count == 4)
     }
 
     @Test("fetchCurrentEvent maps 404 to noCurrentEvent")

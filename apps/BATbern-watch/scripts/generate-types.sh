@@ -59,6 +59,10 @@ for spec in "${API_SPECS[@]}"; do
         exit 1
     fi
     out="$TEMP_DIR/$spec"
+    # enumUnknownDefaultCase: a value the binary doesn't know decodes as `unknownDefaultOpenApi`
+    # instead of failing the whole payload. Installed watches can't be updated in step with the
+    # backend; a closed enum is how 2.3 broke on `aperitif` (#1123, #1126).
+    # SessionType is renamed: the watch's domain model already has a `SessionType`.
     openapi-generator generate \
         -i "$spec_path" \
         -g swift5 \
@@ -67,7 +71,9 @@ for spec in "${API_SPECS[@]}"; do
 library=urlsession,\
 projectName=BATbernAPI,\
 responseAs=Codable,\
+enumUnknownDefaultCase=true,\
 useSPMFileStructure=false \
+        --model-name-mappings SessionType=ApiSessionType \
         --global-property=models >/dev/null
     if [ -d "$out/Sources/BATbernAPI/Models" ]; then
         cp -f "$out/Sources/BATbernAPI/Models"/*.swift "$SRC_MODELS"/ 2>/dev/null || true

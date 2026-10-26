@@ -24,8 +24,8 @@ public struct SessionResponse: Codable, JSONEncodable, Hashable {
     public var eventCode: String
     public var title: String
     public var description: String?
-    /** Session type — null for placeholder sessions, assigned during agenda planning. Free-form string (NOT a closed enum): the deployed contract returns additional values such as `aperitif`, so callers must tolerate unknown types. Known values: keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation, aperitif. */
-    public var sessionType: String?
+    /** Session type — null for placeholder sessions, assigned during agenda planning. */
+    public var sessionType: ApiSessionType?
     /** Session start time - null for placeholder sessions, assigned during slot assignment */
     public var startTime: Date?
     /** Session end time - null for placeholder sessions, assigned during slot assignment */
@@ -37,14 +37,13 @@ public struct SessionResponse: Codable, JSONEncodable, Hashable {
     public var updatedAt: Date?
     /** Story 1.15a.1b: Session speakers with enriched User data List of speakers assigned to this session with their roles  */
     public var speakers: [SessionSpeaker]?
-    /** Material submission workflow status. Free-form string (NOT a closed enum): the deployed contract computes values such as `NONE`, `PARTIAL`, and `COMPLETE` (see SessionService.calculateMaterialsStatus) in addition to the review-workflow values below, so callers must tolerate unknown values. Known values: NONE, PARTIAL, COMPLETE, pending, in_review, approved, requires_changes, rejected, revision_submitted. */
-    public var materialsStatus: String?
+    public var materialsStatus: MaterialsStatus?
     /** Story 5.9: Uploaded session materials (populated by the service layer) */
     public var materials: [SessionMaterialResponse]?
     /** Story 5.9: Number of uploaded materials (for overview displays) */
     public var materialsCount: Int?
 
-    public init(sessionSlug: String, eventCode: String, title: String, description: String? = nil, sessionType: String? = nil, startTime: Date? = nil, endTime: Date? = nil, room: String? = nil, capacity: Int? = nil, language: String? = "de", createdAt: Date? = nil, updatedAt: Date? = nil, speakers: [SessionSpeaker]? = nil, materialsStatus: String? = nil, materials: [SessionMaterialResponse]? = nil, materialsCount: Int? = nil) {
+    public init(sessionSlug: String, eventCode: String, title: String, description: String? = nil, sessionType: ApiSessionType? = nil, startTime: Date? = nil, endTime: Date? = nil, room: String? = nil, capacity: Int? = nil, language: String? = "de", createdAt: Date? = nil, updatedAt: Date? = nil, speakers: [SessionSpeaker]? = nil, materialsStatus: MaterialsStatus? = nil, materials: [SessionMaterialResponse]? = nil, materialsCount: Int? = nil) {
         self.sessionSlug = sessionSlug
         self.eventCode = eventCode
         self.title = title
@@ -105,3 +104,11 @@ public struct SessionResponse: Codable, JSONEncodable, Hashable {
     }
 }
 
+
+extension SessionResponse: UnknownCaseCheckable {
+    public var containsUnknownDefaultOpenApiCase: Bool {
+        if sessionType == .unknownDefaultOpenApi { return true }
+        if materialsStatus == .unknownDefaultOpenApi { return true }
+        return false
+    }
+}

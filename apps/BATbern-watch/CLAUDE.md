@@ -436,11 +436,18 @@ and `Generated/EventDetailExtensions.swift` are preserved. Add a root only when 
 decoding another payload. The script runs on the stock macOS `/bin/bash` (3.2).
 
 **Contract changes surface in `EventDetailExtensions.swift`**, which maps the generated DTOs to
-the domain models (`WatchEvent`, `WatchSession`, `WatchSpeaker`). Note that `sessionType` is a
-free-form string in the contract: new structural types appear without a contract change
-(BATbern60 introduced `aperitif`). Map known values there and keep a default — a closed enum
-in the decode path fails the *whole* event on the first unknown value, which is what broke
-release 2.3 for BATbern60.
+the domain models (`WatchEvent`, `WatchSession`, `WatchSpeaker`).
+
+**Enums tolerate unknown values.** The contract's enums (`sessionType`, `materialsStatus`, …) are
+closed, but installed watches can't be updated in step with the backend. The script therefore
+generates with `enumUnknownDefaultCase=true`: a value this binary doesn't know decodes as
+`.unknownDefaultOpenApi` instead of failing the *whole* event — a closed enum is what broke
+release 2.3 when BATbern60 stored the apéro as `aperitif` (#1123, #1126). Map
+`.unknownDefaultOpenApi` to a sensible default in `EventDetailExtensions.swift` (an unknown
+session type becomes a timed talk slot). The enums rely on `CaseIterableDefaultsLast` /
+`UnknownCaseCheckable`, kept in `Generated/OpenAPIUtilities.swift` because the script generates
+models only. The contract's `SessionType` is generated as `ApiSessionType`
+(`--model-name-mappings`), since the domain model already owns `SessionType`.
 
 **After regenerating:**
 1. Run `./scripts/generate-types.sh`
