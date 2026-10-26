@@ -114,13 +114,13 @@ class AdminSettingsControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.value").value(nullValue()));
     }
 
-    // T2.4 — GET is open for any caller (Story 10.26: Lambda forwarder reads settings without JWT)
+    // T2.4 — GET requires ORGANIZER role (settings hold contact addresses)
     @Test
-    @DisplayName("should_return200_when_nonOrganizerAccessesGet")
+    @DisplayName("should_return403_when_nonOrganizerAccessesGet")
     @WithMockUser(roles = "PARTNER")
-    void should_return200_when_nonOrganizerAccessesGet() throws Exception {
+    void should_return403_when_nonOrganizerAccessesGet() throws Exception {
         mockMvc.perform(get(SETTINGS_URL + "/{key}", SUPPORT_CONTACTS_KEY))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
     }
 
     // T2.4 — PUT requires ORGANIZER role (403 for non-organizers)
@@ -136,11 +136,12 @@ class AdminSettingsControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // Story 10.26 — GET is open for VPC-internal callers (Lambda email forwarder)
     @Test
-    @DisplayName("should_return200_when_unauthenticatedUserAccessesGet")
-    void should_return200_when_unauthenticatedUserAccessesGet() throws Exception {
+    @DisplayName("should_denyAccess_when_unauthenticatedUserAccessesGet")
+    void should_denyAccess_when_unauthenticatedUserAccessesGet() throws Exception {
+        // Test profile permits every request at HTTP level, so @PreAuthorize is what refuses the
+        // anonymous caller here (403). In production the EMS chain and the gateway answer 401 first.
         mockMvc.perform(get(SETTINGS_URL + "/{key}", SUPPORT_CONTACTS_KEY))
-                .andExpect(status().isOk());
+                .andExpect(status().isForbidden());
     }
 }

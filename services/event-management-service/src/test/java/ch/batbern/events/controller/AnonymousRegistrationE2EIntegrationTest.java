@@ -18,6 +18,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -286,6 +287,7 @@ public class AnonymousRegistrationE2EIntegrationTest extends AbstractIntegration
 
     @Test
     @DisplayName("E2E: List registrations returns enriched data")
+    @WithMockUser(roles = "ORGANIZER")
     void should_returnEnrichedRegistrations_when_listingEventRegistrations() throws Exception {
         // Create multiple registrations
         String request1 = """

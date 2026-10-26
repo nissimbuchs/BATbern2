@@ -43,6 +43,9 @@ paths:
         **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
 
+        **Auth**: ORGANIZER role.
+
+
         **Filter Examples**:
 
         - By status: `{"status":"confirmed"}`
@@ -89,6 +92,10 @@ paths:
                       $ref: '#/components/schemas/Registration'
                   pagination:
                     $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -205,10 +212,9 @@ paths:
     get:
       tags:
       - Participants
-      summary: Resolve the email distribution list for an event (internal Lambda route)
-      description: "Returns the email addresses to fan out for the per-event mailing aliases\n`batbern{N}-speaker@batbern.ch`, `batbern{N}-moderator@batbern.ch` and\n`batbern{N}-participants@batbern.ch`.\n\n- `speakers`: all `PRIMARY_SPEAKER` users on scheduled sessions (`start_time IS NOT NULL`)\n  of the event. Includes each user's verified `additionalEmails`. Lowercase-deduped.\n- `moderator`: the event's lead organizer (`Event.organizerUsername`) — plus their\n  verified `additionalEmails`.\n- `participants`: every active registrant (`registered`/`confirmed`/`attended`;\n  excludes `waitlist` and `cancelled`) of the event, by `attendeeEmail`. Reaches the\n  same audience as the Communications → Event registrants send. Lowercase-deduped.\n\n**Auth model:** dual-mode same as `/api/v1/events/{eventCode}/registrations`:\n  - Anonymous from the in-VPC inbound-email forwarder Lambda (Spring Boot gateway is\n    VPC-only).\n  - Organizer JWT from interactive callers.\n\n**Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F2).\n"
+      summary: Resolve the email distribution list for an event (organizer)
+      description: "Returns the email addresses to fan out for the per-event mailing aliases\n`batbern{N}-speaker@batbern.ch`, `batbern{N}-moderator@batbern.ch` and\n`batbern{N}-participants@batbern.ch`.\n\n- `speakers`: all `PRIMARY_SPEAKER` users on scheduled sessions (`start_time IS NOT NULL`)\n  of the event. Includes each user's verified `additionalEmails`. Lowercase-deduped.\n- `moderator`: the event's lead organizer (`Event.organizerUsername`) — plus their\n  verified `additionalEmails`.\n- `participants`: every active registrant (`registered`/`confirmed`/`attended`;\n  excludes `waitlist` and `cancelled`) of the event, by `attendeeEmail`. Reaches the\n  same audience as the Communications → Event registrants send. Lowercase-deduped.\n\n**Auth:** ORGANIZER role (the response is a list of email addresses).\n\n**Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F2).\n"
       operationId: getEventDistributionList
-      security: []
       parameters:
       - name: eventCode
         in: path
@@ -233,6 +239,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DistributionListResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':

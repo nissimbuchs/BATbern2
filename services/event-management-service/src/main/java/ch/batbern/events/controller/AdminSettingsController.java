@@ -24,9 +24,8 @@ public class AdminSettingsController implements AdminSettingsApi {
     private final AdminSettingsService adminSettingsService;
     private final SecurityContextHelper securityContextHelper;
 
-    // No @PreAuthorize: GET is open for VPC-internal callers (Lambda forwarder, Story 10.26).
-    // HTTP-level security (SecurityConfig) controls access; PUT retains the ORGANIZER check.
     @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<AdminSettingResponse> getAdminSetting(String key) {
         String value = adminSettingsService.getSetting(key).orElse(null);
         return ResponseEntity.ok(buildResponse(key, value));

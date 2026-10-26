@@ -63,11 +63,11 @@ public class ParticipantsController implements ParticipantsApi {
     private final SecurityContextHelper securityContextHelper;
 
     /**
-     * Resolve the distribution list for an event/kind pair. Anonymous from the in-VPC
-     * forwarder Lambda; organizer JWT works too. No {@code @PreAuthorize} so the anonymous
-     * path is reachable — the path matchers in {@code SecurityConfig} grant access.
+     * Resolve the distribution list for an event/kind pair. Organizers only: the response is a
+     * list of email addresses.
      */
     @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<DistributionListResponse> getEventDistributionList(
             String eventCode,
             String kind) {

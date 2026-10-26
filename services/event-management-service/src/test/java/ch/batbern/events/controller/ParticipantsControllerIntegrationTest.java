@@ -218,8 +218,9 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     // ---- F2: distribution list ----
 
     @Test
-    @DisplayName("Anonymous GET /distribution-list/speakers → 200 with scheduled primary speakers")
-    void should_return200_when_lambdaCallsSpeakersList() throws Exception {
+    @DisplayName("Organizer GET /distribution-list/speakers → 200 with scheduled primary speakers")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_return200_when_organizerGetsSpeakersList() throws Exception {
         seedScheduledSession("speaker.bob");
 
         // UserApiClient stub for additionalEmails fan-out
@@ -242,8 +243,9 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("Anonymous GET /distribution-list/moderator → 200 with organizer email")
-    void should_return200_when_lambdaCallsModeratorList() throws Exception {
+    @DisplayName("Organizer GET /distribution-list/moderator → 200 with organizer email")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_return200_when_organizerGetsModeratorList() throws Exception {
         when(userApiClient.getUserByUsername(ORGANIZER_USERNAME)).thenReturn(
                 new UserResponse()
                         .id(ORGANIZER_USERNAME)
@@ -259,8 +261,9 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("Anonymous GET /distribution-list/participants → 200 with active registrants, excludes cancelled/waitlist")
-    void should_return200_when_lambdaCallsParticipantsList() throws Exception {
+    @DisplayName("Organizer GET /distribution-list/participants → 200 with active registrants, excludes cancelled/waitlist")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
+    void should_return200_when_organizerGetsParticipantsList() throws Exception {
         seedRegistrationWithEmail("anna.active", "anna@example.com", "registered");
         seedRegistrationWithEmail("ben.active", "ben@example.com", "confirmed");
         seedRegistrationWithEmail("carl.cancelled", "carl@example.com", "cancelled");
@@ -279,7 +282,8 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("Anonymous GET /distribution-list with unknown event → 404")
+    @DisplayName("Organizer GET /distribution-list with unknown event → 404")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
     void should_return404_when_unknownEventOnDistributionList() throws Exception {
         mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
                         "BATbern99999", "speakers"))
@@ -287,11 +291,33 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("Anonymous GET /distribution-list with unknown kind → 404 (defensive)")
+    @DisplayName("Organizer GET /distribution-list with unknown kind → 404 (defensive)")
+    @WithMockUser(username = ORGANIZER_USERNAME, roles = {"ORGANIZER"})
     void should_return404_when_unknownKind() throws Exception {
         mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
                         EVENT_CODE, "foo"))
                 .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("Anonymous GET /distribution-list → denied, no email list leaves the service")
+    void should_denyAccess_when_anonymousGetsDistributionList() throws Exception {
+        // Test profile permits every request at HTTP level, so @PreAuthorize is what refuses the
+        // anonymous caller here (403). In production the EMS chain and the gateway answer 401 first.
+        seedRegistrationWithEmail("anna.active", "anna@example.com", "registered");
+
+        mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
+                        EVENT_CODE, "participants"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @DisplayName("Attendee GET /distribution-list → 403")
+    @WithMockUser(username = "joe.user", roles = {"ATTENDEE"})
+    void should_return403_when_nonOrganizerGetsDistributionList() throws Exception {
+        mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
+                        EVENT_CODE, "participants"))
+                .andExpect(status().isForbidden());
     }
 
     // ---- Add participant (organizer) ----

@@ -1277,6 +1277,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_listRegistrations_when_requested")
+    @WithMockUser(roles = "ORGANIZER")
     void should_listRegistrations_when_requested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
@@ -1291,6 +1292,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_filterRegistrations_when_filterProvided")
+    @WithMockUser(roles = "ORGANIZER")
     void should_filterRegistrations_when_filterProvided() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
@@ -1306,6 +1308,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_return404_when_listingRegistrationsForNonExistentEvent")
+    @WithMockUser(roles = "ORGANIZER")
     void should_return404_when_listingRegistrationsForNonExistentEvent() throws Exception {
         mockMvc.perform(get("/api/v1/events/non-existent-id/registrations")
                         .contentType(MediaType.APPLICATION_JSON))

@@ -89,6 +89,10 @@ Each release includes:
 - ✅ Newsletter tasks that a later announcement has replaced are closed automatically: Topic Announcement once the speakers or the agenda are public, Speaker Lineup once the agenda is public.
 - ✅ Catering is now due **5 days** before the event (final headcount), and two new standard tasks exist: **Namensschilder** (2 days before) and **Wein** (event day). For an existing event, add them from the event's task templates.
 
+**Security — Organizer-only Participant Data (2026-10-26)**:
+- ✅ Registration lists, the per-event mailing-list addresses and admin settings can only be read by organizers.
+- ⚠️ Until the email forwarding moves into the backend (follow-up release), mail to `support@` and `batbern{N}-moderator@` is not forwarded. Incoming mail is kept for 7 days and re-delivered once the follow-up ships.
+
 **Bug Fixes — Any Name and Every Deliverable Email Address Can Register (2026-10-23)**:
 - ✅ Names with a space in the first or last name (`Hông Ân`, `van der Berg`, `Maria José`) or in a non-Latin script no longer fail registration with "Server Error". One attendee had to misspell their own name to get through on 2026-10-22 (#1102).
 - ✅ Account sign-up accepts every name: typographic apostrophes (`O’Neill`, as typed on iPhone), single-character surnames (`王`), Devanagari, decomposed Vietnamese, digits and parentheses.
