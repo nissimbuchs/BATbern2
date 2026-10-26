@@ -251,6 +251,43 @@ struct PublicEventServicePublicReadModelTests {
         }
     }
 
+    @Test("server unreachable surfaces as APIError.networkError, so the controller goes offline (#1122)")
+    func test_fetchCurrentEvent_transportFailure_throwsNetworkError() async {
+        let host = "unreachable.test"
+        let service = PublicEventService(
+            baseURL: "https://\(host)",
+            session: StubURLProtocol.session(host: host, failingWith: URLError(.cannotConnectToHost))
+        )
+
+        do {
+            _ = try await service.fetchCurrentEvent()
+            Issue.record("Expected APIError.networkError")
+        } catch APIError.networkError(let underlying) {
+            // URLSession may rewrite the code (-1004 surfaces as -1003), so only the type is stable.
+            #expect(underlying is URLError)
+        } catch {
+            Issue.record("Expected APIError.networkError, got \(type(of: error)): \(error)")
+        }
+    }
+
+    @Test("fetchEvent(code:) maps a transport failure to APIError.networkError (#1122)")
+    func test_fetchEvent_transportFailure_throwsNetworkError() async {
+        let host = "unreachable-code.test"
+        let service = PublicEventService(
+            baseURL: "https://\(host)",
+            session: StubURLProtocol.session(host: host, failingWith: URLError(.timedOut))
+        )
+
+        do {
+            _ = try await service.fetchEvent(code: "BATbern60")
+            Issue.record("Expected APIError.networkError")
+        } catch APIError.networkError(let underlying) {
+            #expect(underlying is URLError)
+        } catch {
+            Issue.record("Expected APIError.networkError, got \(type(of: error)): \(error)")
+        }
+    }
+
     @Test("fetchEvent(code:) calls GET /api/v1/public/events/{code}")
     func test_fetchEvent_requestsPublicEventEndpoint() async throws {
         let host = "event-path.test"

@@ -59,7 +59,7 @@ class PublicEventService: APIClientProtocol {
         print("🌐 Fetching event from: \(url.absoluteString)")
 
         // Execute HTTP GET request
-        let (data, response) = try await session.data(from: url)
+        let (data, response) = try await get(url)
 
         // Validate HTTP status
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -127,7 +127,7 @@ class PublicEventService: APIClientProtocol {
         }
 
         // Execute HTTP GET request
-        let (data, response) = try await session.data(from: url)
+        let (data, response) = try await get(url)
 
         // Validate HTTP status
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -151,6 +151,20 @@ class PublicEventService: APIClientProtocol {
 
         // Convert generated EventDetail → domain model
         return eventDetail.toWatchEvent()
+    }
+
+    // MARK: - Transport
+
+    /// GET that reports transport failures (server unreachable, timeout, no route) as
+    /// `APIError.networkError`, so EventDataController classifies them as offline (#1122).
+    /// A raw URLError used to fall through to its generic "unexpected error" branch,
+    /// leaving `isOffline` false.
+    private func get(_ url: URL) async throws -> (Data, URLResponse) {
+        do {
+            return try await session.data(from: url)
+        } catch {
+            throw APIError.networkError(error)
+        }
     }
 
     // MARK: - Epic 2 Stubs (not implemented yet)
