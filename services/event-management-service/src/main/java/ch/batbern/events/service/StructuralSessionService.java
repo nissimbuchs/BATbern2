@@ -44,7 +44,7 @@ public class StructuralSessionService {
      * own list, not {@link Session#isStructuralType}: it names what the generator owns, so an
      * overwrite can never delete a session type the generator does not produce.
      */
-    static final List<String> GENERATED_TYPES = List.of("moderation", "break", "lunch", "aperitif");
+    static final List<String> GENERATED_TYPES = List.of("moderation", "break", "lunch", "networking");
 
     private final EventRepository eventRepository;
     private final AgendaConfigResolver agendaConfigResolver;
@@ -166,7 +166,7 @@ public class StructuralSessionService {
             case MODERATION -> "moderation";
             case BREAK -> "break";
             case LUNCH -> "lunch";
-            case APERITIF -> "aperitif";
+            case APERITIF -> "networking"; // the apéro slot is stored as networking (#1123)
             case SPEAKER_SLOT -> throw new IllegalArgumentException(
                     "SPEAKER_SLOT is not a persisted structural session type");
         };

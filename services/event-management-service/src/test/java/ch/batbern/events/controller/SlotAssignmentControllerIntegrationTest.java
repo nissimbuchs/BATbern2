@@ -212,7 +212,7 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
                   "startTime": "%s",
                   "endTime": "%s",
                   "room": "Main Hall",
-                  "sessionType": "PRESENTATION",
+                  "sessionType": "presentation",
                   "changeReason": "drag_drop_reassignment",
                   "notes": "Organizer drag-and-drop assignment"
                 }
@@ -250,7 +250,7 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
                   "startTime": "%s",
                   "endTime": "%s",
                   "room": "Main Hall",
-                  "sessionType": "PRESENTATION",
+                  "sessionType": "presentation",
                   "changeReason": "drag_drop_reassignment"
                 }
                 """.formatted(

@@ -72,7 +72,7 @@ paths:
                       - sessionSlug: cloud-keynote
                         title: Cloud Architecture Keynote
                         abstract: Opening keynote about cloud-native patterns
-                        sessionType: talk
+                        sessionType: keynote
                         scheduledStartTime: '2026-03-01T17:00:00Z'
                         scheduledEndTime: '2026-03-01T17:45:00Z'
                         durationMinutes: 45
@@ -480,9 +480,9 @@ components:
           type: string
           nullable: true
         sessionType:
-          type: string
+          allOf:
+          - $ref: ./event-sessions-api.openapi.yml#/components/schemas/SessionType
           nullable: true
-          example: talk
         scheduledStartTime:
           type: string
           format: date-time

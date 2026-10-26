@@ -1614,6 +1614,30 @@ paths:
           $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
+    SessionType:
+      type: string
+      description: 'Kind of session. `networking` is the apéro (the UI labels it "Apéro"); the
+        duplicate `aperitif` value was folded back into it by V127 (#1123). Never add a second
+        value for an existing meaning and never rename a value: installed Apple Watch binaries
+        decode this list.'
+      enum:
+      - keynote
+      - presentation
+      - workshop
+      - panel_discussion
+      - networking
+      - break
+      - lunch
+      - moderation
+      example: keynote
+    MaterialsStatus:
+      type: string
+      description: 'Whether the session has material: NONE without files, COMPLETE as soon as
+        one file of any type is uploaded (per session, independent of its speakers count; #1123).'
+      enum:
+      - NONE
+      - COMPLETE
+      example: COMPLETE
     CompanySessionResponse:
       type: object
       description: 'A session that has at least one speaker from the queried company, combined
@@ -1636,8 +1660,7 @@ components:
           type: string
           description: Session title
         sessionType:
-          type: string
-          description: Session type (e.g. talk, aperitif)
+          $ref: '#/components/schemas/SessionType'
         startTime:
           type: string
           description: Session start time (ISO-8601)
@@ -1668,7 +1691,7 @@ components:
         room:
           type: string
         sessionType:
-          type: string
+          $ref: '#/components/schemas/SessionType'
         changeReason:
           type: string
         notes:
@@ -1946,13 +1969,10 @@ components:
         description:
           type: string
         sessionType:
-          type: string
+          allOf:
+          - $ref: '#/components/schemas/SessionType'
           nullable: true
-          description: 'Session type — null for placeholder sessions, assigned during agenda
-            planning. Free-form string (NOT a closed enum): the deployed contract returns
-            additional values such as `aperitif`, so callers must tolerate unknown types.
-            Known values: keynote, presentation, workshop, panel_discussion, networking,
-            break, lunch, moderation, aperitif.'
+          description: Session type — null for placeholder sessions, assigned during agenda planning.
           example: keynote
         startTime:
           type: string
@@ -1992,14 +2012,7 @@ components:
           items:
             $ref: '#/components/schemas/SessionSpeaker'
         materialsStatus:
-          type: string
-          description: 'Material submission workflow status. Free-form string (NOT a closed
-            enum): the deployed contract computes values such as `NONE`, `PARTIAL`, and
-            `COMPLETE` (see SessionService.calculateMaterialsStatus) in addition to the
-            review-workflow values below, so callers must tolerate unknown values.
-            Known values: NONE, PARTIAL, COMPLETE, pending, in_review, approved,
-            requires_changes, rejected, revision_submitted.'
-          example: COMPLETE
+          $ref: '#/components/schemas/MaterialsStatus'
     SessionSpeaker:
       type: object
       description: 'Story 1.15a.1b: Session speaker with enriched User data
@@ -2435,8 +2448,7 @@ components:
       type: object
       description: 'Create a fully-defined session. title, sessionType, startTime and
         endTime are all required (the deployed controller rejects a request missing any
-        of them with 400). sessionType is a free string rather than an enum so structural
-        types such as `aperitif` can be created without a contract change.'
+        of them with 400).'
       required:
       - title
       - sessionType
@@ -2449,9 +2461,7 @@ components:
         description:
           type: string
         sessionType:
-          type: string
-          description: 'Session type, e.g. keynote, presentation, workshop, panel_discussion,
-            networking, break, lunch, moderation, aperitif.'
+          $ref: '#/components/schemas/SessionType'
         startTime:
           type: string
           format: date-time

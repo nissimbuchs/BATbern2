@@ -92,9 +92,15 @@ so the website never shows an organizer something a visitor would not see.
 - `GET /public/events/{code}` returns 404 unless the event is publicly visible.
   `GET /public/events?scope=upcoming|archive` serves the upcoming list and the archive (search,
   topic filter and sort apply to `archive` only).
-- **Structural sessions** (moderation, break, lunch, aperitif) have one definition per tier:
+- **Structural sessions** (moderation, break, lunch, networking) have one definition per tier:
   `Session.isStructuralType` in the backend, `web-frontend/src/utils/sessionTypes.ts` in the
-  frontend. Networking is deliberately not structural.
+  frontend. `networking` is the apéro: V127 (#1123) folded the duplicate `aperitif` value back into
+  it. The agenda config keeps its apéro names (`aperitifSlots`, `TimetableSlot.Type.APERITIF`);
+  `StructuralSessionService` stores that slot as `networking`.
+- **`sessionType` and `materialsStatus` are enums in the contract** (`SessionType`,
+  `MaterialsStatus` in `event-sessions-api`). Never add a second value for an existing meaning and
+  never rename one: installed Apple Watch binaries decode the list. `materialsStatus` is `NONE` or
+  `COMPLETE`; one file of any type makes a session `COMPLETE`.
 
 The older `GET /api/v1/events` and `/events/{code}` return sessions and speakers to organizers only.
 `GET /api/v1/events/current` is unchanged for the Apple Watch, an installed binary that calls the

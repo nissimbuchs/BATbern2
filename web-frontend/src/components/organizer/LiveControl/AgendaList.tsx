@@ -8,7 +8,7 @@ interface AgendaListProps {
   sessions: WatchSessionDetail[];
 }
 
-const BREAK_TYPES = new Set(['break', 'lunch', 'networking', 'aperitif']);
+const BREAK_TYPES = new Set(['break', 'lunch', 'networking']);
 
 function formatTime(iso: string | null | undefined): string {
   if (!iso) return '—';

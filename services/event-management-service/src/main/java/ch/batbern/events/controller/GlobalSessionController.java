@@ -2,6 +2,7 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.mapper.SessionEnums;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.service.SessionUserService;
@@ -85,7 +86,7 @@ public class GlobalSessionController implements CompanySessionsApi {
                             .eventTitle(event != null ? event.getTitle() : null)
                             .eventDate(event != null ? event.getDate().toString() : null)
                             .title(session.getTitle())
-                            .sessionType(session.getSessionType())
+                            .sessionType(SessionEnums.sessionType(session.getSessionType()))
                             .startTime(session.getStartTime() != null
                                     ? session.getStartTime().toString() : null)
                             .endTime(session.getEndTime() != null

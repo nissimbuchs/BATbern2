@@ -285,13 +285,12 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
      */
     @Test
     @WithMockUser(username = SPEAKER_USERNAME, roles = {"SPEAKER"})
-    @DisplayName("excludes moderation / break / lunch / aperitif sessions from upcomingEvents")
+    @DisplayName("excludes moderation / break / lunch / networking sessions from upcomingEvents")
     void shouldExcludeStructuralSessions_fromDashboard() throws Exception {
         // Seed one structural session of each non-speaker type, all on the same event,
         // with Alice as PRIMARY_SPEAKER on every one. Without the filter these would
         // surface as 4 extra "speaker" rows on the dashboard.
-        // networking is not structural (owner decision 2026-10-07, Session.isStructuralType)
-        for (String structuralType : java.util.List.of("moderation", "break", "lunch", "aperitif")) {
+        for (String structuralType : java.util.List.of("moderation", "break", "lunch", "networking")) {
             ch.batbern.events.domain.Session s = sessionRepository.save(
                     ch.batbern.events.domain.Session.builder()
                             .eventId(testEvent.getId())

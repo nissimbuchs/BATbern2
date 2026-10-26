@@ -3,6 +3,8 @@ package ch.batbern.events.domain;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 
 import java.time.Instant;
 import java.util.UUID;
@@ -206,5 +208,19 @@ class SessionTest {
                 .speakerRole(role)
                 .isConfirmed(false)
                 .build();
+    }
+
+    // #1123: networking is the one apéro type; aperitif no longer exists (V127).
+
+    @ParameterizedTest
+    @ValueSource(strings = {"moderation", "break", "lunch", "networking", "NETWORKING"})
+    void should_treatAsStructural_when_nonSpeakerSlotType(String type) {
+        assertThat(Session.isStructuralType(type)).isTrue();
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"keynote", "presentation", "workshop", "panel_discussion", "aperitif"})
+    void should_notTreatAsStructural_when_talkOrRemovedType(String type) {
+        assertThat(Session.isStructuralType(type)).isFalse();
     }
 }

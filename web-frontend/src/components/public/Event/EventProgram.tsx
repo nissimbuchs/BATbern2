@@ -33,7 +33,7 @@ const StructuralIcon = ({ sessionType }: { sessionType: string | null | undefine
       return <Coffee className="h-5 w-5 text-zinc-500" />;
     case 'lunch':
       return <UtensilsCrossed className="h-5 w-5 text-zinc-500" />;
-    case 'aperitif':
+    case 'networking':
       return <Wine className="h-5 w-5 text-zinc-500" />;
     default:
       return <Mic2 className="h-5 w-5 text-zinc-500" />;

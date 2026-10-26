@@ -1,7 +1,9 @@
 package ch.batbern.events.mapper;
 
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.sessions.dto.generated.MaterialsStatus;
 import ch.batbern.events.sessions.dto.generated.SessionResponse;
+import ch.batbern.events.sessions.dto.generated.SessionType;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -57,7 +59,7 @@ class SessionMapperTest {
             assertThat(result.getEventCode()).isEqualTo("BAT-25");
             assertThat(result.getTitle()).isEqualTo("Opening Keynote");
             assertThat(result.getDescription()).isEqualTo("The main opening keynote presentation");
-            assertThat(result.getSessionType()).isEqualTo("keynote");
+            assertThat(result.getSessionType()).isEqualTo(SessionType.KEYNOTE);
             assertThat(result.getStartTime()).isEqualTo(OffsetDateTime.parse("2025-06-15T14:00:00Z"));
             assertThat(result.getEndTime()).isEqualTo(OffsetDateTime.parse("2025-06-15T15:30:00Z"));
             assertThat(result.getRoom()).isEqualTo("Main Hall");
@@ -66,7 +68,7 @@ class SessionMapperTest {
             assertThat(result.getCreatedAt()).isEqualTo(OffsetDateTime.parse("2025-06-01T10:00:00Z"));
             assertThat(result.getUpdatedAt()).isEqualTo(OffsetDateTime.parse("2025-06-10T15:30:00Z"));
             assertThat(result.getMaterialsCount()).isEqualTo(3);
-            assertThat(result.getMaterialsStatus()).isEqualTo("COMPLETE");
+            assertThat(result.getMaterialsStatus()).isEqualTo(MaterialsStatus.COMPLETE);
         }
 
         @Test

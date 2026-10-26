@@ -36,7 +36,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Covers AC6 (GET resolved template/override, PUT copy-on-edit upsert, 400/404/403),
  * AC4 (config isolation: editing one event never affects another or the template), and
- * AC5 (apéro persists as an 'aperitif' Session — exercises the V122 CHECK widen + V121 seed).</p>
+ * AC5 (apéro persists as a 'networking' Session — V127 CHECK, #1123 + V121 seed).</p>
  */
 @Transactional
 @Import({TestSecurityConfig.class, TestAwsConfig.class, TestUserApiClientConfig.class})
@@ -243,23 +243,23 @@ class AgendaConfigControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.aperitifDuration").value(90));
     }
 
-    // MARK: - AC5: apéro persists as a structural session (V122 CHECK + V121 template seed)
+    // MARK: - AC5: apéro persists as a structural 'networking' session (V127, #1123; V121 template seed)
 
     @Test
-    @DisplayName("should_persistAperitifSession_when_structuralGeneratedForAfternoonEvent")
+    @DisplayName("should_persistNetworkingSession_when_structuralGeneratedForAfternoonEvent")
     @WithMockUser(username = "marco.organizer", roles = {"ORGANIZER"})
-    void should_persistAperitifSession_when_structuralGeneratedForAfternoonEvent() {
+    void should_persistNetworkingSession_when_structuralGeneratedForAfternoonEvent() {
         Event event = saveEvent("BATbern97", 9097, EventType.AFTERNOON);
         entityManager.flush();
         entityManager.clear();
 
-        // Afternoon template defaults apéro ON → an 'aperitif' Session must persist.
+        // Afternoon template defaults apéro ON → one 'networking' Session must persist.
         structuralSessionService.generateStructuralSessions("BATbern97", false);
         entityManager.flush();
 
-        long aperitifCount = sessionRepository.findByEventId(event.getId()).stream()
-                .filter(s -> "aperitif".equals(s.getSessionType()))
+        long networkingCount = sessionRepository.findByEventId(event.getId()).stream()
+                .filter(s -> "networking".equals(s.getSessionType()))
                 .count();
-        assertThat(aperitifCount).isEqualTo(1);
+        assertThat(networkingCount).isEqualTo(1);
     }
 }

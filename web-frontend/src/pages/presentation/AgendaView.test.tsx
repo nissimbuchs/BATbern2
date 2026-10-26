@@ -19,7 +19,7 @@ describe('AgendaView', () => {
         sessions={[
           session('talk', 'presentation', 'Digitale Souveränität', '2026-11-06T15:05:00Z'),
           session('pause', 'break', 'Kaffeepause', '2026-11-06T16:15:00Z'),
-          session('apero', 'aperitif', 'Apéro', '2026-11-06T17:50:00Z'),
+          session('apero', 'networking', 'Apéro', '2026-11-06T17:50:00Z'),
         ]}
       />
     );
