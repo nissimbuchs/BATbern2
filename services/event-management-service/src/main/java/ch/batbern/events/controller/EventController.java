@@ -2072,6 +2072,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      * @return Paginated list of registrations enriched with user data
      */
     @GetMapping("/events/{eventCode}/registrations")
+    @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
             summary = "List Event Registrations",
             description = "Retrieve registrations for a specific event with "

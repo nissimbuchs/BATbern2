@@ -22,6 +22,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -340,6 +341,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Test
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_listRegistrations_when_eventHasRegistrations_withPagination")
+    @WithMockUser(roles = "ORGANIZER")
     void should_listRegistrations_when_eventHasRegistrations() throws Exception {
         // Create test registrations
         createTestRegistration("john.doe", "confirmed");
@@ -361,6 +363,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
 
     @Test
     @DisplayName("should_returnEmptyList_when_eventHasNoRegistrations")
+    @WithMockUser(roles = "ORGANIZER")
     void should_returnEmptyList_when_eventHasNoRegistrations() throws Exception {
         mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -372,9 +375,31 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     }
 
     @Test
+    @DisplayName("should_denyAccess_when_anonymousListsRegistrations")
+    void should_denyAccess_when_anonymousListsRegistrations() throws Exception {
+        // Test profile permits every request at HTTP level, so @PreAuthorize is what refuses the
+        // anonymous caller here (403). In production the EMS chain and the gateway answer 401 first.
+        createTestRegistration("john.doe", "confirmed");
+
+        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(username = "joe.user", roles = "ATTENDEE")
+    @DisplayName("should_return403_when_nonOrganizerListsRegistrations")
+    void should_return403_when_nonOrganizerListsRegistrations() throws Exception {
+        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_returnPlaceholderData_when_userNotFound")
     @org.springframework.test.annotation.DirtiesContext
+    @WithMockUser(roles = "ORGANIZER")
     void should_returnPlaceholderData_when_userNotFound() throws Exception {
         // Create registrations - one with existing user, one with missing user
         createTestRegistration("john.doe", "confirmed");
@@ -422,6 +447,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Test
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_filterByStatus_when_statusFilterProvided")
+    @WithMockUser(roles = "ORGANIZER")
     void should_filterByStatus_when_statusFilterProvided() throws Exception {
         // Create registrations with different statuses
         createTestRegistration("john.doe", "confirmed");
@@ -443,6 +469,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Test
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_filterByMultipleStatuses_when_multipleStatusFiltersProvided")
+    @WithMockUser(roles = "ORGANIZER")
     void should_filterByMultipleStatuses_when_multipleStatusFiltersProvided() throws Exception {
         // Create registrations with different statuses
         createTestRegistration("john.doe", "confirmed");
@@ -464,6 +491,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Test
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_searchByName_when_searchTermProvided")
+    @WithMockUser(roles = "ORGANIZER")
     void should_searchByName_when_searchTermProvided() throws Exception {
         // Create registrations
         createTestRegistration("john.doe", "confirmed");
@@ -484,6 +512,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Test
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_searchByEmail_when_searchTermProvided")
+    @WithMockUser(roles = "ORGANIZER")
     void should_searchByEmail_when_searchTermProvided() throws Exception {
         // Create registrations
         createTestRegistration("john.doe", "confirmed");
@@ -503,6 +532,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Disabled("Flaky test - passes individually but fails in full suite due to test pollution")
     @DisplayName("should_filterByCompanyId_when_companyIdProvided")
     @org.springframework.test.annotation.DirtiesContext
+    @WithMockUser(roles = "ORGANIZER")
     void should_filterByCompanyId_when_companyIdProvided() throws Exception {
         // Create registrations with different companies
         createTestRegistration("john.doe", "confirmed");
@@ -541,6 +571,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
 
     @Test
     @DisplayName("should_applyCombinedFilters_when_multipleFiltersProvided")
+    @WithMockUser(roles = "ORGANIZER")
     void should_applyCombinedFilters_when_multipleFiltersProvided() throws Exception {
         // Explicitly mock UserApiClient for each username to avoid flakiness
         when(userApiClient.getUserByUsername("john.doe"))

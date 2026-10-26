@@ -149,18 +149,6 @@ public class SecurityConfig {
                 // Story 10.16: AI feature flag endpoint (public — no auth required)
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/features").permitAll()
 
-                // Story 10.26: Internal Lambda forwarder endpoints (VPC-only access)
-                // Registrations list for batbern{N}@ event distribution lists
-                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations").permitAll()
-                // Admin settings read for support@ contact resolution
-                .requestMatchers(HttpMethod.GET, "/api/v1/admin/settings/*").permitAll()
-                // Spec auto-participant-email-aliases-excel-export (F2): per-event
-                // distribution-list resolver for batbern{N}-speaker@ + batbern{N}-moderator@
-                // + batbern{N}-participants@ aliases. Same VPC-only forwarder pattern as
-                // /events/*/registrations.
-                .requestMatchers(HttpMethod.GET,
-                        "/api/v1/events/*/distribution-list/*").permitAll()
-
                 // Dev tool: local email inbox (controller is @Profile("local") — safe in prod)
                 .requestMatchers("/dev/emails/**").permitAll()
 

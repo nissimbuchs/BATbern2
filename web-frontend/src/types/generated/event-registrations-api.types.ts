@@ -18,6 +18,8 @@ export interface paths {
      *     **Acceptance Criteria**: AC11
      *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
      *
+     *     **Auth**: ORGANIZER role.
+     *
      *     **Filter Examples**:
      *     - By status: `{"status":"confirmed"}`
      *     - By date: `{"registrationDate":{"$gte":"2025-01-01"}}`
@@ -61,7 +63,7 @@ export interface paths {
       cookie?: never;
     };
     /**
-     * Resolve the email distribution list for an event (internal Lambda route)
+     * Resolve the email distribution list for an event (organizer)
      * @description Returns the email addresses to fan out for the per-event mailing aliases
      *     `batbern{N}-speaker@batbern.ch`, `batbern{N}-moderator@batbern.ch` and
      *     `batbern{N}-participants@batbern.ch`.
@@ -74,10 +76,7 @@ export interface paths {
      *       excludes `waitlist` and `cancelled`) of the event, by `attendeeEmail`. Reaches the
      *       same audience as the Communications → Event registrants send. Lowercase-deduped.
      *
-     *     **Auth model:** dual-mode same as `/api/v1/events/{eventCode}/registrations`:
-     *       - Anonymous from the in-VPC inbound-email forwarder Lambda (Spring Boot gateway is
-     *         VPC-only).
-     *       - Organizer JWT from interactive callers.
+     *     **Auth:** ORGANIZER role (the response is a list of email addresses).
      *
      *     **Spec:** `_bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md` (F2).
      */
@@ -1043,6 +1042,8 @@ export interface operations {
           };
         };
       };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
@@ -1126,6 +1127,8 @@ export interface operations {
           'application/json': components['schemas']['DistributionListResponse'];
         };
       };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };

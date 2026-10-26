@@ -1832,7 +1832,7 @@ paths:
       tags:
         - Admin Settings
       summary: Get an admin setting by key
-      description: 'Open GET for VPC-internal callers (Story 10.26); HTTP-level security gates access.'
+      description: 'ORGANIZER role.'
       operationId: getAdminSetting
       parameters:
         - name: key
@@ -1847,6 +1847,10 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminSettingResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
     put:
       tags:
         - Admin Settings

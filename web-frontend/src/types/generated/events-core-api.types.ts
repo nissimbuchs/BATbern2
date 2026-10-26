@@ -780,7 +780,7 @@ export interface paths {
     };
     /**
      * Get an admin setting by key
-     * @description Open GET for VPC-internal callers (Story 10.26); HTTP-level security gates access.
+     * @description ORGANIZER role.
      */
     get: operations['getAdminSetting'];
     /**
@@ -3368,6 +3368,8 @@ export interface operations {
           'application/json': components['schemas']['AdminSettingResponse'];
         };
       };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
     };
   };
   setAdminSetting: {
