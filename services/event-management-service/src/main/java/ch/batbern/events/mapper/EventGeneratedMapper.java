@@ -177,14 +177,14 @@ public class EventGeneratedMapper {
                 .eventCode((String) m.get("eventCode"))
                 .title((String) m.get("title"))
                 .description((String) m.get("description"))
-                .sessionType((String) m.get("sessionType"))
+                .sessionType(SessionEnums.sessionType(m.get("sessionType")))
                 .startTime(toOffset(m.get("startTime")))
                 .endTime(toOffset(m.get("endTime")))
                 .room((String) m.get("room"))
                 .capacity((Integer) m.get("capacity"))
                 .createdAt(toOffset(m.get("createdAt")))
                 .updatedAt(toOffset(m.get("updatedAt")))
-                .materialsStatus((String) m.get("materialsStatus"));
+                .materialsStatus(SessionEnums.materialsStatus(m.get("materialsStatus")));
         String language = (String) m.get("language");
         if (language != null) {
             s.setLanguage(language);
@@ -200,14 +200,14 @@ public class EventGeneratedMapper {
                 .eventCode((String) m.get("eventCode"))
                 .title((String) m.get("title"))
                 .description((String) m.get("description"))
-                .sessionType((String) m.get("sessionType"))
+                .sessionType(SessionEnums.sessionType(m.get("sessionType")))
                 .startTime(toOffset(m.get("startTime")))
                 .endTime(toOffset(m.get("endTime")))
                 .room((String) m.get("room"))
                 .capacity((Integer) m.get("capacity"))
                 .createdAt(toOffset(m.get("createdAt")))
                 .updatedAt(toOffset(m.get("updatedAt")))
-                .materialsStatus((String) m.get("materialsStatus"))
+                .materialsStatus(SessionEnums.materialsStatus(m.get("materialsStatus")))
                 .materialsCount((Integer) m.get("materialsCount"));
         String language = (String) m.get("language");
         if (language != null) {

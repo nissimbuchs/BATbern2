@@ -28,7 +28,7 @@ import java.util.UUID;
  *   <li>SPEAKERS: sessions whose speaker is ACCEPTED or later. The session list itself is not
  *       rendered publicly in this phase; the sessions carry the speakers for the speaker grid.</li>
  *   <li>AGENDA: sessions with an assigned slot whose speaker is QUALITY_REVIEWED, plus slotted
- *       structural sessions (moderation, break, lunch, aperitif; {@link Session#isStructuralType}).</li>
+ *       structural sessions (moderation, break, lunch, networking; {@link Session#isStructuralType}).</li>
  * </ul>
  * Completed, archived and past events are returned unfiltered (archive).
  *

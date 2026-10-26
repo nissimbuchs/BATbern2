@@ -28,7 +28,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  *   <li>SPEAKERS: only speakers whose workflow state is ACCEPTED or later; their sessions are
  *       returned so the speaker grid can render, but the frontend shows no session list.</li>
  *   <li>AGENDA: only sessions with an assigned slot whose speaker is QUALITY_REVIEWED, plus
- *       structural slots (moderation, breaks, lunch, aperitif, networking).</li>
+ *       structural slots (moderation, breaks, lunch, networking = the apéro).</li>
  *   <li>Past or completed events are not filtered (archive).</li>
  * </ul>
  */
@@ -266,14 +266,14 @@ class PublicSessionVisibilityPolicyTest {
     }
 
     @Test
-    @DisplayName("should_treatNetworkingAsSpeakerSession_when_filtering")
-    void should_treatNetworkingAsSpeakerSession_when_filtering() {
-        // networking is not structural (owner decision 2026-10-07): without a reviewed speaker it
-        // stays hidden in the AGENDA phase, unlike lunch
+    @DisplayName("should_showNetworkingAsStructuralSlot_when_agendaPhaseAndSlotAssigned")
+    void should_showNetworkingAsStructuralSlot_when_agendaPhaseAndSlotAssigned() {
+        // networking is the apéro (V127, #1123): shown like lunch, without a reviewed speaker
         Event event = upcomingEvent("agenda");
         Session networking = structural("networking", true);
 
-        assertThat(policy.filterForPublic(event, List.of(networking), List.of(), NOW)).isEmpty();
+        assertThat(policy.filterForPublic(event, List.of(networking), List.of(), NOW))
+                .containsExactly(networking);
     }
 
     // ----------------------------------------------------------------------------------------

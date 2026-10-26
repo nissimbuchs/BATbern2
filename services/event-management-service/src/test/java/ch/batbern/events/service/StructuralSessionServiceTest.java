@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.mapper.SessionEnums;
 import ch.batbern.events.sessions.dto.generated.SessionResponse;
 
 import ch.batbern.events.core.dto.generated.EventType;
@@ -160,7 +161,7 @@ class StructuralSessionServiceTest {
                     Session s = inv.getArgument(0);
                     SessionResponse r = new SessionResponse();
                     r.setSessionSlug(s.getSessionSlug());
-                    r.setSessionType(s.getSessionType());
+                    r.setSessionType(SessionEnums.sessionType(s.getSessionType()));
                     r.setTitle(s.getTitle());
                     return r;
                 });
@@ -171,7 +172,7 @@ class StructuralSessionServiceTest {
 
         // Then: at least moderation start + moderation end + at least 1 break + lunch
         assertThat(result).isNotEmpty();
-        List<String> types = result.stream().map(SessionResponse::getSessionType).toList();
+        List<String> types = result.stream().map(r -> SessionEnums.value(r.getSessionType())).toList();
         assertThat(types).contains("moderation", "break", "lunch");
         // Two moderation sessions (start + end)
         assertThat(types.stream().filter("moderation"::equals).count()).isEqualTo(2);
@@ -218,7 +219,7 @@ class StructuralSessionServiceTest {
                     Session s = inv.getArgument(0);
                     SessionResponse r = new SessionResponse();
                     r.setSessionSlug(s.getSessionSlug());
-                    r.setSessionType(s.getSessionType());
+                    r.setSessionType(SessionEnums.sessionType(s.getSessionType()));
                     r.setTitle(s.getTitle());
                     return r;
                 });

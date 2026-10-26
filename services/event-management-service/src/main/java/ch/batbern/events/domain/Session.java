@@ -44,7 +44,7 @@ public class Session {
     /**
      * Structural session types that do NOT represent a speaker talk — used by
      * speaker-portal endpoints to filter out organizer-owned timetable slots
-     * (moderation start/end, breaks, lunch, aperitif) from the speaker
+     * (moderation start/end, breaks, lunch, networking = the apéro) from the speaker
      * dashboard and authorization checks.
      *
      * <p>Source of truth for this set: V59 CHECK constraint plus the
@@ -54,16 +54,15 @@ public class Session {
      * Phase 6/7 follow-up — bug report not Story 10.32 scope).
      */
     public static final Set<String> STRUCTURAL_SESSION_TYPES = Set.of(
-            "moderation", "break", "lunch", "aperitif"
+            "moderation", "break", "lunch", "networking"
     );
 
     /**
      * The single backend definition of "structural" (non-speaker) session types. {@code networking}
-     * is deliberately NOT structural: it is allowed by the V122 CHECK constraint but no event uses
-     * it (owner decision 2026-10-07; no networking session in the data). Frontend mirror:
-     * {@code web-frontend/src/utils/sessionTypes.ts}.
+     * is the apéro: V127 (#1123) folded the duplicate {@code aperitif} value back into it, so it is
+     * structural again. Frontend mirror: {@code web-frontend/src/utils/sessionTypes.ts}.
      *
-     * @return {@code true} for moderation, break, lunch and aperitif (case-insensitive)
+     * @return {@code true} for moderation, break, lunch and networking (case-insensitive)
      */
     public static boolean isStructuralType(String sessionType) {
         return sessionType != null
@@ -146,7 +145,7 @@ public class Session {
     private Boolean hasPresentation = false;
 
     @Column(name = "materials_status", length = 20)
-    private String materialsStatus;  // NONE, PARTIAL, COMPLETE
+    private String materialsStatus;  // NONE, COMPLETE (V127 trigger: any material = COMPLETE)
 
     /**
      * W4.1: Session control fields — populated by organizer session control actions (W4.2+).

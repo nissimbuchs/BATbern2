@@ -664,6 +664,26 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
+    /**
+     * @description Kind of session. `networking` is the apéro (the UI labels it "Apéro"); the duplicate `aperitif` value was folded back into it by V127 (#1123). Never add a second value for an existing meaning and never rename a value: installed Apple Watch binaries decode this list.
+     * @example keynote
+     * @enum {string}
+     */
+    SessionType:
+      | 'keynote'
+      | 'presentation'
+      | 'workshop'
+      | 'panel_discussion'
+      | 'networking'
+      | 'break'
+      | 'lunch'
+      | 'moderation';
+    /**
+     * @description Whether the session has material: NONE without files, COMPLETE as soon as one file of any type is uploaded (per session, independent of its speakers count; #1123).
+     * @example COMPLETE
+     * @enum {string}
+     */
+    MaterialsStatus: 'NONE' | 'COMPLETE';
     /** @description A session that has at least one speaker from the queried company, combined with event + full-speaker context (GlobalSessionController / Company-detail Sessions tab). */
     CompanySessionResponse: {
       /** @description Session slug (event-scoped identifier) */
@@ -676,8 +696,7 @@ export interface components {
       eventDate?: string;
       /** @description Session title */
       title?: string;
-      /** @description Session type (e.g. talk, aperitif) */
-      sessionType?: string;
+      sessionType?: components['schemas']['SessionType'];
       /** @description Session start time (ISO-8601) */
       startTime?: string;
       /** @description Session end time (ISO-8601) */
@@ -694,7 +713,7 @@ export interface components {
       /** Format: date-time */
       endTime: string;
       room?: string;
-      sessionType?: string;
+      sessionType?: components['schemas']['SessionType'];
       changeReason?: string;
       notes?: string;
     };
@@ -860,10 +879,10 @@ export interface components {
       title: string;
       description?: string;
       /**
-       * @description Session type — null for placeholder sessions, assigned during agenda planning. Free-form string (NOT a closed enum): the deployed contract returns additional values such as `aperitif`, so callers must tolerate unknown types. Known values: keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation, aperitif.
+       * @description Session type — null for placeholder sessions, assigned during agenda planning.
        * @example keynote
        */
-      sessionType?: string | null;
+      sessionType?: components['schemas']['SessionType'] | null;
       /**
        * Format: date-time
        * @description Session start time - null for placeholder sessions, assigned during slot assignment
@@ -892,11 +911,7 @@ export interface components {
        *     List of speakers assigned to this session with their roles
        */
       speakers?: components['schemas']['SessionSpeaker'][];
-      /**
-       * @description Material submission workflow status. Free-form string (NOT a closed enum): the deployed contract computes values such as `NONE`, `PARTIAL`, and `COMPLETE` (see SessionService.calculateMaterialsStatus) in addition to the review-workflow values below, so callers must tolerate unknown values. Known values: NONE, PARTIAL, COMPLETE, pending, in_review, approved, requires_changes, rejected, revision_submitted.
-       * @example COMPLETE
-       */
-      materialsStatus?: string;
+      materialsStatus?: components['schemas']['MaterialsStatus'];
     };
     /**
      * @description Story 1.15a.1b: Session speaker with enriched User data
@@ -1250,12 +1265,11 @@ export interface components {
        */
       sessionSlug?: string | null;
     };
-    /** @description Create a fully-defined session. title, sessionType, startTime and endTime are all required (the deployed controller rejects a request missing any of them with 400). sessionType is a free string rather than an enum so structural types such as `aperitif` can be created without a contract change. */
+    /** @description Create a fully-defined session. title, sessionType, startTime and endTime are all required (the deployed controller rejects a request missing any of them with 400). */
     CreateSessionRequest: {
       title: string;
       description?: string;
-      /** @description Session type, e.g. keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation, aperitif. */
-      sessionType: string;
+      sessionType: components['schemas']['SessionType'];
       /**
        * Format: date-time
        * @description Session start time (ISO-8601).

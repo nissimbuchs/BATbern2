@@ -1740,6 +1740,20 @@ export interface components {
       pastEvents: components['schemas']['AttendeeEventCardResponse'][];
     };
     /**
+     * @description Kind of session. `networking` is the apéro (the UI labels it "Apéro"); the duplicate `aperitif` value was folded back into it by V127 (#1123). Never add a second value for an existing meaning and never rename a value: installed Apple Watch binaries decode this list.
+     * @example keynote
+     * @enum {string}
+     */
+    SessionType:
+      | 'keynote'
+      | 'presentation'
+      | 'workshop'
+      | 'panel_discussion'
+      | 'networking'
+      | 'break'
+      | 'lunch'
+      | 'moderation';
+    /**
      * @description Story 1.15a.1b: Session speaker with enriched User data
      *     Combines SessionUser entity (role, confirmation) with User entity (name, company, photo)
      */
@@ -1811,6 +1825,12 @@ export interface components {
       isConfirmed: boolean;
     };
     /**
+     * @description Whether the session has material: NONE without files, COMPLETE as soon as one file of any type is uploaded (per session, independent of its speakers count; #1123).
+     * @example COMPLETE
+     * @enum {string}
+     */
+    MaterialsStatus: 'NONE' | 'COMPLETE';
+    /**
      * @description Story 1.16.2: Uses sessionSlug and eventCode as meaningful IDs
      *
      *     **Placeholder Session Pattern (V21):**
@@ -1832,10 +1852,10 @@ export interface components {
       title: string;
       description?: string;
       /**
-       * @description Session type — null for placeholder sessions, assigned during agenda planning. Free-form string (NOT a closed enum): the deployed contract returns additional values such as `aperitif`, so callers must tolerate unknown types. Known values: keynote, presentation, workshop, panel_discussion, networking, break, lunch, moderation, aperitif.
+       * @description Session type — null for placeholder sessions, assigned during agenda planning.
        * @example keynote
        */
-      sessionType?: string | null;
+      sessionType?: components['schemas']['SessionType'] | null;
       /**
        * Format: date-time
        * @description Session start time - null for placeholder sessions, assigned during slot assignment
@@ -1864,11 +1884,7 @@ export interface components {
        *     List of speakers assigned to this session with their roles
        */
       speakers?: components['schemas']['SessionSpeaker'][];
-      /**
-       * @description Material submission workflow status. Free-form string (NOT a closed enum): the deployed contract computes values such as `NONE`, `PARTIAL`, and `COMPLETE` (see SessionService.calculateMaterialsStatus) in addition to the review-workflow values below, so callers must tolerate unknown values. Known values: NONE, PARTIAL, COMPLETE, pending, in_review, approved, requires_changes, rejected, revision_submitted.
-       * @example COMPLETE
-       */
-      materialsStatus?: string;
+      materialsStatus?: components['schemas']['MaterialsStatus'];
     };
     /**
      * @description Page-based pagination metadata returned with every paginated list response.

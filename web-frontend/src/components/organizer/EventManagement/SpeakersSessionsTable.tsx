@@ -46,7 +46,6 @@ import {
   Folder as FolderIcon,
   Delete as DeleteIcon,
   CheckCircle as CheckIcon,
-  Warning as WarningIcon,
   Error as ErrorIcon,
   Coffee as CoffeeIcon,
   Restaurant as RestaurantIcon,
@@ -116,7 +115,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
       icon: <RestaurantIcon fontSize="small" />,
       color: 'success',
     },
-    aperitif: {
+    networking: {
       label: t('slotAssignment.structuralSessions.aperitif'),
       icon: <LocalBarIcon fontSize="small" />,
       color: 'secondary',
@@ -170,7 +169,7 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
 
   // Materials status icon and color mapping (Story 5.9 - AC2)
   const getMaterialsStatusIcon = (session: SessionUI) => {
-    // Story 5.9: Use materialsStatus from backend (NONE, PARTIAL, COMPLETE)
+    // Story 5.9 / #1123: materialsStatus from backend is NONE or COMPLETE (one file is enough)
     const status: string = session.materialsStatus || 'NONE';
 
     if (status === 'NONE') {
@@ -178,27 +177,15 @@ export const SpeakersSessionsTable: React.FC<SpeakersSessionsTableProps> = ({
       return <ErrorIcon color="error" fontSize="small" data-testid="materials-status-missing" />;
     }
 
-    if (status === 'PARTIAL') {
-      // ⚠️ Pending: Some materials but incomplete
-      return (
-        <WarningIcon color="warning" fontSize="small" data-testid="materials-status-pending" />
-      );
-    }
-
-    // ✓ Complete: All materials uploaded
+    // ✓ Complete: the session has material
     return <CheckIcon color="success" fontSize="small" data-testid="materials-status-complete" />;
   };
 
   const getMaterialsStatusLabel = (session: SessionUI) => {
-    // Story 5.9: Use materialsStatus from backend (NONE, PARTIAL, COMPLETE)
     const status: string = session.materialsStatus || 'NONE';
 
     if (status === 'NONE') {
       return t('speakers.materialsMissing');
-    }
-
-    if (status === 'PARTIAL') {
-      return t('common:filters.status.pending');
     }
 
     return t('speakers.materialsComplete');

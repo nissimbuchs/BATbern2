@@ -68,9 +68,9 @@ const mockSessions: Session[] = [
     },
     title: 'Cloud Security Architecture',
     abstract: 'Best practices for securing cloud-native applications',
-    materialsStatus: 'PARTIAL',
-    materialsCount: 2, // Story 5.9: Has some materials but no presentation
-    hasPresentation: false, // Story 5.9: Pending (⚠️)
+    materialsStatus: 'COMPLETE',
+    materialsCount: 2, // Materials but no PRESENTATION file: still COMPLETE (#1123, no partial)
+    hasPresentation: false,
   },
   {
     id: 'session-3',
@@ -343,7 +343,7 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
       expect(within(slot1Row!).getByText(/vollständig|complete/i)).toBeInTheDocument();
     });
 
-    it('should_displayPendingStatus_when_materialsPending', () => {
+    it('should_displayCompleteStatus_when_onlyNonPresentationMaterials', () => {
       renderWithProviders(
         <SpeakersSessionsTable
           sessions={mockSessions}
@@ -354,14 +354,12 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
         />
       );
 
-      // Should have warning icon (⚠️) for session 2
+      // #1123: one file of any type means the session has material; there is no partial state.
       const slot2Row = screen
         .getByText('Cloud Security Architecture')
         .closest('[data-testid^="session-row"]');
-      expect(within(slot2Row!).getByTestId('materials-status-pending')).toBeInTheDocument();
-
-      // Should display status text ("Ausstehend" in German or "Pending" in English)
-      expect(within(slot2Row!).getByText(/ausstehend|pending/i)).toBeInTheDocument();
+      expect(within(slot2Row!).getByTestId('materials-status-complete')).toBeInTheDocument();
+      expect(screen.queryByTestId('materials-status-pending')).not.toBeInTheDocument();
     });
 
     it('should_displayMissingStatus_when_materialsMissing', () => {
@@ -550,8 +548,7 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
         const vollstandigElements = screen.getAllByText(/vollständig/i);
         expect(vollstandigElements.length).toBeGreaterThan(0);
       });
-      const ausstehenElements = screen.getAllByText(/ausstehend/i);
-      expect(ausstehenElements.length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/fehlend/i).length).toBeGreaterThan(0);
 
       // Reset to English
       await i18n.changeLanguage('en');
@@ -710,32 +707,6 @@ describe('SpeakersSessionsTable - Materials Status (Story 5.9 - AC2)', () => {
 
     // Should display error icon (❌ Missing)
     expect(screen.getByTestId('materials-status-missing')).toBeInTheDocument();
-  });
-
-  it('should_showPendingIcon_when_materialsExistButNoPresentation', () => {
-    const sessionWithPartialMaterials: Session = {
-      sessionSlug: 'test-session',
-      eventCode: 'BAT54',
-      title: 'Test Session',
-      materialsCount: 2,
-      hasPresentation: false,
-      materialsStatus: 'PARTIAL',
-      startTime: '2024-12-15T09:00:00Z',
-      endTime: '2024-12-15T10:00:00Z',
-    };
-
-    renderWithProviders(
-      <SpeakersSessionsTable
-        sessions={[sessionWithPartialMaterials]}
-        eventCode="BAT54"
-        eventDate="2024-12-15"
-        onViewMaterials={vi.fn()}
-        onSessionUpdate={vi.fn()}
-      />
-    );
-
-    // Should display warning icon (⚠️ Pending)
-    expect(screen.getByTestId('materials-status-pending')).toBeInTheDocument();
   });
 
   it('should_showCompleteIcon_when_presentationExists', () => {

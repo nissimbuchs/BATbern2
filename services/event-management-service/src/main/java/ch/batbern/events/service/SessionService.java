@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.mapper.SessionMapper;
+import ch.batbern.events.sessions.dto.generated.MaterialsStatus;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
 import ch.batbern.events.sessions.dto.generated.SessionResponse;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
@@ -70,8 +71,8 @@ public class SessionService {
         builder.materials(materials);
         builder.materialsCount(materials.size());
 
-        // Calculate materials status: NONE, PARTIAL, COMPLETE
-        String materialsStatus = calculateMaterialsStatus(materials);
+        // Calculate materials status: NONE or COMPLETE
+        MaterialsStatus materialsStatus = calculateMaterialsStatus(materials);
         builder.materialsStatus(materialsStatus);
 
         return builder.build();
@@ -82,15 +83,10 @@ public class SessionService {
      * Story 5.9: Materials status indicator
      *
      * @param materials List of session materials
-     * @return Status: NONE, PARTIAL, or COMPLETE
+     * @return NONE without materials, COMPLETE as soon as the session has one (any type, #1123)
      */
-    private String calculateMaterialsStatus(List<SessionMaterialResponse> materials) {
-        if (materials.isEmpty()) {
-            return "NONE";
-        }
-        // For now, any materials = COMPLETE
-        // Story 5.10 will add content extraction validation for PARTIAL vs COMPLETE
-        return "COMPLETE";
+    private MaterialsStatus calculateMaterialsStatus(List<SessionMaterialResponse> materials) {
+        return materials.isEmpty() ? MaterialsStatus.NONE : MaterialsStatus.COMPLETE;
     }
 
     /**

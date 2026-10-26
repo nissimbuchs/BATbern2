@@ -247,8 +247,7 @@ export interface components {
       /** @example Cloud Architecture Keynote */
       title: string;
       abstract?: string | null;
-      /** @example talk */
-      sessionType?: string | null;
+      sessionType?: components['schemas']['SessionType'] | null;
       /**
        * Format: date-time
        * @example 2026-03-01T17:00:00Z
@@ -363,6 +362,20 @@ export interface components {
        */
       minutes?: number | null;
     };
+    /**
+     * @description Kind of session. `networking` is the apéro (the UI labels it "Apéro"); the duplicate `aperitif` value was folded back into it by V127 (#1123). Never add a second value for an existing meaning and never rename a value: installed Apple Watch binaries decode this list.
+     * @example keynote
+     * @enum {string}
+     */
+    SessionType:
+      | 'keynote'
+      | 'presentation'
+      | 'workshop'
+      | 'panel_discussion'
+      | 'networking'
+      | 'break'
+      | 'lunch'
+      | 'moderation';
     /**
      * @description Standard error envelope returned on every 4xx/5xx response across all services.
      *     Flat shape (NOT nested under `error`). Backed by

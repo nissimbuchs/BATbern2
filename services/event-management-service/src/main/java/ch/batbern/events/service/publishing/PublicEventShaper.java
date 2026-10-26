@@ -4,6 +4,7 @@ import ch.batbern.events.core.dto.generated.EventDetail;
 import ch.batbern.events.core.dto.generated.PublicSpeaker;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.mapper.SessionEnums;
 import ch.batbern.events.sessions.dto.generated.SessionResponse;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import lombok.RequiredArgsConstructor;
@@ -36,7 +37,7 @@ public class PublicEventShaper {
     public EventDetail shape(EventDetail dto, Event event) {
         List<SessionResponse> sessions = dto.getSessions() != null ? dto.getSessions() : List.of();
         boolean detailsPublic = policy.sessionDetailsPublic(event, Instant.now());
-        dto.setSpeakers(speakers(sessions, SessionResponse::getSessionType, SessionResponse::getTitle,
+        dto.setSpeakers(speakers(sessions, s -> SessionEnums.value(s.getSessionType()), SessionResponse::getTitle,
                 SessionResponse::getSessionSlug, SessionResponse::getSpeakers, detailsPublic));
         dto.setSessions(detailsPublic ? new ArrayList<>(sessions) : new ArrayList<>());
         return dto;
@@ -49,7 +50,7 @@ public class PublicEventShaper {
                 dto.getSessions() != null ? dto.getSessions() : List.of();
         boolean detailsPublic = policy.sessionDetailsPublic(event, Instant.now());
         dto.setSpeakers(speakers(sessions,
-                ch.batbern.events.sessions.dto.generated.Session::getSessionType,
+                s -> SessionEnums.value(s.getSessionType()),
                 ch.batbern.events.sessions.dto.generated.Session::getTitle,
                 ch.batbern.events.sessions.dto.generated.Session::getSessionSlug,
                 ch.batbern.events.sessions.dto.generated.Session::getSpeakers, detailsPublic));

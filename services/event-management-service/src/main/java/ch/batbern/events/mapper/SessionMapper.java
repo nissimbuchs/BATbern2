@@ -48,7 +48,7 @@ public class SessionMapper {
                 .eventCode(entity.getEventCode())
                 .title(entity.getTitle())
                 .description(entity.getDescription())
-                .sessionType(entity.getSessionType())
+                .sessionType(SessionEnums.sessionType(entity.getSessionType()))
                 .startTime(toOffset(entity.getStartTime()))
                 .endTime(toOffset(entity.getEndTime()))
                 .room(entity.getRoom())
@@ -57,7 +57,7 @@ public class SessionMapper {
                 .createdAt(toOffset(entity.getCreatedAt()))
                 .updatedAt(toOffset(entity.getUpdatedAt()))
                 .materialsCount(entity.getMaterialsCount())
-                .materialsStatus(entity.getMaterialsStatus())
+                .materialsStatus(SessionEnums.materialsStatus(entity.getMaterialsStatus()))
                 // speakers and materials are populated by service layer
                 .build();
     }

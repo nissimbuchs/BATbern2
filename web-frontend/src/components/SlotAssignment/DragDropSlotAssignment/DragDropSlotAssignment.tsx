@@ -90,7 +90,7 @@ const STRUCTURAL_STYLES: Record<
     icon: <RestaurantIcon fontSize="small" sx={{ color: 'success.main' }} />,
     labelKey: 'slotAssignment.structuralSessions.lunch',
   },
-  aperitif: {
+  networking: {
     bgcolor: 'secondary.50',
     borderColor: 'secondary.main',
     icon: <LocalBarIcon fontSize="small" sx={{ color: 'secondary.main' }} />,

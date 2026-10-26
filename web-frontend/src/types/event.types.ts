@@ -356,7 +356,6 @@ export interface SessionTimingRequest {
     | 'networking'
     | 'break'
     | 'lunch'
-    | 'aperitif'
     | 'moderation';
   changeReason?:
     | 'initial_assignment'

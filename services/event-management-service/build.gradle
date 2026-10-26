@@ -120,7 +120,9 @@ openApiGenerate {
         'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
         'Session': 'ch.batbern.events.sessions.dto.generated.Session',
         'SessionSpeaker': 'ch.batbern.events.sessions.dto.generated.SessionSpeaker',
-        'SessionResponse': 'ch.batbern.events.sessions.dto.generated.SessionResponse'
+        'SessionResponse': 'ch.batbern.events.sessions.dto.generated.SessionResponse',
+        'SessionType': 'ch.batbern.events.sessions.dto.generated.SessionType',
+        'MaterialsStatus': 'ch.batbern.events.sessions.dto.generated.MaterialsStatus'
     ]
 
     configOptions = [
@@ -153,6 +155,8 @@ openApiGenerate {
         'Session': 'ch.batbern.events.sessions.dto.generated.Session',
         'SessionSpeaker': 'ch.batbern.events.sessions.dto.generated.SessionSpeaker',
         'SessionResponse': 'ch.batbern.events.sessions.dto.generated.SessionResponse',
+        'SessionType': 'ch.batbern.events.sessions.dto.generated.SessionType',
+        'MaterialsStatus': 'ch.batbern.events.sessions.dto.generated.MaterialsStatus',
         'VenueRole': 'ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig.Role'
     ]
 }
@@ -670,7 +674,9 @@ task openApiGenerateWatch(type: org.openapitools.generator.gradle.plugin.tasks.G
 
     schemaMappings = [
         'ErrorResponse': 'ch.batbern.shared.dto.ErrorResponse',
-        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata'
+        'PaginationMetadata': 'ch.batbern.shared.api.PaginationMetadata',
+        // WatchSessionDetail.sessionType refs the sessions contract's enum (#1123)
+        'SessionType': 'ch.batbern.events.sessions.dto.generated.SessionType'
     ]
 }
 

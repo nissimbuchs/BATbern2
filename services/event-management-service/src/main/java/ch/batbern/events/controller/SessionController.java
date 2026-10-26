@@ -4,6 +4,7 @@ import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.exception.EventNotFoundException;
+import ch.batbern.events.mapper.SessionEnums;
 import ch.batbern.events.mapper.SessionMapper;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
@@ -220,7 +221,7 @@ public class SessionController implements SessionsApi {
                 .eventCode(eventCode)
                 .title(createSessionRequest.getTitle())
                 .description(createSessionRequest.getDescription())
-                .sessionType(createSessionRequest.getSessionType())
+                .sessionType(SessionEnums.value(createSessionRequest.getSessionType()))
                 .startTime(toInstant(createSessionRequest.getStartTime()))
                 .endTime(toInstant(createSessionRequest.getEndTime()))
                 .room(createSessionRequest.getRoom())

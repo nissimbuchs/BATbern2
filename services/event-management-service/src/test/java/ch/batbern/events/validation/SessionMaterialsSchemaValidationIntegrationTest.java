@@ -204,7 +204,8 @@ class SessionMaterialsSchemaValidationIntegrationTest extends AbstractIntegratio
         assertThat(constraints).as("materials_status should have CHECK constraint").isNotEmpty();
 
         String checkClause = (String) constraints.get(0).get("check_clause");
-        assertThat(checkClause).contains("NONE", "PARTIAL", "COMPLETE");
+        // V127 (#1123): one file of any type = COMPLETE; there is no PARTIAL
+        assertThat(checkClause).contains("NONE", "COMPLETE").doesNotContain("PARTIAL");
     }
 
     /**

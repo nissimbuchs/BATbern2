@@ -45,6 +45,10 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fixes — Apéro Session Type and Material Status (2026-10-26)**:
+- ✅ The apéro is stored as one session type again (`networking`, still shown as "Apéro"). A second value, `aperitif`, had been added in June for the same slot; the Apple Watch app 2.3 does not know it and could not load the event at all (#1123).
+- ✅ Speakers & Sessions table: a session shows its material as complete as soon as one file is uploaded, whatever its type. The "Pending" state for a session with only a PDF and no slide deck is gone (#1123).
+
 **New Feature — Next BAT Dates on the Homepage (2026-10-25)**:
 - ✅ Below the venue map, the homepage shows the next three BAT dates after the featured event: one card each with date and title (#1110). The list includes events that are planned but not yet published.
 
