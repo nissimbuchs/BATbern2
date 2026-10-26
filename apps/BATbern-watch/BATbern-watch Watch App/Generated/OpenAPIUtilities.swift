@@ -147,3 +147,39 @@ public struct AnyCodable: Codable, Hashable, Equatable {
         }
     }
 }
+
+// MARK: - Tolerant enums (enumUnknownDefaultCase, #1126)
+// Copied from openapi-generator 7.26 swift5 `Models.swift` (scripts/generate-types.sh generates
+// models only, not supporting files). Generated enums conform to these so that a raw value this
+// binary doesn't know decodes as the last case, `unknownDefaultOpenApi`, instead of throwing.
+
+/// An enum where the last case value can be used as a default catch-all.
+protocol CaseIterableDefaultsLast: Decodable & CaseIterable & RawRepresentable
+where RawValue: Decodable, AllCases: BidirectionalCollection {}
+
+extension CaseIterableDefaultsLast {
+    /// Initializes an enum such that if a known raw value is found, then it is decoded.
+    /// Otherwise the last case is used.
+    /// - Parameter decoder: A decoder.
+    public init(from decoder: Decoder) throws {
+        if let value = try Self(rawValue: decoder.singleValueContainer().decode(RawValue.self)) {
+            self = value
+        } else if let lastValue = Self.allCases.last {
+            self = lastValue
+        } else {
+            throw DecodingError.valueNotFound(
+                Self.Type.self,
+                .init(codingPath: decoder.codingPath, debugDescription: "CaseIterableDefaultsLast")
+            )
+        }
+    }
+}
+
+/// Lets a decoder tell whether a value only decoded thanks to the `unknownDefaultOpenApi` case.
+protocol UnknownCaseCheckable {
+    var containsUnknownDefaultOpenApiCase: Bool { get }
+}
+
+extension UnknownCaseCheckable {
+    public var containsUnknownDefaultOpenApiCase: Bool { false }
+}

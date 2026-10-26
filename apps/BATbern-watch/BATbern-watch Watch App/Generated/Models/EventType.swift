@@ -11,8 +11,15 @@ import AnyCodable
 #endif
 
 /** Event type identifier (Story 5.1 - Event Type Definition). Matches EventType enum from architecture (03-data-architecture.md:547-551).  */
-public enum EventType: String, Codable, CaseIterable {
+public enum EventType: String, Codable, CaseIterable, CaseIterableDefaultsLast {
     case fullDay = "FULL_DAY"
     case afternoon = "AFTERNOON"
     case evening = "EVENING"
+    case unknownDefaultOpenApi = "unknown_default_open_api"
+}
+
+extension EventType: UnknownCaseCheckable {
+    public var containsUnknownDefaultOpenApiCase: Bool {
+        self == .unknownDefaultOpenApi
+    }
 }

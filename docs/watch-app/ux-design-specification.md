@@ -644,7 +644,7 @@ The launch screen sets the mood. Full-bleed theme image background (dimmed for t
 
 **Symbol mark placement:** The BATbern cycle arrows symbol (extracted from the full logo — see [Brand Assets](#brand-assets-for-watch)) renders at ~20pt width, centered above the event number. It uses BATbern Blue (`#2C5F7C`) to match the design system accent color. On the OLED black background with the dimmed theme image, the symbol provides instant brand recognition without competing with the event title below.
 
-**Data source:** `GET /api/v1/events/current?expand=sessions,speakers`
+**Data source:** `GET /api/v1/public/events/current`
 
 **Edge cases:**
 - No current event → Show BATbern symbol mark (~32pt) + "BATbern" wordmark (~14pt, BATbern Blue) centered on screen, with "No upcoming BATbern event" message below (see layout below)

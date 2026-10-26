@@ -48,25 +48,18 @@ class PublicEventService: APIClientProtocol {
     // MARK: - APIClientProtocol Implementation
 
     func fetchCurrentEvent() async throws -> WatchEvent {
-        // Construct URL with query parameters
-        guard var components = URLComponents(string: "\(baseURL)/api/v1/events/current") else {
-            print("❌ Failed to construct URLComponents")
-            throw APIError.invalidResponse
-        }
-
-        components.queryItems = [
-            URLQueryItem(name: "include", value: "topics,venue,sessions")
-        ]
-
-        guard let url = components.url else {
-            print("❌ Failed to construct URL from components")
+        // Public read model (#1070): sessions/speakers shaped by the publishing phase, the
+        // same answer for every caller. The watch never sent a JWT here, so the organizer
+        // zone always received this public view on the legacy /events/current as well.
+        guard let url = URL(string: "\(baseURL)/api/v1/public/events/current") else {
+            print("❌ Failed to construct URL")
             throw APIError.invalidResponse
         }
 
         print("🌐 Fetching event from: \(url.absoluteString)")
 
         // Execute HTTP GET request
-        let (data, response) = try await session.data(from: url)
+        let (data, response) = try await get(url)
 
         // Validate HTTP status
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -129,12 +122,12 @@ class PublicEventService: APIClientProtocol {
 
     func fetchEvent(code: String) async throws -> WatchEvent {
         // Construct URL
-        guard let url = URL(string: "\(baseURL)/api/v1/events/\(code)?include=topics,venue,sessions") else {
+        guard let url = URL(string: "\(baseURL)/api/v1/public/events/\(code)") else {
             throw APIError.invalidResponse
         }
 
         // Execute HTTP GET request
-        let (data, response) = try await session.data(from: url)
+        let (data, response) = try await get(url)
 
         // Validate HTTP status
         guard let httpResponse = response as? HTTPURLResponse else {
@@ -158,6 +151,20 @@ class PublicEventService: APIClientProtocol {
 
         // Convert generated EventDetail → domain model
         return eventDetail.toWatchEvent()
+    }
+
+    // MARK: - Transport
+
+    /// GET that reports transport failures (server unreachable, timeout, no route) as
+    /// `APIError.networkError`, so EventDataController classifies them as offline (#1122).
+    /// A raw URLError used to fall through to its generic "unexpected error" branch,
+    /// leaving `isOffline` false.
+    private func get(_ url: URL) async throws -> (Data, URLResponse) {
+        do {
+            return try await session.data(from: url)
+        } catch {
+            throw APIError.networkError(error)
+        }
     }
 
     // MARK: - Epic 2 Stubs (not implemented yet)

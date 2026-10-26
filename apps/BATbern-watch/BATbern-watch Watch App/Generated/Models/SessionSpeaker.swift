@@ -13,13 +13,14 @@ import AnyCodable
 /** Story 1.15a.1b: Session speaker with enriched User data Combines SessionUser entity (role, confirmation) with User entity (name, company, photo)  */
 public struct SessionSpeaker: Codable, JSONEncodable, Hashable {
 
-    public enum SpeakerRole: String, Codable, CaseIterable {
+    public enum SpeakerRole: String, Codable, CaseIterable, CaseIterableDefaultsLast {
         case primarySpeaker = "PRIMARY_SPEAKER"
         case coSpeaker = "CO_SPEAKER"
         case moderator = "MODERATOR"
         case panelist = "PANELIST"
+        case unknownDefaultOpenApi = "unknown_default_open_api"
     }
-    public static let usernameRule = StringRule(minLength: nil, maxLength: 100, pattern: "/^[a-z]+\\.[a-z]+(\\.[0-9]+)?$/")
+    public static let usernameRule = StringRule(minLength: nil, maxLength: 100, pattern: "^[a-z]+\\.[a-z]+(\\.[0-9]+)?$")
     public static let firstNameRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)
     public static let lastNameRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)
     public static let companyRule = StringRule(minLength: nil, maxLength: 12, pattern: nil)
@@ -95,3 +96,10 @@ public struct SessionSpeaker: Codable, JSONEncodable, Hashable {
     }
 }
 
+
+extension SessionSpeaker: UnknownCaseCheckable {
+    public var containsUnknownDefaultOpenApiCase: Bool {
+        if speakerRole == .unknownDefaultOpenApi { return true }
+        return false
+    }
+}

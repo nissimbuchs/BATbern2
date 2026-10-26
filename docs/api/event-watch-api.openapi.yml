@@ -5,7 +5,7 @@ info:
   description: 'Live timetable timing controls and speaker-arrival tracking for the on-site watch view.
 
 
-    Carved from the consolidated events-api spec (API consolidation Phase 6). Paths preserved verbatim.'
+    Carved from the consolidated events-api spec (API consolidation Phase 6). Paths are relative to the server base URL (/api/v1), like every sibling spec (GitHub #848).'
   contact:
     name: BATbern Platform Team
     email: platform@batbern.ch
@@ -24,7 +24,7 @@ tags:
 - name: Watch
   description: Watch app organizer endpoints (Epic W2)
 paths:
-  /api/v1/watch/organizers/me/active-events:
+  /watch/organizers/me/active-events:
     get:
       tags:
       - Watch
@@ -100,7 +100,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
       security:
       - BearerAuth: []
-  /api/v1/watch/events/{eventCode}/arrivals:
+  /watch/events/{eventCode}/arrivals:
     get:
       tags:
       - Watch
@@ -191,7 +191,7 @@ paths:
           $ref: '#/components/responses/Forbidden'
       security:
       - BearerAuth: []
-  /api/v1/events/{eventCode}/live-timing:
+  /events/{eventCode}/live-timing:
     get:
       tags:
       - Watch
@@ -262,7 +262,7 @@ paths:
           description: Not modified — the version is unchanged since the supplied ETag.
         '404':
           $ref: '#/components/responses/NotFound'
-  /api/v1/events/{eventCode}/live-timing/actions:
+  /events/{eventCode}/live-timing/actions:
     post:
       tags:
       - Watch

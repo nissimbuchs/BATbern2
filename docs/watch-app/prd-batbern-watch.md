@@ -95,7 +95,7 @@ The app uses a **horizontal paging model** with two zones separated by swipe ges
 - Event theme image as full-bleed background
 - Event title overlay
 - Bottom bar: date, time, venue name
-- Data source: `themeImageUrl` from `GET /api/v1/events/current`
+- Data source: `themeImageUrl` from `GET /api/v1/public/events/current`
 
 **Crown Scroll Down → Session Pages (one per session)**
 
@@ -504,7 +504,7 @@ All data sourced from existing public API endpoints:
 
 | Data | Endpoint | Key Fields |
 |---|---|---|
-| Current event | `GET /api/v1/events/current?expand=sessions,speakers` | eventCode, title, date, themeImageUrl, venueName, typicalStartTime/EndTime, currentPublishedPhase |
+| Current event | `GET /api/v1/public/events/current` | eventCode, title, date, themeImageUrl, venueName, typicalStartTime/EndTime, currentPublishedPhase |
 | Event sessions | Included in expand | sessionSlug, title, description, sessionType, startTime, endTime, speakers[] |
 | Speaker info | Included in session speakers[] | firstName, lastName, company, profilePictureUrl, bio, speakerRole |
 | Company logos | `GET /api/v1/companies/{companyName}?expand=logo` | logoUrl |

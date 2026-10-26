@@ -11,9 +11,16 @@ import AnyCodable
 #endif
 
 /** Controls which slide the image appears after in the moderator presentation. */
-public enum TeaserImagePresentationPosition: String, Codable, CaseIterable {
+public enum TeaserImagePresentationPosition: String, Codable, CaseIterable, CaseIterableDefaultsLast {
     case afterWelcome = "AFTER_WELCOME"
     case afterCommittee = "AFTER_COMMITTEE"
     case afterTopicReveal = "AFTER_TOPIC_REVEAL"
     case afterUpcomingEvents = "AFTER_UPCOMING_EVENTS"
+    case unknownDefaultOpenApi = "unknown_default_open_api"
+}
+
+extension TeaserImagePresentationPosition: UnknownCaseCheckable {
+    public var containsUnknownDefaultOpenApiCase: Bool {
+        self == .unknownDefaultOpenApi
+    }
 }

@@ -13,12 +13,13 @@ import AnyCodable
 /** Expanded topic details (only included when ?include&#x3D;topics). Story BAT-109: Archive browsing with topic expansion  */
 public struct EventTopic: Codable, JSONEncodable, Hashable {
 
-    public enum Category: String, Codable, CaseIterable {
+    public enum Category: String, Codable, CaseIterable, CaseIterableDefaultsLast {
         case technical = "technical"
         case management = "management"
         case softSkills = "soft_skills"
         case industryTrends = "industry_trends"
         case toolsPlatforms = "tools_platforms"
+        case unknownDefaultOpenApi = "unknown_default_open_api"
     }
     public var code: String?
     public var name: String?
@@ -50,3 +51,10 @@ public struct EventTopic: Codable, JSONEncodable, Hashable {
     }
 }
 
+
+extension EventTopic: UnknownCaseCheckable {
+    public var containsUnknownDefaultOpenApiCase: Bool {
+        if category == .unknownDefaultOpenApi { return true }
+        return false
+    }
+}

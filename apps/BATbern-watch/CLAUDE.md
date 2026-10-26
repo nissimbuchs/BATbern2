@@ -110,7 +110,8 @@ Protocols/           # Dependency injection contracts (testability)
   └── HapticServiceProtocol.swift  # Haptic engine abstraction
 
 Generated/           # OpenAPI-generated types (auto-generated, do not edit)
-  ├── Models/        # Event, Session, Speaker DTOs from events-api.openapi.yml
+  ├── Models/        # EventDetail + the models it references (generated, do not edit)
+  ├── EventDetailExtensions.swift  # Hand-written: generated DTOs → domain models
   └── OpenAPIUtilities.swift
 
 Utilities/           # Helper functions
@@ -368,7 +369,13 @@ Or in Xcode: `Cmd+U` (all tests), or click the diamond next to a test.
 ### API Endpoints (Consumed)
 
 **Public data (no auth):**
-- `GET /api/v1/events/current?expand=sessions,speakers` — Event schedule
+- `GET /api/v1/public/events/current` — Event schedule (both zones). The public read model:
+  sessions and speakers are shaped by the publishing phase, the same answer for every caller.
+  The watch sends no JWT on this call, so the organizer zone sees the public view too — in
+  AGENDA that is every slotted, reviewed session plus moderation/break/apéro slots.
+- `GET /api/v1/public/events/{eventCode}` — Same shape for a specific event.
+- Up to release 2.3 the watch called the legacy `GET /api/v1/events/current`; the backend keeps
+  it until installed watches have updated (GitHub #1070).
 
 **Organizer endpoints (JWT required):**
 - `POST /api/v1/watch/pair` — Authenticate and join event (Epic W2)
@@ -410,33 +417,43 @@ All design and architecture documentation lives in `../../docs/watch-app/`:
 
 ### Workflow
 
-Model types are refreshed from the BATbern OpenAPI specification:
+Model types are generated from the per-domain BATbern OpenAPI specs:
 
 ```bash
-# Refresh types after API spec changes
+# Regenerate types after API spec changes
 ./scripts/generate-types.sh
 
-# Source: ../../docs/api/events-api.openapi.yml
+# Source: ../../docs/api/events-core-api.openapi.yml + the 8 event-*-api.openapi.yml siblings
 # Output: BATbern-watch Watch App/Generated/Models/*.swift
 ```
 
-**Curated subset, not full generation.** The watch consumes only a slice of the
-events API, so `Generated/Models/` holds a *curated* set — not every schema the
-spec defines. The script therefore **refreshes only the models already present**
-and then **prints the new models the spec now offers** (e.g. `WatchSessionDetail`,
-newsletter/Q&A DTOs) without adding them. It generates into an isolated temp dir
-and never deletes the `Generated/` root, so the hand-maintained
-`Generated/OpenAPIUtilities.swift` is preserved.
+**Closure of the decoded payload, not the whole API.** The watch decodes exactly one
+payload, `EventDetail`. The script generates all models into a temp dir, computes
+`EventDetail` plus everything it references transitively (`ROOT_MODELS` in the script),
+copies that closure into `Generated/Models/` and deletes models that fell out of it. It never
+touches files outside `Generated/Models/`, so the hand-written `Generated/OpenAPIUtilities.swift`
+and `Generated/EventDetailExtensions.swift` are preserved. Add a root only when the watch starts
+decoding another payload. The script runs on the stock macOS `/bin/bash` (3.2).
 
-**After refresh:**
+**Contract changes surface in `EventDetailExtensions.swift`**, which maps the generated DTOs to
+the domain models (`WatchEvent`, `WatchSession`, `WatchSpeaker`).
+
+**Enums tolerate unknown values.** The contract's enums (`sessionType`, `materialsStatus`, …) are
+closed, but installed watches can't be updated in step with the backend. The script therefore
+generates with `enumUnknownDefaultCase=true`: a value this binary doesn't know decodes as
+`.unknownDefaultOpenApi` instead of failing the *whole* event — a closed enum is what broke
+release 2.3 when BATbern60 stored the apéro as `aperitif` (#1123, #1126). Map
+`.unknownDefaultOpenApi` to a sensible default in `EventDetailExtensions.swift` (an unknown
+session type becomes a timed talk slot). The enums rely on `CaseIterableDefaultsLast` /
+`UnknownCaseCheckable`, kept in `Generated/OpenAPIUtilities.swift` because the script generates
+models only. The contract's `SessionType` is generated as `ApiSessionType`
+(`--model-name-mappings`), since the domain model already owns `SessionType`.
+
+**After regenerating:**
 1. Run `./scripts/generate-types.sh`
-2. Build to verify: `Cmd+B` (Xcode picks up new `.swift` files automatically — no manual "Add Files" step needed)
-3. **If the build flags a missing referenced type**, a refreshed model started
-   referencing a new schema. Copy that model file from the generator output
-   (the script lists the available new models) into `Generated/Models/` and
-   rebuild. Example: the `teaserImages` field added `TeaserImageItem` +
-   `TeaserImagePresentationPosition`, which had to be opted in this way.
-4. Run tests (`Cmd+U`) to confirm decoding against the refreshed contract.
+2. Build (`Cmd+B`) and fix `EventDetailExtensions.swift` if a model changed shape.
+3. Run tests (`Cmd+U`). `PublicEventServiceTests` decodes a production-shaped payload through a
+   stubbed `URLSession` (`StubURLProtocol`) — refresh that fixture when the payload changes.
 
 ### Generated vs Manual Models
 
@@ -445,7 +462,6 @@ and never deletes the `Generated/` root, so the hand-maintained
 
 **Rule:** Use generated types for API communication, manual types for local SwiftData persistence and domain logic.
 
-See `OPENAPI_GENERATOR_GUIDE.md` for detailed migration guide.
 
 ## Localization
 

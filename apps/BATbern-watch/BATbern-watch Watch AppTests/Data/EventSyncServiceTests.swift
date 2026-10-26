@@ -3,7 +3,7 @@
 //  BATbern-watch Watch AppTests
 //
 //  Tests for EventDataController sync behaviour.
-//  Always uses GET /api/v1/events/current (same endpoint for both zones).
+//  Always uses GET /api/v1/public/events/current (same endpoint for both zones).
 //
 
 import Testing

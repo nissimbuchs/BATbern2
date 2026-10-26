@@ -7,7 +7,13 @@ import Foundation
 
 // MARK: - Type Mapping Helpers
 
-private func mapSessionType(_ generated: Session.SessionType) -> SessionType {
+/// The contract's session types are a closed enum again (#1123), but installed watches can't be
+/// updated in step with the backend, so the models are generated with `enumUnknownDefaultCase`
+/// (#1126): a value this binary doesn't know decodes as `.unknownDefaultOpenApi` instead of failing
+/// the whole event (how 2.3 broke on `aperitif`). Unknown types are kept as a timed talk slot rather
+/// than dropped: the organizer countdown needs every slot, and a mislabelled slot is better than a
+/// missing one.
+private func mapSessionType(_ generated: ApiSessionType) -> SessionType {
     switch generated {
     case .keynote: return .keynote
     case .presentation: return .presentation
@@ -17,6 +23,7 @@ private func mapSessionType(_ generated: Session.SessionType) -> SessionType {
     case ._break: return .breakTime
     case .lunch: return .lunch
     case .moderation: return .moderation
+    case .unknownDefaultOpenApi: return .presentation
     }
 }
 
@@ -26,6 +33,7 @@ private func mapSpeakerRole(_ generated: SessionSpeaker.SpeakerRole) -> SpeakerR
     case .coSpeaker: return .coSpeaker
     case .moderator: return .moderator
     case .panelist: return .panelist
+    case .unknownDefaultOpenApi: return .panelist  // same fallback as CachedSpeaker
     }
 }
 
@@ -72,17 +80,17 @@ extension EventDetail {
     }
 }
 
-// MARK: - Session → WatchSession
+// MARK: - SessionResponse → WatchSession
 
-extension Session {
+extension SessionResponse {
     func toWatchSession() -> WatchSession? {
         guard let start = startTime,
               let end = endTime,
-              let genSessionType = sessionType else {
+              let generatedType = sessionType else {
             return nil
         }
 
-        let domainType = mapSessionType(genSessionType)
+        let domainType = mapSessionType(generatedType)
         let watchSpeakers = speakers?.compactMap { $0.toWatchSpeaker() } ?? []
 
         return WatchSession(

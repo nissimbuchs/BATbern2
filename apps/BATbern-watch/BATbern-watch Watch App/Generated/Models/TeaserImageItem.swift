@@ -49,3 +49,10 @@ public struct TeaserImageItem: Codable, JSONEncodable, Hashable {
 
 @available(iOS 13, tvOS 13, watchOS 6, macOS 10.15, *)
 extension TeaserImageItem: Identifiable {}
+
+extension TeaserImageItem: UnknownCaseCheckable {
+    public var containsUnknownDefaultOpenApiCase: Bool {
+        if presentationPosition == .unknownDefaultOpenApi { return true }
+        return false
+    }
+}

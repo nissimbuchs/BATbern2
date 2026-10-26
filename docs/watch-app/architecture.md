@@ -338,7 +338,7 @@ Step 3: Ongoing authentication
 The public zone uses existing public API endpoints — no new backend work:
 
 ```
-GET /api/v1/events/current?expand=sessions,speakers    → Full event with sessions & speakers
+GET /api/v1/public/events/current    → Full event with sessions & speakers
 GET /api/v1/companies/{companyName}?expand=logo         → Company logo URL
 ```
 
@@ -361,37 +361,30 @@ GET /api/v1/companies/{companyName}?expand=logo         → Company logo URL
 
 **Implementation:**
 
-1. **Code Generation Script** (`apps/BATbern-watch/scripts/generate-types.sh`):
-   ```bash
-   # Generates Swift types from docs/api/events-api.openapi.yml
-   openapi-generator generate \
-     -i ../../docs/api/events-api.openapi.yml \
-     -g swift5 \
-     -o "BATbern-watch Watch App/Generated/temp" \
-     --additional-properties=library=urlsession,responseAs=Codable \
-     --global-property=models
-
-   # Copies only essential types (EventDetail, Session, Speaker, etc.)
-   # Removes admin/batch types not needed for Watch app
-   ```
+1. **Code Generation Script** (`apps/BATbern-watch/scripts/generate-types.sh`): generates the
+   swift5 models from the per-domain specs (`events-core-api` + the `event-*-api` siblings) with
+   `enumUnknownDefaultCase=true` (unknown enum values decode as `.unknownDefaultOpenApi` instead
+   of failing the payload; #1126) and `--model-name-mappings SessionType=ApiSessionType`, then
+   keeps only `EventDetail` and the models it references transitively. Details:
+   `apps/BATbern-watch/CLAUDE.md` → "OpenAPI Type Generation".
 
 2. **Generated Types** (`BATbern-watch Watch App/Generated/Models/`):
-   - `EventDetail.swift` — Full event response with sessions, speakers, venue
-   - `Event.swift` — Base event model
-   - `Session.swift` — Session with timing, type, speakers
-   - `SessionSpeaker.swift` — Speaker role assignment
-   - `Speaker.swift` — Speaker profile data
-   - `Venue.swift`, `EventType.swift`, `EventWorkflowState.swift` — Supporting types
+   - `EventDetail.swift` — the decoded payload (`/public/events/current`, `/public/events/{code}`)
+   - `SessionResponse.swift`, `SessionSpeaker.swift`, `SessionMaterialResponse.swift` — sessions
+   - `ApiSessionType.swift`, `MaterialsStatus.swift` — session enums (tolerant, see above)
+   - `PublicSpeaker.swift`, `EventTopic.swift`, `Venue.swift`, `TeaserImageItem.swift`,
+     `TeaserImagePresentationPosition.swift`, `EventType.swift`, `EventWorkflowState.swift`
 
 3. **Utility Helpers** (`BATbern-watch Watch App/Generated/OpenAPIUtilities.swift`):
    - `JSONEncodable` protocol — For encoding to JSON
    - `StringRule`, `NumericRule`, `ArrayRule` — Validation metadata (used by generated code)
    - `AnyCodable` — Dynamic JSON support
+   - `CaseIterableDefaultsLast`, `UnknownCaseCheckable` — tolerant enum decoding (#1126)
 
 4. **Type Mapping Extensions** (`BATbern-watch Watch App/Generated/EventDetailExtensions.swift`):
    - `EventDetail → WatchEvent` — Generated API type → domain model
    - `EventDetail → CachedEvent` — Generated API type → SwiftData persistence model
-   - `Session.SessionType → SessionType` — Maps generated enum to domain enum
+   - `ApiSessionType → SessionType` — Maps generated enum to domain enum (`.unknownDefaultOpenApi` → timed talk slot)
    - `SessionSpeaker.SpeakerRole → SpeakerRole` — Maps `PRIMARY_SPEAKER` (backend) → `keynoteSpeaker` (domain)
 
 **Type Flow:**
@@ -1098,7 +1091,7 @@ docs/watch-app/
 **Data Flow — Public Zone:**
 ```
 App Launch → SwiftData Cache → PublicViewModel → Views (immediate)
-             PublicEventService → REST GET /events/current → SwiftData Cache → PublicViewModel → Views (refresh)
+             PublicEventService → REST GET /public/events/current → SwiftData Cache → PublicViewModel → Views (refresh)
 ```
 
 **Data Flow — Organizer Zone:**

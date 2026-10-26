@@ -144,6 +144,8 @@ export interface paths {
      *     **Consumer (2026-10-07)**: kept ONLY for the Apple Watch app
      *     (`apps/BATbern-watch`, both zones), which ships as an installed binary and calls this
      *     path directly. The public website uses `GET /public/events/current` instead.
+     *     Watch release 2.4 switched to `GET /public/events/current` (2026-10-26); this path
+     *     stays until installed watches have updated to 2.4.
      *     Sessions/speakers depend on the caller: organizers (Watch organizer zone) see every
      *     session; everyone else gets the public view by publishing state. Retire this endpoint once
      *     a Watch release has switched to `/public/events/current` (GitHub issue #1070).
