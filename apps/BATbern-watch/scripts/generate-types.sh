@@ -1,23 +1,23 @@
 #!/bin/bash
-# Generate / refresh Swift API model types from the canonical OpenAPI spec.
+# Generate the Swift API model types the watch decodes, from the canonical OpenAPI specs.
 #
-# The watch app consumes a *subset* of the events API, so Generated/Models/
-# holds a curated set of model files (not every schema the spec defines). This
-# script refreshes the models that are already present, and reports any new
-# models the spec now offers so you can opt them in deliberately when a feature
-# needs them.
+# The watch decodes exactly one API payload — EventDetail, from
+# GET /api/v1/public/events/current — so Generated/Models/ holds EventDetail plus every
+# model it references, transitively (the "closure" of ROOT_MODELS). The script computes
+# that closure from the generator output, syncs it into Models/, and removes models
+# that fell out of it. Add a root only when the watch starts decoding another payload.
 #
-# It NEVER deletes the Generated/ root, so hand-maintained files there
-# (e.g. OpenAPIUtilities.swift) are preserved. Generation happens in an
-# isolated temp dir and is only synced into Models/ on success — a failed
+# It NEVER touches files outside Generated/Models/, so hand-maintained files in
+# Generated/ (OpenAPIUtilities.swift, EventDetailExtensions.swift) are preserved.
+# Generation happens in an isolated temp dir and is only synced on success — a failed
 # generation leaves the existing models untouched.
 set -euo pipefail
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 PROJECT_ROOT="$SCRIPT_DIR/.."
 API_DIR="$PROJECT_ROOT/../../docs/api"
-# The events API was split into per-domain specs (API consolidation Phase 6); the
-# watch app's curated models are sourced from the union of all of them.
+# The events API was split into per-domain specs (API consolidation Phase 6); models are
+# generated from all of them so the closure can follow cross-spec references.
 API_SPECS=(
     "events-core-api.openapi.yml"
     "event-sessions-api.openapi.yml"
@@ -30,11 +30,14 @@ API_SPECS=(
     "event-watch-api.openapi.yml"
 )
 MODELS_DIR="$PROJECT_ROOT/BATbern-watch Watch App/Generated/Models"
+# The payloads the watch decodes. Everything they reference is pulled in automatically.
+ROOT_MODELS=("EventDetail")
 TEMP_DIR="$(mktemp -d)"
 trap 'rm -rf "$TEMP_DIR"' EXIT
 
 echo "🔄 Refreshing Swift API models from OpenAPI specs..."
 echo "   Specs:  $API_DIR/event*-api.openapi.yml (${#API_SPECS[@]} per-domain specs)"
+echo "   Roots:  ${ROOT_MODELS[*]}"
 echo "   Models: $MODELS_DIR"
 
 # Install openapi-generator if needed
@@ -76,53 +79,58 @@ if [ -z "$(ls -A "$SRC_MODELS" 2>/dev/null)" ]; then
     exit 1
 fi
 
+# Compute the closure of ROOT_MODELS: a model belongs if a member references its type name
+# (comments excluded). Plain newline-separated lists — macOS /bin/bash is 3.2 (no `declare -A`).
+closure=""
+in_closure() { printf '%s\n' "$closure" | grep -qx "$1"; }
+queue="$(printf '%s\n' "${ROOT_MODELS[@]}")"
+while [ -n "$queue" ]; do
+    name="$(printf '%s\n' "$queue" | head -n 1)"
+    queue="$(printf '%s\n' "$queue" | tail -n +2)"
+    in_closure "$name" && continue
+    if [ ! -f "$SRC_MODELS/$name.swift" ]; then
+        echo "❌ Root/referenced model not produced by the generator: $name" >&2
+        exit 1
+    fi
+    closure="$(printf '%s\n%s' "$closure" "$name" | sed '/^$/d')"
+    code="$(grep -vE '^[[:space:]]*(//|/\*\*|\*)' "$SRC_MODELS/$name.swift")"
+    for candidate in "$SRC_MODELS"/*.swift; do
+        ref="$(basename "$candidate" .swift)"
+        in_closure "$ref" && continue
+        if printf '%s\n' "$code" | grep -qE "(^|[^A-Za-z0-9_])$ref([^A-Za-z0-9_]|$)"; then
+            queue="$(printf '%s\n%s' "$queue" "$ref" | sed '/^$/d')"
+        fi
+    done
+done
+
 mkdir -p "$MODELS_DIR"
 
-# Refresh the curated set: overwrite each model already present with its freshly
-# generated version. Curated files that no longer exist in the spec are left in
-# place and reported (manual review).
-refreshed=0
-missing_from_spec=()
-for existing in "$MODELS_DIR"/*.swift; do
-    [ -e "$existing" ] || continue   # no curated models yet
-    name="$(basename "$existing")"
-    if [ -f "$SRC_MODELS/$name" ]; then
-        cp "$SRC_MODELS/$name" "$existing"
-        refreshed=$((refreshed + 1))
+# Sync: copy every closure member, remove every model outside the closure.
+added=""; removed=""; updated=0; total=0
+for name in $closure; do
+    total=$((total + 1))
+    target="$MODELS_DIR/$name.swift"
+    if [ -f "$target" ]; then
+        cmp -s "$SRC_MODELS/$name.swift" "$target" || updated=$((updated + 1))
     else
-        missing_from_spec+=("$name")
+        added="$added $name"
+    fi
+    cp "$SRC_MODELS/$name.swift" "$target"
+done
+for existing in "$MODELS_DIR"/*.swift; do
+    [ -e "$existing" ] || continue
+    name="$(basename "$existing" .swift)"
+    if ! in_closure "$name"; then
+        rm "$existing"
+        removed="$removed $name"
     fi
 done
 
-# Report new models the spec now offers that aren't in the curated set.
-new_available=()
-for src in "$SRC_MODELS"/*.swift; do
-    [ -e "$src" ] || continue
-    name="$(basename "$src")"
-    [ -f "$MODELS_DIR/$name" ] || new_available+=("$name")
-done
+echo ""
+echo "✅ $total model(s) in the closure of: ${ROOT_MODELS[*]} ($updated changed)"
+for name in $added; do echo "   + $name"; done
+for name in $removed; do echo "   - $name"; done
 
 echo ""
-echo "✅ Refreshed $refreshed curated model(s) in: $MODELS_DIR/"
-echo "   (Generated/OpenAPIUtilities.swift and other hand-maintained files preserved.)"
-
-if [ ${#new_available[@]} -gt 0 ]; then
-    echo ""
-    echo "ℹ️  ${#new_available[@]} new model(s) available in the spec but NOT in the curated set."
-    echo "    Copy one from the generator output into Models/ only if a watch feature needs it"
-    echo "    (e.g. when a refreshed model references a new type the build then flags as missing):"
-    printf '      - %s\n' "${new_available[@]}" | sort
-fi
-
-if [ ${#missing_from_spec[@]} -gt 0 ]; then
-    echo ""
-    echo "⚠️  ${#missing_from_spec[@]} curated model(s) no longer exist in the spec (left untouched — review):"
-    printf '      - %s\n' "${missing_from_spec[@]}"
-fi
-
-echo ""
-echo "📝 Next steps:"
-echo "  1. Build in Xcode (Cmd+B) — new .swift files are picked up automatically."
-echo "  2. If the build flags a missing referenced type, copy that model from the"
-echo "     generator output (printed above) into Models/ and rebuild."
-echo "  3. Run tests (Cmd+U) to verify decoding against the refreshed contract."
+echo "📝 Next: build and run the tests (Cmd+U) — Generated/EventDetailExtensions.swift maps"
+echo "   these types to the watch's domain models and is where contract changes surface."

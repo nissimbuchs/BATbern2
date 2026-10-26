@@ -39,7 +39,7 @@ BATbern-watch/
 
 This app is **independent** of the Gradle/Java/TypeScript build system. It consumes the BATbern public REST API and (for organizers) authenticates via a pairing token flow.
 
-- **Public data:** `GET /api/v1/events/current?expand=sessions,speakers` (existing endpoint)
+- **Public data:** `GET /api/v1/public/events/current` (existing endpoint)
 - **Pairing:** `POST /api/v1/watch/pair` (new endpoint, Epic W2)
 - **Real-time sync:** `wss://.../ws/events/{eventCode}/live` (new WebSocket, Epic W4)
 

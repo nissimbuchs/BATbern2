@@ -48,18 +48,11 @@ class PublicEventService: APIClientProtocol {
     // MARK: - APIClientProtocol Implementation
 
     func fetchCurrentEvent() async throws -> WatchEvent {
-        // Construct URL with query parameters
-        guard var components = URLComponents(string: "\(baseURL)/api/v1/events/current") else {
-            print("❌ Failed to construct URLComponents")
-            throw APIError.invalidResponse
-        }
-
-        components.queryItems = [
-            URLQueryItem(name: "include", value: "topics,venue,sessions")
-        ]
-
-        guard let url = components.url else {
-            print("❌ Failed to construct URL from components")
+        // Public read model (#1070): sessions/speakers shaped by the publishing phase, the
+        // same answer for every caller. The watch never sent a JWT here, so the organizer
+        // zone always received this public view on the legacy /events/current as well.
+        guard let url = URL(string: "\(baseURL)/api/v1/public/events/current") else {
+            print("❌ Failed to construct URL")
             throw APIError.invalidResponse
         }
 
@@ -129,7 +122,7 @@ class PublicEventService: APIClientProtocol {
 
     func fetchEvent(code: String) async throws -> WatchEvent {
         // Construct URL
-        guard let url = URL(string: "\(baseURL)/api/v1/events/\(code)?include=topics,venue,sessions") else {
+        guard let url = URL(string: "\(baseURL)/api/v1/public/events/\(code)") else {
             throw APIError.invalidResponse
         }
 

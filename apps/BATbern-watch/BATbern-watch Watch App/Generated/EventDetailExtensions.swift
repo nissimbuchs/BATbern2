@@ -7,16 +7,22 @@ import Foundation
 
 // MARK: - Type Mapping Helpers
 
-private func mapSessionType(_ generated: Session.SessionType) -> SessionType {
-    switch generated {
-    case .keynote: return .keynote
-    case .presentation: return .presentation
-    case .workshop: return .workshop
-    case .panelDiscussion: return .panelDiscussion
-    case .networking: return .networking
-    case ._break: return .breakTime
-    case .lunch: return .lunch
-    case .moderation: return .moderation
+/// `sessionType` is a free-form string in the contract (not a closed enum), so new
+/// structural types can appear without notice — BATbern60 introduced `aperitif`, which
+/// the old generated enum could not decode at all (the whole event failed to load).
+/// Unknown types are kept as a timed talk slot rather than dropped: the organizer
+/// countdown needs every slot, and a mislabelled slot is better than a missing one.
+private func mapSessionType(_ raw: String) -> SessionType {
+    switch raw {
+    case "keynote": return .keynote
+    case "presentation": return .presentation
+    case "workshop": return .workshop
+    case "panel_discussion": return .panelDiscussion
+    case "networking", "aperitif": return .networking
+    case "break": return .breakTime
+    case "lunch": return .lunch
+    case "moderation": return .moderation
+    default: return .presentation
     }
 }
 
@@ -72,17 +78,17 @@ extension EventDetail {
     }
 }
 
-// MARK: - Session → WatchSession
+// MARK: - SessionResponse → WatchSession
 
-extension Session {
+extension SessionResponse {
     func toWatchSession() -> WatchSession? {
         guard let start = startTime,
               let end = endTime,
-              let genSessionType = sessionType else {
+              let rawSessionType = sessionType else {
             return nil
         }
 
-        let domainType = mapSessionType(genSessionType)
+        let domainType = mapSessionType(rawSessionType)
         let watchSpeakers = speakers?.compactMap { $0.toWatchSpeaker() } ?? []
 
         return WatchSession(

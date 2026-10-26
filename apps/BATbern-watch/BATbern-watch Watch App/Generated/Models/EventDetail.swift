@@ -21,13 +21,13 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         case speakers = "SPEAKERS"
         case agenda = "AGENDA"
     }
-    public static let eventCodeRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^BATbern[0-9]+$/")
+    public static let eventCodeRule = StringRule(minLength: nil, maxLength: nil, pattern: "^BATbern[0-9]+$")
     public static let titleRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)
     public static let venueNameRule = StringRule(minLength: nil, maxLength: 255, pattern: nil)
-    public static let organizerUsernameRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[a-z]+\\.[a-z]+(\\.[0-9]+)?$/")
+    public static let organizerUsernameRule = StringRule(minLength: nil, maxLength: nil, pattern: "^[a-z]+\\.[a-z]+(\\.[0-9]+)?$")
     public static let themeImageUrlRule = StringRule(minLength: nil, maxLength: 1000, pattern: nil)
     public static let themeImageUploadIdRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)
-    public static let topicCodeRule = StringRule(minLength: nil, maxLength: nil, pattern: "/^[a-z0-9-]+$/")
+    public static let topicCodeRule = StringRule(minLength: nil, maxLength: nil, pattern: "^[a-z0-9-]+$")
     /** Human-readable event identifier in format \"BATbern{number}\". Story 1.16.2: Public API uses meaningful IDs, not UUIDs.  */
     public var eventCode: String
     public var title: String
@@ -80,11 +80,32 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
     public var workflowState: EventWorkflowState?
     public var topic: EventTopic?
     public var venue: Venue?
-    public var sessions: [Session]?
+    /** Expanded sessions for the single-event detail view — carries the full SessionResponse shape (materials + enriched speakers). The list endpoint embeds the leaner Session instead (materialsStatus only, no materials array). */
+    public var sessions: [SessionResponse]?
+    /** Public read model only (GET /public/events/_*): the speakers the website may show for the published phase. SPEAKERS phase: accepted-or-later speakers without talk title; AGENDA and later: with talk title. Never set by the organizer endpoints. */
+    public var speakers: [PublicSpeaker]?
+    /** Organizer's free-text note on topic selection (Story 5.2). */
+    public var topicSelectionNote: String?
+    /** Username of the creator (audit). */
+    public var createdBy: String?
+    /** Username of the last updater (audit). */
+    public var updatedBy: String?
+    /** Speakers who accepted their invitation. Only present when ?include=metrics. */
+    public var confirmedSpeakersCount: Int?
+    /** Speakers who submitted complete materials. Only present when ?include=metrics. */
+    public var speakersWithCompleteInfoCount: Int?
+    /** Speakers with materials still pending. Only present when ?include=metrics. */
+    public var pendingMaterialsCount: Int?
+    /** Maximum speaker slots for this event type. Only present when ?include=metrics. */
+    public var maxSpeakerSlots: Int?
+    /** Sessions that have at least one material. Only present when ?include=metrics. */
+    public var sessionsWithMaterialsCount: Int?
+    /** Total sessions for this event. Only present when ?include=metrics. */
+    public var totalSessionsCount: Int?
     /** Progressive publishing phase for watch app (Story W1.2) - TOPIC: Event topic selected, speakers TBA - SPEAKERS: Speaker list published - AGENDA: Full session details published  */
     public var currentPublishedPhase: CurrentPublishedPhase?
 
-    public init(eventCode: String, title: String, eventNumber: Int, date: Date, registrationDeadline: Date, venueName: String, venueAddress: String, venueCapacity: Int, registrationCapacity: Int? = nil, qnaEnabled: Bool? = nil, qnaOpenTrigger: QnaOpenTrigger? = nil, qnaWindowDays: Int? = nil, confirmedCount: Int? = nil, waitlistCount: Int? = nil, spotsRemaining: Int? = nil, realAttendeeCount: Int? = nil, organizerUsername: String, currentAttendeeCount: Int? = 0, publishedAt: Date? = nil, metadata: String? = nil, description: String? = nil, createdAt: Date? = nil, updatedAt: Date? = nil, themeImageUrl: String? = nil, themeImageUploadId: String? = nil, teaserImages: [TeaserImageItem]? = nil, topicCode: String? = nil, eventType: EventType? = nil, typicalStartTime: String? = nil, typicalEndTime: String? = nil, workflowState: EventWorkflowState? = nil, topic: EventTopic? = nil, venue: Venue? = nil, sessions: [Session]? = nil, currentPublishedPhase: CurrentPublishedPhase? = nil) {
+    public init(eventCode: String, title: String, eventNumber: Int, date: Date, registrationDeadline: Date, venueName: String, venueAddress: String, venueCapacity: Int, registrationCapacity: Int? = nil, qnaEnabled: Bool? = nil, qnaOpenTrigger: QnaOpenTrigger? = nil, qnaWindowDays: Int? = nil, confirmedCount: Int? = nil, waitlistCount: Int? = nil, spotsRemaining: Int? = nil, realAttendeeCount: Int? = nil, organizerUsername: String, currentAttendeeCount: Int? = 0, publishedAt: Date? = nil, metadata: String? = nil, description: String? = nil, createdAt: Date? = nil, updatedAt: Date? = nil, themeImageUrl: String? = nil, themeImageUploadId: String? = nil, teaserImages: [TeaserImageItem]? = nil, topicCode: String? = nil, eventType: EventType? = nil, typicalStartTime: String? = nil, typicalEndTime: String? = nil, workflowState: EventWorkflowState? = nil, topic: EventTopic? = nil, venue: Venue? = nil, sessions: [SessionResponse]? = nil, speakers: [PublicSpeaker]? = nil, topicSelectionNote: String? = nil, createdBy: String? = nil, updatedBy: String? = nil, confirmedSpeakersCount: Int? = nil, speakersWithCompleteInfoCount: Int? = nil, pendingMaterialsCount: Int? = nil, maxSpeakerSlots: Int? = nil, sessionsWithMaterialsCount: Int? = nil, totalSessionsCount: Int? = nil, currentPublishedPhase: CurrentPublishedPhase? = nil) {
         self.eventCode = eventCode
         self.title = title
         self.eventNumber = eventNumber
@@ -119,6 +140,16 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         self.topic = topic
         self.venue = venue
         self.sessions = sessions
+        self.speakers = speakers
+        self.topicSelectionNote = topicSelectionNote
+        self.createdBy = createdBy
+        self.updatedBy = updatedBy
+        self.confirmedSpeakersCount = confirmedSpeakersCount
+        self.speakersWithCompleteInfoCount = speakersWithCompleteInfoCount
+        self.pendingMaterialsCount = pendingMaterialsCount
+        self.maxSpeakerSlots = maxSpeakerSlots
+        self.sessionsWithMaterialsCount = sessionsWithMaterialsCount
+        self.totalSessionsCount = totalSessionsCount
         self.currentPublishedPhase = currentPublishedPhase
     }
 
@@ -157,6 +188,16 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         case topic
         case venue
         case sessions
+        case speakers
+        case topicSelectionNote
+        case createdBy
+        case updatedBy
+        case confirmedSpeakersCount
+        case speakersWithCompleteInfoCount
+        case pendingMaterialsCount
+        case maxSpeakerSlots
+        case sessionsWithMaterialsCount
+        case totalSessionsCount
         case currentPublishedPhase
     }
 
@@ -198,6 +239,16 @@ public struct EventDetail: Codable, JSONEncodable, Hashable {
         try container.encodeIfPresent(topic, forKey: .topic)
         try container.encodeIfPresent(venue, forKey: .venue)
         try container.encodeIfPresent(sessions, forKey: .sessions)
+        try container.encodeIfPresent(speakers, forKey: .speakers)
+        try container.encodeIfPresent(topicSelectionNote, forKey: .topicSelectionNote)
+        try container.encodeIfPresent(createdBy, forKey: .createdBy)
+        try container.encodeIfPresent(updatedBy, forKey: .updatedBy)
+        try container.encodeIfPresent(confirmedSpeakersCount, forKey: .confirmedSpeakersCount)
+        try container.encodeIfPresent(speakersWithCompleteInfoCount, forKey: .speakersWithCompleteInfoCount)
+        try container.encodeIfPresent(pendingMaterialsCount, forKey: .pendingMaterialsCount)
+        try container.encodeIfPresent(maxSpeakerSlots, forKey: .maxSpeakerSlots)
+        try container.encodeIfPresent(sessionsWithMaterialsCount, forKey: .sessionsWithMaterialsCount)
+        try container.encodeIfPresent(totalSessionsCount, forKey: .totalSessionsCount)
         try container.encodeIfPresent(currentPublishedPhase, forKey: .currentPublishedPhase)
     }
 }

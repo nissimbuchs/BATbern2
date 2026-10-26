@@ -19,7 +19,7 @@ public struct SessionSpeaker: Codable, JSONEncodable, Hashable {
         case moderator = "MODERATOR"
         case panelist = "PANELIST"
     }
-    public static let usernameRule = StringRule(minLength: nil, maxLength: 100, pattern: "/^[a-z]+\\.[a-z]+(\\.[0-9]+)?$/")
+    public static let usernameRule = StringRule(minLength: nil, maxLength: 100, pattern: "^[a-z]+\\.[a-z]+(\\.[0-9]+)?$")
     public static let firstNameRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)
     public static let lastNameRule = StringRule(minLength: nil, maxLength: 100, pattern: nil)
     public static let companyRule = StringRule(minLength: nil, maxLength: 12, pattern: nil)

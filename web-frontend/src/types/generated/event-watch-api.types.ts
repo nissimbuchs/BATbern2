@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-  '/api/v1/watch/organizers/me/active-events': {
+  '/watch/organizers/me/active-events': {
     parameters: {
       query?: never;
       header?: never;
@@ -32,7 +32,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/watch/events/{eventCode}/arrivals': {
+  '/watch/events/{eventCode}/arrivals': {
     parameters: {
       query?: never;
       header?: never;
@@ -66,7 +66,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/events/{eventCode}/live-timing': {
+  '/events/{eventCode}/live-timing': {
     parameters: {
       query?: never;
       header?: never;
@@ -104,7 +104,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/api/v1/events/{eventCode}/live-timing/actions': {
+  '/events/{eventCode}/live-timing/actions': {
     parameters: {
       query?: never;
       header?: never;

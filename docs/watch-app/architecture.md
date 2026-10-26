@@ -338,7 +338,7 @@ Step 3: Ongoing authentication
 The public zone uses existing public API endpoints — no new backend work:
 
 ```
-GET /api/v1/events/current?expand=sessions,speakers    → Full event with sessions & speakers
+GET /api/v1/public/events/current    → Full event with sessions & speakers
 GET /api/v1/companies/{companyName}?expand=logo         → Company logo URL
 ```
 
@@ -1098,7 +1098,7 @@ docs/watch-app/
 **Data Flow — Public Zone:**
 ```
 App Launch → SwiftData Cache → PublicViewModel → Views (immediate)
-             PublicEventService → REST GET /events/current → SwiftData Cache → PublicViewModel → Views (refresh)
+             PublicEventService → REST GET /public/events/current → SwiftData Cache → PublicViewModel → Views (refresh)
 ```
 
 **Data Flow — Organizer Zone:**
