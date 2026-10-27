@@ -152,7 +152,7 @@ jobs:
 
           # Check for infrastructure changes (requires full deployment)
           # Note: the `lambda` alternation (no `lib/` prefix) catches
-          # `infrastructure/lambda/email-forwarder/**` and the other
+          # `infrastructure/lambda/**` (e.g. the former email-forwarder) and the other
           # standalone Lambdas that live outside `infrastructure/lib/`.
           # Without it, a pure-Lambda-code change is classified as
           # code-only, deploy chooses fast-path, Lambda is never

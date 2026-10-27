@@ -755,22 +755,41 @@ The newsletter send system uses an asynchronous fire-and-forget pattern to handl
 - **Retry**: Dedicated retry endpoint to re-send only failed recipients from a previous partial/failed send
 - **Orphan recovery**: On service startup, any stuck `IN_PROGRESS` records (from a crash mid-send) are reset to `FAILED` for manual retry
 
-## Email Forwarding (Serverless)
+## Email Forwarding (in EMS)
 
-Inbound email forwarding for platform mailboxes (ok@, info@, events@, partner@, support@, batbernNN@batbern.ch) is handled entirely serverlessly:
+Mail to the platform aliases (`ok@`, `info@`, `events@`, `partner@`, `support@`,
+`batbern{N}-speaker@`, `batbern{N}-moderator@`, `batbern{N}-participants@`, deprecated
+`batbern{N}@`) is forwarded by the event-management-service:
 
 ```
-SES Receipt Rule → S3 (raw email) → Lambda (email-forwarder)
-                                          ├─ address-resolver: maps inbox → recipients via role/registration APIs
-                                          ├─ sender-auth: validates sender
-                                          ├─ email-rewriter: rewrites From/Reply-To headers
-                                          └─ SES sendRawEmail → forwarded to resolved recipients
+SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → EMS EmailForwardingListener
+                                                                          ├─ MailClassifier: drop iMIP replies, auto-replies, loops, noreply@/calendar@
+                                                                          ├─ EmailForwardingLogService: claim the S3 key (at-most-once per mail)
+                                                                          ├─ ForwardingSenderAuthorizer: contact aliases open; others need an
+                                                                          │    ORGANIZER From that SES authenticated (DMARC / aligned DKIM)
+                                                                          ├─ ForwardingRecipientResolver: CUMS roles, admin setting,
+                                                                          │    DistributionListService (in-process)
+                                                                          ├─ ForwardedMessageRewriter: From "{name} via BATbern" <noreply@>, Reply-To sender
+                                                                          └─ EmailService.sendRawMessage → SES (config set batbern-{env}-forwarder)
 ```
 
-- **Environment isolation**: Staging uses `replies@staging.batbern.ch`; production uses `replies@batbern.ch` (separate MX records and SES receipt rules)
-- **Outbound sender**: Staging uses `noreply@berner-architekten-treffen.ch` (verified SES domain); production uses `noreply@batbern.ch`
-- **Sender exclusion**: The original sender is excluded from forwarding recipients to prevent bounce loops
-- **Admin configuration**: Organizers can manage forwarding rules via Admin Settings UI
+- **No public endpoint.** Until 2026-10 a Lambda did this and resolved recipients by calling the
+  public API anonymously, which required `permitAll` on the registrations, distribution-list,
+  admin-settings and user-list reads. The premise ("the Spring gateway is VPC-only") was wrong:
+  the gateway *is* `api.batbern.ch`. **Never open an endpoint on the assumption that only in-VPC
+  callers can reach it.** Machine callers use queues and IAM, not anonymous HTTP.
+- **Delivery modes**: `batbern{N}-speaker@` sends one visible mail (speakers in To, event moderator
+  in Cc); every other alias sends one private copy per recipient.
+- **Idempotency**: `email_forwarding_log` (V128, V129) holds one row per S3 object, no addresses or
+  content. A failure before the first send releases the claim so SQS retries (3×, then DLQ with
+  alarm `batbern-{env}-forwarding-dlq`). A claim whose task died before sending is taken over by
+  the redelivery after 6 minutes. After `sending_started_at` is set nothing is retried; failed
+  copies and stalled sends raise `batbern-{env}-forwarding-failed`.
+- **Metrics**: namespace `BATbern/EmailForwarder` (`EmailsForwarded`, `EmailsRejected`,
+  `EmailsUnresolved`, `EmailsFailed`, `*Dropped`, `DuplicatesSkipped`); alarm
+  `batbern-{env}-emails-rejected`.
+- **Replay**: raw mail stays in S3 for 7 days. Re-sending an S3 event JSON for a `forwarding/` key
+  to the forwarding queue forwards it again unless its key is already in `email_forwarding_log`.
 
 ## Auto-Enrollment on Event Creation
 

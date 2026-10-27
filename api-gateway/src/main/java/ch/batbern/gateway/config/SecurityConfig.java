@@ -237,6 +237,8 @@ public class SecurityConfig {
                         // Story 4.1.5: Public registration endpoints
                         // (no auth required - anonymous registration per ADR-005)
                         .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
+                        // Single registration by code: the registration code from the confirmation
+                        // mail is the credential (registrant self-service). The LIST stays organizer-only.
                         .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
 
                         // Story 4.1.5c: Email-based confirmation endpoint

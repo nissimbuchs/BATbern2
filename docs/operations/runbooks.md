@@ -128,7 +128,7 @@ Single-AZ `db.t4g.micro`. There is no failover; a restart is a full outage.
 ## Email and SES
 
 **Alarms:** `bounce-rate-warning`, `bounce-rate-critical`, `complaint-rate-critical`,
-`emails-rejected`, `bounce-processing-dlq`
+`emails-rejected`, `forwarding-dlq`, `forwarding-failed`, `bounce-processing-dlq`
 
 **SES reputation is the single most damaging thing to lose here** — a suspension stops speaker
 invitations, registration confirmations and the newsletter at once.
@@ -136,9 +136,23 @@ invitations, registration confirmations and the newsletter at once.
 1. `bounce-rate-*`: identify whether the bounces are one bad import or a systemic address problem.
    Note **#984** — `bounce-rate-warning` currently watches a metric that keeps it latched on a
    single May event with 0 bounces in 14 days. Confirm against real recent sends before acting.
-2. `emails-rejected` is the abuse-detection signal. Treat a real firing as urgent.
-3. `bounce-processing-dlq`: messages the bounce handler failed. Drain and replay; do not purge.
-4. If a test or E2E run caused the spike, that is the **newsletter super-GAU** class of incident
+2. `emails-rejected` is the abuse-detection signal. Treat a real firing as urgent. Since forwarding
+   moved into EMS, auto-replies and mail to `noreply@`/`calendar@` no longer count, so a firing is
+   real senders being refused: check the EMS log for `Forwarding: unauthorized sender` /
+   `is not authenticated (dmarc=...)` to tell spoofing from an organizer on an unauthenticated mailbox.
+3. `forwarding-dlq`: a mail to a `@batbern.ch` alias failed three times before anything was sent
+   (EMS released it each time, usually CUMS unreachable). Fix the cause, then redrive the DLQ
+   (`aws sqs start-message-move-task`); the raw mail stays in S3 `forwarding/` for 7 days and
+   `email_forwarding_log` makes a redrive safe (no double delivery).
+   A claim whose task died *before* sending (Fargate Spot, deploy) is taken over by the next
+   redelivery after 6 minutes, so that case heals itself.
+4. `forwarding-failed`: copies could not be sent after sending began, or a redelivery found a
+   forward that stalled mid-send (task died between copies). These are never retried, to avoid a
+   double blast. Find the S3 key in the EMS log (`stalled after sending began` / `copy of … failed`),
+   check `email_forwarding_log` (`outcome`, `recipient_count`, `failed_count`), and decide by hand
+   whether the missing recipients need the mail.
+5. `bounce-processing-dlq`: messages the bounce handler failed. Drain and replay; do not purge.
+6. If a test or E2E run caused the spike, that is the **newsletter super-GAU** class of incident
    (2026-07-01). Both walls exist now (Playwright `@sends-real-email` guard and the backend
    `EmailContentTestMarker` send-block) — verify which one was bypassed.
 

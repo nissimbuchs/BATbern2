@@ -1,0 +1,23 @@
+meta {
+  name: Registrations list rejects anonymous callers
+  type: http
+  seq: 8
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern99999/registrations
+  body: none
+  auth: none
+}
+
+tests {
+  test("registrations list is not readable without a token", function() {
+    expect([401, 403]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  The registrations list (names, emails, companies) is organizer-only.
+  It used to be permitAll for the email forwarder Lambda; forwarding now runs inside EMS.
+  Uses a non-existent event code so that a regression returns no data, only a wrong status.
+}

@@ -32,6 +32,12 @@ export interface EventManagementStackProps extends cdk.StackProps {
   inboundEmailBucketName?: string;
   /** Story 10.17: Environment-specific reply address (e.g. replies@staging.batbern.ch). */
   inboundEmailReplyAddress?: string;
+  /** Alias forwarding: SQS queue URL fed by the inbound bucket's forwarding/ prefix. */
+  forwardingQueueUrl?: string;
+  /** Alias forwarding: domain whose aliases are forwarded (batbern.ch). */
+  forwardingDomain?: string;
+  /** Alias forwarding: SES configuration set for forwarded mail (delivery tracking). */
+  forwardingConfigurationSetName?: string;
   /** Watch JWT signing secret — same value used by CUMS to sign, EMS to verify (SecurityConfig). */
   watchJwtSecret?: secretsmanager.ISecret;
   /** Story 10.29: SQS queue URL for bounce/complaint processing. */
@@ -128,6 +134,18 @@ export class EventManagementStack extends cdk.Stack {
           ...(props.inboundEmailBucketName && {
             AWS_INBOUND_EMAIL_BUCKET_NAME: props.inboundEmailBucketName,
           }),
+          // Alias forwarding (ok@, info@, support@, batbern{N}-speaker@ ...) via SQS, in EMS
+          ...(props.forwardingQueueUrl && {
+            AWS_INBOUND_EMAIL_FORWARDING_ENABLED: 'true',
+            AWS_INBOUND_EMAIL_FORWARDING_QUEUE_URL: props.forwardingQueueUrl,
+          }),
+          ...(props.forwardingDomain && {
+            AWS_INBOUND_EMAIL_FORWARDING_DOMAIN: props.forwardingDomain,
+            AWS_INBOUND_EMAIL_FORWARDING_SENDER: `noreply@${props.forwardingDomain}`,
+          }),
+          ...(props.forwardingConfigurationSetName && {
+            AWS_INBOUND_EMAIL_FORWARDING_CONFIGURATION_SET: props.forwardingConfigurationSetName,
+          }),
           // Story 10.29: Bounce/complaint processing via SQS
           ...(props.bounceQueueUrl && {
             AWS_BOUNCE_QUEUE_URL: props.bounceQueueUrl,
@@ -220,8 +238,10 @@ export class EventManagementStack extends cdk.Stack {
           // This allows sending to any verified recipient in sandbox mode
           `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:identity/*`,
           // Configuration sets — required when configurationSetName is passed to SendRawEmail.
-          // Wildcard covers both the newsletter and transactional sets (batbern-{env}-*).
-          ...(props.sesConfigurationSetName || props.sesTransactionalConfigurationSetName
+          // Wildcard covers the newsletter, transactional and forwarder sets (batbern-{env}-*).
+          ...(props.sesConfigurationSetName ||
+          props.sesTransactionalConfigurationSetName ||
+          props.forwardingConfigurationSetName
             ? [
                 `arn:aws:ses:${props.config.region}:${cdk.Stack.of(this).account}:configuration-set/batbern-${envName}-*`,
               ]
@@ -229,6 +249,19 @@ export class EventManagementStack extends cdk.Stack {
         ],
       })
     );
+
+    // Alias forwarding: publish the BATbern/EmailForwarder counters that the EmailsRejected alarm
+    // (InboundEmailStack) watches. Scoped to that namespace only.
+    if (props.forwardingQueueUrl) {
+      this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['cloudwatch:PutMetricData'],
+          resources: ['*'],
+          conditions: { StringEquals: { 'cloudwatch:namespace': 'BATbern/EmailForwarder' } },
+        })
+      );
+    }
 
     // Grant CloudFront cache invalidation permissions for publishing engine (Story 5.7 - BAT-11)
     if (props.cloudFrontDistribution) {

@@ -259,12 +259,6 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     description: `BATbern Inbound Email Pipeline - ${config.envName}`,
     tags: config.tags,
     hostedZone: dnsStack?.hostedZone,
-    vpc: networkStack.vpc,
-    lambdaSecurityGroup: networkStack.lambdaTriggersSecurityGroup,
-    // ECS Service Connect DNS is not resolvable from Lambda; use the public API domain instead.
-    apiGatewayPublicUrl: config.domain?.apiDomain
-      ? `https://${config.domain.apiDomain}`
-      : undefined,
     // #1001: EmailsRejectedAlarm had no actions at all until this was passed.
     alarmTopic: monitoringStack.alarmTopic,
   });
@@ -300,6 +294,9 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     inboundEmailQueueUrl: inboundEmailStack.inboundQueue.queueUrl,
     inboundEmailBucketName: inboundEmailStack.inboundBucket.bucketName,
     inboundEmailReplyAddress: inboundEmailStack.replyAddress,
+    forwardingQueueUrl: inboundEmailStack.forwardingQueue.queueUrl,
+    forwardingDomain: inboundEmailStack.forwardingDomain,
+    forwardingConfigurationSetName: inboundEmailStack.forwarderConfigurationSetName,
     watchJwtSecret: secretsStack.watchJwtSecret,
     env,
     description: `BATbern Event Management Service - ${config.envName}`,
@@ -323,6 +320,11 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     eventManagementStack.service.taskDefinition.taskRole
   );
   inboundEmailStack.inboundBucket.grantRead(eventManagementStack.service.taskDefinition.taskRole);
+  // Alias forwarding moved from the forwarder Lambda into EMS: consume the forwarding queue
+  // (CloudWatch metric permission is granted inside EventManagementStack).
+  inboundEmailStack.forwardingQueue.grantConsumeMessages(
+    eventManagementStack.service.taskDefinition.taskRole
+  );
 
   // 10b. Speaker Coordination Service
   speakerCoordinationStack = new SpeakerCoordinationStack(

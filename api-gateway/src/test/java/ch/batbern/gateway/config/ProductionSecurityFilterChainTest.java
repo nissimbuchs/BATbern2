@@ -1,5 +1,10 @@
 package ch.batbern.gateway.config;
 
+import com.nimbusds.jose.JWSAlgorithm;
+import com.nimbusds.jose.JWSHeader;
+import com.nimbusds.jose.crypto.MACSigner;
+import com.nimbusds.jwt.JWTClaimsSet;
+import com.nimbusds.jwt.SignedJWT;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -18,6 +23,10 @@ import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
 
+import java.nio.charset.StandardCharsets;
+import java.time.Instant;
+import java.util.Date;
+
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -30,14 +39,19 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Only {@link SecurityConfig} and a catch-all probe controller are loaded: a request the
  * chain lets through reaches the probe (200), a blocked one is rejected with 401 before it.
- * The JWK URI is never contacted, because no request here carries a token.
+ * The JWK URI is never contacted: anonymous requests carry no token, and the positive path uses a
+ * Watch token, which the chain verifies locally with the HMAC secret.
  */
 @SpringJUnitWebConfig(ProductionSecurityFilterChainTest.WebConfig.class)
 @ActiveProfiles("staging")
-@TestPropertySource(properties =
-        "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=https://jwks.example.invalid/keys")
+@TestPropertySource(properties = {
+    "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=https://jwks.example.invalid/keys",
+    "watch.jwt.secret=" + ProductionSecurityFilterChainTest.WATCH_TEST_SECRET
+})
 @DisplayName("Production gateway filter chain")
 class ProductionSecurityFilterChainTest {
+
+    static final String WATCH_TEST_SECRET = "production-chain-test-secret-at-least-32-bytes";
 
     @Configuration
     @EnableWebMvc
@@ -76,6 +90,35 @@ class ProductionSecurityFilterChainTest {
     void should_return401_when_anonymousRequestsPersonalDataEndpoint(String path) throws Exception {
         mockMvc.perform(get(path))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/api/v1/events/BATbern60/registrations",
+        "/api/v1/events/BATbern60/distribution-list/participants",
+        "/api/v1/admin/settings/email-forwarding.support-contacts",
+        "/api/v1/users"
+    })
+    @DisplayName("should_reachService_when_callerHasValidToken")
+    void should_reachService_when_callerHasValidToken(String path) throws Exception {
+        // Positive path: the gateway only authenticates; the role check is the service's job.
+        // A Watch token (HS256, test-default secret) is the one token type the chain can verify
+        // here without contacting Cognito's JWK endpoint.
+        mockMvc.perform(get(path).header("Authorization", "Bearer " + watchToken()))
+                .andExpect(status().isOk());
+    }
+
+    private static String watchToken() throws Exception {
+        JWTClaimsSet claims = new JWTClaimsSet.Builder()
+                .issuer("batbern-watch")
+                .subject("test.organizer")
+                .claim("role", "ORGANIZER")
+                .issueTime(new Date())
+                .expirationTime(Date.from(Instant.now().plusSeconds(300)))
+                .build();
+        SignedJWT jwt = new SignedJWT(new JWSHeader(JWSAlgorithm.HS256), claims);
+        jwt.sign(new MACSigner(WATCH_TEST_SECRET.getBytes(StandardCharsets.UTF_8)));
+        return jwt.serialize();
     }
 
     @Test

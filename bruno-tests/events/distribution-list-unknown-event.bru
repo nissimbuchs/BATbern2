@@ -23,6 +23,6 @@ tests {
 docs {
   Spec: _bmad-output/implementation-artifacts/spec-auto-participant-email-aliases-excel-export.md (F2).
 
-  Ensures the resolver does not silently leak an empty 200 for events that do not
-  exist; the Lambda relies on 404 to decide that the alias has no fan-out target.
+  Ensures the resolver does not silently return an empty 200 for events that do not
+  exist (organizer view; alias forwarding resolves in-process in EMS).
 }
