@@ -141,28 +141,62 @@ public class EmailForwardingService {
         }
 
         MailAuthentication authentication = MailAuthentication.fromHeaders(headers(message, "Authentication-Results"));
-        Plan plan;
+        String maskedSender = LoggingUtils.maskEmail(sender);
+        Delivery delivery;
+        // Everything between the claim and markSending is retryable: nothing has been sent yet.
+        // Any failure here gives the claim back and rethrows, so SQS redelivers (then DLQ + alarm).
         try {
-            plan = plan(forwardable, sender, authentication);
+            Plan plan = plan(forwardable, sender, authentication);
+            if (!plan.anyAuthorized) {
+                log.warn("Forwarding: sender {} may not use {}", maskedSender, aliasNames);
+                metrics.increment(ForwardingMetrics.REJECTED);
+                forwardingLog.complete(s3Key, EmailForwardingOutcome.REJECTED, aliasNames, 0, 0);
+                return Result.REJECTED;
+            }
+            delivery = prepare(raw, plan, from.getPersonal(), sender);
+            if (delivery == null) {
+                return unresolved(s3Key, aliasNames);
+            }
+            forwardingLog.markSending(s3Key);
         } catch (RuntimeException e) {
             forwardingLog.release(s3Key);
             throw e;
         }
 
-        String maskedSender = LoggingUtils.maskEmail(sender);
-        if (!plan.anyAuthorized) {
-            log.warn("Forwarding: sender {} may not use {}", maskedSender, aliasNames);
-            metrics.increment(ForwardingMetrics.REJECTED);
-            forwardingLog.complete(s3Key, EmailForwardingOutcome.REJECTED, aliasNames, 0, 0);
-            return Result.REJECTED;
-        }
-
-        String senderName = from.getPersonal();
-        Result result = plan.speakerMode
-                ? sendSpeakerBroadcast(s3Key, raw, plan, senderName, sender, aliasNames)
-                : sendIndividually(s3Key, raw, plan, senderName, sender, aliasNames);
+        Result result = delivery.broadcast()
+                ? sendBroadcast(s3Key, delivery, aliasNames)
+                : sendIndividually(s3Key, delivery, aliasNames);
         log.info("Forwarding: {} from {} to {} → {}", s3Key, maskedSender, aliasNames, result);
         return result;
+    }
+
+    /**
+     * The rewritten message and its recipients. {@code broadcast}: one send to all of
+     * {@code recipients} (speaker alias, visible To + Cc); otherwise one private copy each.
+     */
+    private record Delivery(byte[] message, List<String> recipients, boolean broadcast) {
+    }
+
+    /** @return null when no recipient is left to send to */
+    private Delivery prepare(byte[] raw, Plan plan, String senderName, String sender) {
+        if (plan.speakerMode) {
+            Set<String> to = new LinkedHashSet<>(plan.speakerTo);
+            to.addAll(plan.individual);
+            List<String> cc = plan.moderatorCc.stream().filter(m -> !to.contains(m)).toList();
+            if (to.isEmpty()) {
+                return null;
+            }
+            List<String> toList = List.copyOf(to);
+            byte[] rewritten = rewriter.rewrite(raw, senderName, sender, properties.sender(), toList, cc);
+            List<String> destinations = new ArrayList<>(toList);
+            destinations.addAll(cc);
+            return new Delivery(rewritten, List.copyOf(destinations), true);
+        }
+        if (plan.individual.isEmpty()) {
+            return null;
+        }
+        byte[] rewritten = rewriter.rewrite(raw, senderName, sender, properties.sender(), null, null);
+        return new Delivery(rewritten, List.copyOf(plan.individual), false);
     }
 
     private Plan plan(List<ForwardingAlias> aliases, String sender, MailAuthentication authentication) {
@@ -197,45 +231,28 @@ public class EmailForwardingService {
         return plan;
     }
 
-    private Result sendSpeakerBroadcast(String s3Key, byte[] raw, Plan plan, String senderName,
-                                        String sender, String aliasNames) {
-        Set<String> to = new LinkedHashSet<>(plan.speakerTo);
-        to.addAll(plan.individual);
-        List<String> cc = plan.moderatorCc.stream().filter(m -> !to.contains(m)).toList();
-        if (to.isEmpty()) {
-            return unresolved(s3Key, aliasNames);
-        }
-        List<String> toList = List.copyOf(to);
-        byte[] rewritten = rewriter.rewrite(raw, senderName, sender, properties.sender(), toList, cc);
-        List<String> destinations = new ArrayList<>(toList);
-        destinations.addAll(cc);
-        forwardingLog.markSending(s3Key);
+    private Result sendBroadcast(String s3Key, Delivery delivery, String aliasNames) {
         try {
-            emailService.sendRawMessage(rewritten, destinations, properties.configurationSet());
+            emailService.sendRawMessage(delivery.message(), delivery.recipients(), properties.configurationSet());
         } catch (RuntimeException e) {
             log.error("Forwarding: speaker broadcast {} failed: {}", s3Key, e.toString());
             metrics.increment(ForwardingMetrics.FAILED);
-            forwardingLog.complete(s3Key, EmailForwardingOutcome.FAILED, aliasNames, 0, destinations.size());
+            forwardingLog.complete(s3Key, EmailForwardingOutcome.FAILED, aliasNames, 0, delivery.recipients().size());
             return Result.FAILED;
         }
         metrics.increment(ForwardingMetrics.FORWARDED);
-        forwardingLog.complete(s3Key, EmailForwardingOutcome.FORWARDED, aliasNames, destinations.size(), 0);
+        forwardingLog.complete(s3Key, EmailForwardingOutcome.FORWARDED, aliasNames, delivery.recipients().size(), 0);
         return Result.FORWARDED;
     }
 
-    private Result sendIndividually(String s3Key, byte[] raw, Plan plan, String senderName,
-                                    String sender, String aliasNames) {
-        List<String> recipients = List.copyOf(plan.individual);
-        if (recipients.isEmpty()) {
-            return unresolved(s3Key, aliasNames);
-        }
-        byte[] rewritten = rewriter.rewrite(raw, senderName, sender, properties.sender(), null, null);
-        forwardingLog.markSending(s3Key);
+    private Result sendIndividually(String s3Key, Delivery delivery, String aliasNames) {
+        List<String> recipients = delivery.recipients();
         int sent = 0;
         int failed = 0;
         for (int i = 0; i < recipients.size(); i++) {
             try {
-                emailService.sendRawMessage(rewritten, List.of(recipients.get(i)), properties.configurationSet());
+                emailService.sendRawMessage(delivery.message(), List.of(recipients.get(i)),
+                        properties.configurationSet());
                 sent++;
             } catch (RuntimeException e) {
                 failed++;

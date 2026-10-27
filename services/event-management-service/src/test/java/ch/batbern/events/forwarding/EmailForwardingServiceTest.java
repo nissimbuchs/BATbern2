@@ -308,6 +308,29 @@ class EmailForwardingServiceTest {
     }
 
     @Test
+    @DisplayName("should_releaseClaimAndRethrow_when_rewriteFailsBeforeAnySend")
+    void should_releaseClaimAndRethrow_when_rewriteFailsBeforeAnySend() {
+        // Review of #1137: a failure between claim and markSending must give the claim back.
+        // Otherwise the redelivery (after 300 s) still sees a live claim (< 360 s) and the mail
+        // ends as a silent DUPLICATE.
+        ForwardedMessageRewriter failingRewriter = org.mockito.Mockito.mock(ForwardedMessageRewriter.class);
+        when(failingRewriter.rewrite(any(), any(), any(), any(), any(), any()))
+                .thenThrow(new IllegalStateException("Could not rewrite inbound mail for forwarding"));
+        ForwardingDirectory directory = new ForwardingDirectory(userApiClient);
+        EmailForwardingService withFailingRewriter = new EmailForwardingService(
+                new EmailForwardingProperties(true, "q", "batbern.ch", null, "cs", 0),
+                new ForwardingSenderAuthorizer(directory),
+                new ForwardingRecipientResolver(directory, adminSettingsService, distributionListService),
+                failingRewriter, forwardingLog, metrics, emailService);
+
+        assertThatThrownBy(() -> withFailingRewriter.forward(KEY, mail(STRANGER, "info@batbern.ch", null, null, null)))
+                .isInstanceOf(IllegalStateException.class);
+        verify(forwardingLog).release(KEY);
+        verify(forwardingLog, never()).markSending(anyString());
+        verify(emailService, never()).sendRawMessage(any(), anyList(), any());
+    }
+
+    @Test
     @DisplayName("should_releaseClaimAndRethrow_when_cumsFailsBeforeAnySend")
     void should_releaseClaimAndRethrow_when_cumsFailsBeforeAnySend() {
         when(userApiClient.getOrganizerUsernames()).thenThrow(new UserServiceException("CUMS down"));

@@ -64,13 +64,13 @@ public class EmailForwardingLogService {
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void complete(String s3Key, EmailForwardingOutcome outcome, String aliases,
                          int recipientCount, int failedCount) {
-        repository.findByS3Key(s3Key).ifPresent(entry -> {
+        repository.findByS3Key(s3Key).ifPresentOrElse(entry -> {
             entry.setOutcome(outcome);
             entry.setAliases(truncate(aliases));
             entry.setRecipientCount(recipientCount);
             entry.setFailedCount(failedCount);
             entry.setCompletedAt(Instant.now());
-        });
+        }, () -> log.warn("Forwarding: no log row for {} when recording {}", s3Key, outcome));
     }
 
     private static String truncate(String value) {
