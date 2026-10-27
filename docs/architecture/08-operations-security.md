@@ -204,7 +204,7 @@ line 422 for `ApiGatewayServiceStack`).
 | Bounce processing | `bounce-processing-dlq` | `MonitoringStack` |
 | Cognito / user sync | 7 alarms | `UserSyncAlarms`, in `MonitoringStack` |
 | Inbound email abuse | `emails-rejected` | `InboundEmailStack` |
-| Alias forwarding stuck | `forwarding-dlq` | `InboundEmailStack` |
+| Alias forwarding stuck | `forwarding-dlq`, `forwarding-failed` | `InboundEmailStack` |
 
 RDS alarms are the exception that stays central: `DatabaseStack` runs *before* `MonitoringStack`, but
 the instance identifier is deterministic (`batbern-{env}-postgres`, set explicitly as

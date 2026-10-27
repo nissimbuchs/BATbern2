@@ -80,7 +80,15 @@ public class EmailForwardingService {
         InternetAddress from;
         try {
             message = new MimeMessage(Session.getInstance(new Properties()), new ByteArrayInputStream(raw));
-            from = firstAddress(message.getHeader("From", ","));
+            String[] fromHeaders = message.getHeader("From");
+            if (fromHeaders == null || fromHeaders.length != 1) {
+                // RFC 5322 allows exactly one From. Several would let the authorization check one
+                // address while the recipient's client shows another.
+                log.warn("Forwarding: mail {} has {} From headers, dropping", s3Key,
+                        fromHeaders == null ? 0 : fromHeaders.length);
+                return Result.DROPPED_MALFORMED;
+            }
+            from = firstAddress(fromHeaders[0]);
         } catch (MessagingException e) {
             log.warn("Forwarding: unparseable mail {}: {}", s3Key, e.getMessage());
             return Result.DROPPED_MALFORMED;
@@ -120,8 +128,15 @@ public class EmailForwardingService {
         }
 
         if (!forwardingLog.claim(s3Key)) {
-            log.info("Forwarding: {} already processed, skipping redelivery", s3Key);
-            metrics.increment(ForwardingMetrics.DUPLICATES_SKIPPED);
+            if (forwardingLog.isStuckAfterSending(s3Key)) {
+                // Sending began and never finished (task died mid-send). Not retried, to avoid a
+                // double blast; reported so an operator can check who is missing the mail.
+                log.error("Forwarding: {} stalled after sending began; some recipients may lack it", s3Key);
+                metrics.increment(ForwardingMetrics.FAILED);
+            } else {
+                log.info("Forwarding: {} already processed, skipping redelivery", s3Key);
+                metrics.increment(ForwardingMetrics.DUPLICATES_SKIPPED);
+            }
             return Result.DUPLICATE;
         }
 
@@ -194,6 +209,7 @@ public class EmailForwardingService {
         byte[] rewritten = rewriter.rewrite(raw, senderName, sender, properties.sender(), toList, cc);
         List<String> destinations = new ArrayList<>(toList);
         destinations.addAll(cc);
+        forwardingLog.markSending(s3Key);
         try {
             emailService.sendRawMessage(rewritten, destinations, properties.configurationSet());
         } catch (RuntimeException e) {
@@ -214,6 +230,7 @@ public class EmailForwardingService {
             return unresolved(s3Key, aliasNames);
         }
         byte[] rewritten = rewriter.rewrite(raw, senderName, sender, properties.sender(), null, null);
+        forwardingLog.markSending(s3Key);
         int sent = 0;
         int failed = 0;
         for (int i = 0; i < recipients.size(); i++) {

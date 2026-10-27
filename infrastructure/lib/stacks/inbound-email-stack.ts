@@ -363,9 +363,28 @@ export class InboundEmailStack extends cdk.Stack {
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
     });
 
+    // EMS counts EmailsFailed when copies could not be sent after the point of no return, and when
+    // a redelivery finds a claim that stalled mid-send. Neither is retried, so neither reaches the
+    // DLQ: this alarm is their only signal.
+    const forwardingFailedAlarm = new cloudwatch.Alarm(this, 'ForwardingFailedAlarm', {
+      alarmName: `batbern-${envName}-forwarding-failed`,
+      alarmDescription:
+        'Email forwarding: forwarded copies failed or a forward stalled mid-send; some recipients may be missing a mail',
+      metric: new cloudwatch.Metric({
+        namespace: 'BATbern/EmailForwarder',
+        metricName: 'EmailsFailed',
+        statistic: 'Sum',
+        period: cdk.Duration.hours(1),
+      }),
+      threshold: 0,
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    });
+
     if (props.alarmTopic) {
       const alarmAction = new cloudwatchActions.SnsAction(props.alarmTopic);
-      for (const alarm of [emailsRejectedAlarm, forwardingDlqAlarm]) {
+      for (const alarm of [emailsRejectedAlarm, forwardingDlqAlarm, forwardingFailedAlarm]) {
         alarm.addAlarmAction(alarmAction);
         alarm.addOkAction(alarmAction);
       }

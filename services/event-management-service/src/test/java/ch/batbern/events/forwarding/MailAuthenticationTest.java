@@ -77,6 +77,27 @@ class MailAuthenticationTest {
     }
 
     @Test
+    @DisplayName("should_fallBackToAlignedDkim_when_dmarcTemperror")
+    void should_fallBackToAlignedDkim_when_dmarcTemperror() {
+        // Intended: a transient DNS error on the DMARC lookup does not refuse an organizer whose
+        // mail carries a valid signature of their own domain. Unaligned DKIM still fails.
+        String aligned = "amazonses.com; dkim=pass header.i=@example.ch; dmarc=temperror;";
+        String unaligned = "amazonses.com; dkim=pass header.i=@other.example; dmarc=temperror;";
+
+        assertThat(MailAuthentication.fromHeaders(new String[] {aligned}).verifiesSender("anna@example.ch")).isTrue();
+        assertThat(MailAuthentication.fromHeaders(new String[] {unaligned}).verifiesSender("anna@example.ch")).isFalse();
+    }
+
+    @Test
+    @DisplayName("should_alignOnlyOnLabelBoundaries")
+    void should_alignOnlyOnLabelBoundaries() {
+        // Relaxed alignment by suffix, but only at a dot: "evilexample.ch" is not "example.ch".
+        String header = "amazonses.com; dkim=pass header.d=evilexample.ch; dmarc=none;";
+
+        assertThat(MailAuthentication.fromHeaders(new String[] {header}).verifiesSender("anna@example.ch")).isFalse();
+    }
+
+    @Test
     @DisplayName("should_reject_when_noHeader")
     void should_reject_when_noHeader() {
         assertThat(MailAuthentication.fromHeaders(null).verifiesSender("anna@example.ch")).isFalse();

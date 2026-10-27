@@ -275,6 +275,39 @@ class EmailForwardingServiceTest {
     }
 
     @Test
+    @DisplayName("should_markSendingBeforeFirstCopy_when_forwarding")
+    void should_markSendingBeforeFirstCopy_when_forwarding() {
+        service.forward(KEY, mail(STRANGER, "info@batbern.ch", null, null, null));
+
+        org.mockito.InOrder order = org.mockito.Mockito.inOrder(forwardingLog, emailService);
+        order.verify(forwardingLog).markSending(KEY);
+        order.verify(emailService, org.mockito.Mockito.atLeastOnce()).sendRawMessage(any(), anyList(), anyString());
+    }
+
+    @Test
+    @DisplayName("should_alarm_when_duplicateIsAClaimStuckAfterSending")
+    void should_alarm_when_duplicateIsAClaimStuckAfterSending() {
+        when(forwardingLog.claim(KEY)).thenReturn(false);
+        when(forwardingLog.isStuckAfterSending(KEY)).thenReturn(true);
+
+        Result result = service.forward(KEY, mail(STRANGER, "info@batbern.ch", null, null, null));
+
+        assertThat(result).isEqualTo(Result.DUPLICATE);
+        verify(metrics).increment(ForwardingMetrics.FAILED);
+        verify(emailService, never()).sendRawMessage(any(), anyList(), any());
+    }
+
+    @Test
+    @DisplayName("should_drop_when_mailHasMoreThanOneFromHeader")
+    void should_drop_when_mailHasMoreThanOneFromHeader() {
+        Result result = service.forward(KEY, mail(STRANGER, "batbern60-participants@batbern.ch", null, DMARC_PASS,
+                "From: \"Alice\" <" + ORGANIZER + ">\r\n"));
+
+        assertThat(result).isEqualTo(Result.DROPPED_MALFORMED);
+        verify(forwardingLog, never()).claim(anyString());
+    }
+
+    @Test
     @DisplayName("should_releaseClaimAndRethrow_when_cumsFailsBeforeAnySend")
     void should_releaseClaimAndRethrow_when_cumsFailsBeforeAnySend() {
         when(userApiClient.getOrganizerUsernames()).thenThrow(new UserServiceException("CUMS down"));

@@ -239,6 +239,16 @@ describe('InboundEmailStack', () => {
     expect(stack.forwardingQueue).toBeDefined();
   });
 
+  test('should_alarmOnEmailsFailed_when_copiesFailOrForwardStalls', () => {
+    template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+      AlarmName: 'batbern-staging-forwarding-failed',
+      Namespace: 'BATbern/EmailForwarder',
+      MetricName: 'EmailsFailed',
+      Threshold: 0,
+      TreatMissingData: 'notBreaching',
+    });
+  });
+
   test('should_alarmOnForwardingDlq_when_mailFailedThreeTimes', () => {
     template.hasResourceProperties('AWS::CloudWatch::Alarm', {
       AlarmName: 'batbern-staging-forwarding-dlq',
@@ -388,6 +398,6 @@ describe('Alarm actions (#1001)', () => {
   test('should_stillCreateTheAlarm_when_noTopicProvided', () => {
     // The topic is optional so the stack stays usable standalone, but the alarm must still
     // exist — silently dropping it would trade one invisible failure for another.
-    build(false).resourceCountIs('AWS::CloudWatch::Alarm', 2);
+    build(false).resourceCountIs('AWS::CloudWatch::Alarm', 3);
   });
 });

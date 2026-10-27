@@ -34,6 +34,9 @@ public class EmailForwardingLog {
     @Column(name = "completed_at")
     private Instant completedAt;
 
+    @Column(name = "sending_started_at")
+    private Instant sendingStartedAt;
+
     @Column(name = "aliases")
     private String aliases;
 

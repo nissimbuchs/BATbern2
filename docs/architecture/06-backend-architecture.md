@@ -780,9 +780,11 @@ SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → E
   callers can reach it.** Machine callers use queues and IAM, not anonymous HTTP.
 - **Delivery modes**: `batbern{N}-speaker@` sends one visible mail (speakers in To, event moderator
   in Cc); every other alias sends one private copy per recipient.
-- **Idempotency**: `email_forwarding_log` (V128) holds one row per S3 object, no addresses or
+- **Idempotency**: `email_forwarding_log` (V128, V129) holds one row per S3 object, no addresses or
   content. A failure before the first send releases the claim so SQS retries (3×, then DLQ with
-  alarm `batbern-{env}-forwarding-dlq`); after the first send nothing is retried.
+  alarm `batbern-{env}-forwarding-dlq`). A claim whose task died before sending is taken over by
+  the redelivery after 6 minutes. After `sending_started_at` is set nothing is retried; failed
+  copies and stalled sends raise `batbern-{env}-forwarding-failed`.
 - **Metrics**: namespace `BATbern/EmailForwarder` (`EmailsForwarded`, `EmailsRejected`,
   `EmailsUnresolved`, `EmailsFailed`, `*Dropped`, `DuplicatesSkipped`); alarm
   `batbern-{env}-emails-rejected`.

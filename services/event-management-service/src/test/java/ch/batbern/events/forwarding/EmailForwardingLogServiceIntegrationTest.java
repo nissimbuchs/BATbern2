@@ -76,6 +76,54 @@ class EmailForwardingLogServiceIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("should_reclaim_when_claimIsStaleAndNothingWasSent")
+    void should_reclaim_when_claimIsStaleAndNothingWasSent() {
+        // A task that died between claim and first send (Fargate Spot, deploy, OOM) must not
+        // turn the SQS redelivery into a silent DUPLICATE: nothing went out, a retry is safe.
+        service.claim(KEY);
+        ageClaim(600);
+
+        assertThat(service.claim(KEY)).isTrue();
+    }
+
+    @Test
+    @DisplayName("should_notReclaim_when_claimIsRecent")
+    void should_notReclaim_when_claimIsRecent() {
+        service.claim(KEY);
+
+        assertThat(service.claim(KEY)).isFalse();
+    }
+
+    @Test
+    @DisplayName("should_neverReclaim_when_sendingHadStarted")
+    void should_neverReclaim_when_sendingHadStarted() {
+        service.claim(KEY);
+        service.markSending(KEY);
+        ageClaim(600);
+
+        assertThat(service.claim(KEY)).isFalse();
+        assertThat(service.isStuckAfterSending(KEY)).isTrue();
+    }
+
+    @Test
+    @DisplayName("should_notReportStuck_when_completedOrRecent")
+    void should_notReportStuck_when_completedOrRecent() {
+        service.claim(KEY);
+        service.markSending(KEY);
+        assertThat(service.isStuckAfterSending(KEY)).isFalse();
+
+        ageClaim(600);
+        service.complete(KEY, EmailForwardingOutcome.FORWARDED, "info", 2, 0);
+        assertThat(service.isStuckAfterSending(KEY)).isFalse();
+    }
+
+    private void ageClaim(int seconds) {
+        jdbcTemplate.update("UPDATE email_forwarding_log SET received_at = now() - make_interval(secs => ?),"
+                + " sending_started_at = CASE WHEN sending_started_at IS NULL THEN NULL"
+                + " ELSE now() - make_interval(secs => ?) END WHERE s3_key = ?", seconds, seconds, KEY);
+    }
+
+    @Test
     @DisplayName("should_rejectUnknownOutcome_atDatabaseLevel")
     void should_rejectUnknownOutcome_atDatabaseLevel() {
         assertThatThrownBy(() -> jdbcTemplate.update(
