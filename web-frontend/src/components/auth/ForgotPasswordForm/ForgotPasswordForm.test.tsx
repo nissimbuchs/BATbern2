@@ -10,6 +10,7 @@ import { ForgotPasswordForm } from './ForgotPasswordForm';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { I18nextProvider } from 'react-i18next';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
 import i18n from '@/i18n/config';
 
 // Mock useForgotPassword hook
@@ -28,6 +29,18 @@ vi.mock('@hooks/useForgotPassword', () => ({
   useForgotPassword: () => mockUseForgotPassword,
 }));
 
+// Issue #1141: the "send new confirmation link" action resends via the email-verification service.
+const mockResendVerificationCode = vi.hoisted(() => vi.fn());
+vi.mock('@/services/auth/emailVerificationService', () => ({
+  verifyEmail: vi.fn(),
+  resendVerificationCode: mockResendVerificationCode,
+}));
+
+const VerifyPageProbe = () => {
+  const location = useLocation();
+  return <div data-testid="verify-page">{`${location.pathname}${location.search}`}</div>;
+};
+
 // Create theme for MUI components
 const theme = createTheme();
 
@@ -45,9 +58,16 @@ const renderWithTheme = (component: React.ReactElement) => {
   const queryClient = createTestQueryClient();
   return render(
     <QueryClientProvider client={queryClient}>
-      <I18nextProvider i18n={i18n}>
-        <ThemeProvider theme={theme}>{component}</ThemeProvider>
-      </I18nextProvider>
+      <MemoryRouter initialEntries={['/auth/forgot-password']}>
+        <I18nextProvider i18n={i18n}>
+          <ThemeProvider theme={theme}>
+            <Routes>
+              <Route path="/auth/verify-email" element={<VerifyPageProbe />} />
+              <Route path="*" element={component} />
+            </Routes>
+          </ThemeProvider>
+        </I18nextProvider>
+      </MemoryRouter>
     </QueryClientProvider>
   );
 };
@@ -514,6 +534,74 @@ describe('ForgotPasswordForm Component - Error Handling Tests', () => {
     await waitFor(() => {
       expect(screen.getByText(/connection error/i)).toBeInTheDocument();
     });
+  });
+});
+
+// Issue #1141: Cognito answers resetPassword for an UNCONFIRMED user (no verified email)
+// with InvalidParameterException. The old text claimed the account did not exist.
+describe('ForgotPasswordForm Component - Unconfirmed Account', () => {
+  const invalidParameterState = {
+    mutate: mockForgotPassword,
+    isPending: false,
+    isSuccess: false,
+    isError: true,
+    error: { type: 'invalidParameter', message: 'Invalid email address', statusCode: 400 },
+    data: null,
+    reset: vi.fn(),
+  };
+
+  beforeEach(async () => {
+    vi.clearAllMocks();
+    await i18n.changeLanguage('en');
+    Object.assign(mockUseForgotPassword, invalidParameterState);
+  });
+
+  it('should_explainUnconfirmedAccount_when_invalidParameter', async () => {
+    await act(async () => {
+      renderWithTheme(<ForgotPasswordForm />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/not been confirmed yet/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/no account yet/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send new confirmation link/i })).toBeInTheDocument();
+  });
+
+  it('should_resendConfirmationAndOpenVerifyPage_when_actionClicked', async () => {
+    mockResendVerificationCode.mockResolvedValue({ success: true });
+    const user = userEvent.setup();
+
+    await act(async () => {
+      renderWithTheme(<ForgotPasswordForm />);
+    });
+    await act(async () => {
+      await user.type(screen.getByLabelText(/email address/i), 'pending@example.com');
+    });
+
+    await user.click(screen.getByRole('button', { name: /send new confirmation link/i }));
+
+    expect(mockResendVerificationCode).toHaveBeenCalledWith('pending@example.com');
+    await waitFor(() => {
+      expect(screen.getByTestId('verify-page')).toHaveTextContent(
+        '/auth/verify-email?email=pending%40example.com'
+      );
+    });
+  });
+
+  it('should_notOfferResendAction_when_networkError', async () => {
+    Object.assign(mockUseForgotPassword, {
+      ...invalidParameterState,
+      error: { type: 'networkError', message: 'Network connection failed', statusCode: 0 },
+    });
+
+    await act(async () => {
+      renderWithTheme(<ForgotPasswordForm />);
+    });
+
+    expect(
+      screen.queryByRole('button', { name: /send new confirmation link/i })
+    ).not.toBeInTheDocument();
   });
 });
 

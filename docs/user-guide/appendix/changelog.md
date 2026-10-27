@@ -89,6 +89,11 @@ Each release includes:
 - ✅ Newsletter tasks that a later announcement has replaced are closed automatically: Topic Announcement once the speakers or the agenda are public, Speaker Lineup once the agenda is public.
 - ✅ Catering is now due **5 days** before the event (final headcount), and two new standard tasks exist: **Namensschilder** (2 days before) and **Wein** (event day). For an existing event, add them from the event's task templates.
 
+**Bug Fixes — Account Confirmation and Registration Changes (2026-10-27)**:
+- ✅ "Resend confirmation code" now actually sends the mail. Before, it showed success but nothing was sent, so people who had not confirmed their new account right away could neither confirm it nor reset the password (#1141).
+- ✅ Login, "Forgot password" and "Create account" recognise an account that is not confirmed yet and offer to send a new confirmation link, instead of "unknown error", "no account for this e-mail" or "account already exists".
+- ✅ Changing the status of a registration or deleting it is reserved for organizers. Attendees keep cancelling their own registration through the link in their confirmation mail.
+
 **Bug Fixes — Email Aliases Work Again (2026-10-27)**:
 - ✅ Mail to `ok@`, `info@`, `events@`, `partner@`, `support@` and the per-event aliases `batbern{N}-speaker@`, `batbern{N}-moderator@`, `batbern{N}-participants@` is forwarded again. The organizer-only aliases had refused every sender, organizers included (#1130).
 - ✅ The organizer-only aliases now also check that the sender's mail provider vouches for the address (DMARC, or a DKIM signature of the sender's domain). A forged organizer address can no longer mail all speakers or participants. Organizers sending from a mailbox that does neither get a rejection and should send from an address whose provider does.

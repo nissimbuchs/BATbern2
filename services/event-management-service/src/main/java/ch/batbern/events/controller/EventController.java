@@ -2374,7 +2374,8 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      *
      * PATCH /api/v1/events/{eventCode}/registrations/{registrationCode}
      *
-     * Updates specific fields of a registration (e.g., status)
+     * Updates specific fields of a registration (e.g., status). Organizer only: attendees cancel
+     * through the token-based deregistration flow or {@code DELETE /events/{code}/my-registration}.
      *
      * @param eventCode Event code
      * @param registrationCode Registration code
@@ -2382,6 +2383,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      * @return Updated registration with enriched user data
      */
     @PatchMapping("/events/{eventCode}/registrations/{registrationCode}")
+    @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
             summary = "Update Event Registration",
             description = "Partially update a registration (e.g., change status)"
@@ -2437,13 +2439,14 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      *
      * DELETE /api/v1/events/{eventCode}/registrations/{registrationCode}
      *
-     * Deletes a registration from the event
+     * Deletes a registration from the event. Organizer only.
      *
      * @param eventCode Event code
      * @param registrationCode Registration code
      * @return 204 No Content
      */
     @DeleteMapping("/events/{eventCode}/registrations/{registrationCode}")
+    @PreAuthorize("hasRole('ORGANIZER')")
     @Operation(
             summary = "Delete Event Registration",
             description = "Delete a registration from the event"

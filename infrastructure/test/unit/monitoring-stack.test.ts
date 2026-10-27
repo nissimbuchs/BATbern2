@@ -502,6 +502,54 @@ describe('MonitoringStack', () => {
     });
   });
 
+  // #1141: the CustomEmailSender trigger sends every mail of the user pool. A mail it does not
+  // send (unhandled trigger) or cannot send (throw) leaves the user stuck with no visible error.
+  describe('User Sync — CustomEmailSender Alarms', () => {
+    const template = () =>
+      Template.fromStack(
+        new MonitoringStack(new App(), 'TestMonitoringStackEmailSender', {
+          config: prodConfig,
+          env: { account: '123456789012', region: 'eu-central-1' },
+        })
+      );
+
+    test('should_alarmOnFirstUnhandledTrigger_when_nonDevelopmentEnvironment', () => {
+      template().hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.stringLikeRegexp('.*CustomEmailSender-Unhandled-Trigger'),
+        MetricName: 'UnhandledEmailTrigger',
+        Namespace: 'BATbern/Cognito',
+        Statistic: 'Sum',
+        Threshold: 0,
+        EvaluationPeriods: 1,
+        ComparisonOperator: 'GreaterThanThreshold',
+        TreatMissingData: 'notBreaching',
+        Period: 300,
+        AlarmActions: Match.anyValue(),
+        OKActions: Match.anyValue(),
+      });
+    });
+
+    test('should_alarmOnFirstLambdaError_when_nonDevelopmentEnvironment', () => {
+      template().hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: Match.stringLikeRegexp('.*CustomEmailSender-Errors'),
+        MetricName: 'Errors',
+        Namespace: 'AWS/Lambda',
+        Dimensions: [
+          {
+            Name: 'FunctionName',
+            Value: Match.stringLikeRegexp('batbern-.*-custom-email-sender-trigger'),
+          },
+        ],
+        Statistic: 'Sum',
+        Threshold: 0,
+        ComparisonOperator: 'GreaterThanThreshold',
+        TreatMissingData: 'notBreaching',
+        AlarmActions: Match.anyValue(),
+        OKActions: Match.anyValue(),
+      });
+    });
+  });
+
   // Story 10.29 AC9: SES Bounce/Complaint Rate Alarms
   describe('SES Bounce Monitoring Alarms', () => {
     // Issue #984: the warning alarm watched Reputation.BounceRate, which is a volume-weighted

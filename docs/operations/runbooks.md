@@ -162,9 +162,10 @@ invitations, registration confirmations and the newsletter at once.
 
 **Alarms:** `JIT-Provisioning-High-Failures`, `PreSignUp-Linking-Failures`,
 `PreTokenGeneration-High-Latency`, `PostConfirmation-High-Latency`,
-`User-Creation-High-Failures`, `User-Sync-High-Drift`, `Reconciliation-Orphaned-Users`
+`User-Creation-High-Failures`, `User-Sync-High-Drift`, `Reconciliation-Orphaned-Users`,
+`CustomEmailSender-Unhandled-Trigger`, `CustomEmailSender-Errors`
 
-> These currently notify **nobody** — see **#1005**.
+They publish to the shared alarm topic (#1005 fixed the former private topic with no subscribers).
 
 **A Cognito trigger that throws 503s every sign-in.** That is the failure mode to rule out first.
 
@@ -177,6 +178,15 @@ invitations, registration confirmations and the newsletter at once.
 3. `Reconciliation-Orphaned-Users`: a Cognito user with no `user_profiles` row. Usually a JIT
    interceptor failure earlier in the chain — resolve that first, then re-run reconciliation.
 4. Kill switch if SSO itself is the problem: `FEATURES_SSO_ENABLED=false`.
+5. `CustomEmailSender-Unhandled-Trigger`: Cognito asked `batbern-{env}-custom-email-sender-trigger`
+   for an email type the handler does not implement (log line `Unhandled CustomEmailSender trigger`
+   names the `triggerSource`). Cognito sends nothing itself, so that user got no email. Add the
+   trigger to `infrastructure/lib/lambda/triggers/custom-email-sender.ts`. Until then, affected
+   sign-ups stay `UNCONFIRMED` (#1141); confirm one by hand only when the person has proven they
+   own the address, e.g. by writing to info@ from it with DMARC pass.
+6. `CustomEmailSender-Errors`: the trigger threw, usually SES (sending paused, throttled) or KMS
+   (code decryption). Check the trigger's log group and the SES account status; the user saw a
+   failed sign-up, resend or password reset and can retry once it is fixed.
 
 ---
 

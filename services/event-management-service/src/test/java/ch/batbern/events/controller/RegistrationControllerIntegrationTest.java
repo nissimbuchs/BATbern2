@@ -38,6 +38,7 @@ import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.when;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -761,6 +762,7 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     }
 
     @Test
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("should_updateStatus_when_patchWithTypedStatusBody")
     void should_updateStatus_when_patchWithTypedStatusBody() throws Exception {
         // The PATCH body is now the typed UpdateRegistrationStatusRequest ({status}),
@@ -777,6 +779,48 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
 
         Registration updated = registrationRepository.findById(registration.getId()).orElseThrow();
         assertThat(updated.getStatus()).isEqualTo("confirmed"); // DB constraint is lowercase
+    }
+
+    @Test
+    @WithMockUser(username = "joe.user", roles = "ATTENDEE")
+    @DisplayName("should_return403_when_nonOrganizerPatchesRegistration")
+    void should_return403_when_nonOrganizerPatchesRegistration() throws Exception {
+        Registration registration = createTestRegistration("john.doe", "confirmed");
+
+        mockMvc.perform(patch("/api/v1/events/" + testEvent.getEventCode()
+                        + "/registrations/" + registration.getRegistrationCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"cancelled\"}"))
+                .andExpect(status().isForbidden());
+
+        assertThat(registrationRepository.findById(registration.getId()).orElseThrow().getStatus())
+                .isEqualTo("confirmed");
+    }
+
+    @Test
+    @WithMockUser(username = "joe.user", roles = "ATTENDEE")
+    @DisplayName("should_return403_when_nonOrganizerDeletesRegistration")
+    void should_return403_when_nonOrganizerDeletesRegistration() throws Exception {
+        Registration registration = createTestRegistration("john.doe", "confirmed");
+
+        mockMvc.perform(delete("/api/v1/events/" + testEvent.getEventCode()
+                        + "/registrations/" + registration.getRegistrationCode()))
+                .andExpect(status().isForbidden());
+
+        assertThat(registrationRepository.findById(registration.getId())).isPresent();
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("should_deleteRegistration_when_organizerDeletes")
+    void should_deleteRegistration_when_organizerDeletes() throws Exception {
+        Registration registration = createTestRegistration("john.doe", "confirmed");
+
+        mockMvc.perform(delete("/api/v1/events/" + testEvent.getEventCode()
+                        + "/registrations/" + registration.getRegistrationCode()))
+                .andExpect(status().isNoContent());
+
+        assertThat(registrationRepository.findById(registration.getId())).isEmpty();
     }
 
     @Test
