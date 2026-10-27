@@ -203,6 +203,7 @@ line 422 for `ApiGatewayServiceStack`).
 | SES bounce volume | `bounce-rate-warning` — `Bounce` count > 5/hour, NOT the rolling rate (#984) | `MonitoringStack` |
 | Bounce processing | `bounce-processing-dlq` | `MonitoringStack` |
 | Cognito / user sync | 7 alarms | `UserSyncAlarms`, in `MonitoringStack` |
+| Cognito email delivery | `CustomEmailSender-Unhandled-Trigger` (EMF metric `BATbern/Cognito UnhandledEmailTrigger`), `CustomEmailSender-Errors` (Lambda `Errors`) — the trigger sends every mail of the pool, so a skipped or failed one never arrives (#1141) | `UserSyncAlarms`, in `MonitoringStack` |
 | Inbound email abuse | `emails-rejected` | `InboundEmailStack` |
 | Alias forwarding stuck | `forwarding-dlq`, `forwarding-failed` | `InboundEmailStack` |
 

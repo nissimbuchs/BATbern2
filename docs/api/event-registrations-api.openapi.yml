@@ -567,14 +567,16 @@ paths:
       tags:
       - Registrations
       summary: Update registration
-      description: 'Partially update a registration.
+      description: 'Partially update a registration (e.g. set the status).
 
 
         **Story**: 4.1.6 - Uses registrationCode
 
+        **Security**: ORGANIZER role required. Attendees cancel through the token-based
+        deregistration flow or `DELETE /events/{eventCode}/my-registration`.
+
         '
       operationId: updateRegistration
-      security: []
       parameters:
       - name: eventCode
         in: path
@@ -607,6 +609,10 @@ paths:
                 $ref: '#/components/schemas/Registration'
         '400':
           $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -614,15 +620,16 @@ paths:
     delete:
       tags:
       - Registrations
-      summary: Cancel registration
-      description: 'Cancel a registration from the event.
+      summary: Delete registration
+      description: 'Permanently delete a registration from the event.
 
 
-        **Story**: 4.1.6 - Public cancellation with confirmation code
+        **Story**: 4.1.6
+
+        **Security**: ORGANIZER role required.
 
         '
       operationId: deleteRegistration
-      security: []
       parameters:
       - name: eventCode
         in: path
@@ -643,6 +650,10 @@ paths:
       responses:
         '204':
           description: Registration deleted successfully
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':

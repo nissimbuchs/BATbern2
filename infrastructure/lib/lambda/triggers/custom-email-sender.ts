@@ -3,8 +3,8 @@
  * Story 1.2.2: Implement Forgot Password Flow - Task 1a (UPDATED)
  *
  * This Lambda function is triggered by AWS Cognito for custom email delivery.
- * It intercepts ForgotPassword events, decrypts the actual verification code,
- * and sends branded bilingual HTML emails with clickable reset links via SES.
+ * It handles the ForgotPassword, SignUp and ResendCode events, decrypts the verification code,
+ * and sends branded bilingual HTML emails with a clickable reset or confirmation link via SES.
  *
  * AC15-AC18: Bilingual email templates (German/English) with branded design
  * - Detects user language from custom:language attribute (fallback to 'en')
@@ -390,13 +390,33 @@ export const handler: Handler<CustomEmailSenderEvent, CustomEmailSenderEvent> = 
     return event;
   }
 
-  // Only handle ForgotPassword and SignUp triggers
-  const supportedTriggers = ['CustomEmailSender_ForgotPassword', 'CustomEmailSender_SignUp'];
+  // SignUp and ResendCode both carry a sign-up confirmation code and get the same mail (#1141:
+  // ResendCode used to be skipped, so "resend confirmation code" silently sent nothing).
+  const signupTriggers = ['CustomEmailSender_SignUp', 'CustomEmailSender_ResendCode'];
+  const supportedTriggers = ['CustomEmailSender_ForgotPassword', ...signupTriggers];
   if (!supportedTriggers.includes(event.triggerSource)) {
-    console.log('Skipping unsupported trigger (not implemented yet)', {
+    // Cognito hands every email of this pool to us and sends nothing itself, so an unhandled
+    // trigger is a mail the user never gets. ERROR + EMF metric, watched by the
+    // CustomEmailSender-Unhandled-Trigger alarm.
+    console.error('Unhandled CustomEmailSender trigger, no email sent', {
       triggerSource: event.triggerSource,
     });
-    // Return event without sending - Cognito won't send email for unsupported triggers
+    console.log(
+      JSON.stringify({
+        _aws: {
+          Timestamp: Date.now(),
+          CloudWatchMetrics: [
+            {
+              Namespace: 'BATbern/Cognito',
+              Dimensions: [[]],
+              Metrics: [{ Name: 'UnhandledEmailTrigger', Unit: 'Count' }],
+            },
+          ],
+        },
+        UnhandledEmailTrigger: 1,
+        triggerSource: event.triggerSource,
+      })
+    );
     return event;
   }
 
@@ -415,7 +435,8 @@ export const handler: Handler<CustomEmailSenderEvent, CustomEmailSenderEvent> = 
     // Detect user language (i18n support)
     const language = detectUserLanguage(event.request.userAttributes);
 
-    console.log('Processing ForgotPassword email', {
+    console.log('Processing email', {
+      triggerSource: event.triggerSource,
       email,
       language,
       encryptedCodeLength: event.request.code.length,
@@ -438,7 +459,7 @@ export const handler: Handler<CustomEmailSenderEvent, CustomEmailSenderEvent> = 
     let subject: string;
     let plainText: string;
 
-    if (event.triggerSource === 'CustomEmailSender_SignUp') {
+    if (signupTriggers.includes(event.triggerSource)) {
       // Signup verification link
       link = `${config.FRONTEND_DOMAIN}/auth/verify-email?code=${verificationCode}&email=${encodeURIComponent(email)}&lang=${language}`;
       htmlContent = getSignupEmailHtml(language, link, logoUrl);

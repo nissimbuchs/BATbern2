@@ -92,11 +92,56 @@ describe('custom-email-sender Lambda handler', () => {
     expect(mockSesSend).not.toHaveBeenCalled();
   });
 
-  it('should_returnEventUnchanged_when_triggerSourceIsUnsupportedCustomEmailSender', async () => {
+  it('should_sendSignupVerificationEmail_when_ResendCodeTrigger', async () => {
+    // #1141: ResendCode used to be skipped, so "resend confirmation code" sent nothing and
+    // unconfirmed sign-ups were stuck. It carries a fresh sign-up code: same mail as SignUp.
     const event = makeEvent('CustomEmailSender_ResendCode');
     const result = await (handler as Handler)(event, {} as any, jest.fn());
+
+    expect(mockDecrypt).toHaveBeenCalledTimes(1);
+    expect(mockSesSend).toHaveBeenCalledTimes(1);
+    const sesPayload = mockSesSend.mock.calls[0][0] as {
+      Destination: { ToAddresses: string[] };
+      Message: { Body: { Text: { Data: string } } };
+    };
+    expect(sesPayload.Destination.ToAddresses).toEqual(['user@example.com']);
+    expect(sesPayload.Message.Body.Text.Data).toContain(
+      'https://www.batbern.ch/auth/verify-email?code=123456&email=user%40example.com'
+    );
     expect(result).toEqual(event);
-    expect(mockSesSend).not.toHaveBeenCalled();
+  });
+
+  it('should_logUnhandledTriggerMetric_when_triggerSourceIsUnsupportedCustomEmailSender', async () => {
+    // An unhandled trigger means Cognito expected us to send a mail and nobody did. It must be
+    // loud: an ERROR line plus an EMF metric that the CustomEmailSender-Unhandled-Trigger alarm
+    // watches, instead of the INFO line that hid the ResendCode gap for months.
+    const errorSpy = jest.spyOn(console, 'error').mockImplementation(() => undefined);
+    const logSpy = jest.spyOn(console, 'log').mockImplementation(() => undefined);
+    try {
+      const event = makeEvent('CustomEmailSender_VerifyUserAttribute');
+      const result = await (handler as Handler)(event, {} as any, jest.fn());
+
+      expect(result).toEqual(event);
+      expect(mockSesSend).not.toHaveBeenCalled();
+      expect(errorSpy).toHaveBeenCalledWith(
+        'Unhandled CustomEmailSender trigger, no email sent',
+        expect.objectContaining({ triggerSource: 'CustomEmailSender_VerifyUserAttribute' })
+      );
+      const emf = logSpy.mock.calls
+        .map((c) => c[0])
+        .filter((line): line is string => typeof line === 'string' && line.includes('_aws'))
+        .map((line) => JSON.parse(line));
+      expect(emf).toHaveLength(1);
+      expect(emf[0]._aws.CloudWatchMetrics[0]).toEqual({
+        Namespace: 'BATbern/Cognito',
+        Dimensions: [[]],
+        Metrics: [{ Name: 'UnhandledEmailTrigger', Unit: 'Count' }],
+      });
+      expect(emf[0].UnhandledEmailTrigger).toBe(1);
+    } finally {
+      errorSpy.mockRestore();
+      logSpy.mockRestore();
+    }
   });
 
   it('should_sendPasswordResetEmailViaSES_when_ForgotPasswordTrigger', async () => {

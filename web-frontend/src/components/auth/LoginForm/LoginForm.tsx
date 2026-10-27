@@ -33,6 +33,7 @@ import { authService } from '@/services/auth/authService';
 import { consumeLogoutReason } from '@/services/auth/logoutReason';
 import { LoginCredentials } from '@/types/auth';
 import LanguageSwitcher from '@components/shared/LanguageSwitcher/LanguageSwitcher';
+import { ResendConfirmationAction } from '../ResendConfirmationAction';
 
 type LoginFormData = {
   email: string;
@@ -68,6 +69,8 @@ const getErrorTranslationKey = (errorCode?: string): string => {
   const errorMap: Record<string, string> = {
     INVALID_CREDENTIALS: 'auth:errors.invalidCredentials',
     EMAIL_NOT_VERIFIED: 'auth:errors.emailNotVerified',
+    // Issue #1141: Cognito UserNotConfirmedException (authService.mapCognitoError).
+    USER_NOT_CONFIRMED: 'auth:errors.userNotConfirmed',
     ACCOUNT_LOCKED: 'auth:errors.accountLocked',
     NETWORK_ERROR: 'auth:errors.networkError',
   };
@@ -215,6 +218,10 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
 
   // Get localized error message
   const displayError = error ? t(getErrorTranslationKey(error.code)) : submitError;
+  // Issue #1141: an UNCONFIRMED account can only recover through a fresh confirmation link.
+  const isUnconfirmedAccount =
+    !newPasswordError &&
+    (error?.code === 'USER_NOT_CONFIRMED' || error?.code === 'EMAIL_NOT_VERIFIED');
 
   return (
     <Container maxWidth="sm">
@@ -259,6 +266,7 @@ export const LoginForm: React.FC<LoginFormProps> = ({ onSuccess, onForgotPasswor
             {(displayError || newPasswordError) && (
               <Alert severity="error" sx={{ width: '100%', mb: 2 }}>
                 {newPasswordError || displayError}
+                {isUnconfirmedAccount && <ResendConfirmationAction email={watchedEmail} />}
               </Alert>
             )}
 

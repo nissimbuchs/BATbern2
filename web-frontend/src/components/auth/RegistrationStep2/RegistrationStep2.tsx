@@ -20,6 +20,10 @@ import {
   Stack,
 } from '@mui/material';
 import { Info } from '@mui/icons-material';
+import { ResendConfirmationAction } from '../ResendConfirmationAction';
+
+// Issue #1141: codes for "an account with this email already exists" (UsernameExistsException).
+const EMAIL_EXISTS_CODES = new Set(['EMAIL_EXISTS', 'UsernameExistsException']);
 
 export interface RegistrationStep2Props {
   onBack: () => void;
@@ -168,6 +172,15 @@ export const RegistrationStep2: React.FC<RegistrationStep2Props> = ({
       {error && (
         <Alert severity="error" sx={{ mb: 3 }}>
           {getErrorMessage(error)}
+          {/* Issue #1141: the existing account may never have been confirmed. */}
+          {EMAIL_EXISTS_CODES.has(error.message) && (
+            <>
+              <Typography variant="body2" sx={{ mt: 1 }}>
+                {t('register.errors.usernameExistsHint')}
+              </Typography>
+              <ResendConfirmationAction email={email ?? ''} />
+            </>
+          )}
         </Alert>
       )}
 

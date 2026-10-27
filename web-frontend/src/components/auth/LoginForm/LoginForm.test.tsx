@@ -9,7 +9,8 @@ import userEvent from '@testing-library/user-event';
 import { LoginForm } from './LoginForm';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { I18nextProvider } from 'react-i18next';
-import { MemoryRouter } from 'react-router-dom';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '@/i18n/config';
 import { ConfigProvider } from '@/contexts/ConfigContext';
 import type { AppConfig } from '@/config/runtime-config';
@@ -36,6 +37,20 @@ const mockSignInWithFederated = vi.hoisted(() => vi.fn());
 vi.mock('@/services/auth/authService', () => ({
   authService: { signInWithFederated: mockSignInWithFederated },
 }));
+
+// Issue #1141: the "send new confirmation link" action resends via the email-verification
+// service (never Amplify directly).
+const mockResendVerificationCode = vi.hoisted(() => vi.fn());
+vi.mock('@/services/auth/emailVerificationService', () => ({
+  verifyEmail: vi.fn(),
+  resendVerificationCode: mockResendVerificationCode,
+}));
+
+// Renders the current location on the verify-email route so tests can assert navigation.
+const VerifyPageProbe = () => {
+  const location = useLocation();
+  return <div data-testid="verify-page">{`${location.pathname}${location.search}`}</div>;
+};
 
 // Create theme for MUI components
 const theme = createTheme();
@@ -66,14 +81,24 @@ const renderWithTheme = (
   component: React.ReactElement,
   { route = '/login', config = mockConfig }: { route?: string; config?: AppConfig } = {}
 ) => {
+  const queryClient = new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
   return render(
-    <MemoryRouter initialEntries={[route]}>
-      <ConfigProvider config={config}>
-        <I18nextProvider i18n={i18n}>
-          <ThemeProvider theme={theme}>{component}</ThemeProvider>
-        </I18nextProvider>
-      </ConfigProvider>
-    </MemoryRouter>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[route]}>
+        <ConfigProvider config={config}>
+          <I18nextProvider i18n={i18n}>
+            <ThemeProvider theme={theme}>
+              <Routes>
+                <Route path="/auth/verify-email" element={<VerifyPageProbe />} />
+                <Route path="*" element={component} />
+              </Routes>
+            </ThemeProvider>
+          </I18nextProvider>
+        </ConfigProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 };
 
@@ -409,5 +434,61 @@ describe('LoginForm Component', () => {
       expect(mockSignInWithFederated).toHaveBeenCalledTimes(1);
       expect(mockSignInWithFederated).toHaveBeenCalledWith('Google');
     });
+  });
+
+  // Issue #1141: a self-registered user who never confirmed their email (Cognito UNCONFIRMED)
+  // used to see "unknown error" because USER_NOT_CONFIRMED was not mapped.
+  it('should_showNotConfirmedMessage_when_userNotConfirmed', async () => {
+    Object.assign(mockUseAuth, {
+      error: { code: 'USER_NOT_CONFIRMED', message: 'User is not confirmed.' },
+    });
+
+    await act(async () => {
+      renderWithTheme(<LoginForm />);
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/your email address is not confirmed yet/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/unknown error/i)).not.toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send new confirmation link/i })).toBeInTheDocument();
+  });
+
+  it('should_resendConfirmationAndOpenVerifyPage_when_notConfirmedActionClicked', async () => {
+    mockResendVerificationCode.mockResolvedValue({ success: true });
+    const user = userEvent.setup();
+    Object.assign(mockUseAuth, {
+      error: { code: 'USER_NOT_CONFIRMED', message: 'User is not confirmed.' },
+    });
+
+    await act(async () => {
+      renderWithTheme(<LoginForm />);
+    });
+    await act(async () => {
+      await user.type(screen.getByLabelText(/email address/i), 'pending@example.com');
+    });
+
+    await user.click(screen.getByRole('button', { name: /send new confirmation link/i }));
+
+    expect(mockResendVerificationCode).toHaveBeenCalledWith('pending@example.com');
+    await waitFor(() => {
+      expect(screen.getByTestId('verify-page')).toHaveTextContent(
+        '/auth/verify-email?email=pending%40example.com'
+      );
+    });
+  });
+
+  it('should_notOfferResendAction_when_invalidCredentials', async () => {
+    Object.assign(mockUseAuth, {
+      error: { code: 'INVALID_CREDENTIALS', message: 'Invalid email or password' },
+    });
+
+    await act(async () => {
+      renderWithTheme(<LoginForm />);
+    });
+
+    expect(
+      screen.queryByRole('button', { name: /send new confirmation link/i })
+    ).not.toBeInTheDocument();
   });
 });

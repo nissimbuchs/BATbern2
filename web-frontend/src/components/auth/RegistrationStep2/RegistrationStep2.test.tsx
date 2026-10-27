@@ -4,6 +4,7 @@
  * TDD: Write tests first before implementation
  */
 
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor, act } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -11,7 +12,21 @@ import { RegistrationStep2 } from './RegistrationStep2';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { I18nextProvider } from 'react-i18next';
 import { FormProvider, useForm } from 'react-hook-form';
+import { MemoryRouter, Routes, Route, useLocation } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import i18n from '@/i18n/config';
+
+// Issue #1141: the "send new confirmation link" action resends via the email-verification service.
+const mockResendVerificationCode = vi.hoisted(() => vi.fn());
+vi.mock('@/services/auth/emailVerificationService', () => ({
+  verifyEmail: vi.fn(),
+  resendVerificationCode: mockResendVerificationCode,
+}));
+
+const VerifyPageProbe = () => {
+  const location = useLocation();
+  return <div data-testid="verify-page">{`${location.pathname}${location.search}`}</div>;
+};
 
 // Create theme for MUI components
 const theme = createTheme();
@@ -35,12 +50,26 @@ const FormWrapper: React.FC<{
     mode: 'onBlur',
   });
 
+  const [queryClient] = React.useState(
+    () =>
+      new QueryClient({
+        defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+      })
+  );
+
   return (
-    <I18nextProvider i18n={i18n}>
-      <ThemeProvider theme={theme}>
-        <FormProvider {...methods}>{children}</FormProvider>
-      </ThemeProvider>
-    </I18nextProvider>
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={['/auth/register']}>
+        <I18nextProvider i18n={i18n}>
+          <ThemeProvider theme={theme}>
+            <Routes>
+              <Route path="/auth/verify-email" element={<VerifyPageProbe />} />
+              <Route path="*" element={<FormProvider {...methods}>{children}</FormProvider>} />
+            </Routes>
+          </ThemeProvider>
+        </I18nextProvider>
+      </MemoryRouter>
+    </QueryClientProvider>
   );
 };
 
@@ -338,6 +367,75 @@ describe('RegistrationStep2 Component', () => {
     await waitFor(() => {
       expect(screen.getByText(/an account with this email already exists/i)).toBeInTheDocument();
     });
+  });
+
+  // Issue #1141: an UNCONFIRMED user who signs up again gets UsernameExistsException.
+  // Keep the message, but offer a fresh confirmation link and point confirmed users to login.
+  it('should_offerResendConfirmation_when_emailAlreadyExists', async () => {
+    await act(async () => {
+      render(
+        <FormWrapper onBack={mockOnBack} onSubmit={mockOnSubmit}>
+          <RegistrationStep2
+            onBack={mockOnBack}
+            onSubmit={mockOnSubmit}
+            isLoading={false}
+            error={new Error('EMAIL_EXISTS')}
+          />
+        </FormWrapper>
+      );
+    });
+
+    await waitFor(() => {
+      expect(screen.getByText(/an account with this email already exists/i)).toBeInTheDocument();
+    });
+    expect(screen.getByText(/forgot password/i)).toBeInTheDocument();
+    expect(screen.getByRole('button', { name: /send new confirmation link/i })).toBeInTheDocument();
+  });
+
+  it('should_resendConfirmationAndOpenVerifyPage_when_emailExistsActionClicked', async () => {
+    mockResendVerificationCode.mockResolvedValue({ success: true });
+    const user = userEvent.setup();
+
+    await act(async () => {
+      render(
+        <FormWrapper onBack={mockOnBack} onSubmit={mockOnSubmit}>
+          <RegistrationStep2
+            onBack={mockOnBack}
+            onSubmit={mockOnSubmit}
+            isLoading={false}
+            error={new Error('UsernameExistsException')}
+          />
+        </FormWrapper>
+      );
+    });
+
+    await user.click(screen.getByRole('button', { name: /send new confirmation link/i }));
+
+    expect(mockResendVerificationCode).toHaveBeenCalledWith('john.doe@example.com');
+    await waitFor(() => {
+      expect(screen.getByTestId('verify-page')).toHaveTextContent(
+        '/auth/verify-email?email=john.doe%40example.com'
+      );
+    });
+  });
+
+  it('should_notOfferResendAction_when_passwordWeak', async () => {
+    await act(async () => {
+      render(
+        <FormWrapper onBack={mockOnBack} onSubmit={mockOnSubmit}>
+          <RegistrationStep2
+            onBack={mockOnBack}
+            onSubmit={mockOnSubmit}
+            isLoading={false}
+            error={new Error('INVALID_PASSWORD')}
+          />
+        </FormWrapper>
+      );
+    });
+
+    expect(
+      screen.queryByRole('button', { name: /send new confirmation link/i })
+    ).not.toBeInTheDocument();
   });
 
   // Test 2.11b: INVALID_PASSWORD (code returned by mapCognitoError for InvalidPasswordException)

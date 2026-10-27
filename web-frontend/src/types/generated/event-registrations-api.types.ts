@@ -251,19 +251,21 @@ export interface paths {
     put?: never;
     post?: never;
     /**
-     * Cancel registration
-     * @description Cancel a registration from the event.
+     * Delete registration
+     * @description Permanently delete a registration from the event.
      *
-     *     **Story**: 4.1.6 - Public cancellation with confirmation code
+     *     **Story**: 4.1.6
+     *     **Security**: ORGANIZER role required.
      */
     delete: operations['deleteRegistration'];
     options?: never;
     head?: never;
     /**
      * Update registration
-     * @description Partially update a registration.
+     * @description Partially update a registration (e.g. set the status).
      *
      *     **Story**: 4.1.6 - Uses registrationCode
+     *     **Security**: ORGANIZER role required. Attendees cancel through the token-based deregistration flow or `DELETE /events/{eventCode}/my-registration`.
      */
     patch: operations['updateRegistration'];
     trace?: never;
@@ -1387,6 +1389,8 @@ export interface operations {
         };
         content?: never;
       };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
@@ -1419,6 +1423,8 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };

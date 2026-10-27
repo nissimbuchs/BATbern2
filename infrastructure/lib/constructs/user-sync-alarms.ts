@@ -231,6 +231,53 @@ export class UserSyncAlarms extends Construct {
     preSignUpFailuresAlarm.addAlarmAction(alarmAction);
     preSignUpFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
+    // Alarms 8 + 9: CustomEmailSender (#1141). Cognito hands EVERY email of the pool (sign-up
+    // code, resend code, password reset) to this trigger and sends nothing itself, so a mail
+    // the trigger skips or fails on simply never arrives. That is how "resend confirmation code"
+    // sent nothing for months and left self-registered users stuck as UNCONFIRMED.
+    // Unhandled trigger: EMF metric emitted by custom-email-sender.ts. Errors: the trigger throws
+    // on SES/KMS failure so that Cognito reports the failure to the caller.
+    const unhandledEmailTriggerAlarm = new cloudwatch.Alarm(
+      this,
+      'CustomEmailSenderUnhandledAlarm',
+      {
+        alarmName: `batbern-${props.environment}-CustomEmailSender-Unhandled-Trigger`,
+        alarmDescription:
+          'Cognito asked the CustomEmailSender trigger for an email type it does not handle; the user got no email',
+        metric: new cloudwatch.Metric({
+          namespace: 'BATbern/Cognito',
+          metricName: 'UnhandledEmailTrigger',
+          statistic: 'Sum',
+          period: cdk.Duration.minutes(5),
+        }),
+        threshold: 0,
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      }
+    );
+    unhandledEmailTriggerAlarm.addAlarmAction(alarmAction);
+    unhandledEmailTriggerAlarm.addOkAction(alarmAction);
+
+    const emailSenderErrorsAlarm = new cloudwatch.Alarm(this, 'CustomEmailSenderErrorsAlarm', {
+      alarmName: `batbern-${props.environment}-CustomEmailSender-Errors`,
+      alarmDescription:
+        'The CustomEmailSender trigger failed (SES or KMS); a sign-up, resend or reset email was not sent',
+      metric: new cloudwatch.Metric({
+        namespace: 'AWS/Lambda',
+        metricName: 'Errors',
+        dimensionsMap: { FunctionName: `batbern-${props.environment}-custom-email-sender-trigger` },
+        statistic: 'Sum',
+        period: cdk.Duration.minutes(5),
+      }),
+      threshold: 0,
+      evaluationPeriods: 1,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+    });
+    emailSenderErrorsAlarm.addAlarmAction(alarmAction);
+    emailSenderErrorsAlarm.addOkAction(alarmAction);
+
     // Output alarm topic ARN
     new cdk.CfnOutput(this, 'AlarmTopicArn', {
       value: this.alarmTopic.topicArn,
@@ -248,6 +295,8 @@ export class UserSyncAlarms extends Construct {
         driftDetectionAlarm.alarmName,
         reconciliationFailuresAlarm.alarmName,
         preSignUpFailuresAlarm.alarmName,
+        unhandledEmailTriggerAlarm.alarmName,
+        emailSenderErrorsAlarm.alarmName,
       ].join(','),
       description: 'CloudWatch alarm names for user sync monitoring',
     });

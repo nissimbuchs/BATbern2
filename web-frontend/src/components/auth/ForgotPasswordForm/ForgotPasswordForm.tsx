@@ -12,6 +12,7 @@ import { Box, TextField, Button, Typography, Link, Alert, CircularProgress } fro
 import { ArrowBack, Refresh } from '@mui/icons-material';
 import { useForgotPassword, ForgotPasswordError } from '@hooks/useForgotPassword';
 import { ForgotPasswordConfirmation } from '../ForgotPasswordConfirmation/ForgotPasswordConfirmation';
+import { ResendConfirmationAction } from '../ResendConfirmationAction';
 
 interface ForgotPasswordFormData {
   email: string;
@@ -30,6 +31,7 @@ export const ForgotPasswordForm: React.FC = () => {
     handleSubmit,
     formState: { errors, isValid },
     getValues,
+    watch,
   } = useForm<ForgotPasswordFormData>({
     mode: 'onBlur',
   });
@@ -77,6 +79,11 @@ export const ForgotPasswordForm: React.FC = () => {
   const errorType = forgotPasswordError?.type;
   const isRateLimitError = errorType === 'rateLimitExceeded';
   const isNetworkError = errorType === 'networkError';
+  // Issue #1141: Cognito rejects a reset with InvalidParameterException when the account has
+  // no verified email, i.e. it was registered but never confirmed (UserNotFoundException stays
+  // suppressed in the hook for anti-enumeration). Offer a fresh confirmation link instead.
+  const isUnconfirmedAccount = errorType === 'invalidParameter';
+  const watchedEmail = watch('email') ?? '';
 
   return (
     <Box sx={{ maxWidth: 400, mx: 'auto', mt: 8 }}>
@@ -129,6 +136,7 @@ export const ForgotPasswordForm: React.FC = () => {
           ) : (
             <Typography variant="body2">{t(`auth:forgot.errors.${errorType}`)}</Typography>
           )}
+          {isUnconfirmedAccount && <ResendConfirmationAction email={watchedEmail} />}
         </Alert>
       )}
 
