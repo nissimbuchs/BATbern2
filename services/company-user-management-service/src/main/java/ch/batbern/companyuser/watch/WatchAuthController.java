@@ -10,6 +10,7 @@ import ch.batbern.companyuser.watch.dto.PairingResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -53,6 +54,7 @@ public class WatchAuthController {
      * Returns 400 if code is invalid or expired.
      */
     @PostMapping("/pair")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<?> pair(@Valid @RequestBody PairingRequest request) {
         // Generate token first — claimPairingCode() then atomically validates + persists
         String pairingToken = generateSecurePairingToken();
@@ -96,6 +98,7 @@ public class WatchAuthController {
      * Returns 401 if pairing token is invalid or not yet paired.
      */
     @PostMapping("/authenticate")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<AuthResponse> authenticate(@Valid @RequestBody AuthRequest request) {
         Optional<WatchPairing> pairingOpt = watchPairingService.findByPairingToken(request.pairingToken());
 

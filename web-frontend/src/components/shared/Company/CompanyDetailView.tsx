@@ -361,6 +361,11 @@ interface CompanyDetailViewProps {
   error?: string;
   canEdit?: boolean;
   canDelete?: boolean;
+  /**
+   * Show the users and speakers tabs. They read the user directory, which is organizer-only,
+   * so they stay hidden unless the caller is an organizer.
+   */
+  showPeople?: boolean;
   onEdit: (companyId: string) => void;
   onBack: () => void;
   onRetry?: () => void;
@@ -372,6 +377,7 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
   error,
   canEdit = true,
   canDelete = false,
+  showPeople = false,
   onEdit,
   onBack,
   onRetry,
@@ -426,6 +432,32 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
       </Box>
     );
   }
+
+  // Users and speakers come from the organizer-only user directory; sessions are public.
+  const tabs = [
+    ...(showPeople
+      ? [
+          {
+            key: 'users',
+            label: t('company.detail.tabs.users'),
+            icon: <UsersIcon />,
+            panel: <CompanyUsersPanel companyName={company.name} isMobile={isMobile} />,
+          },
+          {
+            key: 'speakers',
+            label: t('navigation.speakers'),
+            icon: <SpeakersIcon />,
+            panel: <CompanySpeakersPanel companyName={company.name} isMobile={isMobile} />,
+          },
+        ]
+      : []),
+    {
+      key: 'sessions',
+      label: t('labels.sessions'),
+      icon: <SessionsIcon />,
+      panel: <CompanySessionsPanel companyName={company.name} />,
+    },
+  ];
 
   return (
     <Box data-testid="company-detail-view" sx={{ p: { xs: 1.5, sm: 3 }, pb: 8 }}>
@@ -578,39 +610,23 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
             onChange={handleTabChange}
             aria-label={t('company.detail.tabs.ariaLabel')}
           >
-            <Tab
-              label={t('company.detail.tabs.users')}
-              id="company-tab-0"
-              aria-controls="company-tabpanel-0"
-            />
-            <Tab
-              label={t('navigation.speakers')}
-              id="company-tab-1"
-              aria-controls="company-tabpanel-1"
-            />
-            <Tab
-              label={t('labels.sessions')}
-              id="company-tab-2"
-              aria-controls="company-tabpanel-2"
-            />
+            {tabs.map((tab, index) => (
+              <Tab
+                key={tab.key}
+                label={tab.label}
+                id={`company-tab-${index}`}
+                aria-controls={`company-tabpanel-${index}`}
+              />
+            ))}
           </Tabs>
         </Box>
       )}
 
-      {/* Users: all users associated with this company */}
-      <TabPanel value={activeTab} index={0}>
-        <CompanyUsersPanel companyName={company.name} isMobile={isMobile} />
-      </TabPanel>
-
-      {/* Speakers: users with role SPEAKER from this company */}
-      <TabPanel value={activeTab} index={1}>
-        <CompanySpeakersPanel companyName={company.name} isMobile={isMobile} />
-      </TabPanel>
-
-      {/* Sessions: sessions where a speaker from this company participated */}
-      <TabPanel value={activeTab} index={2}>
-        <CompanySessionsPanel companyName={company.name} />
-      </TabPanel>
+      {tabs.map((tab, index) => (
+        <TabPanel key={tab.key} value={activeTab} index={index}>
+          {tab.panel}
+        </TabPanel>
+      ))}
 
       {/* Delete Confirmation Dialog */}
       <DeleteCompanyDialog
@@ -633,9 +649,9 @@ export const CompanyDetailView: React.FC<CompanyDetailViewProps> = ({
         elevation={3}
       >
         <BottomNavigation value={activeTab} onChange={(_, v) => setActiveTab(v)}>
-          <BottomNavigationAction icon={<UsersIcon />} sx={{ minWidth: 0, flex: 1 }} />
-          <BottomNavigationAction icon={<SpeakersIcon />} sx={{ minWidth: 0, flex: 1 }} />
-          <BottomNavigationAction icon={<SessionsIcon />} sx={{ minWidth: 0, flex: 1 }} />
+          {tabs.map((tab) => (
+            <BottomNavigationAction key={tab.key} icon={tab.icon} sx={{ minWidth: 0, flex: 1 }} />
+          ))}
         </BottomNavigation>
       </Paper>
     </Box>

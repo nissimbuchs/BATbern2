@@ -10,6 +10,10 @@
 
 Users are individuals with BATbern accounts. Each user has one or more **roles** that determine their permissions and platform capabilities. Multi-role users get a single session with grouped navigation (section dividers per role) — no separate logins per role.
 
+The user directory (user list, search, and other people's user records) is available to
+**organizers** (and admins) only. Every user reads and edits their own record under
+**My Profile**.
+
 Users sign in with **email + password** or **"Continue with Google"** (see [Continue with Google (SSO)](#continue-with-google-sso) below).
 
 ## User Roles

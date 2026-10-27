@@ -489,6 +489,9 @@ export interface paths {
      *
      *     **Story**: BAT-15 - Integration - Participant Batch Import
      *     **Security**: Requires authentication
+     *
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     get: operations['listUserRegistrations'];
     put?: never;
@@ -1807,6 +1810,13 @@ export interface operations {
         };
       };
       401: components['responses']['Unauthorized'];
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       500: components['responses']['InternalServerError'];
     };
   };

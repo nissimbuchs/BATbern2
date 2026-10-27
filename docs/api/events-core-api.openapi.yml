@@ -194,7 +194,9 @@ paths:
 
         **Performance**: <200ms (P95)
 
-        '
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: createEvent
       requestBody:
         required: true
@@ -218,6 +220,8 @@ paths:
                   currentAttendeeCount: 0
                   description: AI/ML in Production
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '201':
           description: Event created successfully
           content:
@@ -556,7 +560,9 @@ paths:
 
         **Cache Invalidation**: All event caches cleared on update
 
-        '
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: updateEvent
       parameters:
       - name: eventCode
@@ -574,6 +580,8 @@ paths:
             schema:
               $ref: '#/components/schemas/UpdateEventRequest'
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Event updated successfully
           content:
@@ -600,7 +608,9 @@ paths:
 
         **Cache Invalidation**: All event caches cleared on update
 
-        '
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: patchEvent
       parameters:
       - name: eventCode
@@ -623,6 +633,8 @@ paths:
                 value:
                   title: Spring Conference 2025 - Updated
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Event patched successfully
           content:
@@ -651,7 +663,9 @@ paths:
 
         **Cache Invalidation**: All event caches cleared on deletion
 
-        '
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: deleteEvent
       parameters:
       - name: eventCode
@@ -663,6 +677,8 @@ paths:
           pattern: ^BATbern[0-9]+$
           example: BATbern142
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '204':
           description: Event deleted successfully
         '404':
@@ -693,7 +709,9 @@ paths:
 
         **Cache Invalidation**: All event caches cleared on publish
 
-        '
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: publishEvent
       parameters:
       - name: eventCode
@@ -705,6 +723,8 @@ paths:
           pattern: ^BATbern[0-9]+$
           example: BATbern142
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Event published successfully
           content:
@@ -1811,9 +1831,13 @@ paths:
       tags:
         - Admin
       summary: Backfill speaker names for full-text search (maintenance)
-      description: 'Temporary maintenance endpoint (Story archive search).'
+      description: 'Temporary maintenance endpoint (Story archive search).
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: backfillSpeakerNames
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Backfill result
           content:

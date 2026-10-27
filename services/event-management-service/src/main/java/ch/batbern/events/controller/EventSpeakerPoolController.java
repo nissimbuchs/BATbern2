@@ -35,6 +35,7 @@ public class EventSpeakerPoolController implements EventActionsApi {
 
     /** GET /api/v1/events/{eventCode}/speakers/pool — list potential speakers being brainstormed. */
     @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<List<SpeakerPoolResponse>> getSpeakerPool(String eventCode) {
         // Exceptions handled by GlobalExceptionHandler (EventNotFoundException → 404).
         return ResponseEntity.ok(speakerPoolService.getSpeakerPoolForEvent(eventCode));
@@ -42,6 +43,7 @@ public class EventSpeakerPoolController implements EventActionsApi {
 
     /** POST /api/v1/events/{eventCode}/speakers/pool — add a potential speaker during brainstorming. */
     @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<SpeakerPoolResponse> addSpeakerToPool(
             String eventCode, AddSpeakerToPoolRequest addSpeakerToPoolRequest) {
         // GlobalExceptionHandler: EventNotFoundException → 404, IllegalArgumentException → 400.
@@ -51,6 +53,7 @@ public class EventSpeakerPoolController implements EventActionsApi {
 
     /** DELETE /api/v1/events/{eventCode}/speakers/pool/{speakerId} — remove a pool entry. */
     @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Void> deleteSpeakerFromPool(String eventCode, UUID speakerId) {
         // GlobalExceptionHandler: EventNotFoundException → 404, IllegalArgumentException → 404 (not found).
         speakerPoolService.deleteSpeakerFromPool(eventCode, speakerId.toString());

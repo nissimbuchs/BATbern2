@@ -58,7 +58,13 @@ sequenceDiagram
 
 ### Role-Based Security Configuration
 
-> **Important:** Domain services do **not** validate JWTs themselves. JWT signature verification is performed exclusively by the API Gateway. Domain services trust all requests forwarded by the gateway and do not call `jwtDecoder()` or validate token signatures. Role-based access control at the service level is enforced via method-level annotations (`@PreAuthorize`) where needed, using the user context header injected by the gateway.
+> **Important (corrected 2026-10):** Both the API gateway and each domain service validate the JWT
+> (`oauth2ResourceServer` with `jwtDecoder()`). The gateway only authenticates and routes; it does
+> **not** check roles. Role-based access control is enforced **only** in the services, via
+> `@PreAuthorize` on the controller methods (`@EnableMethodSecurity` in every service and the
+> gateway). Every write endpoint must declare its rule; `EndpointAuthorizationGuardTest` in each
+> service fails the build otherwise. (An unused gateway `RoleBasedAuthorizer` from Story 1.2 was
+> removed; it was never wired into the request path.)
 
 #### Public Endpoints (no authentication required)
 
@@ -107,17 +113,28 @@ The older `GET /api/v1/events` and `/events/{code}` return sessions and speakers
 path directly: organizers see every session, everyone else gets the public view. It is retired once
 a Watch release has switched to `/public/events/current` (#1070).
 
-**VPC-Internal Endpoints (no JWT required):**
+**Internal service API (`/internal/**`, no JWT):**
 
-Some endpoints are designed for cross-service communication within the VPC only. These are protected by `VpcInternalAuthorizationManager` (which validates the request originates from within the VPC) rather than JWT-based role checks. Example:
+Service-to-service reads that must not depend on the end user use a separate path prefix,
+`/internal/**`, outside the public `/api/v1` contract. The API gateway has no route for it and
+denies it explicitly (`SecurityConfig`: `/internal/**` → `denyAll`), so it is reachable only inside
+the VPC through Service Connect. Callers send **no** JWT.
 
-| Pattern | Service | Notes |
+| Pattern | Service | Callers |
 |---|---|---|
-| `GET /api/v1/users/by-company` | Company-User Management | Used by partner-coordination-service to fetch contacts without requiring an organizer JWT |
+| `GET /internal/users/{username}[?include=…]` | Company-User Management | EMS user lookups (incl. preferred language, Q&A cadence), PCS contact enrichment, gateway `is_active` gate |
+| `GET /internal/users?role=&company=&page=&limit=` | Company-User Management | EMS organizer/partner lists, PCS partner contacts by company and users by role |
+| `POST /internal/partner-meetings/rsvps` | Partner Coordination | EMS inbound iCal REPLY handling |
 
-This pattern avoids the need to forward end-user JWTs for internal service-to-service calls that don't require user-level authorization.
+Why a separate API rather than forwarding the user's JWT: the public user directory
+(`GET /api/v1/users`, `/users/search`, `/users/{username}`) is ORGANIZER/ADMIN only, while EMS and
+PCS look users up on behalf of any caller (speakers, attendees, partners, schedulers without a JWT)
+and cache the answer per username for everyone. A per-caller answer would either fail or poison
+that cache. The internal API returns the same complete record regardless of who triggered the
+lookup.
 
-Role-gated endpoints (e.g. `POST /api/v1/events`, organizer-only mutations) are enforced at the **API Gateway** layer before requests reach domain services.
+Role checks are enforced **in each service** (`@PreAuthorize` / service `SecurityConfig`). The
+API gateway only authenticates the caller (JWT) and routes; it does not check roles.
 
 ```java
 @Configuration

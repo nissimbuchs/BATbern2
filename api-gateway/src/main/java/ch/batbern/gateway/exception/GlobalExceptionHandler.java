@@ -1,5 +1,6 @@
 package ch.batbern.gateway.exception;
 
+import ch.batbern.gateway.routing.exception.RouteNotFoundException;
 import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.BATbernException;
 import jakarta.servlet.http.HttpServletRequest;
@@ -49,6 +50,25 @@ public class GlobalExceptionHandler {
                 .build();
 
         return ResponseEntity.status(getHttpStatus(ex)).body(error);
+    }
+
+    /** No backend route for the path: 404, not the generic 500. */
+    @ExceptionHandler(RouteNotFoundException.class)
+    public ResponseEntity<ErrorResponse> handleRouteNotFound(
+            RouteNotFoundException ex,
+            HttpServletRequest request) {
+
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.NOT_FOUND.value())
+                .error("ERR_NOT_FOUND")
+                .message("No such endpoint")
+                .correlationId(MDC.get(CORRELATION_ID))
+                .severity("LOW")
+                .build();
+
+        return ResponseEntity.status(HttpStatus.NOT_FOUND).body(error);
     }
 
     @ExceptionHandler(MethodArgumentNotValidException.class)
@@ -146,8 +166,12 @@ public class GlobalExceptionHandler {
         return sanitized;
     }
 
+    /**
+     * Stack traces only for local development. The {@code staging} profile serves production
+     * (api.batbern.ch), so it never gets them.
+     */
     private boolean includeStackTrace() {
-        return "dev".equals(activeProfile) || "staging".equals(activeProfile);
+        return "dev".equals(activeProfile) || "local".equals(activeProfile);
     }
 
     private String getStackTrace(Exception ex) {

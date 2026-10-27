@@ -80,7 +80,7 @@ class AccountActiveGateIntegrationTest {
 
     @Test
     void should_return403AccountDeactivated_when_authenticatedUserIsInactive() throws Exception {
-        when(statusClient.getActiveStatus(anyString(), anyString())).thenReturn(Optional.of(false));
+        when(statusClient.getActiveStatus(anyString())).thenReturn(Optional.of(false));
 
         mockMvc.perform(get("/api/v1/probe"))
                 .andExpect(status().isForbidden())
@@ -89,7 +89,7 @@ class AccountActiveGateIntegrationTest {
 
     @Test
     void should_forwardToDownstream_when_authenticatedUserIsActive() throws Exception {
-        when(statusClient.getActiveStatus(anyString(), anyString())).thenReturn(Optional.of(true));
+        when(statusClient.getActiveStatus(anyString())).thenReturn(Optional.of(true));
 
         mockMvc.perform(get("/api/v1/probe"))
                 .andExpect(status().isOk())

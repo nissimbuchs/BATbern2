@@ -128,6 +128,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.patchCurrentUser",
             description = "Time to partially update current user profile",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> patchCurrentUser(UpdateUserRequest updateUserRequest) {
         log.info("Patching current user profile");
 
@@ -291,6 +292,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.getOrCreateUser",
             description = "Time to get or create user (service-to-service)",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("permitAll()")
     public ResponseEntity<GetOrCreateUserResponse> getOrCreateUser(GetOrCreateUserRequest getOrCreateUserRequest) {
         log.info("Get-or-create user for email: {}", getOrCreateUserRequest.getEmail());
 
@@ -424,6 +426,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.additionalEmails.add",
             description = "Time to add an additional email to the current user",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<AdditionalEmail> addAdditionalEmail(AddAdditionalEmailRequest addAdditionalEmailRequest) {
         log.info("Adding additional email for current user");
         AdditionalEmail created = userService.addAdditionalEmail(addAdditionalEmailRequest);
@@ -440,6 +443,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.additionalEmails.delete",
             description = "Time to remove an additional email from the current user",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteAdditionalEmail(String email) {
         log.info("Removing additional email for current user");
         userService.deleteAdditionalEmail(email);
@@ -455,6 +459,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.additionalEmails.resendVerification",
             description = "Time to resend an additional-email verification email",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> resendAdditionalEmailVerification(String email) {
         log.info("Resending additional-email verification for current user");
         userService.resendVerification(email);
@@ -483,6 +488,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.additionalEmails.verifyConfirm",
             description = "Time to confirm an additional-email verification token",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("permitAll()")
     public ResponseEntity<AdditionalEmailVerificationConfirmResponse> confirmAdditionalEmailVerification(
             ConfirmAdditionalEmailVerificationRequest confirmAdditionalEmailVerificationRequest) {
         log.info("Confirming additional-email verification token");
@@ -499,6 +505,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.profilePicture.requestPresignedUrl",
             description = "Time to generate presigned URL for profile picture",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PresignedUploadUrl> requestProfilePictureUploadUrl(
             ProfilePictureUploadRequest profilePictureUploadRequest) {
         log.info("Requesting presigned URL for profile picture upload: {}",
@@ -519,6 +526,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
 
     /** AC10: Confirm the caller's own profile picture upload completion. */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ProfilePictureUploadConfirmResponse> confirmProfilePictureUpload(
             ProfilePictureUploadConfirmRequest profilePictureUploadConfirmRequest) {
         log.info("Confirming profile picture upload: fileId={}",
@@ -548,6 +556,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.profilePicture.remove",
             description = "Time to remove own profile picture",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> removeOwnProfilePicture() {
         String currentUsername = securityContextHelper.getCurrentUsername();
         log.info("Removing own profile picture for user: {}", currentUsername);
@@ -786,7 +795,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     // ------------------------------------------------------------------------
 
     /** Build the generated {@link PaginatedUserResponse} from a service page (1-based page number). */
-    private static PaginatedUserResponse toPaginatedResponse(Page<UserResponse> usersPage, int page, int limit) {
+    static PaginatedUserResponse toPaginatedResponse(Page<UserResponse> usersPage, int page, int limit) {
         ch.batbern.shared.api.PaginationMetadata paginationMetadata =
             new ch.batbern.shared.api.PaginationMetadata();
         paginationMetadata.setPage(page);  // 1-based for API

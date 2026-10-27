@@ -160,6 +160,8 @@ export interface paths {
      * @description Select a topic for an event and transition workflow state.
      *
      *     **Acceptance Criteria**: AC14 (Story 5.2)
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     post: operations['selectTopicForEvent'];
     delete?: never;

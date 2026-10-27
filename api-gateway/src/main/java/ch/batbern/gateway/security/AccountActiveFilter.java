@@ -111,10 +111,9 @@ public class AccountActiveFilter extends OncePerRequestFilter {
             // first-requests for the same user collapse to ONE CUMS call (no stampede). A loader
             // returning null (unknown — 404 / no body) is NOT cached and surfaces as null here, so
             // the unknown path still fails open AND retries next request.
-            final String bearer = jwt.getTokenValue();
             final String cacheKey = username;
             active = activeCache.get(cacheKey,
-                    key -> statusClient.getActiveStatus(key, bearer).orElse(null));
+                    key -> statusClient.getActiveStatus(key).orElse(null));
         } catch (Exception e) {
             // Transient CUMS failure (loader threw) → fail-open (allow), WARN, emit metric.
             // Caffeine does not cache a load that throws, so the next request retries.

@@ -763,8 +763,9 @@ ships a deactivated user could sign in via Google unchecked; (b) it only blocks 
 **Target (ADR-010) — DONE for Part A (Story 12.2, 2026-06-02):** the request-time **`is_active`
 gate at the API Gateway** is now the **canonical** enforcement. `AccountActiveFilter`
 (`api-gateway/.../security/AccountActiveFilter.java`) runs after Spring Security authentication,
-resolves the caller's `active` flag from CUMS (`GET /api/v1/users/{username}` via
-`GatewayUserStatusClient`), Caffeine-caches it (`expireAfterWrite ≈ 60s`, key = `custom:username`
+resolves the caller's `active` flag from CUMS (`GET /internal/users/{username}`, the VPC-only
+internal user API without JWT, via `GatewayUserStatusClient`; until 2026-10 it read the public
+`/api/v1/users/{username}` with the caller's own JWT, which is organizer-only now), Caffeine-caches it (`expireAfterWrite ≈ 60s`, key = `custom:username`
 → `sub` fallback), and returns `403 ACCOUNT_DEACTIVATED` (never 401 — avoids the SPA refresh loop)
 for a deactivated account. It is **fail-open** (CUMS error or 404 → allow + WARN +
 `gateway.active_gate.cums_error` metric) and **provider-agnostic**, so it covers federated (Google)

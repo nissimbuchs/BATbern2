@@ -128,6 +128,9 @@ export interface paths {
      *
      *     **Acceptance Criteria**: AC10
      *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
+     *
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     post: operations['createSession'];
     delete?: never;
@@ -406,6 +409,9 @@ export interface paths {
      *     **Note**: This endpoint is designed for historical data migration from
      *     the legacy BATspa application. For normal session creation, use the
      *     POST /events/{eventCode}/sessions endpoint.
+     *
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     post: operations['batchImportSessions'];
     delete?: never;
@@ -444,6 +450,9 @@ export interface paths {
      *
      *     **Acceptance Criteria**: AC10
      *     **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs
+     *
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     delete: operations['deleteSession'];
     options?: never;
@@ -457,6 +466,9 @@ export interface paths {
      *
      *     **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs.
      *     Replaces the removed full-replace `PUT` (ADR-013: PATCH-partial is the single mutation).
+     *
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     patch: operations['patchSession'];
     trace?: never;
@@ -1924,6 +1936,13 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
@@ -2377,6 +2396,13 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       /** @description Event not found */
       404: {
         headers: {
@@ -2440,6 +2466,13 @@ export interface operations {
         };
         content?: never;
       };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
@@ -2472,6 +2505,13 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };

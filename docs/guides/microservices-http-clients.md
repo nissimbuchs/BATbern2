@@ -337,6 +337,14 @@ public class HttpClientConfig {
 
 ## JWT Token Propagation
 
+> **User lookups do not propagate the JWT (2026-10).** The public user directory
+> (`/api/v1/users`, `/users/search`, `/users/{username}`) is ORGANIZER/ADMIN only. Services read
+> users through the VPC-only internal API `GET /internal/users/{username}` and
+> `GET /internal/users?role=&company=`, without an `Authorization` header, so the cached answer
+> never depends on who triggered the call. See `UserApiClientImpl` (EMS) and
+> `UserServiceClientImpl` (PCS). Token propagation below still applies to calls that act on
+> behalf of the user (e.g. provisioning, profile patches).
+
 ### Why Token Propagation?
 
 When Service A calls Service B on behalf of a user:

@@ -1,5 +1,6 @@
 package ch.batbern.gateway.routing;
 
+import ch.batbern.gateway.routing.exception.RouteNotFoundException;
 import ch.batbern.gateway.routing.exception.RoutingException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -128,7 +129,7 @@ public class DomainRouter {
         } else if (cleanPath.startsWith("/api/v1/admin")) { // Admin endpoints (e.g. AdminSettingsController)
             return "event-management-service";
         } else {
-            throw new RoutingException("No route found for path: " + cleanPath);
+            throw new RouteNotFoundException(cleanPath);
         }
     }
 

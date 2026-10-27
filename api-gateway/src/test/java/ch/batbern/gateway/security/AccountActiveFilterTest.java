@@ -21,7 +21,6 @@ import java.util.Collections;
 import java.util.Optional;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -71,7 +70,7 @@ class AccountActiveFilterTest {
     @Test
     void should_passThrough_when_userIsActive() throws Exception {
         authenticateAs("john.doe");
-        when(statusClient.getActiveStatus(anyString(), anyString())).thenReturn(Optional.of(true));
+        when(statusClient.getActiveStatus(anyString())).thenReturn(Optional.of(true));
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/events");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -87,7 +86,7 @@ class AccountActiveFilterTest {
     @Test
     void should_return403AccountDeactivated_when_userInactive() throws Exception {
         authenticateAs("jane.doe");
-        when(statusClient.getActiveStatus(anyString(), anyString())).thenReturn(Optional.of(false));
+        when(statusClient.getActiveStatus(anyString())).thenReturn(Optional.of(false));
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/events");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -110,21 +109,21 @@ class AccountActiveFilterTest {
     @Test
     void should_callCumsOnlyOnce_when_twoRequestsForSameUser() throws Exception {
         authenticateAs("john.doe");
-        when(statusClient.getActiveStatus(anyString(), anyString())).thenReturn(Optional.of(true));
+        when(statusClient.getActiveStatus(anyString())).thenReturn(Optional.of(true));
 
         filter.doFilter(new MockHttpServletRequest("GET", "/api/v1/events"),
                 new MockHttpServletResponse(), new MockFilterChain());
         filter.doFilter(new MockHttpServletRequest("GET", "/api/v1/events"),
                 new MockHttpServletResponse(), new MockFilterChain());
 
-        verify(statusClient, times(1)).getActiveStatus(anyString(), anyString());
+        verify(statusClient, times(1)).getActiveStatus(anyString());
     }
 
     // ---------------------------------------------------------------- AC9 (d) + AC6
     @Test
     void should_failOpenAndCountError_when_cumsThrows() throws Exception {
         authenticateAs("john.doe");
-        when(statusClient.getActiveStatus(anyString(), anyString()))
+        when(statusClient.getActiveStatus(anyString()))
                 .thenThrow(new GatewayUserStatusException("boom", new RuntimeException()));
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/events");
@@ -142,7 +141,7 @@ class AccountActiveFilterTest {
     @Test
     void should_failOpen_when_cumsReturns404Unknown() throws Exception {
         authenticateAs("fresh.federated");
-        when(statusClient.getActiveStatus(anyString(), anyString())).thenReturn(Optional.empty());
+        when(statusClient.getActiveStatus(anyString())).thenReturn(Optional.empty());
 
         MockHttpServletRequest request = new MockHttpServletRequest("GET", "/api/v1/events");
         MockHttpServletResponse response = new MockHttpServletResponse();
@@ -155,7 +154,7 @@ class AccountActiveFilterTest {
         // Unknown must NOT be cached — a second request retries CUMS.
         filter.doFilter(new MockHttpServletRequest("GET", "/api/v1/events"),
                 new MockHttpServletResponse(), new MockFilterChain());
-        verify(statusClient, times(2)).getActiveStatus(anyString(), anyString());
+        verify(statusClient, times(2)).getActiveStatus(anyString());
     }
 
     // ---------------------------------------------------------------- AC9 (f)
@@ -170,7 +169,7 @@ class AccountActiveFilterTest {
 
         assertThat(chain.getRequest()).isNotNull();
         assertThat(response.getStatus()).isEqualTo(200);
-        verify(statusClient, never()).getActiveStatus(anyString(), any());
+        verify(statusClient, never()).getActiveStatus(anyString());
     }
 
     // ---------------------------------------------------------------- AC9 (g) + AC7
@@ -188,6 +187,6 @@ class AccountActiveFilterTest {
 
         assertThat(chain.getRequest()).isNotNull();
         assertThat(response.getStatus()).isEqualTo(200);
-        verify(statusClient, never()).getActiveStatus(anyString(), any());
+        verify(statusClient, never()).getActiveStatus(anyString());
     }
 }

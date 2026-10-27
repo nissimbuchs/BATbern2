@@ -27,7 +27,7 @@ class LogoUrlIntegrationTest extends AbstractIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when fetching from null URL")
     void shouldReturn400_whenFetchingFromNullUrl() throws Exception {
         mockMvc.perform(post("/api/v1/logos/fetch-from-url")
@@ -38,7 +38,7 @@ class LogoUrlIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when fetching from empty URL")
     void shouldReturn400_whenFetchingFromEmptyUrl() throws Exception {
         mockMvc.perform(post("/api/v1/logos/fetch-from-url")
@@ -49,7 +49,7 @@ class LogoUrlIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when uploading from null URL")
     void shouldReturn400_whenUploadingFromNullUrl() throws Exception {
         mockMvc.perform(post("/api/v1/logos/upload-from-url")
@@ -60,7 +60,7 @@ class LogoUrlIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when uploading from empty URL")
     void shouldReturn400_whenUploadingFromEmptyUrl() throws Exception {
         mockMvc.perform(post("/api/v1/logos/upload-from-url")

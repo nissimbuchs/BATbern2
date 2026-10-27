@@ -1,5 +1,6 @@
 package ch.batbern.gateway.exception;
 
+import ch.batbern.gateway.routing.exception.RouteNotFoundException;
 import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ServiceException;
@@ -164,6 +165,32 @@ class GlobalExceptionHandlerTest {
 
         // Then
         assertThat(response.getBody()).isNotNull();
+        assertThat(response.getBody().getStackTrace()).isNull();
+    }
+
+    @Test
+    void should_hideStackTrace_when_stagingProfile() {
+        // The "staging" profile serves production (api.batbern.ch): never send stack traces there.
+        ReflectionTestUtils.setField(exceptionHandler, "activeProfile", "staging");
+
+        ResponseEntity<ErrorResponse> domain =
+                exceptionHandler.handleBATbernException(new ServiceException("Internal error"), request);
+        ResponseEntity<ErrorResponse> generic =
+                exceptionHandler.handleGenericException(new RuntimeException("boom"), request);
+
+        assertThat(domain.getBody().getStackTrace()).isNull();
+        assertThat(generic.getBody().getStackTrace()).isNull();
+    }
+
+    @Test
+    void should_return404_when_noRouteFound() {
+        ReflectionTestUtils.setField(exceptionHandler, "activeProfile", "staging");
+
+        ResponseEntity<ErrorResponse> response = exceptionHandler.handleRouteNotFound(
+                new RouteNotFoundException("/api/v1/doesnotexist"), request);
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.NOT_FOUND);
+        assertThat(response.getBody().getError()).isEqualTo("ERR_NOT_FOUND");
         assertThat(response.getBody().getStackTrace()).isNull();
     }
 

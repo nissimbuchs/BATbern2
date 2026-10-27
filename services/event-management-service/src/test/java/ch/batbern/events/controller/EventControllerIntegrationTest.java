@@ -808,6 +808,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_createEvent_when_validDataProvided")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_createEvent_when_validDataProvided() throws Exception {
         String newEvent = """
                 {
@@ -850,6 +851,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_replaceEvent_when_putRequested")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_replaceEvent_when_putRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
@@ -879,6 +881,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_patchFields_when_patchRequested")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_patchFields_when_patchRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
         String originalTitle = savedEvent.getTitle();
@@ -906,6 +909,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_deleteEvent_when_deleteRequested")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_deleteEvent_when_deleteRequested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
         String eventCode = savedEvent.getEventCode();
@@ -924,6 +928,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     // them behind — every nightly E2E run left thousands of notifications for deleted test events.
     @Test
     @DisplayName("should_deleteEventNotifications_when_eventDeleted")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_deleteEventNotifications_when_eventDeleted() throws Exception {
         Event event = createTestEvent("BATbern Notif-Cleanup", "2027-05-15T09:00:00Z", "CREATED");
         Event other = createTestEvent("BATbern Notif-Keep", "2027-06-15T09:00:00Z", "CREATED");
@@ -956,6 +961,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_return404_when_deletingNonExistentEvent")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_return404_when_deletingNonExistentEvent() throws Exception {
         mockMvc.perform(delete("/api/v1/events/BATbern888")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -964,6 +970,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_allowDelete_when_onlyProgrammaticRegistrations")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_allowDelete_when_onlyProgrammaticRegistrations() throws Exception {
         Event event = createTestEvent("BATbern Prog-Only", "2027-05-15T09:00:00Z", "CREATED");
         // Programmatic enrollment (organizer/partner auto-enrol) — carries the autoRegisteredFrom marker.
@@ -983,6 +990,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_blockDelete_when_realAttendeeRegistered")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_blockDelete_when_realAttendeeRegistered() throws Exception {
         Event event = createTestEvent("BATbern Real-Attendee", "2027-06-15T09:00:00Z", "CREATED");
         // A programmatic enrollment must NOT, on its own, block deletion…
@@ -1044,6 +1052,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_publishEvent_when_validationPasses")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_publishEvent_when_validationPasses() throws Exception {
         // Create an event in SLOT_ASSIGNMENT state (ready to be published)
         // The workflow requires SLOT_ASSIGNMENT → AGENDA_PUBLISHED transition
@@ -1084,6 +1093,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_return422_when_validationFails")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_return422_when_validationFails() throws Exception {
         // Create an event with minimal valid data that passes database constraints
         // but should fail publish validation (e.g., past event date)
@@ -1155,6 +1165,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_createSession_when_validData")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_createSession_when_validData() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
@@ -1196,6 +1207,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_updateSession_when_validData")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_updateSession_when_validData() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
@@ -1237,6 +1249,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_deleteSession_when_requested")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_deleteSession_when_requested() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
 
@@ -1540,6 +1553,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_invalidateCache_when_eventUpdated")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_invalidateCache_when_eventUpdated() throws Exception {
         Event savedEvent = eventRepository.findAll().get(0);
         String originalDescription = savedEvent.getDescription();
@@ -1583,6 +1597,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_respondUnder500ms_when_fullIncludesRequested")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_respondUnder500ms_when_fullIncludesRequested() throws Exception {
         // Feedback #1: future-dated event so the 20 registrations below pass the deadline guard.
         Event savedEvent = createTestEvent("BATbern RegPerf", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
@@ -1675,6 +1690,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_createEvent_when_validRequestProvided")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_createEvent_when_validRequestProvided() throws Exception {
         // Given
         String requestBody = """
@@ -1707,6 +1723,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_updateEvent_when_validPutRequestProvided")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_updateEvent_when_validPutRequestProvided() throws Exception {
         // Given - create event
         Event event = createTestEvent("Original Title", "2025-06-15T09:00:00Z", "CREATED");
@@ -1742,6 +1759,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_patchEvent_when_validPatchRequestProvided")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_patchEvent_when_validPatchRequestProvided() throws Exception {
         // Given - create event
         Event event = createTestEvent("Original Title", "2025-06-15T09:00:00Z", "CREATED");
@@ -1770,6 +1788,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_autoGenerateEventCode_when_eventNumberNotProvided")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_autoGenerateEventCode_when_eventNumberNotProvided() throws Exception {
         // Given
         String requestBody = """
@@ -1801,6 +1820,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_rejectDuplicateEventCode_when_creatingEvent")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_rejectDuplicateEventCode_when_creatingEvent() throws Exception {
         // Given - create an event with eventNumber 3000
         createTestEvent("Existing Event", "2025-06-15T09:00:00Z", "CREATED");
@@ -1982,6 +2002,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_storeThemeImageUploadId_when_uploadIdProvided")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_storeThemeImageUploadId_when_uploadIdProvided() throws Exception {
         // Given - Create event with theme image upload ID
         String uploadId = "test-upload-theme-123";
@@ -2017,6 +2038,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_createEventWithoutThemeImage_when_uploadIdNotProvided")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_createEventWithoutThemeImage_when_uploadIdNotProvided() throws Exception {
         // Given - No theme image upload
         String requestBody = """
@@ -2046,6 +2068,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_updateThemeImageUploadId_when_patchingWithUploadId")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_updateThemeImageUploadId_when_patchingWithUploadId() throws Exception {
         // Given - Create event without theme image
         Event existingEvent = createTestEvent("Event to Update", "2025-08-10T09:00:00Z", "AGENDA_PUBLISHED");
@@ -2071,6 +2094,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("PATCH /api/v1/events/{eventCode} - Should regenerate eventCode when eventNumber changes")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_regenerateEventCode_when_eventNumberChangedViaPatch() throws Exception {
         // Given - Create an event with event number 100
         Event event = createTestEvent("Original Event", "2026-06-15T09:00:00Z", "CREATED");
@@ -2101,6 +2125,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("PUT /api/v1/events/{eventCode} - Should regenerate eventCode when eventNumber changes")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_regenerateEventCode_when_eventNumberChangedViaPut() throws Exception {
         // Given - Create an event with event number 5001
         Event event = createTestEvent("Original Event", "2026-06-15T09:00:00Z", "CREATED");
@@ -2139,6 +2164,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("PATCH /api/v1/events/{eventCode} - Should reject duplicate eventNumber")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_rejectDuplicateEventNumber_when_patchingEvent() throws Exception {
         // Given - Create two events with different event numbers
         Event event1 = createTestEvent("Event 5002", "2026-06-15T09:00:00Z", "CREATED");
@@ -2168,6 +2194,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("PATCH /api/v1/events/{eventCode} - Should reject duplicate eventCode when data inconsistency exists")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_rejectDuplicateEventCode_when_dataInconsistencyExists() throws Exception {
         // Given - Create event with data inconsistency: eventCode "BATbern998" but eventNumber 500
         Event event1 = createTestEvent("Event with inconsistent data", "2026-06-15T09:00:00Z", "CREATED");
@@ -2363,6 +2390,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_patchTopicSelectionNote_when_topicSelectionNoteAndTopicCodeProvided")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_patchTopicSelectionNote_when_topicSelectionNoteAndTopicCodeProvided() throws Exception {
         // Given
         Event event = createTestEvent("Topic Note Test Event", "2026-04-15T09:00:00Z", "CREATED");

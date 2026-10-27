@@ -9,6 +9,7 @@ import ch.batbern.events.registrations.dto.generated.RequestDeregistrationByEmai
 import ch.batbern.events.service.DeregistrationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -83,6 +84,7 @@ public class DeregistrationController implements DeregistrationApi {
      * @return 200 on success, 404 if token not found, 409 if already cancelled
      */
     @Override
+    @PreAuthorize("permitAll()")
     public ResponseEntity<DeregisterByToken200Response> deregisterByToken(
             DeregistrationRequest request) {
         deregistrationService.deregisterByToken(request.getToken());
@@ -100,6 +102,7 @@ public class DeregistrationController implements DeregistrationApi {
      * @return 200 always
      */
     @Override
+    @PreAuthorize("permitAll()")
     public ResponseEntity<RequestDeregistrationByEmail200Response> requestDeregistrationByEmail(
             DeregistrationByEmailRequest request) {
         // Fire and forget — anti-enumeration: never surface whether registration was found

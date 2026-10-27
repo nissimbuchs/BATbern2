@@ -28,6 +28,7 @@ import { CompanyList } from '@/components/shared/Company/CompanyList';
 import CompanyFilters from '@/components/shared/Company/CompanyFilters';
 import { CompanyForm } from '@/components/shared/Company/CompanyForm';
 import { CompanyDetailView } from '@/components/shared/Company/CompanyDetailView';
+import { useAuth } from '@/hooks/useAuth';
 import CompanyPagination from '@/components/shared/Company/CompanyPagination';
 import {
   useCreateCompany,
@@ -49,6 +50,7 @@ const CompanyDetailWrapper: React.FC<{
 }> = ({ onBack, onEdit }) => {
   const { id } = useParams<{ id: string }>();
   const { data: company, isLoading, error, refetch } = useCompany(id || '');
+  const { hasRole } = useAuth();
 
   return (
     <CompanyDetailView
@@ -57,6 +59,7 @@ const CompanyDetailWrapper: React.FC<{
       error={error?.message}
       canEdit={true}
       canDelete={true}
+      showPeople={hasRole('organizer')}
       onEdit={() => company && onEdit(company)}
       onBack={onBack}
       onRetry={refetch}

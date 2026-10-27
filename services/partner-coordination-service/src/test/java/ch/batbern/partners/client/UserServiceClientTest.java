@@ -23,7 +23,6 @@ import java.util.Objects;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withResourceNotFound;
@@ -87,7 +86,7 @@ class UserServiceClientTest {
     void should_callUserServiceAPI_when_enrichingContacts() {
         // Given
         String username = "john.doe@google.com";
-        String expectedUrl = "http://company-user-management:8080/api/v1/users/" + username;
+        String expectedUrl = "http://company-user-management:8080/internal/users/" + username;
 
         mockServer.expect(requestTo(expectedUrl))
                 .andExpect(method(HttpMethod.GET))
@@ -128,7 +127,7 @@ class UserServiceClientTest {
     void should_return404_when_userNotFound() {
         // Given
         String username = "nonexistent@example.com";
-        String expectedUrl = "http://company-user-management:8080/api/v1/users/" + username;
+        String expectedUrl = "http://company-user-management:8080/internal/users/" + username;
 
         mockServer.expect(requestTo(expectedUrl))
                 .andExpect(method(HttpMethod.GET))
@@ -147,7 +146,7 @@ class UserServiceClientTest {
     void should_cacheResponse_when_httpCallSucceeds() {
         // Given
         String username = "jane.smith@microsoft.com";
-        String expectedUrl = "http://company-user-management:8080/api/v1/users/" + username;
+        String expectedUrl = "http://company-user-management:8080/internal/users/" + username;
 
         mockServer.expect(requestTo(expectedUrl))
                 .andExpect(method(HttpMethod.GET))
@@ -183,10 +182,10 @@ class UserServiceClientTest {
     }
 
     @Test
-    void should_propagateJwtToken_when_callingUserService() {
+    void should_notForwardJwt_when_lookingUpUser() {
         // Given
         String username = "test.user@example.com";
-        String expectedUrl = "http://company-user-management:8080/api/v1/users/" + username;
+        String expectedUrl = "http://company-user-management:8080/internal/users/" + username;
         String jwtToken = "test-jwt-token-xyz789";
 
         // Mock JWT in SecurityContext
@@ -200,7 +199,11 @@ class UserServiceClientTest {
 
         mockServer.expect(requestTo(expectedUrl))
                 .andExpect(method(HttpMethod.GET))
-                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer " + jwtToken))
+                // The internal API is VPC-only; the caller's token must not reach CUMS, otherwise the
+                // per-username cache would hold data that depends on who triggered the lookup.
+                .andExpect(request -> assertThat(request.getHeaders().containsHeader(HttpHeaders.AUTHORIZATION))
+                        .as("getUserByUsername must NOT forward a JWT")
+                        .isFalse())
                 .andRespond(withSuccess()
                         .contentType(MediaType.APPLICATION_JSON)
                         .body("""
@@ -218,7 +221,7 @@ class UserServiceClientTest {
 
         // Then
         assertThat(user)
-                .as("Should successfully call API with JWT token")
+                .as("Should successfully call the internal API")
                 .isNotNull();
 
         mockServer.verify();
@@ -227,7 +230,7 @@ class UserServiceClientTest {
     @Test
     void should_callByCompanyEndpoint_withoutAuthHeader_when_getUsersByCompanyAndRole() {
         // Given
-        String expectedUrl = "http://company-user-management:8080/api/v1/users/by-company?company=sbb&role=PARTNER&limit=100";
+        String expectedUrl = "http://company-user-management:8080/internal/users?company=sbb&role=PARTNER&limit=100";
 
         mockServer.expect(requestTo(expectedUrl))
                 .andExpect(method(HttpMethod.GET))
@@ -267,7 +270,7 @@ class UserServiceClientTest {
     @Test
     void should_returnEmptyList_when_byCompanyEndpointReturnsEmptyData() {
         // Given
-        String expectedUrl = "http://company-user-management:8080/api/v1/users/by-company?company=empty-co&role=PARTNER&limit=100";
+        String expectedUrl = "http://company-user-management:8080/internal/users?company=empty-co&role=PARTNER&limit=100";
 
         mockServer.expect(requestTo(expectedUrl))
                 .andExpect(method(HttpMethod.GET))
@@ -289,6 +292,39 @@ class UserServiceClientTest {
 
         // Then
         assertThat(users).isEmpty();
+        mockServer.verify();
+    }
+
+    @Test
+    void should_callInternalApi_withoutAuthHeader_when_getUsersByRole() {
+        Jwt mockJwt = Jwt.withTokenValue("organizer-token")
+                .header("alg", "RS256")
+                .claim("sub", "organizer@batbern.ch")
+                .build();
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(mockJwt);
+
+        mockServer.expect(requestTo("http://company-user-management:8080/internal/users?role=ORGANIZER&limit=100"))
+                .andExpect(method(HttpMethod.GET))
+                .andExpect(request -> assertThat(request.getHeaders().containsHeader(HttpHeaders.AUTHORIZATION))
+                        .as("getUsersByRole must NOT forward a JWT")
+                        .isFalse())
+                .andRespond(withSuccess()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                            {
+                                "data": [ { "id": "anna.organizer", "email": "anna@example.com" } ],
+                                "pagination": {
+                                    "page": 1, "limit": 100,
+                                    "totalItems": 1, "totalPages": 1,
+                                    "hasNext": false, "hasPrev": false
+                                }
+                            }
+                            """));
+
+        var users = userServiceClient.getUsersByRole("ORGANIZER");
+
+        assertThat(users).extracting(UserResponse::getEmail).containsExactly("anna@example.com");
         mockServer.verify();
     }
 }

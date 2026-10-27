@@ -1159,7 +1159,9 @@ paths:
 
         **Security**: Requires authentication
 
-        '
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: listUserRegistrations
       security:
       - BearerAuth: []
@@ -1172,6 +1174,8 @@ paths:
           type: string
           example: a.roethlisberger
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: User registrations retrieved successfully
           content:

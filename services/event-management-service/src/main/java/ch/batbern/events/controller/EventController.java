@@ -975,6 +975,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      * Story 1.16.2: Generates eventCode in format "BATbern{number}"
      */
     @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<ch.batbern.events.core.dto.generated.Event> createEvent(
             ch.batbern.events.core.dto.generated.CreateEventRequest gen) {
         CreateEventRequest request = toHandCreate(gen);
@@ -1087,6 +1088,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true),
         @CacheEvict(value = CacheConfig.ARCHIVE_EVENTS_CACHE, allEntries = true)
     })
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<ch.batbern.events.core.dto.generated.Event> updateEvent(
             String eventCode,
             ch.batbern.events.core.dto.generated.UpdateEventRequest gen) {
@@ -1221,6 +1223,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      */
     @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<ch.batbern.events.core.dto.generated.Event> patchEvent(
             String eventCode,
             ch.batbern.events.core.dto.generated.PatchEventRequest gen) {
@@ -1322,6 +1325,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     @Override
     @Transactional
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Void> deleteEvent(String eventCode) {
         log.debug("DELETE /api/v1/events/{}", eventCode);
 
@@ -1357,6 +1361,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      */
     @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<ch.batbern.events.core.dto.generated.Event> publishEvent(String eventCode) {
         log.debug("POST /api/v1/events/{}/publish", eventCode);
 
@@ -1976,6 +1981,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
                     + "Creates anonymous user profile automatically. "
                     + "Registration starts in PENDING status. User must confirm via email link."
     )
+    @PreAuthorize("permitAll()")
     public ResponseEntity<CreateRegistrationResponse> createRegistration(
             @PathVariable String eventCode,
             @Valid @RequestBody CreateRegistrationRequest request) {
@@ -2165,6 +2171,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
             summary = "List User Registrations",
             description = "Retrieve all registrations for a specific user across all events"
     )
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<List<RegistrationResponse>> listUserRegistrations(
             @RequestHeader("X-Attendee-Username") String attendeeUsername) {
         log.debug("GET /api/v1/events/registrations for user={}", attendeeUsername);
@@ -2308,6 +2315,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
             description = "Confirm a pending registration using the token from the confirmation "
                 + "email. Token is valid for 48 hours and event code must match."
     )
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ConfirmRegistration200Response> confirmRegistration(
             @PathVariable String eventCode,
             @RequestParam("token") String token) {
@@ -2549,6 +2557,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     @Operation(summary = "Select topic for event",
             description = "Assign a topic to an event and transition to TOPIC_SELECTION state")
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<TopicSelectionResponse> selectTopicForEvent(
             @PathVariable String eventCode,
             @RequestBody @Valid SelectTopicForEventRequest request) {

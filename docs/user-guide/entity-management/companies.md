@@ -263,7 +263,9 @@ After deletion:
 
 ### Viewing Employees
 
-Company detail view shows linked employees:
+Company detail view shows linked employees (tabs **Users** and **Speakers**). These tabs are
+shown to **organizers only**: the user directory is organizer-only. Speakers who open their own
+company page see the company details and the **Sessions** tab.
 
 ```
 Employees (45)

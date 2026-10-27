@@ -76,6 +76,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Internal user API for EMS/PCS/gateway (InternalUserController). Not routed by the
+                // API gateway, which also denies /internal/** explicitly: reachable only in the VPC.
+                .requestMatchers("/internal/**").permitAll()
                 // Local-dev email inbox (DevEmailController, @Profile("local") only)
                 .requestMatchers("/dev/emails/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
@@ -125,6 +128,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Internal user API for EMS/PCS/gateway (InternalUserController). Not routed by the
+                // API gateway, which also denies /internal/** explicitly: reachable only in the VPC.
+                .requestMatchers("/internal/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
                 // Story 4.1.5: Public company search for registration autocomplete
@@ -188,6 +194,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Internal user API for EMS/PCS/gateway (InternalUserController). Not routed by the
+                // API gateway, which also denies /internal/** explicitly: reachable only in the VPC.
+                .requestMatchers("/internal/**").permitAll()
                 // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
                 .requestMatchers("/api/v1/users/get-or-create").permitAll()
                 // Story 4.1.5: Public company search for registration autocomplete
