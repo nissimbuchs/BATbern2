@@ -116,6 +116,7 @@ public class SecurityConfig {
 
                 // Story 2.2a: Public anonymous registration endpoints (ADR-005)
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
+                // Single registration by code: the code is the credential. The list is organizer-only.
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/*/registrations/*").permitAll()
                 // Email confirmation endpoint (no auth required, token-protected)
                 .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()

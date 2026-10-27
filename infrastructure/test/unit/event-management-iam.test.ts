@@ -25,9 +25,16 @@ const TEST_ACCOUNT = '123456789012';
 const TEST_REGION = 'eu-central-1';
 const SES_CONFIG_SET = 'batbern-staging-newsletter';
 
+interface ForwardingProps {
+  forwardingQueueUrl: string;
+  forwardingDomain: string;
+  forwardingConfigurationSetName: string;
+}
+
 function buildTemplate(
   sesConfigurationSetName?: string,
-  sesTransactionalConfigurationSetName?: string
+  sesTransactionalConfigurationSetName?: string,
+  forwarding?: ForwardingProps
 ): Template {
   const app = new App();
   const parent = new Stack(app, 'Parent', {
@@ -63,6 +70,7 @@ function buildTemplate(
     userPoolClient,
     sesConfigurationSetName,
     sesTransactionalConfigurationSetName,
+    ...forwarding,
     env: { account: TEST_ACCOUNT, region: TEST_REGION },
   });
 
@@ -187,5 +195,88 @@ describe('EventManagementStack — SES IAM policy', () => {
 
       expect(configSetArns).toHaveLength(0);
     });
+  });
+});
+
+describe('EventManagementStack — alias forwarding (moved from the forwarder Lambda)', () => {
+  beforeAll(() => {
+    process.env.IMAGE_TAG = 'test-image-tag';
+  });
+
+  afterAll(() => {
+    delete process.env.IMAGE_TAG;
+  });
+
+  const forwarding: ForwardingProps = {
+    forwardingQueueUrl:
+      'https://sqs.eu-central-1.amazonaws.com/123456789012/batbern-forwarding-email-staging',
+    forwardingDomain: 'batbern.ch',
+    forwardingConfigurationSetName: 'batbern-staging-forwarder',
+  };
+
+  test('should_enableForwardingListener_when_forwardingQueueProvided', () => {
+    const template = buildTemplate(undefined, undefined, forwarding);
+
+    template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+      ContainerDefinitions: Match.arrayWith([
+        Match.objectLike({
+          Environment: Match.arrayWith([
+            { Name: 'AWS_INBOUND_EMAIL_FORWARDING_ENABLED', Value: 'true' },
+            {
+              Name: 'AWS_INBOUND_EMAIL_FORWARDING_QUEUE_URL',
+              Value: forwarding.forwardingQueueUrl,
+            },
+            { Name: 'AWS_INBOUND_EMAIL_FORWARDING_DOMAIN', Value: 'batbern.ch' },
+            { Name: 'AWS_INBOUND_EMAIL_FORWARDING_SENDER', Value: 'noreply@batbern.ch' },
+            {
+              Name: 'AWS_INBOUND_EMAIL_FORWARDING_CONFIGURATION_SET',
+              Value: 'batbern-staging-forwarder',
+            },
+          ]),
+        }),
+      ]),
+    });
+  });
+
+  test('should_grantForwarderConfigurationSet_when_onlyForwardingSetConfigured', () => {
+    // Same class as the 2026-05-05 outage: a configuration set passed to SendRawEmail without
+    // its ARN in the policy is an AccessDenied on every forwarded mail.
+    const template = buildTemplate(undefined, undefined, forwarding);
+
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: ['ses:SendEmail', 'ses:SendRawEmail'],
+            Resource: Match.arrayWith([
+              `arn:aws:ses:${TEST_REGION}:${TEST_ACCOUNT}:configuration-set/batbern-staging-*`,
+            ]),
+          }),
+        ]),
+      }),
+    });
+  });
+
+  test('should_allowPutMetricDataOnlyInForwarderNamespace_when_forwardingEnabled', () => {
+    const template = buildTemplate(undefined, undefined, forwarding);
+
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: 'cloudwatch:PutMetricData',
+            Condition: { StringEquals: { 'cloudwatch:namespace': 'BATbern/EmailForwarder' } },
+          }),
+        ]),
+      }),
+    });
+  });
+
+  test('should_notEnableForwarding_when_noForwardingQueue', () => {
+    const template = buildTemplate();
+    const taskDefs = template.findResources('AWS::ECS::TaskDefinition');
+    const env = JSON.stringify(taskDefs);
+
+    expect(env).not.toContain('AWS_INBOUND_EMAIL_FORWARDING_ENABLED');
   });
 });

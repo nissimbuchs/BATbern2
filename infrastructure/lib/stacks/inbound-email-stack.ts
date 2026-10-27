@@ -8,7 +8,6 @@ import * as sesActions from 'aws-cdk-lib/aws-ses-actions';
 import * as s3n from 'aws-cdk-lib/aws-s3-notifications';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as lambda from 'aws-cdk-lib/aws-lambda';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as logs from 'aws-cdk-lib/aws-logs';
 import * as cloudwatch from 'aws-cdk-lib/aws-cloudwatch';
 import * as cloudwatchActions from 'aws-cdk-lib/aws-cloudwatch-actions';
@@ -23,16 +22,6 @@ export interface InboundEmailStackProps extends cdk.StackProps {
   emsTaskRole?: iam.IRole;
   /** Route53 hosted zone for the inbound domain (used for SES identity DNS verification). */
   hostedZone?: route53.IHostedZone;
-  /** VPC for Lambda to access services via Service Connect DNS (Story 10.26). */
-  vpc?: ec2.IVpc;
-  /** Security group allowing Lambda to communicate with ECS services (Story 10.26). */
-  lambdaSecurityGroup?: ec2.ISecurityGroup;
-  /**
-   * Public API Gateway base URL (e.g. https://api.batbern.ch).
-   * When provided, the forwarder Lambda uses this instead of the ECS Service Connect DNS,
-   * which is not resolvable from VPC-native Lambda functions.
-   */
-  apiGatewayPublicUrl?: string;
 
   /**
    * SNS topic for alarm + recovery notifications.
@@ -53,10 +42,15 @@ export interface InboundEmailStackProps extends cdk.StackProps {
  *   replies@{inboundDomain} → SES receipt rule → S3 bucket (emails/) → S3 event notification
  *   → SQS queue → @SqsListener in EMS → MIME parse → route (unsubscribe/cancel)
  *
- * Data flow (Story 10.26 — email forwarding):
- *   ok@/info@/events@/partner@/support@/batbern{N}@batbern.ch → SES receipt rule
- *   → S3 bucket (forwarding/) → S3 event notification → Forwarder Lambda
- *   → resolve recipients via API → re-send via SES SendRawEmail
+ * Data flow (Story 10.26 — email forwarding, moved into EMS 2026-10):
+ *   ok@/info@/events@/partner@/support@/batbern{N}[-speaker|-moderator|-participants]@batbern.ch
+ *   → SES receipt rule → S3 bucket (forwarding/) → S3 event notification → SQS forwarding queue
+ *   → @SqsListener in EMS (EmailForwardingListener) → sender check + recipients resolved
+ *   in-process → re-send via SES SendRawEmail
+ *
+ *   This replaced a Lambda that resolved recipients by calling the public API anonymously,
+ *   which required opening those endpoints to the internet. Access is now IAM only: SES writes
+ *   to S3, S3 notifies SQS, the EMS task role consumes. No HTTP endpoint is involved.
  *
  * Deployed to eu-central-1 (same region as all other stacks). SES inbound email receiving
  * expanded to eu-central-1 in September 2023 — no cross-region deployment required.
@@ -70,6 +64,12 @@ export class InboundEmailStack extends cdk.Stack {
   public readonly inboundQueue: sqs.IQueue;
   public readonly inboundBucket: s3.IBucket;
   public readonly replyAddress: string;
+  /** SQS queue EMS consumes for alias forwarding (S3 forwarding/ prefix). */
+  public readonly forwardingQueue: sqs.IQueue;
+  /** Domain whose aliases are forwarded, e.g. batbern.ch. */
+  public readonly forwardingDomain: string;
+  /** SES configuration set EMS attaches to forwarded mail (delivery tracking). */
+  public readonly forwarderConfigurationSetName: string;
 
   constructor(scope: Construct, id: string, props: InboundEmailStackProps) {
     super(scope, id, props);
@@ -86,6 +86,7 @@ export class InboundEmailStack extends cdk.Stack {
 
     // Expose for use in bin file (EMAIL_REPLY_TO env var on EMS)
     this.replyAddress = replyAddress;
+    this.forwardingDomain = forwardingDomain;
 
     // Apply tags
     cdk.Tags.of(this).add('Environment', envName);
@@ -109,6 +110,27 @@ export class InboundEmailStack extends cdk.Stack {
       },
     });
     this.inboundQueue = inboundQueue;
+
+    // Alias forwarding queue (forwarding/ prefix → EMS EmailForwardingListener). Separate from the
+    // replies queue: different consumer, different failure handling, and the reply router must
+    // never see alias mail. EMS rethrows on failures before the first send, so SQS retries three
+    // times and then parks the message here for inspection/replay.
+    const forwardingDlq = new sqs.Queue(this, 'ForwardingEmailDLQ', {
+      queueName: `batbern-forwarding-email-dlq-${envName}`,
+      retentionPeriod: cdk.Duration.days(14),
+    });
+    const forwardingQueue = new sqs.Queue(this, 'ForwardingEmailQueue', {
+      queueName: `batbern-forwarding-email-${envName}`,
+      // A 160-recipient participants@ mail at ~14 sends/s takes ~12 s; 300 s leaves headroom.
+      visibilityTimeout: cdk.Duration.seconds(300),
+      // Messages survive an EMS outage for 4 days (raw mail itself stays in S3 for 7).
+      retentionPeriod: cdk.Duration.days(4),
+      deadLetterQueue: {
+        queue: forwardingDlq,
+        maxReceiveCount: 3,
+      },
+    });
+    this.forwardingQueue = forwardingQueue;
 
     // Grant SES permission to send messages to SQS
     inboundQueue.addToResourcePolicy(
@@ -211,14 +233,13 @@ export class InboundEmailStack extends cdk.Stack {
     forwardingRule.node.addDependency(ruleSet.node.findChild('RouteReplies'));
     catchAllRule.node.addDependency(forwardingRule);
 
-    // ========================
-    // Email Forwarder Lambda (Story 10.26)
-    // ========================
-
-    const forwarderLogGroup = new logs.LogGroup(this, 'ForwarderLogGroup', {
+    // The forwarder Lambda (Story 10.26) was removed when forwarding moved into EMS. Its log
+    // group stays so CloudFormation does not delete the last 30 days of forwarder logs with it;
+    // they expire on their own (retention below). Safe to delete from the stack after 2026-12-01.
+    new logs.LogGroup(this, 'ForwarderLogGroup', {
       logGroupName: `/aws/lambda/batbern-email-forwarder-${envName}`,
       retention: logs.RetentionDays.ONE_MONTH,
-      removalPolicy: cdk.RemovalPolicy.DESTROY,
+      removalPolicy: cdk.RemovalPolicy.RETAIN,
     });
 
     // ========================
@@ -227,9 +248,10 @@ export class InboundEmailStack extends cdk.Stack {
     // A standalone config set (NOT the newsletter one) so forwarded speaker/
     // broadcast mail emits delivery/bounce/complaint/reject events to CloudWatch
     // metrics, isolated from the newsletter bounce-SQS + BounceProcessingService
-    // (a speaker bounce must never auto-suppress a newsletter recipient). The
-    // forwarder Lambda attaches this set via an X-SES-CONFIGURATION-SET header.
+    // (a speaker bounce must never auto-suppress a newsletter recipient). EMS
+    // attaches this set to every forwarded mail (AWS_INBOUND_EMAIL_FORWARDING_CONFIGURATION_SET).
     const forwarderConfigSetName = `batbern-${envName}-forwarder`;
+    this.forwarderConfigurationSetName = forwarderConfigSetName;
     const forwarderConfigSet = new ses.CfnConfigurationSet(this, 'ForwarderConfigSet', {
       name: forwarderConfigSetName,
     });
@@ -297,72 +319,10 @@ export class InboundEmailStack extends cdk.Stack {
 
     forwarderEventsTopic.addSubscription(new snsSubscriptions.LambdaSubscription(sesEventLogger));
 
-    // API Gateway URL for the forwarder to call existing APIs.
-    // ECS Service Connect DNS (api-gateway.batbern-{env}) is only resolvable from within ECS
-    // tasks — VPC-native Lambda functions use the standard VPC DNS which cannot resolve it.
-    // Use the public API domain when available; fall back to Service Connect for local/dev.
-    const apiGatewayUrl = props.apiGatewayPublicUrl
-      ? props.apiGatewayPublicUrl
-      : `http://api-gateway.batbern-${envName}:8080`;
-
-    const forwarderLambda = new NodejsFunction(this, 'EmailForwarder', {
-      functionName: `batbern-email-forwarder-${envName}`,
-      runtime: lambda.Runtime.NODEJS_24_X,
-      entry: path.join(__dirname, '../../lambda/email-forwarder/index.ts'),
-      handler: 'handler',
-      memorySize: 256,
-      timeout: cdk.Duration.seconds(60),
-      logGroup: forwarderLogGroup,
-      // VPC access: Lambda needs to call services via Service Connect DNS
-      ...(props.vpc && props.lambdaSecurityGroup
-        ? {
-            vpc: props.vpc,
-            vpcSubnets: { subnetType: ec2.SubnetType.PRIVATE_WITH_EGRESS },
-            securityGroups: [props.lambdaSecurityGroup],
-          }
-        : {}),
-      environment: {
-        API_GATEWAY_URL: apiGatewayUrl,
-        SES_SENDER_ADDRESS: `noreply@${forwardingDomain}`,
-        FORWARDING_DOMAIN: forwardingDomain,
-        SES_CONFIGURATION_SET: forwarderConfigSetName,
-      },
-      bundling: {
-        externalModules: ['@aws-sdk/*'],
-        minify: true,
-        sourceMap: false,
-        forceDockerBundling: false,
-      },
-    });
-
-    // Grant Lambda S3 read access for fetching raw emails
-    inboundBucket.grantRead(forwarderLambda);
-
-    // Grant Lambda SES send permissions
-    forwarderLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: ['ses:SendEmail', 'ses:SendRawEmail'],
-        resources: ['*'],
-      })
-    );
-
-    // Grant Lambda CloudWatch PutMetricData permission
-    forwarderLambda.addToRolePolicy(
-      new iam.PolicyStatement({
-        effect: iam.Effect.ALLOW,
-        actions: ['cloudwatch:PutMetricData'],
-        resources: ['*'],
-        conditions: {
-          StringEquals: { 'cloudwatch:namespace': 'BATbern/EmailForwarder' },
-        },
-      })
-    );
-
-    // S3 event notification → Lambda for forwarding emails (forwarding/ prefix)
+    // S3 event notification → SQS for alias forwarding (forwarding/ prefix) → EMS
     inboundBucket.addEventNotification(
       s3.EventType.OBJECT_CREATED,
-      new s3n.LambdaDestination(forwarderLambda),
+      new s3n.SqsDestination(forwardingQueue),
       { prefix: 'forwarding/' }
     );
 
@@ -388,10 +348,27 @@ export class InboundEmailStack extends cdk.Stack {
     // #1001: both actions, not just ALARM. Without the OK action the github-issues Lambda can
     // never close the issue it opened (#956), so a single abuse spike would leave an incident
     // issue open forever. Guarded by a test that walks every alarm in this stack.
+    // A message in the forwarding DLQ is a mail that reached nobody after three attempts.
+    const forwardingDlqAlarm = new cloudwatch.Alarm(this, 'ForwardingDlqAlarm', {
+      alarmName: `batbern-${envName}-forwarding-dlq`,
+      alarmDescription:
+        'Email forwarding: a mail to a batbern.ch alias failed three times and sits in the DLQ (replayable from S3 for 7 days)',
+      metric: forwardingDlq.metricApproximateNumberOfMessagesVisible({
+        period: cdk.Duration.minutes(5),
+        statistic: 'Maximum',
+      }),
+      threshold: 0,
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    });
+
     if (props.alarmTopic) {
       const alarmAction = new cloudwatchActions.SnsAction(props.alarmTopic);
-      emailsRejectedAlarm.addAlarmAction(alarmAction);
-      emailsRejectedAlarm.addOkAction(alarmAction);
+      for (const alarm of [emailsRejectedAlarm, forwardingDlqAlarm]) {
+        alarm.addAlarmAction(alarmAction);
+        alarm.addOkAction(alarmAction);
+      }
     }
 
     // SES domain identity for the inbound domain — required for SES to accept inbound mail.
@@ -415,6 +392,7 @@ export class InboundEmailStack extends cdk.Stack {
     // Grant EMS task role permissions to consume messages and read email objects
     if (props.emsTaskRole) {
       inboundQueue.grantConsumeMessages(props.emsTaskRole);
+      forwardingQueue.grantConsumeMessages(props.emsTaskRole);
       inboundBucket.grantRead(props.emsTaskRole);
     }
 
@@ -422,6 +400,10 @@ export class InboundEmailStack extends cdk.Stack {
     new cdk.CfnOutput(this, 'InboundQueueUrl', {
       value: inboundQueue.queueUrl,
       exportName: `${id}-InboundQueueUrl`,
+    });
+    new cdk.CfnOutput(this, 'ForwardingQueueUrl', {
+      value: forwardingQueue.queueUrl,
+      exportName: `${id}-ForwardingQueueUrl`,
     });
     new cdk.CfnOutput(this, 'InboundBucketName', {
       value: inboundBucket.bucketName,

@@ -366,6 +366,13 @@ type(scope): description
 - ❌ Calling `userService.getUser()` via JPQL join → ✅ via `UserApiClient` HTTP call
 
 ### Authentication & Roles
+- **The Spring API gateway IS the public origin (`api.batbern.ch`).** Never add a `permitAll` on the
+  premise that "only in-VPC callers reach it" — that premise exposed registrations, distribution
+  lists, admin settings and the user list anonymously from May to Oct 2026. Machine callers
+  without a user (SES, Lambdas, schedulers) get data via SQS/IAM, not anonymous HTTP. And a
+  personal-data read needs `@PreAuthorize` with a role: dropping the HTTP rule alone leaves it open
+  to every signed-in attendee. The gateway's production chain is tested in
+  `ProductionSecurityFilterChainTest`; the `test`-profile chains permit everything.
 - Roles stored exclusively in PostgreSQL `role_assignments` — **NOT** in Cognito groups.
   Never sync roles to Cognito groups; they are added to JWT at login via PreTokenGeneration Lambda.
 - Role updates take effect on the user's NEXT login (JWT is issued at login time).

@@ -1,6 +1,5 @@
 import { App } from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
-import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import { Stack } from 'aws-cdk-lib';
 import { InboundEmailStack } from '../../lib/stacks/inbound-email-stack';
@@ -118,11 +117,16 @@ describe('InboundEmailStack', () => {
 
   // AC1: S3 event notification routes to SQS (CDK uses custom resource for notifications)
   test('should_createNotificationCustomResource_when_inboundBucketDeployed', () => {
-    // CDK uses BucketNotificationsHandler custom resource for S3 event notifications
-    template.resourceCountIs('AWS::SQS::Queue', 2); // main queue + DLQ
-    // Verify the forwarder Lambda exists by name (count is fragile across CDK versions)
-    template.hasResourceProperties('AWS::Lambda::Function', {
-      FunctionName: 'batbern-email-forwarder-staging',
+    // replies queue + DLQ, forwarding queue + DLQ
+    template.resourceCountIs('AWS::SQS::Queue', 4);
+    template.hasResourceProperties('Custom::S3BucketNotifications', {
+      NotificationConfiguration: Match.objectLike({
+        QueueConfigurations: Match.arrayWith([
+          Match.objectLike({
+            Filter: { Key: { FilterRules: [{ Name: 'prefix', Value: 'emails/' }] } },
+          }),
+        ]),
+      }),
     });
   });
 
@@ -181,36 +185,67 @@ describe('InboundEmailStack', () => {
     template.resourceCountIs('AWS::SES::ReceiptRule', 3);
   });
 
-  // T5.1 — AC2: Forwarder Lambda function exists
-  test('should_createForwarderLambda_when_forwardingConfigured', () => {
-    template.hasResourceProperties('AWS::Lambda::Function', {
-      FunctionName: 'batbern-email-forwarder-staging',
-      Runtime: 'nodejs24.x',
-      MemorySize: 256,
-      Timeout: 60,
+  // Forwarding moved into EMS: no forwarder Lambda, the forwarding/ prefix feeds an SQS queue.
+  test('should_notCreateForwarderLambda_when_forwardingRunsInEms', () => {
+    const functions = template.findResources('AWS::Lambda::Function', {
+      Properties: { FunctionName: 'batbern-email-forwarder-staging' },
+    });
+    expect(Object.keys(functions)).toHaveLength(0);
+  });
+
+  test('should_createForwardingQueueWithDlq_when_stackDeployed', () => {
+    template.hasResourceProperties('AWS::SQS::Queue', {
+      QueueName: 'batbern-forwarding-email-staging',
+      VisibilityTimeout: 300,
+      RedrivePolicy: Match.objectLike({ maxReceiveCount: 3 }),
+    });
+    template.hasResourceProperties('AWS::SQS::Queue', {
+      QueueName: 'batbern-forwarding-email-dlq-staging',
     });
   });
 
-  // T5.1 — AC2: Lambda has SES SendRawEmail permission
-  test('should_grantSesPermissions_when_forwarderLambdaCreated', () => {
-    template.hasResourceProperties('AWS::IAM::Policy', {
-      PolicyDocument: Match.objectLike({
-        Statement: Match.arrayWith([
+  test('should_notifyForwardingQueue_when_objectCreatedUnderForwardingPrefix', () => {
+    template.hasResourceProperties('Custom::S3BucketNotifications', {
+      NotificationConfiguration: Match.objectLike({
+        QueueConfigurations: Match.arrayWith([
           Match.objectLike({
-            Action: Match.arrayWith(['ses:SendRawEmail']),
-            Effect: 'Allow',
+            Events: ['s3:ObjectCreated:*'],
+            Filter: { Key: { FilterRules: [{ Name: 'prefix', Value: 'forwarding/' }] } },
           }),
         ]),
       }),
     });
+    // ...and nothing invokes a Lambda for that prefix any more
+    const notifications = template.findResources('Custom::S3BucketNotifications');
+    for (const resource of Object.values(notifications)) {
+      const config = (
+        resource.Properties as { NotificationConfiguration?: Record<string, unknown> }
+      ).NotificationConfiguration;
+      expect(config?.LambdaFunctionConfigurations).toBeUndefined();
+    }
   });
 
-  // T5.2 — S3 event notification for forwarding/ prefix triggers Lambda
-  test('should_createS3NotificationForForwardingPrefix_when_forwarderLambdaCreated', () => {
-    // The Lambda function count: 1 (BucketNotificationsHandler from existing) + 1 (forwarder) + 1 (S3 notification custom resource for Lambda)
-    // We verify the forwarder Lambda exists with the correct name
-    template.hasResourceProperties('AWS::Lambda::Function', {
-      FunctionName: 'batbern-email-forwarder-staging',
+  test('should_keepForwarderLogGroup_when_lambdaRemoved', () => {
+    // Retained so the removal does not delete the last 30 days of forwarder logs.
+    template.hasResource('AWS::Logs::LogGroup', {
+      Properties: { LogGroupName: '/aws/lambda/batbern-email-forwarder-staging' },
+      DeletionPolicy: 'Retain',
+    });
+  });
+
+  test('should_exposeForwardingWiringForEms_when_stackDeployed', () => {
+    expect(stack.forwardingDomain).toBe('batbern.ch');
+    expect(stack.forwarderConfigurationSetName).toBe('batbern-staging-forwarder');
+    expect(stack.forwardingQueue).toBeDefined();
+  });
+
+  test('should_alarmOnForwardingDlq_when_mailFailedThreeTimes', () => {
+    template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+      AlarmName: 'batbern-staging-forwarding-dlq',
+      MetricName: 'ApproximateNumberOfMessagesVisible',
+      Threshold: 0,
+      ComparisonOperator: 'GreaterThanThreshold',
+      TreatMissingData: 'notBreaching',
     });
   });
 
@@ -242,17 +277,6 @@ describe('InboundEmailStack', () => {
         Enabled: true,
         MatchingEventTypes: Match.arrayWith(['delivery', 'bounce', 'complaint', 'reject']),
         CloudWatchDestination: Match.anyValue(),
-      }),
-    });
-  });
-
-  test('should_passConfigurationSetNameToForwarderLambda_when_created', () => {
-    template.hasResourceProperties('AWS::Lambda::Function', {
-      FunctionName: 'batbern-email-forwarder-staging',
-      Environment: Match.objectLike({
-        Variables: Match.objectLike({
-          SES_CONFIGURATION_SET: 'batbern-staging-forwarder',
-        }),
       }),
     });
   });
@@ -318,34 +342,6 @@ describe('InboundEmailStack', () => {
       ]),
     });
   });
-
-  // T10.1 — Story 10.26: Forwarder Lambda has VPC configuration when VPC props provided
-  test('should_configureForwarderLambdaWithVpc_when_vpcPropsProvided', () => {
-    const vpcApp = new App();
-    // Create a helper stack to host the VPC (VPC must be in a Stack scope)
-    const helperStack = new (require('aws-cdk-lib').Stack)(vpcApp, 'HelperStack', {
-      env: { account: '123456789012', region: 'eu-central-1' },
-    });
-    const testVpc = new ec2.Vpc(helperStack, 'TestVpc');
-    const testSg = new ec2.SecurityGroup(helperStack, 'TestSG', { vpc: testVpc });
-
-    const vpcStack = new InboundEmailStack(vpcApp, 'TestVpcInboundEmailStack', {
-      config: stagingConfig,
-      env: { account: '123456789012', region: 'eu-central-1' },
-      vpc: testVpc,
-      lambdaSecurityGroup: testSg,
-    });
-    const vpcTemplate = Template.fromStack(vpcStack);
-
-    // Lambda should have VpcConfig when VPC props are provided
-    vpcTemplate.hasResourceProperties('AWS::Lambda::Function', {
-      FunctionName: 'batbern-email-forwarder-staging',
-      VpcConfig: Match.objectLike({
-        SecurityGroupIds: Match.anyValue(),
-        SubnetIds: Match.anyValue(),
-      }),
-    });
-  });
 });
 
 describe('Alarm actions (#1001)', () => {
@@ -392,6 +388,6 @@ describe('Alarm actions (#1001)', () => {
   test('should_stillCreateTheAlarm_when_noTopicProvided', () => {
     // The topic is optional so the stack stays usable standalone, but the alarm must still
     // exist — silently dropping it would trade one invisible failure for another.
-    build(false).resourceCountIs('AWS::CloudWatch::Alarm', 1);
+    build(false).resourceCountIs('AWS::CloudWatch::Alarm', 2);
   });
 });

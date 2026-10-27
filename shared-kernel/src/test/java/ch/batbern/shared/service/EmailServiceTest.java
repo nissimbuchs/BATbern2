@@ -781,4 +781,103 @@ class EmailServiceTest {
             verify(sesClient).sendEmail(any(SendEmailRequest.class));
         }
     }
+
+    @Nested
+    @DisplayName("Raw message send (email forwarding)")
+    class RawMessageSend {
+
+        private static final String RAW = "From: \"Anna\" <anna@example.org>\r\n"
+                + "To: info@batbern.ch\r\n"
+                + "Subject: Frage zur Anmeldung\r\n"
+                + "\r\n"
+                + "Hallo zusammen\r\n";
+
+        private SesClient sesClient;
+
+        @BeforeEach
+        void wireMockSes() {
+            sesClient = mock(SesClient.class);
+            when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
+                    .thenReturn(SendRawEmailResponse.builder().messageId("m-1").build());
+            ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
+            ReflectionTestUtils.setField(emailService, "configurationSetName", "batbern-transactional");
+            ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
+            ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
+        }
+
+        @Test
+        @DisplayName("should_sendBytesUnchangedToAllDestinations_when_rawMessageSent")
+        void should_sendBytesUnchangedToAllDestinations_when_rawMessageSent() {
+            emailService.sendRawMessage(RAW.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    List.of("a@batbern.ch", "b@batbern.ch"), "batbern-staging-forwarder");
+
+            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
+            verify(sesClient).sendRawEmail(captor.capture());
+            SendRawEmailRequest request = captor.getValue();
+            assertThat(request.destinations()).containsExactly("a@batbern.ch", "b@batbern.ch");
+            assertThat(request.rawMessage().data().asUtf8String()).isEqualTo(RAW);
+            assertThat(request.configurationSetName()).isEqualTo("batbern-staging-forwarder");
+        }
+
+        @Test
+        @DisplayName("should_useDefaultConfigurationSet_when_noOverrideGiven")
+        void should_useDefaultConfigurationSet_when_noOverrideGiven() {
+            emailService.sendRawMessage(RAW.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    List.of("a@batbern.ch"), null);
+
+            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
+            verify(sesClient).sendRawEmail(captor.capture());
+            assertThat(captor.getValue().configurationSetName()).isEqualTo("batbern-transactional");
+        }
+
+        @Test
+        @DisplayName("should_refuseAndSkipSes_when_destinationIsReservedDomain")
+        void should_refuseAndSkipSes_when_destinationIsReservedDomain() {
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    ReservedEmailRecipientException.class,
+                    () -> emailService.sendRawMessage(RAW.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                            List.of("a@batbern.ch", "someone@example.com"), null));
+            org.mockito.Mockito.verifyNoInteractions(sesClient);
+        }
+
+        @Test
+        @DisplayName("should_throwAndSkipSes_when_rawMessageIsTestMarked")
+        void should_throwAndSkipSes_when_rawMessageIsTestMarked() {
+            String marked = RAW.replace("Frage zur Anmeldung", "BATPW-E2E 1782885868836");
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    TestMarkedEmailException.class,
+                    () -> emailService.sendRawMessage(marked.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                            List.of("a@batbern.ch"), null));
+            org.mockito.Mockito.verifyNoInteractions(sesClient);
+        }
+
+        @Test
+        @DisplayName("should_rejectEmptyDestinations")
+        void should_rejectEmptyDestinations() {
+            org.junit.jupiter.api.Assertions.assertThrows(
+                    IllegalArgumentException.class,
+                    () -> emailService.sendRawMessage(RAW.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                            List.of(), null));
+        }
+
+        @Test
+        @DisplayName("should_captureLocally_when_noSesClient")
+        void should_captureLocally_when_noSesClient() {
+            LocalEmailCapture capture = mock(LocalEmailCapture.class);
+            ReflectionTestUtils.setField(emailService, "sesClient", null);
+            ReflectionTestUtils.setField(emailService, "localEmailCapture", capture);
+
+            emailService.sendRawMessage(RAW.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    List.of("a@batbern.ch", "b@batbern.ch"), null);
+
+            verify(capture).capture(
+                    org.mockito.ArgumentMatchers.eq("a@batbern.ch"),
+                    org.mockito.ArgumentMatchers.eq(List.of("b@batbern.ch")),
+                    org.mockito.ArgumentMatchers.eq("Frage zur Anmeldung"),
+                    org.mockito.ArgumentMatchers.contains("Hallo zusammen"),
+                    org.mockito.ArgumentMatchers.anyString(),
+                    org.mockito.ArgumentMatchers.anyString(),
+                    org.mockito.ArgumentMatchers.eq(List.of()));
+        }
+    }
 }

@@ -68,6 +68,25 @@ This document consolidates security implementation, performance standards, acces
   `cognito-idp:ResendConfirmationCode`, scoped to the user-pool ARN (the SPA client has no secret,
   so no `SecretHash` is needed).
 
+### The Spring gateway is the public origin: no "VPC-only" permitAll
+
+`api.batbern.ch` is served by the Spring Boot API gateway itself, so every `permitAll` in its
+`defaultSecurityFilterChain` is open to the internet. From May to October 2026 four reads were
+opened "for the in-VPC forwarder Lambda" on exactly that wrong premise (the Lambda in fact called
+the public URL, because Service Connect DNS does not resolve from Lambda): the registrations list,
+the per-event distribution lists, admin settings and the user list. Forwarding now runs inside EMS
+off an SQS queue (see `06-backend-architecture.md`, "Email Forwarding"), and the rules are gone.
+
+- A machine caller without a user (SES, a scheduler, a Lambda) gets data through a queue or an
+  IAM-authenticated path, never through an anonymous HTTP endpoint.
+- A `permitAll` in the gateway needs a reason that holds for an anonymous internet caller.
+- Removing an HTTP `permitAll` is not enough if the controller method has no `@PreAuthorize`:
+  the endpoint is then open to every signed-in attendee. Personal-data reads need a role check.
+- `ProductionSecurityFilterChainTest` (gateway) exercises the production chain; every other
+  gateway test runs the permit-all `test` profile chain, which cannot catch this class.
+- Mail-based authorization must not trust the `From` header alone: alias forwarding checks the
+  topmost SES `Authentication-Results` (DMARC pass, or DKIM aligned with the From domain).
+
 ## Monitoring & Alerting
 
 ### Authorization is two layers, and only one of them is testable (#961)
@@ -185,6 +204,7 @@ line 422 for `ApiGatewayServiceStack`).
 | Bounce processing | `bounce-processing-dlq` | `MonitoringStack` |
 | Cognito / user sync | 7 alarms | `UserSyncAlarms`, in `MonitoringStack` |
 | Inbound email abuse | `emails-rejected` | `InboundEmailStack` |
+| Alias forwarding stuck | `forwarding-dlq` | `InboundEmailStack` |
 
 RDS alarms are the exception that stays central: `DatabaseStack` runs *before* `MonitoringStack`, but
 the instance identifier is deterministic (`batbern-{env}-postgres`, set explicitly as

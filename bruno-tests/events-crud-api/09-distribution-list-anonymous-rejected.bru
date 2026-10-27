@@ -1,0 +1,22 @@
+meta {
+  name: Distribution list rejects anonymous callers
+  type: http
+  seq: 9
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern99999/distribution-list/participants
+  body: none
+  auth: none
+}
+
+tests {
+  test("distribution list is not readable without a token", function() {
+    expect([401, 403]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Per-event email lists are organizer-only.
+  Uses a non-existent event code so that a regression returns no data, only a wrong status.
+}

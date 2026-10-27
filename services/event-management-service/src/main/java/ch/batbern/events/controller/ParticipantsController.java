@@ -37,9 +37,9 @@ import java.util.Set;
  * DTO types; the class-level {@code @RequestMapping("/api/v1")} supplies the version prefix.
  *
  * <ul>
- *   <li>{@code GET /events/{eventCode}/distribution-list/{kind}} — internal-facing (anonymous
- *       in-VPC + organizer JWT); no {@code @PreAuthorize} so the anonymous forwarder-Lambda path
- *       is reachable (SecurityConfig path matchers grant access).</li>
+ *   <li>{@code GET /events/{eventCode}/distribution-list/{kind}} — organizer-only (email
+ *       addresses). Alias forwarding resolves the same lists in-process via
+ *       {@code DistributionListService}, not over HTTP.</li>
  *   <li>{@code GET /events/{eventCode}/participants/export.xlsx|.docx} — organizer-only; streams
  *       the name-badge file produced by the export services.</li>
  * </ul>

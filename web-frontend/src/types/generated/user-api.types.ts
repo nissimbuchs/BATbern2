@@ -469,7 +469,7 @@ export interface paths {
      * @description Story 10.32 — register a new additional email on the caller's profile.
      *     Additional emails receive forwarded copies of mail addressed to this user
      *     (ok@/partner@/batbern{N}@ role fan-out, registration confirmations) and are
-     *     accepted as authorised senders by the Story 10.26 SES forwarder Lambda.
+     *     accepted as authorised senders by the Story 10.26 alias forwarding (EMS).
      *
      *     Cap: 5 per user (configurable via `batbern.user.additional-emails.max`).
      *     Uniqueness: global, case-insensitive, across BOTH primary emails on
@@ -1156,7 +1156,7 @@ export interface components {
        * @description Story 10.32: additional email addresses registered on this profile.
        *     Receive forwarded copies of mail addressed to the user (ok@/partner@/batbern{N}@
        *     role fan-out, registration confirmations) and are accepted as authorised
-       *     senders by the Story 10.26 forwarder Lambda. Always present; may be empty.
+       *     senders by the Story 10.26 alias forwarding (EMS). Always present; may be empty.
        */
       additionalEmails?: components['schemas']['AdditionalEmail'][];
     };

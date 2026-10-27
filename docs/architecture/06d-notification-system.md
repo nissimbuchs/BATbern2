@@ -460,7 +460,7 @@ Each EMS service that delivers a user-addressed transactional message resolves t
 **Explicitly excluded** from additional-email fan-out:
 - `NewsletterEmailService` — newsletter is email-keyed (Open Q#4); subscribers register addresses independently of user profiles.
 - `InboundEmailConfirmationEmailService` (unsubscribe + cancel reply paths) — recipients are arbitrary external senders, not registered users.
-- `address-resolver.fetchEventRegistrants` in the email-forwarder Lambda (AC15) — event-registration distribution stays attendee-email-driven, not user-keyed.
+- Alias forwarding of `batbern{N}-participants@` (`ForwardingRecipientResolver` → `DistributionListService.resolveParticipants`, AC15) — registrant distribution stays attendee-email-driven; a user's additional emails are used only when a registration has no captured `attendeeEmail`.
 
 ```java
 @Service

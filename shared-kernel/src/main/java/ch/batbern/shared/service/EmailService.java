@@ -21,9 +21,11 @@ import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
 import software.amazon.awssdk.services.ses.model.SendRawEmailResponse;
 import software.amazon.awssdk.services.ses.model.SesException;
 
+import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -435,6 +437,76 @@ public class EmailService {
             log.error("Failed to send email to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);
             throw new EmailSendException("Failed to send email to: " + to, e);
         }
+    }
+
+    /**
+     * Send an already-built MIME message unchanged (email forwarding). The caller owns every
+     * header, including From; SES only adds its own Return-Path and DKIM signature.
+     *
+     * <p>The same walls as every other send apply: reserved-domain recipients are refused, a
+     * test-marked message never reaches a live SES client, and without SES (local/test) the
+     * message is captured to the dev inbox instead.
+     *
+     * @param mime                     raw RFC 5322 message bytes
+     * @param destinations             envelope recipients (not taken from the headers)
+     * @param configurationSetOverride SES configuration set; null falls back to the default
+     */
+    public void sendRawMessage(byte[] mime, List<String> destinations, String configurationSetOverride) {
+        Objects.requireNonNull(mime, "mime must not be null");
+        if (destinations == null || destinations.isEmpty()) {
+            throw new IllegalArgumentException("destinations must not be empty");
+        }
+        destinations.forEach(EmailService::assertSendable);
+
+        String raw = new String(mime, StandardCharsets.UTF_8);
+        String subject = rawSubject(mime);
+
+        if (sesClient == null) {
+            log.warn("SES client not configured - skipping raw email send (local/test mode)");
+            if (localEmailCapture != null) {
+                localEmailCapture.capture(destinations.get(0),
+                        List.copyOf(destinations.subList(1, destinations.size())),
+                        subject, "<pre>" + escapeHtml(raw) + "</pre>", fromEmail, fromName, List.of());
+            } else {
+                log.info("Would send raw email to {} recipient(s), subject: {}", destinations.size(), subject);
+            }
+            return;
+        }
+
+        assertNotTestMarked(subject, raw);
+
+        String configurationSet = configurationSetOverride != null && !configurationSetOverride.isBlank()
+                ? configurationSetOverride
+                : configurationSetName;
+        SendRawEmailRequest.Builder request = SendRawEmailRequest.builder()
+                .destinations(destinations)
+                .rawMessage(RawMessage.builder().data(SdkBytes.fromByteArray(mime)).build());
+        if (configurationSet != null && !configurationSet.isBlank()) {
+            request.configurationSetName(configurationSet);
+        }
+        try {
+            SendRawEmailResponse response = sesClient.sendRawEmail(request.build());
+            log.info("Raw email sent to {} recipient(s), MessageId: {}", destinations.size(), response.messageId());
+        } catch (SesException e) {
+            log.error("Failed to send raw email to {} recipient(s): {}",
+                    destinations.size(), e.awsErrorDetails().errorMessage(), e);
+            throw new EmailSendException("Failed to send raw email", e);
+        }
+    }
+
+    private static String rawSubject(byte[] mime) {
+        try {
+            MimeMessage message = new MimeMessage(Session.getInstance(new Properties()),
+                    new ByteArrayInputStream(mime));
+            String subject = message.getSubject();
+            return subject != null ? subject : "";
+        } catch (MessagingException e) {
+            return "";
+        }
+    }
+
+    private static String escapeHtml(String text) {
+        return text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;");
     }
 
     /**

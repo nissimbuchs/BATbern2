@@ -209,7 +209,7 @@ jobs:
 
           # Build if infrastructure changed (deploy will deploy all)
           # Note: the `lambda` alternation (no `lib/` prefix) catches
-          # `infrastructure/lambda/email-forwarder/**` and the other
+          # `infrastructure/lambda/**` (e.g. the former email-forwarder) and the other
           # standalone Lambdas that live outside `infrastructure/lib/`.
           # Without it, a pure-Lambda-code change (e.g. the Story 10.32
           # address-resolver fan-out patch) is classified as code-only,
@@ -732,7 +732,7 @@ jobs:
 
           # If infrastructure or shared-kernel changed, analyze everything
           # Note: the `lambda` alternation (no `lib/` prefix) catches
-          # `infrastructure/lambda/email-forwarder/**` and the other
+          # `infrastructure/lambda/**` (e.g. the former email-forwarder) and the other
           # standalone Lambdas that live outside `infrastructure/lib/`.
           if echo "$CHANGED_FILES" | grep -qE "^infrastructure/(lib/stacks|lib/lambda|lib/constructs|bin|lambda)/|^infrastructure/package|^shared-kernel/"; then
             echo "✓ Infrastructure or shared-kernel changes detected - analyzing all modules"

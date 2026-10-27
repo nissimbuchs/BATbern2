@@ -1,0 +1,22 @@
+meta {
+  name: Admin settings reject anonymous callers
+  type: http
+  seq: 10
+}
+
+get {
+  url: {{baseUrl}}/admin/settings/bruno-nonexistent-key
+  body: none
+  auth: none
+}
+
+tests {
+  test("admin settings are not readable without a token", function() {
+    expect([401, 403]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Admin settings are organizer-only (they hold contact addresses).
+  Reads a key that does not exist, so a regression exposes nothing.
+}
