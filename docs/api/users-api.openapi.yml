@@ -326,7 +326,9 @@ paths:
 
         **Acceptance Criteria**: AC3, AC13, AC14
 
-        **Authorization**: ADMIN or ORGANIZER role required
+        **Authorization**: ADMIN or ORGANIZER role required; any other role gets 403. Services
+        read users through the VPC-internal `/internal/users` API, which is not routed by the
+        gateway and not part of this contract.
 
         **Filter Syntax Examples**:
         - Single filter: {"role":"SPEAKER"}
@@ -558,53 +560,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
 
-  /users/by-company:
-    get:
-      tags:
-        - User Management
-      summary: List users by company (service-to-service)
-      description: |
-        Returns a paginated list of users in a company, optionally filtered by role.
-        VPC-internal service-to-service endpoint — authorization is enforced at the filter chain.
-      operationId: listUsersByCompany
-      parameters:
-        - name: company
-          in: query
-          description: Company name (ADR-003 meaningful ID)
-          required: true
-          schema:
-            type: string
-        - name: role
-          in: query
-          description: Optional role filter
-          required: false
-          schema:
-            type: string
-        - name: page
-          in: query
-          description: Page number (1-indexed)
-          required: false
-          schema:
-            type: integer
-            default: 1
-        - name: limit
-          in: query
-          required: false
-          schema:
-            type: integer
-            default: 100
-      responses:
-        '200':
-          description: Paginated users for the company
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PaginatedUserResponse'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
   /users/{username}/profile-picture/upload-from-url:
     post:
       tags:
@@ -719,6 +674,9 @@ paths:
 
         **Performance**: <150ms (P95)
 
+        **Authorization**: ADMIN or ORGANIZER role required; any other role gets 403. A user reads
+        their own record via `GET /users/me`.
+
       operationId: getUserByUsername
       parameters:
         - name: username
@@ -745,6 +703,8 @@ paths:
                 $ref: '#/components/schemas/UserResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -851,6 +811,8 @@ paths:
 
         **Acceptance Criteria**: AC4, AC11
 
+        **Authorization**: ADMIN or ORGANIZER role required; any other role gets 403.
+
         **Matched fields**: `username`, `email`, `firstName`, `lastName`, and the concatenated
         full name (`firstName + ' ' + lastName`), each as a case-insensitive substring. The full
         name is matched so that a stored display name such as `speaker_pool.speaker_name`
@@ -920,6 +882,8 @@ paths:
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -1848,75 +1812,6 @@ paths:
       security:
         - BearerAuth: []
 
-  /users/get-or-create:
-    post:
-      tags:
-        - Domain Integration
-      summary: Get or create user (for domain services, supports anonymous users)
-      description: |
-        Idempotent endpoint for domain services to get existing user or create new user.
-
-        **ADR-005**: Anonymous Event Registration - creates users with cognito_id=NULL
-        **Story 4.1.5a**: Architecture consolidation
-        **Acceptance Criteria**: AC12
-
-        **Use Cases**:
-        - Event Service: Create anonymous user during public event registration (ADR-005)
-        - Speaker Service: Create user account when speaker registers
-        - Partner Service: Create user account for partner contact
-        - Attendee Service: Create user account during event registration
-
-        **Anonymous Users** (ADR-005):
-        - When cognitoSync=false, creates user_profile with cognito_id=NULL
-        - User can later create Cognito account which auto-links on first login
-        - Email serves as unique identifier for anonymous users
-
-        **Idempotency**: Safe to call multiple times with same email
-
-        **Additional emails**: an email that is another user's *verified* additional
-        email resolves to that user (`created: false`). An *unverified* additional
-        email cannot be attributed and cannot become a primary email, so a create
-        request for it returns 409 `EMAIL_LINKED_TO_ACCOUNT`.
-
-        **Cognito Sync**: Optionally creates Cognito user if createIfMissing=true
-
-        **Performance**: <200ms (P95)
-
-      operationId: getOrCreateUser
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/GetOrCreateUserRequest'
-            examples:
-              speakerRegistration:
-                summary: Speaker registration
-                value:
-                  email: jane.smith@example.com
-                  firstName: Jane
-                  lastName: Smith
-                  createIfMissing: true
-                  cognitoSync: true
-      responses:
-        '200':
-          description: User retrieved or created
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/GetOrCreateUserResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '409':
-          $ref: '#/components/responses/Conflict'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
-  # W2.2: Watch Authentication Endpoints (unauthenticated — code/token IS the credential)
   /watch/pair:
     post:
       operationId: pairWatch

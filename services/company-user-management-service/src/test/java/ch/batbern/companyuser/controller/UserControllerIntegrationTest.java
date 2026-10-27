@@ -37,6 +37,7 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.startsWith;
 import static org.hamcrest.Matchers.is;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -407,21 +408,36 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.pagination.limit").value(20));
     }
 
+    // The user directory (list, search, single user) is for organizers. Services read users
+    // through /internal/users (InternalUserControllerIntegrationTest), the caller's own record
+    // comes from /api/v1/users/me.
+
+    @ParameterizedTest
+    @ValueSource(strings = {"ATTENDEE", "SPEAKER", "PARTNER"})
+    @DisplayName("should_return403_when_nonOrganizerRequestsUserDirectory")
+    void should_return403_when_nonOrganizerRequestsUserDirectory(String role) throws Exception {
+        var caller = user("john.doe").roles(role);
+        mockMvc.perform(get("/api/v1/users").with(caller))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/users/search").param("query", "John").with(caller))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/users/{username}", "john.doe").with(caller))
+                .andExpect(status().isForbidden());
+    }
+
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
-    @DisplayName("should_return200_when_nonAdminRequestsUserList")
-    void should_return200_when_nonAdminRequestsUserList() throws Exception {
-        // Story 10.26: GET /api/v1/users is permitAll so Lambda email forwarder can call it
-        // without a JWT (routes via NAT GW). Any authenticated or unauthenticated request succeeds.
-        mockMvc.perform(get("/api/v1/users")
-                        .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+    @WithMockUser(username = "admin", roles = {"ADMIN"})
+    @DisplayName("should_listUsers_when_adminRequests")
+    void should_listUsers_when_adminRoleRequests() throws Exception {
+        mockMvc.perform(get("/api/v1/users"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].email").value("john.doe@example.com"));
     }
 
     // AC5: GET /api/v1/users/{username} returns user by username
 
     @Test
-    @WithMockUser(username = "john.doe")
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_getUserByUsername_when_userExists")
     void should_getUserByUsername_when_userExists() throws Exception {
         mockMvc.perform(get("/api/v1/users/{username}", "john.doe")
@@ -434,7 +450,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "john.doe")
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_expandCompanyAndRoles_when_includeProvided")
     void should_expandCompanyAndRoles_when_includeProvided() throws Exception {
         mockMvc.perform(get("/api/v1/users/{username}", "john.doe")
@@ -450,7 +466,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
 
     @Test
-    @WithMockUser(username = "john.doe")
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_return404_when_userNotFound")
     void should_return404_when_userNotFound() throws Exception {
         mockMvc.perform(get("/api/v1/users/{username}", "nonexistent.user")
@@ -725,7 +741,21 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isForbidden());
     }
 
-    // AC12: POST /api/v1/users/get-or-create (for domain service integration)
+    // AC12: get-or-create for domain service integration. EMS calls it in-VPC on the internal API
+    // (/internal/users/get-or-create, no JWT); it is not part of the public API any more.
+
+    @Test
+    @WithMockUser(username = "attendee", roles = {"ATTENDEE"})
+    @DisplayName("should_notCreateUser_when_getOrCreateCalledOnPublicApi")
+    void should_notCreateUser_when_getOrCreateCalledOnPublicApi() throws Exception {
+        mockMvc.perform(post("/api/v1/users/get-or-create")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"email": "new.person@example.com", "firstName": "New", "lastName": "Person"}
+                                """))
+                .andExpect(status().is4xxClientError());
+        assertThat(userRepository.findByEmailIgnoreCase("new.person@example.com")).isEmpty();
+    }
 
     @Test
     @DisplayName("should_returnExistingUser_when_userExists")
@@ -739,7 +769,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/v1/users/get-or-create")
+        mockMvc.perform(post("/internal/users/get-or-create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(getOrCreateRequest))
                 .andExpect(status().isOk())
@@ -767,7 +797,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 {"email": "%s", "firstName": "%s", "lastName": "%s", "createIfMissing": true}
                 """.formatted(email, firstName, lastName);
 
-        mockMvc.perform(post("/api/v1/users/get-or-create")
+        mockMvc.perform(post("/internal/users/get-or-create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
@@ -788,7 +818,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 {"email": "%s", "firstName": "Valid", "lastName": "Address", "createIfMissing": true}
                 """.formatted(email);
 
-        mockMvc.perform(post("/api/v1/users/get-or-create")
+        mockMvc.perform(post("/internal/users/get-or-create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isOk())
@@ -802,7 +832,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 {"email": "jürg@example.ch", "firstName": "Jürg", "lastName": "Muster", "createIfMissing": true}
                 """;
 
-        mockMvc.perform(post("/api/v1/users/get-or-create")
+        mockMvc.perform(post("/internal/users/get-or-create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(body))
                 .andExpect(status().isBadRequest());
@@ -821,7 +851,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 }
                 """;
 
-        mockMvc.perform(post("/api/v1/users/get-or-create")
+        mockMvc.perform(post("/internal/users/get-or-create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(getOrCreateRequest))
                 .andExpect(status().isOk())
@@ -851,7 +881,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         addAdditionalEmail("john.work@example.com", Instant.now());
         long usersBefore = userRepository.count();
 
-        mockMvc.perform(post("/api/v1/users/get-or-create")
+        mockMvc.perform(post("/internal/users/get-or-create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -875,7 +905,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         addAdditionalEmail("john.pending@example.com", null);
         long usersBefore = userRepository.count();
 
-        mockMvc.perform(post("/api/v1/users/get-or-create")
+        mockMvc.perform(post("/internal/users/get-or-create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -899,7 +929,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     void should_returnExistingUser_when_emailDiffersOnlyInCase() throws Exception {
         long usersBefore = userRepository.count();
 
-        mockMvc.perform(post("/api/v1/users/get-or-create")
+        mockMvc.perform(post("/internal/users/get-or-create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -919,7 +949,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_storeLowerCasedEmail_when_creatingUserViaGetOrCreate")
     void should_storeLowerCasedEmail_when_creatingUserViaGetOrCreate() throws Exception {
-        mockMvc.perform(post("/api/v1/users/get-or-create")
+        mockMvc.perform(post("/internal/users/get-or-create")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("""
                                 {
@@ -973,7 +1003,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     // AC4: GET /api/v1/users/search (autocomplete with caching)
 
     @Test
-    @WithMockUser(username = "john.doe")
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_searchUsers_when_queryProvided")
     void should_searchUsers_when_queryProvided() throws Exception {
         // Create additional users for search
@@ -1336,42 +1366,17 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.message").value(containsString("nonexistent.user")));
     }
 
-    // ---- /api/v1/users/by-company (service-to-service endpoint) ----
+    // ---- /api/v1/users/by-company: removed, services use GET /internal/users?company=… ----
 
     @Test
     @WithMockUser(username = "service", roles = {"PARTNER"})
-    @DisplayName("should_returnUsersFilteredByCompanyAndRole_when_callingByCompanyEndpoint")
-    void should_returnUsersFilteredByCompanyAndRole_when_callingByCompanyEndpoint() throws Exception {
-        // Given - partner user in SBB
-        User partnerUser = User.builder()
-                .username("partner.sbb")
-                .email("partner@sbb.ch")
-                .firstName("Partner")
-                .lastName("Sbb")
-                .cognitoUserId("partner-sbb-cognito")
-                .companyId("sbb")
-                .roles(new HashSet<>(Set.of(Role.PARTNER)))
-                .build();
-        userRepository.save(partnerUser);
-
-        // When / Then - any authenticated call succeeds (VPC-internal in production, mock user in tests)
+    @DisplayName("should_notListUsers_when_partnerCallsFormerByCompanyPath")
+    void should_notListUsers_when_partnerCallsFormerByCompanyPath() throws Exception {
         mockMvc.perform(get("/api/v1/users/by-company")
-                        .param("company", "sbb")
-                        .param("role", "PARTNER"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(1)))
-                .andExpect(jsonPath("$.data[0].email", is("partner@sbb.ch")));
-    }
-
-    @Test
-    @WithMockUser(username = "service", roles = {"PARTNER"})
-    @DisplayName("should_returnEmptyList_when_noUsersMatchCompanyAndRole")
-    void should_returnEmptyList_when_noUsersMatchCompanyAndRole() throws Exception {
-        mockMvc.perform(get("/api/v1/users/by-company")
-                        .param("company", "nonexistent-company")
-                        .param("role", "PARTNER"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.data", hasSize(0)));
+                        .param("company", "GoogleZH")
+                        .param("role", "ATTENDEE"))
+                .andExpect(status().is4xxClientError())
+                .andExpect(jsonPath("$.data").doesNotExist());
     }
 
     @Test

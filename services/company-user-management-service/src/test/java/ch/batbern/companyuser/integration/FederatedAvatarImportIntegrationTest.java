@@ -103,7 +103,7 @@ class FederatedAvatarImportIntegrationTest extends AbstractIntegrationTest {
 
     private void performAuthenticatedRequest(String sub, String email, String pictureClaim)
             throws Exception {
-        mockMvc.perform(get("/api/v1/users")
+        mockMvc.perform(get("/api/v1/users/me")
                         .with(jwt()
                                 .jwt(j -> {
                                     j.subject(sub).claim("email", email);
@@ -158,7 +158,7 @@ class FederatedAvatarImportIntegrationTest extends AbstractIntegrationTest {
     void should_importPicture_when_freshFederatedIdentityFirstRequest() throws Exception {
         stubFetchSuccess(new byte[] {(byte) 0x89, 0x50, 0x4E, 0x47}, "image/png");
 
-        mockMvc.perform(get("/api/v1/users")
+        mockMvc.perform(get("/api/v1/users/me")
                         .with(jwt()
                                 .jwt(j -> j.subject("avatar-fresh-sub")
                                         .claim("email", "fresh.google@example.ch")

@@ -12,7 +12,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
-import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -22,7 +21,6 @@ import java.util.Set;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -128,18 +126,5 @@ class InternalUserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.pagination.page").value(2))
                 .andExpect(jsonPath("$.pagination.limit").value(3))
                 .andExpect(jsonPath("$.pagination.totalItems").value(4));
-    }
-
-    @Test
-    @DisplayName("should_returnExistingUser_when_serviceGetsOrCreatesKnownEmail")
-    void should_returnExistingUser_when_serviceGetsOrCreatesKnownEmail() throws Exception {
-        mockMvc.perform(post("/internal/users/get-or-create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                                {"email": "paul@example.com", "firstName": "Paul", "lastName": "Partner"}
-                                """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.username").value("paul.partner"))
-                .andExpect(jsonPath("$.created").value(false));
     }
 }

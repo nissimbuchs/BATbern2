@@ -77,12 +77,13 @@ class JITAdditionalEmailGuardIntegrationTest extends AbstractIntegrationTest {
         // A federated identity that was NOT linked at PreSignUp time: unknown sub, JWT email
         // is the owner's verified additional email.
         String unlinkedSub = "unlinked-federated-sub-222";
-        mockMvc.perform(get("/api/v1/users")
+        mockMvc.perform(get("/api/v1/users/me")
                         .with(jwt()
                                 .jwt(j -> j.subject(unlinkedSub)
                                         .claim("email", additionalEmail))
                                 .authorities(Collections.emptyList())))
-                .andExpect(status().isOk());
+                // The guard provisions nothing for this sub, so /me has no record to return.
+                .andExpect(status().isNotFound());
 
         // No new row created.
         assertThat(userRepository.count()).isEqualTo(usersBefore);
@@ -123,7 +124,7 @@ class JITAdditionalEmailGuardIntegrationTest extends AbstractIntegrationTest {
 
         String freshSub = "fresh-federated-sub-444";
         String freshEmail = "carla.fresh@example.ch";
-        mockMvc.perform(get("/api/v1/users")
+        mockMvc.perform(get("/api/v1/users/me")
                         .with(jwt()
                                 .jwt(j -> j.subject(freshSub)
                                         .claim("email", freshEmail)
