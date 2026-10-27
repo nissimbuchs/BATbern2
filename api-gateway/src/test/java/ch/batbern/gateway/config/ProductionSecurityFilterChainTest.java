@@ -121,6 +121,17 @@ class ProductionSecurityFilterChainTest {
         return jwt.serialize();
     }
 
+    @ParameterizedTest
+    @ValueSource(strings = {"/internal/users/john.doe", "/internal/users", "/internal/partner-meetings/rsvps"})
+    @DisplayName("should_denyInternalPath_when_requestedThroughGateway")
+    void should_denyInternalPath_when_requestedThroughGateway(String path) throws Exception {
+        // /internal/** is the VPC-only service API; even a valid token must not reach it here.
+        mockMvc.perform(get(path).header("Authorization", "Bearer " + watchToken()))
+                .andExpect(status().isForbidden());
+        mockMvc.perform(get(path))
+                .andExpect(status().isUnauthorized());
+    }
+
     @Test
     @DisplayName("should_reachService_when_anonymousRequestsPublicEvent")
     void should_reachService_when_anonymousRequestsPublicEvent() throws Exception {

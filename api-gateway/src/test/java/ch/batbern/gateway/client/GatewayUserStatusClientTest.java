@@ -52,7 +52,7 @@ class GatewayUserStatusClientTest {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(UserStatusResponse.class)))
                 .thenReturn(okWithActive(true));
 
-        assertThat(client.getActiveStatus("john.doe", "tok")).contains(true);
+        assertThat(client.getActiveStatus("john.doe")).contains(true);
     }
 
     @Test
@@ -60,20 +60,24 @@ class GatewayUserStatusClientTest {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(UserStatusResponse.class)))
                 .thenReturn(okWithActive(false));
 
-        assertThat(client.getActiveStatus("jane.doe", "tok")).contains(false);
+        assertThat(client.getActiveStatus("jane.doe")).contains(false);
     }
 
     @Test
-    void should_propagateBearerToken_when_lookingUpStatus() {
+    void should_callInternalApiWithoutBearer_when_lookingUpStatus() {
+        // The public /api/v1/users/{username} is organizer-only; the gate reads the CUMS internal
+        // API, which is VPC-only and needs no token.
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(UserStatusResponse.class)))
                 .thenReturn(okWithActive(true));
 
-        client.getActiveStatus("john.doe", "my-jwt");
+        client.getActiveStatus("john.doe");
 
+        ArgumentCaptor<String> url = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<HttpEntity<Void>> captor = ArgumentCaptor.forClass(HttpEntity.class);
         org.mockito.Mockito.verify(restTemplate)
-                .exchange(anyString(), eq(HttpMethod.GET), captor.capture(), eq(UserStatusResponse.class));
-        assertThat(captor.getValue().getHeaders().getFirst(HttpHeaders.AUTHORIZATION)).isEqualTo("Bearer my-jwt");
+                .exchange(url.capture(), eq(HttpMethod.GET), captor.capture(), eq(UserStatusResponse.class));
+        assertThat(url.getValue()).isEqualTo("http://cums:8085/internal/users/john.doe");
+        assertThat(captor.getValue().getHeaders().containsHeader(HttpHeaders.AUTHORIZATION)).isFalse();
     }
 
     @Test
@@ -81,7 +85,7 @@ class GatewayUserStatusClientTest {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(UserStatusResponse.class)))
                 .thenReturn(okWithActive(null));
 
-        assertThat(client.getActiveStatus("john.doe", "tok")).isEmpty();
+        assertThat(client.getActiveStatus("john.doe")).isEmpty();
     }
 
     @Test
@@ -90,7 +94,7 @@ class GatewayUserStatusClientTest {
                 .thenThrow(HttpClientErrorException.create(
                         HttpStatus.NOT_FOUND, "Not Found", HttpHeaders.EMPTY, new byte[0], null));
 
-        assertThat(client.getActiveStatus("ghost", "tok")).isEmpty();
+        assertThat(client.getActiveStatus("ghost")).isEmpty();
     }
 
     @Test
@@ -99,7 +103,7 @@ class GatewayUserStatusClientTest {
                 .thenThrow(HttpServerErrorException.create(
                         HttpStatus.INTERNAL_SERVER_ERROR, "Boom", HttpHeaders.EMPTY, new byte[0], null));
 
-        assertThatThrownBy(() -> client.getActiveStatus("john.doe", "tok"))
+        assertThatThrownBy(() -> client.getActiveStatus("john.doe"))
                 .isInstanceOf(GatewayUserStatusException.class);
     }
 
@@ -108,7 +112,7 @@ class GatewayUserStatusClientTest {
         when(restTemplate.exchange(anyString(), eq(HttpMethod.GET), any(HttpEntity.class), eq(UserStatusResponse.class)))
                 .thenThrow(new ResourceAccessException("connection refused"));
 
-        assertThatThrownBy(() -> client.getActiveStatus("john.doe", "tok"))
+        assertThatThrownBy(() -> client.getActiveStatus("john.doe"))
                 .isInstanceOf(GatewayUserStatusException.class);
     }
 }

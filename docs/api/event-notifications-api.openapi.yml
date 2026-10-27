@@ -29,6 +29,8 @@ tags:
 paths:
   /notifications:
     get:
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
       tags:
       - Notifications
       operationId: listNotifications
@@ -58,6 +60,8 @@ paths:
           type: integer
         description: Page size (default per PaginationUtils)
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Paginated notifications
           content:
@@ -66,6 +70,8 @@ paths:
                 $ref: '#/components/schemas/NotificationsResponse'
   /notifications/count:
     get:
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
       tags:
       - Notifications
       operationId: getUnreadCount
@@ -83,6 +89,8 @@ paths:
           type: string
           default: UNREAD
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Notification count
           content:
@@ -91,6 +99,8 @@ paths:
                 $ref: '#/components/schemas/NotificationCountResponse'
   /notifications/{id}/read:
     put:
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
       tags:
       - Notifications
       operationId: markAsRead
@@ -103,6 +113,8 @@ paths:
           type: string
           format: uuid
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Notification marked as read
           content:
@@ -113,6 +125,8 @@ paths:
           description: Notification not found
   /notifications/batch-read:
     put:
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
       tags:
       - Notifications
       operationId: batchMarkAsRead
@@ -124,6 +138,8 @@ paths:
             schema:
               $ref: '#/components/schemas/BatchOperationRequest'
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Notifications marked as read
           content:
@@ -132,6 +148,8 @@ paths:
                 $ref: '#/components/schemas/MarkAsReadResponse'
   /notifications/history:
     get:
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
       tags:
       - Notifications
       operationId: getDeliveryHistory
@@ -149,6 +167,8 @@ paths:
           type: string
         description: Delivery channel (e.g. EMAIL, IN_APP). Case-insensitive.
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Notification delivery history (newest first)
           content:
@@ -159,6 +179,8 @@ paths:
                   $ref: '#/components/schemas/NotificationResponse'
   /notifications/{id}:
     delete:
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
       tags:
       - Notifications
       operationId: deleteNotification
@@ -171,6 +193,8 @@ paths:
           type: string
           format: uuid
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Notification deleted
           content:
@@ -181,6 +205,8 @@ paths:
           description: Notification not found
   /notifications/batch-delete:
     delete:
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
       tags:
       - Notifications
       operationId: batchDelete
@@ -192,6 +218,8 @@ paths:
             schema:
               $ref: '#/components/schemas/BatchOperationRequest'
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Notifications deleted
           content:

@@ -64,6 +64,7 @@ public class NewsletterController implements NewsletterApi {
 
     /** AC2: Subscribe to the newsletter (no auth). 200 on success, 409 if already subscribed. */
     @Override
+    @PreAuthorize("permitAll()")
     public ResponseEntity<Void> subscribeNewsletter(NewsletterSubscribeRequest request) {
         log.info("Newsletter subscribe request for email: {}", request.getEmail());
         subscriberService.subscribe(
@@ -87,6 +88,7 @@ public class NewsletterController implements NewsletterApi {
 
     /** AC3: Unsubscribe via token (no auth). 200 on success, 404 if token not found. */
     @Override
+    @PreAuthorize("permitAll()")
     public ResponseEntity<Void> unsubscribeNewsletter(NewsletterUnsubscribeRequest request) {
         log.info("Newsletter unsubscribe via token");
         try {

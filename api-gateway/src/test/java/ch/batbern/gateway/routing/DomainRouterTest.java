@@ -298,8 +298,16 @@ class DomainRouterTest {
 
         // When / Then
         assertThatThrownBy(() -> domainRouter.determineTargetService(unknownPath))
-            .isInstanceOf(RoutingException.class)
+            .isInstanceOf(ch.batbern.gateway.routing.exception.RouteNotFoundException.class)
             .hasMessageContaining("No route found for path");
+    }
+
+    @Test
+    @DisplayName("should_notRoute_when_internalPathRequested")
+    void should_notRoute_when_internalPathRequested() {
+        // /internal/** is the VPC-only service API (CUMS users, PCS RSVPs): never proxied.
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/internal/users/john.doe"))
+            .isInstanceOf(ch.batbern.gateway.routing.exception.RouteNotFoundException.class);
     }
 
     @Test

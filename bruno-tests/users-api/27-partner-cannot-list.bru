@@ -1,0 +1,40 @@
+meta {
+  name: Partner cannot use the user directory — GET /users (user directory) (403)
+  type: http
+  seq: 27
+}
+
+get {
+  url: {{baseUrl}}/users
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+tests {
+  test("non-organizer gets no user data — 403", function() {
+    // 401 is tolerated when no partner token is loaded in the env (CI fallback).
+    // Never 200, and never 404: the role check runs before any lookup.
+    expect([401, 403]).to.include(res.getStatus());
+  });
+
+  test("response carries no user records", function() {
+    const body = JSON.stringify(res.getBody() || {});
+    expect(body).to.not.include("@");
+  });
+}
+
+docs {
+  The user directory (list, search, single user) is ORGANIZER/ADMIN only
+  (@PreAuthorize in CUMS UserController). Services read users through the VPC-only
+  /internal/users API, which the gateway does not route. A user reads their own record
+  via /users/me.
+}

@@ -45,6 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - PostgreSQL via Testcontainers (not H2)
  */
 @Transactional
+@WithMockUser(username = "test.organizer", roles = "ORGANIZER")
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 public class NotificationControllerIntegrationTest extends AbstractIntegrationTest {
 
@@ -113,7 +114,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC1: List Notifications - should return filtered notifications when username provided
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_returnFilteredNotifications_when_usernameProvided() throws Exception {
         mockMvc.perform(get("/api/v1/notifications")
                         .param("username", testUsername)
@@ -129,7 +130,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC1: List Notifications - should return unread only when status=unread
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_returnUnreadOnly_when_statusUnread() throws Exception {
         mockMvc.perform(get("/api/v1/notifications")
                         .param("username", testUsername)
@@ -145,7 +146,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC1: List Notifications - should paginate results when page param provided
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_paginateResults_when_pageParamProvided() throws Exception {
         mockMvc.perform(get("/api/v1/notifications")
                         .param("username", testUsername)
@@ -160,7 +161,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC2: Mark as Read - should mark as read when single notification ID provided
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_markAsRead_when_singleNotificationId() throws Exception {
         mockMvc.perform(put("/api/v1/notifications/{id}/read", testNotificationId1))
                 .andExpect(status().isOk())
@@ -173,7 +174,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC2: Mark as Read - should mark multiple as read when bulk update
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_markMultipleAsRead_when_bulkUpdate() throws Exception {
         List<UUID> notificationIds = List.of(
                 testNotificationId1,
@@ -197,7 +198,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC2: Mark as Read - should return 200 when valid read request
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_return200_when_validReadRequest() throws Exception {
         mockMvc.perform(put("/api/v1/notifications/{id}/read", testNotificationId2))
                 .andExpect(status().isOk())
@@ -208,7 +209,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC4: Delivery History - should return email history when channel=email
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_returnEmailHistory_when_channelEmail() throws Exception {
         mockMvc.perform(get("/api/v1/notifications/history")
                         .param("username", testUsername)
@@ -222,7 +223,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC4: Delivery History - should filter by timeframe when username and channel provided
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_filterByTimeframe_when_usernameAndChannelProvided() throws Exception {
         mockMvc.perform(get("/api/v1/notifications/history")
                         .param("username", testUsername)
@@ -235,7 +236,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC5: Delete - should delete notification when valid ID
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_deleteNotification_when_validId() throws Exception {
         mockMvc.perform(delete("/api/v1/notifications/{id}", testNotificationId1))
                 .andExpect(status().isOk())
@@ -246,7 +247,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC5: Delete - should batch delete when multiple IDs provided
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_batchDelete_when_multipleIdsProvided() throws Exception {
         List<UUID> notificationIds = List.of(
                 testNotificationId2,
@@ -267,7 +268,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC5: Delete - should return 404 when notification not found
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_return404_when_notificationNotFound() throws Exception {
         UUID nonExistentId = UUID.randomUUID();
 
@@ -279,7 +280,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC6: Count - should return unread count when status=unread
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_returnUnreadCount_when_statusUnread() throws Exception {
         mockMvc.perform(get("/api/v1/notifications/count")
                         .param("username", testUsername)
@@ -292,7 +293,7 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
      * AC6: Count - should return total count when no status provided
      */
     @Test
-    @WithMockUser(username = "john.doe", roles = {"ATTENDEE"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_returnTotalCount_when_noStatusProvided() throws Exception {
         mockMvc.perform(get("/api/v1/notifications/count")
                         .param("username", testUsername))

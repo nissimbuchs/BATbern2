@@ -406,7 +406,9 @@ paths:
 
         **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
 
-        '
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: createSession
       parameters:
       - name: eventCode
@@ -424,6 +426,8 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateSessionRequest'
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '201':
           description: Session created successfully
           content:
@@ -952,7 +956,9 @@ paths:
 
         POST /events/{eventCode}/sessions endpoint.
 
-        '
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: batchImportSessions
       parameters:
       - name: eventCode
@@ -983,6 +989,8 @@ paths:
                 portrait: thomas.goetz.jpg
                 speakerId: thomas.goetz
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Import completed (may include skipped/failed sessions)
           content:
@@ -1095,7 +1103,9 @@ paths:
 
         Replaces the removed full-replace `PUT` (ADR-013: PATCH-partial is the single mutation).
 
-        '
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: patchSession
       parameters:
       - name: eventCode
@@ -1121,6 +1131,8 @@ paths:
             schema:
               $ref: '#/components/schemas/PatchSessionRequest'
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '200':
           description: Session updated successfully
           content:
@@ -1144,7 +1156,9 @@ paths:
 
         **Story**: 1.16.2 - Uses eventCode and sessionSlug (meaningful IDs) instead of UUIDs
 
-        '
+
+
+        **Security**: ORGANIZER role required; any other role gets 403.'
       operationId: deleteSession
       parameters:
       - name: eventCode
@@ -1164,6 +1178,8 @@ paths:
           pattern: ^[a-z0-9]+(-[a-z0-9]+)*$
           example: keynote-opening-session
       responses:
+        '403':
+          description: Forbidden (ORGANIZER role required)
         '204':
           description: Session deleted successfully
         '404':

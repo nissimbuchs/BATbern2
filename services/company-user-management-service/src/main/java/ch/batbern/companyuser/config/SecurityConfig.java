@@ -76,10 +76,11 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
+                // Internal user API for EMS/PCS/gateway (InternalUserController). Not routed by the
+                // API gateway, which also denies /internal/** explicitly: reachable only in the VPC.
+                .requestMatchers("/internal/**").permitAll()
                 // Local-dev email inbox (DevEmailController, @Profile("local") only)
                 .requestMatchers("/dev/emails/**").permitAll()
-                // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
-                .requestMatchers("/api/v1/users/get-or-create").permitAll()
                 // Story 4.1.5: Public company search for registration autocomplete
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/search").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)
@@ -125,8 +126,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
-                .requestMatchers("/api/v1/users/get-or-create").permitAll()
+                // Internal user API for EMS/PCS/gateway (InternalUserController). Not routed by the
+                // API gateway, which also denies /internal/** explicitly: reachable only in the VPC.
+                .requestMatchers("/internal/**").permitAll()
                 // Story 4.1.5: Public company search for registration autocomplete
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/search").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)
@@ -146,15 +148,11 @@ public class SecurityConfig {
                 .requestMatchers(HttpMethod.POST, "/api/v1/users/additional-emails/verify").permitAll()
                 // Current user endpoint always requires authentication (even from VPC)
                 .requestMatchers("/api/v1/users/me").authenticated()
-                // Service-to-service: Allow user profile lookups from VPC internal network
-                // OR authenticated external requests (via API Gateway with JWT)
+                // In-VPC calls without JWT or authenticated requests via the gateway. The role check
+                // is per method (@PreAuthorize); services read users via /internal/users.
                 .requestMatchers("/api/v1/users/*")
                     .access(new VpcInternalAuthorizationManager(vpcCidr))
-                // User list: same rule as /api/v1/users/* above. In-VPC callers (EMS role lookups for
-                // notifications, partner enrolment and alias forwarding) need no JWT; everyone else
-                // needs one, and the gateway already requires it. This was permitAll for the forwarder
-                // Lambda, which reached CUMS through the public gateway; forwarding now runs inside
-                // EMS, so nothing outside the VPC needs anonymous access any more.
+                // User list: same rule as /api/v1/users/* above; ORGANIZER/ADMIN via @PreAuthorize.
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/users")
                     .access(new VpcInternalAuthorizationManager(vpcCidr))
                 // W2.2: Watch pairing endpoints — unauthenticated (code/token IS the credential)
@@ -188,8 +186,9 @@ public class SecurityConfig {
             .authorizeHttpRequests(authz -> authz
                 .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                // Story 4.1.5: Anonymous registration - allow get-or-create user endpoint
-                .requestMatchers("/api/v1/users/get-or-create").permitAll()
+                // Internal user API for EMS/PCS/gateway (InternalUserController). Not routed by the
+                // API gateway, which also denies /internal/** explicitly: reachable only in the VPC.
+                .requestMatchers("/internal/**").permitAll()
                 // Story 4.1.5: Public company search for registration autocomplete
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/search").permitAll()
                 // Public company endpoint (GET only for partner showcase enrichment)

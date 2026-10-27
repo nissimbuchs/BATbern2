@@ -198,6 +198,7 @@ public class SessionController implements SessionsApi {
      */
     @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<SessionResponse> createSession(
             String eventCode,
             CreateSessionRequest createSessionRequest) {
@@ -244,6 +245,7 @@ public class SessionController implements SessionsApi {
      */
     @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<SessionResponse> patchSession(
             String eventCode,
             String sessionSlug,
@@ -308,6 +310,7 @@ public class SessionController implements SessionsApi {
     @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
     @org.springframework.transaction.annotation.Transactional
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Void> deleteSession(
             String eventCode,
             String sessionSlug) {
@@ -341,6 +344,7 @@ public class SessionController implements SessionsApi {
      */
     @Override
     @CacheEvict(value = CacheConfig.EVENT_WITH_INCLUDES_CACHE, allEntries = true)
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<BatchImportSessionResult> batchImportSessions(
             String eventCode,
             List<BatchImportSessionRequest> batchImportSessionRequest) {

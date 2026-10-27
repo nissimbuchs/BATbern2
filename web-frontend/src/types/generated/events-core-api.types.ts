@@ -49,6 +49,9 @@ export interface paths {
      *     **Acceptance Criteria**: AC3
      *
      *     **Performance**: <200ms (P95)
+     *
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     post: operations['createEvent'];
     delete?: never;
@@ -203,6 +206,9 @@ export interface paths {
      *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
      *
      *     **Cache Invalidation**: All event caches cleared on update
+     *
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     put: operations['updateEvent'];
     post?: never;
@@ -215,6 +221,9 @@ export interface paths {
      *
      *     **Cascade Deletion**: Deletes all sessions, registrations, and related data
      *     **Cache Invalidation**: All event caches cleared on deletion
+     *
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     delete: operations['deleteEvent'];
     options?: never;
@@ -227,6 +236,9 @@ export interface paths {
      *     **Story**: 1.16.2 - Uses eventCode (meaningful ID) instead of UUID
      *
      *     **Cache Invalidation**: All event caches cleared on update
+     *
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     patch: operations['patchEvent'];
     trace?: never;
@@ -253,6 +265,9 @@ export interface paths {
      *     - Event must be in draft status
      *
      *     **Cache Invalidation**: All event caches cleared on publish
+     *
+     *
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     post: operations['publishEvent'];
     delete?: never;
@@ -763,6 +778,7 @@ export interface paths {
     /**
      * Backfill speaker names for full-text search (maintenance)
      * @description Temporary maintenance endpoint (Story archive search).
+     *     **Security**: ORGANIZER role required; any other role gets 403.
      */
     post: operations['backfillSpeakerNames'];
     delete?: never;
@@ -2184,6 +2200,13 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       500: components['responses']['InternalServerError'];
     };
   };
@@ -2403,6 +2426,13 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
@@ -2421,6 +2451,13 @@ export interface operations {
     responses: {
       /** @description Event deleted successfully */
       204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
         headers: {
           [name: string]: unknown;
         };
@@ -2456,6 +2493,13 @@ export interface operations {
         };
       };
       400: components['responses']['BadRequest'];
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
@@ -2480,6 +2524,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['Event'];
         };
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       404: components['responses']['NotFound'];
       422: components['responses']['UnprocessableEntity'];
@@ -3336,6 +3387,13 @@ export interface operations {
         content: {
           'application/json': components['schemas']['BackfillSpeakerNamesResponse'];
         };
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Backfill failed */
       500: {

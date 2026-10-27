@@ -5,6 +5,7 @@ import ch.batbern.events.core.dto.generated.BackfillSpeakerNamesResponse;
 import ch.batbern.events.service.SpeakerNameBackfillService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
@@ -24,6 +25,7 @@ public class AdminController implements AdminApi {
     private final SpeakerNameBackfillService backfillService;
 
     @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<BackfillSpeakerNamesResponse> backfillSpeakerNames() {
         log.info("Admin endpoint called: backfill-speaker-names");
 

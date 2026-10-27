@@ -57,6 +57,14 @@ public class UserApiClientImpl implements UserApiClient {
     /** CUMS error code: get-or-create email is another user's unverified additional email. */
     public static final String EMAIL_LINKED_TO_ACCOUNT = "EMAIL_LINKED_TO_ACCOUNT";
 
+    /**
+     * CUMS internal user API: VPC-only, not routed by the gateway, no JWT. User reads go here
+     * because the public {@code /api/v1/users} directory is organizer-only and these results are
+     * cached per username for every caller, so they must not depend on whose request triggered
+     * them.
+     */
+    private static final String INTERNAL_USERS_PATH = "/internal/users";
+
     private final RestTemplate restTemplate;
     private final ObjectMapper objectMapper;
     private final CacheManager cacheManager;
@@ -90,10 +98,10 @@ public class UserApiClientImpl implements UserApiClient {
         }
         log.debug("Fetching user profile for username: {}", username);
 
-        String url = userServiceBaseUrl + "/api/v1/users/" + username;
+        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/" + username;
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpHeaders headers = new HttpHeaders();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
             ResponseEntity<UserResponse> response = restTemplate.exchange(
@@ -188,10 +196,10 @@ public class UserApiClientImpl implements UserApiClient {
     public GetOrCreateUserResponse getOrCreateUser(GetOrCreateUserRequest request) {
         log.debug("Getting or creating user for email: {}", request.getEmail());
 
-        String url = userServiceBaseUrl + "/api/v1/users/get-or-create";
+        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/get-or-create";
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpHeaders headers = new HttpHeaders();
             HttpEntity<GetOrCreateUserRequest> httpRequest = new HttpEntity<>(request, headers);
 
             ResponseEntity<GetOrCreateUserResponse> response = restTemplate.exchange(
@@ -329,10 +337,10 @@ public class UserApiClientImpl implements UserApiClient {
         }
         log.debug("Fetching preferred language for username: {}", username);
 
-        String url = userServiceBaseUrl + "/api/v1/users/" + username + "?include=preferences";
+        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/" + username + "?include=preferences";
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpHeaders headers = new HttpHeaders();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
             ResponseEntity<UserResponse> response = restTemplate.exchange(
@@ -374,10 +382,10 @@ public class UserApiClientImpl implements UserApiClient {
         }
         log.debug("Fetching Q&A notification frequency for username: {}", username);
 
-        String url = userServiceBaseUrl + "/api/v1/users/" + username + "?include=preferences";
+        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/" + username + "?include=preferences";
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
+            HttpHeaders headers = new HttpHeaders();
             HttpEntity<Void> request = new HttpEntity<>(headers);
 
             ResponseEntity<UserResponse> response = restTemplate.exchange(
@@ -741,13 +749,11 @@ public class UserApiClientImpl implements UserApiClient {
         log.debug("Fetching {} usernames", label);
         java.util.List<String> usernames = new java.util.ArrayList<>();
         try {
-            HttpEntity<Void> request = new HttpEntity<>(createHeadersWithJwtToken());
+            HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
             for (int page = 1; page <= MAX_PAGES; page++) {
-                // ADR-013 §3: role is expressed via the JSON `filter` vocabulary. A fully-encoded
-                // URI keeps RestTemplate from re-expanding the {,},",: in the filter value.
                 URI url = UriComponentsBuilder
-                        .fromUriString(userServiceBaseUrl + "/api/v1/users")
-                        .queryParam("filter", "{\"role\":\"" + role + "\"}")
+                        .fromUriString(userServiceBaseUrl + INTERNAL_USERS_PATH)
+                        .queryParam("role", role)
                         .queryParam("page", page)
                         .queryParam("limit", MAX_PAGE_SIZE)
                         .build()

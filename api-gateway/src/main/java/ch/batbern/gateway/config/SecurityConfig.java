@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
+import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.AbstractHttpConfigurer;
 import org.springframework.security.config.http.SessionCreationPolicy;
@@ -34,6 +35,7 @@ import java.util.Base64;
  */
 @Configuration
 @EnableWebSecurity
+@EnableMethodSecurity(prePostEnabled = true)
 public class SecurityConfig {
 
     @Value("${spring.security.oauth2.resourceserver.jwt.jwk-set-uri:}")
@@ -199,6 +201,9 @@ public class SecurityConfig {
                 .authorizeHttpRequests(auth -> auth
                         // System health endpoint (needed for load balancer health checks)
                         .requestMatchers("/actuator/health").permitAll()
+                        // VPC-only service API (CUMS /internal/users, PCS RSVPs). DomainRouter has
+                        // no route for it either; deny here so a future route cannot expose it.
+                        .requestMatchers("/internal/**").denyAll()
                         // Other actuator endpoints require auth (metrics, info, prometheus expose internals)
                         .requestMatchers("/actuator/**").authenticated()
                         // ServiceHealthController: proxy health/info of downstream services via Service Connect.

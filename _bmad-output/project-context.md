@@ -142,6 +142,7 @@ Service     →  business logic, returns generated DTOs, uses Mapper + Repositor
 Repository  →  JPA only, returns entities
 Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003)
 ```
+- **Authorization lives in the services (ADR-008).** The AWS API Gateway passes everything through, the Spring API gateway only authenticates the JWT and routes. So every controller method that writes (POST/PUT/PATCH/DELETE) MUST carry `@PreAuthorize`: a role (`hasRole('ORGANIZER')`), an ownership rule, `isAuthenticated()` for self-service, or `permitAll()` for a deliberately public endpoint (plus the matching `permitAll` in the filter chain). Reads that return other people's data need a role rule too. `EndpointAuthorizationGuardTest` (one per service, helper in `shared-kernel` test fixtures) fails the build for any write endpoint without it, and checks that `@EnableMethodSecurity` is on. Service-to-service reads go to `/internal/**` without JWT (not routed by the gateway), never through the public API with the end user's token.
 - `GlobalExceptionHandler` MUST have an explicit `@ExceptionHandler(MethodArgumentNotValidException.class)` —
   the catch-all `@ExceptionHandler(Exception.class)` silently shadows Spring's default 400 handler.
 

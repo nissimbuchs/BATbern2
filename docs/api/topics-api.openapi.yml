@@ -353,6 +353,8 @@ paths:
         Select a topic for an event and transition workflow state.
 
         **Acceptance Criteria**: AC14 (Story 5.2)
+
+        **Security**: ORGANIZER role required; any other role gets 403.
       operationId: selectTopicForEvent
       parameters:
         - name: eventCode

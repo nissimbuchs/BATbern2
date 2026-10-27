@@ -55,7 +55,7 @@ class UserApiClientImplGetOrCreateUserTest {
 
     private void cumsResponds(HttpStatus status, String body) {
         when(restTemplate.exchange(
-                eq(BASE_URL + "/api/v1/users/get-or-create"),
+                eq(BASE_URL + "/internal/users/get-or-create"),
                 eq(HttpMethod.POST), any(HttpEntity.class), eq(GetOrCreateUserResponse.class)))
                 .thenThrow(HttpClientErrorException.create(status, status.getReasonPhrase(),
                         new HttpHeaders(), body.getBytes(StandardCharsets.UTF_8), StandardCharsets.UTF_8));

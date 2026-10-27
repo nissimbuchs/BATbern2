@@ -7,6 +7,7 @@ import io.micrometer.core.annotation.Timed;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -60,6 +61,7 @@ public class UserSettingsController implements UserSettingsApi {
     @Timed(value = "users.updateUserSettings",
             description = "Time to update current user settings",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserSettings> updateUserSettings(
             @Valid @RequestBody UserSettings userSettings) {
         log.info("Updating settings for current authenticated user");

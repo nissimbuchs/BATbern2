@@ -22,6 +22,17 @@ vi.mock('../AssociatedUsersPanel', () => ({
   ),
 }));
 
+// The people tabs (users, speakers) read the organizer-only user directory.
+const mockUseUserList = vi.fn((..._args: unknown[]) => ({
+  data: undefined,
+  isLoading: false,
+  isError: false,
+}));
+vi.mock('@/hooks/useUserManagement', async () => {
+  const actual = await vi.importActual('@/hooks/useUserManagement');
+  return { ...actual, useUserList: (...args: unknown[]) => mockUseUserList(...args) };
+});
+
 // PartnerInfoPanel removed - isPartner field no longer supported by backend
 
 vi.mock('../ActivityTimeline', () => ({
@@ -248,6 +259,31 @@ describe('CompanyDetailView Component', () => {
 
       const detailView = screen.getByTestId('company-detail-view');
       expect(detailView).toBeInTheDocument();
+    });
+  });
+
+  describe('People tabs are organizer-only', () => {
+    it('should_hidePeopleTabs_when_callerIsNotOrganizer', () => {
+      renderWithRouter(
+        <CompanyDetailView company={mockCompany} onEdit={mockOnEdit} onBack={mockOnBack} />
+      );
+
+      expect(screen.getAllByRole('tab')).toHaveLength(1);
+      expect(mockUseUserList).not.toHaveBeenCalled();
+    });
+
+    it('should_showUsersSpeakersAndSessionsTabs_when_callerIsOrganizer', () => {
+      renderWithRouter(
+        <CompanyDetailView
+          company={mockCompany}
+          showPeople={true}
+          onEdit={mockOnEdit}
+          onBack={mockOnBack}
+        />
+      );
+
+      expect(screen.getAllByRole('tab')).toHaveLength(3);
+      expect(mockUseUserList).toHaveBeenCalled();
     });
   });
 });

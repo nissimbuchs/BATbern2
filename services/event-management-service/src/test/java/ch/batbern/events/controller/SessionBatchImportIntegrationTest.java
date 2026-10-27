@@ -17,6 +17,7 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -54,6 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses Testcontainers PostgreSQL for production parity.
  */
 @Transactional
+@WithMockUser(username = "test.organizer", roles = "ORGANIZER")
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
 

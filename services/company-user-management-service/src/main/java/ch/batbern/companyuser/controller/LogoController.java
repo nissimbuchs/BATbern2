@@ -40,6 +40,7 @@ public class LogoController implements LogosApi {
 
     /** Phase 1: request a presigned upload URL. No authentication required. */
     @Override
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'SPEAKER', 'PARTNER')")
     public ResponseEntity<LogoPresignedUploadUrl> requestLogoUploadUrl(LogoUploadRequest request) {
         log.info("Requesting presigned upload URL for file: {}, size: {} bytes",
                 request.getFileName(), request.getFileSize());
@@ -54,6 +55,7 @@ public class LogoController implements LogosApi {
 
     /** Phase 2: confirm upload completion (PENDING → CONFIRMED). No authentication required. */
     @Override
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'SPEAKER', 'PARTNER')")
     public ResponseEntity<Void> confirmLogoUpload(String uploadId, LogoUploadConfirmRequest request) {
         log.info("Confirming upload for uploadId: {}, extension: {}",
                 uploadId, request.getFileExtension());
@@ -106,6 +108,7 @@ public class LogoController implements LogosApi {
      * Up to 10MB; validates the content is an image. No authentication required.
      */
     @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Resource> fetchImageFromUrl(FetchImageFromUrlRequest request) {
         String url = request.getUrl();
 
@@ -145,6 +148,7 @@ public class LogoController implements LogosApi {
      * to avoid binary corruption). Returns the upload ID. No authentication required.
      */
     @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<UploadImageFromUrlResponse> uploadImageFromUrl(UploadImageFromUrlRequest request) {
         String url = request.getUrl();
         String suggestedFilename = request.getFilename() != null ? request.getFilename() : "logo";

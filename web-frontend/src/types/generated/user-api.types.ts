@@ -129,7 +129,9 @@ export interface paths {
      *
      *     **Acceptance Criteria**: AC3, AC13, AC14
      *
-     *     **Authorization**: ADMIN or ORGANIZER role required
+     *     **Authorization**: ADMIN or ORGANIZER role required; any other role gets 403. Services
+     *     read users through the VPC-internal `/internal/users` API, which is not routed by the
+     *     gateway and not part of this contract.
      *
      *     **Filter Syntax Examples**:
      *     - Single filter: {"role":"SPEAKER"}
@@ -196,27 +198,6 @@ export interface paths {
      *     Exposes only publicly-shareable fields (name, bio, email, profile picture, company).
      */
     get: operations['getAllOrganizers'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/users/by-company': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * List users by company (service-to-service)
-     * @description Returns a paginated list of users in a company, optionally filtered by role.
-     *     VPC-internal service-to-service endpoint — authorization is enforced at the filter chain.
-     */
-    get: operations['listUsersByCompany'];
     put?: never;
     post?: never;
     delete?: never;
@@ -310,6 +291,9 @@ export interface paths {
      *     **Resource Expansion**: Supports ?include parameter
      *
      *     **Performance**: <150ms (P95)
+     *
+     *     **Authorization**: ADMIN or ORGANIZER role required; any other role gets 403. A user reads
+     *     their own record via `GET /users/me`.
      */
     get: operations['getUserByUsername'];
     /**
@@ -356,6 +340,8 @@ export interface paths {
      * @description Search users by name, username or email with autocomplete functionality.
      *
      *     **Acceptance Criteria**: AC4, AC11
+     *
+     *     **Authorization**: ADMIN or ORGANIZER role required; any other role gets 403.
      *
      *     **Matched fields**: `username`, `email`, `firstName`, `lastName`, and the concatenated
      *     full name (`firstName + ' ' + lastName`), each as a case-insensitive substring. The full
@@ -884,52 +870,6 @@ export interface paths {
      *     fields are left unchanged.
      */
     patch: operations['patchUserProfile'];
-    trace?: never;
-  };
-  '/users/get-or-create': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Get or create user (for domain services, supports anonymous users)
-     * @description Idempotent endpoint for domain services to get existing user or create new user.
-     *
-     *     **ADR-005**: Anonymous Event Registration - creates users with cognito_id=NULL
-     *     **Story 4.1.5a**: Architecture consolidation
-     *     **Acceptance Criteria**: AC12
-     *
-     *     **Use Cases**:
-     *     - Event Service: Create anonymous user during public event registration (ADR-005)
-     *     - Speaker Service: Create user account when speaker registers
-     *     - Partner Service: Create user account for partner contact
-     *     - Attendee Service: Create user account during event registration
-     *
-     *     **Anonymous Users** (ADR-005):
-     *     - When cognitoSync=false, creates user_profile with cognito_id=NULL
-     *     - User can later create Cognito account which auto-links on first login
-     *     - Email serves as unique identifier for anonymous users
-     *
-     *     **Idempotency**: Safe to call multiple times with same email
-     *
-     *     **Additional emails**: an email that is another user's *verified* additional
-     *     email resolves to that user (`created: false`). An *unverified* additional
-     *     email cannot be attributed and cannot become a primary email, so a create
-     *     request for it returns 409 `EMAIL_LINKED_TO_ACCOUNT`.
-     *
-     *     **Cognito Sync**: Optionally creates Cognito user if createIfMissing=true
-     *
-     *     **Performance**: <200ms (P95)
-     */
-    post: operations['getOrCreateUser'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
     trace?: never;
   };
   '/watch/pair': {
@@ -2126,35 +2066,6 @@ export interface operations {
       500: components['responses']['InternalServerError'];
     };
   };
-  listUsersByCompany: {
-    parameters: {
-      query: {
-        /** @description Company name (ADR-003 meaningful ID) */
-        company: string;
-        /** @description Optional role filter */
-        role?: string;
-        /** @description Page number (1-indexed) */
-        page?: number;
-        limit?: number;
-      };
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Paginated users for the company */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PaginatedUserResponse'];
-        };
-      };
-      500: components['responses']['InternalServerError'];
-    };
-  };
   uploadProfilePictureFromUrl: {
     parameters: {
       query?: never;
@@ -2264,6 +2175,7 @@ export interface operations {
         };
       };
       401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
@@ -2354,6 +2266,7 @@ export interface operations {
       };
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
       500: components['responses']['InternalServerError'];
     };
   };
@@ -3010,34 +2923,6 @@ export interface operations {
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
       404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  getOrCreateUser: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['GetOrCreateUserRequest'];
-      };
-    };
-    responses: {
-      /** @description User retrieved or created */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['GetOrCreateUserResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
     };
   };

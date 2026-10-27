@@ -7,6 +7,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -48,6 +49,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - Cache keys include filters, sort, and page parameters
  */
 @Transactional
+@WithMockUser(username = "test.organizer", roles = "ORGANIZER")
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 public class CaffeineCacheConfigIntegrationTest extends AbstractIntegrationTest {
 

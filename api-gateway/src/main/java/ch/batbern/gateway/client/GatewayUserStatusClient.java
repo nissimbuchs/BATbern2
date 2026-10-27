@@ -50,24 +50,21 @@ public class GatewayUserStatusClient {
     }
 
     /**
-     * Resolve the {@code active} flag for {@code username} from CUMS, forwarding {@code
-     * bearerToken} (the caller's JWT, no "Bearer " prefix) so CUMS authorises the read.
+     * Resolve the {@code active} flag for {@code username} from the CUMS internal user API
+     * ({@code /internal/users/{username}}: VPC-only, no token; the public
+     * {@code /api/v1/users/{username}} is organizer-only).
      *
      * @return present(true)=active, present(false)=deactivated, empty=unknown (404 / no body)
      * @throws GatewayUserStatusException on a transient/unexpected failure (fail-open at caller)
      */
-    public Optional<Boolean> getActiveStatus(String username, String bearerToken) {
+    public Optional<Boolean> getActiveStatus(String username) {
         String url = UriComponentsBuilder
-                .fromUriString(companyUserManagementUrl + "/api/v1/users/{username}")
+                .fromUriString(companyUserManagementUrl + "/internal/users/{username}")
                 .buildAndExpand(username)
                 .toUriString();
 
         try {
-            HttpHeaders headers = new HttpHeaders();
-            if (bearerToken != null && !bearerToken.isBlank()) {
-                headers.set(HttpHeaders.AUTHORIZATION, "Bearer " + bearerToken);
-            }
-            HttpEntity<Void> request = new HttpEntity<>(headers);
+            HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
 
             ResponseEntity<UserStatusResponse> response = restTemplate.exchange(
                     url, HttpMethod.GET, request, UserStatusResponse.class);

@@ -18,8 +18,6 @@ import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationCheckResp
 import ch.batbern.companyuser.dto.generated.AdditionalEmailVerificationConfirmResponse;
 import ch.batbern.companyuser.dto.generated.ConfirmAdditionalEmailVerificationRequest;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
-import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
-import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
 import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
 import ch.batbern.companyuser.dto.generated.PaginatedUserResponse;
 import ch.batbern.companyuser.dto.generated.PatchUserProfileRequest;
@@ -128,6 +126,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.patchCurrentUser",
             description = "Time to partially update current user profile",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<UserResponse> patchCurrentUser(UpdateUserRequest updateUserRequest) {
         log.info("Patching current user profile");
 
@@ -156,11 +155,11 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
      * ordering via {@code sort} ({@code -createdAt}). {@code fields}/{@code include} are accepted
      * for contract conformance; sparse-fieldset on the list is not applied server-side.
      *
-     * <p>No {@code @PreAuthorize}: Story 10.26 — the Lambda email forwarder and internal service
-     * clients call {@code GET /api/v1/users?filter={"role":…}} without auth (routes via NAT GW).
-     * Security is enforced at the filter chain ({@code SecurityConfig.permitAll}).
+     * <p>Organizer directory: ORGANIZER or ADMIN only. Services list users through
+     * {@code GET /internal/users} ({@link InternalUserController}).
      */
     @Override
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     @Timed(value = "users.listUsers",
             description = "Time to list users (admin/organizer)",
             percentiles = {0.5, 0.95, 0.99})
@@ -196,8 +195,14 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
         return ResponseEntity.ok(toPaginatedResponse(usersPage, pageNumber, pageSize));
     }
 
-    /** AC5: Get user by username (?include=company,roles,preferences). Story 1.16.2. */
+    /**
+     * AC5: Get user by username (?include=company,roles,preferences). Story 1.16.2.
+     *
+     * <p>ORGANIZER or ADMIN only. A user reads their own record via {@code /users/me}; services
+     * use {@code GET /internal/users/{username}} ({@link InternalUserController}).
+     */
     @Override
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     public ResponseEntity<UserResponse> getUserByUsername(String username, String include) {
         log.debug("Getting user by username: {} with include: {}", username, include);
 
@@ -257,8 +262,10 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     /**
      * AC4: Search users with autocomplete and caching ({@code <100ms} P95 with Caffeine cache).
      * Returns the slim {@link UserSearchResponse} projection (id/email/name/company/roles/photo).
+     * ORGANIZER or ADMIN only.
      */
     @Override
+    @PreAuthorize("hasAnyRole('ORGANIZER', 'ADMIN')")
     @Timed(value = "users.searchUsers",
             description = "Time to search users with caching",
             percentiles = {0.5, 0.95, 0.99})
@@ -282,22 +289,6 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     // ------------------------------------------------------------------------
     // DomainIntegrationApi
     // ------------------------------------------------------------------------
-
-    /**
-     * AC12: Get-or-create user (for domain service integration). Story 4.1.5: public for anonymous
-     * event registration (ADR-005) — SecurityConfig allows public access for this endpoint.
-     */
-    @Override
-    @Timed(value = "users.getOrCreateUser",
-            description = "Time to get or create user (service-to-service)",
-            percentiles = {0.5, 0.95, 0.99})
-    public ResponseEntity<GetOrCreateUserResponse> getOrCreateUser(GetOrCreateUserRequest getOrCreateUserRequest) {
-        log.info("Get-or-create user for email: {}", getOrCreateUserRequest.getEmail());
-
-        GetOrCreateUserResponse response = userService.getOrCreateUser(getOrCreateUserRequest);
-
-        return ResponseEntity.ok(response);
-    }
 
     /**
      * Story 11.E.2 (AR15, FR9): Issue (or skip) Cognito temp credentials at invitation time.
@@ -424,6 +415,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.additionalEmails.add",
             description = "Time to add an additional email to the current user",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<AdditionalEmail> addAdditionalEmail(AddAdditionalEmailRequest addAdditionalEmailRequest) {
         log.info("Adding additional email for current user");
         AdditionalEmail created = userService.addAdditionalEmail(addAdditionalEmailRequest);
@@ -440,6 +432,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.additionalEmails.delete",
             description = "Time to remove an additional email from the current user",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> deleteAdditionalEmail(String email) {
         log.info("Removing additional email for current user");
         userService.deleteAdditionalEmail(email);
@@ -455,6 +448,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.additionalEmails.resendVerification",
             description = "Time to resend an additional-email verification email",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> resendAdditionalEmailVerification(String email) {
         log.info("Resending additional-email verification for current user");
         userService.resendVerification(email);
@@ -483,6 +477,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.additionalEmails.verifyConfirm",
             description = "Time to confirm an additional-email verification token",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("permitAll()")
     public ResponseEntity<AdditionalEmailVerificationConfirmResponse> confirmAdditionalEmailVerification(
             ConfirmAdditionalEmailVerificationRequest confirmAdditionalEmailVerificationRequest) {
         log.info("Confirming additional-email verification token");
@@ -499,6 +494,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.profilePicture.requestPresignedUrl",
             description = "Time to generate presigned URL for profile picture",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<PresignedUploadUrl> requestProfilePictureUploadUrl(
             ProfilePictureUploadRequest profilePictureUploadRequest) {
         log.info("Requesting presigned URL for profile picture upload: {}",
@@ -519,6 +515,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
 
     /** AC10: Confirm the caller's own profile picture upload completion. */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<ProfilePictureUploadConfirmResponse> confirmProfilePictureUpload(
             ProfilePictureUploadConfirmRequest profilePictureUploadConfirmRequest) {
         log.info("Confirming profile picture upload: fileId={}",
@@ -548,6 +545,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     @Timed(value = "users.profilePicture.remove",
             description = "Time to remove own profile picture",
             percentiles = {0.5, 0.95, 0.99})
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Void> removeOwnProfilePicture() {
         String currentUsername = securityContextHelper.getCurrentUsername();
         log.info("Removing own profile picture for user: {}", currentUsername);
@@ -632,27 +630,6 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     // ------------------------------------------------------------------------
     // Undocumented endpoints (no users-api operation) — hand-rolled; spec follow-up.
     // ------------------------------------------------------------------------
-
-    /**
-     * Service-to-service: list users by company and role. VPC-internal only — authorization
-     * enforced at the filter chain ({@code VpcInternalAuthorizationManager}).
-     * GET /api/v1/users/by-company?company={companyName}&role={role}
-     */
-    @Override
-    @Timed(value = "users.listUsersByCompany",
-            description = "Time to list users by company (service-to-service)")
-    public ResponseEntity<PaginatedUserResponse> listUsersByCompany(
-            String company,
-            String role,
-            Integer page,
-            Integer limit) {
-        log.debug("Service-to-service: listing users by company={}, role={}", company, role);
-
-        int pageIndex = Math.max(0, page - 1);
-        Page<UserResponse> usersPage = userService.listUsersPaginated(role, company, null, null, pageIndex, limit);
-
-        return ResponseEntity.ok(toPaginatedResponse(usersPage, page, limit));
-    }
 
     /**
      * Update user profile by username (Organizer/Admin only). Allows organizers/admins to update
@@ -786,7 +763,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     // ------------------------------------------------------------------------
 
     /** Build the generated {@link PaginatedUserResponse} from a service page (1-based page number). */
-    private static PaginatedUserResponse toPaginatedResponse(Page<UserResponse> usersPage, int page, int limit) {
+    static PaginatedUserResponse toPaginatedResponse(Page<UserResponse> usersPage, int page, int limit) {
         ch.batbern.shared.api.PaginationMetadata paginationMetadata =
             new ch.batbern.shared.api.PaginationMetadata();
         paginationMetadata.setPage(page);  // 1-based for API

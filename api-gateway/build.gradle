@@ -67,6 +67,7 @@ dependencies {
 
     // Shared Kernel Dependency
     implementation project(':shared-kernel')
+    testImplementation testFixtures(project(':shared-kernel'))
 
     // Lombok
     compileOnly 'org.projectlombok:lombok'

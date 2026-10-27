@@ -3,6 +3,7 @@ package ch.batbern.gateway.gdpr;
 import ch.batbern.shared.security.AuditLog;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.security.oauth2.jwt.Jwt;
@@ -43,6 +44,7 @@ public class UserDataDeletionController {
      */
     @DeleteMapping("/delete")
     @AuditLog(action = "USER_DATA_DELETION", severity = AuditLog.AuditSeverity.CRITICAL)
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<Map<String, Object>> deleteUserData(
             @AuthenticationPrincipal Jwt jwt,
             @RequestParam(required = false) String confirmationToken) {

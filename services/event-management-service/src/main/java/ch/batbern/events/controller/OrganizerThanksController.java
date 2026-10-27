@@ -44,6 +44,7 @@ public class OrganizerThanksController implements OrganizerThanksApi {
 
     /** Submit a thank-you (public). Logged-in → deduped upsert by username; anonymous → clap row. */
     @Override
+    @PreAuthorize("permitAll()")
     public ResponseEntity<ThanksCountResponse> submitThanks(String eventCode, SubmitThanksRequest request) {
         String username = resolveUsername();
         String note = request != null ? request.getNote() : null;

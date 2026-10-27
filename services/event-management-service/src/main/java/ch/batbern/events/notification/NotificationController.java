@@ -12,6 +12,7 @@ import ch.batbern.shared.api.PaginationParams;
 import ch.batbern.shared.api.PaginationUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
@@ -37,6 +38,7 @@ import java.util.stream.Collectors;
  * {@code PUT /notifications/batch-read}, {@code GET /notifications/history},
  * {@code DELETE /notifications/{id}}, {@code DELETE /notifications/batch-delete}.
  */
+@PreAuthorize("hasRole('ORGANIZER')")
 @RestController
 @RequestMapping("/api/v1")
 @RequiredArgsConstructor

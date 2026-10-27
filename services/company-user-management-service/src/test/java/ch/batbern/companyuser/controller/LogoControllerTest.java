@@ -72,7 +72,34 @@ class LogoControllerTest extends AbstractIntegrationTest {
     // ============ POST /presigned-url Tests ============
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ATTENDEE")
+    @DisplayName("should_return403_when_attendeeRequestsLogoUpload")
+    void should_return403_when_attendeeRequestsLogoUpload() throws Exception {
+        // Logos belong to companies, which organizers, speakers and partners may create.
+        LogoUploadRequest request = LogoUploadRequest.builder()
+                .fileName("company-logo.png").fileSize(1024L).mimeType("image/png").build();
+
+        mockMvc.perform(post("/api/v1/logos/presigned-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "SPEAKER")
+    @DisplayName("should_return403_when_nonOrganizerFetchesImageFromUrl")
+    void should_return403_when_nonOrganizerFetchesImageFromUrl() throws Exception {
+        // Server-side fetch of an arbitrary URL is for the organizer batch imports only.
+        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"url\": \"https://example.com/logo.png\"}"))
+                .andExpect(status().isForbidden());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("AC1: Should generate presigned URL for valid request")
     void shouldGeneratePresignedUrl_whenValidRequest() throws Exception {
         // Arrange
@@ -112,7 +139,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when file size exceeds limit")
     void shouldReturn400_whenFileSizeExceedsLimit() throws Exception {
         // Arrange
@@ -136,7 +163,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when file type is invalid")
     void shouldReturn400_whenFileTypeInvalid() throws Exception {
         // Arrange
@@ -160,7 +187,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when request body is invalid")
     void shouldReturn400_whenRequestBodyInvalid() throws Exception {
         // Arrange - Missing required fields
@@ -179,7 +206,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     // ============ POST /{uploadId}/confirm Tests ============
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("AC2: Should confirm upload for valid upload ID")
     void shouldConfirmUpload_whenValidUploadId() throws Exception {
         // Arrange
@@ -206,7 +233,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
 
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 404 when upload ID not found")
     void shouldReturn404_whenUploadIdNotFound() throws Exception {
         // Arrange
@@ -231,7 +258,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when confirm request is invalid")
     void shouldReturn400_whenConfirmRequestInvalid() throws Exception {
         // Arrange - Missing required fields
@@ -251,7 +278,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     // ============ DELETE /{uploadId} Tests ============
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("AC3: Should delete unused logo when authenticated")
     void shouldDeleteUnusedLogo_whenAuthenticated() throws Exception {
         // Arrange
@@ -284,7 +311,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
 
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 404 when deleting nonexistent logo")
     void shouldReturn404_whenDeletingNonexistentLogo() throws Exception {
         // Arrange
@@ -301,7 +328,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when deleting associated logo")
     void shouldReturn400_whenDeletingAssociatedLogo() throws Exception {
         // Arrange
@@ -413,7 +440,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     // ============ POST /fetch-from-url Tests ============
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should handle fetch from URL request")
     void shouldHandleFetchFromUrl_whenValidUrl() throws Exception {
         // Arrange
@@ -433,7 +460,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when URL is missing")
     void shouldReturn400_whenUrlMissing() throws Exception {
         // Arrange
@@ -448,7 +475,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when URL is blank")
     void shouldReturn400_whenUrlBlank() throws Exception {
         // Arrange
@@ -479,7 +506,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     // ============ POST /upload-from-url Tests ============
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should handle upload from URL request")
     void shouldHandleUploadFromUrl_whenValidUrl() throws Exception {
         // Arrange
@@ -501,7 +528,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when upload URL is missing")
     void shouldReturn400_whenUploadUrlMissing() throws Exception {
         // Arrange
@@ -516,7 +543,7 @@ class LogoControllerTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("Should return 400 when upload URL is blank")
     void shouldReturn400_whenUploadUrlBlank() throws Exception {
         // Arrange

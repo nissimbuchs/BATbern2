@@ -3,6 +3,7 @@ package ch.batbern.gateway.validation;
 import ch.batbern.gateway.util.LogSanitizer;
 import jakarta.validation.Valid;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -24,6 +25,7 @@ import java.util.Map;
 public class TestValidationController {
 
     @PostMapping("/test")
+    @PreAuthorize("permitAll()")
     public ResponseEntity<Map<String, Object>> testValidation(
             @Valid @RequestBody TestValidationRequest request) {
 

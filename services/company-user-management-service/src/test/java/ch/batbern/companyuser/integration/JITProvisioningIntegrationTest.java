@@ -39,8 +39,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Uses the {@code jwt()} request post-processor (NOT {@code @WithMockUser}) because the
  * interceptor only acts on a {@code JwtAuthenticationToken}. The endpoint hit is the
- * permitAll {@code GET /api/v1/users}; provisioning happens in {@code preHandle} before the
- * controller, so the list response is incidental.
+ * {@code GET /api/v1/users/me}, the first call a freshly signed-in user makes; provisioning
+ * happens in {@code preHandle} before the controller.
  */
 @Transactional
 @Import(TestAwsConfig.class)
@@ -66,7 +66,7 @@ class JITProvisioningIntegrationTest extends AbstractIntegrationTest {
         String email = "marie.favre@example.ch";
         String preferences = "{\"firstName\":\"Marie\",\"lastName\":\"Favre\",\"language\":\"fr\"}";
 
-        mockMvc.perform(get("/api/v1/users")
+        mockMvc.perform(get("/api/v1/users/me")
                         .with(jwt()
                                 .jwt(j -> j.subject(sub)
                                         .claim("email", email)
@@ -110,7 +110,7 @@ class JITProvisioningIntegrationTest extends AbstractIntegrationTest {
         String sub = "jit-fresh-sub-de";
         String email = "hans.muster@example.ch";
 
-        mockMvc.perform(get("/api/v1/users")
+        mockMvc.perform(get("/api/v1/users/me")
                         .with(jwt()
                                 .jwt(j -> j.subject(sub)
                                         .claim("email", email)
@@ -145,7 +145,7 @@ class JITProvisioningIntegrationTest extends AbstractIntegrationTest {
         assertThat(seeded.getCognitoUserId()).isNull();
 
         String freshSub = "fresh-federated-sub-999";
-        mockMvc.perform(get("/api/v1/users")
+        mockMvc.perform(get("/api/v1/users/me")
                         .with(jwt()
                                 .jwt(j -> j.subject(freshSub)
                                         .claim("email", email))

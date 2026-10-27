@@ -38,6 +38,13 @@ public class UserServiceClientImpl implements UserServiceClient {
 
     private final RestTemplate restTemplate;
 
+    /**
+     * CUMS internal user API: VPC-only, not routed by the gateway, no JWT. The public
+     * {@code /api/v1/users} directory is organizer-only, and these results are cached for every
+     * caller, so they must not depend on whose request triggered the lookup.
+     */
+    private static final String INTERNAL_USERS_PATH = "/internal/users";
+
     @Value("${user-service.base-url}")
     private String userServiceBaseUrl;
 
@@ -50,11 +57,10 @@ public class UserServiceClientImpl implements UserServiceClient {
     public UserResponse getUserByUsername(String username) {
         log.debug("Fetching user profile for username: {}", username);
 
-        String url = userServiceBaseUrl + "/api/v1/users/" + username;
+        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/" + username;
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
+            HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
 
             ResponseEntity<UserResponse> response = restTemplate.exchange(
                     url,
@@ -143,39 +149,37 @@ public class UserServiceClientImpl implements UserServiceClient {
 
     /**
      * List all users for a company with the given role.
-     * Calls GET /users/by-company — a VPC-internal service-to-service endpoint.
-     * Does NOT forward the caller's JWT; relies on VPC network trust (VpcInternalAuthorizationManager).
+     * Calls the CUMS internal API {@code GET /internal/users?company=…&role=…}, without JWT.
      */
     @Override
     @Cacheable(value = "usersByCompanyRoleCache", key = "#companyName + '-' + #role")
     public List<UserResponse> getUsersByCompanyAndRole(String companyName, String role) {
         log.debug("Fetching users for company={}, role={}", companyName, role);
 
-        String url = UriComponentsBuilder
-                .fromUriString(userServiceBaseUrl + "/api/v1/users/by-company")
+        URI uri = UriComponentsBuilder
+                .fromUriString(userServiceBaseUrl + INTERNAL_USERS_PATH)
                 .queryParam("company", companyName)
                 .queryParam("role", role)
                 .queryParam("limit", 100)
-                .toUriString();
+                .build()
+                .encode()
+                .toUri();
 
-        return fetchUserListNoAuth(url, "company=" + companyName + ", role=" + role);
+        return fetchUserList(uri, "company=" + companyName + ", role=" + role);
     }
 
     /**
      * List all users with the given role across all companies.
-     * Calls GET /users?filter={"role":"{role}"}&limit=100 with caller's JWT (ORGANIZER-only endpoint).
-     * ADR-013 §3: role is expressed via the JSON `filter` vocabulary, not an ad-hoc ?role= param.
+     * Calls the CUMS internal API {@code GET /internal/users?role=…&limit=100}, without JWT.
      */
     @Override
     @Cacheable(value = "usersByRoleCache", key = "#role")
     public List<UserResponse> getUsersByRole(String role) {
         log.debug("Fetching all users with role={}", role);
 
-        // Build a fully-encoded URI (the JSON filter contains {,},",: which must be percent-encoded
-        // and must NOT be re-expanded by RestTemplate's String-URL template handling).
         URI uri = UriComponentsBuilder
-                .fromUriString(userServiceBaseUrl + "/api/v1/users")
-                .queryParam("filter", "{\"role\":\"" + role + "\"}")
+                .fromUriString(userServiceBaseUrl + INTERNAL_USERS_PATH)
+                .queryParam("role", role)
                 .queryParam("limit", 100)
                 .build()
                 .encode()
@@ -184,55 +188,8 @@ public class UserServiceClientImpl implements UserServiceClient {
         return fetchUserList(uri, "role=" + role);
     }
 
-    /**
-     * Fetch a user list forwarding the caller's JWT.
-     * Used for ORGANIZER-only endpoints (e.g. list all users by role).
-     */
+    /** Fetch a user list from the CUMS internal API (no JWT). */
     private List<UserResponse> fetchUserList(URI url, String context) {
-        try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            ResponseEntity<PaginatedUserResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    PaginatedUserResponse.class
-            );
-
-            PaginatedUserResponse body = response.getBody();
-            if (body == null || body.getData() == null) {
-                return Collections.emptyList();
-            }
-
-            log.debug("Fetched {} users for {}", body.getData().size(), context);
-            return body.getData();
-
-        } catch (HttpClientErrorException e) {
-            log.error("Client error fetching users ({}): {} - {}", context, e.getStatusCode(), e.getMessage());
-            throw new UserServiceException("Client error fetching users: " + context, e.getStatusCode().value(), e);
-
-        } catch (HttpServerErrorException e) {
-            log.error("Server error fetching users ({}): {} - {}", context, e.getStatusCode(), e.getMessage());
-            throw new UserServiceException(
-                    "User Service error fetching users: " + context, e.getStatusCode().value(), e);
-
-        } catch (ResourceAccessException e) {
-            log.error("Network error fetching users ({}): {}", context, e.getMessage());
-            throw new UserServiceException("Failed to connect to User Service: " + context, e);
-
-        } catch (Exception e) {
-            log.error("Unexpected error fetching users ({}): {}", context, e.getMessage(), e);
-            throw new UserServiceException("Unexpected error fetching users: " + context, e);
-        }
-    }
-
-    /**
-     * Fetch a user list WITHOUT forwarding any JWT.
-     * Used for VPC-internal service-to-service calls (e.g. /api/v1/users/by-company).
-     * Authorization is handled by VpcInternalAuthorizationManager in company-user-management.
-     */
-    private List<UserResponse> fetchUserListNoAuth(String url, String context) {
         try {
             HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
 
