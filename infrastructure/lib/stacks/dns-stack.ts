@@ -15,9 +15,11 @@ export interface DnsStackProps extends cdk.StackProps {
  * IMPORTANT: This stack must be deployed to us-east-1 for CloudFront certificates
  *
  * Architecture:
- * - Production: batbern.ch hosted zone owns root domain
- * - Staging: staging.batbern.ch hosted zone (delegated subdomain)
- * - Each environment manages its own certificates with automatic DNS validation
+ * - One live zone: batbern.ch (Z08825557YYLWVHISLPY) in the production account (188701360969).
+ *   Every certificate validates against it, staging.batbern.ch (a CNAME to the redirect
+ *   distribution) included. There is no delegated staging zone: the orphaned staging.batbern.ch
+ *   and mgmt-account batbern.ch zones were deleted on 2026-10-27 (#1133). A record written to a
+ *   zone that is not delegated resolves nowhere, and ACM renewals against it fail a year later.
  */
 export class DnsStack extends cdk.Stack {
   public readonly hostedZone: route53.IHostedZone;

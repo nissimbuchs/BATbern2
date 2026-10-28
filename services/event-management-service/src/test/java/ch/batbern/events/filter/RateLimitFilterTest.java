@@ -137,12 +137,31 @@ class RateLimitFilterTest {
         when(request.getMethod()).thenReturn("POST");
         when(request.getHeader("X-Forwarded-For")).thenReturn("203.0.113.50, 10.0.0.1");
 
-        // When - Make 6 requests (should use first IP from X-Forwarded-For)
+        // When - Make 6 requests (keyed on the rightmost public X-Forwarded-For hop)
         for (int i = 0; i < 6; i++) {
             rateLimitFilter.doFilter(request, response, filterChain);
         }
 
         // Then - 5 should pass, 6th should be rate limited
+        verify(filterChain, times(5)).doFilter(request, response);
+        verify(response).setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
+    }
+
+    /**
+     * #1132: rotating a spoofed first X-Forwarded-For hop must not open a fresh bucket.
+     */
+    @Test
+    void should_rateLimit_when_clientRotatesSpoofedFirstHop() throws Exception {
+        StringWriter responseWriter = new StringWriter();
+        when(response.getWriter()).thenReturn(new PrintWriter(responseWriter));
+        when(request.getRequestURI()).thenReturn("/api/v1/speaker-portal/validate-token");
+        when(request.getMethod()).thenReturn("POST");
+
+        for (int i = 0; i < 6; i++) {
+            when(request.getHeader("X-Forwarded-For")).thenReturn("192.0.2." + i + ", 203.0.113.50");
+            rateLimitFilter.doFilter(request, response, filterChain);
+        }
+
         verify(filterChain, times(5)).doFilter(request, response);
         verify(response).setStatus(HttpStatus.TOO_MANY_REQUESTS.value());
     }

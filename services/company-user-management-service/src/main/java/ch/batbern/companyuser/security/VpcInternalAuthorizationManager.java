@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.security;
 
+import ch.batbern.shared.security.ClientIp;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.authorization.AuthorizationDecision;
@@ -9,7 +10,7 @@ import org.springframework.security.core.Authentication;
 import org.springframework.security.web.access.intercept.RequestAuthorizationContext;
 
 import java.net.InetAddress;
-import java.net.UnknownHostException;
+import java.util.Optional;
 import java.util.function.Supplier;
 
 /**
@@ -63,83 +64,68 @@ public class VpcInternalAuthorizationManager implements AuthorizationManager<Req
     public AuthorizationResult authorize(Supplier<? extends Authentication> authentication,
             RequestAuthorizationContext context) {
         HttpServletRequest request = context.getRequest();
-        String remoteAddr = getClientIpAddress(request);
+        String xForwardedFor = request.getHeader(ClientIp.X_FORWARDED_FOR);
 
-        try {
-            boolean isVpcInternal = isIpInVpc(remoteAddr);
-
-            if (isVpcInternal) {
-                log.debug("Allowing VPC internal request from: {}", remoteAddr);
-                return new AuthorizationDecision(true);
-            } else {
-                // Not from VPC - check if authenticated with JWT
-                Authentication auth = authentication.get();
-                boolean isAuthenticated = auth != null && auth.isAuthenticated()
-                    && !"anonymousUser".equals(auth.getPrincipal());
-
-                if (isAuthenticated) {
-                    log.debug("Allowing authenticated external request from: {}", remoteAddr);
-                    return new AuthorizationDecision(true);
-                } else {
-                    log.warn("Blocking unauthenticated external request from: {}", remoteAddr);
-                    return new AuthorizationDecision(false);
-                }
-            }
-
-        } catch (UnknownHostException e) {
-            log.error("Failed to parse IP address: {}", remoteAddr, e);
-            return new AuthorizationDecision(false);
+        if (isVpcInternal(request.getRemoteAddr(), xForwardedFor)) {
+            log.debug("Allowing VPC internal request from: {}", request.getRemoteAddr());
+            return new AuthorizationDecision(true);
         }
+
+        // Not from VPC - check if authenticated with JWT
+        Authentication auth = authentication.get();
+        boolean isAuthenticated = auth != null && auth.isAuthenticated()
+            && !"anonymousUser".equals(auth.getPrincipal());
+
+        if (isAuthenticated) {
+            log.debug("Allowing authenticated external request via: {}", xForwardedFor);
+            return new AuthorizationDecision(true);
+        }
+        log.warn("Blocking unauthenticated external request from: {}",
+            ClientIp.resolve(xForwardedFor, request.getRemoteAddr()));
+        return new AuthorizationDecision(false);
     }
 
     /**
-     * Check if IP address is within VPC CIDR range or is localhost/loopback.
-     * Localhost (127.0.0.1, ::1) indicates ECS Service Connect internal routing.
+     * A request is VPC internal only if the connection AND every {@code X-Forwarded-For} hop are
+     * VPC or loopback addresses (#1132). Service Connect delivers every request from 127.0.0.1,
+     * so the connection alone proves nothing; the header's first hop is client-controlled, so it
+     * proves nothing either. A request through the gateway always carries the public hop the ALB
+     * appended, which makes it external whatever the client put in front of it.
      */
-    private boolean isIpInVpc(String ipAddress) throws UnknownHostException {
-        // Allow localhost/loopback (ECS Service Connect uses localhost for service-to-service calls)
-        if ("127.0.0.1".equals(ipAddress) || "localhost".equals(ipAddress) || "::1".equals(ipAddress)) {
+    private boolean isVpcInternal(String remoteAddr, String xForwardedFor) {
+        if (!isInternalAddress(remoteAddr)) {
+            return false;
+        }
+        return ClientIp.hops(xForwardedFor).stream().allMatch(this::isInternalAddress);
+    }
+
+    /** VPC CIDR or loopback. Never resolves a host name: the value may come from the client. */
+    private boolean isInternalAddress(String value) {
+        Optional<InetAddress> address = ClientIp.parseLiteral(value);
+        if (address.isEmpty()) {
+            return false;
+        }
+        if (address.get().isLoopbackAddress()) {
             return true;
         }
-
-        // Check VPC CIDR range
-        long ip = ipToLong(ipAddress);
-        return (ip & networkMask) == (networkAddress & networkMask);
+        byte[] bytes = address.get().getAddress();
+        if (bytes.length != 4) {
+            return false;
+        }
+        return (toLong(bytes) & networkMask) == (networkAddress & networkMask);
     }
 
-    /**
-     * Convert IP address string to long for bitwise operations.
-     */
-    private long ipToLong(String ipAddress) {
-        try {
-            InetAddress addr = InetAddress.getByName(ipAddress);
-            byte[] bytes = addr.getAddress();
-
-            long result = 0;
-            for (byte b : bytes) {
-                result = (result << 8) | (b & 0xFF);
-            }
-            return result;
-
-        } catch (UnknownHostException e) {
-            throw new IllegalArgumentException("Invalid IP address: " + ipAddress, e);
+    private static long toLong(byte[] bytes) {
+        long result = 0;
+        for (byte b : bytes) {
+            result = (result << 8) | (b & 0xFF);
         }
+        return result;
     }
 
-    /**
-     * Extract client IP address from request.
-     * Handles X-Forwarded-For header from API Gateway/ALB.
-     */
-    private String getClientIpAddress(HttpServletRequest request) {
-        // Check X-Forwarded-For header (set by API Gateway/ALB)
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            // X-Forwarded-For can contain multiple IPs: client, proxy1, proxy2
-            // First IP is the original client
-            return xForwardedFor.split(",")[0].trim();
-        }
-
-        // Fallback to remote address (direct connection)
-        return request.getRemoteAddr();
+    private static long ipToLong(String ipAddress) {
+        return ClientIp.parseLiteral(ipAddress)
+            .map(address -> toLong(address.getAddress()))
+            .orElseThrow(() -> new IllegalArgumentException("Invalid IP address: " + ipAddress));
     }
 }

@@ -285,6 +285,24 @@ class RateLimitingTest {
     }
 
     @Test
+    @DisplayName("anonPathLimit — a spoofed first X-Forwarded-For hop does not change the bucket (#1132)")
+    void should_ignoreSpoofedFirstHop_when_clientSetsXForwardedFor() {
+        MockHttpServletRequest request = new MockHttpServletRequest();
+        request.setMethod("POST");
+        request.setRequestURI("/api/v1/newsletter/subscribe");
+        request.setRemoteAddr("10.0.0.1");
+        // The client sent "X-Forwarded-For: 192.0.2.77"; the ALB appended the real peer.
+        request.addHeader("X-Forwarded-For", "192.0.2.77, 198.51.100.42");
+        request.addHeader("X-Real-IP", "192.0.2.78");
+        when(rateLimitStorage.tryAcquireForPath(any(), any(), any(), any(), any()))
+                .thenReturn(true);
+
+        rateLimiter.isAnonymousRequestAllowed(request);
+
+        verify(rateLimitStorage).tryAcquireForPath(eq("198.51.100.42"), any(), any(), any(), any());
+    }
+
+    @Test
     @DisplayName("anonPathLimit — GET on a watched path falls back to global anon limit")
     void should_notMatch_when_methodIsNotPost() {
         // 11.E.9: Story 11.C.1/D3 changed the anonymous bucket key from the shared

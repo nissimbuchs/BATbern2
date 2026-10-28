@@ -82,10 +82,39 @@ off an SQS queue (see `06-backend-architecture.md`, "Email Forwarding"), and the
 - A `permitAll` in the gateway needs a reason that holds for an anonymous internet caller.
 - Removing an HTTP `permitAll` is not enough if the controller method has no `@PreAuthorize`:
   the endpoint is then open to every signed-in attendee. Personal-data reads need a role check.
-- `ProductionSecurityFilterChainTest` (gateway) exercises the production chain; every other
-  gateway test runs the permit-all `test` profile chain, which cannot catch this class.
+- `ProductionSecurityFilterChainTest` (gateway, EMS, CUMS) exercises the production chain; every
+  other test runs the permit-all `test` profile chain, which cannot catch this class.
 - Mail-based authorization must not trust the `From` header alone: alias forwarding checks the
   topmost SES `Authentication-Results` (DMARC pass, or DKIM aligned with the From domain).
+
+### Client IP: read X-Forwarded-For from the right, never the first hop (#1132)
+
+Requests reach the Spring gateway as client → AWS HTTP API (`api.batbern.ch`) → internet-facing
+ALB → gateway task, and the domain services through Service Connect, which delivers **every**
+request from 127.0.0.1. The ALB runs `xff_header_processing.mode=append`, and the gateway copies
+all request headers to the service. So whatever a client puts in `X-Forwarded-For` arrives intact
+in front of the hop the ALB appended: the first hop is attacker-controlled.
+
+- Every client-IP lookup goes through `ch.batbern.shared.security.ClientIp.resolve`: the
+  rightmost public hop, else the remote address. `X-Real-IP` is client-controlled too and is not
+  read. Gateway rate limiting, Turnstile, EMS rate limiting, the thanks limit and the speaker-portal
+  audit IP all use it.
+- CUMS `VpcInternalAuthorizationManager` treats a request as in-VPC only if the connection **and
+  every** `X-Forwarded-For` hop are VPC or loopback addresses. A request through the gateway always
+  carries the public hop the ALB appended, so a spoofed `10.x` in front of it no longer passes.
+- Never call `InetAddress.getByName` on a header value: it resolves host names. `ClientIp.parseLiteral`
+  accepts IP literals only.
+
+**Measured on production (2026-10-28): the rightmost public hop is the HTTP API's egress node**
+(`3.71.120.0/22`, `3.127.74.0/23`), not the visitor. Anonymous rate limits therefore bucket by
+API Gateway node, as they always did; the fix removes the spoofing, it does not recover the
+visitor's address. That needs the HTTP API to pass `$context.identity.sourceIp` in a header the
+client cannot set, which in turn needs the ALB to be unreachable directly (#1152).
+
+`ProductionSecurityFilterChainTest` exists for the gateway, EMS and CUMS (#1136). Each loads only
+the service's `SecurityConfig` and a probe controller under a non-test profile, so the `permitAll`
+list and the VPC rule are tested as production runs them. The CUMS test includes the spoofed-hop
+case and fails on the old first-hop code.
 
 ## Monitoring & Alerting
 

@@ -58,7 +58,8 @@ export interface InboundEmailStackProps extends cdk.StackProps {
  * Environment isolation: each environment uses a distinct reply address so replies
  * are routed to the correct SES account:
  *   production  → replies@batbern.ch         (batbern.ch MX → prod account SES)
- *   staging     → replies@staging.batbern.ch  (staging.batbern.ch MX → staging account SES)
+ *   other envs  → replies@<env>.batbern.ch. Not deployed: production traffic runs on the
+ *                 staging stacks with isProdTraffic, and staging.batbern.ch has no MX (#1133).
  */
 export class InboundEmailStack extends cdk.Stack {
   public readonly inboundQueue: sqs.IQueue;

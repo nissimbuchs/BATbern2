@@ -133,6 +133,11 @@ and cache the answer per username for everyone. A per-caller answer would either
 that cache. The internal API returns the same complete record regardless of who triggered the
 lookup.
 
+CUMS still serves a few `/api/v1/users/*` calls from EMS without a JWT through
+`VpcInternalAuthorizationManager`. It grants them only when the connection and every
+`X-Forwarded-For` hop are VPC or loopback addresses; anything that came through the gateway carries
+a public hop and needs a token (#1132, see `08-operations-security.md`).
+
 Role checks are enforced **in each service** (`@PreAuthorize` / service `SecurityConfig`). The
 API gateway only authenticates the caller (JWT) and routes; it does not check roles.
 

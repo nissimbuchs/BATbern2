@@ -1,5 +1,6 @@
 package ch.batbern.gateway.security;
 
+import ch.batbern.shared.security.ClientIp;
 import ch.batbern.gateway.auth.model.UserContext;
 import ch.batbern.gateway.security.exception.RateLimitExceededException;
 import lombok.RequiredArgsConstructor;
@@ -139,16 +140,6 @@ public class RateLimiter {
     }
 
     private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-
-        return request.getRemoteAddr();
+        return ClientIp.resolve(request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
     }
 }
