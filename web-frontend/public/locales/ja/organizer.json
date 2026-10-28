@@ -499,7 +499,7 @@
   },
   "newsletter": {
     "templateSelect": {
-      "label": "[MISSING] Vorlage",
+      "label": "テンプレート",
       "createNew": "新しいテンプレートを作成"
     }
   },

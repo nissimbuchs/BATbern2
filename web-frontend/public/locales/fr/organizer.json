@@ -499,7 +499,7 @@
   },
   "newsletter": {
     "templateSelect": {
-      "label": "[MISSING] Vorlage",
+      "label": "Modèle",
       "createNew": "Créer un nouveau modèle"
     }
   },

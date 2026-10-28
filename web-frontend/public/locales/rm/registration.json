@@ -83,10 +83,10 @@
       "failed": "L'annunziaziun ha fallì. Pruvai anc ina giada."
     },
     "cancelConfirm": "Essas vus segirs da vulair interromper l'annunziaziun?",
-    "waitlistWarning": "[MISSING] This event is full. Submitting will add you to the waitlist.",
-    "waitlistAcknowledgeLabel": "[MISSING] I understand I will be on the waitlist",
-    "waitlistSuccessTitle": "[MISSING] You are on the waitlist!",
-    "waitlistSuccessBody": "[MISSING] You are #{{position}} on the waitlist. We will email you if a spot opens."
+    "waitlistWarning": "Questa occurrenza è cumplaina. Cun trametter vegnis Vus mess sin la glista da spetga.",
+    "waitlistAcknowledgeLabel": "Jau chapesch che jau vegn sin la glista da spetga",
+    "waitlistSuccessTitle": "Vus essas sin la glista da spetga!",
+    "waitlistSuccessBody": "Vus essas nr. {{position}} sin la glista da spetga. Nus As scrivain, sch'i dat in plaz liber."
   },
   "personalDetails": {
     "title": "Infurmaziuns persunalas",
@@ -195,46 +195,46 @@
     "clear": "Allontanar l’interpresa tschernida"
   },
   "registrationStatusBanner": {
-    "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",
-    "registered": "[MISSING] You are registered for this event. Check your email for confirmation.",
-    "waitlist": "[MISSING] You are on the waitlist. We'll notify you if a spot opens.",
-    "cancelled": "[MISSING] Your registration was cancelled.",
+    "confirmed": "Vossa annunzia è confermada. Nus ans legrain da Vus!",
+    "registered": "Vus essas annunzià per questa occurrenza. Controllai Voss e-mail per la conferma.",
+    "waitlist": "Vus essas sin la glista da spetga. Nus As infurmain, sch'i dat in plaz liber.",
+    "cancelled": "Vossa annunzia è vegnida annullada.",
     "attended": "Vus avais participà a quest eveniment. Grazia fitg ch’eras qua!",
-    "manageLink": "[MISSING] Manage Registration",
-    "registerAgain": "[MISSING] Register again",
-    "waitlistWithPosition": "[MISSING] You are #{{position}} on the waitlist. We will notify you if a spot opens."
+    "manageLink": "Administrar l'annunzia",
+    "registerAgain": "S'annunziar danovamain",
+    "waitlistWithPosition": "Vus essas nr. {{position}} sin la glista da spetga. Nus As infurmain, sch'i dat in plaz liber."
   },
   "registrationStatusGuard": {
-    "alreadyRegistered": "[MISSING] You are already registered for this event",
-    "goBack": "[MISSING] Go back",
-    "registerAgain": "[MISSING] Register again",
+    "alreadyRegistered": "Vus essas gia annunzià per questa occurrenza",
+    "goBack": "Enavos",
+    "registerAgain": "S'annunziar danovamain",
     "unregistered": "Vus avez annullà vossa inscripziun. Vulessas vus inscriver puspè?"
   },
   "deregistration": {
     "page": {
-      "verifying": "[MISSING] Verifying your cancellation link…",
-      "title": "[MISSING] Cancel Registration",
-      "confirmQuestion": "[MISSING] Hi {{name}}, are you sure you want to cancel your registration for {{eventTitle}} on {{eventDate}}?",
-      "confirmButton": "[MISSING] Yes, cancel my registration",
-      "goBack": "[MISSING] Go back",
-      "successTitle": "[MISSING] Registration Cancelled",
-      "successBody": "[MISSING] Your registration has been cancelled. Your spot has been released to the next person on the waitlist.",
-      "invalidToken": "[MISSING] This cancellation link is invalid or has already been used. Please contact us if you need help.",
-      "alreadyCancelled": "[MISSING] Your registration was already cancelled."
+      "verifying": "Vossa link per annullar vegn verifitgà…",
+      "title": "Annullar l'annunzia",
+      "confirmQuestion": "Allegra {{name}}, vulais Vus propi annullar Vossa annunzia per {{eventTitle}} ils {{eventDate}}?",
+      "confirmButton": "Gea, annullar mia annunzia",
+      "goBack": "Enavos",
+      "successTitle": "Annunzia annullada",
+      "successBody": "Vossa annunzia è vegnida annullada. Voss plaz è vegnì liberà per la proxima persuna sin la glista da spetga.",
+      "invalidToken": "Quest link per annullar n'è betg valid u è gia vegnì duvrà. Contactai nus, sche Vus duvrais agid.",
+      "alreadyCancelled": "Vossa annunzia è gia vegnida annullada."
     },
     "modal": {
-      "title": "[MISSING] Cancel Registration",
-      "body": "[MISSING] Enter your email address and we'll send you a cancellation link.",
-      "emailLabel": "[MISSING] Email address",
-      "emailError": "[MISSING] Please enter a valid email address",
-      "submitButton": "[MISSING] Send cancellation link",
-      "successMessage": "[MISSING] If you have a registration for this event, you'll receive an email with a cancellation link shortly."
+      "title": "Annullar l'annunzia",
+      "body": "Endatai Vossa adressa d'e-mail e nus As tramettain in link per annullar.",
+      "emailLabel": "Adressa d'e-mail",
+      "emailError": "Endatai p.pl. ina adressa d'e-mail valida",
+      "submitButton": "Trametter il link per annullar",
+      "successMessage": "Sche Vus essas annunzià per questa occurrenza, survegnis Vus prest in e-mail cun in link per annullar."
     },
     "homepage": {
-      "cancelLink": "[MISSING] Cancel your registration"
+      "cancelLink": "Annullar Vossa annunzia"
     },
     "wizard": {
-      "cancelButton": "[MISSING] Cancel my registration"
+      "cancelButton": "Annullar mia annunzia"
     }
   },
   "attendeeQuickRegister": {

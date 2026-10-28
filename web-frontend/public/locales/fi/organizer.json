@@ -499,7 +499,7 @@
   },
   "newsletter": {
     "templateSelect": {
-      "label": "[MISSING] Vorlage",
+      "label": "Malli",
       "createNew": "Luo uusi malli"
     }
   },
