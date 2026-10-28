@@ -6,6 +6,7 @@ import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
+import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -18,7 +19,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.ArrayList;
+import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import java.time.Instant;
 
@@ -557,5 +562,50 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     void should_return403_when_nonOrganizerAccesses() throws Exception {
         mockMvc.perform(get("/api/v1/newsletter/subscribers"))
                 .andExpect(status().isForbidden());
+    }
+
+    // ── #1131: offset paging needs a total order ─────────────────────────────
+
+    @Test
+    @DisplayName("#1131 GET /newsletter/subscribers — 250 rows sharing subscribedAt: every id exactly once across pages")
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    void should_returnEveryIdExactlyOnce_when_pagingOverTiedSortKey() throws Exception {
+        // Production: 1829 of 2087 subscribers share the May 2026 import's subscribed_at.
+        Instant importedAt = Instant.parse("2026-05-01T10:00:00Z");
+        Set<String> expectedIds = new HashSet<>();
+        for (int i = 0; i < 250; i++) {
+            expectedIds.add(subscriberRepository.save(NewsletterSubscriber.builder()
+                    .email(String.format("tied%03d@example.com", i))
+                    .language("de").source("import")
+                    .unsubscribeToken("tok-tied-" + i)
+                    .subscribedAt(importedAt)
+                    .build()).getId().toString());
+        }
+        // A few later sign-ups with distinct dates sort first under -subscribedAt. They shift the
+        // tie across page boundaries; PostgreSQL's bounded (top-N) sort then returns the tied rows
+        // in a different order per OFFSET (measured: 12 duplicates in 270 rows without the fix).
+        for (int i = 0; i < 20; i++) {
+            expectedIds.add(subscriberRepository.save(NewsletterSubscriber.builder()
+                    .email(String.format("later%02d@example.com", i))
+                    .language("de").source("explicit")
+                    .unsubscribeToken("tok-later-" + i)
+                    .subscribedAt(importedAt.plus(i + 1, java.time.temporal.ChronoUnit.DAYS))
+                    .build()).getId().toString());
+        }
+        subscriberRepository.flush();
+
+        // No sort parameter: the admin UI's default, -subscribedAt.
+        List<String> seen = new ArrayList<>();
+        for (int page = 1; page <= 3; page++) {
+            String body = mockMvc.perform(get("/api/v1/newsletter/subscribers")
+                            .param("status", "all").param("page", String.valueOf(page)).param("limit", "100"))
+                    .andExpect(status().isOk())
+                    .andReturn().getResponse().getContentAsString();
+            for (JsonNode node : objectMapper.readTree(body).get("data")) {
+                seen.add(node.get("id").asText());
+            }
+        }
+        assertThat(seen).hasSize(270).doesNotHaveDuplicates();
+        assertThat(new HashSet<>(seen)).isEqualTo(expectedIds);
     }
 }

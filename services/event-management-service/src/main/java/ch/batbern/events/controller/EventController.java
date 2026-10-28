@@ -47,6 +47,7 @@ import ch.batbern.events.service.EventWorkflowStateMachine;
 import ch.batbern.events.service.publishing.PublicEventShaper;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityPolicy;
 import ch.batbern.events.service.publishing.PublicSessionVisibilityService;
+import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
 import jakarta.validation.Valid;
@@ -2118,8 +2119,8 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
                         companyId    // Now filters using denormalized companyId field
                 );
 
-        // Create Pageable with sorting by last name, first name
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+        // Create Pageable with sorting by last name, first name, then id (#1131: names are not unique)
+        org.springframework.data.domain.Pageable pageable = DeterministicPaging.pageRequest(
                 pageNumber,
                 pageSize,
                 org.springframework.data.domain.Sort.by(

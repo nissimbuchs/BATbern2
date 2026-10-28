@@ -1,5 +1,6 @@
 package ch.batbern.gateway.security;
 
+import ch.batbern.shared.security.ClientIp;
 import ch.batbern.gateway.auth.model.UserContext;
 import ch.batbern.gateway.security.exception.RateLimitExceededException;
 import ch.batbern.gateway.util.LogSanitizer;
@@ -139,19 +140,11 @@ public class RateLimitingFilter implements Filter {
     }
 
     /**
-     * Resolves the client IP for anonymous bucketing, honoring X-Forwarded-For and X-Real-IP
-     * (set by the AWS HTTP API in front of the gateway).
+     * Resolves the client IP for anonymous bucketing: the rightmost public X-Forwarded-For hop,
+     * never the client-supplied first one or X-Real-IP (#1132).
      */
     private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        String xRealIp = request.getHeader("X-Real-IP");
-        if (xRealIp != null && !xRealIp.isEmpty()) {
-            return xRealIp;
-        }
-        return request.getRemoteAddr();
+        return ClientIp.resolve(request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
     }
 
     /**

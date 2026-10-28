@@ -133,6 +133,11 @@ and cache the answer per username for everyone. A per-caller answer would either
 that cache. The internal API returns the same complete record regardless of who triggered the
 lookup.
 
+CUMS still serves a few `/api/v1/users/*` calls from EMS without a JWT through
+`VpcInternalAuthorizationManager`. It grants them only when the connection and every
+`X-Forwarded-For` hop are VPC or loopback addresses; anything that came through the gateway carries
+a public hop and needs a token (#1132, see `08-operations-security.md`).
+
 Role checks are enforced **in each service** (`@PreAuthorize` / service `SecurityConfig`). The
 API gateway only authenticates the caller (JWT) and routes; it does not check roles.
 
@@ -767,9 +772,10 @@ The newsletter send system uses an asynchronous fire-and-forget pattern to handl
 
 - **Trigger**: `POST /api/v1/events/{code}/newsletter/send` returns `202 Accepted` immediately
 - **Processing**: `@Async` method sends emails sequentially with SES rate limiting (~70ms/email to stay within SES quotas)
+- **Recipient iteration**: active subscribers are read in batches of 50 by keyset (`id > :lastId ORDER BY id`), not by OFFSET page, so recipients who unsubscribe or bounce during the send cannot make the loop skip anyone; each recipient is re-checked as active right before their mail (#1129)
 - **Progress tracking**: `newsletter_send_status` table tracks state (`PENDING` → `IN_PROGRESS` → `COMPLETED` / `PARTIAL` / `FAILED`), with `sent_count` and `total_count` for progress polling
 - **Duplicate prevention**: A second send attempt while `IN_PROGRESS` returns `409 Conflict`
-- **Retry**: Dedicated retry endpoint to re-send only failed recipients from a previous partial/failed send
+- **Retry**: Dedicated retry endpoint to re-send failed recipients of a previous partial/failed send and to reach active subscribers that have no recipient row yet. A failed recipient whose subscriber was since deleted, unsubscribed or suppressed is marked `skipped` and never mailed again (#1129)
 - **Orphan recovery**: On service startup, any stuck `IN_PROGRESS` records (from a crash mid-send) are reset to `FAILED` for manual retry
 
 ## Email Forwarding (in EMS)

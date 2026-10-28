@@ -15,33 +15,21 @@ auth:bearer {
 }
 
 script:pre-request {
-  // Seed the venue.coordination.config singleton so the test always asserts 200.
-  // Uses batbern.organizer (the staging test organizer) as coordinator.
-  // The coordinator email is resolved at runtime via UserApiClient — it must belong
-  // to an actual organizer-role user in the target environment.
-  const config = JSON.stringify({
-    venue: {
-      salutation: "Frau",
-      name: "Gabriela Senn",
-      email: "gabriela.senn.batbern.test@batbern.ch"
-    },
-    catering: {
-      salutation: "Herr",
-      name: "Stefan Oppliger",
-      email: "stefan.oppliger.batbern.test@batbern.ch"
-    },
-    coordinatorUsername: "batbern.organizer"
-  });
-
-  const res = await bru.runRequest({
-    method: "PUT",
-    url: bru.getEnvVar("baseUrl") + "/admin/settings/venue.coordination.config",
-    headers: {
-      "Content-Type": "application/json",
-      "Authorization": "Bearer " + bru.getEnvVar("organizerAuthToken")
-    },
-    body: JSON.stringify({ value: config })
-  });
+  // READ-ONLY: observe whether the venue.coordination.config singleton is set, never write it.
+  // Missing or failed reads are treated as "not configured", which the tests then pin to 412.
+  let configured = false;
+  try {
+    const res = await bru.sendRequest({
+      method: "GET",
+      url: bru.getEnvVar("baseUrl") + "/admin/settings/venue.coordination.config",
+      headers: { "Authorization": "Bearer " + bru.getEnvVar("organizerAuthToken") }
+    });
+    const value = res && res.data ? res.data.value : null;
+    configured = typeof value === "string" && value.trim() !== "";
+  } catch (e) {
+    configured = false;
+  }
+  bru.setVar("venueConfigConfigured", configured);
 }
 
 body:json {
@@ -53,35 +41,46 @@ body:json {
 }
 
 tests {
-  test("returns 200 — config was seeded in pre-request", function() {
-    expect(res.getStatus()).to.equal(200);
+  test("status matches the observed config state", function() {
+    if (bru.getVar("venueConfigConfigured")) {
+      // 404 only when BATbern59 does not exist in this environment (as in the sibling files).
+      expect([200, 404]).to.include(res.getStatus());
+    } else {
+      expect(res.getStatus()).to.equal(412);
+    }
   });
 
-  test("envelope contains subject, htmlBody, toEmail, replyToEmail", function() {
-    const body = res.getBody();
-    expect(body.subject).to.be.a("string").and.not.equal("");
-    expect(body.htmlBody).to.be.a("string").and.not.equal("");
-    expect(body.toEmail).to.be.a("string").and.not.equal("");
-    expect(body.ccEmails).to.be.an("array");
-    expect(body.replyToEmail).to.be.a("string").and.not.equal("");
+  test("envelope contains subject, htmlBody, toEmail, replyToEmail when 200", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.subject).to.be.a("string").and.not.equal("");
+      expect(body.htmlBody).to.be.a("string").and.not.equal("");
+      expect(body.toEmail).to.be.a("string").and.not.equal("");
+      expect(body.ccEmails).to.be.an("array");
+      expect(body.replyToEmail).to.be.a("string").and.not.equal("");
+    }
   });
 
-  test("subject contains the event date", function() {
-    // The venue-timetable template subject is:
-    // "BATbern vom {{eventDate}} zum Thema ..." — so any rendered subject must be non-empty.
-    // We can't assert the exact date without knowing the live event, but we can check it isn't the raw placeholder.
-    const body = res.getBody();
-    expect(body.subject).to.not.include("{{eventDate}}");
+  test("subject placeholder is rendered when 200", function() {
+    if (res.getStatus() === 200) {
+      expect(res.getBody().subject).to.not.include("{{eventDate}}");
+    }
   });
 }
 
 docs {
-  Contract test for POST /events/{code}/venue-coordination/preview.
+  Contract test for POST /events/{code}/venue-coordination/preview. Preview renders only:
+  readOnly transaction, no SES send.
 
-  A pre-request script seeds the admin-settings singleton (venue.coordination.config)
-  via PUT /admin/settings/... so this test always asserts HTTP 200 rather than tolerating
-  412 (as the old version did). That tolerant posture was a blind spot: the test would pass
-  silently in any misconfigured environment, defeating its purpose.
+  Read-only by design (#1135). The previous version seeded venue.coordination.config with
+  PUT /admin/settings/... in its pre-request. That singleton is the real venue and catering
+  contact set used by the organizer's venue mails, and Bruno runs against staging, which is
+  production, so the seed would have overwritten it with test contacts. It never ran in CI
+  only because bruno-tests/events/ was missing from run-bruno-tests.sh.
+
+  The pre-request now only GETs the setting. The tests are strict in both states rather than
+  tolerant: configured means 200 (or 404 if BATbern59 is absent), unconfigured means exactly
+  412. A misconfigured environment therefore still asserts a specific status.
 
   /send is NOT covered here — sending real SES traffic from Bruno would violate the
   no-real-comms-in-tests rule (staging IS production). The send path is exercised by

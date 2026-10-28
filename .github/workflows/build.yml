@@ -56,6 +56,13 @@ jobs:
       - name: Verify hooks are wired into the setup path
         run: ./scripts/ci/verify-githooks.sh
 
+      # Same class of defect, same cheap slot (#1135): a bruno-tests/<dir>/ that
+      # run-bruno-tests.sh neither runs nor excludes never runs, while the post-deploy Bruno
+      # job stays green. The guard also runs inside run-bruno-tests.sh, but there it only
+      # fires after the deploy; here it shows on the PR first.
+      - name: Verify every Bruno collection is run or explicitly excluded
+        run: ./scripts/ci/test-bruno-collection-guard.sh
+
   # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Shared Kernel (Foundation)
   # ═══════════════════════════════════════════════════════════

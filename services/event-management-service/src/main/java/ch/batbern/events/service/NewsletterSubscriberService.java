@@ -6,6 +6,7 @@ import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.exception.ReservedEmailDomainException;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
+import ch.batbern.shared.api.DeterministicPaging;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -305,7 +306,8 @@ public class NewsletterSubscriberService {
                         : org.springframework.data.domain.Sort.Direction.DESC;
 
         int springPage = params.getOffset() / params.getLimit();
-        org.springframework.data.domain.Pageable pageable = org.springframework.data.domain.PageRequest.of(
+        // #1131: id breaks ties (1829 of 2087 production subscribers share one subscribed_at).
+        org.springframework.data.domain.Pageable pageable = DeterministicPaging.pageRequest(
                 springPage, params.getLimit(),
                 org.springframework.data.domain.Sort.by(direction, safeSortBy));
 

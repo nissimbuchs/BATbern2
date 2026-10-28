@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.shared.security.ClientIp;
 import ch.batbern.events.core.api.generated.OrganizerThanksApi;
 import ch.batbern.events.core.dto.generated.FeaturedThanksResponse;
 import ch.batbern.events.core.dto.generated.SubmitThanksRequest;
@@ -97,17 +98,8 @@ public class OrganizerThanksController implements OrganizerThanksApi {
         return ((ServletRequestAttributes) RequestContextHolder.currentRequestAttributes()).getRequest();
     }
 
-    /** Client IP for the anonymous rate limit — first X-Forwarded-For hop, else remote address. */
+    /** Client IP for the anonymous rate limit — rightmost public X-Forwarded-For hop (#1132). */
     private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isBlank()) {
-            String firstHop = xForwardedFor.split(",")[0].trim();
-            // A blank first hop (e.g. "X-Forwarded-For: , 1.2.3.4") would collapse every caller into
-            // one rate-limit bucket — fall back to the remote address instead.
-            if (!firstHop.isEmpty()) {
-                return firstHop;
-            }
-        }
-        return request.getRemoteAddr();
+        return ClientIp.resolve(request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
     }
 }

@@ -1,5 +1,6 @@
 package ch.batbern.gateway.security;
 
+import ch.batbern.shared.security.ClientIp;
 import ch.batbern.gateway.config.TurnstileProperties;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
@@ -162,15 +163,10 @@ public class TurnstileVerificationFilter implements Filter {
     }
 
     /**
-     * Extracts the real client IP from X-Forwarded-For (set by ALB).
-     * Falls back to getRemoteAddr() when header is absent.
+     * Client IP passed to Cloudflare: the rightmost public X-Forwarded-For hop (#1132).
      */
     private String getClientIp(HttpServletRequest request) {
-        String xff = request.getHeader("X-Forwarded-For");
-        if (xff != null && !xff.isBlank()) {
-            return xff.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return ClientIp.resolve(request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
     }
 
     @Override

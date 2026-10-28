@@ -15,9 +15,7 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Limit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -495,8 +493,8 @@ class NewsletterEmailServiceTest {
     }
 
     @Test
-    @DisplayName("executeNewsletterSendAsync: uses paginated query — excludes suppressed subscribers")
-    void executeNewsletterSendAsync_usesPagedQuery() {
+    @DisplayName("executeNewsletterSendAsync: iterates active subscribers by id keyset (#1129)")
+    void executeNewsletterSendAsync_usesKeysetQuery() {
         testEvent.setId(UUID.randomUUID());
         UUID sendId = UUID.randomUUID();
         NewsletterSend send = NewsletterSend.builder()
@@ -507,12 +505,14 @@ class NewsletterEmailServiceTest {
         subscriber.setEmail("user@example.com");
         subscriber.setUnsubscribeToken("tok-abc");
 
-        Page<NewsletterSubscriber> page = new PageImpl<>(List.of(subscriber));
+        subscriber.setId(UUID.randomUUID());
 
         when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
-        when(subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class)))
-                .thenReturn(page)
-                .thenReturn(Page.empty()); // second call returns empty to stop loop
+        // A batch shorter than the batch size ends the loop.
+        when(subscriberRepository.existsByIdAndUnsubscribedAtIsNullAndSuppressedAtIsNull(any(UUID.class)))
+                .thenReturn(true);
+        when(subscriberRepository.findActiveAfterId(any(UUID.class), any(Limit.class)))
+                .thenReturn(List.of(subscriber));
         when(emailTemplateService.findByKeyAndLocale(any(), any()))
                 .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
         when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
@@ -522,8 +522,8 @@ class NewsletterEmailServiceTest {
 
         newsletterEmailService.executeNewsletterSendAsync(sendId, testEvent, false, "de", "newsletter-event");
 
-        // Must use paginated query, not the non-paginated one
-        verify(subscriberRepository, atLeastOnce()).findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class));
+        // Starts the keyset at the nil UUID with the batch size of 50.
+        verify(subscriberRepository).findActiveAfterId(new UUID(0L, 0L), Limit.of(50));
         verify(emailService, atLeastOnce()).sendHtmlEmailSync(eq("user@example.com"), any(), any(), any());
     }
 
@@ -589,13 +589,13 @@ class NewsletterEmailServiceTest {
         NewsletterSubscriber subscriber = new NewsletterSubscriber();
         subscriber.setEmail("user@example.com");
         subscriber.setUnsubscribeToken("tok-config");
-
-        Page<NewsletterSubscriber> page = new PageImpl<>(List.of(subscriber));
+        subscriber.setId(UUID.randomUUID());
 
         when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
-        when(subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class)))
-                .thenReturn(page)
-                .thenReturn(Page.empty());
+        when(subscriberRepository.existsByIdAndUnsubscribedAtIsNullAndSuppressedAtIsNull(any(UUID.class)))
+                .thenReturn(true);
+        when(subscriberRepository.findActiveAfterId(any(UUID.class), any(Limit.class)))
+                .thenReturn(List.of(subscriber));
         when(emailTemplateService.findByKeyAndLocale(any(), any()))
                 .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
         when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
@@ -640,11 +640,13 @@ class NewsletterEmailServiceTest {
         sub5.setEmail("five@example.com");
         sub5.setUnsubscribeToken("tok-5");
 
-        Page<NewsletterSubscriber> page = new PageImpl<>(List.of(sub1, sub2, sub3, sub4, sub5));
+        List.of(sub1, sub2, sub3, sub4, sub5).forEach(s -> s.setId(UUID.randomUUID()));
 
         when(sendRepository.findById(sendId)).thenReturn(java.util.Optional.of(send));
-        when(subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class)))
-                .thenReturn(page);
+        when(subscriberRepository.existsByIdAndUnsubscribedAtIsNullAndSuppressedAtIsNull(any(UUID.class)))
+                .thenReturn(true);
+        when(subscriberRepository.findActiveAfterId(any(UUID.class), any(Limit.class)))
+                .thenReturn(List.of(sub1, sub2, sub3, sub4, sub5));
         when(emailTemplateService.findByKeyAndLocale(any(), any()))
                 .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
         when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
@@ -786,7 +788,7 @@ class NewsletterEmailServiceTest {
                 eq("[Testmailing nur an OK] final"),
                 any(), any());
         // The paginated query should NOT be called in test mode
-        verify(subscriberRepository, never()).findByUnsubscribedAtIsNullAndSuppressedAtIsNull(any(Pageable.class));
+        verify(subscriberRepository, never()).findActiveAfterId(any(UUID.class), any(Limit.class));
     }
 
     // ── iCal attachment building ─────────────────────────────────────────────

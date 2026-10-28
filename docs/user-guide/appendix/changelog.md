@@ -89,6 +89,12 @@ Each release includes:
 - ✅ Newsletter tasks that a later announcement has replaced are closed automatically: Topic Announcement once the speakers or the agenda are public, Speaker Lineup once the agenda is public.
 - ✅ Catering is now due **5 days** before the event (final headcount), and two new standard tasks exist: **Namensschilder** (2 days before) and **Wein** (event day). For an existing event, add them from the event's task templates.
 
+**Bug Fixes — Newsletter Sending, Paged Lists and Request Origin (2026-10-28)**:
+- ✅ A newsletter send no longer skips subscribers when others unsubscribe while it runs. For BATbern60, 13 of 1060 were missed this way. "Retry" no longer mails addresses that were deleted or unsubscribed in the meantime.
+- ✅ Paged lists show every entry exactly once. The newsletter subscriber list showed some subscribers twice and hid about 337 of them; the same fix applies to every paged list.
+- ✅ The platform no longer trusts an IP address that a caller can set in a request header. This affected an internal access rule and the protection against too many requests.
+- ✅ Automated tests now check the access rules exactly as they run in production, and the API tests for distribution lists and participant exports run on every deploy.
+
 **Bug Fixes — Missing Translations (2026-10-28)**:
 - ✅ French, Italian, Romansh, Spanish, Finnish, Dutch, Japanese and Bernese German no longer show "[MISSING]" texts. This covers the registration status on the event page, cancelling a registration, the waitlist step of the registration form, the status chips on event cards, and the organizer's waitlist table.
 - ✅ A test now fails the build if a "[MISSING]" placeholder is added to any language file again.

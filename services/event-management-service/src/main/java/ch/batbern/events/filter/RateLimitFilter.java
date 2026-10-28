@@ -1,5 +1,6 @@
 package ch.batbern.events.filter;
 
+import ch.batbern.shared.security.ClientIp;
 import com.github.benmanes.caffeine.cache.Cache;
 import com.github.benmanes.caffeine.cache.Caffeine;
 import jakarta.servlet.FilterChain;
@@ -163,15 +164,9 @@ public class RateLimitFilter extends OncePerRequestFilter {
     }
 
     /**
-     * Extract client IP address from request
-     * Checks X-Forwarded-For header for proxied requests
+     * Client IP: the rightmost public X-Forwarded-For hop, never the client-supplied first one (#1132).
      */
     private String getClientIp(HttpServletRequest request) {
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            // X-Forwarded-For can contain multiple IPs, use the first one
-            return xForwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return ClientIp.resolve(request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
     }
 }

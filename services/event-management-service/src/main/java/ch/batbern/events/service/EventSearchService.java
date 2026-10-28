@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.api.FilterCriteria;
 import ch.batbern.shared.api.FilterOperator;
 import ch.batbern.shared.api.FilterParser;
@@ -16,7 +17,6 @@ import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -77,7 +77,8 @@ public class EventSearchService {
         }
 
         // Create pageable
-        Pageable pageable = PageRequest.of(pageNum - 1, pageSize, sort); // Convert to 0-indexed
+        // Convert to 0-indexed; id breaks ties of the requested sort (#1131)
+        Pageable pageable = DeterministicPaging.pageRequest(pageNum - 1, pageSize, sort);
 
         // Execute query
         Page<Event> eventPage = eventRepository.findAll(spec, pageable);
@@ -114,7 +115,7 @@ public class EventSearchService {
                 cb.lower(root.get("currentPublishedPhase")).in(PUBLISHED_PHASES));
 
         Page<Event> eventPage = eventRepository.findAll(
-                spec, PageRequest.of(pageNum - 1, pageSize, Sort.by(Sort.Direction.ASC, "date")));
+                spec, DeterministicPaging.pageRequest(pageNum - 1, pageSize, Sort.by(Sort.Direction.ASC, "date")));
         return PaginatedResponse.<Event>builder()
                 .data(eventPage.getContent())
                 .pagination(PaginationUtils.generateMetadata(pageNum, pageSize, eventPage.getTotalElements()))

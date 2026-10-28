@@ -8,6 +8,7 @@ import ch.batbern.events.mapper.TopicMapper;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.repository.TopicUsageHistoryRepository;
+import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -84,9 +85,11 @@ public class TopicService {
                     || status.equalsIgnoreCase("caution")
                     || status.equalsIgnoreCase("unavailable"))) {
 
-            // Fetch all topics by category (no pagination — staleness filter is in-memory)
+            // Fetch all topics by category (no pagination — staleness filter is in-memory), in the
+            // requested order plus id, so the manual pages below are stable (#1131)
             List<Topic> all = topicRepository.findByFilters(
-                    category, null, org.springframework.data.domain.Pageable.unpaged()).getContent();
+                    category, null, DeterministicPaging.withTieBreaker(Pageable.unpaged(pageable.getSort())))
+                    .getContent();
 
             // Batch-compute staleness in one query
             java.util.Map<UUID, StalenessScoreService.StalenessData> stalenessMap =

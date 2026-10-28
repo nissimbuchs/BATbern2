@@ -23,7 +23,7 @@ public interface RateLimitStorage {
      * configured limit AND increments the counter; returns false if the limit
      * has already been reached (does NOT increment).
      *
-     * @param clientIp source IP (X-Forwarded-For first hop, or remote addr)
+     * @param clientIp source IP (rightmost public X-Forwarded-For hop, see ClientIp)
      * @param method   HTTP method (POST)
      * @param path     request URI
      * @param limit    max requests per window for this (ip, method, path)

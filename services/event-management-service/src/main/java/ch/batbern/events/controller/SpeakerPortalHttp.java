@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.shared.security.ClientIp;
 import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.web.context.request.RequestContextHolder;
 import org.springframework.web.context.request.ServletRequestAttributes;
@@ -19,7 +20,7 @@ final class SpeakerPortalHttp {
     }
 
     /**
-     * Current caller's client IP, honouring {@code X-Forwarded-For} for proxied calls.
+     * Current caller's client IP, the rightmost public {@code X-Forwarded-For} hop (#1132).
      * Returns {@code "unknown"} when no request is bound to the current thread.
      */
     static String clientIp() {
@@ -27,10 +28,6 @@ final class SpeakerPortalHttp {
             return "unknown";
         }
         HttpServletRequest request = attrs.getRequest();
-        String xForwardedFor = request.getHeader("X-Forwarded-For");
-        if (xForwardedFor != null && !xForwardedFor.isEmpty()) {
-            return xForwardedFor.split(",")[0].trim();
-        }
-        return request.getRemoteAddr();
+        return ClientIp.resolve(request.getHeader(ClientIp.X_FORWARDED_FOR), request.getRemoteAddr());
     }
 }

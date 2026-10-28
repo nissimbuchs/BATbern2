@@ -29,8 +29,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.context.event.ApplicationReadyEvent;
 import org.springframework.context.annotation.Lazy;
 import org.springframework.context.event.EventListener;
-import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Limit;
 import org.springframework.lang.Nullable;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
@@ -61,7 +60,8 @@ import java.util.stream.Collectors;
  *       launches {@link #executeNewsletterSendAsync} in a background thread,
  *       and returns immediately with the send ID and PENDING status.</li>
  *   <li>{@link #executeNewsletterSendAsync} runs in a single {@code @Async} thread,
- *       processes subscribers in pages of 50, calls
+ *       walks the active subscribers in batches of 50 by keyset ({@code id > lastId ORDER BY id},
+ *       #1129: an OFFSET page skipped recipients when others unsubscribed mid-send), calls
  *       {@link EmailService#sendHtmlEmailSync} (no inner thread-pool dispatch),
  *       and respects the SES default rate limit (~14/s) via a 70 ms sleep between emails.</li>
  *   <li>Progress is written to {@code newsletter_sends} after each page so the organizer
@@ -74,9 +74,10 @@ import java.util.stream.Collectors;
  * send is already IN_PROGRESS for the same event.
  *
  * <h2>Retry</h2>
- * {@link #retryFailedRecipients} re-sends only to subscribers with
- * {@code delivery_status='failed'} in {@code newsletter_recipients}, updating the
- * existing send row in place.
+ * {@link #retryFailedRecipients} re-sends to recipients with {@code delivery_status='failed'} in
+ * {@code newsletter_recipients} whose subscriber is still active (others become {@code skipped},
+ * #1129), and to active subscribers with no recipient row at all, updating the existing send row
+ * in place.
  */
 @Slf4j
 @Service
@@ -88,6 +89,8 @@ public class NewsletterEmailService {
     private static final String DEFAULT_TEMPLATE_KEY = "newsletter-event";
     private static final String LAYOUT_KEY = "batbern-default";
     private static final int SEND_PAGE_SIZE = 50;
+    /** Keyset cursor start: PostgreSQL orders the nil UUID before every other UUID. */
+    private static final UUID KEYSET_START = new UUID(0L, 0L);
     /** The newsletter lists only the next few events, not the whole future calendar (#1111). */
     private static final int UPCOMING_EVENTS_LIMIT = 3;
     /** Base for the calendar SEQUENCE: 2020-01-01T00:00:00Z in epoch seconds. */
@@ -119,6 +122,13 @@ public class NewsletterEmailService {
     static final String STATUS_COMPLETED = "COMPLETED";
     static final String STATUS_PARTIAL = "PARTIAL";
     static final String STATUS_FAILED = "FAILED";
+
+    /**
+     * Recipient row state for a failed recipient that retry no longer mails, because the
+     * subscriber was deleted, unsubscribed or suppressed after the send (#1129). Not counted as
+     * failed, so the send can end COMPLETED.
+     */
+    static final String DELIVERY_SKIPPED = "skipped";
 
     // ── Dependencies ──────────────────────────────────────────────────────────
 
@@ -325,7 +335,7 @@ public class NewsletterEmailService {
     /**
      * Background send job — runs in a single {@code @Async} thread.
      *
-     * <p>Processes subscribers in pages of {@value #SEND_PAGE_SIZE}, sends each email
+     * <p>Walks active subscribers by id in batches of {@value #SEND_PAGE_SIZE} (keyset, #1129), sends each email
      * synchronously (no inner thread-pool dispatch), and updates progress counters in DB
      * after each page. Sleeps {@code sendRateDelayMs} ms between emails to respect
      * the SES default sending rate.
@@ -421,22 +431,33 @@ public class NewsletterEmailService {
             return;
         }
 
-        // ── Normal send: paged processing ────────────────────────────────────
+        // ── Normal send: keyset iteration in id order (#1129) ────────────────
+        // An OFFSET page skips rows whenever a recipient unsubscribes or is suppressed while the
+        // send runs (13 of 1060 BATbern60 subscribers were never contacted). The id cursor cannot
+        // skip or repeat anyone: a subscriber who leaves before being reached is simply not mailed.
         boolean reachedLimit = false;
 
         try {
-            int pageNumber = 0;
-            Page<NewsletterSubscriber> page;
+            UUID lastId = KEYSET_START;
+            List<NewsletterSubscriber> batch;
 
             do {
-                page = subscriberRepository.findByUnsubscribedAtIsNullAndSuppressedAtIsNull(
-                        PageRequest.of(pageNumber, SEND_PAGE_SIZE));
+                batch = subscriberRepository.findActiveAfterId(lastId, Limit.of(SEND_PAGE_SIZE));
+                if (!batch.isEmpty()) {
+                    lastId = batch.get(batch.size() - 1).getId();
+                }
 
-                for (NewsletterSubscriber subscriber : page.getContent()) {
+                for (NewsletterSubscriber subscriber : batch) {
                     // Story 10.29 AC7: Early termination for canary send mode
                     if (maxRecipients != null && sentCount + failedCount >= maxRecipients) {
                         reachedLimit = true;
                         break;
+                    }
+                    // A batch is read up to ~3.5 s before its last mail; whoever unsubscribed or
+                    // bounced in between is not mailed (one primary-key lookup per recipient).
+                    if (!subscriberRepository.existsByIdAndUnsubscribedAtIsNullAndSuppressedAtIsNull(
+                            subscriber.getId())) {
+                        continue;
                     }
 
                     String deliveryStatus = "sent";
@@ -463,14 +484,14 @@ public class NewsletterEmailService {
 
                 // Persist mid-send progress so the status endpoint reflects live counts.
                 updateSendProgress(sendId, sentCount, failedCount);
-                pageNumber++;
 
+                boolean mayHaveMore = batch.size() == SEND_PAGE_SIZE;
                 // Story 10.29 AC7: Inter-page delay for canary mode pacing
-                if (interPageDelayMs > 0 && page.hasNext() && !reachedLimit) {
+                if (interPageDelayMs > 0 && mayHaveMore && !reachedLimit) {
                     sleepQuietly(interPageDelayMs);
                 }
 
-            } while (page.hasNext() && !reachedLimit);
+            } while (batch.size() == SEND_PAGE_SIZE && !reachedLimit);
 
             String finalStatus = computeFinalStatus(sentCount, failedCount);
             markCompleted(sendId, sentCount, failedCount, finalStatus);
@@ -543,12 +564,20 @@ public class NewsletterEmailService {
             // ── 1. Re-send to previously-failed recipients ─────────────────────
             for (NewsletterRecipient failed : failedRecipients) {
                 String email = failed.getId().getEmail();
+                // #1129: never mail an address again whose subscriber was deleted, unsubscribed or
+                // suppressed since the send; it would also go out without an unsubscribe token.
+                Optional<NewsletterSubscriber> activeSubscriber = subscriberRepository.findByEmailIgnoreCase(email)
+                        .filter(s -> s.getUnsubscribedAt() == null && s.getSuppressedAt() == null);
+                if (activeSubscriber.isEmpty()) {
+                    log.info("Newsletter retry: skipping failed recipient without active subscriber, sendId={}",
+                            sendId);
+                    updateRecipientStatus(sendId, email, DELIVERY_SKIPPED);
+                    continue;
+                }
                 String deliveryStatus = "sent";
                 try {
-                    String unsubToken = subscriberRepository.findByEmailIgnoreCase(email)
-                            .map(NewsletterSubscriber::getUnsubscribeToken)
-                            .orElse("");
-                    String unsubLink = baseUrl + "/unsubscribe?token=" + unsubToken;
+                    String unsubLink = baseUrl + "/unsubscribe?token="
+                            + activeSubscriber.get().getUnsubscribeToken();
                     Map<String, String> recipientVars = new HashMap<>(baseVars);
                     recipientVars.put("unsubscribeLink", unsubLink);
                     String contentHtml = renderContent(locale, recipientVars, effectiveKey);
