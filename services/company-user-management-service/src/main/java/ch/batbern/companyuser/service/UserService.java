@@ -32,6 +32,7 @@ import ch.batbern.companyuser.exception.UserValidationException;
 import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.service.SlugGenerationService;
 import ch.batbern.shared.utils.LoggingUtils;
@@ -45,7 +46,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
@@ -387,7 +387,8 @@ public class UserService {
             sort = sort.and(Sort.by(direction, "firstName"));
         }
 
-        Pageable pageable = PageRequest.of(page, limit, sort);
+        // id breaks ties (#1131): names and companies repeat, and an OFFSET page over a tie is not stable
+        Pageable pageable = DeterministicPaging.pageRequest(page, limit, sort);
         Page<User> usersPage;
 
         // Use optimized repository methods with JOIN FETCH

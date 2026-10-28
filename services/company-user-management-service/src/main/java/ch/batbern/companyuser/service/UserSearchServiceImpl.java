@@ -4,11 +4,11 @@ import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.generated.UserResponse;
 import ch.batbern.companyuser.repository.UserRepository;
+import ch.batbern.shared.api.DeterministicPaging;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cache.CacheManager;
 import org.springframework.cache.annotation.Cacheable;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -66,7 +66,8 @@ public class UserSearchServiceImpl implements UserSearchService {
 
         // Ranking, role filtering and limiting all happen in the database. Doing any of it here
         // would mean filtering an already-truncated page — the 2026-09-09 bug.
-        Pageable page = PageRequest.of(0, effectiveLimit);
+        // The queries' ORDER BY ends in the unique username, so the limit cuts a total order.
+        Pageable page = DeterministicPaging.orderedByQuery(0, effectiveLimit);
         List<User> users = role != null
                 ? userRepository.searchByNameOrEmailAndRole(query, role, page)
                 : userRepository.searchByNameOrEmail(query, page);

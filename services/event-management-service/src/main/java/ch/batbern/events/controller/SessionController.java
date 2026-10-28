@@ -20,6 +20,7 @@ import ch.batbern.events.sessions.dto.generated.CreateSessionRequest;
 import ch.batbern.events.sessions.dto.generated.ListSessions200Response;
 import ch.batbern.events.sessions.dto.generated.PatchSessionRequest;
 import ch.batbern.events.sessions.dto.generated.SessionResponse;
+import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.api.FilterCriteria;
 import ch.batbern.shared.api.FilterOperator;
 import ch.batbern.shared.api.FilterParser;
@@ -32,8 +33,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageImpl;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -121,13 +122,14 @@ public class SessionController implements SessionsApi {
 
             // Apply pagination. Non-organizers only see the sessions the published phase allows, so
             // for them the filter runs before paging (an event has a few dozen sessions at most).
-            Pageable pageable = PageRequest.of(pageNum - 1, pageSize); // Convert to 0-indexed
+            // Agenda order, id breaking ties (#1131: an unsorted OFFSET page is not stable).
+            Pageable pageable = DeterministicPaging.pageRequest(pageNum - 1, pageSize, Sort.by("startTime"));
             Page<Session> sessionsPage;
             if (publicSessionVisibilityService.callerIsOrganizer()) {
                 sessionsPage = sessionRepository.findAll(spec, pageable);
             } else {
                 List<Session> visible = publicSessionVisibilityService.visibleSessions(
-                        event, sessionRepository.findAll(spec));
+                        event, sessionRepository.findAll(spec, pageable.getSort()));
                 int from = Math.min((int) pageable.getOffset(), visible.size());
                 int to = Math.min(from + pageSize, visible.size());
                 sessionsPage = new PageImpl<>(visible.subList(from, to), pageable, visible.size());

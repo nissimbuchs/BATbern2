@@ -8,13 +8,13 @@ import ch.batbern.events.notifications.dto.generated.NotificationCountResponse;
 import ch.batbern.events.notifications.dto.generated.NotificationPagination;
 import ch.batbern.events.notifications.dto.generated.NotificationResponse;
 import ch.batbern.events.notifications.dto.generated.NotificationsResponse;
+import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.api.PaginationParams;
 import ch.batbern.shared.api.PaginationUtils;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
@@ -59,7 +59,8 @@ public class NotificationController implements NotificationsApi {
         int pageSize = paginationParams.getLimit();
 
         // Convert to 0-based for Spring Pageable
-        Pageable pageable = PageRequest.of(pageNum - 1, pageSize, Sort.by("createdAt").descending());
+        // id breaks createdAt ties (#1131)
+        Pageable pageable = DeterministicPaging.pageRequest(pageNum - 1, pageSize, Sort.by("createdAt").descending());
 
         Page<Notification> notifications = status != null
                 ? notificationRepository.findByRecipientUsernameAndStatus(username, status.toUpperCase(), pageable)

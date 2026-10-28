@@ -12,9 +12,9 @@ import ch.batbern.events.media.dto.generated.EventPhotoUploadRequest;
 import ch.batbern.events.media.dto.generated.EventPhotoUploadResponse;
 import ch.batbern.events.repository.EventPhotoRepository;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.shared.api.DeterministicPaging;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
@@ -209,7 +209,7 @@ public class EventPhotoService {
     @Transactional(readOnly = true)
     public List<EventPhotoResponse> getRecentPhotos(int limit, int lastNEvents) {
         List<Event> recentEvents = eventRepository
-                .findByDateBeforeOrderByDateDesc(Instant.now(), PageRequest.of(0, lastNEvents));
+                .findByDateBeforeOrderByDateDesc(Instant.now(), DeterministicPaging.orderedByQuery(0, lastNEvents));
 
         if (recentEvents.isEmpty()) {
             return List.of();
