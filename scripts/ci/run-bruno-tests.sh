@@ -14,6 +14,10 @@
 #                        (e.g. 00-pretest-cleanup.bru, 99-posttest-cleanup.bru, and any
 #                        suffixed 99b-/99c-/*-cleanup-topics variants), in filename order.
 #                        Belt-and-suspenders after a Bruno runner crash to wipe test data.
+#   --check-collections  Only run the collection-coverage guard (see below) and exit.
+#                        Needs no tokens, no Bruno CLI and no network. Exit 0 = every
+#                        bruno-tests/*/ directory with .bru files is either run or
+#                        explicitly excluded; exit 1 = at least one is neither.
 #   --no-bail            Disable early-exit on script-level errors. Collection-level
 #                        failures already accumulate without bailing (see exit-code logic
 #                        at the bottom), so this is rarely needed — mainly a future-proof
@@ -34,6 +38,7 @@ ENVIRONMENT=${1:-"development"}
 AUTH_TOKEN=""
 TARGET_COLLECTION=""
 CLEANUP_ONLY=0
+CHECK_COLLECTIONS_ONLY=0
 
 # Consume the optional positional auth_token arg (skipped if next arg is a flag)
 shift || true
@@ -55,6 +60,10 @@ while [ $# -gt 0 ]; do
             ;;
         --cleanup-only)
             CLEANUP_ONLY=1
+            shift
+            ;;
+        --check-collections)
+            CHECK_COLLECTIONS_ONLY=1
             shift
             ;;
         --no-bail)
@@ -83,6 +92,98 @@ echo ""
 echo "Environment:        $ENVIRONMENT"
 [ -n "$TARGET_COLLECTION" ] && echo "Target collection:  $TARGET_COLLECTION"
 [ "$CLEANUP_ONLY" = "1" ] && echo "Mode:               cleanup-only"
+
+# --- Collection registry ----------------------------------------------------
+# Every bruno-tests/*/ directory that contains .bru files MUST appear in exactly one of
+# the three lists below. check_collection_coverage() enforces this and fails the run
+# otherwise (#1135: bruno-tests/events/ sat outside the list and never ran in CI, a green
+# Bruno job that silently covered nothing).
+#
+# `collections` runs on EVERY environment, including staging, which is production
+# (www/api.batbern.ch, real data). A collection belongs here only if every file in it is
+# read-only or self-cleaning, sends no mail or notification, and never PUTs a partial
+# captured object back.
+#
+# admin-cleanup-api MUST run first — verifies the cleanup endpoint's authorization +
+# routing + 400-validation chain through the gateway. Plan F2 mandates "runs FIRST in
+# run-bruno-tests.sh so authorization regressions are caught before any test creates
+# state to clean."
+collections=(
+    "admin-cleanup-api"
+    "file-upload-api"
+    "companies-api"
+    "users-api"
+    "tasks-api"
+    "event-types-api"
+    "event-topics-api"
+    "events-crud-api"
+    "events"
+    "sessions-api"
+    "speaker-pool-api"
+    "event-full-workflow-api"
+    "partners-api"
+    "partner-meetings-api"
+)
+
+# Run only on development/local/test. speaker-portal-api requires the E2E token helper
+# endpoint (@Profile dev/local/test only), so it cannot pass against staging/production.
+dev_only_collections=(
+    "speaker-portal-api"
+)
+
+# Never run as a collection. Each entry needs a reason; add one here only on purpose.
+#   environments  Bruno environment definitions (development/staging/production.bru),
+#                 not requests. Selected via --env, never via `bru run <dir>`.
+excluded_collections=(
+    "environments"
+)
+
+# Returns 1 when a bruno-tests/*/ directory holding .bru files (at any depth, matching
+# `bru run -r`) is in none of the lists above. Prints every offender, not just the first.
+check_collection_coverage() {
+    local root="${1:-bruno-tests}"
+    local known=" ${collections[*]} ${dev_only_collections[*]} ${excluded_collections[*]} "
+    local unregistered=()
+    local dir name
+    for dir in "$root"/*/; do
+        [ -d "$dir" ] || continue
+        name=$(basename "$dir")
+        if [ -z "$(find "$dir" -name '*.bru' -print -quit)" ]; then
+            continue
+        fi
+        case "$known" in
+            *" $name "*) ;;
+            *) unregistered+=("$name") ;;
+        esac
+    done
+    if [ ${#unregistered[@]} -gt 0 ]; then
+        echo -e "${RED}ERROR: Bruno collection(s) neither run nor excluded:${NC}" >&2
+        printf '  bruno-tests/%s/\n' "${unregistered[@]}" >&2
+        echo "Add each to 'collections' (runs against production, so it must be safe there)," >&2
+        echo "'dev_only_collections', or 'excluded_collections' with a reason, in $0." >&2
+        return 1
+    fi
+    echo -e "${GREEN}✓ Collection coverage: every bruno-tests/*/ directory is run or explicitly excluded${NC}"
+    return 0
+}
+
+# Verify Bruno tests directory exists
+if [ ! -d "bruno-tests" ]; then
+    echo -e "${RED}ERROR: bruno-tests directory not found${NC}"
+    echo "Expected path: $(pwd)/bruno-tests"
+    exit 1
+fi
+
+# Fail fast, before tokens, Bruno CLI or network: an unregistered collection is a wiring
+# defect, not a test failure.
+check_collection_coverage "bruno-tests" || exit 1
+if [ "$CHECK_COLLECTIONS_ONLY" = "1" ]; then
+    exit 0
+fi
+
+if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "local" ] || [ "$ENVIRONMENT" = "test" ]; then
+    collections+=("${dev_only_collections[@]}")
+fi
 
 # Try to load token from local config if not provided
 if [ -z "$AUTH_TOKEN" ]; then
@@ -178,42 +279,9 @@ if ! command -v bru &> /dev/null; then
     }
 fi
 
-# Verify Bruno tests directory exists
-if [ ! -d "bruno-tests" ]; then
-    echo -e "${RED}ERROR: bruno-tests directory not found${NC}"
-    echo "Expected path: $(pwd)/bruno-tests"
-    exit 1
-fi
-
 passed=0
 failed=0
 skipped=0
-
-# Test collection directories
-# admin-cleanup-api MUST run first — verifies the cleanup endpoint's authorization +
-# routing + 400-validation chain through the gateway. Plan F2 mandates "runs FIRST in
-# run-bruno-tests.sh so authorization regressions are caught before any test creates
-# state to clean."
-# speaker-portal-api requires the E2E token helper endpoint (@Profile dev/local/test only)
-# and is therefore excluded on staging/production.
-collections=(
-    "admin-cleanup-api"
-    "file-upload-api"
-    "companies-api"
-    "users-api"
-    "tasks-api"
-    "event-types-api"
-    "event-topics-api"
-    "events-crud-api"
-    "sessions-api"
-    "speaker-pool-api"
-    "event-full-workflow-api"
-    "partners-api"
-    "partner-meetings-api"
-)
-if [ "$ENVIRONMENT" = "development" ] || [ "$ENVIRONMENT" = "local" ] || [ "$ENVIRONMENT" = "test" ]; then
-    collections+=("speaker-portal-api")
-fi
 
 # If --collection set, narrow to just that one (validate it's in the list to prevent typos)
 if [ -n "$TARGET_COLLECTION" ]; then

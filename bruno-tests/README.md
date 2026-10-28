@@ -147,20 +147,23 @@ executes even if Bruno's runner crashed mid-collection.
 
 ## Collections — current state
 
-| Collection | Entity | Owning service | Auth | Status |
-|-----------|--------|----------------|------|--------|
-| `file-upload-api` | logos | CUMS | organizer | per-entity, light audit pending |
-| `companies-api` | companies | CUMS | organizer | per-entity, light audit pending |
-| `users-api` | users | CUMS | organizer | per-entity, light audit pending |
-| `tasks-api` | event_tasks | EMS | organizer | per-entity, light audit pending |
-| `events-api` | events + sessions + topics + speaker-pool + reminders (monolithic) | EMS | organizer | **decomposition pending** — PR 2 splits into 6 collections |
-| `partners-api` | partners + meetings + votes | PCS | organizer | per-entity, light audit pending |
-| `speaker-portal-api` | speaker invitation/portal flow | EMS | organizer + speaker | dev-only — depends on `@Profile("dev/local/test")`-gated token endpoint |
-| `admin-cleanup-api` | cleanup endpoint authorization | (all 3 services) | organizer | added in PR 1 |
+Every `bruno-tests/*/` directory that contains `.bru` files must be registered in
+`scripts/ci/run-bruno-tests.sh`, in exactly one of three lists. The runner fails before
+any request when one is not (#1135), and the `verify-hooks` job in `build.yml` runs the
+same check on the PR (`scripts/ci/test-bruno-collection-guard.sh`). To check locally:
+`./scripts/ci/run-bruno-tests.sh development --check-collections`.
 
-`speaker-portal-api` is automatically excluded from staging runs by
-`scripts/ci/run-bruno-tests.sh` because it requires an E2E token helper that
-only exists in dev/local/test profiles.
+| List | Runs on | Directories |
+|------|---------|-------------|
+| `collections` | every environment, **including staging = production** | `admin-cleanup-api` (first), `file-upload-api`, `companies-api`, `users-api`, `tasks-api`, `event-types-api`, `event-topics-api`, `events-crud-api`, `events`, `sessions-api`, `speaker-pool-api`, `event-full-workflow-api`, `partners-api`, `partner-meetings-api` |
+| `dev_only_collections` | development / local / test only | `speaker-portal-api`: needs the `@Profile("dev/local/test")`-gated E2E token endpoint |
+| `excluded_collections` | never | `environments`: Bruno environment files, selected via `--env`, not requests |
+
+A directory goes into `collections` only if every file in it is safe against production:
+read-only or self-cleaning, no outbound mail or notification, and no PUT of a partial
+captured object (see #1069). `events` holds read-only smoke tests against the real
+`BATbern59` (distribution lists, name-badge XLSX/DOCX export, venue-mail preview); they
+accept 404 so environments without that event still pass.
 
 ## Auth tokens
 
