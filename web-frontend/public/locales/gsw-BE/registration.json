@@ -9,46 +9,46 @@
     }
   },
   "registrationStatusBanner": {
-    "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",
-    "registered": "[MISSING] You are registered for this event. Check your email for confirmation.",
-    "waitlist": "[MISSING] You are on the waitlist. We'll notify you if a spot opens.",
-    "cancelled": "[MISSING] Your registration was cancelled.",
+    "confirmed": "Dini Aamäudig isch bestätigt. Mir fröie üs uf di!",
+    "registered": "Du bisch für dä Aalass aagmäudet. Lueg i dis E-Mail für d Bestätigung.",
+    "waitlist": "Du bisch uf dr Warteliste. Mir mäude üs, wenn e Platz frei wird.",
+    "cancelled": "Dini Aamäudig isch storniert worde.",
     "attended": "Du bisch a dere Veranstaltig debi gsi. Merci, dass d debi gsi bisch!",
-    "manageLink": "[MISSING] Manage Registration",
-    "registerAgain": "[MISSING] Register again",
-    "waitlistWithPosition": "[MISSING] You are #{{position}} on the waitlist. We will notify you if a spot opens."
+    "manageLink": "Aamäudig verwaute",
+    "registerAgain": "Nomau aamäude",
+    "waitlistWithPosition": "Du bisch uf Platz {{position}} vo dr Warteliste. Mir mäude üs, wenn e Platz frei wird."
   },
   "registrationStatusGuard": {
-    "alreadyRegistered": "[MISSING] You are already registered for this event",
-    "goBack": "[MISSING] Go back",
-    "registerAgain": "[MISSING] Register again",
+    "alreadyRegistered": "Du bisch scho für dä Aalass aagmäudet",
+    "goBack": "Zrügg",
+    "registerAgain": "Nomau aamäude",
     "unregistered": "Du hesch di vo dem Event abgmäutet. Wetsch di wieder aamäute?"
   },
   "deregistration": {
     "page": {
-      "verifying": "[MISSING] Verifying your cancellation link…",
-      "title": "[MISSING] Cancel Registration",
-      "confirmQuestion": "[MISSING] Hi {{name}}, are you sure you want to cancel your registration for {{eventTitle}} on {{eventDate}}?",
-      "confirmButton": "[MISSING] Yes, cancel my registration",
-      "goBack": "[MISSING] Go back",
-      "successTitle": "[MISSING] Registration Cancelled",
-      "successBody": "[MISSING] Your registration has been cancelled. Your spot has been released to the next person on the waitlist.",
-      "invalidToken": "[MISSING] This cancellation link is invalid or has already been used. Please contact us if you need help.",
-      "alreadyCancelled": "[MISSING] Your registration was already cancelled."
+      "verifying": "Dä Abmäude-Link wird prüeft…",
+      "title": "Aamäudig storniere",
+      "confirmQuestion": "Hoi {{name}}, wetsch dini Aamäudig für {{eventTitle}} am {{eventDate}} würklech storniere?",
+      "confirmButton": "Ja, mini Aamäudig storniere",
+      "goBack": "Zrügg",
+      "successTitle": "Aamäudig storniert",
+      "successBody": "Dini Aamäudig isch storniert. Di Platz isch für di nächschti Person uf dr Warteliste frei worde.",
+      "invalidToken": "Dä Abmäude-Link isch ungültig oder isch scho bruucht worde. Mäud di bi üs, wenn d Hiuf bruuchsch.",
+      "alreadyCancelled": "Dini Aamäudig isch scho storniert worde."
     },
     "modal": {
-      "title": "[MISSING] Cancel Registration",
-      "body": "[MISSING] Enter your email address and we'll send you a cancellation link.",
-      "emailLabel": "[MISSING] Email address",
-      "emailError": "[MISSING] Please enter a valid email address",
-      "submitButton": "[MISSING] Send cancellation link",
-      "successMessage": "[MISSING] If you have a registration for this event, you'll receive an email with a cancellation link shortly."
+      "title": "Aamäudig storniere",
+      "body": "Gib dini E-Mail-Adrässe ii, när schicke mir dir e Abmäude-Link.",
+      "emailLabel": "E-Mail-Adrässe",
+      "emailError": "Bitte gib e gültigi E-Mail-Adrässe ii",
+      "submitButton": "Abmäude-Link schicke",
+      "successMessage": "Wenn du für dä Aalass aagmäudet bisch, chunnsch gli es E-Mail mit emne Abmäude-Link über."
     },
     "homepage": {
-      "cancelLink": "[MISSING] Cancel your registration"
+      "cancelLink": "Aamäudig storniere"
     },
     "wizard": {
-      "cancelButton": "[MISSING] Cancel my registration"
+      "cancelButton": "Mini Aamäudig storniere"
     }
   },
   "attendeeQuickRegister": {
@@ -77,5 +77,11 @@
   },
   "success": {
     "companyUpdated": "Mir hei dini hinterleiti Firma uf {{company}} aktualisiert."
+  },
+  "wizard": {
+    "waitlistAcknowledgeLabel": "I verstah, dass i uf d Warteliste chume",
+    "waitlistSuccessBody": "Du bisch uf Platz {{position}} vo dr Warteliste. Mir schribe dir, wenn e Platz frei wird.",
+    "waitlistSuccessTitle": "Du bisch uf dr Warteliste!",
+    "waitlistWarning": "Dä Aalass isch usbuecht. Wenn d abschicksch, chunnsch uf d Warteliste."
   }
 }

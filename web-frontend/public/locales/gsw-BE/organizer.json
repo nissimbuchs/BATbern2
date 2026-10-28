@@ -42,7 +42,7 @@
   },
   "newsletter": {
     "templateSelect": {
-      "label": "[MISSING] Vorlage",
+      "label": "Vorlag",
       "createNew": "Neus Vorlagi erstelle"
     }
   },

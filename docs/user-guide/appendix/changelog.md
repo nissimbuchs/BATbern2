@@ -89,6 +89,10 @@ Each release includes:
 - ✅ Newsletter tasks that a later announcement has replaced are closed automatically: Topic Announcement once the speakers or the agenda are public, Speaker Lineup once the agenda is public.
 - ✅ Catering is now due **5 days** before the event (final headcount), and two new standard tasks exist: **Namensschilder** (2 days before) and **Wein** (event day). For an existing event, add them from the event's task templates.
 
+**Bug Fixes — Missing Translations (2026-10-28)**:
+- ✅ French, Italian, Romansh, Spanish, Finnish, Dutch, Japanese and Bernese German no longer show "[MISSING]" texts. This covers the registration status on the event page, cancelling a registration, the waitlist step of the registration form, the status chips on event cards, and the organizer's waitlist table.
+- ✅ A test now fails the build if a "[MISSING]" placeholder is added to any language file again.
+
 **Bug Fixes — Waitlist Mail and Capacity Badge (2026-10-28)**:
 - ✅ Logged-in users who register for a full event now get the waitlist mail, like everyone who registers through the form. Before, they only saw the message on the page.
 - ✅ On the homepage, a visitor who is already registered for a full event sees "You're registered!" in the event details, as in the hero card, instead of "Full — join waitlist". Someone on the waitlist sees "You're on the waitlist".

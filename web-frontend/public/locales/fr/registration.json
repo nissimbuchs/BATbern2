@@ -83,10 +83,10 @@
       "failed": "Échec de l'inscription. Veuillez réessayer."
     },
     "cancelConfirm": "Êtes-vous sûr(e) de vouloir annuler l'inscription ?",
-    "waitlistWarning": "[MISSING] This event is full. Submitting will add you to the waitlist.",
-    "waitlistAcknowledgeLabel": "[MISSING] I understand I will be on the waitlist",
-    "waitlistSuccessTitle": "[MISSING] You are on the waitlist!",
-    "waitlistSuccessBody": "[MISSING] You are #{{position}} on the waitlist. We will email you if a spot opens."
+    "waitlistWarning": "Cet événement est complet. En envoyant le formulaire, vous serez placé sur la liste d'attente.",
+    "waitlistAcknowledgeLabel": "Je comprends que je serai sur la liste d'attente",
+    "waitlistSuccessTitle": "Vous êtes sur la liste d'attente !",
+    "waitlistSuccessBody": "Vous êtes n° {{position}} sur la liste d'attente. Nous vous écrirons si une place se libère."
   },
   "personalDetails": {
     "title": "Informations personnelles",
@@ -195,46 +195,46 @@
     "clear": "Supprimer l’entreprise sélectionnée"
   },
   "registrationStatusBanner": {
-    "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",
-    "registered": "[MISSING] You are registered for this event. Check your email for confirmation.",
-    "waitlist": "[MISSING] You are on the waitlist. We'll notify you if a spot opens.",
-    "cancelled": "[MISSING] Your registration was cancelled.",
+    "confirmed": "Votre inscription est confirmée. Au plaisir de vous voir !",
+    "registered": "Vous êtes inscrit à cet événement. Consultez vos e-mails pour la confirmation.",
+    "waitlist": "Vous êtes sur la liste d'attente. Nous vous préviendrons si une place se libère.",
+    "cancelled": "Votre inscription a été annulée.",
     "attended": "Vous avez participé à cet événement. Merci de votre présence !",
-    "manageLink": "[MISSING] Manage Registration",
-    "registerAgain": "[MISSING] Register again",
-    "waitlistWithPosition": "[MISSING] You are #{{position}} on the waitlist. We will notify you if a spot opens."
+    "manageLink": "Gérer l'inscription",
+    "registerAgain": "S'inscrire à nouveau",
+    "waitlistWithPosition": "Vous êtes n° {{position}} sur la liste d'attente. Nous vous préviendrons si une place se libère."
   },
   "registrationStatusGuard": {
-    "alreadyRegistered": "[MISSING] You are already registered for this event",
-    "goBack": "[MISSING] Go back",
-    "registerAgain": "[MISSING] Register again",
+    "alreadyRegistered": "Vous êtes déjà inscrit à cet événement",
+    "goBack": "Retour",
+    "registerAgain": "S'inscrire à nouveau",
     "unregistered": "Vous vous êtes désinscrit de cet événement. Souhaitez-vous vous réinscrire ?"
   },
   "deregistration": {
     "page": {
-      "verifying": "[MISSING] Verifying your cancellation link…",
-      "title": "[MISSING] Cancel Registration",
-      "confirmQuestion": "[MISSING] Hi {{name}}, are you sure you want to cancel your registration for {{eventTitle}} on {{eventDate}}?",
-      "confirmButton": "[MISSING] Yes, cancel my registration",
-      "goBack": "[MISSING] Go back",
-      "successTitle": "[MISSING] Registration Cancelled",
-      "successBody": "[MISSING] Your registration has been cancelled. Your spot has been released to the next person on the waitlist.",
-      "invalidToken": "[MISSING] This cancellation link is invalid or has already been used. Please contact us if you need help.",
-      "alreadyCancelled": "[MISSING] Your registration was already cancelled."
+      "verifying": "Vérification de votre lien d'annulation…",
+      "title": "Annuler l'inscription",
+      "confirmQuestion": "Bonjour {{name}}, voulez-vous vraiment annuler votre inscription à {{eventTitle}} le {{eventDate}} ?",
+      "confirmButton": "Oui, annuler mon inscription",
+      "goBack": "Retour",
+      "successTitle": "Inscription annulée",
+      "successBody": "Votre inscription a été annulée. Votre place a été attribuée à la personne suivante sur la liste d'attente.",
+      "invalidToken": "Ce lien d'annulation est invalide ou a déjà été utilisé. Contactez-nous si vous avez besoin d'aide.",
+      "alreadyCancelled": "Votre inscription a déjà été annulée."
     },
     "modal": {
-      "title": "[MISSING] Cancel Registration",
-      "body": "[MISSING] Enter your email address and we'll send you a cancellation link.",
-      "emailLabel": "[MISSING] Email address",
-      "emailError": "[MISSING] Please enter a valid email address",
-      "submitButton": "[MISSING] Send cancellation link",
-      "successMessage": "[MISSING] If you have a registration for this event, you'll receive an email with a cancellation link shortly."
+      "title": "Annuler l'inscription",
+      "body": "Saisissez votre adresse e-mail et nous vous enverrons un lien d'annulation.",
+      "emailLabel": "Adresse e-mail",
+      "emailError": "Veuillez saisir une adresse e-mail valide",
+      "submitButton": "Envoyer le lien d'annulation",
+      "successMessage": "Si vous êtes inscrit à cet événement, vous recevrez sous peu un e-mail avec un lien d'annulation."
     },
     "homepage": {
-      "cancelLink": "[MISSING] Cancel your registration"
+      "cancelLink": "Annuler votre inscription"
     },
     "wizard": {
-      "cancelButton": "[MISSING] Cancel my registration"
+      "cancelButton": "Annuler mon inscription"
     }
   },
   "attendeeQuickRegister": {

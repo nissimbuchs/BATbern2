@@ -83,10 +83,10 @@
       "failed": "登録に失敗しました。もう一度お試しください。"
     },
     "cancelConfirm": "登録をキャンセルしてよろしいですか？",
-    "waitlistWarning": "[MISSING] This event is full. Submitting will add you to the waitlist.",
-    "waitlistAcknowledgeLabel": "[MISSING] I understand I will be on the waitlist",
-    "waitlistSuccessTitle": "[MISSING] You are on the waitlist!",
-    "waitlistSuccessBody": "[MISSING] You are #{{position}} on the waitlist. We will email you if a spot opens."
+    "waitlistWarning": "このイベントは満席です。送信するとキャンセル待ちに登録されます。",
+    "waitlistAcknowledgeLabel": "キャンセル待ちになることを了承します",
+    "waitlistSuccessTitle": "キャンセル待ちに登録しました！",
+    "waitlistSuccessBody": "キャンセル待ち{{position}}番目です。空きが出た場合はメールでお知らせします。"
   },
   "personalDetails": {
     "title": "個人情報",
@@ -195,46 +195,46 @@
     "clear": "選択した会社を削除"
   },
   "registrationStatusBanner": {
-    "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",
-    "registered": "[MISSING] You are registered for this event. Check your email for confirmation.",
-    "waitlist": "[MISSING] You are on the waitlist. We'll notify you if a spot opens.",
-    "cancelled": "[MISSING] Your registration was cancelled.",
+    "confirmed": "ご登録が確定しました。当日お会いできるのを楽しみにしています！",
+    "registered": "このイベントに登録済みです。確認メールをご確認ください。",
+    "waitlist": "キャンセル待ちに登録されています。空きが出た場合はお知らせします。",
+    "cancelled": "ご登録はキャンセルされました。",
     "attended": "このイベントにご参加いただきました。ご参加ありがとうございました！",
-    "manageLink": "[MISSING] Manage Registration",
-    "registerAgain": "[MISSING] Register again",
-    "waitlistWithPosition": "[MISSING] You are #{{position}} on the waitlist. We will notify you if a spot opens."
+    "manageLink": "登録を管理",
+    "registerAgain": "再度登録する",
+    "waitlistWithPosition": "キャンセル待ち{{position}}番目です。空きが出た場合はお知らせします。"
   },
   "registrationStatusGuard": {
-    "alreadyRegistered": "[MISSING] You are already registered for this event",
-    "goBack": "[MISSING] Go back",
-    "registerAgain": "[MISSING] Register again",
+    "alreadyRegistered": "このイベントにはすでに登録済みです",
+    "goBack": "戻る",
+    "registerAgain": "再度登録する",
     "unregistered": "このイベントの登録を解除しました。再登録しますか？"
   },
   "deregistration": {
     "page": {
-      "verifying": "[MISSING] Verifying your cancellation link…",
-      "title": "[MISSING] Cancel Registration",
-      "confirmQuestion": "[MISSING] Hi {{name}}, are you sure you want to cancel your registration for {{eventTitle}} on {{eventDate}}?",
-      "confirmButton": "[MISSING] Yes, cancel my registration",
-      "goBack": "[MISSING] Go back",
-      "successTitle": "[MISSING] Registration Cancelled",
-      "successBody": "[MISSING] Your registration has been cancelled. Your spot has been released to the next person on the waitlist.",
-      "invalidToken": "[MISSING] This cancellation link is invalid or has already been used. Please contact us if you need help.",
-      "alreadyCancelled": "[MISSING] Your registration was already cancelled."
+      "verifying": "キャンセル用リンクを確認しています…",
+      "title": "登録のキャンセル",
+      "confirmQuestion": "{{name}}様、{{eventDate}}の{{eventTitle}}へのご登録を本当にキャンセルしますか？",
+      "confirmButton": "はい、登録をキャンセルします",
+      "goBack": "戻る",
+      "successTitle": "登録をキャンセルしました",
+      "successBody": "ご登録はキャンセルされました。お席はキャンセル待ちの次の方に割り当てられます。",
+      "invalidToken": "このキャンセル用リンクは無効か、すでに使用されています。お困りの場合はお問い合わせください。",
+      "alreadyCancelled": "ご登録はすでにキャンセルされています。"
     },
     "modal": {
-      "title": "[MISSING] Cancel Registration",
-      "body": "[MISSING] Enter your email address and we'll send you a cancellation link.",
-      "emailLabel": "[MISSING] Email address",
-      "emailError": "[MISSING] Please enter a valid email address",
-      "submitButton": "[MISSING] Send cancellation link",
-      "successMessage": "[MISSING] If you have a registration for this event, you'll receive an email with a cancellation link shortly."
+      "title": "登録のキャンセル",
+      "body": "メールアドレスを入力してください。キャンセル用のリンクをお送りします。",
+      "emailLabel": "メールアドレス",
+      "emailError": "有効なメールアドレスを入力してください",
+      "submitButton": "キャンセル用リンクを送信",
+      "successMessage": "このイベントにご登録済みの場合、まもなくキャンセル用リンクを記載したメールが届きます。"
     },
     "homepage": {
-      "cancelLink": "[MISSING] Cancel your registration"
+      "cancelLink": "登録をキャンセル"
     },
     "wizard": {
-      "cancelButton": "[MISSING] Cancel my registration"
+      "cancelButton": "登録をキャンセル"
     }
   },
   "attendeeQuickRegister": {

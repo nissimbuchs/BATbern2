@@ -83,10 +83,10 @@
       "failed": "Rekisteröinti epäonnistui. Yritä uudelleen."
     },
     "cancelConfirm": "Haluatko varmasti peruuttaa rekisteröinnin?",
-    "waitlistWarning": "[MISSING] This event is full. Submitting will add you to the waitlist.",
-    "waitlistAcknowledgeLabel": "[MISSING] I understand I will be on the waitlist",
-    "waitlistSuccessTitle": "[MISSING] You are on the waitlist!",
-    "waitlistSuccessBody": "[MISSING] You are #{{position}} on the waitlist. We will email you if a spot opens."
+    "waitlistWarning": "Tämä tapahtuma on täynnä. Lähettämällä lomakkeen pääset jonotuslistalle.",
+    "waitlistAcknowledgeLabel": "Ymmärrän, että päädyn jonotuslistalle",
+    "waitlistSuccessTitle": "Olet jonotuslistalla!",
+    "waitlistSuccessBody": "Olet jonotuslistalla sijalla {{position}}. Lähetämme sähköpostia, jos paikka vapautuu."
   },
   "personalDetails": {
     "title": "Henkilökohtaiset tiedot",
@@ -195,46 +195,46 @@
     "clear": "Poista valittu yritys"
   },
   "registrationStatusBanner": {
-    "confirmed": "[MISSING] Your registration is confirmed. We'll see you there!",
-    "registered": "[MISSING] You are registered for this event. Check your email for confirmation.",
-    "waitlist": "[MISSING] You are on the waitlist. We'll notify you if a spot opens.",
-    "cancelled": "[MISSING] Your registration was cancelled.",
+    "confirmed": "Ilmoittautumisesi on vahvistettu. Nähdään paikan päällä!",
+    "registered": "Olet ilmoittautunut tähän tapahtumaan. Tarkista vahvistus sähköpostistasi.",
+    "waitlist": "Olet jonotuslistalla. Ilmoitamme sinulle, jos paikka vapautuu.",
+    "cancelled": "Ilmoittautumisesi on peruttu.",
     "attended": "Osallistuit tähän tapahtumaan. Kiitos, että olit mukana!",
-    "manageLink": "[MISSING] Manage Registration",
-    "registerAgain": "[MISSING] Register again",
-    "waitlistWithPosition": "[MISSING] You are #{{position}} on the waitlist. We will notify you if a spot opens."
+    "manageLink": "Hallinnoi ilmoittautumista",
+    "registerAgain": "Ilmoittaudu uudelleen",
+    "waitlistWithPosition": "Olet jonotuslistalla sijalla {{position}}. Ilmoitamme sinulle, jos paikka vapautuu."
   },
   "registrationStatusGuard": {
-    "alreadyRegistered": "[MISSING] You are already registered for this event",
-    "goBack": "[MISSING] Go back",
-    "registerAgain": "[MISSING] Register again",
+    "alreadyRegistered": "Olet jo ilmoittautunut tähän tapahtumaan",
+    "goBack": "Takaisin",
+    "registerAgain": "Ilmoittaudu uudelleen",
     "unregistered": "Olet peruuttanut ilmoittautumisesi. Haluatko ilmoittautua uudelleen?"
   },
   "deregistration": {
     "page": {
-      "verifying": "[MISSING] Verifying your cancellation link…",
-      "title": "[MISSING] Cancel Registration",
-      "confirmQuestion": "[MISSING] Hi {{name}}, are you sure you want to cancel your registration for {{eventTitle}} on {{eventDate}}?",
-      "confirmButton": "[MISSING] Yes, cancel my registration",
-      "goBack": "[MISSING] Go back",
-      "successTitle": "[MISSING] Registration Cancelled",
-      "successBody": "[MISSING] Your registration has been cancelled. Your spot has been released to the next person on the waitlist.",
-      "invalidToken": "[MISSING] This cancellation link is invalid or has already been used. Please contact us if you need help.",
-      "alreadyCancelled": "[MISSING] Your registration was already cancelled."
+      "verifying": "Tarkistetaan peruutuslinkkiä…",
+      "title": "Peru ilmoittautuminen",
+      "confirmQuestion": "Hei {{name}}, haluatko varmasti perua ilmoittautumisesi tapahtumaan {{eventTitle}} {{eventDate}}?",
+      "confirmButton": "Kyllä, peru ilmoittautumiseni",
+      "goBack": "Takaisin",
+      "successTitle": "Ilmoittautuminen peruttu",
+      "successBody": "Ilmoittautumisesi on peruttu. Paikkasi on vapautettu seuraavalle jonotuslistalla olevalle.",
+      "invalidToken": "Tämä peruutuslinkki on virheellinen tai jo käytetty. Ota meihin yhteyttä, jos tarvitset apua.",
+      "alreadyCancelled": "Ilmoittautumisesi on jo peruttu."
     },
     "modal": {
-      "title": "[MISSING] Cancel Registration",
-      "body": "[MISSING] Enter your email address and we'll send you a cancellation link.",
-      "emailLabel": "[MISSING] Email address",
-      "emailError": "[MISSING] Please enter a valid email address",
-      "submitButton": "[MISSING] Send cancellation link",
-      "successMessage": "[MISSING] If you have a registration for this event, you'll receive an email with a cancellation link shortly."
+      "title": "Peru ilmoittautuminen",
+      "body": "Anna sähköpostiosoitteesi, niin lähetämme sinulle peruutuslinkin.",
+      "emailLabel": "Sähköpostiosoite",
+      "emailError": "Anna kelvollinen sähköpostiosoite",
+      "submitButton": "Lähetä peruutuslinkki",
+      "successMessage": "Jos olet ilmoittautunut tähän tapahtumaan, saat pian sähköpostin, jossa on peruutuslinkki."
     },
     "homepage": {
-      "cancelLink": "[MISSING] Cancel your registration"
+      "cancelLink": "Peru ilmoittautumisesi"
     },
     "wizard": {
-      "cancelButton": "[MISSING] Cancel my registration"
+      "cancelButton": "Peru ilmoittautumiseni"
     }
   },
   "attendeeQuickRegister": {

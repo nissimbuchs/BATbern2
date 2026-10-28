@@ -499,7 +499,7 @@
   },
   "newsletter": {
     "templateSelect": {
-      "label": "[MISSING] Vorlage",
+      "label": "Sjabloon",
       "createNew": "Nieuw sjabloon maken"
     }
   },
