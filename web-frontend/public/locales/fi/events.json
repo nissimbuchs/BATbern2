@@ -1062,10 +1062,11 @@
     }
   },
   "capacity": {
-    "spotsRemaining": "[MISSING] {{count}} spots remaining",
-    "spotsRemaining_one": "[MISSING] 1 spot remaining",
-    "fullJoinWaitlist": "[MISSING] Full — join waitlist",
-    "waitlistCount": "[MISSING] {{count}} on waitlist"
+    "spotsRemaining": "{{count}} paikkaa vapaana",
+    "spotsRemaining_one": "1 paikka vapaana",
+    "onWaitlist": "Olet jonotuslistalla",
+    "fullJoinWaitlist": "Täynnä, liity jonotuslistalle",
+    "waitlistCount": "{{count}} jonotuslistalla"
   },
   "description": {
     "heading": "Tietoja tapahtumasta"

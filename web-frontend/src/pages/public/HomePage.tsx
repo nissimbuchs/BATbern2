@@ -336,6 +336,7 @@ const HomePage = () => {
                   registrationCapacity={event.registrationCapacity}
                   spotsRemaining={event.spotsRemaining}
                   waitlistCount={event.waitlistCount}
+                  registrationStatus={myRegistration?.status}
                 />
               </div>
             )}

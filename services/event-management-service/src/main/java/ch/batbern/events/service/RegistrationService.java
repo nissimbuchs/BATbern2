@@ -709,7 +709,8 @@ public class RegistrationService {
      * - The user profile is fetched by username (user already exists in the system)
      * - Non-waitlist registrations start as "confirmed" (no email confirmation step)
      * - A confirmed registration gets the registration-confirmed mail with the calendar invite,
-     *   like every other confirmed attendee (#1097); a waitlisted one gets no mail
+     *   like every other confirmed attendee (#1097); a waitlisted one gets the waitlist mail,
+     *   like an anonymous waitlist registration
      * - Capacity/waitlist logic still applies
      *
      * @param eventCode event code (e.g., "BATbern42")
@@ -810,6 +811,8 @@ public class RegistrationService {
                 registrationCode, username, eventCode, registrationStatus);
         if ("confirmed".equals(registrationStatus)) {
             notifyRegistrationConfirmed(saved, event);
+        } else {
+            waitlistPromotionEmailService.sendWaitlistConfirmationEmail(saved);
         }
         return saved;
     }

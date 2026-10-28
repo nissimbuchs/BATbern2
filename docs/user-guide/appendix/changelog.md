@@ -89,6 +89,11 @@ Each release includes:
 - ✅ Newsletter tasks that a later announcement has replaced are closed automatically: Topic Announcement once the speakers or the agenda are public, Speaker Lineup once the agenda is public.
 - ✅ Catering is now due **5 days** before the event (final headcount), and two new standard tasks exist: **Namensschilder** (2 days before) and **Wein** (event day). For an existing event, add them from the event's task templates.
 
+**Bug Fixes — Waitlist Mail and Capacity Badge (2026-10-28)**:
+- ✅ Logged-in users who register for a full event now get the waitlist mail, like everyone who registers through the form. Before, they only saw the message on the page.
+- ✅ On the homepage, a visitor who is already registered for a full event sees "You're registered!" in the event details, as in the hero card, instead of "Full — join waitlist". Someone on the waitlist sees "You're on the waitlist".
+- ✅ The capacity badge ("spots remaining", "fully booked", "on waitlist") is translated into all ten languages. Eight of them showed an English placeholder.
+
 **Security — User Directory for Organizers Only (2026-10-28)**:
 - ✅ The user list, the user search and other people's user records can only be read by organizers. Everyone reads their own profile under "My Profile" as before.
 - ✅ On their company page, speakers see the company's details and sessions. The lists of colleagues and speakers of the company are shown to organizers only.

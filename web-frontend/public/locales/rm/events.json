@@ -1062,10 +1062,11 @@
     }
   },
   "capacity": {
-    "spotsRemaining": "[MISSING] {{count}} spots remaining",
-    "spotsRemaining_one": "[MISSING] 1 spot remaining",
-    "fullJoinWaitlist": "[MISSING] Full — join waitlist",
-    "waitlistCount": "[MISSING] {{count}} on waitlist"
+    "spotsRemaining": "{{count}} plazzas libras",
+    "spotsRemaining_one": "1 plazza libra",
+    "onWaitlist": "Vus essas sin la glista d'spetga",
+    "fullJoinWaitlist": "Occupà, s'annunziar sin la glista d'spetga",
+    "waitlistCount": "{{count}} sin la glista d'spetga"
   },
   "description": {
     "heading": "Davart quest'eveniment"
