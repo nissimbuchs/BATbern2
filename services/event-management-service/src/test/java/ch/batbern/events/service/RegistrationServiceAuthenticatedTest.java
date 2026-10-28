@@ -21,6 +21,7 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
@@ -53,6 +54,9 @@ class RegistrationServiceAuthenticatedTest {
 
     @Mock
     private RegistrationEmailService registrationEmailService;
+
+    @Mock
+    private WaitlistPromotionEmailService waitlistPromotionEmailService;
 
     @InjectMocks
     private RegistrationService registrationService;
@@ -185,6 +189,38 @@ class RegistrationServiceAuthenticatedTest {
                 "BATbern59", "user.tom", "tom@windshop.ch");
 
         verify(registrationEmailService, never()).sendRegistrationConfirmed(any(), any(), any(), any());
+    }
+
+    // A logged-in user who lands on the waitlist gets the same waitlist mail as an anonymous one.
+    // Before, they only saw the message on the page.
+    @Test
+    void should_sendWaitlistMail_when_quickRegistrationIsWaitlisted() {
+        event.setRegistrationCapacity(1);
+        when(userApiClient.getUserByUsername("user.tom")).thenReturn(profile("Tom", "Smith"));
+        when(registrationRepository.findByEventIdAndAttendeeUsername(any(), any()))
+                .thenReturn(Optional.empty());
+        when(registrationRepository.countByEventIdAndStatusIn(any(), any())).thenReturn(1L);
+        when(registrationRepository.getNextWaitlistPosition(any())).thenReturn(3);
+        when(registrationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        var registration = registrationService.createRegistrationForAuthenticatedUser(
+                "BATbern59", "user.tom", "tom@windshop.ch");
+
+        assertThat(registration.getStatus()).isEqualTo("waitlist");
+        verify(waitlistPromotionEmailService).sendWaitlistConfirmationEmail(registration);
+    }
+
+    @Test
+    void should_notSendWaitlistMail_when_quickRegistrationIsConfirmed() {
+        when(userApiClient.getUserByUsername("user.tom")).thenReturn(profile("Tom", "Smith"));
+        when(registrationRepository.findByEventIdAndAttendeeUsername(any(), any()))
+                .thenReturn(Optional.empty());
+        when(registrationRepository.save(any())).thenAnswer(inv -> inv.getArgument(0));
+
+        registrationService.createRegistrationForAuthenticatedUser(
+                "BATbern59", "user.tom", "tom@windshop.ch");
+
+        verify(waitlistPromotionEmailService, never()).sendWaitlistConfirmationEmail(any());
     }
 
     @Test

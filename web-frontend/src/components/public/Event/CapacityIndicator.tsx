@@ -5,7 +5,8 @@
  * Displays a capacity badge on public event pages:
  * - When registrationCapacity is null (unlimited): renders nothing
  * - When spotsRemaining > 0: green badge "X spots remaining"
- * - When spotsRemaining === 0: amber badge "Full — join waitlist"
+ * - When spotsRemaining === 0: amber badge "Full — join waitlist", or just "Full" for a visitor
+ *   who already holds a registration (the hero card shows their status)
  */
 
 import { useTranslation } from 'react-i18next';
@@ -15,12 +16,15 @@ interface CapacityIndicatorProps {
   registrationCapacity?: number | null;
   spotsRemaining?: number | null;
   waitlistCount?: number | null;
+  /** The visitor already holds an active registration, so do not invite them to the waitlist */
+  alreadyRegistered?: boolean;
 }
 
 export function CapacityIndicator({
   registrationCapacity,
   spotsRemaining,
   waitlistCount,
+  alreadyRegistered = false,
 }: CapacityIndicatorProps) {
   const { t } = useTranslation('events');
 
@@ -43,7 +47,7 @@ export function CapacityIndicator({
   return (
     <div className="flex items-center gap-2 flex-wrap">
       <Badge className="bg-amber-900/60 text-amber-300 border border-amber-700 px-3 py-1 text-sm">
-        {t('capacity.fullJoinWaitlist')}
+        {t(alreadyRegistered ? 'capacity.full' : 'capacity.fullJoinWaitlist')}
       </Badge>
       {waitlistCount != null && waitlistCount > 0 && (
         <Badge className="bg-zinc-800 text-zinc-400 border border-zinc-700 px-3 py-1 text-sm">

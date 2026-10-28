@@ -1065,10 +1065,11 @@
     }
   },
   "capacity": {
-    "spotsRemaining": "[MISSING] {{count}} spots remaining",
-    "spotsRemaining_one": "[MISSING] 1 spot remaining",
-    "fullJoinWaitlist": "[MISSING] Full — join waitlist",
-    "waitlistCount": "[MISSING] {{count}} on waitlist"
+    "spotsRemaining": "{{count}} Plätz frei",
+    "spotsRemaining_one": "1 Platz frei",
+    "full": "Usbuechet",
+    "fullJoinWaitlist": "Usbuechet, uf d Warteliste",
+    "waitlistCount": "{{count}} uf dr Warteliste"
   },
   "description": {
     "heading": "Über disi Veranstautig"

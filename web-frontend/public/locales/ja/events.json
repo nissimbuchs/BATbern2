@@ -1062,10 +1062,11 @@
     }
   },
   "capacity": {
-    "spotsRemaining": "[MISSING] {{count}} spots remaining",
-    "spotsRemaining_one": "[MISSING] 1 spot remaining",
-    "fullJoinWaitlist": "[MISSING] Full — join waitlist",
-    "waitlistCount": "[MISSING] {{count}} on waitlist"
+    "spotsRemaining": "残り{{count}}席",
+    "spotsRemaining_one": "残り1席",
+    "full": "満席",
+    "fullJoinWaitlist": "満席、キャンセル待ちに登録",
+    "waitlistCount": "キャンセル待ち{{count}}名"
   },
   "description": {
     "heading": "このイベントについて"

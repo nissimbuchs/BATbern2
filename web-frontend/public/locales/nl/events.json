@@ -1062,10 +1062,11 @@
     }
   },
   "capacity": {
-    "spotsRemaining": "[MISSING] {{count}} spots remaining",
-    "spotsRemaining_one": "[MISSING] 1 spot remaining",
-    "fullJoinWaitlist": "[MISSING] Full — join waitlist",
-    "waitlistCount": "[MISSING] {{count}} on waitlist"
+    "spotsRemaining": "{{count}} plaatsen beschikbaar",
+    "spotsRemaining_one": "1 plaats beschikbaar",
+    "full": "Volgeboekt",
+    "fullJoinWaitlist": "Volgeboekt, schrijf je in op de wachtlijst",
+    "waitlistCount": "{{count}} op de wachtlijst"
   },
   "description": {
     "heading": "Over dit evenement"
