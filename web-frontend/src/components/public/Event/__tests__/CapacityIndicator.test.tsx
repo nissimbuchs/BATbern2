@@ -3,7 +3,7 @@
  * Story 10.11: Venue Capacity Enforcement & Waitlist Management (AC7)
  *
  * A visitor who already holds a registration must not be invited to join the waitlist:
- * the hero card says "registered", so the badge below must not contradict it.
+ * the badge says what the hero card says ("You're registered!", or "on the waitlist").
  */
 
 import { describe, test, expect, vi } from 'vitest';
@@ -38,17 +38,46 @@ describe('CapacityIndicator', () => {
     expect(screen.getByText('capacity.waitlistCount')).toBeInTheDocument();
   });
 
-  test('says only "full" when the visitor is already registered', () => {
+  test.each(['CONFIRMED', 'REGISTERED'] as const)(
+    'says "you are registered", like the hero card, for a %s registration',
+    (status) => {
+      render(
+        <CapacityIndicator
+          registrationCapacity={220}
+          spotsRemaining={0}
+          waitlistCount={17}
+          registrationStatus={status}
+        />
+      );
+
+      expect(screen.getByText('common:registration.alreadyRegistered.title')).toBeInTheDocument();
+      expect(screen.queryByText('capacity.fullJoinWaitlist')).not.toBeInTheDocument();
+    }
+  );
+
+  test('says "you are on the waitlist" for a waitlisted visitor', () => {
     render(
       <CapacityIndicator
         registrationCapacity={220}
         spotsRemaining={0}
         waitlistCount={17}
-        alreadyRegistered
+        registrationStatus="WAITLIST"
       />
     );
 
-    expect(screen.getByText('capacity.full')).toBeInTheDocument();
+    expect(screen.getByText('capacity.onWaitlist')).toBeInTheDocument();
     expect(screen.queryByText('capacity.fullJoinWaitlist')).not.toBeInTheDocument();
+  });
+
+  test('invites to join the waitlist again after a cancellation', () => {
+    render(
+      <CapacityIndicator
+        registrationCapacity={220}
+        spotsRemaining={0}
+        registrationStatus="CANCELLED"
+      />
+    );
+
+    expect(screen.getByText('capacity.fullJoinWaitlist')).toBeInTheDocument();
   });
 });

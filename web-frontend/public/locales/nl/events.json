@@ -1064,7 +1064,7 @@
   "capacity": {
     "spotsRemaining": "{{count}} plaatsen beschikbaar",
     "spotsRemaining_one": "1 plaats beschikbaar",
-    "full": "Volgeboekt",
+    "onWaitlist": "Je staat op de wachtlijst",
     "fullJoinWaitlist": "Volgeboekt, schrijf je in op de wachtlijst",
     "waitlistCount": "{{count}} op de wachtlijst"
   },

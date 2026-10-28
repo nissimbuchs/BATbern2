@@ -1064,7 +1064,7 @@
   "capacity": {
     "spotsRemaining": "{{count}} paikkaa vapaana",
     "spotsRemaining_one": "1 paikka vapaana",
-    "full": "Täynnä",
+    "onWaitlist": "Olet jonotuslistalla",
     "fullJoinWaitlist": "Täynnä, liity jonotuslistalle",
     "waitlistCount": "{{count}} jonotuslistalla"
   },

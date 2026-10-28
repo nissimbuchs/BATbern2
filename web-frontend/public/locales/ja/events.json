@@ -1064,7 +1064,7 @@
   "capacity": {
     "spotsRemaining": "残り{{count}}席",
     "spotsRemaining_one": "残り1席",
-    "full": "満席",
+    "onWaitlist": "キャンセル待ちに登録済み",
     "fullJoinWaitlist": "満席、キャンセル待ちに登録",
     "waitlistCount": "キャンセル待ち{{count}}名"
   },

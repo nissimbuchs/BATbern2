@@ -1067,7 +1067,7 @@
   "capacity": {
     "spotsRemaining": "{{count}} Plätz frei",
     "spotsRemaining_one": "1 Platz frei",
-    "full": "Usbuechet",
+    "onWaitlist": "Dir standet uf dr Warteliste",
     "fullJoinWaitlist": "Usbuechet, uf d Warteliste",
     "waitlistCount": "{{count}} uf dr Warteliste"
   },

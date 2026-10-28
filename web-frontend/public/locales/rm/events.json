@@ -1064,7 +1064,7 @@
   "capacity": {
     "spotsRemaining": "{{count}} plazzas libras",
     "spotsRemaining_one": "1 plazza libra",
-    "full": "Occupà",
+    "onWaitlist": "Vus essas sin la glista d'spetga",
     "fullJoinWaitlist": "Occupà, s'annunziar sin la glista d'spetga",
     "waitlistCount": "{{count}} sin la glista d'spetga"
   },

@@ -1064,7 +1064,7 @@
   "capacity": {
     "spotsRemaining": "{{count}} posti disponibili",
     "spotsRemaining_one": "1 posto disponibile",
-    "full": "Al completo",
+    "onWaitlist": "Sei in lista d'attesa",
     "fullJoinWaitlist": "Al completo, iscriviti alla lista d'attesa",
     "waitlistCount": "{{count}} in lista d'attesa"
   },

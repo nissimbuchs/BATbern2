@@ -336,9 +336,7 @@ const HomePage = () => {
                   registrationCapacity={event.registrationCapacity}
                   spotsRemaining={event.spotsRemaining}
                   waitlistCount={event.waitlistCount}
-                  alreadyRegistered={
-                    myRegistration != null && myRegistration.status !== 'CANCELLED'
-                  }
+                  registrationStatus={myRegistration?.status}
                 />
               </div>
             )}

@@ -1088,7 +1088,7 @@
   "capacity": {
     "spotsRemaining": "{{count}} spots remaining",
     "spotsRemaining_one": "1 spot remaining",
-    "full": "Fully booked",
+    "onWaitlist": "You're on the waitlist",
     "fullJoinWaitlist": "Full — join waitlist",
     "waitlistCount": "{{count}} on waitlist"
   },

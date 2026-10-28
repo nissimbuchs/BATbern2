@@ -91,7 +91,7 @@ Each release includes:
 
 **Bug Fixes — Waitlist Mail and Capacity Badge (2026-10-28)**:
 - ✅ Logged-in users who register for a full event now get the waitlist mail, like everyone who registers through the form. Before, they only saw the message on the page.
-- ✅ On the homepage, a visitor who is already registered for a full event sees "Fully booked" in the event details instead of "Full — join waitlist", which contradicted their status in the hero card.
+- ✅ On the homepage, a visitor who is already registered for a full event sees "You're registered!" in the event details, as in the hero card, instead of "Full — join waitlist". Someone on the waitlist sees "You're on the waitlist".
 - ✅ The capacity badge ("spots remaining", "fully booked", "on waitlist") is translated into all ten languages. Eight of them showed an English placeholder.
 
 **Security — User Directory for Organizers Only (2026-10-28)**:
