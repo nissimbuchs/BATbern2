@@ -298,7 +298,7 @@ class NewsletterSubscriberServiceTest {
             newsletterSubscriberService.findSubscribers(null, "all", "subscribedAt", "desc", params);
 
             verify(subscriberRepository).findFiltered(any(), any(), any(),
-                    eq(PageRequest.of(1, 10, Sort.by(Sort.Direction.DESC, "subscribedAt"))));
+                    eq(PageRequest.of(1, 10, Sort.by(Sort.Order.desc("subscribedAt"), Sort.Order.asc("id")))));
         }
 
         @Test
@@ -311,7 +311,7 @@ class NewsletterSubscriberServiceTest {
             newsletterSubscriberService.findSubscribers(null, "all", "email", "asc", params);
 
             verify(subscriberRepository).findFiltered(any(), any(), any(),
-                    eq(PageRequest.of(0, 20, Sort.by(Sort.Direction.ASC, "email"))));
+                    eq(PageRequest.of(0, 20, Sort.by(Sort.Order.asc("email"), Sort.Order.asc("id")))));
         }
     }
 

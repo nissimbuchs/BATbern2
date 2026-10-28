@@ -11,8 +11,8 @@ import ch.batbern.events.service.StalenessScoreService;
 import ch.batbern.events.service.TopicService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ch.batbern.shared.api.DeterministicPaging;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.http.HttpStatus;
@@ -192,8 +192,9 @@ public class TopicController implements TopicsApi {
     );
 
     private Pageable createPageable(int page, int limit, String sort) {
+        // #1131: every page is ordered by the requested field, then id, so OFFSET pages are stable.
         if (sort == null || sort.isBlank()) {
-            return PageRequest.of(page, limit);
+            return DeterministicPaging.pageRequest(page, limit, Sort.unsorted());
         }
         Sort.Direction direction = Sort.Direction.ASC;
         String property = sort;
@@ -211,7 +212,7 @@ public class TopicController implements TopicsApi {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST,
                     "Invalid sort field '" + property + "'. Allowed: " + ALLOWED_SORT_FIELDS);
         }
-        return PageRequest.of(page, limit, Sort.by(direction, property));
+        return DeterministicPaging.pageRequest(page, limit, Sort.by(direction, property));
     }
 
     /**

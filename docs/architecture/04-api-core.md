@@ -378,17 +378,22 @@ Rate limit exceeded returns `429 Too Many Requests` with retry-after header.
 ### Pagination
 
 All list endpoints use **page-based** pagination (NOT offset/cursor):
-- `page` - Page index (default: 0)
+- `page` - Page number, 1-based (default: 1; `PaginationUtils.parseParams`)
 - `limit` - Items per page (default: 20, max: 100)
 - `sort` - JSON:API-style sort expression (ADR-013 §3)
 - `filter` - JSON:API-style filter expression (ADR-013 §3)
+
+List endpoints always sort by a unique tie-breaker (`id`) after the requested sort, so pages
+neither repeat nor drop rows when the sort key has ties. Build every `Pageable` with
+`ch.batbern.shared.api.DeterministicPaging`; `DeterministicPagingGuardTest` fails the build on a
+raw `PageRequest.of` (#1131).
 
 Response wraps data in a `PaginatedResponse` with `PaginationMetadata`:
 ```json
 {
   "data": [...],
   "pagination": {
-    "page": 0,
+    "page": 1,
     "limit": 20,
     "totalItems": 150,
     "totalPages": 8,

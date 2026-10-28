@@ -6,6 +6,7 @@ import ch.batbern.companyuser.dto.generated.CompanyResponse;
 import ch.batbern.companyuser.dto.generated.PaginatedCompanyResponse;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.specification.CompanySpecification;
+import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.api.FieldSelector;
 import ch.batbern.shared.api.FilterCriteria;
 import ch.batbern.shared.api.FilterParser;
@@ -19,7 +20,6 @@ import ch.batbern.shared.api.SortParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
@@ -103,7 +103,7 @@ public class CompanyQueryService {
         // Build Sort from SortCriteria
         if (sortCriteria.isEmpty()) {
             // Default sort: name ASC (alphabetical order)
-            return PageRequest.of(zeroIndexedPage, paginationParams.getLimit(),
+            return DeterministicPaging.pageRequest(zeroIndexedPage, paginationParams.getLimit(),
                     Sort.by(Sort.Direction.ASC, "name"));
         }
 
@@ -117,7 +117,8 @@ public class CompanyQueryService {
                 })
                 .collect(Collectors.toList());
 
-        return PageRequest.of(zeroIndexedPage, paginationParams.getLimit(), Sort.by(orders));
+        // id breaks ties of a non-unique sort field (#1131), so OFFSET pages are stable
+        return DeterministicPaging.pageRequest(zeroIndexedPage, paginationParams.getLimit(), Sort.by(orders));
     }
 
     /**

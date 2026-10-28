@@ -10,13 +10,12 @@ import ch.batbern.events.sessions.api.generated.CompanySessionsApi;
 import ch.batbern.events.sessions.dto.generated.CompanySessionResponse;
 import ch.batbern.events.sessions.dto.generated.SearchSessionsByCompany200Response;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
+import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.api.PaginationMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
-import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -65,7 +64,8 @@ public class GlobalSessionController implements CompanySessionsApi {
                     .pagination(emptyPagination));
         }
 
-        Pageable pageable = PageRequest.of(page - 1, limit, Sort.unsorted());
+        // The native query orders by start_time DESC NULLS LAST, s.id (#1131).
+        Pageable pageable = DeterministicPaging.orderedByQuery(page - 1, limit);
         Page<Session> sessionsPage = sessionRepository.findSessionsByCompanyName(companyName, pageable);
 
         // Batch-load events to avoid N+1 queries

@@ -165,7 +165,7 @@ public interface SessionRepository extends JpaRepository<Session, UUID>, JpaSpec
             JOIN user_profiles up ON up.username = su.username
             WHERE up.company_id = :companyName
         )
-        ORDER BY s.start_time DESC NULLS LAST
+        ORDER BY s.start_time DESC NULLS LAST, s.id
         """,
         countQuery = """
         SELECT COUNT(*) FROM sessions s
