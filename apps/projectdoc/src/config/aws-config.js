@@ -92,7 +92,10 @@ export default {
 
   // Route 53 Configuration
   route53: {
-    hostedZoneId: process.env.ROUTE53_HOSTED_ZONE_ID || 'Z04921951F6B818JF0POD',
+    // No default: batbern.ch lives in the PRODUCTION account (zone Z08825557YYLWVHISLPY), which the
+    // mgmt profile cannot write. The mgmt zone Z04921951F6B818JF0POD was orphaned and deleted on
+    // 2026-10-27 (#1133). project.batbern.ch's alias record is maintained there by hand.
+    hostedZoneId: process.env.ROUTE53_HOSTED_ZONE_ID || '',
     recordName: 'project.batbern.ch',
     recordType: 'A', // Changed to A record for CloudFront alias
     createAlias: true,

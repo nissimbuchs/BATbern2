@@ -402,7 +402,9 @@ Required:
 Optional (with defaults):
 - `S3_BUCKET_NAME=project-batbern-ch`
 - `AWS_REGION=eu-central-1`
-- `ROUTE53_HOSTED_ZONE_ID=Z04921951F6B818JF0POD`
+- `ROUTE53_HOSTED_ZONE_ID` (no default; DNS for project.batbern.ch lives in the production
+  account's batbern.ch zone and is not touched by the deploy, #1133)
+- `SSL_CERTIFICATE_ARN` (optional pin; the deploy otherwise picks the issued project.batbern.ch cert)
 - `CLOUDFRONT_ENABLED=true`
 
 ### BATbern Branding
