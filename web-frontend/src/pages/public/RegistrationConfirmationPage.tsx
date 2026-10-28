@@ -286,9 +286,8 @@ const RegistrationConfirmationPage = () => {
                       {registration.email}
                     </p>
                     <Button asChild variant="outline" size="sm">
-                      <Link
-                        to={`/auth/register?email=${encodeURIComponent(registration.email || '')}`}
-                      >
+                      {/* The lookup returns the address masked (GHSA-qhqv), so it cannot prefill */}
+                      <Link to="/auth/register">
                         <UserPlus className="h-4 w-4 mr-2" />
                         Create Account
                       </Link>

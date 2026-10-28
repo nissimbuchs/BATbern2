@@ -1939,7 +1939,9 @@ components:
           type: string
     PublicOrganizerResponse:
       type: object
-      description: Public organizer projection for the About page (no sensitive fields)
+      description: >-
+        Public organizer projection for the About page (no sensitive fields; no email address,
+        GHSA-qhqv: the page contacts info@batbern.ch)
       properties:
         id:
           type: string
@@ -1947,8 +1949,6 @@ components:
         firstName:
           type: string
         lastName:
-          type: string
-        email:
           type: string
         bio:
           type: string

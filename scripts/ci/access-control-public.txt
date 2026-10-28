@@ -1,0 +1,58 @@
+# Operations that are PUBLIC BY DESIGN: anonymous callers may use them (#1155, GHSA-qhqv).
+#
+# Read by scripts/ci/access-control-check.py. Every operation in docs/api/*.openapi.yml that is
+# NOT listed here must answer an anonymous caller with 401 or 403. A new operation therefore fails
+# the check until someone decides it is public and adds it here, with a reason.
+#
+# Format: METHOD /path/as/in/the/spec   # why it is public
+# Being listed only means "no login needed". What such a response may contain is a separate
+# question: public responses are projections (see GHSA-qhqv for the fields kept out of them).
+
+# --- Website: events, sessions, speakers -------------------------------------------------------
+GET    /events                                   # event list (archive, upcoming dates); public projection
+GET    /events/current                           # homepage and Watch: the current event
+GET    /events/{eventCode}                       # event page; public projection
+GET    /events/types                             # event format definitions (slot lengths), no data about people
+GET    /events/recent-photos                     # homepage photo strip
+GET    /events/{eventCode}/photos                # event photo gallery
+GET    /events/{eventCode}/sessions              # programme
+GET    /events/{eventCode}/sessions/{sessionSlug}  # talk page
+GET    /events/{eventCode}/sessions/{sessionSlug}/speakers  # speakers of a talk
+GET    /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download  # published slides
+GET    /events/{eventCode}/sessions/{sessionSlug}/qna  # post-event Q&A (Epic 7)
+GET    /events/{eventCode}/live-timing           # presenter screen and Watch on event day
+GET    /public/events                            # website read model, list
+GET    /public/events/current                    # website read model, current event
+GET    /public/events/{eventCode}                # website read model, event page
+GET    /topics                                   # archive topic filter; public projection
+GET    /public/users/{username}                  # public speaker profile (name, picture, bio)
+GET    /public/organizers                        # About page; no email addresses
+GET    /partners                                 # About page partner showcase; no contract end dates
+GET    /companies/{name}                         # company name and logo next to a speaker
+GET    /companies/search                         # company typeahead in the registration wizard
+GET    /public/settings/presentation             # presentation mode settings
+GET    /public/settings/features                 # feature flags the website reads before login
+
+# --- Thank the organizers (Epic 7) ---------------------------------------------------------------
+GET    /events/{eventCode}/thanks                # thank-you wall of an event
+GET    /thanks/featured                          # featured thank-yous on the homepage
+POST   /events/{eventCode}/thanks                # anonymous thank-you; Turnstile-protected
+
+# --- Registration without an account (ADR-005) -------------------------------------------------
+POST   /events/{eventCode}/registrations         # registration wizard; Turnstile-protected
+GET    /events/{eventCode}/registrations/{registrationCode}  # confirmation page; code is the secret, email masked
+POST   /events/{eventCode}/registrations/confirm # confirmation link; signed token
+GET    /registrations/deregister/verify          # deregistration link; signed token
+POST   /registrations/deregister                 # deregistration link; signed token
+POST   /registrations/deregister/by-email        # "send me my deregistration link"; mails only the registered address
+
+# --- Newsletter ----------------------------------------------------------------------------------
+POST   /newsletter/subscribe                     # subscribe form; Turnstile-protected, double opt-in
+GET    /newsletter/unsubscribe/verify            # unsubscribe link; signed token
+POST   /newsletter/unsubscribe                   # unsubscribe link; signed token
+
+# --- Account and device flows --------------------------------------------------------------------
+GET    /users/additional-emails/verify           # verify an added email address; signed token
+POST   /users/additional-emails/verify           # same, form post
+POST   /watch/pair                               # Watch pairing with a one-time code
+POST   /watch/authenticate                       # Watch token exchange with the paired secret

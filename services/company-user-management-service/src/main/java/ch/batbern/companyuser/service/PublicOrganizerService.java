@@ -51,7 +51,6 @@ public class PublicOrganizerService {
                 .id(user.getUsername())
                 .firstName(user.getFirstName())
                 .lastName(user.getLastName())
-                .email(user.getEmail())
                 .bio(user.getBio())
                 .profilePictureUrl(user.getProfilePictureUrl())
                 .companyId(user.getCompanyId());

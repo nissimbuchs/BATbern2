@@ -399,6 +399,45 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     // Helper methods
+    // GHSA-qhqv: the About page shows "partner since"; when a contract ends is commercial data.
+
+    @Test
+    void should_omitPartnershipEndDate_when_anonymousListsPartners() throws Exception {
+        Partner partner = createTestPartner("GoogleZH", PartnershipLevel.GOLD);
+        partner.setPartnershipEndDate(LocalDate.now().plusYears(1));
+        partnerRepository.save(partner);
+
+        mockMvc.perform(get("/api/v1/partners"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].partnershipStartDate").exists())
+                .andExpect(jsonPath("$.data[0].partnershipEndDate").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(username = "some.partner", roles = {"PARTNER"})
+    void should_omitPartnershipEndDate_when_partnerListsAllPartners() throws Exception {
+        Partner partner = createTestPartner("GoogleZH", PartnershipLevel.GOLD);
+        partner.setPartnershipEndDate(LocalDate.now().plusYears(1));
+        partnerRepository.save(partner);
+
+        mockMvc.perform(get("/api/v1/partners"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].partnershipEndDate").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(username = "test-organizer", roles = {"ORGANIZER"})
+    void should_includePartnershipEndDate_when_organizerListsPartners() throws Exception {
+        LocalDate end = LocalDate.now().plusYears(1);
+        Partner partner = createTestPartner("GoogleZH", PartnershipLevel.GOLD);
+        partner.setPartnershipEndDate(end);
+        partnerRepository.save(partner);
+
+        mockMvc.perform(get("/api/v1/partners"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].partnershipEndDate").value(end.toString()));
+    }
+
     private Partner createTestPartner(String companyName, PartnershipLevel level) {
         Partner partner = new Partner();
         partner.setCompanyName(companyName);

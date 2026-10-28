@@ -376,10 +376,8 @@ describe('RegistrationConfirmationPage Component', () => {
       await waitFor(() => {
         const createAccountLink = screen.getByRole('link', { name: /create account/i });
         expect(createAccountLink).toBeInTheDocument();
-        expect(createAccountLink).toHaveAttribute(
-          'href',
-          `/auth/register?email=${encodeURIComponent('john.doe@example.com')}`
-        );
+        // The lookup returns the address masked (GHSA-qhqv), so the link no longer prefills it
+        expect(createAccountLink).toHaveAttribute('href', '/auth/register');
       });
     });
 

@@ -306,7 +306,7 @@ export interface components {
       topicName: string;
       cluster: string;
     };
-    /** @description Topic entity for event management */
+    /** @description Topic entity for event management. Callers other than organizers get the public projection used by the archive filter (code, title, description, category, usageCount, lastUsedDate, active); stalenessScore, colorZone, status, similarityScores and usageHistory are organizer planning data and are omitted for them (GHSA-qhqv). */
     Topic: {
       /**
        * @description Topic unique identifier (slug-format)
@@ -347,9 +347,9 @@ export interface components {
        * @description Staleness score (0-100, higher = safer to reuse)
        * @example 75
        */
-      stalenessScore: number;
-      colorZone: components['schemas']['TopicColorZone'];
-      status: components['schemas']['TopicStatus'];
+      stalenessScore?: number;
+      colorZone?: components['schemas']['TopicColorZone'];
+      status?: components['schemas']['TopicStatus'];
       /** @description Similarity scores to other topics */
       similarityScores?: components['schemas']['SimilarityScore'][];
       /**

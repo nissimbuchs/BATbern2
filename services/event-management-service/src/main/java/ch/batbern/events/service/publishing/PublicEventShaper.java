@@ -25,7 +25,8 @@ import java.util.function.Function;
  * {@link PublicSessionVisibilityService#publicSessions}. Output: {@code speakers[]} derived from
  * those sessions, and session list and talk titles only where
  * {@link PublicSessionVisibilityPolicy#sessionDetailsPublic} allows it. Every decision comes from the
- * policy; this class only applies it to the wire format.
+ * policy; this class only applies it to the wire format. Organizer-only fields (organizer,
+ * last editor, real attendee count) are always removed here (GHSA-qhqv).
  */
 @Component
 @RequiredArgsConstructor
@@ -40,6 +41,9 @@ public class PublicEventShaper {
         dto.setSpeakers(speakers(sessions, s -> SessionEnums.value(s.getSessionType()), SessionResponse::getTitle,
                 SessionResponse::getSessionSlug, SessionResponse::getSpeakers, detailsPublic));
         dto.setSessions(detailsPublic ? new ArrayList<>(sessions) : new ArrayList<>());
+        dto.setOrganizerUsername(null);
+        dto.setUpdatedBy(null);
+        dto.setRealAttendeeCount(null);
         return dto;
     }
 
@@ -55,6 +59,9 @@ public class PublicEventShaper {
                 ch.batbern.events.sessions.dto.generated.Session::getSessionSlug,
                 ch.batbern.events.sessions.dto.generated.Session::getSpeakers, detailsPublic));
         dto.setSessions(detailsPublic ? new ArrayList<>(sessions) : new ArrayList<>());
+        dto.setOrganizerUsername(null);
+        dto.setUpdatedBy(null);
+        dto.setRealAttendeeCount(null);
         return dto;
     }
 

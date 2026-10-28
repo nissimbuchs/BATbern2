@@ -135,7 +135,12 @@ class EmsProductionSecurityFilterChainTest {
         "POST,   /api/v1/events/BATbern60/sessions",
         "POST,   /api/v1/topics",
         "PATCH,  /api/v1/events/BATbern60/thanks/t1",
-        "POST,   /api/v1/events/BATbern60/live-timing/actions"
+        "POST,   /api/v1/events/BATbern60/live-timing/actions",
+        // GHSA-qhqv: organizer paths the public GET wildcards would match as event code / slug
+        "GET,    /api/v1/events/attendance-summary",
+        "GET,    /api/v1/events/registrations",
+        "GET,    /api/v1/events/BATbern60/sessions/unassigned",
+        "GET,    /api/v1/events/BATbern60/sessions/conflicts"
     })
     @DisplayName("should_return401_when_anonymousRequestsProtectedPath")
     void should_return401_when_anonymousRequestsProtectedPath(String method, String path) throws Exception {

@@ -1111,7 +1111,7 @@ export interface components {
        */
       spotsRemaining?: number | null;
       /**
-       * @description Count of *real* (self-registered) attendees in an active status — i.e. registrations
+       * @description Organizers only (omitted for other callers, GHSA-qhqv). Count of *real* (self-registered) attendees in an active status — i.e. registrations
        *     WITHOUT an `autoRegisteredFrom` metadata marker. Excludes programmatic enrollments
        *     (organizers/partners auto-enrolled at event creation, and auto-registered speakers).
        *     An event is deletable only when this is 0 (deleteEvent returns 409 otherwise); the
@@ -1120,11 +1120,11 @@ export interface components {
        */
       realAttendeeCount?: number;
       /**
-       * @description Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+       * @description Organizers only (omitted for other callers, GHSA-qhqv). Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe
        */
-      organizerUsername: string;
+      organizerUsername?: string;
       /**
        * @default 0
        * @example 0
@@ -1228,7 +1228,7 @@ export interface components {
       topicSelectionNote?: string;
       /** @description Username of the creator (audit). */
       createdBy?: string;
-      /** @description Username of the last updater (audit). */
+      /** @description Organizers only (omitted for other callers, GHSA-qhqv). Username of the last updater (audit). */
       updatedBy?: string;
       /** @description Speakers who accepted their invitation. Only present when ?include=metrics. */
       confirmedSpeakersCount?: number;

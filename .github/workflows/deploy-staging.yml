@@ -1166,6 +1166,16 @@ jobs:
             echo "::error::CORS validation tests script not found"
           fi
 
+      # #1155 / GHSA-qhqv: every operation in docs/api that is not on the reviewed public
+      # allowlist (scripts/ci/access-control-public.txt) must reject an anonymous caller with
+      # 401/403. Generic scanners cannot tell a public endpoint from a forgotten rule; this
+      # check can. Inert by construction (non-existent ids, text/plain bodies, id-less and
+      # body-less writes never sent), so it is safe against production.
+      - name: Run access-control check (anonymous caller)
+        run: |
+          python3 -m pip install --quiet pyyaml==6.0.2
+          python3 scripts/ci/access-control-check.py --base-url https://api.batbern.ch/api/v1
+
       # Promote the just-deployed IMAGE_TAG to the mutable `staging-current` tag in every
       # service ECR repo. This runs AFTER smoke + CORS gates pass — so a deploy that
       # didn't actually come up healthy never advances `staging-current`. The bruno-tests

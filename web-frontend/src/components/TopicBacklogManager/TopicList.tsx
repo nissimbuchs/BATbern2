@@ -20,6 +20,7 @@ import {
   Pagination,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { FULLY_AVAILABLE_STALENESS } from '@/types/topic.types';
 import type { Topic, PaginationMetadata } from '@/types/topic.types';
 
 export interface TopicListProps {
@@ -108,7 +109,9 @@ export const TopicList: React.FC<TopicListProps> = ({
                     <Chip
                       label={`${topic.stalenessScore}%`}
                       size="small"
-                      color={getColorForStaleness(topic.stalenessScore)}
+                      color={getColorForStaleness(
+                        topic.stalenessScore ?? FULLY_AVAILABLE_STALENESS
+                      )}
                       data-testid={`staleness-score-${topic.topicCode}`}
                     />
                   </Box>

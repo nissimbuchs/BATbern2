@@ -885,6 +885,7 @@ components:
         partnershipEndDate:
           type: string
           format: date
+          description: In the list, organizers only (omitted for other callers, GHSA-qhqv).
         isActive:
           type: boolean
         company:

@@ -18,7 +18,7 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.context.junit.jupiter.web.SpringJUnitWebConfig;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.setup.MockMvcBuilders;
-import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import org.springframework.web.context.WebApplicationContext;
 import org.springframework.web.servlet.config.annotation.EnableWebMvc;
@@ -29,6 +29,7 @@ import java.util.Date;
 
 import static org.springframework.security.test.web.servlet.setup.SecurityMockMvcConfigurers.springSecurity;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -61,7 +62,7 @@ class ProductionSecurityFilterChainTest {
 
     @RestController
     static class ProbeController {
-        @GetMapping("/**")
+        @RequestMapping("/**")
         String reached() {
             return "reached";
         }
@@ -90,6 +91,42 @@ class ProductionSecurityFilterChainTest {
     void should_return401_when_anonymousRequestsPersonalDataEndpoint(String path) throws Exception {
         mockMvc.perform(get(path))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/api/v1/events/attendance-summary",
+        "/api/v1/events/registrations",
+        "/api/v1/events/BATbern60/sessions/unassigned",
+        "/api/v1/events/BATbern60/sessions/conflicts"
+    })
+    @DisplayName("should_return401_when_anonymousRequestsOrganizerPathMatchedByPublicWildcard")
+    void should_return401_when_anonymousRequestsOrganizerPathMatchedByPublicWildcard(String path)
+            throws Exception {
+        // GHSA-qhqv: GET /events/* and /events/*/sessions/* are public for event codes and
+        // session slugs, but these literal segments are organizer endpoints.
+        mockMvc.perform(get(path)).andExpect(status().isUnauthorized());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "/api/v1/events/BATbern60",
+        "/api/v1/events/BATbern60/sessions/keynote",
+        "/api/v1/events/types",
+        "/api/v1/events/recent-photos"
+    })
+    @DisplayName("should_reachService_when_anonymousRequestsPublicEventPath")
+    void should_reachService_when_anonymousRequestsPublicEventPath(String path) throws Exception {
+        mockMvc.perform(get(path)).andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("should_return401_when_anonymousCallsRetiredMagicLinkEndpoint")
+    void should_return401_when_anonymousCallsRetiredMagicLinkEndpoint() throws Exception {
+        // The magic-link portal was removed in 11.F.1; its permitAll rules outlived it.
+        mockMvc.perform(get("/api/v1/speaker-portal/dashboard")).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/speaker-portal/validate-token")).andExpect(status().isUnauthorized());
+        mockMvc.perform(post("/api/v1/speaker-portal/respond")).andExpect(status().isUnauthorized());
     }
 
     @ParameterizedTest

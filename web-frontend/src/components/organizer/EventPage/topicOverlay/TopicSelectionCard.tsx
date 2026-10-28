@@ -13,6 +13,7 @@ import React from 'react';
 import { Box, Button, Card, CardContent, Chip, Stack, Typography } from '@mui/material';
 import { Warning as WarningIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { FULLY_AVAILABLE_STALENESS } from '@/types/topic.types';
 import type { Topic } from '@/types/topic.types';
 import { RECENT_STALENESS } from './useTopicSelection';
 
@@ -48,7 +49,7 @@ export const TopicSelectionCard: React.FC<TopicSelectionCardProps> = ({
   onDelete,
 }) => {
   const { t } = useTranslation(['events', 'organizer', 'common']);
-  const isRecent = topic.stalenessScore < RECENT_STALENESS;
+  const isRecent = (topic.stalenessScore ?? FULLY_AVAILABLE_STALENESS) < RECENT_STALENESS;
   const canDelete = !topic.usageCount || topic.usageCount === 0;
 
   return (

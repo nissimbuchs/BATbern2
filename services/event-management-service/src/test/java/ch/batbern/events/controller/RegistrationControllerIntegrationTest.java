@@ -638,8 +638,20 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .andExpect(jsonPath("$.attendeeUsername").value("john.doe"))
                 .andExpect(jsonPath("$.attendeeFirstName").value("John"))
                 .andExpect(jsonPath("$.attendeeLastName").value("Doe"))
-                .andExpect(jsonPath("$.attendeeEmail").value("john.doe@example.com"))
+                // GHSA-qhqv: the code is the only secret, so the anonymous lookup masks the address
+                .andExpect(jsonPath("$.attendeeEmail").value("j***@example.com"))
                 .andExpect(jsonPath("$.attendeeCompany").value("Test Company"));
+    }
+
+    @Test
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
+    @DisplayName("should_returnFullEmail_when_organizerLooksUpRegistration")
+    void should_returnFullEmail_when_organizerLooksUpRegistration() throws Exception {
+        Registration registration = createTestRegistration("john.doe", "confirmed");
+
+        mockMvc.perform(get("/api/v1/events/BATbern142/registrations/" + registration.getRegistrationCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.attendeeEmail").value("john.doe@example.com"));
     }
 
     @Test
