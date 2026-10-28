@@ -111,7 +111,7 @@ API Gateway node, as they always did; the fix removes the spoofing, it does not 
 visitor's address. That needs the HTTP API to pass `$context.identity.sourceIp` in a header the
 client cannot set, which in turn needs the ALB to be unreachable directly (#1152).
 
-`ProductionSecurityFilterChainTest` exists for the gateway, EMS and CUMS (#1136). Each loads only
+`ProductionSecurityFilterChainTest` exists for the gateway and CUMS, `EmsProductionSecurityFilterChainTest` for EMS (#1136). The EMS one lives in `ch.batbern.securitychain` because EMS component-scans its test packages, and a probe controller there would hijack every other EMS test. Each loads only
 the service's `SecurityConfig` and a probe controller under a non-test profile, so the `permitAll`
 list and the VPC rule are tested as production runs them. The CUMS test includes the spoofed-hop
 case and fails on the old first-hop code.

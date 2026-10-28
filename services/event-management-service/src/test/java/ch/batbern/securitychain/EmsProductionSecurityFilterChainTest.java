@@ -1,5 +1,6 @@
-package ch.batbern.events.config;
+package ch.batbern.securitychain;
 
+import ch.batbern.events.config.SecurityConfig;
 import com.nimbusds.jose.JWSAlgorithm;
 import com.nimbusds.jose.JWSHeader;
 import com.nimbusds.jose.crypto.MACSigner;
@@ -36,17 +37,21 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Every integration test runs {@code TestSecurityConfig}, whose chain is {@code anyRequest().permitAll()},
  * so the {@code permitAll} matchers that guard production had no test.
  *
+ * <p>Lives outside {@code ch.batbern.events}/{@code ch.batbern.shared} on purpose: EMS scans those
+ * packages with a plain {@code @ComponentScan} (no test-type exclusion), so a probe controller there
+ * would be registered in every other EMS integration test and swallow their routes.
+ *
  * <p>Only {@link SecurityConfig} and a catch-all probe controller are loaded: a request the chain
  * lets through reaches the probe (200), a blocked one is rejected with 401 before it.
  */
-@SpringJUnitWebConfig(ProductionSecurityFilterChainTest.WebConfig.class)
+@SpringJUnitWebConfig(EmsProductionSecurityFilterChainTest.WebConfig.class)
 @ActiveProfiles("staging")
 @TestPropertySource(properties = {
     "spring.security.oauth2.resourceserver.jwt.jwk-set-uri=https://jwks.example.invalid/keys",
-    "watch.jwt.secret=" + ProductionSecurityFilterChainTest.WATCH_TEST_SECRET
+    "watch.jwt.secret=" + EmsProductionSecurityFilterChainTest.WATCH_TEST_SECRET
 })
 @DisplayName("Production EMS filter chain")
-class ProductionSecurityFilterChainTest {
+class EmsProductionSecurityFilterChainTest {
 
     static final String WATCH_TEST_SECRET = "production-chain-test-secret-at-least-32-bytes";
 
