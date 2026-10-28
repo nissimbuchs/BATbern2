@@ -25,6 +25,13 @@ export type CreateTopicRequest = components['schemas']['CreateTopicRequest'];
 export type SelectTopicForEventRequest = components['schemas']['SelectTopicForEventRequest'];
 export type TopicSelectionResponse = components['schemas']['TopicSelectionResponse'];
 
+/**
+ * Staleness, colour zone and status are organizer planning data and optional on the wire: the
+ * public archive gets a projection without them (GHSA-qhqv). Organizer screens always receive
+ * them; this default only satisfies the type (100 = never used, fully available).
+ */
+export const FULLY_AVAILABLE_STALENESS = 100;
+
 // Defined locally — no longer generated from OpenAPI (staleness endpoints removed from backend)
 export interface OverrideStalenessRequest {
   stalenessScore: number;

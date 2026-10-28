@@ -63,6 +63,16 @@ jobs:
       - name: Verify every Bruno collection is run or explicitly excluded
         run: ./scripts/ci/test-bruno-collection-guard.sh
 
+      # #1155: the post-deploy access-control check fails closed on every non-public operation.
+      # Here, before the deploy: its own regression test, and an offline check that every
+      # allowlisted public operation still exists in docs/api (a renamed path must not slip).
+      - name: Verify the access-control check, its public allowlist and ZAP spec coverage
+        run: |
+          python3 -m pip install --quiet pyyaml==6.0.2
+          python3 scripts/ci/test-access-control-check.py
+          python3 scripts/ci/access-control-check.py --check-allowlist
+          python3 scripts/ci/check-zap-spec-coverage.py
+
   # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Shared Kernel (Foundation)
   # ═══════════════════════════════════════════════════════════

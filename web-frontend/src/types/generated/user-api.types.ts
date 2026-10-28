@@ -954,13 +954,12 @@ export interface components {
       success?: boolean;
       message?: string;
     };
-    /** @description Public organizer projection for the About page (no sensitive fields) */
+    /** @description Public organizer projection for the About page (no sensitive fields; no email address, GHSA-qhqv: the page contacts info@batbern.ch) */
     PublicOrganizerResponse: {
       /** @description Username (public identifier) */
       id?: string;
       firstName?: string;
       lastName?: string;
-      email?: string;
       bio?: string;
       profilePictureUrl?: string;
       companyId?: string;

@@ -33,6 +33,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useSimilarTopics, useSelectTopicForEvent, useTopicUsageHistory } from '@/hooks/useTopics';
 import { TopicHeatMap } from '@/components/TopicHeatMap';
 import { topicService } from '@/services/topicService';
+import { FULLY_AVAILABLE_STALENESS } from '@/types/topic.types';
 import type { Topic } from '@/types/topic.types';
 
 export interface TopicDetailsPanelProps {
@@ -129,7 +130,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
     }
   };
 
-  const status = getStatusMessage(topic.stalenessScore);
+  const status = getStatusMessage(topic.stalenessScore ?? FULLY_AVAILABLE_STALENESS);
 
   // Check if there are high similarity warnings (>70%) - AC5
   const highSimilarityTopics =
@@ -285,7 +286,7 @@ export const TopicDetailsPanel: React.FC<TopicDetailsPanelProps> = ({
                   : t('topicBacklog.details.selectButton', 'Select for Event')}
               </Button>
 
-              {topic.stalenessScore < 50 && (
+              {(topic.stalenessScore ?? FULLY_AVAILABLE_STALENESS) < 50 && (
                 <Button
                   variant="outlined"
                   color="warning"

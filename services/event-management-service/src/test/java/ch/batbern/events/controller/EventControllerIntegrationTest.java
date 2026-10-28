@@ -1009,6 +1009,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // realAttendeeCount: organizers only
     @DisplayName("should_excludeProgrammaticRegistrations_from_realAttendeeCount")
     void should_excludeProgrammaticRegistrations_from_realAttendeeCount() throws Exception {
         Event event = createTestEvent("BATbern Count", "2027-07-15T09:00:00Z", "CREATED");
@@ -1022,6 +1023,75 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.realAttendeeCount").value(1));
+    }
+
+    // GHSA-qhqv: anonymous and non-organizer callers get the public projection. Internal
+    // fields (organizer, last editor, real attendee count) are organizer-only; the public
+    // website still needs workflow state and the registration counters.
+
+    @Test
+    @DisplayName("should_omitInternalFields_when_anonymousRequestsEventDetail")
+    void should_omitInternalFields_when_anonymousRequestsEventDetail() throws Exception {
+        Event event = createTestEvent("BATbern Public Detail", "2027-08-15T09:00:00Z", "CREATED");
+
+        mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.workflowState").exists())
+                .andExpect(jsonPath("$.waitlistCount").exists())
+                .andExpect(jsonPath("$.organizerUsername").doesNotExist())
+                .andExpect(jsonPath("$.updatedBy").doesNotExist())
+                .andExpect(jsonPath("$.realAttendeeCount").doesNotExist());
+    }
+
+    @Test
+    @DisplayName("should_omitInternalFields_when_anonymousListsEvents")
+    void should_omitInternalFields_when_anonymousListsEvents() throws Exception {
+        mockMvc.perform(get("/api/v1/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].workflowState").exists())
+                .andExpect(jsonPath("$.data[*].organizerUsername", hasSize(0)))
+                .andExpect(jsonPath("$.data[*].updatedBy", hasSize(0)))
+                .andExpect(jsonPath("$.data[*].realAttendeeCount", hasSize(0)));
+    }
+
+    @Test
+    @WithMockUser(username = "some.speaker", roles = "SPEAKER")
+    @DisplayName("should_omitInternalFields_when_nonOrganizerRequestsEventDetail")
+    void should_omitInternalFields_when_nonOrganizerRequestsEventDetail() throws Exception {
+        Event event = createTestEvent("BATbern Speaker View", "2027-08-15T09:00:00Z", "CREATED");
+
+        mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.organizerUsername").doesNotExist())
+                .andExpect(jsonPath("$.realAttendeeCount").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
+    @DisplayName("should_includeInternalFields_when_organizerRequestsEvent")
+    void should_includeInternalFields_when_organizerRequestsEvent() throws Exception {
+        Event event = createTestEvent("BATbern Organizer View", "2027-08-15T09:00:00Z", "CREATED");
+
+        mockMvc.perform(get("/api/v1/events/" + event.getEventCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.organizerUsername").value("test.organizer"))
+                .andExpect(jsonPath("$.realAttendeeCount").value(0));
+        mockMvc.perform(get("/api/v1/events"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].organizerUsername").value("test.organizer"));
+    }
+
+    @Test
+    @DisplayName("should_omitInternalFields_when_anonymousRequestsCurrentEvent")
+    void should_omitInternalFields_when_anonymousRequestsCurrentEvent() throws Exception {
+        eventRepository.deleteAll();
+        createTestEvent("BATbern Current", "2027-12-15T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
+
+        mockMvc.perform(get("/api/v1/events/current"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.title").value("BATbern Current"))
+                .andExpect(jsonPath("$.organizerUsername").doesNotExist())
+                .andExpect(jsonPath("$.realAttendeeCount").doesNotExist());
     }
 
     /**
@@ -1662,6 +1732,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     // ============================================================================
 
     @Test
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // organizerUsername: organizers only
     @DisplayName("should_getEventByCode_when_validEventCodeProvided")
     void should_getEventByCode_when_validEventCodeProvided() throws Exception {
         // Given - create test event

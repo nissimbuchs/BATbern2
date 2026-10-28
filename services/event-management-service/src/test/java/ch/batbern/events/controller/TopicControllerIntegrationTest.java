@@ -90,6 +90,56 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.pagination.totalItems").value(3));
     }
 
+    // GHSA-qhqv: the archive filter is public, the planning data behind a topic is not.
+
+    @Test
+    void should_returnPublicProjection_when_anonymousListsTopics() throws Exception {
+        createTestTopic("Cloud Native Architecture", "technical");
+
+        mockMvc.perform(get("/api/v1/topics")
+                .param("page", "1")
+                .param("limit", "50")
+                .param("include", "history,similarity"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].topicCode").exists())
+                .andExpect(jsonPath("$.data[0].title").value("Cloud Native Architecture"))
+                .andExpect(jsonPath("$.data[0].category").value("technical"))
+                .andExpect(jsonPath("$.data[0].usageCount").exists())
+                .andExpect(jsonPath("$.data[0].status").doesNotExist())
+                .andExpect(jsonPath("$.data[0].colorZone").doesNotExist())
+                .andExpect(jsonPath("$.data[0].stalenessScore").doesNotExist())
+                .andExpect(jsonPath("$.data[0].similarityScores").doesNotExist())
+                .andExpect(jsonPath("$.data[0].usageHistory").doesNotExist());
+
+        // Ordering by staleness would leak it; outside the organizer view it is not a sort field.
+        mockMvc.perform(get("/api/v1/topics").param("page", "1").param("limit", "50")
+                .param("sort", "stalenessScore,desc"))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @WithMockUser(username = "some.partner", roles = {"PARTNER"})
+    void should_returnPublicProjection_when_nonOrganizerListsTopics() throws Exception {
+        createTestTopic("Cloud Native Architecture", "technical");
+
+        mockMvc.perform(get("/api/v1/topics").param("page", "1").param("limit", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].status").doesNotExist())
+                .andExpect(jsonPath("$.data[0].stalenessScore").doesNotExist());
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_returnPlanningFields_when_organizerListsTopics() throws Exception {
+        createTestTopic("Cloud Native Architecture", "technical");
+
+        mockMvc.perform(get("/api/v1/topics").param("page", "1").param("limit", "50"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[0].status").exists())
+                .andExpect(jsonPath("$.data[0].colorZone").exists())
+                .andExpect(jsonPath("$.data[0].stalenessScore").exists());
+    }
+
     @Test
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_filterTopicsByCategory_when_categoryFilterProvided() throws Exception {

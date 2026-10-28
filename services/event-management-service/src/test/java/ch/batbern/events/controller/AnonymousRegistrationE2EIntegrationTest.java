@@ -185,7 +185,7 @@ public class AnonymousRegistrationE2EIntegrationTest extends AbstractIntegration
                 .andExpect(jsonPath("$.attendeeUsername").value("alice.wonderland"))
                 .andExpect(jsonPath("$.attendeeFirstName").value("Alice"))
                 .andExpect(jsonPath("$.attendeeLastName").value("Wonderland"))
-                .andExpect(jsonPath("$.attendeeEmail").value("alice.wonderland@example.com"))
+                .andExpect(jsonPath("$.attendeeEmail").value("a***@example.com")) // masked, GHSA-qhqv
                 .andExpect(jsonPath("$.status").value("REGISTERED")) // Story 4.1.5c: starts as 'registered'
                 .andExpect(jsonPath("$.registrationDate").exists())
                 .andExpect(jsonPath("$.createdAt").exists())

@@ -81,6 +81,13 @@ public class SecurityConfig {
                 // W4.1: Raw WebSocket for Watch clients — auth handled at STOMP level by JwtStompInterceptor
                 .requestMatchers("/api/v1/watch/ws").permitAll()
 
+                // GHSA-qhqv: organizer endpoints whose literal segment the public wildcards
+                // below would otherwise match as an event code or session slug.
+                .requestMatchers(HttpMethod.GET, "/api/v1/events/attendance-summary",
+                        "/api/v1/events/registrations",
+                        "/api/v1/events/*/sessions/unassigned",
+                        "/api/v1/events/*/sessions/conflicts").authenticated()
+
                 // Story 4.1.3: Public event discovery endpoints
                 // /events/current: Watch app only (#1070). /public/events*: website read model (2026-10-07)
                 .requestMatchers(HttpMethod.GET, "/api/v1/events/current", "/api/v1/public/events",

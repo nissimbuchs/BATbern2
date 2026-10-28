@@ -207,6 +207,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         return ResponseEntity.ok(new ListEvents200Response()
                 .data(eventResponses.stream()
                         .map(eventGeneratedMapper::toEvent)
+                        .map(this::forAudience)
                         .collect(Collectors.toList()))
                 .pagination(result.getPagination()));
     }
@@ -282,7 +283,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         HttpHeaders headers = new HttpHeaders();
         headers.add("X-Cache-Status", cacheStatus);
 
-        return ResponseEntity.ok().headers(headers).body(eventGeneratedMapper.toEventDetail(response));
+        return ResponseEntity.ok().headers(headers).body(forAudience(eventGeneratedMapper.toEventDetail(response)));
     }
 
     /**
@@ -827,7 +828,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
             applyResourceExpansionsToDTO(currentEvent, include, response, view);
         }
 
-        return ResponseEntity.ok(eventGeneratedMapper.toEventDetail(response));
+        return ResponseEntity.ok(forAudience(eventGeneratedMapper.toEventDetail(response)));
     }
 
     /**
@@ -1537,6 +1538,31 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      * @param event The event to update
      * @param request The patch request with optional fields
      */
+    /**
+     * GHSA-qhqv: callers other than organizers get the public projection. Who runs the event,
+     * who edited it last and the real attendee count are organizer data; the public website
+     * needs workflow state and the registration counters, which stay. Applied to the wire
+     * object after the cache, so cached responses are never altered.
+     */
+    private ch.batbern.events.core.dto.generated.Event forAudience(
+            ch.batbern.events.core.dto.generated.Event event) {
+        if (!publicSessionVisibilityService.callerIsOrganizer()) {
+            event.setOrganizerUsername(null);
+            event.setUpdatedBy(null);
+            event.setRealAttendeeCount(null);
+        }
+        return event;
+    }
+
+    private EventDetail forAudience(EventDetail event) {
+        if (!publicSessionVisibilityService.callerIsOrganizer()) {
+            event.setOrganizerUsername(null);
+            event.setUpdatedBy(null);
+            event.setRealAttendeeCount(null);
+        }
+        return event;
+    }
+
     /**
      * Enrich an EventResponse with live registration counts (Story 10.11).
      * Adds confirmedCount, waitlistCount, and spotsRemaining (null when capacity is unlimited).
@@ -2294,7 +2320,24 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         registration.setEventCode(eventCode);
         RegistrationResponse response = registrationService.enrichRegistrationWithUserData(registration);
 
+        // GHSA-qhqv: anonymous callers hold only the registration code, so they see the address
+        // masked. The confirmation page needs to show which mailbox to check, not the address.
+        if (!publicSessionVisibilityService.callerIsOrganizer()) {
+            response.setAttendeeEmail(maskEmail(response.getAttendeeEmail()));
+        }
         return ResponseEntity.ok(response);
+    }
+
+    /** {@code john.doe@example.com} becomes {@code j***@example.com}; null and malformed stay masked. */
+    static String maskEmail(String email) {
+        if (email == null) {
+            return null;
+        }
+        int at = email.indexOf('@');
+        if (at < 1) {
+            return "***";
+        }
+        return email.charAt(0) + "***" + email.substring(at);
     }
 
     /**

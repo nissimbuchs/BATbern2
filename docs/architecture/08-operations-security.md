@@ -87,6 +87,47 @@ off an SQS queue (see `06-backend-architecture.md`, "Email Forwarding"), and the
 - Mail-based authorization must not trust the `From` header alone: alias forwarding checks the
   topmost SES `Authentication-Results` (DMARC pass, or DKIM aligned with the From domain).
 
+### Public means "no login", not "everything": the access-control check (#1155, GHSA-qhqv)
+
+No generic scanner finds a missing authorization rule. ZAP looks for injection, headers and
+disclosure patterns; an anonymous `200` is not an alert to it, because it cannot tell a public
+endpoint from a forgotten one. Sonar and CodeQL have no rule "write endpoint without
+`@PreAuthorize`" either. Broken access control (OWASP A01) is business logic, so it needs a check
+that knows the policy.
+
+`scripts/ci/access-control-check.py` is that check. It reads every operation in
+`docs/api/*.openapi.yml` and calls each one **anonymously** against production after every deploy
+(`deploy-staging.yml`, before `staging-current` is promoted). Every operation not listed in
+`scripts/ci/access-control-public.txt` must answer `401` or `403`; anything else fails the deploy.
+A new operation is protected by default: it fails until someone adds it to the allowlist, with a
+reason. The build runs its regression test and an offline `--check-allowlist`, so a renamed path
+cannot leave a stale public entry behind.
+
+It is safe against production by construction: path ids that do not exist, `text/plain` bodies
+that every JSON endpoint refuses with `415` before the controller runs, required query and header
+parameters filled so the request reaches the authorization check instead of failing binding, and
+writes with neither an id nor a body are not sent at all (listed as "not probed"). A `415` or `404`
+on a non-public write still counts as a finding: it proves the request passed the security layer.
+
+Two rules the 2026-10-28 review (GHSA-qhqv) added:
+
+- **Being on the allowlist only answers "may an anonymous caller use this".** What a public response
+  contains is a separate decision. The review found public responses carrying organizer planning
+  data (topic staleness and status), who runs and last edited an event, the organizers' email
+  addresses, partner contract end dates and an attendee's full email address. Public responses are
+  now projections: `EventController.forAudience`, `PublicEventShaper`, `TopicController.publicProjection`,
+  the partner list and the registration lookup (email masked). The check cannot see payloads; a
+  review of each allowlist entry's response can.
+- **A wildcard `permitAll` matches every literal segment too.** `GET /api/v1/events/*` also matched
+  `/events/attendance-summary` and `/events/registrations`; `/events/*/sessions/*` matched
+  `sessions/unassigned` and `sessions/conflicts`. Method security still answered 403, so nothing
+  leaked, but the first wall was missing. Gateway and EMS now name those paths `authenticated()`
+  before the wildcards. When adding an endpoint under a public wildcard, add it there as well.
+
+The weekly ZAP API scan covered 13 of 19 specs (users, topics, partner meetings, tasks,
+notifications and app settings were missing). `scripts/ci/check-zap-spec-coverage.py` now fails
+the build when a spec is not in the scan matrix.
+
 ### Client IP: read X-Forwarded-For from the right, never the first hop (#1132)
 
 Requests reach the Spring gateway as client → AWS HTTP API (`api.batbern.ch`) → internet-facing

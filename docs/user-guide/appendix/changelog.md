@@ -89,6 +89,12 @@ Each release includes:
 - ✅ Newsletter tasks that a later announcement has replaced are closed automatically: Topic Announcement once the speakers or the agenda are public, Speaker Lineup once the agenda is public.
 - ✅ Catering is now due **5 days** before the event (final headcount), and two new standard tasks exist: **Namensschilder** (2 days before) and **Wein** (event day). For an existing event, add them from the event's task templates.
 
+**Security — Public Pages Show Only Public Data (2026-10-28)**:
+- ✅ Visitors who are not logged in no longer see organizer planning data: the topic list on the archive page shows only title, category and how often a topic ran; event pages no longer show which organizer runs or last edited an event.
+- ✅ The About page no longer exposes the organizers' email addresses; contact stays info@batbern.ch. The partner list no longer shows when a partnership ends; "partner since" stays.
+- ✅ The registration confirmation page shows the email address masked (n***@example.com). "Create account" no longer fills in the address; you type it once.
+- ✅ After every deploy, an automated check calls every non-public API operation without login and fails the deploy if one answers. The weekly security scan now covers all 19 API areas instead of 13.
+
 **Bug Fixes — Newsletter Sending, Paged Lists and Request Origin (2026-10-28)**:
 - ✅ A newsletter send no longer skips subscribers when others unsubscribe while it runs. For BATbern60, 13 of 1060 were missed this way. "Retry" no longer mails addresses that were deleted or unsubscribed in the meantime.
 - ✅ Paged lists show every entry exactly once. The newsletter subscriber list showed some subscribers twice and hid about 337 of them; the same fix applies to every paged list.

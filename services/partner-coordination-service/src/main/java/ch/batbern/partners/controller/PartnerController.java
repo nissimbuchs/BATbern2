@@ -51,6 +51,11 @@ public class PartnerController implements PartnersApi {
         // #961: the LIST spans companies, so only an organizer may expand contacts here.
         Set<String> includes = withContactsAuthorized(parseIncludes(include), null);
         List<PartnerResponse> partners = partnerService.listPartners(filter, null, page, size, includes);
+        // GHSA-qhqv: the public About page shows "partner since"; when a contract ends is
+        // commercial data for organizers only.
+        if (!partnerSecurityService.isOrganizer()) {
+            partners.forEach(p -> p.setPartnershipEndDate(null));
+        }
 
         // Create pagination metadata
         PaginationMetadata metadata = new PaginationMetadata();

@@ -16,6 +16,7 @@
 
 import { useState } from 'react';
 import { useSelectTopicForEvent, useSimilarTopics } from '@/hooks/useTopics';
+import { FULLY_AVAILABLE_STALENESS } from '@/types/topic.types';
 import type { Topic } from '@/types/topic.types';
 
 export const SIMILARITY_THRESHOLD = 0.7;
@@ -89,7 +90,7 @@ export function useTopicSelection({
   const requestSelect = (topic: Topic) => {
     setActingTopic(topic);
     setJustification('');
-    if (topic.stalenessScore < RECENT_STALENESS) {
+    if ((topic.stalenessScore ?? FULLY_AVAILABLE_STALENESS) < RECENT_STALENESS) {
       setMode('override');
     } else if (hasHighSimilarity(topic)) {
       setMode('similar');

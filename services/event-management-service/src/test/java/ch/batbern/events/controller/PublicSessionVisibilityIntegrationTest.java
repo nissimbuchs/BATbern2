@@ -147,6 +147,26 @@ class PublicSessionVisibilityIntegrationTest extends AbstractIntegrationTest {
 
         @Test
         @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
+        @DisplayName("should_omitOrganizerFields_when_readModelServesAnyCaller")
+        void should_omitOrganizerFields_when_readModelServesAnyCaller() throws Exception {
+            // GHSA-qhqv: the read model is the public website; it never carries who runs or
+            // edited the event, nor the real attendee count, whoever asks.
+            mockMvc.perform(get("/api/v1/public/events/current"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.organizerUsername").doesNotExist())
+                    .andExpect(jsonPath("$.updatedBy").doesNotExist())
+                    .andExpect(jsonPath("$.realAttendeeCount").doesNotExist());
+            mockMvc.perform(get("/api/v1/public/events/" + CODE))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.organizerUsername").doesNotExist());
+            mockMvc.perform(get("/api/v1/public/events").param("scope", "upcoming"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data[*].organizerUsername", hasSize(0)))
+                    .andExpect(jsonPath("$.data[*].realAttendeeCount", hasSize(0)));
+        }
+
+        @Test
+        @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
         @DisplayName("should_showOrganizerTheSamePublicView_when_loggedInOrganizerVisitsWebsite")
         void should_showOrganizerTheSamePublicView_when_loggedInOrganizerVisitsWebsite() throws Exception {
             mockMvc.perform(get("/api/v1/public/events/current"))

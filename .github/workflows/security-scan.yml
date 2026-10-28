@@ -77,6 +77,19 @@ jobs:
             spec: docs/api/partners-api.openapi.yml
           - api: attendees
             spec: docs/api/attendees-api.openapi.yml
+          # #1155: the six specs below were never scanned (the users API among them).
+          - api: users
+            spec: docs/api/users-api.openapi.yml
+          - api: topics
+            spec: docs/api/topics-api.openapi.yml
+          - api: partner-meetings
+            spec: docs/api/partner-meetings-api.openapi.yml
+          - api: event-tasks
+            spec: docs/api/event-tasks-api.openapi.yml
+          - api: event-notifications
+            spec: docs/api/event-notifications-api.openapi.yml
+          - api: event-app-settings
+            spec: docs/api/event-app-settings-api.openapi.yml
 
     steps:
       - name: Checkout code

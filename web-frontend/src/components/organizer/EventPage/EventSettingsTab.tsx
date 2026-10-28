@@ -68,7 +68,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
   const deleteEventMutation = useDeleteEvent();
 
   const updateEventMutation = useUpdateEvent();
-  const [selectedOrganizer, setSelectedOrganizer] = useState(event.organizerUsername);
+  const [selectedOrganizer, setSelectedOrganizer] = useState(event.organizerUsername ?? '');
   const [moderatorUpdateError, setModeratorUpdateError] = useState<string | null>(null);
   const [moderatorUpdateSuccess, setModeratorUpdateSuccess] = useState(false);
 

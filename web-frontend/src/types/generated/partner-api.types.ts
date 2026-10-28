@@ -408,7 +408,10 @@ export interface components {
       partnershipLevel: components['schemas']['PartnershipLevel'];
       /** Format: date */
       partnershipStartDate: string;
-      /** Format: date */
+      /**
+       * Format: date
+       * @description In the list, organizers only (omitted for other callers, GHSA-qhqv).
+       */
       partnershipEndDate?: string;
       isActive: boolean;
       /** @description Enriched via HTTP call (when include=company) */

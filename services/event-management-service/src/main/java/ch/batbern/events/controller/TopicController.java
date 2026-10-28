@@ -9,6 +9,7 @@ import ch.batbern.events.dto.TopicFilterRequest;
 import ch.batbern.events.mapper.TopicMapper;
 import ch.batbern.events.service.StalenessScoreService;
 import ch.batbern.events.service.TopicService;
+import ch.batbern.events.service.publishing.PublicSessionVisibilityService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import ch.batbern.shared.api.DeterministicPaging;
@@ -51,16 +52,19 @@ public class TopicController implements TopicsApi {
     private final TopicMapper topicMapper;
     private final StalenessScoreService stalenessScoreService;
     private final ObjectMapper objectMapper;
+    private final PublicSessionVisibilityService audience;
 
     public TopicController(
             TopicService topicService,
             TopicMapper topicMapper,
             StalenessScoreService stalenessScoreService,
-            ObjectMapper objectMapper) {
+            ObjectMapper objectMapper,
+            PublicSessionVisibilityService audience) {
         this.topicService = topicService;
         this.topicMapper = topicMapper;
         this.stalenessScoreService = stalenessScoreService;
         this.objectMapper = objectMapper;
+        this.audience = audience;
     }
 
     /**
@@ -98,11 +102,14 @@ public class TopicController implements TopicsApi {
             }
         }
 
-        boolean includeHistory = include != null && include.contains("history");
-        boolean includeSimilarity = include != null && include.contains("similarity");
+        // GHSA-qhqv: the archive filter is public, the planning data behind a topic is not.
+        // Other callers get no history, no similarity and no staleness ordering.
+        boolean organizer = audience.callerIsOrganizer();
+        boolean includeHistory = organizer && include != null && include.contains("history");
+        boolean includeSimilarity = organizer && include != null && include.contains("similarity");
 
         // Staleness and usageCount sorts are handled in-memory; pass null sort to DB for those
-        boolean sortByStaleness = sort != null && sort.contains("stalenessScore");
+        boolean sortByStaleness = organizer && sort != null && sort.contains("stalenessScore");
         boolean sortByUsageCount = sort != null && sort.contains("usageCount");
         boolean inMemorySort = sortByStaleness || sortByUsageCount;
         Pageable pageable = createPageable(page - 1, limit, inMemorySort ? null : sort);
@@ -184,7 +191,26 @@ public class TopicController implements TopicsApi {
                 .hasPrev(page > 1)
                 .build();
 
+        if (!organizer) {
+            topicDtos = topicDtos.stream().map(TopicController::publicProjection).collect(Collectors.toList());
+        }
         return ResponseEntity.ok(new TopicListResponse(topicDtos, pagination));
+    }
+
+    /**
+     * What the public archive needs to filter by topic: code, title, description, category and how
+     * often it ran. Status, colour zone, staleness, similarity and history are organizer planning data.
+     */
+    private static ch.batbern.events.dto.generated.topics.Topic publicProjection(
+            ch.batbern.events.dto.generated.topics.Topic topic) {
+        return new ch.batbern.events.dto.generated.topics.Topic()
+                .topicCode(topic.getTopicCode())
+                .title(topic.getTitle())
+                .description(topic.getDescription())
+                .category(topic.getCategory())
+                .usageCount(topic.getUsageCount())
+                .lastUsedDate(topic.getLastUsedDate())
+                .active(topic.getActive());
     }
 
     private static final Set<String> ALLOWED_SORT_FIELDS = Set.of(

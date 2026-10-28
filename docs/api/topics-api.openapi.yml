@@ -598,14 +598,15 @@ components:
           type: string
     Topic:
       type: object
-      description: Topic entity for event management
+      description: >-
+        Topic entity for event management. Callers other than organizers get the public
+        projection used by the archive filter (code, title, description, category, usageCount,
+        lastUsedDate, active); stalenessScore, colorZone, status, similarityScores and
+        usageHistory are organizer planning data and are omitted for them (GHSA-qhqv).
       required:
         - topicCode
         - title
         - category
-        - stalenessScore
-        - colorZone
-        - status
       properties:
         topicCode:
           type: string
