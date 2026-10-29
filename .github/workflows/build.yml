@@ -73,6 +73,10 @@ jobs:
           python3 scripts/ci/access-control-check.py --check-allowlist
           python3 scripts/ci/check-zap-spec-coverage.py
 
+      # #1140: the deploy waits for stacks a previous deploy left in *_IN_PROGRESS.
+      - name: Verify the deploy waits for in-progress CloudFormation stacks
+        run: ./scripts/ci/test-wait-for-stable-stacks.sh
+
   # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Shared Kernel (Foundation)
   # ═══════════════════════════════════════════════════════════

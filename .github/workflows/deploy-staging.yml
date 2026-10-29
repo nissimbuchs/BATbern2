@@ -565,6 +565,13 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
+      # #1140: a stack the previous deploy left in *_IN_PROGRESS (e.g. UPDATE_COMPLETE_CLEANUP while
+      # a VPC Lambda's ENIs are released, ~25 min) makes every cdk deploy against it fail at once.
+      # Wait for all stacks to settle first; covers both the layer and the per-stack path.
+      - name: Wait for in-progress CloudFormation stacks
+        timeout-minutes: 45
+        run: ./scripts/ci/wait-for-stable-stacks.sh BATbern-staging- 2400
+
       # Layer-based deployment with token refresh between layers
       - name: Deploy Layer 0 - Foundation
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -585,7 +592,8 @@ jobs:
 
       - name: Deploy Layer 1 - Infrastructure
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 20
+        # 40, not 20 (#1140): InboundEmail's cleanup phase waited ~25 min for a VPC Lambda delete.
+        timeout-minutes: 40
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 1: Infrastructure (Network, Secrets, EventBus, InboundEmail)"
