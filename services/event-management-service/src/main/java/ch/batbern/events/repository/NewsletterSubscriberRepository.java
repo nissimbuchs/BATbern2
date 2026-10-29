@@ -28,7 +28,12 @@ public interface NewsletterSubscriberRepository extends JpaRepository<Newsletter
 
     Optional<NewsletterSubscriber> findByUnsubscribeToken(String unsubscribeToken);
 
-    Optional<NewsletterSubscriber> findByUsername(String username);
+    /**
+     * Every row of a user. {@code username} is NOT unique: a user who subscribed under two
+     * addresses has two rows (one per address, unique by {@code lower(email)}). An
+     * {@code Optional} finder here threw IncorrectResultSizeDataAccessException (#1143).
+     */
+    List<NewsletterSubscriber> findAllByUsername(String username);
 
     /** All active subscribers (not unsubscribed, not suppressed — Story 10.29). */
     List<NewsletterSubscriber> findByUnsubscribedAtIsNullAndSuppressedAtIsNull();

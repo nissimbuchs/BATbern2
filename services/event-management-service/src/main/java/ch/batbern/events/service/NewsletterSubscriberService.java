@@ -173,10 +173,14 @@ public class NewsletterSubscriberService {
      */
     @Transactional(readOnly = true)
     public NewsletterSubscriptionStatusResponse getMySubscription(String username, String email) {
-        // Try by username first
-        Optional<NewsletterSubscriber> byUsername = subscriberRepository.findByUsername(username);
-        if (byUsername.isPresent()) {
-            NewsletterSubscriber sub = byUsername.get();
+        // A user may have one row per address (#1143): subscribed if any of them is active,
+        // and report the active address.
+        List<NewsletterSubscriber> byUsername = subscriberRepository.findAllByUsername(username);
+        if (!byUsername.isEmpty()) {
+            NewsletterSubscriber sub = byUsername.stream()
+                    .filter(s -> s.getUnsubscribedAt() == null)
+                    .findFirst()
+                    .orElse(byUsername.get(0));
             return NewsletterSubscriptionStatusResponse.builder()
                     .subscribed(sub.getUnsubscribedAt() == null)
                     .email(sub.getEmail())
@@ -217,16 +221,19 @@ public class NewsletterSubscriberService {
                 log.debug("Authenticated user {} is already subscribed, ignoring", username);
             }
         } else {
-            // Unsubscribe by token or by email lookup
-            Optional<NewsletterSubscriber> sub = subscriberRepository.findByUsername(username);
-            if (sub.isEmpty()) {
-                sub = subscriberRepository.findByEmailIgnoreCase(email);
+            // Unsubscribe every address of this user (#1143), or fall back to the email lookup
+            List<NewsletterSubscriber> subs = subscriberRepository.findAllByUsername(username);
+            if (subs.isEmpty()) {
+                subs = subscriberRepository.findByEmailIgnoreCase(email).map(List::of).orElse(List.of());
             }
-            sub.ifPresent(s -> {
-                s.setUnsubscribedAt(Instant.now());
-                subscriberRepository.save(s);
-                log.info("Authenticated user {} unsubscribed from newsletter", username);
-            });
+            Instant now = Instant.now();
+            subs.stream()
+                    .filter(s -> s.getUnsubscribedAt() == null)
+                    .forEach(s -> {
+                        s.setUnsubscribedAt(now);
+                        subscriberRepository.save(s);
+                        log.info("Authenticated user {} unsubscribed from newsletter", username);
+                    });
         }
         return getMySubscription(username, email);
     }

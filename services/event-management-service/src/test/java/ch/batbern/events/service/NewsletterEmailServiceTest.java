@@ -483,6 +483,7 @@ class NewsletterEmailServiceTest {
         testEvent.setId(UUID.randomUUID());
         testEvent.setEventCode("BATbern79101");
         testEvent.setTitle("BATPW-E2E 1782885868836");
+        when(emailService.isLiveDelivery()).thenReturn(true);
 
         assertThatThrownBy(() ->
                 newsletterEmailService.sendNewsletter(testEvent, false, "de", "organizer", null))
@@ -490,6 +491,25 @@ class NewsletterEmailServiceTest {
 
         verify(sendRepository, never()).findFirstByEventIdAndStatus(any(), any());
         verify(subscriberService, never()).getActiveCount();
+    }
+
+    @Test
+    @DisplayName("sendNewsletter: a test-marked event proceeds when no live SES client exists (#1071)")
+    void sendNewsletter_proceeds_whenEventIsTestMarkedButDeliveryIsNotLive() {
+        // Local dev has no SesClient: mail goes to LocalEmailCapture, nothing leaves the machine.
+        // The wall exists for live delivery only, like the per-email wall in EmailService; without
+        // this the newsletter E2E spec could never pass anywhere.
+        testEvent.setId(UUID.randomUUID());
+        testEvent.setEventCode("BATbern79102");
+        testEvent.setTitle("BATPW-E2E 1782885868837");
+        when(emailService.isLiveDelivery()).thenReturn(false);
+        when(sendRepository.findFirstByEventIdAndStatus(any(), any()))
+                .thenReturn(java.util.Optional.of(NewsletterSend.builder().id(UUID.randomUUID()).build()));
+
+        // Reaches the duplicate-send check, i.e. passed the marker wall.
+        assertThatThrownBy(() ->
+                newsletterEmailService.sendNewsletter(testEvent, false, "de", "organizer", null))
+                .isInstanceOf(DuplicateNewsletterSendException.class);
     }
 
     @Test

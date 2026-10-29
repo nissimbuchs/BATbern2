@@ -55,7 +55,7 @@ public class DeregistrationEmailService {
     // Not @Async: always called from DeregistrationService.deregisterByEmail() which is itself @Async
     public void sendDeregistrationLinkEmail(Registration registration, Event event, String deregistrationLink) {
         try {
-            String locale = resolveLocale(registration.getAttendeeEmail());
+            String locale = resolveLocale(registration.getAttendeeUsername());
             String templateKey = "deregistration-link";
             String classpathFallback = "email-templates/deregistration-link-" + locale + ".html";
 
@@ -128,12 +128,14 @@ public class DeregistrationEmailService {
     }
 
     /**
-     * Resolve email locale. Uses "de" as default (primary BATbern audience is German-speaking).
-     * A future improvement could look up the user's preferred language via UserApiClient.
+     * The attendee's language, from their CUMS preference: German or English (the only template
+     * locales). Unknown user or failed lookup: German, the primary audience.
      */
-    private String resolveLocale(String email) {
-        // TODO: resolve from user profile via UserApiClient (Story 10.12 improvement)
-        return "de";
+    private String resolveLocale(String username) {
+        if (username == null || username.isBlank()) {
+            return "de";
+        }
+        return EmailLocales.fromPreference(userApiClient.getPreferredLanguage(username)).getLanguage();
     }
 
     /**

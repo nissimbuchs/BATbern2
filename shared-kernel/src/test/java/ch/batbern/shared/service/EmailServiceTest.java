@@ -39,6 +39,24 @@ class EmailServiceTest {
     }
 
     @Nested
+    @DisplayName("Live delivery (#1071)")
+    class LiveDelivery {
+
+        @Test
+        @DisplayName("should_reportNotLive_when_noSesClientConfigured")
+        void should_reportNotLive_when_noSesClientConfigured() {
+            assertThat(emailService.isLiveDelivery()).isFalse();
+        }
+
+        @Test
+        @DisplayName("should_reportLive_when_sesClientConfigured")
+        void should_reportLive_when_sesClientConfigured() {
+            ReflectionTestUtils.setField(emailService, "sesClient", mock(SesClient.class));
+            assertThat(emailService.isLiveDelivery()).isTrue();
+        }
+    }
+
+    @Nested
     @DisplayName("Simple Variable Replacement")
     class SimpleVariableReplacement {
 

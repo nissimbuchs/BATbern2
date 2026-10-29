@@ -18,5 +18,10 @@ public enum EmailForwardingOutcome {
     /** Authorized, but no recipient could be resolved. */
     UNRESOLVED,
     /** No recipient was reached. */
-    FAILED
+    FAILED,
+    /**
+     * Sending began and never finished (the task died mid-send). Some recipients may lack the
+     * mail. Recorded once so redeliveries do not report it again (#1139); never retried.
+     */
+    STALLED
 }

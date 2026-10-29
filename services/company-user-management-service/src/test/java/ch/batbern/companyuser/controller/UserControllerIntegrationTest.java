@@ -22,6 +22,7 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -131,6 +132,28 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.id").value("john.doe"))
                 .andExpect(jsonPath("$.company").exists())
                 .andExpect(jsonPath("$.company.id").value("GoogleZH"));
+    }
+
+    /**
+     * #1142: a dangling company_id must not 500 the profile. Runs WITHOUT the test transaction:
+     * inside it, the controller joins the test transaction, which is rolled back anyway, so
+     * a rollback-only mark never surfaces as UnexpectedRollbackException. Production commits.
+     */
+    @Test
+    @WithMockUser(username = "john.doe")
+    @Transactional(propagation = Propagation.NOT_SUPPORTED)
+    @DisplayName("should_return200_when_companyIdDoesNotResolve")
+    void should_return200_when_companyIdDoesNotResolve() throws Exception {
+        try {
+            mockMvc.perform(get("/api/v1/users/me")
+                            .param("include", "roles,company,preferences")
+                            .contentType(MediaType.APPLICATION_JSON))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.company.id").value("GoogleZH"))
+                    .andExpect(jsonPath("$.company.name").value("GoogleZH"));
+        } finally {
+            userRepository.deleteAll();
+        }
     }
 
     @Test
@@ -253,6 +276,41 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data").isArray())
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.data[0].roles", hasItem("ORGANIZER")));
+    }
+
+    /**
+     * #1153: the active filter ran on the DB page, so page 1 (limit 1) came back empty and
+     * totalItems was the size of the filtered page, while the inactive user sat on page 2.
+     */
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_filterActiveAcrossPages_when_activeFilterAndSmallLimit")
+    void should_filterActiveAcrossPages_when_activeFilterAndSmallLimit() throws Exception {
+        userRepository.save(User.builder()
+                .username("zoe.zimmer")
+                .email("zoe.zimmer@example.com")
+                .firstName("Zoe")
+                .lastName("Zimmer")
+                .cognitoUserId("cognito-zoe")
+                .isActive(false)
+                .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
+                .build());
+
+        mockMvc.perform(get("/api/v1/users")
+                        .param("filter", "{\"active\":false}")
+                        .param("page", "1")
+                        .param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].id").value("zoe.zimmer"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(1));
+
+        mockMvc.perform(get("/api/v1/users")
+                        .param("filter", "{\"active\":true}")
+                        .param("search", "zoe"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(0)))
+                .andExpect(jsonPath("$.pagination.totalItems").value(0));
     }
 
     @Test

@@ -31,6 +31,7 @@ import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.exception.UserValidationException;
 import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
+import ch.batbern.companyuser.specification.UserSpecification;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.events.DomainEventPublisher;
@@ -48,11 +49,11 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalTime;
-import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
 import java.util.Set;
@@ -389,59 +390,14 @@ public class UserService {
 
         // id breaks ties (#1131): names and companies repeat, and an OFFSET page over a tie is not stable
         Pageable pageable = DeterministicPaging.pageRequest(page, limit, sort);
-        Page<User> usersPage;
-
-        // Use optimized repository methods with JOIN FETCH
-        // Database-level search filtering when search parameter is provided
-        if (search != null && !search.isBlank()) {
-            // Search queries (database-level filtering)
-            if (roleFilter != null && companyFilter != null) {
-                // Search + role + company filters
-                Role role = parseRole(roleFilter);
-                log.debug("Searching with role: {} and company: {}", role, companyFilter);
-                usersPage = userRepository.searchUsersByRoleAndCompanyWithRoles(search, role, companyFilter, pageable);
-            } else if (roleFilter != null) {
-                // Search + role filter
-                Role role = parseRole(roleFilter);
-                log.debug("Searching with role: {}", role);
-                usersPage = userRepository.searchUsersByRoleWithRoles(search, role, pageable);
-            } else if (companyFilter != null) {
-                // Search + company filter
-                log.debug("Searching with company: {}", companyFilter);
-                usersPage = userRepository.searchUsersByCompanyWithRoles(search, companyFilter, pageable);
-            } else {
-                // Search only
-                log.debug("Searching users: {}", search);
-                usersPage = userRepository.searchUsersWithRoles(search, pageable);
-            }
-        } else {
-            // No search - use existing filter queries
-            if (roleFilter != null && companyFilter != null) {
-                // Both filters
-                Role role = parseRole(roleFilter);
-                log.debug("Filtering by role: {} and company: {}", role, companyFilter);
-                usersPage = userRepository.findByRoleAndCompanyWithRoles(role, companyFilter, pageable);
-            } else if (roleFilter != null) {
-                // Role filter only
-                Role role = parseRole(roleFilter);
-                log.debug("Filtering by role: {}", role);
-                usersPage = userRepository.findByRolesContainingWithRoles(role, pageable);
-            } else if (companyFilter != null) {
-                // Company filter only
-                usersPage = userRepository.findByCompanyIdWithRoles(companyFilter, pageable);
-            } else {
-                // No filters
-                usersPage = userRepository.findAllWithRoles(pageable);
-            }
-        }
-
-        // Apply JSON filter (active status, etc.)
-        Page<User> filteredPage = usersPage;
-        if (jsonFilter != null && !jsonFilter.isBlank()) {
-            List<User> jsonFiltered = applyJsonFilter(usersPage.getContent(), jsonFilter);
-            filteredPage = new org.springframework.data.domain.PageImpl<>(
-                    jsonFiltered, pageable, jsonFiltered.size());
-        }
+        // Every filter in SQL, so the page, totalItems and the filters agree (#1153).
+        Role role = roleFilter != null ? parseRole(roleFilter) : null;
+        Specification<User> spec = Specification.allOf(
+                UserSpecification.matchesSearch(search),
+                UserSpecification.hasRole(role),
+                UserSpecification.inCompany(companyFilter),
+                UserSpecification.isActive(parseActiveFilter(jsonFilter)));
+        Page<User> filteredPage = userRepository.findAll(spec, pageable);
 
         // Map to response DTOs
         return filteredPage.map(responseMapper::mapToResponse);
@@ -468,32 +424,34 @@ public class UserService {
      * Supports: {"active": true/false}
      */
     private java.util.List<User> applyJsonFilter(java.util.List<User> users, String jsonFilter) {
-        try {
-            // URL decode the filter if needed (frontend sends URL-encoded JSON)
-            String decodedFilter = jsonFilter;
-            try {
-                decodedFilter = java.net.URLDecoder.decode(jsonFilter, java.nio.charset.StandardCharsets.UTF_8);
-                log.debug("URL-decoded filter from '{}' to '{}'", jsonFilter, decodedFilter);
-            } catch (Exception e) {
-                log.debug("Filter does not need URL decoding, using as-is: {}", jsonFilter);
-            }
-
-            // Simple JSON parsing for active filter
-            if (decodedFilter.contains("\"active\":true") || decodedFilter.contains("\"active\": true")) {
-                java.util.List<User> filtered = users.stream().filter(User::isActive).toList();
-                log.debug("Active=true filter applied: {} -> {} users", users.size(), filtered.size());
-                return filtered;
-            } else if (decodedFilter.contains("\"active\":false") || decodedFilter.contains("\"active\": false")) {
-                java.util.List<User> filtered = users.stream().filter(u -> !u.isActive()).toList();
-                log.debug("Active=false filter applied: {} -> {} users", users.size(), filtered.size());
-                return filtered;
-            }
-            log.debug("No active filter matched, returning {} users", users.size());
-            return users;
-        } catch (Exception e) {
-            log.warn("Failed to parse JSON filter: {}", jsonFilter, e);
+        Boolean active = parseActiveFilter(jsonFilter);
+        if (active == null) {
             return users;
         }
+        return users.stream().filter(u -> u.isActive() == active).toList();
+    }
+
+    /**
+     * The {@code active} flag of the JSON filter, or null when it does not set one.
+     * The frontend sends URL-encoded JSON.
+     */
+    private Boolean parseActiveFilter(String jsonFilter) {
+        if (jsonFilter == null || jsonFilter.isBlank()) {
+            return null;
+        }
+        String decodedFilter = jsonFilter;
+        try {
+            decodedFilter = java.net.URLDecoder.decode(jsonFilter, java.nio.charset.StandardCharsets.UTF_8);
+        } catch (IllegalArgumentException e) {
+            log.debug("Filter does not need URL decoding, using as-is: {}", jsonFilter);
+        }
+        if (decodedFilter.contains("\"active\":true") || decodedFilter.contains("\"active\": true")) {
+            return Boolean.TRUE;
+        }
+        if (decodedFilter.contains("\"active\":false") || decodedFilter.contains("\"active\": false")) {
+            return Boolean.FALSE;
+        }
+        return null;
     }
 
     /**
@@ -1232,21 +1190,20 @@ public class UserService {
      * reference) so a dangling reference never 500s the whole profile load.
      */
     private ch.batbern.companyuser.dto.generated.Company expandCompany(String companyId) {
-        try {
-            ch.batbern.companyuser.dto.generated.CompanyResponse company =
-                companyService.getCompanyByName(companyId);
-            return new ch.batbern.companyuser.dto.generated.Company()
-                    .id(company.getName())
-                    .name(company.getName())
-                    .displayName(company.getDisplayName())
-                    .industry(company.getIndustry());
-        } catch (RuntimeException ex) {
-            log.warn("Could not resolve company '{}' for profile expansion: {}",
-                     companyId, ex.getMessage());
-            return new ch.batbern.companyuser.dto.generated.Company()
-                    .id(companyId)
-                    .name(companyId);
-        }
+        // Non-throwing lookup: catching a not-found thrown through CompanyService still left
+        // this read transaction rollback-only and 500ed the whole profile (#1142).
+        return companyService.findCompanyByName(companyId)
+                .map(company -> new ch.batbern.companyuser.dto.generated.Company()
+                        .id(company.getName())
+                        .name(company.getName())
+                        .displayName(company.getDisplayName())
+                        .industry(company.getIndustry()))
+                .orElseGet(() -> {
+                    log.warn("Could not resolve company '{}' for profile expansion", companyId);
+                    return new ch.batbern.companyuser.dto.generated.Company()
+                            .id(companyId)
+                            .name(companyId);
+                });
     }
 
     /**

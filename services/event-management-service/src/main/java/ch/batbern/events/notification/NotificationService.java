@@ -1,9 +1,7 @@
 package ch.batbern.events.notification;
 
 import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.domain.Event;
 import ch.batbern.events.event.EventPublishedEvent;
-import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.shared.service.EmailService;
 import lombok.RequiredArgsConstructor;
@@ -17,7 +15,6 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.List;
-import java.util.stream.Collectors;
 
 /**
  * Notification service
@@ -25,7 +22,6 @@ import java.util.stream.Collectors;
  *
  * Implements hybrid storage strategy:
  * - Email/SMS notifications: Create audit trail records
- * - In-app notifications: Query dynamically (no rows created)
  *
  * Checks user preferences before sending
  */
@@ -37,7 +33,6 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
     private final UserApiClient userApiClient;
-    private final EventRepository eventRepository;
     private final RegistrationRepository registrationRepository;
     private final SimpMessagingTemplate messagingTemplate;
 
@@ -131,27 +126,6 @@ public class NotificationService {
 
             log.error("Failed to send notification: {}", notification.getId(), e);
         }
-    }
-
-    /**
-     * Query in-app notifications dynamically (no rows created)
-     * Finds events published since user's last login
-     */
-    public List<InAppNotification> getInAppNotifications(String username) {
-        // Find events published since user's last login
-        Instant lastLogin = userApiClient.getLastLogin(username);
-
-        List<Event> newEvents = eventRepository.findByPublishedAtAfter(lastLogin);
-
-        // Convert to notifications on-the-fly (NO database writes)
-        return newEvents.stream()
-                .map(event -> InAppNotification.builder()
-                        .type("EVENT_PUBLISHED")
-                        .title(event.getTitle() + " is now published")
-                        .eventCode(event.getEventCode())
-                        .createdAt(event.getPublishedAt())
-                        .build())
-                .collect(Collectors.toList());
     }
 
     /**

@@ -123,6 +123,10 @@ BATbern automatically publishes event content on a fixed schedule to reduce manu
   - Publishes complete session schedule with time slots
   - Sets event.agendaPublishedAt timestamp
   - Transitions event to **AGENDA_PUBLISHED** state
+  - Generates the structural slots (moderation, breaks, lunch, apéro) from the event type's agenda
+    config if none are stored yet. Manual and automatic publishing both do this; an existing,
+    edited structure is never overwritten. Before this, the website showed the talks only until
+    someone pressed **Generate structure** in the Slots view (#1108).
   - Auto-creates "Newsletter: Final" task (if not exists)
 
 **Manual Override**:

@@ -266,20 +266,23 @@ public class UserApiClientImpl implements UserApiClient {
     public ch.batbern.events.notification.UserPreferences getPreferences(String username) {
         log.debug("Fetching preferences for username: {}", username);
 
-        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/preferences";
+        // #1146: CUMS has no /api/v1/users/{username}/preferences; the internal read carries
+        // the preferences (VPC-only, no JWT, like getPreferredLanguage).
+        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/" + username + "?include=preferences";
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
+            HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
 
-            ResponseEntity<ch.batbern.events.notification.UserPreferences> response = restTemplate.exchange(
+            ResponseEntity<UserResponse> response = restTemplate.exchange(
                     url,
                     HttpMethod.GET,
                     request,
-                    ch.batbern.events.notification.UserPreferences.class
+                    UserResponse.class
             );
 
-            ch.batbern.events.notification.UserPreferences prefs = response.getBody();
+            UserResponse user = response.getBody();
+            ch.batbern.events.notification.UserPreferences prefs =
+                    toNotificationPreferences(user != null ? user.getPreferences() : null);
             log.debug("Successfully fetched preferences for username: {}", username);
             return prefs;
 
@@ -319,6 +322,23 @@ public class UserApiClientImpl implements UserApiClient {
                     e
             );
         }
+    }
+
+    /** CUMS preferences to the notification view; no preferences row means the CUMS defaults. */
+    private static ch.batbern.events.notification.UserPreferences toNotificationPreferences(
+            ch.batbern.events.dto.generated.users.UserPreferences source) {
+        ch.batbern.events.dto.generated.users.UserPreferences prefs = source != null
+                ? source
+                : new ch.batbern.events.dto.generated.users.UserPreferences();
+        return ch.batbern.events.notification.UserPreferences.builder()
+                .emailNotificationsEnabled(!Boolean.FALSE.equals(prefs.getEmailNotifications()))
+                .inAppNotificationsEnabled(!Boolean.FALSE.equals(prefs.getInAppNotifications()))
+                .pushNotificationsEnabled(Boolean.TRUE.equals(prefs.getPushNotifications()))
+                .notificationFrequency(prefs.getNotificationFrequency() != null
+                        ? prefs.getNotificationFrequency().getValue() : null)
+                .quietHoursStart(prefs.getQuietHoursStart())
+                .quietHoursEnd(prefs.getQuietHoursEnd())
+                .build();
     }
 
     /**
@@ -410,65 +430,6 @@ public class UserApiClientImpl implements UserApiClient {
             log.warn("Could not resolve Q&A notification frequency for username {} (defaulting): {}",
                     username, e.getMessage());
             return null;
-        }
-    }
-
-    @Override
-    public java.time.Instant getLastLogin(String username) {
-        log.debug("Fetching last login for username: {}", username);
-
-        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/last-login";
-
-        try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            ResponseEntity<java.time.Instant> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    java.time.Instant.class
-            );
-
-            java.time.Instant lastLogin = response.getBody();
-            log.debug("Successfully fetched last login for username: {}", username);
-            return lastLogin;
-
-        } catch (HttpClientErrorException.NotFound e) {
-            log.warn("User not found: {}", username);
-            throw new UserNotFoundException(username, e);
-
-        } catch (HttpClientErrorException e) {
-            log.error("Client error fetching last login for {}: {} - {}", username, e.getStatusCode(), e.getMessage());
-            throw new UserServiceException(
-                    "Client error fetching last login for user: " + username,
-                    e.getStatusCode().value(),
-                    e
-            );
-
-        } catch (HttpServerErrorException e) {
-            log.error("Server error from User Management Service for last login {}: {} - {}",
-                    username, e.getStatusCode(), e.getMessage());
-            throw new UserServiceException(
-                    "User Management Service error for user: " + username,
-                    e.getStatusCode().value(),
-                    e
-            );
-
-        } catch (ResourceAccessException e) {
-            log.error("Network error connecting to User Management Service for last login {}: {}",
-                    username, e.getMessage());
-            throw new UserServiceException(
-                    "Failed to connect to User Management Service for user: " + username,
-                    e
-            );
-
-        } catch (Exception e) {
-            log.error("Unexpected error fetching last login for {}: {}", username, e.getMessage(), e);
-            throw new UserServiceException(
-                    "Unexpected error fetching last login for user: " + username,
-                    e
-            );
         }
     }
 
@@ -917,6 +878,13 @@ public class UserApiClientImpl implements UserApiClient {
      */
     private HttpHeaders createHeadersWithJwtToken() {
         HttpHeaders headers = new HttpHeaders();
+
+        // No Authentication at all is normal on listener and scheduler threads (e.g. the SQS
+        // forwarding listener): nothing to propagate, and no WARN per call (#1139).
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            log.debug("No authentication in SecurityContext; calling User Management without JWT");
+            return headers;
+        }
 
         try {
             Object principal = SecurityContextHolder.getContext()

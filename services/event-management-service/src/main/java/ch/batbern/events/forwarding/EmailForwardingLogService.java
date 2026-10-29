@@ -22,6 +22,10 @@ public class EmailForwardingLogService {
     /**
      * A claim older than this is presumed dead: the SQS visibility timeout (300 s) has passed, so
      * the redelivery that is asking cannot overlap a still-running owner.
+     *
+     * <p>Coupled to {@code visibilityTimeout} of the forwarding queue in
+     * {@code infrastructure/lib/stacks/inbound-email-stack.ts}: it must stay above that value.
+     * Raising the timeout there means raising this too.
      */
     static final int STALE_CLAIM_SECONDS = 360;
 
@@ -71,6 +75,12 @@ public class EmailForwardingLogService {
             entry.setFailedCount(failedCount);
             entry.setCompletedAt(Instant.now());
         }, () -> log.warn("Forwarding: no log row for {} when recording {}", s3Key, outcome));
+    }
+
+    /** Retention (#1138). @return number of rows deleted */
+    @Transactional
+    public int purgeOlderThanDays(int days) {
+        return repository.deleteOlderThanDays(days);
     }
 
     private static String truncate(String value) {

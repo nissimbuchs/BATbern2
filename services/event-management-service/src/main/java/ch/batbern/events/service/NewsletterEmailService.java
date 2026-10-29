@@ -284,8 +284,10 @@ public class NewsletterEmailService {
         // title/code (EmailContentTestMarker), so this fails fast BEFORE the async send loop even
         // starts — belt to the EmailService per-email content guard's suspenders, and it also
         // spares the subscriber list from a marked send that a template omitting {{eventTitle}}
-        // might otherwise slip past the per-email check.
-        if (EmailContentTestMarker.containsMarker(event.getTitle(), event.getEventCode())) {
+        // might otherwise slip past the per-email check. Only for live delivery, like that wall:
+        // local dev has no SES client and captures mail, so the newsletter E2E can run there (#1071).
+        if (emailService.isLiveDelivery()
+                && EmailContentTestMarker.containsMarker(event.getTitle(), event.getEventCode())) {
             log.error("BLOCKED newsletter send for test event (markers: {}): code={}, title={}",
                     EmailContentTestMarker.describe(), event.getEventCode(), event.getTitle());
             throw new TestMarkedEmailException(

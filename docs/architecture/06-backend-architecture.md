@@ -102,7 +102,9 @@ so the website never shows an organizer something a visitor would not see.
   `Session.isStructuralType` in the backend, `web-frontend/src/utils/sessionTypes.ts` in the
   frontend. `networking` is the apéro: V127 (#1123) folded the duplicate `aperitif` value back into
   it. The agenda config keeps its apéro names (`aperitifSlots`, `TimetableSlot.Type.APERITIF`);
-  `StructuralSessionService` stores that slot as `networking`.
+  `StructuralSessionService` stores that slot as `networking`. Publishing the agenda calls
+  `generateIfMissing`, so the public agenda (stored sessions only) matches the slot view, which
+  computes the structure from the config (#1108). It never overwrites and never throws.
 - **`sessionType` and `materialsStatus` are enums in the contract** (`SessionType`,
   `MaterialsStatus` in `event-sessions-api`). Never add a second value for an existing meaning and
   never rename one: installed Apple Watch binaries decode the list. `materialsStatus` is `NONE` or
@@ -803,11 +805,16 @@ SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → E
   callers can reach it.** Machine callers use queues and IAM, not anonymous HTTP.
 - **Delivery modes**: `batbern{N}-speaker@` sends one visible mail (speakers in To, event moderator
   in Cc); every other alias sends one private copy per recipient.
-- **Idempotency**: `email_forwarding_log` (V128, V129) holds one row per S3 object, no addresses or
+- **Idempotency**: `email_forwarding_log` (V128 to V130) holds one row per S3 object, no addresses or
   content. A failure before the first send releases the claim so SQS retries (3×, then DLQ with
   alarm `batbern-{env}-forwarding-dlq`). A claim whose task died before sending is taken over by
-  the redelivery after 6 minutes. After `sending_started_at` is set nothing is retried; failed
-  copies and stalled sends raise `batbern-{env}-forwarding-failed`.
+  the redelivery after 6 minutes (`STALE_CLAIM_SECONDS` = 360, which must stay above the queue's
+  300 s visibility timeout). After `sending_started_at` is set nothing is retried; failed copies
+  raise `batbern-{env}-forwarding-failed`, and a send that stalled is recorded once as outcome
+  `stalled` (same alarm), so further redeliveries count as duplicates. The info log line carries
+  recipient count and send duration per mail.
+- **Retention**: `EmailForwardingLogRetentionScheduler` deletes rows older than 90 days nightly
+  (03:15, ShedLock). The raw mail is gone from S3 after 7 days, so older rows cannot be replayed.
 - **Metrics**: namespace `BATbern/EmailForwarder` (`EmailsForwarded`, `EmailsRejected`,
   `EmailsUnresolved`, `EmailsFailed`, `*Dropped`, `DuplicatesSkipped`); alarm
   `batbern-{env}-emails-rejected`.

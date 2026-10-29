@@ -427,6 +427,10 @@ type(scope): description
 ### Backend Gotchas
 - `GlobalExceptionHandler`: ALWAYS add explicit `@ExceptionHandler(MethodArgumentNotValidException.class)`.
   Without it, `@ExceptionHandler(Exception.class)` returns 500 instead of 400 for validation failures.
+- Every catch-all `@ExceptionHandler(Exception.class)` asks `ClientErrorClassifier` (shared-kernel)
+  first: Spring web exceptions keep their 4xx (missing parameter/header, 404, 405, 415) and a NUL
+  byte (SQLState 22021) is a 400, all at severity LOW. `ClientErrorContract.verify(handler)`
+  (shared-kernel test fixtures) asserts it per service through the real resolver chain (#1148).
 - `@ElementCollection(fetch = FetchType.EAGER)` causes N+1 on every list query — always LAZY.
 - Never use `findAll()` then filter/paginate in memory — always paginate at the DB level.
 - Flyway migration filenames must be strictly sequential: `V{n}__{description}.sql`.

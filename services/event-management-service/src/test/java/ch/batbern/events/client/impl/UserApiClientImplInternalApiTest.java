@@ -152,4 +152,47 @@ class UserApiClientImplInternalApiTest {
                 eq(GetOrCreateUserResponse.class));
         assertThat(entity.getValue().getHeaders().containsHeader(HttpHeaders.AUTHORIZATION)).isFalse();
     }
+
+    /**
+     * #1146: the old path {@code /api/v1/users/{username}/preferences} never existed in CUMS, so
+     * every email notification threw before sending. The internal read carries the preferences.
+     */
+    @Test
+    @DisplayName("getPreferences reads /internal/users/{username}?include=preferences without Authorization")
+    void should_readPreferencesFromInternalApi_when_preferencesRequested() {
+        String url = BASE_URL + "/internal/users/john.doe?include=preferences";
+        ch.batbern.events.dto.generated.users.UserPreferences prefs =
+                new ch.batbern.events.dto.generated.users.UserPreferences()
+                        .emailNotifications(false)
+                        .inAppNotifications(true)
+                        .pushNotifications(false)
+                        .notificationFrequency(ch.batbern.events.dto.generated.users.UserPreferences
+                                .NotificationFrequencyEnum.DAILY_DIGEST)
+                        .quietHoursStart("22:00")
+                        .quietHoursEnd("07:00");
+        when(restTemplate.exchange(eq(url), eq(HttpMethod.GET), any(HttpEntity.class), eq(UserResponse.class)))
+                .thenReturn(ResponseEntity.ok(new UserResponse().id("john.doe").preferences(prefs)));
+
+        ch.batbern.events.notification.UserPreferences result = client.getPreferences("john.doe");
+
+        assertThat(result.isEmailNotificationsEnabled()).isFalse();
+        assertThat(result.isInAppNotificationsEnabled()).isTrue();
+        assertThat(result.getNotificationFrequency()).isEqualTo("daily_digest");
+        assertThat(result.getQuietHoursStart()).isEqualTo("22:00");
+        assertThat(result.getQuietHoursEnd()).isEqualTo("07:00");
+        assertThat(sentHeaders(url, UserResponse.class).containsHeader(HttpHeaders.AUTHORIZATION)).isFalse();
+    }
+
+    @Test
+    @DisplayName("getPreferences falls back to defaults (email on) when the user has no preferences row")
+    void should_returnDefaults_when_userHasNoPreferences() {
+        String url = BASE_URL + "/internal/users/jane.doe?include=preferences";
+        when(restTemplate.exchange(eq(url), eq(HttpMethod.GET), any(HttpEntity.class), eq(UserResponse.class)))
+                .thenReturn(ResponseEntity.ok(new UserResponse().id("jane.doe")));
+
+        ch.batbern.events.notification.UserPreferences result = client.getPreferences("jane.doe");
+
+        assertThat(result.isEmailNotificationsEnabled()).isTrue();
+        assertThat(result.getQuietHoursStart()).isNull();
+    }
 }

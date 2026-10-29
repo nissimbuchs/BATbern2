@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.ReminderProperties;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.OutreachHistory;
@@ -51,6 +52,7 @@ public class SpeakerReminderService {
     private final NotificationService notificationService;
     private final ReminderProperties reminderProperties;
     private final PrimarySpeakerResolver primarySpeakerResolver;
+    private final UserApiClient userApiClient;
 
     private static final String REMINDER_TYPE_RESPONSE = "RESPONSE";
     private static final String REMINDER_TYPE_CONTENT = "CONTENT";
@@ -310,10 +312,9 @@ public class SpeakerReminderService {
         outreachHistoryRepository.save(outreach);
 
         // Send email - catch failures to preserve DB records for dedup
-        // TODO: Use speaker language preference when SpeakerPool gets a locale field
         try {
             reminderEmailService.sendReminderEmail(
-                    speaker, event, reminderType, tier, deadline, Locale.GERMAN);
+                    speaker, event, reminderType, tier, deadline, speakerLocale(speaker));
         } catch (Exception e) {
             log.error("Failed to send reminder email for speaker {}: type={}, tier={}",
                     speaker.getId(), reminderType, tier, e);
@@ -323,6 +324,16 @@ public class SpeakerReminderService {
         if ("TIER_3".equals(tier) && reminderProperties.isEscalateAfterTier3()) {
             sendOrganizerEscalation(speaker, event, reminderType);
         }
+    }
+
+    /** The primary speaker's language preference (CUMS); German when unknown (#1119). */
+    private Locale speakerLocale(SpeakerPool speaker) {
+        String username = primarySpeakerResolver.resolve(speaker)
+                .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
+                .orElse(null);
+        return username == null
+                ? Locale.GERMAN
+                : EmailLocales.fromPreference(userApiClient.getPreferredLanguage(username));
     }
 
     private void sendOrganizerEscalation(SpeakerPool speaker, Event event, String reminderType) {

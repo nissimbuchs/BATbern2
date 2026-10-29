@@ -3,6 +3,7 @@ package ch.batbern.gateway.exception;
 import ch.batbern.gateway.routing.exception.RouteNotFoundException;
 import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.BATbernException;
+import ch.batbern.shared.exception.ClientErrorClassifier;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.slf4j.MDC;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.ResponseStatus;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 @ControllerAdvice
 @Slf4j
@@ -107,6 +109,15 @@ public class GlobalExceptionHandler {
             HttpServletRequest request) {
 
         String correlationId = MDC.get(CORRELATION_ID);
+
+        // A client mistake that no specific handler maps (missing parameter/header, 415, 404,
+        // 405) is a 4xx, not a 500 CRITICAL (#1148).
+        Optional<ClientErrorClassifier.ClientError> clientError = ClientErrorClassifier.classify(ex);
+        if (clientError.isPresent()) {
+            log.warn("Client error {} [{}] {} {}: {}", clientError.get().status().value(),
+                    correlationId, request.getMethod(), request.getRequestURI(), ex.getMessage());
+            return clientError.get().toResponseEntity(request.getRequestURI(), correlationId);
+        }
 
         log.error("Unexpected error [{}]: ", correlationId, ex);
 

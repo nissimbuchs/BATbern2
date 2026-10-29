@@ -117,6 +117,40 @@ class EmailForwardingLogServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(service.isStuckAfterSending(KEY)).isFalse();
     }
 
+    /** #1139: a stall is recorded once; later redeliveries then see a finished row, not a stall. */
+    @Test
+    @DisplayName("should_notReportStuckAgain_when_stallWasRecorded")
+    void should_notReportStuckAgain_when_stallWasRecorded() {
+        service.claim(KEY);
+        service.markSending(KEY);
+        ageClaim(600);
+        assertThat(service.isStuckAfterSending(KEY)).isTrue();
+
+        service.complete(KEY, EmailForwardingOutcome.STALLED, null, 0, 0);
+
+        assertThat(service.isStuckAfterSending(KEY)).isFalse();
+        assertThat(service.claim(KEY)).isFalse();
+    }
+
+    /** #1138: rows past the retention go; the S3 object behind them is gone after 7 days anyway. */
+    @Test
+    @DisplayName("should_purgeOnlyOldRows_when_retentionApplied")
+    void should_purgeOnlyOldRows_when_retentionApplied() {
+        service.claim(KEY);
+        service.complete(KEY, EmailForwardingOutcome.FORWARDED, "info", 1, 0);
+        jdbcTemplate.update("UPDATE email_forwarding_log SET received_at = now() - interval '91 days'"
+                + " WHERE s3_key = ?", KEY);
+        String recent = KEY + "-recent";
+        service.claim(recent);
+
+        assertThat(service.purgeOlderThanDays(90)).isEqualTo(1);
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM email_forwarding_log WHERE s3_key IN (?, ?)", Integer.class, KEY, recent))
+                .isEqualTo(1);
+        jdbcTemplate.update("DELETE FROM email_forwarding_log WHERE s3_key = ?", recent);
+    }
+
     private void ageClaim(int seconds) {
         jdbcTemplate.update("UPDATE email_forwarding_log SET received_at = now() - make_interval(secs => ?),"
                 + " sending_started_at = CASE WHEN sending_started_at IS NULL THEN NULL"

@@ -565,6 +565,16 @@ jobs:
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
 
+      # #1140: a stack the previous deploy left in *_IN_PROGRESS (e.g. UPDATE_COMPLETE_CLEANUP while
+      # a VPC Lambda's ENIs are released, ~25 min) makes every cdk deploy against it fail at once.
+      # Wait for all stacks to settle first; covers both the layer and the per-stack path.
+      - name: Wait for in-progress CloudFormation stacks
+        timeout-minutes: 45
+        # Every stack the deploy:staging:* scripts deploy. The role may not list stacks (#1140).
+        run: |
+          STACKS=$(grep -oE 'BATbern-staging-[A-Za-z0-9]+' infrastructure/package.json | sort -u)
+          ./scripts/ci/wait-for-stable-stacks.sh 2400 $STACKS
+
       # Layer-based deployment with token refresh between layers
       - name: Deploy Layer 0 - Foundation
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -585,7 +595,8 @@ jobs:
 
       - name: Deploy Layer 1 - Infrastructure
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        timeout-minutes: 20
+        # 40, not 20 (#1140): InboundEmail's cleanup phase waited ~25 min for a VPC Lambda delete.
+        timeout-minutes: 40
         working-directory: ./infrastructure
         run: |
           echo "🏗️  Layer 1: Infrastructure (Network, Secrets, EventBus, InboundEmail)"
@@ -1218,32 +1229,10 @@ jobs:
       # lets `tag-stable-on-success` / `rollback-on-test-failure` react to a clean
       # job-level result instead of a `continue-on-error` swallow.
 
-      # E2E infrastructure tests temporarily disabled - require additional setup:
-      # - Missing AWS SDK dependencies (@aws-sdk/client-ecs, @aws-sdk/client-cloudformation, @aws-sdk/client-apigatewayv2)
-      # - IAM permissions needed for GitHub Actions role (cloudwatch:GetDashboard, ecs:Describe*, etc.)
-      # - API Gateway test needs update from REST API (v1) to HTTP API (v2)
-      # TODO: Re-enable after adding dependencies and permissions
-      # - name: Run E2E infrastructure tests
-      #   working-directory: ./infrastructure
-      #   run: |
-      #     echo "Running E2E tests against deployed staging infrastructure..."
-      #     if [ -d "test/e2e" ]; then
-      #       TEST_E2E=true TEST_ENVIRONMENT=staging npm test -- test/e2e/
-      #       echo "✅ E2E infrastructure tests passed"
-      #     else
-      #       echo "::warning::E2E test directory not found, skipping"
-      #     fi
-      #   env:
-      #     AWS_REGION: ${{ env.AWS_REGION }}
-      #     AWS_ACCESS_KEY_ID: ${{ env.AWS_ACCESS_KEY_ID }}
-      #     AWS_SECRET_ACCESS_KEY: ${{ env.AWS_SECRET_ACCESS_KEY }}
-      #     AWS_SESSION_TOKEN: ${{ env.AWS_SESSION_TOKEN }}
-
-      - name: E2E infrastructure tests status
-        run: |
-          echo "ℹ️  E2E infrastructure tests temporarily disabled"
-          echo "   Reason: Missing AWS SDK dependencies and IAM permissions"
-          echo "   Alternative: Runtime validation via smoke tests, CORS tests, and header propagation tests"
+      # The infrastructure E2E suite (infrastructure/test/e2e) is not run here: it needs AWS SDK
+      # clients and read permissions the deploy role does not have, and its API Gateway test still
+      # targets the REST API (v1) instead of the HTTP API (v2). Runtime validation comes from the
+      # smoke, CORS and header-propagation checks plus Bruno and Playwright (#1119).
 
       # Playwright UI E2E tests moved to a dedicated `playwright-tests` job below
       # (docs/plans/playwright-staging-hardening.md §A1/§A8). The old dormant step here

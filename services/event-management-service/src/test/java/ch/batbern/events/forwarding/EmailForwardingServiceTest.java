@@ -292,9 +292,24 @@ class EmailForwardingServiceTest {
 
         Result result = service.forward(KEY, mail(STRANGER, "info@batbern.ch", null, null, null));
 
-        assertThat(result).isEqualTo(Result.DUPLICATE);
+        // #1139: its own result, recorded once so a later redelivery does not count it again
+        assertThat(result).isEqualTo(Result.STALLED);
         verify(metrics).increment(ForwardingMetrics.FAILED);
+        verify(forwardingLog).complete(eq(KEY), eq(EmailForwardingOutcome.STALLED), any(), eq(0), eq(0));
         verify(emailService, never()).sendRawMessage(any(), anyList(), any());
+    }
+
+    @Test
+    @DisplayName("should_keepOriginalCause_when_releaseAlsoFails")
+    void should_keepOriginalCause_when_releaseAlsoFails() {
+        // #1139: with the DB down, release() fails too; the CUMS failure must stay the cause.
+        when(userApiClient.getOrganizerUsernames()).thenThrow(new UserServiceException("CUMS down"));
+        org.mockito.Mockito.doThrow(new IllegalStateException("DB down")).when(forwardingLog).release(KEY);
+
+        assertThatThrownBy(() -> service.forward(KEY, mail(STRANGER, "info@batbern.ch", null, null, null)))
+                .isInstanceOf(UserServiceException.class)
+                .satisfies(e -> assertThat(e.getSuppressed())
+                        .anySatisfy(s -> assertThat(s).hasMessage("DB down")));
     }
 
     @Test

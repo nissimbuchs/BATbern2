@@ -9,6 +9,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.Optional;
+
 /**
  * Resolves the effective {@link AgendaConfig} for an event (Story 15.2).
  *
@@ -33,16 +35,23 @@ public class AgendaConfigResolver {
      */
     @Transactional(readOnly = true)
     public AgendaConfig resolve(Event event) {
-        return overrideRepository.findByEventId(event.getId())
-                .map(override -> (AgendaConfig) override)
-                .orElseGet(() -> {
-                    if (event.getEventType() == null) {
-                        throw new NotFoundException(
-                                "Event '" + event.getEventCode() + "' has no event type configured");
-                    }
-                    return templateRepository.findByType(event.getEventType())
-                            .orElseThrow(() -> new NotFoundException(
-                                    "Event type configuration not found for: " + event.getEventType()));
-                });
+        return find(event).orElseThrow(() -> new NotFoundException(event.getEventType() == null
+                ? "Event '" + event.getEventCode() + "' has no event type configured"
+                : "Event type configuration not found for: " + event.getEventType()));
+    }
+
+    /**
+     * Same as {@link #resolve} without throwing. Callers that tolerate a missing config inside a
+     * larger transaction must use this: an exception thrown through this transactional bean
+     * marks the caller's transaction rollback-only even when the caller catches it.
+     */
+    @Transactional(readOnly = true)
+    public Optional<AgendaConfig> find(Event event) {
+        Optional<AgendaConfig> override = overrideRepository.findByEventId(event.getId())
+                .map(o -> (AgendaConfig) o);
+        if (override.isPresent() || event.getEventType() == null) {
+            return override;
+        }
+        return templateRepository.findByType(event.getEventType()).map(t -> (AgendaConfig) t);
     }
 }

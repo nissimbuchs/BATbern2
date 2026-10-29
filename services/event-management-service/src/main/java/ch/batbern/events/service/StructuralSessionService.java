@@ -88,6 +88,41 @@ public class StructuralSessionService {
             sessionRepository.flush();
         }
 
+        return createStructuralSessions(event, config).stream()
+                .map(s -> sessionService.toSessionResponse(s, eventCode))
+                .toList();
+    }
+
+    /**
+     * Generate the structural sessions when the event has none stored (#1108). Called when the
+     * agenda is published: the public agenda shows stored sessions only, while the slot view
+     * computes the structure from the config, so without this the website listed talks only.
+     * Never overwrites, and never throws for a missing config (it logs and returns 0), so it
+     * cannot break the publish it runs in. noRollbackFor: an unexpected failure in the timeline
+     * computation must not mark the publishing transaction rollback-only either.
+     *
+     * @return number of sessions created
+     */
+    @Transactional(noRollbackFor = RuntimeException.class)
+    public int generateIfMissing(String eventCode) {
+        var event = eventRepository.findByEventCode(eventCode).orElse(null);
+        if (event == null
+                || !sessionRepository.findByEventIdAndSessionTypeIn(event.getId(), GENERATED_TYPES).isEmpty()) {
+            return 0;
+        }
+        var config = agendaConfigResolver.find(event);
+        if (config.isEmpty()) {
+            log.warn("Agenda of '{}' published without structural sessions: no agenda config", eventCode);
+            return 0;
+        }
+        int created = createStructuralSessions(event, config.get()).size();
+        log.info("Agenda of '{}' published: generated {} missing structural sessions", eventCode, created);
+        return created;
+    }
+
+    private List<Session> createStructuralSessions(ch.batbern.events.domain.Event event, AgendaConfig config) {
+        String eventCode = event.getEventCode();
+
         // 4. Delegate timeline computation to TimetableService
         // Calendar day in Bern time, as TimetableService.getTimetable does. UTC put an event stored
         // between 00:00 and 02:00 Bern time on the previous day (fix 2026-10-07).
@@ -115,11 +150,7 @@ public class StructuralSessionService {
 
         log.info("Generated {} structural sessions for event '{}' (organizer={})",
                 createdSessions.size(), eventCode, organizerUsername);
-
-        // 6. Convert to response DTOs
-        return createdSessions.stream()
-                .map(s -> sessionService.toSessionResponse(s, eventCode))
-                .toList();
+        return createdSessions;
     }
 
     // ─────────────────────────────────────────────────────────────────────────
