@@ -2,8 +2,6 @@ package ch.batbern.events.notification;
 
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.dto.generated.users.UserResponse;
-import ch.batbern.events.domain.Event;
-import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -11,8 +9,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
-import java.time.Instant;
-import java.util.List;
 import java.util.UUID;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -52,8 +48,6 @@ class NotificationServiceTest {
     @Mock
     private UserApiClient userApiClient;
 
-    @Mock
-    private EventRepository eventRepository;
 
     @Mock
     private ch.batbern.events.repository.RegistrationRepository registrationRepository;
@@ -72,7 +66,6 @@ class NotificationServiceTest {
                 notificationRepository,
                 emailService,
                 userApiClient,
-                eventRepository,
                 registrationRepository,
                 messagingTemplate
         );
@@ -221,34 +214,5 @@ class NotificationServiceTest {
         assertThat(savedNotification.get().getStatus()).isEqualTo("FAILED");
         assertThat(savedNotification.get().getFailedAt()).isNotNull();
         assertThat(savedNotification.get().getFailureReason()).contains("AWS SES error");
-    }
-
-    /**
-     * In-app notifications should query dynamically (no rows created)
-     */
-    @Test
-    void should_queryDynamically_when_gettingInAppNotifications() {
-        // Given
-        Instant lastLogin = Instant.now().minusSeconds(3600); // 1 hour ago
-
-        Event newEvent = Event.builder()
-                .eventCode(testEventCode)
-                .title("Test Event")
-                .publishedAt(Instant.now().minusSeconds(1800)) // 30 min ago
-                .build();
-
-        when(userApiClient.getLastLogin(testUsername)).thenReturn(lastLogin);
-        when(eventRepository.findByPublishedAtAfter(lastLogin)).thenReturn(List.of(newEvent));
-
-        // When
-        List<InAppNotification> notifications = notificationService.getInAppNotifications(testUsername);
-
-        // Then
-        assertThat(notifications).hasSize(1);
-        assertThat(notifications.get(0).getEventCode()).isEqualTo(testEventCode);
-        assertThat(notifications.get(0).getType()).isEqualTo("EVENT_PUBLISHED");
-
-        // Verify NO database writes occurred
-        verify(notificationRepository, never()).save(any(Notification.class));
     }
 }

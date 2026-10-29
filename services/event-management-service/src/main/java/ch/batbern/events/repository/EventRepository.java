@@ -181,15 +181,6 @@ public interface EventRepository extends JpaRepository<Event, UUID>, JpaSpecific
     List<Event> findByDateAfter(Instant after);
 
     /**
-     * Find events published after a given timestamp
-     * Used for in-app notifications (Story BAT-7)
-     *
-     * @param publishedAfter Find events published after this timestamp
-     * @return List of events published after the given time
-     */
-    List<Event> findByPublishedAtAfter(Instant publishedAfter);
-
-    /**
      * Find events with registration deadlines between start and end timestamps
      * Used for deadline reminder notifications (Story BAT-7)
      *

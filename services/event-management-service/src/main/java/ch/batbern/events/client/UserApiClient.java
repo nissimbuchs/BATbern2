@@ -11,7 +11,6 @@ import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
 
-import java.time.Instant;
 import java.util.List;
 
 /**
@@ -70,7 +69,7 @@ public interface UserApiClient {
      * Used for checking if user wants to receive notifications.
      *
      * @param username User's username
-     * @return User notification preferences
+     * @return User notification preferences (CUMS defaults when the user has none)
      * @throws UserNotFoundException if user not found (404)
      * @throws UserServiceException if API communication fails (5xx, timeout, network error)
      */
@@ -110,16 +109,6 @@ public interface UserApiClient {
      */
     String getQnaNotificationFrequency(String username);
 
-    /**
-     * Get user's last login timestamp.
-     * Used for in-app notification queries.
-     *
-     * @param username User's username
-     * @return Last login timestamp
-     * @throws UserNotFoundException if user not found (404)
-     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
-     */
-    Instant getLastLogin(String username);
 
     /**
      * Get all organizer usernames.
