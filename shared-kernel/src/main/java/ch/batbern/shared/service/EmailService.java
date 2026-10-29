@@ -60,6 +60,15 @@ public class EmailService {
     @Autowired(required = false)
     private SesClient sesClient;
 
+    /**
+     * Whether mail actually leaves the system: true only with an SES client (staging/production).
+     * Local dev captures mail and tests log it. Guards against sending test content key on this,
+     * like the per-email {@code assertNotTestMarked} wall, which only runs on the SES branch.
+     */
+    public boolean isLiveDelivery() {
+        return sesClient != null;
+    }
+
     /** Optional — present only on 'local' Spring profile. Null in test/production. */
     @Autowired(required = false)
     private LocalEmailCapture localEmailCapture;
