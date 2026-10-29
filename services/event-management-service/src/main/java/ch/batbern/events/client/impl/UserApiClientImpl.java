@@ -879,6 +879,13 @@ public class UserApiClientImpl implements UserApiClient {
     private HttpHeaders createHeadersWithJwtToken() {
         HttpHeaders headers = new HttpHeaders();
 
+        // No Authentication at all is normal on listener and scheduler threads (e.g. the SQS
+        // forwarding listener): nothing to propagate, and no WARN per call (#1139).
+        if (SecurityContextHolder.getContext().getAuthentication() == null) {
+            log.debug("No authentication in SecurityContext; calling User Management without JWT");
+            return headers;
+        }
+
         try {
             Object principal = SecurityContextHolder.getContext()
                     .getAuthentication()

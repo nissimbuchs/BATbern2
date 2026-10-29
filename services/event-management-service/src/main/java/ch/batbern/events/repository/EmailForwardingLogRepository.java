@@ -49,4 +49,10 @@ public interface EmailForwardingLogRepository extends JpaRepository<EmailForward
     int release(@Param("s3Key") String s3Key);
 
     Optional<EmailForwardingLog> findByS3Key(String s3Key);
+
+    /** Retention (#1138): delete rows received more than {@code days} days ago. */
+    @Modifying
+    @Query(value = "DELETE FROM email_forwarding_log WHERE received_at < now() - make_interval(days => :days)",
+            nativeQuery = true)
+    int deleteOlderThanDays(@Param("days") int days);
 }

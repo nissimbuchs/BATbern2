@@ -123,6 +123,8 @@ export class InboundEmailStack extends cdk.Stack {
     const forwardingQueue = new sqs.Queue(this, 'ForwardingEmailQueue', {
       queueName: `batbern-forwarding-email-${envName}`,
       // A 160-recipient participants@ mail at ~14 sends/s takes ~12 s; 300 s leaves headroom.
+      // Coupled to EmailForwardingLogService.STALE_CLAIM_SECONDS (360) in EMS, which must stay
+      // above this value: raise both together.
       visibilityTimeout: cdk.Duration.seconds(300),
       // Messages survive an EMS outage for 4 days (raw mail itself stays in S3 for 7).
       retentionPeriod: cdk.Duration.days(4),

@@ -54,6 +54,8 @@ public class EmailForwardingService {
         DROPPED_NO_REPLY,
         DROPPED_AUTO_REPLY,
         DUPLICATE,
+        /** Sending began earlier and never finished; recorded once, never retried (#1139). */
+        STALLED,
         REJECTED,
         UNRESOLVED,
         FORWARDED,
@@ -131,12 +133,15 @@ public class EmailForwardingService {
             if (forwardingLog.isStuckAfterSending(s3Key)) {
                 // Sending began and never finished (task died mid-send). Not retried, to avoid a
                 // double blast; reported so an operator can check who is missing the mail.
+                // Recorded as STALLED, so a further redelivery is a plain duplicate and the
+                // alarm metric counts this mail once (#1139).
                 log.error("Forwarding: {} stalled after sending began; some recipients may lack it", s3Key);
                 metrics.increment(ForwardingMetrics.FAILED);
-            } else {
-                log.info("Forwarding: {} already processed, skipping redelivery", s3Key);
-                metrics.increment(ForwardingMetrics.DUPLICATES_SKIPPED);
+                forwardingLog.complete(s3Key, EmailForwardingOutcome.STALLED, aliasNames, 0, 0);
+                return Result.STALLED;
             }
+            log.info("Forwarding: {} already processed, skipping redelivery", s3Key);
+            metrics.increment(ForwardingMetrics.DUPLICATES_SKIPPED);
             return Result.DUPLICATE;
         }
 
@@ -159,14 +164,25 @@ public class EmailForwardingService {
             }
             forwardingLog.markSending(s3Key);
         } catch (RuntimeException e) {
-            forwardingLog.release(s3Key);
+            // With the DB down, release fails too. Keep the original cause and attach that
+            // failure; the claim then ages out through reclaimStale (#1139).
+            try {
+                forwardingLog.release(s3Key);
+            } catch (RuntimeException releaseFailure) {
+                e.addSuppressed(releaseFailure);
+            }
             throw e;
         }
 
+        // Sends run sequentially on the listener thread and must finish well inside the queue's
+        // 300 s visibility timeout; the duration in the log shows how close a large alias gets.
+        long started = System.nanoTime();
         Result result = delivery.broadcast()
                 ? sendBroadcast(s3Key, delivery, aliasNames)
                 : sendIndividually(s3Key, delivery, aliasNames);
-        log.info("Forwarding: {} from {} to {} → {}", s3Key, maskedSender, aliasNames, result);
+        long elapsedMs = (System.nanoTime() - started) / 1_000_000;
+        log.info("Forwarding: {} from {} to {} → {} ({} recipient(s) in {} ms)", s3Key, maskedSender, aliasNames,
+                result, delivery.recipients().size(), elapsedMs);
         return result;
     }
 

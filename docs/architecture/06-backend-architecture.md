@@ -803,11 +803,16 @@ SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → E
   callers can reach it.** Machine callers use queues and IAM, not anonymous HTTP.
 - **Delivery modes**: `batbern{N}-speaker@` sends one visible mail (speakers in To, event moderator
   in Cc); every other alias sends one private copy per recipient.
-- **Idempotency**: `email_forwarding_log` (V128, V129) holds one row per S3 object, no addresses or
+- **Idempotency**: `email_forwarding_log` (V128 to V130) holds one row per S3 object, no addresses or
   content. A failure before the first send releases the claim so SQS retries (3×, then DLQ with
   alarm `batbern-{env}-forwarding-dlq`). A claim whose task died before sending is taken over by
-  the redelivery after 6 minutes. After `sending_started_at` is set nothing is retried; failed
-  copies and stalled sends raise `batbern-{env}-forwarding-failed`.
+  the redelivery after 6 minutes (`STALE_CLAIM_SECONDS` = 360, which must stay above the queue's
+  300 s visibility timeout). After `sending_started_at` is set nothing is retried; failed copies
+  raise `batbern-{env}-forwarding-failed`, and a send that stalled is recorded once as outcome
+  `stalled` (same alarm), so further redeliveries count as duplicates. The info log line carries
+  recipient count and send duration per mail.
+- **Retention**: `EmailForwardingLogRetentionScheduler` deletes rows older than 90 days nightly
+  (03:15, ShedLock). The raw mail is gone from S3 after 7 days, so older rows cannot be replayed.
 - **Metrics**: namespace `BATbern/EmailForwarder` (`EmailsForwarded`, `EmailsRejected`,
   `EmailsUnresolved`, `EmailsFailed`, `*Dropped`, `DuplicatesSkipped`); alarm
   `batbern-{env}-emails-rejected`.
