@@ -30,6 +30,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -195,6 +196,47 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
         mockMvc.perform(get("/api/v1/newsletter/my-subscription"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.subscribed").value(false));
+    }
+
+    /** #1143: username is not unique (one row per address); two rows must not 500. */
+    @Test
+    @DisplayName("GET /newsletter/my-subscription — two rows for one username → 200, subscribed if any is active")
+    @WithMockUser(username = "dora", roles = "USER")
+    void should_reportSubscribed_when_userHasTwoSubscriberRows() throws Exception {
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email("dora.old@example.com").language("de").source("account").username("dora")
+                .unsubscribeToken("tok-dora-1").unsubscribedAt(Instant.now()).build());
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email("dora@example.com").language("de").source("account").username("dora")
+                .unsubscribeToken("tok-dora-2").build());
+
+        mockMvc.perform(get("/api/v1/newsletter/my-subscription"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subscribed").value(true))
+                .andExpect(jsonPath("$.email").value("dora@example.com"));
+    }
+
+    /** #1143: unsubscribing from the account settings stops every address of that user. */
+    @Test
+    @DisplayName("PATCH /newsletter/my-subscription — unsubscribe with two rows → all rows unsubscribed")
+    @WithMockUser(username = "dora", roles = "USER")
+    void should_unsubscribeAllRows_when_userHasTwoSubscriberRows() throws Exception {
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email("dora.old@example.com").language("de").source("account").username("dora")
+                .unsubscribeToken("tok-dora-3").build());
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email("dora@example.com").language("de").source("account").username("dora")
+                .unsubscribeToken("tok-dora-4").build());
+
+        mockMvc.perform(patch("/api/v1/newsletter/my-subscription")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"subscribed\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.subscribed").value(false));
+
+        assertThat(subscriberRepository.findAll())
+                .filteredOn(s -> "dora".equals(s.getUsername()))
+                .allSatisfy(s -> assertThat(s.getUnsubscribedAt()).isNotNull());
     }
 
     // ── AC10: GET /newsletter/subscribers/count (ORGANIZER only) ─────────────
