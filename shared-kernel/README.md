@@ -41,36 +41,34 @@ implementation 'ch.batbern:shared-kernel:1.0.0'
 
 ## Usage
 
-### Domain Value Objects
+### Shared Types
 
 ```java
-import ch.batbern.shared.types.*;
+import ch.batbern.shared.types.EventWorkflowState;
+import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.types.SpeakerResponseType;
 
-// Create strongly-typed identifiers
-EventId eventId = EventId.generate();
-EventId fromString = EventId.from("550e8400-e29b-41d4-a716-446655440000");
-
-// User ID from AWS Cognito
-UserId userId = UserId.from("cognito-user-id-123");
-
-// Speaker ID
-SpeakerId speakerId = SpeakerId.generate();
+// Workflow states shared by the services (UPPER_CASE in Java and JSON, lowercase in the DB)
+EventWorkflowState state = EventWorkflowState.AGENDA_PUBLISHED;
+SpeakerWorkflowState speaker = SpeakerWorkflowState.ACCEPTED;
 ```
+
+There are no typed ID wrappers. Cross-service references use meaningful string IDs
+(`eventCode`, `username`, `companyName`, ADR-003); UUIDs stay inside one service.
 
 ### Domain Events
 
 ```java
 import ch.batbern.shared.events.*;
-import ch.batbern.shared.types.*;
 
 // Create an event
 EventCreatedEvent event = EventCreatedEvent.builder()
-    .createdEventId(EventId.generate())
-    .title("BATbern 2024")
-    .eventType("CONFERENCE")
-    .eventDate(LocalDate.of(2024, 6, 15))
-    .venue("Bern Convention Center")
-    .organizerId(UserId.from("organizer-123"))
+    .createdEventCode("BATbern60")
+    .title("BATbern 60")
+    .eventType("EVENING")
+    .eventDate(LocalDate.of(2026, 11, 6))
+    .venue("Kornhausforum")
+    .organizerId("john.doe")
     .build();
 
 // Publish to EventBridge
@@ -106,26 +104,23 @@ ValidationUtils.validateLength(text, 5, 100, "description");
 ### Error Handling
 
 ```java
-import ch.batbern.shared.utils.ErrorHandlingUtils;
-import ch.batbern.shared.utils.ErrorResponse;
+import ch.batbern.shared.dto.ErrorResponse;               // standard error body of every service
+import ch.batbern.shared.exception.NotFoundException;     // BATbernException hierarchy, with ErrorCode + severity
+import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.exception.ClientErrorClassifier;
 
-try {
-    // Some operation
-} catch (Exception e) {
-    // Create error response
-    ErrorResponse response = ErrorHandlingUtils.createErrorResponse(e, "/api/events");
+throw new NotFoundException("Event", "BATbern60");
 
-    // Format error message
-    String message = ErrorHandlingUtils.formatErrorMessage(e);
-
-    // Check error type
-    if (ErrorHandlingUtils.isClientError(e)) {
-        // Return 400 Bad Request
-    } else if (ErrorHandlingUtils.isRetryableError(e)) {
-        // Retry the operation
-    }
+// In a catch-all @ExceptionHandler(Exception.class): client mistakes (missing parameter/header,
+// 404, 405, 415, NUL byte) keep their 4xx at severity LOW instead of a 500 CRITICAL (#1148).
+Optional<ClientErrorClassifier.ClientError> clientError = ClientErrorClassifier.classify(ex);
+if (clientError.isPresent()) {
+    return clientError.get().toResponseEntity(request.getRequestURI(), correlationId);
 }
 ```
+
+Every service's handler is checked against this with `ClientErrorContract.verify(handler)` from
+the shared-kernel test fixtures.
 
 ### Logging Utilities
 

@@ -213,6 +213,15 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         return str.substring(0, 1).toUpperCase() + str.substring(1);
     }
 
+    /**
+     * An ISO instant {@code days} days ahead. /events/current only considers upcoming events, so
+     * fixed future dates (they were 2027) silently turn into past events and break these tests.
+     */
+    private static String daysFromNow(int days) {
+        return Instant.now().plus(Duration.ofDays(days)).truncatedTo(ChronoUnit.HOURS)
+                .toString();
+    }
+
     private Event createTestEvent(String title, String dateStr, String workflowStateStr) {
         return createTestEvent(title, dateStr, workflowStateStr, null);
     }
@@ -1085,7 +1094,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_omitInternalFields_when_anonymousRequestsCurrentEvent")
     void should_omitInternalFields_when_anonymousRequestsCurrentEvent() throws Exception {
         eventRepository.deleteAll();
-        createTestEvent("BATbern Current", "2027-12-15T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
+        createTestEvent("BATbern Current", daysFromNow(400), "AGENDA_PUBLISHED", "agenda");
 
         mockMvc.perform(get("/api/v1/events/current"))
                 .andExpect(status().isOk())
@@ -1925,7 +1934,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_returnPublishedEvent_when_onlyPublishedExists() throws Exception {
         // Given - clean all and create only one AGENDA_PUBLISHED event (future date required)
         eventRepository.deleteAll();
-        Event agendaPublishedEvent = createTestEvent("Current Published Event", "2027-12-15T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
+        Event agendaPublishedEvent = createTestEvent("Current Published Event", daysFromNow(400), "AGENDA_PUBLISHED", "agenda");
 
         // When/Then
         mockMvc.perform(get("/api/v1/events/current"))
@@ -1940,7 +1949,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_returnRegistrationOpenEvent_when_exists() throws Exception {
         // Given - clean all and create AGENDA_PUBLISHED event
         eventRepository.deleteAll();
-        Event registrationOpenEvent = createTestEvent("Registration Open Event", "2027-11-20T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
+        Event registrationOpenEvent = createTestEvent("Registration Open Event", daysFromNow(380), "AGENDA_PUBLISHED", "agenda");
 
         // When/Then
         mockMvc.perform(get("/api/v1/events/current"))
@@ -1954,7 +1963,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_returnRegistrationClosedEvent_when_exists() throws Exception {
         // Given - clean all and create AGENDA_PUBLISHED event
         eventRepository.deleteAll();
-        Event registrationClosedEvent = createTestEvent("Registration Closed Event", "2027-10-10T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
+        Event registrationClosedEvent = createTestEvent("Registration Closed Event", daysFromNow(340), "AGENDA_PUBLISHED", "agenda");
 
         // When/Then
         mockMvc.perform(get("/api/v1/events/current"))
@@ -1970,9 +1979,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         eventRepository.deleteAll();
 
         // Create events with different dates and statuses (all future dates required)
-        createTestEvent("Future Event 1", "2027-12-15T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
-        Event nearestEvent = createTestEvent("Nearest Event", "2027-08-10T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
-        createTestEvent("Future Event 2", "2028-01-20T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
+        createTestEvent("Future Event 1", daysFromNow(400), "AGENDA_PUBLISHED", "agenda");
+        Event nearestEvent = createTestEvent("Nearest Event", daysFromNow(280), "AGENDA_PUBLISHED", "agenda");
+        createTestEvent("Future Event 2", daysFromNow(450), "AGENDA_PUBLISHED", "agenda");
 
         // When/Then - should return the event with the earliest date
         mockMvc.perform(get("/api/v1/events/current"))
@@ -2024,7 +2033,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     void should_includeExpansions_when_includeParamProvided() throws Exception {
         // Given - clean all and create a AGENDA_PUBLISHED event (future date required)
         eventRepository.deleteAll();
-        Event agendaPublishedEvent = createTestEvent("Event with Expansions", "2027-11-15T09:00:00Z", "AGENDA_PUBLISHED", "agenda");
+        Event agendaPublishedEvent = createTestEvent("Event with Expansions", daysFromNow(370), "AGENDA_PUBLISHED", "agenda");
 
         // When/Then - request with include parameter
         // Note: speakers removed from top-level, now accessed via sessions.speakers

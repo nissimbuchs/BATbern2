@@ -71,6 +71,9 @@ class SpeakerReminderServiceTest {
     @Mock
     private PrimarySpeakerResolver primarySpeakerResolver;
 
+    @Mock
+    private ch.batbern.events.client.UserApiClient userApiClient;
+
     private ReminderProperties reminderProperties;
 
     @InjectMocks
@@ -102,7 +105,7 @@ class SpeakerReminderServiceTest {
                 outreachHistoryRepository, sessionContentHistoryRepository,
                 reminderEmailService,
                 notificationService, reminderProperties,
-                primarySpeakerResolver
+                primarySpeakerResolver, userApiClient
         );
 
         testEvent = Event.builder()
@@ -294,6 +297,25 @@ class SpeakerReminderServiceTest {
                     eq(testSpeaker.getResponseDeadline()), eq(Locale.GERMAN));
             verify(reminderLogRepository).save(any(SpeakerReminderLog.class));
             verify(outreachHistoryRepository).save(any(OutreachHistory.class));
+        }
+
+        @Test
+        @DisplayName("should send the reminder in English when the speaker prefers English (#1119)")
+        void shouldUseSpeakerLanguagePreference() {
+            when(eventRepository.findByDateAfter(any(Instant.class))).thenReturn(List.of(testEvent));
+            when(speakerPoolRepository.findByEventId(eventId)).thenReturn(List.of(testSpeaker));
+            when(reminderLogRepository.existsBySpeakerPoolIdAndReminderTypeAndTierAndDeadlineDateAndTriggeredBy(
+                    any(), any(), any(), any(), any())).thenReturn(false);
+            when(primarySpeakerResolver.resolve(testSpeaker)).thenReturn(java.util.Optional.of(
+                    new PrimarySpeakerResolver.PrimarySpeakerProfile(
+                            "john.doe", "john@example.com", "John", "Doe", null)));
+            when(userApiClient.getPreferredLanguage("john.doe")).thenReturn("en");
+
+            speakerReminderService.processReminders();
+
+            verify(reminderEmailService).sendReminderEmail(
+                    eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_1"),
+                    eq(testSpeaker.getResponseDeadline()), eq(Locale.ENGLISH));
         }
 
         @Test
