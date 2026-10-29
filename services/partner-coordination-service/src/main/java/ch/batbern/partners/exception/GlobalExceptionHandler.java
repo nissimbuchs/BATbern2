@@ -1,6 +1,7 @@
 package ch.batbern.partners.exception;
 
 import ch.batbern.shared.dto.ErrorResponse;
+import ch.batbern.shared.exception.ClientErrorClassifier;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import java.time.Instant;
+import java.util.Optional;
 
 /**
  * Global exception handler using shared-kernel ErrorResponse.
@@ -428,6 +430,14 @@ public class GlobalExceptionHandler {
         // the caller can actually be found in CloudWatch (issue #904). Generating it after
         // the log call — as this did — returns the client an ID that appears in no log line.
         String correlationId = CorrelationIdGenerator.current();
+        // A client mistake that no specific handler maps (missing parameter/header, 415, 404,
+        // NUL byte) is a 4xx, not a 500 CRITICAL (#1148, #1157, #1103).
+        Optional<ClientErrorClassifier.ClientError> clientError = ClientErrorClassifier.classify(ex);
+        if (clientError.isPresent()) {
+            log.warn("Client error {} [correlationId={}] {} {}: {}", clientError.get().status().value(),
+                    correlationId, request.getMethod(), request.getRequestURI(), ex.getMessage());
+            return clientError.get().toResponseEntity(request.getRequestURI(), correlationId);
+        }
         log.error("Unexpected error [correlationId={}]", correlationId, ex);
 
         ErrorResponse error = ErrorResponse.builder()

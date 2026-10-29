@@ -1,6 +1,7 @@
 package ch.batbern.companyuser.exception;
 
 import ch.batbern.shared.dto.ErrorResponse;
+import ch.batbern.shared.exception.ClientErrorClassifier;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
 import jakarta.servlet.http.HttpServletRequest;
@@ -20,6 +21,7 @@ import org.springframework.web.server.ResponseStatusException;
 import java.time.Instant;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Optional;
 
 /**
  * Global exception handler for REST API
@@ -245,6 +247,14 @@ public class GlobalExceptionHandler {
             return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
         }
 
+        // A NUL byte in the input fails here too (SQLState 22021): the client's fault, not ours.
+        Optional<ClientErrorClassifier.ClientError> clientError = ClientErrorClassifier.classify(ex);
+        if (clientError.isPresent()) {
+            log.warn("Client error {} {} {}: {}", clientError.get().status().value(),
+                    request.getMethod(), request.getRequestURI(), ex.getMostSpecificCause().getMessage());
+            return clientError.get().toResponseEntity(request.getRequestURI(), CorrelationIdGenerator.current());
+        }
+
         log.error("Data integrity violation: ", ex);
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
@@ -378,27 +388,6 @@ public class GlobalExceptionHandler {
                 .details(validationErrors)
                 .build();
 
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
-    }
-
-    /**
-     * Handle missing request parameters
-     * Returns 400 Bad Request when required request parameters are missing
-     */
-    @ExceptionHandler(org.springframework.web.bind.MissingServletRequestParameterException.class)
-    public ResponseEntity<ErrorResponse> handleMissingServletRequestParameter(
-            org.springframework.web.bind.MissingServletRequestParameterException ex,
-            HttpServletRequest request) {
-        log.error("Missing required parameter: {}", ex.getMessage());
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(String.format("Required parameter '%s' is missing", ex.getParameterName()))
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("WARNING")
-                .build();
         return ResponseEntity.status(HttpStatus.BAD_REQUEST).body(error);
     }
 
@@ -722,6 +711,14 @@ public class GlobalExceptionHandler {
         // the caller can actually be found in CloudWatch (issue #904). Generating it after
         // the log call — as this did — returns the client an ID that appears in no log line.
         String correlationId = CorrelationIdGenerator.current();
+        // A client mistake that no specific handler maps (missing parameter/header, 415, 404,
+        // NUL byte) is a 4xx, not a 500 CRITICAL (#1148, #1157, #1103).
+        Optional<ClientErrorClassifier.ClientError> clientError = ClientErrorClassifier.classify(ex);
+        if (clientError.isPresent()) {
+            log.warn("Client error {} [correlationId={}] {} {}: {}", clientError.get().status().value(),
+                    correlationId, request.getMethod(), request.getRequestURI(), ex.getMessage());
+            return clientError.get().toResponseEntity(request.getRequestURI(), correlationId);
+        }
         log.error("Unexpected error [correlationId={}]", correlationId, ex);
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
