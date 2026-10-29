@@ -23,6 +23,7 @@ import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.AgendaConfigResolver;
 import ch.batbern.events.service.CdnInvalidationService;
 import ch.batbern.events.service.EventWorkflowStateMachine;
+import ch.batbern.events.service.StructuralSessionService;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.types.EventWorkflowState;
 import lombok.RequiredArgsConstructor;
@@ -64,6 +65,7 @@ public class PublishingService {
     private final SecurityContextHelper securityContextHelper;
     private final CdnInvalidationService cdnInvalidationService;
     private final org.springframework.context.ApplicationEventPublisher applicationEventPublisher;
+    private final StructuralSessionService structuralSessionService;
 
     /**
      * Publish a specific phase (topic, speakers, or agenda)
@@ -98,6 +100,12 @@ public class PublishingService {
                     actor != null ? actor : "system",
                     true,
                     "Agenda phase published");
+        }
+
+        // #1108: the public agenda shows stored sessions only. Generate moderation, breaks and
+        // apéro if nobody pressed "Generate structure"; never overwrites an edited structure.
+        if ("agenda".equals(phase)) {
+            structuralSessionService.generateIfMissing(eventCode);
         }
 
         // Evict cache for this event

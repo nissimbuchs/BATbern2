@@ -312,4 +312,29 @@ class StructuralSessionServiceTest {
         assertThat(sessionCaptor.getAllValues().get(0).getStartTime().toString())
                 .isEqualTo("2025-06-15T07:00:00Z");
     }
+
+    // #1108: generateIfMissing runs inside the agenda publish and must never break it.
+
+    @Test
+    void should_returnZeroWithoutThrowing_when_noAgendaConfig() {
+        Event event = Event.builder().id(java.util.UUID.randomUUID()).eventCode(EVENT_CODE).build();
+        when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
+        when(sessionRepository.findByEventIdAndSessionTypeIn(any(), any())).thenReturn(List.of());
+        when(agendaConfigResolver.find(event)).thenReturn(Optional.empty());
+
+        assertThat(structuralSessionService.generateIfMissing(EVENT_CODE)).isZero();
+        verify(sessionRepository, never()).save(any());
+    }
+
+    @Test
+    void should_notTouchExistingStructure_when_generateIfMissing() {
+        Event event = Event.builder().id(java.util.UUID.randomUUID()).eventCode(EVENT_CODE).build();
+        when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
+        when(sessionRepository.findByEventIdAndSessionTypeIn(any(), any()))
+                .thenReturn(List.of(Session.builder().sessionType("break").build()));
+
+        assertThat(structuralSessionService.generateIfMissing(EVENT_CODE)).isZero();
+        verify(sessionRepository, never()).deleteByEventIdAndSessionTypeIn(any(), any());
+        verify(sessionRepository, never()).save(any());
+    }
 }

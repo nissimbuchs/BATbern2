@@ -102,7 +102,9 @@ so the website never shows an organizer something a visitor would not see.
   `Session.isStructuralType` in the backend, `web-frontend/src/utils/sessionTypes.ts` in the
   frontend. `networking` is the apéro: V127 (#1123) folded the duplicate `aperitif` value back into
   it. The agenda config keeps its apéro names (`aperitifSlots`, `TimetableSlot.Type.APERITIF`);
-  `StructuralSessionService` stores that slot as `networking`.
+  `StructuralSessionService` stores that slot as `networking`. Publishing the agenda calls
+  `generateIfMissing`, so the public agenda (stored sessions only) matches the slot view, which
+  computes the structure from the config (#1108). It never overwrites and never throws.
 - **`sessionType` and `materialsStatus` are enums in the contract** (`SessionType`,
   `MaterialsStatus` in `event-sessions-api`). Never add a second value for an existing meaning and
   never rename one: installed Apple Watch binaries decode the list. `materialsStatus` is `NONE` or
