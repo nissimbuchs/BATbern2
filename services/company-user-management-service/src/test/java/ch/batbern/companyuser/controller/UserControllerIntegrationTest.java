@@ -278,6 +278,41 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data[0].roles", hasItem("ORGANIZER")));
     }
 
+    /**
+     * #1153: the active filter ran on the DB page, so page 1 (limit 1) came back empty and
+     * totalItems was the size of the filtered page, while the inactive user sat on page 2.
+     */
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_filterActiveAcrossPages_when_activeFilterAndSmallLimit")
+    void should_filterActiveAcrossPages_when_activeFilterAndSmallLimit() throws Exception {
+        userRepository.save(User.builder()
+                .username("zoe.zimmer")
+                .email("zoe.zimmer@example.com")
+                .firstName("Zoe")
+                .lastName("Zimmer")
+                .cognitoUserId("cognito-zoe")
+                .isActive(false)
+                .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
+                .build());
+
+        mockMvc.perform(get("/api/v1/users")
+                        .param("filter", "{\"active\":false}")
+                        .param("page", "1")
+                        .param("limit", "1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].id").value("zoe.zimmer"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(1));
+
+        mockMvc.perform(get("/api/v1/users")
+                        .param("filter", "{\"active\":true}")
+                        .param("search", "zoe"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(0)))
+                .andExpect(jsonPath("$.pagination.totalItems").value(0));
+    }
+
     @Test
     @WithMockUser(username = "admin", roles = {"ORGANIZER"})
     @DisplayName("should_filterByCompany_when_companyFilterProvided")

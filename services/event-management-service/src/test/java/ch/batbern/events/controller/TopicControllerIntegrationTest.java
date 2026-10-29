@@ -191,6 +191,38 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data[0].stalenessScore", lessThanOrEqualTo(100)));
     }
 
+    /**
+     * #1153: the staleness order holds across pages. The page used to be cut by id first and
+     * only that page sorted, so page 1 showed the stalest of an arbitrary page.
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_sortAcrossPages_when_sortingByStalenessWithSmallLimit() throws Exception {
+        Topic topicA = createTestTopic("Stale Topic", "technical");
+        Topic topicB = createTestTopic("Recent Topic", "technical");
+        Topic topicC = createTestTopic("Moderate Topic", "technical");
+
+        Event eventA = createTestEvent("BATbern210", EventWorkflowState.ARCHIVED);
+        Event eventB = createTestEvent("BATbern211", EventWorkflowState.ARCHIVED);
+        Event eventC = createTestEvent("BATbern212", EventWorkflowState.ARCHIVED);
+
+        createTopicUsageHistory(topicA.getId(), eventA.getId(), LocalDateTime.now().minusMonths(30), null, null);
+        createTopicUsageHistory(topicB.getId(), eventB.getId(), LocalDateTime.now().minusMonths(6), null, null);
+        createTopicUsageHistory(topicC.getId(), eventC.getId(), LocalDateTime.now().minusMonths(15), null, null);
+
+        String[] expected = {"Stale Topic", "Moderate Topic", "Recent Topic"};
+        for (int page = 1; page <= 3; page++) {
+            mockMvc.perform(get("/api/v1/topics")
+                    .param("sort", "-stalenessScore")
+                    .param("page", String.valueOf(page))
+                    .param("limit", "1"))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.data", hasSize(1)))
+                    .andExpect(jsonPath("$.data[0].title").value(expected[page - 1]))
+                    .andExpect(jsonPath("$.pagination.totalItems").value(3));
+        }
+    }
+
     @Test
     @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
     void should_returnTopicWithDetails_when_getTopicByIdCalled() throws Exception {

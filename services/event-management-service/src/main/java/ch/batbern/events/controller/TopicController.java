@@ -108,15 +108,41 @@ public class TopicController implements TopicsApi {
         boolean includeHistory = organizer && include != null && include.contains("history");
         boolean includeSimilarity = organizer && include != null && include.contains("similarity");
 
-        // Staleness and usageCount sorts are handled in-memory; pass null sort to DB for those
+        // Staleness and usageCount are computed, not columns: sort them in memory over ALL
+        // matching topics, then cut the page. Sorting only the DB page ordered an arbitrary
+        // page instead of the whole list (#1153). A few hundred topics at most.
         boolean sortByStaleness = organizer && sort != null && sort.contains("stalenessScore");
         boolean sortByUsageCount = sort != null && sort.contains("usageCount");
         boolean inMemorySort = sortByStaleness || sortByUsageCount;
-        Pageable pageable = createPageable(page - 1, limit, inMemorySort ? null : sort);
 
-        Page<Topic> topicPage = topicService.getAllTopics(category, status, pageable);
-
-        final List<Topic> baseTopics = topicPage.getContent();
+        final List<Topic> baseTopics;
+        final long totalItems;
+        if (inMemorySort) {
+            List<Topic> all = topicService.getAllTopics(category, status,
+                    DeterministicPaging.pageRequest(0, Integer.MAX_VALUE, Sort.unsorted())).getContent();
+            Map<UUID, StalenessScoreService.StalenessData> allStaleness =
+                    stalenessScoreService.computeStalenessDataBatch(all);
+            boolean desc = sort == null || !sort.endsWith("asc");
+            List<Topic> sorted = all.stream()
+                    .sorted((a, b) -> {
+                        StalenessScoreService.StalenessData sda = allStaleness.getOrDefault(
+                                a.getId(), StalenessScoreService.StalenessData.NEVER_USED);
+                        StalenessScoreService.StalenessData sdb = allStaleness.getOrDefault(
+                                b.getId(), StalenessScoreService.StalenessData.NEVER_USED);
+                        int va = sortByUsageCount ? sda.usageCount() : sda.staleness();
+                        int vb = sortByUsageCount ? sdb.usageCount() : sdb.staleness();
+                        return desc ? Integer.compare(vb, va) : Integer.compare(va, vb);
+                    })
+                    .collect(Collectors.toList());
+            int from = Math.min((page - 1) * limit, sorted.size());
+            int to = Math.min(from + limit, sorted.size());
+            baseTopics = sorted.subList(from, to);
+            totalItems = sorted.size();
+        } else {
+            Page<Topic> topicPage = topicService.getAllTopics(category, status, createPageable(page - 1, limit, sort));
+            baseTopics = topicPage.getContent();
+            totalItems = topicPage.getTotalElements();
+        }
 
         // Recalculate similarity on-demand if requested
         final List<Topic> topics;
@@ -131,26 +157,10 @@ public class TopicController implements TopicsApi {
             topics = baseTopics;
         }
 
-        // Compute staleness for all topics in one batch query
+        // Compute staleness for the page in one batch query
         Map<UUID, StalenessScoreService.StalenessData> stalenessMap =
                 stalenessScoreService.computeStalenessDataBatch(topics);
-
-        // Apply in-memory sort if requested (staleness or usageCount)
         List<Topic> sortedTopics = topics;
-        if (inMemorySort) {
-            boolean desc = sort == null || !sort.endsWith("asc");
-            sortedTopics = topics.stream()
-                    .sorted((a, b) -> {
-                        StalenessScoreService.StalenessData sda = stalenessMap.getOrDefault(
-                                a.getId(), StalenessScoreService.StalenessData.NEVER_USED);
-                        StalenessScoreService.StalenessData sdb = stalenessMap.getOrDefault(
-                                b.getId(), StalenessScoreService.StalenessData.NEVER_USED);
-                        int va = sortByUsageCount ? sda.usageCount() : sda.staleness();
-                        int vb = sortByUsageCount ? sdb.usageCount() : sdb.staleness();
-                        return desc ? Integer.compare(vb, va) : Integer.compare(va, vb);
-                    })
-                    .collect(Collectors.toList());
-        }
 
         // Convert to DTOs
         List<ch.batbern.events.dto.generated.topics.Topic> topicDtos;
@@ -181,11 +191,11 @@ public class TopicController implements TopicsApi {
         }
 
         // Build pagination response
-        int totalPages = (int) Math.ceil((double) topicPage.getTotalElements() / limit);
+        int totalPages = (int) Math.ceil((double) totalItems / limit);
         ch.batbern.shared.api.PaginationMetadata pagination = ch.batbern.shared.api.PaginationMetadata.builder()
                 .page(page)
                 .limit(limit)
-                .totalItems(topicPage.getTotalElements())
+                .totalItems(totalItems)
                 .totalPages(totalPages)
                 .hasNext(page < totalPages)
                 .hasPrev(page > 1)
