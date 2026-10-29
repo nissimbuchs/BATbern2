@@ -212,6 +212,16 @@ public class CompanyService {
     }
 
     /**
+     * Same lookup without throwing. Callers that tolerate a missing company must use this: a
+     * {@link CompanyNotFoundException} thrown through this transactional bean marks the caller's
+     * transaction rollback-only, even when the caller catches it (#1142).
+     */
+    @Transactional(readOnly = true)
+    public Optional<CompanyResponse> findCompanyByName(String name) {
+        return companyRepository.findByName(name).map(this::mapToResponse);
+    }
+
+    /**
      * Retrieves all companies
      * AC4: Company listing
      */

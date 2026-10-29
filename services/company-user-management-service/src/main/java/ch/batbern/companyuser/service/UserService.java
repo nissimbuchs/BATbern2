@@ -1232,21 +1232,20 @@ public class UserService {
      * reference) so a dangling reference never 500s the whole profile load.
      */
     private ch.batbern.companyuser.dto.generated.Company expandCompany(String companyId) {
-        try {
-            ch.batbern.companyuser.dto.generated.CompanyResponse company =
-                companyService.getCompanyByName(companyId);
-            return new ch.batbern.companyuser.dto.generated.Company()
-                    .id(company.getName())
-                    .name(company.getName())
-                    .displayName(company.getDisplayName())
-                    .industry(company.getIndustry());
-        } catch (RuntimeException ex) {
-            log.warn("Could not resolve company '{}' for profile expansion: {}",
-                     companyId, ex.getMessage());
-            return new ch.batbern.companyuser.dto.generated.Company()
-                    .id(companyId)
-                    .name(companyId);
-        }
+        // Non-throwing lookup: catching a not-found thrown through CompanyService still left
+        // this read transaction rollback-only and 500ed the whole profile (#1142).
+        return companyService.findCompanyByName(companyId)
+                .map(company -> new ch.batbern.companyuser.dto.generated.Company()
+                        .id(company.getName())
+                        .name(company.getName())
+                        .displayName(company.getDisplayName())
+                        .industry(company.getIndustry()))
+                .orElseGet(() -> {
+                    log.warn("Could not resolve company '{}' for profile expansion", companyId);
+                    return new ch.batbern.companyuser.dto.generated.Company()
+                            .id(companyId)
+                            .name(companyId);
+                });
     }
 
     /**

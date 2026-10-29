@@ -3,7 +3,6 @@ package ch.batbern.companyuser.service;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.generated.CompanyResponse;
-import ch.batbern.companyuser.exception.CompanyNotFoundException;
 import ch.batbern.companyuser.dto.generated.CreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
@@ -850,12 +849,12 @@ class UserServiceTest {
         baseResponse.setCompanyId("infowellgmbh");
         when(responseMapper.mapToResponse(any(User.class))).thenReturn(baseResponse);
 
-        when(companyService.getCompanyByName("infowellgmbh")).thenReturn(
+        when(companyService.findCompanyByName("infowellgmbh")).thenReturn(Optional.of(
                 CompanyResponse.builder()
                         .name("infowellgmbh")
                         .displayName("Infowell GmbH")
                         .industry("IT")
-                        .build());
+                        .build()));
 
         // When
         UserResponse response = userService.getCurrentUser("company");
@@ -885,8 +884,7 @@ class UserServiceTest {
         baseResponse.setCompanyId("ghostco");
         when(responseMapper.mapToResponse(any(User.class))).thenReturn(baseResponse);
 
-        when(companyService.getCompanyByName("ghostco"))
-                .thenThrow(new CompanyNotFoundException("ghostco"));
+        when(companyService.findCompanyByName("ghostco")).thenReturn(Optional.empty());
 
         // When — must NOT throw; profile load is resilient to a dangling reference
         UserResponse response = userService.getCurrentUser("company");
