@@ -348,7 +348,8 @@ Solution: Check ECS console, CloudWatch logs, increase timeout
 Error: stack ... is in UPDATE_COMPLETE_CLEANUP_IN_PROGRESS state and can not be updated
 Solution: none needed any more. The deploy job's first step, "Wait for in-progress
 CloudFormation stacks" (scripts/ci/wait-for-stable-stacks.sh), waits up to 40 min for every
-BATbern-staging-* stack to settle. Deleting a VPC Lambda can keep a stack in cleanup for
+stack named in infrastructure/package.json to settle. It describes them one by one: the
+GitHub Actions role may not call list-stacks. Deleting a VPC Lambda can keep a stack in cleanup for
 ~25 min (ENIs are released lazily); Layer 1 has a 40-min timeout for that reason.
 ```
 

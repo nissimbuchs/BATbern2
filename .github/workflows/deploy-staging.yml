@@ -570,7 +570,10 @@ jobs:
       # Wait for all stacks to settle first; covers both the layer and the per-stack path.
       - name: Wait for in-progress CloudFormation stacks
         timeout-minutes: 45
-        run: ./scripts/ci/wait-for-stable-stacks.sh BATbern-staging- 2400
+        # Every stack the deploy:staging:* scripts deploy. The role may not list stacks (#1140).
+        run: |
+          STACKS=$(grep -oE 'BATbern-staging-[A-Za-z0-9]+' infrastructure/package.json | sort -u)
+          ./scripts/ci/wait-for-stable-stacks.sh 2400 $STACKS
 
       # Layer-based deployment with token refresh between layers
       - name: Deploy Layer 0 - Foundation
