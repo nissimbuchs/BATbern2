@@ -52,6 +52,8 @@ Registration is double opt-in, and the attendee receives two emails:
 
 Participants added by an organizer are confirmed immediately and receive the `registration-organizer-added` email (with calendar invite) instead.
 
+**Declining the calendar invite** (Story 16.0, #1161): if an attendee clicks "Decline" on that invite, their calendar replies to `calendar@batbern.ch`. The platform then sends them the **deregistration-link mail**; the place (and the waitlist promotion behind it) is released only when they click the link, so a misclick costs nobody their seat. A second decline within 7 days sends no second mail. "Accept" and "Tentative" replies are ignored. Each invite carries a stable per-registration UID for the matching (never the registration code, which is a credential); invites sent before this change are matched by the sender address and an event within ±1 day of the invite's start, and only when exactly one registration fits.
+
 ### Partner Calendar Invites (Epic 8)
 
 RFC 5545 `.ics` calendar invites delivered via email to partners. Each file contains two `VEVENT` entries: the spring/autumn partner lunch and the BATbern event itself. See [Partner Portal: Meeting Coordination](../partner-portal/meetings.md).
@@ -98,7 +100,8 @@ A dedicated organizer-only **Newsletter Subscribers** page (top-level navigation
 Subscribers and attendees can manage their preferences simply by **replying** to any BATbern email (no links to click — convenient on mobile). All outbound mail carries a `Reply-To: replies@batbern.ch` header, and an inbound handler (SES → S3 → SQS → EMS) routes the reply by its first line:
 
 - **`UNSUBSCRIBE`** (incl. `abmelden` / `désinscription`) → unsubscribes the sender; a confirmation email is sent.
-- **`CANCEL`** (incl. `deregister` / `absagen`) on a registration-confirmation reply → cancels the registration, fires waitlist promotion, and sends a cancellation confirmation.
+- **`CANCEL`** (incl. `deregister` / `absagen`) on a registration-confirmation reply → sends the **deregistration-link mail**; the registration is cancelled (and the waitlist promoted) only when the attendee clicks the link. A second request within 7 days sends no second mail. Until Story 16.0 (#1162, 2026-10) the reply cancelled at once.
+- Keywords act only when the first line is essentially the keyword alone (at most 3 words, e.g. `cancel`, `Bitte absagen`). A longer sentence that merely contains a keyword ("Ich muss leider absagen, kann ich den Platz weitergeben?") is treated as a human reply and forwarded to the organizers.
 - **`ACCEPT`** (incl. `bestätigen` / `confirmer`) on an event-coded email → confirms attendance for the matching active registration.
 - Any other reply is **forwarded to the organizers** (one private copy each, Reply-To = the original sender), exactly like mail to `info@`. Automatic replies (out-of-office), bounces and mail from our own domain are not forwarded; each one is counted and logged. Until Story 16.0 (#1160, 2026-10) such replies were silently discarded. An anti-abuse rate limiter caps replies from a single sender.
 - **Speaker mails** (invitation, acceptance, tiered reminders, quality-review revision requests) carry `Reply-To: batbern{N}-moderator@batbern.ch` instead of `replies@`, so a speaker's answer reaches the event's moderator directly (Story 16.0).

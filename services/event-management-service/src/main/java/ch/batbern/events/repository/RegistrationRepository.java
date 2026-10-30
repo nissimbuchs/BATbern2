@@ -289,6 +289,34 @@ public interface RegistrationRepository
      * @param waitlistStatus the exact waitlist status string (e.g. "waitlist")
      * @return number of registrations updated
      */
+    /** Story 16.0 (#1161): the registration a calendar invite with UID {@code reg-{calendarUid}} belongs to. */
+    Optional<Registration> findByCalendarUid(UUID calendarUid);
+
+    /**
+     * Story 16.0 (#1161) fallback for invites sent before the stable UID existed: the active
+     * registrations of one address for events dated within {@code [from, to]}. The caller acts only
+     * when exactly one comes back.
+     */
+    @Query("SELECT r FROM Registration r JOIN Event e ON r.eventId = e.id "
+            + "WHERE LOWER(r.attendeeEmail) = LOWER(:email) AND r.status <> 'cancelled' "
+            + "AND e.date BETWEEN :from AND :to")
+    List<Registration> findActiveByEmailAndEventDateBetween(@Param("email") String email,
+                                                            @Param("from") Instant from,
+                                                            @Param("to") Instant to);
+
+    /**
+     * Story 16.0 (#1161, #1162): atomically records that the deregistration-link mail goes out now,
+     * unless it already went out after {@code notBefore}. A single conditional UPDATE, so two
+     * replies processed at once cannot both win.
+     *
+     * @return 1 when the caller may send the mail, 0 when it was sent recently
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Registration r SET r.declineLinkSentAt = :now WHERE r.id = :id "
+            + "AND (r.declineLinkSentAt IS NULL OR r.declineLinkSentAt < :notBefore)")
+    int claimDeregistrationLink(@Param("id") UUID id, @Param("now") Instant now,
+                                @Param("notBefore") Instant notBefore);
+
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Registration r SET r.status = 'cancelled' WHERE r.eventId = :eventId "
             + "AND r.status = :waitlistStatus")

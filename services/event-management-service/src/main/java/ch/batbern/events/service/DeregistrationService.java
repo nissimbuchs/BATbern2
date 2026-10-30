@@ -11,6 +11,7 @@ import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.Instant;
 import java.util.NoSuchElementException;
 import java.util.UUID;
@@ -40,6 +41,18 @@ public class DeregistrationService {
 
     @Value("${app.base-url:https://batbern.ch}")
     private String appBaseUrl;
+
+    /** Story 16.0 AC9: at most one deregistration-link mail per registration in this window. */
+    static final Duration LINK_RESEND_WINDOW = Duration.ofDays(7);
+
+    /** Outcome of {@link #requestDeregistrationLinkByReply} and {@link #sendDeregistrationLinkOnce}. */
+    public enum DeregistrationLinkResult {
+        SENT,
+        /** Sent within the last 7 days; nothing sent now. */
+        ALREADY_SENT,
+        /** No active registration (none, or already cancelled); nothing sent. */
+        NOT_FOUND
+    }
 
     /**
      * Verify a deregistration token and return registration details for confirmation display.
@@ -128,6 +141,52 @@ public class DeregistrationService {
             // Anti-enumeration: never surface errors. Log for investigation.
             log.error("Unexpected error during deregisterByEmail for {}/{}: {}", email, eventCode, e.getMessage(), e);
         }
+    }
+
+    /**
+     * Story 16.0 AC11 (#1162): a reply "cancel" / "absagen" no longer cancels. It sends the
+     * deregistration-link mail, so the attendee confirms with one click (and a misread reply cannot
+     * cost anyone their seat). Synchronous, unlike {@link #deregisterByEmail}: the caller is the
+     * inbound-mail listener thread and needs the result.
+     *
+     * @return what happened; callers must not reveal it to the sender (anti-enumeration)
+     */
+    @Transactional
+    public DeregistrationLinkResult requestDeregistrationLinkByReply(String email, String eventCode) {
+        return registrationRepository.findByAttendeeEmailAndEventCode(email, eventCode)
+                .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()))
+                .map(this::sendDeregistrationLinkOnce)
+                .orElse(DeregistrationLinkResult.NOT_FOUND);
+    }
+
+    /**
+     * Sends the deregistration-link mail for an active registration, at most once per
+     * {@link #LINK_RESEND_WINDOW} (AC9/AC10, {@code registrations.decline_link_sent_at}). Shared by
+     * the reply path (#1162) and the calendar-decline path (#1161).
+     */
+    @Transactional
+    public DeregistrationLinkResult sendDeregistrationLinkOnce(Registration registration) {
+        if ("cancelled".equalsIgnoreCase(registration.getStatus())) {
+            return DeregistrationLinkResult.NOT_FOUND;
+        }
+        Event event = eventRepository.findById(registration.getEventId()).orElse(null);
+        if (event == null) {
+            log.warn("Event not found for registration {}; no deregistration link sent",
+                    registration.getRegistrationCode());
+            return DeregistrationLinkResult.NOT_FOUND;
+        }
+        Instant now = Instant.now();
+        if (registrationRepository.claimDeregistrationLink(registration.getId(), now,
+                now.minus(LINK_RESEND_WINDOW)) == 0) {
+            log.info("Deregistration link for {} already sent within {} days; not sending again",
+                    registration.getRegistrationCode(), LINK_RESEND_WINDOW.toDays());
+            return DeregistrationLinkResult.ALREADY_SENT;
+        }
+        String deregistrationLink = appBaseUrl + "/deregister?token=" + registration.getDeregistrationToken();
+        deregistrationEmailService.sendDeregistrationLinkEmail(registration, event, deregistrationLink);
+        log.info("Deregistration link sent: registration={}, event={}",
+                registration.getRegistrationCode(), event.getEventCode());
+        return DeregistrationLinkResult.SENT;
     }
 
     /**

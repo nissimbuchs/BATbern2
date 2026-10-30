@@ -270,7 +270,7 @@ development_status:
   # 16.0 = #1160 + #1161 (two PRs). Start with an explicit story path: older ready-for-dev stories sort first.
   # Sequence (owner decision 3): 16.0 (A, C, B) -> 16.1a -> 16.1b -> 16.3 -> 16.4, then 16.8 -> 16.9, then 16.2 + 16.6 for speakers, then all aliases, 16.5, 16.7.
   epic-16: in-progress
-  16-0-stop-losing-replies-and-calendar-declines: in-progress
+  16-0-stop-losing-replies-and-calendar-declines: review
   16-1a-record-outbound-mail: ready-for-dev
   16-1b-delivery-status: ready-for-dev
   16-2-capture-inbound-human-mail: backlog

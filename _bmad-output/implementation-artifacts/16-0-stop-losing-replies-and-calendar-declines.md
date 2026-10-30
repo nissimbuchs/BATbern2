@@ -1,6 +1,6 @@
 # Story 16.0: Stop losing replies and calendar declines (#1160, #1161, #1162)
 
-Status: in-progress
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -60,21 +60,21 @@ so that **no speaker question or newsletter reply is silently dropped, and peopl
 
 ### Part B — #1161 (PR 2, body `Fixes #1161`)
 
-- [ ] **Task B0 — Size it first** (no code): count `CalendarRepliesDropped` for the last weeks (CloudWatch metric `BATbern/EmailForwarder`) and, if possible without a DB dump, check a few decline senders against registrations via the organizer API. Write the numbers into Completion Notes. Never download production data.
-- [ ] **Task B1 — Stable registration UID** (AC: 7)
-  - [ ] `RegistrationEmailService.generateCalendarFile` currently gets a random UID from `IcsCalendarService.generateIcsFile` (`UUID.randomUUID() + "@batbern.ch"`). `generateIcsFile(...)` has no UID parameter; the stable UID exists only on `IcsCalendarService.IcsEventData` (used by `generateMultiEventIcsFile` / `generateRequestIcsFile`). Add a UID-taking overload of `generateIcsFile` (or switch to the `IcsEventData` path) and use `reg-{registrationCode}@batbern.ch`. Check whether `registrationCode` is safe to expose in an ICS (it is already in the deregistration links).
-- [ ] **Task B2 — Decline handling** (AC: 6, 7, 8, 9)
-  - [ ] In `EmailForwardingService.forward`, the calendar-reply branch currently drops everything (`DROPPED_CALENDAR_REPLY`). Before dropping: parse PARTSTAT and UID (reuse `InboundEmailListenerService.extractIcsProperty` or move it to a shared parser); if `DECLINED` and the alias is `calendar@`, hand off to a new `CalendarDeclineService`.
-  - [ ] `CalendarDeclineService`: match (UID first, fallback per AC7), check active status, de-dup (AC9), send the deregistration-link mail, metrics.
-  - [ ] Integration tests: matched by UID, matched by fallback, ambiguous, already cancelled, duplicate within 7 days, accepted reply ignored.
-- [ ] **Task B2b — De-dup column** (AC: 9, 10): migration `V{next}__registrations_decline_link_sent_at.sql` (`ALTER TABLE registrations ADD COLUMN decline_link_sent_at TIMESTAMPTZ`); entity field next to `confirmationResentAt`.
-- [ ] **Task B3 — Docs** — doc-drift check as in A4, plus a short note in the registration docs that a calendar decline triggers the deregistration-link mail.
+- [x] **Task B0 — Size it first** (no code): count `CalendarRepliesDropped` for the last weeks (CloudWatch metric `BATbern/EmailForwarder`) and, if possible without a DB dump, check a few decline senders against registrations via the organizer API. Write the numbers into Completion Notes. Never download production data.
+- [x] **Task B1 — Stable registration UID** (AC: 7)
+  - [x] `RegistrationEmailService.generateCalendarFile` currently gets a random UID from `IcsCalendarService.generateIcsFile` (`UUID.randomUUID() + "@batbern.ch"`). `generateIcsFile(...)` has no UID parameter; the stable UID exists only on `IcsCalendarService.IcsEventData` (used by `generateMultiEventIcsFile` / `generateRequestIcsFile`). Add a UID-taking overload of `generateIcsFile` (or switch to the `IcsEventData` path) and use `reg-{registrationCode}@batbern.ch`. Check whether `registrationCode` is safe to expose in an ICS (it is already in the deregistration links). → done with a deviation: the code is a credential, so the UID is `reg-{calendarUid}` (see Completion Notes, Part B).
+- [x] **Task B2 — Decline handling** (AC: 6, 7, 8, 9)
+  - [x] In `EmailForwardingService.forward`, the calendar-reply branch currently drops everything (`DROPPED_CALENDAR_REPLY`). Before dropping: parse PARTSTAT and UID (reuse `InboundEmailListenerService.extractIcsProperty` or move it to a shared parser); if `DECLINED` and the alias is `calendar@`, hand off to a new `CalendarDeclineService`.
+  - [x] `CalendarDeclineService`: match (UID first, fallback per AC7), check active status, de-dup (AC9), send the deregistration-link mail, metrics.
+  - [x] Integration tests: matched by UID, matched by fallback, ambiguous, already cancelled, duplicate within 7 days, accepted reply ignored.
+- [x] **Task B2b — De-dup column** (AC: 9, 10): migration `V{next}__registrations_decline_link_sent_at.sql` (`ALTER TABLE registrations ADD COLUMN decline_link_sent_at TIMESTAMPTZ`); entity field next to `confirmationResentAt`.
+- [x] **Task B3 — Docs** — doc-drift check as in A4, plus a short note in the registration docs that a calendar decline triggers the deregistration-link mail.
 
 ### Part C — #1162 (PR 3, body `Fixes #1162`)
 
-- [ ] **Task C1 — Short-line rule** (AC: 12, 13): in `InboundEmailRouter.route`, keyword steps 3–5 act only if the normalized first line has at most 3 words; otherwise fall through to the AC3 forward. Table-driven unit test with real-life sentences (DE + EN) that must NOT trigger.
-- [ ] **Task C2 — Cancel asks first** (AC: 11): replace `registrationService.cancelByEmail` + `sendCancelConfirmation` in step 4 with the deregistration-link mail, reusing the Part B service and the AC10 column.
-- [ ] **Task C3 — Docs**: as in A4.
+- [x] **Task C1 — Short-line rule** (AC: 12, 13): in `InboundEmailRouter.route`, keyword steps 3–5 act only if the normalized first line has at most 3 words; otherwise fall through to the AC3 forward. Table-driven unit test with real-life sentences (DE + EN) that must NOT trigger.
+- [x] **Task C2 — Cancel asks first** (AC: 11): replace `registrationService.cancelByEmail` + `sendCancelConfirmation` in step 4 with the deregistration-link mail, reusing the Part B service and the AC10 column.
+- [x] **Task C3 — Docs**: as in A4.
 
 ## Dev Notes
 
@@ -124,6 +124,25 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-10-30.
 - Owner request 2026-10-30 (in Part A): CloudWatch alarm `batbern-{env}-replies-dlq` on the replies DLQ (`InboundEmailStack`), with SNS alarm + OK actions like the forwarding DLQ. Before, the replies DLQ had no alarm, so a reply dead-lettered by the new retry would have sat there unseen. CDK unit test added. Makes the Part A PR a layer-based infra deploy. CI on #1164 then failed `incident-response-docs.test.ts` (every declared alarm needs a runbook entry); I had run only the stack's own test locally. Fixed with a `replies-dlq` entry in `docs/operations/runbooks.md`; full infra suite 483 passed / 19 skipped, run with `--maxWorkers=2` (a 4-worker run OOM-killed the session on rack, see Debug Log).
 - A4: `docs/architecture/06-backend-architecture.md` and `docs/user-guide/features/notifications.md` updated (the user guide said "silently discarded").
 
+**Part C (#1162), branch `feature/16-0c-keyword-replies-ask-first` (cut from Part A)**
+
+- Order A → C → B as the Dev Notes say, so Part C introduces the shared pieces and Part B reuses them: migration **V132** (`registrations.decline_link_sent_at`, Task B2b done here), `Registration.declineLinkSentAt`, `RegistrationRepository.claimDeregistrationLink` (one conditional UPDATE, so two concurrent requests cannot both send), `DeregistrationService.sendDeregistrationLinkOnce(Registration)` and `requestDeregistrationLinkByReply(email, eventCode)` returning SENT / ALREADY_SENT / NOT_FOUND.
+- AC11: router step 4 calls `requestDeregistrationLinkByReply` instead of `cancelByEmail` + cancel confirmation. Nothing is cancelled until the link is clicked. Sender never learns the outcome (anti-enumeration).
+- AC12/AC13: router acts on keywords only when the normalized first line has at most 3 words; otherwise UNRECOGNIZED → forwarded (Part A). Applies to unsubscribe, cancel and accept; unsubscribe still acts at once. Table-driven tests: 10 short forms that act, 8 real-life DE/EN sentences that must not.
+- Dead code removed: `RegistrationService.cancelByEmail` and `InboundEmailConfirmationEmailService.sendCancelConfirmation` had no callers left. The `cancel-confirmation-{de,en}` templates are still seeded into the admin template store but are no longer sent; left in place (removing seeded templates is a separate decision).
+- Tests: `DeregistrationLinkOnceIntegrationTest` (Testcontainers, 4 cases: first sends + records, second within 7 days does not, after 8 days sends again, cancelled/unknown sends nothing); router 38/38. Full EMS suite 2162 tests, 0 failures; checkstyle clean.
+- **Verified live on local dev 2026-10-30**: V132 applied; reply "Bitte absagen" → one deregistration-link mail captured, registration still `registered`, `decline_link_sent_at` set; second reply "cancel" → ALREADY_SENT, no mail; "Ich muss leider absagen, kann ich den Platz weitergeben?" → forwarded to 4 organizers. Test rows deleted afterwards.
+- C3: `docs/user-guide/features/notifications.md` (CANCEL bullet, short-line rule) and `docs/architecture/06-backend-architecture.md`.
+
+**Part B (#1161), branch `feature/16-0b-calendar-declines-free-seats` (cut from Part C)**
+
+- B0 (sizing, read-only CloudWatch, no prod data downloaded): `CalendarRepliesDropped` weekly sums 2026-10-16..22: 1, 10-23..29: 38. That metric counts all calendar RSVPs (accept/decline/tentative). The decline count (14 in 23–30 Oct, 13 for the event registration) comes from #1161's S3 inspection. Not repeated: cross-checking decline senders against registrations would need reading raw production mail.
+- B1, **deviation from the task text**: the UID is NOT `reg-{registrationCode}`. The story asked to check whether the code is safe in an ICS: it is not. `SecurityConfig` permits `GET /events/*/registrations/{code}` anonymously ("the code is the credential"), and a calendar UID travels with every forwarded or shared entry; a hash of the code is brute-forceable (short random suffix, known prefix). Instead a new non-credential column `registrations.calendar_uid` (V133, random UUID, unique, default for existing rows); invite UID `reg-{calendarUid}@batbern.ch` via `CalendarInviteUid` (one class for writing and parsing). Shared kernel: `IcsCalendarService.generateIcsFile(IcsEventData, organizerEmail, organizerName)` overload (the 8-param variant violated Checkstyle `ParameterNumber`); the legacy 7-arg variant delegates with a random UID. Side effect: a re-sent invite now updates the same calendar entry.
+- B2: `EmailForwardingService.forward` hands a `PARTSTAT=DECLINED` addressed to `calendar@` to `CalendarDeclineService` (Result `CALENDAR_DECLINE`); accepts, tentatives and replies to other aliases are dropped exactly as before (AC8). Matching (AC7): UID first, else sender + event date within ±1 day of DTSTART, only when exactly one active registration fits; otherwise `CalendarDeclineUnmatched`. Then `DeregistrationService.sendDeregistrationLinkOnce` (Part C helper, AC9/AC10 de-dup). Nothing is cancelled. New `CalendarReply` parser (multipart, folded lines, PARTSTAT anywhere in ATTENDEE, UTC/TZID/date DTSTART). `InboundEmailListenerService`'s own ICS parsing for partner-meeting RSVPs on `replies@` is left untouched (different queue, different fields); not merged into the new parser to keep partner RSVPs out of this change.
+- Tests: `CalendarReplyTest` 3, `CalendarInviteUidTest` 2, `CalendarDeclineServiceIntegrationTest` 6 (Testcontainers: UID match incl. reply from another address, fallback match, ambiguous, no event near the date, already cancelled, second decline within 7 days), `EmailForwardingServiceTest` +4, `RegistrationEmailServiceTest` asserts the UID and that the registration code is not in it, shared-kernel `IcsCalendarServiceTest` +2. Full suites: shared-kernel 449, EMS 2177, 0 failures; checkstyle clean.
+- **Verified live on local dev 2026-10-30**: V133 applied over existing rows; registration confirmed via `accept` reply → captured `event.ics` has `UID:reg-224cdf5a-…@batbern.ch` equal to the row's `calendar_uid`, ORGANIZER `calendar@batbern.ch`. **Not verifiable locally**: the decline itself, because the forwarding SQS listener does not run on local dev and there is no dev simulator for it; covered by the Testcontainers and unit tests only. First real check after deploy: metric `CalendarDeclineLinkSent` in `BATbern/EmailForwarder`.
+- B3: `docs/user-guide/features/notifications.md` (declining the invite), `docs/architecture/06-backend-architecture.md`.
+
 ### File List
 
 **Part A**
@@ -166,8 +185,43 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-10-30.
 - `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md` (M)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` (M)
 
+**Part B**
+- `shared-kernel/src/main/java/ch/batbern/shared/service/IcsCalendarService.java` (M)
+- `shared-kernel/src/test/java/ch/batbern/shared/service/IcsCalendarServiceTest.java` (M)
+- `services/event-management-service/src/main/resources/db/migration/V133__registrations_calendar_uid.sql` (A)
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/Registration.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/RegistrationRepository.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/CalendarInviteUid.java` (A)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/CalendarDeclineService.java` (A)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/RegistrationEmailService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/forwarding/CalendarReply.java` (A)
+- `services/event-management-service/src/main/java/ch/batbern/events/forwarding/EmailForwardingService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/forwarding/ForwardingMetrics.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/forwarding/CalendarReplyTest.java` (A)
+- `services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingServiceTest.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/CalendarInviteUidTest.java` (A)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/CalendarDeclineServiceIntegrationTest.java` (A)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/RegistrationEmailServiceTest.java` (M)
+- `docs/user-guide/features/notifications.md` (M)
+- `docs/architecture/06-backend-architecture.md` (M)
+
+**Part C**
+- `services/event-management-service/src/main/resources/db/migration/V132__registrations_decline_link_sent_at.sql` (A)
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/Registration.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/RegistrationRepository.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/DeregistrationService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailRouter.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/RegistrationService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailConfirmationEmailService.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/DeregistrationLinkOnceIntegrationTest.java` (A)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/InboundEmailRouterTest.java` (M)
+- `docs/user-guide/features/notifications.md` (M)
+- `docs/architecture/06-backend-architecture.md` (M)
+
 ## Change Log
 
 - 2026-10-30: Story drafted from #1160 and #1161 (John, PM).
 - 2026-10-30: Readiness fixes: de-dup storage named (AC10); Part C for #1162 added.
 - 2026-10-30: Part A (#1160) implemented on `feature/16-0a-replies-reach-a-person` (Amelia).
+- 2026-10-30: Part A PR #1164 opened (owner go). Part C (#1162) implemented on `feature/16-0c-keyword-replies-ask-first`, incl. the shared de-dup column for Part B (Amelia).
+- 2026-10-30: Part B (#1161) implemented on `feature/16-0b-calendar-declines-free-seats`. All tasks done; status review (Amelia).

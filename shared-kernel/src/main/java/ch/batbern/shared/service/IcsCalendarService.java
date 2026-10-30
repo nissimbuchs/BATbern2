@@ -44,6 +44,22 @@ public class IcsCalendarService {
             String organizerEmail,
             String organizerName
     ) {
+        return generateIcsFile(new IcsEventData(eventTitle, eventDescription, eventLocation, startDateTime,
+                endDateTime), organizerEmail, organizerName);
+    }
+
+    /**
+     * Same file as the 7-arg variant, with the UID taken from {@code event.uid()} (the
+     * {@code @batbern.ch} suffix is appended). Story 16.0 (#1161): a registration invite carries a
+     * stable, per-registration UID so that a calendar "Declined" reply can be matched to it. The
+     * value must not be a credential: the UID travels with every forwarded or shared calendar entry.
+     */
+    public byte[] generateIcsFile(IcsEventData event, String organizerEmail, String organizerName) {
+        String eventTitle = event.title();
+        String eventDescription = event.description();
+        String eventLocation = event.location();
+        ZonedDateTime startDateTime = event.start();
+        ZonedDateTime endDateTime = event.end();
         log.debug("Generating .ics file for event: {}", eventTitle);
 
         // Convert to UTC for iCalendar format
@@ -53,8 +69,7 @@ public class IcsCalendarService {
                 .format(ICS_DATE_FORMAT);
         String now = ZonedDateTime.now(java.time.ZoneOffset.UTC).format(ICS_DATE_FORMAT);
 
-        // Generate unique UID for the event
-        String uid = UUID.randomUUID().toString() + "@batbern.ch";
+        String uid = event.uid() + "@batbern.ch";
 
         // Build iCalendar content (RFC 5545)
         StringBuilder ics = new StringBuilder();

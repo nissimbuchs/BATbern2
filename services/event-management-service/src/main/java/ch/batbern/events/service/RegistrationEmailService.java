@@ -251,7 +251,7 @@ public class RegistrationEmailService {
                         : fallbackSubjectPrefixEn + event.getTitle());
 
         // inline → accept/decline in Apple Mail, Outlook, Gmail
-        byte[] icsFile = generateCalendarFile(event, eventDateTime);
+        byte[] icsFile = generateCalendarFile(registration, event);
         EmailService.EmailAttachment calendarAttachment = new EmailService.EmailAttachment(
                 "event.ics", icsFile, "text/calendar; charset=utf-8; method=REQUEST", true);
 
@@ -366,17 +366,24 @@ public class RegistrationEmailService {
     /**
      * Generate .ics calendar file for the event.
      */
-    private byte[] generateCalendarFile(Event event, ZonedDateTime startDateTime) {
+    /**
+     * The invite's UID is {@code reg-{calendarUid}}: stable per registration, so a calendar
+     * "Declined" reply can be matched to it (Story 16.0, #1161), and a re-sent invite updates the
+     * same calendar entry instead of adding a second one.
+     */
+    private byte[] generateCalendarFile(Registration registration, Event event) {
         EventTimeResolver.TimeRange range = eventTimeResolver.resolve(event);
 
         String eventDescription = "Berner Architekten Treffen - " + event.getTitle();
 
         return icsCalendarService.generateIcsFile(
-                event.getTitle(),
-                eventDescription,
-                event.getVenueAddress() != null ? event.getVenueAddress() : "",
-                range.start(),
-                range.end(),
+                new IcsCalendarService.IcsEventData(
+                        CalendarInviteUid.forRegistration(registration),
+                        event.getTitle(),
+                        eventDescription,
+                        event.getVenueAddress() != null ? event.getVenueAddress() : "",
+                        range.start(),
+                        range.end()),
                 calendarOrganizerEmail,
                 organizerName
         );

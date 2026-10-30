@@ -813,6 +813,19 @@ SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → E
   loops and malformed mail are not forwarded and are logged as `dropped_*` outcomes (V131). A
   failure before the first send is rethrown, so the replies queue retries and then dead-letters
   (alarm `batbern-{env}-replies-dlq`).
+- **Keyword replies ask first** (Story 16.0, #1162): `InboundEmailRouter` acts on a keyword only
+  when the first line has at most 3 words. A cancel keyword sends the deregistration-link mail via
+  `DeregistrationService.requestDeregistrationLinkByReply` instead of cancelling; the mail goes out
+  at most once per 7 days per registration (`registrations.decline_link_sent_at`, V132, set by one
+  conditional UPDATE). Unsubscribe still acts at once.
+- **Calendar declines** (Story 16.0, #1161): `EmailForwardingService` still forwards no iMIP reply,
+  but a `PARTSTAT=DECLINED` to `calendar@` goes to `CalendarDeclineService`. It matches the
+  registration by the invite UID `reg-{registrations.calendar_uid}@batbern.ch` (V133; written by
+  `RegistrationEmailService` via `CalendarInviteUid`), else by sender + event date ±1 day when
+  exactly one registration fits, and sends the deregistration-link mail through
+  `DeregistrationService.sendDeregistrationLinkOnce` (7-day de-dup, V132). Metrics
+  `CalendarDeclineLinkSent`, `CalendarDeclineUnmatched`, `CalendarDeclineSkipped`; other calendar
+  replies still count as `CalendarRepliesDropped`.
 - **Speaker Reply-To**: speaker-facing mails (invitation, acceptance, tiered reminder,
   quality-review revision) set Reply-To via `ModeratorReplyAddress` → `batbern{N}-moderator@`.
 - **Idempotency**: `email_forwarding_log` (V128 to V131) holds one row per S3 object, no addresses or

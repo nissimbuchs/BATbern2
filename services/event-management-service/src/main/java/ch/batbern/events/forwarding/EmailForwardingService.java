@@ -1,6 +1,7 @@
 package ch.batbern.events.forwarding;
 
 import ch.batbern.events.domain.EmailForwardingOutcome;
+import ch.batbern.events.service.CalendarDeclineService;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.util.ReservedEmailDomain;
 import ch.batbern.shared.utils.LoggingUtils;
@@ -21,6 +22,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
 import java.util.stream.Collectors;
@@ -53,6 +55,8 @@ public class EmailForwardingService {
 
     public enum Result {
         DROPPED_CALENDAR_REPLY,
+        /** Story 16.0 Part B: a registrant's calendar "Declined", handed to {@link CalendarDeclineService}. */
+        CALENDAR_DECLINE,
         DROPPED_LOOP,
         DROPPED_MALFORMED,
         DROPPED_NO_REPLY,
@@ -75,15 +79,14 @@ public class EmailForwardingService {
     private final EmailForwardingLogService forwardingLog;
     private final ForwardingMetrics metrics;
     private final EmailService emailService;
+    private final CalendarDeclineService calendarDeclineService;
 
     /** Alias name recorded in the log and in log lines for {@link #forwardUnrecognizedReply}. */
     static final String REPLIES = "replies";
 
     public Result forward(String s3Key, byte[] raw) {
         if (MailClassifier.isCalendarReply(new String(raw, StandardCharsets.ISO_8859_1))) {
-            log.info("Forwarding: dropping iMIP calendar reply {}", s3Key);
-            metrics.increment(ForwardingMetrics.CALENDAR_REPLIES_DROPPED);
-            return Result.DROPPED_CALENDAR_REPLY;
+            return calendarReply(s3Key, raw);
         }
 
         MimeMessage message;
@@ -180,6 +183,42 @@ public class EmailForwardingService {
         log.info("Forwarding: {} from {} to {} → {} ({} recipient(s) in {} ms)", s3Key, maskedSender, aliasNames,
                 result, delivery.recipients().size(), elapsedMs);
         return result;
+    }
+
+    /**
+     * iMIP replies are never forwarded. A "Declined" to {@code calendar@} (the ORGANIZER of the
+     * registration invite) is handed to {@link CalendarDeclineService}, which sends the
+     * deregistration-link mail (Story 16.0 Part B, #1161). Everything else (accepts, tentatives,
+     * replies to other aliases, partner meetings) is dropped as before. Not claimed in the
+     * forwarding log: a redelivered decline is absorbed by the 7-day de-dup instead.
+     */
+    private Result calendarReply(String s3Key, byte[] raw) {
+        try {
+            MimeMessage message = new MimeMessage(Session.getInstance(new Properties()), new ByteArrayInputStream(raw));
+            String[] fromHeaders = message.getHeader("From");
+            InternetAddress from = fromHeaders != null && fromHeaders.length == 1 ? firstAddress(fromHeaders[0]) : null;
+            boolean toCalendar = addressedAliases(message, properties.domain().toLowerCase(Locale.ROOT)).stream()
+                    .anyMatch(alias -> alias.localPart().equals("calendar"));
+            Optional<CalendarReply> reply = toCalendar && from != null && from.getAddress() != null
+                    ? CalendarReply.parse(message) : Optional.empty();
+            if (reply.isPresent() && reply.get().declined()) {
+                CalendarDeclineService.Outcome outcome =
+                        calendarDeclineService.handleDecline(from.getAddress(), reply.get());
+                String metric = switch (outcome) {
+                    case LINK_SENT -> ForwardingMetrics.CALENDAR_DECLINE_LINK_SENT;
+                    case UNMATCHED -> ForwardingMetrics.CALENDAR_DECLINE_UNMATCHED;
+                    case ALREADY_SENT, NOT_ACTIVE -> ForwardingMetrics.CALENDAR_DECLINE_SKIPPED;
+                };
+                metrics.increment(metric);
+                log.info("Forwarding: calendar decline {} → {}", s3Key, outcome);
+                return Result.CALENDAR_DECLINE;
+            }
+        } catch (MessagingException e) {
+            log.warn("Forwarding: unparseable calendar reply {}: {}", s3Key, e.getMessage());
+        }
+        log.info("Forwarding: dropping iMIP calendar reply {}", s3Key);
+        metrics.increment(ForwardingMetrics.CALENDAR_REPLIES_DROPPED);
+        return Result.DROPPED_CALENDAR_REPLY;
     }
 
     /**

@@ -40,7 +40,6 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
@@ -168,8 +167,7 @@ class RegistrationEmailServiceTest {
                 .build();
 
         byte[] mockIcsFile = "mock-ics-content".getBytes();
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString()))
                 .thenReturn(mockIcsFile);
 
         // Mock template variable replacement
@@ -204,8 +202,7 @@ class RegistrationEmailServiceTest {
         );
         verify(emailService, never()).sendHtmlEmailWithAttachments(
                 anyString(), anyList(), anyString(), any(), anyList());
-        verify(icsCalendarService, never()).generateIcsFile(anyString(), anyString(), anyString(),
-                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString());
+        verify(icsCalendarService, never()).generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString());
 
         assertThat(emailCaptor.getValue()).isEqualTo("john.doe@example.com");
         assertThat(subjectCaptor.getValue()).startsWith("Bitte bestätigen");
@@ -246,8 +243,7 @@ class RegistrationEmailServiceTest {
                 .build();
 
         byte[] mockIcsFile = "mock-ics-content".getBytes();
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString()))
                 .thenReturn(mockIcsFile);
 
         when(emailService.replaceVariables(anyString(), anyMap()))
@@ -303,8 +299,7 @@ class RegistrationEmailServiceTest {
                 .build();
 
         byte[] mockIcsFile = "mock-ics-content".getBytes();
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString()))
                 .thenReturn(mockIcsFile);
 
         // When
@@ -315,15 +310,19 @@ class RegistrationEmailServiceTest {
 
         // Then — ORGANIZER address is the non-forwarded calendar mailbox, not the public events@ alias.
         // Reason: iMIP REPLYs from mail clients on Accept/Decline must not fan out to organizers.
+        ArgumentCaptor<IcsCalendarService.IcsEventData> icsEvent =
+                ArgumentCaptor.forClass(IcsCalendarService.IcsEventData.class);
         verify(icsCalendarService, times(1)).generateIcsFile(
-                eq("Test Event"),
-                contains("Test Event"),
-                eq("Test Address"),
-                any(ZonedDateTime.class), // Start time
-                any(ZonedDateTime.class), // End time (start + 4 hours)
+                icsEvent.capture(),
                 eq("calendar@batbern.ch"),
                 eq("BATbern Team")
         );
+        assertThat(icsEvent.getValue().title()).isEqualTo("Test Event");
+        assertThat(icsEvent.getValue().description()).contains("Test Event");
+        assertThat(icsEvent.getValue().location()).isEqualTo("Test Address");
+        // Story 16.0 AC7: stable per-registration UID, never the registration code (a credential)
+        assertThat(icsEvent.getValue().uid()).isEqualTo("reg-" + registration.getCalendarUid());
+        assertThat(icsEvent.getValue().uid()).doesNotContain(registration.getRegistrationCode());
     }
 
     @Test
@@ -358,11 +357,10 @@ class RegistrationEmailServiceTest {
                 .build();
 
         // Capture the ZonedDateTime passed to ICS generation
-        ArgumentCaptor<ZonedDateTime> startCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
-        ArgumentCaptor<ZonedDateTime> endCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
+        ArgumentCaptor<IcsCalendarService.IcsEventData> icsCaptor =
+                ArgumentCaptor.forClass(IcsCalendarService.IcsEventData.class);
         byte[] mockIcsFile = "mock-ics".getBytes();
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                startCaptor.capture(), endCaptor.capture(), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(icsCaptor.capture(), anyString(), anyString()))
                 .thenReturn(mockIcsFile);
 
         when(emailService.replaceVariables(anyString(), any(Map.class)))
@@ -373,13 +371,13 @@ class RegistrationEmailServiceTest {
         Thread.sleep(100);
 
         // Then — start time should be 13:00 Swiss, NOT 02:00
-        ZonedDateTime capturedStart = startCaptor.getValue();
+        ZonedDateTime capturedStart = icsCaptor.getValue().start();
         assertThat(capturedStart.getHour()).isEqualTo(13);
         assertThat(capturedStart.getMinute()).isEqualTo(0);
         assertThat(capturedStart.getZone()).isEqualTo(ZoneId.of("Europe/Zurich"));
 
         // End time should be 19:00 Swiss (from config), NOT start + 4h
-        ZonedDateTime capturedEnd = endCaptor.getValue();
+        ZonedDateTime capturedEnd = icsCaptor.getValue().end();
         assertThat(capturedEnd.getHour()).isEqualTo(19);
         assertThat(capturedEnd.getMinute()).isEqualTo(0);
     }
@@ -428,11 +426,10 @@ class RegistrationEmailServiceTest {
         when(sessionRepository.findByEventIdAndStartTimeIsNotNull(eventId))
                 .thenReturn(List.of(session1, session2));
 
-        ArgumentCaptor<ZonedDateTime> startCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
-        ArgumentCaptor<ZonedDateTime> endCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
+        ArgumentCaptor<IcsCalendarService.IcsEventData> icsCaptor =
+                ArgumentCaptor.forClass(IcsCalendarService.IcsEventData.class);
         byte[] mockIcsFile = "mock-ics".getBytes();
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                startCaptor.capture(), endCaptor.capture(), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(icsCaptor.capture(), anyString(), anyString()))
                 .thenReturn(mockIcsFile);
 
         when(emailService.replaceVariables(anyString(), any(Map.class)))
@@ -443,11 +440,11 @@ class RegistrationEmailServiceTest {
         Thread.sleep(100);
 
         // Then — should use earliest session start (13:30) and latest session end (15:15)
-        ZonedDateTime capturedStart = startCaptor.getValue();
+        ZonedDateTime capturedStart = icsCaptor.getValue().start();
         assertThat(capturedStart.getHour()).isEqualTo(13);
         assertThat(capturedStart.getMinute()).isEqualTo(30);
 
-        ZonedDateTime capturedEnd = endCaptor.getValue();
+        ZonedDateTime capturedEnd = icsCaptor.getValue().end();
         assertThat(capturedEnd.getHour()).isEqualTo(15);
         assertThat(capturedEnd.getMinute()).isEqualTo(15);
     }
@@ -484,11 +481,10 @@ class RegistrationEmailServiceTest {
                 .workflowState(EventWorkflowState.SLOT_ASSIGNMENT)
                 .build();
 
-        ArgumentCaptor<ZonedDateTime> startCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
-        ArgumentCaptor<ZonedDateTime> endCaptor = ArgumentCaptor.forClass(ZonedDateTime.class);
+        ArgumentCaptor<IcsCalendarService.IcsEventData> icsCaptor =
+                ArgumentCaptor.forClass(IcsCalendarService.IcsEventData.class);
         byte[] mockIcsFile = "mock-ics".getBytes();
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                startCaptor.capture(), endCaptor.capture(), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(icsCaptor.capture(), anyString(), anyString()))
                 .thenReturn(mockIcsFile);
 
         when(emailService.replaceVariables(anyString(), any(Map.class)))
@@ -499,11 +495,11 @@ class RegistrationEmailServiceTest {
         Thread.sleep(100);
 
         // Then — should use event type times (AFTERNOON: 13:00–19:00), NOT session times
-        ZonedDateTime capturedStart = startCaptor.getValue();
+        ZonedDateTime capturedStart = icsCaptor.getValue().start();
         assertThat(capturedStart.getHour()).isEqualTo(13);
         assertThat(capturedStart.getMinute()).isEqualTo(0);
 
-        ZonedDateTime capturedEnd = endCaptor.getValue();
+        ZonedDateTime capturedEnd = icsCaptor.getValue().end();
         assertThat(capturedEnd.getHour()).isEqualTo(19);
         assertThat(capturedEnd.getMinute()).isEqualTo(0);
 
@@ -539,8 +535,7 @@ class RegistrationEmailServiceTest {
                 .build();
 
         byte[] mockIcsFile = "mock-ics-content".getBytes();
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString()))
                 .thenReturn(mockIcsFile);
 
         doThrow(new RuntimeException("Email sending failed"))
@@ -593,8 +588,7 @@ class RegistrationEmailServiceTest {
                 .eventType(EventType.EVENING)
                 .build();
 
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString()))
                 .thenReturn("ics".getBytes());
 
         when(emailService.replaceVariables(anyString(), anyMap()))
@@ -646,8 +640,7 @@ class RegistrationEmailServiceTest {
                 .eventType(EventType.EVENING)
                 .build();
 
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString()))
                 .thenReturn("ics".getBytes());
 
         when(emailService.replaceVariables(anyString(), anyMap()))
@@ -706,8 +699,7 @@ class RegistrationEmailServiceTest {
                 .id("john.doe").firstName("John").lastName("Doe").email("john.doe@example.com");
 
         byte[] mockIcsFile = "mock-ics-content".getBytes();
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString()))
                 .thenReturn(mockIcsFile);
         ArgumentCaptor<Map<String, String>> varsCaptor = ArgumentCaptor.forClass(Map.class);
         when(emailService.replaceVariables(anyString(), varsCaptor.capture()))
@@ -743,8 +735,7 @@ class RegistrationEmailServiceTest {
         Registration registration = confirmedRegistration("jane.smith");
         UserResponse userProfile = new UserResponse()
                 .id("jane.smith").firstName("Jane").lastName("Smith").email("jane.smith@example.com");
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString()))
                 .thenReturn("ics".getBytes());
         when(emailService.replaceVariables(anyString(), anyMap()))
                 .thenAnswer(invocation -> invocation.getArgument(0, String.class));
@@ -766,8 +757,7 @@ class RegistrationEmailServiceTest {
                 .id("multi.mail").firstName("Multi").lastName("Mail").email("multi@example.com")
                 .additionalEmails(List.of(new ch.batbern.events.dto.generated.users.AdditionalEmail()
                         .email("second@example.com")));
-        when(icsCalendarService.generateIcsFile(anyString(), anyString(), anyString(),
-                any(ZonedDateTime.class), any(ZonedDateTime.class), anyString(), anyString()))
+        when(icsCalendarService.generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString()))
                 .thenReturn("ics".getBytes());
         when(emailService.replaceVariables(anyString(), anyMap()))
                 .thenAnswer(invocation -> invocation.getArgument(0, String.class));
