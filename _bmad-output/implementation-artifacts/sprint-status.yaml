@@ -266,6 +266,19 @@ development_status:
   15-9-owasp-llm-agentic-security-checklist: done
   epic-15-retrospective: optional
 
+  # Epic 16: Mail Center — APPROVED 2026-10-30 (docs/prd/epic-16-mail-center.md)
+  # Prerequisites shipped independently: #1160 (replies@ drops human replies), #1161 (calendar declines).
+  # Sequence (owner decision 3): 16.1 -> 16.3 -> 16.4, then 16.2 + 16.6 for speakers, then all aliases, 16.5, 16.7.
+  epic-16: in-progress
+  16-1-record-every-outbound-mail: ready-for-dev
+  16-2-capture-inbound-human-mail: backlog
+  16-3-communications-tab-becomes-mail-page: ready-for-dev
+  16-4-new-mail-picker: ready-for-dev
+  16-5-own-text-placeholders-preview: backlog
+  16-6-answer-from-mail-center: backlog
+  16-7-global-mail-navigation: backlog
+  epic-16-retrospective: optional
+
   # Deferred-work backlog clusters (groomed 2026-06-07 — see deferred-work.md) — candidate stories,
   # not yet scheduled. Cluster A is a REQUIRED precondition for 12-10 (Apple/generic OIDC).
   cluster-a-auth-sso-hardening: backlog
