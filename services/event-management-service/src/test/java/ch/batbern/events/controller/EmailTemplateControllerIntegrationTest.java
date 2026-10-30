@@ -64,6 +64,16 @@ class EmailTemplateControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
+    @DisplayName("cancel-confirmation is gone: never sent since Story 16.0 (#1162), so not editable either")
+    void cancelConfirmation_isNotSeeded() throws Exception {
+        for (String locale : new String[] {"de", "en"}) {
+            mockMvc.perform(get("/api/v1/email-templates/cancel-confirmation/" + locale))
+                    .andExpect(status().isNotFound());
+        }
+    }
+
+    @Test
+    @WithMockUser(username = "organizer", roles = {"ORGANIZER"})
     @DisplayName("GET /api/v1/email-templates?isLayout=true returns at least 2 layout templates")
     void list_filteredByIsLayout_returnsLayouts() throws Exception {
         mockMvc.perform(get("/api/v1/email-templates")
