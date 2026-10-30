@@ -10,6 +10,7 @@ import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -111,7 +112,8 @@ class InboundEmailRouterTest {
         InboundEmailRouter.ParsedEmail email = new InboundEmailRouter.ParsedEmail(
                 "user@example.com", "Re: BATbern newsletter", "cancel");
 
-        router.route(email);
+        // Nothing can be cancelled without an event code, so a person has to see it (Story 16.0 AC3)
+        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.UNRECOGNIZED);
 
         verifyNoInteractions(registrationService, newsletterSubscriberService, confirmationEmailService);
     }
@@ -127,17 +129,25 @@ class InboundEmailRouterTest {
         verify(confirmationEmailService).sendCancelConfirmation("user@example.com", "BATbern10", "de");
     }
 
-    // ─── Silent discard ──────────────────────────────────────────────────────────
+    // ─── Unrecognized → handed back for forwarding (Story 16.0 AC3) ──────────────
 
     @Test
-    void route_withUnrecognizedBody_doesNothing() {
+    void route_withUnrecognizedBody_returnsUnrecognizedAndActsOnNothing() {
         InboundEmailRouter.ParsedEmail email = new InboundEmailRouter.ParsedEmail(
                 "user@example.com", "Re: BATbern42", "hello world");
 
-        router.route(email);
+        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.UNRECOGNIZED);
 
         verifyNoInteractions(newsletterSubscriberService,
                 registrationService, confirmationEmailService);
+    }
+
+    @Test
+    void route_withKeywordHandled_returnsHandled() {
+        InboundEmailRouter.ParsedEmail email = new InboundEmailRouter.ParsedEmail(
+                "user@example.com", "Re: BATbern newsletter", "unsubscribe");
+
+        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.HANDLED);
     }
 
     // ─── Acceptance routing ──────────────────────────────────────────────────────
@@ -198,7 +208,7 @@ class InboundEmailRouterTest {
         InboundEmailRouter.ParsedEmail email = new InboundEmailRouter.ParsedEmail(
                 "user@example.com", "Re: BATbern newsletter", "accept");
 
-        router.route(email);
+        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.UNRECOGNIZED);
 
         verifyNoInteractions(newsletterSubscriberService,
                 registrationService, confirmationEmailService);
@@ -212,7 +222,7 @@ class InboundEmailRouterTest {
         InboundEmailRouter.ParsedEmail email = new InboundEmailRouter.ParsedEmail(
                 "spammer@example.com", "anything", "unsubscribe");
 
-        router.route(email);
+        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.RATE_LIMITED);
 
         verifyNoInteractions(newsletterSubscriberService,
                 registrationService, confirmationEmailService);

@@ -28,6 +28,9 @@ public class ForwardingMetrics {
     static final String NO_REPLY_DROPPED = "NoReplyDropped";
     static final String LOOPS_DROPPED = "LoopsDropped";
     static final String DUPLICATES_SKIPPED = "DuplicatesSkipped";
+    /** Story 16.0: unrecognized replies@ mail handed to the organizers (kept apart from alias forwards). */
+    static final String REPLIES_FORWARDED = "RepliesForwarded";
+    static final String BOUNCES_DROPPED = "BouncesDropped";
 
     private final ObjectProvider<CloudWatchClient> cloudWatch;
 

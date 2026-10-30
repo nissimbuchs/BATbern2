@@ -68,4 +68,19 @@ class ForwardingAliasTest {
         assertThat(ForwardingAlias.parse("whoever@batbern.ch", DOMAIN).orElseThrow().forwardable()).isFalse();
         assertThat(ForwardingAlias.parse("info@batbern.ch", DOMAIN).orElseThrow().forwardable()).isTrue();
     }
+
+    @Test
+    @DisplayName("should_buildModeratorAddress_when_eventCodeGiven")
+    void should_buildModeratorAddress_when_eventCodeGiven() {
+        assertThat(ForwardingAlias.moderatorAddress("BATbern60", DOMAIN)).isEqualTo("batbern60-moderator@batbern.ch");
+        assertThat(ForwardingAlias.parse(ForwardingAlias.moderatorAddress("BATbern60", DOMAIN), DOMAIN)
+                .orElseThrow().kind()).isEqualTo(ForwardingAlias.Kind.EVENT_MODERATOR);
+    }
+
+    @Test
+    @DisplayName("should_returnNull_when_eventCodeIsNotAnEventNumber")
+    void should_returnNull_when_eventCodeIsNotAnEventNumber() {
+        assertThat(ForwardingAlias.moderatorAddress("TEST-EVENT", DOMAIN)).isNull();
+        assertThat(ForwardingAlias.moderatorAddress(null, DOMAIN)).isNull();
+    }
 }

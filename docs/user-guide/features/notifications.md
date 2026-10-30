@@ -100,7 +100,8 @@ Subscribers and attendees can manage their preferences simply by **replying** to
 - **`UNSUBSCRIBE`** (incl. `abmelden` / `désinscription`) → unsubscribes the sender; a confirmation email is sent.
 - **`CANCEL`** (incl. `deregister` / `absagen`) on a registration-confirmation reply → cancels the registration, fires waitlist promotion, and sends a cancellation confirmation.
 - **`ACCEPT`** (incl. `bestätigen` / `confirmer`) on an event-coded email → confirms attendance for the matching active registration.
-- Unrecognised replies are silently discarded; an anti-abuse rate limiter caps replies from a single sender.
+- Any other reply is **forwarded to the organizers** (one private copy each, Reply-To = the original sender), exactly like mail to `info@`. Automatic replies (out-of-office), bounces and mail from our own domain are not forwarded; each one is counted and logged. Until Story 16.0 (#1160, 2026-10) such replies were silently discarded. An anti-abuse rate limiter caps replies from a single sender.
+- **Speaker mails** (invitation, acceptance, tiered reminders, quality-review revision requests) carry `Reply-To: batbern{N}-moderator@batbern.ch` instead of `replies@`, so a speaker's answer reaches the event's moderator directly (Story 16.0).
 
 ### Email Forwarding & Distribution Lists (2026-03)
 
@@ -110,7 +111,7 @@ The platform provides serverless email forwarding for 6 inboxes: `ok@`, `info@`,
 - **Sender exclusion** — Original sender is excluded from forwarding to prevent bounce loops
 - **CC address forwarding** — CC recipients on inbound emails are recognised as mailing-list addresses and resolved through the same recipient-resolution pipeline; they are forwarded alongside the primary recipients
 - **All mailing list variants recognised** — All `batbernNN@batbern.ch` series addresses (e.g. `batbern44@batbern.ch`) are detected and handled correctly, not only the latest series
-- **Event-specific aliases** — The `-speaker@` alias resolves to both the primary speaker and co-speakers on the event's scheduled sessions, delivered as a single visible message (all speakers in `To:`, the event organizer in `Cc:`) so the recipient list is verifiable at a glance. The `-moderator@` alias reaches the event organizer. Other aliases keep one-copy-per-recipient delivery for privacy.
+- **Event-specific aliases** — The `-speaker@` alias resolves to both the primary speaker and co-speakers on the event's scheduled sessions, delivered as a single visible message (all speakers in `To:`, the event organizer in `Cc:`) so the recipient list is verifiable at a glance. Its `Reply-To` is `batbernNN-moderator@`, so speakers answer the moderator, not the organizer who wrote the broadcast (Story 16.0). The `-moderator@` alias reaches the event organizer. Other aliases keep one-copy-per-recipient delivery for privacy.
 - **Environment isolation** — Staging uses `replies@staging.batbern.ch` with `noreply@batbern.ch`; production uses `replies@batbern.ch` with `noreply@batbern.ch`
 - **Admin configuration** — Organizers manage forwarding rules via Admin Settings UI
 - **Additional user emails** (Story 10.32) — A user can register additional email addresses on their profile. Those addresses then both **receive** fan-out mail destined for the user's primary email and are treated as **authorised senders** by the forwarder's sender-auth check (so mail sent from a legacy/shared/personal address is not silently dropped).

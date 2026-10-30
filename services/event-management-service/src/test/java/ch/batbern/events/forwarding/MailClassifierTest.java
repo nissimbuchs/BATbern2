@@ -71,4 +71,22 @@ class MailClassifierTest {
         assertThat(MailClassifier.isAutoReply(null, "bulk", null, null)).isFalse();
         assertThat(MailClassifier.isAutoReply(null, "list", null, null)).isFalse();
     }
+
+    @Test
+    @DisplayName("should_detectBounce_when_mailerDaemonOrDeliveryReportOrNullReturnPath")
+    void should_detectBounce_when_mailerDaemonOrDeliveryReportOrNullReturnPath() {
+        assertThat(MailClassifier.isBounce("MAILER-DAEMON@mx.example.org", null, null)).isTrue();
+        assertThat(MailClassifier.isBounce("postmaster@example.org", null, null)).isTrue();
+        assertThat(MailClassifier.isBounce("anna@example.org",
+                "multipart/report; report-type=delivery-status; boundary=x", null)).isTrue();
+        assertThat(MailClassifier.isBounce("anna@example.org", null, "<>")).isTrue();
+    }
+
+    @Test
+    @DisplayName("should_notDetectBounce_when_personWrites")
+    void should_notDetectBounce_when_personWrites() {
+        assertThat(MailClassifier.isBounce("anna@example.org", "text/plain; charset=UTF-8",
+                "<anna@example.org>")).isFalse();
+        assertThat(MailClassifier.isBounce("postmaster.fan@example.org", "multipart/mixed", null)).isFalse();
+    }
 }

@@ -1,6 +1,6 @@
 # Story 16.0: Stop losing replies and calendar declines (#1160, #1161, #1162)
 
-Status: ready-for-dev
+Status: in-progress
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -45,18 +45,18 @@ so that **no speaker question or newsletter reply is silently dropped, and peopl
 
 ### Part A — #1160 (PR 1, body `Fixes #1160`)
 
-- [ ] **Task A1 — Moderator Reply-To on speaker mails** (AC: 1)
-  - [ ] One helper that builds `batbern{N}-moderator@{forwarding-domain}` from an event, reusing the alias format of `ForwardingAlias` / `DistributionListService` (do not hand-build the string in each service).
-  - [ ] Pass it as `replyTo` from `SpeakerInvitationEmailService`, `SpeakerAcceptanceEmailService`, `SpeakerReminderEmailService`, `QualityReviewService`. `EmailService.sendHtmlEmailSync(..., replyTo)` already supports the override (line ~167); add an async overload with `replyTo` if a caller needs it.
-  - [ ] Unit tests per service asserting the Reply-To.
-- [ ] **Task A2 — `-speaker@` broadcast Reply-To** (AC: 2)
-  - [ ] `ForwardedMessageRewriter.rewrite` (line ~48 sets Reply-To = sender): add a `replyToOverride` parameter; `EmailForwardingService` passes the moderator alias when the destination alias is `-speaker@`.
-  - [ ] Test: `-speaker@` → moderator Reply-To; `info@` → sender Reply-To.
-- [ ] **Task A3 — Forward unrecognized replies** (AC: 3, 4, 5)
-  - [ ] Replace the discard branch in `InboundEmailRouter` (step 6, "Unrecognized — silent discard") with a forward to the organizer recipients via `EmailForwardingService` (raw MIME from the same S3 object).
-  - [ ] Auto-reply / bounce / own-domain filter before forwarding; metrics + forwarding log entries.
-  - [ ] Integration test with a fixture MIME (synthetic, `@example.com`).
-- [ ] **Task A4 — Docs** — check `.github/doc-drift-mappings.yml` for the changed paths and update the mapped doc in the same commit; if none is mapped, `[no-doc]` in the commit message.
+- [x] **Task A1 — Moderator Reply-To on speaker mails** (AC: 1)
+  - [x] One helper that builds `batbern{N}-moderator@{forwarding-domain}` from an event, reusing the alias format of `ForwardingAlias` / `DistributionListService` (do not hand-build the string in each service).
+  - [x] Pass it as `replyTo` from `SpeakerInvitationEmailService`, `SpeakerAcceptanceEmailService`, `SpeakerReminderEmailService`, `QualityReviewService`. `EmailService.sendHtmlEmailSync(..., replyTo)` already supports the override (line ~167); add an async overload with `replyTo` if a caller needs it.
+  - [x] Unit tests per service asserting the Reply-To.
+- [x] **Task A2 — `-speaker@` broadcast Reply-To** (AC: 2)
+  - [x] `ForwardedMessageRewriter.rewrite` (line ~48 sets Reply-To = sender): add a `replyToOverride` parameter; `EmailForwardingService` passes the moderator alias when the destination alias is `-speaker@`.
+  - [x] Test: `-speaker@` → moderator Reply-To; `info@` → sender Reply-To.
+- [x] **Task A3 — Forward unrecognized replies** (AC: 3, 4, 5)
+  - [x] Replace the discard branch in `InboundEmailRouter` (step 6, "Unrecognized — silent discard") with a forward to the organizer recipients via `EmailForwardingService` (raw MIME from the same S3 object).
+  - [x] Auto-reply / bounce / own-domain filter before forwarding; metrics + forwarding log entries.
+  - [x] Integration test with a fixture MIME (synthetic, `@example.com`).
+- [x] **Task A4 — Docs** — check `.github/doc-drift-mappings.yml` for the changed paths and update the mapped doc in the same commit; if none is mapped, `[no-doc]` in the commit message.
 
 ### Part B — #1161 (PR 2, body `Fixes #1161`)
 
@@ -101,13 +101,67 @@ so that **no speaker question or newsletter reply is silently dropped, and peopl
 
 ### Agent Model Used
 
+Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-10-30.
+
 ### Debug Log References
+
+- `SpeakerModeratorReplyToTest` first run: NPE in `Map.entry` because the `@Value` fields of `SpeakerReminderEmailService` are null outside Spring; fixed in the test with `ReflectionTestUtils`, not in production code.
 
 ### Completion Notes List
 
+**Part A (#1160), branch `feature/16-0a-replies-reach-a-person`**
+
+- AC1: `ModeratorReplyAddress` (forwarding package) builds `batbern{N}-moderator@{forwarding domain}` via `ForwardingAlias.moderatorAddress`; returns null for event codes that are not `BATbern{N}`, which falls back to the global `replies@`. Passed as Reply-To by `SpeakerInvitationEmailService`, `SpeakerAcceptanceEmailService`, `SpeakerReminderEmailService`, `QualityReviewService`. To keep their async behaviour, `EmailService` got one async overload `sendHtmlEmail(to, cc, subject, html, replyTo)` (shared kernel; story allowed it).
+- AC2: `ForwardedMessageRewriter.rewrite` has a `replyToOverride` overload; `EmailForwardingService` passes the moderator alias of the first `-speaker@` alias in a broadcast. All other aliases keep Reply-To = sender (existing `info@` test unchanged).
+- AC3: `InboundEmailRouter.route` now returns `RouteResult` (HANDLED, RATE_LIMITED, UNRECOGNIZED) instead of discarding. `InboundEmailListenerService` forwards UNRECOGNIZED mail via the new `EmailForwardingService.forwardUnrecognizedReply(s3Key, raw)`: all organizers, one private copy each, same rewrite as `info@`. Design deviation from the task text: the router does not forward itself (it has no raw MIME); it returns the result and the listener, which holds the S3 bytes, forwards. Same behaviour, router stays free of S3.
+- AC3, extension: a cancel/accept keyword **without** an event code in the subject used to be dropped too; it now counts as UNRECOGNIZED and is forwarded, since nothing could act on it.
+- AC3, retry: the forward runs outside the listener's catch-all. A failure before the first send (e.g. CUMS down) is rethrown so the replies queue retries and dead-letters, instead of being lost. Safe because the router ran no action for that mail.
+- AC4: not forwarded and logged: own domain / forwarded marker (`dropped_loop`), bounces (`MailClassifier.isBounce`: `MAILER-DAEMON@`/`postmaster@`, `multipart/report`, `Return-Path: <>`; `dropped_bounce`), automatic replies (existing `isAutoReply`; `dropped_auto_reply`), no single From (`dropped_malformed`). Metrics `RepliesForwarded`, `BouncesDropped`, plus the existing `LoopsDropped`/`AutoRepliesDropped`. Migration **V131** extends the outcome CHECK constraint. Redelivery of the same S3 key is a no-op via the existing claim.
+- AC5: keyword paths unchanged; all existing router tests stay green (three now also assert the result).
+- AC14 / local dev: `DevEmailController` reply simulation forwards UNRECOGNIZED replies through the same service, so the organizer copy lands in `/dev/mails`.
+- Speaker-facing mails audited: the four listed services plus `QnaNotificationService` (Q&A digest to presenters). The digest keeps `replies@`; a reply to it is now forwarded to the organizers by AC3, so nothing is lost. Not changed, out of the AC1 list.
+- A4: `docs/architecture/06-backend-architecture.md` and `docs/user-guide/features/notifications.md` updated (the user guide said "silently discarded").
+
 ### File List
+
+**Part A**
+- `shared-kernel/src/main/java/ch/batbern/shared/service/EmailService.java` (M)
+- `shared-kernel/src/test/java/ch/batbern/shared/service/EmailServiceTest.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/forwarding/ModeratorReplyAddress.java` (A)
+- `services/event-management-service/src/main/java/ch/batbern/events/forwarding/ForwardingAlias.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/forwarding/ForwardedMessageRewriter.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/forwarding/MailClassifier.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/forwarding/ForwardingMetrics.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/forwarding/EmailForwardingService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/EmailForwardingOutcome.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailRouter.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailListenerService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerInvitationEmailService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerAcceptanceEmailService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerReminderEmailService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/QualityReviewService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/controller/DevEmailController.java` (M)
+- `services/event-management-service/src/main/resources/db/migration/V131__email_forwarding_log_dropped_outcomes.sql` (A)
+- `services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingRepliesIntegrationTest.java` (A)
+- `services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingServiceTest.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/forwarding/ForwardedMessageRewriterTest.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/forwarding/ForwardingAliasTest.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/forwarding/MailClassifierTest.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/InboundEmailRouterTest.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/InboundEmailListenerServiceTest.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerInvitationEmailServiceTest.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerAcceptanceEmailServiceTest.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerModeratorReplyToTest.java` (A)
+- `services/event-management-service/src/test/java/ch/batbern/events/controller/DevEmailControllerReplyTest.java` (M)
+- `services/event-management-service/src/test/resources/mail/human-reply.eml` (A)
+- `services/event-management-service/src/test/resources/mail/ooo-reply.eml` (A)
+- `docs/architecture/06-backend-architecture.md` (M)
+- `docs/user-guide/features/notifications.md` (M)
+- `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md` (M)
+- `_bmad-output/implementation-artifacts/sprint-status.yaml` (M)
 
 ## Change Log
 
 - 2026-10-30: Story drafted from #1160 and #1161 (John, PM).
 - 2026-10-30: Readiness fixes: de-dup storage named (AC10); Part C for #1162 added.
+- 2026-10-30: Part A (#1160) implemented on `feature/16-0a-replies-reach-a-person` (Amelia).

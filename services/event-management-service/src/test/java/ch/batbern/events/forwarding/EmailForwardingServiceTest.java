@@ -128,6 +128,8 @@ class EmailForwardingServiceTest {
         MimeMessage sent = parse(body.getValue());
         assertThat(sent.getHeader("To", null)).isEqualTo("success+s1" + SIM + ", success+s2" + SIM);
         assertThat(sent.getHeader("Cc", null)).isEqualTo(ORGANIZER);
+        // Story 16.0 AC2: speakers answer the moderator, not the organizer who wrote the broadcast
+        assertThat(sent.getHeader("Reply-To", null)).isEqualTo("batbern60-moderator@batbern.ch");
     }
 
     @Test
@@ -394,6 +396,77 @@ class EmailForwardingServiceTest {
     }
 
     // ---- helpers ----
+
+    // ---- Story 16.0 Part A: unrecognized replies@ mail reaches the organizers (AC3, AC4) ----
+
+    private static final String REPLY_KEY = "emails/reply123";
+
+    @Test
+    @DisplayName("should_forwardPrivatelyToEveryOrganizer_when_replyIsUnrecognized")
+    void should_forwardPrivatelyToEveryOrganizer_when_replyIsUnrecognized() throws Exception {
+        Result result = service.forwardUnrecognizedReply(REPLY_KEY,
+                mail(STRANGER, "replies@batbern.ch", null, null, null));
+
+        assertThat(result).isEqualTo(Result.FORWARDED);
+        ArgumentCaptor<byte[]> body = ArgumentCaptor.forClass(byte[].class);
+        verify(emailService).sendRawMessage(body.capture(), eq(List.of(ORGANIZER)), eq("batbern-staging-forwarder"));
+        verify(emailService).sendRawMessage(any(), eq(List.of(ORGANIZER_2)), eq("batbern-staging-forwarder"));
+        MimeMessage sent = parse(body.getValue());
+        assertThat(sent.getHeader("From", null)).contains("via BATbern").contains("noreply@batbern.ch");
+        assertThat(sent.getHeader("Reply-To", null)).isEqualTo(STRANGER);
+        verify(forwardingLog).markSending(REPLY_KEY);
+        verify(forwardingLog).complete(REPLY_KEY, EmailForwardingOutcome.FORWARDED, "replies", 2, 0);
+        verify(metrics).increment(ForwardingMetrics.REPLIES_FORWARDED);
+    }
+
+    @Test
+    @DisplayName("should_dropAndLog_when_replyIsAutoReply")
+    void should_dropAndLog_when_replyIsAutoReply() {
+        Result result = service.forwardUnrecognizedReply(REPLY_KEY,
+                mail(STRANGER, "replies@batbern.ch", null, null, "Auto-Submitted: auto-replied\r\n"));
+
+        assertThat(result).isEqualTo(Result.DROPPED_AUTO_REPLY);
+        verify(emailService, never()).sendRawMessage(any(), anyList(), any());
+        verify(metrics).increment(ForwardingMetrics.AUTO_REPLIES_DROPPED);
+        verify(forwardingLog).complete(REPLY_KEY, EmailForwardingOutcome.DROPPED_AUTO_REPLY, "replies", 0, 0);
+    }
+
+    @Test
+    @DisplayName("should_dropAndLog_when_replyIsBounce")
+    void should_dropAndLog_when_replyIsBounce() {
+        Result result = service.forwardUnrecognizedReply(REPLY_KEY,
+                mail("MAILER-DAEMON@simulator.amazonses.com", "replies@batbern.ch", null, null, null));
+
+        assertThat(result).isEqualTo(Result.DROPPED_BOUNCE);
+        verify(emailService, never()).sendRawMessage(any(), anyList(), any());
+        verify(metrics).increment(ForwardingMetrics.BOUNCES_DROPPED);
+        verify(forwardingLog).complete(REPLY_KEY, EmailForwardingOutcome.DROPPED_BOUNCE, "replies", 0, 0);
+    }
+
+    @Test
+    @DisplayName("should_dropAndLog_when_replyComesFromOwnDomain")
+    void should_dropAndLog_when_replyComesFromOwnDomain() {
+        Result result = service.forwardUnrecognizedReply(REPLY_KEY,
+                mail("noreply@batbern.ch", "replies@batbern.ch", null, null, null));
+
+        assertThat(result).isEqualTo(Result.DROPPED_LOOP);
+        verify(emailService, never()).sendRawMessage(any(), anyList(), any());
+        verify(metrics).increment(ForwardingMetrics.LOOPS_DROPPED);
+        verify(forwardingLog).complete(REPLY_KEY, EmailForwardingOutcome.DROPPED_LOOP, "replies", 0, 0);
+    }
+
+    @Test
+    @DisplayName("should_skip_when_replyAlreadyProcessed")
+    void should_skip_when_replyAlreadyProcessed() {
+        when(forwardingLog.claim(REPLY_KEY)).thenReturn(false);
+
+        Result result = service.forwardUnrecognizedReply(REPLY_KEY,
+                mail(STRANGER, "replies@batbern.ch", null, null, null));
+
+        assertThat(result).isEqualTo(Result.DUPLICATE);
+        verify(emailService, never()).sendRawMessage(any(), anyList(), any());
+        verify(forwardingLog, never()).complete(anyString(), any(), anyString(), anyInt(), anyInt());
+    }
 
     private static byte[] mail(String from, String to, String cc, String authenticationResults, String extraHeaders) {
         StringBuilder raw = new StringBuilder();

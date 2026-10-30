@@ -16,6 +16,8 @@ final class MailClassifier {
     private static final Pattern CALENDAR = Pattern.compile("text/calendar", Pattern.CASE_INSENSITIVE);
     private static final Pattern METHOD_REPLY = Pattern.compile("method\\s*=\\s*\"?reply\"?", Pattern.CASE_INSENSITIVE);
 
+    private static final Pattern DELIVERY_REPORT = Pattern.compile("^\\s*multipart/report", Pattern.CASE_INSENSITIVE);
+
     private MailClassifier() {
     }
 
@@ -51,5 +53,23 @@ final class MailClassifier {
             return true;
         }
         return xAutoreply != null || xAutorespond != null;
+    }
+
+    /**
+     * Delivery status notifications (bounces): sent by {@code MAILER-DAEMON@}/{@code postmaster@},
+     * as {@code multipart/report} (RFC 6522), or with the null reverse path {@code Return-Path: <>}
+     * that RFC 5321 requires for them. Never a person, never worth forwarding.
+     */
+    static boolean isBounce(String fromAddress, String contentType, String returnPath) {
+        if (fromAddress != null) {
+            String lower = fromAddress.trim().toLowerCase(Locale.ROOT);
+            if (lower.startsWith("mailer-daemon@") || lower.startsWith("postmaster@")) {
+                return true;
+            }
+        }
+        if (contentType != null && DELIVERY_REPORT.matcher(contentType).find()) {
+            return true;
+        }
+        return returnPath != null && returnPath.trim().equals("<>");
     }
 }

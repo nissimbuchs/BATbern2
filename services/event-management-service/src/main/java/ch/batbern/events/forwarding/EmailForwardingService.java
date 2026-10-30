@@ -41,6 +41,10 @@ import java.util.stream.Collectors;
  * </ol>
  * A failure before the first send gives the claim back and rethrows, so SQS retries; after the
  * first send nothing is retried (a gap is better than a double blast to every registrant).
+ *
+ * <p>{@link #forwardUnrecognizedReply} is the second entry point (Story 16.0, #1160): mail to
+ * {@code replies@} that {@code InboundEmailRouter} could not act on goes to the organizers like
+ * mail to {@code info@}, instead of being discarded.
  */
 @Service
 @RequiredArgsConstructor
@@ -53,6 +57,7 @@ public class EmailForwardingService {
         DROPPED_MALFORMED,
         DROPPED_NO_REPLY,
         DROPPED_AUTO_REPLY,
+        DROPPED_BOUNCE,
         DUPLICATE,
         /** Sending began earlier and never finished; recorded once, never retried (#1139). */
         STALLED,
@@ -70,6 +75,9 @@ public class EmailForwardingService {
     private final EmailForwardingLogService forwardingLog;
     private final ForwardingMetrics metrics;
     private final EmailService emailService;
+
+    /** Alias name recorded in the log and in log lines for {@link #forwardUnrecognizedReply}. */
+    static final String REPLIES = "replies";
 
     public Result forward(String s3Key, byte[] raw) {
         if (MailClassifier.isCalendarReply(new String(raw, StandardCharsets.ISO_8859_1))) {
@@ -130,19 +138,7 @@ public class EmailForwardingService {
         }
 
         if (!forwardingLog.claim(s3Key)) {
-            if (forwardingLog.isStuckAfterSending(s3Key)) {
-                // Sending began and never finished (task died mid-send). Not retried, to avoid a
-                // double blast; reported so an operator can check who is missing the mail.
-                // Recorded as STALLED, so a further redelivery is a plain duplicate and the
-                // alarm metric counts this mail once (#1139).
-                log.error("Forwarding: {} stalled after sending began; some recipients may lack it", s3Key);
-                metrics.increment(ForwardingMetrics.FAILED);
-                forwardingLog.complete(s3Key, EmailForwardingOutcome.STALLED, aliasNames, 0, 0);
-                return Result.STALLED;
-            }
-            log.info("Forwarding: {} already processed, skipping redelivery", s3Key);
-            metrics.increment(ForwardingMetrics.DUPLICATES_SKIPPED);
-            return Result.DUPLICATE;
+            return duplicateOrStalled(s3Key, aliasNames);
         }
 
         MailAuthentication authentication = MailAuthentication.fromHeaders(headers(message, "Authentication-Results"));
@@ -179,11 +175,105 @@ public class EmailForwardingService {
         long started = System.nanoTime();
         Result result = delivery.broadcast()
                 ? sendBroadcast(s3Key, delivery, aliasNames)
-                : sendIndividually(s3Key, delivery, aliasNames);
+                : sendIndividually(s3Key, delivery, aliasNames, ForwardingMetrics.FORWARDED);
         long elapsedMs = (System.nanoTime() - started) / 1_000_000;
         log.info("Forwarding: {} from {} to {} → {} ({} recipient(s) in {} ms)", s3Key, maskedSender, aliasNames,
                 result, delivery.recipients().size(), elapsedMs);
         return result;
+    }
+
+    /**
+     * Forwards a {@code replies@} mail that matched no keyword to every organizer, one private
+     * copy each, rewritten exactly like mail to {@code info@} (Reply-To = the original sender).
+     * Story 16.0 AC3/AC4 (#1160): automatic replies, bounces and mail from our own domain are not
+     * forwarded. Every outcome, forward or skip, is counted and written to the forwarding log.
+     *
+     * <p>Same retry contract as {@link #forward}: a failure before the first send releases the
+     * claim and rethrows; after it nothing is retried.
+     */
+    public Result forwardUnrecognizedReply(String s3Key, byte[] raw) {
+        if (!forwardingLog.claim(s3Key)) {
+            return duplicateOrStalled(s3Key, REPLIES);
+        }
+
+        MimeMessage message;
+        InternetAddress from;
+        try {
+            message = new MimeMessage(Session.getInstance(new Properties()), new ByteArrayInputStream(raw));
+            String[] fromHeaders = message.getHeader("From");
+            from = fromHeaders != null && fromHeaders.length == 1 ? firstAddress(fromHeaders[0]) : null;
+        } catch (MessagingException e) {
+            log.warn("Forwarding: unparseable reply {}: {}", s3Key, e.getMessage());
+            return dropReply(s3Key, Result.DROPPED_MALFORMED, EmailForwardingOutcome.DROPPED_MALFORMED, null);
+        }
+        if (from == null || from.getAddress() == null) {
+            return dropReply(s3Key, Result.DROPPED_MALFORMED, EmailForwardingOutcome.DROPPED_MALFORMED, null);
+        }
+        String sender = from.getAddress().toLowerCase(Locale.ROOT);
+        String domain = properties.domain().toLowerCase(Locale.ROOT);
+
+        if (header(message, MailClassifier.FORWARDED_MARKER_HEADER) != null || sender.endsWith("@" + domain)) {
+            return dropReply(s3Key, Result.DROPPED_LOOP, EmailForwardingOutcome.DROPPED_LOOP,
+                    ForwardingMetrics.LOOPS_DROPPED);
+        }
+        if (MailClassifier.isBounce(sender, header(message, "Content-Type"), header(message, "Return-Path"))) {
+            return dropReply(s3Key, Result.DROPPED_BOUNCE, EmailForwardingOutcome.DROPPED_BOUNCE,
+                    ForwardingMetrics.BOUNCES_DROPPED);
+        }
+        if (MailClassifier.isAutoReply(header(message, "Auto-Submitted"), header(message, "Precedence"),
+                header(message, "X-Autoreply"), header(message, "X-Autorespond"))) {
+            return dropReply(s3Key, Result.DROPPED_AUTO_REPLY, EmailForwardingOutcome.DROPPED_AUTO_REPLY,
+                    ForwardingMetrics.AUTO_REPLIES_DROPPED);
+        }
+
+        Delivery delivery;
+        try {
+            List<String> organizers = resolver.resolve(new ForwardingAlias("info", ForwardingAlias.Kind.ORGANIZERS,
+                    null)).stream().filter(email -> !ReservedEmailDomain.isReserved(email)).toList();
+            if (organizers.isEmpty()) {
+                return unresolved(s3Key, REPLIES);
+            }
+            byte[] rewritten = rewriter.rewrite(raw, from.getPersonal(), sender, properties.sender(), null, null);
+            delivery = new Delivery(rewritten, organizers, false);
+            forwardingLog.markSending(s3Key);
+        } catch (RuntimeException e) {
+            try {
+                forwardingLog.release(s3Key);
+            } catch (RuntimeException releaseFailure) {
+                e.addSuppressed(releaseFailure);
+            }
+            throw e;
+        }
+
+        Result result = sendIndividually(s3Key, delivery, REPLIES, ForwardingMetrics.REPLIES_FORWARDED);
+        log.info("Forwarding: unrecognized reply {} from {} → {} ({} organizer(s))", s3Key,
+                LoggingUtils.maskEmail(sender), result, delivery.recipients().size());
+        return result;
+    }
+
+    private Result dropReply(String s3Key, Result result, EmailForwardingOutcome outcome, String metric) {
+        log.info("Forwarding: not forwarding reply {}: {}", s3Key, result);
+        if (metric != null) {
+            metrics.increment(metric);
+        }
+        forwardingLog.complete(s3Key, outcome, REPLIES, 0, 0);
+        return result;
+    }
+
+    private Result duplicateOrStalled(String s3Key, String aliasNames) {
+        if (forwardingLog.isStuckAfterSending(s3Key)) {
+            // Sending began and never finished (task died mid-send). Not retried, to avoid a
+            // double blast; reported so an operator can check who is missing the mail.
+            // Recorded as STALLED, so a further redelivery is a plain duplicate and the
+            // alarm metric counts this mail once (#1139).
+            log.error("Forwarding: {} stalled after sending began; some recipients may lack it", s3Key);
+            metrics.increment(ForwardingMetrics.FAILED);
+            forwardingLog.complete(s3Key, EmailForwardingOutcome.STALLED, aliasNames, 0, 0);
+            return Result.STALLED;
+        }
+        log.info("Forwarding: {} already processed, skipping redelivery", s3Key);
+        metrics.increment(ForwardingMetrics.DUPLICATES_SKIPPED);
+        return Result.DUPLICATE;
     }
 
     /**
@@ -203,7 +293,10 @@ public class EmailForwardingService {
                 return null;
             }
             List<String> toList = List.copyOf(to);
-            byte[] rewritten = rewriter.rewrite(raw, senderName, sender, properties.sender(), toList, cc);
+            // Story 16.0 AC2: speakers answer the moderator, their contact point, not the organizer
+            // who happened to write the broadcast.
+            String replyTo = ForwardingAlias.moderatorAddress(plan.speakerEventCode, properties.domain());
+            byte[] rewritten = rewriter.rewrite(raw, senderName, sender, properties.sender(), replyTo, toList, cc);
             List<String> destinations = new ArrayList<>(toList);
             destinations.addAll(cc);
             return new Delivery(rewritten, List.copyOf(destinations), true);
@@ -228,6 +321,9 @@ public class EmailForwardingService {
             switch (alias.kind()) {
                 case EVENT_SPEAKERS -> {
                     plan.speakerMode = true;
+                    if (plan.speakerEventCode == null) {
+                        plan.speakerEventCode = alias.eventCode();
+                    }
                     plan.speakerTo.addAll(resolved);
                     ForwardingAlias moderator = new ForwardingAlias(
                             alias.localPart().replace("-speaker", "-moderator"),
@@ -261,7 +357,7 @@ public class EmailForwardingService {
         return Result.FORWARDED;
     }
 
-    private Result sendIndividually(String s3Key, Delivery delivery, String aliasNames) {
+    private Result sendIndividually(String s3Key, Delivery delivery, String aliasNames, String forwardedMetric) {
         List<String> recipients = delivery.recipients();
         int sent = 0;
         int failed = 0;
@@ -292,7 +388,7 @@ public class EmailForwardingService {
             result = Result.PARTIAL;
         }
         if (sent > 0) {
-            metrics.increment(ForwardingMetrics.FORWARDED);
+            metrics.increment(forwardedMetric);
         }
         if (failed > 0) {
             metrics.increment(ForwardingMetrics.FAILED);
@@ -372,6 +468,7 @@ public class EmailForwardingService {
     private static final class Plan {
         private boolean anyAuthorized;
         private boolean speakerMode;
+        private String speakerEventCode;
         private final Set<String> individual = new LinkedHashSet<>();
         private final Set<String> speakerTo = new LinkedHashSet<>();
         private final Set<String> moderatorCc = new LinkedHashSet<>();

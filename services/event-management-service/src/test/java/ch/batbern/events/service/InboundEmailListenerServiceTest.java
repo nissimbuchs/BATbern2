@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.forwarding.EmailForwardingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -18,7 +19,9 @@ import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoInteractions;
@@ -39,13 +42,17 @@ class InboundEmailListenerServiceTest {
     @Mock
     private InboundEmailRouter router;
 
+    @Mock
+    private EmailForwardingService forwardingService;
+
     private InboundEmailListenerService listenerService;
 
     private static final String BUCKET_NAME = "batbern-inbound-emails-staging";
 
     @BeforeEach
     void setUp() {
-        listenerService = new InboundEmailListenerService(s3Client, router, BUCKET_NAME, new ObjectMapper());
+        listenerService = new InboundEmailListenerService(s3Client, router, forwardingService, BUCKET_NAME,
+                new ObjectMapper());
     }
 
     /**
@@ -204,6 +211,52 @@ class InboundEmailListenerServiceTest {
     }
 
     // ─── Helpers ──────────────────────────────────────────────────────────────
+
+    // ─── Story 16.0 AC3: unrecognized replies go to the organizers ─────────────
+
+    @Test
+    void handleS3Notification_whenRouterDoesNotRecognize_forwardsRawMailToOrganizers() {
+        byte[] rawBytes = RAW_EMAIL.replace("cancel", "Danke, ich komme gerne. Gibt es Parkplaetze?")
+                .getBytes(StandardCharsets.UTF_8);
+        mockS3Return(rawBytes);
+        when(router.route(any())).thenReturn(InboundEmailRouter.RouteResult.UNRECOGNIZED);
+
+        listenerService.handleS3Notification(s3NotificationJson("emails/human-reply"));
+
+        verify(forwardingService).forwardUnrecognizedReply(eq("emails/human-reply"), eq(rawBytes));
+    }
+
+    @Test
+    void handleS3Notification_whenForwardFailsBeforeSending_rethrowsSoSqsRetries() {
+        mockS3Return(RAW_EMAIL.getBytes(StandardCharsets.UTF_8));
+        when(router.route(any())).thenReturn(InboundEmailRouter.RouteResult.UNRECOGNIZED);
+        when(forwardingService.forwardUnrecognizedReply(any(), any()))
+                .thenThrow(new IllegalStateException("CUMS down"));
+
+        assertThatThrownBy(
+                () -> listenerService.handleS3Notification(s3NotificationJson("emails/retry-me")))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    void handleS3Notification_whenRouterHandledKeyword_doesNotForward() {
+        mockS3Return(RAW_EMAIL.getBytes(StandardCharsets.UTF_8));
+        when(router.route(any())).thenReturn(InboundEmailRouter.RouteResult.HANDLED);
+
+        listenerService.handleS3Notification(s3NotificationJson("emails/keyword"));
+
+        verifyNoInteractions(forwardingService);
+    }
+
+    @Test
+    void handleS3Notification_whenRateLimited_doesNotForward() {
+        mockS3Return(RAW_EMAIL.getBytes(StandardCharsets.UTF_8));
+        when(router.route(any())).thenReturn(InboundEmailRouter.RouteResult.RATE_LIMITED);
+
+        listenerService.handleS3Notification(s3NotificationJson("emails/flood"));
+
+        verifyNoInteractions(forwardingService);
+    }
 
     private void mockS3Return(byte[] rawBytes) {
         ResponseInputStream<GetObjectResponse> responseStream = new ResponseInputStream<>(

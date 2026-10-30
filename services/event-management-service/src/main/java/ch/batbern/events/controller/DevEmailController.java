@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.forwarding.EmailForwardingService;
 import ch.batbern.events.service.InboundEmailRouter;
 import ch.batbern.shared.service.CapturedEmail;
 import ch.batbern.shared.service.LocalEmailCapture;
@@ -17,6 +18,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
 
@@ -42,6 +44,7 @@ public class DevEmailController {
 
     private final LocalEmailCapture localEmailCapture;
     private final InboundEmailRouter inboundEmailRouter;
+    private final EmailForwardingService forwardingService;
 
     @GetMapping
     public List<CapturedEmail> listEmails() {
@@ -107,7 +110,12 @@ public class DevEmailController {
                 InboundEmailRouter.ParsedEmail parsed = new InboundEmailRouter.ParsedEmail(
                     e.to(), "Re: " + e.subject(), request.replyBody()
                 );
-                inboundEmailRouter.route(parsed);
+                if (inboundEmailRouter.route(parsed) == InboundEmailRouter.RouteResult.UNRECOGNIZED) {
+                    // Story 16.0 AC3: same forward as replies@ in production; the copy lands in the inbox
+                    forwardingService.forwardUnrecognizedReply("dev/" + UUID.randomUUID(),
+                        replyMime(e.to(), "Re: " + e.subject(), request.replyBody()));
+                    return ResponseEntity.ok("Reply forwarded to organizers: " + request.replyBody());
+                }
                 return ResponseEntity.ok("Reply routed: " + request.replyBody());
             })
             .orElse(ResponseEntity.notFound().build());
@@ -117,6 +125,18 @@ public class DevEmailController {
     public ResponseEntity<Void> clearInbox() {
         localEmailCapture.clear();
         return ResponseEntity.noContent().build();
+    }
+
+    /** Minimal MIME for a simulated reply, shaped like what SES stores for replies@. */
+    private static byte[] replyMime(String from, String subject, String body) {
+        String mime = "From: " + from + "\r\n"
+            + "To: replies@batbern.ch\r\n"
+            + "Subject: " + subject + "\r\n"
+            + "Message-ID: <" + UUID.randomUUID() + "@localhost>\r\n"
+            + "MIME-Version: 1.0\r\n"
+            + "Content-Type: text/plain; charset=UTF-8\r\n\r\n"
+            + body + "\r\n";
+        return mime.getBytes(StandardCharsets.UTF_8);
     }
 
     /** Request body for reply simulation. */

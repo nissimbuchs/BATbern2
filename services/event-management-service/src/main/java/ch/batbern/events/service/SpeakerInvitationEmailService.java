@@ -8,6 +8,7 @@ import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
+import ch.batbern.events.forwarding.ModeratorReplyAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -53,6 +54,7 @@ public class SpeakerInvitationEmailService {
     // invitation. Previously this service read speaker_pool.username/email directly —
     // those columns went stale at reassign time.
     private final PrimarySpeakerResolver primarySpeakerResolver;
+    private final ModeratorReplyAddress moderatorReplyAddress;
 
     @Value("${app.email.organizer-name:BATbern Team}")
     private String organizerName;
@@ -139,11 +141,13 @@ public class SpeakerInvitationEmailService {
             // every declared address (empty list = unchanged 3-arg behaviour).
             java.util.List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
                     .orElse(java.util.Collections.emptyList());
+            // Story 16.0 AC1: the speaker's answer reaches the moderator, not replies@.
             emailService.sendHtmlEmail(
                     recipientEmail,
                     cc,
                     content.subject(),
-                    content.html()
+                    content.html(),
+                    moderatorReplyAddress.forEvent(event)
             );
 
             log.info("Invitation email sent successfully to: {} (ccCount={})",

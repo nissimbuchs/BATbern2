@@ -23,5 +23,13 @@ public enum EmailForwardingOutcome {
      * Sending began and never finished (the task died mid-send). Some recipients may lack the
      * mail. Recorded once so redeliveries do not report it again (#1139); never retried.
      */
-    STALLED
+    STALLED,
+    /** Story 16.0, replies@ only: an out-of-office or other automatic reply, not forwarded. */
+    DROPPED_AUTO_REPLY,
+    /** Story 16.0, replies@ only: a delivery status notification, not forwarded. */
+    DROPPED_BOUNCE,
+    /** Story 16.0, replies@ only: mail from our own domain or a copy we forwarded, not forwarded. */
+    DROPPED_LOOP,
+    /** Story 16.0, replies@ only: no single parseable From, not forwarded. */
+    DROPPED_MALFORMED
 }

@@ -10,6 +10,7 @@ import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.events.forwarding.ModeratorReplyAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -40,6 +41,7 @@ public class QualityReviewService {
     private final EmailService emailService;
     private final SpeakerWorkflowService speakerWorkflowService;
     private final PrimarySpeakerResolver primarySpeakerResolver;
+    private final ModeratorReplyAddress moderatorReplyAddress;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -226,7 +228,8 @@ public class QualityReviewService {
             java.util.List<String> cc = primary
                     .map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
                     .orElse(java.util.Collections.emptyList());
-            emailService.sendHtmlEmail(recipientEmail, cc, subject, body);
+            // Story 16.0 AC1: the speaker's answer reaches the moderator, not replies@.
+            emailService.sendHtmlEmail(recipientEmail, cc, subject, body, moderatorReplyAddress.forEvent(event));
             // Note: Don't log email address (PII) - only log speaker ID per GDPR data minimization
             log.info("Revision notification sent to speaker pool entry: {} with portal link (ccCount={})",
                     speaker.getId(), cc.size());

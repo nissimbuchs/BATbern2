@@ -804,8 +804,17 @@ SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → E
   the gateway *is* `api.batbern.ch`. **Never open an endpoint on the assumption that only in-VPC
   callers can reach it.** Machine callers use queues and IAM, not anonymous HTTP.
 - **Delivery modes**: `batbern{N}-speaker@` sends one visible mail (speakers in To, event moderator
-  in Cc); every other alias sends one private copy per recipient.
-- **Idempotency**: `email_forwarding_log` (V128 to V130) holds one row per S3 object, no addresses or
+  in Cc, Reply-To `batbern{N}-moderator@`); every other alias sends one private copy per recipient
+  with Reply-To = the original sender.
+- **Unrecognized `replies@` mail** (Story 16.0, #1160): `InboundEmailListenerService` hands every
+  reply that `InboundEmailRouter` cannot act on (`RouteResult.UNRECOGNIZED`) to
+  `EmailForwardingService.forwardUnrecognizedReply`, which forwards it to all organizers like
+  `info@` (alias `replies` in the log, metric `RepliesForwarded`). Bounces, automatic replies,
+  loops and malformed mail are not forwarded and are logged as `dropped_*` outcomes (V131). A
+  failure before the first send is rethrown, so the replies queue retries and then dead-letters.
+- **Speaker Reply-To**: speaker-facing mails (invitation, acceptance, tiered reminder,
+  quality-review revision) set Reply-To via `ModeratorReplyAddress` → `batbern{N}-moderator@`.
+- **Idempotency**: `email_forwarding_log` (V128 to V131) holds one row per S3 object, no addresses or
   content. A failure before the first send releases the claim so SQS retries (3×, then DLQ with
   alarm `batbern-{env}-forwarding-dlq`). A claim whose task died before sending is taken over by
   the redelivery after 6 minutes (`STALE_CLAIM_SECONDS` = 360, which must stay above the queue's
@@ -816,7 +825,7 @@ SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → E
 - **Retention**: `EmailForwardingLogRetentionScheduler` deletes rows older than 90 days nightly
   (03:15, ShedLock). The raw mail is gone from S3 after 7 days, so older rows cannot be replayed.
 - **Metrics**: namespace `BATbern/EmailForwarder` (`EmailsForwarded`, `EmailsRejected`,
-  `EmailsUnresolved`, `EmailsFailed`, `*Dropped`, `DuplicatesSkipped`); alarm
+  `EmailsUnresolved`, `EmailsFailed`, `RepliesForwarded`, `*Dropped`, `DuplicatesSkipped`); alarm
   `batbern-{env}-emails-rejected`.
 - **Replay**: raw mail stays in S3 for 7 days. Re-sending an S3 event JSON for a `forwarding/` key
   to the forwarding queue forwards it again unless its key is already in `email_forwarding_log`.

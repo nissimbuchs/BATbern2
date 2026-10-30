@@ -18,7 +18,8 @@ import java.util.regex.Pattern;
  *   <li>Unsubscribe keywords → {@link NewsletterSubscriberService#unsubscribeByEmail}</li>
  *   <li>Cancel keywords + event code → {@link RegistrationService#cancelByEmail}</li>
  *   <li>Accept keywords + event code → {@link RegistrationService#confirmByEmail}</li>
- *   <li>Unknown body → silent discard (WARN log)</li>
+ *   <li>Anything it cannot act on → {@link RouteResult#UNRECOGNIZED}: the caller forwards the
+ *       mail to the organizers (Story 16.0, #1160). It used to be discarded.</li>
  * </ul>
  */
 @Service
@@ -43,6 +44,16 @@ public class InboundEmailRouter {
      */
     public record ParsedEmail(String senderEmail, String subject, String bodyFirstLine) {}
 
+    /** What {@link #route} did with a mail. */
+    public enum RouteResult {
+        /** A keyword action ran. */
+        HANDLED,
+        /** The sender exceeded the rate limit; nothing ran and nothing is forwarded. */
+        RATE_LIMITED,
+        /** No action could run; a person has to read it (Story 16.0 AC3). */
+        UNRECOGNIZED
+    }
+
     /**
      * Immutable DTO representing a parsed iCal REPLY — Story 10.27 (AC3, AC4).
      *
@@ -56,11 +67,12 @@ public class InboundEmailRouter {
      * Route the parsed email to the appropriate action.
      *
      * @param email parsed inbound email
+     * @return what was done; {@link RouteResult#UNRECOGNIZED} means the caller must forward it
      */
-    public void route(ParsedEmail email) {
+    public RouteResult route(ParsedEmail email) {
         // 1. Rate limit check
         if (!rateLimiter.isAllowed(email.senderEmail())) {
-            return; // warn already logged in rateLimiter
+            return RouteResult.RATE_LIMITED; // warn already logged in rateLimiter
         }
 
         // 2. Normalize body (lowercase, strip special chars except accented letters incl. German umlauts)
@@ -78,7 +90,7 @@ public class InboundEmailRouter {
             newsletterSubscriberService.unsubscribeByEmail(email.senderEmail());
             confirmationEmailService.sendUnsubscribeConfirmation(email.senderEmail(), locale);
             log.info("Processed unsubscribe reply from: {}***", senderPrefix);
-            return;
+            return RouteResult.HANDLED;
         }
 
         // 4. Deregistration variants: cancel, deregister, absagen
@@ -90,11 +102,10 @@ public class InboundEmailRouter {
                 registrationService.cancelByEmail(email.senderEmail(), eventCode);
                 confirmationEmailService.sendCancelConfirmation(email.senderEmail(), eventCode, locale);
                 log.info("Processed deregistration reply from: {}*** for event: {}", senderPrefix, eventCode);
-            } else {
-                log.warn("Deregistration keyword but no event code in subject from: {}*** subject: {}",
-                        senderPrefix, email.subject());
+                return RouteResult.HANDLED;
             }
-            return;
+            log.warn("Deregistration keyword but no event code in subject from: {}*** — forwarding", senderPrefix);
+            return RouteResult.UNRECOGNIZED;
         }
 
         // 5. Acceptance variants: accept, bestätigen, confirmer, bevestigen
@@ -104,15 +115,15 @@ public class InboundEmailRouter {
             if (eventCode != null) {
                 registrationService.confirmByEmail(email.senderEmail(), eventCode);
                 log.info("Processed acceptance reply from: {}*** for event: {}", senderPrefix, eventCode);
-            } else {
-                log.warn("Acceptance keyword but no event code in subject from: {}*** subject: {}",
-                        senderPrefix, email.subject());
+                return RouteResult.HANDLED;
             }
-            return;
+            log.warn("Acceptance keyword but no event code in subject from: {}*** — forwarding", senderPrefix);
+            return RouteResult.UNRECOGNIZED;
         }
 
-        // 6. Unrecognized — silent discard
-        log.warn("Unrecognized inbound email body from: {}*** — discarding", senderPrefix);
+        // 6. Unrecognized — a person has to read it; the caller forwards it to the organizers
+        log.info("Unrecognized inbound email body from: {}*** — forwarding to organizers", senderPrefix);
+        return RouteResult.UNRECOGNIZED;
     }
 
     /**

@@ -5,6 +5,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
+import ch.batbern.events.forwarding.ModeratorReplyAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -36,6 +37,7 @@ public class SpeakerReminderEmailService {
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
     private final PrimarySpeakerResolver primarySpeakerResolver;
+    private final ModeratorReplyAddress moderatorReplyAddress;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -100,7 +102,9 @@ public class SpeakerReminderEmailService {
             // Story 10.32: CC speaker's additional emails (empty list = unchanged behaviour)
             java.util.List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
                     .orElse(java.util.Collections.emptyList());
-            emailService.sendHtmlEmail(recipientEmail, cc, content.subject(), content.html());
+            // Story 16.0 AC1: the speaker's answer reaches the moderator, not replies@.
+            emailService.sendHtmlEmail(recipientEmail, cc, content.subject(), content.html(),
+                    moderatorReplyAddress.forEvent(event));
 
             log.info("Reminder email sent: type={}, tier={}, speaker={}, event={}, ccCount={}",
                     reminderType, tier, LoggingUtils.maskEmail(recipientEmail), event.getEventCode(), cc.size());

@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.forwarding.EmailForwardingService;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.awspring.cloud.sqs.annotation.SqsListener;
@@ -16,6 +17,7 @@ import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 
+import java.io.ByteArrayInputStream;
 import java.io.InputStream;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
@@ -32,6 +34,8 @@ import java.util.regex.Pattern;
  *   <li>Raw email bytes fetched from S3</li>
  *   <li>MIME parsed via jakarta.mail: From, Subject, first non-quoted plain-text line</li>
  *   <li>Routed to {@link InboundEmailRouter}</li>
+ *   <li>Mail the router cannot act on → {@link EmailForwardingService#forwardUnrecognizedReply}
+ *       (Story 16.0, #1160)</li>
  * </ol>
  *
  * <p>This bean is only loaded when {@code aws.inbound-email.enabled=true} (staging/production).
@@ -48,16 +52,19 @@ public class InboundEmailListenerService {
 
     private final S3Client s3Client;
     private final InboundEmailRouter router;
+    private final EmailForwardingService forwardingService;
     private final String bucketName;
     private final ObjectMapper objectMapper;
 
     public InboundEmailListenerService(
             S3Client s3Client,
             InboundEmailRouter router,
+            EmailForwardingService forwardingService,
             @Value("${aws.inbound-email.bucket-name:}") String bucketName,
             ObjectMapper objectMapper) {
         this.s3Client = s3Client;
         this.router = router;
+        this.forwardingService = forwardingService;
         this.bucketName = bucketName;
         this.objectMapper = objectMapper;
     }
@@ -69,6 +76,8 @@ public class InboundEmailListenerService {
      */
     @SqsListener("${aws.inbound-email.queue-url}")
     public void handleS3Notification(String messageBody) {
+        String key;
+        byte[] raw;
         try {
             // Parse S3 event notification JSON
             JsonNode root = objectMapper.readTree(messageBody);
@@ -79,7 +88,7 @@ public class InboundEmailListenerService {
             }
 
             JsonNode s3Node = records.get(0).path("s3");
-            String key = s3Node.path("object").path("key").asText("");
+            key = s3Node.path("object").path("key").asText("");
 
             if (key.isBlank()) {
                 log.warn("Inbound email: empty S3 object key — discarding");
@@ -93,38 +102,49 @@ public class InboundEmailListenerService {
                     .build();
 
             try (InputStream rawEmailStream = s3Client.getObject(getRequest)) {
-                // Parse MIME email
-                Session session = Session.getInstance(new Properties());
-                MimeMessage message = new MimeMessage(session, rawEmailStream);
+                raw = rawEmailStream.readAllBytes();
+            }
+            // Parse MIME email
+            Session session = Session.getInstance(new Properties());
+            MimeMessage message = new MimeMessage(session, new ByteArrayInputStream(raw));
 
-                String from = extractFrom(message);
+            String from = extractFrom(message);
 
-                if (from == null || from.isBlank()) {
-                    log.warn("Inbound email: could not extract From address — discarding");
-                    return;
+            if (from == null || from.isBlank()) {
+                log.warn("Inbound email: could not extract From address — discarding");
+                return;
+            }
+
+            // Story 10.27: detect iCal REPLY before falling through to plain-text routing.
+            // findCalendarReplyText returns the raw iCal body if a text/calendar; method=REPLY part exists.
+            // If a calendar part exists (even if unparseable), skip plain-text routing entirely.
+            String calendarText = findCalendarReplyText(message);
+            if (calendarText != null) {
+                InboundEmailRouter.IcsReply icsReply = parseIcsReply(calendarText);
+                if (icsReply != null) {
+                    router.routeIcsReply(icsReply);
                 }
+                return; // Always skip plain-text routing when a calendar part is present
+            }
 
-                // Story 10.27: detect iCal REPLY before falling through to plain-text routing.
-                // findCalendarReplyText returns the raw iCal body if a text/calendar; method=REPLY part exists.
-                // If a calendar part exists (even if unparseable), skip plain-text routing entirely.
-                String calendarText = findCalendarReplyText(message);
-                if (calendarText != null) {
-                    InboundEmailRouter.IcsReply icsReply = parseIcsReply(calendarText);
-                    if (icsReply != null) {
-                        router.routeIcsReply(icsReply);
-                    }
-                    return; // Always skip plain-text routing when a calendar part is present
-                }
-
-                String subject = message.getSubject();
-                String bodyFirstLine = extractFirstPlainTextLine(message);
-                router.route(new InboundEmailRouter.ParsedEmail(from, subject != null ? subject : "", bodyFirstLine));
+            String subject = message.getSubject();
+            String bodyFirstLine = extractFirstPlainTextLine(message);
+            InboundEmailRouter.RouteResult result = router.route(
+                    new InboundEmailRouter.ParsedEmail(from, subject != null ? subject : "", bodyFirstLine));
+            if (result != InboundEmailRouter.RouteResult.UNRECOGNIZED) {
+                return;
             }
 
         } catch (Exception e) {
             // Catch-all: log and discard — do NOT rethrow to prevent infinite SQS redelivery
             log.error("Failed to process inbound email message: {}", e.getMessage(), e);
+            return;
         }
+
+        // Story 16.0 AC3: outside the catch-all on purpose. The router ran no action, so a
+        // redelivery is harmless, and a failure before the first send (e.g. CUMS down) must reach
+        // SQS so the reply is retried and lands in the DLQ instead of being lost.
+        forwardingService.forwardUnrecognizedReply(key, raw);
     }
 
     /**
