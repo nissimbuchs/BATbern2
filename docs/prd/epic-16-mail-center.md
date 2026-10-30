@@ -1,7 +1,8 @@
 # Epic 16 — Mail Center
 
 **Author:** John (PM), with Sally (UX) and Winston (Architect) · **Date:** 2026-10-30 · **Status:** APPROVED by the owner 2026-10-30, including the five decisions below
-**Source:** party-mode design session 2026-10-29/30, clickable prototype v4 (real data, kept out of the repo, served over Tailscale only), measured SES traffic of the last 6 months.
+**Source:** party-mode design session 2026-10-29/30, measured SES traffic of the last 6 months, Winston's compose review 2026-10-30.
+**UX:** [`docs/ux/mail-center-prototype.html`](../ux/mail-center-prototype.html) (anonymized, open in a browser) and [`docs/ux/mail-center-spec.md`](../ux/mail-center-spec.md). Readiness: [`docs/implementation-readiness-report-epic-16-2026-10-30.md`](../implementation-readiness-report-epic-16-2026-10-30.md).
 
 ## Epic goal
 
@@ -38,13 +39,15 @@ So this is **not a helpdesk**. It is a per-event log with a short "needs an answ
 
 ## How to start (read this first, dev agent)
 
-**Read order:** this epic → `_bmad-output/project-context.md` → the story file → the files listed in its Dev Notes. `CLAUDE.md` rules apply (TDD, Testcontainers, PII, Flyway).
+**Read order:** this epic → `_bmad-output/project-context.md` → the story file → `docs/ux/mail-center-spec.md` (UI stories) → the files listed in its Dev Notes. `CLAUDE.md` rules apply (TDD, Testcontainers, PII, Flyway).
 
 **Story order:**
 1. 16.0 Part A
 2. 16.0 Part B
-3. 16.1
-4. 16.3 + 16.4
+3. 16.0 Part C (#1162)
+4. 16.1a, then 16.1b
+5. 16.3 + 16.4
+6. 16.8, then 16.9 (story files are written when they come up)
 
 `sprint-status.yaml` lists older `ready-for-dev` stories (11-e-5, 11-g-1, 13-5) ahead of Epic 16. Always start with the explicit story path, never with "next story".
 
@@ -54,7 +57,8 @@ So this is **not a helpdesk**. It is a per-event log with a short "needs an answ
 - One branch and one PR per deployable part:
   - `feature/16-0a-...` (`Fixes #1160`)
   - `feature/16-0b-...` (`Fixes #1161`)
-  - `feature/16-1-...`
+  - `feature/16-0c-...` (`Fixes #1162`)
+  - `feature/16-1a-...`, `feature/16-1b-...`
   - `feature/16-3-4-...`
 - Conventional commits, scope `mailcenter`, `email`, `forwarding` or `registration`.
 - Update the story file (tasks, Dev Agent Record, File List, Status) and `sprint-status.yaml` on the story branch, in the same commits as the code.
@@ -77,16 +81,16 @@ So this is **not a helpdesk**. It is a per-event log with a short "needs an answ
 **Event › Communications** (one column, three sections):
 
 1. **Needs an answer.** Human mail linked to this event, Open or Waiting, with assignee. Usually zero to three items.
-2. **What went out.** Every send, newest first: who sent it, to whom (audience + count), subject, delivered / failed counts, and "template" or "own text". A click shows the exact rendered mail, the newsletter included.
+2. **What went out.** Every send, newest first, filterable by audience (Newsletter, Registrants, Speakers, Venue & Catering, Partners): who sent it, to whom (audience + count), subject, delivered / failed counts, and "template" or "own text". A click shows the exact rendered mail, the newsletter included.
 3. **Handled automatically** (collapsed). Counts only: accepts, declines, bounces, out-of-office replies, calendar RSVPs. Expandable for the rare check.
 
 **Global top-nav "Mail"**: open items across all events, mail without an event (`info@`, `support@`) with an "assign to event" control, and spam.
 
 ## Stories
 
-### Story 16.0 — Stop losing replies and calendar declines (#1160, #1161)
+### Story 16.0 — Stop losing replies and calendar declines (#1160, #1161, #1162)
 
-Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md`. Two parts, two PRs.
+Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md`. Three parts, three PRs.
 
 **Part A (#1160):**
 - Speaker mails carry Reply-To `batbern{N}-moderator@`.
@@ -96,56 +100,69 @@ Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-
 **Part B (#1161):**
 - A calendar "Declined" from a registrant triggers the existing deregistration-link mail. The registration is cancelled only when they click it.
 - New registration invites carry a stable UID per registration, so declines can be matched.
+- A second decline within 7 days sends no second mail (`registrations.decline_link_sent_at`).
+
+**Part C (#1162):**
+- A reply whose first line contains "cancel" or "absagen" no longer cancels immediately. It sends the deregistration-link mail. Keywords act only on short lines (at most 3 words); longer sentences are forwarded as human mail.
 
 ---
 
-### Story 16.1 — Record every outbound mail
+### Story 16.1a — Record every outbound mail
+
+Story file: `_bmad-output/implementation-artifacts/16-1a-record-outbound-mail.md`.
 
 **Scope:**
-- `mail_message` table (EMS): direction, event code (nullable), audience kind, template key or `own_text`, rendered subject + body, sender (organizer username or `system`), recipient count, SES Message-ID(s), created-at.
-- `EmailService` returns the SES Message-ID; callers that represent a user-visible send pass a `MailContext` (event, audience, template key). One row per send, not per recipient; per-recipient delivery stays where it is for the newsletter and is added as a child table for the others.
-- SES message tags on every send (`event`, `audience`, `mail_id`). Delivery / bounce / complaint events from the `transactional` and `newsletter` configuration sets update per-recipient status in the DB (today they go only to CloudWatch and a log-only Lambda).
+- `mail_message` + `mail_recipient` tables in EMS.
+- A `MailContext` passed by callers and an `OutboundMailRecorder` SPI in the shared kernel, called after a successful SES send with the Message-ID.
+- Send-group rules: one group per organizer request, per scheduler run × event × template, or per individual transactional mail.
+- Readable `mail_key` (`{eventCode}-{n}`), source-scan guard test, retention job, privacy note.
+- Newsletter: one `mail_message` linked to `newsletter_sends`; per-recipient status stays in `newsletter_recipients`.
 
-**Acceptance criteria:**
-- AC1 — GIVEN any send path that an organizer triggers or that targets an event audience, WHEN it sends, THEN one `mail_message` row exists with the rendered content and the SES Message-ID.
-- AC2 — GIVEN a bounce on the transactional configuration set, WHEN SES reports it, THEN the matching recipient row shows "failed" with the bounce type.
-- AC3 — ADR-015 send guards still block test-marked content; a blocked send writes no row.
-- AC4 — Inventory test: every caller of `EmailService` is either context-tagged or on an explicit allow-list of system mails (verification codes etc.), so a new send path cannot silently skip the record.
+**Acceptance criteria (summary):** every EMS event/organizer send is recorded with Message-IDs; test-marked sends write nothing; a new send path without context fails the build; retention deletes at event date + 12 months.
+
+---
+
+### Story 16.1b — Delivery status from SES events
+
+Story file: `_bmad-output/implementation-artifacts/16-1b-delivery-status.md`. Depends on 16.1a. Contains a CDK change.
+
+**Scope:** an SQS queue on the existing transactional SES events topic; an EMS listener sets `DELIVERED` / `FAILED` (with reason) per recipient; statuses never move backwards; newsletter suppression untouched.
 
 ---
 
 ### Story 16.2 — Capture inbound human mail as conversations
 
-**Depends on:** #1160, 16.1.
+**Depends on:** 16.0 Part A, 16.1a.
 
 **Scope:**
 - Inbound from `replies@` and all aliases is stored as `mail_message` (direction `in`) and attached to a `mail_conversation`.
 - Threading, in order: per-conversation Reply-To token (`replies+{token}@`), then `In-Reply-To` / `References` against stored Message-IDs, then alias → event (`batbern{N}-*@`). Otherwise the conversation has no event.
 - Classification before a conversation is opened: bounce, auto-reply (`Auto-Submitted`, `X-Autoreply`, common OOO patterns), iMIP REPLY, keyword actions already handled by `InboundEmailRouter`. These are counted for "Handled automatically", not opened.
-- Forwarding to private inboxes stays on during the transition (see open decision 2).
+- Forwarding to private inboxes stays on during the transition (owner decision 2).
+- **UI: the "Needs an answer" section** on the event's Communications page (moved here from 16.3 by the readiness check): list of Open/Waiting conversations with assignee, conversation view (read only), status and assignee changes. One-line empty state.
 
 **Acceptance criteria:**
 - AC1 — GIVEN a speaker replies to a speaker mail, WHEN it arrives, THEN it lands in that event's conversation, status Open, assignee = the event's moderator.
 - AC2 — GIVEN an out-of-office reply, WHEN it arrives, THEN no conversation is opened and the automatic count increments.
 - AC3 — GIVEN mail to `info@` with no event reference, WHEN it arrives, THEN it appears under global Mail › "No event".
-- AC4 — Raw MIME needed for display is kept for the retention period (open decision 1), not the current 7 days.
+- AC4 — Raw MIME needed for display is kept for the retention period (owner decision 1), not the current 7 days.
+- AC5 — GIVEN no open conversations, THEN "Needs an answer" shows a one-line empty state, not an empty table.
+- AC6 — An organizer can set status (Open, Waiting, Done) and assignee; the change is visible to every organizer.
 
 ---
 
 ### Story 16.3 — Communications tab becomes the mail page
 
-**Depends on:** 16.1 (16.2 for section 1).
+**Depends on:** 16.1a (16.1b for delivered/failed counts of non-newsletter mail; without it they show as sent).
 
 **Scope:**
-- Replace the sub-tabs of `EventCommunicationsContainer` with the three sections described above.
+- Replace the sub-tabs of `EventCommunicationsContainer` with "What went out" and "Handled automatically", leaving room for "Needs an answer" (built in 16.2).
 - "What went out" shows the exact rendered mail, the newsletter included, with delivered / failed counts.
-- Status and assignee changes on a conversation (Open, Waiting, Done).
 - i18n keys in all 10 locales.
 
 **Acceptance criteria:**
 - AC1 — GIVEN an event with a newsletter sent, WHEN the organizer opens Communications, THEN the newsletter appears in "What went out" with recipient, delivered and failed counts, and a click shows the mail as sent.
-- AC2 — GIVEN no open conversations, THEN section 1 shows a one-line empty state, not an empty table.
-- AC3 — The automatic section is collapsed by default and shows counts only.
+- AC2 — The automatic section is collapsed by default and shows counts only (failed deliveries in this story; accepts, declines and out-of-office counts come with 16.2).
 
 ---
 
@@ -154,7 +171,7 @@ Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-
 **Depends on:** 16.3.
 
 **Scope:**
-- A menu with the four audiences of today (Newsletter, Registrants, Speakers, Venue & Catering). Each opens its existing compose flow in a side panel, behaviour unchanged.
+- A menu with the four audiences of today (Newsletter, Registrants, Speakers, Venue & Catering) plus **Partners** (owner request 2026-10-30). Each opens its existing compose flow in a side panel, behaviour unchanged. Partners opens a picker of this event's partner meetings and the existing invite / cancellation action (`MeetingDetailPanel`).
 - After sending, the new row appears at the top of "What went out".
 
 **Acceptance criteria:**
@@ -165,7 +182,7 @@ Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-
 
 ### Story 16.5 — Own text with placeholders and per-recipient preview
 
-**Depends on:** 16.4.
+**Depends on:** 16.8 (built once, inside the shared composer, not four times).
 
 **Scope:**
 - A [Template | Own text] toggle in the compose panel.
@@ -182,7 +199,7 @@ Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-
 - AC1 — GIVEN own text with `{{speakerName}}`, WHEN previewing recipient 3 of 8, THEN the preview shows that speaker's name, highlighted.
 - AC2 — GIVEN own text with `{{deadlin}}`, THEN the preview marks it red, Send is disabled, and a direct API call is rejected with 400.
 - AC3 — GIVEN a newsletter in own text, THEN the sent mail contains a working unsubscribe link even if the author did not insert one.
-- AC4 — The rendered body stored by 16.1 equals the preview for the same recipient (byte-equal test).
+- AC4 — The rendered body stored by 16.1a equals the preview for the same recipient (byte-equal test).
 - AC5 — "What went out" marks the send as "own text".
 
 ---
@@ -200,6 +217,7 @@ Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-
 - AC1 — GIVEN an organizer answers a speaker, WHEN the speaker replies again, THEN that reply threads into the same conversation.
 - AC2 — The answer shows sender, time and text to every organizer.
 - AC3 — Reassigning notifies the new assignee once.
+- AC4 (owner decision 2, final task) — Once 16.6 is live and the owner gives the go, alias forwarding to private inboxes is replaced by a body-less notification ("new mail for BATbern{N}, open it here", link to the conversation). Behind a runtime flag, so it can be switched back.
 
 ---
 
@@ -209,9 +227,87 @@ Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-
 
 **Scope:** top-nav entry with three lists: open conversations across events, mail without an event (with "assign to event"), spam. Badge with the open count.
 
+**Spam source:** enable SES spam and virus scanning on the inbound receipt rules (`ScanEnabled: true`, CDK) and classify by the `X-SES-Spam-Verdict` / `X-SES-Virus-Verdict` headers in 16.2's classifier. Virus verdict FAIL is dropped and counted, never shown. Spam FAIL goes to the spam list, not to "Needs an answer". Spam is kept 30 days, then deleted.
+
 **Acceptance criteria:**
 - AC1 — GIVEN an `info@` mail assigned to BATbern{N}, THEN it moves to that event's Communications page and leaves "No event".
 - AC2 — GIVEN zero open items, the badge is hidden.
+- AC3 — GIVEN an inbound mail with `X-SES-Spam-Verdict: FAIL`, THEN it appears only under spam, and "not spam" moves it to the right list.
+
+---
+
+### Story 16.8 — One shared composer for all audiences
+
+**Depends on:** 16.1a, 16.4. Architecture review: Winston, 2026-10-30.
+
+**Why:** the five compose flows are one flow written five times, and they have drifted apart (verified in code):
+
+| Audience | Preview | Test send to organizers | Recipients |
+|---|---|---|---|
+| Newsletter | server-rendered | yes (`testMode`), but only to organizers who are also subscribers | all subscribers |
+| Registrants | server-rendered with **sample** data, not the real recipient | no | all active registrants |
+| Speakers | **none** | no | by status; the frontend loops one request per speaker |
+| Venue & Catering | server-rendered per recipient | no | role checkboxes, first role To, rest Cc |
+| Partners | none; subject and body are hard-coded Java | no | all partner and organizer users in **one To: line** |
+
+The speaker reminder templates **are** editable in the admin template editor. The speaker flow lacks template choice and preview: the key (`speaker-reminder-{response,content}-tier{1,2,3}`) is derived in code from reminder type and an auto-detected tier, so the organizer never sees which of the six goes out. Partners are the one audience with no admin template at all.
+
+**Scope:**
+- **Frontend:** one `MailComposer` drawer, the same steps for every audience:
+  1. template or own text (own text arrives with 16.5);
+  2. language;
+  3. recipients, shown by the server;
+  4. preview stepping through the real recipients;
+  5. **[Send to organizers]** (test) or **[Send to N recipients]**, behind one confirm dialog.
+- **Audience adapters:** each audience contributes only a small adapter: template category, extra fields (reminder type, venue roles, meeting picker), async or sync.
+- **Backend:** one API in EMS `mailcenter`:
+  - `POST /events/{code}/mails/preview` returns HTML, subject, recipient i/n and unknown placeholders;
+  - `POST /events/{code}/mails` with `target: RECIPIENTS | ORGANIZERS`;
+  - `GET /events/{code}/mails/{mailKey}`, which also serves the send progress.
+- **Strategy:** audience logic sits behind `AudienceAdapter { resolveRecipients, variables, allowedVariables, allowedCategories, deliver }`. One render path makes preview equal to sent. One placeholder check, one `MailContext`, one `hasRole('ORGANIZER')`.
+- Adapters reuse what exists:
+  - the newsletter async job and `newsletter_sends` progress/retry;
+  - the registrant one-shot guard;
+  - the speaker per-recipient send, with the loop moved server-side;
+  - the venue To plus Cc.
+- **Test send:** `target=ORGANIZERS` renders the mail for the recipient currently previewed and sends it to all ORGANIZER-role users with a `[TEST]` subject prefix. It is recorded with `is_test=true` and hidden from "What went out" by default. The unsubscribe link is a dummy.
+- **Speakers:** the template list shows all six reminder templates. The auto-detected tier is preselected and can be overridden.
+- **Clean-up:** after one release, delete `SpeakerBulkComms`, `EventRegistrantNoticesTab`, the body of `VenueCoordinationComposer`, the newsletter compose section, and the old preview/send endpoints and specs.
+
+**Acceptance criteria:**
+- AC1 — Every audience offers template choice, preview of the real recipient (stepping ‹ ›), test send to organizers and send to recipients, with the same layout.
+- AC2 — The preview for recipient i is byte-equal to the mail recipient i receives (one render path, tested).
+- AC3 — "Send to organizers" reaches every organizer, whether or not they subscribe, and never a real recipient.
+- AC4 — The newsletter keeps its progress display and retry; registrants keep the one-shot guard.
+- AC5 — No Playwright or Bruno test calls the send endpoint against staging (`@sends-real-email` guard); send tests run against local dev only.
+
+**Decisions taken (owner can overrule):**
+- Speaker tier: the auto-detected tier is preselected and can be overridden.
+- Registrant one-shot guard for own text: one own-text send per event and subject. A second send needs an explicit "send again" confirmation.
+
+---
+
+### Story 16.9 — Partner meeting mails in the mail center
+
+**Depends on:** 16.1a, 16.8. Owner request 2026-10-30.
+
+**Scope:**
+- **Sent:** partner-coordination implements the 16.1a `OutboundMailRecorder` SPI with an HTTP recorder. It posts to EMS `POST /internal/mail-messages` (no JWT, not routed by the gateway; same pattern as EMS → partner `/internal/partner-meetings/rsvps`). It is best-effort: failures are logged and not retried.
+  - Partner invites and cancellations appear in the event's "What went out", audience Partners, with the RSVP counts from `PartnerMeetingRsvpPanel` alongside.
+  - The partner meeting page shows the same list, filtered to that meeting.
+- **New mail:** "+ New mail → Partners" offers two paths:
+  - (a) meeting invite or cancellation through the existing partner-service endpoint, because it owns the ICS UID, SEQUENCE and RSVPs;
+  - (b) a plain partner mail through a 16.8 Partners adapter, with recipients = PARTNER-role users via CUMS and a new template category PARTNER in the admin store.
+- **Inbound:** mail to `partner@` and meeting RSVPs belong to the meeting's event. With 16.2 they show under that event; RSVPs are counted under "Handled automatically".
+
+**Acceptance criteria:**
+- AC1 — GIVEN a partner meeting invite is sent, THEN it appears in the event's "What went out" within one minute, with recipient count and RSVP summary.
+- AC2 — GIVEN EMS is unreachable, THEN the invite is still sent, and the missing record is logged as a warning.
+- AC3 — A plain partner mail supports template, preview, test send to organizers and send, like every other audience.
+
+**Out of scope, recorded:**
+- The invite body stays hard-coded in Java. Moving it into the admin store needs a render call from the partner service to EMS. Follow-up.
+- All partners in one To: line expose their addresses to each other. Filed separately (#1163) for an owner decision.
 
 ---
 
@@ -219,7 +315,12 @@ Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-
 
 1. **Retention:** conversations and rendered outbound mail are kept until event date + 12 months, then deleted. Mail without an event: created-at + 12 months. Newsletter per-recipient status unchanged. The privacy documentation gets a note.
 2. **Team rule: answer from the mail center.** Alias forwarding to private inboxes stays on during the transition. Once 16.6 is live, forwarding is replaced by a short notification ("new mail for BATbern{N}, open it here") that carries no body.
-3. **Sequence:** 16.0 (#1160, #1161) first, then 16.1, 16.3, 16.4 (what went out is visible, no inbound change). Then 16.2 + 16.6 for speakers only. Then 16.2 for all aliases, 16.5, 16.7.
+3. **Sequence:**
+   1. 16.0 (#1160, #1161, #1162).
+   2. 16.1a, 16.1b, 16.3, 16.4: what went out becomes visible, no inbound change.
+   3. 16.8 shared composer, then 16.9 partners (added 2026-10-30).
+   4. 16.2 + 16.6 for speakers only.
+   5. 16.2 for all aliases, 16.5, 16.7.
 4. **Reply-To on `-speaker@` broadcasts** sent by an organizer: `batbern{N}-moderator@`, consistent with decision 2 of the epic.
 5. **Registrant replies:** stay with #1160 option 1 until 16.2 covers all aliases.
 

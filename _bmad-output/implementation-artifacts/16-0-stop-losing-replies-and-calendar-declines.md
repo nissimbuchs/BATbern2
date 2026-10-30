@@ -1,4 +1,4 @@
-# Story 16.0: Stop losing replies and calendar declines (#1160, #1161)
+# Story 16.0: Stop losing replies and calendar declines (#1160, #1161, #1162)
 
 Status: ready-for-dev
 
@@ -11,7 +11,7 @@ I want **human replies to our automated mails to reach the team, and a registran
 so that **no speaker question or newsletter reply is silently dropped, and people on the waitlist get the seats of people who already said no**.
 
 > Source: `docs/prd/epic-16-mail-center.md` → **Story 16.0**. GitHub issues **#1160** and **#1161**.
-> Stand-alone fixes, deployable before the rest of Epic 16. Two parts, **two PRs**: Part A closes #1160, Part B closes #1161. Part A first, it is live data loss.
+> Stand-alone fixes, deployable before the rest of Epic 16. Three parts, **three PRs**: Part A closes #1160, Part B closes #1161, Part C closes #1162. Part A first, it is live data loss. Part C touches the same router as Part A; do it right after A.
 
 ## Acceptance Criteria
 
@@ -29,7 +29,17 @@ so that **no speaker question or newsletter reply is silently dropped, and peopl
 7. **AC7 (matching)** — New registration invites carry a stable UID that identifies the registration (see Dev Notes). Older invites with a random UID are matched by sender address + event (SUMMARY/DTSTART against events within ±1 day). No match, or more than one, → no action, counted as `CalendarDeclineUnmatched`.
 8. **AC8 (other replies)** — `ACCEPTED` / `TENTATIVE` replies to `calendar@` stay dropped, as today. Partner-meeting replies are untouched.
 9. **AC9 (one mail only)** — A second decline for the same registration within 7 days does not send a second mail.
-10. **AC10** — No test sends real mail. Send-path checks run against local dev (`/dev/mails`), never staging (= production).
+10. **AC10 (de-dup storage)** — The 7-day check of AC9 uses a new nullable column `registrations.decline_link_sent_at` (additive migration, same shape as the existing `confirmation_resent_at`). Set when the mail is sent; AC9 compares against it.
+
+**Part C — Keyword replies ask before acting (#1162)**
+
+11. **AC11** — GIVEN a reply to `replies@` whose first line contains `cancel`, `deregister` or `absagen` and whose subject has an event code, WHEN routed, THEN the registration is NOT cancelled; the sender gets the deregistration-link mail (as in AC6, de-duplicated via AC10).
+12. **AC12** — Keywords act only when the first line is essentially the keyword alone (e.g. `cancel`, `Absagen`, `cancel please`, at most 3 words). A longer sentence that merely contains a keyword is treated as a human reply and forwarded per AC3.
+13. **AC13** — The same rule (AC12) applies to the unsubscribe (`abmelden`, `unsubscribe`) and accept keywords. Unsubscribe keeps acting immediately (it is reversible and legally required to be easy).
+
+**All parts**
+
+14. **AC14** — No test sends real mail. Send-path checks run against local dev (`/dev/mails`), never staging (= production).
 
 ## Tasks / Subtasks
 
@@ -57,9 +67,18 @@ so that **no speaker question or newsletter reply is silently dropped, and peopl
   - [ ] In `EmailForwardingService.forward`, the calendar-reply branch currently drops everything (`DROPPED_CALENDAR_REPLY`). Before dropping: parse PARTSTAT and UID (reuse `InboundEmailListenerService.extractIcsProperty` or move it to a shared parser); if `DECLINED` and the alias is `calendar@`, hand off to a new `CalendarDeclineService`.
   - [ ] `CalendarDeclineService`: match (UID first, fallback per AC7), check active status, de-dup (AC9), send the deregistration-link mail, metrics.
   - [ ] Integration tests: matched by UID, matched by fallback, ambiguous, already cancelled, duplicate within 7 days, accepted reply ignored.
+- [ ] **Task B2b — De-dup column** (AC: 9, 10): migration `V{next}__registrations_decline_link_sent_at.sql` (`ALTER TABLE registrations ADD COLUMN decline_link_sent_at TIMESTAMPTZ`); entity field next to `confirmationResentAt`.
 - [ ] **Task B3 — Docs** — doc-drift check as in A4, plus a short note in the registration docs that a calendar decline triggers the deregistration-link mail.
 
+### Part C — #1162 (PR 3, body `Fixes #1162`)
+
+- [ ] **Task C1 — Short-line rule** (AC: 12, 13): in `InboundEmailRouter.route`, keyword steps 3–5 act only if the normalized first line has at most 3 words; otherwise fall through to the AC3 forward. Table-driven unit test with real-life sentences (DE + EN) that must NOT trigger.
+- [ ] **Task C2 — Cancel asks first** (AC: 11): replace `registrationService.cancelByEmail` + `sendCancelConfirmation` in step 4 with the deregistration-link mail, reusing the Part B service and the AC10 column.
+- [ ] **Task C3 — Docs**: as in A4.
+
 ## Dev Notes
+
+- **Order:** A, then C (same file, `InboundEmailRouter`), then B. B and C both send the deregistration-link mail; whichever lands second reuses the first one's helper.
 
 - **Reply-To today:** global `app.email.reply-to` = `replies@batbern.ch` (`event-management-service/src/main/resources/application.yml:109`). Only `VenueCoordinationService` overrides it (`.replyToEmail(coordinator.email())`, line ~114). Copy that pattern.
 - **`-moderator@`** resolves to `Event.organizerUsername` (the lead organizer) plus their additional emails (`DistributionListService`), not to `SessionUser.MODERATOR`. It is open to any sender (`ForwardingAlias.openToAnyone`), so speakers can write to it.
@@ -91,3 +110,4 @@ so that **no speaker question or newsletter reply is silently dropped, and peopl
 ## Change Log
 
 - 2026-10-30: Story drafted from #1160 and #1161 (John, PM).
+- 2026-10-30: Readiness fixes: de-dup storage named (AC10); Part C for #1162 added.

@@ -197,3 +197,33 @@ Brownfield epic; no starter-template story needed. Tables are created by the sto
 The assessment found 12 issues across 4 categories (1 critical, 6 major, 5 minor), plus 3 coverage gaps and 1 UX warning. 16.0 Part A can start immediately; the rest should be fixed before its story starts.
 
 **Assessor:** John (PM), BMAD check-implementation-readiness · **Date:** 2026-10-30
+
+## Resolution (2026-10-30, same day)
+
+All findings were fixed on branch `docs/epic-16-mail-center`. The owner also asked for two additions, and Winston reviewed the compose flows.
+
+| # | Finding | Resolution |
+|---|---|---|
+| 1 | "Needs an answer" had no owner | Moved to 16.2 (UI + status/assignee); 16.3 epic text and story aligned |
+| 2 | 16.1 too large | Split into 16.1a (record) and 16.1b (delivery status, CDK) |
+| 3 | Send groups undefined | 16.1a AC2: per request / per scheduler run × event × template / per transactional mail |
+| 4 | Public id open | 16.1a AC8: `mail_key` = `{eventCode}-{n}` from one sequence |
+| 5 | Guard tool | 16.1a AC5: source-scan JUnit test, no new dependency |
+| 6 | 16.0B de-dup storage | 16.0 AC10: `registrations.decline_link_sent_at` |
+| 7 | 16.1 alone has no visible value | 16.1a deploys shortly before 16.3 (story note) |
+| 8–9 | Epic/story drift, stale references | Epic aligned to stories; #1160 → 16.0, "open decision" → decision |
+| 10 | AC format | Left as is (testable) |
+| 11 | Keyword auto-cancel | Issue #1162; added to 16.0 as Part C |
+| 12 | Prototype vs MUI | Stated in 16.3, 16.4 and the UX spec |
+| MC-FR15 | Forwarding switch-over | 16.6 AC4, behind a runtime flag |
+| MC-FR11 | Spam source | 16.7: SES receipt scanning + verdict headers |
+| Partner gap | Partner mails | New Story 16.9 (+ Partners entry in 16.4); invite privacy filed as #1163 |
+| Privacy note | MC-NFR1 | 16.1a Task 6 |
+| UX | Prototype not durable | Anonymized prototype + spec in `docs/ux/`; names scanned out |
+
+**Added after the check:**
+- **Story 16.8, shared composer.** Winston's review found five compose flows with drifting preview, test-send and recipient logic, so they become one composer with audience adapters. 16.5 now builds on it.
+- **Story 16.9, partner meeting mails.** Partner mails appear under "What went out" and in "+ New mail".
+- **Speaker templates.** They were already editable in admin; the speaker flow lacked a template choice and a preview, which 16.8 adds. Partners are the audience without admin templates.
+
+**Status after resolution:** 16.0 (A, B, C), 16.1a, 16.1b, 16.3 and 16.4 are READY. 16.2 and 16.5–16.9 are backlog; their story files are written when they come up.

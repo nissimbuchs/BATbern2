@@ -1,0 +1,387 @@
+<!doctype html>
+<html lang="de">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<!-- Anonymized copy of the Epic 16 prototype. All person names and mail texts are synthetic. -->
+<title>BATbern Kommunikation</title>
+<script src="https://cdn.tailwindcss.com/3.4.16"></script>
+<script>
+tailwind.config = { theme: { extend: {
+  colors: { bat:{ DEFAULT:'#2C5F7C', light:'#4A90B8', dark:'#1A3A4D', tint:'#EAF0F4' }, ink:{ DEFAULT:'#34495E', soft:'#7F8C8D' } },
+  fontFamily: { sans: ['"Helvetica Neue"','Helvetica','Arial','sans-serif'] }
+}}};
+</script>
+<style> body{background:#F4F6F8} </style>
+</head>
+<body class="font-sans text-ink">
+
+<header class="bg-bat text-white">
+  <div class="max-w-4xl mx-auto px-4 h-14 flex items-center gap-2 text-sm">
+    <span class="font-bold text-base mr-4">BATbern</span>
+    <a onclick="go('event')" id="navEvents" class="px-3 py-1.5 rounded cursor-pointer">Events</a>
+    <a onclick="go('global')" id="navMail" class="px-3 py-1.5 rounded cursor-pointer flex items-center gap-2">Mail <span id="navBadge" class="bg-red-500 text-white text-[11px] rounded-full px-1.5 leading-5"></span></a>
+    <span class="hidden sm:inline px-3 py-1.5 opacity-80">Partner</span>
+    <span class="hidden sm:inline px-3 py-1.5 opacity-80">Firmen</span>
+    <span class="ml-auto opacity-90 truncate">Anna Organisator</span>
+  </div>
+</header>
+
+<!-- ============ EVENT PAGE ============ -->
+<main id="pageEvent" class="max-w-4xl mx-auto px-4 py-6">
+  <div class="text-sm text-ink-soft">Events › BATbern60</div>
+  <h1 class="text-2xl font-semibold">BATbern60 · Digitale Souveränität</h1>
+  <div class="text-sm text-ink-soft mt-1">Fr 6. November · Zentrum Paul Klee · noch 7 Tage · Moderation: <b class="text-ink">Bruno Moderator</b></div>
+
+  <div class="flex gap-6 border-b mt-5 mb-6 text-sm">
+    <span class="pb-2 text-ink-soft">Übersicht</span><span class="pb-2 text-ink-soft">Speaker</span>
+    <span class="pb-2 text-ink-soft">Programm</span>
+    <span class="pb-2 border-b-2 border-bat text-bat font-semibold">Kommunikation</span>
+  </div>
+
+  <div class="space-y-8">
+    <section>
+      <div class="flex items-center mb-2">
+        <h2 class="font-semibold">Braucht eine Antwort <span id="openCount" class="ml-1 text-sm bg-red-100 text-red-700 rounded-full px-2"></span></h2>
+        <div class="ml-auto relative">
+          <button onclick="toggleMenu()" class="bg-bat text-white text-sm rounded px-4 py-2 hover:bg-bat-dark">+ Neue Mail ▾</button>
+          <div id="menu" class="hidden absolute right-0 mt-1 w-72 bg-white rounded-lg shadow-lg border z-20 py-1 text-sm">
+            <div class="px-4 py-1 text-xs text-ink-soft">Senden an …</div>
+            <button onclick="openCompose('newsletter')" class="w-full text-left px-4 py-2 hover:bg-bat-tint"><b>Newsletter</b><div class="text-xs text-ink-soft">1060 Abonnenten</div></button>
+            <button onclick="openCompose('registrants')" class="w-full text-left px-4 py-2 hover:bg-bat-tint"><b>Angemeldete</b><div class="text-xs text-ink-soft">220 bestätigt</div></button>
+            <button onclick="openCompose('speakers')" class="w-full text-left px-4 py-2 hover:bg-bat-tint"><b>Speaker</b><div class="text-xs text-ink-soft">8 Speaker · Antworten an Bruno</div></button>
+            <button onclick="openCompose('venue')" class="w-full text-left px-4 py-2 hover:bg-bat-tint"><b>Venue &amp; Catering</b><div class="text-xs text-ink-soft">Venue-Kontakt · Catering-Kontakt</div></button>
+            <button onclick="openCompose('partners')" class="w-full text-left px-4 py-2 hover:bg-bat-tint"><b>Partner</b><div class="text-xs text-ink-soft">Partner-Meeting 6.11. · alle Partner-Kontakte</div></button>
+          </div>
+        </div>
+      </div>
+      <div id="inbox" class="bg-white rounded-lg shadow-sm divide-y"></div>
+    </section>
+
+    <section>
+      <h2 class="font-semibold mb-2">Was rausging</h2>
+      <div id="audFilter" class="flex flex-wrap gap-1 mb-2 text-xs"></div>
+      <div id="sent" class="bg-white rounded-lg shadow-sm divide-y"></div>
+    </section>
+
+    <section>
+      <details class="bg-white rounded-lg shadow-sm">
+        <summary class="px-4 py-3 cursor-pointer text-sm"><b>Automatisch verarbeitet</b> <span class="text-ink-soft">· letzte 7 Tage · rund 90 Mails, niemand muss etwas tun</span></summary>
+        <div class="px-4 pb-4 text-sm space-y-2">
+          <div class="flex justify-between"><span>Kalender-Zusagen zur Anmeldung</span><b>25</b></div>
+          <div class="flex justify-between items-start gap-4"><span>Kalender-Absagen zur Anmeldung<br><span class="text-xs text-red-700">Heute verworfen. Bei 32 Personen auf der Warteliste wären das freie Plätze (#1161).</span></span><b>13</b></div>
+          <div class="flex justify-between"><span>Unzustellbar (Bounces)</span><b>28</b></div>
+          <div class="flex justify-between"><span>Abwesenheitsnotizen auf den Newsletter</span><b>25</b></div>
+        </div>
+      </details>
+    </section>
+  </div>
+</main>
+
+<!-- ============ GLOBAL MAIL ============ -->
+<main id="pageGlobal" class="hidden max-w-4xl mx-auto px-4 py-6 space-y-8">
+  <div>
+    <h1 class="text-2xl font-semibold">Mail</h1>
+    <div class="text-sm text-ink-soft">Nur was eine Antwort braucht, über alle Events. Was rausging, steht beim jeweiligen Event.</div>
+  </div>
+  <section>
+    <h2 class="font-semibold mb-2">Offen</h2>
+    <div id="gOpen" class="bg-white rounded-lg shadow-sm divide-y"></div>
+  </section>
+  <section>
+    <h2 class="font-semibold mb-2">Ohne Event <span class="text-sm font-normal text-ink-soft">· info@, support@</span></h2>
+    <div id="gNoEvent" class="bg-white rounded-lg shadow-sm divide-y"></div>
+  </section>
+  <section>
+    <details class="bg-white rounded-lg shadow-sm"><summary class="px-4 py-3 cursor-pointer text-sm"><b>Spam</b> <span class="text-ink-soft">· 1 Mail an info@ (FedEx-Phishing)</span></summary></details>
+  </section>
+</main>
+
+<p class="max-w-4xl mx-auto px-4 pb-8 text-xs text-ink-soft">Prototyp v4 mit echten Daten von BATbern60. Nur über Tailscale erreichbar. Frühere Versionen: <a class="underline" href="v3.html">v3</a> · <a class="underline" href="v2.html">v2</a> · <a class="underline" href="v1.html">v1</a>.</p>
+
+<!-- ============ SIDE PANEL ============ -->
+<div id="panel" class="hidden fixed inset-0 bg-black/40 z-50 flex justify-end" onclick="if(event.target===this)closePanel()">
+  <div class="bg-white w-full max-w-xl h-full flex flex-col shadow-xl">
+    <div class="border-b px-5 py-3 flex items-center gap-3 shrink-0">
+      <button onclick="closePanel()" class="text-ink-soft">✕</button>
+      <div id="pTitle" class="font-semibold truncate"></div>
+    </div>
+    <div id="pBody" class="p-5 text-sm space-y-4 overflow-y-auto flex-1"></div>
+    <div id="pFoot" class="border-t px-5 py-3 shrink-0 hidden"></div>
+  </div>
+</div>
+
+<div id="toast" class="hidden fixed bottom-5 left-1/2 -translate-x-1/2 bg-ink text-white text-sm px-4 py-2 rounded shadow-lg z-50"></div>
+
+<script>
+const ORG = { 'Anna Organisator':'AO', 'Bruno Moderator':'BM', 'Clara Orga':'CO', 'David Orga':'DO', 'Eva Orga':'EO' };
+const ME = 'Anna Organisator';
+const SPEAKERS = ['Speaker Eins','Speaker Zwei','Speaker Drei','Speaker Vier','Speaker Fünf','Speaker Sechs','Speaker Sieben','Speaker Acht'];
+
+const inbox = [
+ { id:'i1', event:'BATbern60', from:'Petra Muster', via:'Antwort auf Newsletter', when:'Di 27.10.', subject:'Kann man auch als Pensionierter teilnehmen?',
+   text:'Liebes BAT-Team\n\nKann man an den Veranstaltungen auch als Pensionierte teilnehmen? Danke für eine kurze Rückmeldung.\nPetra Muster',
+   who:null, done:false, today:'Heute: diese Mail hat niemand gesehen (#1160).' },
+ { id:'i2', event:'BATbern60', from:'Karl Beispiel', via:'info@', when:'Mo 26.10.', subject:'6.11. Abmeldung',
+   text:'Hallo\n\nIch möchte mich für den 6.11. abmelden, finde aber den Abmeldelink nicht.\n\nGruss\nKarl Beispiel',
+   who:'Anna Organisator', done:true, reply:'Anna Organisator · erledigt' },
+ { id:'i3', event:null, from:'Lena Probst', via:'info@', when:'Fr 23.10.', subject:'Anmelden nicht möglich',
+   text:'Hallo\n\nIch kann mich nicht anmelden: das Passwort-Zurücksetzen sagt, es gebe kein Konto, die Anmeldung sagt, es gebe eines. Was tun?\nLena Probst',
+   who:'Anna Organisator', done:true, reply:'Anna Organisator · erledigt' },
+];
+
+const sent = [
+ { id:'s1', aud:'speakers', when:'Do 29.10.', who:'Bruno Moderator', to:'8 Speaker', subject:'Folien und Infos zum BATbern60', stat:'',
+   body:`<p>Hallo zusammen</p><p class="mt-2">Danke für euren Beitrag am BATbern60. Bitte sendet mir den aktuellen Stand eurer Folien bis am 2. November. Die definitiven Folien bitte auf einem USB-Stick mitbringen und 20 Minuten vor Beginn beim Speaker-Pult sein …</p>`,
+   recips:[...SPEAKERS, 'Kopie: Bruno Moderator'], replies:'Noch keine Antwort. Antworten gehen an Bruno.' },
+ { id:'s2', aud:'newsletter', when:'Mo 26.10.', who:'Bruno Moderator', to:'1060 Newsletter-Abonnenten', subject:'Newsletter: BATbern60 · Digitale Souveränität', stat:'1049 zugestellt · 11 fehlgeschlagen',
+   newsletter:true, replies:'1 echte Antwort (Petra Muster, oben) · 25 Abwesenheitsnotizen · 28 Bounces' },
+ { id:'s3', aud:'registrants', when:'laufend', who:'automatisch', to:'Anmeldungen', subject:'Anmeldebestätigungen mit Kalendereintrag', stat:'220 bestätigt · 32 Warteliste',
+   body:'<p>Wird bei jeder Anmeldung automatisch verschickt, mit Kalendereinladung (ICS).</p>', replies:'25 Zusagen und 13 Absagen über den Kalender in den letzten 7 Tagen' },
+ { id:'s4', aud:'speakers', when:'laufend', who:'automatisch', to:'8 Speaker', subject:'Speaker-Einladungen und Bestätigungen', stat:'',
+   body:'<p>Einladung, Zusage-Bestätigung und Erinnerungen aus dem Speaker-Workflow.</p>', replies:'' },
+ { id:'s5', aud:'partners', when:'Sa 14.3.', who:'Anna Organisator', to:'alle Partner-Kontakte', subject:'Einladung Partner-Meeting Herbst · 6.11.2026, 12:00', stat:'4 Zusagen · 1 Absage',
+   body:'<p>Partner-Meeting Herbst, Freitag 6. November 2026, 12:00, Restaurant Schöngrün, Bern.</p><p class="mt-2">Mit Kalendereinladung (ICS). Zu- und Absagen kommen über den Kalender zurück und werden beim Meeting gezählt.</p>',
+   replies:'4 Zusagen, 1 Absage über den Kalender' },
+];
+const AUD = { all:'Alle', newsletter:'Newsletter', registrants:'Angemeldete', speakers:'Speaker', venue:'Venue & Catering', partners:'Partner' };
+let audSel = 'all';
+
+/* ---------- compose: template OR own text, both with placeholders + per-recipient preview ---------- */
+const EVENT_VARS = { eventTitle:'Digitale Souveränität', eventDate:'Freitag, 6. November 2026', eventTime:'16:00', eventNumber:'60', venue:'Zentrum Paul Klee' };
+const FLOWS = {
+  newsletter: { key:'newsletter', title:'Newsletter', to:'1060 Newsletter-Abonnenten', n:1060, lang:true, test:true,
+    templates:[ {name:'Ankündigung (newsletter-event)', subject:'BATbern{{eventNumber}} · {{eventTitle}}', body:'Willkommen beim Newsletter für das Berner Architekten Treffen BATbern.\n\nAm {{eventDate}} ab {{eventTime}} Uhr treffen wir uns im {{venue}} zum Thema «{{eventTitle}}».\n\nJetzt anmelden: {{registrationLink}}'} ],
+    vars:['eventTitle','eventDate','eventTime','venue','registrationLink','eventDetailLink'],
+    auto:'Abmeldelink ({{unsubscribeLink}}) wird automatisch in die Fusszeile gesetzt.',
+    recips:[ {label:'alle 1060 Abonnenten (keine persönlichen Felder)', registrationLink:'https://www.batbern.ch/events/BATbern60', eventDetailLink:'https://www.batbern.ch/events/BATbern60'} ] },
+  registrants: { key:'registrants', title:'An Angemeldete', to:'220 Angemeldete', n:220, lang:true,
+    templates:[ {name:'Bitte abmelden, wenn verhindert (registrant-notice-deregistration-call)', subject:'BATbern{{eventNumber}}: Bitte abmelden, wenn du verhindert bist', body:'Hallo {{recipientName}}\n\nDer Anlass «{{eventTitle}}» am {{eventDate}} ist ausgebucht, 32 Personen warten auf einen Platz. Falls du nicht kommen kannst, melde dich bitte hier ab: {{deregistrationUrl}}\n\nDanke!'},
+               {name:'Folien sind online (slides-online)', subject:'BATbern{{eventNumber}}: Die Folien sind online', body:'Hallo {{recipientName}}\n\nDanke für deinen Besuch. Die Folien findest du hier: {{eventDetailLink}}'} ],
+    vars:['recipientName','eventTitle','eventDate','eventNumber','deregistrationUrl','eventDetailLink'],
+    recips:[ {label:'Teilnehmer Eins', recipientName:'Teilnehmer Eins'}, {label:'Teilnehmer Zwei', recipientName:'Teilnehmer Zwei'}, {label:'Teilnehmer Drei', recipientName:'Teilnehmer Drei'} ]
+      .map(r=>({...r, deregistrationUrl:'https://www.batbern.ch/deregister/…', eventDetailLink:'https://www.batbern.ch/events/BATbern60'})) },
+  speakers: { key:'speakers', title:'An Speaker', to:'8 Speaker', n:8,
+    templates:[
+      {name:'Erinnerung Zusage · Stufe 1 (speaker-reminder-response-tier1)', subject:'BATbern{{eventNumber}}: Kannst du dabei sein?', body:'Hallo {{speakerName}}\n\nWir freuen uns auf deine Rückmeldung zur Einladung bis {{deadline}}: {{portalLink}}\n\n{{organizerName}}'},
+      {name:'Erinnerung Zusage · Stufe 2 (speaker-reminder-response-tier2)', subject:'BATbern{{eventNumber}}: Erinnerung: deine Zusage', body:'Hallo {{speakerName}}\n\nNoch {{daysRemaining}} Tage bis zur Frist am {{deadline}}. Bitte sag uns zu oder ab: {{portalLink}}\n\n{{organizerName}}'},
+      {name:'Erinnerung Zusage · Stufe 3 (speaker-reminder-response-tier3)', subject:'BATbern{{eventNumber}}: Letzte Erinnerung', body:'Hallo {{speakerName}}\n\nDie Frist läuft am {{deadline}} ab. Ohne Rückmeldung planen wir ohne dich: {{portalLink}}\n\n{{organizerName}}'},
+      {name:'Erinnerung Inhalte · Stufe 1 (speaker-reminder-content-tier1)', subject:'BATbern{{eventNumber}}: Abstract und Folien', body:'Hallo {{speakerName}}\n\nBitte lade Abstract und Folien für «{{sessionTitle}}» bis {{deadline}} im Speaker-Portal hoch: {{portalLink}}\n\nBei Fragen: {{organizerName}}'},
+      {name:'Erinnerung Inhalte · Stufe 2 (speaker-reminder-content-tier2)', subject:'BATbern{{eventNumber}}: Erinnerung Inhalte', body:'Hallo {{speakerName}}\n\nNoch {{daysRemaining}} Tage: bitte lade Abstract und Folien bis {{deadline}} hoch: {{portalLink}}\n\nBei Fragen: {{organizerName}}'},
+      {name:'Erinnerung Inhalte · Stufe 3 (speaker-reminder-content-tier3)', subject:'BATbern{{eventNumber}}: Letzte Erinnerung Inhalte', body:'Hallo {{speakerName}}\n\nDie Frist ist am {{deadline}}. Ohne Unterlagen können wir den Beitrag nicht ankündigen: {{portalLink}}\n\n{{organizerName}}'} ],
+    defaultTpl:4, tplHint:'Stufe automatisch erkannt: Inhalte, Stufe 2 (Frist in 3 Tagen). Andere Vorlage wählbar.',
+    vars:['speakerName','sessionTitle','eventTitle','eventDate','deadline','daysRemaining','portalLink','organizerName'],
+    recips:[['Speaker Eins','Weniger Cloud, mehr Klarheit'],['Speaker Zwei','Souveräne KI im Spital-Alltag'],['Speaker Drei','Souveräne KI im Spital-Alltag'],['Speaker Vier','Souveräne KI im Spital-Alltag'],['Speaker Fünf','Digitale Souveränität bei der Mobiliar'],['Speaker Sechs','Souveräne AI im Bundesumfeld'],['Speaker Sieben','Souveräne AI im Bundesumfeld'],['Speaker Acht','Souveräne AI im Bundesumfeld']]
+      .map(([n,s])=>({label:n, speakerName:n, sessionTitle:s, deadline:'2. November 2026', daysRemaining:'3', portalLink:'https://www.batbern.ch/speaker', organizerName:'Bruno Moderator'})),
+    replyNote:'Antworten gehen an Bruno Moderator (Moderation) und erscheinen hier unter „Braucht eine Antwort“.' },
+  venue: { key:'venue', title:'An Venue & Catering', to:'Venue & Catering', n:2,
+    templates:[ {name:'Ablaufplan (venue-timetable)', subject:'BATbern{{eventNumber}}: Ablaufplan {{eventDate}}', body:'{{salutation}}\n\nAnbei der Ablauf für den {{eventDate}}:\n\n{{agenda}}\n\n{{organizerSignature}}'},
+               {name:'Offerte Catering (catering-offerte-request)', subject:'BATbern{{eventNumber}}: Offerte Catering', body:'{{salutation}}\n\nFür den {{eventDate}} bitten wir um eine Offerte für 220 Personen.\n\n{{organizerSignature}}'} ],
+    vars:['salutation','eventDate','topicTitle','agenda','organizerSignature'],
+    recips:[ {label:'Venue-Kontakt (Zentrum Paul Klee)', salutation:'Liebe Venue-Kontakt'}, {label:'Catering-Kontakt', salutation:'Lieber Catering-Kontakt'} ]
+      .map(r=>({...r, topicTitle:'Digitale Souveränität', agenda:'15:00 Moderation · 15:05 Vorträge · 16:15 Pause · 17:45 Abschluss · 17:50 Apéro', organizerSignature:'Freundliche Grüsse\nAnna Organisator, BATbern'})),
+    replyNote:'Antworten gehen an Anna Organisator (Koordination) und erscheinen hier unter „Braucht eine Antwort“.' },
+  partners: { key:'partners', title:'An Partner', to:'alle Partner-Kontakte', n:'alle', recipNote:'Alle Kontakte mit Rolle Partner. Die genaue Zahl zeigt der Server.',
+    templates:[ {name:'Einladung Partner-Meeting mit Kalender (Partner-Service, ICS)', ics:true, subject:'Einladung Partner-Meeting · {{meetingDate}}, {{meetingTime}}', body:'Liebe Partner\n\nWir laden euch herzlich zum Partner-Meeting ein: {{meetingDate}}, {{meetingTime}}, {{meetingLocation}}.\n\nBitte sagt über die Kalendereinladung zu oder ab.\n\nFreundliche Grüsse\n{{organizerName}}'},
+               {name:'Partner-Info (partner-info, neu)', subject:'BATbern{{eventNumber}}: Info für unsere Partner', body:'Liebe Partner\n\nKurz vor dem BATbern{{eventNumber}} am {{eventDate}} …\n\nFreundliche Grüsse\n{{organizerName}}'} ],
+    tplHint:'Die Einladung mit Kalender verschickt weiterhin der Partner-Service (Kalender-ID und Zusagen bleiben dort). Ihr Text ist heute fest im Code, noch nicht im Vorlagen-Editor.',
+    vars:['meetingDate','meetingTime','meetingLocation','eventNumber','eventDate','organizerName'],
+    recips:[ {label:'Partner-Kontakte (keine persönlichen Felder)', meetingDate:'Freitag, 6. November 2026', meetingTime:'12:00', meetingLocation:'Restaurant Schöngrün, Bern', organizerName:'Anna Organisator'} ] },
+};
+const VAR_LABEL = { eventTitle:'Titel', eventDate:'Datum', eventTime:'Zeit', eventNumber:'Nummer', venue:'Ort', registrationLink:'Anmeldelink', eventDetailLink:'Eventseite',
+  recipientName:'Name', deregistrationUrl:'Abmeldelink', speakerName:'Name', sessionTitle:'Vortragstitel', deadline:'Frist', daysRemaining:'Tage bis Frist', portalLink:'Speaker-Portal', organizerName:'Moderation',
+  salutation:'Anrede', topicTitle:'Thema', agenda:'Ablauf', organizerSignature:'Signatur', meetingDate:'Meeting-Datum', meetingTime:'Meeting-Zeit', meetingLocation:'Meeting-Ort' };
+
+let flow=null, mode='template', tplIdx=0, pIdx=0, freeSubject='', freeBody='';
+function openCompose(k){ toggleMenu(true); flow=FLOWS[k]; mode='template'; tplIdx=flow.defaultTpl||0; pIdx=0; freeSubject=''; freeBody=''; renderCompose(); document.getElementById('panel').classList.remove('hidden'); }
+
+function current(){ if (mode==='template') return flow.templates[tplIdx]; return { subject:freeSubject, body:freeBody }; }
+function fill(text, r){
+  return esc(text).replace(/\{\{\s*([A-Za-z]+)\s*\}\}/g, (m, k) => {
+    const v = r[k] ?? EVENT_VARS[k];
+    return v===undefined ? `<span class="bg-red-100 text-red-700 rounded px-1">${m}</span>` : `<span class="bg-yellow-100 rounded px-0.5">${esc(v)}</span>`;
+  });
+}
+function unknownVars(){ const c=current(); const all=(c.subject+' '+c.body).match(/\{\{\s*([A-Za-z]+)\s*\}\}/g)||[];
+  const r=flow.recips[0]; return [...new Set(all.map(x=>x.replace(/[{}\s]/g,'')).filter(k=>r[k]===undefined && EVENT_VARS[k]===undefined))]; }
+function esc(s){ return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;'); }
+
+function renderCompose(){
+  document.getElementById('pTitle').textContent = 'Neue Mail · ' + flow.title;
+  const c = current(), r = flow.recips[pIdx], bad = unknownVars();
+  document.getElementById('pBody').innerHTML = `
+    <div class="flex text-sm border rounded overflow-hidden w-max">
+      <button onclick="setMode('template')" class="px-4 py-1.5 ${mode==='template'?'bg-bat text-white':''}">Vorlage</button>
+      <button onclick="setMode('free')" class="px-4 py-1.5 ${mode==='free'?'bg-bat text-white':''}">Eigener Text</button>
+    </div>
+    ${mode==='template' ? `
+      <label class="block"><span class="text-xs text-ink-soft">Vorlage</span>
+        <select onchange="tplIdx=this.selectedIndex; renderCompose()" class="w-full border rounded px-2 py-1.5">${flow.templates.map((t,i)=>`<option ${i===tplIdx?'selected':''}>${t.name}</option>`).join('')}</select></label>
+      ${flow.tplHint?`<div class="text-xs text-ink-soft">${flow.tplHint}</div>`:''}
+      ${flow.templates[tplIdx].ics?'':`<button onclick="startFromTemplate()" class="text-xs text-bat underline">Diese Vorlage als Ausgangspunkt nehmen und anpassen →</button>`}`
+    : `
+      <label class="block"><span class="text-xs text-ink-soft">Betreff</span>
+        <input id="fSubj" oninput="freeSubject=this.value; refreshPreview()" class="w-full border rounded px-2 py-1.5" value="${esc(freeSubject)}" placeholder="z.B. BATbern{{eventNumber}}: Kurze Info"></label>
+      <div>
+        <div class="flex items-end justify-between mb-1"><span class="text-xs text-ink-soft">Text</span>
+          <span class="text-xs text-ink-soft">Platzhalter einfügen:</span></div>
+        <div class="flex flex-wrap gap-1 mb-2">${flow.vars.map(v=>`<button onclick="insertVar('${v}')" title="{{${v}}}" class="text-xs bg-bat-tint text-bat rounded px-2 py-0.5 hover:bg-bat hover:text-white">${VAR_LABEL[v]||v}</button>`).join('')}</div>
+        <textarea id="fBody" oninput="freeBody=this.value; refreshPreview()" class="w-full border rounded p-2 h-40 font-mono text-[13px]" placeholder="Hallo {{${flow.vars[0]}}} …">${esc(freeBody)}</textarea>
+        ${flow.auto?`<div class="text-xs text-ink-soft mt-1">${flow.auto}</div>`:''}
+      </div>`}
+    <div><div class="text-xs text-ink-soft">Empfänger</div><div class="font-semibold">${flow.to}</div>
+      ${flow.recipNote?`<div class="text-xs text-ink-soft">${flow.recipNote}</div>`:''}
+      ${flow.recips.length>1?`<div class="flex flex-wrap gap-1 mt-1">${flow.recips.slice(0,8).map(r=>`<span class="text-xs bg-gray-100 rounded px-2 py-0.5">${r.label}</span>`).join('')}</div>`:''}</div>
+    <div id="preview"></div>
+    ${flow.replyNote?`<div class="text-xs text-ink-soft">${flow.replyNote}</div>`:''}`;
+  refreshPreview();
+  renderFoot();
+}
+function refreshPreview(){
+  const c = current(), r = flow.recips[pIdx], bad = unknownVars();
+  const many = flow.recips.length>1;
+  document.getElementById('preview').innerHTML = `
+    <div class="flex items-center justify-between mb-1">
+      <span class="text-xs text-ink-soft">Vorschau${mode==='free'?' (in der BATbern-Gestaltung)':''}</span>
+      <span class="text-xs flex items-center gap-2">${many?`<button onclick="pIdx=(pIdx+${flow.recips.length}-1)%${flow.recips.length}; refreshPreview()" class="px-1">‹</button>`:''}
+        für <b>${r.label}</b>${many?` <span class="text-ink-soft">(${pIdx+1}/${flow.recips.length})</span><button onclick="pIdx=(pIdx+1)%${flow.recips.length}; refreshPreview()" class="px-1">›</button>`:''}</span>
+    </div>
+    <div class="border rounded overflow-hidden">
+      <div class="bg-bat text-white px-4 py-2 text-xs">BATbern · Berner Architekten Treffen</div>
+      <div class="p-4">
+        <div class="font-semibold mb-2">${fill(c.subject||'(kein Betreff)', r)}</div>
+        <div class="whitespace-pre-line">${c.body ? fill(c.body, r) : '<span class="text-ink-soft">(noch kein Text)</span>'}</div>
+      </div>
+      <div class="bg-gray-50 px-4 py-2 text-[11px] text-ink-soft">BATbern · Bern${flow.key==='newsletter'?' · Newsletter abbestellen':''}</div>
+    </div>
+    ${bad.length?`<div class="mt-2 text-xs bg-red-50 text-red-700 rounded px-3 py-2">Unbekannter Platzhalter: ${bad.map(b=>'{{'+b+'}}').join(', ')}. So kann nicht gesendet werden.</div>`:''}
+    <div class="text-[11px] text-ink-soft mt-1"><span class="bg-yellow-100 rounded px-0.5">Gelb</span> = ersetzter Platzhalter.</div>`;
+  renderFoot();
+}
+function renderFoot(){
+  const bad = unknownVars().length>0, empty = mode==='free' && (!freeSubject.trim() || !freeBody.trim());
+  const foot = document.getElementById('pFoot'); foot.classList.remove('hidden');
+  foot.innerHTML = `<div class="flex items-center gap-3">
+    ${mode==='free' ? `<button onclick="toast('Als neue Vorlage gespeichert (Admin › E-Mail-Vorlagen).')" class="text-xs text-bat underline">Als Vorlage speichern</button>` : ''}
+    <button ${bad||empty?'disabled':''} onclick="testSend()" class="ml-auto border border-bat text-bat rounded px-3 py-2 text-sm disabled:opacity-40" title="Diese Vorschau mit [TEST] im Betreff an alle 5 Organisatoren">An Organisatoren (Test)</button>
+    <button ${bad||empty?'disabled':''} onclick="confirmSend()" class="bg-bat text-white rounded px-4 py-2 text-sm disabled:opacity-40">An ${flow.to} senden</button></div>`;
+}
+function testSend(){ toast('Testmail an die 5 Organisatoren gesendet, Betreff mit [TEST]. Erscheint nicht unter „Was rausging“.'); }
+function setMode(m){ mode=m; renderCompose(); }
+function startFromTemplate(){ const t=flow.templates[tplIdx]; freeSubject=t.subject; freeBody=t.body; mode='free'; renderCompose(); }
+function insertVar(v){ const ta=document.getElementById('fBody'); const ins='{{'+v+'}}';
+  const s=ta.selectionStart??ta.value.length, e=ta.selectionEnd??s; ta.value=ta.value.slice(0,s)+ins+ta.value.slice(e);
+  freeBody=ta.value; ta.focus(); ta.selectionStart=ta.selectionEnd=s+ins.length; refreshPreview(); }
+function confirmSend(){
+  const foot = document.getElementById('pFoot');
+  foot.innerHTML = `<div class="flex items-center gap-3"><span class="text-sm">Wirklich an <b>${flow.to}</b> senden?</span>
+    <button onclick="renderFoot()" class="ml-auto border rounded px-4 py-2 text-sm">Zurück</button>
+    <button onclick="doSend()" class="bg-bat text-white rounded px-4 py-2 text-sm">Ja, senden</button></div>`;
+}
+function doSend(){
+  const c = current(), r = flow.recips[0];
+  sent.unshift({ id:'n'+Date.now(), aud:flow.key, when:'jetzt', who:ME, to:flow.to, subject:c.subject.replace(/\{\{\s*([A-Za-z]+)\s*\}\}/g,(m,k)=>EVENT_VARS[k]??r[k]??m), stat:'wird gesendet …', fresh:true,
+    kind: mode==='free' ? 'eigener Text' : 'Vorlage',
+    body:`<div class="text-xs text-ink-soft mb-2">${mode==='free'?'Eigener Text':'Vorlage'} · Beispiel für ${r.label}</div><div class="whitespace-pre-line">${fill(c.body, r)}</div>`, replies:'' });
+  const n=flow.n; closePanel(); render(); toast('Gesendet. Steht jetzt oben unter „Was rausging“.');
+  setTimeout(()=>{ const s=sent[0]; s.stat = typeof n==='number' ? `${n} zugestellt` : 'zugestellt'; s.fresh=false; render(); }, 2500);
+}
+
+/* ---------- rendering ---------- */
+function av(n){ return n ? `<span title="${n}" class="w-7 h-7 rounded-full bg-bat text-white text-[11px] flex items-center justify-center shrink-0">${ORG[n]||'?'}</span>` : ''; }
+function row(m, showEvent){
+  return `<div class="px-4 py-3 flex items-center gap-3 cursor-pointer hover:bg-gray-50 ${m.done?'opacity-60':''}" onclick="openMail('${m.id}')">
+    <span class="w-2 h-2 rounded-full ${m.done?'bg-green-500':'bg-red-500'} shrink-0"></span>
+    <div class="min-w-0 flex-1">
+      <div class="text-sm"><b>${m.from}</b> <span class="text-ink-soft">· ${m.via} · ${m.when}${showEvent && m.event ? ' · '+m.event : ''}</span></div>
+      <div class="truncate">${m.subject}</div>
+    </div>
+    ${m.done ? `<span class="text-xs text-green-700 shrink-0">erledigt</span>${av(m.who)}`
+      : m.who ? av(m.who) : `<button onclick="event.stopPropagation(); take('${m.id}')" class="text-sm border border-bat text-bat rounded px-3 py-1 shrink-0 hover:bg-bat hover:text-white">Ich übernehme</button>`}
+  </div>`;
+}
+function render(){
+  const ev = inbox.filter(m=>m.event==='BATbern60');
+  const openAll = inbox.filter(m=>!m.done).length;
+  document.getElementById('openCount').textContent = ev.filter(m=>!m.done).length || '';
+  document.getElementById('navBadge').textContent = openAll || '';
+  document.getElementById('navBadge').style.display = openAll ? '' : 'none';
+  document.getElementById('inbox').innerHTML = ev.map(m=>row(m,false)).join('');
+  document.getElementById('audFilter').innerHTML = Object.entries(AUD).map(([k,v])=>`<button onclick="audSel='${k}'; render()" class="rounded-full px-3 py-0.5 border ${audSel===k?'bg-bat text-white border-bat':'bg-white'}">${v}</button>`).join('');
+  const shown = sent.filter(s=>audSel==='all'||s.aud===audSel);
+  document.getElementById('sent').innerHTML = shown.length ? shown.map(s=>`
+    <div class="px-4 py-3 cursor-pointer hover:bg-gray-50 ${s.fresh?'bg-green-50':''}" onclick="openSent('${s.id}')">
+      <div class="text-sm text-ink-soft">${s.when ? s.when+' · ' : ''}${s.who} → ${s.to}${s.kind?` · <span class="text-bat">${s.kind}</span>`:''}</div>
+      <div class="flex justify-between gap-3"><span class="truncate">${s.subject}</span><span class="text-xs text-ink-soft shrink-0 pt-1">${s.stat}</span></div>
+    </div>`).join('') : '<div class="px-4 py-6 text-center text-sm text-ink-soft">Nichts für diese Gruppe.</div>';
+  const open = inbox.filter(m=>!m.done);
+  document.getElementById('gOpen').innerHTML = open.length ? open.map(m=>row(m,true)).join('') : '<div class="px-4 py-6 text-center text-sm text-ink-soft">Nichts offen.</div>';
+  document.getElementById('gNoEvent').innerHTML = inbox.filter(m=>!m.event).map(m=>row(m,true)).join('');
+}
+
+function take(id){ inbox.find(m=>m.id===id).who = ME; render(); }
+
+function openMail(id){
+  const m = inbox.find(x=>x.id===id);
+  document.getElementById('pTitle').textContent = m.subject;
+  document.getElementById('pFoot').classList.add('hidden');
+  document.getElementById('pBody').innerHTML = `
+    ${m.today && !m.done ?`<div class="bg-red-50 text-red-700 rounded px-3 py-2 text-xs">${m.today}</div>`:''}
+    <div class="text-ink-soft">${m.from} · ${m.via} · ${m.when}</div>
+    ${!m.event ? `<label class="text-xs flex items-center gap-2">Event zuordnen <select class="border rounded px-2 py-1"><option>— ohne Event —</option><option>BATbern60</option></select></label>` : ''}
+    <div class="whitespace-pre-line border rounded p-4">${m.text}</div>
+    ${m.reply?`<div class="text-xs text-green-700">✓ ${m.reply}</div>`:''}
+    ${m.done?'':`
+      <textarea class="w-full border rounded p-3 h-28" placeholder="Antwort an ${m.from} …"></textarea>
+      <div class="flex justify-between items-center gap-3">
+        <span class="text-xs text-ink-soft">Geht raus als „${ME} via BATbern“. Die Antwort landet wieder hier.</span>
+        <button onclick="answer('${m.id}')" class="bg-bat text-white rounded px-4 py-2 shrink-0">Senden</button>
+      </div>`}`;
+  document.getElementById('panel').classList.remove('hidden');
+}
+function answer(id){ const m=inbox.find(x=>x.id===id); m.done=true; m.who=ME; m.reply=`${ME} · jetzt · Antwort gesendet`; closePanel(); render(); toast('Antwort gesendet.'); }
+
+function newsletterHtml(){
+  const prog = [
+    ['Weniger Cloud, mehr Klarheit: Digitale Souveränität bei Software, Daten, IT-Infrastruktur und KI','Speaker Eins'],
+    ['Souveräne KI im Spital-Alltag','Speaker Zwei, Speaker Drei, Speaker Vier'],
+    ['Digitale Souveränität bei der Mobiliar: Optimieren statt Maximieren','Speaker Fünf'],
+    ['Souveräne AI im Bundesumfeld','Speaker Sechs, Speaker Sieben, Speaker Acht'],
+  ];
+  return `<div class="border rounded overflow-hidden">
+    <div class="bg-bat text-white px-4 py-3"><div class="text-xs opacity-80">BATbern · Berner Architekten Treffen · Abend-BAT</div><div class="text-lg font-semibold">Digitale Souveränität</div><div class="text-xs">#BATbern60</div></div>
+    <div class="p-4 space-y-3">
+      <div class="grid grid-cols-2 gap-2 text-xs"><div><b>Datum &amp; Zeit</b><br>Freitag, 6. November 2026 ab 16:00 Uhr</div><div><b>Ort</b><br>Zentrum Paul Klee</div></div>
+      <p class="text-xs">Willkommen beim Newsletter für das Berner Architekten Treffen BATbern. Als ehemaliger Teilnehmer oder Interessent informieren wir dich über unsere geplanten Veranstaltungen und Themen.</p>
+      <div class="text-xs font-semibold">Programm</div>
+      ${prog.map(p=>`<div class="text-xs border-l-2 border-bat pl-2"><div>${p[0]}</div><div class="text-ink-soft">${p[1]}</div></div>`).join('')}
+      <p class="text-[11px] text-ink-soft">Gekürzte Darstellung; im Mailcenter wäre es die gerenderte Mail, so wie sie verschickt wurde.</p>
+    </div></div>`;
+}
+function openSent(id){
+  const s = sent.find(x=>x.id===id);
+  document.getElementById('pTitle').textContent = s.subject;
+  document.getElementById('pFoot').classList.add('hidden');
+  document.getElementById('pBody').innerHTML = `
+    <div class="text-ink-soft">${s.when ? s.when+' · ' : ''}${s.who} → ${s.to}</div>
+    ${s.stat?`<div><b>${s.stat}</b></div>`:''}
+    ${s.newsletter ? newsletterHtml() : `<div class="border rounded p-4">${s.body}</div>`}
+    ${s.recips?`<div><div class="text-xs text-ink-soft mb-1">Empfänger</div><div class="flex flex-wrap gap-1">${s.recips.map(r=>`<span class="text-xs bg-gray-100 rounded px-2 py-0.5">${r}</span>`).join('')}</div></div>`:''}
+    ${s.replies?`<div class="text-xs bg-bat-tint rounded px-3 py-2">Rückmeldungen: ${s.replies}</div>`:''}`;
+  document.getElementById('panel').classList.remove('hidden');
+}
+
+function closePanel(){ document.getElementById('panel').classList.add('hidden'); }
+function toggleMenu(forceClose){ const m=document.getElementById('menu'); if(forceClose===true) m.classList.add('hidden'); else m.classList.toggle('hidden'); }
+document.addEventListener('click', e=>{ if(!e.target.closest('#menu') && !e.target.closest('[onclick="toggleMenu()"]')) toggleMenu(true); });
+function toast(t){ const el=document.getElementById('toast'); el.textContent=t; el.classList.remove('hidden'); clearTimeout(window._tt); window._tt=setTimeout(()=>el.classList.add('hidden'),2500); }
+function go(p){
+  document.getElementById('pageEvent').classList.toggle('hidden', p!=='event');
+  document.getElementById('pageGlobal').classList.toggle('hidden', p!=='global');
+  document.getElementById('navEvents').className = 'px-3 py-1.5 rounded cursor-pointer ' + (p==='event'?'bg-white/15 font-semibold':'hover:bg-white/10');
+  document.getElementById('navMail').className = 'px-3 py-1.5 rounded cursor-pointer flex items-center gap-2 ' + (p==='global'?'bg-white/15 font-semibold':'hover:bg-white/10');
+}
+go('event'); render();
+</script>
+</body>
+</html>

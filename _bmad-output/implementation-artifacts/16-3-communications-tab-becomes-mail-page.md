@@ -8,17 +8,18 @@ As an **organizer**,
 I want **the event's Communications tab to show everything that went out for this event, newest first, with the exact mail and its delivery result**,
 so that **I can answer "did the speakers get the slides mail?" in one click instead of asking the team**.
 
-> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.3**. Depends on 16.1.
-> **First-wave scope:** section 1 ("Needs an answer") arrives with 16.2. This story builds sections 2 and 3 only and leaves room for section 1 at the top.
+> Source: `docs/prd/epic-16-mail-center.md` → **Story 16.3**. Depends on 16.1a (16.1b for delivered/failed of non-newsletter mail).
+> **Scope:** "Needs an answer" is built by 16.2 (epic updated by the readiness check). This story builds "What went out" and "Handled automatically" and leaves room for it at the top.
+> **UX reference:** `docs/ux/mail-center-prototype.html` (anonymized, Tailwind) and `docs/ux/mail-center-spec.md`. The prototype is a layout reference only: build with the organizer area's MUI components and theme.
 
 ## Acceptance Criteria
 
 1. **AC1** — GIVEN an event with a newsletter sent, WHEN the organizer opens Communications, THEN "What went out" lists it with sender, audience, recipient count, delivered and failed counts, and a click shows the mail as sent.
-2. **AC2** — GIVEN a speaker or registrant send recorded by 16.1, THEN it appears in the same list with the same fields and is marked "Template" or "Own text".
+2. **AC2** — GIVEN a speaker or registrant send recorded by 16.1a, THEN it appears in the same list with the same fields and is marked "Template" or "Own text".
 3. **AC3** — "Handled automatically" is collapsed by default and shows counts only. In this story it shows failed deliveries (bounces, rejects) for this event. Accept/decline/out-of-office counts are added by 16.2.
 4. **AC4** — GIVEN failed recipients on a send, WHEN the organizer expands that send, THEN the failed addresses and the reason are listed.
 5. **AC5** — New read endpoint `GET /api/v1/events/{eventCode}/mail-messages` (paged, newest first) and `GET /api/v1/events/{eventCode}/mail-messages/{mailKey}` (with body and recipients), both `hasRole('ORGANIZER')`, ADR-013 conventions, in a new spec `docs/api/event-mail-api.openapi.yml`; frontend types regenerated.
-6. **AC6** — Sends made before 16.1 shipped are not shown, except newsletters, which are backfilled from `newsletter_sends` by the endpoint (read-time union, no data migration).
+6. **AC6** — Sends made before 16.1a shipped are not shown, except newsletters, which are backfilled from `newsletter_sends` by the endpoint (read-time union, no data migration).
 7. **AC7** — New i18n keys in all 10 locales; EN + DE first-class.
 8. **AC8** — Works on mobile width (single column, no horizontal scroll).
 
@@ -42,7 +43,7 @@ so that **I can answer "did the speakers get the slides mail?" in one click inst
 
 - `EventCommunicationsContainer.tsx` (109 lines) holds the four audiences in local `useState`; there are no sub-tab routes, so nothing needs a redirect.
 - Newsletter history today comes from `useNewsletterHistory(eventCode)` in `EventNewsletterTab.tsx`. That hook also drives "resume polling an active send"; keep that behaviour.
-- The prototype v4 (scratchpad, not in the repo) shows the target layout. It contains real names, so do not copy its data.
+- Grouping in the list: individual transactional mails (one group per mail, see 16.1a AC2) are collapsed per template and day, e.g. "Registration confirmation · 14 mails", so they don't flood the list.
 - Rendered mail bodies are PII; the endpoint is organizer-only and never cached publicly.
 
 ### References
@@ -66,3 +67,4 @@ so that **I can answer "did the speakers get the slides mail?" in one click inst
 ## Change Log
 
 - 2026-10-30: Story drafted from Epic 16 (John, PM).
+- 2026-10-30: Readiness fixes: section 1 owned by 16.2, UX reference in docs/ux, transactional grouping.
