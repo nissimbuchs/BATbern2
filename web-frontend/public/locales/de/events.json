@@ -296,7 +296,8 @@
       "retryTooltip": "Fehlgeschlagene Empfänger erneut senden",
       "testMode": "Testmodus (nur Organisatoren)",
       "testModeWarning": "Testmodus aktiviert — Newsletter wird nur an Organisatoren-Abonnenten gesendet.",
-      "confirmSendBodyTestMode": "{{type}} mit Vorlage '{{templateKey}}' nur an Organisatoren-Abonnenten (Testmodus) für Veranstaltung «{{eventTitle}}» senden?"
+      "confirmSendBodyTestMode": "{{type}} mit Vorlage '{{templateKey}}' nur an Organisatoren-Abonnenten (Testmodus) für Veranstaltung «{{eventTitle}}» senden?",
+      "retryHint": "Der Versand vom {{date}} hat {{count}} Empfänger:innen nicht erreicht."
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -369,14 +370,6 @@
       "uploadingImage": "Wird hochgeladen…",
       "replaceImage": "Bild ersetzen"
     },
-    "communications": {
-      "audiences": {
-        "newsletter": "Newsletter-Abonnenten",
-        "registrants": "Event-Teilnehmende",
-        "speakers": "Referent:innen",
-        "venue": "Location & Catering"
-      }
-    },
     "speakerComms": {
       "title": "Referent:innen-Erinnerungen",
       "description": "Senden Sie eine Frist-Erinnerung an die Referent:innen, die noch eine Antwort oder ihre Inhalte schulden. Jede Person wird einzeln per E-Mail benachrichtigt – Einladungen und einzelne Nachfragen bleiben auf der Referent:innen-Karte.",
@@ -414,6 +407,63 @@
     "mobile": {
       "more": "Mehr",
       "moreSheetTitle": "Mehr"
+    },
+    "mail": {
+      "whatWentOut": "Was rausging",
+      "newMail": "Neue Mail",
+      "handledAutomatically": "Automatisch verarbeitet",
+      "failedDeliveries_one": "{{count}} fehlgeschlagene Zustellung (Bounce, Beschwerde oder Ablehnung)",
+      "failedDeliveries_other": "{{count}} fehlgeschlagene Zustellungen (Bounces, Beschwerden, Ablehnungen)",
+      "sentToast": "Gesendet. Die Mail erscheint jetzt unter «Was rausging».",
+      "loadError": "Die Mails konnten nicht geladen werden.",
+      "emptyAll": "Für diesen Event ging noch nichts raus.",
+      "emptyFilter": "Nichts für diese Gruppe.",
+      "automatic": "automatisch",
+      "template": "Vorlage",
+      "ownText": "Eigener Text",
+      "groupTitle_one": "{{template}} · {{count}} Mail",
+      "groupTitle_other": "{{template}} · {{count}} Mails",
+      "groupTruncated": "Die neuesten {{count}} werden angezeigt.",
+      "sendingProgress": "wird gesendet … {{sent}} / {{total}}",
+      "delivered": "{{count}} zugestellt",
+      "failed": "{{count}} fehlgeschlagen",
+      "recipients_one": "{{count}} Empfänger:in",
+      "recipients_other": "{{count}} Empfänger:innen",
+      "recipientsHeading": "Empfänger:innen",
+      "failedRecipients": "Fehlgeschlagene Empfänger:innen",
+      "bodyTitle": "Mail wie gesendet",
+      "bodyNotRecorded": "Der Text wurde nicht gespeichert: Diese Mail ging raus, bevor es die Aufzeichnung gab.",
+      "status": {
+        "SENT": "gesendet",
+        "DELIVERED": "zugestellt",
+        "FAILED": "fehlgeschlagen"
+      },
+      "filters": {
+        "ALL": "Alle",
+        "NEWSLETTER": "Newsletter",
+        "REGISTRANTS": "Angemeldete",
+        "SPEAKERS": "Speaker",
+        "VENUE": "Venue & Catering",
+        "PARTNERS": "Partner",
+        "ORGANIZERS": "Organisatoren",
+        "SYSTEM": "System"
+      },
+      "compose": {
+        "newsletter": "Newsletter",
+        "registrants": "Angemeldete",
+        "speakers": "Speaker",
+        "venue": "Venue & Catering",
+        "partners": "Partner"
+      },
+      "partners": {
+        "noMeeting": "Dieser Event hat noch kein Partner-Meeting.",
+        "meetingsLink": "Zu den Partner-Meetings",
+        "hint": "Der Partner-Service versendet die Kalendereinladung und erfasst die Antworten.",
+        "type": {
+          "SPRING": "Frühlings-Meeting",
+          "AUTUMN": "Herbst-Meeting"
+        }
+      }
     }
   },
   "dashboard": {

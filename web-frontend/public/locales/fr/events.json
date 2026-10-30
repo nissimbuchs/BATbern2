@@ -282,7 +282,8 @@
       "historyRecipients": "Destinataires",
       "typeNewsletter": "Newsletter",
       "typeReminder": "Rappel",
-      "previewTitle": "Aperçu de l'e-mail"
+      "previewTitle": "Aperçu de l'e-mail",
+      "retryHint": "L'envoi du {{date}} n'a pas atteint {{count}} destinataire(s)."
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -355,14 +356,6 @@
       "uploadingImage": "Téléversement…",
       "replaceImage": "Remplacer l'image"
     },
-    "communications": {
-      "audiences": {
-        "newsletter": "Abonnés à la newsletter",
-        "registrants": "Participants à l'événement",
-        "speakers": "Intervenants",
-        "venue": "Lieu et traiteur"
-      }
-    },
     "speakerComms": {
       "title": "Rappels aux intervenants",
       "description": "Envoyez un rappel d'échéance aux intervenants qui doivent encore une réponse ou leur contenu. Chaque intervenant reçoit un e-mail individuel — les invitations et relances ponctuelles restent sur la fiche de l'intervenant.",
@@ -400,6 +393,63 @@
     "mobile": {
       "more": "Plus",
       "moreSheetTitle": "Plus"
+    },
+    "mail": {
+      "whatWentOut": "Ce qui a été envoyé",
+      "newMail": "Nouveau mail",
+      "handledAutomatically": "Traité automatiquement",
+      "failedDeliveries_one": "{{count}} échec de distribution (rebond, plainte ou refus)",
+      "failedDeliveries_other": "{{count}} échecs de distribution (rebonds, plaintes, refus)",
+      "sentToast": "Envoyé. Le mail apparaît maintenant sous « Ce qui a été envoyé ».",
+      "loadError": "Les mails n'ont pas pu être chargés.",
+      "emptyAll": "Rien n'a encore été envoyé pour cet événement.",
+      "emptyFilter": "Rien pour ce groupe.",
+      "automatic": "automatique",
+      "template": "Modèle",
+      "ownText": "Texte propre",
+      "groupTitle_one": "{{template}} · {{count}} mail",
+      "groupTitle_other": "{{template}} · {{count}} mails",
+      "groupTruncated": "Les {{count}} plus récents sont affichés.",
+      "sendingProgress": "envoi en cours … {{sent}} / {{total}}",
+      "delivered": "{{count}} distribués",
+      "failed": "{{count}} échoués",
+      "recipients_one": "{{count}} destinataire",
+      "recipients_other": "{{count}} destinataires",
+      "recipientsHeading": "Destinataires",
+      "failedRecipients": "Destinataires en échec",
+      "bodyTitle": "Mail tel qu'envoyé",
+      "bodyNotRecorded": "Le texte n'a pas été enregistré : ce mail est parti avant l'existence de l'historique.",
+      "status": {
+        "SENT": "envoyé",
+        "DELIVERED": "distribué",
+        "FAILED": "échoué"
+      },
+      "filters": {
+        "ALL": "Tous",
+        "NEWSLETTER": "Newsletter",
+        "REGISTRANTS": "Inscrits",
+        "SPEAKERS": "Intervenants",
+        "VENUE": "Lieu & traiteur",
+        "PARTNERS": "Partenaires",
+        "ORGANIZERS": "Organisateurs",
+        "SYSTEM": "Système"
+      },
+      "compose": {
+        "newsletter": "Newsletter",
+        "registrants": "Inscrits",
+        "speakers": "Intervenants",
+        "venue": "Lieu & traiteur",
+        "partners": "Partenaires"
+      },
+      "partners": {
+        "noMeeting": "Cet événement n'a pas encore de réunion partenaires.",
+        "meetingsLink": "Vers les réunions partenaires",
+        "hint": "Le service partenaires envoie l'invitation calendrier et suit les réponses.",
+        "type": {
+          "SPRING": "Réunion de printemps",
+          "AUTUMN": "Réunion d'automne"
+        }
+      }
     }
   },
   "dashboard": {

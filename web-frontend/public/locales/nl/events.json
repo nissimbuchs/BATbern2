@@ -282,7 +282,8 @@
       "historyRecipients": "Ontvangers",
       "typeNewsletter": "Nieuwsbrief",
       "typeReminder": "Herinnering",
-      "previewTitle": "E-mailvoorbeeld"
+      "previewTitle": "E-mailvoorbeeld",
+      "retryHint": "De verzending van {{date}} heeft {{count}} ontvanger(s) niet bereikt."
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -355,14 +356,6 @@
       "uploadingImage": "Uploaden…",
       "replaceImage": "Afbeelding vervangen"
     },
-    "communications": {
-      "audiences": {
-        "newsletter": "Nieuwsbriefabonnees",
-        "registrants": "Deelnemers aan het evenement",
-        "speakers": "Sprekers",
-        "venue": "Locatie & catering"
-      }
-    },
     "speakerComms": {
       "title": "Herinneringen aan sprekers",
       "description": "Stuur een deadlineherinnering naar de sprekers die nog een reactie of hun content verschuldigd zijn. Elke spreker krijgt een individuele e-mail — uitnodigingen en losse aansporingen blijven op de sprekerkaart.",
@@ -400,6 +393,63 @@
     "mobile": {
       "more": "Meer",
       "moreSheetTitle": "Meer"
+    },
+    "mail": {
+      "whatWentOut": "Wat is verstuurd",
+      "newMail": "Nieuwe mail",
+      "handledAutomatically": "Automatisch verwerkt",
+      "failedDeliveries_one": "{{count}} mislukte bezorging (bounce, klacht of weigering)",
+      "failedDeliveries_other": "{{count}} mislukte bezorgingen (bounces, klachten, weigeringen)",
+      "sentToast": "Verstuurd. De mail staat nu onder \"Wat is verstuurd\".",
+      "loadError": "De mails konden niet worden geladen.",
+      "emptyAll": "Voor dit event is nog niets verstuurd.",
+      "emptyFilter": "Niets voor deze groep.",
+      "automatic": "automatisch",
+      "template": "Sjabloon",
+      "ownText": "Eigen tekst",
+      "groupTitle_one": "{{template}} · {{count}} mail",
+      "groupTitle_other": "{{template}} · {{count}} mails",
+      "groupTruncated": "De nieuwste {{count}} worden getoond.",
+      "sendingProgress": "wordt verstuurd … {{sent}} / {{total}}",
+      "delivered": "{{count}} bezorgd",
+      "failed": "{{count}} mislukt",
+      "recipients_one": "{{count}} ontvanger",
+      "recipients_other": "{{count}} ontvangers",
+      "recipientsHeading": "Ontvangers",
+      "failedRecipients": "Mislukte ontvangers",
+      "bodyTitle": "Mail zoals verstuurd",
+      "bodyNotRecorded": "De tekst is niet bewaard: deze mail is verstuurd voordat de registratie bestond.",
+      "status": {
+        "SENT": "verstuurd",
+        "DELIVERED": "bezorgd",
+        "FAILED": "mislukt"
+      },
+      "filters": {
+        "ALL": "Alle",
+        "NEWSLETTER": "Nieuwsbrief",
+        "REGISTRANTS": "Aangemelden",
+        "SPEAKERS": "Sprekers",
+        "VENUE": "Locatie & catering",
+        "PARTNERS": "Partners",
+        "ORGANIZERS": "Organisatoren",
+        "SYSTEM": "Systeem"
+      },
+      "compose": {
+        "newsletter": "Nieuwsbrief",
+        "registrants": "Aangemelden",
+        "speakers": "Sprekers",
+        "venue": "Locatie & catering",
+        "partners": "Partners"
+      },
+      "partners": {
+        "noMeeting": "Dit event heeft nog geen partnermeeting.",
+        "meetingsLink": "Naar de partnermeetings",
+        "hint": "De partnerservice verstuurt de agenda-uitnodiging en houdt de antwoorden bij.",
+        "type": {
+          "SPRING": "Voorjaarsmeeting",
+          "AUTUMN": "Najaarsmeeting"
+        }
+      }
     }
   },
   "dashboard": {

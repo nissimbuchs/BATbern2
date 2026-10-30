@@ -282,7 +282,8 @@
       "historyRecipients": "受信者",
       "typeNewsletter": "ニュースレター",
       "typeReminder": "リマインダー",
-      "previewTitle": "メールプレビュー"
+      "previewTitle": "メールプレビュー",
+      "retryHint": "{{date}} の送信で {{count}} 名に届きませんでした。"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -355,14 +356,6 @@
       "uploadingImage": "アップロード中…",
       "replaceImage": "画像を置き換える"
     },
-    "communications": {
-      "audiences": {
-        "newsletter": "ニュースレター購読者",
-        "registrants": "イベント参加者",
-        "speakers": "登壇者",
-        "venue": "会場・ケータリング"
-      }
-    },
     "speakerComms": {
       "title": "登壇者へのリマインダー",
       "description": "回答または資料がまだ未提出の登壇者に締め切りリマインダーを送信します。各登壇者には個別にメールが送られます。招待や個別の催促は登壇者カードに残ります。",
@@ -400,6 +393,63 @@
     "mobile": {
       "more": "その他",
       "moreSheetTitle": "その他"
+    },
+    "mail": {
+      "whatWentOut": "送信済み",
+      "newMail": "新規メール",
+      "handledAutomatically": "自動処理",
+      "failedDeliveries_one": "配信失敗 {{count}} 件（バウンス、苦情、拒否）",
+      "failedDeliveries_other": "配信失敗 {{count}} 件（バウンス、苦情、拒否）",
+      "sentToast": "送信しました。「送信済み」に表示されます。",
+      "loadError": "メールを読み込めませんでした。",
+      "emptyAll": "このイベントではまだ何も送信されていません。",
+      "emptyFilter": "このグループには何もありません。",
+      "automatic": "自動",
+      "template": "テンプレート",
+      "ownText": "独自テキスト",
+      "groupTitle_one": "{{template}} · {{count}} 件",
+      "groupTitle_other": "{{template}} · {{count}} 件",
+      "groupTruncated": "最新の {{count}} 件を表示しています。",
+      "sendingProgress": "送信中 … {{sent}} / {{total}}",
+      "delivered": "{{count}} 件配信",
+      "failed": "{{count}} 件失敗",
+      "recipients_one": "受信者 {{count}} 名",
+      "recipients_other": "受信者 {{count}} 名",
+      "recipientsHeading": "受信者",
+      "failedRecipients": "配信失敗の受信者",
+      "bodyTitle": "送信時のメール",
+      "bodyNotRecorded": "本文は保存されていません。このメールは記録機能の導入前に送信されました。",
+      "status": {
+        "SENT": "送信済み",
+        "DELIVERED": "配信済み",
+        "FAILED": "失敗"
+      },
+      "filters": {
+        "ALL": "すべて",
+        "NEWSLETTER": "ニュースレター",
+        "REGISTRANTS": "参加登録者",
+        "SPEAKERS": "登壇者",
+        "VENUE": "会場・ケータリング",
+        "PARTNERS": "パートナー",
+        "ORGANIZERS": "主催者",
+        "SYSTEM": "システム"
+      },
+      "compose": {
+        "newsletter": "ニュースレター",
+        "registrants": "参加登録者",
+        "speakers": "登壇者",
+        "venue": "会場・ケータリング",
+        "partners": "パートナー"
+      },
+      "partners": {
+        "noMeeting": "このイベントにはまだパートナーミーティングがありません。",
+        "meetingsLink": "パートナーミーティングへ",
+        "hint": "パートナーサービスがカレンダー招待を送信し、返信を記録します。",
+        "type": {
+          "SPRING": "春のミーティング",
+          "AUTUMN": "秋のミーティング"
+        }
+      }
     }
   },
   "dashboard": {

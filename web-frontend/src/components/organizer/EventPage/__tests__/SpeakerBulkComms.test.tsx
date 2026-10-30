@@ -100,6 +100,25 @@ describe('SpeakerBulkComms', () => {
     expect(screen.getByTestId('speaker-comms-retry-failed')).toBeInTheDocument();
   });
 
+  it('Story 16.4: calls onSent when every reminder went out, not on a partial failure', async () => {
+    const onSent = vi.fn();
+    const { unmount } = render(
+      <SpeakerBulkComms eventCode="BATbern73" eventTitle="DevOps Event" onSent={onSent} />
+    );
+    fireEvent.click(screen.getByTestId('speaker-comms-send-button'));
+    fireEvent.click(screen.getByTestId('speaker-comms-confirm-send'));
+    await waitFor(() => expect(onSent).toHaveBeenCalledTimes(1));
+    unmount();
+
+    onSent.mockReset();
+    mutateAsync.mockReset().mockResolvedValueOnce({}).mockRejectedValueOnce(new Error('boom'));
+    render(<SpeakerBulkComms eventCode="BATbern73" eventTitle="DevOps Event" onSent={onSent} />);
+    fireEvent.click(screen.getByTestId('speaker-comms-send-button'));
+    fireEvent.click(screen.getByTestId('speaker-comms-confirm-send'));
+    await screen.findByTestId('speaker-comms-retry-failed');
+    expect(onSent).not.toHaveBeenCalled();
+  });
+
   it('locks the reminder-type select while a send is in flight (no mid-send type switch)', async () => {
     // A never-resolving send keeps the component in the `sending` state.
     let release: () => void = () => {};

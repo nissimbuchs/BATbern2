@@ -1,0 +1,27 @@
+meta {
+  name: Mail page — partner cannot read mail (403)
+  type: http
+  seq: 23
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern59/mail-messages
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+
+tests {
+  test("a non-organizer never receives 200", function() {
+    // 401 when no partner token is loaded in the env (CI fallback).
+    expect([401, 403]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Story 16.3 AC5: mail bodies and addresses are personal data, ORGANIZER only
+  (@PreAuthorize("hasRole('ORGANIZER')")).
+}

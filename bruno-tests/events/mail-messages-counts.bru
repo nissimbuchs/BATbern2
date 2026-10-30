@@ -1,0 +1,31 @@
+meta {
+  name: Mail page — counts for handled automatically (organizer)
+  type: http
+  seq: 22
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern59/mail-messages/counts
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 200 (404 where BATbern59 is not seeded)", function() {
+    expect([200, 404]).to.include(res.getStatus());
+  });
+
+  test("failedDeliveries is a non-negative number", function() {
+    if (res.getStatus() === 200) {
+      expect(res.getBody().failedDeliveries).to.be.at.least(0);
+    }
+  });
+}
+
+docs {
+  Story 16.3 AC3: GET /events/{eventCode}/mail-messages/counts. Read-only.
+}

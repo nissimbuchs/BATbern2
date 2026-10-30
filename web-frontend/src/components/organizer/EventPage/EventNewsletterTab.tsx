@@ -4,18 +4,14 @@
  * Newsletter management tab for organizers:
  * 1. Subscriber summary
  * 2. Compose & send section (template select, language, preview iframe, send/reminder buttons + confirm dialog)
- * 3. Send history table (collapsible, at the bottom)
+ * 3. Retry of the newest send that left recipients out (the history is on the mail page, Story 16.3)
  */
 
 import React, { useEffect, useRef, useState } from 'react';
 import {
-  Accordion,
-  AccordionDetails,
-  AccordionSummary,
   Alert,
   Box,
   Button,
-  Chip,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -33,15 +29,9 @@ import {
   Skeleton,
   Stack,
   Switch,
-  Table,
-  TableBody,
-  TableCell,
-  TableHead,
-  TableRow,
-  Tooltip,
   Typography,
 } from '@mui/material';
-import { Email as EmailIcon, ExpandMore as ExpandMoreIcon } from '@mui/icons-material';
+import { Email as EmailIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import {
   useSubscriberCount,
@@ -59,6 +49,8 @@ import { useBreakpoints } from '@/hooks/useBreakpoints';
 interface EventNewsletterTabProps {
   eventCode: string;
   eventTitle: string;
+  /** Story 16.4: called after a real (non-test) send was started; the mail page closes the panel. */
+  onSent?: () => void;
 }
 
 type SendType = 'newsletter' | 'reminder';
@@ -66,6 +58,7 @@ type SendType = 'newsletter' | 'reminder';
 export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
   eventCode,
   eventTitle,
+  onSent,
 }) => {
   const { t } = useTranslation(['events', 'organizer']);
   const { isMobile } = useBreakpoints();
@@ -114,6 +107,12 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
     prevStatusRef.current = status;
   }, [sendStatusQuery.data?.status, historyQuery]);
 
+  // The newest send, if it ended PARTIAL or FAILED: offer to retry its failed recipients.
+  const retryableSend = (() => {
+    const newest = historyQuery.data?.[0];
+    return newest && (newest.status === 'PARTIAL' || newest.status === 'FAILED') ? newest : null;
+  })();
+
   const filteredTemplates: EmailTemplateResponse[] = React.useMemo(
     () => (newsletterTemplatesQuery.data ?? []).filter((tpl) => tpl.locale === locale),
     [newsletterTemplatesQuery.data, locale]
@@ -149,6 +148,10 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
         // Start polling the send-job status.
         if (data.id) {
           setActiveSendId(data.id);
+        }
+        // A test send stays in the panel so the real send can follow; the list shows progress.
+        if (!testMode) {
+          onSent?.();
         }
       },
       onError: () => {
@@ -405,129 +408,35 @@ export const EventNewsletterTab: React.FC<EventNewsletterTabProps> = ({
             )}
           </Paper>
 
-          {/* Section 3 — Send history */}
-          <Paper variant="outlined" sx={{ p: 2 }}>
-            <Accordion variant="outlined" disableGutters>
-              <AccordionSummary expandIcon={<ExpandMoreIcon />}>
-                <Typography variant="subtitle1" fontWeight="medium">
-                  {t('eventPage.newsletter.sendHistory')}
-                  {historyQuery.data && historyQuery.data.length > 0 && (
-                    <Typography
-                      component="span"
-                      variant="caption"
-                      color="text.secondary"
-                      sx={{ ml: 1 }}
-                    >
-                      ({historyQuery.data.length})
-                    </Typography>
-                  )}
-                </Typography>
-              </AccordionSummary>
-              <AccordionDetails sx={{ p: 0 }}>
-                {historyQuery.isLoading ? (
-                  <Box p={2}>
-                    <Skeleton variant="rectangular" height={100} />
-                  </Box>
-                ) : historyQuery.data && historyQuery.data.length > 0 ? (
-                  // overflowX so the 5-column send-history table scrolls within its own box on
-                  // mobile instead of widening the whole Communications tab (Phase G).
-                  <Paper variant="outlined" sx={{ border: 0, overflowX: 'auto' }}>
-                    <Table size="small" sx={{ minWidth: 'max-content' }}>
-                      <TableHead>
-                        <TableRow>
-                          <TableCell>{t('common:labels.date')}</TableCell>
-                          <TableCell>{t('eventPage.newsletter.historyType', 'Type')}</TableCell>
-                          <TableCell align="right">
-                            {t('eventPage.newsletter.historyRecipients', 'Recipients')}
-                          </TableCell>
-                          <TableCell align="center">
-                            {t('eventPage.newsletter.historyStatus', 'Status')}
-                          </TableCell>
-                          <TableCell />
-                        </TableRow>
-                      </TableHead>
-                      <TableBody>
-                        {historyQuery.data.map((send) => (
-                          <TableRow key={send.id}>
-                            <TableCell>{new Date(send.sentAt).toLocaleString()}</TableCell>
-                            <TableCell>
-                              {send.isReminder
-                                ? t('eventPage.newsletter.typeReminder', 'Reminder')
-                                : t('eventPage.newsletter.typeNewsletter', 'Newsletter')}
-                              {send.testMode && (
-                                <Chip
-                                  label="TEST"
-                                  size="small"
-                                  color="warning"
-                                  variant="outlined"
-                                  sx={{ ml: 0.5 }}
-                                />
-                              )}
-                            </TableCell>
-                            <TableCell align="right">
-                              {send.id === activeSendId && isJobActive
-                                ? `${sendStatusQuery.data?.sentCount ?? send.sentCount ?? 0} / ${send.recipientCount}`
-                                : send.recipientCount}
-                            </TableCell>
-                            <TableCell align="center">
-                              <Typography
-                                variant="caption"
-                                color={
-                                  send.status === 'COMPLETED'
-                                    ? 'success.main'
-                                    : send.status === 'PARTIAL'
-                                      ? 'warning.main'
-                                      : send.status === 'FAILED'
-                                        ? 'error.main'
-                                        : 'text.secondary'
-                                }
-                              >
-                                {send.status ?? 'COMPLETED'}
-                              </Typography>
-                            </TableCell>
-                            <TableCell>
-                              {(send.status === 'PARTIAL' || send.status === 'FAILED') && (
-                                <Tooltip
-                                  title={t(
-                                    'eventPage.newsletter.retryTooltip',
-                                    'Retry failed recipients'
-                                  )}
-                                >
-                                  <span>
-                                    <Button
-                                      size="small"
-                                      variant="text"
-                                      color="warning"
-                                      onClick={() => {
-                                        retryMutation.mutate(send.id, {
-                                          onSuccess: (data) => {
-                                            if (data.id) setActiveSendId(data.id);
-                                          },
-                                        });
-                                      }}
-                                      disabled={retryMutation.isPending || isJobActive}
-                                    >
-                                      {t('eventPage.newsletter.retryButton', 'Retry')}
-                                    </Button>
-                                  </span>
-                                </Tooltip>
-                              )}
-                            </TableCell>
-                          </TableRow>
-                        ))}
-                      </TableBody>
-                    </Table>
-                  </Paper>
-                ) : (
-                  <Box p={2}>
-                    <Typography variant="body2" color="text.secondary">
-                      {t('eventPage.newsletter.noHistory')}
-                    </Typography>
-                  </Box>
-                )}
-              </AccordionDetails>
-            </Accordion>
-          </Paper>
+          {/* Section 3 — Retry. The send history moved to the mail page ("What went out", Story
+              16.3); the most recent send that left recipients out can still be retried here. */}
+          {retryableSend && (
+            <Alert
+              severity="warning"
+              data-testid="newsletter-retry-alert"
+              action={
+                <Button
+                  size="small"
+                  color="inherit"
+                  onClick={() => {
+                    retryMutation.mutate(retryableSend.id, {
+                      onSuccess: (data) => {
+                        if (data.id) setActiveSendId(data.id);
+                      },
+                    });
+                  }}
+                  disabled={retryMutation.isPending || isJobActive}
+                >
+                  {t('eventPage.newsletter.retryButton', 'Retry')}
+                </Button>
+              }
+            >
+              {t('eventPage.newsletter.retryHint', {
+                date: new Date(retryableSend.sentAt).toLocaleString(),
+                count: retryableSend.failedCount ?? 0,
+              })}
+            </Alert>
+          )}
         </Stack>
       </Box>
 

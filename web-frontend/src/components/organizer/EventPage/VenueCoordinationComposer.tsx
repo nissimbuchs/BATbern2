@@ -58,6 +58,8 @@ import {
 
 interface VenueCoordinationComposerProps {
   eventCode: string;
+  /** Story 16.4: called after a successful send; the mail page closes the panel and refreshes. */
+  onSent?: () => void;
 }
 
 function parseConfig(raw: string | null | undefined): VenueCoordinationConfig | null {
@@ -71,6 +73,7 @@ function parseConfig(raw: string | null | undefined): VenueCoordinationConfig | 
 
 export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps> = ({
   eventCode,
+  onSent,
 }) => {
   const { t } = useTranslation(['events', 'common']);
   const { isMobile } = useBreakpoints();
@@ -133,6 +136,7 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
         recipients: selectedRecipients,
       }),
     onSuccess: (data) => {
+      onSent?.();
       setSnackbar({
         message: t('eventPage.venueCoordination.sentSuccess', {
           count: data.sentTo.length,

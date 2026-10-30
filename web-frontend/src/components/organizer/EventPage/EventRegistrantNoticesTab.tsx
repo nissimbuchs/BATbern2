@@ -45,11 +45,14 @@ import { useBreakpoints } from '@/hooks/useBreakpoints';
 interface EventRegistrantNoticesTabProps {
   eventCode: string;
   eventTitle: string;
+  /** Story 16.4: called after a successful send; the mail page closes the panel and refreshes. */
+  onSent?: () => void;
 }
 
 export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps> = ({
   eventCode,
   eventTitle,
+  onSent,
 }) => {
   const { t } = useTranslation(['events', 'organizer', 'common']);
   const { isMobile } = useBreakpoints();
@@ -123,6 +126,7 @@ export const EventRegistrantNoticesTab: React.FC<EventRegistrantNoticesTabProps>
       onSuccess: (data) => {
         setConfirmOpen(false);
         setActiveSendId(data.sendId); // begin polling for the final result
+        onSent?.();
       },
       onError: () => setConfirmOpen(false),
     });

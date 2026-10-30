@@ -896,6 +896,22 @@ SES events of the transactional configuration set move each `mail_recipient` fro
 - **Newsletter suppression untouched**: the newsletter set keeps its own bounce queue and
   `BounceProcessingService`; no transactional event reaches it.
 
+### Read API (Story 16.3)
+
+`event-mail-api.openapi.yml`, implemented by `EventMailController` → `MailMessageQueryService`
+(native SQL, read-only), all `hasRole('ORGANIZER')` and `Cache-Control: no-store`:
+
+- `GET /events/{eventCode}/mail-messages`: paged, newest first, filters `audience`,
+  `templateKey`, `date` (Europe/Zurich). Automatic mails (no sender, template, not a newsletter)
+  collapse per template and day unless `grouped=false`.
+- Newsletter sends without a `mail_message` (sent before 16.1a) are a read-time union from
+  `newsletter_sends`, keyed `newsletter-{sendId}`, without body. Their audience is REGISTRANTS for
+  `REGISTRANT_NOTICE` templates, otherwise NEWSLETTER. Newsletter counts come from
+  `newsletter_recipients` (failed = SES refused or bounced; the newsletter set has no delivery
+  events).
+- `GET .../mail-messages/{mailKey}`: body and recipients; for a newsletter only the failed ones.
+- `GET .../mail-messages/counts`: failed deliveries of the event ("Handled automatically").
+
 ## Auto-Enrollment on Event Creation
 
 When a new event is created, an `EventCreatedEvent` listener automatically enrolls all active organizers and partner contacts as stakeholders. A manual quick-action button is also available for idempotent re-enrollment (`POST` endpoint returns success even if already enrolled).

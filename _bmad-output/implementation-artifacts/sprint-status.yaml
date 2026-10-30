@@ -274,8 +274,8 @@ development_status:
   16-1a-record-outbound-mail: review
   16-1b-delivery-status: review
   16-2-capture-inbound-human-mail: backlog
-  16-3-communications-tab-becomes-mail-page: ready-for-dev
-  16-4-new-mail-picker: ready-for-dev
+  16-3-communications-tab-becomes-mail-page: review
+  16-4-new-mail-picker: review
   16-5-own-text-placeholders-preview: backlog
   16-6-answer-from-mail-center: backlog
   16-7-global-mail-navigation: backlog

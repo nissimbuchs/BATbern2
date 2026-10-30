@@ -14,6 +14,7 @@ BATbern provides a comprehensive set of features designed to streamline event ma
 
 ### Communication & Notifications
 - **[Notification System](notifications.md)** - Email notifications, newsletter, and inbound email handling `[IMPLEMENTED]`
+- **[Event mail page](event-mail.md)** - What went out for an event, delivery results, "+ New mail" `[IMPLEMENTED]`
 - Email templates for speaker outreach and attendee communications `[IMPLEMENTED]`
 - In-app notification center (real-time alerts) `[PLANNED]`
 
