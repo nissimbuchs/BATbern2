@@ -366,6 +366,23 @@ export class InboundEmailStack extends cdk.Stack {
       comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
     });
 
+    // Story 16.0 (#1160): EMS forwards replies@ mail that matches no keyword to the organizers and
+    // rethrows a failure before the first send, so SQS retries three times and dead-letters it.
+    // A message here is a human reply that reached nobody (raw mail stays in S3 for 7 days).
+    const repliesDlqAlarm = new cloudwatch.Alarm(this, 'RepliesDlqAlarm', {
+      alarmName: `batbern-${envName}-replies-dlq`,
+      alarmDescription:
+        'Inbound replies: a mail to replies@ failed three times and sits in the DLQ (replayable from S3 for 7 days)',
+      metric: dlq.metricApproximateNumberOfMessagesVisible({
+        period: cdk.Duration.minutes(5),
+        statistic: 'Maximum',
+      }),
+      threshold: 0,
+      evaluationPeriods: 1,
+      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+    });
+
     // EMS counts EmailsFailed when copies could not be sent after the point of no return, and when
     // a redelivery finds a claim that stalled mid-send. Neither is retried, so neither reaches the
     // DLQ: this alarm is their only signal.
@@ -387,7 +404,12 @@ export class InboundEmailStack extends cdk.Stack {
 
     if (props.alarmTopic) {
       const alarmAction = new cloudwatchActions.SnsAction(props.alarmTopic);
-      for (const alarm of [emailsRejectedAlarm, forwardingDlqAlarm, forwardingFailedAlarm]) {
+      for (const alarm of [
+        emailsRejectedAlarm,
+        forwardingDlqAlarm,
+        repliesDlqAlarm,
+        forwardingFailedAlarm,
+      ]) {
         alarm.addAlarmAction(alarmAction);
         alarm.addOkAction(alarmAction);
       }

@@ -22,6 +22,7 @@ public record ForwardingAlias(String localPart, Kind kind, String eventCode) {
 
     private static final Pattern EVENT_ALIAS =
             Pattern.compile("^batbern(\\d+)(?:-(speaker|moderator|participants))?$");
+    private static final Pattern EVENT_CODE = Pattern.compile("^batbern(\\d+)$", Pattern.CASE_INSENSITIVE);
 
     public enum Kind {
         ORGANIZERS,
@@ -83,6 +84,22 @@ public record ForwardingAlias(String localPart, Kind kind, String eventCode) {
             kind = Kind.EVENT_PARTICIPANTS;
         }
         return new ForwardingAlias(localPart, kind, eventCode);
+    }
+
+    /**
+     * {@code batbern{N}-moderator@{domain}} for an event: the speakers' contact point (Story 16.0,
+     * owner decision 2026-10-29). Null when the code is not {@code BATbern{N}}, so callers fall
+     * back to the default Reply-To.
+     */
+    public static String moderatorAddress(String eventCode, String forwardingDomain) {
+        if (eventCode == null || forwardingDomain == null) {
+            return null;
+        }
+        Matcher m = EVENT_CODE.matcher(eventCode.trim());
+        if (!m.matches()) {
+            return null;
+        }
+        return "batbern" + m.group(1) + "-moderator@" + forwardingDomain.toLowerCase(Locale.ROOT);
     }
 
     /** Contact addresses anyone may write to. Everything else is organizer-only. */

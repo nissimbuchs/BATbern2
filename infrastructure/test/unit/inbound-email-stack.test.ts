@@ -259,6 +259,20 @@ describe('InboundEmailStack', () => {
     });
   });
 
+  // Story 16.0 (#1160): unrecognized replies@ mail is forwarded; a forward that fails before the
+  // first send is rethrown, retried three times and dead-lettered. Without this alarm the reply
+  // would sit in the DLQ unseen.
+  test('should_alarmOnRepliesDlq_when_replyFailedThreeTimes', () => {
+    template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+      AlarmName: 'batbern-staging-replies-dlq',
+      MetricName: 'ApproximateNumberOfMessagesVisible',
+      Dimensions: [{ Name: 'QueueName', Value: Match.anyValue() }],
+      Threshold: 0,
+      ComparisonOperator: 'GreaterThanThreshold',
+      TreatMissingData: 'notBreaching',
+    });
+  });
+
   // T5.3 — AC10: CloudWatch alarm for EmailsRejected metric
   test('should_createCloudWatchAlarm_when_forwarderLambdaCreated', () => {
     template.hasResourceProperties('AWS::CloudWatch::Alarm', {
@@ -398,6 +412,6 @@ describe('Alarm actions (#1001)', () => {
   test('should_stillCreateTheAlarm_when_noTopicProvided', () => {
     // The topic is optional so the stack stays usable standalone, but the alarm must still
     // exist — silently dropping it would trade one invisible failure for another.
-    build(false).resourceCountIs('AWS::CloudWatch::Alarm', 3);
+    build(false).resourceCountIs('AWS::CloudWatch::Alarm', 4);
   });
 });

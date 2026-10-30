@@ -545,6 +545,29 @@ class EmailServiceTest {
         }
 
         @Test
+        @DisplayName("should_useExplicitReplyTo_when_passedToAsyncCcOverload")
+        void should_useExplicitReplyTo_when_passedToAsyncCcOverload() {
+            // Story 16.0 AC1: speaker mails answer to batbern{N}-moderator@, not the global replies@.
+            // Called directly here, so @Async does not apply and the send is observable at once.
+            emailService.sendHtmlEmail("user@batbern.ch", List.of(), "subj", "<p>body</p>",
+                    "batbern60-moderator@batbern.ch");
+
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
+            assertThat(captor.getValue().replyToAddresses()).containsExactly("batbern60-moderator@batbern.ch");
+        }
+
+        @Test
+        @DisplayName("should_fallBackToDefaultReplyTo_when_asyncOverloadGetsNull")
+        void should_fallBackToDefaultReplyTo_when_asyncOverloadGetsNull() {
+            emailService.sendHtmlEmail("user@batbern.ch", List.of(), "subj", "<p>body</p>", null);
+
+            ArgumentCaptor<SendEmailRequest> captor = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(captor.capture());
+            assertThat(captor.getValue().replyToAddresses()).containsExactly("replies@batbern.ch");
+        }
+
+        @Test
         @DisplayName("should_omitConfigurationSet_when_propertyNotConfigured")
         void should_omitConfigurationSet_when_propertyNotConfigured() {
             ReflectionTestUtils.setField(emailService, "configurationSetName", null);

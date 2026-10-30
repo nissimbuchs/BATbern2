@@ -128,7 +128,7 @@ Single-AZ `db.t4g.micro`. There is no failover; a restart is a full outage.
 ## Email and SES
 
 **Alarms:** `bounce-rate-warning`, `bounce-rate-critical`, `complaint-rate-critical`,
-`emails-rejected`, `forwarding-dlq`, `forwarding-failed`, `bounce-processing-dlq`
+`emails-rejected`, `forwarding-dlq`, `replies-dlq`, `forwarding-failed`, `bounce-processing-dlq`
 
 **SES reputation is the single most damaging thing to lose here** — a suspension stops speaker
 invitations, registration confirmations and the newsletter at once.
@@ -146,6 +146,11 @@ invitations, registration confirmations and the newsletter at once.
    `email_forwarding_log` makes a redrive safe (no double delivery).
    A claim whose task died *before* sending (Fargate Spot, deploy) is taken over by the next
    redelivery after 6 minutes, so that case heals itself.
+   `replies-dlq` is the same for mail to `replies@` (Story 16.0, #1160): a human reply that matched
+   no keyword could not be forwarded to the organizers three times before anything was sent. Only
+   that forward rethrows, so the keyword actions never ran for these messages and a redrive of the
+   replies DLQ to `batbern-inbound-email-{env}` is safe; the raw mail is in S3 `emails/` for 7 days
+   and `email_forwarding_log` (alias `replies`) prevents a double send.
 4. `forwarding-failed`: copies could not be sent after sending began, or a redelivery found a
    forward that stalled mid-send (task died between copies). These are never retried, to avoid a
    double blast. Find the S3 key in the EMS log (`stalled after sending began` / `copy of … failed`),

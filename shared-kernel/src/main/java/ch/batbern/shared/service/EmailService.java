@@ -119,6 +119,16 @@ public class EmailService {
     }
 
     /**
+     * Async HTML email with CC and an explicit Reply-To (Story 16.0: speaker mails answer to
+     * {@code batbern{N}-moderator@}). A null or blank {@code replyTo} falls back to the
+     * configured {@code app.email.reply-to}, exactly like the 4-arg variant.
+     */
+    @Async
+    public void sendHtmlEmail(String to, List<String> cc, String subject, String htmlBody, String replyTo) {
+        sendHtmlEmailSync(to, cc, subject, htmlBody, configurationSetName, replyTo);
+    }
+
+    /**
      * Send a simple HTML email synchronously (blocking).
      *
      * <p>Use this variant when the caller is already running in a background thread

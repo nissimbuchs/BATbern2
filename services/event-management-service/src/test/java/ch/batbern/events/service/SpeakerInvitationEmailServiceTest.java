@@ -5,6 +5,8 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
+import ch.batbern.events.forwarding.EmailForwardingProperties;
+import ch.batbern.events.forwarding.ModeratorReplyAddress;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
@@ -30,6 +32,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.nullable;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -75,7 +78,8 @@ class SpeakerInvitationEmailServiceTest {
     @BeforeEach
     void setUp() {
         invitationEmailService = new SpeakerInvitationEmailService(
-                emailService, sessionRepository, emailTemplateService, primarySpeakerResolver);
+                emailService, sessionRepository, emailTemplateService, primarySpeakerResolver,
+                new ModeratorReplyAddress(new EmailForwardingProperties(false, null, null, null, null, 0)));
         // DB lookup defaults to empty so classpath templates load.
         when(emailTemplateService.findByKeyAndLocale(anyString(), anyString()))
                 .thenReturn(Optional.empty());
@@ -154,6 +158,18 @@ class SpeakerInvitationEmailServiceTest {
         });
     }
 
+    @Test
+    @DisplayName("Story 16.0 AC1: Reply-To is the event's moderator alias")
+    void should_replyToModeratorAlias_when_invitationSent() {
+        event.setEventCode("BATbern60");
+        when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
+
+        invitationEmailService.sendInvitationEmail(speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
+
+        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), anyString(),
+                eq("batbern60-moderator@batbern.ch"));
+    }
+
     // ============================================================
     // AC8 item 5 — the four required cases
     // ============================================================
@@ -167,7 +183,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
+        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
         String body = bodyCaptor.getValue();
         // Temp password value appears.
         assertThat(body).contains("Tk7!aB2@nx9pQ4#z");
@@ -185,7 +201,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, useExistingCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
+        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
         String body = bodyCaptor.getValue();
         // No temp password appears.
         assertThat(body).doesNotContain("Tk7!aB2@nx9pQ4#z");
@@ -205,7 +221,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, freshCredentials, Locale.GERMAN);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), bodyCaptor.capture());
+        verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), bodyCaptor.capture(), nullable(String.class));
         assertThat(subjectCaptor.getValue()).contains("Einladung als Referent");
         // German body must contain the German "temporary password" wording.
         String body = bodyCaptor.getValue();
@@ -222,7 +238,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
+        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
         assertThat(bodyCaptor.getValue()).contains(loginUrl);
         // Speaker email is the Cognito username.
         assertThat(bodyCaptor.getValue()).contains("john.doe@example.com");
@@ -244,7 +260,7 @@ class SpeakerInvitationEmailServiceTest {
                     eq("john.doe@example.com"),
                     anyList(),
                     contains("Speaker Invitation"),
-                    anyString());
+                    anyString(), nullable(String.class));
         }
 
         @Test
@@ -256,7 +272,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
             String body = bodyCaptor.getValue();
             assertThat(body).contains("BATbern 2026");
             assertThat(body).contains("15.03.2026");
@@ -274,7 +290,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, null);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), anyString());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), anyString(), nullable(String.class));
             assertThat(subjectCaptor.getValue()).contains("Einladung als Referent");
         }
 
@@ -283,7 +299,7 @@ class SpeakerInvitationEmailServiceTest {
         void should_notThrow_when_emailSendingFails() {
             when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
             doThrow(new RuntimeException("Email server unavailable"))
-                    .when(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), anyString());
+                    .when(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), anyString(), nullable(String.class));
 
             // No exception escapes.
             invitationEmailService.sendInvitationEmail(
@@ -301,7 +317,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
             assertThat(bodyCaptor.getValue()).contains("TBA");
         }
 
@@ -318,7 +334,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
             assertThat(bodyCaptor.getValue()).contains("John Doe");
             assertThat(bodyCaptor.getValue()).contains("Tk7!aB2@nx9pQ4#z");
         }
@@ -349,7 +365,7 @@ class SpeakerInvitationEmailServiceTest {
                 eq("john.doe@example.com"),
                 ccCaptor.capture(),
                 anyString(),
-                anyString());
+                anyString(), nullable(String.class));
         assertThat(ccCaptor.getValue())
                 .containsExactly("john.work@example.com", "john.private@example.com");
     }
@@ -371,7 +387,7 @@ class SpeakerInvitationEmailServiceTest {
                 eq("john.doe@example.com"),
                 ccCaptor.capture(),
                 anyString(),
-                anyString());
+                anyString(), nullable(String.class));
         assertThat(ccCaptor.getValue()).isEmpty();
     }
 }

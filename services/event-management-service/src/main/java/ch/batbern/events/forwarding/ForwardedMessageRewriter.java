@@ -19,7 +19,8 @@ import java.util.Properties;
  *
  * <ul>
  *   <li>From: {@code "{name} via BATbern" <noreply@{domain}>} (SES only sends from verified identities)</li>
- *   <li>Reply-To: the original sender, so replies go to the person and not to the alias</li>
+ *   <li>Reply-To: the original sender, so replies go to the person and not to the alias
+ *       (or an explicit override, e.g. the moderator for speaker broadcasts)</li>
  *   <li>Return-Path, Sender and DKIM-Signature removed (SES sets/signs its own)</li>
  *   <li>Optional To/Cc override for the visible speaker broadcast</li>
  *   <li>{@value MailClassifier#FORWARDED_MARKER_HEADER} added so a forwarded copy that comes back is dropped</li>
@@ -41,11 +42,21 @@ public class ForwardedMessageRewriter {
      */
     public byte[] rewrite(byte[] raw, String senderName, String senderEmail, String sesSender,
                           List<String> toOverride, List<String> ccOverride) {
+        return rewrite(raw, senderName, senderEmail, sesSender, null, toOverride, ccOverride);
+    }
+
+    /**
+     * @param replyToOverride Reply-To instead of the original sender, or null to keep the sender
+     *                        (Story 16.0: {@code batbern{N}-speaker@} broadcasts answer the moderator)
+     */
+    public byte[] rewrite(byte[] raw, String senderName, String senderEmail, String sesSender,
+                          String replyToOverride, List<String> toOverride, List<String> ccOverride) {
         try {
             MimeMessage message = new PreservingMimeMessage(raw);
             message.removeHeader("From");
             message.setFrom(new InternetAddress(sesSender, displayName(senderName, senderEmail) + VIA, "UTF-8"));
-            message.setReplyTo(new InternetAddress[] {new InternetAddress(senderEmail)});
+            String replyTo = replyToOverride != null ? replyToOverride : senderEmail;
+            message.setReplyTo(new InternetAddress[] {new InternetAddress(replyTo)});
             message.removeHeader("Return-Path");
             message.removeHeader("Sender");
             message.removeHeader("DKIM-Signature");

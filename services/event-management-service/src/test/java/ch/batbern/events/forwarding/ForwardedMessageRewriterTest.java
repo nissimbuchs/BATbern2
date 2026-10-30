@@ -112,4 +112,13 @@ class ForwardedMessageRewriterTest {
     private static MimeMessage parse(byte[] raw) throws Exception {
         return new MimeMessage(Session.getInstance(new Properties()), new ByteArrayInputStream(raw));
     }
+
+    @Test
+    @DisplayName("should_setReplyToOverride_when_provided")
+    void should_setReplyToOverride_when_provided() throws Exception {
+        byte[] out = rewriter.rewrite(RAW.getBytes(StandardCharsets.UTF_8), "Anna Muster", "anna@example.org",
+                "noreply@batbern.ch", "batbern60-moderator@batbern.ch", List.of("s1@example.org"), List.of());
+
+        assertThat(parse(out).getHeader("Reply-To", null)).isEqualTo("batbern60-moderator@batbern.ch");
+    }
 }

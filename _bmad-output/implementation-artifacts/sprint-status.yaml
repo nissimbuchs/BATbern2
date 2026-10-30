@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-21
-last_updated: 2026-06-21
+last_updated: 2026-10-30
 project: BATbern
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -265,6 +265,23 @@ development_status:
   15-8-linkedin-post-drafts: backlog
   15-9-owasp-llm-agentic-security-checklist: done
   epic-15-retrospective: optional
+
+  # Epic 16: Mail Center — APPROVED 2026-10-30 (docs/prd/epic-16-mail-center.md)
+  # 16.0 = #1160 + #1161 (two PRs). Start with an explicit story path: older ready-for-dev stories sort first.
+  # Sequence (owner decision 3): 16.0 (A, C, B) -> 16.1a -> 16.1b -> 16.3 -> 16.4, then 16.8 -> 16.9, then 16.2 + 16.6 for speakers, then all aliases, 16.5, 16.7.
+  epic-16: in-progress
+  16-0-stop-losing-replies-and-calendar-declines: in-progress
+  16-1a-record-outbound-mail: ready-for-dev
+  16-1b-delivery-status: ready-for-dev
+  16-2-capture-inbound-human-mail: backlog
+  16-3-communications-tab-becomes-mail-page: ready-for-dev
+  16-4-new-mail-picker: ready-for-dev
+  16-5-own-text-placeholders-preview: backlog
+  16-6-answer-from-mail-center: backlog
+  16-7-global-mail-navigation: backlog
+  16-8-shared-composer: backlog
+  16-9-partner-meeting-mails: backlog
+  epic-16-retrospective: optional
 
   # Deferred-work backlog clusters (groomed 2026-06-07 — see deferred-work.md) — candidate stories,
   # not yet scheduled. Cluster A is a REQUIRED precondition for 12-10 (Apple/generic OIDC).
