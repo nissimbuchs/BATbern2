@@ -4,6 +4,7 @@ import ch.batbern.events.forwarding.EmailForwardingService;
 import ch.batbern.events.service.InboundEmailRouter;
 import ch.batbern.shared.service.CapturedEmail;
 import ch.batbern.shared.service.LocalEmailCapture;
+import jakarta.mail.internet.MimeUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
 import org.springframework.http.ContentDisposition;
@@ -18,6 +19,7 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.UUID;
@@ -129,9 +131,16 @@ public class DevEmailController {
 
     /** Minimal MIME for a simulated reply, shaped like what SES stores for replies@. */
     private static byte[] replyMime(String from, String subject, String body) {
+        String encodedSubject;
+        try {
+            // RFC 2047, as real mail clients send it; a raw UTF-8 header is read back as Latin-1
+            encodedSubject = MimeUtility.encodeText(subject, "UTF-8", "B");
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException(e);
+        }
         String mime = "From: " + from + "\r\n"
             + "To: replies@batbern.ch\r\n"
-            + "Subject: " + subject + "\r\n"
+            + "Subject: " + encodedSubject + "\r\n"
             + "Message-ID: <" + UUID.randomUUID() + "@localhost>\r\n"
             + "MIME-Version: 1.0\r\n"
             + "Content-Type: text/plain; charset=UTF-8\r\n\r\n"

@@ -81,7 +81,7 @@ class DevEmailControllerReplyTest {
         // so the organizer copy lands in /dev/mails instead of being dropped.
         UUID id = UUID.randomUUID();
         when(localEmailCapture.getAll()).thenReturn(List.of(new CapturedEmail(id, "attendee@example.com",
-            List.of(), "BATbern42 Registration Confirmation", "<p>x</p>", "noreply@batbern.ch",
+            List.of(), "Bitte bestätigen: BATbern42", "<p>x</p>", "noreply@batbern.ch",
             "BATbern Platform", Instant.now(), List.of())));
         when(inboundEmailRouter.route(any())).thenReturn(InboundEmailRouter.RouteResult.UNRECOGNIZED);
 
@@ -91,7 +91,8 @@ class DevEmailControllerReplyTest {
         verify(forwardingService).forwardUnrecognizedReply(startsWith("dev/"), raw.capture());
         String mime = new String(raw.getValue(), StandardCharsets.UTF_8);
         assertThat(mime).contains("From: attendee@example.com")
-            .contains("Subject: Re: BATbern42 Registration Confirmation")
+            .doesNotContain("Subject: Re: Bitte bestätigen")
+            .contains("Subject: =?UTF-8?B?")
             .contains("Kann ich den Platz weitergeben?");
     }
 
