@@ -31,6 +31,12 @@ public class ForwardingMetrics {
     /** Story 16.0: unrecognized replies@ mail handed to the organizers (kept apart from alias forwards). */
     static final String REPLIES_FORWARDED = "RepliesForwarded";
     static final String BOUNCES_DROPPED = "BouncesDropped";
+    /** Story 16.0 Part B: a calendar "Declined" to calendar@ that led to the deregistration-link mail. */
+    static final String CALENDAR_DECLINE_LINK_SENT = "CalendarDeclineLinkSent";
+    /** A decline that matched no single registration (AC7). */
+    static final String CALENDAR_DECLINE_UNMATCHED = "CalendarDeclineUnmatched";
+    /** A matched decline that sent nothing: link sent within 7 days, or already cancelled. */
+    static final String CALENDAR_DECLINE_SKIPPED = "CalendarDeclineSkipped";
 
     private final ObjectProvider<CloudWatchClient> cloudWatch;
 

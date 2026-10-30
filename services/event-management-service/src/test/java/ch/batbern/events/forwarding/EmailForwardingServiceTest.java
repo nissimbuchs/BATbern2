@@ -6,6 +6,7 @@ import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.forwarding.EmailForwardingService.Result;
 import ch.batbern.events.service.AdminSettingsService;
+import ch.batbern.events.service.CalendarDeclineService;
 import ch.batbern.events.service.DistributionListService;
 import ch.batbern.shared.service.EmailService;
 import jakarta.mail.Session;
@@ -74,6 +75,8 @@ class EmailForwardingServiceTest {
     private ForwardingMetrics metrics;
     @Mock
     private EmailService emailService;
+    @Mock
+    private CalendarDeclineService calendarDeclineService;
 
     private EmailForwardingService service;
 
@@ -84,7 +87,7 @@ class EmailForwardingServiceTest {
                 new EmailForwardingProperties(true, "q", "batbern.ch", null, "batbern-staging-forwarder", 0);
         service = new EmailForwardingService(properties, new ForwardingSenderAuthorizer(directory),
                 new ForwardingRecipientResolver(directory, adminSettingsService, distributionListService),
-                new ForwardedMessageRewriter(), forwardingLog, metrics, emailService);
+                new ForwardedMessageRewriter(), forwardingLog, metrics, emailService, calendarDeclineService);
 
         when(forwardingLog.claim(anyString())).thenReturn(true);
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("alice", "bob"));
@@ -338,7 +341,7 @@ class EmailForwardingServiceTest {
                 new EmailForwardingProperties(true, "q", "batbern.ch", null, "cs", 0),
                 new ForwardingSenderAuthorizer(directory),
                 new ForwardingRecipientResolver(directory, adminSettingsService, distributionListService),
-                failingRewriter, forwardingLog, metrics, emailService);
+                failingRewriter, forwardingLog, metrics, emailService, calendarDeclineService);
 
         assertThatThrownBy(() -> withFailingRewriter.forward(KEY, mail(STRANGER, "info@batbern.ch", null, null, null)))
                 .isInstanceOf(IllegalStateException.class);
@@ -396,6 +399,67 @@ class EmailForwardingServiceTest {
     }
 
     // ---- helpers ----
+
+    // ---- Story 16.0 Part B: calendar declines release the seat (AC6, AC8) ----
+
+    @Test
+    @DisplayName("should_handOverDecline_when_registrantDeclinesInviteToCalendarAlias")
+    void should_handOverDecline_when_registrantDeclinesInviteToCalendarAlias() {
+        when(calendarDeclineService.handleDecline(eq(STRANGER), any()))
+                .thenReturn(CalendarDeclineService.Outcome.LINK_SENT);
+
+        Result result = service.forward(KEY, calendarReply(STRANGER, "calendar@batbern.ch", "DECLINED"));
+
+        assertThat(result).isEqualTo(Result.CALENDAR_DECLINE);
+        ArgumentCaptor<CalendarReply> reply = ArgumentCaptor.forClass(CalendarReply.class);
+        verify(calendarDeclineService).handleDecline(eq(STRANGER), reply.capture());
+        assertThat(reply.getValue().uid()).isEqualTo("reg-0b6e3f8a-1d2c-4b5a-9e8f-7a6b5c4d3e2f@batbern.ch");
+        verify(metrics).increment(ForwardingMetrics.CALENDAR_DECLINE_LINK_SENT);
+        verify(emailService, never()).sendRawMessage(any(), anyList(), any());
+    }
+
+    @Test
+    @DisplayName("should_countUnmatched_when_declineMatchesNoRegistration")
+    void should_countUnmatched_when_declineMatchesNoRegistration() {
+        when(calendarDeclineService.handleDecline(any(), any())).thenReturn(CalendarDeclineService.Outcome.UNMATCHED);
+
+        service.forward(KEY, calendarReply(STRANGER, "calendar@batbern.ch", "DECLINED"));
+
+        verify(metrics).increment(ForwardingMetrics.CALENDAR_DECLINE_UNMATCHED);
+    }
+
+    @Test
+    @DisplayName("should_dropAsBefore_when_calendarReplyIsAcceptedOrTentative")
+    void should_dropAsBefore_when_calendarReplyIsAcceptedOrTentative() {
+        for (String partStat : new String[] {"ACCEPTED", "TENTATIVE"}) {
+            Result result = service.forward(KEY, calendarReply(STRANGER, "calendar@batbern.ch", partStat));
+            assertThat(result).isEqualTo(Result.DROPPED_CALENDAR_REPLY);
+        }
+        verify(calendarDeclineService, never()).handleDecline(any(), any());
+        verify(metrics, times(2)).increment(ForwardingMetrics.CALENDAR_REPLIES_DROPPED);
+    }
+
+    @Test
+    @DisplayName("should_dropAsBefore_when_declineIsNotAddressedToCalendarAlias")
+    void should_dropAsBefore_when_declineIsNotAddressedToCalendarAlias() {
+        Result result = service.forward(KEY, calendarReply(STRANGER, "info@batbern.ch", "DECLINED"));
+
+        assertThat(result).isEqualTo(Result.DROPPED_CALENDAR_REPLY);
+        verify(calendarDeclineService, never()).handleDecline(any(), any());
+    }
+
+    private static byte[] calendarReply(String from, String to, String partStat) {
+        String raw = "From: \"Test Person\" <" + from + ">\r\nTo: " + to + "\r\n"
+                + "Subject: Declined: BATbern #60\r\nMIME-Version: 1.0\r\n"
+                + "Content-Type: multipart/alternative; boundary=\"b1\"\r\n\r\n"
+                + "--b1\r\nContent-Type: text/plain\r\n\r\nx\r\n"
+                + "--b1\r\nContent-Type: text/calendar; charset=UTF-8; method=REPLY\r\n\r\n"
+                + "BEGIN:VCALENDAR\r\nMETHOD:REPLY\r\nBEGIN:VEVENT\r\n"
+                + "UID:reg-0b6e3f8a-1d2c-4b5a-9e8f-7a6b5c4d3e2f@batbern.ch\r\n"
+                + "ATTENDEE;PARTSTAT=" + partStat + ":mailto:" + from + "\r\n"
+                + "DTSTART:20261203T170000Z\r\nEND:VEVENT\r\nEND:VCALENDAR\r\n--b1--\r\n";
+        return raw.getBytes(StandardCharsets.UTF_8);
+    }
 
     // ---- Story 16.0 Part A: unrecognized replies@ mail reaches the organizers (AC3, AC4) ----
 

@@ -57,6 +57,36 @@ class IcsCalendarServiceTest {
     }
 
     @Test
+    @DisplayName("generateIcsFile: explicit UID is used as-is (Story 16.0 AC7, calendar declines)")
+    void registrationIcs_usesGivenUid() {
+        ZonedDateTime start = ZonedDateTime.of(2026, 12, 3, 18, 0, 0, 0, ZoneId.of("Europe/Zurich"));
+
+        String ics = new String(service.generateIcsFile(new IcsCalendarService.IcsEventData(
+                "reg-0b6e3f8a-1d2c-4b5a-9e8f-7a6b5c4d3e2f", "BATbern #60", "desc", "Bern", start,
+                start.plusHours(3)), "calendar@batbern.ch", "BATbern"), StandardCharsets.UTF_8);
+
+        assertThat(ics).contains("UID:reg-0b6e3f8a-1d2c-4b5a-9e8f-7a6b5c4d3e2f@batbern.ch\r\n");
+        assertThat(countOccurrences(ics, "UID:")).isEqualTo(1);
+    }
+
+    @Test
+    @DisplayName("generateIcsFile: legacy signature still gets a random UID")
+    void registrationIcs_legacySignatureRandomUid() {
+        ZonedDateTime start = ZonedDateTime.of(2026, 12, 3, 18, 0, 0, 0, ZoneId.of("Europe/Zurich"));
+
+        String first = new String(service.generateIcsFile("T", "d", "Bern", start, start.plusHours(1),
+                "calendar@batbern.ch", "BATbern"), StandardCharsets.UTF_8);
+        String second = new String(service.generateIcsFile("T", "d", "Bern", start, start.plusHours(1),
+                "calendar@batbern.ch", "BATbern"), StandardCharsets.UTF_8);
+
+        assertThat(uid(first)).endsWith("@batbern.ch").isNotEqualTo(uid(second));
+    }
+
+    private static String uid(String ics) {
+        return ics.lines().filter(l -> l.startsWith("UID:")).findFirst().orElseThrow();
+    }
+
+    @Test
     @DisplayName("generateMultiEventIcsFile: single event produces valid output")
     void singleEvent_producesOneVevent() {
         ZonedDateTime start = ZonedDateTime.of(2026, 3, 6, 16, 0, 0, 0, ZoneId.of("Europe/Zurich"));

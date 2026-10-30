@@ -236,6 +236,15 @@ public class Registration {
     private Instant declineLinkSentAt;
 
     /**
+     * Story 16.0 (#1161): stable UID of the calendar invite ({@code reg-{calendarUid}@batbern.ch}),
+     * used to match a calendar "Declined" reply to this registration. Not a credential, unlike
+     * {@code registrationCode}, because a calendar entry gets forwarded and shared.
+     */
+    @Column(name = "calendar_uid", nullable = false, updatable = false, columnDefinition = "UUID")
+    @Builder.Default
+    private UUID calendarUid = UUID.randomUUID();
+
+    /**
      * JSONB audit metadata.
      * <p>
      * Auto-participant enrolment (spec

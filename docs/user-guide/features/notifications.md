@@ -52,6 +52,8 @@ Registration is double opt-in, and the attendee receives two emails:
 
 Participants added by an organizer are confirmed immediately and receive the `registration-organizer-added` email (with calendar invite) instead.
 
+**Declining the calendar invite** (Story 16.0, #1161): if an attendee clicks "Decline" on that invite, their calendar replies to `calendar@batbern.ch`. The platform then sends them the **deregistration-link mail**; the place (and the waitlist promotion behind it) is released only when they click the link, so a misclick costs nobody their seat. A second decline within 7 days sends no second mail. "Accept" and "Tentative" replies are ignored. Each invite carries a stable per-registration UID for the matching (never the registration code, which is a credential); invites sent before this change are matched by the sender address and an event within ±1 day of the invite's start, and only when exactly one registration fits.
+
 ### Partner Calendar Invites (Epic 8)
 
 RFC 5545 `.ics` calendar invites delivered via email to partners. Each file contains two `VEVENT` entries: the spring/autumn partner lunch and the BATbern event itself. See [Partner Portal: Meeting Coordination](../partner-portal/meetings.md).
