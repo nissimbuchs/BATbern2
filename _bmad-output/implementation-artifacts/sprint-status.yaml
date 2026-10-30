@@ -272,7 +272,7 @@ development_status:
   epic-16: in-progress
   16-0-stop-losing-replies-and-calendar-declines: done
   16-1a-record-outbound-mail: review
-  16-1b-delivery-status: ready-for-dev
+  16-1b-delivery-status: review
   16-2-capture-inbound-human-mail: backlog
   16-3-communications-tab-becomes-mail-page: ready-for-dev
   16-4-new-mail-picker: ready-for-dev

@@ -47,6 +47,9 @@ sends for an event, so they fall under the same rules as registration data:
   the recipient. A new mail that puts another secret into its text must name it with
   `MailContext.withSecrets`.
 - **Access:** organizers only (the read endpoint arrives with Story 16.3, `hasRole('ORGANIZER')`).
+- **Delivery status (Story 16.1b):** a bounce or complaint stores only the SES bounce type/subtype,
+  `complaint`, or the reject reason, not the remote server's diagnostic text. Transactional bounces
+  never feed newsletter suppression.
 
 ### AI / LLM Security (OWASP-LLM, Story 15.9)
 - The AI surface lives in `event-management-service` (event description, theme image, abstract
@@ -285,6 +288,7 @@ line 422 for `ApiGatewayServiceStack`).
 | SES reputation | `bounce-rate-critical` (`Reputation.BounceRate` > 5%), `complaint-rate-critical` | `MonitoringStack` |
 | SES bounce volume | `bounce-rate-warning` — `Bounce` count > 5/hour, NOT the rolling rate (#984) | `MonitoringStack` |
 | Bounce processing | `bounce-processing-dlq` | `MonitoringStack` |
+| Mail delivery status (Story 16.1b; statuses stay `SENT` while it fires) | `mail-delivery-status-dlq` | `MonitoringStack` |
 | Cognito / user sync | 7 alarms | `UserSyncAlarms`, in `MonitoringStack` |
 | Cognito email delivery | `CustomEmailSender-Unhandled-Trigger` (EMF metric `BATbern/Cognito UnhandledEmailTrigger`), `CustomEmailSender-Errors` (Lambda `Errors`) — the trigger sends every mail of the pool, so a skipped or failed one never arrives (#1141) | `UserSyncAlarms`, in `MonitoringStack` |
 | Inbound email abuse | `emails-rejected` | `InboundEmailStack` |

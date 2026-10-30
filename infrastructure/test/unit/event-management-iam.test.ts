@@ -17,6 +17,7 @@ import { Template, Match } from 'aws-cdk-lib/assertions';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 
 import { stagingConfig } from '../../lib/config/staging-config';
 import { EventManagementStack } from '../../lib/stacks/event-management-stack';
@@ -26,9 +27,10 @@ const TEST_REGION = 'eu-central-1';
 const SES_CONFIG_SET = 'batbern-staging-newsletter';
 
 interface ForwardingProps {
-  forwardingQueueUrl: string;
-  forwardingDomain: string;
-  forwardingConfigurationSetName: string;
+  forwardingQueueUrl?: string;
+  forwardingDomain?: string;
+  forwardingConfigurationSetName?: string;
+  mailDeliveryStatusQueueArn?: string;
 }
 
 function buildTemplate(
@@ -70,7 +72,12 @@ function buildTemplate(
     userPoolClient,
     sesConfigurationSetName,
     sesTransactionalConfigurationSetName,
-    ...forwarding,
+    forwardingQueueUrl: forwarding?.forwardingQueueUrl,
+    forwardingDomain: forwarding?.forwardingDomain,
+    forwardingConfigurationSetName: forwarding?.forwardingConfigurationSetName,
+    mailDeliveryStatusQueue: forwarding?.mailDeliveryStatusQueueArn
+      ? sqs.Queue.fromQueueArn(parent, 'MailDeliveryStatus', forwarding.mailDeliveryStatusQueueArn)
+      : undefined,
     env: { account: TEST_ACCOUNT, region: TEST_REGION },
   });
 
@@ -278,5 +285,71 @@ describe('EventManagementStack — alias forwarding (moved from the forwarder La
     const env = JSON.stringify(taskDefs);
 
     expect(env).not.toContain('AWS_INBOUND_EMAIL_FORWARDING_ENABLED');
+  });
+});
+
+describe('EventManagementStack — mail delivery status (Story 16.1b)', () => {
+  beforeAll(() => {
+    process.env.IMAGE_TAG = 'test-tag';
+  });
+
+  afterAll(() => {
+    delete process.env.IMAGE_TAG;
+  });
+
+  const queueArn = `arn:aws:sqs:${TEST_REGION}:${TEST_ACCOUNT}:batbern-staging-mail-delivery-status`;
+
+  test('should_enableDeliveryStatusListener_when_queueUrlProvided', () => {
+    const template = buildTemplate(undefined, undefined, { mailDeliveryStatusQueueArn: queueArn });
+
+    template.hasResourceProperties('AWS::ECS::TaskDefinition', {
+      ContainerDefinitions: Match.arrayWith([
+        Match.objectLike({
+          Environment: Match.arrayWith([
+            { Name: 'AWS_SES_DELIVERY_STATUS_ENABLED', Value: 'true' },
+            // fromQueueArn yields the URL as a Join token; the real stack passes a cross-stack ref.
+            { Name: 'AWS_SES_DELIVERY_STATUS_QUEUE_URL', Value: Match.anyValue() },
+          ]),
+        }),
+      ]),
+    });
+  });
+
+  test('should_grantConsumeOnDeliveryStatusQueue_toTaskRole', () => {
+    const template = buildTemplate(undefined, undefined, { mailDeliveryStatusQueueArn: queueArn });
+
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: Match.arrayWith(['sqs:ReceiveMessage', 'sqs:DeleteMessage']),
+            Resource: queueArn,
+          }),
+        ]),
+      }),
+    });
+  });
+
+  test('should_allowPutMetricDataOnlyInMailCenterNamespace_when_deliveryStatusEnabled', () => {
+    const template = buildTemplate(undefined, undefined, { mailDeliveryStatusQueueArn: queueArn });
+
+    template.hasResourceProperties('AWS::IAM::Policy', {
+      PolicyDocument: Match.objectLike({
+        Statement: Match.arrayWith([
+          Match.objectLike({
+            Action: 'cloudwatch:PutMetricData',
+            Condition: { StringEquals: { 'cloudwatch:namespace': 'BATbern/MailCenter' } },
+          }),
+        ]),
+      }),
+    });
+  });
+
+  test('should_notEnableDeliveryStatusListener_when_noQueueUrl', () => {
+    const template = buildTemplate();
+    const env = JSON.stringify(template.findResources('AWS::ECS::TaskDefinition'));
+
+    expect(env).not.toContain('AWS_SES_DELIVERY_STATUS_ENABLED');
+    expect(JSON.stringify(template.toJSON())).not.toContain('BATbern/MailCenter');
   });
 });

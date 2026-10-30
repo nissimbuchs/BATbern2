@@ -128,7 +128,8 @@ Single-AZ `db.t4g.micro`. There is no failover; a restart is a full outage.
 ## Email and SES
 
 **Alarms:** `bounce-rate-warning`, `bounce-rate-critical`, `complaint-rate-critical`,
-`emails-rejected`, `forwarding-dlq`, `replies-dlq`, `forwarding-failed`, `bounce-processing-dlq`
+`emails-rejected`, `forwarding-dlq`, `replies-dlq`, `forwarding-failed`, `bounce-processing-dlq`,
+`mail-delivery-status-dlq`
 
 **SES reputation is the single most damaging thing to lose here** — a suspension stops speaker
 invitations, registration confirmations and the newsletter at once.
@@ -157,6 +158,10 @@ invitations, registration confirmations and the newsletter at once.
    check `email_forwarding_log` (`outcome`, `recipient_count`, `failed_count`), and decide by hand
    whether the missing recipients need the mail.
 5. `bounce-processing-dlq`: messages the bounce handler failed. Drain and replay; do not purge.
+   `mail-delivery-status-dlq` (Story 16.1b): SES delivery/bounce events EMS failed to apply three
+   times, so the affected mails still show `SENT` in the Mail Center. No mail is lost or resent.
+   Check the EMS log for `UnreadableEventException` or a database error, fix the cause, then redrive
+   (`aws sqs start-message-move-task`). Replaying is safe: statuses only move forward.
 6. If a test or E2E run caused the spike, that is the **newsletter super-GAU** class of incident
    (2026-07-01). Both walls exist now (Playwright `@sends-real-email` guard and the backend
    `EmailContentTestMarker` send-block) — verify which one was bypassed.

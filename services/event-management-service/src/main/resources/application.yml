@@ -87,6 +87,10 @@ aws:
       enabled: ${AWS_BOUNCE_ENABLED:false}
       queue-url: ${AWS_BOUNCE_QUEUE_URL:}
       soft-threshold: ${SES_BOUNCE_SOFT_THRESHOLD:3}
+    # Story 16.1b: transactional SES events → mail_recipient status (queue set by the CDK stack)
+    delivery-status:
+      enabled: ${AWS_SES_DELIVERY_STATUS_ENABLED:false}
+      queue-url: ${AWS_SES_DELIVERY_STATUS_QUEUE_URL:}
 
 # User Service Configuration (API-based user data access)
 # Uses ECS Service Connect DNS for service-to-service communication in AWS

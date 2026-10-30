@@ -6,6 +6,7 @@ import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
 import * as sns from 'aws-cdk-lib/aws-sns';
+import * as sqs from 'aws-cdk-lib/aws-sqs';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import { Construct } from 'constructs';
 import { EnvironmentConfig } from '../config/environment-config';
@@ -42,6 +43,11 @@ export interface EventManagementStackProps extends cdk.StackProps {
   watchJwtSecret?: secretsmanager.ISecret;
   /** Story 10.29: SQS queue URL for bounce/complaint processing. */
   bounceQueueUrl?: string;
+  /**
+   * Story 16.1b: transactional SES events (delivery/bounce/complaint/reject) for mail_recipient
+   * status. The stack injects the URL and grants consume on the task role.
+   */
+  mailDeliveryStatusQueue?: sqs.IQueue;
   /**
    * Story 10.29: SES Configuration Set name to attach to newsletter sends so BOUNCE/COMPLAINT
    * events get routed to SNS → SQS → BounceProcessingService. Without it, SES drops the events
@@ -151,6 +157,11 @@ export class EventManagementStack extends cdk.Stack {
             AWS_BOUNCE_QUEUE_URL: props.bounceQueueUrl,
             AWS_BOUNCE_ENABLED: 'true',
           }),
+          // Story 16.1b: delivery status per recipient (mailcenter) via SQS
+          ...(props.mailDeliveryStatusQueue && {
+            AWS_SES_DELIVERY_STATUS_ENABLED: 'true',
+            AWS_SES_DELIVERY_STATUS_QUEUE_URL: props.mailDeliveryStatusQueue.queueUrl,
+          }),
           // Transactional set is the shared EmailService default (batbern.ses.configuration-set-name)
           // → applied to every non-newsletter send for delivery tracking (no suppression).
           ...(props.sesTransactionalConfigurationSetName && {
@@ -259,6 +270,20 @@ export class EventManagementStack extends cdk.Stack {
           actions: ['cloudwatch:PutMetricData'],
           resources: ['*'],
           conditions: { StringEquals: { 'cloudwatch:namespace': 'BATbern/EmailForwarder' } },
+        })
+      );
+    }
+
+    // Story 16.1b: consume the delivery status queue and publish the BATbern/MailCenter counters
+    // (unknown Message-IDs, AC3). Scoped to that namespace only.
+    if (props.mailDeliveryStatusQueue) {
+      props.mailDeliveryStatusQueue.grantConsumeMessages(this.service.taskDefinition.taskRole);
+      this.service.taskDefinition.taskRole.addToPrincipalPolicy(
+        new iam.PolicyStatement({
+          effect: iam.Effect.ALLOW,
+          actions: ['cloudwatch:PutMetricData'],
+          resources: ['*'],
+          conditions: { StringEquals: { 'cloudwatch:namespace': 'BATbern/MailCenter' } },
         })
       );
     }

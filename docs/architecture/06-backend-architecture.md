@@ -857,7 +857,7 @@ went out (Mail Center, Epic 16). Record only; the Communications page (16.3) rea
   its error code. Every recorded send carries the SES tag `mail_group` = send-group id.
 - **Tables** (`V135`): `mail_message`, one row per send group, public id `mail_key` =
   `{eventCode}-{n}` or `general-{n}` from `mail_message_seq`; `mail_recipient`, one row per address
-  (TO/CC) with `ses_message_id` and status `SENT`/`FAILED` (16.1b adds `DELIVERED`). A recipient row
+  (TO/CC) with `ses_message_id` and status `SENT`/`FAILED`, moved to `DELIVERED`/`FAILED` by 16.1b. A recipient row
   keeps its own body only when its text differs from the message's.
 - **Send groups** (`MailTrigger`): one per organizer request, per scheduler run × event × template,
   or per transactional mail. Newsletter and registrant notices group by their `newsletter_sends` row,
@@ -871,6 +871,30 @@ went out (Mail Center, Epic 16). Record only; the Communications page (16.3) rea
   unsubscribe acknowledgement.
 - **Retention**: `MailMessageRetentionScheduler` (03:30 Europe/Zurich, ShedLock) deletes a mail once
   its event date and the mail itself are older than 12 months; mail without an event after 12 months.
+
+### Delivery status (Story 16.1b)
+
+SES events of the transactional configuration set move each `mail_recipient` from `SENT` to
+`DELIVERED` or `FAILED`, so an organizer sees which address bounced and why.
+
+- **Path**: SES → SNS `batbern-{env}-ses-transactional-events` → SQS
+  `batbern-{env}-mail-delivery-status` (SNS envelope kept) → `MailDeliveryStatusListener` →
+  `MailDeliveryStatusService`. The log-only `transactional-event-logger` Lambda stays subscribed.
+  The listener runs only with `aws.ses.delivery-status.enabled=true` (set by the CDK stack); local
+  dev has no queue.
+- **Matching**: SES Message-ID (`mail.messageId`) plus address, case-insensitive. Delivery, bounce and
+  complaint carry their own recipient lists; a reject has none and fails every recipient of the message.
+- **Reasons**: bounce = `bounceType/bounceSubType` (e.g. `Permanent/NoEmail`), complaint =
+  `complaint`, reject = SES's reason.
+- **Never backwards** (`DeliveryStatusRule`): `SENT` → `DELIVERED` → `FAILED`. `FAILED` is final and
+  keeps its first reason; a complaint after delivery still fails. The rule is applied in the UPDATE's
+  `WHERE status IN (...)`, so concurrent events cannot reorder it.
+- **Unknown Message-IDs** (system mail without context, forwarding, partner mail, mail before 16.1a)
+  are ignored and counted as `BATbern/MailCenter DeliveryEventsUnmatched`.
+- **Failures**: an unreadable message throws; SQS retries it and moves it to
+  `mail-delivery-status-dlq` after 3 attempts (alarm in `MonitoringStack`).
+- **Newsletter suppression untouched**: the newsletter set keeps its own bounce queue and
+  `BounceProcessingService`; no transactional event reaches it.
 
 ## Auto-Enrollment on Event Creation
 

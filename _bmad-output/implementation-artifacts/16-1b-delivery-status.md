@@ -1,6 +1,6 @@
 # Story 16.1b: Delivery status from SES events
 
-Status: ready-for-dev
+Status: review
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 
@@ -24,16 +24,16 @@ so that **I can fix a wrong address or call a speaker whose mail bounced, instea
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Infrastructure** (AC: 5)
-  - [ ] In `infrastructure/lib/stacks/ses-stack.ts`: new SQS queue + DLQ subscribed to `TransactionalEventsTopic` (raw message delivery off, same as the bounce queue pattern). Keep the logger Lambda subscription.
-  - [ ] Grant the EMS task role `sqs:ReceiveMessage/DeleteMessage` on the new queue; pass the URL as an env var (follow how `aws.ses.bounce.queue-url` is wired).
-  - [ ] CDK unit test for the queue, the subscription and the grant; update the doc mapped for `infrastructure/` in `.github/doc-drift-mappings.yml` in the same PR.
-- [ ] **Task 2 — Listener** (AC: 1–4, 6)
-  - [ ] EMS `@SqsListener("${aws.ses.transactional-events.queue-url}")` in the `mailcenter` package: parse SNS envelope → SES event, match recipients by `mail.messageId` + address.
-  - [ ] Status transition rule (AC6) in one place, unit-tested.
-  - [ ] Property toggle so local dev runs without the queue (as the bounce listener does).
-- [ ] **Task 3 — Tests** (AC: all)
-  - [ ] Integration test with sample SES delivery/bounce/complaint/reject JSON (synthetic addresses, SES simulator domains only).
+- [x] **Task 1 — Infrastructure** (AC: 5)
+  - [x] In `infrastructure/lib/stacks/ses-stack.ts`: new SQS queue + DLQ subscribed to `TransactionalEventsTopic` (raw message delivery off, same as the bounce queue pattern). Keep the logger Lambda subscription.
+  - [x] Grant the EMS task role `sqs:ReceiveMessage/DeleteMessage` on the new queue; pass the URL as an env var (follow how `aws.ses.bounce.queue-url` is wired).
+  - [x] CDK unit test for the queue, the subscription and the grant; update the doc mapped for `infrastructure/` in `.github/doc-drift-mappings.yml` in the same PR.
+- [x] **Task 2 — Listener** (AC: 1–4, 6)
+  - [x] EMS `@SqsListener("${aws.ses.transactional-events.queue-url}")` in the `mailcenter` package: parse SNS envelope → SES event, match recipients by `mail.messageId` + address.
+  - [x] Status transition rule (AC6) in one place, unit-tested.
+  - [x] Property toggle so local dev runs without the queue (as the bounce listener does).
+- [x] **Task 3 — Tests** (AC: all)
+  - [x] Integration test with sample SES delivery/bounce/complaint/reject JSON (synthetic addresses, SES simulator domains only).
 
 ## Dev Notes
 
@@ -51,12 +51,71 @@ so that **I can fix a wrong address or call a speaker whose mail bounced, instea
 
 ### Agent Model Used
 
+Claude Opus 5.5 (Amelia, dev-story), 2026-10-30
+
 ### Debug Log References
+
+- CDK: `npx jest --maxWorkers=2 test/unit`: 472 tests, 0 failures (after adding the runbook entry the
+  `incident-response-docs` guard asked for).
+- EMS: new tests 5 (rule) + 8 (PostgreSQL) + 2 (metrics). Full suite with checkstyle: 2201 tests,
+  0 failures, 18 skipped.
 
 ### Completion Notes List
 
+- **Infra (AC5):** `SesStack` adds `batbern-{env}-mail-delivery-status` + `-dlq` (maxReceiveCount 3,
+  visibility 60 s) as a second subscriber on `TransactionalEventsTopic`, SNS envelope kept. The
+  logger Lambda stays. Only additions: no existing resource renamed or moved.
+- **Deviation, wiring:** `EventManagementStack` takes the queue itself (`mailDeliveryStatusQueue`)
+  instead of a URL, injects `AWS_SES_DELIVERY_STATUS_ENABLED/_QUEUE_URL` and grants consume on the
+  task role inside the stack. The bounce queue is granted in `bin/`, where no test reaches it; this
+  way the grant is unit-tested.
+- **Deviation, property name:** `aws.ses.delivery-status.{enabled,queue-url}` instead of the
+  suggested `aws.ses.transactional-events.queue-url`, matching the queue name.
+- **DLQ alarm:** `batbern-{env}-mail-delivery-status-dlq` in `MonitoringStack`, same pattern as the
+  bounce DLQ alarm (notBreaching, ALARM + OK actions). Runbook entry added.
+- **Listener (AC1, AC2, AC6):** thin `MailDeliveryStatusListener` (`@SqsListener`, property-gated)
+  delegates to `MailDeliveryStatusService`, which the tests drive without SQS. Matching by
+  `mail.messageId` + address, case-insensitive. Reject has no recipient list, so it fails every
+  recipient of the message. `DeliveryStatusRule` (SENT → DELIVERED → FAILED, FAILED final) is
+  applied in the UPDATE's `WHERE status IN (...)`, so concurrent events cannot move a status back.
+- **AC3:** unknown Message-IDs increment `BATbern/MailCenter DeliveryEventsUnmatched`
+  (`MailCenterMetrics`, same pattern as `ForwardingMetrics`). The task role may publish only in that
+  namespace. The shared `CloudWatchClient` bean now also exists when only the delivery status
+  listener is enabled.
+- **AC4:** separate queue and service; nothing calls `BounceProcessingService`. CDK test asserts the
+  transactional topic has no subscription to the bounce queue.
+- **AC5:** an unreadable message throws `UnreadableEventException`; SQS redelivers and moves it to
+  the DLQ after 3 receives.
+- **Not verified:** a real SES event end to end. Local dev has no queue (listener off) and SES events
+  only exist in production. First signal after deploy: `mail_recipient` rows leaving `SENT`, and the
+  DLQ staying empty.
+
 ### File List
+
+- `infrastructure/lib/stacks/ses-stack.ts`
+- `infrastructure/lib/stacks/monitoring-stack.ts`
+- `infrastructure/lib/stacks/event-management-stack.ts`
+- `infrastructure/bin/batbern-infrastructure.ts`
+- `infrastructure/test/unit/ses-stack.test.ts`
+- `infrastructure/test/unit/monitoring-stack.test.ts`
+- `infrastructure/test/unit/event-management-iam.test.ts`
+- `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/DeliveryStatusRule.java` (new)
+- `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailCenterMetrics.java` (new)
+- `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailDeliveryStatusService.java` (new)
+- `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailDeliveryStatusListener.java` (new)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/MailRecipientRepository.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/forwarding/EmailForwardingConfig.java`
+- `services/event-management-service/src/main/resources/application.yml`
+- `services/event-management-service/src/test/java/ch/batbern/events/mailcenter/DeliveryStatusRuleTest.java` (new)
+- `services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailDeliveryStatusServiceTest.java` (new)
+- `services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailDeliveryStatusIntegrationTest.java` (new)
+- `docs/architecture/06-backend-architecture.md`
+- `docs/architecture/08-operations-security.md`
+- `docs/operations/runbooks.md`
+- `_bmad-output/implementation-artifacts/16-1b-delivery-status.md`
+- `_bmad-output/implementation-artifacts/sprint-status.yaml`
 
 ## Change Log
 
 - 2026-10-30: Split from 16.1 (readiness check), John (PM).
+- 2026-10-30: Implemented (queue, DLQ alarm, listener, status rule, metric, docs). Status review. Amelia (dev).
