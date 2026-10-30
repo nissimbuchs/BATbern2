@@ -39,3 +39,17 @@ so that **sending and seeing what went out live on the same page**.
 - `docs/prd/epic-16-mail-center.md`
 - `web-frontend/src/components/organizer/EventPage/EventCommunicationsContainer.tsx`
 - `web-frontend/src/components/organizer/EventPage/SpeakerBulkComms.tsx`
+
+## Dev Agent Record
+
+### Agent Model Used
+
+### Debug Log References
+
+### Completion Notes List
+
+### File List
+
+## Change Log
+
+- 2026-10-30: Story drafted from Epic 16 (John, PM).

@@ -52,3 +52,17 @@ so that **I can answer "did the speakers get the slides mail?" in one click inst
 - `web-frontend/src/components/organizer/EventPage/EventNewsletterTab.tsx`
 - `docs/api/event-newsletter-api.openapi.yml`
 - `docs/architecture/ADR-013-rest-api-crud-conventions.md`
+
+## Dev Agent Record
+
+### Agent Model Used
+
+### Debug Log References
+
+### Completion Notes List
+
+### File List
+
+## Change Log
+
+- 2026-10-30: Story drafted from Epic 16 (John, PM).

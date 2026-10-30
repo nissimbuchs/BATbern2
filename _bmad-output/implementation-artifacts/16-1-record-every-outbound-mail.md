@@ -61,3 +61,17 @@ so that **the team can see what went out without asking each other, and the Comm
 - `infrastructure/lib/stacks/ses-stack.ts` (configuration sets and destinations)
 - `services/event-management-service/.../service/BounceProcessingService.java`
 - `services/event-management-service/.../scheduler/EmailForwardingLogRetentionScheduler.java`
+
+## Dev Agent Record
+
+### Agent Model Used
+
+### Debug Log References
+
+### Completion Notes List
+
+### File List
+
+## Change Log
+
+- 2026-10-30: Story drafted from Epic 16 (John, PM).
