@@ -38,7 +38,9 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyMap;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -161,8 +163,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         var toCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
         var subjectCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
         org.mockito.Mockito.verify(emailService, org.mockito.Mockito.times(4))
-                .sendHtmlEmailSync(toCaptor.capture(), subjectCaptor.capture(), anyString(),
-                        org.mockito.ArgumentMatchers.any());
+                .sendHtmlEmailSync(any(), toCaptor.capture(), any(), subjectCaptor.capture(), anyString(), any(), any());
 
         Map<String, String> subjectByEmail = new HashMap<>();
         for (int i = 0; i < toCaptor.getAllValues().size(); i++) {
@@ -199,9 +200,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         lenient().when(userApiClient.getPreferredLanguage(anyString())).thenReturn("de");
 
         org.mockito.Mockito.doThrow(new RuntimeException("SES throttled"))
-                .when(emailService).sendHtmlEmailSync(
-                        org.mockito.ArgumentMatchers.eq("boom@x.ch"), anyString(), anyString(),
-                        org.mockito.ArgumentMatchers.any());
+                .when(emailService).sendHtmlEmailSync(any(), eq("boom@x.ch"), any(), anyString(), anyString(), any(), any());
 
         NewsletterSend send = savePendingSend(event.getId());
         slidesOnlineEmailService.processSend(send.getId(), event, "slides-online");

@@ -5,6 +5,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.forwarding.ModeratorReplyAddress;
@@ -119,7 +120,10 @@ public class SpeakerAcceptanceEmailService {
             java.util.List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
                     .orElse(java.util.Collections.emptyList());
             // Story 16.0 AC1: the speaker's answer reaches the moderator, not replies@.
+            MailContext context = MailContext.individual(event.getEventCode(), MailContext.Audience.SPEAKERS,
+                    "speaker-acceptance");
             emailService.sendHtmlEmail(
+                    context,
                     recipientEmail,
                     cc,
                     content.subject(),

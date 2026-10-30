@@ -1,5 +1,9 @@
 package ch.batbern.shared.service;
 
+import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.MailRedaction;
+import ch.batbern.shared.mail.OutboundMail;
+import ch.batbern.shared.mail.OutboundMailRecorder;
 import ch.batbern.shared.util.EmailContentTestMarker;
 import ch.batbern.shared.util.ReservedEmailDomain;
 import ch.batbern.shared.utils.EmailAddresses;
@@ -14,6 +18,7 @@ import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.Body;
 import software.amazon.awssdk.services.ses.model.Content;
 import software.amazon.awssdk.services.ses.model.Destination;
+import software.amazon.awssdk.services.ses.model.MessageTag;
 import software.amazon.awssdk.services.ses.model.RawMessage;
 import software.amazon.awssdk.services.ses.model.SendEmailRequest;
 import software.amazon.awssdk.services.ses.model.SendEmailResponse;
@@ -29,6 +34,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
+import java.util.UUID;
 
 import jakarta.mail.Message;
 import jakarta.mail.MessagingException;
@@ -72,6 +78,16 @@ public class EmailService {
     /** Optional — present only on 'local' Spring profile. Null in test/production. */
     @Autowired(required = false)
     private LocalEmailCapture localEmailCapture;
+
+    /**
+     * Story 16.1a: records sends that carry a {@link MailContext}. Optional; EMS provides one, the
+     * other services send unrecorded.
+     */
+    @Autowired(required = false)
+    private OutboundMailRecorder outboundMailRecorder;
+
+    /** SES message tag naming the send group, so SES events can be traced to the recorded mail. */
+    static final String MAIL_GROUP_TAG = "mail_group";
 
     @Value("${app.email.from:noreply@batbern.ch}")
     private String fromEmail;
@@ -129,6 +145,16 @@ public class EmailService {
     }
 
     /**
+     * Story 16.1a: async HTML email that is recorded with its {@link MailContext}. Null or empty
+     * {@code cc} and null {@code replyTo} behave as in the other overloads.
+     */
+    @Async
+    public void sendHtmlEmail(MailContext context, String to, List<String> cc, String subject, String htmlBody,
+            String replyTo) {
+        sendHtmlEmailSync(context, to, cc, subject, htmlBody, configurationSetName, replyTo);
+    }
+
+    /**
      * Send a simple HTML email synchronously (blocking).
      *
      * <p>Use this variant when the caller is already running in a background thread
@@ -175,6 +201,15 @@ public class EmailService {
      */
     public void sendHtmlEmailSync(String to, List<String> cc, String subject, String htmlBody,
             String configurationSetName, String replyTo) {
+        sendHtmlEmailSync(null, to, cc, subject, htmlBody, configurationSetName, replyTo);
+    }
+
+    /**
+     * Story 16.1a: the synchronous send every HTML overload ends in. With a non-null
+     * {@code context} the send is recorded after SES answers and tagged {@code mail_group}.
+     */
+    public void sendHtmlEmailSync(MailContext context, String to, List<String> cc, String subject,
+            String htmlBody, String configurationSetName, String replyTo) {
         Objects.requireNonNull(to, "to recipient must not be null");
         assertSendable(to);
 
@@ -188,8 +223,11 @@ public class EmailService {
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
             if (localEmailCapture != null) {
-                localEmailCapture.capture(to, ccClean, subject, htmlBody, fromEmail, fromName, List.of());
+                UUID captured = localEmailCapture.capture(to, ccClean, subject, htmlBody, fromEmail, fromName,
+                        List.of());
+                record(context, to, ccClean, subject, htmlBody, "local-" + captured, null);
             } else {
+                record(context, to, ccClean, subject, htmlBody, null, null);
                 log.info("Would send email to: {}, ccCount: {}, subject: {}, replyTo: {}",
                         LoggingUtils.maskEmail(to), ccClean.size(), subject,
                         LoggingUtils.maskEmail(effectiveReplyTo));
@@ -225,14 +263,19 @@ public class EmailService {
             if (configurationSetName != null && !configurationSetName.isBlank()) {
                 requestBuilder.configurationSetName(configurationSetName);
             }
+            if (context != null) {
+                requestBuilder.tags(mailGroupTag(context));
+            }
 
             SendEmailResponse response = sesClient.sendEmail(requestBuilder.build());
             log.info("Email sent (sync) to: {}, ccCount: {}, MessageId: {}",
                     LoggingUtils.maskEmail(to), ccClean.size(), response.messageId());
+            record(context, to, ccClean, subject, htmlBody, response.messageId(), null);
 
         } catch (SesException e) {
             log.error("Failed to send email (sync) to: {}, Error: {}",
                     LoggingUtils.maskEmail(to), e.awsErrorDetails().errorMessage(), e);
+            record(context, to, ccClean, subject, htmlBody, null, errorCode(e));
             throw new EmailSendException("Failed to send email to: " + LoggingUtils.maskEmail(to), e);
         }
     }
@@ -272,6 +315,18 @@ public class EmailService {
             String htmlBody,
             List<EmailAttachment> attachments
     ) {
+        sendHtmlEmailWithAttachments(null, to, cc, subject, htmlBody, attachments);
+    }
+
+    /** Story 16.1a: as above, recorded with its {@link MailContext} when that is non-null. */
+    public void sendHtmlEmailWithAttachments(
+            MailContext context,
+            String to,
+            List<String> cc,
+            String subject,
+            String htmlBody,
+            List<EmailAttachment> attachments
+    ) {
         Objects.requireNonNull(to, "to recipient must not be null");
         assertSendable(to);
         // Story 10.32: normalise CC list the same way the SES MIME path below does,
@@ -289,9 +344,11 @@ public class EmailService {
                 for (EmailAttachment attachment : attachments) {
                     localEmailCapture.storeAttachmentBytes(emailId, attachment.filename(), attachment.content());
                 }
+                record(context, to, ccClean, subject, htmlBody, "local-" + emailId, null);
             } else {
                 log.info("Would send email with {} attachment(s) to: {}, ccCount: {}, subject: {}",
                         attachments.size(), LoggingUtils.maskEmail(to), ccClean.size(), subject);
+                record(context, to, ccClean, subject, htmlBody, null, null);
             }
             return;
         }
@@ -360,15 +417,20 @@ public class EmailService {
             if (configurationSetName != null && !configurationSetName.isBlank()) {
                 rawRequestBuilder.configurationSetName(configurationSetName);
             }
+            if (context != null) {
+                rawRequestBuilder.tags(mailGroupTag(context));
+            }
 
             SendRawEmailResponse response = sesClient.sendRawEmail(rawRequestBuilder.build());
             log.info("Email with attachments sent successfully to: {}, MessageId: {}", to, response.messageId());
+            record(context, to, ccClean, subject, htmlBody, response.messageId(), null);
 
         } catch (MessagingException | IOException e) {
             log.error("Failed to create MIME message for: {}", to, e);
             throw new EmailSendException("Failed to create email message", e);
         } catch (SesException e) {
             log.error("Failed to send email to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);
+            record(context, to, ccClean, subject, htmlBody, null, errorCode(e));
             throw new EmailSendException("Failed to send email to: " + to, e);
         }
     }
@@ -378,6 +440,18 @@ public class EmailService {
      * Supports configurationSetName for SES bounce/complaint tracking.
      */
     public void sendHtmlEmailSyncWithAttachments(
+            String to,
+            String subject,
+            String htmlBody,
+            List<EmailAttachment> attachments,
+            String configurationSetName
+    ) {
+        sendHtmlEmailSyncWithAttachments(null, to, subject, htmlBody, attachments, configurationSetName);
+    }
+
+    /** Story 16.1a: as above, recorded with its {@link MailContext} when that is non-null. */
+    public void sendHtmlEmailSyncWithAttachments(
+            MailContext context,
             String to,
             String subject,
             String htmlBody,
@@ -398,6 +472,9 @@ public class EmailService {
                 for (EmailAttachment attachment : attachments) {
                     localEmailCapture.storeAttachmentBytes(emailId, attachment.filename(), attachment.content());
                 }
+                record(context, to, List.of(), subject, htmlBody, "local-" + emailId, null);
+            } else {
+                record(context, to, List.of(), subject, htmlBody, null, null);
             }
             return;
         }
@@ -445,15 +522,20 @@ public class EmailService {
             if (configurationSetName != null && !configurationSetName.isBlank()) {
                 rawRequestBuilder.configurationSetName(configurationSetName);
             }
+            if (context != null) {
+                rawRequestBuilder.tags(mailGroupTag(context));
+            }
 
             SendRawEmailResponse response = sesClient.sendRawEmail(rawRequestBuilder.build());
             log.info("Email with attachments sent (sync) to: {}, MessageId: {}", to, response.messageId());
+            record(context, to, List.of(), subject, htmlBody, response.messageId(), null);
 
         } catch (MessagingException | IOException e) {
             log.error("Failed to create MIME message for: {}", to, e);
             throw new EmailSendException("Failed to create email message", e);
         } catch (SesException e) {
             log.error("Failed to send email to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);
+            record(context, to, List.of(), subject, htmlBody, null, errorCode(e));
             throw new EmailSendException("Failed to send email to: " + to, e);
         }
     }
@@ -511,6 +593,34 @@ public class EmailService {
                     destinations.size(), e.awsErrorDetails().errorMessage(), e);
             throw new EmailSendException("Failed to send raw email", e);
         }
+    }
+
+    /**
+     * Story 16.1a: hand a send to the recorder, credentials redacted. Never throws: a recording
+     * failure must not turn a delivered mail into an error for the caller.
+     */
+    private void record(MailContext context, String to, List<String> cc, String subject, String htmlBody,
+            String messageId, String failureReason) {
+        if (context == null || outboundMailRecorder == null) {
+            return;
+        }
+        try {
+            outboundMailRecorder.record(context, new OutboundMail(to, cc,
+                    MailRedaction.redact(subject, context.secrets()),
+                    MailRedaction.redact(htmlBody, context.secrets()), messageId, failureReason));
+        } catch (RuntimeException e) {
+            log.error("Failed to record outbound mail (group {}): {}", context.sendGroupId(), e.getMessage(), e);
+        }
+    }
+
+    private static MessageTag mailGroupTag(MailContext context) {
+        return MessageTag.builder().name(MAIL_GROUP_TAG).value(context.sendGroupId()).build();
+    }
+
+    private static String errorCode(SesException e) {
+        return e.awsErrorDetails() != null && e.awsErrorDetails().errorCode() != null
+                ? e.awsErrorDetails().errorCode()
+                : "SES_ERROR";
     }
 
     private static String rawSubject(byte[] mime) {

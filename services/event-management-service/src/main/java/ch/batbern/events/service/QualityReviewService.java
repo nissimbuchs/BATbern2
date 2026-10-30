@@ -8,6 +8,7 @@ import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.workflow.TransitionPayload;
+import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import ch.batbern.events.forwarding.ModeratorReplyAddress;
@@ -229,7 +230,10 @@ public class QualityReviewService {
                     .map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
                     .orElse(java.util.Collections.emptyList());
             // Story 16.0 AC1: the speaker's answer reaches the moderator, not replies@.
-            emailService.sendHtmlEmail(recipientEmail, cc, subject, body, moderatorReplyAddress.forEvent(event));
+            MailContext context = MailContext.individual(event.getEventCode(), MailContext.Audience.SPEAKERS,
+                    "quality-review-revision");
+            emailService.sendHtmlEmail(context, recipientEmail, cc, subject, body,
+                    moderatorReplyAddress.forEvent(event));
             // Note: Don't log email address (PII) - only log speaker ID per GDPR data minimization
             log.info("Revision notification sent to speaker pool entry: {} with portal link (ccCount={})",
                     speaker.getId(), cc.size());

@@ -17,6 +17,8 @@ import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
+import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
 import ch.batbern.shared.service.TestMarkedEmailException;
@@ -367,6 +369,7 @@ public class NewsletterEmailService {
                                             String locale, String effectiveKey,
                                             @Nullable Integer maxRecipients, boolean testMode) {
         markInProgress(sendId);
+        MailContext mailContext = mailContext(sendId, event, effectiveKey);
 
         Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
         String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
@@ -408,7 +411,7 @@ public class NewsletterEmailService {
                         String mergedHtml = emailService.replaceVariables(
                                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
                                 recipientVars);
-                        sendWithOptionalAttachments(
+                        sendWithOptionalAttachments(mailContext,
                                 subscriber.getEmail(), subject, mergedHtml, icsAttachments);
                         sentCount++;
                     } catch (Exception e) {
@@ -472,7 +475,7 @@ public class NewsletterEmailService {
                         String mergedHtml = emailService.replaceVariables(
                                 emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
                                 recipientVars);
-                        sendWithOptionalAttachments(
+                        sendWithOptionalAttachments(mailContext,
                                 subscriber.getEmail(), subject, mergedHtml, icsAttachments);
                         sentCount++;
                     } catch (Exception e) {
@@ -542,6 +545,7 @@ public class NewsletterEmailService {
     public void executeRetryAsync(UUID sendId, Event event, boolean isReminder,
                                    String locale, String effectiveKey) {
         markInProgress(sendId);
+        MailContext mailContext = mailContext(sendId, event, effectiveKey);
 
         Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
         String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
@@ -586,7 +590,8 @@ public class NewsletterEmailService {
                     String mergedHtml = emailService.replaceVariables(
                             emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
                             recipientVars);
-                    emailService.sendHtmlEmailSync(email, subject, mergedHtml, configurationSetName);
+                    emailService.sendHtmlEmailSync(mailContext, email, null, subject, mergedHtml,
+                            configurationSetName, null);
                     newlySent++;
                 } catch (Exception e) {
                     log.error("Newsletter retry (failed) failed for {}: {}", email, e.getMessage());
@@ -615,7 +620,8 @@ public class NewsletterEmailService {
                     String mergedHtml = emailService.replaceVariables(
                             emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
                             recipientVars);
-                    emailService.sendHtmlEmailSync(email, subject, mergedHtml, configurationSetName);
+                    emailService.sendHtmlEmailSync(mailContext, email, null, subject, mergedHtml,
+                            configurationSetName, null);
                     newlySent++;
                 } catch (Exception e) {
                     log.error("Newsletter retry (uncontacted) failed for {}: {}", email, e.getMessage());
@@ -721,14 +727,25 @@ public class NewsletterEmailService {
     // ── Send helper ───────────────────────────────────────────────────────────
 
     /** Send with attachments when present, otherwise use simple (non-MIME) path. */
-    private void sendWithOptionalAttachments(String to, String subject, String mergedHtml,
+    private void sendWithOptionalAttachments(MailContext mailContext, String to, String subject, String mergedHtml,
                                               List<EmailService.EmailAttachment> attachments) {
         if (attachments.isEmpty()) {
-            emailService.sendHtmlEmailSync(to, subject, mergedHtml, configurationSetName);
+            emailService.sendHtmlEmailSync(mailContext, to, null, subject, mergedHtml, configurationSetName, null);
         } else {
             emailService.sendHtmlEmailSyncWithAttachments(
-                    to, subject, mergedHtml, attachments, configurationSetName);
+                    mailContext, to, subject, mergedHtml, attachments, configurationSetName);
         }
+    }
+
+    /**
+     * Story 16.1a: one recorded mail per newsletter send, linked to its {@code newsletter_sends} row;
+     * a retry joins it. Per-recipient status stays in {@code newsletter_recipients} (AC3).
+     */
+    private MailContext mailContext(UUID sendId, Event event, String effectiveKey) {
+        Optional<NewsletterSend> send = sendRepository.findById(sendId);
+        return MailContext.of(MailTrigger.forSend(sendId, send.map(NewsletterSend::getSentByUsername).orElse(null)),
+                        event.getEventCode(), MailContext.Audience.NEWSLETTER, effectiveKey)
+                .forNewsletterSend(sendId, send.map(NewsletterSend::isTestMode).orElse(false));
     }
 
     // ── iCal attachment building ────────────────────────────────────────────────

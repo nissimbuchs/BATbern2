@@ -3,6 +3,7 @@ package ch.batbern.events.notification;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
+import ch.batbern.shared.mail.MailTrigger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.scheduling.annotation.Scheduled;
@@ -43,6 +44,7 @@ public class DeadlineReminderJob {
                 .findByRegistrationDeadlineBetween(now, threeDaysFromNow);
 
         int notificationsSent = 0;
+        MailTrigger run = MailTrigger.system();
 
         for (Event event : upcomingDeadlines) {
             Duration timeUntilDeadline = Duration.between(now, event.getRegistrationDeadline());
@@ -58,6 +60,7 @@ public class DeadlineReminderJob {
                                 .recipientUsername(username)
                                 .eventCode(event.getEventCode())
                                 .type("DEADLINE_WARNING")
+                                .mailTrigger(run)
                                 .channel("EMAIL")
                                 .priority("HIGH")
                                 .subject(String.format("Registration for %s closes in %d days",

@@ -14,6 +14,8 @@ import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.RegistrationRepository;
+import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -250,12 +252,19 @@ public class SlidesOnlineEmailService {
         processSend(sendId, event, templateKey);
     }
 
+    private String sentBy(UUID sendId) {
+        return sendRepository.findById(sendId).map(NewsletterSend::getSentByUsername).orElse(null);
+    }
+
     /**
      * Synchronous send core: resolve active registrants, skip opt-outs, send the locale-correct
      * template to each, record per-recipient audit, isolate per-recipient failures, throttle for SES.
      */
     void processSend(UUID sendId, Event event, String templateKey) {
         markInProgress(sendId);
+        // Story 16.1a: the whole send is one recorded mail, linked to its newsletter_sends row.
+        MailContext sendContext = MailContext.of(MailTrigger.forSend(sendId, sentBy(sendId)), event.getEventCode(),
+                MailContext.Audience.REGISTRANTS, templateKey).forNewsletterSend(sendId, false);
 
         // Render once per locale (body + subject are identical for all recipients of a locale).
         Map<String, RenderedMail> renderedByLocale = new HashMap<>();
@@ -304,7 +313,8 @@ public class SlidesOnlineEmailService {
 
                 String deliveryStatus = "sent";
                 try {
-                    emailService.sendHtmlEmailSync(email, personalisedSubject, personalisedHtml, configurationSetName);
+                    emailService.sendHtmlEmailSync(sendContext.withSecrets(registration.getRegistrationCode()), email,
+                            null, personalisedSubject, personalisedHtml, configurationSetName, null);
                     sentCount++;
                 } catch (Exception e) {
                     // AC6: isolate a transient SES failure for one recipient.

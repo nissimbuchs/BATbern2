@@ -135,11 +135,7 @@ class TaskReminderEmailServiceTest {
         void should_sendEmail_to_assignedOrganizer() {
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(
-                    eq("lena.mueller@example.com"),
-                    anyString(),
-                    anyString()
-            );
+            verify(emailService).sendHtmlEmail(any(), eq("lena.mueller@example.com"), any(), anyString(), anyString(), any());
         }
 
         @Test
@@ -149,7 +145,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), subjectCaptor.capture(), anyString());
+            verify(emailService).sendHtmlEmail(any(), anyString(), any(), subjectCaptor.capture(), anyString(), any());
             assertThat(subjectCaptor.getValue()).contains("Aufgabenerinnerung");
             assertThat(subjectCaptor.getValue()).contains("Moderator beauftragen");
             assertThat(subjectCaptor.getValue()).contains("fällig morgen");
@@ -162,7 +158,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.ENGLISH);
 
-            verify(emailService).sendHtmlEmail(anyString(), subjectCaptor.capture(), anyString());
+            verify(emailService).sendHtmlEmail(any(), anyString(), any(), subjectCaptor.capture(), anyString(), any());
             assertThat(subjectCaptor.getValue()).contains("Task Reminder");
             assertThat(subjectCaptor.getValue()).contains("Moderator beauftragen");
             assertThat(subjectCaptor.getValue()).contains("due tomorrow");
@@ -175,7 +171,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, null);
 
-            verify(emailService).sendHtmlEmail(anyString(), subjectCaptor.capture(), anyString());
+            verify(emailService).sendHtmlEmail(any(), anyString(), any(), subjectCaptor.capture(), anyString(), any());
             assertThat(subjectCaptor.getValue()).contains("Aufgabenerinnerung");
         }
 
@@ -186,7 +182,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), bodyCaptor.capture(), any());
             assertThat(bodyCaptor.getValue()).contains("Moderator beauftragen");
         }
 
@@ -197,7 +193,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), bodyCaptor.capture(), any());
             assertThat(bodyCaptor.getValue()).contains("BATbern 2026");
         }
 
@@ -208,7 +204,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), bodyCaptor.capture(), any());
             assertThat(bodyCaptor.getValue()).contains("https://batbern.ch/events/BAT2026/tasks");
         }
 
@@ -219,7 +215,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), bodyCaptor.capture(), any());
             assertThat(bodyCaptor.getValue()).contains("Lena");
         }
 
@@ -232,7 +228,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), bodyCaptor.capture(), any());
             assertThat(bodyCaptor.getValue()).contains("organizer1");
         }
     }
@@ -253,7 +249,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), bodyCaptor.capture());
+            verify(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), bodyCaptor.capture(), any());
             assertThat(bodyCaptor.getValue()).contains("DB Aufgabe: Moderator beauftragen");
         }
 
@@ -286,7 +282,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+            verify(emailService, never()).sendHtmlEmail(any(), anyString(), any(), anyString(), anyString(), any());
         }
 
         @Test
@@ -296,14 +292,14 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+            verify(emailService, never()).sendHtmlEmail(any(), anyString(), any(), anyString(), anyString(), any());
         }
 
         @Test
         @DisplayName("should not throw when email sending fails")
         void should_notThrow_when_emailSendFails() {
             doThrow(new RuntimeException("SES unavailable"))
-                    .when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+                    .when(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), anyString(), any());
 
             // Should complete without throwing
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
@@ -316,7 +312,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+            verify(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), anyString(), any());
         }
 
         @Test
@@ -326,7 +322,7 @@ class TaskReminderEmailServiceTest {
 
             service.sendTaskDeadlineReminder(task, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+            verify(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), anyString(), any());
         }
     }
 }

@@ -35,6 +35,19 @@ This document consolidates security implementation, performance standards, acces
 - **Rate Limiting**: API rate limiting per user and endpoint
 - **CORS Policy**: Restrictive CORS configuration
 
+### Recorded mail is personal data (Story 16.1a)
+
+`mail_message` and `mail_recipient` hold recipient addresses and the rendered text of every mail EMS
+sends for an event, so they fall under the same rules as registration data:
+
+- **Retention:** deleted nightly once the event date and the mail are both older than 12 months;
+  mail without an event after 12 months (owner decision, Epic 16).
+- **No credentials:** one-click links (`token=`), registration codes and temporary passwords are
+  replaced by `[redacted]` before the mail is stored, so reading the record never lets someone act as
+  the recipient. A new mail that puts another secret into its text must name it with
+  `MailContext.withSecrets`.
+- **Access:** organizers only (the read endpoint arrives with Story 16.3, `hasRole('ORGANIZER')`).
+
 ### AI / LLM Security (OWASP-LLM, Story 15.9)
 - The AI surface lives in `event-management-service` (event description, theme image, abstract
   analysis, trending topics, organizer-editable prompts), is ORGANIZER-gated, AI-feature-flagged

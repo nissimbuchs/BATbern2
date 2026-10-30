@@ -844,6 +844,34 @@ SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → E
 - **Replay**: raw mail stays in S3 for 7 days. Re-sending an S3 event JSON for a `forwarding/` key
   to the forwarding queue forwards it again unless its key is already in `email_forwarding_log`.
 
+## Outbound Mail Record (Story 16.1a)
+
+Every mail EMS sends for an event or on an organizer's behalf is recorded, so the team can see what
+went out (Mail Center, Epic 16). Record only; the Communications page (16.3) reads it.
+
+- **Hook**: callers pass a `MailContext` (shared kernel `ch.batbern.shared.mail`) to the
+  context-taking `EmailService` overloads. After SES answers, `EmailService` hands the redacted mail
+  and the SES Message-ID to the optional `OutboundMailRecorder` SPI; EMS implements it with
+  `JpaOutboundMailRecorder` (own transaction). A send without context, or blocked before SES
+  (reserved domain, ADR-015 test marker), is not recorded. An SES error is recorded as `FAILED` with
+  its error code. Every recorded send carries the SES tag `mail_group` = send-group id.
+- **Tables** (`V135`): `mail_message`, one row per send group, public id `mail_key` =
+  `{eventCode}-{n}` or `general-{n}` from `mail_message_seq`; `mail_recipient`, one row per address
+  (TO/CC) with `ses_message_id` and status `SENT`/`FAILED` (16.1b adds `DELIVERED`). A recipient row
+  keeps its own body only when its text differs from the message's.
+- **Send groups** (`MailTrigger`): one per organizer request, per scheduler run × event × template,
+  or per transactional mail. Newsletter and registrant notices group by their `newsletter_sends` row,
+  so a retry joins the same record. The newsletter adds no recipient rows; its per-recipient status
+  stays in `newsletter_recipients`.
+- **No credentials in the record**: `MailRedaction` masks every `token=` link parameter
+  (confirmation, deregistration, unsubscribe) and the plain-text secrets the caller names
+  (`MailContext.withSecrets`: registration code, temporary password).
+- **Guard**: `OutboundMailInventoryGuardTest` scans EMS sources and fails for a send through
+  `EmailService` without a context. Allow-listed: forwarding (inbound, Story 16.2) and the newsletter
+  unsubscribe acknowledgement.
+- **Retention**: `MailMessageRetentionScheduler` (03:30 Europe/Zurich, ShedLock) deletes a mail once
+  its event date and the mail itself are older than 12 months; mail without an event after 12 months.
+
 ## Auto-Enrollment on Event Creation
 
 When a new event is created, an `EventCreatedEvent` listener automatically enrolls all active organizers and partner contacts as stakeholders. A manual quick-action button is also available for idempotent re-enrollment (`POST` endpoint returns success even if already enrolled).

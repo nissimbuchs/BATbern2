@@ -4,6 +4,7 @@ import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
 import ch.batbern.shared.utils.LoggingUtils;
@@ -112,11 +113,15 @@ public class RegistrationEmailService {
             // link) have an empty list and behave unchanged.
             List<String> cc = additionalEmailsFor(userProfile);
 
+            MailContext context = MailContext.individual(event.getEventCode(), MailContext.Audience.REGISTRANTS,
+                    "registration-confirmation").withSecrets(registration.getRegistrationCode(), confirmationToken);
             emailService.sendHtmlEmail(
+                    context,
                     userProfile.getEmail(),
                     cc,
                     content.subject(),
-                    content.html()
+                    content.html(),
+                    null
             );
 
             if (!cc.isEmpty()) {
@@ -256,8 +261,10 @@ public class RegistrationEmailService {
                 "event.ics", icsFile, "text/calendar; charset=utf-8; method=REQUEST", true);
 
         List<String> cc = additionalEmailsFor(userProfile);
+        MailContext context = MailContext.individual(event.getEventCode(), MailContext.Audience.REGISTRANTS,
+                templateKey).withSecrets(registration.getRegistrationCode());
         emailService.sendHtmlEmailWithAttachments(
-                userProfile.getEmail(), cc, subject, html, List.of(calendarAttachment));
+                context, userProfile.getEmail(), cc, subject, html, List.of(calendarAttachment));
     }
 
     /**

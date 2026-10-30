@@ -3,6 +3,7 @@ package ch.batbern.events.scheduler;
 import ch.batbern.events.domain.EventTask;
 import ch.batbern.events.repository.EventTaskRepository;
 import ch.batbern.events.service.TaskReminderEmailService;
+import ch.batbern.shared.mail.MailTrigger;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -80,7 +81,7 @@ class TaskDeadlineReminderSchedulerTest {
             scheduler.processReminders();
 
             verify(taskReminderEmailService, times(1))
-                    .sendTaskDeadlineReminder(eq(task), eq(Locale.GERMAN));
+                    .sendTaskDeadlineReminder(eq(task), eq(Locale.GERMAN), any(MailTrigger.class));
         }
 
         @Test
@@ -94,8 +95,11 @@ class TaskDeadlineReminderSchedulerTest {
 
             scheduler.processReminders();
 
+            // Story 16.1a AC2: one run = one trigger, so the run's reminders are one recorded mail per event.
+            ArgumentCaptor<MailTrigger> triggers = ArgumentCaptor.forClass(MailTrigger.class);
             verify(taskReminderEmailService, times(3))
-                    .sendTaskDeadlineReminder(any(EventTask.class), eq(Locale.GERMAN));
+                    .sendTaskDeadlineReminder(any(EventTask.class), eq(Locale.GERMAN), triggers.capture());
+            assertThat(triggers.getAllValues()).hasSize(3).containsOnly(triggers.getAllValues().get(0));
         }
 
         @Test
@@ -107,7 +111,7 @@ class TaskDeadlineReminderSchedulerTest {
             scheduler.processReminders();
 
             verify(taskReminderEmailService, never())
-                    .sendTaskDeadlineReminder(any(EventTask.class), any(Locale.class));
+                    .sendTaskDeadlineReminder(any(EventTask.class), any(Locale.class), any(MailTrigger.class));
         }
 
         @Test
@@ -142,7 +146,8 @@ class TaskDeadlineReminderSchedulerTest {
 
             scheduler.processReminders();
 
-            verify(taskReminderEmailService).sendTaskDeadlineReminder(any(EventTask.class), eq(Locale.GERMAN));
+            verify(taskReminderEmailService).sendTaskDeadlineReminder(any(EventTask.class), eq(Locale.GERMAN),
+                    any(MailTrigger.class));
         }
     }
 

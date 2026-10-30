@@ -8,6 +8,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -97,10 +98,9 @@ class SpeakerModeratorReplyToTest {
         ReflectionTestUtils.setField(service, "organizerEmail", "events@batbern.ch");
 
         service.sendReminderEmail(speaker, event, "RESPONSE", "TIER_1", LocalDate.now().plusDays(7),
-                Locale.ENGLISH);
+                Locale.ENGLISH, MailTrigger.system());
 
-        verify(emailService).sendHtmlEmail(eq("speaker@example.com"), anyList(), anyString(), anyString(),
-                eq(MODERATOR));
+        verify(emailService).sendHtmlEmail(any(), eq("speaker@example.com"), anyList(), anyString(), anyString(), eq(MODERATOR));
     }
 
     @Test
@@ -114,7 +114,6 @@ class SpeakerModeratorReplyToTest {
 
         service.rejectContent(speaker.getId().toString(), "Please shorten the abstract", "organizer");
 
-        verify(emailService).sendHtmlEmail(eq("speaker@example.com"), anyList(), anyString(), anyString(),
-                eq(MODERATOR));
+        verify(emailService).sendHtmlEmail(any(), eq("speaker@example.com"), anyList(), anyString(), anyString(), eq(MODERATOR));
     }
 }

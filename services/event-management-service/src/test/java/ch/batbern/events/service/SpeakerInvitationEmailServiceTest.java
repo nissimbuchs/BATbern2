@@ -166,8 +166,7 @@ class SpeakerInvitationEmailServiceTest {
 
         invitationEmailService.sendInvitationEmail(speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), anyString(),
-                eq("batbern60-moderator@batbern.ch"));
+        verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), anyString(), eq("batbern60-moderator@batbern.ch"));
     }
 
     // ============================================================
@@ -183,7 +182,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
+        verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
         String body = bodyCaptor.getValue();
         // Temp password value appears.
         assertThat(body).contains("Tk7!aB2@nx9pQ4#z");
@@ -201,7 +200,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, useExistingCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
+        verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
         String body = bodyCaptor.getValue();
         // No temp password appears.
         assertThat(body).doesNotContain("Tk7!aB2@nx9pQ4#z");
@@ -221,7 +220,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, freshCredentials, Locale.GERMAN);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), bodyCaptor.capture(), nullable(String.class));
+        verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), subjectCaptor.capture(), bodyCaptor.capture(), nullable(String.class));
         assertThat(subjectCaptor.getValue()).contains("Einladung als Referent");
         // German body must contain the German "temporary password" wording.
         String body = bodyCaptor.getValue();
@@ -238,7 +237,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
+        verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
         assertThat(bodyCaptor.getValue()).contains(loginUrl);
         // Speaker email is the Cognito username.
         assertThat(bodyCaptor.getValue()).contains("john.doe@example.com");
@@ -256,11 +255,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-            verify(emailService).sendHtmlEmail(
-                    eq("john.doe@example.com"),
-                    anyList(),
-                    contains("Speaker Invitation"),
-                    anyString(), nullable(String.class));
+            verify(emailService).sendHtmlEmail(any(), eq("john.doe@example.com"), anyList(), contains("Speaker Invitation"), anyString(), nullable(String.class));
         }
 
         @Test
@@ -272,7 +267,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
+            verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
             String body = bodyCaptor.getValue();
             assertThat(body).contains("BATbern 2026");
             assertThat(body).contains("15.03.2026");
@@ -290,7 +285,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, null);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyList(), subjectCaptor.capture(), anyString(), nullable(String.class));
+            verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), subjectCaptor.capture(), anyString(), nullable(String.class));
             assertThat(subjectCaptor.getValue()).contains("Einladung als Referent");
         }
 
@@ -299,7 +294,7 @@ class SpeakerInvitationEmailServiceTest {
         void should_notThrow_when_emailSendingFails() {
             when(sessionRepository.findById(speaker.getSessionId())).thenReturn(Optional.of(session));
             doThrow(new RuntimeException("Email server unavailable"))
-                    .when(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), anyString(), nullable(String.class));
+                    .when(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), anyString(), nullable(String.class));
 
             // No exception escapes.
             invitationEmailService.sendInvitationEmail(
@@ -317,7 +312,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
+            verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
             assertThat(bodyCaptor.getValue()).contains("TBA");
         }
 
@@ -334,7 +329,7 @@ class SpeakerInvitationEmailServiceTest {
             invitationEmailService.sendInvitationEmail(
                     speaker, event, loginUrl, freshCredentials, Locale.GERMAN);
 
-            verify(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
+            verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
             assertThat(bodyCaptor.getValue()).contains("John Doe");
             assertThat(bodyCaptor.getValue()).contains("Tk7!aB2@nx9pQ4#z");
         }
@@ -361,11 +356,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(
-                eq("john.doe@example.com"),
-                ccCaptor.capture(),
-                anyString(),
-                anyString(), nullable(String.class));
+        verify(emailService).sendHtmlEmail(any(), eq("john.doe@example.com"), ccCaptor.capture(), anyString(), anyString(), nullable(String.class));
         assertThat(ccCaptor.getValue())
                 .containsExactly("john.work@example.com", "john.private@example.com");
     }
@@ -383,11 +374,7 @@ class SpeakerInvitationEmailServiceTest {
         invitationEmailService.sendInvitationEmail(
                 speaker, event, loginUrl, freshCredentials, Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmail(
-                eq("john.doe@example.com"),
-                ccCaptor.capture(),
-                anyString(),
-                anyString(), nullable(String.class));
+        verify(emailService).sendHtmlEmail(any(), eq("john.doe@example.com"), ccCaptor.capture(), anyString(), anyString(), nullable(String.class));
         assertThat(ccCaptor.getValue()).isEmpty();
     }
 }
