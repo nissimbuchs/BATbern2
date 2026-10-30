@@ -16,8 +16,13 @@ import java.util.regex.Pattern;
  * <ul>
  *   <li>Rate limit check: {@link InboundEmailRateLimiter}</li>
  *   <li>Unsubscribe keywords → {@link NewsletterSubscriberService#unsubscribeByEmail}</li>
- *   <li>Cancel keywords + event code → {@link RegistrationService#cancelByEmail}</li>
+ *   <li>Cancel keywords + event code → deregistration-link mail via
+ *       {@link DeregistrationService#requestDeregistrationLinkByReply}: the attendee confirms with one
+ *       click; nothing is cancelled here (Story 16.0 AC11, #1162)</li>
  *   <li>Accept keywords + event code → {@link RegistrationService#confirmByEmail}</li>
+ *   <li>Keywords act only when the first line is essentially the keyword alone, at most
+ *       {@value #MAX_KEYWORD_WORDS} words (Story 16.0 AC12/AC13). A longer sentence that merely
+ *       contains one is a human reply.</li>
  *   <li>Anything it cannot act on → {@link RouteResult#UNRECOGNIZED}: the caller forwards the
  *       mail to the organizers (Story 16.0, #1160). It used to be discarded.</li>
  * </ul>
@@ -29,11 +34,15 @@ public class InboundEmailRouter {
 
     private static final Pattern EVENT_CODE_PATTERN = Pattern.compile("BATbern\\d+");
 
+    /** Story 16.0 AC12: "cancel", "Bitte absagen", "cancel please" act; a sentence does not. */
+    static final int MAX_KEYWORD_WORDS = 3;
+
     private final NewsletterSubscriberService newsletterSubscriberService;
     private final RegistrationService registrationService;
     private final InboundEmailConfirmationEmailService confirmationEmailService;
     private final InboundEmailRateLimiter rateLimiter;
     private final PartnerMeetingRsvpClient partnerMeetingRsvpClient;
+    private final DeregistrationService deregistrationService;
 
     /**
      * Immutable DTO representing a parsed inbound email.
@@ -83,6 +92,14 @@ public class InboundEmailRouter {
 
         String senderPrefix = email.senderEmail().substring(0, Math.min(5, email.senderEmail().length()));
 
+        // Story 16.0 AC12/AC13: a keyword inside a longer sentence ("Ich muss leider absagen, kann
+        // ich den Platz weitergeben?") is a question for a person, not a command.
+        if (body.isEmpty() || body.split("\\s+").length > MAX_KEYWORD_WORDS) {
+            log.info("Inbound email body from: {}*** is not a short keyword — forwarding to organizers",
+                    senderPrefix);
+            return RouteResult.UNRECOGNIZED;
+        }
+
         // 3. Unsubscribe variants: unsubscribe, abmelden, désinscription
         if (body.contains("unsubscribe") || body.contains("abmelden") || body.contains("désinscription")) {
             String locale = body.contains("abmelden") ? "de"
@@ -96,12 +113,14 @@ public class InboundEmailRouter {
         // 4. Deregistration variants: cancel, deregister, absagen
         //    Note: "abmelden" matches both unsubscribe and deregistration — unsubscribe takes priority
         if (body.contains("cancel") || body.contains("deregister") || body.contains("absagen")) {
-            String locale = body.contains("absagen") ? "de" : "en";
             String eventCode = extractEventCode(email.subject());
             if (eventCode != null) {
-                registrationService.cancelByEmail(email.senderEmail(), eventCode);
-                confirmationEmailService.sendCancelConfirmation(email.senderEmail(), eventCode, locale);
-                log.info("Processed deregistration reply from: {}*** for event: {}", senderPrefix, eventCode);
+                // Story 16.0 AC11 (#1162): ask before acting. The deregistration-link mail lets the
+                // attendee confirm; a misread reply can no longer cost anyone their seat.
+                DeregistrationService.DeregistrationLinkResult result =
+                        deregistrationService.requestDeregistrationLinkByReply(email.senderEmail(), eventCode);
+                log.info("Processed deregistration reply from: {}*** for event: {} → {}", senderPrefix, eventCode,
+                        result);
                 return RouteResult.HANDLED;
             }
             log.warn("Deregistration keyword but no event code in subject from: {}*** — forwarding", senderPrefix);

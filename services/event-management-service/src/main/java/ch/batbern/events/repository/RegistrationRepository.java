@@ -289,6 +289,19 @@ public interface RegistrationRepository
      * @param waitlistStatus the exact waitlist status string (e.g. "waitlist")
      * @return number of registrations updated
      */
+    /**
+     * Story 16.0 (#1161, #1162): atomically records that the deregistration-link mail goes out now,
+     * unless it already went out after {@code notBefore}. A single conditional UPDATE, so two
+     * replies processed at once cannot both win.
+     *
+     * @return 1 when the caller may send the mail, 0 when it was sent recently
+     */
+    @Modifying(clearAutomatically = true, flushAutomatically = true)
+    @Query("UPDATE Registration r SET r.declineLinkSentAt = :now WHERE r.id = :id "
+            + "AND (r.declineLinkSentAt IS NULL OR r.declineLinkSentAt < :notBefore)")
+    int claimDeregistrationLink(@Param("id") UUID id, @Param("now") Instant now,
+                                @Param("notBefore") Instant notBefore);
+
     @Modifying(clearAutomatically = true)
     @Query("UPDATE Registration r SET r.status = 'cancelled' WHERE r.eventId = :eventId "
             + "AND r.status = :waitlistStatus")
