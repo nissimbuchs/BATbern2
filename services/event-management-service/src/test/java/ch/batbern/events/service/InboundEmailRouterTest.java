@@ -4,6 +4,8 @@ import ch.batbern.events.client.PartnerMeetingRsvpClient;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
@@ -36,6 +38,9 @@ class InboundEmailRouterTest {
 
     @Mock
     private PartnerMeetingRsvpClient partnerMeetingRsvpClient;
+
+    @Mock
+    private DeregistrationService deregistrationService;
 
     @InjectMocks
     private InboundEmailRouter router;
@@ -96,15 +101,15 @@ class InboundEmailRouterTest {
     // ─── Deregistration routing ─────────────────────────────────────────────────
 
     @Test
-    void route_withCancelBodyAndEventCodeInSubject_callsCancelByEmail() {
+    void route_withCancelBodyAndEventCodeInSubject_sendsDeregistrationLinkInsteadOfCancelling() {
+        // Story 16.0 AC11 (#1162): ask before acting — the registration stays until the link is clicked
         InboundEmailRouter.ParsedEmail email = new InboundEmailRouter.ParsedEmail(
                 "user@example.com", "Re: BATbern42 Registration Confirmation", "cancel");
 
-        router.route(email);
+        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.HANDLED);
 
-        verify(registrationService).cancelByEmail("user@example.com", "BATbern42");
-        verify(confirmationEmailService).sendCancelConfirmation("user@example.com", "BATbern42", "en");
-        verifyNoInteractions(newsletterSubscriberService);
+        verify(deregistrationService).requestDeregistrationLinkByReply("user@example.com", "BATbern42");
+        verifyNoInteractions(registrationService, confirmationEmailService, newsletterSubscriberService);
     }
 
     @Test
@@ -115,7 +120,8 @@ class InboundEmailRouterTest {
         // Nothing can be cancelled without an event code, so a person has to see it (Story 16.0 AC3)
         assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.UNRECOGNIZED);
 
-        verifyNoInteractions(registrationService, newsletterSubscriberService, confirmationEmailService);
+        verifyNoInteractions(registrationService, newsletterSubscriberService, confirmationEmailService,
+                deregistrationService);
     }
 
     @Test
@@ -125,8 +131,41 @@ class InboundEmailRouterTest {
 
         router.route(email);
 
-        verify(registrationService).cancelByEmail("user@example.com", "BATbern10");
-        verify(confirmationEmailService).sendCancelConfirmation("user@example.com", "BATbern10", "de");
+        verify(deregistrationService).requestDeregistrationLinkByReply("user@example.com", "BATbern10");
+        verifyNoInteractions(registrationService, confirmationEmailService);
+    }
+
+    // ─── Short-line rule (Story 16.0 AC12, AC13) ─────────────────────────────────
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "cancel", "Cancel please", "Absagen", "Bitte absagen.", "deregister me", "abmelden",
+        "UNSUBSCRIBE", "Bitte abmelden!", "accept", "Ja bestätigen"})
+    void route_withKeywordAloneOnFirstLine_acts(String firstLine) {
+        InboundEmailRouter.ParsedEmail email = new InboundEmailRouter.ParsedEmail(
+                "user@example.com", "Re: BATbern42 Anmeldung", firstLine);
+
+        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.HANDLED);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "Ich muss leider absagen, kann ich den Platz weitergeben?",
+        "Leider muss ich absagen, mein Zug fällt aus",
+        "Can I cancel and register my colleague instead?",
+        "Please do not cancel my registration, I will be late",
+        "Wie kann ich mich vom Newsletter abmelden und trotzdem kommen?",
+        "I want to unsubscribe my old address but keep the new one",
+        "I accept the invitation but need a vegetarian meal",
+        "Gerne bestätigen wir die Teilnahme von zwei Personen"})
+    void route_withKeywordInsideLongerSentence_isForwardedAndActsOnNothing(String firstLine) {
+        InboundEmailRouter.ParsedEmail email = new InboundEmailRouter.ParsedEmail(
+                "user@example.com", "Re: BATbern42 Anmeldung", firstLine);
+
+        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.UNRECOGNIZED);
+
+        verifyNoInteractions(newsletterSubscriberService, registrationService, confirmationEmailService,
+                deregistrationService);
     }
 
     // ─── Unrecognized → handed back for forwarding (Story 16.0 AC3) ──────────────

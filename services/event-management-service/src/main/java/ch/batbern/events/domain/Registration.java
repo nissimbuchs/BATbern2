@@ -227,6 +227,15 @@ public class Registration {
     private Integer confirmationResendCount = 0;
 
     /**
+     * Story 16.0 (#1161, #1162): when the deregistration-link mail was last sent in answer to a
+     * reply "cancel" or a calendar "Declined". A second request within 7 days sends nothing.
+     * Null = never sent. Written only through {@link
+     * ch.batbern.events.repository.RegistrationRepository#claimDeregistrationLink}.
+     */
+    @Column(name = "decline_link_sent_at")
+    private Instant declineLinkSentAt;
+
+    /**
      * JSONB audit metadata.
      * <p>
      * Auto-participant enrolment (spec

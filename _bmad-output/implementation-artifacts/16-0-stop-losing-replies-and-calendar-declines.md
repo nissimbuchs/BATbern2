@@ -67,14 +67,14 @@ so that **no speaker question or newsletter reply is silently dropped, and peopl
   - [ ] In `EmailForwardingService.forward`, the calendar-reply branch currently drops everything (`DROPPED_CALENDAR_REPLY`). Before dropping: parse PARTSTAT and UID (reuse `InboundEmailListenerService.extractIcsProperty` or move it to a shared parser); if `DECLINED` and the alias is `calendar@`, hand off to a new `CalendarDeclineService`.
   - [ ] `CalendarDeclineService`: match (UID first, fallback per AC7), check active status, de-dup (AC9), send the deregistration-link mail, metrics.
   - [ ] Integration tests: matched by UID, matched by fallback, ambiguous, already cancelled, duplicate within 7 days, accepted reply ignored.
-- [ ] **Task B2b — De-dup column** (AC: 9, 10): migration `V{next}__registrations_decline_link_sent_at.sql` (`ALTER TABLE registrations ADD COLUMN decline_link_sent_at TIMESTAMPTZ`); entity field next to `confirmationResentAt`.
+- [x] **Task B2b — De-dup column** (AC: 9, 10): migration `V{next}__registrations_decline_link_sent_at.sql` (`ALTER TABLE registrations ADD COLUMN decline_link_sent_at TIMESTAMPTZ`); entity field next to `confirmationResentAt`.
 - [ ] **Task B3 — Docs** — doc-drift check as in A4, plus a short note in the registration docs that a calendar decline triggers the deregistration-link mail.
 
 ### Part C — #1162 (PR 3, body `Fixes #1162`)
 
-- [ ] **Task C1 — Short-line rule** (AC: 12, 13): in `InboundEmailRouter.route`, keyword steps 3–5 act only if the normalized first line has at most 3 words; otherwise fall through to the AC3 forward. Table-driven unit test with real-life sentences (DE + EN) that must NOT trigger.
-- [ ] **Task C2 — Cancel asks first** (AC: 11): replace `registrationService.cancelByEmail` + `sendCancelConfirmation` in step 4 with the deregistration-link mail, reusing the Part B service and the AC10 column.
-- [ ] **Task C3 — Docs**: as in A4.
+- [x] **Task C1 — Short-line rule** (AC: 12, 13): in `InboundEmailRouter.route`, keyword steps 3–5 act only if the normalized first line has at most 3 words; otherwise fall through to the AC3 forward. Table-driven unit test with real-life sentences (DE + EN) that must NOT trigger.
+- [x] **Task C2 — Cancel asks first** (AC: 11): replace `registrationService.cancelByEmail` + `sendCancelConfirmation` in step 4 with the deregistration-link mail, reusing the Part B service and the AC10 column.
+- [x] **Task C3 — Docs**: as in A4.
 
 ## Dev Notes
 
@@ -124,6 +124,16 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-10-30.
 - Owner request 2026-10-30 (in Part A): CloudWatch alarm `batbern-{env}-replies-dlq` on the replies DLQ (`InboundEmailStack`), with SNS alarm + OK actions like the forwarding DLQ. Before, the replies DLQ had no alarm, so a reply dead-lettered by the new retry would have sat there unseen. CDK unit test added. Makes the Part A PR a layer-based infra deploy. CI on #1164 then failed `incident-response-docs.test.ts` (every declared alarm needs a runbook entry); I had run only the stack's own test locally. Fixed with a `replies-dlq` entry in `docs/operations/runbooks.md`; full infra suite 483 passed / 19 skipped, run with `--maxWorkers=2` (a 4-worker run OOM-killed the session on rack, see Debug Log).
 - A4: `docs/architecture/06-backend-architecture.md` and `docs/user-guide/features/notifications.md` updated (the user guide said "silently discarded").
 
+**Part C (#1162), branch `feature/16-0c-keyword-replies-ask-first` (cut from Part A)**
+
+- Order A → C → B as the Dev Notes say, so Part C introduces the shared pieces and Part B reuses them: migration **V132** (`registrations.decline_link_sent_at`, Task B2b done here), `Registration.declineLinkSentAt`, `RegistrationRepository.claimDeregistrationLink` (one conditional UPDATE, so two concurrent requests cannot both send), `DeregistrationService.sendDeregistrationLinkOnce(Registration)` and `requestDeregistrationLinkByReply(email, eventCode)` returning SENT / ALREADY_SENT / NOT_FOUND.
+- AC11: router step 4 calls `requestDeregistrationLinkByReply` instead of `cancelByEmail` + cancel confirmation. Nothing is cancelled until the link is clicked. Sender never learns the outcome (anti-enumeration).
+- AC12/AC13: router acts on keywords only when the normalized first line has at most 3 words; otherwise UNRECOGNIZED → forwarded (Part A). Applies to unsubscribe, cancel and accept; unsubscribe still acts at once. Table-driven tests: 10 short forms that act, 8 real-life DE/EN sentences that must not.
+- Dead code removed: `RegistrationService.cancelByEmail` and `InboundEmailConfirmationEmailService.sendCancelConfirmation` had no callers left. The `cancel-confirmation-{de,en}` templates are still seeded into the admin template store but are no longer sent; left in place (removing seeded templates is a separate decision).
+- Tests: `DeregistrationLinkOnceIntegrationTest` (Testcontainers, 4 cases: first sends + records, second within 7 days does not, after 8 days sends again, cancelled/unknown sends nothing); router 38/38. Full EMS suite 2162 tests, 0 failures; checkstyle clean.
+- **Verified live on local dev 2026-10-30**: V132 applied; reply "Bitte absagen" → one deregistration-link mail captured, registration still `registered`, `decline_link_sent_at` set; second reply "cancel" → ALREADY_SENT, no mail; "Ich muss leider absagen, kann ich den Platz weitergeben?" → forwarded to 4 organizers. Test rows deleted afterwards.
+- C3: `docs/user-guide/features/notifications.md` (CANCEL bullet, short-line rule) and `docs/architecture/06-backend-architecture.md`.
+
 ### File List
 
 **Part A**
@@ -166,8 +176,22 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-10-30.
 - `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md` (M)
 - `_bmad-output/implementation-artifacts/sprint-status.yaml` (M)
 
+**Part C**
+- `services/event-management-service/src/main/resources/db/migration/V132__registrations_decline_link_sent_at.sql` (A)
+- `services/event-management-service/src/main/java/ch/batbern/events/domain/Registration.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/repository/RegistrationRepository.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/DeregistrationService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailRouter.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/RegistrationService.java` (M)
+- `services/event-management-service/src/main/java/ch/batbern/events/service/InboundEmailConfirmationEmailService.java` (M)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/DeregistrationLinkOnceIntegrationTest.java` (A)
+- `services/event-management-service/src/test/java/ch/batbern/events/service/InboundEmailRouterTest.java` (M)
+- `docs/user-guide/features/notifications.md` (M)
+- `docs/architecture/06-backend-architecture.md` (M)
+
 ## Change Log
 
 - 2026-10-30: Story drafted from #1160 and #1161 (John, PM).
 - 2026-10-30: Readiness fixes: de-dup storage named (AC10); Part C for #1162 added.
 - 2026-10-30: Part A (#1160) implemented on `feature/16-0a-replies-reach-a-person` (Amelia).
+- 2026-10-30: Part A PR #1164 opened (owner go). Part C (#1162) implemented on `feature/16-0c-keyword-replies-ask-first`, incl. the shared de-dup column for Part B (Amelia).

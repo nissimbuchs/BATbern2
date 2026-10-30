@@ -8,14 +8,15 @@ import org.springframework.stereotype.Service;
 
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
-import java.util.Map;
 
 /**
  * Sends confirmation emails after inbound email actions (Story 10.17 — AC7).
  *
  * <ul>
  *   <li>After unsubscribe → sends {@code unsubscribe-confirmation-{locale}.html}</li>
- *   <li>After deregistration cancel → sends {@code cancel-confirmation-{locale}.html}</li>
+ *   <li>No cancel confirmation since Story 16.0 (#1162): a reply "cancel" sends the
+ *       deregistration-link mail instead, and the cancellation is confirmed by the link flow.
+ *       The {@code cancel-confirmation} templates stay seeded but are not sent.</li>
  * </ul>
  *
  * Template loading is best-effort: if template is missing, logs a warning and skips send.
@@ -52,35 +53,6 @@ public class InboundEmailConfirmationEmailService {
             emailService.sendHtmlEmail(email, subject, html);
         } catch (Exception e) {
             log.warn("Failed to send unsubscribe confirmation to: {}*** — {}",
-                    email.substring(0, Math.min(5, email.length())), e.getMessage());
-        }
-    }
-
-    /**
-     * Send deregistration confirmation email to the given address.
-     * Best-effort: failures are logged, not thrown.
-     *
-     * @param email     recipient address
-     * @param eventCode event code (e.g. "BATbern42")
-     * @param locale    BCP 47 locale code detected from reply keyword
-     */
-    public void sendCancelConfirmation(String email, String eventCode, String locale) {
-        try {
-            String resolvedLocale = resolveLocale(locale, "cancel-confirmation");
-            String html = loadHtml("cancel-confirmation", resolvedLocale,
-                    "email-templates/cancel-confirmation-" + resolvedLocale + ".html");
-            if (html.isBlank()) {
-                log.warn("cancel-confirmation template not found — skipping confirmation email to: {}***",
-                        email.substring(0, Math.min(5, email.length())));
-                return;
-            }
-            html = emailService.replaceVariables(html, Map.of("eventCode", eventCode));
-            String subject = resolvedLocale.equals("de")
-                    ? "Abmeldung für " + eventCode + " bestätigt"
-                    : "Deregistration for " + eventCode + " Confirmed";
-            emailService.sendHtmlEmail(email, subject, html);
-        } catch (Exception e) {
-            log.warn("Failed to send cancel confirmation to: {}*** — {}",
                     email.substring(0, Math.min(5, email.length())), e.getMessage());
         }
     }

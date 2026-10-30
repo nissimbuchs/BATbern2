@@ -465,32 +465,6 @@ public class RegistrationService {
      * @param registration The registration to cancel (must not be null, must have eventId)
      */
     /**
-     * Cancel a registration by email address and event code.
-     * Called when an attendee replies with a CANCEL keyword (Story 10.17).
-     * Replicates the same status change as clicking the deregistration link in the email,
-     * including waitlist promotion.
-     * <p>
-     * Anti-enumeration: silent no-op if no matching active registration is found.
-     *
-     * @param email     attendee email address
-     * @param eventCode event code (e.g. "BATbern42")
-     */
-    @Transactional
-    public void cancelByEmail(String email, String eventCode) {
-        registrationRepository.findByAttendeeEmailAndEventCode(email, eventCode)
-                .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()))
-                .ifPresentOrElse(
-                        registration -> {
-                            cancelRegistration(registration);
-                            log.info("Registration cancelled via email reply: {} for event: {}",
-                                    registration.getRegistrationCode(), eventCode);
-                        },
-                        () -> log.info("cancelByEmail: no active registration found for {}*** / {}",
-                                email.substring(0, Math.min(5, email.length())), eventCode)
-            );
-    }
-
-    /**
      * Send the "registration confirmed" mail (with the calendar invite) for a registration that has
      * just moved from pending to confirmed. Called by both confirmation paths: the confirmation link
      * and the ACCEPT email reply. Never throws: a failed lookup or send must not undo the
