@@ -120,6 +120,7 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-10-30.
 - AC5: keyword paths unchanged; all existing router tests stay green (three now also assert the result).
 - AC14 / local dev: `DevEmailController` reply simulation forwards UNRECOGNIZED replies through the same service, so the organizer copy lands in `/dev/mails`. **Verified live on local dev 2026-10-30** (profile `local`, no SES client): registered an SES-simulator address on test event BATbern89608, simulated a human reply → 4 organizer copies captured, Reply-To = the registrant, `X-BATbern-Forwarded: 1`, log row `forwarded | replies | 4 | 0`, V131 applied. Simulated `accept` → acceptance action ran, nothing forwarded. Found and fixed on the way: the simulator wrote the UTF-8 subject unencoded (displayed as `bestÃ¤tigen`); it now uses RFC 2047. Test rows deleted from the local DB afterwards.
 - Speaker-facing mails audited: the four listed services plus `QnaNotificationService` (Q&A digest to presenters). The digest keeps `replies@`; a reply to it is now forwarded to the organizers by AC3, so nothing is lost. Not changed, out of the AC1 list.
+- Owner request 2026-10-30 (in Part A): CloudWatch alarm `batbern-{env}-replies-dlq` on the replies DLQ (`InboundEmailStack`), with SNS alarm + OK actions like the forwarding DLQ. Before, the replies DLQ had no alarm, so a reply dead-lettered by the new retry would have sat there unseen. CDK unit test added (30/30 green). Makes the Part A PR a layer-based infra deploy.
 - A4: `docs/architecture/06-backend-architecture.md` and `docs/user-guide/features/notifications.md` updated (the user guide said "silently discarded").
 
 ### File List
@@ -155,6 +156,9 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-10-30.
 - `services/event-management-service/src/test/java/ch/batbern/events/controller/DevEmailControllerReplyTest.java` (M)
 - `services/event-management-service/src/test/resources/mail/human-reply.eml` (A)
 - `services/event-management-service/src/test/resources/mail/ooo-reply.eml` (A)
+- `infrastructure/lib/stacks/inbound-email-stack.ts` (M)
+- `infrastructure/test/unit/inbound-email-stack.test.ts` (M)
+- `docs/architecture/08-operations-security.md` (M)
 - `docs/architecture/06-backend-architecture.md` (M)
 - `docs/user-guide/features/notifications.md` (M)
 - `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md` (M)

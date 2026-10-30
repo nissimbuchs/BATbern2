@@ -811,7 +811,8 @@ SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → E
   `EmailForwardingService.forwardUnrecognizedReply`, which forwards it to all organizers like
   `info@` (alias `replies` in the log, metric `RepliesForwarded`). Bounces, automatic replies,
   loops and malformed mail are not forwarded and are logged as `dropped_*` outcomes (V131). A
-  failure before the first send is rethrown, so the replies queue retries and then dead-letters.
+  failure before the first send is rethrown, so the replies queue retries and then dead-letters
+  (alarm `batbern-{env}-replies-dlq`).
 - **Speaker Reply-To**: speaker-facing mails (invitation, acceptance, tiered reminder,
   quality-review revision) set Reply-To via `ModeratorReplyAddress` → `batbern{N}-moderator@`.
 - **Idempotency**: `email_forwarding_log` (V128 to V131) holds one row per S3 object, no addresses or

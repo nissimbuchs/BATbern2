@@ -276,6 +276,7 @@ line 422 for `ApiGatewayServiceStack`).
 | Cognito email delivery | `CustomEmailSender-Unhandled-Trigger` (EMF metric `BATbern/Cognito UnhandledEmailTrigger`), `CustomEmailSender-Errors` (Lambda `Errors`) — the trigger sends every mail of the pool, so a skipped or failed one never arrives (#1141) | `UserSyncAlarms`, in `MonitoringStack` |
 | Inbound email abuse | `emails-rejected` | `InboundEmailStack` |
 | Alias forwarding stuck | `forwarding-dlq`, `forwarding-failed` | `InboundEmailStack` |
+| Reply to `replies@` reached nobody (Story 16.0) | `replies-dlq` | `InboundEmailStack` |
 
 RDS alarms are the exception that stays central: `DatabaseStack` runs *before* `MonitoringStack`, but
 the instance identifier is deterministic (`batbern-{env}-postgres`, set explicitly as
