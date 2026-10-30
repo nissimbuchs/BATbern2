@@ -267,9 +267,10 @@ development_status:
   epic-15-retrospective: optional
 
   # Epic 16: Mail Center — APPROVED 2026-10-30 (docs/prd/epic-16-mail-center.md)
-  # Prerequisites shipped independently: #1160 (replies@ drops human replies), #1161 (calendar declines).
-  # Sequence (owner decision 3): 16.1 -> 16.3 -> 16.4, then 16.2 + 16.6 for speakers, then all aliases, 16.5, 16.7.
+  # 16.0 = #1160 + #1161 (two PRs). Start with an explicit story path: older ready-for-dev stories sort first.
+  # Sequence (owner decision 3): 16.0 -> 16.1 -> 16.3 -> 16.4, then 16.2 + 16.6 for speakers, then all aliases, 16.5, 16.7.
   epic-16: in-progress
+  16-0-stop-losing-replies-and-calendar-declines: ready-for-dev
   16-1-record-every-outbound-mail: ready-for-dev
   16-2-capture-inbound-human-mail: backlog
   16-3-communications-tab-becomes-mail-page: ready-for-dev

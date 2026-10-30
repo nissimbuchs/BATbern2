@@ -36,6 +36,42 @@ So this is **not a helpdesk**. It is a per-event log with a short "needs an answ
 4. **Unit of work is the conversation.** Statuses: Open, Waiting, Done. One assignee. Default assignee for speaker conversations: the event's moderator.
 5. **Own text uses the existing Mustache placeholders** (`{{var}}`, rendered by `EmailService.replaceVariables`). Preview and send use the same render path, so they cannot diverge.
 
+## How to start (read this first, dev agent)
+
+**Read order:** this epic → `_bmad-output/project-context.md` → the story file → the files listed in its Dev Notes. `CLAUDE.md` rules apply (TDD, Testcontainers, PII, Flyway).
+
+**Story order:**
+1. 16.0 Part A
+2. 16.0 Part B
+3. 16.1
+4. 16.3 + 16.4
+
+`sprint-status.yaml` lists older `ready-for-dev` stories (11-e-5, 11-g-1, 13-5) ahead of Epic 16. Always start with the explicit story path, never with "next story".
+
+**Branching:**
+- The epic and the story files live on `docs/epic-16-mail-center`, which is pushed but not merged to `develop`.
+- Until it is merged, cut each story branch from it: `git fetch origin && git switch -c feature/16-0a-replies-reach-a-person origin/docs/epic-16-mail-center`. After it is merged, cut from `origin/develop`.
+- One branch and one PR per deployable part:
+  - `feature/16-0a-...` (`Fixes #1160`)
+  - `feature/16-0b-...` (`Fixes #1161`)
+  - `feature/16-1-...`
+  - `feature/16-3-4-...`
+- Conventional commits, scope `mailcenter`, `email`, `forwarding` or `registration`.
+- Update the story file (tasks, Dev Agent Record, File List, Status) and `sprint-status.yaml` on the story branch, in the same commits as the code.
+
+**Pushing and PRs:**
+- **A PR to `develop` deploys to production (www.batbern.ch) at once, unreviewed.** Opening a PR is a production action.
+- Push the branch, then stop and ask the owner before opening the PR. Once he agrees, open it immediately; a branch push alone starts no CI.
+- Only `Fixes #N` in the PR body closes an issue. `Refs #N` closes nothing.
+- Before pushing, run the affected module's tests: `set -o pipefail; ./gradlew :services:event-management-service:test 2>&1 | tee /tmp/ems-test.log`. The pre-push hook runs the integration tests and needs Docker.
+
+**Mail safety:**
+- The AWS account is production. No test, Bruno run or Playwright run may send real mail (ADR-015, incident 2026-07-01).
+- Verify send paths on local dev (`make dev-native-up`). Mail lands in `/dev/mails` there.
+- Never download production data.
+
+**Migrations:** EMS head was V130 on 2026-10-30. Check again before numbering. Never edit an applied migration.
+
 ## Information architecture
 
 **Event › Communications** (one column, three sections):
@@ -48,7 +84,18 @@ So this is **not a helpdesk**. It is a per-event log with a short "needs an answ
 
 ## Stories
 
-Prerequisites, already filed and independently shippable before this epic starts: **#1160** (replies@ drops human replies; speaker mails get Reply-To `-moderator@`) and **#1161** (calendar declines dropped while the waitlist is full).
+### Story 16.0 — Stop losing replies and calendar declines (#1160, #1161)
+
+Story file: `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md`. Two parts, two PRs.
+
+**Part A (#1160):**
+- Speaker mails carry Reply-To `batbern{N}-moderator@`.
+- `-speaker@` broadcasts get the same Reply-To.
+- Unrecognized mail at `replies@` is forwarded to the organizers instead of discarded. Auto-replies and bounces are filtered.
+
+**Part B (#1161):**
+- A calendar "Declined" from a registrant triggers the existing deregistration-link mail. The registration is cancelled only when they click it.
+- New registration invites carry a stable UID per registration, so declines can be matched.
 
 ---
 
@@ -172,7 +219,7 @@ Prerequisites, already filed and independently shippable before this epic starts
 
 1. **Retention:** conversations and rendered outbound mail are kept until event date + 12 months, then deleted. Mail without an event: created-at + 12 months. Newsletter per-recipient status unchanged. The privacy documentation gets a note.
 2. **Team rule: answer from the mail center.** Alias forwarding to private inboxes stays on during the transition. Once 16.6 is live, forwarding is replaced by a short notification ("new mail for BATbern{N}, open it here") that carries no body.
-3. **Sequence:** 16.1, 16.3, 16.4 first (what went out is visible, no inbound change). Then 16.2 + 16.6 for speakers only. Then 16.2 for all aliases, 16.5, 16.7.
+3. **Sequence:** 16.0 (#1160, #1161) first, then 16.1, 16.3, 16.4 (what went out is visible, no inbound change). Then 16.2 + 16.6 for speakers only. Then 16.2 for all aliases, 16.5, 16.7.
 4. **Reply-To on `-speaker@` broadcasts** sent by an organizer: `batbern{N}-moderator@`, consistent with decision 2 of the epic.
 5. **Registrant replies:** stay with #1160 option 1 until 16.2 covers all aliases.
 
