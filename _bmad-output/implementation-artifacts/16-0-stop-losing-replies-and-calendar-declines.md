@@ -105,6 +105,7 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-10-30.
 
 ### Debug Log References
 
+- 2026-10-30 ~13:54: full CDK jest with `--maxWorkers=4` hit rack's 14 GB `user.slice` cap (4 workers × ~2.5 GB + idle Gradle daemon 1.9 GB + 1.5 GB `cdk.out*` on tmpfs). The OOM killer thrashed ~30 min and the session died; no reboot, git state intact. Rerun with `./gradlew --stop`, `/tmp/cdk.out*` cleared, `--maxWorkers=2`: green.
 - `SpeakerModeratorReplyToTest` first run: NPE in `Map.entry` because the `@Value` fields of `SpeakerReminderEmailService` are null outside Spring; fixed in the test with `ReflectionTestUtils`, not in production code.
 
 ### Completion Notes List
@@ -120,7 +121,7 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-10-30.
 - AC5: keyword paths unchanged; all existing router tests stay green (three now also assert the result).
 - AC14 / local dev: `DevEmailController` reply simulation forwards UNRECOGNIZED replies through the same service, so the organizer copy lands in `/dev/mails`. **Verified live on local dev 2026-10-30** (profile `local`, no SES client): registered an SES-simulator address on test event BATbern89608, simulated a human reply → 4 organizer copies captured, Reply-To = the registrant, `X-BATbern-Forwarded: 1`, log row `forwarded | replies | 4 | 0`, V131 applied. Simulated `accept` → acceptance action ran, nothing forwarded. Found and fixed on the way: the simulator wrote the UTF-8 subject unencoded (displayed as `bestÃ¤tigen`); it now uses RFC 2047. Test rows deleted from the local DB afterwards.
 - Speaker-facing mails audited: the four listed services plus `QnaNotificationService` (Q&A digest to presenters). The digest keeps `replies@`; a reply to it is now forwarded to the organizers by AC3, so nothing is lost. Not changed, out of the AC1 list.
-- Owner request 2026-10-30 (in Part A): CloudWatch alarm `batbern-{env}-replies-dlq` on the replies DLQ (`InboundEmailStack`), with SNS alarm + OK actions like the forwarding DLQ. Before, the replies DLQ had no alarm, so a reply dead-lettered by the new retry would have sat there unseen. CDK unit test added (30/30 green). Makes the Part A PR a layer-based infra deploy.
+- Owner request 2026-10-30 (in Part A): CloudWatch alarm `batbern-{env}-replies-dlq` on the replies DLQ (`InboundEmailStack`), with SNS alarm + OK actions like the forwarding DLQ. Before, the replies DLQ had no alarm, so a reply dead-lettered by the new retry would have sat there unseen. CDK unit test added. Makes the Part A PR a layer-based infra deploy. CI on #1164 then failed `incident-response-docs.test.ts` (every declared alarm needs a runbook entry); I had run only the stack's own test locally. Fixed with a `replies-dlq` entry in `docs/operations/runbooks.md`; full infra suite 483 passed / 19 skipped, run with `--maxWorkers=2` (a 4-worker run OOM-killed the session on rack, see Debug Log).
 - A4: `docs/architecture/06-backend-architecture.md` and `docs/user-guide/features/notifications.md` updated (the user guide said "silently discarded").
 
 ### File List
@@ -159,6 +160,7 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-10-30.
 - `infrastructure/lib/stacks/inbound-email-stack.ts` (M)
 - `infrastructure/test/unit/inbound-email-stack.test.ts` (M)
 - `docs/architecture/08-operations-security.md` (M)
+- `docs/operations/runbooks.md` (M)
 - `docs/architecture/06-backend-architecture.md` (M)
 - `docs/user-guide/features/notifications.md` (M)
 - `_bmad-output/implementation-artifacts/16-0-stop-losing-replies-and-calendar-declines.md` (M)
