@@ -90,7 +90,8 @@ describeNewsletter('Organizer · Event newsletter send', { tag: '@sends-real-ema
     await expect(newest).toContainText('Newsletter', { timeout: 45_000 });
     // ~1000 local subscribers at the configured send delay take over a minute. This checks that
     // the send reaches a terminal state, not that it delivered: on the anonymized local snapshot
-    // almost every subscriber is refused (reserved domain), so it ends PARTIAL. See #1158.
+    // almost every subscriber is refused (reserved domain), so it ends PARTIAL. Accepting PARTIAL
+    // can hide a real delivery failure; the owner accepted that trade-off in #1158.
     await expect(newest).not.toContainText('sending', { timeout: 150_000 });
   });
 });

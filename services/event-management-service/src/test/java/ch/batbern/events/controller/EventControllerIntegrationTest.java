@@ -955,6 +955,37 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .contains(other.getEventCode());
     }
 
+    // #1158: newsletter_sends referenced the event without ON DELETE, so deleting an event that ever
+    // had a newsletter or registrant notice answered 500. They are history of the deleted event.
+    @Test
+    @DisplayName("should_deleteNewsletterSends_when_eventDeleted")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
+    void should_deleteNewsletterSends_when_eventDeleted() throws Exception {
+        Event event = createTestEvent("BATbern Newsletter-Cleanup", "2027-05-15T09:00:00Z", "CREATED");
+        entityManager.flush();
+        Object sendId = entityManager.createNativeQuery(
+                        "INSERT INTO newsletter_sends (event_id, template_key, sent_by_username) "
+                                + "VALUES (?1, 'newsletter_event', 'test.organizer') RETURNING id")
+                .setParameter(1, event.getId())
+                .getSingleResult();
+        entityManager.createNativeQuery(
+                        "INSERT INTO newsletter_recipients (send_id, email) VALUES (?1, 'a@example.com')")
+                .setParameter(1, sendId)
+                .executeUpdate();
+
+        mockMvc.perform(delete("/api/v1/events/" + event.getEventCode())
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isNoContent());
+
+        entityManager.flush();
+        assertThat(entityManager.createNativeQuery(
+                        "SELECT count(*) FROM newsletter_sends WHERE id = ?1")
+                .setParameter(1, sendId).getSingleResult()).isEqualTo(0L);
+        assertThat(entityManager.createNativeQuery(
+                        "SELECT count(*) FROM newsletter_recipients WHERE send_id = ?1")
+                .setParameter(1, sendId).getSingleResult()).isEqualTo(0L);
+    }
+
     private Notification notification(String eventCode) {
         return Notification.builder()
                 .recipientUsername("test.organizer")
