@@ -26,7 +26,7 @@ so that **sending and seeing what went out live on the same page**.
   - [x] Mount `EventNewsletterTab`, `EventRegistrantNoticesTab`, `SpeakerBulkComms`, `EventVenueTab` inside the drawer as they are.
   - [x] Partners entry (AC6): meeting list + the existing invite action extracted from `MeetingDetailPanel` into a reusable piece (no behaviour change on the partner meetings page).
 - [x] **Task 2 — Refresh after send** (AC: 3)
-  - [x] Each compose component gets an optional `onSent` callback; the container invalidates the mail-messages query and closes the drawer.
+  - [x] Each compose component gets an optional `onSent` callback; the container invalidates the mails query and closes the drawer.
 - [x] **Task 3 — Tests** (AC: all)
   - [x] Vitest: menu items, drawer opens the right component, `onSent` closes and invalidates.
   - [x] Playwright: open each panel, do not send.
@@ -69,7 +69,7 @@ Claude Opus 5.5 (Amelia, dev-story), 2026-10-30. Same branch and PR as 16.3.
   four composers switch to two columns on the viewport `md` breakpoint, so a 560 px panel squeezed
   them; widening the panel avoided changing their layouts (Dev Notes: fix only what breaks).
 - **Refresh after send (AC3):** optional `onSent` on each composer; the container invalidates
-  `['mail-messages', eventCode]`, closes the panel and shows a toast. Deliberate exceptions: a
+  `['mails', eventCode]`, closes the panel and shows a toast. Deliberate exceptions: a
   **test** newsletter keeps the panel open (the real send follows), and speaker reminders with
   failures keep it open so the failed speakers and the retry stay visible.
 - **Partners (AC6):** `PartnerMeetingInviteAction` extracted from `MeetingDetailPanel` (same
@@ -99,7 +99,7 @@ See Story 16.3 (one change set):
 - `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/EventMailController.java` (new)
 - `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailMessageQueryService.java` (new)
 - `services/event-management-service/src/test/java/ch/batbern/events/mailcenter/EventMailControllerIntegrationTest.java` (new)
-- `bruno-tests/events/mail-messages-{list,detail,counts,forbidden,unknown-event}.bru` (new)
+- `bruno-tests/events/mails-{list,detail,counts,forbidden,unknown-event}.bru` (new)
 - `.github/workflows/security-scan.yml` (ZAP scan of the new spec)
 - `web-frontend/package.json` (type generation)
 - `web-frontend/src/types/generated/event-mail-api.types.ts` (new, generated)
@@ -134,3 +134,4 @@ See Story 16.3 (one change set):
 - 2026-10-30: Partners entry added (owner request); pointer to 16.8.
 - 2026-10-30: Implemented with 16.3. Status review. Amelia (dev).
 - 2026-10-31: Side panels replaced by inline expand (desktop) and full-screen dialogs (mobile), owner decision.
+- 2026-10-31: Read API renamed to `/events/{code}/mails` (see 16.3).

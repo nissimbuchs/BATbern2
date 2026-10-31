@@ -161,7 +161,7 @@ describe('EventCommunicationsContainer', () => {
     fireEvent.click(await screen.findByText('send-stub-registrant'));
 
     await waitFor(() => expect(screen.queryByTestId('stub-registrant')).not.toBeInTheDocument());
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['mail-messages', 'BAT54'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['mails', 'BAT54'] });
     expect(screen.getByTestId('mail-sent-toast')).toHaveTextContent('eventPage.mail.sentToast');
   });
 });

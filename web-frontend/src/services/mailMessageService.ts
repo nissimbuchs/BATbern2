@@ -24,7 +24,7 @@ export interface MailMessageListParams {
   limit?: number;
 }
 
-const base = (eventCode: string) => `/events/${encodeURIComponent(eventCode)}/mail-messages`;
+const base = (eventCode: string) => `/events/${encodeURIComponent(eventCode)}/mails`;
 
 /** List what went out for an event, newest first. */
 export async function listMailMessages(

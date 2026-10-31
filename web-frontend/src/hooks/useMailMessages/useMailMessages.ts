@@ -15,12 +15,11 @@ import type {
 
 export const MAIL_MESSAGE_QUERY_KEYS = {
   /** Prefix of every mail query of an event; invalidate it after a send (Story 16.4). */
-  event: (eventCode: string) => ['mail-messages', eventCode] as const,
+  event: (eventCode: string) => ['mails', eventCode] as const,
   list: (eventCode: string, params: MailMessageListParams) =>
-    ['mail-messages', eventCode, 'list', params] as const,
-  detail: (eventCode: string, mailKey: string) =>
-    ['mail-messages', eventCode, 'detail', mailKey] as const,
-  counts: (eventCode: string) => ['mail-messages', eventCode, 'counts'] as const,
+    ['mails', eventCode, 'list', params] as const,
+  detail: (eventCode: string, mailKey: string) => ['mails', eventCode, 'detail', mailKey] as const,
+  counts: (eventCode: string) => ['mails', eventCode, 'counts'] as const,
 };
 
 /** Newsletter send-job states that are still sending. */

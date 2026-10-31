@@ -41,7 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class EventMailControllerIntegrationTest extends AbstractIntegrationTest {
 
     private static final String EVENT_CODE = "BATbern915";
-    private static final String BASE = "/api/v1/events/" + EVENT_CODE + "/mail-messages";
+    private static final String BASE = "/api/v1/events/" + EVENT_CODE + "/mails";
     private static final String A = "success+anna@simulator.amazonses.com";
     private static final String B = "bounce+bob@simulator.amazonses.com";
 
@@ -201,7 +201,7 @@ class EventMailControllerIntegrationTest extends AbstractIntegrationTest {
         message(new Mail("BATbern999-1", "SPEAKERS", "speaker-invitation", "TEMPLATE", "organizer1", null, "Other", now,
                 "BATbern999"));
 
-        mockMvc.perform(get("/api/v1/events/BATbern404/mail-messages")).andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/events/BATbern404/mails")).andExpect(status().isNotFound());
         mockMvc.perform(get(BASE + "/BATbern915-99")).andExpect(status().isNotFound());
         mockMvc.perform(get(BASE + "/BATbern999-1")).andExpect(status().isNotFound());
         mockMvc.perform(get(BASE + "/newsletter-" + UUID.randomUUID())).andExpect(status().isNotFound());

@@ -4,7 +4,7 @@
  */
 
 export interface paths {
-  '/events/{eventCode}/mail-messages': {
+  '/events/{eventCode}/mails': {
     parameters: {
       query?: never;
       header?: never;
@@ -24,7 +24,7 @@ export interface paths {
      *     (Story 16.1b). For newsletters, `failedCount` is sends SES refused plus bounces, and
      *     `deliveredCount` is the rest: the newsletter configuration set reports no deliveries.
      */
-    get: operations['listEventMailMessages'];
+    get: operations['listEventMails'];
     put?: never;
     post?: never;
     delete?: never;
@@ -33,7 +33,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/mail-messages/counts': {
+  '/events/{eventCode}/mails/counts': {
     parameters: {
       query?: never;
       header?: never;
@@ -56,7 +56,7 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/mail-messages/{mailKey}': {
+  '/events/{eventCode}/mails/{mailKey}': {
     parameters: {
       query?: never;
       header?: never;
@@ -72,7 +72,7 @@ export interface paths {
      *     for a recorded mail; for a newsletter only the failed ones (`failedCount` gives the total).
      *     Credentials in the body were replaced by `[redacted]` when it was recorded.
      */
-    get: operations['getEventMailMessage'];
+    get: operations['getEventMail'];
     put?: never;
     post?: never;
     delete?: never;
@@ -182,7 +182,7 @@ export interface components {
 }
 export type $defs = Record<string, never>;
 export interface operations {
-  listEventMailMessages: {
+  listEventMails: {
     parameters: {
       query?: {
         /** @description Only entries for this audience. */
@@ -281,7 +281,7 @@ export interface operations {
       };
     };
   };
-  getEventMailMessage: {
+  getEventMail: {
     parameters: {
       query?: never;
       header?: never;

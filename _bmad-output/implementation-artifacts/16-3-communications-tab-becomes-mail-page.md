@@ -97,6 +97,11 @@ was therefore never built (16.4 AC4).
   in an alert, and the active-send polling stays.
 - **i18n (AC7):** `eventPage.mail.*` and `eventPage.newsletter.retryHint` in all 10 locales; the
   unused `eventPage.communications.audiences` keys removed.
+- **API review 2026-10-31 (owner):** the resource is `/events/{eventCode}/mails` (was
+  `/mail-messages`, the name in AC5), so 16.8 extends it with POST send and preview instead of
+  creating a second resource, 16.9 posts to `/internal/mails` and 16.7 reads `GET /mails`.
+  Operation ids `listEventMails`, `getEventMail`, `getEventMailCounts`. Verified: EMS mailcenter
+  tests + guard green, Bruno `events` 12 requests 24/24 against local dev.
 - **Side finding, not fixed here:** `DELETE /api/v1/events/{code}` answers 500 for an event with
   `newsletter_sends` (FK without ON DELETE). Added to #1158 with options.
 
@@ -107,7 +112,7 @@ was therefore never built (16.4 AC4).
 - `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/EventMailController.java` (new)
 - `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailMessageQueryService.java` (new)
 - `services/event-management-service/src/test/java/ch/batbern/events/mailcenter/EventMailControllerIntegrationTest.java` (new)
-- `bruno-tests/events/mail-messages-{list,detail,counts,forbidden,unknown-event}.bru` (new)
+- `bruno-tests/events/mails-{list,detail,counts,forbidden,unknown-event}.bru` (new)
 - `.github/workflows/security-scan.yml` (ZAP scan of the new spec)
 - `web-frontend/package.json` (type generation)
 - `web-frontend/src/types/generated/event-mail-api.types.ts` (new, generated)
@@ -142,3 +147,4 @@ was therefore never built (16.4 AC4).
 - 2026-10-30: Readiness fixes: section 1 owned by 16.2, UX reference in docs/ux, transactional grouping.
 - 2026-10-30: Implemented with 16.4 (API, mail page, tests, docs). Status review. Amelia (dev).
 - 2026-10-31: Mail detail opens inline below its row (desktop) or full screen (mobile) instead of a drawer, owner decision; see 16.4 notes.
+- 2026-10-31: Read API renamed `/mail-messages` → `/mails` after the Epic 16 API review.

@@ -5,7 +5,7 @@ meta {
 }
 
 get {
-  url: {{baseUrl}}/events/BATbern59/mail-messages?limit=5
+  url: {{baseUrl}}/events/BATbern59/mails?limit=5
   body: none
   auth: bearer
 }
@@ -48,7 +48,7 @@ tests {
 }
 
 docs {
-  Story 16.3 AC5/AC6: GET /events/{eventCode}/mail-messages (event-mail-api.openapi.yml).
+  Story 16.3 AC5/AC6: GET /events/{eventCode}/mails (event-mail-api.openapi.yml).
   Read-only: lists the outbound mail record plus newsletter sends made before it existed.
   Accepts 404 where BATbern59 is not seeded; the shape is checked on 200.
 }

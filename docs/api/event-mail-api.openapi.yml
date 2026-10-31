@@ -25,11 +25,11 @@ tags:
 - name: EventMail
   description: Outbound mail of an event, newest first (Story 16.3)
 paths:
-  /events/{eventCode}/mail-messages:
+  /events/{eventCode}/mails:
     get:
       tags:
       - EventMail
-      operationId: listEventMailMessages
+      operationId: listEventMails
       summary: List what went out for an event, newest first (ORGANIZER)
       description: |
         **Security**: ORGANIZER role required; any other role gets 403.
@@ -102,7 +102,7 @@ paths:
           description: Forbidden (ORGANIZER role required)
         '404':
           description: Event not found
-  /events/{eventCode}/mail-messages/counts:
+  /events/{eventCode}/mails/counts:
     get:
       tags:
       - EventMail
@@ -132,11 +132,11 @@ paths:
           description: Forbidden (ORGANIZER role required)
         '404':
           description: Event not found
-  /events/{eventCode}/mail-messages/{mailKey}:
+  /events/{eventCode}/mails/{mailKey}:
     get:
       tags:
       - EventMail
-      operationId: getEventMailMessage
+      operationId: getEventMail
       summary: One mail as sent, with its recipients (ORGANIZER)
       description: |
         **Security**: ORGANIZER role required; any other role gets 403.

@@ -36,7 +36,7 @@ public class EventMailController implements EventMailApi {
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<MailMessagePage> listEventMailMessages(String eventCode, MailAudience audience,
+    public ResponseEntity<MailMessagePage> listEventMails(String eventCode, MailAudience audience,
             String templateKey, LocalDate date, Boolean grouped, Integer page, Integer limit) {
         MailFilter filter = new MailFilter(audience == null ? null : audience.getValue(), templateKey, date,
                 !Boolean.FALSE.equals(grouped));
@@ -54,7 +54,7 @@ public class EventMailController implements EventMailApi {
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<MailMessageDetail> getEventMailMessage(String eventCode, String mailKey) {
+    public ResponseEntity<MailMessageDetail> getEventMail(String eventCode, String mailKey) {
         MailMessageQueryService.MailDetail detail = queries.get(eventCode, mailKey)
                 .orElseThrow(() -> new NotFoundException("Mail not found: " + mailKey));
         return noStore(new MailMessageDetail()

@@ -901,7 +901,7 @@ SES events of the transactional configuration set move each `mail_recipient` fro
 `event-mail-api.openapi.yml`, implemented by `EventMailController` → `MailMessageQueryService`
 (native SQL, read-only), all `hasRole('ORGANIZER')` and `Cache-Control: no-store`:
 
-- `GET /events/{eventCode}/mail-messages`: paged, newest first, filters `audience`,
+- `GET /events/{eventCode}/mails`: paged, newest first, filters `audience`,
   `templateKey`, `date` (Europe/Zurich). Automatic mails (no sender, template, not a newsletter)
   collapse per template and day unless `grouped=false`.
 - Newsletter sends without a `mail_message` (sent before 16.1a) are a read-time union from
@@ -909,8 +909,8 @@ SES events of the transactional configuration set move each `mail_recipient` fro
   `REGISTRANT_NOTICE` templates, otherwise NEWSLETTER. Newsletter counts come from
   `newsletter_recipients` (failed = SES refused or bounced; the newsletter set has no delivery
   events).
-- `GET .../mail-messages/{mailKey}`: body and recipients; for a newsletter only the failed ones.
-- `GET .../mail-messages/counts`: failed deliveries of the event ("Handled automatically").
+- `GET .../mails/{mailKey}`: body and recipients; for a newsletter only the failed ones.
+- `GET .../mails/counts`: failed deliveries of the event ("Handled automatically").
 
 ## Auto-Enrollment on Event Creation
 
