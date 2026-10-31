@@ -115,9 +115,9 @@ was therefore never built (16.4 AC4).
 - `web-frontend/src/hooks/useMailMessages/useMailMessages.ts` (new)
 - `web-frontend/src/components/organizer/EventPage/EventCommunicationsContainer.tsx`
 - `web-frontend/src/components/organizer/EventPage/communications/MailSentList.tsx` (new)
-- `web-frontend/src/components/organizer/EventPage/communications/MailDetailDrawer.tsx` (new)
+- `web-frontend/src/components/organizer/EventPage/communications/MailDetail.tsx` (new; was `MailDetailDrawer.tsx`)
 - `web-frontend/src/components/organizer/EventPage/communications/PartnerMeetingsCompose.tsx` (new)
-- `web-frontend/src/components/organizer/EventPage/communications/__tests__/{MailSentList,MailDetailDrawer,PartnerMeetingsCompose}.test.tsx` (new)
+- `web-frontend/src/components/organizer/EventPage/communications/__tests__/{MailSentList,MailDetail,PartnerMeetingsCompose}.test.tsx` (new)
 - `web-frontend/src/components/organizer/EventPage/EventNewsletterTab.tsx`
 - `web-frontend/src/components/organizer/EventPage/EventRegistrantNoticesTab.tsx`
 - `web-frontend/src/components/organizer/EventPage/SpeakerBulkComms.tsx`
@@ -141,3 +141,4 @@ was therefore never built (16.4 AC4).
 - 2026-10-30: Story drafted from Epic 16 (John, PM).
 - 2026-10-30: Readiness fixes: section 1 owned by 16.2, UX reference in docs/ux, transactional grouping.
 - 2026-10-30: Implemented with 16.4 (API, mail page, tests, docs). Status review. Amelia (dev).
+- 2026-10-31: Mail detail opens inline below its row (desktop) or full screen (mobile) instead of a drawer, owner decision; see 16.4 notes.

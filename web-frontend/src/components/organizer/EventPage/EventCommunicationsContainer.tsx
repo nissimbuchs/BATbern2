@@ -5,18 +5,22 @@
  * delivered/failed counts) and "Handled automatically" (collapsed, counts only). Section 1,
  * "Needs an answer", is added by Story 16.2 above them.
  *
- * "+ New mail" opens the existing compose components in a side panel (full screen on mobile);
- * after a send the panel closes and the list refreshes. 16.8 replaces the composers with one.
+ * "+ New mail" opens the existing compose components inline at the top of the page on desktop and
+ * as a full-screen dialog on mobile (owner decision 2026-10-31, `docs/ux/mail-center-layouts.html`
+ * variant A and `docs/ux/mail-center-mobile.html`); a sent mail likewise opens below its row.
+ * After a send the composer closes and the list refreshes. 16.8 replaces the composers with one.
  */
 
-import React, { useRef, useState } from 'react';
+import React, { useEffect, useRef, useState } from 'react';
 import {
   Accordion,
   AccordionDetails,
   AccordionSummary,
+  AppBar,
   Box,
   Button,
-  Drawer,
+  Collapse,
+  Dialog,
   IconButton,
   ListItemIcon,
   ListItemText,
@@ -24,6 +28,7 @@ import {
   MenuItem,
   Paper,
   Snackbar,
+  Toolbar,
   Typography,
 } from '@mui/material';
 import {
@@ -46,7 +51,6 @@ import { EventRegistrantNoticesTab } from './EventRegistrantNoticesTab';
 import { EventVenueTab } from './EventVenueTab';
 import { SpeakerBulkComms } from './SpeakerBulkComms';
 import { MailSentList } from './communications/MailSentList';
-import { MailDetailDrawer } from './communications/MailDetailDrawer';
 import { PartnerMeetingsCompose } from './communications/PartnerMeetingsCompose';
 
 interface EventCommunicationsContainerProps {
@@ -66,7 +70,7 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
   const newMailButton = useRef<HTMLButtonElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
   const [compose, setCompose] = useState<ComposeAudience | null>(null);
-  const [openMailKey, setOpenMailKey] = useState<string | null>(null);
+  const composeHeading = useRef<HTMLHeadingElement>(null);
   const [sentToast, setSentToast] = useState(false);
   const counts = useMailCounts(eventCode);
   const eventTitle = event.title || '';
@@ -87,17 +91,50 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
     { value: 'partners', icon: <PartnersIcon />, label: t('eventPage.mail.compose.partners') },
   ];
 
-  const closeCompose = () => setCompose(null);
+  // AC5: focus returns to "+ New mail" once the composer is gone. The dialog would restore it to
+  // the menu item that opened it, which no longer exists, so both layouts do it here.
+  const closeCompose = () => {
+    setCompose(null);
+    if (!isMobile) newMailButton.current?.focus();
+  };
 
-  // Story 16.4 AC3: a successful send closes the panel and the new row appears on top.
+  // Desktop: move focus into the inline composer, so keyboard and screen reader users land there.
+  useEffect(() => {
+    if (compose && !isMobile) composeHeading.current?.focus();
+  }, [compose, isMobile]);
+
+  // Story 16.4 AC3: a successful send closes the composer and the new row appears on top.
   const handleSent = () => {
     void queryClient.invalidateQueries({ queryKey: MAIL_MESSAGE_QUERY_KEYS.event(eventCode) });
     closeCompose();
     setSentToast(true);
   };
 
+  const composeLabel = audiences.find((a) => a.value === compose)?.label;
+  const composer = (
+    <>
+      {compose === 'newsletter' && (
+        <EventNewsletterTab eventCode={eventCode} eventTitle={eventTitle} onSent={handleSent} />
+      )}
+      {compose === 'registrants' && (
+        <EventRegistrantNoticesTab
+          eventCode={eventCode}
+          eventTitle={eventTitle}
+          onSent={handleSent}
+        />
+      )}
+      {compose === 'speakers' && (
+        <SpeakerBulkComms eventCode={eventCode} eventTitle={eventTitle} onSent={handleSent} />
+      )}
+      {compose === 'venue' && <EventVenueTab event={event} onSent={handleSent} />}
+      {compose === 'partners' && (
+        <PartnerMeetingsCompose eventCode={eventCode} onSent={handleSent} />
+      )}
+    </>
+  );
+
   return (
-    <Box sx={{ maxWidth: 900 }}>
+    <Box sx={{ maxWidth: 1100 }}>
       <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
         <Typography variant="h6" sx={{ flex: 1 }}>
           {t('eventPage.mail.whatWentOut')}
@@ -138,8 +175,37 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
         </Menu>
       </Box>
 
+      {!isMobile && (
+        <Collapse in={compose !== null} unmountOnExit>
+          <Paper
+            variant="outlined"
+            sx={{ p: 2, mb: 3, borderColor: 'primary.main' }}
+            onKeyDown={(e) => {
+              if (e.key === 'Escape') closeCompose();
+            }}
+            data-testid={compose ? `compose-panel-${compose}` : undefined}
+          >
+            <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
+              <Typography
+                ref={composeHeading}
+                tabIndex={-1}
+                variant="h6"
+                component="h3"
+                sx={{ flex: 1, outline: 'none' }}
+              >
+                {composeLabel}
+              </Typography>
+              <IconButton onClick={closeCompose} aria-label={t('common:actions.close', 'Close')}>
+                <CloseIcon />
+              </IconButton>
+            </Box>
+            {composer}
+          </Paper>
+        </Collapse>
+      )}
+
       <Paper variant="outlined" sx={{ p: { xs: 1, sm: 2 }, mb: 3 }}>
-        <MailSentList eventCode={eventCode} onOpen={setOpenMailKey} />
+        <MailSentList eventCode={eventCode} />
       </Paper>
 
       <Accordion variant="outlined" disableGutters data-testid="mail-automatic">
@@ -153,52 +219,40 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
         </AccordionDetails>
       </Accordion>
 
-      <MailDetailDrawer
-        eventCode={eventCode}
-        mailKey={openMailKey}
-        onClose={() => setOpenMailKey(null)}
-      />
-
-      {/* The Drawer is a modal: it traps focus and closes on Esc (AC5). */}
-      <Drawer
-        anchor="right"
-        open={compose !== null}
-        onClose={closeCompose}
-        // AC5: focus returns to "+ New mail" once the panel is gone. MUI would restore it to the
-        // menu item that opened the panel, which no longer exists.
-        disableRestoreFocus
-        slotProps={{ transition: { onExited: () => newMailButton.current?.focus() } }}
-        // Wide enough for the composers' two-column layout (they switch on the viewport width).
-        PaperProps={{ sx: { width: isMobile ? '100%' : 'min(1100px, 92vw)' } }}
-      >
-        <Box sx={{ p: 2 }} data-testid={compose ? `compose-panel-${compose}` : undefined}>
-          <Box sx={{ display: 'flex', alignItems: 'center', mb: 2 }}>
-            <Typography variant="h6" sx={{ flex: 1 }}>
-              {audiences.find((a) => a.value === compose)?.label}
-            </Typography>
-            <IconButton onClick={closeCompose} aria-label={t('common:actions.close', 'Close')}>
-              <CloseIcon />
-            </IconButton>
+      {isMobile && (
+        // The Dialog is a modal: it traps focus and closes on Esc (AC5).
+        <Dialog
+          fullScreen
+          open={compose !== null}
+          onClose={closeCompose}
+          disableRestoreFocus
+          TransitionProps={{ onExited: () => newMailButton.current?.focus() }}
+          aria-labelledby="compose-title"
+        >
+          <AppBar
+            position="sticky"
+            color="default"
+            elevation={0}
+            sx={{ borderBottom: 1, borderColor: 'divider' }}
+          >
+            <Toolbar sx={{ gap: 1 }}>
+              <IconButton
+                edge="start"
+                onClick={closeCompose}
+                aria-label={t('common:actions.close', 'Close')}
+              >
+                <CloseIcon />
+              </IconButton>
+              <Typography id="compose-title" variant="subtitle1" noWrap sx={{ flex: 1 }}>
+                {composeLabel}
+              </Typography>
+            </Toolbar>
+          </AppBar>
+          <Box sx={{ p: 2 }} data-testid={compose ? `compose-panel-${compose}` : undefined}>
+            {composer}
           </Box>
-          {compose === 'newsletter' && (
-            <EventNewsletterTab eventCode={eventCode} eventTitle={eventTitle} onSent={handleSent} />
-          )}
-          {compose === 'registrants' && (
-            <EventRegistrantNoticesTab
-              eventCode={eventCode}
-              eventTitle={eventTitle}
-              onSent={handleSent}
-            />
-          )}
-          {compose === 'speakers' && (
-            <SpeakerBulkComms eventCode={eventCode} eventTitle={eventTitle} onSent={handleSent} />
-          )}
-          {compose === 'venue' && <EventVenueTab event={event} onSent={handleSent} />}
-          {compose === 'partners' && (
-            <PartnerMeetingsCompose eventCode={eventCode} onSent={handleSent} />
-          )}
-        </Box>
-      </Drawer>
+        </Dialog>
+      )}
 
       <Snackbar
         open={sentToast}

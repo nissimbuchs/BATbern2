@@ -1,17 +1,24 @@
 /**
- * MailSentList tests (Story 16.3): "What went out" list, filters, collapsed automatic mails.
+ * MailSentList tests (Story 16.3): "What went out" list, filters, collapsed automatic mails, and
+ * the open mail: inline below its row on desktop, a full-screen dialog on mobile.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MailSentList } from '../MailSentList';
 import type { MailMessageSummary } from '@/services/mailMessageService';
 
-const { listMailMessages } = vi.hoisted(() => ({ listMailMessages: vi.fn() }));
+const { listMailMessages, getMailMessage, breakpoints } = vi.hoisted(() => ({
+  listMailMessages: vi.fn(),
+  getMailMessage: vi.fn(),
+  breakpoints: { isMobile: false, isTablet: false, isDesktop: true },
+}));
 
 vi.mock('@/services/mailMessageService', () => ({
   listMailMessages: (...args: unknown[]) => listMailMessages(...args),
+  getMailMessage: (...args: unknown[]) => getMailMessage(...args),
 }));
+vi.mock('@/hooks/useBreakpoints', () => ({ useBreakpoints: () => breakpoints }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, unknown>) =>
@@ -56,18 +63,29 @@ function page(data: MailMessageSummary[], totalPages = 1) {
   };
 }
 
-function renderList(onOpen = vi.fn()) {
+function renderList() {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <MailSentList eventCode="BATbern60" onOpen={onOpen} />
+      <MailSentList eventCode="BATbern60" />
     </QueryClientProvider>
   );
-  return { onOpen };
+}
+
+function detailOf(summary: MailMessageSummary) {
+  return { message: summary, bodyHtml: `<p>${summary.mailKey}</p>`, recipients: [] };
 }
 
 describe('MailSentList', () => {
-  beforeEach(() => listMailMessages.mockReset());
+  beforeEach(() => {
+    listMailMessages.mockReset();
+    getMailMessage
+      .mockReset()
+      .mockImplementation((_code: string, key: string) =>
+        Promise.resolve(detailOf(row({ mailKey: key })))
+      );
+    breakpoints.isMobile = false;
+  });
 
   it('shows a one-line empty state when nothing went out', async () => {
     listMailMessages.mockResolvedValue(page([]));
@@ -89,11 +107,44 @@ describe('MailSentList', () => {
     expect(item).toHaveTextContent('eventPage.mail.failed(count=1)');
   });
 
-  it('opens a single mail on click', async () => {
+  it('desktop: opens a mail inline below its row, one at a time, and closes it on a second click', async () => {
+    listMailMessages.mockResolvedValue(
+      page([row({}), row({ mailKey: 'BATbern60-2', subject: 'Agenda' })])
+    );
+    renderList();
+    const first = await screen.findByTestId('mail-row-BATbern60-1');
+
+    fireEvent.click(first);
+    expect(first).toHaveAttribute('aria-expanded', 'true');
+    const inline = await screen.findByTestId('mail-inline-BATbern60-1');
+    expect(await within(inline).findByTestId('mail-detail-body')).toHaveAttribute(
+      'srcdoc',
+      '<p>BATbern60-1</p>'
+    );
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByTestId('mail-row-BATbern60-2'));
+    expect(await screen.findByTestId('mail-inline-BATbern60-2')).toBeInTheDocument();
+    expect(first).toHaveAttribute('aria-expanded', 'false');
+    await waitFor(() =>
+      expect(screen.queryByTestId('mail-inline-BATbern60-1')).not.toBeInTheDocument()
+    );
+
+    fireEvent.click(screen.getByTestId('mail-row-BATbern60-2'));
+    await waitFor(() =>
+      expect(screen.queryByTestId('mail-inline-BATbern60-2')).not.toBeInTheDocument()
+    );
+  });
+
+  it('mobile: opens a mail in a full-screen dialog titled with its subject', async () => {
+    breakpoints.isMobile = true;
     listMailMessages.mockResolvedValue(page([row({})]));
-    const { onOpen } = renderList();
+    renderList();
     fireEvent.click(await screen.findByTestId('mail-row-BATbern60-1'));
-    expect(onOpen).toHaveBeenCalledWith('BATbern60-1');
+
+    const dialog = await screen.findByRole('dialog', { name: 'Your slides, please' });
+    expect(await within(dialog).findByTestId('mail-detail-body')).toBeInTheDocument();
+    expect(screen.queryByTestId('mail-inline-BATbern60-1')).not.toBeInTheDocument();
   });
 
   it('filters by audience and shows the per-group empty state', async () => {
@@ -126,7 +177,7 @@ describe('MailSentList', () => {
       .mockResolvedValueOnce(
         page([row({ mailKey: 'BATbern60-9' }), row({ mailKey: 'BATbern60-8' })])
       );
-    const { onOpen } = renderList();
+    renderList();
 
     const item = await screen.findByTestId('mail-row-BATbern60-9');
     expect(item).toHaveTextContent('eventPage.mail.automatic');
@@ -135,7 +186,8 @@ describe('MailSentList', () => {
     );
 
     fireEvent.click(item);
-    expect(onOpen).not.toHaveBeenCalled();
+    expect(item).toHaveAttribute('aria-expanded', 'true');
+    expect(getMailMessage).not.toHaveBeenCalled();
     await waitFor(() =>
       expect(listMailMessages).toHaveBeenLastCalledWith(
         'BATbern60',
@@ -148,7 +200,8 @@ describe('MailSentList', () => {
       )
     );
     fireEvent.click(await screen.findByTestId('mail-row-BATbern60-8'));
-    expect(onOpen).toHaveBeenCalledWith('BATbern60-8');
+    expect(await screen.findByTestId('mail-inline-BATbern60-8')).toBeInTheDocument();
+    expect(getMailMessage).toHaveBeenCalledWith('BATbern60', 'BATbern60-8');
   });
 
   it('shows the progress of a newsletter that is still sending', async () => {

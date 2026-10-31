@@ -1,8 +1,9 @@
 /**
  * Event Detail → Communications: the mail page (Epic 16, Stories 16.3 + 16.4). READ-ONLY.
  *
- * Opens "What went out", "Handled automatically" and every "+ New mail" panel, and closes each
- * panel again without sending anything. No compose action is confirmed in this spec.
+ * Opens "What went out", "Handled automatically" and every "+ New mail" composer (inline on desktop,
+ * full-screen dialog on mobile), and closes each again without sending anything. No compose action
+ * is confirmed in this spec.
  *
  * Guarded to LOCAL DEV like the newsletter spec: the fixture event is created through the API,
  * and on staging (= production) the AWS account is live (ADR-015). Never tag it @gate.
@@ -55,6 +56,8 @@ describeMailPage('Organizer · Event mail page (read-only)', () => {
       await page.getByTestId('new-mail-button').click();
       await page.getByTestId(`new-mail-${audience}`).click();
       await expect(page.getByTestId(`compose-panel-${audience}`)).toBeVisible();
+      // Desktop: inline above the list, not a modal.
+      await expect(page.getByRole('dialog')).toHaveCount(0);
       await page.keyboard.press('Escape');
       await expect(page.getByTestId(`compose-panel-${audience}`)).toBeHidden();
       await expect(page.getByTestId('new-mail-button')).toBeFocused();
@@ -73,5 +76,16 @@ describeMailPage('Organizer · Event mail page (read-only)', () => {
       () => document.documentElement.scrollWidth - document.documentElement.clientWidth
     );
     expect(overflow).toBeLessThanOrEqual(0);
+
+    // Mobile: "+ New mail" opens the composer as a full-screen dialog, closed with Esc.
+    await page.getByTestId('new-mail-button').click();
+    await page.getByTestId('new-mail-speakers').click();
+    const dialog = page.getByRole('dialog');
+    await expect(dialog.getByTestId('compose-panel-speakers')).toBeVisible();
+    const box = await dialog.boundingBox();
+    expect(box?.width).toBe(375);
+    await page.keyboard.press('Escape');
+    await expect(page.getByTestId('compose-panel-speakers')).toBeHidden();
+    await expect(page.getByTestId('new-mail-button')).toBeFocused();
   });
 });

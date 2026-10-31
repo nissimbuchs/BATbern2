@@ -2,7 +2,7 @@
  * EventCommunicationsContainer tests (Epic 16, Stories 16.3 + 16.4)
  *
  * The mail page: "What went out" and "Handled automatically", plus the "+ New mail" picker that
- * opens the existing composers in a side panel. Composers and the list have their own tests, so
+ * opens the existing composers inline at the top (desktop) or full screen (mobile). Composers and the list have their own tests, so
  * they are stubbed here; the stubs expose `onSent` to drive the refresh-after-send path.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -12,10 +12,11 @@ import { MemoryRouter } from 'react-router-dom';
 import { EventCommunicationsContainer } from '../EventCommunicationsContainer';
 import type { Event } from '@/types/event.types';
 
-const { getMailCounts, stub } = vi.hoisted(() => {
+const { getMailCounts, stub, breakpoints } = vi.hoisted(() => {
   type StubProps = { eventCode?: string; onSent?: () => void };
   return {
     getMailCounts: vi.fn(),
+    breakpoints: { isMobile: false, isTablet: false, isDesktop: true },
     stub:
       (id: string) =>
       ({ onSent }: StubProps) => (
@@ -44,9 +45,7 @@ vi.mock('../communications/PartnerMeetingsCompose', () => ({
 vi.mock('../communications/MailSentList', () => ({
   MailSentList: () => <div data-testid="stub-sent-list" />,
 }));
-vi.mock('../communications/MailDetailDrawer', () => ({
-  MailDetailDrawer: () => null,
-}));
+vi.mock('@/hooks/useBreakpoints', () => ({ useBreakpoints: () => breakpoints }));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: { count?: number } | string) =>
@@ -72,6 +71,7 @@ function renderContainer() {
 describe('EventCommunicationsContainer', () => {
   beforeEach(() => {
     getMailCounts.mockReset().mockResolvedValue({ failedDeliveries: 3 });
+    breakpoints.isMobile = false;
   });
 
   it('shows "What went out" and a collapsed "Handled automatically" with the failed count', async () => {
@@ -108,16 +108,40 @@ describe('EventCommunicationsContainer', () => {
     ['speakers', 'stub-speakers'],
     ['venue', 'stub-venue'],
     ['partners', 'stub-partners'],
-  ])('opens the %s composer in the side panel', async (audience, stubId) => {
+  ])('opens the %s composer inline above the list', async (audience, stubId) => {
     renderContainer();
     fireEvent.click(screen.getByTestId('new-mail-button'));
     fireEvent.click(screen.getByTestId(`new-mail-${audience}`));
 
-    expect(await screen.findByTestId(`compose-panel-${audience}`)).toBeInTheDocument();
-    expect(screen.getByTestId(stubId)).toBeInTheDocument();
+    const panel = await screen.findByTestId(`compose-panel-${audience}`);
+    expect(within(panel).getByTestId(stubId)).toBeInTheDocument();
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
+    expect(
+      panel.compareDocumentPosition(screen.getByTestId('stub-sent-list')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+    await waitFor(() =>
+      expect(
+        within(panel).getByRole('heading', { name: `eventPage.mail.compose.${audience}` })
+      ).toHaveFocus()
+    );
   });
 
-  it('closes the panel on Esc and returns focus to the "+ New mail" button', async () => {
+  it('mobile: opens the composer as a full-screen dialog', async () => {
+    breakpoints.isMobile = true;
+    renderContainer();
+    fireEvent.click(screen.getByTestId('new-mail-button'));
+    fireEvent.click(screen.getByTestId('new-mail-speakers'));
+
+    const dialog = await screen.findByRole('dialog', { name: 'eventPage.mail.compose.speakers' });
+    expect(within(dialog).getByTestId('stub-speakers')).toBeInTheDocument();
+
+    fireEvent.click(within(dialog).getByRole('button', { name: 'common:actions.close' }));
+    await waitFor(() => expect(screen.queryByTestId('stub-speakers')).not.toBeInTheDocument());
+    await waitFor(() => expect(screen.getByTestId('new-mail-button')).toHaveFocus());
+  });
+
+  it('closes the composer on Esc and returns focus to the "+ New mail" button', async () => {
     renderContainer();
     const button = screen.getByTestId('new-mail-button');
     fireEvent.click(button);
@@ -130,7 +154,7 @@ describe('EventCommunicationsContainer', () => {
     await waitFor(() => expect(button).toHaveFocus());
   });
 
-  it('after a send closes the panel, refreshes the mail list and confirms', async () => {
+  it('after a send closes the composer, refreshes the mail list and confirms', async () => {
     const { invalidate } = renderContainer();
     fireEvent.click(screen.getByTestId('new-mail-button'));
     fireEvent.click(screen.getByTestId('new-mail-registrants'));

@@ -4,6 +4,9 @@
  * Filter chips per audience, one row per send (automatic mails collapsed per template and day by
  * the server), delivered/failed counts on the right. A click opens the mail as sent; a collapsed
  * row expands into its single mails first.
+ *
+ * Desktop opens the mail inline below its row, one at a time, and a second click closes it. Mobile
+ * opens it as a full-screen dialog (see MailDetail).
  */
 
 import React, { useState } from 'react';
@@ -19,8 +22,10 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useMailMessages } from '@/hooks/useMailMessages/useMailMessages';
 import type { MailAudience, MailMessageSummary } from '@/services/mailMessageService';
+import { MailDetail, MailDetailDialog } from './MailDetail';
 
 const FILTERS: Array<MailAudience | 'ALL'> = [
   'ALL',
@@ -35,7 +40,12 @@ const ACTIVE_NEWSLETTER = ['PENDING', 'IN_PROGRESS'];
 
 interface MailSentListProps {
   eventCode: string;
-  onOpen: (mailKey: string) => void;
+}
+
+/** The mail that is open, and the title the mobile dialog shows for it. */
+interface OpenMail {
+  mailKey: string;
+  title: string;
 }
 
 /** yyyy-MM-dd of the send in Europe/Zurich, the day the server groups by. */
@@ -43,10 +53,20 @@ function zurichDay(iso: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich' }).format(new Date(iso));
 }
 
-export const MailSentList: React.FC<MailSentListProps> = ({ eventCode, onOpen }) => {
+export const MailSentList: React.FC<MailSentListProps> = ({ eventCode }) => {
   const { t } = useTranslation('events');
+  const { isMobile } = useBreakpoints();
   const [filter, setFilter] = useState<MailAudience | 'ALL'>('ALL');
   const [page, setPage] = useState(1);
+  const [open, setOpen] = useState<OpenMail | null>(null);
+  const toggle = (mail: OpenMail) =>
+    setOpen((current) => (current?.mailKey === mail.mailKey ? null : mail));
+  const rowProps = {
+    eventCode,
+    openKey: open?.mailKey ?? null,
+    inline: !isMobile,
+    onToggle: toggle,
+  };
   const query = useMailMessages(eventCode, {
     audience: filter === 'ALL' ? undefined : filter,
     page,
@@ -67,6 +87,7 @@ export const MailSentList: React.FC<MailSentListProps> = ({ eventCode, onOpen })
             onClick={() => {
               setFilter(f);
               setPage(1);
+              setOpen(null);
             }}
             data-testid={`mail-filter-${f}`}
           />
@@ -86,7 +107,7 @@ export const MailSentList: React.FC<MailSentListProps> = ({ eventCode, onOpen })
       ) : (
         <List disablePadding>
           {rows.map((row) => (
-            <MailRow key={row.mailKey} eventCode={eventCode} row={row} onOpen={onOpen} />
+            <MailRow key={row.mailKey} row={row} {...rowProps} />
           ))}
         </List>
       )}
@@ -96,22 +117,81 @@ export const MailSentList: React.FC<MailSentListProps> = ({ eventCode, onOpen })
           <Pagination
             count={totalPages}
             page={page}
-            onChange={(_e, p) => setPage(p)}
+            onChange={(_e, p) => {
+              setPage(p);
+              setOpen(null);
+            }}
             size="small"
           />
         </Box>
+      )}
+
+      {isMobile && (
+        <MailDetailDialog
+          eventCode={eventCode}
+          mailKey={open?.mailKey ?? null}
+          title={open?.title}
+          onClose={() => setOpen(null)}
+        />
       )}
     </Box>
   );
 };
 
-interface MailRowProps {
+interface RowProps {
   eventCode: string;
-  row: MailMessageSummary;
-  onOpen: (mailKey: string) => void;
+  openKey: string | null;
+  /** Desktop: the open mail renders below its row. Mobile: the list's dialog shows it. */
+  inline: boolean;
+  onToggle: (mail: OpenMail) => void;
 }
 
-const MailRow: React.FC<MailRowProps> = ({ eventCode, row, onOpen }) => {
+function rowTitle(row: MailMessageSummary): string {
+  return row.subject ?? row.templateKey ?? row.mailKey;
+}
+
+/** One single mail: the row, and on desktop the mail itself below it while it is open. */
+const SingleMail: React.FC<RowProps & { row: MailMessageSummary }> = ({
+  eventCode,
+  openKey,
+  inline,
+  onToggle,
+  row,
+}) => {
+  const isOpen = openKey === row.mailKey;
+  return (
+    <>
+      <ListItemButton
+        divider={!(inline && isOpen)}
+        selected={isOpen}
+        onClick={() => onToggle({ mailKey: row.mailKey, title: rowTitle(row) })}
+        aria-expanded={inline ? isOpen : undefined}
+        data-testid={`mail-row-${row.mailKey}`}
+        sx={{ alignItems: 'flex-start', gap: 2, px: 1 }}
+      >
+        <MailRowContent row={row} />
+      </ListItemButton>
+      {inline && (
+        <Collapse in={isOpen} unmountOnExit>
+          <Box
+            sx={{
+              p: 2,
+              borderBottom: 1,
+              borderColor: 'divider',
+              bgcolor: 'action.hover',
+            }}
+            data-testid={`mail-inline-${row.mailKey}`}
+          >
+            <MailDetail eventCode={eventCode} mailKey={row.mailKey} />
+          </Box>
+        </Collapse>
+      )}
+    </>
+  );
+};
+
+const MailRow: React.FC<RowProps & { row: MailMessageSummary }> = (props) => {
+  const { eventCode, row } = props;
   const { t } = useTranslation('events');
   const [expanded, setExpanded] = useState(false);
   const collapsed = row.messageCount > 1;
@@ -127,40 +207,32 @@ const MailRow: React.FC<MailRowProps> = ({ eventCode, row, onOpen }) => {
     collapsed && expanded
   );
 
+  if (!collapsed) return <SingleMail {...props} />;
+
   return (
     <>
       <ListItemButton
         divider
-        onClick={() => (collapsed ? setExpanded((e) => !e) : onOpen(row.mailKey))}
-        aria-expanded={collapsed ? expanded : undefined}
+        onClick={() => setExpanded((e) => !e)}
+        aria-expanded={expanded}
         data-testid={`mail-row-${row.mailKey}`}
         sx={{ alignItems: 'flex-start', gap: 2, px: 1 }}
       >
         <MailRowContent row={row} />
       </ListItemButton>
-      {collapsed && (
-        <Collapse in={expanded} unmountOnExit>
-          <List disablePadding sx={{ pl: 2 }} data-testid={`mail-group-${row.mailKey}`}>
-            {singles.isLoading && <Skeleton height={40} />}
-            {(singles.data?.data ?? []).map((single) => (
-              <ListItemButton
-                key={single.mailKey}
-                divider
-                onClick={() => onOpen(single.mailKey)}
-                data-testid={`mail-row-${single.mailKey}`}
-                sx={{ alignItems: 'flex-start', gap: 2, px: 1 }}
-              >
-                <MailRowContent row={single} />
-              </ListItemButton>
-            ))}
-            {singles.data && singles.data.pagination.totalItems > singles.data.data.length && (
-              <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
-                {t('eventPage.mail.groupTruncated', { count: singles.data.data.length })}
-              </Typography>
-            )}
-          </List>
-        </Collapse>
-      )}
+      <Collapse in={expanded} unmountOnExit>
+        <List disablePadding sx={{ pl: 2 }} data-testid={`mail-group-${row.mailKey}`}>
+          {singles.isLoading && <Skeleton height={40} />}
+          {(singles.data?.data ?? []).map((single) => (
+            <SingleMail key={single.mailKey} {...props} row={single} />
+          ))}
+          {singles.data && singles.data.pagination.totalItems > singles.data.data.length && (
+            <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
+              {t('eventPage.mail.groupTruncated', { count: singles.data.data.length })}
+            </Typography>
+          )}
+        </List>
+      </Collapse>
     </>
   );
 };

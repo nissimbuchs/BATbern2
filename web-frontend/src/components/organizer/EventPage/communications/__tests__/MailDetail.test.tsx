@@ -1,10 +1,12 @@
 /**
- * MailDetailDrawer tests (Story 16.3 AC1/AC4): the mail as sent, failed recipients first.
+ * MailDetail tests (Story 16.3 AC1/AC4): the mail as sent, failed recipients first. Desktop shows it
+ * inline (MailSentList), mobile in the full-screen MailDetailDialog.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, within } from '@testing-library/react';
+import React from 'react';
+import { render, screen, within, fireEvent } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MailDetailDrawer } from '../MailDetailDrawer';
+import { MailDetail, MailDetailDialog } from '../MailDetail';
 
 const { getMailMessage } = vi.hoisted(() => ({ getMailMessage: vi.fn() }));
 
@@ -34,16 +36,16 @@ const message = {
   test: false,
 };
 
-function renderDrawer(mailKey: string | null) {
+function renderWithQuery(ui: React.ReactElement) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
-  render(
-    <QueryClientProvider client={queryClient}>
-      <MailDetailDrawer eventCode="BATbern60" mailKey={mailKey} onClose={vi.fn()} />
-    </QueryClientProvider>
-  );
+  render(<QueryClientProvider client={queryClient}>{ui}</QueryClientProvider>);
 }
 
-describe('MailDetailDrawer', () => {
+function renderDetail(mailKey: string) {
+  renderWithQuery(<MailDetail eventCode="BATbern60" mailKey={mailKey} />);
+}
+
+describe('MailDetail', () => {
   beforeEach(() => getMailMessage.mockReset());
 
   it('lists failed recipients first with their reason and renders the body sandboxed', async () => {
@@ -60,7 +62,7 @@ describe('MailDetailDrawer', () => {
         },
       ],
     });
-    renderDrawer('BATbern60-4');
+    renderDetail('BATbern60-4');
 
     const list = await screen.findByTestId('mail-detail-recipients');
     const items = within(list).getAllByRole('listitem');
@@ -81,13 +83,30 @@ describe('MailDetailDrawer', () => {
       bodyHtml: null,
       recipients: [],
     });
-    renderDrawer('newsletter-1');
+    renderDetail('newsletter-1');
     expect(await screen.findByText('eventPage.mail.bodyNotRecorded')).toBeInTheDocument();
   });
 
-  it('stays closed and fetches nothing without a mail', () => {
-    renderDrawer(null);
-    expect(screen.queryByTestId('mail-detail')).not.toBeInTheDocument();
+  it('mobile: shows the mail in a full-screen dialog titled with the subject', async () => {
+    getMailMessage.mockResolvedValue({ message, bodyHtml: '<p>Hello</p>', recipients: [] });
+    const onClose = vi.fn();
+    renderWithQuery(
+      <MailDetailDialog
+        eventCode="BATbern60"
+        mailKey="BATbern60-4"
+        title="Invitation"
+        onClose={onClose}
+      />
+    );
+    const dialog = await screen.findByRole('dialog', { name: 'Invitation' });
+    expect(await within(dialog).findByTestId('mail-detail-body')).toBeInTheDocument();
+    fireEvent.click(within(dialog).getByRole('button', { name: 'common:actions.close' }));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it('mobile: the dialog stays closed and fetches nothing without a mail', () => {
+    renderWithQuery(<MailDetailDialog eventCode="BATbern60" mailKey={null} onClose={vi.fn()} />);
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     expect(getMailMessage).not.toHaveBeenCalled();
   });
 });

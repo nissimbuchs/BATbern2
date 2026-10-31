@@ -78,6 +78,14 @@ Claude Opus 5.5 (Amelia, dev-story), 2026-10-30. Same branch and PR as 16.3.
   `PartnerMeetingsCompose` filters `GET /partner-meetings` by `eventCode` client-side and links to
   the partner meetings page when there is none.
 - **AC4:** no temporary switch was built; 16.3 and 16.4 ship together.
+- **Layout change after review (2026-10-31, owner):** side panels replaced by inline expand
+  (prototype variant A, `docs/ux/mail-center-layouts.html`). Desktop: the composer opens at the top
+  of the page, focus moves to its heading, Esc or ✕ closes it and focus returns to "+ New mail"; a
+  mail opens below its row, mail beside facts. Mobile (< 900 px): both are full-screen dialogs
+  (`docs/ux/mail-center-mobile.html`). `MailDetailDrawer` became `MailDetail` + `MailDetailDialog`;
+  the open mail is state of `MailSentList`. Page width 900 → 1100 px so the composers keep their
+  two columns. Vitest 23/23 in the touched files, `event-mail-page.spec.ts` 2/2 on local dev (now also
+  checks: no modal on desktop, a 375 px full-screen dialog on mobile).
 - **E2E:** `event-newsletter-send.spec.ts` now opens the panel from "+ New mail" and checks the
   row on the mail page. On the anonymized local DB the send ends PARTIAL and the spec passes on
   that (#1158 option 3, which the issue warns about); noted in the spec and on #1158.
@@ -99,9 +107,9 @@ See Story 16.3 (one change set):
 - `web-frontend/src/hooks/useMailMessages/useMailMessages.ts` (new)
 - `web-frontend/src/components/organizer/EventPage/EventCommunicationsContainer.tsx`
 - `web-frontend/src/components/organizer/EventPage/communications/MailSentList.tsx` (new)
-- `web-frontend/src/components/organizer/EventPage/communications/MailDetailDrawer.tsx` (new)
+- `web-frontend/src/components/organizer/EventPage/communications/MailDetail.tsx` (new; was `MailDetailDrawer.tsx`)
 - `web-frontend/src/components/organizer/EventPage/communications/PartnerMeetingsCompose.tsx` (new)
-- `web-frontend/src/components/organizer/EventPage/communications/__tests__/{MailSentList,MailDetailDrawer,PartnerMeetingsCompose}.test.tsx` (new)
+- `web-frontend/src/components/organizer/EventPage/communications/__tests__/{MailSentList,MailDetail,PartnerMeetingsCompose}.test.tsx` (new)
 - `web-frontend/src/components/organizer/EventPage/EventNewsletterTab.tsx`
 - `web-frontend/src/components/organizer/EventPage/EventRegistrantNoticesTab.tsx`
 - `web-frontend/src/components/organizer/EventPage/SpeakerBulkComms.tsx`
@@ -125,3 +133,4 @@ See Story 16.3 (one change set):
 - 2026-10-30: Story drafted from Epic 16 (John, PM).
 - 2026-10-30: Partners entry added (owner request); pointer to 16.8.
 - 2026-10-30: Implemented with 16.3. Status review. Amelia (dev).
+- 2026-10-31: Side panels replaced by inline expand (desktop) and full-screen dialogs (mobile), owner decision.
