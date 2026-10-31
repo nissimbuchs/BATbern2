@@ -217,14 +217,7 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
         @SuppressWarnings("unchecked")
         ArgumentCaptor<java.util.List<String>> ccCaptor = ArgumentCaptor.forClass(java.util.List.class);
         ArgumentCaptor<String> replyToCaptor = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(1)).sendHtmlEmailSync(
-                toCaptor.capture(),
-                ccCaptor.capture(),
-                anyString(),
-                anyString(),
-                any(),
-                replyToCaptor.capture()
-        );
+        verify(emailService, times(1)).sendHtmlEmailSync(any(), toCaptor.capture(), ccCaptor.capture(), anyString(), anyString(), any(), replyToCaptor.capture());
         org.assertj.core.api.Assertions.assertThat(toCaptor.getValue()).isEqualTo("venue@test.invalid");
         org.assertj.core.api.Assertions.assertThat(ccCaptor.getValue()).containsExactly("catering@test.invalid");
         org.assertj.core.api.Assertions.assertThat(replyToCaptor.getValue()).isEqualTo("nissim.buchs@elca.ch");

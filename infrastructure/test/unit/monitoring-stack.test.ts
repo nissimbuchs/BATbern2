@@ -681,6 +681,43 @@ describe('MonitoringStack', () => {
     });
   });
 
+  describe('Mail delivery status DLQ alarm (Story 16.1b)', () => {
+    test('should_createMailDeliveryStatusDlqAlarm_when_dlqNameProvided', () => {
+      const app = new App();
+      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+        config: prodConfig,
+        bounceProcessingDlqName: 'batbern-staging-bounce-processing-dlq',
+        mailDeliveryStatusDlqName: 'batbern-staging-mail-delivery-status-dlq',
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+
+      template.hasResourceProperties('AWS::CloudWatch::Alarm', {
+        AlarmName: 'batbern-production-mail-delivery-status-dlq',
+        MetricName: 'ApproximateNumberOfMessagesVisible',
+        Namespace: 'AWS/SQS',
+        Dimensions: [{ Name: 'QueueName', Value: 'batbern-staging-mail-delivery-status-dlq' }],
+        Threshold: 0,
+        EvaluationPeriods: 1,
+        TreatMissingData: 'notBreaching',
+      });
+      // The existing bounce DLQ alarm keeps its logical ID (no replacement on deploy).
+      expect(Object.keys(template.findResources('AWS::CloudWatch::Alarm'))).toEqual(
+        expect.arrayContaining([expect.stringMatching(/^BounceProcessingDLQAlarm/)])
+      );
+    });
+
+    test('should_notCreateMailDeliveryStatusDlqAlarm_when_dlqNameAbsent', () => {
+      const app = new App();
+      const stack = new MonitoringStack(app, 'TestMonitoringStack', {
+        config: prodConfig,
+        env: { account: '123456789012', region: 'eu-central-1' },
+      });
+      const template = Template.fromStack(stack);
+      expect(JSON.stringify(template.toJSON())).not.toContain('mail-delivery-status-dlq');
+    });
+  });
+
   describe('Stack Outputs', () => {
     test('should_exportDashboardUrl_when_monitoringStackDeployed', () => {
       // Arrange

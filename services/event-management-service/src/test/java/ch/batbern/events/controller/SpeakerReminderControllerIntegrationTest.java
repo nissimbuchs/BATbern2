@@ -114,7 +114,7 @@ class SpeakerReminderControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Story 11.F.1: portalToken parameter dropped from sendReminderEmail (6 args).
         doNothing().when(reminderEmailService).sendReminderEmail(
-                any(), any(), any(), any(), any(), any());
+                any(), any(), any(), any(), any(), any(), any());
 
         // Story 11.E.9: the pool.email column is gone. The resolver returns the email
         // from the seeded session_users / UserApiClient pair, but the existing reminder

@@ -288,7 +288,8 @@
       "historyRecipients": "Empfänger",
       "typeNewsletter": "Newsletter",
       "typeReminder": "Erinnerig",
-      "previewTitle": "E-Mail-Vorschau"
+      "previewTitle": "E-Mail-Vorschau",
+      "retryHint": "Dr Versand vom {{date}} het {{count}} Empfänger:inne nid erreicht."
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -361,14 +362,6 @@
       "uploadingImage": "Wird ueglade…",
       "replaceImage": "Bild ersetze"
     },
-    "communications": {
-      "audiences": {
-        "newsletter": "Newsletter-Abonnänte",
-        "registrants": "Event-Teilnähmer",
-        "speakers": "Referänte",
-        "venue": "Lokal & Catering"
-      }
-    },
     "speakerComms": {
       "title": "Erinnerige a d'Referänte",
       "description": "Schick e Termin-Erinnerig a d'Referänte, wo no e Antwort oder ihre Inhalt schulde. Jede überchunnt einzeln es Mail – Iiladige u einzelni Nachfroge blybe uf der Referänte-Charte.",
@@ -406,6 +399,63 @@
     "mobile": {
       "more": "Meh",
       "moreSheetTitle": "Meh"
+    },
+    "mail": {
+      "whatWentOut": "Was usegange isch",
+      "newMail": "Nöii Mail",
+      "handledAutomatically": "Automatisch verarbeitet",
+      "failedDeliveries_one": "{{count}} fählgschlagnigi Zuestellig (Bounce, Beschwärde oder Ablehnig)",
+      "failedDeliveries_other": "{{count}} fählgschlagnigi Zuestellige (Bounces, Beschwärde, Ablehnige)",
+      "sentToast": "Gschickt. D Mail erschiint jitz under «Was usegange isch».",
+      "loadError": "D Mails hei nid chönne glade wärde.",
+      "emptyAll": "Für dä Event isch no nüt usegange.",
+      "emptyFilter": "Nüt für die Gruppe.",
+      "automatic": "automatisch",
+      "template": "Vorlag",
+      "ownText": "Eigete Text",
+      "groupTitle_one": "{{template}} · {{count}} Mail",
+      "groupTitle_other": "{{template}} · {{count}} Mails",
+      "groupTruncated": "Di nöischte {{count}} wärde azeigt.",
+      "sendingProgress": "wird gschickt … {{sent}} / {{total}}",
+      "delivered": "{{count}} zuegstellt",
+      "failed": "{{count}} fählgschlage",
+      "recipients_one": "{{count}} Empfänger:in",
+      "recipients_other": "{{count}} Empfänger:inne",
+      "recipientsHeading": "Empfänger:inne",
+      "failedRecipients": "Fählgschlagnigi Empfänger:inne",
+      "bodyTitle": "Mail wie gschickt",
+      "bodyNotRecorded": "Dr Text isch nid gspicheret: Die Mail isch usegange, bevor s d Ufzeichnig gä het.",
+      "status": {
+        "SENT": "gschickt",
+        "DELIVERED": "zuegstellt",
+        "FAILED": "fählgschlage"
+      },
+      "filters": {
+        "ALL": "Aui",
+        "NEWSLETTER": "Newsletter",
+        "REGISTRANTS": "Agmäldeti",
+        "SPEAKERS": "Speaker",
+        "VENUE": "Lokal & Catering",
+        "PARTNERS": "Partner",
+        "ORGANIZERS": "Organisatore",
+        "SYSTEM": "System"
+      },
+      "compose": {
+        "newsletter": "Newsletter",
+        "registrants": "Agmäldeti",
+        "speakers": "Speaker",
+        "venue": "Lokal & Catering",
+        "partners": "Partner"
+      },
+      "partners": {
+        "noMeeting": "Dä Event het no kes Partner-Meeting.",
+        "meetingsLink": "Zu de Partner-Meetings",
+        "hint": "Dr Partner-Service schickt d Kaländer-Iiladig und erfasst d Antworte.",
+        "type": {
+          "SPRING": "Früehligs-Meeting",
+          "AUTUMN": "Herbscht-Meeting"
+        }
+      }
     }
   },
   "dashboard": {

@@ -294,7 +294,7 @@ class SpeakerReminderServiceTest {
             assertThat(result.contentReminders()).isZero();
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_1"),
-                    eq(testSpeaker.getResponseDeadline()), eq(Locale.GERMAN));
+                    eq(testSpeaker.getResponseDeadline()), eq(Locale.GERMAN), any());
             verify(reminderLogRepository).save(any(SpeakerReminderLog.class));
             verify(outreachHistoryRepository).save(any(OutreachHistory.class));
         }
@@ -315,7 +315,7 @@ class SpeakerReminderServiceTest {
 
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_1"),
-                    eq(testSpeaker.getResponseDeadline()), eq(Locale.ENGLISH));
+                    eq(testSpeaker.getResponseDeadline()), eq(Locale.ENGLISH), any());
         }
 
         @Test
@@ -336,7 +336,7 @@ class SpeakerReminderServiceTest {
             assertThat(result.contentReminders()).isEqualTo(1);
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("CONTENT"), eq("TIER_2"),
-                    eq(testSpeaker.getContentDeadline()), eq(Locale.GERMAN));
+                    eq(testSpeaker.getContentDeadline()), eq(Locale.GERMAN), any());
         }
 
         @Test
@@ -352,7 +352,7 @@ class SpeakerReminderServiceTest {
             assertThat(result.responseReminders()).isZero();
             assertThat(result.skipped()).isZero();
             verify(reminderEmailService, never()).sendReminderEmail(
-                    any(), any(), any(), any(), any(), any());
+                    any(), any(), any(), any(), any(), any(), any());
         }
     }
 
@@ -374,7 +374,7 @@ class SpeakerReminderServiceTest {
 
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_2"),
-                    eq(testSpeaker.getResponseDeadline()), eq(Locale.GERMAN));
+                    eq(testSpeaker.getResponseDeadline()), eq(Locale.GERMAN), any());
 
             // Verify outreach logged with organizer username
             ArgumentCaptor<OutreachHistory> outreachCaptor = ArgumentCaptor.forClass(OutreachHistory.class);
@@ -478,7 +478,7 @@ class SpeakerReminderServiceTest {
             // Verify email was sent (not thrown)
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("CONTENT"), eq("TIER_1"),
-                    any(LocalDate.class), eq(Locale.GERMAN));
+                    any(LocalDate.class), eq(Locale.GERMAN), any());
         }
 
         @Test
@@ -495,7 +495,7 @@ class SpeakerReminderServiceTest {
             assertThat(result.tier()).isEqualTo("TIER_1");
             verify(reminderEmailService).sendReminderEmail(
                     eq(testSpeaker), eq(testEvent), eq("RESPONSE"), eq("TIER_1"),
-                    any(LocalDate.class), eq(Locale.GERMAN));
+                    any(LocalDate.class), eq(Locale.GERMAN), any());
         }
     }
 }

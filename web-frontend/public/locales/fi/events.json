@@ -282,7 +282,8 @@
       "historyRecipients": "Vastaanottajat",
       "typeNewsletter": "Uutiskirje",
       "typeReminder": "Muistutus",
-      "previewTitle": "Sähköpostin esikatselu"
+      "previewTitle": "Sähköpostin esikatselu",
+      "retryHint": "Lähetys {{date}} ei tavoittanut {{count}} vastaanottajaa."
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -355,14 +356,6 @@
       "uploadingImage": "Ladataan…",
       "replaceImage": "Vaihda kuva"
     },
-    "communications": {
-      "audiences": {
-        "newsletter": "Uutiskirjeen tilaajat",
-        "registrants": "Tapahtuman osallistujat",
-        "speakers": "Puhujat",
-        "venue": "Tila ja pitopalvelu"
-      }
-    },
     "speakerComms": {
       "title": "Muistutukset puhujille",
       "description": "Lähetä määräaikamuistutus puhujille, joilta puuttuu vielä vastaus tai sisältö. Jokaiselle puhujalle lähetetään oma sähköposti – kutsut ja yksittäiset muistutukset pysyvät puhujakortilla.",
@@ -400,6 +393,63 @@
     "mobile": {
       "more": "Lisää",
       "moreSheetTitle": "Lisää"
+    },
+    "mail": {
+      "whatWentOut": "Mitä lähetettiin",
+      "newMail": "Uusi viesti",
+      "handledAutomatically": "Käsitelty automaattisesti",
+      "failedDeliveries_one": "{{count}} epäonnistunut toimitus (palautus, valitus tai hylkäys)",
+      "failedDeliveries_other": "{{count}} epäonnistunutta toimitusta (palautukset, valitukset, hylkäykset)",
+      "sentToast": "Lähetetty. Viesti näkyy nyt kohdassa ”Mitä lähetettiin”.",
+      "loadError": "Viestejä ei voitu ladata.",
+      "emptyAll": "Tälle tapahtumalle ei ole vielä lähetetty mitään.",
+      "emptyFilter": "Ei mitään tälle ryhmälle.",
+      "automatic": "automaattinen",
+      "template": "Pohja",
+      "ownText": "Oma teksti",
+      "groupTitle_one": "{{template}} · {{count}} viesti",
+      "groupTitle_other": "{{template}} · {{count}} viestiä",
+      "groupTruncated": "Näytetään {{count}} uusinta.",
+      "sendingProgress": "lähetetään … {{sent}} / {{total}}",
+      "delivered": "{{count}} toimitettu",
+      "failed": "{{count}} epäonnistui",
+      "recipients_one": "{{count}} vastaanottaja",
+      "recipients_other": "{{count}} vastaanottajaa",
+      "recipientsHeading": "Vastaanottajat",
+      "failedRecipients": "Epäonnistuneet vastaanottajat",
+      "bodyTitle": "Viesti lähetettynä",
+      "bodyNotRecorded": "Tekstiä ei tallennettu: viesti lähti ennen kuin tallennus oli käytössä.",
+      "status": {
+        "SENT": "lähetetty",
+        "DELIVERED": "toimitettu",
+        "FAILED": "epäonnistui"
+      },
+      "filters": {
+        "ALL": "Kaikki",
+        "NEWSLETTER": "Uutiskirje",
+        "REGISTRANTS": "Ilmoittautuneet",
+        "SPEAKERS": "Puhujat",
+        "VENUE": "Tapahtumapaikka ja catering",
+        "PARTNERS": "Kumppanit",
+        "ORGANIZERS": "Järjestäjät",
+        "SYSTEM": "Järjestelmä"
+      },
+      "compose": {
+        "newsletter": "Uutiskirje",
+        "registrants": "Ilmoittautuneet",
+        "speakers": "Puhujat",
+        "venue": "Tapahtumapaikka ja catering",
+        "partners": "Kumppanit"
+      },
+      "partners": {
+        "noMeeting": "Tällä tapahtumalla ei ole vielä kumppanitapaamista.",
+        "meetingsLink": "Siirry kumppanitapaamisiin",
+        "hint": "Kumppanipalvelu lähettää kalenterikutsun ja seuraa vastauksia.",
+        "type": {
+          "SPRING": "Kevättapaaminen",
+          "AUTUMN": "Syystapaaminen"
+        }
+      }
     }
   },
   "dashboard": {

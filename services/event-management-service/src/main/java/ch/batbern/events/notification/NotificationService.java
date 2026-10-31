@@ -3,6 +3,8 @@ package ch.batbern.events.notification;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.event.EventPublishedEvent;
 import ch.batbern.events.repository.RegistrationRepository;
+import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -15,6 +17,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Locale;
 
 /**
  * Notification service
@@ -48,6 +51,7 @@ public class NotificationService {
 
         // Find all registered attendees for this event
         List<String> attendees = registrationRepository.findUsernamesByEventCode(event.getEventCode());
+        MailTrigger publication = MailTrigger.system();
 
         log.info("Found {} attendees for event {}", attendees.size(), event.getEventCode());
 
@@ -58,6 +62,7 @@ public class NotificationService {
                         .recipientUsername(username)
                         .eventCode(event.getEventCode())
                         .type("EVENT_PUBLISHED")
+                        .mailTrigger(publication)
                         .channel("EMAIL")
                         .subject("Event " + event.getTitle() + " is now published!")
                         .body(buildEventPublishedEmailBody(event))
@@ -109,7 +114,8 @@ public class NotificationService {
             String htmlBody = buildEmailContent(notification);
 
             // Send via shared EmailService
-            emailService.sendHtmlEmail(email, notification.getSubject(), htmlBody);
+            emailService.sendHtmlEmail(mailContext(request), email, null, notification.getSubject(), htmlBody,
+                    null);
 
             // Update status after delivery
             notification.setStatus("SENT");
@@ -164,6 +170,19 @@ public class NotificationService {
             // Range crossing midnight
             return now.isAfter(start) && now.isBefore(end);
         }
+    }
+
+    /**
+     * Story 16.1a: speaker escalations go to organizers, everything else here to registrants. One
+     * send group per trigger (a publication, a job run) and notification type.
+     */
+    static MailContext mailContext(NotificationRequest request) {
+        MailTrigger trigger = request.getMailTrigger() != null ? request.getMailTrigger() : MailTrigger.system();
+        MailContext.Audience audience = "SPEAKER_ESCALATION".equals(request.getType())
+                ? MailContext.Audience.ORGANIZERS
+                : MailContext.Audience.REGISTRANTS;
+        String templateKey = "notification-" + String.valueOf(request.getType()).toLowerCase(Locale.ROOT);
+        return MailContext.of(trigger, request.getEventCode(), audience, templateKey);
     }
 
     /**

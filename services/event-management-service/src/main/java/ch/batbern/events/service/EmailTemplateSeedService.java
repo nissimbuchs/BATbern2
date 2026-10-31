@@ -164,11 +164,11 @@ public class EmailTemplateSeedService {
             return "REGISTRATION";
         }
         // Inbound-email confirmations (Story 10.17): transactional acks after a registrant
-        // accepts/cancels a deregistration or unsubscribes. REGISTRATION is an admin-EDIT-only
-        // category (NOT a blast send-picker like REGISTRANT_NOTICE / NEWSLETTER), so these
+        // accepts a deregistration or unsubscribes (cancel-confirmation removed in Story 16.0).
+        // REGISTRATION is an admin-EDIT-only category (NOT a blast send-picker like
+        // REGISTRANT_NOTICE / NEWSLETTER), so these
         // transactional templates can be edited in admin without becoming mass-sendable.
-        if (templateKey.equals("accept-confirmation") || templateKey.equals("cancel-confirmation")
-                || templateKey.equals("unsubscribe-confirmation")) {
+        if (templateKey.equals("accept-confirmation") || templateKey.equals("unsubscribe-confirmation")) {
             return "REGISTRATION";
         }
         if (templateKey.startsWith("task-reminder")) {

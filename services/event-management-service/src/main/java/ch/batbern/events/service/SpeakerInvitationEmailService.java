@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.repository.SessionRepository;
+import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.forwarding.ModeratorReplyAddress;
@@ -142,7 +143,11 @@ public class SpeakerInvitationEmailService {
             java.util.List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
                     .orElse(java.util.Collections.emptyList());
             // Story 16.0 AC1: the speaker's answer reaches the moderator, not replies@.
+            // The temporary password must not reach the mail record (Story 11.E.2 keeps it out of storage).
+            MailContext context = MailContext.individual(event.getEventCode(), MailContext.Audience.SPEAKERS,
+                    "speaker-invitation").withSecrets(credentials != null ? credentials.getTemporaryPassword() : null);
             emailService.sendHtmlEmail(
+                    context,
                     recipientEmail,
                     cc,
                     content.subject(),

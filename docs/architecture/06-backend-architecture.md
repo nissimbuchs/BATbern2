@@ -844,6 +844,74 @@ SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → E
 - **Replay**: raw mail stays in S3 for 7 days. Re-sending an S3 event JSON for a `forwarding/` key
   to the forwarding queue forwards it again unless its key is already in `email_forwarding_log`.
 
+## Outbound Mail Record (Story 16.1a)
+
+Every mail EMS sends for an event or on an organizer's behalf is recorded, so the team can see what
+went out (Mail Center, Epic 16). Record only; the Communications page (16.3) reads it.
+
+- **Hook**: callers pass a `MailContext` (shared kernel `ch.batbern.shared.mail`) to the
+  context-taking `EmailService` overloads. After SES answers, `EmailService` hands the redacted mail
+  and the SES Message-ID to the optional `OutboundMailRecorder` SPI; EMS implements it with
+  `JpaOutboundMailRecorder` (own transaction). A send without context, or blocked before SES
+  (reserved domain, ADR-015 test marker), is not recorded. An SES error is recorded as `FAILED` with
+  its error code. Every recorded send carries the SES tag `mail_group` = send-group id.
+- **Tables** (`V135`): `mail_message`, one row per send group, public id `mail_key` =
+  `{eventCode}-{n}` or `general-{n}` from `mail_message_seq`; `mail_recipient`, one row per address
+  (TO/CC) with `ses_message_id` and status `SENT`/`FAILED`, moved to `DELIVERED`/`FAILED` by 16.1b. A recipient row
+  keeps its own body only when its text differs from the message's.
+- **Send groups** (`MailTrigger`): one per organizer request, per scheduler run × event × template,
+  or per transactional mail. Newsletter and registrant notices group by their `newsletter_sends` row,
+  so a retry joins the same record. The newsletter adds no recipient rows; its per-recipient status
+  stays in `newsletter_recipients`.
+- **No credentials in the record**: `MailRedaction` masks every `token=` link parameter
+  (confirmation, deregistration, unsubscribe) and the plain-text secrets the caller names
+  (`MailContext.withSecrets`: registration code, temporary password).
+- **Guard**: `OutboundMailInventoryGuardTest` scans EMS sources and fails for a send through
+  `EmailService` without a context. Allow-listed: forwarding (inbound, Story 16.2) and the newsletter
+  unsubscribe acknowledgement.
+- **Retention**: `MailMessageRetentionScheduler` (03:30 Europe/Zurich, ShedLock) deletes a mail once
+  its event date and the mail itself are older than 12 months; mail without an event after 12 months.
+
+### Delivery status (Story 16.1b)
+
+SES events of the transactional configuration set move each `mail_recipient` from `SENT` to
+`DELIVERED` or `FAILED`, so an organizer sees which address bounced and why.
+
+- **Path**: SES → SNS `batbern-{env}-ses-transactional-events` → SQS
+  `batbern-{env}-mail-delivery-status` (SNS envelope kept) → `MailDeliveryStatusListener` →
+  `MailDeliveryStatusService`. The log-only `transactional-event-logger` Lambda stays subscribed.
+  The listener runs only with `aws.ses.delivery-status.enabled=true` (set by the CDK stack); local
+  dev has no queue.
+- **Matching**: SES Message-ID (`mail.messageId`) plus address, case-insensitive. Delivery, bounce and
+  complaint carry their own recipient lists; a reject has none and fails every recipient of the message.
+- **Reasons**: bounce = `bounceType/bounceSubType` (e.g. `Permanent/NoEmail`), complaint =
+  `complaint`, reject = SES's reason.
+- **Never backwards** (`DeliveryStatusRule`): `SENT` → `DELIVERED` → `FAILED`. `FAILED` is final and
+  keeps its first reason; a complaint after delivery still fails. The rule is applied in the UPDATE's
+  `WHERE status IN (...)`, so concurrent events cannot reorder it.
+- **Unknown Message-IDs** (system mail without context, forwarding, partner mail, mail before 16.1a)
+  are ignored and counted as `BATbern/MailCenter DeliveryEventsUnmatched`.
+- **Failures**: an unreadable message throws; SQS retries it and moves it to
+  `mail-delivery-status-dlq` after 3 attempts (alarm in `MonitoringStack`).
+- **Newsletter suppression untouched**: the newsletter set keeps its own bounce queue and
+  `BounceProcessingService`; no transactional event reaches it.
+
+### Read API (Story 16.3)
+
+`event-mail-api.openapi.yml`, implemented by `EventMailController` → `MailMessageQueryService`
+(native SQL, read-only), all `hasRole('ORGANIZER')` and `Cache-Control: no-store`:
+
+- `GET /events/{eventCode}/mails`: paged, newest first, filters `audience`,
+  `templateKey`, `date` (Europe/Zurich). Automatic mails (no sender, template, not a newsletter)
+  collapse per template and day unless `grouped=false`.
+- Newsletter sends without a `mail_message` (sent before 16.1a) are a read-time union from
+  `newsletter_sends`, keyed `newsletter-{sendId}`, without body. Their audience is REGISTRANTS for
+  `REGISTRANT_NOTICE` templates, otherwise NEWSLETTER. Newsletter counts come from
+  `newsletter_recipients` (failed = SES refused or bounced; the newsletter set has no delivery
+  events).
+- `GET .../mails/{mailKey}`: body and recipients; for a newsletter only the failed ones.
+- `GET .../mails/counts`: failed deliveries of the event ("Handled automatically").
+
 ## Auto-Enrollment on Event Creation
 
 When a new event is created, an `EventCreatedEvent` listener automatically enrolls all active organizers and partner contacts as stakeholders. A manual quick-action button is also available for idempotent re-enrollment (`POST` endpoint returns success even if already enrolled).

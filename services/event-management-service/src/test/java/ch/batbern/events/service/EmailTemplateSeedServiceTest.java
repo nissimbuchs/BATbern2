@@ -71,7 +71,6 @@ class EmailTemplateSeedServiceTest {
     @DisplayName("should derive REGISTRATION category for the inbound-confirmation templates")
     void should_deriveCategory_forConfirmationKeys() {
         assertThat(emailTemplateSeedService.deriveCategory("accept-confirmation")).isEqualTo("REGISTRATION");
-        assertThat(emailTemplateSeedService.deriveCategory("cancel-confirmation")).isEqualTo("REGISTRATION");
         assertThat(emailTemplateSeedService.deriveCategory("unsubscribe-confirmation"))
                 .isEqualTo("REGISTRATION");
     }

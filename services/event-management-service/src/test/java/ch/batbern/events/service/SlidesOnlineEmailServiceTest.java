@@ -185,8 +185,8 @@ class SlidesOnlineEmailServiceTest {
         service.processSend(sendId, event, "slides-online");
 
         // Two active, non-opted-out recipients → two sends; opted-out skipped.
-        verify(emailService, times(2)).sendHtmlEmailSync(anyString(), anyString(), anyString(), any());
-        verify(emailService, never()).sendHtmlEmailSync(eq("opt@x.ch"), anyString(), anyString(), any());
+        verify(emailService, times(2)).sendHtmlEmailSync(any(), anyString(), any(), anyString(), anyString(), any(), any());
+        verify(emailService, never()).sendHtmlEmailSync(any(), eq("opt@x.ch"), any(), anyString(), anyString(), any(), any());
         assertThat(send.getStatus()).isEqualTo("COMPLETED");
         assertThat(send.getSentCount()).isEqualTo(2);
         assertThat(send.getFailedCount()).isZero();

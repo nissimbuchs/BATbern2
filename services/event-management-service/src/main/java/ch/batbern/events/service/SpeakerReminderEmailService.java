@@ -3,6 +3,8 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.forwarding.ModeratorReplyAddress;
@@ -64,6 +66,7 @@ public class SpeakerReminderEmailService {
      * @param tier TIER_1, TIER_2, or TIER_3
      * @param deadline the deadline date
      * @param locale email language (defaults to German)
+     * @param mailTrigger the scheduler run or organizer request this reminder belongs to (Story 16.1a)
      */
     public void sendReminderEmail(
             SpeakerPool speaker,
@@ -71,7 +74,8 @@ public class SpeakerReminderEmailService {
             String reminderType,
             String tier,
             LocalDate deadline,
-            Locale locale
+            Locale locale,
+            MailTrigger mailTrigger
     ) {
         // Phase B of the post-Epic-11 cleanup: recipient routing now resolves through
         // session_users + UserApiClient, not the stale speaker_pool.email column. When
@@ -103,7 +107,10 @@ public class SpeakerReminderEmailService {
             java.util.List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
                     .orElse(java.util.Collections.emptyList());
             // Story 16.0 AC1: the speaker's answer reaches the moderator, not replies@.
-            emailService.sendHtmlEmail(recipientEmail, cc, content.subject(), content.html(),
+            // Story 16.1a AC2: one recorded mail per run (or manual click), event and template.
+            MailContext context = MailContext.of(mailTrigger, event.getEventCode(), MailContext.Audience.SPEAKERS,
+                    templateKey(reminderType, tier));
+            emailService.sendHtmlEmail(context, recipientEmail, cc, content.subject(), content.html(),
                     moderatorReplyAddress.forEvent(event));
 
             log.info("Reminder email sent: type={}, tier={}, speaker={}, event={}, ccCount={}",
@@ -146,6 +153,11 @@ public class SpeakerReminderEmailService {
 
     private record EmailContent(String html, String subject) {}
 
+    /** e.g. RESPONSE + TIER_1 → {@code speaker-reminder-response-tier1}. */
+    static String templateKey(String reminderType, String tier) {
+        return "speaker-reminder-" + reminderType.toLowerCase() + "-" + tier.toLowerCase().replace("_", "");
+    }
+
     private EmailContent loadReminderTemplate(
             Locale locale,
             String speakerName,
@@ -158,8 +170,7 @@ public class SpeakerReminderEmailService {
         String type = reminderType.toLowerCase();
         String tierNum = tier.toLowerCase().replace("_", "");
 
-        // e.g., templateKey = "speaker-reminder-response-tier1"
-        String templateKey = "speaker-reminder-" + type + "-" + tierNum;
+        String templateKey = templateKey(reminderType, tier);
         // e.g., "email-templates/speaker-reminder-response-tier1-en.html"
         String templateName = String.format("email-templates/speaker-reminder-%s-%s-%s.html",
                 type, tierNum, lang);

@@ -282,7 +282,8 @@
       "historyRecipients": "Destinataris",
       "typeNewsletter": "Newsletter",
       "typeReminder": "Memorativ",
-      "previewTitle": "Prevista e-mail"
+      "previewTitle": "Prevista e-mail",
+      "retryHint": "La spediziun dals {{date}} n'ha betg cuntanschì {{count}} destinaturs."
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -355,14 +356,6 @@
       "uploadingImage": "Chargiar si…",
       "replaceImage": "Remplazar il maletg"
     },
-    "communications": {
-      "audiences": {
-        "newsletter": "Abunents da la newsletter",
-        "registrants": "Participants da l'occurrenza",
-        "speakers": "Relaturs",
-        "venue": "Lieu & catering"
-      }
-    },
     "speakerComms": {
       "title": "Endrizzas als relaturs",
       "description": "Trametta in endriz da termin als relaturs che dastgan anc ina resposta u lur cuntegn. Mintga relatur retschaiva in e-mail individual – las invitaziuns ed ils endrizs singuls restan sin la carta dal relatur.",
@@ -400,6 +393,63 @@
     "mobile": {
       "more": "Dapli",
       "moreSheetTitle": "Dapli"
+    },
+    "mail": {
+      "whatWentOut": "Quai ch'è vegnì tramess",
+      "newMail": "Nov e-mail",
+      "handledAutomatically": "Elavurà automaticamain",
+      "failedDeliveries_one": "{{count}} consegna betg reussida (bounce, protesta u refus)",
+      "failedDeliveries_other": "{{count}} consegnas betg reussidas (bounces, protestas, refus)",
+      "sentToast": "Tramess. L'e-mail cumpara ussa sut «Quai ch'è vegnì tramess».",
+      "loadError": "Las e-mails n'han betg pudì vegnir chargiadas.",
+      "emptyAll": "Per quest'occurrenza n'è anc nagut vegnì tramess.",
+      "emptyFilter": "Nagut per questa gruppa.",
+      "automatic": "automatic",
+      "template": "Model",
+      "ownText": "Agen text",
+      "groupTitle_one": "{{template}} · {{count}} e-mail",
+      "groupTitle_other": "{{template}} · {{count}} e-mails",
+      "groupTruncated": "Ils {{count}} pli novs vegnan mussads.",
+      "sendingProgress": "vegn tramess … {{sent}} / {{total}}",
+      "delivered": "{{count}} consegnadas",
+      "failed": "{{count}} betg reussidas",
+      "recipients_one": "{{count}} destinatur",
+      "recipients_other": "{{count}} destinaturs",
+      "recipientsHeading": "Destinaturs",
+      "failedRecipients": "Destinaturs betg cuntanschids",
+      "bodyTitle": "E-mail sco tramess",
+      "bodyNotRecorded": "Il text n'è betg vegnì memorisà: quest e-mail è vegnì tramess avant che la registraziun existiva.",
+      "status": {
+        "SENT": "tramess",
+        "DELIVERED": "consegnà",
+        "FAILED": "betg reussì"
+      },
+      "filters": {
+        "ALL": "Tuts",
+        "NEWSLETTER": "Newsletter",
+        "REGISTRANTS": "Annunziads",
+        "SPEAKERS": "Relaturs",
+        "VENUE": "Lieu & catering",
+        "PARTNERS": "Partenaris",
+        "ORGANIZERS": "Organisaturs",
+        "SYSTEM": "Sistem"
+      },
+      "compose": {
+        "newsletter": "Newsletter",
+        "registrants": "Annunziads",
+        "speakers": "Relaturs",
+        "venue": "Lieu & catering",
+        "partners": "Partenaris"
+      },
+      "partners": {
+        "noMeeting": "Questa occurrenza n'ha anc nagina sesida da partenaris.",
+        "meetingsLink": "Tar las sesidas da partenaris",
+        "hint": "Il servetsch da partenaris trametta l'invit da chalender e registrescha las respostas.",
+        "type": {
+          "SPRING": "Sesida da primavaira",
+          "AUTUMN": "Sesida d'atun"
+        }
+      }
     }
   },
   "dashboard": {

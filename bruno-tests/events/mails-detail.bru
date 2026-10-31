@@ -1,0 +1,38 @@
+meta {
+  name: Mail page — one mail with recipients (organizer)
+  type: http
+  seq: 21
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern59/mails/{{mailKeyForDetail}}
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns the mail, or 404 when the list had none", function() {
+    expect([200, 404]).to.include(res.getStatus());
+  });
+
+  test("detail carries the summary and the recipients", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.message.mailKey).to.equal(bru.getVar("mailKeyForDetail"));
+      expect(body.recipients).to.be.an("array");
+      for (const r of body.recipients) {
+        expect(["SENT", "DELIVERED", "FAILED"]).to.include(r.status);
+        expect(["TO", "CC"]).to.include(r.kind);
+      }
+    }
+  });
+}
+
+docs {
+  Story 16.3 AC4/AC5: GET /events/{eventCode}/mails/{mailKey}. Uses the newest key from
+  the list request (seq 20). Read-only. Bodies are stored with credentials redacted (16.1a).
+}

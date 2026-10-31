@@ -544,7 +544,7 @@ class NewsletterEmailServiceTest {
 
         // Starts the keyset at the nil UUID with the batch size of 50.
         verify(subscriberRepository).findActiveAfterId(new UUID(0L, 0L), Limit.of(50));
-        verify(emailService, atLeastOnce()).sendHtmlEmailSync(eq("user@example.com"), any(), any(), any());
+        verify(emailService, atLeastOnce()).sendHtmlEmailSync(any(), eq("user@example.com"), any(), any(), any(), any(), any());
     }
 
     @Test
@@ -625,8 +625,7 @@ class NewsletterEmailServiceTest {
 
         newsletterEmailService.executeNewsletterSendAsync(sendId, testEvent, false, "de", "newsletter-event");
 
-        verify(emailService).sendHtmlEmailSync(
-                eq("user@example.com"), any(), any(), eq("batbern-bounce-tracking"));
+        verify(emailService).sendHtmlEmailSync(any(), eq("user@example.com"), any(), any(), any(), eq("batbern-bounce-tracking"), any());
     }
 
     @Test
@@ -678,7 +677,7 @@ class NewsletterEmailServiceTest {
                 sendId, testEvent, false, "de", "newsletter-event", 2);
 
         // Only 2 emails should have been sent despite 5 subscribers being available
-        verify(emailService, times(2)).sendHtmlEmailSync(any(), any(), any(), any());
+        verify(emailService, times(2)).sendHtmlEmailSync(any(), any(), any(), any(), any(), any(), any());
     }
 
     // ── Test mode: organizer-only send ───────────────────────────────────────
@@ -803,10 +802,7 @@ class NewsletterEmailServiceTest {
                 sendId, testEvent, false, "de", "newsletter-event", null, true);
 
         // Only the organizer subscriber should receive the email
-        verify(emailService, times(1)).sendHtmlEmailSync(
-                eq("org@batbern.ch"),
-                eq("[Testmailing nur an OK] final"),
-                any(), any());
+        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("org@batbern.ch"), any(), eq("[Testmailing nur an OK] final"), any(), any(), any());
         // The paginated query should NOT be called in test mode
         verify(subscriberRepository, never()).findActiveAfterId(any(UUID.class), any(Limit.class));
     }

@@ -16,6 +16,8 @@ import ch.batbern.events.repository.EmailTemplateRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
+import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import com.fasterxml.jackson.core.JsonProcessingException;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -143,7 +145,10 @@ public class VenueCoordinationService {
                 eventCode, templateKey, uniqueRoles, mask(to), cc.size(),
                 mask(coordinator.email()), sentByUsername);
 
+        MailContext context = MailContext.of(MailTrigger.organizer(sentByUsername), eventCode,
+                MailContext.Audience.VENUE, templateKey);
         emailService.sendHtmlEmailSync(
+                context,
                 to,
                 cc,
                 rendered.subject(),

@@ -296,7 +296,8 @@
       "retryTooltip": "Retry failed recipients",
       "testMode": "Test Mode (organizers only)",
       "testModeWarning": "Test mode enabled — newsletter will only be sent to organizer subscribers.",
-      "confirmSendBodyTestMode": "Send {{type}} using '{{templateKey}}' to organizer subscribers only (test mode) for event «{{eventTitle}}»?"
+      "confirmSendBodyTestMode": "Send {{type}} using '{{templateKey}}' to organizer subscribers only (test mode) for event «{{eventTitle}}»?",
+      "retryHint": "The send of {{date}} left {{count}} recipient(s) out."
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -369,14 +370,6 @@
       "uploadingImage": "Uploading…",
       "replaceImage": "Replace image"
     },
-    "communications": {
-      "audiences": {
-        "newsletter": "Newsletter subscribers",
-        "registrants": "Event registrants",
-        "speakers": "Speakers",
-        "venue": "Venue & Caterer"
-      }
-    },
     "speakerComms": {
       "title": "Speaker reminders",
       "description": "Send a deadline reminder to the speakers who still owe a response or their content. Each speaker is emailed individually — invitations and one-off nudges stay on the speaker card.",
@@ -414,6 +407,63 @@
     "mobile": {
       "more": "More",
       "moreSheetTitle": "More"
+    },
+    "mail": {
+      "whatWentOut": "What went out",
+      "newMail": "New mail",
+      "handledAutomatically": "Handled automatically",
+      "failedDeliveries_one": "{{count}} failed delivery (bounce, complaint or rejection)",
+      "failedDeliveries_other": "{{count}} failed deliveries (bounces, complaints, rejections)",
+      "sentToast": "Sent. It now appears under \"What went out\".",
+      "loadError": "The mails could not be loaded.",
+      "emptyAll": "Nothing has gone out for this event yet.",
+      "emptyFilter": "Nothing for this group.",
+      "automatic": "automatic",
+      "template": "Template",
+      "ownText": "Own text",
+      "groupTitle_one": "{{template}} · {{count}} mail",
+      "groupTitle_other": "{{template}} · {{count}} mails",
+      "groupTruncated": "Showing the newest {{count}}.",
+      "sendingProgress": "sending … {{sent}} / {{total}}",
+      "delivered": "{{count}} delivered",
+      "failed": "{{count}} failed",
+      "recipients_one": "{{count}} recipient",
+      "recipients_other": "{{count}} recipients",
+      "recipientsHeading": "Recipients",
+      "failedRecipients": "Failed recipients",
+      "bodyTitle": "Mail as sent",
+      "bodyNotRecorded": "The text was not recorded: this mail went out before the mail record existed.",
+      "status": {
+        "SENT": "sent",
+        "DELIVERED": "delivered",
+        "FAILED": "failed"
+      },
+      "filters": {
+        "ALL": "All",
+        "NEWSLETTER": "Newsletter",
+        "REGISTRANTS": "Registrants",
+        "SPEAKERS": "Speakers",
+        "VENUE": "Venue & Catering",
+        "PARTNERS": "Partners",
+        "ORGANIZERS": "Organizers",
+        "SYSTEM": "System"
+      },
+      "compose": {
+        "newsletter": "Newsletter",
+        "registrants": "Registrants",
+        "speakers": "Speakers",
+        "venue": "Venue & Catering",
+        "partners": "Partners"
+      },
+      "partners": {
+        "noMeeting": "This event has no partner meeting yet.",
+        "meetingsLink": "Go to partner meetings",
+        "hint": "The partner service sends the calendar invitation and tracks the replies.",
+        "type": {
+          "SPRING": "Spring meeting",
+          "AUTUMN": "Autumn meeting"
+        }
+      }
     }
   },
   "dashboard": {

@@ -61,9 +61,9 @@ describeNewsletter('Organizer · Event newsletter send', { tag: '@sends-real-ema
     await page.goto(`/organizer/events/${event.eventCode}`);
     await waitForAppShell(page);
     await page.getByTestId('event-tab-communications').click();
-    // Newsletter is the default communications subtab; click it defensively if rendered.
-    const subtab = page.getByTestId('comms-subtab-newsletter');
-    if (await subtab.count()) await subtab.click();
+    // Story 16.4: the composers open from "+ New mail" in a side panel.
+    await page.getByTestId('new-mail-button').click();
+    await page.getByTestId('new-mail-newsletter').click();
   }
 
   test('previews then sends a newsletter to completion', async ({ page }) => {
@@ -83,7 +83,15 @@ describeNewsletter('Organizer · Event newsletter send', { tag: '@sends-real-ema
     await expect(dialog).toBeVisible();
     await dialog.getByTestId('newsletter-confirm-send-button').click();
 
-    // The component polls the send status; a terminal COMPLETED state shows this alert.
-    await expect(page.getByTestId('newsletter-send-completed')).toBeVisible({ timeout: 45_000 });
+    // Story 16.4 AC3: a real send closes the panel and the send appears on top of "What went
+    // out" (Story 16.3), which polls while the newsletter is still sending.
+    await expect(page.getByTestId('compose-panel-newsletter')).toBeHidden({ timeout: 15_000 });
+    const newest = page.locator('[data-testid^="mail-row-"]').first();
+    await expect(newest).toContainText('Newsletter', { timeout: 45_000 });
+    // ~1000 local subscribers at the configured send delay take over a minute. This checks that
+    // the send reaches a terminal state, not that it delivered: on the anonymized local snapshot
+    // almost every subscriber is refused (reserved domain), so it ends PARTIAL. Accepting PARTIAL
+    // can hide a real delivery failure; the owner accepted that trade-off in #1158.
+    await expect(newest).not.toContainText('sending', { timeout: 150_000 });
   });
 });

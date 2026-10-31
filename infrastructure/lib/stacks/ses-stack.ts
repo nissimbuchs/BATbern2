@@ -44,6 +44,14 @@ export class SesStack extends cdk.Stack {
    */
   public readonly transactionalConfigurationSetName: string;
 
+  /**
+   * Story 16.1b: per-recipient delivery/bounce/complaint/reject events of the transactional set,
+   * consumed by EMS (mailcenter) to set mail_recipient status. Separate from the bounce queue,
+   * so transactional bounces never reach newsletter suppression.
+   */
+  public readonly mailDeliveryStatusQueue: sqs.Queue;
+  public readonly mailDeliveryStatusQueueDlq: sqs.Queue;
+
   constructor(scope: Construct, id: string, props: SesStackProps) {
     super(scope, id, props);
 
@@ -165,6 +173,24 @@ export class SesStack extends cdk.Stack {
 
     transactionalEventsTopic.addSubscription(
       new subscriptions.LambdaSubscription(transactionalEventLogger)
+    );
+
+    // Story 16.1b: second subscriber on the same topic. EMS sets mail_recipient to DELIVERED or
+    // FAILED. SNS envelope kept (no raw delivery), like the bounce queue. 3 attempts, then DLQ
+    // (alarm in MonitoringStack).
+    this.mailDeliveryStatusQueueDlq = new sqs.Queue(this, 'MailDeliveryStatusDLQ', {
+      queueName: `batbern-${envName}-mail-delivery-status-dlq`,
+      retentionPeriod: cdk.Duration.days(14),
+    });
+
+    this.mailDeliveryStatusQueue = new sqs.Queue(this, 'MailDeliveryStatusQueue', {
+      queueName: `batbern-${envName}-mail-delivery-status`,
+      visibilityTimeout: cdk.Duration.seconds(60),
+      deadLetterQueue: { queue: this.mailDeliveryStatusQueueDlq, maxReceiveCount: 3 },
+    });
+
+    transactionalEventsTopic.addSubscription(
+      new subscriptions.SqsSubscription(this.mailDeliveryStatusQueue)
     );
 
     // CloudFormation outputs

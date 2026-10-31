@@ -181,6 +181,8 @@ const monitoringStack = new MonitoringStack(app, `${stackPrefix}-Monitoring`, {
   githubRepo,
   // Story 10.29: DLQ name for bounce processing alarm
   bounceProcessingDlqName: `batbern-${config.envName}-bounce-processing-dlq`,
+  // Story 16.1b: DLQ name for the mail delivery status alarm
+  mailDeliveryStatusDlqName: `batbern-${config.envName}-mail-delivery-status-dlq`,
   env,
   description: `BATbern Monitoring & Observability - ${config.envName}`,
   tags: config.tags,
@@ -284,6 +286,8 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     aiEnabled: config.envName === 'staging' || config.envName === 'production',
     // Story 10.29: Bounce/complaint processing SQS queue URL
     bounceQueueUrl: sesStack.bounceQueue.queueUrl,
+    // Story 16.1b: transactional SES events → mail_recipient status (env var + consume grant)
+    mailDeliveryStatusQueue: sesStack.mailDeliveryStatusQueue,
     // Story 10.29: SES Configuration Set name — required for SES BOUNCE/COMPLAINT events
     // to reach SNS → SQS → BounceProcessingService.
     sesConfigurationSetName: sesStack.configurationSetName,

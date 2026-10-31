@@ -90,6 +90,8 @@ jobs:
             spec: docs/api/event-notifications-api.openapi.yml
           - api: event-app-settings
             spec: docs/api/event-app-settings-api.openapi.yml
+          - api: event-mail
+            spec: docs/api/event-mail-api.openapi.yml
 
     steps:
       - name: Checkout code

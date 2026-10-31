@@ -18,6 +18,8 @@ export interface MonitoringStackProps extends cdk.StackProps {
   githubRepo?: string;
   /** Story 10.29: DLQ name for bounce processing — enables DLQ visibility alarm. */
   bounceProcessingDlqName?: string;
+  /** Story 16.1b: DLQ of the mail delivery status queue (transactional SES events → EMS). */
+  mailDeliveryStatusDlqName?: string;
 }
 
 /**
@@ -282,6 +284,32 @@ export class MonitoringStack extends cdk.Stack {
         const dlqSnsAction = new cloudwatchActions.SnsAction(this.alarmTopic);
         dlqAlarm.addAlarmAction(dlqSnsAction);
         dlqAlarm.addOkAction(dlqSnsAction); // see #956 note above
+      }
+    }
+
+    // Story 16.1b: mail delivery status DLQ alarm, same pattern as the bounce DLQ alarm above
+    if (props.mailDeliveryStatusDlqName) {
+      const deliveryStatusDlqAlarm = new cloudwatch.Alarm(this, 'MailDeliveryStatusDLQAlarm', {
+        alarmName: `batbern-${props.config.envName}-mail-delivery-status-dlq`,
+        alarmDescription:
+          'Mail delivery status processing failed 3 times. SES events in DLQ, statuses stay SENT',
+        metric: new cloudwatch.Metric({
+          namespace: 'AWS/SQS',
+          metricName: 'ApproximateNumberOfMessagesVisible',
+          dimensionsMap: { QueueName: props.mailDeliveryStatusDlqName },
+          statistic: 'Maximum',
+          period: cdk.Duration.minutes(1),
+        }),
+        threshold: 0,
+        evaluationPeriods: 1,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING, // see #969 note above
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+      });
+
+      if (this.alarmTopic) {
+        const action = new cloudwatchActions.SnsAction(this.alarmTopic);
+        deliveryStatusDlqAlarm.addAlarmAction(action);
+        deliveryStatusDlqAlarm.addOkAction(action); // see #956 note above
       }
     }
 

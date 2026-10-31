@@ -151,6 +151,69 @@ describe('SesStack', () => {
     });
   });
 
+  // ----- Story 16.1b: delivery status queue on the transactional events topic -----
+
+  test('should_createMailDeliveryStatusQueue_withDlqAfterThreeAttempts', () => {
+    const dlq = template.findResources('AWS::SQS::Queue', {
+      Properties: { QueueName: 'batbern-staging-mail-delivery-status-dlq' },
+    });
+    const dlqId = Object.keys(dlq)[0];
+    expect(dlqId).toBeDefined();
+    template.hasResourceProperties('AWS::SQS::Queue', {
+      QueueName: 'batbern-staging-mail-delivery-status',
+      RedrivePolicy: {
+        deadLetterTargetArn: { 'Fn::GetAtt': [dlqId, 'Arn'] },
+        maxReceiveCount: 3,
+      },
+    });
+  });
+
+  test('should_subscribeDeliveryStatusQueue_toTransactionalTopic_withSnsEnvelope', () => {
+    const topics = template.findResources('AWS::SNS::Topic', {
+      Properties: { TopicName: 'batbern-staging-ses-transactional-events' },
+    });
+    const topicId = Object.keys(topics)[0];
+    const queues = template.findResources('AWS::SQS::Queue', {
+      Properties: { QueueName: 'batbern-staging-mail-delivery-status' },
+    });
+    const queueId = Object.keys(queues)[0];
+    template.hasResourceProperties('AWS::SNS::Subscription', {
+      Protocol: 'sqs',
+      TopicArn: { Ref: topicId },
+      Endpoint: { 'Fn::GetAtt': [queueId, 'Arn'] },
+      // The listener parses the SNS envelope, like BounceProcessingService.
+      RawMessageDelivery: Match.absent(),
+    });
+  });
+
+  test('should_keepTransactionalEventLogger_whenDeliveryStatusQueueAdded', () => {
+    template.resourcePropertiesCountIs('AWS::SNS::Subscription', { Protocol: 'lambda' }, 1);
+  });
+
+  test('should_notRouteTransactionalEvents_toNewsletterBounceQueue', () => {
+    // AC4: transactional bounces never reach BounceProcessingService.
+    const bounceQueues = template.findResources('AWS::SQS::Queue', {
+      Properties: { QueueName: 'batbern-staging-bounce-processing' },
+    });
+    const bounceQueueId = Object.keys(bounceQueues)[0];
+    const transactionalTopics = template.findResources('AWS::SNS::Topic', {
+      Properties: { TopicName: 'batbern-staging-ses-transactional-events' },
+    });
+    const transactionalTopicId = Object.keys(transactionalTopics)[0];
+    const subscriptions = Object.values(template.findResources('AWS::SNS::Subscription'));
+    const wrong = subscriptions.filter(
+      (sub) =>
+        JSON.stringify(sub.Properties.TopicArn) === JSON.stringify({ Ref: transactionalTopicId }) &&
+        JSON.stringify(sub.Properties.Endpoint).includes(bounceQueueId)
+    );
+    expect(wrong).toHaveLength(0);
+  });
+
+  test('should_exposeMailDeliveryStatusQueues_asPublicProperties', () => {
+    expect(stack.mailDeliveryStatusQueue).toBeDefined();
+    expect(stack.mailDeliveryStatusQueueDlq).toBeDefined();
+  });
+
   // Tags applied
   test('should_applyEnvironmentTags_when_sesStackDeployed', () => {
     expect(stack.stackName).toBe('TestSesStack');

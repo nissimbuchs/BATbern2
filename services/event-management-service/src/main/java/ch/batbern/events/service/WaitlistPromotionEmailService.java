@@ -7,6 +7,7 @@ import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
@@ -89,7 +90,9 @@ public class WaitlistPromotionEmailService {
 
             // Story 10.32: CC attendee's additional emails (empty list = unchanged behaviour)
             java.util.List<String> cc = additionalEmailsFor(attendee);
-            emailService.sendHtmlEmail(attendee.getEmail(), cc, subject, html);
+            MailContext context = MailContext.individual(event.getEventCode(), MailContext.Audience.REGISTRANTS,
+                    "waitlist-promotion").withSecrets(registration.getRegistrationCode());
+            emailService.sendHtmlEmail(context, attendee.getEmail(), cc, subject, html, null);
             log.info("Waitlist-promotion email sent to: {} (ccCount={})",
                     LoggingUtils.maskEmail(attendee.getEmail()), cc.size());
 
@@ -147,7 +150,9 @@ public class WaitlistPromotionEmailService {
 
             // Story 10.32: CC attendee's additional emails (empty list = unchanged behaviour)
             java.util.List<String> cc = additionalEmailsFor(attendee);
-            emailService.sendHtmlEmail(attendee.getEmail(), cc, subject, html);
+            MailContext context = MailContext.individual(event.getEventCode(), MailContext.Audience.REGISTRANTS,
+                    "registration-waitlist-confirmation").withSecrets(registration.getRegistrationCode());
+            emailService.sendHtmlEmail(context, attendee.getEmail(), cc, subject, html, null);
             log.info("Waitlist-confirmation email sent to: {} (ccCount={})",
                     LoggingUtils.maskEmail(attendee.getEmail()), cc.size());
 

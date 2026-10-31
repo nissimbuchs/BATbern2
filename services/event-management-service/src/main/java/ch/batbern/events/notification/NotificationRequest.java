@@ -1,5 +1,7 @@
 package ch.batbern.events.notification;
 
+import ch.batbern.shared.mail.MailTrigger;
+
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Data;
@@ -24,4 +26,6 @@ public class NotificationRequest {
     private String subject;
     private String body;
     private Map<String, Object> metadata;
+    /** Story 16.1a: the run this notification belongs to; null = a mail on its own. */
+    private MailTrigger mailTrigger;
 }

@@ -1,0 +1,54 @@
+meta {
+  name: Mail page — list what went out (organizer)
+  type: http
+  seq: 20
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern59/mails?limit=5
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 200 for an existing event (404 where BATbern59 is not seeded)", function() {
+    expect([200, 404]).to.include(res.getStatus());
+  });
+
+  test("is never cached", function() {
+    if (res.getStatus() === 200) {
+      expect(res.getHeader("cache-control")).to.contain("no-store");
+    }
+  });
+
+  test("paged envelope with summary fields, newest first", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.data).to.be.an("array");
+      expect(body.data.length).to.be.at.most(5);
+      expect(body.pagination.limit).to.equal(5);
+      for (const row of body.data) {
+        expect(row.mailKey).to.be.a("string");
+        expect(row.audience).to.be.a("string");
+        expect(row.recipientCount).to.be.a("number");
+        expect(row.deliveredCount).to.be.a("number");
+        expect(row.failedCount).to.be.a("number");
+        expect(row.messageCount).to.be.at.least(1);
+      }
+      for (let i = 1; i < body.data.length; i++) {
+        expect(body.data[i - 1].sentAt >= body.data[i].sentAt).to.equal(true);
+      }
+      bru.setVar("mailKeyForDetail", body.data.length > 0 ? body.data[0].mailKey : "");
+    }
+  });
+}
+
+docs {
+  Story 16.3 AC5/AC6: GET /events/{eventCode}/mails (event-mail-api.openapi.yml).
+  Read-only: lists the outbound mail record plus newsletter sends made before it existed.
+  Accepts 404 where BATbern59 is not seeded; the shape is checked on 200.
+}

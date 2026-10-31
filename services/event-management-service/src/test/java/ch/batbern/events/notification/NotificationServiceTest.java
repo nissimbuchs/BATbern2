@@ -100,14 +100,14 @@ class NotificationServiceTest {
             n.setId(UUID.randomUUID());
             return n;
         });
-        doNothing().when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+        doNothing().when(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), anyString(), any());
 
         // When
         notificationService.createAndSendEmailNotification(request);
 
         // Then
         verify(notificationRepository, times(2)).save(any(Notification.class));
-        verify(emailService).sendHtmlEmail(eq("john.doe@example.com"), eq("Test Subject"), anyString());
+        verify(emailService).sendHtmlEmail(any(), eq("john.doe@example.com"), any(), eq("Test Subject"), anyString(), any());
     }
 
     /**
@@ -132,7 +132,7 @@ class NotificationServiceTest {
 
         // Then
         verify(notificationRepository, never()).save(any(Notification.class));
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmail(any(), anyString(), any(), anyString(), anyString(), any());
     }
 
     /**
@@ -165,7 +165,7 @@ class NotificationServiceTest {
             savedNotification.set(n);
             return n;
         });
-        doNothing().when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+        doNothing().when(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), anyString(), any());
 
         // When
         notificationService.createAndSendEmailNotification(request);
@@ -205,7 +205,7 @@ class NotificationServiceTest {
             savedNotification.set(n);
             return n;
         });
-        doThrow(new RuntimeException("AWS SES error")).when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+        doThrow(new RuntimeException("AWS SES error")).when(emailService).sendHtmlEmail(any(), anyString(), any(), anyString(), anyString(), any());
 
         // When
         notificationService.createAndSendEmailNotification(request);

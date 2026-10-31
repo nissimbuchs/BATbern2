@@ -3,33 +3,16 @@
  * Story 8.3: Partner Meeting Coordination — AC2, 3, 4, 7
  *
  * Expanded panel shown below a meeting row.
- * Provides: agenda editing, notes editing, send-invite action.
+ * Provides: agenda editing, notes editing, send-invite action (PartnerMeetingInviteAction).
  */
 
 import React, { useEffect, useState } from 'react';
-import {
-  Alert,
-  Box,
-  Button,
-  Chip,
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogTitle,
-  Divider,
-  TextField,
-  Typography,
-} from '@mui/material';
-import { CalendarMonth as CalendarMonthIcon } from '@mui/icons-material';
+import { Box, Divider, TextField, Typography } from '@mui/material';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import {
-  updateMeeting,
-  sendInvite,
-  type PartnerMeetingDTO,
-} from '@/services/api/partnerMeetingsApi';
+import { updateMeeting, type PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
 import PartnerMeetingRsvpPanel from './PartnerMeetingRsvpPanel';
-import { useBreakpoints } from '@/hooks/useBreakpoints';
+import PartnerMeetingInviteAction from './PartnerMeetingInviteAction';
 
 interface MeetingDetailPanelProps {
   meeting: PartnerMeetingDTO;
@@ -37,13 +20,10 @@ interface MeetingDetailPanelProps {
 
 const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
   const { t } = useTranslation('partners');
-  const { isMobile } = useBreakpoints();
   const queryClient = useQueryClient();
 
   const [agenda, setAgenda] = useState(meeting.agenda ?? '');
   const [notes, setNotes] = useState(meeting.notes ?? '');
-  const [confirmOpen, setConfirmOpen] = useState(false);
-  const [inviteSuccess, setInviteSuccess] = useState(false);
   const [rsvpRefreshKey, setRsvpRefreshKey] = useState(0);
 
   // Keep local state in sync if meeting data changes
@@ -57,16 +37,6 @@ const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
       updateMeeting(meeting.id, req),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['partnerMeetings'] });
-    },
-  });
-
-  const inviteMutation = useMutation({
-    mutationFn: () => sendInvite(meeting.id),
-    onSuccess: () => {
-      void queryClient.invalidateQueries({ queryKey: ['partnerMeetings'] });
-      setInviteSuccess(true);
-      setConfirmOpen(false);
-      setRsvpRefreshKey((k) => k + 1);
     },
   });
 
@@ -84,26 +54,11 @@ const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
     }
   };
 
-  const inviteSentDate = meeting.inviteSentAt
-    ? new Date(meeting.inviteSentAt).toLocaleDateString()
-    : null;
-
   return (
     <Box
       sx={{ p: 2, bgcolor: 'action.hover', borderRadius: 1 }}
       data-testid={`meeting-detail-${meeting.id}`}
     >
-      {inviteSuccess && (
-        <Alert
-          severity="success"
-          sx={{ mb: 2 }}
-          onClose={() => setInviteSuccess(false)}
-          data-testid={`invite-success-alert-${meeting.id}`}
-        >
-          {t('meetings.inviteSuccess')}
-        </Alert>
-      )}
-
       <Box sx={{ display: 'flex', gap: 2, flexDirection: { xs: 'column', md: 'row' } }}>
         {/* Agenda */}
         <Box sx={{ flex: 1 }}>
@@ -142,59 +97,11 @@ const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
 
       <Divider sx={{ my: 2 }} />
 
-      {/* Invite section */}
-      <Box sx={{ display: 'flex', alignItems: 'center', gap: 2, flexWrap: 'wrap' }}>
-        {inviteSentDate ? (
-          <Chip
-            icon={<CalendarMonthIcon />}
-            label={t('meetings.inviteSentOn', { date: inviteSentDate })}
-            color="success"
-            size="small"
-            data-testid={`invite-sent-chip-${meeting.id}`}
-          />
-        ) : (
-          <Chip
-            label={t('meetings.inviteNotSent')}
-            variant="outlined"
-            size="small"
-            data-testid={`invite-not-sent-chip-${meeting.id}`}
-          />
-        )}
-
-        <Button
-          variant="outlined"
-          startIcon={<CalendarMonthIcon />}
-          onClick={() => setConfirmOpen(true)}
-          disabled={inviteMutation.isPending}
-          data-testid={`send-invite-btn-${meeting.id}`}
-        >
-          {inviteMutation.isPending ? t('meetings.inviteQueued') : t('meetings.sendInvite')}
-        </Button>
-      </Box>
-
-      {/* Confirmation dialog */}
-      <Dialog
-        open={confirmOpen}
-        onClose={() => setConfirmOpen(false)}
-        maxWidth="xs"
-        fullScreen={isMobile}
-      >
-        <DialogTitle>{t('meetings.sendInvite')}</DialogTitle>
-        <DialogContent>
-          <Typography>{t('meetings.confirmSendInvite')}</Typography>
-        </DialogContent>
-        <DialogActions>
-          <Button onClick={() => setConfirmOpen(false)}>{t('common:actions.cancel')}</Button>
-          <Button
-            variant="contained"
-            onClick={() => inviteMutation.mutate()}
-            disabled={inviteMutation.isPending}
-            data-testid="confirm-send-invite-btn"
-          >
-            {inviteMutation.isPending ? t('meetings.inviteQueued') : t('meetings.sendInvite')}
-          </Button>
-        </DialogActions>
-      </Dialog>
+      {/* Invite section (shared with the event's mail page, Story 16.4) */}
+      <PartnerMeetingInviteAction
+        meeting={meeting}
+        onSent={() => setRsvpRefreshKey((k) => k + 1)}
+      />
 
       {/* RSVP responses — Story 10.27 */}
       <PartnerMeetingRsvpPanel

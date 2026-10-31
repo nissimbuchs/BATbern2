@@ -227,6 +227,8 @@ Story file: `_bmad-output/implementation-artifacts/16-1b-delivery-status.md`. De
 
 **Scope:** top-nav entry with three lists: open conversations across events, mail without an event (with "assign to event"), spam. Badge with the open count.
 
+**API:** no second mail resource. Sent mail across events is `GET /mails` with the same schema and filters as `GET /events/{code}/mails` (16.3) plus `eventCode` and "no event"; details open inline, full screen on mobile, as on the event page (owner decision 2026-10-31).
+
 **Spam source:** enable SES spam and virus scanning on the inbound receipt rules (`ScanEnabled: true`, CDK) and classify by the `X-SES-Spam-Verdict` / `X-SES-Virus-Verdict` headers in 16.2's classifier. Virus verdict FAIL is dropped and counted, never shown. Spam FAIL goes to the spam list, not to "Needs an answer". Spam is kept 30 days, then deleted.
 
 **Acceptance criteria:**
@@ -260,10 +262,10 @@ The speaker reminder templates **are** editable in the admin template editor. Th
   4. preview stepping through the real recipients;
   5. **[Send to organizers]** (test) or **[Send to N recipients]**, behind one confirm dialog.
 - **Audience adapters:** each audience contributes only a small adapter: template category, extra fields (reminder type, venue roles, meeting picker), async or sync.
-- **Backend:** one API in EMS `mailcenter`:
+- **Backend:** one API in EMS `mailcenter`, extending the `/events/{code}/mails` resource that 16.3 created for reading (`event-mail-api.openapi.yml`); no second resource:
   - `POST /events/{code}/mails/preview` returns HTML, subject, recipient i/n and unknown placeholders;
   - `POST /events/{code}/mails` with `target: RECIPIENTS | ORGANIZERS`;
-  - `GET /events/{code}/mails/{mailKey}`, which also serves the send progress.
+  - send progress comes from the existing `GET /events/{code}/mails/{mailKey}`, extended with the progress fields.
 - **Strategy:** audience logic sits behind `AudienceAdapter { resolveRecipients, variables, allowedVariables, allowedCategories, deliver }`. One render path makes preview equal to sent. One placeholder check, one `MailContext`, one `hasRole('ORGANIZER')`.
 - Adapters reuse what exists:
   - the newsletter async job and `newsletter_sends` progress/retry;
@@ -272,7 +274,7 @@ The speaker reminder templates **are** editable in the admin template editor. Th
   - the venue To plus Cc.
 - **Test send:** `target=ORGANIZERS` renders the mail for the recipient currently previewed and sends it to all ORGANIZER-role users with a `[TEST]` subject prefix. It is recorded with `is_test=true` and hidden from "What went out" by default. The unsubscribe link is a dummy.
 - **Speakers:** the template list shows all six reminder templates. The auto-detected tier is preselected and can be overridden.
-- **Clean-up:** after one release, delete `SpeakerBulkComms`, `EventRegistrantNoticesTab`, the body of `VenueCoordinationComposer`, the newsletter compose section, and the old preview/send endpoints and specs.
+- **Clean-up:** after one release, delete `SpeakerBulkComms`, `EventRegistrantNoticesTab`, the body of `VenueCoordinationComposer`, the newsletter compose section, and the old preview/send endpoints and specs, including `GET /events/{code}/newsletter/history` (the mail list already shows newsletters; its remaining use is the composer's progress and Retry).
 
 **Acceptance criteria:**
 - AC1 — Every audience offers template choice, preview of the real recipient (stepping ‹ ›), test send to organizers and send to recipients, with the same layout.
@@ -292,7 +294,7 @@ The speaker reminder templates **are** editable in the admin template editor. Th
 **Depends on:** 16.1a, 16.8. Owner request 2026-10-30.
 
 **Scope:**
-- **Sent:** partner-coordination implements the 16.1a `OutboundMailRecorder` SPI with an HTTP recorder. It posts to EMS `POST /internal/mail-messages` (no JWT, not routed by the gateway; same pattern as EMS → partner `/internal/partner-meetings/rsvps`). It is best-effort: failures are logged and not retried.
+- **Sent:** partner-coordination implements the 16.1a `OutboundMailRecorder` SPI with an HTTP recorder. It posts to EMS `POST /internal/mails` (no JWT, not routed by the gateway; same pattern as EMS → partner `/internal/partner-meetings/rsvps`). It is best-effort: failures are logged and not retried.
   - Partner invites and cancellations appear in the event's "What went out", audience Partners, with the RSVP counts from `PartnerMeetingRsvpPanel` alongside.
   - The partner meeting page shows the same list, filtered to that meeting.
 - **New mail:** "+ New mail → Partners" offers two paths:
@@ -307,7 +309,7 @@ The speaker reminder templates **are** editable in the admin template editor. Th
 
 **Out of scope, recorded:**
 - The invite body stays hard-coded in Java. Moving it into the admin store needs a render call from the partner service to EMS. Follow-up.
-- All partners in one To: line expose their addresses to each other. Filed separately (#1163) for an owner decision.
+- All partners in one To: line expose their addresses to each other. Owner decision (#1163, 2026-10-31): keep it as it is; 16.9 does not change the recipient line.
 
 ---
 

@@ -94,10 +94,10 @@ class NewsletterSendIterationIntegrationTest extends AbstractIntegrationTest {
             renderedVariables.add(Map.copyOf(inv.<Map<String, String>>getArgument(1)));
             return inv.getArgument(0);
         });
-        lenient().doAnswer(inv -> recordMail(inv.getArgument(0)))
-                .when(emailService).sendHtmlEmailSync(anyString(), any(), any(), any());
-        lenient().doAnswer(inv -> recordMail(inv.getArgument(0)))
-                .when(emailService).sendHtmlEmailSyncWithAttachments(anyString(), any(), any(), any(), any());
+        lenient().doAnswer(inv -> recordMail(inv.getArgument(1)))
+                .when(emailService).sendHtmlEmailSync(any(), anyString(), any(), any(), any(), any(), any());
+        lenient().doAnswer(inv -> recordMail(inv.getArgument(1)))
+                .when(emailService).sendHtmlEmailSyncWithAttachments(any(), anyString(), any(), any(), any(), any());
     }
 
     @AfterEach

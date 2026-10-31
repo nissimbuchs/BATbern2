@@ -13,13 +13,13 @@
 
 ## Event › Kommunikation
 
-One column, max width about 900 px, three sections in this order:
+One column, max width about 1100 px, three sections in this order. Details open **inline** (owner decision 2026-10-31, variant A in `mail-center-layouts.html`): a mail expands below its row, the composer opens at the top of the page, so the list keeps its place and the mail gets the full width. On mobile both open as full-screen dialogs, like the rest of the organizer area (`mail-center-mobile.html`). The same applies to the global Mail page (16.7).
 
 1. **Braucht eine Antwort** (Story 16.2). Human mail for this event with status and assignee. The count badge shows the open ones only. Empty state: one line ("Nichts offen."), never an empty table. Done items stay visible, greyed.
 2. **Was rausging** (Story 16.3).
    - Filter chips: Alle · Newsletter · Angemeldete · Speaker · Venue & Catering · Partner.
    - Each row: date · sender → audience · "Vorlage" or "eigener Text" on line 1, the subject on line 2, and delivery stats on the right ("1049 zugestellt · 11 fehlgeschlagen"; for partner invites, the RSVP counts).
-   - A click opens the side panel with the mail exactly as sent, the recipients, and what came back.
+   - A click opens the mail inline below its row: the mail exactly as sent (about two thirds), beside it the recipients and what came back. One mail is open at a time; a second click closes it. Mobile: full-screen dialog.
    - Automatic transactional mails (confirmations, invitations) are collapsed per template ("Anmeldebestätigungen · laufend").
    - A filter chip with nothing to show displays "Nichts für diese Gruppe.".
 3. **Automatisch verarbeitet** (16.3 / 16.2). Collapsed. Counts only: accepts, declines, bounces, out-of-office replies, calendar RSVPs.
@@ -31,7 +31,7 @@ The **"+ Neue Mail"** button sits in the header of section 1. Its menu lists, ea
 - Venue & Catering
 - Partner
 
-## Composer (side panel, Stories 16.4 → 16.8 → 16.5)
+## Composer (inline at the top, full screen on mobile, Stories 16.4 → 16.8 → 16.5)
 
 The same steps for every audience:
 
@@ -50,7 +50,7 @@ The same steps for every audience:
    - "Als Vorlage speichern" (own text only);
    - **[An Organisatoren (Test)]**, an outlined button: the current preview goes to all organizers with `[TEST]` in the subject, and the toast says so;
    - **[An {N Empfänger} senden]**, the primary button, followed by an inline confirm ("Wirklich an … senden?" · Zurück · Ja, senden).
-8. **After sending:** the panel closes, a toast confirms, and the new row appears on top of "Was rausging", highlighted, first showing "wird gesendet …" and then the counts.
+8. **After sending:** the composer closes, a toast confirms, and the new row appears on top of "Was rausging", highlighted, first showing "wird gesendet …" and then the counts.
 
 **Partner:**
 - Template 1, "Einladung Partner-Meeting mit Kalender", is sent by the partner service (ICS, RSVP tracking). Its text is still hard-coded, as the hint says.

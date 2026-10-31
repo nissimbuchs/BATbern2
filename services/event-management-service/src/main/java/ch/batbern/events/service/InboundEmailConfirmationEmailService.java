@@ -15,8 +15,7 @@ import java.nio.charset.StandardCharsets;
  * <ul>
  *   <li>After unsubscribe → sends {@code unsubscribe-confirmation-{locale}.html}</li>
  *   <li>No cancel confirmation since Story 16.0 (#1162): a reply "cancel" sends the
- *       deregistration-link mail instead, and the cancellation is confirmed by the link flow.
- *       The {@code cancel-confirmation} templates stay seeded but are not sent.</li>
+ *       deregistration-link mail instead, and the cancellation is confirmed by the link flow.</li>
  * </ul>
  *
  * Template loading is best-effort: if template is missing, logs a warning and skips send.

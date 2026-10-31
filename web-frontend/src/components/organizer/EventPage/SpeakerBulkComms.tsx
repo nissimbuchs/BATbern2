@@ -45,6 +45,11 @@ import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 interface SpeakerBulkCommsProps {
   eventCode: string;
   eventTitle: string;
+  /**
+   * Story 16.4: called when every reminder went out; the mail page closes the panel. With failures
+   * the panel stays open so the failed speakers remain visible.
+   */
+  onSent?: () => void;
 }
 
 type ReminderType = 'RESPONSE' | 'CONTENT';
@@ -55,7 +60,11 @@ const TARGET_STATUS: Record<ReminderType, SpeakerPoolEntry['status']> = {
   CONTENT: 'ACCEPTED',
 };
 
-export const SpeakerBulkComms: React.FC<SpeakerBulkCommsProps> = ({ eventCode, eventTitle }) => {
+export const SpeakerBulkComms: React.FC<SpeakerBulkCommsProps> = ({
+  eventCode,
+  eventTitle,
+  onSent,
+}) => {
   const { t } = useTranslation(['events', 'common']);
   const { isMobile } = useBreakpoints();
   const poolQuery = useSpeakerPool(eventCode);
@@ -99,6 +108,9 @@ export const SpeakerBulkComms: React.FC<SpeakerBulkCommsProps> = ({ eventCode, e
         }
       }
       setResult({ sent, failed });
+      if (failed.length === 0 && sent > 0) {
+        onSent?.();
+      }
     } finally {
       // Guarantee the button is re-enabled even if something throws outside the per-item catch.
       setSending(false);

@@ -1,6 +1,6 @@
 # Story 16.0: Stop losing replies and calendar declines (#1160, #1161, #1162)
 
-Status: review
+Status: done
 
 <!-- Note: Validation is optional. Run validate-create-story for quality check before dev-story. -->
 

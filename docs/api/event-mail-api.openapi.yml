@@ -1,0 +1,307 @@
+openapi: 3.0.3
+info:
+  title: BATbern Event Mail API
+  version: 1.0.0
+  description: 'What went out for an event (Mail Center, Epic 16, Story 16.3). Reads the outbound mail
+    record written since Story 16.1a (`mail_message`, `mail_recipient`, delivery status from Story
+    16.1b) and, for newsletters sent before the record existed, `newsletter_sends`.
+
+
+    Mail bodies and addresses are personal data: every operation is ORGANIZER-only and the responses
+    are never cached publicly.'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: http://localhost:8080/api/v1
+  description: Development
+security:
+- BearerAuth: []
+tags:
+- name: EventMail
+  description: Outbound mail of an event, newest first (Story 16.3)
+paths:
+  /events/{eventCode}/mails:
+    get:
+      tags:
+      - EventMail
+      operationId: listEventMails
+      summary: List what went out for an event, newest first (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        One entry per recorded send group, plus one per newsletter send made before the mail record
+        existed (read-time union with `newsletter_sends`, no data migration). Automatic mails (no
+        sender, from a template) are collapsed per template and day unless `grouped=false`:
+        such an entry has `messageCount` > 1 and stands for all of them.
+
+        Counts: `deliveredCount` and `failedCount` come from the delivery status of each recipient
+        (Story 16.1b). For newsletters, `failedCount` is sends SES refused plus bounces, and
+        `deliveredCount` is the rest: the newsletter configuration set reports no deliveries.
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: audience
+        in: query
+        required: false
+        description: Only entries for this audience.
+        schema:
+          $ref: '#/components/schemas/MailAudience'
+      - name: templateKey
+        in: query
+        required: false
+        description: Only entries of this template (used to expand a collapsed entry).
+        schema:
+          type: string
+      - name: date
+        in: query
+        required: false
+        description: Only entries sent on this day, Europe/Zurich (used to expand a collapsed entry).
+        schema:
+          type: string
+          format: date
+      - name: grouped
+        in: query
+        required: false
+        description: Collapse automatic mails per template and day (default true).
+        schema:
+          type: boolean
+          default: true
+      - name: page
+        in: query
+        description: Page number (1-based)
+        schema:
+          type: integer
+          default: 1
+          minimum: 1
+      - name: limit
+        in: query
+        description: Items per page (max 100)
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Paginated entries, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMessagePage'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Event not found
+  /events/{eventCode}/mails/counts:
+    get:
+      tags:
+      - EventMail
+      operationId: getEventMailCounts
+      summary: Counts for "Handled automatically" (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Failed deliveries (SES errors, bounces, complaints, rejects) of this event's mail, newsletter
+        included. Accepts, declines and out-of-office counts are added by Story 16.2.
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: Counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailCounts'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Event not found
+  /events/{eventCode}/mails/{mailKey}:
+    get:
+      tags:
+      - EventMail
+      operationId: getEventMail
+      summary: One mail as sent, with its recipients (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        `mailKey` is the record's key (`BATbern60-12`) or, for a newsletter sent before the record
+        existed, `newsletter-{sendId}`; such an entry has no `bodyHtml`. Recipients: every address
+        for a recorded mail; for a newsletter only the failed ones (`failedCount` gives the total).
+        Credentials in the body were replaced by `[redacted]` when it was recorded.
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: mailKey
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The mail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMessageDetail'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Event or mail not found
+components:
+  schemas:
+    MailMessagePage:
+      type: object
+      required:
+      - data
+      - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailMessageSummary'
+        pagination:
+          $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+    MailAudience:
+      type: string
+      enum:
+      - NEWSLETTER
+      - REGISTRANTS
+      - SPEAKERS
+      - VENUE
+      - PARTNERS
+      - ORGANIZERS
+      - SYSTEM
+    MailMessageSummary:
+      type: object
+      required:
+      - mailKey
+      - sentAt
+      - audience
+      - contentSource
+      - recipientCount
+      - deliveredCount
+      - failedCount
+      - messageCount
+      - test
+      properties:
+        mailKey:
+          type: string
+          description: Key of the entry's newest mail; opens it with the detail operation.
+          example: BATbern60-12
+        sentAt:
+          type: string
+          format: date-time
+          description: When the newest mail of the entry went out.
+        senderUsername:
+          type: string
+          nullable: true
+          description: Organizer who sent it; absent for automatic mail.
+        audience:
+          $ref: '#/components/schemas/MailAudience'
+        templateKey:
+          type: string
+          nullable: true
+        contentSource:
+          type: string
+          enum:
+          - TEMPLATE
+          - OWN_TEXT
+        subject:
+          type: string
+          nullable: true
+          description: Absent for a newsletter sent before the record existed.
+        recipientCount:
+          type: integer
+        deliveredCount:
+          type: integer
+        failedCount:
+          type: integer
+        messageCount:
+          type: integer
+          description: Number of mails this entry stands for (> 1 for a collapsed automatic entry).
+        newsletterSendId:
+          type: string
+          format: uuid
+          nullable: true
+        newsletterStatus:
+          type: string
+          nullable: true
+          description: Send-job status of a newsletter (PENDING, IN_PROGRESS, COMPLETED, PARTIAL, FAILED).
+        test:
+          type: boolean
+          description: Test send to the organizers.
+    MailMessageDetail:
+      type: object
+      required:
+      - message
+      - recipients
+      properties:
+        message:
+          $ref: '#/components/schemas/MailMessageSummary'
+        bodyHtml:
+          type: string
+          nullable: true
+          description: The mail as sent, credentials redacted; absent for a newsletter sent before the record existed.
+        recipients:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailRecipientEntry'
+    MailRecipientEntry:
+      type: object
+      required:
+      - address
+      - kind
+      - status
+      properties:
+        address:
+          type: string
+        kind:
+          type: string
+          enum:
+          - TO
+          - CC
+        status:
+          type: string
+          enum:
+          - SENT
+          - DELIVERED
+          - FAILED
+        failureReason:
+          type: string
+          nullable: true
+          description: Bounce type/subtype, `complaint`, SES reject reason or SES error code.
+    MailCounts:
+      type: object
+      required:
+      - failedDeliveries
+      properties:
+        failedDeliveries:
+          type: integer
+  securitySchemes:
+    BearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+      description: AWS Cognito JWT token

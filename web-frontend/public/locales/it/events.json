@@ -282,7 +282,8 @@
       "historyRecipients": "Destinatari",
       "typeNewsletter": "Newsletter",
       "typeReminder": "Promemoria",
-      "previewTitle": "Anteprima e-mail"
+      "previewTitle": "Anteprima e-mail",
+      "retryHint": "L'invio del {{date}} non ha raggiunto {{count}} destinatari."
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -355,14 +356,6 @@
       "uploadingImage": "Caricamento…",
       "replaceImage": "Sostituisci immagine"
     },
-    "communications": {
-      "audiences": {
-        "newsletter": "Iscritti alla newsletter",
-        "registrants": "Partecipanti all'evento",
-        "speakers": "Relatori",
-        "venue": "Sede e catering"
-      }
-    },
     "speakerComms": {
       "title": "Promemoria ai relatori",
       "description": "Invia un promemoria di scadenza ai relatori che devono ancora una risposta o i loro contenuti. Ogni relatore riceve un'e-mail individuale: gli inviti e i solleciti singoli restano sulla scheda del relatore.",
@@ -400,6 +393,63 @@
     "mobile": {
       "more": "Altro",
       "moreSheetTitle": "Altro"
+    },
+    "mail": {
+      "whatWentOut": "Cosa è stato inviato",
+      "newMail": "Nuova e-mail",
+      "handledAutomatically": "Gestito automaticamente",
+      "failedDeliveries_one": "{{count}} consegna non riuscita (rimbalzo, reclamo o rifiuto)",
+      "failedDeliveries_other": "{{count}} consegne non riuscite (rimbalzi, reclami, rifiuti)",
+      "sentToast": "Inviato. Ora appare sotto «Cosa è stato inviato».",
+      "loadError": "Impossibile caricare le e-mail.",
+      "emptyAll": "Per questo evento non è ancora stato inviato nulla.",
+      "emptyFilter": "Niente per questo gruppo.",
+      "automatic": "automatico",
+      "template": "Modello",
+      "ownText": "Testo proprio",
+      "groupTitle_one": "{{template}} · {{count}} e-mail",
+      "groupTitle_other": "{{template}} · {{count}} e-mail",
+      "groupTruncated": "Vengono mostrati i {{count}} più recenti.",
+      "sendingProgress": "invio in corso … {{sent}} / {{total}}",
+      "delivered": "{{count}} consegnate",
+      "failed": "{{count}} non riuscite",
+      "recipients_one": "{{count}} destinatario",
+      "recipients_other": "{{count}} destinatari",
+      "recipientsHeading": "Destinatari",
+      "failedRecipients": "Destinatari non raggiunti",
+      "bodyTitle": "E-mail come inviata",
+      "bodyNotRecorded": "Il testo non è stato salvato: questa e-mail è partita prima che esistesse lo storico.",
+      "status": {
+        "SENT": "inviato",
+        "DELIVERED": "consegnato",
+        "FAILED": "non riuscito"
+      },
+      "filters": {
+        "ALL": "Tutti",
+        "NEWSLETTER": "Newsletter",
+        "REGISTRANTS": "Iscritti",
+        "SPEAKERS": "Relatori",
+        "VENUE": "Location & catering",
+        "PARTNERS": "Partner",
+        "ORGANIZERS": "Organizzatori",
+        "SYSTEM": "Sistema"
+      },
+      "compose": {
+        "newsletter": "Newsletter",
+        "registrants": "Iscritti",
+        "speakers": "Relatori",
+        "venue": "Location & catering",
+        "partners": "Partner"
+      },
+      "partners": {
+        "noMeeting": "Questo evento non ha ancora un incontro partner.",
+        "meetingsLink": "Vai agli incontri partner",
+        "hint": "Il servizio partner invia l'invito di calendario e registra le risposte.",
+        "type": {
+          "SPRING": "Incontro primaverile",
+          "AUTUMN": "Incontro autunnale"
+        }
+      }
     }
   },
   "dashboard": {

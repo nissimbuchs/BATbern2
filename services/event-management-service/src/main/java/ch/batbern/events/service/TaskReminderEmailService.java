@@ -7,6 +7,8 @@ import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
@@ -62,6 +64,19 @@ public class TaskReminderEmailService {
      */
     @Async
     public void sendTaskDeadlineReminder(EventTask task, Locale locale) {
+        sendReminder(task, locale, MailTrigger.system());
+    }
+
+    /**
+     * As above, as part of a scheduler run: all reminders of one run and event are one recorded
+     * mail (Story 16.1a AC2).
+     */
+    @Async
+    public void sendTaskDeadlineReminder(EventTask task, Locale locale, MailTrigger run) {
+        sendReminder(task, locale, run);
+    }
+
+    private void sendReminder(EventTask task, Locale locale, MailTrigger run) {
         String username = task.getAssignedOrganizerUsername();
         try {
             // Look up organizer profile (email + display name) in one call
@@ -87,7 +102,9 @@ public class TaskReminderEmailService {
             Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
             EmailContent content = buildEmailBody(task, event, organizer, emailLocale);
 
-            emailService.sendHtmlEmail(organizer.getEmail(), content.subject(), content.html());
+            MailContext context = MailContext.of(run, event.getEventCode(), MailContext.Audience.ORGANIZERS,
+                    "task-reminder");
+            emailService.sendHtmlEmail(context, organizer.getEmail(), null, content.subject(), content.html(), null);
 
             log.info("Task deadline reminder sent successfully to: {}",
                     LoggingUtils.maskEmail(organizer.getEmail()));

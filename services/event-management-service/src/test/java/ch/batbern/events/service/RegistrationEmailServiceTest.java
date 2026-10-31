@@ -194,14 +194,9 @@ class RegistrationEmailServiceTest {
         // Then — the registration is NOT valid yet, so the mail must not look like a booking:
         // no calendar invite (it rendered an "Accept" button that people took for the
         // confirmation) and a subject that asks for the confirmation.
-        verify(emailService, times(1)).sendHtmlEmail(
-                emailCaptor.capture(),
-                anyList(), // Story 10.32: cc parameter
-                subjectCaptor.capture(),
-                htmlBodyCaptor.capture()
-        );
-        verify(emailService, never()).sendHtmlEmailWithAttachments(
-                anyString(), anyList(), anyString(), any(), anyList());
+        verify(emailService, times(1)).sendHtmlEmail(any(), emailCaptor.capture(), anyList(), // Story 10.32: cc parameter
+                subjectCaptor.capture(), htmlBodyCaptor.capture(), any());
+        verify(emailService, never()).sendHtmlEmailWithAttachments(any(), anyString(), anyList(), anyString(), any(), anyList());
         verify(icsCalendarService, never()).generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString());
 
         assertThat(emailCaptor.getValue()).isEqualTo("john.doe@example.com");
@@ -256,12 +251,8 @@ class RegistrationEmailServiceTest {
         Thread.sleep(100);
 
         // Then
-        verify(emailService, times(1)).sendHtmlEmail(
-                emailCaptor.capture(),
-                anyList(), // Story 10.32: cc parameter
-                subjectCaptor.capture(),
-                htmlBodyCaptor.capture()
-        );
+        verify(emailService, times(1)).sendHtmlEmail(any(), emailCaptor.capture(), anyList(), // Story 10.32: cc parameter
+                subjectCaptor.capture(), htmlBodyCaptor.capture(), any());
 
         assertThat(emailCaptor.getValue()).isEqualTo("jane.smith@example.com");
         assertThat(subjectCaptor.getValue()).startsWith("Please confirm your registration");
@@ -539,7 +530,7 @@ class RegistrationEmailServiceTest {
                 .thenReturn(mockIcsFile);
 
         doThrow(new RuntimeException("Email sending failed"))
-                .when(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), any());
+                .when(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), any(), any());
 
         // When & Then - should not throw exception
         registrationEmailService.sendRegistrationConfirmation(registration, userProfile, event, "test-token", "http://localhost:8100/deregister?token=test-deregister-token", Locale.GERMAN);
@@ -548,7 +539,7 @@ class RegistrationEmailServiceTest {
         Thread.sleep(100);
 
         // Verify the attempt was made
-        verify(emailService, times(1)).sendHtmlEmail(anyString(), anyList(), anyString(), any());
+        verify(emailService, times(1)).sendHtmlEmail(any(), anyString(), anyList(), anyString(), any(), any());
     }
 
     // ===========================================================
@@ -603,12 +594,7 @@ class RegistrationEmailServiceTest {
         Thread.sleep(100);
 
         // Then
-        verify(emailService, times(1)).sendHtmlEmail(
-                eq("nissim.buchs@elca.ch"),
-                ccCaptor.capture(),
-                anyString(),
-                anyString()
-        );
+        verify(emailService, times(1)).sendHtmlEmail(any(), eq("nissim.buchs@elca.ch"), ccCaptor.capture(), anyString(), anyString(), any());
         assertThat(ccCaptor.getValue()).containsExactly("info@batbern.ch");
     }
 
@@ -653,12 +639,7 @@ class RegistrationEmailServiceTest {
                 "tok", "http://x/deregister?token=t", Locale.GERMAN);
         Thread.sleep(100);
 
-        verify(emailService, times(1)).sendHtmlEmail(
-                eq("anon@example.com"),
-                ccCaptor.capture(),
-                anyString(),
-                anyString()
-        );
+        verify(emailService, times(1)).sendHtmlEmail(any(), eq("anon@example.com"), ccCaptor.capture(), anyString(), anyString(), any());
         assertThat(ccCaptor.getValue()).isEmpty();
     }
 
@@ -707,13 +688,7 @@ class RegistrationEmailServiceTest {
 
         registrationEmailService.sendRegistrationConfirmed(registration, userProfile, event, Locale.GERMAN);
 
-        verify(emailService, times(1)).sendHtmlEmailWithAttachments(
-                emailCaptor.capture(),
-                anyList(),
-                subjectCaptor.capture(),
-                htmlBodyCaptor.capture(),
-                attachmentsCaptor.capture()
-        );
+        verify(emailService, times(1)).sendHtmlEmailWithAttachments(any(), emailCaptor.capture(), anyList(), subjectCaptor.capture(), htmlBodyCaptor.capture(), attachmentsCaptor.capture());
         assertThat(emailCaptor.getValue()).isEqualTo("john.doe@example.com");
         assertThat(subjectCaptor.getValue()).startsWith("Anmeldung bestätigt");
         assertThat(subjectCaptor.getValue()).contains("BATbern142");
@@ -743,8 +718,7 @@ class RegistrationEmailServiceTest {
         registrationEmailService.sendRegistrationConfirmed(
                 registration, userProfile, eventFor(registration), Locale.ENGLISH);
 
-        verify(emailService).sendHtmlEmailWithAttachments(
-                anyString(), anyList(), subjectCaptor.capture(), anyString(), anyList());
+        verify(emailService).sendHtmlEmailWithAttachments(any(), anyString(), anyList(), subjectCaptor.capture(), anyString(), anyList());
         assertThat(subjectCaptor.getValue()).startsWith("Registration confirmed");
         assertThat(subjectCaptor.getValue()).contains("BATbern142");
     }
@@ -766,8 +740,7 @@ class RegistrationEmailServiceTest {
         registrationEmailService.sendRegistrationConfirmed(
                 registration, userProfile, eventFor(registration), Locale.GERMAN);
 
-        verify(emailService).sendHtmlEmailWithAttachments(
-                eq("multi@example.com"), ccCaptor.capture(), anyString(), anyString(), anyList());
+        verify(emailService).sendHtmlEmailWithAttachments(any(), eq("multi@example.com"), ccCaptor.capture(), anyString(), anyString(), anyList());
         assertThat(ccCaptor.getValue()).containsExactly("second@example.com");
     }
 
@@ -778,12 +751,12 @@ class RegistrationEmailServiceTest {
         UserResponse userProfile = new UserResponse()
                 .id("fail.user").firstName("Fail").lastName("User").email("fail@example.com");
         doThrow(new RuntimeException("SES down"))
-                .when(emailService).sendHtmlEmailWithAttachments(anyString(), anyList(), anyString(), any(), anyList());
+                .when(emailService).sendHtmlEmailWithAttachments(any(), anyString(), anyList(), anyString(), any(), anyList());
 
         registrationEmailService.sendRegistrationConfirmed(
                 registration, userProfile, eventFor(registration), Locale.GERMAN);
 
-        verify(emailService).sendHtmlEmailWithAttachments(anyString(), anyList(), anyString(), any(), anyList());
+        verify(emailService).sendHtmlEmailWithAttachments(any(), anyString(), anyList(), anyString(), any(), anyList());
     }
 
     @Test

@@ -3,6 +3,7 @@ package ch.batbern.events.scheduler;
 import ch.batbern.events.domain.EventTask;
 import ch.batbern.events.repository.EventTaskRepository;
 import ch.batbern.events.service.TaskReminderEmailService;
+import ch.batbern.shared.mail.MailTrigger;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import net.javacrumbs.shedlock.spring.annotation.SchedulerLock;
@@ -67,8 +68,9 @@ public class TaskDeadlineReminderScheduler {
 
             log.info("Found {} task(s) due tomorrow — sending reminders", tasksDueTomorrow.size());
 
+            MailTrigger run = MailTrigger.system();
             for (EventTask task : tasksDueTomorrow) {
-                taskReminderEmailService.sendTaskDeadlineReminder(task, Locale.GERMAN);
+                taskReminderEmailService.sendTaskDeadlineReminder(task, Locale.GERMAN, run);
             }
 
             log.info("Task deadline reminder processing complete: {} reminder(s) dispatched",

@@ -14,6 +14,8 @@ import ch.batbern.events.repository.SessionQnaPostRepository;
 import ch.batbern.events.repository.SessionQnaWindowRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
+import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -113,9 +115,10 @@ public class QnaNotificationService {
             return;
         }
         int sent = 0;
+        MailTrigger run = MailTrigger.system();
         for (SessionQnaWindow window : openWindows) {
             try {
-                sent += processWindow(window);
+                sent += processWindow(window, run);
             } catch (Exception e) {
                 // Per-window isolation — one window's failure must not abort the rest.
                 log.error("qnaDigestFlush: window {} (event {}) failed: {}",
@@ -127,7 +130,7 @@ public class QnaNotificationService {
         }
     }
 
-    private int processWindow(SessionQnaWindow window) {
+    private int processWindow(SessionQnaWindow window, MailTrigger run) {
         UUID sessionId = window.getSessionId();
         Session session = sessionRepository.findById(sessionId).orElse(null);
         if (session == null) {
@@ -149,7 +152,7 @@ public class QnaNotificationService {
         int sent = 0;
         for (String recipient : recipients) {
             try {
-                if (notifyRecipient(window, session, event, recipient)) {
+                if (notifyRecipient(window, session, event, recipient, run)) {
                     sent++;
                 }
             } catch (Exception e) {
@@ -162,7 +165,7 @@ public class QnaNotificationService {
     }
 
     private boolean notifyRecipient(SessionQnaWindow window, Session session, Event event,
-                                    String recipient) {
+                                    String recipient, MailTrigger run) {
         String freq = Optional.ofNullable(userApiClient.getQnaNotificationFrequency(recipient))
                 .orElse("live");
         if ("off".equals(freq)) {
@@ -199,7 +202,9 @@ public class QnaNotificationService {
         String locale = localeFor(userApiClient.getPreferredLanguage(recipient));
 
         RenderedMail mail = renderMail(window, session, event, recipient, count, locale);
-        emailService.sendHtmlEmailSync(email, mail.subject(), mail.html());
+        MailContext context = MailContext.of(run, window.getEventCode(), MailContext.Audience.SPEAKERS,
+                "qna-new-questions");
+        emailService.sendHtmlEmailSync(context, email, null, mail.subject(), mail.html(), null, null);
 
         // Commit the throttle/water-mark in its own transaction, immediately after the send, so a
         // later recipient's failure can't roll it back and trigger a duplicate digest next flush.

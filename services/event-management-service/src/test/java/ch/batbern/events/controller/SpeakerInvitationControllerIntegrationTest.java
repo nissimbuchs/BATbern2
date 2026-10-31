@@ -114,7 +114,7 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .thenReturn(userResponse);
 
         // Mock EmailService (don't actually send emails)
-        doNothing().when(emailService).sendHtmlEmail(anyString(), anyList(), anyString(), anyString());
+        doNothing().when(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), anyString(), any());
 
         // Story 11.E.9: sendInvitation resolves the recipient email via
         // PrimarySpeakerResolver → UserApiClient.getUserByUsername (the pool.email

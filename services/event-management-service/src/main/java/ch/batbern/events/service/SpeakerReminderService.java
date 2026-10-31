@@ -13,6 +13,7 @@ import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerReminderLogRepository;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -80,6 +81,7 @@ public class SpeakerReminderService {
 
         // Get all events with future dates
         List<Event> activeEvents = eventRepository.findByDateAfter(Instant.now());
+        MailTrigger run = MailTrigger.system();
 
         for (Event event : activeEvents) {
             List<SpeakerPool> speakers = speakerPoolRepository.findByEventId(event.getId());
@@ -94,7 +96,7 @@ public class SpeakerReminderService {
                             if (shouldSendReminder(speaker, REMINDER_TYPE_RESPONSE, tier,
                                     speaker.getResponseDeadline())) {
                                 sendAndLogReminder(speaker, event, REMINDER_TYPE_RESPONSE, tier,
-                                        speaker.getResponseDeadline(), TRIGGERED_BY_SYSTEM);
+                                        speaker.getResponseDeadline(), TRIGGERED_BY_SYSTEM, run);
                                 responseReminders++;
                             } else {
                                 skipped++;
@@ -116,7 +118,7 @@ public class SpeakerReminderService {
                             if (shouldSendReminder(speaker, REMINDER_TYPE_CONTENT, tier,
                                     speaker.getContentDeadline())) {
                                 sendAndLogReminder(speaker, event, REMINDER_TYPE_CONTENT, tier,
-                                        speaker.getContentDeadline(), TRIGGERED_BY_SYSTEM);
+                                        speaker.getContentDeadline(), TRIGGERED_BY_SYSTEM, run);
                                 contentReminders++;
                             } else {
                                 skipped++;
@@ -184,7 +186,8 @@ public class SpeakerReminderService {
         String effectiveTier = tier != null ? tier : autoDetectTier(LocalDate.now(), deadline);
 
         // Send (bypass dedup for manual triggers)
-        sendAndLogReminder(speaker, event, reminderType, effectiveTier, deadline, triggeredBy);
+        sendAndLogReminder(speaker, event, reminderType, effectiveTier, deadline, triggeredBy,
+                MailTrigger.organizer(triggeredBy));
 
         // Phase B: recipient routing now flows through PrimarySpeakerResolver. For manual
         // reminder result, surface whatever email was actually used (may be null if the
@@ -279,7 +282,8 @@ public class SpeakerReminderService {
             String reminderType,
             String tier,
             LocalDate deadline,
-            String triggeredBy
+            String triggeredBy,
+            MailTrigger mailTrigger
     ) {
         // Persist reminder log BEFORE sending email (dedup safety)
         // Phase B: log the recipient as resolved by PrimarySpeakerResolver — that's the
@@ -314,7 +318,7 @@ public class SpeakerReminderService {
         // Send email - catch failures to preserve DB records for dedup
         try {
             reminderEmailService.sendReminderEmail(
-                    speaker, event, reminderType, tier, deadline, speakerLocale(speaker));
+                    speaker, event, reminderType, tier, deadline, speakerLocale(speaker), mailTrigger);
         } catch (Exception e) {
             log.error("Failed to send reminder email for speaker {}: type={}, tier={}",
                     speaker.getId(), reminderType, tier, e);

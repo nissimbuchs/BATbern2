@@ -2,7 +2,7 @@
  * EventNewsletterTab Tests (Story 10.7 — AC9, AC12)
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EventNewsletterTab } from '../EventNewsletterTab';
 
@@ -136,23 +136,7 @@ describe('EventNewsletterTab', () => {
     expect(screen.getByText('234 active subscribers')).toBeInTheDocument();
   });
 
-  it('shows empty history message when no newsletters sent', () => {
-    vi.mocked(useSubscriberCount).mockReturnValue({
-      isLoading: false,
-      data: { totalActive: 0 },
-    } as ReturnType<typeof useSubscriberCount>);
-
-    vi.mocked(useNewsletterHistory).mockReturnValue({
-      isLoading: false,
-      data: [],
-    } as ReturnType<typeof useNewsletterHistory>);
-
-    renderTab();
-
-    expect(screen.getByText('No newsletters sent for this event yet.')).toBeInTheDocument();
-  });
-
-  it('shows send history table when history exists', () => {
+  it('offers no retry when the newest send completed (history lives on the mail page)', () => {
     vi.mocked(useSubscriberCount).mockReturnValue({
       isLoading: false,
       data: { totalActive: 10 },
@@ -168,14 +152,55 @@ describe('EventNewsletterTab', () => {
           sentByUsername: 'organizer',
           recipientCount: 150,
           templateKey: 'newsletter-event',
+          status: 'COMPLETED',
         },
       ],
     } as ReturnType<typeof useNewsletterHistory>);
 
     renderTab();
 
-    expect(screen.getByText('150')).toBeInTheDocument();
-    expect(screen.getByText('Newsletter')).toBeInTheDocument();
+    expect(screen.queryByTestId('newsletter-retry-alert')).not.toBeInTheDocument();
+    expect(screen.queryByRole('table')).not.toBeInTheDocument();
+  });
+
+  it('Story 16.4: calls onSent after a real send, not after a test send', async () => {
+    const onSent = vi.fn();
+    const mockMutate = vi.fn().mockImplementation((_req, { onSuccess }) => {
+      onSuccess({ id: 'send-7', status: 'PENDING', recipientCount: 50 });
+    });
+    vi.mocked(useSendNewsletter).mockReturnValue({
+      mutate: mockMutate,
+      isPending: false,
+      isSuccess: false,
+      isError: false,
+    } as ReturnType<typeof useSendNewsletter>);
+    vi.mocked(useSubscriberCount).mockReturnValue({
+      isLoading: false,
+      data: { totalActive: 50 },
+    } as ReturnType<typeof useSubscriberCount>);
+
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <EventNewsletterTab eventCode="BATbern58" eventTitle="T" onSent={onSent} />
+      </QueryClientProvider>
+    );
+
+    // Test send first: stays in the panel.
+    fireEvent.click(screen.getByLabelText('eventPage.newsletter.testMode'));
+    fireEvent.click(screen.getByTestId('newsletter-send-button'));
+    fireEvent.click(await screen.findByTestId('newsletter-confirm-send-button'));
+    expect(mockMutate).toHaveBeenLastCalledWith(
+      expect.objectContaining({ testMode: true }),
+      expect.anything()
+    );
+    expect(onSent).not.toHaveBeenCalled();
+
+    // Real send: the mail page closes the panel.
+    fireEvent.click(screen.getByLabelText('eventPage.newsletter.testMode'));
+    fireEvent.click(screen.getByTestId('newsletter-send-button'));
+    fireEvent.click(await screen.findByTestId('newsletter-confirm-send-button'));
+    expect(onSent).toHaveBeenCalledTimes(1);
   });
 
   it('opens confirmation dialog when Send Newsletter is clicked', async () => {
@@ -438,7 +463,7 @@ describe('EventNewsletterTab', () => {
     });
   });
 
-  it('shows retry button for PARTIAL history rows', () => {
+  it('offers a retry when the newest send ended PARTIAL', () => {
     vi.mocked(useSubscriberCount).mockReturnValue({
       isLoading: false,
       data: { totalActive: 10 },
@@ -463,10 +488,13 @@ describe('EventNewsletterTab', () => {
 
     renderTab();
 
-    // History is in a collapsed Accordion — expand it first.
-    fireEvent.click(screen.getByText(/send history/i));
+    const alert = screen.getByTestId('newsletter-retry-alert');
+    fireEvent.click(within(alert).getByRole('button', { name: /retry/i }));
 
-    expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
+    expect(vi.mocked(useRetryFailedRecipients).mock.results[0].value.mutate).toHaveBeenCalledWith(
+      'send-partial-1',
+      expect.anything()
+    );
   });
 
   it('send buttons are disabled when a polled send-job is IN_PROGRESS', async () => {

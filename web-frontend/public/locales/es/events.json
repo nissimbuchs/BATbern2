@@ -282,7 +282,8 @@
       "historyRecipients": "Destinatarios",
       "typeNewsletter": "Newsletter",
       "typeReminder": "Recordatorio",
-      "previewTitle": "Vista previa del correo"
+      "previewTitle": "Vista previa del correo",
+      "retryHint": "El envío del {{date}} no llegó a {{count}} destinatario(s)."
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -355,14 +356,6 @@
       "uploadingImage": "Subiendo…",
       "replaceImage": "Reemplazar imagen"
     },
-    "communications": {
-      "audiences": {
-        "newsletter": "Suscriptores del boletín",
-        "registrants": "Asistentes al evento",
-        "speakers": "Ponentes",
-        "venue": "Lugar y catering"
-      }
-    },
     "speakerComms": {
       "title": "Recordatorios a ponentes",
       "description": "Envía un recordatorio de plazo a los ponentes que aún deben una respuesta o su contenido. Cada ponente recibe un correo individual; las invitaciones y avisos puntuales permanecen en la ficha del ponente.",
@@ -400,6 +393,63 @@
     "mobile": {
       "more": "Más",
       "moreSheetTitle": "Más"
+    },
+    "mail": {
+      "whatWentOut": "Lo que se envió",
+      "newMail": "Nuevo correo",
+      "handledAutomatically": "Procesado automáticamente",
+      "failedDeliveries_one": "{{count}} entrega fallida (rebote, queja o rechazo)",
+      "failedDeliveries_other": "{{count}} entregas fallidas (rebotes, quejas, rechazos)",
+      "sentToast": "Enviado. Ahora aparece en «Lo que se envió».",
+      "loadError": "No se pudieron cargar los correos.",
+      "emptyAll": "Todavía no se ha enviado nada para este evento.",
+      "emptyFilter": "Nada para este grupo.",
+      "automatic": "automático",
+      "template": "Plantilla",
+      "ownText": "Texto propio",
+      "groupTitle_one": "{{template}} · {{count}} correo",
+      "groupTitle_other": "{{template}} · {{count}} correos",
+      "groupTruncated": "Se muestran los {{count}} más recientes.",
+      "sendingProgress": "enviando … {{sent}} / {{total}}",
+      "delivered": "{{count}} entregados",
+      "failed": "{{count}} fallidos",
+      "recipients_one": "{{count}} destinatario",
+      "recipients_other": "{{count}} destinatarios",
+      "recipientsHeading": "Destinatarios",
+      "failedRecipients": "Destinatarios fallidos",
+      "bodyTitle": "Correo tal como se envió",
+      "bodyNotRecorded": "El texto no se guardó: este correo se envió antes de que existiera el registro.",
+      "status": {
+        "SENT": "enviado",
+        "DELIVERED": "entregado",
+        "FAILED": "fallido"
+      },
+      "filters": {
+        "ALL": "Todos",
+        "NEWSLETTER": "Boletín",
+        "REGISTRANTS": "Inscritos",
+        "SPEAKERS": "Ponentes",
+        "VENUE": "Sede y catering",
+        "PARTNERS": "Socios",
+        "ORGANIZERS": "Organizadores",
+        "SYSTEM": "Sistema"
+      },
+      "compose": {
+        "newsletter": "Boletín",
+        "registrants": "Inscritos",
+        "speakers": "Ponentes",
+        "venue": "Sede y catering",
+        "partners": "Socios"
+      },
+      "partners": {
+        "noMeeting": "Este evento aún no tiene reunión de socios.",
+        "meetingsLink": "Ir a las reuniones de socios",
+        "hint": "El servicio de socios envía la invitación de calendario y registra las respuestas.",
+        "type": {
+          "SPRING": "Reunión de primavera",
+          "AUTUMN": "Reunión de otoño"
+        }
+      }
     }
   },
   "dashboard": {

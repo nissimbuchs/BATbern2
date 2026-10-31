@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
+import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
@@ -85,7 +86,9 @@ public class DeregistrationEmailService {
             // deregistration link reaches every address they declared. Anonymous registrants
             // (no attendeeUsername) and CUMS lookup failures degrade to primary-only.
             List<String> cc = additionalEmailsFor(registration.getAttendeeUsername());
-            emailService.sendHtmlEmail(registration.getAttendeeEmail(), cc, subject, html);
+            MailContext context = MailContext.individual(event.getEventCode(), MailContext.Audience.REGISTRANTS,
+                    templateKey).withSecrets(registration.getRegistrationCode());
+            emailService.sendHtmlEmail(context, registration.getAttendeeEmail(), cc, subject, html, null);
             log.info("Deregistration link email sent to {} for event {} (ccCount={})",
                     LoggingUtils.maskEmail(registration.getAttendeeEmail()),
                     event.getEventCode(),

@@ -153,11 +153,11 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         qnaNotificationService.flushPending();
 
         ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(3)).sendHtmlEmailSync(to.capture(), anyString(), anyString());
+        verify(emailService, times(3)).sendHtmlEmailSync(any(), to.capture(), any(), anyString(), anyString(), any(), any());
         assertThat(to.getAllValues()).containsExactlyInAnyOrder(
                 "primary.speaker@batbern.ch", "co.speaker@batbern.ch", "the.moderator@batbern.ch");
         // Panelist never emailed.
-        verify(emailService, never()).sendHtmlEmailSync(eq("the.panelist@batbern.ch"), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmailSync(any(), eq("the.panelist@batbern.ch"), any(), anyString(), anyString(), any(), any());
 
         assertThat(notificationRepository.count()).isEqualTo(3);
     }
@@ -189,7 +189,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         qnaNotificationService.flushPending();
 
         ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(2)).sendHtmlEmailSync(to.capture(), anyString(), anyString());
+        verify(emailService, times(2)).sendHtmlEmailSync(any(), to.capture(), any(), anyString(), anyString(), any(), any());
         assertThat(to.getAllValues()).containsExactlyInAnyOrder(
                 "primary.speaker@batbern.ch", "the.moderator@batbern.ch");
     }
@@ -209,8 +209,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         qnaNotificationService.flushPending();
 
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(1)).sendHtmlEmailSync(eq("primary.speaker@batbern.ch"),
-                anyString(), body.capture());
+        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), body.capture(), any(), any());
         assertThat(body.getValue()).contains("5");
     }
 
@@ -225,8 +224,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         qnaNotificationService.flushPending();
         qnaNotificationService.flushPending(); // immediately again — within the 15-min window
 
-        verify(emailService, times(1)).sendHtmlEmailSync(eq("primary.speaker@batbern.ch"),
-                anyString(), anyString());
+        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -252,8 +250,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         qnaNotificationService.flushPending(); // should send "2" (only the new ones)
 
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(2)).sendHtmlEmailSync(eq("primary.speaker@batbern.ch"),
-                anyString(), body.capture());
+        verify(emailService, times(2)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), body.capture(), any(), any());
         assertThat(body.getAllValues().get(1)).contains("2");
     }
 
@@ -279,8 +276,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        verify(emailService, times(1)).sendHtmlEmailSync(eq("primary.speaker@batbern.ch"),
-                anyString(), anyString());
+        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), anyString(), any(), any());
     }
 
     // ==================== AC7 (off) ====================
@@ -296,8 +292,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        verify(emailService, never()).sendHtmlEmailSync(eq("primary.speaker@batbern.ch"),
-                anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), anyString(), any(), any());
         assertThat(notificationRepository.count()).isZero();
     }
 
@@ -313,7 +308,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        verify(emailService, never()).sendHtmlEmailSync(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmailSync(any(), anyString(), any(), anyString(), anyString(), any(), any());
     }
 
     // ==================== AC9 (exclusions) ====================
@@ -343,8 +338,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         qnaNotificationService.flushPending();
 
         // Exactly one email overall (for the original question) — the replies didn't add any.
-        verify(emailService, times(1)).sendHtmlEmailSync(eq("primary.speaker@batbern.ch"),
-                anyString(), anyString());
+        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), anyString(), any(), any());
     }
 
     @Test
@@ -359,10 +353,8 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        verify(emailService, never()).sendHtmlEmailSync(eq("primary.speaker@batbern.ch"),
-                anyString(), anyString());
-        verify(emailService, times(1)).sendHtmlEmailSync(eq("the.moderator@batbern.ch"),
-                anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), anyString(), any(), any());
+        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("the.moderator@batbern.ch"), any(), anyString(), anyString(), any(), any());
     }
 
     // ==================== AC10 (enrichment: missing email skipped; non-DE/EN → EN) ====================
@@ -378,7 +370,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        verify(emailService, never()).sendHtmlEmailSync(anyString(), anyString(), anyString());
+        verify(emailService, never()).sendHtmlEmailSync(any(), anyString(), any(), anyString(), anyString(), any(), any());
         assertThat(notificationRepository.count()).isZero();
     }
 
@@ -394,8 +386,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         qnaNotificationService.flushPending();
 
         ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(1)).sendHtmlEmailSync(eq("primary.speaker@batbern.ch"),
-                anyString(), body.capture());
+        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), body.capture(), any(), any());
         assertThat(body.getValue()).contains("question"); // EN copy
         assertThat(body.getValue()).doesNotContain("Frage"); // not the DE template
     }

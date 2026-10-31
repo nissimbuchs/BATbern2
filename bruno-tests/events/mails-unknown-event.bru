@@ -1,0 +1,25 @@
+meta {
+  name: Mail page — unknown event returns 404
+  type: http
+  seq: 24
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern99999/mails
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 404 for unknown event", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Story 16.3 AC5: no empty 200 for an event that does not exist.
+}
