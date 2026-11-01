@@ -1,6 +1,6 @@
 # Story 16.4: "+ New mail" picker with the existing flows
 
-Status: review
+Status: done
 
 ## Story
 

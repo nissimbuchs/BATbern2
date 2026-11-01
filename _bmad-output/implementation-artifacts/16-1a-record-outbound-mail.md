@@ -1,6 +1,6 @@
 # Story 16.1a: Record every outbound mail
 
-Status: review
+Status: done
 
 ## Story
 

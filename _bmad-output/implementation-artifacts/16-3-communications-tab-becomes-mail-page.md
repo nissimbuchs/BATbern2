@@ -1,6 +1,6 @@
 # Story 16.3: Communications tab becomes the mail page
 
-Status: review
+Status: done
 
 ## Story
 
