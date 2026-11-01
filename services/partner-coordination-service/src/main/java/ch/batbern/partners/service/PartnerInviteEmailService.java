@@ -68,7 +68,6 @@ public class PartnerInviteEmailService {
      * @param details         meeting details (title, code, date, times, location)
      * @param icsContent      generated ICS file bytes
      */
-    @Async
     public void sendCalendarInvites(
             List<String> recipientEmails,
             MeetingInviteDetails details,
@@ -97,22 +96,19 @@ public class PartnerInviteEmailService {
         );
 
         // Send one email with all recipients in To: so everyone sees who was invited.
-        // InternetAddress.parse() (used by EmailService) accepts comma-separated addresses.
-        String toField = String.join(",", recipientEmails);
-
+        // Each address must reach EmailService on its own: a comma-joined string is validated
+        // as ONE address and rejected (#1104 broke every invite that way until this fix).
         log.info("Sending partner meeting invite to {} recipients for event={}", recipientEmails.size(), eventTitle);
 
-        try {
-            emailService.sendHtmlEmailWithAttachments(
-                    toField,
-                    subject,
-                    htmlBody,
-                    List.of(icsAttachment)
-            );
-            log.debug("Partner meeting invite sent to: {}", toField);
-        } catch (Exception e) {
-            log.error("Failed to send partner meeting invite: {}", e.getMessage(), e);
-        }
+        // Synchronous on purpose: the caller marks the meeting as invited only when this returns.
+        // A failure propagates so the organizer sees it (BATbern60, 2026-10-30: the old @Async
+        // dispatch only logged the error and the meeting showed "invite sent").
+        emailService.sendGroupHtmlEmailWithAttachments(
+                recipientEmails,
+                subject,
+                htmlBody,
+                List.of(icsAttachment)
+        );
     }
 
     /**
@@ -148,12 +144,10 @@ public class PartnerInviteEmailService {
                 true  // inline → calendar clients process the cancellation automatically
         );
 
-        String toField = String.join(",", recipientEmails);
         log.info("Sending cancellation notice to {} recipients for event={}", recipientEmails.size(), eventTitle);
 
         try {
-            emailService.sendHtmlEmailWithAttachments(toField, subject, htmlBody, List.of(attachment));
-            log.debug("Cancellation notice sent to: {}", toField);
+            emailService.sendGroupHtmlEmailWithAttachments(recipientEmails, subject, htmlBody, List.of(attachment));
         } catch (Exception e) {
             log.error("Failed to send cancellation notice: {}", e.getMessage(), e);
         }

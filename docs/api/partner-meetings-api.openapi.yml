@@ -163,8 +163,10 @@ paths:
       summary: "Send calendar invite to all partner contacts"
       description: |
         Generates an ICS file (RFC 5545) with two VEVENTs — the partner meeting and
-        the linked BATbern event — and sends it via SES to all partner contacts.
-        Returns 202 Accepted immediately; email is dispatched asynchronously.
+        the linked BATbern event — and sends it via SES as one mail to all partner contacts
+        and organizers. The send is synchronous: 202 means SES accepted the mail, and only
+        then is `inviteSentAt` set. If it cannot be sent, the answer is 502 and the meeting
+        stays unchanged. (202 is kept from the former asynchronous contract.)
         ORGANIZER role required.
       operationId: "sendPartnerMeetingInvite"
       tags: ["Partner Meetings"]
@@ -177,7 +179,7 @@ paths:
             format: uuid
       responses:
         "202":
-          description: "Invite queued for sending"
+          description: "Invite accepted by SES and sent"
           content:
             application/json:
               schema:
@@ -190,6 +192,12 @@ paths:
                 $ref: "#/components/schemas/ErrorResponse"
         "404":
           description: "Meeting not found"
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "502":
+          description: "The invite could not be sent; nothing was delivered and inviteSentAt is unchanged"
           content:
             application/json:
               schema:

@@ -14,8 +14,10 @@ import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import java.time.Instant;
 import java.time.LocalTime;
@@ -128,10 +130,11 @@ public class PartnerMeetingService {
      * 1. Load meeting + fetch BATbern event details
      * 2. Generate ICS file with two VEVENTs
      * 3. Collect all partner contact emails via UserServiceClient
-     * 4. Send async via PartnerInviteEmailService
-     * 5. Update invite_sent_at timestamp
+     * 4. Send via PartnerInviteEmailService (synchronous: one SES call for all recipients)
+     * 5. Update invite_sent_at timestamp, only when the send succeeded
      *
-     * Returns immediately with recipient count — email is dispatched asynchronously.
+     * A failed send answers 502 and rolls back, so the meeting is never shown as invited
+     * when nothing went out.
      */
     @Transactional
     public SendInviteResponse sendInvite(UUID meetingId) {
@@ -151,7 +154,6 @@ public class PartnerMeetingService {
         // Generate ICS content with recipient emails for ATTENDEE fields (Story 10.27 AC1)
         byte[] icsContent = icsGeneratorService.generate(meeting, event, emails);
 
-        // Dispatch emails asynchronously (AC8 — returns 202 immediately)
         var inviteDetails = new PartnerInviteEmailService.MeetingInviteDetails(
                 event.title(),
                 meeting.getEventCode(),
@@ -160,16 +162,24 @@ public class PartnerMeetingService {
                 meeting.getEndTime(),
                 meeting.getLocation()
         );
-        inviteEmailService.sendCalendarInvites(emails, inviteDetails, icsContent);
+        try {
+            inviteEmailService.sendCalendarInvites(emails, inviteDetails, icsContent);
+        } catch (RuntimeException e) {
+            // Rolls back the sequence increment; invite_sent_at stays as it was.
+            log.error("Partner meeting invite NOT sent: meetingId={}, recipients={}, reason={}",
+                    meetingId, emails.size(), e.getMessage(), e);
+            throw new ResponseStatusException(HttpStatus.BAD_GATEWAY,
+                    "The calendar invite could not be sent. Nothing was delivered; please try again.", e);
+        }
 
-        // Persist updated sequence and invite_sent_at together
+        // Only now, after SES accepted the mail: persist updated sequence and invite_sent_at together
         meeting.setInviteSentAt(Instant.now());
         meetingRepository.save(meeting);
 
-        log.info("Partner meeting invite queued for {} recipients, meetingId={}", emails.size(), meetingId);
+        log.info("Partner meeting invite sent to {} recipients, meetingId={}", emails.size(), meetingId);
 
         return new SendInviteResponse()
-                .message("Calendar invite is being sent to all partner contacts")
+                .message("Calendar invite was sent to all partner contacts")
                 .meetingId(meetingId)
                 .recipientCount(emails.size());
     }

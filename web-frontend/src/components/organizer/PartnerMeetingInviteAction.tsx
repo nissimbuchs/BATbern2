@@ -38,9 +38,15 @@ const PartnerMeetingInviteAction: React.FC<PartnerMeetingInviteActionProps> = ({
   const queryClient = useQueryClient();
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [inviteSuccess, setInviteSuccess] = useState(false);
+  const [inviteFailed, setInviteFailed] = useState(false);
 
   const inviteMutation = useMutation({
     mutationFn: () => sendInvite(meeting.id),
+    onMutate: () => setInviteFailed(false),
+    onError: () => {
+      setInviteFailed(true);
+      setConfirmOpen(false);
+    },
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ['partnerMeetings'] });
       setInviteSuccess(true);
@@ -63,6 +69,17 @@ const PartnerMeetingInviteAction: React.FC<PartnerMeetingInviteActionProps> = ({
           data-testid={`invite-success-alert-${meeting.id}`}
         >
           {t('meetings.inviteSuccess')}
+        </Alert>
+      )}
+
+      {inviteFailed && (
+        <Alert
+          severity="error"
+          sx={{ mb: 2 }}
+          onClose={() => setInviteFailed(false)}
+          data-testid={`invite-error-alert-${meeting.id}`}
+        >
+          {t('meetings.inviteFailed')}
         </Alert>
       )}
 

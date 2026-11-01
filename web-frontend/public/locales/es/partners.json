@@ -166,6 +166,7 @@
     },
     "error": "No se pudieron cargar las reuniones",
     "inviteSuccess": "La invitación de calendario está siendo enviada",
+    "inviteFailed": "No se pudo enviar la invitación. No se entregó nada. Inténtalo de nuevo.",
     "rsvp": {
       "title": "Respuestas de asistentes",
       "loading": "Cargando respuestas...",

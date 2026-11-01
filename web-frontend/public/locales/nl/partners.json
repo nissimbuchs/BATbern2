@@ -166,6 +166,7 @@
     },
     "error": "Vergaderingen konden niet worden geladen",
     "inviteSuccess": "Kalenderuitnodiging wordt verstuurd",
+    "inviteFailed": "De uitnodiging kon niet worden verzonden. Er is niets bezorgd. Probeer het opnieuw.",
     "rsvp": {
       "title": "Reacties van deelnemers",
       "loading": "Reacties laden...",

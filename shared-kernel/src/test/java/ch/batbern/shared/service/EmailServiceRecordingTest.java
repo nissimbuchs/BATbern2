@@ -178,4 +178,39 @@ class EmailServiceRecordingTest {
         assertThat(recorded().sesMessageId()).isEqualTo("local-" + captured);
         verify(sesClient, never()).sendEmail(any(SendEmailRequest.class));
     }
+
+    @Test
+    @DisplayName("a group send puts every address in To: and is recorded ONCE with the To: comma-joined")
+    void groupSend_recordedOnceWithJoinedTo() {
+        when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                .thenReturn(SendEmailResponse.builder().messageId("ses-group-1").build());
+
+        emailService.sendGroupHtmlEmailSync(context,
+                List.of("a@batbern-test.ch", "not-an-address", "b@batbern-test.ch", "A@batbern-test.ch"),
+                List.of(), "Partner mail", "<p>body</p>", null);
+
+        ArgumentCaptor<SendEmailRequest> sent = ArgumentCaptor.forClass(SendEmailRequest.class);
+        verify(sesClient).sendEmail(sent.capture());
+        assertThat(sent.getValue().destination().toAddresses())
+                .containsExactly("a@batbern-test.ch", "b@batbern-test.ch");
+        // 16.9a's JpaOutboundMailRecorder splits this into one mail_recipient row per address.
+        OutboundMail mail = recorded();
+        assertThat(mail.to()).isEqualTo("a@batbern-test.ch,b@batbern-test.ch");
+        assertThat(mail.sesMessageId()).isEqualTo("ses-group-1");
+    }
+
+    @Test
+    @DisplayName("a group send with attachments is recorded ONCE with the To: comma-joined")
+    void groupSendWithAttachments_recordedOnceWithJoinedTo() {
+        when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
+                .thenReturn(SendRawEmailResponse.builder().messageId("ses-group-2").build());
+
+        emailService.sendGroupHtmlEmailWithAttachments(context,
+                List.of("a@batbern-test.ch", "b@batbern-test.ch"), List.of(), "Invite", "<p>body</p>",
+                List.of(new EmailService.EmailAttachment("m.ics", new byte[]{1}, "text/calendar", true)));
+
+        OutboundMail mail = recorded();
+        assertThat(mail.to()).isEqualTo("a@batbern-test.ch,b@batbern-test.ch");
+        assertThat(mail.sesMessageId()).isEqualTo("ses-group-2");
+    }
 }

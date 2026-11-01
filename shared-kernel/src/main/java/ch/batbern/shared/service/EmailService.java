@@ -212,8 +212,23 @@ public class EmailService {
             String htmlBody, String configurationSetName, String replyTo) {
         Objects.requireNonNull(to, "to recipient must not be null");
         assertSendable(to);
+        sendSyncTo(context, List.of(to), cc, subject, htmlBody, configurationSetName, replyTo);
+    }
 
-        List<String> ccClean = normaliseCc(cc, to);
+    /**
+     * One plain HTML mail with every address of {@code to} in To: (e.g. all partners of a
+     * partner mail). Each address is checked on its own; see {@link #deliverableRecipients}.
+     * Recorded once, with the To: addresses comma-joined, like a single send.
+     */
+    public void sendGroupHtmlEmailSync(MailContext context, List<String> to, List<String> cc, String subject,
+            String htmlBody, String replyTo) {
+        sendSyncTo(context, deliverableRecipients(to), cc, subject, htmlBody, configurationSetName, replyTo);
+    }
+
+    private void sendSyncTo(MailContext context, List<String> toList, List<String> cc, String subject,
+            String htmlBody, String configurationSetName, String replyTo) {
+        String to = String.join(",", toList);
+        List<String> ccClean = normaliseCc(cc, toList);
         // Null/blank guard: callers may pass null (no explicit Reply-To needed) or an empty string
         // from config. Both fall back to the global app.email.reply-to value so the behaviour is
         // identical to the 5-arg overload. An empty-string caller will not accidentally send an
@@ -244,7 +259,7 @@ public class EmailService {
                     LoggingUtils.maskEmail(effectiveReplyTo));
 
             List<String> ccSes = toDeliveryForm(ccClean);
-            Destination.Builder destBuilder = Destination.builder().toAddresses(EmailAddresses.toDeliveryForm(to));
+            Destination.Builder destBuilder = Destination.builder().toAddresses(deliveryForms(toList));
             if (!ccSes.isEmpty()) {
                 destBuilder.ccAddresses(ccSes);
             }
@@ -329,9 +344,49 @@ public class EmailService {
     ) {
         Objects.requireNonNull(to, "to recipient must not be null");
         assertSendable(to);
+        sendWithAttachmentsTo(context, List.of(to), cc, subject, htmlBody, attachments);
+    }
+
+    /** One mail with attachments to every address of {@code to} in To:, unrecorded. */
+    public void sendGroupHtmlEmailWithAttachments(
+            List<String> to,
+            String subject,
+            String htmlBody,
+            List<EmailAttachment> attachments
+    ) {
+        sendGroupHtmlEmailWithAttachments(null, to, java.util.Collections.emptyList(), subject, htmlBody,
+                attachments);
+    }
+
+    /**
+     * One mail with attachments to every address of {@code to} in To: (partner meeting invites
+     * and cancellations: every partner and organizer sees who was invited). Each address is
+     * checked on its own; see {@link #deliverableRecipients}. Recorded once, with the To:
+     * addresses comma-joined, like a single send.
+     */
+    public void sendGroupHtmlEmailWithAttachments(
+            MailContext context,
+            List<String> to,
+            List<String> cc,
+            String subject,
+            String htmlBody,
+            List<EmailAttachment> attachments
+    ) {
+        sendWithAttachmentsTo(context, deliverableRecipients(to), cc, subject, htmlBody, attachments);
+    }
+
+    private void sendWithAttachmentsTo(
+            MailContext context,
+            List<String> toList,
+            List<String> cc,
+            String subject,
+            String htmlBody,
+            List<EmailAttachment> attachments
+    ) {
+        String to = String.join(",", toList);
         // Story 10.32: normalise CC list the same way the SES MIME path below does,
         // so the local /dev/emails inbox shows exactly what staging/prod would deliver.
-        List<String> ccClean = normaliseCc(cc, to);
+        List<String> ccClean = normaliseCc(cc, toList);
         // In test/local environments without SES, capture or log the email
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
@@ -366,7 +421,8 @@ public class EmailService {
 
             // Set headers
             message.setFrom(new InternetAddress(fromEmail, fromName));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(EmailAddresses.toDeliveryForm(to)));
+            message.setRecipients(Message.RecipientType.TO,
+                    InternetAddress.parse(String.join(",", deliveryForms(toList))));
             // Story 10.32: CC additional emails (if any) — list normalised at method top.
             List<String> ccSes = toDeliveryForm(ccClean);
             if (!ccSes.isEmpty()) {
@@ -422,7 +478,8 @@ public class EmailService {
             }
 
             SendRawEmailResponse response = sesClient.sendRawEmail(rawRequestBuilder.build());
-            log.info("Email with attachments sent successfully to: {}, MessageId: {}", to, response.messageId());
+            log.info("Email with attachments sent successfully to {} recipient(s): {}, MessageId: {}",
+                    toList.size(), LoggingUtils.maskEmail(to), response.messageId());
             record(context, to, ccClean, subject, htmlBody, response.messageId(), null);
 
         } catch (MessagingException | IOException e) {
@@ -761,7 +818,7 @@ public class EmailService {
      *       Found in review 2026-05-22 finding P1-6.</li>
      * </ol>
      */
-    private static List<String> normaliseCc(List<String> cc, String to) {
+    private static List<String> normaliseCc(List<String> cc, List<String> to) {
         if (cc == null || cc.isEmpty()) {
             return java.util.Collections.emptyList();
         }
@@ -769,7 +826,7 @@ public class EmailService {
                 .filter(Objects::nonNull)
                 .map(String::trim)
                 .filter(s -> !s.isEmpty())
-                .filter(s -> !s.equalsIgnoreCase(to))
+                .filter(s -> to.stream().noneMatch(s::equalsIgnoreCase))
                 .filter(s -> {
                     if (ReservedEmailDomain.isReserved(s)) {
                         log.warn("Dropping reserved-domain CC entry: {}", LoggingUtils.maskEmail(s));
@@ -778,6 +835,40 @@ public class EmailService {
                     return true;
                 })
                 .toList();
+    }
+
+    private static List<String> deliveryForms(List<String> addresses) {
+        return addresses.stream().map(EmailAddresses::toDeliveryForm).toList();
+    }
+
+    /**
+     * The To: list of a group mail: trimmed, de-duplicated, and without addresses SES cannot
+     * deliver to or that are on a reserved domain. A single bad address is dropped with a
+     * warning instead of failing the whole mail, so the other recipients still get it.
+     *
+     * @throws IllegalArgumentException when no deliverable address is left
+     */
+    static List<String> deliverableRecipients(List<String> to) {
+        Objects.requireNonNull(to, "to recipients must not be null");
+        java.util.Map<String, String> unique = new java.util.LinkedHashMap<>();
+        for (String raw : to) {
+            String address = raw == null ? "" : raw.trim();
+            if (address.isEmpty()) {
+                continue;
+            }
+            if (ReservedEmailDomain.isReserved(address)) {
+                log.warn("Dropping reserved-domain recipient from group mail: {}", LoggingUtils.maskEmail(address));
+            } else if (!EmailAddresses.isAcceptable(address)) {
+                log.warn("Dropping undeliverable recipient from group mail: {}", LoggingUtils.maskEmail(address));
+            } else {
+                unique.putIfAbsent(address.toLowerCase(java.util.Locale.ROOT), address);
+            }
+        }
+        if (unique.isEmpty()) {
+            throw new IllegalArgumentException(
+                    "Cannot send group mail: none of the " + to.size() + " recipients is deliverable");
+        }
+        return List.copyOf(unique.values());
     }
 
     /**
