@@ -42,24 +42,19 @@ So this is **not a helpdesk**. It is a per-event log with a short "needs an answ
 **Read order:** this epic → `_bmad-output/project-context.md` → the story file → `docs/ux/mail-center-spec.md` (UI stories) → the files listed in its Dev Notes. `CLAUDE.md` rules apply (TDD, Testcontainers, PII, Flyway).
 
 **Story order:**
-1. 16.0 Part A
-2. 16.0 Part B
-3. 16.0 Part C (#1162)
-4. 16.1a, then 16.1b
-5. 16.3 + 16.4
-6. 16.8, then 16.9 (story files are written when they come up)
+1. 16.0 Part A, B, C: live (#1164, #1165)
+2. 16.1a, 16.1b, 16.3, 16.4: live 2026-10-31 (#1166)
+3. 16.8 (as 16.8a backend, 16.8b frontend; 16.8c clean-up one release later, owner go), then 16.9
+4. 16.2a + 16.6 (speakers)
+5. 16.2b (all aliases), 16.5, 16.7, 16.10
+
+All story files exist in `_bmad-output/implementation-artifacts/16-*.md` (written 2026-11-01).
 
 `sprint-status.yaml` lists older `ready-for-dev` stories (11-e-5, 11-g-1, 13-5) ahead of Epic 16. Always start with the explicit story path, never with "next story".
 
 **Branching:**
-- The epic and the story files live on `docs/epic-16-mail-center`, which is pushed but not merged to `develop`.
-- Until it is merged, cut each story branch from it: `git fetch origin && git switch -c feature/16-0a-replies-reach-a-person origin/docs/epic-16-mail-center`. After it is merged, cut from `origin/develop`.
-- One branch and one PR per deployable part:
-  - `feature/16-0a-...` (`Fixes #1160`)
-  - `feature/16-0b-...` (`Fixes #1161`)
-  - `feature/16-0c-...` (`Fixes #1162`)
-  - `feature/16-1a-...`, `feature/16-1b-...`
-  - `feature/16-3-4-...`
+- Cut each story branch from `origin/develop`: `git fetch origin && git switch -c feature/16-8a-composer-api origin/develop`.
+- One branch and one PR per deployable part, as split in the story file (16.8a/b/c, 16.9 A/B, 16.2a backend/frontend, 16.6 reply/switch, 16.7 CDK first).
 - Conventional commits, scope `mailcenter`, `email`, `forwarding` or `registration`.
 - Update the story file (tasks, Dev Agent Record, File List, Status) and `sprint-status.yaml` on the story branch, in the same commits as the code.
 
@@ -74,7 +69,7 @@ So this is **not a helpdesk**. It is a per-event log with a short "needs an answ
 - Verify send paths on local dev (`make dev-native-up`). Mail lands in `/dev/mails` there.
 - Never download production data.
 
-**Migrations:** EMS head was V130 on 2026-10-30. Check again before numbering. Never edit an applied migration.
+**Migrations:** EMS head was V136 on 2026-11-01. Several stories add one (16.2a, 16.2b, 16.5, 16.9, 16.10); whichever is built first takes the next number. Check again before numbering. Never edit an applied migration.
 
 ## Information architecture
 
@@ -131,6 +126,12 @@ Story file: `_bmad-output/implementation-artifacts/16-1b-delivery-status.md`. De
 ---
 
 ### Story 16.2 — Capture inbound human mail as conversations
+
+**Split 2026-11-01** to follow decision 3: **16.2a** speakers (`batbern{N}-moderator@`, replies to speaker mails; story `16-2a-speaker-conversations.md`) and **16.2b** all other aliases, registrant and newsletter replies, mail without an event (`16-2b-all-alias-conversations.md`).
+
+**Data model (2026-11-01, owner to confirm):** messages stay `mail_message` rows (direction `IN` and `OUT`) under the one mail resource. A new `mail_conversation` table carries status, assignee and event, with its own resource `/events/{code}/conversations` and `/conversations/{key}`. Status and assignee belong to the thread, and conversations without an event have no event path to live under. Bodies are parsed into the database at receipt; the 7-day S3 lifecycle stays (no CDK change).
+
+**Verified in code 2026-11-01:** since 16.0 speaker replies arrive at the moderator alias, not at `replies@`. `replies+{token}@` is currently dropped as an unknown alias (`EmailForwardingService.java:125-133`). We store the SES API id as Message-ID; raw sends carry a JavaMail id. Threading therefore matches all three.
 
 **Depends on:** 16.0 Part A, 16.1a.
 
@@ -249,7 +250,7 @@ Story file: `_bmad-output/implementation-artifacts/16-1b-delivery-status.md`. De
 | Newsletter | server-rendered | yes (`testMode`), but only to organizers who are also subscribers | all subscribers |
 | Registrants | server-rendered with **sample** data, not the real recipient | no | all active registrants |
 | Speakers | **none** | no | by status; the frontend loops one request per speaker |
-| Venue & Catering | server-rendered per recipient | no | role checkboxes, first role To, rest Cc |
+| Venue & Catering | server-rendered, **one mail** with a combined salutation (corrected 2026-11-01, `VenueCoordinationService.java:137-143`) | no | role checkboxes, first role To, rest Cc |
 | Partners | none; subject and body are hard-coded Java | no | all partner and organizer users in **one To: line** |
 
 The speaker reminder templates **are** editable in the admin template editor. The speaker flow lacks template choice and preview: the key (`speaker-reminder-{response,content}-tier{1,2,3}`) is derived in code from reminder type and an auto-detected tier, so the organizer never sees which of the six goes out. Partners are the one audience with no admin template at all.
@@ -299,8 +300,8 @@ The speaker reminder templates **are** editable in the admin template editor. Th
   - The partner meeting page shows the same list, filtered to that meeting.
 - **New mail:** "+ New mail → Partners" offers two paths:
   - (a) meeting invite or cancellation through the existing partner-service endpoint, because it owns the ICS UID, SEQUENCE and RSVPs;
-  - (b) a plain partner mail through a 16.8 Partners adapter, with recipients = PARTNER-role users via CUMS and a new template category PARTNER in the admin store.
-- **Inbound:** mail to `partner@` and meeting RSVPs belong to the meeting's event. With 16.2 they show under that event; RSVPs are counted under "Handled automatically".
+  - (b) a plain partner mail through a 16.8 Partners adapter: **one mail with all PARTNER-role users (CUMS) on the To: line** (owner decision 2026-11-01, same shape as the invite, #1163), and a new template category PARTNER in the admin store.
+- **Inbound:** corrected 2026-11-01: `partner@` is an organizer-only broadcast to all partners (`ForwardingAlias.java`, `Kind.PARTNERS`), not an inbound mailbox; 16.2b records it as a send. Partner replies thread through 16.2. Meeting RSVPs are counted under "Handled automatically".
 
 **Acceptance criteria:**
 - AC1 — GIVEN a partner meeting invite is sent, THEN it appears in the event's "What went out" within one minute, with recipient count and RSVP summary.
@@ -312,6 +313,32 @@ The speaker reminder templates **are** editable in the admin template editor. Th
 - All partners in one To: line expose their addresses to each other. Owner decision (#1163, 2026-10-31): keep it as it is; 16.9 does not change the recipient line.
 
 ---
+
+### Story 16.10 — Mail tab on user and partner detail
+
+**Owner request 2026-10-31.** Story file: `16-10-mail-tab-user-partner-detail.md`. **Depends on:** 16.1a, 16.2a (inbound), `GET /mails` (16.7; whichever of 16.7 and 16.10 is built first builds it). Partner meeting mails appear once 16.9 records them.
+
+**Scope:** a "Mail" tab on the organizer's user detail and partner detail: mails to and from that user, or that partner's contacts. `GET /mails` gains `participantUsername` / `participantCompany`, resolved server-side to every address of the user, additional emails included. Same rows and inline detail as the event page, full screen on mobile. Newsletters are left out (recommendation, owner to confirm).
+
+---
+
+## Decisions taken 2026-11-01 (owner)
+
+Raised while writing the story files; the owner accepted every recommendation except 3, which he changed.
+
+1. **Conversation model:** messages stay `mail_message` rows (in and out); `mail_conversation` with its own `/conversations` resource for status and assignee. Bodies parsed into the database at receipt (16.2a).
+2. **Newsletter retry** moves to `POST /events/{code}/mails/{mailKey}/retry`; the old status and retry endpoints go with the 16.8c clean-up.
+3. **Plain partner mail: one mail, all partners on the To: line** (owner, overriding the one-mail-per-partner proposal; same shape as the invite, #1163). No per-person placeholders (16.9).
+4. Own text to a speaker writes an outreach-history row, but no reminder log and no tier-3 escalation (16.5).
+5. Own text is sent in the language it is written in, regardless of each recipient's preference (16.5).
+6. Leftover placeholders in existing templates warn; in own text they block (16.5, 16.8).
+7. Inbound attachments are stored in S3 up to a size cap, before any forwarding group is switched to notification (16.6 PR 2 prerequisite).
+8. Spam is no longer forwarded to private inboxes, also during the transition. Viruses never (16.7).
+9. The global Mail page has a collapsed "What went out (all events)" section (16.7).
+10. When threading finds nothing, fall back to the event code in the subject, counted separately (16.2b).
+11. Inbound HTML is sanitized with jsoup (16.2a).
+12. Answers are plain text with the question quoted, no BATbern layout (16.6).
+13. Newsletters are left out of the user and partner Mail tab (16.10).
 
 ## Decisions taken 2026-10-30 (owner, formerly open)
 

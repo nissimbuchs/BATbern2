@@ -269,18 +269,21 @@ development_status:
   # Epic 16: Mail Center — APPROVED 2026-10-30 (docs/prd/epic-16-mail-center.md)
   # 16.0 = #1160 + #1161 (two PRs). Start with an explicit story path: older ready-for-dev stories sort first.
   # Sequence (owner decision 3): 16.0 (A, C, B) -> 16.1a -> 16.1b -> 16.3 -> 16.4, then 16.8 -> 16.9, then 16.2 + 16.6 for speakers, then all aliases, 16.5, 16.7.
+  # 16.0-16.4 live 2026-10-31 (#1164, #1165, #1166). 16.2 split 2026-11-01: 16.2a speakers, 16.2b all aliases. 16.10 = Mail tab on user + partner detail (owner request 2026-10-31).
   epic-16: in-progress
   16-0-stop-losing-replies-and-calendar-declines: done
-  16-1a-record-outbound-mail: review
-  16-1b-delivery-status: review
-  16-2-capture-inbound-human-mail: backlog
-  16-3-communications-tab-becomes-mail-page: review
-  16-4-new-mail-picker: review
-  16-5-own-text-placeholders-preview: backlog
-  16-6-answer-from-mail-center: backlog
-  16-7-global-mail-navigation: backlog
-  16-8-shared-composer: backlog
-  16-9-partner-meeting-mails: backlog
+  16-1a-record-outbound-mail: done
+  16-1b-delivery-status: done
+  16-2a-speaker-conversations: ready-for-dev
+  16-2b-all-alias-conversations: ready-for-dev
+  16-3-communications-tab-becomes-mail-page: done
+  16-4-new-mail-picker: done
+  16-5-own-text-placeholders-preview: ready-for-dev
+  16-6-answer-from-mail-center: ready-for-dev
+  16-7-global-mail-navigation: ready-for-dev
+  16-8-shared-composer: ready-for-dev
+  16-9-partner-meeting-mails: ready-for-dev
+  16-10-mail-tab-user-partner-detail: ready-for-dev
   epic-16-retrospective: optional
 
   # Deferred-work backlog clusters (groomed 2026-06-07 — see deferred-work.md) — candidate stories,
