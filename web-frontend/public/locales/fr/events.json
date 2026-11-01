@@ -449,6 +449,74 @@
           "SPRING": "Réunion de printemps",
           "AUTUMN": "Réunion d'automne"
         }
+      },
+      "sending": "envoi en cours …",
+      "showTests": "Afficher les envois test",
+      "retry": "Renvoyer les échecs",
+      "composer": {
+        "contentSource": "Contenu",
+        "source": {
+          "template": "Modèle",
+          "ownText": "Texte libre",
+          "ownTextSoon": "Le texte libre arrive avec une mise à jour ultérieure."
+        },
+        "template": "Modèle",
+        "automatic": "Automatique (niveau par intervenant)",
+        "noTemplates": "Aucun modèle disponible",
+        "language": "Langue",
+        "ownLanguage": "Chaque destinataire reçoit le mail dans sa propre langue.",
+        "newsletter": {
+          "reminder": "Envoyer comme rappel"
+        },
+        "speakers": {
+          "which": "Quels intervenants ?",
+          "type": {
+            "RESPONSE": "Intervenants invités sans réponse",
+            "CONTENT": "Intervenants confirmés sans contenu"
+          },
+          "goesTo": "Destinataires : {{target}}",
+          "detected": "Choisi automatiquement pour {{name}} : {{templateKey}}"
+        },
+        "recipients": {
+          "count_one": "{{count}} destinataire",
+          "count_other": "{{count}} destinataires",
+          "more": "+{{count}} autres",
+          "sameText": "Aucun champ personnel : tout le monde reçoit le même texte.",
+          "to": "À",
+          "cc": "Cc"
+        },
+        "skipped": {
+          "title_one": "{{count}} exclu",
+          "title_other": "{{count}} exclus",
+          "reason": {
+            "OPTED_OUT": "désinscrit",
+            "REMINDERS_DISABLED": "rappels désactivés",
+            "NO_EMAIL": "pas d'adresse e-mail",
+            "DUPLICATE": "adresse en double"
+          }
+        },
+        "preview": {
+          "previous": "Destinataire précédent",
+          "next": "Destinataire suivant",
+          "position": "({{index}}/{{count}})",
+          "subject": "Objet",
+          "frameTitle": "Aperçu du mail",
+          "unknownPlaceholders": "Variables inconnues : {{list}}. Corrigez le modèle avant l'envoi.",
+          "incomplete": "L'aperçu apparaît dès que tout est choisi."
+        },
+        "replyTo": "Les réponses vont à {{address}}.",
+        "replyDefault": "Les réponses vont à l'adresse de l'expéditeur.",
+        "footer": {
+          "test": "Envoyer aux organisateurs (test)",
+          "send_one": "Envoyer à {{count}} destinataire",
+          "send_other": "Envoyer à {{count}} destinataires",
+          "confirm_one": "Vraiment envoyer à {{count}} destinataire ?",
+          "confirm_other": "Vraiment envoyer à {{count}} destinataires ?",
+          "back": "Retour",
+          "yes": "Oui, envoyer"
+        },
+        "testSent_one": "Test envoyé à {{count}} organisateur",
+        "testSent_other": "Test envoyé à {{count}} organisateurs"
       }
     }
   },

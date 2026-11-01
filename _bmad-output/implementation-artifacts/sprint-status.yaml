@@ -281,7 +281,7 @@ development_status:
   16-5-own-text-placeholders-preview: ready-for-dev
   16-6-answer-from-mail-center: ready-for-dev
   16-7-global-mail-navigation: ready-for-dev
-  16-8-shared-composer: in-progress  # 16.8a in review (feature/16-8a-composer-api), 16.8b + 16.8c open
+  16-8-shared-composer: in-progress  # 16.8a + 16.8b in review (feature/16-8a-composer-api, feature/16-8b-composer-ui), 16.8c after one release
   16-9-partner-meeting-mails: ready-for-dev
   16-10-mail-tab-user-partner-detail: ready-for-dev
   epic-16-retrospective: optional

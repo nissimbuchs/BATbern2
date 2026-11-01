@@ -1,6 +1,6 @@
 # Story 16.8: One shared composer for all audiences
 
-Status: in-progress (16.8a in review; 16.8b, 16.8c open)
+Status: in-progress (16.8a and 16.8b in review; 16.8c open, after one release)
 
 ## Story
 
@@ -118,26 +118,26 @@ Do not start 16.8c in the same branch as 16.8b. Wait for the owner's go after 16
 
 ### Part 16.8b — frontend (PR 2)
 
-- [ ] **Task 10 — Service + hooks** (AC: 11, 13)
-  - [ ] `mailMessageService.ts`: `previewMail`, `sendMail`, `retryMail`; types from `@/types/generated/event-mail-api.types`.
-  - [ ] `useMailMessages.ts`: `useMailPreview` (query keyed on the request incl. `recipientIndex`, `keepPreviousData` while stepping), `useSendMail`, `useRetryMail`, `useMailMessage(mailKey, {poll})` polling every 3 s while `progress.status` is PENDING/IN_PROGRESS (as `useSendStatus` does today).
-- [ ] **Task 11 — RED: Vitest first** (AC: 11–16)
-  - [ ] `MailComposer.test.tsx` (MSW, not service mocks): steps render for each audience; ‹ › changes `recipientIndex`; "(3/8)"; unknown placeholders shown; test button → toast, stays open; send → confirm → `onSent(mailKeys)`; 409 message; `skipped[]` list; Own text toggle disabled.
-  - [ ] Adapter tests: speaker template list shows six + "Automatic"; choosing a content template switches the recipient hint; venue role checkboxes; newsletter reminder switch.
-  - [ ] `EventCommunicationsContainer.test.tsx`: picker opens `MailComposer` for four audiences, `PartnerMeetingsCompose` for partners; focus handling unchanged.
-  - [ ] `MailSentList.test.tsx`: highlighted row, "sending …", Retry on PARTIAL, "show test sends" toggle (AC9).
-- [ ] **Task 12 — Composer** (AC: 11, 12, 14, 16)
-  - [ ] `web-frontend/src/components/organizer/EventPage/communications/composer/MailComposer.tsx` (steps), `ComposerPreview.tsx` (sandboxed iframe, no `allow-scripts`, as `MailDetail.tsx`), `ComposerRecipients.tsx`, `ComposerFooter.tsx` (sticky on mobile, inline confirm).
-  - [ ] `composer/audiences/{newsletter,registrants,speakers,venue}.tsx`: each exports a `ComposerAudience` object `{ audience, templateCategory, templateFilter?, defaultTemplateKey?, personalized, ExtraFields, toRequest(state) }`. Templates from the existing `useEmailTemplates({ category })`; the backend re-checks (AC10).
-  - [ ] Venue extra fields reuse the role checkboxes and notes from `VenueCoordinationComposer.tsx` (extract, do not copy).
-- [ ] **Task 13 — Wire into the page** (AC: 12, 13, 15)
-  - [ ] `EventCommunicationsContainer.tsx`: the `composer` block (:114-134) mounts `MailComposer` for the four audiences; `handleSent(mailKeys)` invalidates, closes, highlights.
-  - [ ] `MailSentList.tsx`: `highlightKey` prop, progress line, Retry button, "show test sends" switch (`includeTests`).
-- [ ] **Task 14 — i18n** (AC: 16): `web-frontend/public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/events.json` under `eventPage.mail.composer.*`.
-- [ ] **Task 15 — Playwright (local dev only)** (AC: 11, 12, 17)
-  - [ ] `e2e/organizer/event-mail-composer.spec.ts`: opens each audience, steps the preview, checks the 375 px layout. **Does not click a send button.**
-  - [ ] `e2e/organizer/event-mail-composer-send.spec.ts`: one test send + one real send on a throwaway event, tagged `@sends-real-email`, guarded by `EMAIL_SAFE_ENV` exactly like `event-newsletter-send.spec.ts:41-43`. Replace the send part of `event-newsletter-send.spec.ts` or point it at the composer.
-- [ ] **Task 16 — Verify**: lint, type-check, `check:api-types`, full Vitest to a file; Playwright on local dev; screenshot-free (PII).
+- [x] **Task 10 — Service + hooks** (AC: 11, 13)
+  - [x] `mailMessageService.ts`: `previewMail`, `sendMail`, `retryMail`; types from `@/types/generated/event-mail-api.types`.
+  - [x] `useMailMessages.ts`: `useMailPreview` (query keyed on the request incl. `recipientIndex`, `keepPreviousData` while stepping), `useSendMail`, `useRetryMail`, `useMailMessage(mailKey, {poll})` polling every 3 s while `progress.status` is PENDING/IN_PROGRESS (as `useSendStatus` does today).
+- [x] **Task 11 — RED: Vitest first** (AC: 11–16)
+  - [x] `MailComposer.test.tsx` (MSW, not service mocks): steps render for each audience; ‹ › changes `recipientIndex`; "(3/8)"; unknown placeholders shown; test button → toast, stays open; send → confirm → `onSent(mailKeys)`; 409 message; `skipped[]` list; Own text toggle disabled.
+  - [x] Adapter tests: speaker template list shows six + "Automatic"; choosing a content template switches the recipient hint; venue role checkboxes; newsletter reminder switch.
+  - [x] `EventCommunicationsContainer.test.tsx`: picker opens `MailComposer` for four audiences, `PartnerMeetingsCompose` for partners; focus handling unchanged.
+  - [x] `MailSentList.test.tsx`: highlighted row, "sending …", Retry on PARTIAL, "show test sends" toggle (AC9).
+- [x] **Task 12 — Composer** (AC: 11, 12, 14, 16)
+  - [x] `web-frontend/src/components/organizer/EventPage/communications/composer/MailComposer.tsx` (steps), `ComposerPreview.tsx` (sandboxed iframe, no `allow-scripts`, as `MailDetail.tsx`), `ComposerRecipients.tsx`, `ComposerFooter.tsx` (sticky on mobile, inline confirm).
+  - [x] `composer/audiences/{newsletter,registrants,speakers,venue}.tsx`: each exports a `ComposerAudience` object `{ audience, templateCategory, templateFilter?, defaultTemplateKey?, personalized, ExtraFields, toRequest(state) }`. Templates from the existing `useEmailTemplates({ category })`; the backend re-checks (AC10).
+  - [x] Venue extra fields reuse the role checkboxes and notes from `VenueCoordinationComposer.tsx` (extract, do not copy).
+- [x] **Task 13 — Wire into the page** (AC: 12, 13, 15)
+  - [x] `EventCommunicationsContainer.tsx`: the `composer` block (:114-134) mounts `MailComposer` for the four audiences; `handleSent(mailKeys)` invalidates, closes, highlights.
+  - [x] `MailSentList.tsx`: `highlightKey` prop, progress line, Retry button, "show test sends" switch (`includeTests`).
+- [x] **Task 14 — i18n** (AC: 16): `web-frontend/public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/events.json` under `eventPage.mail.composer.*`.
+- [x] **Task 15 — Playwright (local dev only)** (AC: 11, 12, 17)
+  - [x] `e2e/organizer/event-mail-composer.spec.ts`: opens each audience, steps the preview, checks the 375 px layout. **Does not click a send button.**
+  - [x] `e2e/organizer/event-mail-composer-send.spec.ts`: one test send + one real send on a throwaway event, tagged `@sends-real-email`, guarded by `EMAIL_SAFE_ENV` exactly like `event-newsletter-send.spec.ts:41-43`. Replace the send part of `event-newsletter-send.spec.ts` or point it at the composer.
+- [x] **Task 16 — Verify**: lint, type-check, `check:api-types`, full Vitest to a file; Playwright on local dev; screenshot-free (PII).
 
 ### Part 16.8c — clean-up (PR 3, after one release, owner go required)
 
@@ -237,7 +237,8 @@ Keep: the subscriber endpoints, `/email-templates`, `PUT .../reminders-disabled`
 
 ### Agent Model Used
 
-Claude Opus 5.5 (Amelia, dev-story), 2026-11-01. Part 16.8a only, branch `feature/16-8a-composer-api`.
+Claude Opus 5.5 (Amelia, dev-story), 2026-11-01. Part 16.8a on `feature/16-8a-composer-api`; Part 16.8b on
+`feature/16-8b-composer-ui`, branched from the 16.8a branch (16.8a not yet on develop, so its PR must go first).
 
 ### Debug Log References
 
@@ -258,6 +259,20 @@ Claude Opus 5.5 (Amelia, dev-story), 2026-11-01. Part 16.8a only, branch `featur
 - Not checked: the newsletter real send on local dev (1010 local subscribers would flush the
   200-mail capture buffer); it is covered by `MailComposerSendIntegrationTest`. Nothing ran against
   staging/production.
+
+- **16.8b:**
+  - Vitest full suite: 420 files, 5535 passed, 0 failed. Lint (max-warnings 0), `tsc --noEmit`,
+    Prettier, `check:api-types` clean. RED seen first (missing module, then 4 MailSentList and 6
+    container tests); two deliberate mutations of `MailComposer` were caught by the tests.
+  - Local dev, live through the gateway: preview of every audience and every template of
+    REGISTRANT_NOTICE and VENUE_COORDINATION on BATbern60 reports no unknown placeholder
+    (newsletter 1010 recipients, registrants 61 + 1 skipped, speakers CONTENT 1, venue 1).
+  - Playwright on local dev: `event-mail-composer.spec.ts` 6/6 and `event-mail-page.spec.ts` 2/2;
+    `event-mail-composer-send.spec.ts` (`@sends-real-email`) 2/2. Captured mail checked directly:
+    test send = 2 organizer copies, subject `[TEST] `, only `token=TEST`; real send carries the
+    subscribers' real unsubscribe tokens. The 2 `mail_message` rows of the deleted fixture event
+    were removed by hand (retention keeps mail of a deleted event 12 months by design, 16.1a AC6).
+  - Nothing ran against staging/production.
 
 ### Completion Notes List
 
@@ -284,6 +299,26 @@ Claude Opus 5.5 (Amelia, dev-story), 2026-11-01. Part 16.8a only, branch `featur
   first recipient's the record holds the first recipient's subject. Body is per recipient.
 - Visible change: test sends (including old newsletter test-mode sends) are hidden from "What went
   out" until 16.8b adds the "show test sends" switch.
+- **16.8b:** `MailComposer` + `ComposerRecipients` / `ComposerPreview` / `ComposerFooter`; one
+  `ComposerAudience` per audience (`audiences/*.ts`, field components in their own `.tsx` for fast
+  refresh). The composer has no audience branch. Preview is a query keyed on the request
+  (`keepPreviousData` while stepping); venue notes are debounced 400 ms. The preselected template is
+  derived, not stored, so the first request is already the right one.
+- Venue roles and notes extracted to `VenueRecipientFields` + `useVenueCoordinationConfig`; the old
+  `VenueCoordinationComposer` uses them until 16.8c deletes it (its 9 tests pass unchanged).
+- Found and fixed on local dev: ‹ › and the test button were disabled while their request ran, so the
+  focused button dropped focus to `<body>` and Esc no longer closed the composer. They now stay
+  enabled and ignore clicks while busy (`aria-busy`); two Vitest regressions, one shown to fail on the
+  old code.
+- Deviations from the task text: the audience tests are in `MailComposer.test.tsx` (they drive the
+  real adapters through the composer, with MSW); `MailSentList` takes `highlightKeys: string[]`
+  (a speaker send can return up to three keys); Retry sits beside the row (a button inside the row
+  button is not operable). `event-newsletter-send.spec.ts` is deleted, its scenario lives in
+  `event-mail-composer-send.spec.ts`.
+- The old compose components (`EventNewsletterTab`, `EventRegistrantNoticesTab`, `SpeakerBulkComms`,
+  `EventVenueTab`) are no longer mounted but stay in the tree with their tests until 16.8c.
+- MSW `setupServer` is used for the first time in a component test here; it intercepts the axios
+  client under jsdom without extra setup.
 
 ### File List
 
@@ -313,7 +348,24 @@ Claude Opus 5.5 (Amelia, dev-story), 2026-11-01. Part 16.8a only, branch `featur
 - `docs/architecture/06-backend-architecture.md`, `docs/user-guide/features/event-mail.md`
 - `_bmad-output/implementation-artifacts/16-8-shared-composer.md`, `sprint-status.yaml`
 
+16.8b:
+- `web-frontend/src/services/mailMessageService.ts`, `web-frontend/src/hooks/useMailMessages/useMailMessages.ts`
+- `web-frontend/src/components/organizer/EventPage/communications/composer/` (new): `MailComposer.tsx`,
+  `ComposerFooter.tsx`, `ComposerPreview.tsx`, `ComposerRecipients.tsx`, `types.ts`,
+  `audiences/{index,newsletter,registrants,speakers,venue,speakerTemplates,useVenueCoordinationConfig}.ts`,
+  `audiences/{NewsletterFields,SpeakerFields,VenueFields,VenueRecipientFields}.tsx`,
+  `__tests__/MailComposer.test.tsx`
+- `web-frontend/src/components/organizer/EventPage/EventCommunicationsContainer.tsx`,
+  `communications/MailSentList.tsx`, `VenueCoordinationComposer.tsx`
+- `web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx`,
+  `communications/__tests__/MailSentList.test.tsx`
+- `web-frontend/public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/events.json`
+- `web-frontend/e2e/organizer/event-mail-composer.spec.ts`, `event-mail-composer-send.spec.ts` (new);
+  `event-newsletter-send.spec.ts` (deleted)
+- `docs/user-guide/features/event-mail.md`
+
 ## Change Log
 
 - 2026-11-01: Story drafted from Epic 16, grounded in code at 15a13959. Split into 16.8a/b/c.
 - 2026-11-01: Part 16.8a implemented (backend composer API, adapters, test send, progress, retry); in review.
+- 2026-11-01: Part 16.8b implemented (shared composer UI, highlight, retry, show test sends); in review.

@@ -455,6 +455,74 @@
           "SPRING": "Früehligs-Meeting",
           "AUTUMN": "Herbscht-Meeting"
         }
+      },
+      "sending": "wird gschickt …",
+      "showTests": "Testmails azeige",
+      "retry": "Fählgschlageni nomau schicke",
+      "composer": {
+        "contentSource": "Inhaut",
+        "source": {
+          "template": "Vorlag",
+          "ownText": "Eigete Text",
+          "ownTextSoon": "Eigete Text chunnt mit emne spätere Update."
+        },
+        "template": "Vorlag",
+        "automatic": "Automatisch (Stufe je Speaker)",
+        "noTemplates": "Kei Vorlage vorhande",
+        "language": "Sprach",
+        "ownLanguage": "Aui überchöme d Mail i ihrer eigete Sprach.",
+        "newsletter": {
+          "reminder": "Aus Erinnerig schicke"
+        },
+        "speakers": {
+          "which": "Weli Speaker?",
+          "type": {
+            "RESPONSE": "Iglade Speaker ohni Antwort",
+            "CONTENT": "Zuegseiti Speaker ohni Inhaut"
+          },
+          "goesTo": "Geit a: {{target}}",
+          "detected": "Für {{name}} automatisch gwäut: {{templateKey}}"
+        },
+        "recipients": {
+          "count_one": "{{count}} Empfänger:in",
+          "count_other": "{{count}} Empfänger:inne",
+          "more": "+{{count}} wiiteri",
+          "sameText": "Kei persönleche Fäuder: Aui überchöme dr gliich Text.",
+          "to": "A",
+          "cc": "Cc"
+        },
+        "skipped": {
+          "title_one": "{{count}} usgla",
+          "title_other": "{{count}} usgla",
+          "reason": {
+            "OPTED_OUT": "abgmäudet",
+            "REMINDERS_DISABLED": "Erinnerige abgschautet",
+            "NO_EMAIL": "kei E-Mail-Adrässe",
+            "DUPLICATE": "doppleti Adrässe"
+          }
+        },
+        "preview": {
+          "previous": "Vorderi Empfänger:in",
+          "next": "Nächschti Empfänger:in",
+          "position": "({{index}}/{{count}})",
+          "subject": "Betreff",
+          "frameTitle": "Vorschou vo dr Mail",
+          "unknownPlaceholders": "Unbekannti Platzhauter: {{list}}. Bitte zersch d Vorlag korrigiere.",
+          "incomplete": "D Vorschou chunnt, sobau aues usgwäut isch."
+        },
+        "replyTo": "Antworte gö a {{address}}.",
+        "replyDefault": "Antworte gö a d Absänderadrässe.",
+        "footer": {
+          "test": "A d Organisatore (Test)",
+          "send_one": "A {{count}} Empfänger:in schicke",
+          "send_other": "A {{count}} Empfänger:inne schicke",
+          "confirm_one": "Würklech a {{count}} Empfänger:in schicke?",
+          "confirm_other": "Würklech a {{count}} Empfänger:inne schicke?",
+          "back": "Zrügg",
+          "yes": "Ja, schicke"
+        },
+        "testSent_one": "Test a {{count}} Organisator:in gschickt",
+        "testSent_other": "Test a {{count}} Organisator:inne gschickt"
       }
     }
   },

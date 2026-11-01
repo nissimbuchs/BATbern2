@@ -449,6 +449,74 @@
           "SPRING": "Voorjaarsmeeting",
           "AUTUMN": "Najaarsmeeting"
         }
+      },
+      "sending": "wordt verzonden …",
+      "showTests": "Testverzendingen tonen",
+      "retry": "Mislukte opnieuw verzenden",
+      "composer": {
+        "contentSource": "Inhoud",
+        "source": {
+          "template": "Sjabloon",
+          "ownText": "Eigen tekst",
+          "ownTextSoon": "Eigen tekst komt met een latere update."
+        },
+        "template": "Sjabloon",
+        "automatic": "Automatisch (niveau per spreker)",
+        "noTemplates": "Geen sjablonen beschikbaar",
+        "language": "Taal",
+        "ownLanguage": "Iedere ontvanger krijgt de mail in de eigen taal.",
+        "newsletter": {
+          "reminder": "Als herinnering verzenden"
+        },
+        "speakers": {
+          "which": "Welke sprekers?",
+          "type": {
+            "RESPONSE": "Uitgenodigde sprekers zonder antwoord",
+            "CONTENT": "Bevestigde sprekers zonder inhoud"
+          },
+          "goesTo": "Gaat naar: {{target}}",
+          "detected": "Automatisch gekozen voor {{name}}: {{templateKey}}"
+        },
+        "recipients": {
+          "count_one": "{{count}} ontvanger",
+          "count_other": "{{count}} ontvangers",
+          "more": "+{{count}} meer",
+          "sameText": "Geen persoonlijke velden: iedereen krijgt dezelfde tekst.",
+          "to": "Aan",
+          "cc": "Cc"
+        },
+        "skipped": {
+          "title_one": "{{count}} weggelaten",
+          "title_other": "{{count}} weggelaten",
+          "reason": {
+            "OPTED_OUT": "afgemeld",
+            "REMINDERS_DISABLED": "herinneringen uitgeschakeld",
+            "NO_EMAIL": "geen e-mailadres",
+            "DUPLICATE": "dubbel adres"
+          }
+        },
+        "preview": {
+          "previous": "Vorige ontvanger",
+          "next": "Volgende ontvanger",
+          "position": "({{index}}/{{count}})",
+          "subject": "Onderwerp",
+          "frameTitle": "Voorbeeld van de mail",
+          "unknownPlaceholders": "Onbekende placeholders: {{list}}. Corrigeer eerst het sjabloon.",
+          "incomplete": "Het voorbeeld verschijnt zodra alles gekozen is."
+        },
+        "replyTo": "Antwoorden gaan naar {{address}}.",
+        "replyDefault": "Antwoorden gaan naar het afzenderadres.",
+        "footer": {
+          "test": "Naar organisatoren (test)",
+          "send_one": "Naar {{count}} ontvanger verzenden",
+          "send_other": "Naar {{count}} ontvangers verzenden",
+          "confirm_one": "Echt naar {{count}} ontvanger verzenden?",
+          "confirm_other": "Echt naar {{count}} ontvangers verzenden?",
+          "back": "Terug",
+          "yes": "Ja, verzenden"
+        },
+        "testSent_one": "Test verzonden naar {{count}} organisator",
+        "testSent_other": "Test verzonden naar {{count}} organisatoren"
       }
     }
   },

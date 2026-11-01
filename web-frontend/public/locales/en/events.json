@@ -463,6 +463,74 @@
           "SPRING": "Spring meeting",
           "AUTUMN": "Autumn meeting"
         }
+      },
+      "sending": "sending …",
+      "showTests": "Show test sends",
+      "retry": "Retry failed",
+      "composer": {
+        "contentSource": "Content",
+        "source": {
+          "template": "Template",
+          "ownText": "Own text",
+          "ownTextSoon": "Own text comes with a later update."
+        },
+        "template": "Template",
+        "automatic": "Automatic (each speaker's tier)",
+        "noTemplates": "No templates available",
+        "language": "Language",
+        "ownLanguage": "Each recipient gets the mail in their own language.",
+        "newsletter": {
+          "reminder": "Send as reminder"
+        },
+        "speakers": {
+          "which": "Which speakers?",
+          "type": {
+            "RESPONSE": "Invited speakers who have not answered",
+            "CONTENT": "Accepted speakers whose content is missing"
+          },
+          "goesTo": "Goes to: {{target}}",
+          "detected": "Chosen automatically for {{name}}: {{templateKey}}"
+        },
+        "recipients": {
+          "count_one": "{{count}} recipient",
+          "count_other": "{{count}} recipients",
+          "more": "+{{count}} more",
+          "sameText": "No personal fields: everyone gets the same text.",
+          "to": "To",
+          "cc": "Cc"
+        },
+        "skipped": {
+          "title_one": "{{count}} left out",
+          "title_other": "{{count}} left out",
+          "reason": {
+            "OPTED_OUT": "unsubscribed",
+            "REMINDERS_DISABLED": "reminders turned off",
+            "NO_EMAIL": "no email address",
+            "DUPLICATE": "duplicate address"
+          }
+        },
+        "preview": {
+          "previous": "Previous recipient",
+          "next": "Next recipient",
+          "position": "({{index}}/{{count}})",
+          "subject": "Subject",
+          "frameTitle": "Mail preview",
+          "unknownPlaceholders": "Unknown placeholders: {{list}}. Fix the template before sending.",
+          "incomplete": "The preview appears once everything is chosen."
+        },
+        "replyTo": "Replies go to {{address}}.",
+        "replyDefault": "Replies go to the sender address.",
+        "footer": {
+          "test": "Send to organizers (test)",
+          "send_one": "Send to {{count}} recipient",
+          "send_other": "Send to {{count}} recipients",
+          "confirm_one": "Really send to {{count}} recipient?",
+          "confirm_other": "Really send to {{count}} recipients?",
+          "back": "Back",
+          "yes": "Yes, send"
+        },
+        "testSent_one": "Test sent to {{count}} organizer",
+        "testSent_other": "Test sent to {{count}} organizers"
       }
     }
   },

@@ -1,6 +1,8 @@
 /**
  * MailSentList tests (Story 16.3): "What went out" list, filters, collapsed automatic mails, and
  * the open mail: inline below its row on desktop, a full-screen dialog on mobile.
+ * Story 16.8b: the highlighted new row, "sending …", Retry on a PARTIAL/FAILED newsletter, and
+ * the "show test sends" switch.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
@@ -8,15 +10,17 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MailSentList } from '../MailSentList';
 import type { MailMessageSummary } from '@/services/mailMessageService';
 
-const { listMailMessages, getMailMessage, breakpoints } = vi.hoisted(() => ({
+const { listMailMessages, getMailMessage, retryMail, breakpoints } = vi.hoisted(() => ({
   listMailMessages: vi.fn(),
   getMailMessage: vi.fn(),
+  retryMail: vi.fn(),
   breakpoints: { isMobile: false, isTablet: false, isDesktop: true },
 }));
 
 vi.mock('@/services/mailMessageService', () => ({
   listMailMessages: (...args: unknown[]) => listMailMessages(...args),
   getMailMessage: (...args: unknown[]) => getMailMessage(...args),
+  retryMail: (...args: unknown[]) => retryMail(...args),
 }));
 vi.mock('@/hooks/useBreakpoints', () => ({ useBreakpoints: () => breakpoints }));
 vi.mock('react-i18next', () => ({
@@ -63,11 +67,11 @@ function page(data: MailMessageSummary[], totalPages = 1) {
   };
 }
 
-function renderList() {
+function renderList(highlightKeys?: string[]) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <MailSentList eventCode="BATbern60" />
+      <MailSentList eventCode="BATbern60" highlightKeys={highlightKeys} />
     </QueryClientProvider>
   );
 }
@@ -219,6 +223,74 @@ describe('MailSentList', () => {
     renderList();
     expect(await screen.findByTestId('mail-row-BATbern60-1')).toHaveTextContent(
       'eventPage.mail.sendingProgress(sent=402,total=1060)'
+    );
+  });
+
+  // ── Story 16.8b ─────────────────────────────────────────────────────────────
+
+  it('highlights the row of a mail just sent, showing "sending …" until it has progress (AC13)', async () => {
+    listMailMessages.mockResolvedValue(
+      page([
+        row({ mailKey: 'BATbern60-2', audience: 'NEWSLETTER', newsletterStatus: 'PENDING' }),
+        row({}),
+      ])
+    );
+    renderList(['BATbern60-2']);
+    const fresh = await screen.findByTestId('mail-row-BATbern60-2');
+    expect(fresh).toHaveAttribute('data-highlighted', 'true');
+    expect(fresh).toHaveTextContent('eventPage.mail.sending');
+    expect(screen.getByTestId('mail-row-BATbern60-1')).not.toHaveAttribute('data-highlighted');
+  });
+
+  it.each(['PARTIAL', 'FAILED'])(
+    'offers Retry on a newsletter that ended %s (AC8)',
+    async (status) => {
+      retryMail.mockResolvedValue({
+        mailKeys: ['BATbern60-1'],
+        target: 'RECIPIENTS',
+        recipientCount: 3,
+        skipped: [],
+      });
+      listMailMessages.mockResolvedValue(
+        page([row({ audience: 'NEWSLETTER', newsletterStatus: status, failedCount: 3 })])
+      );
+      renderList();
+      fireEvent.click(await screen.findByTestId('mail-retry-BATbern60-1'));
+      await waitFor(() => expect(retryMail).toHaveBeenCalledWith('BATbern60', 'BATbern60-1'));
+      // The retry button does not also open the mail.
+      expect(screen.queryByTestId('mail-inline-BATbern60-1')).not.toBeInTheDocument();
+    }
+  );
+
+  it('offers no Retry on a completed newsletter or another audience', async () => {
+    listMailMessages.mockResolvedValue(
+      page([
+        row({ mailKey: 'BATbern60-3', audience: 'NEWSLETTER', newsletterStatus: 'COMPLETED' }),
+        row({ mailKey: 'BATbern60-4', audience: 'REGISTRANTS', newsletterStatus: 'PARTIAL' }),
+      ])
+    );
+    renderList();
+    await screen.findByTestId('mail-row-BATbern60-3');
+    expect(screen.queryByTestId('mail-retry-BATbern60-3')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('mail-retry-BATbern60-4')).not.toBeInTheDocument();
+  });
+
+  it('hides test sends unless "show test sends" is switched on (AC9)', async () => {
+    listMailMessages.mockResolvedValue(page([row({})]));
+    renderList();
+    await screen.findByTestId('mail-row-BATbern60-1');
+    expect(listMailMessages).toHaveBeenLastCalledWith(
+      'BATbern60',
+      expect.objectContaining({ includeTests: false })
+    );
+
+    fireEvent.click(within(screen.getByTestId('mail-show-tests')).getByRole('switch'));
+
+    await waitFor(() =>
+      expect(listMailMessages).toHaveBeenLastCalledWith(
+        'BATbern60',
+        expect.objectContaining({ includeTests: true, page: 1 })
+      )
     );
   });
 });

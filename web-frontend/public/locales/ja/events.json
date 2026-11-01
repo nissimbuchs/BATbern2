@@ -449,6 +449,74 @@
           "SPRING": "春のミーティング",
           "AUTUMN": "秋のミーティング"
         }
+      },
+      "sending": "送信中 …",
+      "showTests": "テスト送信を表示",
+      "retry": "失敗分を再送信",
+      "composer": {
+        "contentSource": "内容",
+        "source": {
+          "template": "テンプレート",
+          "ownText": "独自テキスト",
+          "ownTextSoon": "独自テキストは今後のアップデートで追加されます。"
+        },
+        "template": "テンプレート",
+        "automatic": "自動（登壇者ごとの段階）",
+        "noTemplates": "利用できるテンプレートがありません",
+        "language": "言語",
+        "ownLanguage": "各受信者には本人の言語でメールが届きます。",
+        "newsletter": {
+          "reminder": "リマインダーとして送信"
+        },
+        "speakers": {
+          "which": "どの登壇者？",
+          "type": {
+            "RESPONSE": "未回答の招待済み登壇者",
+            "CONTENT": "コンテンツ未提出の承諾済み登壇者"
+          },
+          "goesTo": "送信先: {{target}}",
+          "detected": "{{name}} に自動選択: {{templateKey}}"
+        },
+        "recipients": {
+          "count_one": "受信者 {{count}} 名",
+          "count_other": "受信者 {{count}} 名",
+          "more": "ほか {{count}} 名",
+          "sameText": "個人項目なし：全員に同じ本文が届きます。",
+          "to": "宛先",
+          "cc": "Cc"
+        },
+        "skipped": {
+          "title_one": "{{count}} 名を除外",
+          "title_other": "{{count}} 名を除外",
+          "reason": {
+            "OPTED_OUT": "配信停止済み",
+            "REMINDERS_DISABLED": "リマインダー無効",
+            "NO_EMAIL": "メールアドレスなし",
+            "DUPLICATE": "重複アドレス"
+          }
+        },
+        "preview": {
+          "previous": "前の受信者",
+          "next": "次の受信者",
+          "position": "({{index}}/{{count}})",
+          "subject": "件名",
+          "frameTitle": "メールのプレビュー",
+          "unknownPlaceholders": "不明なプレースホルダー: {{list}}。送信前にテンプレートを修正してください。",
+          "incomplete": "すべて選択するとプレビューが表示されます。"
+        },
+        "replyTo": "返信は {{address}} に届きます。",
+        "replyDefault": "返信は送信元アドレスに届きます。",
+        "footer": {
+          "test": "主催者に送信（テスト）",
+          "send_one": "{{count}} 名に送信",
+          "send_other": "{{count}} 名に送信",
+          "confirm_one": "本当に {{count}} 名に送信しますか？",
+          "confirm_other": "本当に {{count}} 名に送信しますか？",
+          "back": "戻る",
+          "yes": "はい、送信"
+        },
+        "testSent_one": "主催者 {{count}} 名にテストを送信しました",
+        "testSent_other": "主催者 {{count}} 名にテストを送信しました"
       }
     }
   },
