@@ -65,6 +65,8 @@ so that **the team sees who answered what, and nobody has to forward mail to a p
 
 ### PR 2 — Notification instead of forwarding (code ships switched off; switching on needs the owner's go)
 
+- [ ] **Prerequisite (owner decision 2026-11-01, from 16.2a):** inbound attachments are kept, not only their names. At receipt, copy each attachment up to a size cap to a new S3 prefix, show it in the conversation view, delete it in the retention job (CDK: EMS write grant on the prefix + a lifecycle backstop; needs the Doc Drift doc change). No forwarding group is switched to notification before this is live.
+
 - [ ] **Task 7 — Switch and notification** (AC: 7–9)
   - [ ] Setting key `mailcenter.notify-instead-of-forward` read via `AdminSettingsService.getSetting` (line 18), parsed into a set; unknown values ignored and logged.
   - [ ] Templates `mailcenter-new-mail-{de,en}.html`, category `MAIL_CENTER`.
@@ -102,7 +104,7 @@ so that **the team sees who answered what, and nobody has to forward mail to a p
 - The recipients are the ones forwarding resolves today: `ForwardingRecipientResolver.resolve(alias)` per alias, organizers for `replies@` (`EmailForwardingService.java:270–271`). Reuse them, so switching on changes the content of the mail, not who receives it.
 - Group `contact` must stay off until 16.2b stores `info@`/`support@` mail and 16.7 can show conversations without an event; otherwise the link has nowhere to go.
 
-### Open questions for the owner
+### Owner decisions (2026-11-01: recommendations below accepted, see epic "Decisions taken 2026-11-01")
 
 - Body of an answer: plain text with a minimal HTML version and the quoted inbound mail, no BATbern newsletter layout (recommended: it is a personal answer). Alternative: the default layout `layout-batbern-default`.
 - Attachments in answers: not in scope. Inbound attachments: see 16.2a open question; decide before switching any group on.

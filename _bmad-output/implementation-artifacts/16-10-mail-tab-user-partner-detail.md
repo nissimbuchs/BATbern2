@@ -72,7 +72,7 @@ One PR (backend filter + both tabs) when `GET /mails` already exists. Otherwise 
 - Sending from the tab (that is the composer, 16.8).
 - Newsletters (AC6) and forwarded alias copies (never recorded as OUT; the inbound original is the record).
 
-### Open question for the owner
+### Owner decisions (2026-11-01: recommendations below accepted, see epic "Decisions taken 2026-11-01")
 
 - Newsletters in the person's tab (AC6). Recommendation: leave them out; if wanted later, add a "Newsletters received" count from `newsletter_recipients` instead of listing every send.
 

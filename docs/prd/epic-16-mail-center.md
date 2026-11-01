@@ -300,7 +300,7 @@ The speaker reminder templates **are** editable in the admin template editor. Th
   - The partner meeting page shows the same list, filtered to that meeting.
 - **New mail:** "+ New mail → Partners" offers two paths:
   - (a) meeting invite or cancellation through the existing partner-service endpoint, because it owns the ICS UID, SEQUENCE and RSVPs;
-  - (b) a plain partner mail through a 16.8 Partners adapter, with recipients = PARTNER-role users via CUMS and a new template category PARTNER in the admin store.
+  - (b) a plain partner mail through a 16.8 Partners adapter: **one mail with all PARTNER-role users (CUMS) on the To: line** (owner decision 2026-11-01, same shape as the invite, #1163), and a new template category PARTNER in the admin store.
 - **Inbound:** corrected 2026-11-01: `partner@` is an organizer-only broadcast to all partners (`ForwardingAlias.java`, `Kind.PARTNERS`), not an inbound mailbox; 16.2b records it as a send. Partner replies thread through 16.2. Meeting RSVPs are counted under "Handled automatically".
 
 **Acceptance criteria:**
@@ -321,6 +321,24 @@ The speaker reminder templates **are** editable in the admin template editor. Th
 **Scope:** a "Mail" tab on the organizer's user detail and partner detail: mails to and from that user, or that partner's contacts. `GET /mails` gains `participantUsername` / `participantCompany`, resolved server-side to every address of the user, additional emails included. Same rows and inline detail as the event page, full screen on mobile. Newsletters are left out (recommendation, owner to confirm).
 
 ---
+
+## Decisions taken 2026-11-01 (owner)
+
+Raised while writing the story files; the owner accepted every recommendation except 3, which he changed.
+
+1. **Conversation model:** messages stay `mail_message` rows (in and out); `mail_conversation` with its own `/conversations` resource for status and assignee. Bodies parsed into the database at receipt (16.2a).
+2. **Newsletter retry** moves to `POST /events/{code}/mails/{mailKey}/retry`; the old status and retry endpoints go with the 16.8c clean-up.
+3. **Plain partner mail: one mail, all partners on the To: line** (owner, overriding the one-mail-per-partner proposal; same shape as the invite, #1163). No per-person placeholders (16.9).
+4. Own text to a speaker writes an outreach-history row, but no reminder log and no tier-3 escalation (16.5).
+5. Own text is sent in the language it is written in, regardless of each recipient's preference (16.5).
+6. Leftover placeholders in existing templates warn; in own text they block (16.5, 16.8).
+7. Inbound attachments are stored in S3 up to a size cap, before any forwarding group is switched to notification (16.6 PR 2 prerequisite).
+8. Spam is no longer forwarded to private inboxes, also during the transition. Viruses never (16.7).
+9. The global Mail page has a collapsed "What went out (all events)" section (16.7).
+10. When threading finds nothing, fall back to the event code in the subject, counted separately (16.2b).
+11. Inbound HTML is sanitized with jsoup (16.2a).
+12. Answers are plain text with the question quoted, no BATbern layout (16.6).
+13. Newsletters are left out of the user and partner Mail tab (16.10).
 
 ## Decisions taken 2026-10-30 (owner, formerly open)
 

@@ -139,7 +139,7 @@ so that **the whole team sees what speakers asked and who is answering, instead 
 - Existing header checks: `MailClassifier.isAutoReply` (line 48), `isBounce` (line 63), `isCalendarReply` (line 30). Story 16.0 AC4 speaks of "out-of-office patterns already known to `MailClassifier`"; the code knows headers only, no subject patterns. Add, case-insensitive, at the start of the subject: `Out of Office`, `Automatic reply`, `Auto-Reply`, `Autoreply`, `Abwesenheitsnotiz`, `Automatische Antwort`, `Abwesend`, `Réponse automatique`, `Absence`, `Risposta automatica`. Precedence `bulk/list` stays NOT a signal (comment at line 44–46 explains why).
 - Calendar replies on the alias path go to `calendar@` (registration ICS organizer, `application.yml:112`) and are handled by `CalendarDeclineService`; on the replies path partner-meeting RSVPs go to `InboundEmailRouter.routeIcsReply`. Count both; partner RSVPs have no EMS event (meeting UUID only) and stay without event until 16.9/16.2b.
 
-### Conversation model (owner decision to confirm, see report)
+### Conversation model (owner decision 2026-11-01: accepted)
 
 - Messages stay `mail_message` rows (`IN` and `OUT`), one mail resource: `/events/{code}/mails/{mailKey}` returns any of them. A conversation is a separate concept with its own state (status, assignee, token), so it gets its own small resource: `/events/{code}/conversations` (list) and `/conversations/{key}` (detail, PATCH; 16.6 adds `POST …/replies`; 16.7 adds the global `GET /conversations`). Keys are global (`conv-{n}`) because 16.7 can move a conversation to another event; that is also why the per-conversation operations are not nested under an event.
 - Alternative considered: conversation fields on `MailMessageSummary` and `PATCH /events/{code}/mails/{mailKey}`. Rejected: status and assignee belong to the thread, not to one message, and no-event conversations (16.2b) have no event path to live under.
@@ -159,7 +159,7 @@ so that **the whole team sees what speakers asked and who is answering, instead 
 - Bruno runs against production after each deploy: read-only requests only.
 - Mail bodies are PII: organizer-only endpoints, `no-store`, synthetic fixtures.
 
-### Open question for the owner (does not block 16.2a)
+### Owner decisions (2026-11-01: recommendations below accepted, see epic "Decisions taken 2026-11-01")
 
 - Attachments: kept as names only. Once 16.6 AC4 stops forwarding, a speaker's attachment (e.g. slides) is readable for 7 days only (S3) and not from the UI. Options: (a) accept, speakers upload through the portal; (b) copy attachments up to a size cap to a new S3 prefix at receipt and delete them in the retention job (CDK: write grant + prefix lifecycle backstop). Recommendation: (b), decided before 16.6 AC4 is switched on.
 

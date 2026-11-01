@@ -19,7 +19,7 @@ so that **I can see at a glance whether anything is waiting, put an `info@` mail
 2. **AC2 (badge)** — The "Mail" entry shows a badge with the number of `OPEN` conversations across all events and without event. GIVEN zero, the badge is hidden. It refreshes at least every 60 s and after any change made in this browser.
 3. **AC3 (spam)** — GIVEN an inbound mail with `X-SES-Spam-Verdict: FAIL`, WHEN it arrives, THEN it is stored as an inbound message flagged spam, appears only in the Spam list, opens no conversation and is not counted as open. "Not spam" clears the flag and runs the 16.2a/16.2b threading, so it lands where it belongs (an event's "Needs an answer" or "No event").
 4. **AC4 (virus)** — GIVEN `X-SES-Virus-Verdict: FAIL`, THEN the mail is neither stored nor forwarded nor opened; it is counted (`VIRUS`) and logged with the S3 key only.
-5. **AC5 (forwarding of spam and virus)** — Neither a virus-FAIL nor a spam-FAIL mail is forwarded to private inboxes any more (recommendation, see open questions; virus is not negotiable).
+5. **AC5 (forwarding of spam and virus)** — Neither a virus-FAIL nor a spam-FAIL mail is forwarded to private inboxes any more (owner decision 2026-11-01).
 6. **AC6 (scanning on)** — The three SES receipt rules (`RouteReplies`, `RouteForwardingNamed`, `RouteForwardingCatchAll`) have `scanEnabled: true`. CDK unit test asserts it. Only `FAIL` is acted on; `PASS`, `GRAY`, `PROCESSING_FAILED` and a missing header are treated as clean.
 7. **AC7 (spam retention)** — Spam is deleted 30 days after receipt by the existing `MailMessageRetentionScheduler` (extended, not a second job). The 12-month rules stay for everything else.
 8. **AC8 (three lists, one page)** — Route `/organizer/mail`, organizer-only, nav entry "Mail" after "Events". Sections in this order: **Open** (OPEN and WAITING across events, each row shows its event code), **No event** (`info@`, `support@`; each row has an "Assign to event" control), **Spam** (collapsed, count in the header, "Not spam" per row). Rows and inline details are the 16.2a components; mobile opens the full-screen dialog. Empty sections show one line, never an empty table.
@@ -91,7 +91,7 @@ so that **I can see at a glance whether anything is waiting, put an `info@` mail
 - `mail_conversation.event_code` and `mail_message.event_code` are plain columns (no FK to `events`, V135). Update both. `mail_key` keeps its prefix; the UI must never parse the event out of a key.
 - Retention follows the new event (event date + 12 months) automatically, since the rule reads `event_code` at run time.
 
-### Open questions for the owner
+### Owner decisions (2026-11-01: recommendations below accepted, see epic "Decisions taken 2026-11-01")
 
 1. Forward spam during the transition? Recommendation: no (AC5). Spam is visible in the Spam list for 30 days, so nothing is lost; forwarding it only trains organizers to click phishing.
 2. "What went out (all events)" on the global page (AC9): the prototype (2026-10-30) shows three lists and says sent mail stays per event; the API decision (2026-10-31) introduces `GET /mails`. Recommendation: keep the collapsed fourth section; it costs one component reuse and answers "what did we send this week".

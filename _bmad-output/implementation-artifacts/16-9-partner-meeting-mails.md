@@ -27,8 +27,8 @@ so that **the partner side of an event is visible to the whole team like everyth
 6. **AC6 (composer)** — "+ New mail → Partners" opens `MailComposer`. Its template list has:
    1. "Partner meeting invite with calendar": selecting it shows this event's meetings and the existing invite action (`PartnerMeetingInviteAction`, with its confirmation), plus the hint that its text is still fixed; no preview, no test send, no "use as starting point" (spec);
    2. the templates of the new category **PARTNER** (seeded: `partner-info`).
-7. **AC7 (same as every audience)** — A plain partner mail supports template choice, preview of each real recipient (‹ ›), test send to organizers and send to recipients, like every other audience (16.8 AC1–AC6 apply unchanged).
-8. **AC8 (recipients)** — Recipients = users with the PARTNER role (CUMS), one mail per person, sorted by company then name; users without an email are listed under `skipped[]`. Organizers are not recipients (they get the test send).
+7. **AC7 (same as every audience)** — A plain partner mail supports template choice, preview, test send to organizers and send to recipients, like every other audience (16.8 AC1–AC6). It is one mail, so the preview has no ‹ › stepping (as venue: `personalized = false`).
+8. **AC8 (recipients, owner decision 2026-11-01)** — ONE mail with every PARTNER-role user (CUMS) on the To: line, sorted by company then name, the same shape as the meeting invite (#1163). Users without an email are listed under `skipped[]`. Organizers are not added (they get the test send, and the mail is visible in "What went out"). The record splits the To: line into one `mail_recipient` row per address (same rule as AC3), so delivery status stays per address.
 9. **AC9 (category PARTNER)** — The admin template editor lists, filters and creates PARTNER templates; the label is translated in all 10 locales; the API enum includes `PARTNER` everywhere it lists categories.
 10. **AC10 (mail safety)** — No test sends real mail. The partner service's HTTP recorder is tested with a mock server; partner invites are never triggered by Bruno or Playwright against staging. Verified 2026-11-01: `bruno-tests/partner-meetings-api/09-delete-meeting.bru` deletes a meeting whose invite was never sent, and `e2e/organizer/partner-meetings.spec.ts:152` mocks `send-invite` with `page.route`. Keep it that way.
 
@@ -70,21 +70,21 @@ so that **the partner side of an event is visible to the whole team like everyth
 - [ ] **Task 8 — Category PARTNER** (AC: 9)
   - [ ] Spec enums in `docs/api/event-newsletter-api.openapi.yml` (list filter :51-61, `EmailTemplateResponse.category` :1152-1163, `CreateEmailTemplateRequest.category` :1208-1219): add `PARTNER`. Regenerate types.
   - [ ] `EmailTemplateSeedService.deriveCategory`: `partner-` prefix → `PARTNER` (before the `LAYOUT` fallback, :199; see V120 for what happens otherwise).
-  - [ ] Classpath templates `email-templates/partner-info-de.html` and `partner-info-en.html` (subject in the existing subject convention of the seeder; content only, layout `batbern-default`). Wording: neutral info mail, salutation `{{recipientName}}`. Owner reviews the DE text.
+  - [ ] Classpath templates `email-templates/partner-info-de.html` and `partner-info-en.html` (subject in the existing subject convention of the seeder; content only, layout `batbern-default`). Wording: neutral info mail to all partners, generic salutation ("Liebe Partnerinnen und Partner" / "Dear partners"), no per-person placeholder. Owner reviews the DE text.
   - [ ] Admin: `EmailTemplatesTab.tsx` (:64-94) and `EmailTemplateEditModal.tsx` (:189-195) category lists + `emailTemplates.categories.PARTNER` in 10 locales.
   - [ ] No migration: `email_templates.category` has no check constraint (V62).
 - [ ] **Task 9 — RED: adapter tests** (AC: 7, 8)
-  - [ ] `PartnerAudienceAdapterTest`: recipients from stubbed `UserApiClient.getPartnerUsernames()` (:129) + `getUserByUsername`; order; skipped without email; only PARTNER templates allowed; variables.
+  - [ ] `PartnerAudienceAdapterTest`: recipients from stubbed `UserApiClient.getPartnerUsernames()` (:129) + `getUserByUsername`; ONE recipient entry whose To: holds all addresses in order; skipped without email; only PARTNER templates allowed; no per-person variables; the record has one `mail_recipient` per address.
   - [ ] Extend 16.8's byte-equal and test-send integration tests with PARTNERS.
 - [ ] **Task 10 — `PartnerAudienceAdapter`** (AC: 7, 8)
-  - [ ] Categories `PARTNER`; `personalized = true`; variables `recipientName`, `companyName` (company display name via `getCompanyDisplayName`), `eventTitle`, `eventDate`, `eventNumber`, `currentYear`, `logoUrl`; Reply-To `partner@{forwarding domain}` (alias exists, `ForwardingAlias` :61-62); one `MailContext.of(trigger, eventCode, PARTNERS, templateKey)` per send.
+  - [ ] Categories `PARTNER`; `personalized = false`; one recipient entry, all partner addresses on To: (as `VenueAudienceAdapter`, but To only, no Cc); variables (no per-person ones) `eventTitle`, `eventDate`, `eventNumber`, `currentYear`, `logoUrl`; Reply-To `partner@{forwarding domain}` (alias exists, `ForwardingAlias` :61-62); one `MailContext.of(trigger, eventCode, PARTNERS, templateKey)` per send.
   - [ ] Add `PARTNERS` to `MailComposeRequest.audience` in the spec.
 - [ ] **Task 11 — Frontend** (AC: 6, 7)
   - [ ] `composer/audiences/partners.tsx`: template list = pseudo-entry "Partner meeting invite with calendar" + PARTNER templates. The pseudo-entry renders the body of today's `PartnerMeetingsCompose` (meeting picker + `PartnerMeetingInviteAction`) in place of preview and footer, with the hint.
   - [ ] `EventCommunicationsContainer.tsx`: Partners opens `MailComposer` (16.8 AC15 kept `PartnerMeetingsCompose` until now); `PartnerMeetingsCompose.tsx` becomes the pseudo-entry's body or is folded into it.
   - [ ] Vitest (MSW): both paths; invite path keeps its confirmation and test ids.
 - [ ] **Task 12 — Verify Part B**
-  - [ ] Local dev: partner info mail preview stepping, test send, real send on a throwaway event; `/dev/emails` vs record; invite path still works.
+  - [ ] Local dev: partner info mail preview (one mail, all partners on To:), test send, real send on a throwaway event; `/dev/emails` vs record; invite path still works.
   - [ ] Playwright: extend `event-mail-composer.spec.ts` (no send). Any send spec stays `@sends-real-email`, local only.
 
 ## Dev Notes
