@@ -1,6 +1,9 @@
 package ch.batbern.events.mailcenter.compose;
 
+import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.service.EmailTemplateService;
+import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 
 import java.util.Map;
@@ -23,7 +26,23 @@ public final class MailRenderer {
 
     public static String body(EmailService emailService, EmailTemplateService templates, String contentTemplate,
             String locale, Map<String, String> variables) {
-        String content = emailService.replaceVariables(contentTemplate, variables);
-        return emailService.replaceVariables(templates.mergeWithLayout(content, LAYOUT_KEY, locale), variables);
+        return render(emailService, templates, new MailContent(null, locale, null, contentTemplate, LAYOUT_KEY,
+                MailContext.ContentSource.TEMPLATE), variables).html();
+    }
+
+    /**
+     * Story 16.11: the one renderer. Content variables, then the content's layout (none when its
+     * layout key is null), then variables again for the layout's own placeholders; the subject gets
+     * the same variables, or stays null when the content has none.
+     */
+    public static RenderedMail render(EmailService emailService, EmailTemplateService templates, MailContent content,
+            Map<String, String> variables) {
+        String body = emailService.replaceVariables(content.bodyHtml(), variables);
+        String html = content.layoutKey() == null ? body
+                : emailService.replaceVariables(templates.mergeWithLayout(body, content.layoutKey(),
+                        content.locale()), variables);
+        String subject = content.subject() == null ? null
+                : emailService.replaceVariables(content.subject(), variables);
+        return new RenderedMail(subject, html);
     }
 }
