@@ -1,6 +1,6 @@
 # Story 16.8: One shared composer for all audiences
 
-Status: ready-for-dev
+Status: in-progress (16.8a in review; 16.8b, 16.8c open)
 
 ## Story
 
@@ -79,42 +79,42 @@ Do not start 16.8c in the same branch as 16.8b. Wait for the owner's go after 16
 
 ### Part 16.8a — backend (PR 1)
 
-- [ ] **Task 1 — Contract first** (AC: 1, 4, 5, 6, 8, 9, 10)
-  - [ ] Extend `docs/api/event-mail-api.openapi.yml`: schemas `MailComposeRequest`, `MailPreviewResponse`, `MailSendRequest` (= compose request + `target`), `MailSendResponse`, `MailProgress`, `MailComposeRecipient`, `MailSkippedRecipient`; operations `previewEventMail`, `sendEventMail`, `retryEventMail`; `progress` on `MailMessageDetail`; `includeTests` on list and counts. Field list in Dev Notes.
-  - [ ] Regenerate frontend types (`npm run generate:api-types:event-mail`) and commit them; the EMS generator already reads this spec (`services/event-management-service/build.gradle:856`).
-- [ ] **Task 2 — Shared kernel** (AC: 5)
-  - [ ] `MailContext.asTest()` (same context, `test = true`). Unit test in `MailContextTest`.
-  - [ ] Nothing else in shared kernel; `MailContext.of(...)` stays the factory.
-- [ ] **Task 3 — RED: tests first** (AC: 2–10, 17)
-  - [ ] `MailComposerControllerIntegrationTest` (extends `AbstractIntegrationTest`, `@Transactional`): 403 for non-organizer on all three new operations, 400 cases of AC10, 404 unknown event.
-  - [ ] `MailComposerByteEqualIntegrationTest`: per audience, preview recipient *i* then send; capture what `EmailService` sends and what `JpaOutboundMailRecorder` stored; assert byte-equal subject + body (AC3). Use a capturing `EmailService` stub or the local-capture branch (`EmailService` with no SES client records `local-{id}` Message-IDs, 16.1a); never an SES client.
-  - [ ] `MailComposerTestSendIntegrationTest`: organizer list from a stubbed `UserApiClient`; asserts AC5 (all organizers, `[TEST] ` prefix, credential dummies, no `newsletter_sends`, `is_test = true`, registrant guard not consumed).
-  - [ ] `SpeakerAudienceAdapterTest` (unit): template list = six keys; automatic tier per speaker; reminder type ↔ status; disabled speakers skipped (AC7).
-  - [ ] `MailMessageQueryService` tests: `includeTests` default false (AC9); `progress` from `newsletter_sends` (AC8).
-- [ ] **Task 4 — One render path** (AC: 3)
-  - [ ] `MailRenderer` in `mailcenter.compose`: `render(TemplateSource src, String locale, Map<String,String> vars) → RenderedMail(subject, html)`, doing exactly what the four services do today: `replaceVariables(content)` → `mergeWithLayout(..., "batbern-default", locale)` → `replaceVariables(merged)`; subject = `replaceVariables(subject)`. `TemplateSource` = DB template (key, locale, DE fallback as `VenueCoordinationService.loadTemplateOrThrow` does) or classpath fallback (speaker reminders, `SpeakerReminderEmailService.loadHtmlContent`).
-  - [ ] Refactor the send loops to call the **same** adapter render function the preview calls, not a copy: `NewsletterEmailService` (`renderContent` + `mergeWithLayout` at :226-231 and inside the loops at :403-416, :455-480, retry :588-623), `SlidesOnlineEmailService.renderMail` + per-recipient layering (:299-311, :383-403), `SpeakerReminderEmailService.loadReminderTemplate` (:162-203), `VenueCoordinationService.render` (:163-170). Keep each service's existing quirks (newsletter `buildSubject` fallback, speaker subject fallback, registrant per-recipient locale) inside the adapter/variables, not inside `MailRenderer`.
-  - [ ] `PlaceholderScanner`: returns every `{{name}}`, `{{#name}}`, `{{/name}}` left in a rendered subject or html. Preview reports them in `unknownPlaceholders` (warning only for templates in this story; 16.5 makes it blocking for own text).
-- [ ] **Task 5 — Adapters** (AC: 2, 4, 6, 7)
-  - [ ] `AudienceAdapter` interface + `ComposeContext` record (event, request, organizer username) + `ComposeRecipient` record (displayName, address, cc, locale, per-recipient key such as speakerPoolId or registration id, internal only).
-  - [ ] `NewsletterAudienceAdapter`: categories `NEWSLETTER`; recipients = active subscribers in keyset order (`findActiveAfterId`, as the send job); `personalized = false` (only `unsubscribeLink` differs, and it is redacted); extra field `newsletterReminder`; credential variables `unsubscribeLink`; `deliver` → `sendNewsletter(...)` with `testMode = false`.
-  - [ ] `RegistrantAudienceAdapter`: categories `REGISTRANT_NOTICE`; recipients = the exact filter of `processSend` (active statuses, resolvable email, case-insensitive dedupe, newsletter opt-out skipped → `skipped[]` with reason `OPTED_OUT`); per-recipient locale (`resolveLocale`), so the preview's `locale` only applies when the organizer overrides it for viewing (see Dev Notes); credential variables `deregistrationUrl`; secrets: the registration code (`withSecrets`, as today :308).
-  - [ ] `SpeakerAudienceAdapter`: allowed templates = the six reminder keys; recipients = speaker pool entries in the target status, ordered by speaker name, `remindersDisabled` → `skipped[]` with `REMINDERS_DISABLED`, no resolvable primary email → `NO_EMAIL`; locale per speaker (`speakerLocale`, `SpeakerReminderService` :334-341); variables as `SpeakerReminderEmailService` :191-202; Reply-To `ModeratorReplyAddress.forEvent`. `deliver` → new `SpeakerReminderService.sendManualReminders(event, reminderType, templateKeyOrAuto, trigger, organizer)` that loops `sendManualReminder`'s body with **one** `MailTrigger.organizer(...)` passed through (today each call creates its own trigger, :190).
-  - [ ] `VenueAudienceAdapter`: categories `VENUE_COORDINATION`; extra fields `venueRecipients` (`VENUE`, `CATERING`) and `venueNotes`; one recipient entry (To + Cc); `personalized = false`; Reply-To coordinator; `deliver` → `VenueCoordinationService.send(...)`.
-- [ ] **Task 6 — `MailComposerService` + controller** (AC: 1, 4, 5, 6, 10)
-  - [ ] `preview(eventCode, request)`: adapter lookup by audience, template check, recipient *i*, render, redact, scan, build response.
-  - [ ] `send(eventCode, request, organizer)`: `ORGANIZERS` → test path (render recipient *i* with credential dummies, `[TEST] ` prefix, loop organizers via `emailService.sendHtmlEmailSync(context.asTest(), ...)`; newsletter ICS attachments included when the template carries them); `RECIPIENTS` → `adapter.deliver(...)`.
-  - [ ] Open the record before delivery so the response can return `mailKeys` (Dev Notes → "mailKey before the async send").
-  - [ ] Controller methods on `EventMailController` (same generated `EventMailApi`), `@PreAuthorize("hasRole('ORGANIZER')")`, `Cache-Control: no-store` on preview (bodies are PII).
-- [ ] **Task 7 — Progress, retry, test filter** (AC: 8, 9)
-  - [ ] `MailMessageQueryService`: `includeTests` in `ENTRIES` (`AND (:includeTests OR NOT is_test)`) for list and counts; `progress` for rows with `newsletter_send_id` (status, recipient_count, sent_count, failed_count, retryable = status in PARTIAL/FAILED and no IN_PROGRESS send for the event).
-  - [ ] `retryEventMail`: resolve `newsletter_send_id` from the mail key (also the `newsletter-{sendId}` backfill keys) → `NewsletterEmailService.retryFailedRecipients`.
-- [ ] **Task 8 — Bruno (read-only, local dev)** (AC: 1, 10, 17)
-  - [ ] `bruno-tests/events/mails-preview-*.bru` (newsletter preview 200, 400 unknown template, 403 partner/speaker token where available). **No `POST /mails` file**: the Bruno suite runs against production after each deploy. Prose in `docs { }`, never `#`.
-- [ ] **Task 9 — GREEN + verify** (AC: all of 16.8a)
-  - [ ] Full EMS suite, output to a file: `set -o pipefail; ./gradlew :services:event-management-service:test 2>&1 | tee /tmp/ems-16-8a.log`.
-  - [ ] Local dev (`make dev-native-up`): preview each audience, step speakers; send one test to organizers and one real send per audience on a **local throwaway event**; compare `/dev/emails` capture with the recorded `mail_message` (subject, body). Note in the Dev Agent Record what was and was not checked.
-  - [ ] Docs: `docs/architecture/06-backend-architecture.md` (mailcenter section: compose API, adapters), `docs/user-guide/features/event-mail.md` (consult `.github/doc-drift-mappings.yml`).
+- [x] **Task 1 — Contract first** (AC: 1, 4, 5, 6, 8, 9, 10)
+  - [x] Extend `docs/api/event-mail-api.openapi.yml`: schemas `MailComposeRequest`, `MailPreviewResponse`, `MailSendRequest` (= compose request + `target`), `MailSendResponse`, `MailProgress`, `MailComposeRecipient`, `MailSkippedRecipient`; operations `previewEventMail`, `sendEventMail`, `retryEventMail`; `progress` on `MailMessageDetail`; `includeTests` on list and counts. Field list in Dev Notes.
+  - [x] Regenerate frontend types (`npm run generate:api-types:event-mail`) and commit them; the EMS generator already reads this spec (`services/event-management-service/build.gradle:856`).
+- [x] **Task 2 — Shared kernel** (AC: 5)
+  - [x] `MailContext.asTest()` (same context, `test = true`). Unit test in `MailContextTest`.
+  - [x] Nothing else in shared kernel; `MailContext.of(...)` stays the factory.
+- [x] **Task 3 — RED: tests first** (AC: 2–10, 17)
+  - [x] `MailComposerControllerIntegrationTest` (extends `AbstractIntegrationTest`, `@Transactional`): 403 for non-organizer on all three new operations, 400 cases of AC10, 404 unknown event.
+  - [x] `MailComposerByteEqualIntegrationTest`: per audience, preview recipient *i* then send; capture what `EmailService` sends and what `JpaOutboundMailRecorder` stored; assert byte-equal subject + body (AC3). Use a capturing `EmailService` stub or the local-capture branch (`EmailService` with no SES client records `local-{id}` Message-IDs, 16.1a); never an SES client.
+  - [x] `MailComposerTestSendIntegrationTest`: organizer list from a stubbed `UserApiClient`; asserts AC5 (all organizers, `[TEST] ` prefix, credential dummies, no `newsletter_sends`, `is_test = true`, registrant guard not consumed).
+  - [x] `SpeakerAudienceAdapterTest` (unit): template list = six keys; automatic tier per speaker; reminder type ↔ status; disabled speakers skipped (AC7).
+  - [x] `MailMessageQueryService` tests: `includeTests` default false (AC9); `progress` from `newsletter_sends` (AC8).
+- [x] **Task 4 — One render path** (AC: 3)
+  - [x] `MailRenderer` in `mailcenter.compose`: `render(TemplateSource src, String locale, Map<String,String> vars) → RenderedMail(subject, html)`, doing exactly what the four services do today: `replaceVariables(content)` → `mergeWithLayout(..., "batbern-default", locale)` → `replaceVariables(merged)`; subject = `replaceVariables(subject)`. `TemplateSource` = DB template (key, locale, DE fallback as `VenueCoordinationService.loadTemplateOrThrow` does) or classpath fallback (speaker reminders, `SpeakerReminderEmailService.loadHtmlContent`).
+  - [x] Refactor the send loops to call the **same** adapter render function the preview calls, not a copy: `NewsletterEmailService` (`renderContent` + `mergeWithLayout` at :226-231 and inside the loops at :403-416, :455-480, retry :588-623), `SlidesOnlineEmailService.renderMail` + per-recipient layering (:299-311, :383-403), `SpeakerReminderEmailService.loadReminderTemplate` (:162-203), `VenueCoordinationService.render` (:163-170). Keep each service's existing quirks (newsletter `buildSubject` fallback, speaker subject fallback, registrant per-recipient locale) inside the adapter/variables, not inside `MailRenderer`.
+  - [x] `PlaceholderScanner`: returns every `{{name}}`, `{{#name}}`, `{{/name}}` left in a rendered subject or html. Preview reports them in `unknownPlaceholders` (warning only for templates in this story; 16.5 makes it blocking for own text).
+- [x] **Task 5 — Adapters** (AC: 2, 4, 6, 7)
+  - [x] `AudienceAdapter` interface + `ComposeContext` record (event, request, organizer username) + `ComposeRecipient` record (displayName, address, cc, locale, per-recipient key such as speakerPoolId or registration id, internal only).
+  - [x] `NewsletterAudienceAdapter`: categories `NEWSLETTER`; recipients = active subscribers in keyset order (`findActiveAfterId`, as the send job); `personalized = false` (only `unsubscribeLink` differs, and it is redacted); extra field `newsletterReminder`; credential variables `unsubscribeLink`; `deliver` → `sendNewsletter(...)` with `testMode = false`.
+  - [x] `RegistrantAudienceAdapter`: categories `REGISTRANT_NOTICE`; recipients = the exact filter of `processSend` (active statuses, resolvable email, case-insensitive dedupe, newsletter opt-out skipped → `skipped[]` with reason `OPTED_OUT`); per-recipient locale (`resolveLocale`), so the preview's `locale` only applies when the organizer overrides it for viewing (see Dev Notes); credential variables `deregistrationUrl`; secrets: the registration code (`withSecrets`, as today :308).
+  - [x] `SpeakerAudienceAdapter`: allowed templates = the six reminder keys; recipients = speaker pool entries in the target status, ordered by speaker name, `remindersDisabled` → `skipped[]` with `REMINDERS_DISABLED`, no resolvable primary email → `NO_EMAIL`; locale per speaker (`speakerLocale`, `SpeakerReminderService` :334-341); variables as `SpeakerReminderEmailService` :191-202; Reply-To `ModeratorReplyAddress.forEvent`. `deliver` → new `SpeakerReminderService.sendManualReminders(event, reminderType, templateKeyOrAuto, trigger, organizer)` that loops `sendManualReminder`'s body with **one** `MailTrigger.organizer(...)` passed through (today each call creates its own trigger, :190).
+  - [x] `VenueAudienceAdapter`: categories `VENUE_COORDINATION`; extra fields `venueRecipients` (`VENUE`, `CATERING`) and `venueNotes`; one recipient entry (To + Cc); `personalized = false`; Reply-To coordinator; `deliver` → `VenueCoordinationService.send(...)`.
+- [x] **Task 6 — `MailComposerService` + controller** (AC: 1, 4, 5, 6, 10)
+  - [x] `preview(eventCode, request)`: adapter lookup by audience, template check, recipient *i*, render, redact, scan, build response.
+  - [x] `send(eventCode, request, organizer)`: `ORGANIZERS` → test path (render recipient *i* with credential dummies, `[TEST] ` prefix, loop organizers via `emailService.sendHtmlEmailSync(context.asTest(), ...)`; newsletter ICS attachments included when the template carries them); `RECIPIENTS` → `adapter.deliver(...)`.
+  - [x] Open the record before delivery so the response can return `mailKeys` (Dev Notes → "mailKey before the async send").
+  - [x] Controller methods on `EventMailController` (same generated `EventMailApi`), `@PreAuthorize("hasRole('ORGANIZER')")`, `Cache-Control: no-store` on preview (bodies are PII).
+- [x] **Task 7 — Progress, retry, test filter** (AC: 8, 9)
+  - [x] `MailMessageQueryService`: `includeTests` in `ENTRIES` (`AND (:includeTests OR NOT is_test)`) for list and counts; `progress` for rows with `newsletter_send_id` (status, recipient_count, sent_count, failed_count, retryable = status in PARTIAL/FAILED and no IN_PROGRESS send for the event).
+  - [x] `retryEventMail`: resolve `newsletter_send_id` from the mail key (also the `newsletter-{sendId}` backfill keys) → `NewsletterEmailService.retryFailedRecipients`.
+- [x] **Task 8 — Bruno (read-only, local dev)** (AC: 1, 10, 17)
+  - [x] `bruno-tests/events/mails-preview-*.bru` (newsletter preview 200, 400 unknown template, 403 partner/speaker token where available). **No `POST /mails` file**: the Bruno suite runs against production after each deploy. Prose in `docs { }`, never `#`.
+- [x] **Task 9 — GREEN + verify** (AC: all of 16.8a)
+  - [x] Full EMS suite, output to a file: `set -o pipefail; ./gradlew :services:event-management-service:test 2>&1 | tee /tmp/ems-16-8a.log`.
+  - [x] Local dev (`make dev-native-up`): preview each audience, step speakers; send one test to organizers and one real send per audience on a **local throwaway event**; compare `/dev/emails` capture with the recorded `mail_message` (subject, body). Note in the Dev Agent Record what was and was not checked.
+  - [x] Docs: `docs/architecture/06-backend-architecture.md` (mailcenter section: compose API, adapters), `docs/user-guide/features/event-mail.md` (consult `.github/doc-drift-mappings.yml`).
 
 ### Part 16.8b — frontend (PR 2)
 
@@ -237,12 +237,83 @@ Keep: the subscriber endpoints, `/email-templates`, `PUT .../reminders-disabled`
 
 ### Agent Model Used
 
+Claude Opus 5.5 (Amelia, dev-story), 2026-11-01. Part 16.8a only, branch `feature/16-8a-composer-api`.
+
 ### Debug Log References
+
+- EMS full suite with checkstyle: 2236 tests, 0 failures, 0 errors, 18 skipped (pre-existing).
+  Shared kernel suite green. Frontend `type-check` clean; regenerated `event-mail-api.types.ts`.
+- RED seen first: the new tests did not compile, then failed for the expected reasons
+  (`Map.copyOf` with null variable values, per-recipient subject, 500 from a mocked EmailService).
+- Local dev (live, through the gateway at :8000, throwaway event `BATbern990` with two synthetic
+  registrants, removed afterwards):
+  - previews 200 for all four audiences (newsletter 1010 subscribers, registrants 2, venue 1,
+    speakers on BATbern60 CONTENT tier 2); own text 400; no real token in any preview body.
+  - test sends 202 for newsletter, registrants, speakers: recorded `is_test`, subject `[TEST] `;
+    captured copies carry only `token=TEST`, the newsletter copy its `.ics`.
+  - real sends 202: registrants (recorded, one-shot guard then 409), venue (with simulator contacts
+    set temporarily in the local config, restored after): preview == record == redacted capture.
+  - Bruno `events/mails-preview-*` + existing `mails-*`: 6 files, 12/12 tests, 403 for the partner
+    token, no "Skipping invalid file".
+- Not checked: the newsletter real send on local dev (1010 local subscribers would flush the
+  200-mail capture buffer); it is covered by `MailComposerSendIntegrationTest`. Nothing ran against
+  staging/production.
 
 ### Completion Notes List
 
+- Contract: preview, send (`POST /events/{code}/mails`), retry, `progress` on the detail,
+  `includeTests` on list and counts, all on the one mail resource.
+- `MailComposerService` + `AudienceAdapter` with four adapters; the service holds no audience
+  branch. Each adapter renders through the same service method its send uses: newsletter
+  `prepare`/`renderBody` (the job, its retry and test mode now use them too), registrants
+  `resolveRecipients`/`renderBase`/`personalise` (the send loop uses them), speakers
+  `SpeakerReminderEmailService.render` (the send uses it), venue `renderFor`.
+- `MailRenderer` is static (content → layout → variables) so existing service tests that mock
+  `EmailService` keep working unchanged.
+- Speakers: one request, one `MailTrigger`, `SpeakerReminderService.sendManualReminders`; one record
+  per template key. Reminder log, outreach history, escalation per speaker as before.
+- Test send: every organizer address from CUMS, deduplicated; an organizer whose copy fails is
+  logged by exception type only (the message can contain the address) and skipped.
+  `organizerCount` counts reachable addresses.
+- Deviations from the task text: the byte-equal and test-send integration tests share one class
+  (`MailComposerSendIntegrationTest`, same fixtures); the query tests for `includeTests` and
+  `progress` are in `EventMailControllerIntegrationTest`. Integration tests must replace
+  `TestAwsConfig`'s bare `EmailService` mock with `@MockitoBean(answers = CALLS_REAL_METHODS)`,
+  otherwise rendering returns null and an equality test passes vacuously.
+- Known limit: `mail_recipient` has no subject, so for a registrant whose language differs from the
+  first recipient's the record holds the first recipient's subject. Body is per recipient.
+- Visible change: test sends (including old newsletter test-mode sends) are hidden from "What went
+  out" until 16.8b adds the "show test sends" switch.
+
 ### File List
+
+- `docs/api/event-mail-api.openapi.yml`
+- `web-frontend/src/types/generated/event-mail-api.types.ts`
+- `shared-kernel/src/main/java/ch/batbern/shared/mail/MailContext.java`
+- `shared-kernel/src/test/java/ch/batbern/shared/mail/MailContextTest.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/EventMailController.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/JpaOutboundMailRecorder.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailMessageQueryService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/mailcenter/compose/` (new):
+  `AudienceAdapter`, `ComposeContext`, `ComposeRecipient`, `ComposeRequest`, `DeliveredMail`,
+  `MailComposerService`, `MailRenderer`, `NewsletterAudienceAdapter`, `PlaceholderScanner`,
+  `Recipients`, `RegistrantAudienceAdapter`, `Rendering`, `SkippedRecipient`,
+  `SpeakerAudienceAdapter`, `TemplateCategories`, `VenueAudienceAdapter`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/NewsletterEmailService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SlidesOnlineEmailService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerReminderEmailService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/SpeakerReminderService.java`
+- `services/event-management-service/src/main/java/ch/batbern/events/service/VenueCoordinationService.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/mailcenter/EventMailControllerIntegrationTest.java`
+- `services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerControllerIntegrationTest.java` (new)
+- `services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerSendIntegrationTest.java` (new)
+- `services/event-management-service/src/test/java/ch/batbern/events/mailcenter/compose/PlaceholderScannerTest.java` (new)
+- `services/event-management-service/src/test/java/ch/batbern/events/mailcenter/compose/SpeakerAudienceAdapterTest.java` (new)
+- `bruno-tests/events/mails-preview-newsletter.bru`, `mails-preview-invalid.bru`, `mails-preview-forbidden.bru` (new)
+- `docs/architecture/06-backend-architecture.md`, `docs/user-guide/features/event-mail.md`
+- `_bmad-output/implementation-artifacts/16-8-shared-composer.md`, `sprint-status.yaml`
 
 ## Change Log
 
 - 2026-11-01: Story drafted from Epic 16, grounded in code at 15a13959. Split into 16.8a/b/c.
+- 2026-11-01: Part 16.8a implemented (backend composer API, adapters, test send, progress, retry); in review.

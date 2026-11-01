@@ -26,7 +26,18 @@ export interface paths {
      */
     get: operations['listEventMails'];
     put?: never;
-    post?: never;
+    /**
+     * Send a mail to the audience, or a test to the organizers (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Story 16.8. `target=RECIPIENTS` sends to the audience through the existing send code
+     *     (newsletter job, registrant one-shot guard, speaker reminders, venue To and Cc).
+     *     `target=ORGANIZERS` sends the mail as rendered for recipient `recipientIndex` to every
+     *     organizer, subject prefixed `[TEST] `, with dummy credential links; no real recipient gets
+     *     anything. The response carries the keys of the recorded mail(s) at once; progress of a
+     *     newsletter or registrant notice comes from the detail operation.
+     */
+    post: operations['sendEventMail'];
     delete?: never;
     options?: never;
     head?: never;
@@ -56,6 +67,33 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/events/{eventCode}/mails/preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Render a mail for one real recipient, without sending (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Story 16.8. Renders the mail exactly as recipient `recipientIndex` of the audience gets it,
+     *     through the same code path the send uses, so preview and sent mail are byte-equal.
+     *     Credentials (unsubscribe and deregistration links, the registration code) are shown as
+     *     `[redacted]`, as in the record. Registrants and speakers get the mail in their own language;
+     *     for them `locale` in the request is ignored and the response says which one was used.
+     *     `unknownPlaceholders` lists `{{...}}` left after rendering (a warning for templates).
+     */
+    post: operations['previewEventMail'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/mails/{mailKey}': {
     parameters: {
       query?: never;
@@ -75,6 +113,29 @@ export interface paths {
     get: operations['getEventMail'];
     put?: never;
     post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/mails/{mailKey}/retry': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Retry the failed recipients of a newsletter (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Story 16.8. Re-sends a PARTIAL or FAILED newsletter to the recipients that failed or were
+     *     never reached. Replaces `POST /events/{eventCode}/newsletter/sends/{sendId}/retry`.
+     */
+    post: operations['retryEventMail'];
     delete?: never;
     options?: never;
     head?: never;
@@ -128,6 +189,99 @@ export interface components {
       /** @description The mail as sent, credentials redacted; absent for a newsletter sent before the record existed. */
       bodyHtml?: string | null;
       recipients: components['schemas']['MailRecipientEntry'][];
+      progress?: components['schemas']['MailProgress'];
+    };
+    /** @description Send progress of a newsletter or registrant notice (Story 16.8); absent for other mail. */
+    MailProgress: {
+      /** @enum {string} */
+      status: 'PENDING' | 'IN_PROGRESS' | 'COMPLETED' | 'PARTIAL' | 'FAILED';
+      total: number;
+      sent: number;
+      failed: number;
+      /** @description A newsletter that ended PARTIAL or FAILED, with no other send running. */
+      retryable: boolean;
+    } | null;
+    /** @description One composer request (Story 16.8). Flat optional fields; each says which audience uses it. */
+    MailComposeRequest: {
+      /** @enum {string} */
+      audience: 'NEWSLETTER' | 'REGISTRANTS' | 'SPEAKERS' | 'VENUE';
+      /**
+       * @description OWN_TEXT is rejected with 400 until Story 16.5.
+       * @default TEMPLATE
+       * @enum {string}
+       */
+      contentSource: 'TEMPLATE' | 'OWN_TEXT';
+      /** @description The template. For SPEAKERS null means automatic (each speaker's tier); for NEWSLETTER null means the default newsletter template. */
+      templateKey?: string | null;
+      /**
+       * @description Language for NEWSLETTER and VENUE. Registrants and speakers get their own.
+       * @default de
+       * @enum {string}
+       */
+      locale: 'de' | 'en';
+      /**
+       * @description Preview, and the rendering a test send uses.
+       * @default 0
+       */
+      recipientIndex: number;
+      /**
+       * @description NEWSLETTER only. Prefix "Reminder:".
+       * @default false
+       */
+      newsletterReminder: boolean;
+      /**
+       * @description SPEAKERS only, required in automatic mode. RESPONSE targets INVITED speakers, CONTENT targets ACCEPTED speakers without content.
+       * @enum {string|null}
+       */
+      speakerReminderType?: 'RESPONSE' | 'CONTENT' | null;
+      /** @description VENUE only, at least one. The first role is To, the rest Cc. */
+      venueRecipients?: ('VENUE' | 'CATERING')[];
+      /** @description VENUE only. */
+      venueNotes?: string | null;
+    };
+    MailSendRequest: components['schemas']['MailComposeRequest'] & {
+      /** @enum {string} */
+      target: 'RECIPIENTS' | 'ORGANIZERS';
+    };
+    MailComposeRecipient: {
+      displayName: string;
+      address: string;
+      cc?: string[];
+    };
+    MailSampleRecipient: {
+      displayName: string;
+    };
+    MailSkippedRecipient: {
+      displayName: string;
+      /** @enum {string} */
+      reason: 'OPTED_OUT' | 'REMINDERS_DISABLED' | 'NO_EMAIL' | 'DUPLICATE';
+    };
+    MailPreviewResponse: {
+      subject: string;
+      /** @description The mail as recipient `recipientIndex` gets it, credentials redacted. */
+      html: string;
+      recipientIndex: number;
+      recipientCount: number;
+      recipient?: components['schemas']['MailComposeRecipient'];
+      sampleRecipients: components['schemas']['MailSampleRecipient'][];
+      /** @description False when everyone gets the same text (newsletter, venue); no stepping then. */
+      personalized: boolean;
+      /** @description The template recipient `recipientIndex` gets (speakers in automatic mode). */
+      templateKey?: string | null;
+      locale: string;
+      replyTo?: string | null;
+      /** @description How many organizers a test send reaches. */
+      organizerCount: number;
+      skipped: components['schemas']['MailSkippedRecipient'][];
+      unknownPlaceholders: string[];
+    };
+    MailSendResponse: {
+      /** @description Keys of the recorded mail(s); speakers in automatic mode can give one per template. */
+      mailKeys: string[];
+      /** @enum {string} */
+      target: 'RECIPIENTS' | 'ORGANIZERS';
+      recipientCount: number;
+      skipped: components['schemas']['MailSkippedRecipient'][];
     };
     MailRecipientEntry: {
       address: string;
@@ -193,6 +347,8 @@ export interface operations {
         date?: string;
         /** @description Collapse automatic mails per template and day (default true). */
         grouped?: boolean;
+        /** @description Include organizer test sends (Story 16.8, hidden by default). */
+        includeTests?: boolean;
         /** @description Page number (1-based) */
         page?: number;
         /** @description Items per page (max 100) */
@@ -238,9 +394,92 @@ export interface operations {
       };
     };
   };
-  getEventMailCounts: {
+  sendEventMail: {
     parameters: {
       query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "audience": "NEWSLETTER",
+         *       "contentSource": "TEMPLATE",
+         *       "templateKey": "newsletter-event",
+         *       "locale": "de",
+         *       "target": "ORGANIZERS"
+         *     }
+         */
+        'application/json': components['schemas']['MailSendRequest'];
+      };
+    };
+    responses: {
+      /** @description Accepted; the mail is recorded and on its way */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "mailKeys": [
+           *         "BATbern60-41"
+           *       ],
+           *       "target": "RECIPIENTS",
+           *       "recipientCount": 1052,
+           *       "skipped": []
+           *     }
+           */
+          'application/json': components['schemas']['MailSendResponse'];
+        };
+      };
+      /** @description Invalid request (as for preview) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description A newsletter send is running, or this registrant notice was already sent */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getEventMailCounts: {
+    parameters: {
+      query?: {
+        /** @description Include organizer test sends (Story 16.8, hidden by default). */
+        includeTests?: boolean;
+      };
       header?: never;
       path: {
         eventCode: string;
@@ -257,6 +496,94 @@ export interface operations {
         content: {
           'application/json': components['schemas']['MailCounts'];
         };
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  previewEventMail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        /**
+         * @example {
+         *       "audience": "SPEAKERS",
+         *       "contentSource": "TEMPLATE",
+         *       "speakerReminderType": "CONTENT",
+         *       "locale": "de",
+         *       "recipientIndex": 2
+         *     }
+         */
+        'application/json': components['schemas']['MailComposeRequest'];
+      };
+    };
+    responses: {
+      /** @description The rendered mail for one recipient */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          /**
+           * @example {
+           *       "subject": "Erinnerung: Materialien - BATbern60",
+           *       "html": "<html>...</html>",
+           *       "recipientIndex": 2,
+           *       "recipientCount": 8,
+           *       "recipient": {
+           *         "displayName": "Anna Example",
+           *         "address": "anna@example.com",
+           *         "cc": []
+           *       },
+           *       "sampleRecipients": [
+           *         {
+           *           "displayName": "Anna Example"
+           *         }
+           *       ],
+           *       "personalized": true,
+           *       "templateKey": "speaker-reminder-content-tier2",
+           *       "locale": "de",
+           *       "replyTo": "batbern60-moderator@batbern.ch",
+           *       "organizerCount": 6,
+           *       "skipped": [],
+           *       "unknownPlaceholders": []
+           *     }
+           */
+          'application/json': components['schemas']['MailPreviewResponse'];
+        };
+      };
+      /** @description Invalid request (template not allowed for the audience, recipient index out of range, missing audience field, own text before Story 16.5) */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
       /** @description Not authenticated */
       401: {
@@ -318,6 +645,64 @@ export interface operations {
       };
       /** @description Event or mail not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  retryEventMail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        mailKey: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Retry started */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MailSendResponse'];
+        };
+      };
+      /** @description The mail is not a newsletter */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Event or mail not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Nothing to retry (completed) or a send is running */
+      409: {
         headers: {
           [name: string]: unknown;
         };

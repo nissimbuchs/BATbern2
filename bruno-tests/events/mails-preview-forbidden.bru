@@ -1,0 +1,33 @@
+meta {
+  name: Mail composer — partner cannot preview (403)
+  type: http
+  seq: 27
+}
+
+post {
+  url: {{baseUrl}}/events/BATbern59/mails/preview
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+
+body:json {
+  {
+    "audience": "NEWSLETTER"
+  }
+}
+
+tests {
+  test("a non-organizer never receives 200", function() {
+    // 401 when no partner token is loaded in the env (CI fallback).
+    expect([401, 403]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Story 16.8a AC1: the preview shows a real recipient's mail, which is personal data,
+  ORGANIZER only (@PreAuthorize("hasRole('ORGANIZER')")).
+}

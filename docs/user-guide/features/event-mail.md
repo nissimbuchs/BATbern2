@@ -1,6 +1,6 @@
 # Event mail page (Communications tab)
 
-> **Last Updated:** 2026-10-30 · Epic 16, Stories 16.3 + 16.4
+> **Last Updated:** 2026-11-01 · Epic 16, Stories 16.3, 16.4, 16.8a
 
 The **Communications** tab of an event is its mail page. It answers "did the speakers get the
 slides mail?" without asking the team.
@@ -22,6 +22,8 @@ Every mail sent for the event, newest first, the newsletter included.
 - **Links and codes are not shown.** One-click links, registration codes and temporary passwords
   were replaced by `[redacted]` when the mail was recorded.
 - **A newsletter that is still sending** shows its progress and refreshes by itself.
+- **Test sends are not listed.** A test to the organizers (the newsletter test, and from Story
+  16.8 the test button of every audience) is recorded but hidden from the list.
 
 Limits:
 - Mails sent before 30 October 2026 are not listed, except newsletters and registrant notices,

@@ -56,19 +56,7 @@ public class JpaOutboundMailRecorder implements OutboundMailRecorder {
     @Override
     @Transactional(propagation = Propagation.REQUIRES_NEW)
     public void record(MailContext context, OutboundMail mail) {
-        jdbc.update(INSERT_IF_ABSENT, new MapSqlParameterSource()
-                .addValue("eventCode", context.eventCode())
-                .addValue("groupId", context.sendGroupId())
-                .addValue("audience", context.audience().name())
-                .addValue("templateKey", context.templateKey())
-                .addValue("contentSource", context.contentSource().name())
-                .addValue("subject", Objects.requireNonNullElse(mail.subject(), ""))
-                .addValue("bodyHtml", Objects.requireNonNullElse(mail.htmlBody(), ""))
-                .addValue("sender", context.senderUsername())
-                .addValue("newsletterSendId", context.newsletterSendId())
-                .addValue("test", context.test()));
-        MailMessage message = messages.findBySendGroupId(context.sendGroupId())
-                .orElseThrow(() -> new IllegalStateException("mail_message missing for " + context.sendGroupId()));
+        MailMessage message = insertIfAbsent(context, mail.subject(), mail.htmlBody());
 
         int addressCount = 1 + mail.cc().size();
         if (context.audience() != MailContext.Audience.NEWSLETTER) {
@@ -81,6 +69,34 @@ public class JpaOutboundMailRecorder implements OutboundMailRecorder {
             recipients.saveAll(rows);
         }
         messages.addRecipients(message.getId(), addressCount);
+    }
+
+    /**
+     * Story 16.8: creates the group's mail before its first send, so the composer can return the
+     * mail key while an asynchronous send has not reached anyone yet. Later sends of the group add
+     * their recipients to it. {@code subject} and {@code bodyHtml} must already be redacted.
+     *
+     * @return the mail key
+     */
+    @Transactional(propagation = Propagation.REQUIRES_NEW)
+    public String open(MailContext context, String subject, String bodyHtml) {
+        return insertIfAbsent(context, subject, bodyHtml).getMailKey();
+    }
+
+    private MailMessage insertIfAbsent(MailContext context, String subject, String bodyHtml) {
+        jdbc.update(INSERT_IF_ABSENT, new MapSqlParameterSource()
+                .addValue("eventCode", context.eventCode())
+                .addValue("groupId", context.sendGroupId())
+                .addValue("audience", context.audience().name())
+                .addValue("templateKey", context.templateKey())
+                .addValue("contentSource", context.contentSource().name())
+                .addValue("subject", Objects.requireNonNullElse(subject, ""))
+                .addValue("bodyHtml", Objects.requireNonNullElse(bodyHtml, ""))
+                .addValue("sender", context.senderUsername())
+                .addValue("newsletterSendId", context.newsletterSendId())
+                .addValue("test", context.test()));
+        return messages.findBySendGroupId(context.sendGroupId())
+                .orElseThrow(() -> new IllegalStateException("mail_message missing for " + context.sendGroupId()));
     }
 
     private static MailRecipient recipient(MailMessage message, OutboundMail mail, String address,

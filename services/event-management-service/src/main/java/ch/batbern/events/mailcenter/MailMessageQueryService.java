@@ -86,7 +86,8 @@ public class MailMessageQueryService {
             WITH rows AS (%s UNION ALL %s),
                  filtered AS (
                    SELECT * FROM rows
-                    WHERE (CAST(:audience AS TEXT) IS NULL OR audience = :audience)
+                    WHERE (CAST(:includeTests AS BOOLEAN) OR NOT is_test)
+                      AND (CAST(:audience AS TEXT) IS NULL OR audience = :audience)
                       AND (CAST(:templateKey AS TEXT) IS NULL OR template_key = :templateKey)
                       AND (CAST(:day AS DATE) IS NULL
                            OR CAST(sent_at AT TIME ZONE '%s' AS DATE) = CAST(:day AS DATE))),
@@ -111,7 +112,7 @@ public class MailMessageQueryService {
 
     public MailPage list(String eventCode, MailFilter filter, int page, int limit) {
         requireEvent(eventCode);
-        MapSqlParameterSource params = params(eventCode, filter.grouped())
+        MapSqlParameterSource params = params(eventCode, filter.grouped(), filter.includeTests())
                 .addValue("audience", filter.audience())
                 .addValue("templateKey", filter.templateKey())
                 .addValue("day", filter.day())
@@ -125,17 +126,18 @@ public class MailMessageQueryService {
         return new MailPage(data, total);
     }
 
-    /** Failed deliveries of the event's mail, newsletter included (AC3). */
-    public long failedDeliveries(String eventCode) {
+    /** Failed deliveries of the event's mail, newsletter included (AC3); test sends only on request. */
+    public long failedDeliveries(String eventCode, boolean includeTests) {
         requireEvent(eventCode);
         return Optional.ofNullable(jdbc.queryForObject(ENTRIES + " SELECT COALESCE(sum(failed), 0) FROM entries",
-                params(eventCode, false).addValue("audience", null).addValue("templateKey", null)
+                params(eventCode, false, includeTests).addValue("audience", null).addValue("templateKey", null)
                         .addValue("day", null), Long.class)).orElse(0L);
     }
 
     public Optional<MailDetail> get(String eventCode, String mailKey) {
         requireEvent(eventCode);
-        MapSqlParameterSource params = params(eventCode, false).addValue("audience", null)
+        // A test send opens by its key even though the list hides it (Story 16.8 AC9).
+        MapSqlParameterSource params = params(eventCode, false, true).addValue("audience", null)
                 .addValue("templateKey", null).addValue("day", null).addValue("mailKey", mailKey);
         List<MailEntry> found = jdbc.query(ENTRIES + " SELECT * FROM entries WHERE mail_key = :mailKey",
                 params, MailMessageQueryService::entry);
@@ -143,8 +145,10 @@ public class MailMessageQueryService {
             return Optional.empty();
         }
         MailEntry entry = found.get(0);
+        MailProgress progress = progress(entry);
         if (mailKey.startsWith(NEWSLETTER_KEY_PREFIX)) {
-            return Optional.of(new MailDetail(entry, null, failedNewsletterRecipients(entry.newsletterSendId())));
+            return Optional.of(new MailDetail(entry, null, failedNewsletterRecipients(entry.newsletterSendId()),
+                    progress));
         }
         String body = jdbc.queryForObject("SELECT body_html FROM mail_message WHERE mail_key = :mailKey",
                 params, String.class);
@@ -157,7 +161,27 @@ public class MailMessageQueryService {
                          ORDER BY r.kind DESC, r.address
                         """, params, (rs, n) -> new RecipientEntry(rs.getString("address"), rs.getString("kind"),
                         rs.getString("status"), rs.getString("failure_reason")));
-        return Optional.of(new MailDetail(entry, body, recipients));
+        return Optional.of(new MailDetail(entry, body, recipients, progress));
+    }
+
+    /**
+     * Story 16.8 AC8: progress of a newsletter or registrant notice from its send row. Retryable: a
+     * newsletter that ended PARTIAL or FAILED while no other send of the event is running.
+     */
+    private MailProgress progress(MailEntry entry) {
+        if (entry.newsletterSendId() == null) {
+            return null;
+        }
+        List<MailProgress> found = jdbc.query("""
+                SELECT s.status, COALESCE(s.recipient_count, 0) AS total, s.sent_count, s.failed_count,
+                       s.status IN ('PARTIAL', 'FAILED')
+                         AND NOT EXISTS (SELECT 1 FROM newsletter_sends o WHERE o.event_id = s.event_id
+                                          AND o.status IN ('PENDING', 'IN_PROGRESS')) AS idle_and_unfinished
+                  FROM newsletter_sends s WHERE s.id = :sendId
+                """, new MapSqlParameterSource("sendId", entry.newsletterSendId()), (rs, n) -> new MailProgress(
+                rs.getString("status"), rs.getInt("total"), rs.getInt("sent_count"), rs.getInt("failed_count"),
+                rs.getBoolean("idle_and_unfinished") && "NEWSLETTER".equals(entry.audience())));
+        return found.isEmpty() ? null : found.get(0);
     }
 
     private List<RecipientEntry> failedNewsletterRecipients(UUID sendId) {
@@ -176,8 +200,9 @@ public class MailMessageQueryService {
         }
     }
 
-    private static MapSqlParameterSource params(String eventCode, boolean grouped) {
-        return new MapSqlParameterSource("eventCode", eventCode).addValue("grouped", grouped);
+    private static MapSqlParameterSource params(String eventCode, boolean grouped, boolean includeTests) {
+        return new MapSqlParameterSource("eventCode", eventCode).addValue("grouped", grouped)
+                .addValue("includeTests", includeTests);
     }
 
     private static MailEntry entry(ResultSet rs, int n) throws SQLException {
@@ -189,8 +214,9 @@ public class MailMessageQueryService {
                 rs.getBoolean("is_test"));
     }
 
-    /** Filters of the list operation; null means no filter. */
-    public record MailFilter(String audience, String templateKey, LocalDate day, boolean grouped) {
+    /** Filters of the list operation; null means no filter. Test sends are hidden unless asked for. */
+    public record MailFilter(String audience, String templateKey, LocalDate day, boolean grouped,
+            boolean includeTests) {
     }
 
     public record MailPage(List<MailEntry> data, long total) {
@@ -204,6 +230,11 @@ public class MailMessageQueryService {
     public record RecipientEntry(String address, String kind, String status, String failureReason) {
     }
 
-    public record MailDetail(MailEntry entry, String bodyHtml, List<RecipientEntry> recipients) {
+    public record MailDetail(MailEntry entry, String bodyHtml, List<RecipientEntry> recipients,
+            MailProgress progress) {
+    }
+
+    /** Send progress from {@code newsletter_sends} (Story 16.8). */
+    public record MailProgress(String status, int total, int sent, int failed, boolean retryable) {
     }
 }

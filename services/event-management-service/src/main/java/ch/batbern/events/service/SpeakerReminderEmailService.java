@@ -21,6 +21,7 @@ import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -77,50 +78,69 @@ public class SpeakerReminderEmailService {
             Locale locale,
             MailTrigger mailTrigger
     ) {
-        // Phase B of the post-Epic-11 cleanup: recipient routing now resolves through
-        // session_users + UserApiClient, not the stale speaker_pool.email column. When
-        // an organizer reassigns the session's PRIMARY_SPEAKER on the Sessions tab the
-        // next reminder goes to the new speaker — without this resolver it would still
-        // hit the pre-reassign address.
+        Optional<RenderedReminder> rendered = render(speaker, event, reminderType, tier, deadline, locale);
+        if (rendered.isEmpty()) {
+            log.warn("Skipping reminder for speaker pool {} — no resolvable primary speaker email "
+                    + "(session unset, no PRIMARY_SPEAKER session_user, or CUMS degraded)",
+                    speaker.getId());
+            return;
+        }
+        RenderedReminder mail = rendered.get();
+        try {
+            // Story 16.1a AC2: one recorded mail per run (or manual click), event and template.
+            MailContext context = MailContext.of(mailTrigger, event.getEventCode(), MailContext.Audience.SPEAKERS,
+                    mail.templateKey());
+            emailService.sendHtmlEmail(context, mail.to(), mail.cc(), mail.subject(), mail.html(), mail.replyTo());
+
+            log.info("Reminder email sent: type={}, tier={}, speaker={}, event={}, ccCount={}",
+                    reminderType, tier, LoggingUtils.maskEmail(mail.to()), event.getEventCode(), mail.cc().size());
+
+        } catch (Exception e) {
+            log.error("Failed to send reminder email: type={}, tier={}, speaker={}",
+                    reminderType, tier, LoggingUtils.maskEmail(mail.to()), e);
+            throw new RuntimeException("Failed to send reminder email", e);
+        }
+    }
+
+    /**
+     * A reminder as the speaker gets it (Story 16.8: the send and the composer's preview both
+     * render here). Empty when the speaker has no resolvable address.
+     *
+     * @param to          the primary speaker's address
+     * @param cc          the speaker's additional addresses (Story 10.32)
+     * @param subject     subject as sent
+     * @param html        body as sent
+     * @param templateKey e.g. {@code speaker-reminder-response-tier1}
+     * @param replyTo     the event's moderator address (Story 16.0 AC1)
+     */
+    public record RenderedReminder(String to, List<String> cc, String subject, String html, String templateKey,
+            String replyTo) {
+    }
+
+    public Optional<RenderedReminder> render(SpeakerPool speaker, Event event, String reminderType, String tier,
+            LocalDate deadline, Locale locale) {
+        // Phase B of the post-Epic-11 cleanup: recipient routing resolves through session_users +
+        // UserApiClient, not the stale speaker_pool.email column, so a reassigned session's
+        // PRIMARY_SPEAKER gets the next reminder.
         Optional<PrimarySpeakerResolver.PrimarySpeakerProfile> primary =
                 primarySpeakerResolver.resolve(speaker);
         String recipientEmail = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::email)
                 .filter(e -> e != null && !e.isBlank())
                 .orElse(null);
         if (recipientEmail == null) {
-            log.warn("Skipping reminder for speaker pool {} — no resolvable primary speaker email "
-                    + "(session unset, no PRIMARY_SPEAKER session_user, or CUMS degraded)",
-                    speaker.getId());
-            return;
+            return Optional.empty();
         }
         String recipientName = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::fullName)
                 .filter(n -> !n.isEmpty())
                 .orElse(speaker.getSpeakerName());
-
-        try {
-            Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
-
-            EmailContent content = loadReminderTemplate(
-                    emailLocale, recipientName, event, reminderType, tier, deadline);
-
-            // Story 10.32: CC speaker's additional emails (empty list = unchanged behaviour)
-            java.util.List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
-                    .orElse(java.util.Collections.emptyList());
-            // Story 16.0 AC1: the speaker's answer reaches the moderator, not replies@.
-            // Story 16.1a AC2: one recorded mail per run (or manual click), event and template.
-            MailContext context = MailContext.of(mailTrigger, event.getEventCode(), MailContext.Audience.SPEAKERS,
-                    templateKey(reminderType, tier));
-            emailService.sendHtmlEmail(context, recipientEmail, cc, content.subject(), content.html(),
-                    moderatorReplyAddress.forEvent(event));
-
-            log.info("Reminder email sent: type={}, tier={}, speaker={}, event={}, ccCount={}",
-                    reminderType, tier, LoggingUtils.maskEmail(recipientEmail), event.getEventCode(), cc.size());
-
-        } catch (Exception e) {
-            log.error("Failed to send reminder email: type={}, tier={}, speaker={}",
-                    reminderType, tier, LoggingUtils.maskEmail(recipientEmail), e);
-            throw new RuntimeException("Failed to send reminder email", e);
-        }
+        Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
+        EmailContent content = loadReminderTemplate(emailLocale, recipientName, event, reminderType, tier, deadline);
+        // Story 10.32: CC speaker's additional emails (empty list = unchanged behaviour)
+        List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
+                .orElse(List.of());
+        // Story 16.0 AC1: the speaker's answer reaches the moderator, not replies@.
+        return Optional.of(new RenderedReminder(recipientEmail, cc == null ? List.of() : cc, content.subject(),
+                content.html(), templateKey(reminderType, tier), moderatorReplyAddress.forEvent(event)));
     }
 
     private String buildSubject(Locale locale, String reminderType, String tier, String eventTitle) {
@@ -154,7 +174,7 @@ public class SpeakerReminderEmailService {
     private record EmailContent(String html, String subject) {}
 
     /** e.g. RESPONSE + TIER_1 → {@code speaker-reminder-response-tier1}. */
-    static String templateKey(String reminderType, String tier) {
+    public static String templateKey(String reminderType, String tier) {
         return "speaker-reminder-" + reminderType.toLowerCase() + "-" + tier.toLowerCase().replace("_", "");
     }
 
