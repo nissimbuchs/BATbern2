@@ -45,8 +45,10 @@ public class MailPipeline {
      */
     public MailContent template(String templateKey, String locale) {
         String wanted = "en".equalsIgnoreCase(locale) ? "en" : DEFAULT_LOCALE;
-        Optional<EmailTemplate> stored = templates.findByKeyAndLocale(templateKey, wanted)
-                .or(() -> templates.findByKeyAndLocale(templateKey, DEFAULT_LOCALE));
+        Optional<EmailTemplate> stored = templates.findByKeyAndLocale(templateKey, wanted);
+        if (stored.isEmpty() && !wanted.equals(DEFAULT_LOCALE)) {
+            stored = templates.findByKeyAndLocale(templateKey, DEFAULT_LOCALE);
+        }
         if (stored.isPresent()) {
             EmailTemplate t = stored.get();
             return new MailContent(templateKey, t.getLocale(), t.getSubject(), t.getHtmlBody(), t.getLayoutKey(),
