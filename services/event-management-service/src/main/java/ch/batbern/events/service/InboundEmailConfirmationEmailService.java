@@ -1,13 +1,12 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.shared.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
-
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 
 /**
  * Sends confirmation emails after inbound email actions (Story 10.17 — AC7).
@@ -26,8 +25,8 @@ import java.nio.charset.StandardCharsets;
 @Slf4j
 public class InboundEmailConfirmationEmailService {
 
-    private final EmailTemplateService emailTemplateService;
     private final EmailService emailService;
+    private final MailPipeline mailPipeline;
 
     /**
      * Send unsubscribe confirmation email to the given address.
@@ -38,49 +37,23 @@ public class InboundEmailConfirmationEmailService {
      */
     public void sendUnsubscribeConfirmation(String email, String locale) {
         try {
-            String resolvedLocale = resolveLocale(locale, "unsubscribe-confirmation");
-            String html = loadHtml("unsubscribe-confirmation", resolvedLocale,
-                    "email-templates/unsubscribe-confirmation-" + resolvedLocale + ".html");
-            if (html.isBlank()) {
+            String resolvedLocale = "de".equals(locale) ? "de" : "en";
+            MailContent content = mailPipeline.template("unsubscribe-confirmation", resolvedLocale);
+            if (content.bodyHtml().isBlank()) {
                 log.warn("unsubscribe-confirmation template not found — skipping confirmation email to: {}***",
                         email.substring(0, Math.min(5, email.length())));
                 return;
             }
-            String subject = resolvedLocale.equals("de")
-                    ? "Newsletter Abmeldung bestätigt"
-                    : "Newsletter Unsubscribe Confirmed";
-            emailService.sendHtmlEmail(email, subject, html);
+            // Story 16.11: through the one pipeline, so the BATbern layout and {{baseUrl}} are filled in
+            RenderedMail mail = mailPipeline.render(content, mailPipeline.variables().system().asMap());
+            String subject = mail.subject() != null ? mail.subject()
+                    : resolvedLocale.equals("de")
+                            ? "Newsletter Abmeldung bestätigt"
+                            : "Newsletter Unsubscribe Confirmed";
+            emailService.sendHtmlEmail(email, subject, mail.html());
         } catch (Exception e) {
             log.warn("Failed to send unsubscribe confirmation to: {}*** — {}",
                     email.substring(0, Math.min(5, email.length())), e.getMessage());
         }
-    }
-
-    /**
-     * Resolves the locale to use for the given template key.
-     * Falls back to "en" if the requested locale has no template on the classpath.
-     */
-    private String resolveLocale(String requestedLocale, String templateKey) {
-        if ("en".equals(requestedLocale)) {
-            return "en";
-        }
-        // Check if a classpath template exists for the requested locale; fall back to "en" if not
-        ClassPathResource resource = new ClassPathResource(
-                "email-templates/" + templateKey + "-" + requestedLocale + ".html");
-        return resource.exists() ? requestedLocale : "en";
-    }
-
-    private String loadHtml(String templateKey, String locale, String classpathPath) {
-        return emailTemplateService.findByKeyAndLocale(templateKey, locale)
-                .map(t -> t.getHtmlBody())
-                .orElseGet(() -> {
-                    try {
-                        ClassPathResource resource = new ClassPathResource(classpathPath);
-                        return resource.getContentAsString(StandardCharsets.UTF_8);
-                    } catch (IOException e) {
-                        log.warn("Email template classpath resource not found: {}", classpathPath);
-                        return "";
-                    }
-                });
     }
 }
