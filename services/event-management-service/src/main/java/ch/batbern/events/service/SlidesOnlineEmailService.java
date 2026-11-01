@@ -6,15 +6,17 @@ import ch.batbern.events.domain.NewsletterRecipient;
 import ch.batbern.events.domain.NewsletterRecipientId;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.newsletter.dto.generated.RegistrantNoticePreviewResponse;
-import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.exception.SlidesOnlineAlreadySentException;
+import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.variables.MailVariable;
+import ch.batbern.events.newsletter.dto.generated.RegistrantNoticePreviewResponse;
+import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.RegistrationRepository;
-import ch.batbern.events.mailcenter.compose.MailRenderer;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
@@ -28,9 +30,6 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
-import java.time.Year;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
@@ -94,6 +93,7 @@ public class SlidesOnlineEmailService {
 
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
+    private final MailPipeline mailPipeline;
     private final NewsletterSendRepository sendRepository;
     private final NewsletterRecipientRepository recipientRepository;
     private final NewsletterSubscriberRepository subscriberRepository;
@@ -423,40 +423,30 @@ public class SlidesOnlineEmailService {
     public RenderedMail renderBase(Event event, String templateKey, String locale) {
         Map<String, String> vars = buildVariables(event, locale);
 
-        String content = emailTemplateService.findByKeyAndLocale(templateKey, locale)
-                .map(ch.batbern.events.domain.EmailTemplate::getHtmlBody)
-                .orElseGet(() -> {
-                    log.warn("Registrant-notice template '{}' locale '{}' not found in DB", templateKey, locale);
-                    return "<p>The slides are online.</p>";
-                });
-        String mergedHtml = MailRenderer.body(emailService, emailTemplateService, content, locale, vars);
+        MailContent content = mailPipeline.storedTemplate(templateKey, locale);
+        if (content.bodyHtml().isBlank()) {
+            log.warn("Registrant-notice template '{}' locale '{}' not found in DB", templateKey, locale);
+            content = new MailContent(templateKey, locale, content.subject(), "<p>The slides are online.</p>",
+                    content.layoutKey(), content.contentSource());
+        }
+        ch.batbern.events.mailcenter.render.RenderedMail mail = mailPipeline.render(content, vars);
+        String subject = mail.subject() != null ? mail.subject()
+                : ("de".equals(locale) ? "Die Folien sind online — " : "The slides are online — ")
+                        + event.getTitle();
 
-        String subject = emailTemplateService.resolveSubject(templateKey, locale)
-                .map(s -> emailService.replaceVariables(s, vars))
-                .orElseGet(() -> ("de".equals(locale) ? "Die Folien sind online — " : "The slides are online — ")
-                        + event.getTitle());
-
-        return new RenderedMail(subject, mergedHtml);
+        return new RenderedMail(subject, mail.html());
     }
 
+    /**
+     * The event-level values, the same for every registrant of a language. Per-registrant values
+     * (cancel link, name) are NOT here: this render is shared, see {@link #personalise}.
+     */
     private Map<String, String> buildVariables(Event event, String locale) {
-        boolean isDe = "de".equals(locale);
-        Map<String, String> vars = new HashMap<>();
-        vars.put("eventTitle", nullToEmpty(event.getTitle()));
-        vars.put("eventNumber", String.valueOf(event.getEventNumber()));
-        vars.put("eventType", localizeEventType(event.getEventType(), isDe));
-        vars.put("eventDate", formatEventDate(event, isDe ? Locale.GERMAN : Locale.ENGLISH));
-        vars.put("eventDetailLink", baseUrl + "/events/" + event.getEventCode());
-        vars.put("currentYear", String.valueOf(Year.now().getValue()));
-        // batbern-default layout variables (the layout is shared with the newsletter; without
-        // these the merged email shows literal {{logoUrl}} etc. — replaceVariables leaves
-        // unmatched placeholders untouched). logoUrl matches the newsletter (white logo on the
-        // dark header); the footer links point at the public site / event detail.
-        vars.put("logoUrl", baseUrl + "/BATbern_white_logo.png");
-        vars.put("eventUrl", baseUrl + "/events/" + event.getEventCode());
-        vars.put("dashboardLink", baseUrl);
-        vars.put("supportUrl", baseUrl);
-        return vars;
+        return mailPipeline.variables().event(event, locale)
+                .put(MailVariable.DASHBOARD_LINK, baseUrl)
+                // Story 16.11: value kept until the owner-decided change (separate commit)
+                .put(MailVariable.SUPPORT_URL, baseUrl)
+                .asMap();
     }
 
     /**
@@ -496,27 +486,6 @@ public class SlidesOnlineEmailService {
         vars.put("recipientName", fullName);
         vars.put("attendeeFirstName", nullToEmpty(registration.getAttendeeFirstName()));
         return vars;
-    }
-
-    private String localizeEventType(ch.batbern.events.core.dto.generated.EventType eventType, boolean isDe) {
-        if (eventType == null) {
-            return isDe ? "Abend-BAT" : "Evening BAT";
-        }
-        return switch (eventType) {
-            case EVENING -> isDe ? "Abend-BAT" : "Evening BAT";
-            case FULL_DAY -> isDe ? "Ganztages-BAT" : "Full-Day BAT";
-            case AFTERNOON -> isDe ? "Nachmittags-BAT" : "Afternoon BAT";
-            default -> eventType.name().replace("_", " ");
-        };
-    }
-
-    private String formatEventDate(Event event, Locale locale) {
-        if (event.getDate() == null) {
-            return "";
-        }
-        return DateTimeFormatter.ofPattern("EEEE, d. MMMM yyyy", locale)
-                .withZone(ZoneId.of("Europe/Zurich"))
-                .format(event.getDate());
     }
 
     // ── @Transactional audit helpers (short, autonomous transactions) ─────────────
