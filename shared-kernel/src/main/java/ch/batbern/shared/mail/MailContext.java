@@ -80,6 +80,15 @@ public record MailContext(
                 sendId, testSend, secrets);
     }
 
+    /**
+     * Story 16.8: the same context as an organizer test send. Recorded with {@code is_test = true}
+     * and hidden from "What went out" by default.
+     */
+    public MailContext asTest() {
+        return new MailContext(sendGroupId, eventCode, audience, templateKey, contentSource, senderUsername,
+                newsletterSendId, true, secrets);
+    }
+
     private static String sanitize(String raw) {
         String safe = raw.replaceAll("[^A-Za-z0-9_-]", "-");
         return safe.length() > MAX_GROUP_ID_LENGTH ? safe.substring(0, MAX_GROUP_ID_LENGTH) : safe;

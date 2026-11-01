@@ -2,9 +2,10 @@ openapi: 3.0.3
 info:
   title: BATbern Event Mail API
   version: 1.0.0
-  description: 'What went out for an event (Mail Center, Epic 16, Story 16.3). Reads the outbound mail
-    record written since Story 16.1a (`mail_message`, `mail_recipient`, delivery status from Story
-    16.1b) and, for newsletters sent before the record existed, `newsletter_sends`.
+  description: 'What went out for an event (Mail Center, Epic 16, Story 16.3), and the one composer
+    that sends it (Story 16.8). Reads the outbound mail record written since Story 16.1a
+    (`mail_message`, `mail_recipient`, delivery status from Story 16.1b) and, for newsletters sent
+    before the record existed, `newsletter_sends`.
 
 
     Mail bodies and addresses are personal data: every operation is ORGANIZER-only and the responses
@@ -23,7 +24,7 @@ security:
 - BearerAuth: []
 tags:
 - name: EventMail
-  description: Outbound mail of an event, newest first (Story 16.3)
+  description: Outbound mail of an event, newest first (Story 16.3), preview and send (Story 16.8)
 paths:
   /events/{eventCode}/mails:
     get:
@@ -74,6 +75,13 @@ paths:
         schema:
           type: boolean
           default: true
+      - name: includeTests
+        in: query
+        required: false
+        description: Include organizer test sends (Story 16.8, hidden by default).
+        schema:
+          type: boolean
+          default: false
       - name: page
         in: query
         description: Page number (1-based)
@@ -102,6 +110,61 @@ paths:
           description: Forbidden (ORGANIZER role required)
         '404':
           description: Event not found
+    post:
+      tags:
+      - EventMail
+      operationId: sendEventMail
+      summary: Send a mail to the audience, or a test to the organizers (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.8. `target=RECIPIENTS` sends to the audience through the existing send code
+        (newsletter job, registrant one-shot guard, speaker reminders, venue To and Cc).
+        `target=ORGANIZERS` sends the mail as rendered for recipient `recipientIndex` to every
+        organizer, subject prefixed `[TEST] `, with dummy credential links; no real recipient gets
+        anything. The response carries the keys of the recorded mail(s) at once; progress of a
+        newsletter or registrant notice comes from the detail operation.
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailSendRequest'
+            example:
+              audience: NEWSLETTER
+              contentSource: TEMPLATE
+              templateKey: newsletter-event
+              locale: de
+              target: ORGANIZERS
+      responses:
+        '202':
+          description: Accepted; the mail is recorded and on its way
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailSendResponse'
+              example:
+                mailKeys:
+                - BATbern60-41
+                target: RECIPIENTS
+                recipientCount: 1052
+                skipped: []
+        '400':
+          description: Invalid request (as for preview)
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Event not found
+        '409':
+          description: A newsletter send is running, or this registrant notice was already sent
   /events/{eventCode}/mails/counts:
     get:
       tags:
@@ -119,6 +182,13 @@ paths:
         required: true
         schema:
           type: string
+      - name: includeTests
+        in: query
+        required: false
+        description: Include organizer test sends (Story 16.8, hidden by default).
+        schema:
+          type: boolean
+          default: false
       responses:
         '200':
           description: Counts
@@ -126,6 +196,73 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailCounts'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Event not found
+  /events/{eventCode}/mails/preview:
+    post:
+      tags:
+      - EventMail
+      operationId: previewEventMail
+      summary: Render a mail for one real recipient, without sending (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.8. Renders the mail exactly as recipient `recipientIndex` of the audience gets it,
+        through the same code path the send uses, so preview and sent mail are byte-equal.
+        Credentials (unsubscribe and deregistration links, the registration code) are shown as
+        `[redacted]`, as in the record. Registrants and speakers get the mail in their own language;
+        for them `locale` in the request is ignored and the response says which one was used.
+        `unknownPlaceholders` lists `{{...}}` left after rendering (a warning for templates).
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailComposeRequest'
+            example:
+              audience: SPEAKERS
+              contentSource: TEMPLATE
+              speakerReminderType: CONTENT
+              locale: de
+              recipientIndex: 2
+      responses:
+        '200':
+          description: The rendered mail for one recipient
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailPreviewResponse'
+              example:
+                subject: 'Erinnerung: Materialien - BATbern60'
+                html: '<html>...</html>'
+                recipientIndex: 2
+                recipientCount: 8
+                recipient:
+                  displayName: Anna Example
+                  address: anna@example.com
+                  cc: []
+                sampleRecipients:
+                - displayName: Anna Example
+                personalized: true
+                templateKey: speaker-reminder-content-tier2
+                locale: de
+                replyTo: batbern60-moderator@batbern.ch
+                organizerCount: 6
+                skipped: []
+                unknownPlaceholders: []
+        '400':
+          description: Invalid request (template not allowed for the audience, recipient index out of
+            range, missing audience field, own text before Story 16.5)
         '401':
           description: Not authenticated
         '403':
@@ -169,6 +306,45 @@ paths:
           description: Forbidden (ORGANIZER role required)
         '404':
           description: Event or mail not found
+  /events/{eventCode}/mails/{mailKey}/retry:
+    post:
+      tags:
+      - EventMail
+      operationId: retryEventMail
+      summary: Retry the failed recipients of a newsletter (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.8. Re-sends a PARTIAL or FAILED newsletter to the recipients that failed or were
+        never reached. Replaces `POST /events/{eventCode}/newsletter/sends/{sendId}/retry`.
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: mailKey
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '202':
+          description: Retry started
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailSendResponse'
+        '400':
+          description: The mail is not a newsletter
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Event or mail not found
+        '409':
+          description: Nothing to retry (completed) or a send is running
 components:
   schemas:
     MailMessagePage:
@@ -268,6 +444,224 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/MailRecipientEntry'
+        progress:
+          $ref: '#/components/schemas/MailProgress'
+    MailProgress:
+      type: object
+      nullable: true
+      description: Send progress of a newsletter or registrant notice (Story 16.8); absent for other mail.
+      required:
+      - status
+      - total
+      - sent
+      - failed
+      - retryable
+      properties:
+        status:
+          type: string
+          enum:
+          - PENDING
+          - IN_PROGRESS
+          - COMPLETED
+          - PARTIAL
+          - FAILED
+        total:
+          type: integer
+        sent:
+          type: integer
+        failed:
+          type: integer
+        retryable:
+          type: boolean
+          description: A newsletter that ended PARTIAL or FAILED, with no other send running.
+    MailComposeRequest:
+      type: object
+      description: |
+        One composer request (Story 16.8). Flat optional fields; each says which audience uses it.
+      required:
+      - audience
+      properties:
+        audience:
+          type: string
+          enum:
+          - NEWSLETTER
+          - REGISTRANTS
+          - SPEAKERS
+          - VENUE
+        contentSource:
+          type: string
+          enum:
+          - TEMPLATE
+          - OWN_TEXT
+          default: TEMPLATE
+          description: OWN_TEXT is rejected with 400 until Story 16.5.
+        templateKey:
+          type: string
+          nullable: true
+          description: The template. For SPEAKERS null means automatic (each speaker's tier); for
+            NEWSLETTER null means the default newsletter template.
+        locale:
+          type: string
+          enum:
+          - de
+          - en
+          default: de
+          description: Language for NEWSLETTER and VENUE. Registrants and speakers get their own.
+        recipientIndex:
+          type: integer
+          minimum: 0
+          default: 0
+          description: Preview, and the rendering a test send uses.
+        newsletterReminder:
+          type: boolean
+          default: false
+          description: NEWSLETTER only. Prefix "Reminder:".
+        speakerReminderType:
+          type: string
+          enum:
+          - RESPONSE
+          - CONTENT
+          nullable: true
+          description: SPEAKERS only, required in automatic mode. RESPONSE targets INVITED speakers,
+            CONTENT targets ACCEPTED speakers without content.
+        venueRecipients:
+          type: array
+          items:
+            type: string
+            enum:
+            - VENUE
+            - CATERING
+          description: VENUE only, at least one. The first role is To, the rest Cc.
+        venueNotes:
+          type: string
+          maxLength: 4000
+          nullable: true
+          description: VENUE only.
+    MailSendRequest:
+      allOf:
+      - $ref: '#/components/schemas/MailComposeRequest'
+      - type: object
+        required:
+        - target
+        properties:
+          target:
+            type: string
+            enum:
+            - RECIPIENTS
+            - ORGANIZERS
+    MailComposeRecipient:
+      type: object
+      required:
+      - displayName
+      - address
+      properties:
+        displayName:
+          type: string
+        address:
+          type: string
+        cc:
+          type: array
+          items:
+            type: string
+    MailSampleRecipient:
+      type: object
+      required:
+      - displayName
+      properties:
+        displayName:
+          type: string
+    MailSkippedRecipient:
+      type: object
+      required:
+      - displayName
+      - reason
+      properties:
+        displayName:
+          type: string
+        reason:
+          type: string
+          enum:
+          - OPTED_OUT
+          - REMINDERS_DISABLED
+          - NO_EMAIL
+          - DUPLICATE
+    MailPreviewResponse:
+      type: object
+      required:
+      - subject
+      - html
+      - recipientIndex
+      - recipientCount
+      - sampleRecipients
+      - personalized
+      - locale
+      - organizerCount
+      - skipped
+      - unknownPlaceholders
+      properties:
+        subject:
+          type: string
+        html:
+          type: string
+          description: The mail as recipient `recipientIndex` gets it, credentials redacted.
+        recipientIndex:
+          type: integer
+        recipientCount:
+          type: integer
+        recipient:
+          $ref: '#/components/schemas/MailComposeRecipient'
+        sampleRecipients:
+          type: array
+          maxItems: 8
+          items:
+            $ref: '#/components/schemas/MailSampleRecipient'
+        personalized:
+          type: boolean
+          description: False when everyone gets the same text (newsletter, venue); no stepping then.
+        templateKey:
+          type: string
+          nullable: true
+          description: The template recipient `recipientIndex` gets (speakers in automatic mode).
+        locale:
+          type: string
+        replyTo:
+          type: string
+          nullable: true
+        organizerCount:
+          type: integer
+          description: How many organizers a test send reaches.
+        skipped:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailSkippedRecipient'
+        unknownPlaceholders:
+          type: array
+          items:
+            type: string
+    MailSendResponse:
+      type: object
+      required:
+      - mailKeys
+      - target
+      - recipientCount
+      - skipped
+      properties:
+        mailKeys:
+          type: array
+          items:
+            type: string
+          description: Keys of the recorded mail(s); speakers in automatic mode can give one per template.
+        target:
+          type: string
+          enum:
+          - RECIPIENTS
+          - ORGANIZERS
+        recipientCount:
+          type: integer
+        skipped:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailSkippedRecipient'
     MailRecipientEntry:
       type: object
       required:

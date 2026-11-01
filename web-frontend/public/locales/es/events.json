@@ -449,6 +449,74 @@
           "SPRING": "Reunión de primavera",
           "AUTUMN": "Reunión de otoño"
         }
+      },
+      "sending": "enviando …",
+      "showTests": "Mostrar envíos de prueba",
+      "retry": "Reenviar fallidos",
+      "composer": {
+        "contentSource": "Contenido",
+        "source": {
+          "template": "Plantilla",
+          "ownText": "Texto propio",
+          "ownTextSoon": "El texto propio llegará con una actualización posterior."
+        },
+        "template": "Plantilla",
+        "automatic": "Automático (nivel por ponente)",
+        "noTemplates": "No hay plantillas",
+        "language": "Idioma",
+        "ownLanguage": "Cada destinatario recibe el correo en su propio idioma.",
+        "newsletter": {
+          "reminder": "Enviar como recordatorio"
+        },
+        "speakers": {
+          "which": "¿Qué ponentes?",
+          "type": {
+            "RESPONSE": "Ponentes invitados sin respuesta",
+            "CONTENT": "Ponentes confirmados sin contenido"
+          },
+          "goesTo": "Para: {{target}}",
+          "detected": "Elegido automáticamente para {{name}}: {{templateKey}}"
+        },
+        "recipients": {
+          "count_one": "{{count}} destinatario",
+          "count_other": "{{count}} destinatarios",
+          "more": "+{{count}} más",
+          "sameText": "Sin campos personales: todos reciben el mismo texto.",
+          "to": "Para",
+          "cc": "Cc"
+        },
+        "skipped": {
+          "title_one": "{{count}} excluido",
+          "title_other": "{{count}} excluidos",
+          "reason": {
+            "OPTED_OUT": "dado de baja",
+            "REMINDERS_DISABLED": "recordatorios desactivados",
+            "NO_EMAIL": "sin dirección de correo",
+            "DUPLICATE": "dirección duplicada"
+          }
+        },
+        "preview": {
+          "previous": "Destinatario anterior",
+          "next": "Destinatario siguiente",
+          "position": "({{index}}/{{count}})",
+          "subject": "Asunto",
+          "frameTitle": "Vista previa del correo",
+          "unknownPlaceholders": "Marcadores desconocidos: {{list}}. Corrige la plantilla antes de enviar.",
+          "incomplete": "La vista previa aparece cuando todo está elegido."
+        },
+        "replyTo": "Las respuestas van a {{address}}.",
+        "replyDefault": "Las respuestas van a la dirección del remitente.",
+        "footer": {
+          "test": "Enviar a organizadores (prueba)",
+          "send_one": "Enviar a {{count}} destinatario",
+          "send_other": "Enviar a {{count}} destinatarios",
+          "confirm_one": "¿Enviar de verdad a {{count}} destinatario?",
+          "confirm_other": "¿Enviar de verdad a {{count}} destinatarios?",
+          "back": "Atrás",
+          "yes": "Sí, enviar"
+        },
+        "testSent_one": "Prueba enviada a {{count}} organizador",
+        "testSent_other": "Prueba enviada a {{count}} organizadores"
       }
     }
   },

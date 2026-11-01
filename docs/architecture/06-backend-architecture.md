@@ -911,6 +911,46 @@ SES events of the transactional configuration set move each `mail_recipient` fro
   events).
 - `GET .../mails/{mailKey}`: body and recipients; for a newsletter only the failed ones.
 - `GET .../mails/counts`: failed deliveries of the event ("Handled automatically").
+- List and counts hide organizer test sends (`is_test`) unless `includeTests=true` (Story 16.8);
+  the detail opens a test send by its key.
+
+### Composer API (Story 16.8a)
+
+One composer for every audience, on the same resource (no second mail resource). Package
+`ch.batbern.events.mailcenter.compose`, all `hasRole('ORGANIZER')`:
+
+- `POST /events/{eventCode}/mails/preview`: renders the mail for recipient `recipientIndex` of the
+  audience, redacted like the record, with `recipientCount`, up to 8 sample names, `skipped[]`
+  (`OPTED_OUT`, `REMINDERS_DISABLED`, `NO_EMAIL`, `DUPLICATE`), `organizerCount` and
+  `unknownPlaceholders` (a warning for templates). `Cache-Control: no-store`.
+- `POST /events/{eventCode}/mails` with `target`: `RECIPIENTS` delivers through the existing send
+  code; `ORGANIZERS` sends recipient i's mail to every ORGANIZER-role user (CUMS, subscribed or
+  not), subject prefixed `[TEST] `, credential variables replaced by dummies (`token=TEST`),
+  recorded with `is_test = true`; no send audit row, no one-shot guard consumed. Returns 202 with
+  the recorded `mailKeys` at once.
+- `POST .../mails/{mailKey}/retry`: retries a PARTIAL or FAILED newsletter (400 for any other mail,
+  409 when completed or running). `GET .../mails/{mailKey}` carries `progress` (status, total,
+  sent, failed, retryable) for a newsletter or registrant notice.
+- **Flow** (`MailComposerService`, no audience `if`): validate (own text 400 until 16.5, template
+  allowed for the audience, audience fields) → `resolveRecipients` → `render` one recipient →
+  preview, test or `deliver`.
+- **`AudienceAdapter`**, one per audience: `NewsletterAudienceAdapter` (subscribers in the job's
+  keyset order, not personalised, delivery = newsletter job), `RegistrantAudienceAdapter`
+  (`SlidesOnlineEmailService.resolveRecipients`, per-recipient language and cancel link, one-shot
+  guard), `SpeakerAudienceAdapter` (the six `speaker-reminder-*` keys only; automatic = tier of each
+  speaker's own deadline; one request, one `MailTrigger`, so one record per template key instead of
+  one per speaker), `VenueAudienceAdapter` (one mail, first role To, rest Cc).
+- **Preview equals sent** (AC3): the adapter renders through the same service method the send
+  uses (`NewsletterEmailService.prepare`/`renderBody`, `SlidesOnlineEmailService.renderBase`/
+  `personalise`, `SpeakerReminderEmailService.render`, `VenueCoordinationService.renderFor`);
+  `MailRenderer` holds the content → layout → variables order. Tested byte-equal per audience
+  (`MailComposerSendIntegrationTest`). `mail_recipient` keeps no subject, so a recipient whose
+  language differs from the first recipient's has the mail's subject in the record.
+- **Key before an async send**: `JpaOutboundMailRecorder.open` creates the group's row (same
+  `INSERT_IF_ABSENT`) so the response carries the key while the newsletter or reminder threads are
+  still sending.
+- The old compose endpoints (newsletter, registrant notices, venue, speaker send-reminder) stay
+  until the clean-up release (16.8c).
 
 ## Auto-Enrollment on Event Creation
 

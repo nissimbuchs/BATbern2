@@ -19,7 +19,6 @@ import {
   Alert,
   Box,
   Button,
-  Checkbox,
   CircularProgress,
   Dialog,
   DialogActions,
@@ -27,48 +26,35 @@ import {
   DialogContentText,
   DialogTitle,
   FormControl,
-  FormControlLabel,
   InputLabel,
-  Link,
   MenuItem,
   Paper,
   Select,
   Snackbar,
   Stack,
-  TextField,
   ToggleButton,
   ToggleButtonGroup,
   Typography,
 } from '@mui/material';
 import { Send as SendIcon, Preview as PreviewIcon } from '@mui/icons-material';
-import { useMutation, useQuery } from '@tanstack/react-query';
+import { useMutation } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import { Link as RouterLink } from 'react-router-dom';
 import { useEmailTemplates } from '@/hooks/useEmailTemplates';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
-import { getAdminSetting } from '@/services/adminSettingsService';
+import { venueCoordinationService } from '@/services/venueCoordinationService';
 import {
-  venueCoordinationService,
+  useVenueCoordinationConfig,
   type VenueRecipientRole,
-} from '@/services/venueCoordinationService';
+} from './communications/composer/audiences/useVenueCoordinationConfig';
 import {
-  VENUE_COORDINATION_CONFIG_KEY,
-  type VenueCoordinationConfig,
-} from '@/components/organizer/Admin/VenueCateringContactsTab';
+  VenueNotConfiguredAlert,
+  VenueRecipientFields,
+} from './communications/composer/audiences/VenueRecipientFields';
 
 interface VenueCoordinationComposerProps {
   eventCode: string;
   /** Story 16.4: called after a successful send; the mail page closes the panel and refreshes. */
   onSent?: () => void;
-}
-
-function parseConfig(raw: string | null | undefined): VenueCoordinationConfig | null {
-  if (!raw) return null;
-  try {
-    return JSON.parse(raw) as VenueCoordinationConfig;
-  } catch {
-    return null;
-  }
 }
 
 export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps> = ({
@@ -79,15 +65,8 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
   const { isMobile } = useBreakpoints();
 
   // ── Admin config (contacts + coordinator) ───────────────────────────────
-  const configQuery = useQuery({
-    queryKey: ['admin-settings', VENUE_COORDINATION_CONFIG_KEY],
-    queryFn: () => getAdminSetting(VENUE_COORDINATION_CONFIG_KEY),
-  });
-  const config = useMemo(() => parseConfig(configQuery.data?.value), [configQuery.data]);
-  const venueConfigured = Boolean(config?.venue?.name && config?.venue?.email);
-  const cateringConfigured = Boolean(config?.catering?.name && config?.catering?.email);
-  const coordinatorConfigured = Boolean(config?.coordinatorUsername);
-  const fullyConfigured = venueConfigured && cateringConfigured && coordinatorConfigured;
+  const venueConfig = useVenueCoordinationConfig();
+  const { config, venueConfigured, cateringConfigured, fullyConfigured } = venueConfig;
 
   // ── Templates ────────────────────────────────────────────────────────────
   const templatesQuery = useEmailTemplates({ category: 'VENUE_COORDINATION', isLayout: false });
@@ -105,17 +84,14 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
 
   // ── Composer state ───────────────────────────────────────────────────────
   const [notes, setNotes] = useState('');
-  const [sendToVenue, setSendToVenue] = useState(true);
-  const [sendToCatering, setSendToCatering] = useState(true);
+  const [selectedRecipients, setSelectedRecipients] = useState<VenueRecipientRole[]>([
+    'VENUE',
+    'CATERING',
+  ]);
+  const sendToVenue = selectedRecipients.includes('VENUE');
+  const sendToCatering = selectedRecipients.includes('CATERING');
   const [confirmOpen, setConfirmOpen] = useState(false);
   const [snackbar, setSnackbar] = useState<{ message: string; error: boolean } | null>(null);
-
-  const selectedRecipients = useMemo<VenueRecipientRole[]>(() => {
-    const list: VenueRecipientRole[] = [];
-    if (sendToVenue) list.push('VENUE');
-    if (sendToCatering) list.push('CATERING');
-    return list;
-  }, [sendToVenue, sendToCatering]);
 
   const previewMutation = useMutation({
     mutationFn: () =>
@@ -164,7 +140,7 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
 
   // ── Render ───────────────────────────────────────────────────────────────
 
-  if (configQuery.isLoading) {
+  if (venueConfig.isLoading) {
     return (
       <Paper sx={{ p: 3 }}>
         <Box sx={{ display: 'flex', justifyContent: 'center' }}>
@@ -186,17 +162,7 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
         )}
       </Typography>
 
-      {!fullyConfigured && (
-        <Alert severity="warning" sx={{ mb: 2 }}>
-          {t(
-            'eventPage.venueCoordination.notConfigured',
-            'Venue or catering contacts are not configured.'
-          )}{' '}
-          <Link component={RouterLink} to="/organizer/admin?tab=8">
-            {t('eventPage.venueCoordination.openAdmin', 'Open Administration → Venue & Catering')}
-          </Link>
-        </Alert>
-      )}
+      {!fullyConfigured && <VenueNotConfiguredAlert />}
 
       <Box
         sx={{
@@ -247,59 +213,14 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
               </FormControl>
             </Stack>
 
-            {/* Recipient checkboxes */}
-            <Box>
-              <Typography variant="subtitle2" sx={{ mb: 1 }}>
-                {t('eventPage.venueCoordination.recipients', 'Recipients')}
-              </Typography>
-              <Stack direction="column" spacing={1}>
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={sendToVenue}
-                      onChange={(e) => setSendToVenue(e.target.checked)}
-                      disabled={!venueConfigured}
-                      data-testid="venue-coord-send-venue"
-                    />
-                  }
-                  label={
-                    venueConfigured && config
-                      ? `${t('eventPage.venueCoordination.venueRole', 'Venue')} — ${config.venue.name} <${config.venue.email}>`
-                      : t('eventPage.venueCoordination.venueRole', 'Venue')
-                  }
-                  sx={{ '& .MuiFormControlLabel-label': { wordBreak: 'break-word' } }}
-                />
-                <FormControlLabel
-                  control={
-                    <Checkbox
-                      checked={sendToCatering}
-                      onChange={(e) => setSendToCatering(e.target.checked)}
-                      disabled={!cateringConfigured}
-                      data-testid="venue-coord-send-catering"
-                    />
-                  }
-                  label={
-                    cateringConfigured && config
-                      ? `${t('eventPage.venueCoordination.cateringRole', 'Catering')} — ${config.catering.name} <${config.catering.email}>`
-                      : t('eventPage.venueCoordination.cateringRole', 'Catering')
-                  }
-                  sx={{ '& .MuiFormControlLabel-label': { wordBreak: 'break-word' } }}
-                />
-              </Stack>
-            </Box>
-
-            {/* Notes */}
-            <TextField
-              label={t('eventPage.venueCoordination.notesLabel', 'Notes (optional)')}
-              placeholder={t(
-                'eventPage.venueCoordination.notesPlaceholder',
-                'e.g. Reserve a lunch table for 8 at 12:30 in the back room.'
-              )}
-              value={notes}
-              onChange={(e) => setNotes(e.target.value)}
-              multiline
-              minRows={3}
-              fullWidth
+            <VenueRecipientFields
+              config={config}
+              venueConfigured={venueConfigured}
+              cateringConfigured={cateringConfigured}
+              roles={selectedRecipients}
+              onRolesChange={setSelectedRecipients}
+              notes={notes}
+              onNotesChange={setNotes}
             />
 
             {/* Preview button */}

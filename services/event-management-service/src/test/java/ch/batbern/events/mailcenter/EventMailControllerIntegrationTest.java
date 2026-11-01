@@ -216,6 +216,63 @@ class EventMailControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get(BASE + "/BATbern915-1")).andExpect(status().isForbidden());
     }
 
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("Story 16.8 AC9: test sends are hidden from list and counts unless includeTests=true")
+    void testSends_hiddenByDefault() throws Exception {
+        UUID real = message(new Mail("BATbern915-20", "VENUE", "venue-timetable", "TEMPLATE", "organizer1", null,
+                "Timetable", now.minus(2, ChronoUnit.HOURS), EVENT_CODE));
+        recipient(real, A, "FAILED", "Permanent/General");
+        UUID test = message(new Mail("BATbern915-21", "VENUE", "venue-timetable", "TEMPLATE", "organizer1", null,
+                "[TEST] Timetable", now.minus(1, ChronoUnit.HOURS), EVENT_CODE));
+        recipient(test, B, "FAILED", "Permanent/General");
+        jdbc.update("UPDATE mail_message SET is_test = true WHERE id = ?", test);
+
+        mockMvc.perform(get(BASE))
+                .andExpect(jsonPath("$.data[*].mailKey", contains("BATbern915-20")));
+        mockMvc.perform(get(BASE + "/counts"))
+                .andExpect(jsonPath("$.failedDeliveries").value(1));
+        mockMvc.perform(get(BASE).param("includeTests", "true"))
+                .andExpect(jsonPath("$.data[*].mailKey", contains("BATbern915-21", "BATbern915-20")))
+                .andExpect(jsonPath("$.data[0].test").value(true));
+        mockMvc.perform(get(BASE + "/counts").param("includeTests", "true"))
+                .andExpect(jsonPath("$.failedDeliveries").value(2));
+        mockMvc.perform(get(BASE + "/BATbern915-21"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.message.test").value(true));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("Story 16.8 AC8: a newsletter's detail carries its progress; retryable when PARTIAL and idle")
+    void newsletterDetail_progress() throws Exception {
+        UUID sendId = newsletterSend("newsletter-event", now.minus(1, ChronoUnit.HOURS), 5);
+        jdbc.update("UPDATE newsletter_sends SET status = 'PARTIAL', sent_count = 4, failed_count = 1 WHERE id = ?",
+                sendId);
+        message(new Mail("BATbern915-30", "NEWSLETTER", "newsletter-event", "TEMPLATE", "organizer1", sendId, "News",
+                now.minus(1, ChronoUnit.HOURS), EVENT_CODE));
+        message(new Mail("BATbern915-31", "VENUE", "venue-timetable", "TEMPLATE", "organizer1", null, "Timetable",
+                now, EVENT_CODE));
+
+        mockMvc.perform(get(BASE + "/BATbern915-30"))
+                .andExpect(jsonPath("$.progress.status").value("PARTIAL"))
+                .andExpect(jsonPath("$.progress.total").value(5))
+                .andExpect(jsonPath("$.progress.sent").value(4))
+                .andExpect(jsonPath("$.progress.failed").value(1))
+                .andExpect(jsonPath("$.progress.retryable").value(true));
+        mockMvc.perform(get(BASE + "/newsletter-" + sendId))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get(BASE + "/BATbern915-31"))
+                .andExpect(jsonPath("$.progress").value(nullValue()));
+
+        jdbc.update("INSERT INTO newsletter_sends (id, event_id, template_key, is_reminder, locale, sent_at,"
+                + " sent_by_username, recipient_count, status, sent_count, failed_count, test_mode, created_at)"
+                + " VALUES (?, ?, 'newsletter-event', true, 'de', now(), 'organizer1', 5, 'IN_PROGRESS', 0, 0, false,"
+                + " now())", UUID.randomUUID(), event.getId());
+        mockMvc.perform(get(BASE + "/BATbern915-30"))
+                .andExpect(jsonPath("$.progress.retryable").value(false));
+    }
+
     // --- fixtures (direct SQL, inside the test transaction) ---
 
     /** One mail_message fixture row. */

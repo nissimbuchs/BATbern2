@@ -1,0 +1,54 @@
+meta {
+  name: Mail composer — newsletter preview (organizer)
+  type: http
+  seq: 25
+}
+
+post {
+  url: {{baseUrl}}/events/BATbern59/mails/preview
+  body: json
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+body:json {
+  {
+    "audience": "NEWSLETTER",
+    "contentSource": "TEMPLATE",
+    "locale": "de",
+    "recipientIndex": 0
+  }
+}
+
+tests {
+  test("returns 200 (404 where BATbern59 is not seeded, 400 where nobody subscribes)", function() {
+    expect([200, 400, 404]).to.include(res.getStatus());
+  });
+
+  test("renders one recipient, not personalised, with the default template", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      expect(body.recipientIndex).to.equal(0);
+      expect(body.recipientCount).to.be.at.least(1);
+      expect(body.personalized).to.equal(false);
+      expect(body.templateKey).to.equal("newsletter-event");
+      expect(body.html).to.be.a("string").and.not.be.empty;
+      expect(body.unknownPlaceholders).to.be.an("array");
+    }
+  });
+
+  test("never cached", function() {
+    if (res.getStatus() === 200) {
+      expect(res.getHeader("cache-control")).to.contain("no-store");
+    }
+  });
+}
+
+docs {
+  Story 16.8a AC1/AC4: POST /events/{eventCode}/mails/preview renders the mail for one real
+  recipient without sending. Read-only: there is deliberately no Bruno file for POST /mails,
+  because this collection also runs against production after every deploy (ADR-015).
+}

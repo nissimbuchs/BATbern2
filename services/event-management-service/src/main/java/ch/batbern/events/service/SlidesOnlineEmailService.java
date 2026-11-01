@@ -14,6 +14,7 @@ import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.RegistrationRepository;
+import ch.batbern.events.mailcenter.compose.MailRenderer;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
@@ -75,7 +76,6 @@ import java.util.UUID;
 public class SlidesOnlineEmailService {
 
     static final String TEMPLATE_KEY = "slides-online";
-    private static final String LAYOUT_KEY = "batbern-default";
 
     /**
      * Registrant statuses that receive the mail. Uses the canonical "confirmed/attending" set
@@ -203,7 +203,7 @@ public class SlidesOnlineEmailService {
                                                                    String locale) {
         requireRegistrantNoticeTemplate(templateKey);
         String loc = "en".equalsIgnoreCase(locale) ? "en" : "de";
-        RenderedMail mail = renderMail(event, templateKey, loc);
+        RenderedMail mail = renderBase(event, templateKey, loc);
         // The real send personalises {{deregistrationUrl}} / {{recipientName}} per registrant
         // (see processSend). For the organizer preview, fill those with a representative sample so
         // the preview doesn't show literal {{deregistrationUrl}} placeholders.
@@ -229,11 +229,7 @@ public class SlidesOnlineEmailService {
      * (the symmetric counterpart of {@code NewsletterEmailService#rejectRegistrantTemplate}).
      */
     private void requireRegistrantNoticeTemplate(String templateKey) {
-        boolean isRegistrantNotice = java.util.stream.Stream.of("de", "en")
-                .map(l -> emailTemplateService.findByKeyAndLocale(templateKey, l))
-                .flatMap(Optional::stream)
-                .anyMatch(t -> "REGISTRANT_NOTICE".equalsIgnoreCase(t.getCategory()));
-        if (!isRegistrantNotice) {
+        if (!isRegistrantNoticeTemplate(templateKey)) {
             throw new IllegalArgumentException(
                     "Template '" + templateKey + "' is not a registrant-notice template "
                     + "(category REGISTRANT_NOTICE) and cannot be sent to registrants.");
@@ -263,58 +259,27 @@ public class SlidesOnlineEmailService {
     void processSend(UUID sendId, Event event, String templateKey) {
         markInProgress(sendId);
         // Story 16.1a: the whole send is one recorded mail, linked to its newsletter_sends row.
-        MailContext sendContext = MailContext.of(MailTrigger.forSend(sendId, sentBy(sendId)), event.getEventCode(),
-                MailContext.Audience.REGISTRANTS, templateKey).forNewsletterSend(sendId, false);
+        MailContext sendContext = mailContextFor(sendId, event.getEventCode(), templateKey, sentBy(sendId));
 
         // Render once per locale (body + subject are identical for all recipients of a locale).
         Map<String, RenderedMail> renderedByLocale = new HashMap<>();
-        Set<String> seenEmails = new HashSet<>();
 
         int sentCount = 0;
         int failedCount = 0;
 
         try {
-            List<Registration> registrants =
-                    registrationRepository.findByEventIdAndStatusIn(event.getId(), ACTIVE_REGISTRANT_STATUSES);
-
-            for (Registration registration : registrants) {
-                String email = resolveEmail(registration);
-                if (email == null || email.isBlank()) {
-                    log.warn("Slides-online: skipping registration {} — no resolvable email",
-                            registration.getRegistrationCode());
-                    continue;
-                }
-
-                // Dedupe: the same person could hold rows under different usernames/emails-case.
-                if (!seenEmails.add(email.toLowerCase(Locale.ROOT))) {
-                    continue;
-                }
-
-                // AC3: honour the global newsletter opt-out (registrations have no own flag).
-                if (isOptedOut(email)) {
-                    log.debug("Slides-online: skipping {} — global newsletter opt-out", email);
-                    continue;
-                }
-
-                String locale = resolveLocale(registration.getAttendeeUsername());
+            for (RegistrantRecipient recipient : resolveRecipients(event).recipients()) {
+                Registration registration = recipient.registration();
+                String email = recipient.email();
+                String locale = recipientLocale(registration);
                 RenderedMail mail =
-                        renderedByLocale.computeIfAbsent(locale, l -> renderMail(event, templateKey, l));
-
-                // Per-registrant personalisation (Way-1 "deregistration call"): inject the one-click
-                // self-service cancel link + recipient name. These vars are intentionally NOT in
-                // buildVariables() — that map is event-level and feeds the per-locale render cache, so
-                // baking a per-recipient token there would leak one registrant's link to everyone. We
-                // therefore substitute them on the cached html/subject per recipient. replaceVariables
-                // leaves any unmatched {{var}} untouched, so templates that don't use these
-                // placeholders (e.g. slides-online) are unaffected.
-                Map<String, String> perRecipientVars = buildPerRecipientVariables(registration);
-                String personalisedHtml = emailService.replaceVariables(mail.html(), perRecipientVars);
-                String personalisedSubject = emailService.replaceVariables(mail.subject(), perRecipientVars);
+                        renderedByLocale.computeIfAbsent(locale, l -> renderBase(event, templateKey, l));
+                RenderedMail personalised = personalise(mail, registration, false);
 
                 String deliveryStatus = "sent";
                 try {
                     emailService.sendHtmlEmailSync(sendContext.withSecrets(registration.getRegistrationCode()), email,
-                            null, personalisedSubject, personalisedHtml, configurationSetName, null);
+                            null, personalised.subject(), personalised.html(), configurationSetName, null);
                     sentCount++;
                 } catch (Exception e) {
                     // AC6: isolate a transient SES failure for one recipient.
@@ -338,6 +303,77 @@ public class SlidesOnlineEmailService {
     }
 
     // ── Recipient resolution helpers ────────────────────────────────────────────
+
+    /** One registrant who gets the mail. */
+    public record RegistrantRecipient(Registration registration, String email, String displayName) {
+    }
+
+    /** One registrant who does not get it, and why ({@code NO_EMAIL}, {@code DUPLICATE}, {@code OPTED_OUT}). */
+    public record SkippedRegistrant(String displayName, String reason) {
+    }
+
+    /** The audience of a registrant notice in send order (Story 16.8: the composer shows the same list). */
+    public record RegistrantAudience(List<RegistrantRecipient> recipients, List<SkippedRegistrant> skipped) {
+    }
+
+    /**
+     * Active registrants with a resolvable address, each address once, without global newsletter
+     * opt-outs (AC3). The send and the composer's preview walk this same list.
+     */
+    public RegistrantAudience resolveRecipients(Event event) {
+        List<RegistrantRecipient> recipients = new java.util.ArrayList<>();
+        List<SkippedRegistrant> skipped = new java.util.ArrayList<>();
+        Set<String> seenEmails = new HashSet<>();
+        for (Registration registration
+                : registrationRepository.findByEventIdAndStatusIn(event.getId(), ACTIVE_REGISTRANT_STATUSES)) {
+            String displayName = displayName(registration);
+            String email = resolveEmail(registration);
+            if (email == null || email.isBlank()) {
+                log.warn("Slides-online: skipping registration {} — no resolvable email",
+                        registration.getRegistrationCode());
+                skipped.add(new SkippedRegistrant(displayName, "NO_EMAIL"));
+                continue;
+            }
+            // Dedupe: the same person could hold rows under different usernames/emails-case.
+            if (!seenEmails.add(email.toLowerCase(Locale.ROOT))) {
+                skipped.add(new SkippedRegistrant(displayName, "DUPLICATE"));
+                continue;
+            }
+            // AC3: honour the global newsletter opt-out (registrations have no own flag).
+            if (isOptedOut(email)) {
+                log.debug("Slides-online: skipping {} — global newsletter opt-out", email);
+                skipped.add(new SkippedRegistrant(displayName, "OPTED_OUT"));
+                continue;
+            }
+            recipients.add(new RegistrantRecipient(registration, email, displayName));
+        }
+        return new RegistrantAudience(recipients, skipped);
+    }
+
+    private static String displayName(Registration registration) {
+        String name = (nullToEmpty(registration.getAttendeeFirstName()) + " "
+                + nullToEmpty(registration.getAttendeeLastName())).trim();
+        return name.isEmpty() ? nullToEmpty(registration.getAttendeeUsername()) : name;
+    }
+
+    /** The registrant's language (AC4). */
+    public String recipientLocale(Registration registration) {
+        return resolveLocale(registration.getAttendeeUsername());
+    }
+
+    /** Whether the template is a registrant notice (category {@code REGISTRANT_NOTICE}) in DE or EN. */
+    public boolean isRegistrantNoticeTemplate(String templateKey) {
+        return templateKey != null && java.util.stream.Stream.of("de", "en")
+                .map(l -> emailTemplateService.findByKeyAndLocale(templateKey, l))
+                .flatMap(Optional::stream)
+                .anyMatch(t -> "REGISTRANT_NOTICE".equalsIgnoreCase(t.getCategory()));
+    }
+
+    /** Story 16.1a: one recorded mail per registrant-notice send, linked to its audit row. */
+    public static MailContext mailContextFor(UUID sendId, String eventCode, String templateKey, String sentBy) {
+        return MailContext.of(MailTrigger.forSend(sendId, sentBy), eventCode, MailContext.Audience.REGISTRANTS,
+                templateKey).forNewsletterSend(sendId, false);
+    }
 
     private String resolveEmail(Registration registration) {
         if (registration.getAttendeeEmail() != null && !registration.getAttendeeEmail().isBlank()) {
@@ -380,19 +416,20 @@ public class SlidesOnlineEmailService {
 
     // ── Rendering ────────────────────────────────────────────────────────────────
 
-    private RenderedMail renderMail(Event event, String templateKey, String locale) {
+    /**
+     * The event-level part of a notice in one language, the same for every registrant of that
+     * language (Story 16.8: send and composer preview both start here).
+     */
+    public RenderedMail renderBase(Event event, String templateKey, String locale) {
         Map<String, String> vars = buildVariables(event, locale);
 
-        Optional<ch.batbern.events.domain.EmailTemplate> templateOpt =
-                emailTemplateService.findByKeyAndLocale(templateKey, locale);
-        String contentHtml = templateOpt
-                .map(t -> emailService.replaceVariables(t.getHtmlBody(), vars))
+        String content = emailTemplateService.findByKeyAndLocale(templateKey, locale)
+                .map(ch.batbern.events.domain.EmailTemplate::getHtmlBody)
                 .orElseGet(() -> {
                     log.warn("Registrant-notice template '{}' locale '{}' not found in DB", templateKey, locale);
                     return "<p>The slides are online.</p>";
                 });
-        String mergedHtml = emailService.replaceVariables(
-                emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), vars);
+        String mergedHtml = MailRenderer.body(emailService, emailTemplateService, content, locale, vars);
 
         String subject = emailTemplateService.resolveSubject(templateKey, locale)
                 .map(s -> emailService.replaceVariables(s, vars))
@@ -420,6 +457,22 @@ public class SlidesOnlineEmailService {
         vars.put("dashboardLink", baseUrl);
         vars.put("supportUrl", baseUrl);
         return vars;
+    }
+
+    /**
+     * Per-registrant personalisation (Way-1 "deregistration call"): the one-click self-service
+     * cancel link and the recipient name, substituted on the per-locale render. They are not in
+     * {@link #buildVariables}: that map feeds the per-locale cache, and a token there would leak one
+     * registrant's link to everyone. Unmatched placeholders stay untouched, so templates without
+     * them are unaffected. With {@code test} the cancel link is a dummy (Story 16.8 AC5).
+     */
+    public RenderedMail personalise(RenderedMail base, Registration registration, boolean test) {
+        Map<String, String> perRecipientVars = buildPerRecipientVariables(registration);
+        if (test) {
+            perRecipientVars.put("deregistrationUrl", baseUrl + "/deregister?token=TEST");
+        }
+        return new RenderedMail(emailService.replaceVariables(base.subject(), perRecipientVars),
+                emailService.replaceVariables(base.html(), perRecipientVars));
     }
 
     /**
@@ -542,5 +595,6 @@ public class SlidesOnlineEmailService {
     }
 
     /** Rendered subject + HTML for one locale, computed once and reused across recipients. */
-    private record RenderedMail(String subject, String html) {}
+    public record RenderedMail(String subject, String html) {
+    }
 }

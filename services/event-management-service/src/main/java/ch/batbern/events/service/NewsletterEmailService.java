@@ -17,6 +17,7 @@ import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
+import ch.batbern.events.mailcenter.compose.MailRenderer;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
@@ -371,8 +372,8 @@ public class NewsletterEmailService {
         markInProgress(sendId);
         MailContext mailContext = mailContext(sendId, event, effectiveKey);
 
-        Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
-        String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
+        NewsletterDraft draft = prepare(event, locale, isReminder, effectiveKey);
+        String subject = draft.subject();
         if (testMode) {
             subject = "[Testmailing nur an OK] " + subject;
         }
@@ -383,7 +384,7 @@ public class NewsletterEmailService {
                 .map(t -> t.getHtmlBody())
                 .orElse("");
         List<EmailService.EmailAttachment> icsAttachments =
-                buildIcsAttachments(rawTemplateHtml, baseVars, event);
+                buildIcsAttachments(rawTemplateHtml, draft.baseVars(), event);
         if (!icsAttachments.isEmpty()) {
             log.info("Newsletter will include {} iCal attachment(s) for sendId={}", icsAttachments.size(), sendId);
         }
@@ -403,14 +404,7 @@ public class NewsletterEmailService {
                 for (NewsletterSubscriber subscriber : testRecipients) {
                     String deliveryStatus = "sent";
                     try {
-                        String unsubLink = baseUrl + "/unsubscribe?token="
-                                + subscriber.getUnsubscribeToken();
-                        Map<String, String> recipientVars = new HashMap<>(baseVars);
-                        recipientVars.put("unsubscribeLink", unsubLink);
-                        String contentHtml = renderContent(locale, recipientVars, effectiveKey);
-                        String mergedHtml = emailService.replaceVariables(
-                                emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
-                                recipientVars);
+                        String mergedHtml = renderBody(draft, unsubscribeLink(subscriber.getUnsubscribeToken()));
                         sendWithOptionalAttachments(mailContext,
                                 subscriber.getEmail(), subject, mergedHtml, icsAttachments);
                         sentCount++;
@@ -467,14 +461,7 @@ public class NewsletterEmailService {
 
                     String deliveryStatus = "sent";
                     try {
-                        String unsubLink = baseUrl + "/unsubscribe?token="
-                                + subscriber.getUnsubscribeToken();
-                        Map<String, String> recipientVars = new HashMap<>(baseVars);
-                        recipientVars.put("unsubscribeLink", unsubLink);
-                        String contentHtml = renderContent(locale, recipientVars, effectiveKey);
-                        String mergedHtml = emailService.replaceVariables(
-                                emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
-                                recipientVars);
+                        String mergedHtml = renderBody(draft, unsubscribeLink(subscriber.getUnsubscribeToken()));
                         sendWithOptionalAttachments(mailContext,
                                 subscriber.getEmail(), subject, mergedHtml, icsAttachments);
                         sentCount++;
@@ -547,8 +534,8 @@ public class NewsletterEmailService {
         markInProgress(sendId);
         MailContext mailContext = mailContext(sendId, event, effectiveKey);
 
-        Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
-        String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
+        NewsletterDraft draft = prepare(event, locale, isReminder, effectiveKey);
+        String subject = draft.subject();
 
         // Recipients that previously failed (explicit delivery failure).
         List<NewsletterRecipient> failedRecipients =
@@ -582,14 +569,8 @@ public class NewsletterEmailService {
                 }
                 String deliveryStatus = "sent";
                 try {
-                    String unsubLink = baseUrl + "/unsubscribe?token="
-                            + activeSubscriber.get().getUnsubscribeToken();
-                    Map<String, String> recipientVars = new HashMap<>(baseVars);
-                    recipientVars.put("unsubscribeLink", unsubLink);
-                    String contentHtml = renderContent(locale, recipientVars, effectiveKey);
-                    String mergedHtml = emailService.replaceVariables(
-                            emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
-                            recipientVars);
+                    String mergedHtml = renderBody(draft,
+                            unsubscribeLink(activeSubscriber.get().getUnsubscribeToken()));
                     emailService.sendHtmlEmailSync(mailContext, email, null, subject, mergedHtml,
                             configurationSetName, null);
                     newlySent++;
@@ -612,14 +593,7 @@ public class NewsletterEmailService {
                 String email = subscriber.getEmail();
                 String deliveryStatus = "sent";
                 try {
-                    String unsubLink = baseUrl + "/unsubscribe?token="
-                            + subscriber.getUnsubscribeToken();
-                    Map<String, String> recipientVars = new HashMap<>(baseVars);
-                    recipientVars.put("unsubscribeLink", unsubLink);
-                    String contentHtml = renderContent(locale, recipientVars, effectiveKey);
-                    String mergedHtml = emailService.replaceVariables(
-                            emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale),
-                            recipientVars);
+                    String mergedHtml = renderBody(draft, unsubscribeLink(subscriber.getUnsubscribeToken()));
                     emailService.sendHtmlEmailSync(mailContext, email, null, subject, mergedHtml,
                             configurationSetName, null);
                     newlySent++;
@@ -696,6 +670,64 @@ public class NewsletterEmailService {
         return instant != null ? instant.atOffset(ZoneOffset.UTC) : null;
     }
 
+    // ── One render path: send job, retry and the composer (Story 16.8 AC3) ──
+
+    /**
+     * Everything of a newsletter that is the same for every subscriber: the variables (they cost
+     * several queries, so the job builds them once) and the subject.
+     */
+    public record NewsletterDraft(Map<String, String> baseVars, String subject, String templateKey, String locale) {
+    }
+
+    /** The default newsletter template when none is chosen. */
+    public String effectiveTemplateKey(@Nullable String templateKey) {
+        return resolveTemplateKey(templateKey);
+    }
+
+    /** Builds the part of the mail every subscriber shares. */
+    public NewsletterDraft prepare(Event event, String locale, boolean isReminder, String effectiveKey) {
+        Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
+        String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
+        return new NewsletterDraft(java.util.Collections.unmodifiableMap(baseVars), subject, effectiveKey, locale);
+    }
+
+    /** The body one subscriber gets: the draft with their unsubscribe link. */
+    public String renderBody(NewsletterDraft draft, String unsubscribeLink) {
+        Map<String, String> vars = new HashMap<>(draft.baseVars());
+        vars.put("unsubscribeLink", unsubscribeLink);
+        String content = emailTemplateService.findByKeyAndLocale(draft.templateKey(), draft.locale())
+                .map(ch.batbern.events.domain.EmailTemplate::getHtmlBody)
+                .orElseGet(() -> {
+                    log.warn("Newsletter template '{}' locale '{}' not found in DB", draft.templateKey(),
+                            draft.locale());
+                    return "<p>Newsletter template not available.</p>";
+                });
+        return MailRenderer.body(emailService, emailTemplateService, content, draft.locale(), vars);
+    }
+
+    public String unsubscribeLink(String unsubscribeToken) {
+        return baseUrl + "/unsubscribe?token=" + unsubscribeToken;
+    }
+
+    /** The calendar entry the send job attaches, for the composer's test send. */
+    public List<EmailService.EmailAttachment> icsAttachments(NewsletterDraft draft, Event event) {
+        String rawTemplateHtml = emailTemplateService.findByKeyAndLocale(draft.templateKey(), draft.locale())
+                .map(t -> t.getHtmlBody())
+                .orElse("");
+        return buildIcsAttachments(rawTemplateHtml, draft.baseVars(), event);
+    }
+
+    /**
+     * Story 16.1a: one recorded mail per newsletter send, linked to its {@code newsletter_sends} row;
+     * a retry joins it. Per-recipient status stays in {@code newsletter_recipients} (AC3). Public
+     * for the composer, which opens the record under the same group (Story 16.8).
+     */
+    public static MailContext mailContextFor(UUID sendId, String eventCode, String effectiveKey, String sentBy,
+            boolean testMode) {
+        return MailContext.of(MailTrigger.forSend(sendId, sentBy), eventCode, MailContext.Audience.NEWSLETTER,
+                effectiveKey).forNewsletterSend(sendId, testMode);
+    }
+
     // ── Variable building ─────────────────────────────────────────────────────
 
     Map<String, String> buildVariables(Event event, String locale, boolean isReminder,
@@ -743,9 +775,9 @@ public class NewsletterEmailService {
      */
     private MailContext mailContext(UUID sendId, Event event, String effectiveKey) {
         Optional<NewsletterSend> send = sendRepository.findById(sendId);
-        return MailContext.of(MailTrigger.forSend(sendId, send.map(NewsletterSend::getSentByUsername).orElse(null)),
-                        event.getEventCode(), MailContext.Audience.NEWSLETTER, effectiveKey)
-                .forNewsletterSend(sendId, send.map(NewsletterSend::isTestMode).orElse(false));
+        return mailContextFor(sendId, event.getEventCode(), effectiveKey,
+                send.map(NewsletterSend::getSentByUsername).orElse(null),
+                send.map(NewsletterSend::isTestMode).orElse(false));
     }
 
     // ── iCal attachment building ────────────────────────────────────────────────

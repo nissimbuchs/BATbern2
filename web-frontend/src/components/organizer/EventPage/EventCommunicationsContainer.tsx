@@ -1,14 +1,16 @@
 /**
- * EventCommunicationsContainer (Epic 16, Stories 16.3 + 16.4): the event's mail page.
+ * EventCommunicationsContainer (Epic 16, Stories 16.3, 16.4, 16.8b): the event's mail page.
  *
  * One column, newest first: "What went out" (every recorded send, the newsletter included, with
  * delivered/failed counts) and "Handled automatically" (collapsed, counts only). Section 1,
  * "Needs an answer", is added by Story 16.2 above them.
  *
- * "+ New mail" opens the existing compose components inline at the top of the page on desktop and
- * as a full-screen dialog on mobile (owner decision 2026-10-31, `docs/ux/mail-center-layouts.html`
- * variant A and `docs/ux/mail-center-mobile.html`); a sent mail likewise opens below its row.
- * After a send the composer closes and the list refreshes. 16.8 replaces the composers with one.
+ * "+ New mail" opens the composer inline at the top of the page on desktop and as a full-screen
+ * dialog on mobile (owner decision 2026-10-31, `docs/ux/mail-center-layouts.html` variant A and
+ * `docs/ux/mail-center-mobile.html`); a sent mail likewise opens below its row. Newsletter,
+ * registrants, speakers and venue share one MailComposer (16.8b); Partners keeps
+ * PartnerMeetingsCompose until 16.9. After a send the composer closes, the list refreshes and the
+ * new row is highlighted on top.
  */
 
 import React, { useEffect, useRef, useState } from 'react';
@@ -45,23 +47,28 @@ import { useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { MAIL_MESSAGE_QUERY_KEYS, useMailCounts } from '@/hooks/useMailMessages/useMailMessages';
+import type { ComposeAudience, MailSendResponse } from '@/services/mailMessageService';
 import type { Event, EventDetailUI } from '@/types/event.types';
-import { EventNewsletterTab } from './EventNewsletterTab';
-import { EventRegistrantNoticesTab } from './EventRegistrantNoticesTab';
-import { EventVenueTab } from './EventVenueTab';
-import { SpeakerBulkComms } from './SpeakerBulkComms';
 import { MailSentList } from './communications/MailSentList';
 import { PartnerMeetingsCompose } from './communications/PartnerMeetingsCompose';
+import { MailComposer } from './communications/composer/MailComposer';
 
 interface EventCommunicationsContainerProps {
   event: Event | EventDetailUI;
   eventCode: string;
 }
 
-type ComposeAudience = 'newsletter' | 'registrants' | 'speakers' | 'venue' | 'partners';
+type PickerAudience = 'newsletter' | 'registrants' | 'speakers' | 'venue' | 'partners';
+
+/** The picker entries the shared composer serves; Partners is not among them yet (AC15). */
+const COMPOSER_AUDIENCE: Partial<Record<PickerAudience, ComposeAudience>> = {
+  newsletter: 'NEWSLETTER',
+  registrants: 'REGISTRANTS',
+  speakers: 'SPEAKERS',
+  venue: 'VENUE',
+};
 
 export const EventCommunicationsContainer: React.FC<EventCommunicationsContainerProps> = ({
-  event,
   eventCode,
 }) => {
   const { t } = useTranslation('events');
@@ -69,13 +76,13 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
   const queryClient = useQueryClient();
   const newMailButton = useRef<HTMLButtonElement>(null);
   const [menuOpen, setMenuOpen] = useState(false);
-  const [compose, setCompose] = useState<ComposeAudience | null>(null);
+  const [compose, setCompose] = useState<PickerAudience | null>(null);
   const composeHeading = useRef<HTMLHeadingElement>(null);
   const [sentToast, setSentToast] = useState(false);
+  const [highlightKeys, setHighlightKeys] = useState<string[]>([]);
   const counts = useMailCounts(eventCode);
-  const eventTitle = event.title || '';
 
-  const audiences: Array<{ value: ComposeAudience; icon: React.ReactNode; label: string }> = [
+  const audiences: Array<{ value: PickerAudience; icon: React.ReactNode; label: string }> = [
     {
       value: 'newsletter',
       icon: <NewsletterIcon />,
@@ -103,32 +110,29 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
     if (compose && !isMobile) composeHeading.current?.focus();
   }, [compose, isMobile]);
 
-  // Story 16.4 AC3: a successful send closes the composer and the new row appears on top.
-  const handleSent = () => {
+  // Story 16.4 AC3, 16.8b AC13: a successful send closes the composer and the new row appears
+  // on top, highlighted (the shared composer returns its key(s); the partner invite does not).
+  const handleSent = (result?: MailSendResponse) => {
     void queryClient.invalidateQueries({ queryKey: MAIL_MESSAGE_QUERY_KEYS.event(eventCode) });
+    setHighlightKeys(result?.mailKeys ?? []);
     closeCompose();
     setSentToast(true);
   };
 
   const composeLabel = audiences.find((a) => a.value === compose)?.label;
+  const composerAudience = compose ? COMPOSER_AUDIENCE[compose] : undefined;
   const composer = (
     <>
-      {compose === 'newsletter' && (
-        <EventNewsletterTab eventCode={eventCode} eventTitle={eventTitle} onSent={handleSent} />
-      )}
-      {compose === 'registrants' && (
-        <EventRegistrantNoticesTab
+      {composerAudience && (
+        <MailComposer
+          key={composerAudience}
           eventCode={eventCode}
-          eventTitle={eventTitle}
+          audience={composerAudience}
           onSent={handleSent}
         />
       )}
-      {compose === 'speakers' && (
-        <SpeakerBulkComms eventCode={eventCode} eventTitle={eventTitle} onSent={handleSent} />
-      )}
-      {compose === 'venue' && <EventVenueTab event={event} onSent={handleSent} />}
       {compose === 'partners' && (
-        <PartnerMeetingsCompose eventCode={eventCode} onSent={handleSent} />
+        <PartnerMeetingsCompose eventCode={eventCode} onSent={() => handleSent()} />
       )}
     </>
   );
@@ -205,7 +209,7 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
       )}
 
       <Paper variant="outlined" sx={{ p: { xs: 1, sm: 2 }, mb: 3 }}>
-        <MailSentList eventCode={eventCode} />
+        <MailSentList eventCode={eventCode} highlightKeys={highlightKeys} />
       </Paper>
 
       <Accordion variant="outlined" disableGutters data-testid="mail-automatic">

@@ -1,9 +1,10 @@
 /**
- * EventCommunicationsContainer tests (Epic 16, Stories 16.3 + 16.4)
+ * EventCommunicationsContainer tests (Epic 16, Stories 16.3, 16.4, 16.8b)
  *
- * The mail page: "What went out" and "Handled automatically", plus the "+ New mail" picker that
- * opens the existing composers inline at the top (desktop) or full screen (mobile). Composers and the list have their own tests, so
- * they are stubbed here; the stubs expose `onSent` to drive the refresh-after-send path.
+ * The mail page: "What went out" and "Handled automatically", plus the "+ New mail" picker. Since
+ * 16.8b four audiences open the shared MailComposer and Partners keeps PartnerMeetingsCompose
+ * (AC15), inline at the top (desktop) or full screen (mobile). Composers and the list have their
+ * own tests, so they are stubbed here; the stubs expose `onSent` to drive the after-send path.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
@@ -12,11 +13,12 @@ import { MemoryRouter } from 'react-router-dom';
 import { EventCommunicationsContainer } from '../EventCommunicationsContainer';
 import type { Event } from '@/types/event.types';
 
-const { getMailCounts, stub, breakpoints } = vi.hoisted(() => {
+const { getMailCounts, stub, breakpoints, sentListProps } = vi.hoisted(() => {
   type StubProps = { eventCode?: string; onSent?: () => void };
   return {
     getMailCounts: vi.fn(),
     breakpoints: { isMobile: false, isTablet: false, isDesktop: true },
+    sentListProps: { highlightKeys: undefined as string[] | undefined },
     stub:
       (id: string) =>
       ({ onSent }: StubProps) => (
@@ -33,17 +35,38 @@ vi.mock('@/services/mailMessageService', () => ({
   getMailMessage: vi.fn(),
 }));
 
-vi.mock('../EventNewsletterTab', () => ({ EventNewsletterTab: stub('stub-newsletter') }));
-vi.mock('../EventRegistrantNoticesTab', () => ({
-  EventRegistrantNoticesTab: stub('stub-registrant'),
+vi.mock('../communications/composer/MailComposer', () => ({
+  MailComposer: ({
+    audience,
+    onSent,
+  }: {
+    audience: string;
+    onSent: (r: {
+      mailKeys: string[];
+      target: string;
+      recipientCount: number;
+      skipped: [];
+    }) => void;
+  }) => (
+    <div data-testid={`stub-composer-${audience}`}>
+      <button
+        onClick={() =>
+          onSent({ mailKeys: ['BAT54-7'], target: 'RECIPIENTS', recipientCount: 3, skipped: [] })
+        }
+      >
+        send-{audience}
+      </button>
+    </div>
+  ),
 }));
-vi.mock('../SpeakerBulkComms', () => ({ SpeakerBulkComms: stub('stub-speakers') }));
-vi.mock('../EventVenueTab', () => ({ EventVenueTab: stub('stub-venue') }));
 vi.mock('../communications/PartnerMeetingsCompose', () => ({
   PartnerMeetingsCompose: stub('stub-partners'),
 }));
 vi.mock('../communications/MailSentList', () => ({
-  MailSentList: () => <div data-testid="stub-sent-list" />,
+  MailSentList: ({ highlightKeys }: { highlightKeys?: string[] }) => {
+    sentListProps.highlightKeys = highlightKeys;
+    return <div data-testid="stub-sent-list">{(highlightKeys ?? []).join(',')}</div>;
+  },
 }));
 vi.mock('@/hooks/useBreakpoints', () => ({ useBreakpoints: () => breakpoints }));
 vi.mock('react-i18next', () => ({
@@ -72,6 +95,7 @@ describe('EventCommunicationsContainer', () => {
   beforeEach(() => {
     getMailCounts.mockReset().mockResolvedValue({ failedDeliveries: 3 });
     breakpoints.isMobile = false;
+    sentListProps.highlightKeys = undefined;
   });
 
   it('shows "What went out" and a collapsed "Handled automatically" with the failed count', async () => {
@@ -103,10 +127,10 @@ describe('EventCommunicationsContainer', () => {
   });
 
   it.each([
-    ['newsletter', 'stub-newsletter'],
-    ['registrants', 'stub-registrant'],
-    ['speakers', 'stub-speakers'],
-    ['venue', 'stub-venue'],
+    ['newsletter', 'stub-composer-NEWSLETTER'],
+    ['registrants', 'stub-composer-REGISTRANTS'],
+    ['speakers', 'stub-composer-SPEAKERS'],
+    ['venue', 'stub-composer-VENUE'],
     ['partners', 'stub-partners'],
   ])('opens the %s composer inline above the list', async (audience, stubId) => {
     renderContainer();
@@ -134,10 +158,12 @@ describe('EventCommunicationsContainer', () => {
     fireEvent.click(screen.getByTestId('new-mail-speakers'));
 
     const dialog = await screen.findByRole('dialog', { name: 'eventPage.mail.compose.speakers' });
-    expect(within(dialog).getByTestId('stub-speakers')).toBeInTheDocument();
+    expect(within(dialog).getByTestId('stub-composer-SPEAKERS')).toBeInTheDocument();
 
     fireEvent.click(within(dialog).getByRole('button', { name: 'common:actions.close' }));
-    await waitFor(() => expect(screen.queryByTestId('stub-speakers')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByTestId('stub-composer-SPEAKERS')).not.toBeInTheDocument()
+    );
     await waitFor(() => expect(screen.getByTestId('new-mail-button')).toHaveFocus());
   });
 
@@ -150,18 +176,34 @@ describe('EventCommunicationsContainer', () => {
 
     fireEvent.keyDown(panel, { key: 'Escape' });
 
-    await waitFor(() => expect(screen.queryByTestId('stub-speakers')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByTestId('stub-composer-SPEAKERS')).not.toBeInTheDocument()
+    );
     await waitFor(() => expect(button).toHaveFocus());
   });
 
-  it('after a send closes the composer, refreshes the mail list and confirms', async () => {
+  it('after a send closes the composer, refreshes the list, confirms and highlights the new row (AC13)', async () => {
     const { invalidate } = renderContainer();
     fireEvent.click(screen.getByTestId('new-mail-button'));
     fireEvent.click(screen.getByTestId('new-mail-registrants'));
-    fireEvent.click(await screen.findByText('send-stub-registrant'));
+    fireEvent.click(await screen.findByText('send-REGISTRANTS'));
 
-    await waitFor(() => expect(screen.queryByTestId('stub-registrant')).not.toBeInTheDocument());
+    await waitFor(() =>
+      expect(screen.queryByTestId('stub-composer-REGISTRANTS')).not.toBeInTheDocument()
+    );
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['mails', 'BAT54'] });
     expect(screen.getByTestId('mail-sent-toast')).toHaveTextContent('eventPage.mail.sentToast');
+    expect(sentListProps.highlightKeys).toEqual(['BAT54-7']);
+  });
+
+  it('partners still opens PartnerMeetingsCompose; its send refreshes without a highlight (AC15)', async () => {
+    const { invalidate } = renderContainer();
+    fireEvent.click(screen.getByTestId('new-mail-button'));
+    fireEvent.click(screen.getByTestId('new-mail-partners'));
+    fireEvent.click(await screen.findByText('send-stub-partners'));
+
+    await waitFor(() => expect(screen.queryByTestId('stub-partners')).not.toBeInTheDocument());
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['mails', 'BAT54'] });
+    expect(sentListProps.highlightKeys ?? []).toEqual([]);
   });
 });

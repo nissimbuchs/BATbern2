@@ -463,6 +463,74 @@
           "SPRING": "Frühlings-Meeting",
           "AUTUMN": "Herbst-Meeting"
         }
+      },
+      "sending": "wird gesendet …",
+      "showTests": "Testmails anzeigen",
+      "retry": "Fehlgeschlagene erneut senden",
+      "composer": {
+        "contentSource": "Inhalt",
+        "source": {
+          "template": "Vorlage",
+          "ownText": "Eigener Text",
+          "ownTextSoon": "Eigener Text folgt mit einem späteren Update."
+        },
+        "template": "Vorlage",
+        "automatic": "Automatisch (Stufe je Speaker)",
+        "noTemplates": "Keine Vorlagen vorhanden",
+        "language": "Sprache",
+        "ownLanguage": "Alle erhalten die Mail in ihrer eigenen Sprache.",
+        "newsletter": {
+          "reminder": "Als Erinnerung senden"
+        },
+        "speakers": {
+          "which": "Welche Speaker?",
+          "type": {
+            "RESPONSE": "Eingeladene Speaker ohne Antwort",
+            "CONTENT": "Zugesagte Speaker ohne Inhalte"
+          },
+          "goesTo": "Geht an: {{target}}",
+          "detected": "Für {{name}} automatisch gewählt: {{templateKey}}"
+        },
+        "recipients": {
+          "count_one": "{{count}} Empfänger:in",
+          "count_other": "{{count}} Empfänger:innen",
+          "more": "+{{count}} weitere",
+          "sameText": "Keine persönlichen Felder: Alle erhalten denselben Text.",
+          "to": "An",
+          "cc": "Cc"
+        },
+        "skipped": {
+          "title_one": "{{count}} ausgelassen",
+          "title_other": "{{count}} ausgelassen",
+          "reason": {
+            "OPTED_OUT": "abgemeldet",
+            "REMINDERS_DISABLED": "Erinnerungen ausgeschaltet",
+            "NO_EMAIL": "keine E-Mail-Adresse",
+            "DUPLICATE": "doppelte Adresse"
+          }
+        },
+        "preview": {
+          "previous": "Vorherige Empfänger:in",
+          "next": "Nächste Empfänger:in",
+          "position": "({{index}}/{{count}})",
+          "subject": "Betreff",
+          "frameTitle": "Vorschau der Mail",
+          "unknownPlaceholders": "Unbekannte Platzhalter: {{list}}. Bitte zuerst die Vorlage korrigieren.",
+          "incomplete": "Die Vorschau erscheint, sobald alles ausgewählt ist."
+        },
+        "replyTo": "Antworten gehen an {{address}}.",
+        "replyDefault": "Antworten gehen an die Absenderadresse.",
+        "footer": {
+          "test": "An Organisatoren (Test)",
+          "send_one": "An {{count}} Empfänger:in senden",
+          "send_other": "An {{count}} Empfänger:innen senden",
+          "confirm_one": "Wirklich an {{count}} Empfänger:in senden?",
+          "confirm_other": "Wirklich an {{count}} Empfänger:innen senden?",
+          "back": "Zurück",
+          "yes": "Ja, senden"
+        },
+        "testSent_one": "Test an {{count}} Organisator:in gesendet",
+        "testSent_other": "Test an {{count}} Organisator:innen gesendet"
       }
     }
   },

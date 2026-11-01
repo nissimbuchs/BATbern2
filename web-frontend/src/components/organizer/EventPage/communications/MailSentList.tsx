@@ -7,23 +7,33 @@
  *
  * Desktop opens the mail inline below its row, one at a time, and a second click closes it. Mobile
  * opens it as a full-screen dialog (see MailDetail).
+ *
+ * Story 16.8b: the row(s) of a mail just sent are highlighted and show "sending …" until the job
+ * reports progress; a newsletter that ended PARTIAL or FAILED offers Retry on its row; organizer
+ * test sends are hidden unless "show test sends" is on.
  */
 
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
+  Alert,
   Box,
+  Button,
   Chip,
   Collapse,
+  FormControlLabel,
   List,
+  ListItem,
   ListItemButton,
   Pagination,
   Skeleton,
   Stack,
+  Switch,
   Typography,
 } from '@mui/material';
+import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
-import { useMailMessages } from '@/hooks/useMailMessages/useMailMessages';
+import { useMailMessages, useRetryMail } from '@/hooks/useMailMessages/useMailMessages';
 import type { MailAudience, MailMessageSummary } from '@/services/mailMessageService';
 import { MailDetail, MailDetailDialog } from './MailDetail';
 
@@ -37,9 +47,12 @@ const FILTERS: Array<MailAudience | 'ALL'> = [
 ];
 const PAGE_SIZE = 20;
 const ACTIVE_NEWSLETTER = ['PENDING', 'IN_PROGRESS'];
+const RETRYABLE_NEWSLETTER = ['PARTIAL', 'FAILED'];
 
 interface MailSentListProps {
   eventCode: string;
+  /** Story 16.8b: the mail(s) just sent; their rows are highlighted. */
+  highlightKeys?: string[];
 }
 
 /** The mail that is open, and the title the mobile dialog shows for it. */
@@ -53,25 +66,48 @@ function zurichDay(iso: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich' }).format(new Date(iso));
 }
 
-export const MailSentList: React.FC<MailSentListProps> = ({ eventCode }) => {
+export const MailSentList: React.FC<MailSentListProps> = ({ eventCode, highlightKeys }) => {
   const { t } = useTranslation('events');
   const { isMobile } = useBreakpoints();
   const [filter, setFilter] = useState<MailAudience | 'ALL'>('ALL');
   const [page, setPage] = useState(1);
+  const [includeTests, setIncludeTests] = useState(false);
   const [open, setOpen] = useState<OpenMail | null>(null);
+  const retry = useRetryMail(eventCode);
   const toggle = (mail: OpenMail) =>
     setOpen((current) => (current?.mailKey === mail.mailKey ? null : mail));
-  const rowProps = {
+
+  // A new send shows on top of the unfiltered first page.
+  const highlightSignature = (highlightKeys ?? []).join(',');
+  useEffect(() => {
+    if (highlightSignature) {
+      setFilter('ALL');
+      setPage(1);
+    }
+  }, [highlightSignature]);
+
+  const rowProps: RowProps = {
     eventCode,
     openKey: open?.mailKey ?? null,
     inline: !isMobile,
     onToggle: toggle,
+    includeTests,
+    highlightKeys: highlightKeys ?? [],
+    retryingKey: retry.isPending ? (retry.variables ?? null) : null,
+    onRetry: (mailKey) => retry.mutate(mailKey),
   };
   const query = useMailMessages(eventCode, {
     audience: filter === 'ALL' ? undefined : filter,
+    includeTests,
     page,
     limit: PAGE_SIZE,
   });
+  const retryError = retry.error
+    ? axios.isAxiosError(retry.error)
+      ? ((retry.error.response?.data as { message?: string } | undefined)?.message ??
+        retry.error.message)
+      : retry.error.message
+    : null;
   const rows = query.data?.data ?? [];
   const totalPages = query.data?.pagination.totalPages ?? 0;
 
@@ -92,7 +128,29 @@ export const MailSentList: React.FC<MailSentListProps> = ({ eventCode }) => {
             data-testid={`mail-filter-${f}`}
           />
         ))}
+        <FormControlLabel
+          sx={{ ml: { sm: 'auto' } }}
+          control={
+            <Switch
+              size="small"
+              checked={includeTests}
+              onChange={(e) => {
+                setIncludeTests(e.target.checked);
+                setPage(1);
+                setOpen(null);
+              }}
+            />
+          }
+          label={<Typography variant="body2">{t('eventPage.mail.showTests')}</Typography>}
+          data-testid="mail-show-tests"
+        />
       </Stack>
+
+      {retryError && (
+        <Alert severity="error" sx={{ mb: 2 }} onClose={() => retry.reset()}>
+          {retryError}
+        </Alert>
+      )}
 
       {query.isLoading ? (
         <Skeleton variant="rectangular" height={120} />
@@ -144,7 +202,17 @@ interface RowProps {
   /** Desktop: the open mail renders below its row. Mobile: the list's dialog shows it. */
   inline: boolean;
   onToggle: (mail: OpenMail) => void;
+  includeTests: boolean;
+  highlightKeys: string[];
+  retryingKey: string | null;
+  onRetry: (mailKey: string) => void;
 }
+
+const HIGHLIGHT_SX = {
+  bgcolor: 'action.selected',
+  boxShadow: (theme: { palette: { primary: { main: string } } }) =>
+    `inset 3px 0 0 ${theme.palette.primary.main}`,
+};
 
 function rowTitle(row: MailMessageSummary): string {
   return row.subject ?? row.templateKey ?? row.mailKey;
@@ -156,21 +224,54 @@ const SingleMail: React.FC<RowProps & { row: MailMessageSummary }> = ({
   openKey,
   inline,
   onToggle,
+  highlightKeys,
+  retryingKey,
+  onRetry,
   row,
 }) => {
+  const { t } = useTranslation('events');
   const isOpen = openKey === row.mailKey;
+  const highlighted = highlightKeys.includes(row.mailKey);
+  const retryable =
+    row.audience === 'NEWSLETTER' &&
+    Boolean(row.newsletterStatus && RETRYABLE_NEWSLETTER.includes(row.newsletterStatus));
+  const button = (
+    <ListItemButton
+      divider={!retryable && !(inline && isOpen)}
+      selected={isOpen}
+      onClick={() => onToggle({ mailKey: row.mailKey, title: rowTitle(row) })}
+      aria-expanded={inline ? isOpen : undefined}
+      data-testid={`mail-row-${row.mailKey}`}
+      data-highlighted={highlighted || undefined}
+      sx={{ alignItems: 'flex-start', gap: 2, px: 1, ...(highlighted && HIGHLIGHT_SX) }}
+    >
+      <MailRowContent row={row} />
+    </ListItemButton>
+  );
   return (
     <>
-      <ListItemButton
-        divider={!(inline && isOpen)}
-        selected={isOpen}
-        onClick={() => onToggle({ mailKey: row.mailKey, title: rowTitle(row) })}
-        aria-expanded={inline ? isOpen : undefined}
-        data-testid={`mail-row-${row.mailKey}`}
-        sx={{ alignItems: 'flex-start', gap: 2, px: 1 }}
-      >
-        <MailRowContent row={row} />
-      </ListItemButton>
+      {retryable ? (
+        // Retry sits beside the row, not inside it: a button inside a button is not operable.
+        <ListItem
+          disablePadding
+          divider={!(inline && isOpen)}
+          sx={{ flexWrap: { xs: 'wrap', sm: 'nowrap' }, alignItems: 'center' }}
+        >
+          {button}
+          <Button
+            size="small"
+            color="error"
+            onClick={() => onRetry(row.mailKey)}
+            disabled={retryingKey !== null}
+            sx={{ flex: '0 0 auto', mx: 1 }}
+            data-testid={`mail-retry-${row.mailKey}`}
+          >
+            {t('eventPage.mail.retry')}
+          </Button>
+        </ListItem>
+      ) : (
+        button
+      )}
       {inline && (
         <Collapse in={isOpen} unmountOnExit>
           <Box
@@ -191,7 +292,7 @@ const SingleMail: React.FC<RowProps & { row: MailMessageSummary }> = ({
 };
 
 const MailRow: React.FC<RowProps & { row: MailMessageSummary }> = (props) => {
-  const { eventCode, row } = props;
+  const { eventCode, row, includeTests } = props;
   const { t } = useTranslation('events');
   const [expanded, setExpanded] = useState(false);
   const collapsed = row.messageCount > 1;
@@ -202,6 +303,7 @@ const MailRow: React.FC<RowProps & { row: MailMessageSummary }> = (props) => {
       date: zurichDay(row.sentAt),
       audience: row.audience,
       grouped: false,
+      includeTests,
       limit: 100,
     },
     collapsed && expanded
@@ -272,10 +374,12 @@ const MailRowContent: React.FC<{ row: MailMessageSummary }> = ({ row }) => {
       <Box sx={{ flex: '0 0 auto', textAlign: { xs: 'left', sm: 'right' } }}>
         {active ? (
           <Typography variant="caption" color="text.secondary">
-            {t('eventPage.mail.sendingProgress', {
-              sent: row.deliveredCount + row.failedCount,
-              total: row.recipientCount,
-            })}
+            {row.newsletterStatus === 'PENDING' || row.recipientCount === 0
+              ? t('eventPage.mail.sending')
+              : t('eventPage.mail.sendingProgress', {
+                  sent: row.deliveredCount + row.failedCount,
+                  total: row.recipientCount,
+                })}
           </Typography>
         ) : (
           <Typography variant="caption" component="div">

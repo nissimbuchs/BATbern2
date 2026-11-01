@@ -75,4 +75,20 @@ class MailContextTest {
         assertThat(newsletter.newsletterSendId()).isEqualTo(sendId);
         assertThat(newsletter.test()).isTrue();
     }
+
+    @Test
+    @DisplayName("Story 16.8: asTest marks a test send and keeps group, audience, sender and secrets")
+    void asTest_marksTestSend() {
+        MailContext base = MailContext.of(MailTrigger.organizer("organizer1"), "BATbern60",
+                MailContext.Audience.REGISTRANTS, "slides-online").withSecrets("REG-CODE-1");
+
+        MailContext test = base.asTest();
+
+        assertThat(test.test()).isTrue();
+        assertThat(base.test()).isFalse();
+        assertThat(test.sendGroupId()).isEqualTo(base.sendGroupId());
+        assertThat(test.audience()).isEqualTo(MailContext.Audience.REGISTRANTS);
+        assertThat(test.senderUsername()).isEqualTo("organizer1");
+        assertThat(test.secrets()).containsExactly("REG-CODE-1");
+    }
 }

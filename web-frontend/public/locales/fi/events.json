@@ -449,6 +449,74 @@
           "SPRING": "Kevättapaaminen",
           "AUTUMN": "Syystapaaminen"
         }
+      },
+      "sending": "lähetetään …",
+      "showTests": "Näytä testilähetykset",
+      "retry": "Lähetä epäonnistuneet uudelleen",
+      "composer": {
+        "contentSource": "Sisältö",
+        "source": {
+          "template": "Pohja",
+          "ownText": "Oma teksti",
+          "ownTextSoon": "Oma teksti tulee myöhemmässä päivityksessä."
+        },
+        "template": "Pohja",
+        "automatic": "Automaattinen (taso puhujittain)",
+        "noTemplates": "Ei pohjia saatavilla",
+        "language": "Kieli",
+        "ownLanguage": "Jokainen vastaanottaja saa viestin omalla kielellään.",
+        "newsletter": {
+          "reminder": "Lähetä muistutuksena"
+        },
+        "speakers": {
+          "which": "Mitkä puhujat?",
+          "type": {
+            "RESPONSE": "Kutsutut puhujat, jotka eivät ole vastanneet",
+            "CONTENT": "Hyväksyneet puhujat, joilta puuttuu sisältö"
+          },
+          "goesTo": "Vastaanottajat: {{target}}",
+          "detected": "Valittu automaattisesti ({{name}}): {{templateKey}}"
+        },
+        "recipients": {
+          "count_one": "{{count}} vastaanottaja",
+          "count_other": "{{count}} vastaanottajaa",
+          "more": "+{{count}} muuta",
+          "sameText": "Ei henkilökohtaisia kenttiä: kaikki saavat saman tekstin.",
+          "to": "Vastaanottaja",
+          "cc": "Kopio"
+        },
+        "skipped": {
+          "title_one": "{{count}} jätetty pois",
+          "title_other": "{{count}} jätetty pois",
+          "reason": {
+            "OPTED_OUT": "peruutettu tilaus",
+            "REMINDERS_DISABLED": "muistutukset pois päältä",
+            "NO_EMAIL": "ei sähköpostiosoitetta",
+            "DUPLICATE": "kaksoisosoite"
+          }
+        },
+        "preview": {
+          "previous": "Edellinen vastaanottaja",
+          "next": "Seuraava vastaanottaja",
+          "position": "({{index}}/{{count}})",
+          "subject": "Aihe",
+          "frameTitle": "Viestin esikatselu",
+          "unknownPlaceholders": "Tuntemattomat paikkamerkit: {{list}}. Korjaa pohja ennen lähettämistä.",
+          "incomplete": "Esikatselu näkyy, kun kaikki on valittu."
+        },
+        "replyTo": "Vastaukset menevät osoitteeseen {{address}}.",
+        "replyDefault": "Vastaukset menevät lähettäjän osoitteeseen.",
+        "footer": {
+          "test": "Lähetä järjestäjille (testi)",
+          "send_one": "Lähetä {{count}} vastaanottajalle",
+          "send_other": "Lähetä {{count}} vastaanottajalle",
+          "confirm_one": "Lähetetäänkö todella {{count}} vastaanottajalle?",
+          "confirm_other": "Lähetetäänkö todella {{count}} vastaanottajalle?",
+          "back": "Takaisin",
+          "yes": "Kyllä, lähetä"
+        },
+        "testSent_one": "Testi lähetetty {{count}} järjestäjälle",
+        "testSent_other": "Testi lähetetty {{count}} järjestäjälle"
       }
     }
   },

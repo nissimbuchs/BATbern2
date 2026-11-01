@@ -449,6 +449,74 @@
           "SPRING": "Sesida da primavaira",
           "AUTUMN": "Sesida d'atun"
         }
+      },
+      "sending": "vegn tramess …",
+      "showTests": "Mussar mails da test",
+      "retry": "Trametter danovamain ils nunreussids",
+      "composer": {
+        "contentSource": "Cuntegn",
+        "source": {
+          "template": "Model",
+          "ownText": "Agen text",
+          "ownTextSoon": "L'agen text vegn cun in update pli tard."
+        },
+        "template": "Model",
+        "automatic": "Automatic (stgalim per referent)",
+        "noTemplates": "Nagins models disponibels",
+        "language": "Lingua",
+        "ownLanguage": "Mintga destinatur survegn il mail en sia atgna lingua.",
+        "newsletter": {
+          "reminder": "Trametter sco promemoria"
+        },
+        "speakers": {
+          "which": "Tge referents?",
+          "type": {
+            "RESPONSE": "Referents envidads senza resposta",
+            "CONTENT": "Referents confermads senza cuntegn"
+          },
+          "goesTo": "Va a: {{target}}",
+          "detected": "Elegì automaticamain per {{name}}: {{templateKey}}"
+        },
+        "recipients": {
+          "count_one": "{{count}} destinatur",
+          "count_other": "{{count}} destinaturs",
+          "more": "+{{count}} ulteriurs",
+          "sameText": "Nagins champs persunals: tuts survegnan il medem text.",
+          "to": "A",
+          "cc": "Cc"
+        },
+        "skipped": {
+          "title_one": "{{count}} exclus",
+          "title_other": "{{count}} exclus",
+          "reason": {
+            "OPTED_OUT": "deconnectà",
+            "REMINDERS_DISABLED": "promemorias deactivads",
+            "NO_EMAIL": "nagina adressa dad e-mail",
+            "DUPLICATE": "adressa dubla"
+          }
+        },
+        "preview": {
+          "previous": "Destinatur precedent",
+          "next": "Proxim destinatur",
+          "position": "({{index}}/{{count}})",
+          "subject": "Object",
+          "frameTitle": "Prevista dal mail",
+          "unknownPlaceholders": "Placeholders nunenconuschents: {{list}}. Curreger l'emprim il model.",
+          "incomplete": "La prevista cumpara uschespert che tut è tschernì."
+        },
+        "replyTo": "Respostas van a {{address}}.",
+        "replyDefault": "Respostas van a l'adressa dal speditur.",
+        "footer": {
+          "test": "Als organisaturs (test)",
+          "send_one": "Trametter a {{count}} destinatur",
+          "send_other": "Trametter a {{count}} destinaturs",
+          "confirm_one": "Propi trametter a {{count}} destinatur?",
+          "confirm_other": "Propi trametter a {{count}} destinaturs?",
+          "back": "Enavos",
+          "yes": "Gea, trametter"
+        },
+        "testSent_one": "Test tramess a {{count}} organisatur",
+        "testSent_other": "Test tramess a {{count}} organisaturs"
       }
     }
   },

@@ -172,16 +172,7 @@ public class SpeakerReminderService {
                 .orElseThrow(() -> new IllegalArgumentException("Event not found: " + speaker.getEventId()));
 
         // Auto-detect tier if not specified
-        LocalDate deadline = REMINDER_TYPE_RESPONSE.equals(reminderType)
-                ? speaker.getResponseDeadline()
-                : speaker.getContentDeadline();
-
-        if (deadline == null) {
-            // Fallback to event date for manual reminders without an explicit deadline
-            deadline = event.getDate().atZone(ZoneId.of("Europe/Zurich")).toLocalDate();
-            log.info("No {} deadline set for speaker {}, using event date {} as fallback",
-                    reminderType.toLowerCase(), speakerPoolId, deadline);
-        }
+        LocalDate deadline = deadlineFor(speaker, event, reminderType);
 
         String effectiveTier = tier != null ? tier : autoDetectTier(LocalDate.now(), deadline);
 
@@ -194,6 +185,70 @@ public class SpeakerReminderService {
         // sender path skipped due to no resolvable recipient).
         String resolvedEmail = primarySpeakerResolver.resolveEmail(speaker).orElse(null);
         return new ManualReminderResult(effectiveTier, resolvedEmail);
+    }
+
+    /**
+     * Story 16.8: the speakers a manual reminder of this type goes to, in name order. RESPONSE:
+     * INVITED speakers. CONTENT: ACCEPTED speakers whose session has no content yet. Speakers with
+     * reminders disabled are included; the composer lists them as skipped.
+     */
+    @Transactional(readOnly = true)
+    public List<SpeakerPool> manualAudience(Event event, String reminderType) {
+        return speakerPoolRepository.findByEventId(event.getId()).stream()
+                .filter(speaker -> isTarget(speaker, reminderType))
+                .sorted(java.util.Comparator.comparing(
+                        (SpeakerPool speaker) -> speaker.getSpeakerName() == null ? "" : speaker.getSpeakerName(),
+                        String.CASE_INSENSITIVE_ORDER))
+                .toList();
+    }
+
+    private boolean isTarget(SpeakerPool speaker, String reminderType) {
+        if (REMINDER_TYPE_RESPONSE.equals(reminderType)) {
+            return speaker.getStatus() == SpeakerWorkflowState.INVITED;
+        }
+        return speaker.getStatus() == SpeakerWorkflowState.ACCEPTED
+                && (speaker.getSessionId() == null
+                    || !sessionContentHistoryRepository.existsBySessionId(speaker.getSessionId()));
+    }
+
+    /** The deadline a manual reminder refers to; the event date when none is set. */
+    public LocalDate deadlineFor(SpeakerPool speaker, Event event, String reminderType) {
+        LocalDate deadline = REMINDER_TYPE_RESPONSE.equals(reminderType)
+                ? speaker.getResponseDeadline()
+                : speaker.getContentDeadline();
+        if (deadline == null) {
+            // Fallback to event date for manual reminders without an explicit deadline
+            deadline = event.getDate().atZone(ZoneId.of("Europe/Zurich")).toLocalDate();
+            log.info("No {} deadline set for speaker {}, using event date {} as fallback",
+                    reminderType.toLowerCase(), speaker.getId(), deadline);
+        }
+        return deadline;
+    }
+
+    /**
+     * Story 16.8 AC6/AC7: one composer send to several speakers. The loop that used to run in the
+     * browser (one request per speaker) runs here, under one {@link MailTrigger}, so the send is one
+     * recorded mail per template key instead of one per speaker. Each speaker gets the explicit
+     * tier, or the one detected from their own deadline. Reminder log, outreach history and the
+     * TIER_3 escalation happen per speaker, as for a single manual reminder. Speakers with
+     * reminders disabled are not mailed.
+     *
+     * @return the template keys used, in first-use order
+     */
+    @Transactional
+    public List<String> sendManualReminders(Event event, String reminderType, String tier,
+            List<SpeakerPool> speakers, MailTrigger mailTrigger, String triggeredBy) {
+        java.util.LinkedHashSet<String> templateKeys = new java.util.LinkedHashSet<>();
+        for (SpeakerPool speaker : speakers) {
+            if (Boolean.TRUE.equals(speaker.getRemindersDisabled())) {
+                continue;
+            }
+            LocalDate deadline = deadlineFor(speaker, event, reminderType);
+            String effectiveTier = tier != null ? tier : autoDetectTier(LocalDate.now(), deadline);
+            sendAndLogReminder(speaker, event, reminderType, effectiveTier, deadline, triggeredBy, mailTrigger);
+            templateKeys.add(SpeakerReminderEmailService.templateKey(reminderType, effectiveTier));
+        }
+        return List.copyOf(templateKeys);
     }
 
     /**
@@ -215,7 +270,7 @@ public class SpeakerReminderService {
      * Auto-detect the appropriate tier based on days remaining.
      * Used for manual reminders when tier is not specified.
      */
-    String autoDetectTier(LocalDate today, LocalDate deadline) {
+    public String autoDetectTier(LocalDate today, LocalDate deadline) {
         long daysUntilDeadline = ChronoUnit.DAYS.between(today, deadline);
 
         // Find the closest tier (round to nearest configured tier)
@@ -331,7 +386,7 @@ public class SpeakerReminderService {
     }
 
     /** The primary speaker's language preference (CUMS); German when unknown (#1119). */
-    private Locale speakerLocale(SpeakerPool speaker) {
+    public Locale speakerLocale(SpeakerPool speaker) {
         String username = primarySpeakerResolver.resolve(speaker)
                 .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)
                 .orElse(null);

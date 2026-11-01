@@ -449,6 +449,74 @@
           "SPRING": "Incontro primaverile",
           "AUTUMN": "Incontro autunnale"
         }
+      },
+      "sending": "invio in corso …",
+      "showTests": "Mostra invii di prova",
+      "retry": "Reinvia i falliti",
+      "composer": {
+        "contentSource": "Contenuto",
+        "source": {
+          "template": "Modello",
+          "ownText": "Testo libero",
+          "ownTextSoon": "Il testo libero arriverà con un aggiornamento successivo."
+        },
+        "template": "Modello",
+        "automatic": "Automatico (livello per relatore)",
+        "noTemplates": "Nessun modello disponibile",
+        "language": "Lingua",
+        "ownLanguage": "Ogni destinatario riceve la mail nella propria lingua.",
+        "newsletter": {
+          "reminder": "Invia come promemoria"
+        },
+        "speakers": {
+          "which": "Quali relatori?",
+          "type": {
+            "RESPONSE": "Relatori invitati senza risposta",
+            "CONTENT": "Relatori confermati senza contenuti"
+          },
+          "goesTo": "Destinatari: {{target}}",
+          "detected": "Scelto automaticamente per {{name}}: {{templateKey}}"
+        },
+        "recipients": {
+          "count_one": "{{count}} destinatario",
+          "count_other": "{{count}} destinatari",
+          "more": "+{{count}} altri",
+          "sameText": "Nessun campo personale: tutti ricevono lo stesso testo.",
+          "to": "A",
+          "cc": "Cc"
+        },
+        "skipped": {
+          "title_one": "{{count}} escluso",
+          "title_other": "{{count}} esclusi",
+          "reason": {
+            "OPTED_OUT": "disiscritto",
+            "REMINDERS_DISABLED": "promemoria disattivati",
+            "NO_EMAIL": "nessun indirizzo e-mail",
+            "DUPLICATE": "indirizzo doppio"
+          }
+        },
+        "preview": {
+          "previous": "Destinatario precedente",
+          "next": "Destinatario successivo",
+          "position": "({{index}}/{{count}})",
+          "subject": "Oggetto",
+          "frameTitle": "Anteprima della mail",
+          "unknownPlaceholders": "Segnaposto sconosciuti: {{list}}. Correggi il modello prima dell'invio.",
+          "incomplete": "L'anteprima appare quando tutto è selezionato."
+        },
+        "replyTo": "Le risposte vanno a {{address}}.",
+        "replyDefault": "Le risposte vanno all'indirizzo del mittente.",
+        "footer": {
+          "test": "Invia agli organizzatori (prova)",
+          "send_one": "Invia a {{count}} destinatario",
+          "send_other": "Invia a {{count}} destinatari",
+          "confirm_one": "Inviare davvero a {{count}} destinatario?",
+          "confirm_other": "Inviare davvero a {{count}} destinatari?",
+          "back": "Indietro",
+          "yes": "Sì, invia"
+        },
+        "testSent_one": "Prova inviata a {{count}} organizzatore",
+        "testSent_other": "Prova inviata a {{count}} organizzatori"
       }
     }
   },
