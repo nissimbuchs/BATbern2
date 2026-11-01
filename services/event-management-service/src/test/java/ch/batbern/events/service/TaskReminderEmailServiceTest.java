@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventTask;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
+import ch.batbern.events.mailcenter.render.MailPipelines;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
@@ -76,12 +77,10 @@ class TaskReminderEmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new TaskReminderEmailService(
-                emailService, emailTemplateService, userApiClient, eventRepository);
+        service = new TaskReminderEmailService(emailService, userApiClient, eventRepository,
+                MailPipelines.over(emailService, emailTemplateService));
 
         ReflectionTestUtils.setField(service, "baseUrl", "https://batbern.ch");
-        ReflectionTestUtils.setField(service, "organizerName", "BATbern Team");
-        ReflectionTestUtils.setField(service, "organizerEmail", "events@batbern.ch");
 
         // By default, no DB template — classpath fallback used
         when(emailTemplateService.findByKeyAndLocale(anyString(), anyString()))
