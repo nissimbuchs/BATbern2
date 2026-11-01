@@ -16,8 +16,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.Map;
 import java.util.Optional;
-import java.util.regex.Matcher;
-import java.util.regex.Pattern;
 
 /**
  * The one way a template-based mail is made (Story 16.11): {@link #template} resolves the content
@@ -30,7 +28,6 @@ import java.util.regex.Pattern;
 public class MailPipeline {
 
     private static final String DEFAULT_LOCALE = "de";
-    private static final Pattern SUBJECT_COMMENT = Pattern.compile("^<!--\\s*subject:\\s*(.+?)\\s*-->\\r?\\n?");
 
     private final EmailService emailService;
     private final EmailTemplateService templates;
@@ -42,7 +39,8 @@ public class MailPipeline {
 
     /**
      * The template's content in {@code locale}: the store first, its German version next, then the
-     * classpath file the store is seeded from (seeded on every start, so in practice never reached).
+     * classpath file the store is seeded from (seeded on every start, so in practice never reached;
+     * used as the services used it: raw file, no layout, the caller's fallback subject).
      * Empty body, logged, when none exists.
      */
     public MailContent template(String templateKey, String locale) {
@@ -58,10 +56,8 @@ public class MailPipeline {
         for (String candidate : candidates) {
             Optional<String> file = classpath("email-templates/" + templateKey + "-" + candidate + ".html");
             if (file.isPresent()) {
-                Matcher m = SUBJECT_COMMENT.matcher(file.get());
-                String subject = m.find() ? m.group(1) : null;
-                String body = SUBJECT_COMMENT.matcher(file.get()).replaceFirst("").trim();
-                return new MailContent(templateKey, candidate, subject, body, MailRenderer.LAYOUT_KEY,
+                // As the services did before 16.11: the file as it is, no layout, the caller's subject.
+                return new MailContent(templateKey, candidate, null, file.get(), null,
                         MailContext.ContentSource.TEMPLATE);
             }
         }

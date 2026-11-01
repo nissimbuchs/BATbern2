@@ -1,17 +1,19 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.entity.EventTypeConfiguration;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.variables.MailVariableFactory;
 import ch.batbern.events.repository.EventAgendaConfigRepository;
 import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
+import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -100,6 +102,9 @@ class RegistrationEmailServiceTest {
         eventTimeResolver = new EventTimeResolver(
                 new AgendaConfigResolver(eventAgendaConfigRepository, eventTypeRepository), sessionRepository);
         ReflectionTestUtils.setField(registrationEmailService, "eventTimeResolver", eventTimeResolver);
+        // Story 16.11: the one pipeline, over the same mocks
+        ReflectionTestUtils.setField(registrationEmailService, "mailPipeline",
+                new MailPipeline(emailService, emailTemplateService, new MailVariableFactory(eventTimeResolver)));
 
         // Set configuration values
         ReflectionTestUtils.setField(registrationEmailService, "baseUrl", "https://batbern.ch");
