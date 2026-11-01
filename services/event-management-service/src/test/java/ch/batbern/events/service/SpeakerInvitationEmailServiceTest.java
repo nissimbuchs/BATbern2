@@ -7,6 +7,7 @@ import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.forwarding.EmailForwardingProperties;
 import ch.batbern.events.forwarding.ModeratorReplyAddress;
+import ch.batbern.events.mailcenter.render.MailPipelines;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
@@ -17,7 +18,6 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
-import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -78,13 +78,12 @@ class SpeakerInvitationEmailServiceTest {
     @BeforeEach
     void setUp() {
         invitationEmailService = new SpeakerInvitationEmailService(
-                emailService, sessionRepository, emailTemplateService, primarySpeakerResolver,
+                emailService, sessionRepository, MailPipelines.over(emailService, emailTemplateService),
+                primarySpeakerResolver,
                 new ModeratorReplyAddress(new EmailForwardingProperties(false, null, null, null, null, 0)));
         // DB lookup defaults to empty so classpath templates load.
         when(emailTemplateService.findByKeyAndLocale(anyString(), anyString()))
                 .thenReturn(Optional.empty());
-        ReflectionTestUtils.setField(invitationEmailService, "organizerName", "BATbern Team");
-        ReflectionTestUtils.setField(invitationEmailService, "organizerEmail", "events@batbern.ch");
 
         UUID speakerId = UUID.randomUUID();
         UUID eventId = UUID.randomUUID();

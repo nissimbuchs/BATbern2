@@ -4,6 +4,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.forwarding.EmailForwardingProperties;
 import ch.batbern.events.forwarding.ModeratorReplyAddress;
+import ch.batbern.events.mailcenter.render.MailPipelines;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -92,10 +93,9 @@ class SpeakerModeratorReplyToTest {
     @DisplayName("should_replyToModeratorAlias_when_tieredReminderSent")
     void should_replyToModeratorAlias_when_tieredReminderSent() {
         SpeakerReminderEmailService service = new SpeakerReminderEmailService(
-                emailService, emailTemplateService, primarySpeakerResolver, moderatorReplyAddress);
+                emailService, MailPipelines.over(emailService, emailTemplateService), primarySpeakerResolver,
+                moderatorReplyAddress);
         ReflectionTestUtils.setField(service, "baseUrl", "https://batbern.ch");
-        ReflectionTestUtils.setField(service, "organizerName", "BATbern Team");
-        ReflectionTestUtils.setField(service, "organizerEmail", "events@batbern.ch");
 
         service.sendReminderEmail(speaker, event, "RESPONSE", "TIER_1", LocalDate.now().plusDays(7),
                 Locale.ENGLISH, MailTrigger.system());

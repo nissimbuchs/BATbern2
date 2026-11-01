@@ -1,23 +1,22 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.forwarding.ModeratorReplyAddress;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
+import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
-import ch.batbern.events.forwarding.ModeratorReplyAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
@@ -46,18 +45,13 @@ public class SpeakerAcceptanceEmailService {
 
     private final EmailService emailService;
     private final SessionRepository sessionRepository;
-    private final EmailTemplateService emailTemplateService;
+    private final MailPipeline mailPipeline;
     private final PrimarySpeakerResolver primarySpeakerResolver;
     private final ModeratorReplyAddress moderatorReplyAddress;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
 
-    @Value("${app.email.organizer-name:BATbern Team}")
-    private String organizerName;
-
-    @Value("${app.email.organizer-email:events@batbern.ch}")
-    private String organizerEmail;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
@@ -154,12 +148,6 @@ public class SpeakerAcceptanceEmailService {
             String speakerDisplayName
     ) {
         String localeStr = locale.getLanguage();
-        String templateName = localeStr.equals("de")
-                ? "email-templates/speaker-acceptance-de.html"
-                : "email-templates/speaker-acceptance-en.html";
-
-        // Story 10.2: DB-first template loading
-        String template = loadHtmlContent("speaker-acceptance", localeStr, templateName);
 
         // Story 11.E.3 D1 / 11.F.1 Phase F: speakers now authenticate via Cognito; the
         // SPA routes use eventCode in the path and pick up the Bearer from the session.
@@ -179,60 +167,26 @@ public class SpeakerAcceptanceEmailService {
             }
         }
 
-        // Prepare template variables
-        Map<String, String> variables = Map.ofEntries(
-                Map.entry("speakerName", speakerDisplayName != null ? speakerDisplayName : ""),
-                Map.entry("eventTitle", event.getTitle()),
-                Map.entry("eventCode", event.getEventCode()),
-                Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
-                Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),
-                Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
-                Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
-                Map.entry("sessionTitle", sessionTitle),
-                Map.entry("profileUrl", profileUrl),
-                Map.entry("contentUrl", contentUrl),
-                Map.entry("dashboardLink", dashboardLink),
-                Map.entry("contentDeadline", speaker.getContentDeadline() != null
-                        ? speaker.getContentDeadline().format(DATE_FORMATTER)
-                        : ""),
-                Map.entry("organizerName", organizerName),
-                Map.entry("organizerEmail", organizerEmail),
-                Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
-                Map.entry("supportUrl", baseUrl + "/support"),
-                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
-                Map.entry("logoUrl", baseUrl + "/BATbern_white_logo.png")
-        );
+        Map<String, String> variables = mailPipeline.variables().event(event, localeStr)
+                .put(MailVariable.SPEAKER_NAME, speakerDisplayName)
+                // Story 16.11: format kept until the owner-decided change (separate commit)
+                .put(MailVariable.EVENT_DATE, eventDateTime.format(DATE_FORMATTER))
+                // "Uhr" in English too: open unification decision (Story 16.11)
+                .put(MailVariable.EVENT_TIME, eventDateTime.format(TIME_FORMATTER) + " Uhr")
+                .put(MailVariable.SESSION_TITLE, sessionTitle)
+                .put(MailVariable.PROFILE_URL, profileUrl)
+                .put(MailVariable.CONTENT_URL, contentUrl)
+                .put(MailVariable.DASHBOARD_LINK, dashboardLink)
+                .put(MailVariable.CONTENT_DEADLINE, speaker.getContentDeadline() != null
+                        ? speaker.getContentDeadline().format(DATE_FORMATTER) : "")
+                .asMap();
 
-        String html = emailService.replaceVariables(template, variables);
-        String subject = emailTemplateService.resolveSubject("speaker-acceptance", localeStr)
-                .map(s -> emailService.replaceVariables(s, variables))
-                .orElseGet(() -> localeStr.equals("de")
+        RenderedMail mail = mailPipeline.render(mailPipeline.template("speaker-acceptance", localeStr), variables);
+        String html = mail.html();
+        String subject = mail.subject() != null ? mail.subject()
+                : localeStr.equals("de")
                         ? "Bestätigung Ihrer Teilnahme - " + event.getTitle()
-                        : "Speaker Confirmation - " + event.getTitle());
+                        : "Speaker Confirmation - " + event.getTitle();
         return new EmailContent(html, subject);
-    }
-
-    /**
-     * Loads HTML content from DB (with optional layout merge) or falls back to classpath.
-     * Story 10.2 AC1: DB-first template loading.
-     */
-    private String loadHtmlContent(String templateKey, String localeStr, String classpathFallback) {
-        Optional<EmailTemplate> dbTemplate = emailTemplateService.findByKeyAndLocale(templateKey, localeStr);
-        if (dbTemplate.isPresent()) {
-            String contentHtml = dbTemplate.get().getHtmlBody();
-            String layoutKey = dbTemplate.get().getLayoutKey();
-            if (layoutKey != null) {
-                return emailTemplateService.mergeWithLayout(contentHtml, layoutKey, localeStr);
-            }
-            return contentHtml;
-        }
-        // Classpath fallback
-        try {
-            ClassPathResource resource = new ClassPathResource(classpathFallback);
-            return resource.getContentAsString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            log.error("Email template not found in DB or classpath: {}/{}", templateKey, localeStr);
-            return "";
-        }
     }
 }

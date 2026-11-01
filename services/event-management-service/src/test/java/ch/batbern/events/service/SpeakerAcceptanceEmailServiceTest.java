@@ -6,6 +6,7 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.forwarding.EmailForwardingProperties;
 import ch.batbern.events.forwarding.ModeratorReplyAddress;
+import ch.batbern.events.mailcenter.render.MailPipelines;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
@@ -74,11 +75,10 @@ class SpeakerAcceptanceEmailServiceTest {
     @BeforeEach
     void setUp() {
         acceptanceEmailService = new SpeakerAcceptanceEmailService(
-                emailService, sessionRepository, emailTemplateService, primarySpeakerResolver,
+                emailService, sessionRepository, MailPipelines.over(emailService, emailTemplateService),
+                primarySpeakerResolver,
                 new ModeratorReplyAddress(new EmailForwardingProperties(false, null, null, null, null, 0)));
         ReflectionTestUtils.setField(acceptanceEmailService, "baseUrl", "https://batbern.ch");
-        ReflectionTestUtils.setField(acceptanceEmailService, "organizerName", "BATbern Team");
-        ReflectionTestUtils.setField(acceptanceEmailService, "organizerEmail", "events@batbern.ch");
 
         // Set up test data
         UUID speakerId = UUID.randomUUID();
