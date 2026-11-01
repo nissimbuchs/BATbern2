@@ -12,12 +12,22 @@ import software.amazon.awssdk.services.ses.model.SendEmailResponse;
 import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
 import software.amazon.awssdk.services.ses.model.SendRawEmailResponse;
 
+import jakarta.mail.Message;
+import jakarta.mail.Session;
+import jakarta.mail.internet.InternetAddress;
+import jakarta.mail.internet.MimeMessage;
+
+import java.io.ByteArrayInputStream;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -542,6 +552,53 @@ class EmailServiceTest {
             verify(sesClient).sendRawEmail(captor.capture());
             String raw = captor.getValue().rawMessage().data().asUtf8String();
             assertThat(raw).contains("To: max@xn--mller-kva.ch").doesNotContain("müller");
+        }
+
+        @Test
+        void should_putEveryRecipientInTo_when_groupSendWithAttachments() throws Exception {
+            // Partner meeting invites go out as ONE mail with every partner and organizer in To:.
+            // Since #1104 a comma-joined `to` string was validated as a single address and the
+            // whole send threw "not a valid address" (BATbern60 resend, 2026-10-30).
+            emailService.sendGroupHtmlEmailWithAttachments(
+                    List.of("partner@batbern.ch", "max@müller.ch", "organizer@batbern.ch"),
+                    "subj", "<p>body</p>", List.of(icsAttachment()));
+
+            assertThat(sentToAddresses())
+                    .containsExactly("partner@batbern.ch", "max@xn--mller-kva.ch", "organizer@batbern.ch");
+        }
+
+        @Test
+        void should_dropOnlyUndeliverableRecipient_when_groupSendHasOneBadAddress() throws Exception {
+            // One bad address must not cost the other recipients their invite.
+            emailService.sendGroupHtmlEmailWithAttachments(
+                    List.of("partner@batbern.ch", "jürg@batbern.ch", "not-an-address", "organizer@batbern.ch"),
+                    "subj", "<p>body</p>", List.of(icsAttachment()));
+
+            assertThat(sentToAddresses()).containsExactly("partner@batbern.ch", "organizer@batbern.ch");
+        }
+
+        @Test
+        void should_throw_when_groupSendHasNoDeliverableRecipient() {
+            assertThatThrownBy(() -> emailService.sendGroupHtmlEmailWithAttachments(
+                    List.of("not-an-address", "jürg@batbern.ch"),
+                    "subj", "<p>body</p>", List.of(icsAttachment())))
+                    .isInstanceOf(IllegalArgumentException.class);
+            verify(sesClient, never()).sendRawEmail(any(SendRawEmailRequest.class));
+        }
+
+        private EmailService.EmailAttachment icsAttachment() {
+            return new EmailService.EmailAttachment("event.ics",
+                    "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(), "text/calendar", true);
+        }
+
+        private List<String> sentToAddresses() throws Exception {
+            ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
+            verify(sesClient).sendRawEmail(captor.capture());
+            MimeMessage sent = new MimeMessage(Session.getInstance(new Properties()),
+                    new ByteArrayInputStream(captor.getValue().rawMessage().data().asByteArray()));
+            return Arrays.stream(sent.getRecipients(Message.RecipientType.TO))
+                    .map(a -> ((InternetAddress) a).getAddress())
+                    .toList();
         }
 
         @Test

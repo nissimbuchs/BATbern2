@@ -45,6 +45,9 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fixes — Partner Meeting Invites (2026-11-01)**:
+- ✅ Partner meeting invites and cancellations are sent again. Since 24 October every one of them failed silently: the mail goes to all partners and organizers in one To: line, and the address check introduced with #1104 read that whole line as one invalid address. The organizer saw no error. An address that cannot be delivered is now left out with a warning, and the others still get the mail.
+
 **Bug Fixes — Apéro Session Type and Material Status (2026-10-26)**:
 - ✅ The apéro is stored as one session type again (`networking`, still shown as "Apéro"). A second value, `aperitif`, had been added in June for the same slot; the Apple Watch app 2.3 does not know it and could not load the event at all (#1123).
 - ✅ Speakers & Sessions table: a session shows its material as complete as soon as one file is uploaded, whatever its type. The "Pending" state for a session with only a PDF and no slide deck is gone (#1123).

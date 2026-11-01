@@ -574,6 +574,14 @@ emails are accepted whenever SES can deliver to them (`shared-kernel` `EmailAddr
 `SlugGenerationService.generateUsername(first, last, email)`, which always satisfies
 `chk_username_format`. Full rules: [06b-user-lifecycle-sync.md → Names, emails and usernames](06b-user-lifecycle-sync.md#names-emails-and-usernames-1102).
 
+**One mail, several To: addresses.** `EmailService` validates its `String to` as exactly one address.
+A mail for several people in To: (partner meeting invites and cancellations, partner mails) goes
+through `sendGroupHtmlEmailSync` / `sendGroupHtmlEmailWithAttachments` with a `List<String>`: each
+address is checked on its own, an undeliverable or reserved-domain one is dropped with a warning, and
+the call throws only when none is left. Never pass a comma-joined string as `to`: since #1104 it is
+rejected as a whole, and every partner invite failed that way from 2026-10-24 until the fix. The send
+is recorded once, with the To: addresses comma-joined.
+
 #### Conflict Detection Severities
 
 The `ConflictDetectionService` distinguishes between hard errors and soft warnings:

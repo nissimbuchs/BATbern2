@@ -44,8 +44,9 @@ class PartnerInviteEmailServiceTest {
     private String captureSentHtml(String expectedSubjectPrefix) {
         ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmailWithAttachments(
-                eq("partner@example.com,organizer@batbern.ch"),
+        // One mail, every recipient as its own To: address (a comma-joined string broke in #1104).
+        verify(emailService).sendGroupHtmlEmailWithAttachments(
+                eq(List.of("partner@example.com", "organizer@batbern.ch")),
                 subject.capture(), html.capture(), anyList());
         assertThat(subject.getValue()).startsWith(expectedSubjectPrefix);
         return html.getValue();
@@ -132,6 +133,6 @@ class PartnerInviteEmailServiceTest {
         service.sendCalendarInvites(List.of(), details, new byte[]{1});
 
         verify(emailService, org.mockito.Mockito.never())
-                .sendHtmlEmailWithAttachments(any(), any(), any(), anyList());
+                .sendGroupHtmlEmailWithAttachments(anyList(), any(), any(), anyList());
     }
 }
