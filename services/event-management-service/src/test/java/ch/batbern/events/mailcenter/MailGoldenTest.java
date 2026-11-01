@@ -224,6 +224,28 @@ class MailGoldenTest extends AbstractIntegrationTest {
                 ACTUAL.toAbsolutePath()).isEmpty();
     }
 
+    @Test
+    @DisplayName("AC8: a newsletter send renders every recipient from the content resolved at its start")
+    void newsletter_contentFixedPerSend() {
+        NewsletterEmailService.NewsletterDraft draft = newsletterEmailService.prepare(event, "de", false,
+                "newsletter-event");
+        String before = newsletterEmailService.renderBody(draft, "https://batbern.ch/unsubscribe?token=a");
+        String original = jdbc.queryForObject(
+                "SELECT html_body FROM email_templates WHERE template_key = 'newsletter-event' AND locale = 'de'",
+                String.class);
+        try {
+            jdbc.update("UPDATE email_templates SET html_body = '<p>EDITED DURING SEND</p>'"
+                    + " WHERE template_key = 'newsletter-event' AND locale = 'de'");
+
+            String after = newsletterEmailService.renderBody(draft, "https://batbern.ch/unsubscribe?token=a");
+
+            assertThat(after).isEqualTo(before).doesNotContain("EDITED DURING SEND");
+        } finally {
+            jdbc.update("UPDATE email_templates SET html_body = ? WHERE template_key = 'newsletter-event'"
+                    + " AND locale = 'de'", original);
+        }
+    }
+
     private void compareQna(String locale) {
         Session session = Session.builder().id(UUID.randomUUID()).eventId(event.getId()).eventCode(EVENT_CODE)
                 .title("Fitness Functions in der Praxis").sessionSlug("fitness-functions").build();

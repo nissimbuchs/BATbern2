@@ -53,7 +53,7 @@ public class MailPipeline {
         }
         if (stored.isPresent()) {
             EmailTemplate t = stored.get();
-            return new MailContent(templateKey, foundLocale, t.getSubject(), t.getHtmlBody(), t.getLayoutKey(),
+            return new MailContent(templateKey, foundLocale, subjectOf(t), t.getHtmlBody(), t.getLayoutKey(),
                     MailContext.ContentSource.TEMPLATE);
         }
         List<String> candidates = wanted.equals(DEFAULT_LOCALE) ? List.of(wanted) : List.of(wanted, DEFAULT_LOCALE);
@@ -70,9 +70,34 @@ public class MailPipeline {
                 MailContext.ContentSource.TEMPLATE);
     }
 
+    /**
+     * The template's content from the store only, always in the BATbern layout: how the newsletter,
+     * registrant notices, venue and partner mails loaded it before Story 16.11. Empty body when the
+     * store has neither the locale nor German.
+     */
+    public MailContent storedTemplate(String templateKey, String locale) {
+        String wanted = "en".equalsIgnoreCase(locale) ? "en" : DEFAULT_LOCALE;
+        // The layout is merged in the requested language, as MailRenderer.body did.
+        Optional<EmailTemplate> stored = templates.findByKeyAndLocale(templateKey, wanted);
+        if (stored.isEmpty() && !wanted.equals(DEFAULT_LOCALE)) {
+            stored = templates.findByKeyAndLocale(templateKey, DEFAULT_LOCALE);
+        }
+        return stored.map(t -> new MailContent(templateKey, wanted, subjectOf(t), t.getHtmlBody(),
+                        t.getLayoutKey(), MailContext.ContentSource.TEMPLATE))
+                .orElseGet(() -> new MailContent(templateKey, wanted, null, "", null,
+                        MailContext.ContentSource.TEMPLATE))
+                .withDefaultLayout(MailRenderer.LAYOUT_KEY);
+    }
+
     /** The content with {@code vars} filled in. */
     public RenderedMail render(MailContent content, Map<String, String> vars) {
         return MailRenderer.render(emailService, templates, content, vars);
+    }
+
+    /** A blank subject counts as none, as {@code EmailTemplateService.resolveSubject} decided. */
+    private static String subjectOf(EmailTemplate template) {
+        String subject = template.getSubject();
+        return subject == null || subject.isBlank() ? null : subject;
     }
 
     private static Optional<String> classpath(String path) {

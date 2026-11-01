@@ -21,4 +21,10 @@ public record MailContent(String templateKey, String locale, String subject, Str
     public MailContent {
         bodyHtml = bodyHtml == null ? "" : bodyHtml;
     }
+
+    /** The same content in {@code layout} when it names none (the composer audiences always had one). */
+    public MailContent withDefaultLayout(String layout) {
+        return layoutKey != null ? this
+                : new MailContent(templateKey, locale, subject, bodyHtml, layout, contentSource);
+    }
 }
