@@ -166,6 +166,7 @@
     },
     "error": "Impossible de charger les réunions",
     "inviteSuccess": "L'invitation de calendrier est en cours d'envoi",
+    "inviteFailed": "L'invitation n'a pas pu être envoyée. Rien n'a été distribué. Veuillez réessayer.",
     "rsvp": {
       "title": "Réponses des participants",
       "loading": "Chargement des réponses...",

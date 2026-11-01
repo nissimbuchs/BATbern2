@@ -166,6 +166,7 @@
     },
     "error": "Impussibel da chargiare inscunters",
     "inviteSuccess": "L'invitaziun dal chalender vegn tramessa",
+    "inviteFailed": "L'invitaziun n'ha betg pudì vegnir tramessa. I n'è vegnì furnì nagut. Emprova anc ina giada.",
     "rsvp": {
       "title": "Respostas dals participants",
       "loading": "Chargiar respostas...",

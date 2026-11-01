@@ -47,6 +47,7 @@ Each release includes:
 
 **Bug Fixes — Partner Meeting Invites (2026-11-01)**:
 - ✅ Partner meeting invites and cancellations are sent again. Since 24 October every one of them failed silently: the mail goes to all partners and organizers in one To: line, and the address check introduced with #1104 read that whole line as one invalid address. The organizer saw no error. An address that cannot be delivered is now left out with a warning, and the others still get the mail.
+- ✅ The meeting shows "invite sent" only when the invite really went out. Before, it was marked as sent as soon as the button was pressed, even when sending then failed (BATbern60, 30 October). A failed send now shows an error to the organizer and leaves the meeting unmarked, so it can simply be sent again.
 
 **Bug Fixes — Apéro Session Type and Material Status (2026-10-26)**:
 - ✅ The apéro is stored as one session type again (`networking`, still shown as "Apéro"). A second value, `aperitif`, had been added in June for the same slot; the Apple Watch app 2.3 does not know it and could not load the event at all (#1123).

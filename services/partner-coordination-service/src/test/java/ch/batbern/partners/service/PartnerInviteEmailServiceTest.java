@@ -135,4 +135,18 @@ class PartnerInviteEmailServiceTest {
         verify(emailService, org.mockito.Mockito.never())
                 .sendGroupHtmlEmailWithAttachments(anyList(), any(), any(), anyList());
     }
+
+    @Test
+    @DisplayName("a failed invite send reaches the caller instead of being swallowed")
+    void should_propagateFailure_when_inviteSendFails() {
+        var details = new PartnerInviteEmailService.MeetingInviteDetails(
+                "Event", "BATbern61",
+                LocalDate.of(2026, 9, 3), LocalTime.of(16, 0), LocalTime.of(17, 0), "Bern");
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("none deliverable"))
+                .when(emailService).sendGroupHtmlEmailWithAttachments(anyList(), any(), any(), anyList());
+
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.sendCalendarInvites(
+                        List.of("partner@example.com"), details, new byte[]{1}))
+                .isInstanceOf(IllegalArgumentException.class);
+    }
 }

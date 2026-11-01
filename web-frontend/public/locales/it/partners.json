@@ -166,6 +166,7 @@
     },
     "error": "Impossibile caricare le riunioni",
     "inviteSuccess": "L'invito del calendario è in fase di invio",
+    "inviteFailed": "L'invito non è stato inviato. Nessun messaggio è stato recapitato. Riprova.",
     "rsvp": {
       "title": "Risposte dei partecipanti",
       "loading": "Caricamento risposte...",

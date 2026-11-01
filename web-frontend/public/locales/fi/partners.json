@@ -166,6 +166,7 @@
     },
     "error": "Kokouksia ei voitu ladata",
     "inviteSuccess": "Kalenterikutsua lähetetään",
+    "inviteFailed": "Kutsua ei voitu lähettää. Mitään ei toimitettu. Yritä uudelleen.",
     "rsvp": {
       "title": "Osallistujien vastaukset",
       "loading": "Ladataan vastauksia...",

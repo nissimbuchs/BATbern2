@@ -580,7 +580,9 @@ through `sendGroupHtmlEmailSync` / `sendGroupHtmlEmailWithAttachments` with a `L
 address is checked on its own, an undeliverable or reserved-domain one is dropped with a warning, and
 the call throws only when none is left. Never pass a comma-joined string as `to`: since #1104 it is
 rejected as a whole, and every partner invite failed that way from 2026-10-24 until the fix. The send
-is recorded once, with the To: addresses comma-joined.
+is recorded once, with the To: addresses comma-joined. The partner meeting invite (`POST /partner-meetings/{id}/send-invite`) sends
+synchronously and sets `invite_sent_at` only after SES accepted the mail; a failure answers 502 and
+rolls back. Never mark something as sent before the send has returned.
 
 #### Conflict Detection Severities
 

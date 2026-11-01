@@ -73,8 +73,10 @@ export interface paths {
     /**
      * Send calendar invite to all partner contacts
      * @description Generates an ICS file (RFC 5545) with two VEVENTs — the partner meeting and
-     *     the linked BATbern event — and sends it via SES to all partner contacts.
-     *     Returns 202 Accepted immediately; email is dispatched asynchronously.
+     *     the linked BATbern event — and sends it via SES as one mail to all partner contacts
+     *     and organizers. The send is synchronous: 202 means SES accepted the mail, and only
+     *     then is `inviteSentAt` set. If it cannot be sent, the answer is 502 and the meeting
+     *     stays unchanged. (202 is kept from the former asynchronous contract.)
      *     ORGANIZER role required.
      */
     post: operations['sendPartnerMeetingInvite'];
@@ -485,7 +487,7 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Invite queued for sending */
+      /** @description Invite accepted by SES and sent */
       202: {
         headers: {
           [name: string]: unknown;
@@ -505,6 +507,15 @@ export interface operations {
       };
       /** @description Meeting not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description The invite could not be sent; nothing was delivered and inviteSentAt is unchanged */
+      502: {
         headers: {
           [name: string]: unknown;
         };

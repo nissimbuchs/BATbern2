@@ -39,7 +39,8 @@
         "declined": "Abgseit",
         "tentative": "Vorläufig"
       }
-    }
+    },
+    "inviteFailed": "D Iiladig het nid chönne gschickt wärde. Es isch nüt zuegstellt worde. Bitte nomau probiere."
   },
   "topicStatus": {
     "eventCodePlaceholder": "e.g. BATbern58"

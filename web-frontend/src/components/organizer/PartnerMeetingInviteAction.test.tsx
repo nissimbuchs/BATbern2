@@ -41,7 +41,11 @@ function renderAction(onSent = vi.fn()) {
 }
 
 describe('PartnerMeetingInviteAction', () => {
-  beforeEach(() => sendInvite.mockReset().mockResolvedValue({}));
+  // Block body on purpose: a function returned from beforeEach is run by Vitest as teardown,
+  // and mockResolvedValue() returns the mock itself, which would then be called once more.
+  beforeEach(() => {
+    sendInvite.mockReset().mockResolvedValue({});
+  });
 
   it('sends nothing until the confirmation, then sends and calls onSent', async () => {
     const { onSent } = renderAction();
@@ -54,5 +58,19 @@ describe('PartnerMeetingInviteAction', () => {
     await waitFor(() => expect(sendInvite).toHaveBeenCalledWith('meeting-1'));
     expect(onSent).toHaveBeenCalledTimes(1);
     expect(await screen.findByTestId('invite-success-alert-meeting-1')).toBeInTheDocument();
+  });
+
+  it('shows an error and does not report success when the invite could not be sent', async () => {
+    sendInvite.mockRejectedValue({ response: { status: 502 } });
+    const { onSent } = renderAction();
+
+    fireEvent.click(screen.getByTestId('send-invite-btn-meeting-1'));
+    fireEvent.click(screen.getByTestId('confirm-send-invite-btn'));
+
+    expect(await screen.findByTestId('invite-error-alert-meeting-1')).toHaveTextContent(
+      'meetings.inviteFailed'
+    );
+    expect(screen.queryByTestId('invite-success-alert-meeting-1')).not.toBeInTheDocument();
+    expect(onSent).not.toHaveBeenCalled();
   });
 });
