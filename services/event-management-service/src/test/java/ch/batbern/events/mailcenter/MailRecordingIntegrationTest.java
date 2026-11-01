@@ -139,6 +139,41 @@ class MailRecordingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("16.9 AC3: a To: line with several addresses becomes one row per address, trimmed, with the reference")
+    void multiAddressTo_splitIntoRows() {
+        MailContext context = MailContext.of(MailTrigger.organizer("organizer1"), EVENT_CODE,
+                MailContext.Audience.PARTNERS, "partner-meeting-invite").withReference("partner-meeting:m-1");
+        String to = "success+p1@simulator.amazonses.com, success+p2@simulator.amazonses.com,,"
+                + " success+p3@simulator.amazonses.com ";
+
+        recorder.record(context, new OutboundMail(to, List.of(), "Invite", "<p>i</p>", "ses-9", null));
+
+        MailMessage message = messages.findBySendGroupId(context.sendGroupId()).orElseThrow();
+        assertThat(message.getReference()).isEqualTo("partner-meeting:m-1");
+        assertThat(message.getRecipientCount()).isEqualTo(3);
+        assertThat(recipients.findByMailMessageId(message.getId()))
+                .extracting(MailRecipient::getAddress, MailRecipient::getKind, MailRecipient::getSesMessageId)
+                .containsExactlyInAnyOrder(
+                        org.assertj.core.groups.Tuple.tuple("success+p1@simulator.amazonses.com", MailRecipient.Kind.TO, "ses-9"),
+                        org.assertj.core.groups.Tuple.tuple("success+p2@simulator.amazonses.com", MailRecipient.Kind.TO, "ses-9"),
+                        org.assertj.core.groups.Tuple.tuple("success+p3@simulator.amazonses.com", MailRecipient.Kind.TO, "ses-9"));
+    }
+
+    @Test
+    @DisplayName("16.9 AC3: a single To: address is unchanged and the reference stays null")
+    void singleAddressTo_unchanged() {
+        MailContext context = MailContext.individual(EVENT_CODE, MailContext.Audience.SPEAKERS, "speaker-invitation");
+
+        recorder.record(context, new OutboundMail(TO, List.of(CC), "S", "<p>b</p>", "ses-1", null));
+
+        MailMessage message = messages.findBySendGroupId(context.sendGroupId()).orElseThrow();
+        assertThat(message.getReference()).isNull();
+        assertThat(message.getRecipientCount()).isEqualTo(2);
+        assertThat(recipients.findByMailMessageId(message.getId()))
+                .extracting(MailRecipient::getAddress).containsExactlyInAnyOrder(TO, CC);
+    }
+
+    @Test
     @DisplayName("AC3: a newsletter is one message linked to newsletter_sends, counted, without recipient rows")
     void newsletter_linkedWithoutRecipientRows() {
         NewsletterSend send = newsletterSendRepository.save(NewsletterSend.builder()

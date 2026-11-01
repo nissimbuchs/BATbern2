@@ -517,7 +517,8 @@
         },
         "testSent_one": "Test tramess a {{count}} organisatur",
         "testSent_other": "Test tramess a {{count}} organisaturs"
-      }
+      },
+      "rsvpSummary": "Respostas: {{accepted}} acceptadas · {{declined}} refusadas · {{tentative}} provisoricas · {{noAnswer}} senza resposta"
     }
   },
   "dashboard": {

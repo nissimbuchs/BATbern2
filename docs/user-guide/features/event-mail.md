@@ -72,4 +72,11 @@ notice was already sent, a newsletter is still running), the composer says why.
 **Partners** still lists the event's partner meeting with its calendar invite. Without a meeting it
 links to the partner meetings page.
 
+Partner meeting invites and cancellations appear in "What went out" like every other mail: audience
+Partners, the organizer who clicked as sender, every partner and organizer address as a recipient
+with its own delivery status. An invite row also shows the meeting's answers (accepted, declined,
+tentative, no answer). The invite still goes out as one mail with all addresses on the To: line.
+
+In **Partner meetings**, the open meeting lists its own mails under "Mails of this meeting".
+
 Esc closes the composer; the focus goes back to "+ New mail".

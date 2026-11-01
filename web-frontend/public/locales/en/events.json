@@ -531,7 +531,8 @@
         },
         "testSent_one": "Test sent to {{count}} organizer",
         "testSent_other": "Test sent to {{count}} organizers"
-      }
+      },
+      "rsvpSummary": "RSVP: {{accepted}} accepted · {{declined}} declined · {{tentative}} tentative · {{noAnswer}} no answer"
     }
   },
   "dashboard": {

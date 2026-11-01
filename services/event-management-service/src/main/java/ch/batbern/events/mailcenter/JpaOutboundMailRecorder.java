@@ -16,6 +16,8 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
 import java.util.Objects;
 
@@ -41,10 +43,10 @@ public class JpaOutboundMailRecorder implements OutboundMailRecorder {
      */
     private static final String INSERT_IF_ABSENT = """
             INSERT INTO mail_message (mail_key, send_group_id, event_code, audience, template_key,
-                content_source, subject, body_html, sender_username, newsletter_send_id, is_test)
+                content_source, subject, body_html, sender_username, newsletter_send_id, is_test, reference)
             SELECT COALESCE(:eventCode, 'general') || '-' || nextval('mail_message_seq'), :groupId,
                 :eventCode, :audience, :templateKey, :contentSource, :subject, :bodyHtml, :sender,
-                :newsletterSendId, :test
+                :newsletterSendId, :test, :reference
             WHERE NOT EXISTS (SELECT 1 FROM mail_message WHERE send_group_id = :groupId)
             ON CONFLICT (send_group_id) DO NOTHING
             """;
@@ -58,11 +60,14 @@ public class JpaOutboundMailRecorder implements OutboundMailRecorder {
     public void record(MailContext context, OutboundMail mail) {
         MailMessage message = insertIfAbsent(context, mail.subject(), mail.htmlBody());
 
-        int addressCount = 1 + mail.cc().size();
+        List<String> toAddresses = splitAddresses(mail.to());
+        int addressCount = toAddresses.size() + mail.cc().size();
         if (context.audience() != MailContext.Audience.NEWSLETTER) {
             String ownBody = Objects.equals(mail.htmlBody(), message.getBodyHtml()) ? null : mail.htmlBody();
             List<MailRecipient> rows = new ArrayList<>();
-            rows.add(recipient(message, mail, mail.to(), MailRecipient.Kind.TO, ownBody));
+            for (String to : toAddresses) {
+                rows.add(recipient(message, mail, to, MailRecipient.Kind.TO, ownBody));
+            }
             for (String cc : mail.cc()) {
                 rows.add(recipient(message, mail, cc, MailRecipient.Kind.CC, ownBody));
             }
@@ -94,9 +99,27 @@ public class JpaOutboundMailRecorder implements OutboundMailRecorder {
                 .addValue("bodyHtml", Objects.requireNonNullElse(bodyHtml, ""))
                 .addValue("sender", context.senderUsername())
                 .addValue("newsletterSendId", context.newsletterSendId())
-                .addValue("test", context.test()));
+                .addValue("test", context.test())
+                .addValue("reference", context.reference()));
         return messages.findBySendGroupId(context.sendGroupId())
                 .orElseThrow(() -> new IllegalStateException("mail_message missing for " + context.sendGroupId()));
+    }
+
+    /**
+     * Story 16.9 AC3: a To: line may hold several addresses ({@code a@x,b@y}, the partner meeting
+     * invite). Each becomes its own row, so delivery status (matched by SES Message-ID and address,
+     * 16.1b) works per address and no row overflows {@code address VARCHAR(320)}. Split here rather
+     * than in the caller, so any future multi-address sender is covered.
+     */
+    static List<String> splitAddresses(String to) {
+        if (to == null) {
+            return Collections.singletonList(null);
+        }
+        List<String> parts = Arrays.stream(to.split(","))
+                .map(String::trim)
+                .filter(part -> !part.isEmpty())
+                .toList();
+        return parts.isEmpty() ? List.of(to) : parts;
     }
 
     private static MailRecipient recipient(MailMessage message, OutboundMail mail, String address,

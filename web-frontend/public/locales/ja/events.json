@@ -517,7 +517,8 @@
         },
         "testSent_one": "主催者 {{count}} 名にテストを送信しました",
         "testSent_other": "主催者 {{count}} 名にテストを送信しました"
-      }
+      },
+      "rsvpSummary": "出欠: 参加 {{accepted}} · 不参加 {{declined}} · 未定 {{tentative}} · 未回答 {{noAnswer}}"
     }
   },
   "dashboard": {

@@ -68,6 +68,10 @@ public class MailMessage {
     @Column(name = "is_test", nullable = false)
     private boolean test;
 
+    /** Story 16.9: what the mail is about beyond its event, e.g. {@code partner-meeting:{id}}; see V137. */
+    @Column(name = "reference")
+    private String reference;
+
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
 }

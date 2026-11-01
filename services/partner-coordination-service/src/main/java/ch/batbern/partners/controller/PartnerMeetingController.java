@@ -74,7 +74,8 @@ public class PartnerMeetingController implements PartnerMeetingsApi {
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<SendInviteResponse> sendPartnerMeetingInvite(UUID meetingId) {
-        SendInviteResponse response = meetingService.sendInvite(meetingId);
+        SendInviteResponse response = meetingService.sendInvite(meetingId,
+                securityContextHelper.getCurrentUsername());
         return ResponseEntity.status(HttpStatus.ACCEPTED).body(response);
     }
 
@@ -86,7 +87,7 @@ public class PartnerMeetingController implements PartnerMeetingsApi {
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<Void> deletePartnerMeeting(UUID meetingId) {
-        meetingService.deleteMeeting(meetingId);
+        meetingService.deleteMeeting(meetingId, securityContextHelper.getCurrentUsername());
         return ResponseEntity.noContent().build();
     }
 }

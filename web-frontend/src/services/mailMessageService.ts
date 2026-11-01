@@ -27,6 +27,8 @@ export type ComposeAudience = MailComposeRequest['audience'];
 export interface MailMessageListParams {
   audience?: MailAudience;
   templateKey?: string;
+  /** Story 16.9: only mails about this subject, e.g. `partner-meeting:{meetingId}`. */
+  reference?: string;
   /** yyyy-MM-dd, Europe/Zurich */
   date?: string;
   grouped?: boolean;

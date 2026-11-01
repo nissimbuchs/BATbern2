@@ -523,7 +523,8 @@
         },
         "testSent_one": "Test a {{count}} Organisator:in gschickt",
         "testSent_other": "Test a {{count}} Organisator:inne gschickt"
-      }
+      },
+      "rsvpSummary": "Rückmäldige: {{accepted}} zuegseit · {{declined}} abgseit · {{tentative}} viilech · {{noAnswer}} ohni Antwort"
     }
   },
   "dashboard": {

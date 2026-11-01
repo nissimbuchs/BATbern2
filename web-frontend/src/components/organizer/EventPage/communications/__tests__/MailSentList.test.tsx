@@ -10,10 +10,11 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MailSentList } from '../MailSentList';
 import type { MailMessageSummary } from '@/services/mailMessageService';
 
-const { listMailMessages, getMailMessage, retryMail, breakpoints } = vi.hoisted(() => ({
+const { listMailMessages, getMailMessage, retryMail, getRsvps, breakpoints } = vi.hoisted(() => ({
   listMailMessages: vi.fn(),
   getMailMessage: vi.fn(),
   retryMail: vi.fn(),
+  getRsvps: vi.fn(),
   breakpoints: { isMobile: false, isTablet: false, isDesktop: true },
 }));
 
@@ -21,6 +22,9 @@ vi.mock('@/services/mailMessageService', () => ({
   listMailMessages: (...args: unknown[]) => listMailMessages(...args),
   getMailMessage: (...args: unknown[]) => getMailMessage(...args),
   retryMail: (...args: unknown[]) => retryMail(...args),
+}));
+vi.mock('@/services/api/partnerMeetingsApi', () => ({
+  getRsvps: (...args: unknown[]) => getRsvps(...args),
 }));
 vi.mock('@/hooks/useBreakpoints', () => ({ useBreakpoints: () => breakpoints }));
 vi.mock('react-i18next', () => ({
@@ -67,11 +71,14 @@ function page(data: MailMessageSummary[], totalPages = 1) {
   };
 }
 
-function renderList(highlightKeys?: string[]) {
+function renderList(
+  highlightKeys?: string[],
+  scope: { audience?: 'PARTNERS'; reference?: string } = {}
+) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   render(
     <QueryClientProvider client={queryClient}>
-      <MailSentList eventCode="BATbern60" highlightKeys={highlightKeys} />
+      <MailSentList eventCode="BATbern60" highlightKeys={highlightKeys} {...scope} />
     </QueryClientProvider>
   );
 }
@@ -292,5 +299,76 @@ describe('MailSentList', () => {
         expect.objectContaining({ includeTests: true, page: 1 })
       )
     );
+  });
+
+  describe('Story 16.9: partner meeting mails', () => {
+    const invite = row({
+      mailKey: 'BATbern60-40',
+      audience: 'PARTNERS',
+      templateKey: 'partner-meeting-invite',
+      subject: 'Einladung / Invitation: BATbern Partner-Meeting',
+      recipientCount: 10,
+      deliveredCount: 10,
+      failedCount: 0,
+      reference: 'partner-meeting:m-1',
+    });
+
+    it('should show the RSVP summary of the meeting when a partner meeting invite is listed', async () => {
+      getRsvps.mockReset().mockResolvedValue({
+        meetingId: 'm-1',
+        inviteSentAt: '2026-10-28T10:00:00Z',
+        rsvps: [],
+        summary: { accepted: 4, declined: 1, tentative: 2 },
+      });
+      listMailMessages.mockResolvedValue(page([invite]));
+
+      renderList();
+
+      expect(await screen.findByTestId('mail-rsvp-BATbern60-40')).toHaveTextContent(
+        'eventPage.mail.rsvpSummary(accepted=4,declined=1,tentative=2,noAnswer=3)'
+      );
+      expect(getRsvps).toHaveBeenCalledWith('m-1');
+    });
+
+    it('should not load RSVPs for a cancellation or a mail without a meeting reference', async () => {
+      getRsvps.mockReset();
+      listMailMessages.mockResolvedValue(
+        page([
+          row({
+            mailKey: 'BATbern60-41',
+            audience: 'PARTNERS',
+            templateKey: 'partner-meeting-cancellation',
+            reference: 'partner-meeting:m-1',
+          }),
+          row({ mailKey: 'BATbern60-42', audience: 'SPEAKERS' }),
+        ])
+      );
+
+      renderList();
+
+      expect(await screen.findByTestId('mail-row-BATbern60-41')).toBeInTheDocument();
+      expect(screen.queryByTestId('mail-rsvp-BATbern60-41')).not.toBeInTheDocument();
+      expect(screen.queryByTestId('mail-rsvp-BATbern60-42')).not.toBeInTheDocument();
+      expect(getRsvps).not.toHaveBeenCalled();
+    });
+
+    it('should list only the mails of one meeting without audience chips when scoped', async () => {
+      getRsvps.mockReset().mockResolvedValue({
+        meetingId: 'm-1',
+        inviteSentAt: null,
+        rsvps: [],
+        summary: { accepted: 0, declined: 0, tentative: 0 },
+      });
+      listMailMessages.mockResolvedValue(page([invite]));
+
+      renderList(undefined, { audience: 'PARTNERS', reference: 'partner-meeting:m-1' });
+
+      expect(await screen.findByTestId('mail-row-BATbern60-40')).toBeInTheDocument();
+      expect(listMailMessages).toHaveBeenLastCalledWith(
+        'BATbern60',
+        expect.objectContaining({ audience: 'PARTNERS', reference: 'partner-meeting:m-1' })
+      );
+      expect(screen.queryByTestId('mail-filter-ALL')).not.toBeInTheDocument();
+    });
   });
 });

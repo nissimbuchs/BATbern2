@@ -40,7 +40,10 @@
         "tentative": "Vorläufig"
       }
     },
-    "inviteFailed": "D Iiladig het nid chönne gschickt wärde. Es isch nüt zuegstellt worde. Bitte nomau probiere."
+    "inviteFailed": "D Iiladig het nid chönne gschickt wärde. Es isch nüt zuegstellt worde. Bitte nomau probiere.",
+    "mails": {
+      "title": "Mails zu däm Meeting"
+    }
   },
   "topicStatus": {
     "eventCodePlaceholder": "e.g. BATbern58"

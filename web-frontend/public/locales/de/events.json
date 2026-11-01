@@ -531,7 +531,8 @@
         },
         "testSent_one": "Test an {{count}} Organisator:in gesendet",
         "testSent_other": "Test an {{count}} Organisator:innen gesendet"
-      }
+      },
+      "rsvpSummary": "Rückmeldungen: {{accepted}} zugesagt · {{declined}} abgesagt · {{tentative}} vielleicht · {{noAnswer}} ohne Antwort"
     }
   },
   "dashboard": {

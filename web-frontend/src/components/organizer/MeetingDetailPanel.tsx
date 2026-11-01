@@ -4,6 +4,8 @@
  *
  * Expanded panel shown below a meeting row.
  * Provides: agenda editing, notes editing, send-invite action (PartnerMeetingInviteAction).
+ * Story 16.9 AC5: the mails of this meeting (invites, cancellation), from the event's
+ * "What went out" scoped to the meeting.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -13,6 +15,7 @@ import { useTranslation } from 'react-i18next';
 import { updateMeeting, type PartnerMeetingDTO } from '@/services/api/partnerMeetingsApi';
 import PartnerMeetingRsvpPanel from './PartnerMeetingRsvpPanel';
 import PartnerMeetingInviteAction from './PartnerMeetingInviteAction';
+import { MailSentList } from './EventPage/communications/MailSentList';
 
 interface MeetingDetailPanelProps {
   meeting: PartnerMeetingDTO;
@@ -108,6 +111,17 @@ const MeetingDetailPanel: React.FC<MeetingDetailPanelProps> = ({ meeting }) => {
         meetingId={meeting.id}
         inviteSentAt={meeting.inviteSentAt ?? null}
         refreshKey={rsvpRefreshKey}
+      />
+
+      {/* Mails of this meeting — Story 16.9 */}
+      <Divider sx={{ my: 2 }} />
+      <Typography variant="subtitle2" gutterBottom>
+        {t('meetings.mails.title')}
+      </Typography>
+      <MailSentList
+        eventCode={meeting.eventCode}
+        audience="PARTNERS"
+        reference={`partner-meeting:${meeting.id}`}
       />
     </Box>
   );

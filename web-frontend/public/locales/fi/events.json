@@ -517,7 +517,8 @@
         },
         "testSent_one": "Testi lähetetty {{count}} järjestäjälle",
         "testSent_other": "Testi lähetetty {{count}} järjestäjälle"
-      }
+      },
+      "rsvpSummary": "Vastaukset: {{accepted}} hyväksytty · {{declined}} hylätty · {{tentative}} alustava · {{noAnswer}} ei vastausta"
     }
   },
   "dashboard": {

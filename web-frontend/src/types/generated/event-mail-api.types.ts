@@ -183,6 +183,12 @@ export interface components {
       newsletterStatus?: string | null;
       /** @description Test send to the organizers. */
       test: boolean;
+      /**
+       * @description What the mail is about beyond its event, e.g. `partner-meeting:{meetingId}` for a partner
+       *     meeting invite or cancellation (Story 16.9). The meeting id is the partner meeting's public id.
+       * @example partner-meeting:3f2a9c1e-7b4d-4e2a-9c1e-7b4d4e2a9c1e
+       */
+      reference?: string | null;
     };
     MailMessageDetail: {
       message: components['schemas']['MailMessageSummary'];
@@ -343,6 +349,11 @@ export interface operations {
         audience?: components['schemas']['MailAudience'];
         /** @description Only entries of this template (used to expand a collapsed entry). */
         templateKey?: string;
+        /**
+         * @description Only mails about this subject, e.g. `partner-meeting:{meetingId}` for the invites and
+         *     cancellations of one partner meeting (Story 16.9).
+         */
+        reference?: string;
         /** @description Only entries sent on this day, Europe/Zurich (used to expand a collapsed entry). */
         date?: string;
         /** @description Collapse automatic mails per template and day (default true). */

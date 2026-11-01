@@ -186,6 +186,9 @@
         "declined": "Abgesagt",
         "tentative": "Vorläufig"
       }
+    },
+    "mails": {
+      "title": "Mails zu diesem Meeting"
     }
   },
   "portal": {

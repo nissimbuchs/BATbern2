@@ -58,8 +58,9 @@ public class EventMailController implements EventMailApi {
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<MailMessagePage> listEventMails(String eventCode, MailAudience audience,
-            String templateKey, LocalDate date, Boolean grouped, Boolean includeTests, Integer page, Integer limit) {
-        MailFilter filter = new MailFilter(audience == null ? null : audience.getValue(), templateKey, date,
+            String templateKey, String reference, LocalDate date, Boolean grouped, Boolean includeTests, Integer page,
+            Integer limit) {
+        MailFilter filter = new MailFilter(audience == null ? null : audience.getValue(), templateKey, reference, date,
                 !Boolean.FALSE.equals(grouped), Boolean.TRUE.equals(includeTests));
         MailPage result = queries.list(eventCode, filter, page, limit);
         return noStore(new MailMessagePage()
@@ -201,7 +202,8 @@ public class EventMailController implements EventMailApi {
                 .messageCount(e.messageCount())
                 .newsletterSendId(e.newsletterSendId())
                 .newsletterStatus(e.newsletterStatus())
-                .test(e.test());
+                .test(e.test())
+                .reference(e.reference());
     }
 
     private static <T> ResponseEntity<T> noStore(T body) {

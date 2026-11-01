@@ -135,9 +135,11 @@ public class PartnerMeetingService {
      *
      * A failed send answers 502 and rolls back, so the meeting is never shown as invited
      * when nothing went out.
+     *
+     * @param senderUsername the organizer who clicked; recorded as the sender (Story 16.9)
      */
     @Transactional
-    public SendInviteResponse sendInvite(UUID meetingId) {
+    public SendInviteResponse sendInvite(UUID meetingId, String senderUsername) {
         PartnerMeeting meeting = findMeetingById(meetingId);
 
         log.info("Sending partner meeting invite: meetingId={}, eventCode={}", meetingId, meeting.getEventCode());
@@ -163,7 +165,7 @@ public class PartnerMeetingService {
                 meeting.getLocation()
         );
         try {
-            inviteEmailService.sendCalendarInvites(emails, inviteDetails, icsContent);
+            inviteEmailService.sendCalendarInvites(emails, inviteDetails, icsContent, meetingId, senderUsername);
         } catch (RuntimeException e) {
             // Rolls back the sequence increment; invite_sent_at stays as it was.
             log.error("Partner meeting invite NOT sent: meetingId={}, recipients={}, reason={}",
@@ -194,9 +196,10 @@ public class PartnerMeetingService {
      * RSVPs are removed automatically via ON DELETE CASCADE (V9 migration).
      *
      * @param meetingId the meeting to delete
+     * @param senderUsername the organizer who deleted it; recorded as the cancellation's sender (Story 16.9)
      */
     @Transactional
-    public void deleteMeeting(UUID meetingId) {
+    public void deleteMeeting(UUID meetingId, String senderUsername) {
         PartnerMeeting meeting = findMeetingById(meetingId);
         log.info("Deleting partner meeting: id={}, eventCode={}, inviteSent={}",
                 meetingId, meeting.getEventCode(), meeting.getInviteSentAt() != null);
@@ -211,7 +214,9 @@ public class PartnerMeetingService {
                     event.title(),
                     meeting.getEventCode(),
                     meeting.getMeetingDate(),
-                    cancelIcs
+                    cancelIcs,
+                    meetingId,
+                    senderUsername
             );
             log.info("Cancellation notice queued for {} recipients, meetingId={}", emails.size(), meetingId);
         }

@@ -178,6 +178,9 @@
         "declined": "辞退",
         "tentative": "仮承諾"
       }
+    },
+    "mails": {
+      "title": "このミーティングのメール"
     }
   },
   "portal": {

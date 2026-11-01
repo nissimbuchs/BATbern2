@@ -11,11 +11,14 @@ import ch.batbern.partners.domain.PartnerMeeting;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.partners.repository.PartnerRepository;
+import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -37,9 +40,14 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.timeout;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -74,6 +82,9 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
     EventManagementClient eventManagementClient;
     @MockitoBean
     UserServiceClient userServiceClient;
+    /** Mock from TestAwsConfig: no mail leaves the test; Story 16.9 asserts the context it gets. */
+    @Autowired
+    EmailService emailService;
 
     @BeforeEach
     void setUp() {
@@ -189,6 +200,56 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get(BASE + "/" + meetingId).with(user("organizer").roles("ORGANIZER")))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.inviteSentAt", notNullValue()));
+    }
+
+    // ─── Story 16.9: the invite and the cancellation carry what gets recorded ──
+
+    @Test
+    void should_recordInvite_withClickingOrganizerAndMeetingReference() throws Exception {
+        org.mockito.Mockito.clearInvocations(emailService);
+        UserResponse organizer = new UserResponse();
+        organizer.setEmail("success+org@simulator.amazonses.com");
+        when(userServiceClient.getUsersByRole("ORGANIZER")).thenReturn(List.of(organizer));
+        String meetingId = createMeeting("BATbern57");
+
+        mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
+                        .with(user("anna.organizer").roles("ORGANIZER")))
+                .andExpect(status().isAccepted());
+
+        ArgumentCaptor<MailContext> context = ArgumentCaptor.forClass(MailContext.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<String>> to = ArgumentCaptor.forClass(List.class);
+        verify(emailService, timeout(5000)).sendGroupHtmlEmailWithAttachments(context.capture(), to.capture(),
+                anyList(), anyString(), anyString(), anyList());
+        assertThat(context.getValue().audience()).isEqualTo(MailContext.Audience.PARTNERS);
+        assertThat(context.getValue().templateKey()).isEqualTo("partner-meeting-invite");
+        assertThat(context.getValue().eventCode()).isEqualTo("BATbern57");
+        assertThat(context.getValue().senderUsername()).isEqualTo("anna.organizer");
+        assertThat(context.getValue().reference()).isEqualTo("partner-meeting:" + meetingId);
+        // AC3: one mail, every partner and organizer address in To:
+        assertThat(to.getValue()).containsExactly("contact@partner.com", "success+org@simulator.amazonses.com");
+    }
+
+    @Test
+    void should_recordCancellation_when_meetingWithSentInviteDeleted() throws Exception {
+        org.mockito.Mockito.clearInvocations(emailService);
+        String meetingId = createMeeting("BATbern57");
+        mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
+                        .with(user("anna.organizer").roles("ORGANIZER")))
+                .andExpect(status().isAccepted());
+        verify(emailService, timeout(5000)).sendGroupHtmlEmailWithAttachments(any(MailContext.class), anyList(),
+                anyList(), anyString(), anyString(), anyList());
+
+        mockMvc.perform(delete(BASE + "/" + meetingId).with(user("ben.organizer").roles("ORGANIZER")))
+                .andExpect(status().isNoContent());
+
+        ArgumentCaptor<MailContext> context = ArgumentCaptor.forClass(MailContext.class);
+        verify(emailService, timeout(5000).times(2)).sendGroupHtmlEmailWithAttachments(context.capture(),
+                anyList(), anyList(), anyString(), anyString(), anyList());
+        MailContext cancellation = context.getAllValues().get(1);
+        assertThat(cancellation.templateKey()).isEqualTo("partner-meeting-cancellation");
+        assertThat(cancellation.senderUsername()).isEqualTo("ben.organizer");
+        assertThat(cancellation.reference()).isEqualTo("partner-meeting:" + meetingId);
     }
 
     // ─── AC4: Meeting notes ───────────────────────────────────────────────────

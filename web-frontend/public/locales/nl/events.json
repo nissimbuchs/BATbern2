@@ -517,7 +517,8 @@
         },
         "testSent_one": "Test verzonden naar {{count}} organisator",
         "testSent_other": "Test verzonden naar {{count}} organisatoren"
-      }
+      },
+      "rsvpSummary": "Reacties: {{accepted}} geaccepteerd · {{declined}} afgewezen · {{tentative}} voorlopig · {{noAnswer}} geen antwoord"
     }
   },
   "dashboard": {

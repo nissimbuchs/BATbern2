@@ -178,6 +178,9 @@
         "declined": "Refusà",
         "tentative": "Provisoric"
       }
+    },
+    "mails": {
+      "title": "E-mails da questa sesida"
     }
   },
   "portal": {

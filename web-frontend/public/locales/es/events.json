@@ -517,7 +517,8 @@
         },
         "testSent_one": "Prueba enviada a {{count}} organizador",
         "testSent_other": "Prueba enviada a {{count}} organizadores"
-      }
+      },
+      "rsvpSummary": "Respuestas: {{accepted}} aceptadas · {{declined}} rechazadas · {{tentative}} provisionales · {{noAnswer}} sin respuesta"
     }
   },
   "dashboard": {
