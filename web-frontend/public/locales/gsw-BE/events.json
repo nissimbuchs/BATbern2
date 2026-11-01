@@ -522,7 +522,11 @@
           "yes": "Ja, schicke"
         },
         "testSent_one": "Test a {{count}} Organisator:in gschickt",
-        "testSent_other": "Test a {{count}} Organisator:inne gschickt"
+        "testSent_other": "Test a {{count}} Organisator:inne gschickt",
+        "partners": {
+          "meetingInvite": "Partner-Meeting-Iiladig mit Kaländeiitrag",
+          "fixedText": "Dr Text vo dere Iiladig isch no fescht vorgä. Si geit als ei Mail a aui Partner und Organisatore, mit em Kaländeiitrag im Ahang."
+        }
       },
       "rsvpSummary": "Rückmäldige: {{accepted}} zuegseit · {{declined}} abgseit · {{tentative}} viilech · {{noAnswer}} ohni Antwort"
     }

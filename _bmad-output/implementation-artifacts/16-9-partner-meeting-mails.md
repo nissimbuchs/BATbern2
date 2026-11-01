@@ -67,22 +67,22 @@ so that **the partner side of an event is visible to the whole team like everyth
 
 ### Part B — plain partner mail (PR 2, `feature/16-9b-partner-adapter`)
 
-- [ ] **Task 8 — Category PARTNER** (AC: 9)
-  - [ ] Spec enums in `docs/api/event-newsletter-api.openapi.yml` (list filter :51-61, `EmailTemplateResponse.category` :1152-1163, `CreateEmailTemplateRequest.category` :1208-1219): add `PARTNER`. Regenerate types.
-  - [ ] `EmailTemplateSeedService.deriveCategory`: `partner-` prefix → `PARTNER` (before the `LAYOUT` fallback, :199; see V120 for what happens otherwise).
-  - [ ] Classpath templates `email-templates/partner-info-de.html` and `partner-info-en.html` (subject in the existing subject convention of the seeder; content only, layout `batbern-default`). Wording: neutral info mail to all partners, generic salutation ("Liebe Partnerinnen und Partner" / "Dear partners"), no per-person placeholder. Owner reviews the DE text.
-  - [ ] Admin: `EmailTemplatesTab.tsx` (:64-94) and `EmailTemplateEditModal.tsx` (:189-195) category lists + `emailTemplates.categories.PARTNER` in 10 locales.
-  - [ ] No migration: `email_templates.category` has no check constraint (V62).
-- [ ] **Task 9 — RED: adapter tests** (AC: 7, 8)
-  - [ ] `PartnerAudienceAdapterTest`: recipients from stubbed `UserApiClient.getPartnerUsernames()` (:129) + `getUserByUsername`; ONE recipient entry whose To: holds all addresses in order; skipped without email; only PARTNER templates allowed; no per-person variables; the record has one `mail_recipient` per address.
-  - [ ] Extend 16.8's byte-equal and test-send integration tests with PARTNERS.
+- [x] **Task 8 — Category PARTNER** (AC: 9)
+  - [x] Spec enums in `docs/api/event-newsletter-api.openapi.yml` (list filter :51-61, `EmailTemplateResponse.category` :1152-1163, `CreateEmailTemplateRequest.category` :1208-1219): add `PARTNER`. Regenerate types.
+  - [x] `EmailTemplateSeedService.deriveCategory`: `partner-` prefix → `PARTNER` (before the `LAYOUT` fallback, :199; see V120 for what happens otherwise).
+  - [x] Classpath templates `email-templates/partner-info-de.html` and `partner-info-en.html` (subject in the existing subject convention of the seeder; content only, layout `batbern-default`). Wording: neutral info mail to all partners, generic salutation ("Liebe Partnerinnen und Partner" / "Dear partners"), no per-person placeholder. Owner reviews the DE text.
+  - [x] Admin: `EmailTemplatesTab.tsx` (:64-94) and `EmailTemplateEditModal.tsx` (:189-195) category lists + `emailTemplates.categories.PARTNER` in 10 locales.
+  - [x] No migration: `email_templates.category` has no check constraint (V62).
+- [x] **Task 9 — RED: adapter tests** (AC: 7, 8)
+  - [x] `PartnerAudienceAdapterTest`: recipients from stubbed `UserApiClient.getPartnerUsernames()` (:129) + `getUserByUsername`; ONE recipient entry whose To: holds all addresses in order; skipped without email; only PARTNER templates allowed; no per-person variables; the record has one `mail_recipient` per address.
+  - [x] Extend 16.8's byte-equal and test-send integration tests with PARTNERS.
 - [ ] **Task 10 — `PartnerAudienceAdapter`** (AC: 7, 8)
   - [ ] Categories `PARTNER`; `personalized = false`; one recipient entry, all partner addresses on To: (as `VenueAudienceAdapter`, but To only, no Cc); variables (no per-person ones) `eventTitle`, `eventDate`, `eventNumber`, `currentYear`, `logoUrl`; Reply-To `partner@{forwarding domain}` (alias exists, `ForwardingAlias` :61-62); one `MailContext.of(trigger, eventCode, PARTNERS, templateKey)` per send.
-  - [ ] Add `PARTNERS` to `MailComposeRequest.audience` in the spec.
-- [ ] **Task 11 — Frontend** (AC: 6, 7)
-  - [ ] `composer/audiences/partners.tsx`: template list = pseudo-entry "Partner meeting invite with calendar" + PARTNER templates. The pseudo-entry renders the body of today's `PartnerMeetingsCompose` (meeting picker + `PartnerMeetingInviteAction`) in place of preview and footer, with the hint.
-  - [ ] `EventCommunicationsContainer.tsx`: Partners opens `MailComposer` (16.8 AC15 kept `PartnerMeetingsCompose` until now); `PartnerMeetingsCompose.tsx` becomes the pseudo-entry's body or is folded into it.
-  - [ ] Vitest (MSW): both paths; invite path keeps its confirmation and test ids.
+  - [x] Add `PARTNERS` to `MailComposeRequest.audience` in the spec.
+- [x] **Task 11 — Frontend** (AC: 6, 7)
+  - [x] `composer/audiences/partners.tsx`: template list = pseudo-entry "Partner meeting invite with calendar" + PARTNER templates. The pseudo-entry renders the body of today's `PartnerMeetingsCompose` (meeting picker + `PartnerMeetingInviteAction`) in place of preview and footer, with the hint.
+  - [x] `EventCommunicationsContainer.tsx`: Partners opens `MailComposer` (16.8 AC15 kept `PartnerMeetingsCompose` until now); `PartnerMeetingsCompose.tsx` becomes the pseudo-entry's body or is folded into it.
+  - [x] Vitest (MSW): both paths; invite path keeps its confirmation and test ids.
 - [ ] **Task 12 — Verify Part B**
   - [ ] Local dev: partner info mail preview (one mail, all partners on To:), test send, real send on a throwaway event; `/dev/emails` vs record; invite path still works.
   - [ ] Playwright: extend `event-mail-composer.spec.ts` (no send). Any send spec stays `@sends-real-email`, local only.
@@ -140,6 +140,13 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-11-01
 
 ### Completion Notes List
 
+**Part B (branch `feature/16-9b-partner-adapter`), 2026-11-01, NOT complete**
+
+- Done: category PARTNER (specs, seeder `partner-` prefix, `partner-info` DE/EN, admin tab + modal, 10 locales); `PartnerAudienceAdapter` (one recipient entry, To: = all partners sorted company/last/first name, NO_EMAIL + DUPLICATE skips, PARTNER templates only, 5 event variables, Reply-To `partner@{forwarding domain}`, 400 above 50 addresses because SES accepts at most 50 recipients per message; this guard is an addition to the story); composer pseudo-template mechanism (`ComposerPseudoTemplate`) with the meeting invite listed first and preselected, rendering `PartnerMeetingsCompose` in place of preview/footer with the fixed-text hint; Partners opens `MailComposer`.
+- Tests: adapter unit 8, seeder 1, composer IT 2 (preview byte-equal to record, one row per address, test send to organizers only); Vitest composer 2 + container + admin; full Vitest 5542 passed / 0 failed; EMS full suite 2238 passed / 0 failed; checkstyle, tsc, eslint, prettier clean.
+- OPEN, blocked on the hotfix: `PartnerAudienceAdapter.deliver` still calls `sendHtmlEmailSync` with a comma-joined To:, which fails in production exactly like the invite. After rebasing onto the hotfix switch it to `sendGroupHtmlEmailSync(MailContext, List<String> to, ...)`; the ComposeRecipient then needs the address list (key) rather than only the joined string.
+- OPEN: Task 12 (local-dev preview/test/send check, Playwright extension of `event-mail-composer.spec.ts`).
+
 **Part A (branch `feature/16-9a-partner-mail-record`), 2026-11-01**
 
 - `MailContext.reference` + `withReference`; every copy method carries it (MailContextTest 7/7).
@@ -151,6 +158,7 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-11-01
 - Frontend: `MeetingRsvpSummary` (RSVP line on invite rows, shares `['meetingRsvps', id, 0]` with the RSVP panel; no answer = recipients − answers), `MailSentList` `audience`/`reference` props (chips hidden when scoped), "Mails of this meeting" in `MeetingDetailPanel`. i18n in 10 locales.
 - Tests: shared-kernel + EMS full suite 2693 passed / 0 failed; PCS full suite 225 / 0; Vitest full 5539 passed / 0 failed; checkstyle, eslint (0 warnings), tsc, prettier clean.
 - Local dev (all services, 2026-11-01): invite on BATbern63 → one captured mail, 20 addresses on To: + ICS; EMS `BATbern63-13` PARTNERS/partner-meeting-invite/sender batbern.organizer/reference, 20 recipient rows. EMS stopped → invite still sent (202, captured), one WARN `cause=ResourceAccessException`, no record. Delete → `partner-meeting-cancellation` recorded with 20 rows. Gateway: `/internal/mails` 401 anonymous, 403 with token. Screenshots: RSVP line on the mail page and "Mails of this meeting" in the panel.
+- **Correction (2026-11-01, later the same day):** the local-dev check above proves capture and record, NOT delivery. Local dev has no SesClient, so `EmailService` never reaches `EmailAddresses.toDeliveryForm(to)` (`EmailService.java:369`), which rejects a comma-joined To: as one invalid address. Since #1104 every partner meeting invite and cancellation fails in production: CloudWatch (PCS, last 90 days) shows exactly one invite, BATbern60 on 2026-10-30 18:59, "Failed to send partner meeting invite: Cannot deliver to email address: it is not a valid address". A separate session fixes it on `fix/partner-invite-multi-recipient` (commit 3af00710: `sendGroupHtmlEmailWithAttachments` / `sendGroupHtmlEmailSync` with `List<String> to`, recorded ONCE with `to` = comma-joined deliverable addresses, which matches the split here). **16.9a must be rebased onto develop after that hotfix merges, keeping the List<String> call and adding the MailContext; no PR before.**
 - Local-dev finding (pre-existing, not changed): the anonymized DB gives partners `@example.invalid` addresses, and `EmailService.assertSendable` refuses the whole one-To:-line invite, so locally nothing is sent and nothing recorded. For the check, 16 addresses were swapped to SES-simulator addresses in the local DB and restored afterwards (backup tables dropped).
 
 ### File List
@@ -189,7 +197,27 @@ Part A:
 - docs/architecture/06-backend-architecture.md
 - docs/user-guide/features/event-mail.md
 
+Part B (branch `feature/16-9b-partner-adapter`, stacked on Part A):
+- docs/api/event-mail-api.openapi.yml (MailComposeRequest.audience PARTNERS)
+- docs/api/event-newsletter-api.openapi.yml (category PARTNER, 3 enums)
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/compose/PartnerAudienceAdapter.java
+- services/event-management-service/src/main/java/ch/batbern/events/service/EmailTemplateSeedService.java
+- services/event-management-service/src/main/resources/email-templates/partner-info-de.html
+- services/event-management-service/src/main/resources/email-templates/partner-info-en.html
+- services/event-management-service/src/test/java/ch/batbern/events/mailcenter/compose/PartnerAudienceAdapterTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerSendIntegrationTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/service/EmailTemplateSeedServiceTest.java
+- web-frontend/src/types/generated/{event-mail-api,event-newsletter-api}.types.ts
+- web-frontend/src/components/organizer/Admin/{EmailTemplatesTab,EmailTemplatesTab.test,EmailTemplateEditModal}.tsx
+- web-frontend/src/components/organizer/EventPage/EventCommunicationsContainer.tsx
+- web-frontend/src/components/organizer/EventPage/__tests__/EventCommunicationsContainer.test.tsx
+- web-frontend/src/components/organizer/EventPage/communications/composer/{MailComposer,types}.tsx/.ts
+- web-frontend/src/components/organizer/EventPage/communications/composer/audiences/{index,partners}.ts
+- web-frontend/src/components/organizer/EventPage/communications/composer/__tests__/MailComposer.test.tsx
+- web-frontend/public/locales/*/common.json (emailTemplates.categories.PARTNER), */events.json (composer.partners.*)
+
 ## Change Log
 
 - 2026-11-01: Story drafted from Epic 16, grounded in code at 15a13959. Two parts (record, adapter).
+- 2026-11-01: Part B implemented except the delivery call (waits for the multi-recipient hotfix) and Task 12 verification.
 - 2026-11-01: Part A implemented (record partner meeting invites and cancellations, `/internal/mails`, reference filter, RSVP line, meeting panel mails).

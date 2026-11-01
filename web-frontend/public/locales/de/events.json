@@ -530,7 +530,11 @@
           "yes": "Ja, senden"
         },
         "testSent_one": "Test an {{count}} Organisator:in gesendet",
-        "testSent_other": "Test an {{count}} Organisator:innen gesendet"
+        "testSent_other": "Test an {{count}} Organisator:innen gesendet",
+        "partners": {
+          "meetingInvite": "Partner-Meeting-Einladung mit Kalendereintrag",
+          "fixedText": "Der Text dieser Einladung ist noch fest vorgegeben. Sie geht als eine Mail an alle Partner und Organisatoren, mit dem Kalendereintrag im Anhang."
+        }
       },
       "rsvpSummary": "Rückmeldungen: {{accepted}} zugesagt · {{declined}} abgesagt · {{tentative}} vielleicht · {{noAnswer}} ohne Antwort"
     }

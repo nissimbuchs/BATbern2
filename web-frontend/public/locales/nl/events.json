@@ -516,7 +516,11 @@
           "yes": "Ja, verzenden"
         },
         "testSent_one": "Test verzonden naar {{count}} organisator",
-        "testSent_other": "Test verzonden naar {{count}} organisatoren"
+        "testSent_other": "Test verzonden naar {{count}} organisatoren",
+        "partners": {
+          "meetingInvite": "Uitnodiging partnervergadering met agenda-item",
+          "fixedText": "De tekst van deze uitnodiging ligt nog vast. Ze gaat als één e-mail naar alle partners en organisatoren, met het agenda-item als bijlage."
+        }
       },
       "rsvpSummary": "Reacties: {{accepted}} geaccepteerd · {{declined}} afgewezen · {{tentative}} voorlopig · {{noAnswer}} geen antwoord"
     }

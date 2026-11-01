@@ -516,7 +516,11 @@
           "yes": "はい、送信"
         },
         "testSent_one": "主催者 {{count}} 名にテストを送信しました",
-        "testSent_other": "主催者 {{count}} 名にテストを送信しました"
+        "testSent_other": "主催者 {{count}} 名にテストを送信しました",
+        "partners": {
+          "meetingInvite": "カレンダー付きパートナーミーティング招待",
+          "fixedText": "この招待の本文はまだ固定です。カレンダー項目を添付し、全パートナーと主催者に1通のメールで送信されます。"
+        }
       },
       "rsvpSummary": "出欠: 参加 {{accepted}} · 不参加 {{declined}} · 未定 {{tentative}} · 未回答 {{noAnswer}}"
     }

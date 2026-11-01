@@ -197,6 +197,12 @@ public class EmailTemplateSeedService {
         if (templateKey.startsWith("venue-") || templateKey.startsWith("catering-")) {
             return "VENUE_COORDINATION";
         }
+        // Story 16.9: plain mail to all partners, offered by the composer's Partners audience only.
+        // The partner meeting invite and cancellation are recorded under "partner-meeting-*" keys
+        // but are sent by partner-coordination, not from this store.
+        if (templateKey.startsWith("partner-")) {
+            return "PARTNER";
+        }
         return "LAYOUT";
     }
 

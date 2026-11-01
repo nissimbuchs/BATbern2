@@ -516,7 +516,11 @@
           "yes": "Oui, envoyer"
         },
         "testSent_one": "Test envoyé à {{count}} organisateur",
-        "testSent_other": "Test envoyé à {{count}} organisateurs"
+        "testSent_other": "Test envoyé à {{count}} organisateurs",
+        "partners": {
+          "meetingInvite": "Invitation à la réunion des partenaires avec entrée de calendrier",
+          "fixedText": "Le texte de cette invitation est encore fixe. Elle part en un seul e-mail à tous les partenaires et organisateurs, avec l'entrée de calendrier en pièce jointe."
+        }
       },
       "rsvpSummary": "Réponses : {{accepted}} acceptées · {{declined}} refusées · {{tentative}} provisoires · {{noAnswer}} sans réponse"
     }

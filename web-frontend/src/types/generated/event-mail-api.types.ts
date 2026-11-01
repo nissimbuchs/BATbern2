@@ -209,8 +209,12 @@ export interface components {
     } | null;
     /** @description One composer request (Story 16.8). Flat optional fields; each says which audience uses it. */
     MailComposeRequest: {
-      /** @enum {string} */
-      audience: 'NEWSLETTER' | 'REGISTRANTS' | 'SPEAKERS' | 'VENUE';
+      /**
+       * @description PARTNERS (Story 16.9): one mail with every PARTNER-role user on the To: line, sorted by
+       *     company then name; PARTNER templates only, no per-person placeholders.
+       * @enum {string}
+       */
+      audience: 'NEWSLETTER' | 'REGISTRANTS' | 'SPEAKERS' | 'VENUE' | 'PARTNERS';
       /**
        * @description OWN_TEXT is rejected with 400 until Story 16.5.
        * @default TEMPLATE

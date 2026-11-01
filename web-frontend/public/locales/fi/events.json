@@ -516,7 +516,11 @@
           "yes": "Kyllä, lähetä"
         },
         "testSent_one": "Testi lähetetty {{count}} järjestäjälle",
-        "testSent_other": "Testi lähetetty {{count}} järjestäjälle"
+        "testSent_other": "Testi lähetetty {{count}} järjestäjälle",
+        "partners": {
+          "meetingInvite": "Kumppanitapaamisen kutsu kalenterimerkinnällä",
+          "fixedText": "Tämän kutsun teksti on vielä kiinteä. Se lähtee yhtenä viestinä kaikille kumppaneille ja järjestäjille, kalenterimerkintä liitteenä."
+        }
       },
       "rsvpSummary": "Vastaukset: {{accepted}} hyväksytty · {{declined}} hylätty · {{tentative}} alustava · {{noAnswer}} ei vastausta"
     }

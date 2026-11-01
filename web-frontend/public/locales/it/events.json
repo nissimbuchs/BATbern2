@@ -516,7 +516,11 @@
           "yes": "Sì, invia"
         },
         "testSent_one": "Prova inviata a {{count}} organizzatore",
-        "testSent_other": "Prova inviata a {{count}} organizzatori"
+        "testSent_other": "Prova inviata a {{count}} organizzatori",
+        "partners": {
+          "meetingInvite": "Invito alla riunione dei partner con voce di calendario",
+          "fixedText": "Il testo di questo invito è ancora fisso. Parte come un'unica e-mail a tutti i partner e gli organizzatori, con la voce di calendario allegata."
+        }
       },
       "rsvpSummary": "Risposte: {{accepted}} accettate · {{declined}} rifiutate · {{tentative}} provvisorie · {{noAnswer}} senza risposta"
     }

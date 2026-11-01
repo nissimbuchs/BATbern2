@@ -499,11 +499,15 @@ components:
       properties:
         audience:
           type: string
+          description: |
+            PARTNERS (Story 16.9): one mail with every PARTNER-role user on the To: line, sorted by
+            company then name; PARTNER templates only, no per-person placeholders.
           enum:
           - NEWSLETTER
           - REGISTRANTS
           - SPEAKERS
           - VENUE
+          - PARTNERS
         contentSource:
           type: string
           enum:

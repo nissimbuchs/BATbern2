@@ -629,7 +629,8 @@
       "TASK_REMINDER": "Taakherinneringen",
       "NEWSLETTER": "Nieuwsbrief",
       "VENUE_COORDINATION": "Locatie & Catering",
-      "REGISTRANT_NOTICE": "Deelnemersberichten"
+      "REGISTRANT_NOTICE": "Deelnemersberichten",
+      "PARTNER": "Partners"
     },
     "layoutKey": "Lay-out",
     "standalone": "Geen (zelfstandig)",

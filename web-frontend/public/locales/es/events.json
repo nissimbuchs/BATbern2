@@ -516,7 +516,11 @@
           "yes": "Sí, enviar"
         },
         "testSent_one": "Prueba enviada a {{count}} organizador",
-        "testSent_other": "Prueba enviada a {{count}} organizadores"
+        "testSent_other": "Prueba enviada a {{count}} organizadores",
+        "partners": {
+          "meetingInvite": "Invitación a la reunión de socios con entrada de calendario",
+          "fixedText": "El texto de esta invitación todavía es fijo. Se envía como un único correo a todos los socios y organizadores, con la entrada de calendario adjunta."
+        }
       },
       "rsvpSummary": "Respuestas: {{accepted}} aceptadas · {{declined}} rechazadas · {{tentative}} provisionales · {{noAnswer}} sin respuesta"
     }

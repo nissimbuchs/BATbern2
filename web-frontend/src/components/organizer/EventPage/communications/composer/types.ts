@@ -30,6 +30,19 @@ export interface ExtraFieldsProps {
   onChange: (patch: Partial<ComposerState>) => void;
 }
 
+/**
+ * Story 16.9: a choice in the template list that is not a template of the store, e.g. the partner
+ * meeting invite with its fixed text. Selecting it shows its own body in place of the preview and
+ * the footer: no preview, no test send.
+ */
+export interface ComposerPseudoTemplate {
+  key: string;
+  labelKey: string;
+  /** Shown above the body, e.g. that the text is still fixed. */
+  hintKey: string;
+  Body: React.FC<{ eventCode: string; onSent: () => void }>;
+}
+
 export interface ComposerAudience {
   audience: ComposeAudience;
   /** Admin template store category whose templates are offered. */
@@ -38,6 +51,8 @@ export interface ComposerAudience {
   templateFilter?: (templateKey: string) => boolean;
   /** Preselected when present; otherwise the first template. */
   defaultTemplateKey?: string;
+  /** Listed before the store's templates (Story 16.9). */
+  pseudoTemplates?: ComposerPseudoTemplate[];
   /** Speakers: "Automatic" (templateKey null) is offered and preselected. */
   allowsAutomatic?: boolean;
   /** False when everyone gets the same text; the preview then does not step. */

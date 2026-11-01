@@ -530,7 +530,11 @@
           "yes": "Yes, send"
         },
         "testSent_one": "Test sent to {{count}} organizer",
-        "testSent_other": "Test sent to {{count}} organizers"
+        "testSent_other": "Test sent to {{count}} organizers",
+        "partners": {
+          "meetingInvite": "Partner meeting invite with calendar entry",
+          "fixedText": "The text of this invitation is still fixed. It goes out as one mail to all partners and organizers, with the calendar entry attached."
+        }
       },
       "rsvpSummary": "RSVP: {{accepted}} accepted · {{declined}} declined · {{tentative}} tentative · {{noAnswer}} no answer"
     }

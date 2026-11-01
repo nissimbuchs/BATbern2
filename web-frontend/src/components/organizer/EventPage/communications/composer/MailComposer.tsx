@@ -1,5 +1,6 @@
 /**
- * MailComposer (Story 16.8b): one composer for newsletter, registrants, speakers and venue.
+ * MailComposer (Story 16.8b): one composer for newsletter, registrants, speakers, venue and (Story
+ * 16.9) partners.
  *
  * The same steps for every audience (`docs/ux/mail-center-spec.md` → "Composer"): content source,
  * template, language, the audience's own fields, recipients, preview of one real recipient, where
@@ -48,8 +49,11 @@ const NOTES_DEBOUNCE_MS = 400;
 interface MailComposerProps {
   eventCode: string;
   audience: ComposeAudience;
-  /** A real send was accepted; the page closes the composer and highlights the new row(s). */
-  onSent: (result: MailSendResponse) => void;
+  /**
+   * A real send was accepted; the page closes the composer and highlights the new row(s). Without
+   * a result for a pseudo-template's own send (the partner meeting invite returns no mail key).
+   */
+  onSent: (result?: MailSendResponse) => void;
 }
 
 /** The server's message for a failed request, and whether it is a 409 the organizer must read. */
@@ -94,17 +98,21 @@ export const MailComposer: React.FC<MailComposerProps> = ({ eventCode, audience,
     return [...new Set(keys)];
   }, [templates.data, adapter]);
   // The preselected template is derived, not stored: the request is right from the first render.
+  const pseudoTemplates = adapter.pseudoTemplates ?? [];
+  const choices = [...pseudoTemplates.map((p) => p.key), ...templateKeys];
   const defaultKey =
-    adapter.defaultTemplateKey && templateKeys.includes(adapter.defaultTemplateKey)
+    adapter.defaultTemplateKey && choices.includes(adapter.defaultTemplateKey)
       ? adapter.defaultTemplateKey
-      : (templateKeys[0] ?? null);
+      : (choices[0] ?? null);
   const templateKey = state.templateKey ?? (adapter.allowsAutomatic ? null : defaultKey);
+  const pseudo = pseudoTemplates.find((p) => p.key === templateKey);
 
   // ── preview ────────────────────────────────────────────────────────────────
   const venueNotes = useDebounce(state.venueNotes, NOTES_DEBOUNCE_MS);
-  const requestJson = templates.isLoading
-    ? null
-    : JSON.stringify(adapter.toRequest({ ...state, templateKey, venueNotes }));
+  const requestJson =
+    templates.isLoading || pseudo
+      ? null
+      : JSON.stringify(adapter.toRequest({ ...state, templateKey, venueNotes }));
   const request = useMemo<MailComposeRequest | null>(
     () => (requestJson ? (JSON.parse(requestJson) as MailComposeRequest | null) : null),
     [requestJson]
@@ -177,12 +185,17 @@ export const MailComposer: React.FC<MailComposerProps> = ({ eventCode, audience,
           {adapter.allowsAutomatic && (
             <MenuItem value={AUTOMATIC}>{t('eventPage.mail.composer.automatic')}</MenuItem>
           )}
+          {pseudoTemplates.map((p) => (
+            <MenuItem key={p.key} value={p.key}>
+              {t(p.labelKey)}
+            </MenuItem>
+          ))}
           {templateKeys.map((key) => (
             <MenuItem key={key} value={key}>
               {key}
             </MenuItem>
           ))}
-          {!adapter.allowsAutomatic && templateKeys.length === 0 && (
+          {!adapter.allowsAutomatic && choices.length === 0 && (
             <MenuItem value="" disabled>
               {t('eventPage.mail.composer.noTemplates')}
             </MenuItem>
@@ -202,7 +215,11 @@ export const MailComposer: React.FC<MailComposerProps> = ({ eventCode, audience,
         </Typography>
       )}
 
-      {adapter.organizerPicksLanguage ? (
+      {pseudo ? (
+        <Typography variant="body2" color="text.secondary" data-testid="composer-fixed-text-hint">
+          {t(pseudo.hintKey)}
+        </Typography>
+      ) : adapter.organizerPicksLanguage ? (
         <Box>
           <Typography variant="subtitle2" id={`composer-language-${audience}`} sx={{ mb: 0.5 }}>
             {t('eventPage.mail.composer.language')}
@@ -228,13 +245,17 @@ export const MailComposer: React.FC<MailComposerProps> = ({ eventCode, audience,
         </Typography>
       )}
 
-      {ExtraFields && <ExtraFields state={state} onChange={update} />}
+      {ExtraFields && !pseudo && <ExtraFields state={state} onChange={update} />}
 
-      {shown && <ComposerRecipients preview={shown} personalized={adapter.personalized} />}
+      {shown && !pseudo && (
+        <ComposerRecipients preview={shown} personalized={adapter.personalized} />
+      )}
     </Stack>
   );
 
-  const previewPane = shown ? (
+  const previewPane = pseudo ? (
+    <pseudo.Body eventCode={eventCode} onSent={() => onSent()} />
+  ) : shown ? (
     <ComposerPreview
       preview={shown}
       personalized={adapter.personalized}
@@ -273,17 +294,19 @@ export const MailComposer: React.FC<MailComposerProps> = ({ eventCode, audience,
         </Alert>
       )}
 
-      <ComposerFooter
-        recipientCount={shown?.recipientCount ?? 0}
-        disabled={!canSend}
-        testPending={sendingTarget === 'ORGANIZERS'}
-        sendPending={sendingTarget === 'RECIPIENTS'}
-        sticky={isMobile}
-        confirming={confirming}
-        onConfirmingChange={setConfirming}
-        onTest={() => sendTo('ORGANIZERS')}
-        onSend={() => sendTo('RECIPIENTS')}
-      />
+      {!pseudo && (
+        <ComposerFooter
+          recipientCount={shown?.recipientCount ?? 0}
+          disabled={!canSend}
+          testPending={sendingTarget === 'ORGANIZERS'}
+          sendPending={sendingTarget === 'RECIPIENTS'}
+          sticky={isMobile}
+          confirming={confirming}
+          onConfirmingChange={setConfirming}
+          onTest={() => sendTo('ORGANIZERS')}
+          onSend={() => sendTo('RECIPIENTS')}
+        />
+      )}
 
       <Snackbar
         open={testSentTo !== null}

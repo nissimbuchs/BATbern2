@@ -666,7 +666,8 @@
       "TASK_REMINDER": "Task Reminders",
       "NEWSLETTER": "Newsletter",
       "VENUE_COORDINATION": "Venue & Catering",
-      "REGISTRANT_NOTICE": "Registrant Notices"
+      "REGISTRANT_NOTICE": "Registrant Notices",
+      "PARTNER": "Partners"
     },
     "layoutKey": "Layout",
     "standalone": "None (standalone)",
