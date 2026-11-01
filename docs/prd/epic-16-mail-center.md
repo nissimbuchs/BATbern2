@@ -322,6 +322,21 @@ The speaker reminder templates **are** editable in the admin template editor. Th
 
 ---
 
+
+### Story 16.11 — One mail pipeline and variable catalog
+
+**Owner decision 2026-11-01**, after Winston's review of the 16.5 render design. Story file: `_bmad-output/implementation-artifacts/16-11-mail-pipeline-variable-catalog.md`. **Depends on:** 16.8. **Blocks:** 16.5.
+
+Every template-based mail renders through one pipeline (`MailContent` resolved once per send → catalog variables → `MailRenderer`), and one `MailVariableCatalog` defines every variable name, scope and alias. Any template may use every variable its mail has the data for. Golden-file tests pin today's output first. Visible changes, decided by the owner: `eventDate` in the long form everywhere, `supportUrl` = `{baseUrl}/support`. Also fixes the newsletter re-reading its template for every subscriber. Replaces the `TemplateSource` that 16.8 planned and did not build.
+
+### Story 16.12 — HTML-in-Java mails into the template store (backlog)
+
+`NotificationService` digest and `QualityReviewService` move to stored templates on the 16.11 pipeline; the partner meeting invite follows once partner-coordination can ask EMS to render.
+
+### Story 16.13 — One `Mail` value for `EmailService` (backlog)
+
+Replace the six `send*` variants and the two list variants of #1176 with one value (recipients, cc, subject, html, attachments, reply-to, context). Shared kernel, all services.
+
 ## Decisions taken 2026-11-01 (owner)
 
 Raised while writing the story files; the owner accepted every recommendation except 3, which he changed.
