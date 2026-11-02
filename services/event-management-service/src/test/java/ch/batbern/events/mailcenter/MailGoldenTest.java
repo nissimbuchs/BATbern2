@@ -52,6 +52,7 @@ import java.nio.file.Path;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.Year;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
@@ -292,8 +293,11 @@ class MailGoldenTest extends AbstractIntegrationTest {
     }
 
     private static String normalise(String text) {
+        // Speaker reminders are rendered for a deadline five days from today.
+        String reminderDeadline = LocalDate.now().plusDays(5).format(DateTimeFormatter.ofPattern("dd.MM.yyyy"));
         // Signed links (registration confirmation) carry issue and expiry times.
-        return text.replace(String.valueOf(Year.now().getValue()), "{YEAR}")
+        return text.replace(reminderDeadline, "{DEADLINE}")
+                .replace(String.valueOf(Year.now().getValue()), "{YEAR}")
                 .replaceAll("eyJ[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+\\.[A-Za-z0-9_-]+", "{JWT}");
     }
 
