@@ -525,7 +525,7 @@
         "testSent_other": "Test tramess a {{count}} organisaturs",
         "partners": {
           "meetingInvite": "Invitaziun a la sesida dals partenaris cun endataziun en il chalender",
-          "fixedText": "Il text da questa invitaziun è anc fixà. Ella vegn tramessa sco in e-mail a tut ils partenaris ed organisaturs, cun l'endataziun dal chalender en l'agiunta."
+          "fixedText": "Il text da questa invitaziun è anc fixà. Mintga partenari ed organisatur survegn in agen e-mail cun l'endataziun dal chalender en l'agiunta; nagin na vesa las adressas dals auters."
         },
         "ownText": {
           "subject": "Object",

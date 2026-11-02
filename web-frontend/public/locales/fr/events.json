@@ -525,7 +525,7 @@
         "testSent_other": "Test envoyé à {{count}} organisateurs",
         "partners": {
           "meetingInvite": "Invitation à la réunion des partenaires avec entrée de calendrier",
-          "fixedText": "Le texte de cette invitation est encore fixe. Elle part en un seul e-mail à tous les partenaires et organisateurs, avec l'entrée de calendrier en pièce jointe."
+          "fixedText": "Le texte de cette invitation est encore fixe. Chaque partenaire et organisateur reçoit son propre e-mail avec l'entrée de calendrier en pièce jointe ; personne ne voit les adresses des autres."
         },
         "ownText": {
           "subject": "Objet",

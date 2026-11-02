@@ -525,7 +525,7 @@
         "testSent_other": "Prueba enviada a {{count}} organizadores",
         "partners": {
           "meetingInvite": "Invitación a la reunión de socios con entrada de calendario",
-          "fixedText": "El texto de esta invitación todavía es fijo. Se envía como un único correo a todos los socios y organizadores, con la entrada de calendario adjunta."
+          "fixedText": "El texto de esta invitación todavía es fijo. Cada socio y organizador recibe su propio correo con la entrada de calendario adjunta; nadie ve las direcciones de los demás."
         },
         "ownText": {
           "subject": "Asunto",

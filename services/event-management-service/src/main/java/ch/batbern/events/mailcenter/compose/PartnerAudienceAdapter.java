@@ -11,6 +11,9 @@ import ch.batbern.events.service.EmailTemplateService;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.utils.LoggingUtils;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.util.ArrayList;
@@ -24,28 +27,29 @@ import java.util.Optional;
 import java.util.Set;
 
 /**
- * Plain mail to all partners (Story 16.9 Part B). ONE mail with every PARTNER-role user on the To:
- * line, sorted by company then name, the same shape as the partner meeting invite (owner decision
- * #1163, confirmed for this mail 2026-11-01). So the audience is one recipient entry and the mail
- * is not personalised: event variables only, no salutation per person. Organizers are not added;
- * they get the test send and see the mail in "What went out".
+ * Plain mail to all partners (Story 16.9 Part B). Every PARTNER-role user with an address gets the
+ * mail on their own, sorted by company then name (owner decision 2026-11-02, replacing the shared
+ * To: line of #1163: nobody sees the other partners' addresses). The text is the same for all, so
+ * the preview does not step: system and event variables only, no salutation per person. Organizers
+ * are not added; they get the test send and see the mail in "What went out".
  *
- * <p>Reply-To {@code partner@} (the organizer alias, {@code ForwardingAlias}). The record splits the
- * To: line into one recipient row per address ({@code JpaOutboundMailRecorder}), so delivery status
- * stays per partner.
+ * <p>Reply-To {@code partner@} (the organizer alias, {@code ForwardingAlias}). All sends share one
+ * {@code MailContext}: one recorded mail, one recipient row per partner, delivery status per partner.
  */
+@Slf4j
 @Component
 public class PartnerAudienceAdapter implements AudienceAdapter {
 
     static final String CATEGORY = "PARTNER";
-    /** SES accepts at most 50 recipients per message (To + Cc + Bcc). */
-    static final int MAX_ADDRESSES_PER_MAIL = 50;
 
     private final UserApiClient userApiClient;
     private final EmailTemplateService templates;
     private final EmailService emailService;
     private final EmailForwardingProperties forwarding;
     private final MailPipeline mailPipeline;
+
+    @Value("${batbern.ses.configuration-set-name:#{null}}")
+    private String configurationSetName;
 
     public PartnerAudienceAdapter(UserApiClient userApiClient, EmailTemplateService templates,
             EmailService emailService, EmailForwardingProperties forwarding, MailPipeline mailPipeline) {
@@ -94,7 +98,7 @@ public class PartnerAudienceAdapter implements AudienceAdapter {
         }
     }
 
-    /** One recipient entry: every partner with an address on To:, company then name order. */
+    /** Every partner with an address, once, company then name order. */
     @Override
     public Recipients resolveRecipients(ComposeContext context) {
         List<UserResponse> partners = new ArrayList<>();
@@ -122,15 +126,11 @@ public class PartnerAudienceAdapter implements AudienceAdapter {
                 names.add(name);
             }
         }
-        if (addresses.size() > MAX_ADDRESSES_PER_MAIL) {
-            throw new IllegalArgumentException(addresses.size() + " partners have an address, but one mail reaches"
-                    + " at most " + MAX_ADDRESSES_PER_MAIL + " recipients");
+        List<ComposeRecipient> recipients = new ArrayList<>();
+        for (int i = 0; i < addresses.size(); i++) {
+            recipients.add(new ComposeRecipient(names.get(i), addresses.get(i), List.of(), null));
         }
-        if (addresses.isEmpty()) {
-            return new Recipients(List.of(), skipped);
-        }
-        return new Recipients(List.of(new ComposeRecipient(String.join(", ", names), String.join(",", addresses),
-                List.of(), null)), skipped);
+        return new Recipients(recipients, skipped);
     }
 
     /** Partner mail carries no credential, so a test rendering equals the real one. */
@@ -154,19 +154,26 @@ public class PartnerAudienceAdapter implements AudienceAdapter {
     }
 
     /**
-     * One synchronous send to every partner in To:, each address handed over on its own (a joined
-     * To: string is one invalid address for SES, #1176); {@code EmailService} records it once.
+     * One synchronous mail per partner (owner decision 2026-11-02: nobody sees the other partners'
+     * addresses). All share one {@code MailContext}, so the send is one recorded mail with a row per
+     * partner; a failed partner is recorded as FAILED and does not stop the others.
      */
     @Override
     public List<DeliveredMail> deliver(ComposeContext context, Recipients recipients, MailTrigger trigger) {
-        ComposeRecipient all = recipients.recipients().get(0);
-        Rendering rendering = render(context, all, false);
+        Rendering rendering = render(context, recipients.recipients().get(0), false);
         String eventCode = context.event().getEventCode();
         MailContext mailContext = context.request().ownText()
                 ? MailContext.ownText(trigger, eventCode, MailContext.Audience.PARTNERS)
                 : MailContext.of(trigger, eventCode, MailContext.Audience.PARTNERS, rendering.templateKey());
-        emailService.sendGroupHtmlEmailSync(mailContext, List.of(all.address().split(",")), List.of(),
-                rendering.subject(), rendering.html(), rendering.replyTo());
+        for (ComposeRecipient recipient : recipients.recipients()) {
+            try {
+                emailService.sendHtmlEmailSync(mailContext, recipient.address(), List.of(), rendering.subject(),
+                        rendering.html(), configurationSetName, rendering.replyTo());
+            } catch (RuntimeException e) {
+                log.error("Partner mail to {} failed: {}", LoggingUtils.maskEmail(recipient.address()),
+                        e.getClass().getSimpleName());
+            }
+        }
         return List.of(new DeliveredMail(mailContext, rendering));
     }
 

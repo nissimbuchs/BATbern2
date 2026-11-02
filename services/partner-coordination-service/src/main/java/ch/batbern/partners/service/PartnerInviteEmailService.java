@@ -3,6 +3,7 @@ package ch.batbern.partners.service;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -15,6 +16,8 @@ import java.time.Year;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.UUID;
+import java.util.function.Consumer;
+import java.util.function.Function;
 
 /**
  * Service for sending partner meeting calendar invites via AWS SES.
@@ -65,63 +68,70 @@ public class PartnerInviteEmailService {
     ) { }
 
     /**
-     * Send the partner meeting calendar invite asynchronously.
+     * Sends the partner meeting invite to every recipient on their own (owner decision 2026-11-02:
+     * a shared To: line, and an ICS listing every attendee, showed all addresses to everyone). Each
+     * recipient gets an ICS with only their own ATTENDEE line, from {@code icsFor}. All sends share
+     * one {@link MailContext}, so they are recorded as one mail with one recipient row each.
      *
-     * Sends a single email addressed to all recipients (partners + organizers) so that
-     * every invitee can see who else received the invitation. The ICS attachment contains
-     * two VEVENTs: the partner meeting and the main BATbern event.
+     * <p>Synchronous: the caller marks the meeting as invited only when this returns. One failed
+     * recipient does not stop the others (it is recorded as FAILED); when nobody could be reached the
+     * failure propagates (BATbern60, 2026-10-30: the old dispatch only logged it).
      *
-     * @param recipientEmails list of all recipient email addresses (partners + organizers)
+     * @param recipientEmails all recipient addresses (partners + organizers)
      * @param details         meeting details (title, code, date, times, location)
-     * @param icsContent      generated ICS file bytes
+     * @param icsFor          the ICS for one recipient
      * @param meetingId       the meeting, recorded as {@code partner-meeting:{id}} (Story 16.9)
      * @param senderUsername  the organizer who clicked, recorded as sender (Story 16.9)
+     * @return how many recipients the invite reached
      */
-    public void sendCalendarInvites(
+    public int sendCalendarInvites(
             List<String> recipientEmails,
             MeetingInviteDetails details,
-            byte[] icsContent,
+            Function<String, byte[]> icsFor,
             UUID meetingId,
             String senderUsername
     ) {
-        String eventTitle = details.eventTitle();
-        String eventCode = details.eventCode();
-        LocalDate meetingDate = details.meetingDate();
-        LocalTime meetingStartTime = details.startTime();
-        LocalTime meetingEndTime = details.endTime();
-        String location = details.location();
         if (recipientEmails == null || recipientEmails.isEmpty()) {
             log.warn("No recipient emails provided — skipping partner meeting invite send");
-            return;
+            return 0;
         }
-
+        String eventTitle = details.eventTitle();
+        String eventCode = details.eventCode();
         String subject = "Einladung / Invitation: BATbern Partner-Meeting + " + eventTitle;
-        String htmlBody = buildEmailBody(eventTitle, meetingDate, meetingStartTime, meetingEndTime, location);
-
+        String htmlBody = buildEmailBody(eventTitle, details.meetingDate(), details.startTime(), details.endTime(),
+                details.location());
         String filename = "partner-meeting-and-" + eventCode.toLowerCase() + "-event.ics";
-        EmailService.EmailAttachment icsAttachment = new EmailService.EmailAttachment(
-                filename,
-                icsContent,
-                "text/calendar; charset=utf-8; method=REQUEST",
-                true  // inline → triggers accept/decline in Apple Mail, Outlook, Gmail
-        );
+        MailContext context = mailContext(INVITE_TEMPLATE_KEY, eventCode, meetingId, senderUsername);
 
-        // Send one email with all recipients in To: so everyone sees who was invited.
-        // Each address must reach EmailService on its own: a comma-joined string is validated
-        // as ONE address and rejected (#1104 broke every invite that way until this fix).
-        log.info("Sending partner meeting invite to {} recipients for event={}", recipientEmails.size(), eventTitle);
+        log.info("Sending partner meeting invite to {} recipients, one mail each, for event={}",
+                recipientEmails.size(), eventTitle);
+        int sent = sendEach(recipientEmails, recipient -> emailService.sendHtmlEmailWithAttachments(context, recipient,
+                List.of(), subject, htmlBody, List.of(new EmailService.EmailAttachment(filename,
+                        icsFor.apply(recipient), "text/calendar; charset=utf-8; method=REQUEST",
+                        true))));  // inline → triggers accept/decline in Apple Mail, Outlook, Gmail
+        if (sent == 0) {
+            throw new IllegalStateException("None of the " + recipientEmails.size()
+                    + " partner meeting invites could be sent");
+        }
+        return sent;
+    }
 
-        // Synchronous on purpose: the caller marks the meeting as invited only when this returns.
-        // A failure propagates so the organizer sees it (BATbern60, 2026-10-30: the old @Async
-        // dispatch only logged the error and the meeting showed "invite sent").
-        emailService.sendGroupHtmlEmailWithAttachments(
-                mailContext(INVITE_TEMPLATE_KEY, eventCode, meetingId, senderUsername),
-                recipientEmails,
-                List.of(),
-                subject,
-                htmlBody,
-                List.of(icsAttachment)
-        );
+    /** Runs {@code send} for every recipient; a failure is logged (address masked) and skipped. */
+    private int sendEach(List<String> recipients, Consumer<String> send) {
+        int sent = 0;
+        for (String recipient : recipients) {
+            try {
+                send.accept(recipient);
+                sent++;
+            } catch (RuntimeException e) {
+                log.error("Partner meeting mail to {} failed: {}", LoggingUtils.maskEmail(recipient),
+                        e.getClass().getSimpleName());
+            }
+        }
+        if (sent < recipients.size()) {
+            log.warn("Partner meeting mail reached {} of {} recipients", sent, recipients.size());
+        }
+        return sent;
     }
 
     /**
@@ -161,15 +171,13 @@ public class PartnerInviteEmailService {
                 true  // inline → calendar clients process the cancellation automatically
         );
 
-        log.info("Sending cancellation notice to {} recipients for event={}", recipientEmails.size(), eventTitle);
+        log.info("Sending cancellation notice to {} recipients, one mail each, for event={}",
+                recipientEmails.size(), eventTitle);
 
-        try {
-            emailService.sendGroupHtmlEmailWithAttachments(
-                    mailContext(CANCELLATION_TEMPLATE_KEY, eventCode, meetingId, senderUsername),
-                    recipientEmails, List.of(), subject, htmlBody, List.of(attachment));
-        } catch (Exception e) {
-            log.error("Failed to send cancellation notice: {}", e.getMessage(), e);
-        }
+        // One mail per recipient, like the invite (owner decision 2026-11-02).
+        MailContext context = mailContext(CANCELLATION_TEMPLATE_KEY, eventCode, meetingId, senderUsername);
+        sendEach(recipientEmails, recipient -> emailService.sendHtmlEmailWithAttachments(context, recipient,
+                List.of(), subject, htmlBody, List.of(attachment)));
     }
 
     /**

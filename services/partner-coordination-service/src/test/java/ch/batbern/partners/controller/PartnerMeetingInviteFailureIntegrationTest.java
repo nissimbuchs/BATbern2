@@ -91,8 +91,8 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
                 .endTime(LocalTime.of(14, 0))
                 .createdBy("organizer")
                 .build());
-        doThrow(new IllegalArgumentException("Cannot send group mail: none of the 1 recipients is deliverable"))
-                .when(emailService).sendGroupHtmlEmailWithAttachments(any(MailContext.class), anyList(), anyList(),
+        doThrow(new IllegalArgumentException("not a deliverable address"))
+                .when(emailService).sendHtmlEmailWithAttachments(any(MailContext.class), anyString(), anyList(),
                         any(), any(), anyList());
 
         mockMvc.perform(post("/api/v1/partner-meetings/" + meeting.getId() + "/send-invite")

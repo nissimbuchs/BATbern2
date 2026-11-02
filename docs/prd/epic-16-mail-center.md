@@ -310,7 +310,7 @@ The speaker reminder templates **are** editable in the admin template editor. Th
 
 **Out of scope, recorded:**
 - The invite body stays hard-coded in Java. Moving it into the admin store needs a render call from the partner service to EMS. Follow-up.
-- All partners in one To: line expose their addresses to each other. Owner decision (#1163, 2026-10-31): keep it as it is; 16.9 does not change the recipient line.
+- All partners in one To: line expose their addresses to each other. Owner decision (#1163, 2026-10-31): keep it as it is. **Superseded 2026-11-02 by the owner**: after a real invite to 20 recipients, invite, cancellation and the plain partner mail go to each recipient on their own, each invite with an ICS listing only that recipient.
 
 ---
 

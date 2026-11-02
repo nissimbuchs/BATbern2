@@ -539,7 +539,7 @@
         "testSent_other": "Test an {{count}} Organisator:innen gesendet",
         "partners": {
           "meetingInvite": "Partner-Meeting-Einladung mit Kalendereintrag",
-          "fixedText": "Der Text dieser Einladung ist noch fest vorgegeben. Sie geht als eine Mail an alle Partner und Organisatoren, mit dem Kalendereintrag im Anhang."
+          "fixedText": "Der Text dieser Einladung ist noch fest vorgegeben. Jeder Partner und Organisator erhält eine eigene Mail mit dem Kalendereintrag im Anhang; niemand sieht die Adressen der anderen."
         },
         "ownText": {
           "subject": "Betreff",

@@ -525,7 +525,7 @@
         "testSent_other": "Test verzonden naar {{count}} organisatoren",
         "partners": {
           "meetingInvite": "Uitnodiging partnervergadering met agenda-item",
-          "fixedText": "De tekst van deze uitnodiging ligt nog vast. Ze gaat als één e-mail naar alle partners en organisatoren, met het agenda-item als bijlage."
+          "fixedText": "De tekst van deze uitnodiging ligt nog vast. Elke partner en organisator krijgt een eigen e-mail met het agenda-item als bijlage; niemand ziet de adressen van de anderen."
         },
         "ownText": {
           "subject": "Onderwerp",

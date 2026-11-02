@@ -239,7 +239,7 @@ class MailComposerSendIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "organizer1", roles = "ORGANIZER")
-    @DisplayName("16.9 AC7/AC8 partners: one mail, every partner on To: sorted; preview equals sent; one row per address")
+    @DisplayName("16.9 partners: one mail per partner, sorted; preview equals sent; one record, a row per partner")
     void partners_previewEqualsSent_oneRowPerAddress() throws Exception {
         partners();
         String request = "{\"audience\":\"PARTNERS\",\"templateKey\":\"partner-info\",\"locale\":\"de\"}";
@@ -248,8 +248,8 @@ class MailComposerSendIntegrationTest extends AbstractIntegrationTest {
         JsonNode sent = send(request, "RECIPIENTS");
 
         assertThat(preview.get("personalized").asBoolean()).isFalse();
-        assertThat(preview.get("recipientCount").asInt()).isEqualTo(1);
-        assertThat(preview.at("/recipient/address").asText()).isEqualTo(PARTNER_A + "," + PARTNER_B);
+        assertThat(preview.get("recipientCount").asInt()).isEqualTo(2);
+        assertThat(preview.at("/recipient/address").asText()).isEqualTo(PARTNER_A);
         assertThat(preview.get("replyTo").asText()).isEqualTo("partner@batbern.ch");
         assertThat(preview.at("/skipped/0/reason").asText()).isEqualTo("NO_EMAIL");
         assertThat(preview.get("unknownPlaceholders")).isEmpty();
@@ -261,6 +261,10 @@ class MailComposerSendIntegrationTest extends AbstractIntegrationTest {
         assertThat(recipientCount(mailKey)).isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT audience FROM mail_message WHERE mail_key = ?", String.class,
                 mailKey)).isEqualTo("PARTNERS");
+        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
+        verify(emailService, atLeastOnce()).sendHtmlEmailSync(any(), to.capture(), any(), anyString(), anyString(),
+                any(), any());
+        assertThat(to.getAllValues()).containsExactly(PARTNER_A, PARTNER_B);
     }
 
     @Test

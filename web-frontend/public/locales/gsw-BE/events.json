@@ -531,7 +531,7 @@
         "testSent_other": "Test a {{count}} Organisator:inne gschickt",
         "partners": {
           "meetingInvite": "Partner-Meeting-Iiladig mit Kaländeiitrag",
-          "fixedText": "Dr Text vo dere Iiladig isch no fescht vorgä. Si geit als ei Mail a aui Partner und Organisatore, mit em Kaländeiitrag im Ahang."
+          "fixedText": "Dr Text vo dere Iiladig isch no fescht vorgä. Jede Partner und Organisator überchunnt e eigeti Mail mit em Kaländeiitrag im Ahang; niemer gseht d Adrässe vo de andere."
         },
         "ownText": {
           "subject": "Betreff",

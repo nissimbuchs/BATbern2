@@ -525,7 +525,7 @@
         "testSent_other": "Testi lähetetty {{count}} järjestäjälle",
         "partners": {
           "meetingInvite": "Kumppanitapaamisen kutsu kalenterimerkinnällä",
-          "fixedText": "Tämän kutsun teksti on vielä kiinteä. Se lähtee yhtenä viestinä kaikille kumppaneille ja järjestäjille, kalenterimerkintä liitteenä."
+          "fixedText": "Tämän kutsun teksti on vielä kiinteä. Jokainen kumppani ja järjestäjä saa oman viestinsä kalenterimerkintä liitteenä; kukaan ei näe muiden osoitteita."
         },
         "ownText": {
           "subject": "Aihe",

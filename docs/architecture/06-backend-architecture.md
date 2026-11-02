@@ -899,10 +899,13 @@ deleted, the cancellation. Both are recorded in the event's mail like EMS's own.
 - **Endpoint limits**: audience `PARTNERS` only, subject ≤ 1000, body ≤ 2 MB, ≤ 500 addresses;
   anything else is a 400. Permitted in the EMS production chain like every `/internal/**` path; the
   gateway denies it (`InternalPathSecurityTest` covers the EMS chain).
-- **One To: line, one row per address**: the invite keeps every partner and organizer on one To: line
-  (owner decision #1163). `JpaOutboundMailRecorder` splits a comma-separated To: into one
-  `mail_recipient` row per address (trimmed, empties dropped), so 16.1b's status by Message-ID and
-  address works per partner. Done in EMS, so any later multi-address caller is covered.
+- **One mail per recipient, one record** (owner decision 2026-11-02, replacing the shared To: line of
+  #1163): invite and cancellation go to each partner and organizer on their own, the invite with an
+  ICS that carries only that recipient's ATTENDEE line. All sends share one `MailContext`, so
+  `JpaOutboundMailRecorder` joins them into one mail with a `mail_recipient` row per address. A
+  failed recipient is recorded FAILED and the others still get it; only when nobody is reached does
+  the invite answer 502. The plain partner mail (16.9 B) is sent the same way. The recorder still
+  splits a comma-separated To: into rows, for any other multi-address caller.
 - **Reference** (`V137`): `mail_message.reference VARCHAR(100)`, what the mail is about beyond its
   event, by value (ADR-003, no FK). `GET /events/{code}/mails?reference=` filters by it and the
   summary carries it; the partner meeting panel lists its mails with it and shows the meeting's RSVP

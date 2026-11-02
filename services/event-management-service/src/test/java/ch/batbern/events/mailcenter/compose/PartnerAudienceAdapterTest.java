@@ -30,8 +30,8 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 
 /**
- * Story 16.9 Part B AC7/AC8: the partner audience. One mail with every PARTNER-role user on the To:
- * line, sorted by company then name; users without an address are skipped; PARTNER templates only;
+ * Story 16.9 Part B AC7/AC8: the partner audience. One mail per PARTNER-role user (owner decision
+ * 2026-11-02), sorted by company then name; users without an address are skipped; PARTNER templates only;
  * no per-person variables. Synthetic addresses only.
  */
 @ExtendWith(MockitoExtension.class)
@@ -99,8 +99,8 @@ class PartnerAudienceAdapterTest {
     }
 
     @Test
-    @DisplayName("AC8 + #1176: deliver hands every partner address to the group send on its own")
-    void deliver_groupSendWithEachAddress() {
+    @DisplayName("owner decision 2026-11-02: one mail per partner, one record (same context)")
+    void deliver_oneMailPerPartner() {
         when(emailService.replaceVariables(org.mockito.ArgumentMatchers.anyString(),
                 org.mockito.ArgumentMatchers.anyMap())).thenCallRealMethod();
         EmailTemplate stored = template("PARTNER");
@@ -110,28 +110,27 @@ class PartnerAudienceAdapterTest {
         when(templates.findByKeyAndLocale("partner-info", "de")).thenReturn(Optional.of(stored));
         when(templates.mergeWithLayout(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
                 org.mockito.ArgumentMatchers.any())).thenAnswer(i -> i.getArgument(0));
-        Recipients recipients = new Recipients(List.of(new ComposeRecipient("Ann Able, Bob Brown",
-                "success+ann@simulator.amazonses.com,success+bob@simulator.amazonses.com", List.of(), null)),
+        Recipients recipients = new Recipients(List.of(
+                new ComposeRecipient("Ann Able", "success+ann@simulator.amazonses.com", List.of(), null),
+                new ComposeRecipient("Bob Brown", "success+bob@simulator.amazonses.com", List.of(), null)),
                 List.of());
 
         adapter.deliver(context("partner-info"), recipients, MailTrigger.forSend(UUID.randomUUID(), "organizer1"));
 
-        org.mockito.Mockito.verify(emailService).sendGroupHtmlEmailSync(org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.eq(List.of("success+ann@simulator.amazonses.com",
-                        "success+bob@simulator.amazonses.com")),
-                org.mockito.ArgumentMatchers.eq(List.of()), org.mockito.ArgumentMatchers.eq("Info BATbern60"),
-                org.mockito.ArgumentMatchers.eq("<p>BATbern60</p>"),
-                org.mockito.ArgumentMatchers.eq("partner@batbern.ch"));
-        org.mockito.Mockito.verify(emailService, org.mockito.Mockito.never()).sendHtmlEmailSync(
-                org.mockito.ArgumentMatchers.any(MailContext.class), org.mockito.ArgumentMatchers.anyString(),
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
-                org.mockito.ArgumentMatchers.any());
+        org.mockito.ArgumentCaptor<MailContext> contexts = org.mockito.ArgumentCaptor.forClass(MailContext.class);
+        org.mockito.ArgumentCaptor<String> to = org.mockito.ArgumentCaptor.forClass(String.class);
+        org.mockito.Mockito.verify(emailService, org.mockito.Mockito.times(2)).sendHtmlEmailSync(contexts.capture(),
+                to.capture(), org.mockito.ArgumentMatchers.eq(List.of()),
+                org.mockito.ArgumentMatchers.eq("Info BATbern60"), org.mockito.ArgumentMatchers.eq("<p>BATbern60</p>"),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.eq("partner@batbern.ch"));
+        assertThat(to.getAllValues()).containsExactly("success+ann@simulator.amazonses.com",
+                "success+bob@simulator.amazonses.com");
+        assertThat(contexts.getAllValues().get(0)).isSameAs(contexts.getAllValues().get(1));
     }
 
     @Test
-    @DisplayName("AC8: ONE recipient entry, every partner on To: sorted by company then name; no Cc, no organizers")
-    void oneMail_allPartnersOnTo_sorted() {
+    @DisplayName("every partner is a recipient of their own, sorted by company then name; no Cc, no organizers")
+    void onePerPartner_sorted() {
         partners(
                 user("zoe", "success+zoe@simulator.amazonses.com", "Zoe", "Zed", "AlphaAG"),
                 user("bob", "success+bob@simulator.amazonses.com", "Bob", "Brown", "BetaGmbH"),
@@ -139,12 +138,12 @@ class PartnerAudienceAdapterTest {
 
         Recipients recipients = adapter.resolveRecipients(context("partner-info"));
 
-        assertThat(recipients.recipients()).singleElement().satisfies(r -> {
-            assertThat(r.address()).isEqualTo("success+ann@simulator.amazonses.com,"
-                    + "success+zoe@simulator.amazonses.com,success+bob@simulator.amazonses.com");
-            assertThat(r.cc()).isEmpty();
-            assertThat(r.displayName()).isEqualTo("Ann Able, Zoe Zed, Bob Brown");
-        });
+        assertThat(recipients.recipients()).extracting(ComposeRecipient::address).containsExactly(
+                "success+ann@simulator.amazonses.com", "success+zoe@simulator.amazonses.com",
+                "success+bob@simulator.amazonses.com");
+        assertThat(recipients.recipients()).extracting(ComposeRecipient::displayName)
+                .containsExactly("Ann Able", "Zoe Zed", "Bob Brown");
+        assertThat(recipients.recipients()).allSatisfy(r -> assertThat(r.cc()).isEmpty());
         assertThat(recipients.skipped()).isEmpty();
     }
 
@@ -158,8 +157,8 @@ class PartnerAudienceAdapterTest {
 
         Recipients recipients = adapter.resolveRecipients(context("partner-info"));
 
-        assertThat(recipients.recipients()).singleElement()
-                .satisfies(r -> assertThat(r.address()).isEqualTo("success+ann@simulator.amazonses.com"));
+        assertThat(recipients.recipients()).extracting(ComposeRecipient::address)
+                .containsExactly("success+ann@simulator.amazonses.com");
         assertThat(recipients.skipped()).extracting(SkippedRecipient::displayName, SkippedRecipient::reason)
                 .containsExactlyInAnyOrder(
                         org.assertj.core.groups.Tuple.tuple("Nina Null", SkippedRecipient.NO_EMAIL),
@@ -175,17 +174,15 @@ class PartnerAudienceAdapterTest {
     }
 
     @Test
-    @DisplayName("AC8: more addresses than SES accepts in one mail (50) is a 400, not a failed send")
-    void tooManyForOneMail_rejected() {
+    @DisplayName("more than 50 partners is fine now: each gets their own mail")
+    void manyPartners_allowed() {
         List<UserResponse> many = new ArrayList<>();
         for (int i = 0; i < 51; i++) {
             many.add(user("p" + i, "success+p" + i + "@simulator.amazonses.com", "P", "N" + i, "Co"));
         }
         partners(many.toArray(UserResponse[]::new));
 
-        assertThatThrownBy(() -> adapter.resolveRecipients(context("partner-info")))
-                .isInstanceOf(IllegalArgumentException.class)
-                .hasMessageContaining("50");
+        assertThat(adapter.resolveRecipients(context("partner-info")).recipients()).hasSize(51);
     }
 
     private void partners(UserResponse... users) {

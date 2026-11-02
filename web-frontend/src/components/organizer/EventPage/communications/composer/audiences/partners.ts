@@ -5,8 +5,8 @@ import { baseRequest, isOwnText, ownTextReady, type ComposerAudience } from '../
 export const PARTNER_MEETING_INVITE = '__partner-meeting-invite__';
 
 /**
- * Partners (Story 16.9): ONE mail with every partner on the To: line, in the organizer's language,
- * not personalised. The template list starts with the partner meeting invite (calendar entry, fixed
+ * Partners (Story 16.9): every partner gets the same text as their own mail (owner decision
+ * 2026-11-02), in the organizer's language, not personalised. The template list starts with the partner meeting invite (calendar entry, fixed
  * text, its own confirmation), which keeps its own body: this event's meetings with the invite
  * action. Then the PARTNER templates of the store, with preview, test send and send.
  */

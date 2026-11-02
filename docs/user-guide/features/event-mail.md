@@ -75,7 +75,9 @@ links to the partner meetings page.
 Partner meeting invites and cancellations appear in "What went out" like every other mail: audience
 Partners, the organizer who clicked as sender, every partner and organizer address as a recipient
 with its own delivery status. An invite row also shows the meeting's answers (accepted, declined,
-tentative, no answer). The invite still goes out as one mail with all addresses on the To: line.
+tentative, no answer). Every partner and organizer gets the invite as their own mail, with a
+calendar entry that lists only them, so nobody sees the other addresses. The same holds for the
+cancellation and for a plain mail to all partners.
 
 In **Partner meetings**, the open meeting lists its own mails under "Mails of this meeting".
 

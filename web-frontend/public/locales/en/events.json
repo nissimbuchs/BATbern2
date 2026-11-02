@@ -539,7 +539,7 @@
         "testSent_other": "Test sent to {{count}} organizers",
         "partners": {
           "meetingInvite": "Partner meeting invite with calendar entry",
-          "fixedText": "The text of this invitation is still fixed. It goes out as one mail to all partners and organizers, with the calendar entry attached."
+          "fixedText": "The text of this invitation is still fixed. Every partner and organizer gets their own mail with the calendar entry attached; nobody sees the others' addresses."
         },
         "ownText": {
           "subject": "Subject",

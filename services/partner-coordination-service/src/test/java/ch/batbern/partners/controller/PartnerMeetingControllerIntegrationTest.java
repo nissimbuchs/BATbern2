@@ -217,17 +217,17 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isAccepted());
 
         ArgumentCaptor<MailContext> context = ArgumentCaptor.forClass(MailContext.class);
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<List<String>> to = ArgumentCaptor.forClass(List.class);
-        verify(emailService, timeout(5000)).sendGroupHtmlEmailWithAttachments(context.capture(), to.capture(),
+        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
+        verify(emailService, timeout(5000).times(2)).sendHtmlEmailWithAttachments(context.capture(), to.capture(),
                 anyList(), anyString(), anyString(), anyList());
         assertThat(context.getValue().audience()).isEqualTo(MailContext.Audience.PARTNERS);
         assertThat(context.getValue().templateKey()).isEqualTo("partner-meeting-invite");
         assertThat(context.getValue().eventCode()).isEqualTo("BATbern57");
         assertThat(context.getValue().senderUsername()).isEqualTo("anna.organizer");
         assertThat(context.getValue().reference()).isEqualTo("partner-meeting:" + meetingId);
-        // AC3: one mail, every partner and organizer address in To:
-        assertThat(to.getValue()).containsExactly("contact@partner.com", "success+org@simulator.amazonses.com");
+        // Owner decision 2026-11-02: one mail per address, nobody sees the others; one record (same group).
+        assertThat(to.getAllValues()).containsExactly("contact@partner.com", "success+org@simulator.amazonses.com");
+        assertThat(context.getAllValues().get(0).sendGroupId()).isEqualTo(context.getAllValues().get(1).sendGroupId());
     }
 
     @Test
@@ -237,16 +237,17 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
                         .with(user("anna.organizer").roles("ORGANIZER")))
                 .andExpect(status().isAccepted());
-        verify(emailService, timeout(5000)).sendGroupHtmlEmailWithAttachments(any(MailContext.class), anyList(),
-                anyList(), anyString(), anyString(), anyList());
+        verify(emailService, timeout(5000).atLeastOnce()).sendHtmlEmailWithAttachments(any(MailContext.class),
+                anyString(), anyList(), anyString(), anyString(), anyList());
+        org.mockito.Mockito.clearInvocations(emailService);
 
         mockMvc.perform(delete(BASE + "/" + meetingId).with(user("ben.organizer").roles("ORGANIZER")))
                 .andExpect(status().isNoContent());
 
         ArgumentCaptor<MailContext> context = ArgumentCaptor.forClass(MailContext.class);
-        verify(emailService, timeout(5000).times(2)).sendGroupHtmlEmailWithAttachments(context.capture(),
-                anyList(), anyList(), anyString(), anyString(), anyList());
-        MailContext cancellation = context.getAllValues().get(1);
+        verify(emailService, timeout(5000).atLeastOnce()).sendHtmlEmailWithAttachments(context.capture(),
+                anyString(), anyList(), anyString(), anyString(), anyList());
+        MailContext cancellation = context.getValue();
         assertThat(cancellation.templateKey()).isEqualTo("partner-meeting-cancellation");
         assertThat(cancellation.senderUsername()).isEqualTo("ben.organizer");
         assertThat(cancellation.reference()).isEqualTo("partner-meeting:" + meetingId);
