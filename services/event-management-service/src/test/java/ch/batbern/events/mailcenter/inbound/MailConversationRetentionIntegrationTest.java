@@ -29,7 +29,7 @@ import static org.assertj.core.api.Assertions.assertThat;
  * without an event, own age alone), and nothing else.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
-@DisplayName("Story 16.2a: retention of conversations and automatic counts")
+@DisplayName("Stories 16.2a, 16.2b: retention of conversations and automatic counts")
 class MailConversationRetentionIntegrationTest extends AbstractIntegrationTest {
 
     private static final String OLD_EVENT = "BATbern918";
@@ -67,6 +67,13 @@ class MailConversationRetentionIntegrationTest extends AbstractIntegrationTest {
         UUID futureEventOld = conversation("conv-ret-3", FUTURE_EVENT, 420);
         UUID noEventOld = conversation("conv-ret-4", null, 420);
         UUID noEventRecent = conversation("conv-ret-5", null, 10);
+        // 16.2b AC10: an info@ conversation (PUBLIC, no event), same rule. One purge per test class:
+        // ShedLock keeps the lock in-process for lockAtLeastFor, so a second run would be skipped.
+        UUID infoOld = conversation("conv-ret-6", null, 420);
+        UUID infoRecent = conversation("conv-ret-7", null, 30);
+        jdbc.update("UPDATE mail_conversation SET audience = 'PUBLIC' WHERE id IN (?, ?)", infoOld, infoRecent);
+        jdbc.update("UPDATE mail_message SET audience = 'PUBLIC', alias_local_part = 'info' "
+                + "WHERE conversation_id IN (?, ?)", infoOld, infoRecent);
         automatic("ret-1", OLD_EVENT, 420);
         automatic("ret-2", OLD_EVENT, 10);
         automatic("ret-3", FUTURE_EVENT, 420);
@@ -79,6 +86,8 @@ class MailConversationRetentionIntegrationTest extends AbstractIntegrationTest {
         assertThat(exists(oldEventRecent)).isTrue();
         assertThat(exists(futureEventOld)).isTrue();
         assertThat(exists(noEventRecent)).isTrue();
+        assertThat(exists(infoOld)).isFalse();
+        assertThat(exists(infoRecent)).isTrue();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM mail_message WHERE conversation_id IN (?, ?)",
                 Integer.class, oldEventOld, noEventOld)).isZero();
         assertThat(jdbc.queryForList("SELECT dedupe_key FROM mail_automatic_event WHERE dedupe_key LIKE 'ret-%'"

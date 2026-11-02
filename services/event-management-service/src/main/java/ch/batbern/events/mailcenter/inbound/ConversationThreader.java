@@ -1,6 +1,7 @@
 package ch.batbern.events.mailcenter.inbound;
 
 import ch.batbern.events.mailcenter.MailCenterMetrics;
+import ch.batbern.events.repository.EventRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -11,6 +12,7 @@ import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -25,7 +27,9 @@ import java.util.regex.Pattern;
  *       part against {@code mail_recipient.ses_message_id}, because SES writes the header as
  *       {@code <{MessageId}@{region}.amazonses.com>} (verified 2026-11-02 on SendEmail and
  *       SendRawEmail mail);</li>
- *   <li>the event of the {@code batbern{N}-moderator@} alias the mail was addressed to.</li>
+ *   <li>the event of the {@code batbern{N}-moderator@} alias the mail was addressed to;</li>
+ *   <li>Story 16.2b AC3 (owner decision 2026-11-01): exactly one event code of an existing event in
+ *       the subject ({@code BATbern\d+}, as {@code InboundEmailRouter}). Counted separately.</li>
  * </ol>
  * Reads only; {@link InboundMailStore} writes.
  */
@@ -34,6 +38,7 @@ import java.util.regex.Pattern;
 public class ConversationThreader {
 
     private static final Pattern TOKEN_ADDRESS = Pattern.compile("^replies\\+([a-z2-7]{16})@(.+)$");
+    private static final Pattern EVENT_CODE = Pattern.compile("BATbern\\d+");
 
     /** The stored mail an id names: its conversation (if any), event and audience. */
     private static final String BY_MESSAGE_HEADER = """
@@ -52,6 +57,7 @@ public class ConversationThreader {
             """;
 
     private final NamedParameterJdbcTemplate jdbc;
+    private final EventRepository events;
 
     /**
      * Where a mail belongs.
@@ -95,11 +101,39 @@ public class ConversationThreader {
         return Optional.empty();
     }
 
-    /** Within an event: the OPEN or WAITING conversation with this counterpart, newest first. */
+    /**
+     * Rule 4 (Story 16.2b AC3): the one event code in the subject, if that event exists. Several
+     * different codes, or none, give nothing.
+     */
+    public Optional<Target> bySubject(String subject) {
+        Set<String> codes = eventCodesIn(subject);
+        if (codes.size() != 1) {
+            return Optional.empty();
+        }
+        String code = codes.iterator().next();
+        return events.existsByEventCode(code)
+                ? Optional.of(new Target(null, code, null, MailCenterMetrics.THREAD_MATCHED_BY_SUBJECT))
+                : Optional.empty();
+    }
+
+    static Set<String> eventCodesIn(String subject) {
+        Set<String> codes = new LinkedHashSet<>();
+        Matcher m = EVENT_CODE.matcher(subject == null ? "" : subject);
+        while (m.find()) {
+            codes.add(m.group());
+        }
+        return codes;
+    }
+
+    /**
+     * Within an event, or among conversations without one (16.2b): the OPEN or WAITING conversation
+     * with this counterpart, newest first.
+     */
     public Optional<UUID> openConversationWith(String eventCode, String counterpart) {
         List<UUID> ids = jdbc.query("""
                 SELECT id FROM mail_conversation
-                 WHERE event_code = :eventCode AND counterpart_address = :counterpart
+                 WHERE event_code IS NOT DISTINCT FROM CAST(:eventCode AS VARCHAR)
+                   AND counterpart_address = :counterpart
                    AND status IN ('OPEN', 'WAITING')
                  ORDER BY last_message_at DESC LIMIT 1
                 """, new MapSqlParameterSource().addValue("eventCode", eventCode).addValue("counterpart", counterpart),

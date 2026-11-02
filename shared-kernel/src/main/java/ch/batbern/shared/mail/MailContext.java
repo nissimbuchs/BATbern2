@@ -39,8 +39,8 @@ public record MailContext(
 
     private static final int MAX_GROUP_ID_LENGTH = 256;
 
-    /** Who a mail goes to. */
-    public enum Audience { NEWSLETTER, REGISTRANTS, SPEAKERS, VENUE, PARTNERS, ORGANIZERS, SYSTEM }
+    /** Who a mail goes to, or (PUBLIC, Story 16.2b) who wrote: anyone not addressed as a group. */
+    public enum Audience { NEWSLETTER, REGISTRANTS, SPEAKERS, VENUE, PARTNERS, ORGANIZERS, SYSTEM, PUBLIC }
 
     /** Where the text came from. */
     public enum ContentSource { TEMPLATE, OWN_TEXT }

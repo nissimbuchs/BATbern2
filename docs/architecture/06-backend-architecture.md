@@ -1006,9 +1006,30 @@ local dev → POST /dev/emails/inbound (same processors)                  ─┘
   `<{SES MessageId}@eu-central-1.amazonses.com>` for `SendEmail` and also for `SendRawEmail` (the
   registration ICS mail, forwarded copies): JavaMail's own id is replaced. So the local-part match
   is the production branch; the header columns cover anything else.
-- **16.2a gate**: a conversation opens only for speaker mail: the moderator alias, a reply that names
-  a `SPEAKERS` mail, or an existing conversation. Organizer senders (primary or additional email,
-  `ForwardingDirectory`) open nothing. Everything else is left to forwarding (16.2b widens this).
+- **Gate (16.2a, widened by 16.2b)**: a HUMAN mail opens or joins a conversation when it is a
+  `replies+{token}@` reply, any reply at `replies@` the keyword router did not act on, or alias mail
+  to `batbern{N}-moderator@`, `info@`, `events@` or `support@`. Organizer sends to `-speaker@`,
+  `-participants@`, `batbern{N}@`, `partner@` and mail to `ok@` open nothing. An organizer
+  (primary or additional email, `ForwardingDirectory`) is a counterpart only on a contact alias
+  (16.2b AC6; organizer mail to `-moderator@` still opens nothing). Audience: the matched mail's,
+  else `SPEAKERS` for the moderator alias, else `PUBLIC` (V141, inbound only). Assignee: the lead
+  organizer for a new `SPEAKERS` conversation, otherwise unassigned. Without any match the
+  conversation has no event (listed by Story 16.7) and joins the person's open no-event
+  conversation. Metric `ThreadMatchedNone`.
+- **Subject fallback (16.2b AC3, owner decision 2026-11-01)**: after token, headers and alias,
+  exactly one `BATbern\d+` code of an existing event in the subject puts the conversation on that
+  event; several distinct codes give none. Counted as `ThreadMatchedBySubject`, so the owner can
+  judge the rule.
+- **Broadcasts recorded (16.2b AC4)**: an organizer's mail to `-participants@` (or the deprecated
+  `batbern{N}@`) or `partner@` is one `mail_message` (OUT, own text, sender = organizer, audience
+  `REGISTRANTS` on the event or `PARTNERS` without event), each private copy one recipient with its
+  SES id. Copies to organizers (forwarded inbound mail) stay unrecorded.
+- **Message-ID on raw sends (16.2b AC7)**: `sendHtmlEmailWithAttachments` and
+  `sendHtmlEmailSyncWithAttachments` with a `MailContext` (registration mails with ICS, newsletter)
+  set `Message-ID: <{uuid}@{sender domain}>` and hand it to the recorder
+  (`mail_recipient.message_id_header`), so replies match whatever SES does with the header. Without
+  a context the header stays JavaMail's. Local dev has no SES branch, so locally the
+  `local-{captureId}` id threads instead.
 - **Storage**: inbound rows are `mail_message` with `direction = 'IN'`, `content_source = 'OWN_TEXT'`,
   no recipients, `send_group_id = in_ + 40 hex of sha256(Message-ID, else S3 key)`; the unique
   constraint makes a redelivery or a mail to two aliases one row. Text and sanitized HTML (no images,

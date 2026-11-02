@@ -588,6 +588,8 @@
         "openCount_other": "未対応 {{count}} 件",
         "via": "{{address}} 経由",
         "viaReply": "メールへの返信",
+        "viaReplyRegistrants": "登録者向けメールへの返信",
+        "viaReplyNewsletter": "ニュースレターへの返信",
         "messages_one": "{{count}} 件のメッセージ",
         "messages_other": "{{count}} 件のメッセージ",
         "status": {

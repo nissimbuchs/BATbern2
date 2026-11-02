@@ -588,6 +588,8 @@
         "openCount_other": "{{count}} open",
         "via": "via {{address}}",
         "viaReply": "antwoord op een e-mail",
+        "viaReplyRegistrants": "antwoord op een mail aan aangemelden",
+        "viaReplyNewsletter": "antwoord op de nieuwsbrief",
         "messages_one": "{{count}} bericht",
         "messages_other": "{{count}} berichten",
         "status": {

@@ -588,6 +588,8 @@
         "openCount_other": "{{count}} ouverts",
         "via": "via {{address}}",
         "viaReply": "réponse à un e-mail",
+        "viaReplyRegistrants": "réponse à un e-mail aux inscrits",
+        "viaReplyNewsletter": "réponse à la newsletter",
         "messages_one": "{{count}} message",
         "messages_other": "{{count}} messages",
         "status": {

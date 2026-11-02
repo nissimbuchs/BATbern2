@@ -36,6 +36,10 @@ public class MailCenterMetrics {
     public static final String THREAD_MATCHED_BY_HEADER = "ThreadMatchedByHeader";
     public static final String THREAD_MATCHED_BY_SES_ID = "ThreadMatchedBySesId";
     public static final String THREAD_MATCHED_BY_ALIAS = "ThreadMatchedByAlias";
+    /** Story 16.2b AC3: the event code in the subject, the owner judges this rule by its count. */
+    public static final String THREAD_MATCHED_BY_SUBJECT = "ThreadMatchedBySubject";
+    /** Story 16.2b: nothing matched; a conversation without event was opened. */
+    public static final String THREAD_MATCHED_NONE = "ThreadMatchedNone";
 
     /**
      * Story 16.6: a reply to an organizer's answer ({@code replies+{token}@}), with dimension

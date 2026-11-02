@@ -11,9 +11,15 @@ What speakers wrote to the team for this event, so everyone sees the question an
 instead of it sitting in one private inbox (Story 16.2a).
 
 - **What lands here:** a speaker's mail to the event's moderator address
-  (`batbern{N}-moderator@batbern.ch`, the Reply-To of every speaker mail), and a reply to a speaker
-  mail that still goes to `replies@`. Mail from organizers does not. Other addresses (`info@`,
-  registrant replies) follow with Story 16.2b.
+  (`batbern{N}-moderator@batbern.ch`, the Reply-To of every speaker mail), replies to registration
+  mails and newsletters, and mail to `info@`, `events@` or `support@` that belongs to the event (it
+  answers one of the event's mails, or its subject names the event, e.g. "BATbern60"). Contact mail
+  that belongs to no event is kept too and will be listed on the Mail page (Story 16.7). An
+  organizer's mail to `info@` counts like anyone's; organizer mail to the moderator address or to
+  `ok@` does not. A row says where the mail came from: "via info@batbern.ch", "reply to a registrant
+  mail", "reply to the newsletter".
+- **Broadcasts are sends:** an organizer's mail to `batbern{N}-participants@` or `partner@` appears
+  under "What went out" as one mail to all recipients.
 - **Forwarding is unchanged.** The moderator still gets the mail in their own inbox as before.
 - **Each row:** a status dot, date, who wrote, where it arrived, the subject, and the avatar of the
   organizer who answers. Open and waiting first, newest first; done ones below, greyed. The number

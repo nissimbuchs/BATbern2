@@ -594,6 +594,8 @@
         "openCount_other": "{{count}} offe",
         "via": "über {{address}}",
         "viaReply": "Antwort uf es Mail",
+        "viaReplyRegistrants": "Antwort uf es Mail a d Agmäldete",
+        "viaReplyNewsletter": "Antwort uf e Newsletter",
         "messages_one": "{{count}} Nachricht",
         "messages_other": "{{count}} Nachrichte",
         "status": {

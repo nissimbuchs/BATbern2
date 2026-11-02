@@ -38,7 +38,7 @@ import static org.mockito.Mockito.when;
  * class removes what it wrote.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
-@DisplayName("Story 16.2a: conversation threading")
+@DisplayName("Stories 16.2a, 16.2b: conversation threading")
 class ConversationThreadingIntegrationTest extends AbstractIntegrationTest {
 
     private static final String EVENT = "BATbern916";
@@ -193,21 +193,108 @@ class ConversationThreadingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("16.2a scope: a reply that matches nothing is not opened")
-    void should_notOpen_when_replyMatchesNothing() {
+    @DisplayName("16.2b AC2: an unrecognized reply that matches nothing opens a conversation without event")
+    void should_openWithoutEvent_when_replyMatchesNothing() {
         reply(mail(SPEAKER, "replies@batbern.ch", "Re: x", "r1@example.com", "nothing@example.com", null, "Hi"));
+        assertThat(onlyConversation()).containsEntry("event_code", null).containsEntry("audience", "PUBLIC")
+                .containsEntry("assignee_username", null).containsEntry("status", "OPEN");
+    }
+
+    @Test
+    @DisplayName("16.2b AC2: a reply to a registrant mail opens a conversation on its event, audience REGISTRANTS")
+    void should_open_when_replyMatchesRegistrantMail() {
+        UUID out = outbound("REGISTRANTS", EVENT);
+        recipient(out, SPEAKER, "0107019acccc-0003-000000", null);
+        reply(mail(SPEAKER, "replies@batbern.ch", "Re: x", "r1@example.com",
+                "0107019acccc-0003-000000@eu-central-1.amazonses.com", null, "Hi"));
+        assertThat(onlyConversation()).containsEntry("event_code", EVENT).containsEntry("audience", "REGISTRANTS")
+                .containsEntry("assignee_username", null);
+    }
+
+    @Test
+    @DisplayName("16.2b AC2: a reply to the newsletter opens a conversation on its event, audience NEWSLETTER")
+    void should_open_when_replyMatchesNewsletter() {
+        UUID out = outbound("NEWSLETTER", EVENT);
+        recipient(out, SPEAKER, null, "nl-1@batbern.ch");
+        reply(mail(SPEAKER, "replies@batbern.ch", "Re: Newsletter", "r1@example.com", "nl-1@batbern.ch", null,
+                "Gerne"));
+        assertThat(onlyConversation()).containsEntry("event_code", EVENT).containsEntry("audience", "NEWSLETTER");
+    }
+
+    // ── 16.2b AC1, AC6: contact aliases ─────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("16.2b AC1: info@ without a match opens an unassigned PUBLIC conversation without event")
+    void should_openWithoutEvent_when_infoMailMatchesNothing() {
+        alias(mail(SPEAKER, "info@batbern.ch", "Parkplätze?", "i1@example.com", null, null, "Gibt es Parkplätze?"));
+        assertThat(onlyConversation()).containsEntry("event_code", null).containsEntry("audience", "PUBLIC")
+                .containsEntry("assignee_username", null).containsEntry("status", "OPEN");
+        assertThat(jdbc.queryForObject("SELECT alias_local_part FROM mail_message WHERE direction = 'IN'",
+                String.class)).isEqualTo("info");
+    }
+
+    @Test
+    @DisplayName("16.2b AC1: a second info@ mail of the same person joins the open no-event conversation")
+    void should_joinNoEventConversation_when_samePersonWritesAgain() {
+        alias(mail(SPEAKER, "info@batbern.ch", "Frage", "i1@example.com", null, null, "Eins"));
+        alias(mail(SPEAKER, "events@batbern.ch", "Noch was", "i2@example.com", null, null, "Zwei"));
+        assertThat(conversationCount()).isEqualTo(1);
+        assertThat(messagesOf(onlyConversation().get("id"))).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("16.2b AC1: support@ with In-Reply-To of a registrant mail lands on that event")
+    void should_putOnEvent_when_supportMailRepliesToRegistrantMail() {
+        UUID out = outbound("REGISTRANTS", EVENT);
+        recipient(out, SPEAKER, "0107019adddd-0004-000000", null);
+        alias(mail(SPEAKER, "support@batbern.ch", "Re: Anmeldung", "s1@example.com",
+                "0107019adddd-0004-000000@eu-central-1.amazonses.com", null, "Hilfe"));
+        assertThat(onlyConversation()).containsEntry("event_code", EVENT).containsEntry("audience", "REGISTRANTS");
+    }
+
+    @Test
+    @DisplayName("16.2b AC6: an organizer writing to info@ opens a conversation; the organizer is the counterpart")
+    void should_open_when_organizerWritesInfo() {
+        alias(mail(ORGANIZER_MAIL, "info@batbern.ch", "Weiterleitung", "o2@example.com", null, null, "FYI"));
+        assertThat(onlyConversation()).containsEntry("counterpart_address", ORGANIZER_MAIL);
+    }
+
+    @Test
+    @DisplayName("16.2b: ok@ and organizer broadcasts to -participants@ or partner@ open nothing")
+    void should_notOpen_when_internalOrBroadcastAlias() {
+        alias(mail(ORGANIZER_MAIL, "ok@batbern.ch", "Intern", "o3@example.com", null, null, "x"));
+        alias(mail(ORGANIZER_MAIL, "batbern916-participants@batbern.ch", "Info", "o4@example.com", null, null, "x"));
+        alias(mail(ORGANIZER_MAIL, "partner@batbern.ch", "Info", "o5@example.com", null, null, "x"));
         assertThat(conversationCount()).isZero();
         assertThat(inboundCount()).isZero();
     }
 
     @Test
-    @DisplayName("16.2a scope: a reply to a registrant mail is not opened (16.2b)")
-    void should_notOpen_when_replyMatchesRegistrantMail() {
-        UUID out = outbound("REGISTRANTS", EVENT);
-        recipient(out, SPEAKER, "0107019acccc-0003-000000", null);
-        reply(mail(SPEAKER, "replies@batbern.ch", "Re: x", "r1@example.com",
-                "0107019acccc-0003-000000@eu-central-1.amazonses.com", null, "Hi"));
+    @DisplayName("16.2b AC5: an out-of-office to info@ is counted, nothing stored")
+    void should_count_when_outOfOfficeToInfo() {
+        alias(mail(SPEAKER, "info@batbern.ch", "Abwesenheitsnotiz", "a1@example.com", null, null, "Bin weg"));
         assertThat(conversationCount()).isZero();
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM mail_automatic_event WHERE kind = 'OUT_OF_OFFICE'",
+                Integer.class)).isEqualTo(1);
+    }
+
+    // ── 16.2b AC3: subject fallback ─────────────────────────────────────────────────────────
+
+    @Test
+    @DisplayName("16.2b AC3: info@ naming exactly one existing event in the subject lands on that event")
+    void should_putOnEvent_when_subjectNamesOneEvent() {
+        alias(mail(SPEAKER, "info@batbern.ch", "Re: AW: BATbern916 Anmeldung", "f1@example.com", null, null, "?"));
+        assertThat(onlyConversation()).containsEntry("event_code", EVENT).containsEntry("audience", "PUBLIC");
+    }
+
+    @Test
+    @DisplayName("16.2b AC3: two different codes or an unknown code give no event")
+    void should_notPutOnEvent_when_subjectAmbiguousOrUnknown() {
+        alias(mail(SPEAKER, "info@batbern.ch", "BATbern916 und BATbern1", "f2@example.com", null, null, "?"));
+        alias(mail("other+person@simulator.amazonses.com", "info@batbern.ch", "BATbern99999", "f3@example.com",
+                null, null, "?"));
+        assertThat(jdbc.queryForObject("SELECT count(*) FROM mail_conversation WHERE event_code IS NULL",
+                Integer.class)).isEqualTo(2);
     }
 
     // ── AC4, AC6 ─────────────────────────────────────────────────────────────────────────────

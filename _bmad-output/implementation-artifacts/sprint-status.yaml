@@ -275,7 +275,7 @@ development_status:
   16-1a-record-outbound-mail: done
   16-1b-delivery-status: done
   16-2a-speaker-conversations: review  # implemented 2026-11-02 on feature/16-2a-speaker-conversations; PR waits for owner review
-  16-2b-all-alias-conversations: ready-for-dev
+  16-2b-all-alias-conversations: review  # implemented 2026-11-02 on feature/16-2a-speaker-conversations; ships with 16.2a + 16.6
   16-3-communications-tab-becomes-mail-page: done
   16-4-new-mail-picker: done
   16-5-own-text-placeholders-preview: done  # live via #1180 2026-11-02; Task 8 checks done 2026-11-02

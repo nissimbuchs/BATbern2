@@ -602,6 +602,8 @@
         "openCount_other": "{{count}} offen",
         "via": "über {{address}}",
         "viaReply": "Antwort auf eine Mail",
+        "viaReplyRegistrants": "Antwort auf eine Mail an Angemeldete",
+        "viaReplyNewsletter": "Antwort auf den Newsletter",
         "messages_one": "{{count}} Nachricht",
         "messages_other": "{{count}} Nachrichten",
         "status": {

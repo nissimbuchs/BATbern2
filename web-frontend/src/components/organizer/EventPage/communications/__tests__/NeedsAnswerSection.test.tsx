@@ -178,6 +178,27 @@ describe('NeedsAnswerSection', () => {
     expect(screen.getAllByTestId('conversation-assignee-avatar')[0]).toHaveTextContent('LO');
   });
 
+  it('16.2b AC9: a reply names the mail it answers; info@ shows its address', async () => {
+    listEventConversations.mockResolvedValue(
+      page([
+        conv({ conversationKey: 'conv-5', via: 'reply', audience: 'REGISTRANTS' }),
+        conv({ conversationKey: 'conv-6', via: 'reply', audience: 'NEWSLETTER' }),
+        conv({ conversationKey: 'conv-7', via: 'info@batbern.ch', audience: 'PUBLIC' }),
+      ])
+    );
+    renderSection();
+    await screen.findByTestId('needs-answer-list');
+    expect(screen.getByTestId('conversation-row-conv-5')).toHaveTextContent(
+      'eventPage.mail.conversations.viaReplyRegistrants'
+    );
+    expect(screen.getByTestId('conversation-row-conv-6')).toHaveTextContent(
+      'eventPage.mail.conversations.viaReplyNewsletter'
+    );
+    expect(screen.getByTestId('conversation-row-conv-7')).toHaveTextContent(
+      'eventPage.mail.conversations.via(address=info@batbern.ch)'
+    );
+  });
+
   it('AC11 desktop: a click asks to open the row, the open row shows its messages inline', async () => {
     listEventConversations.mockResolvedValue(page([conv({})]));
     const { onOpenChange } = renderSection();

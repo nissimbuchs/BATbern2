@@ -50,8 +50,8 @@ sends for an event, so they fall under the same rules as registration data:
 - **Delivery status (Story 16.1b):** a bounce or complaint stores only the SES bounce type/subtype,
   `complaint`, or the reject reason, not the remote server's diagnostic text. Transactional bounces
   never feed newsletter suppression.
-- **Inbound mail and conversations (Story 16.2a):** a speaker's mail to the event's moderator alias
-  (or a reply to a speaker mail) is stored with sender, addresses, text and sanitized HTML in
+- **Inbound mail and conversations (Stories 16.2a, 16.2b):** a person's mail to the moderator alias,
+  `info@`, `events@` or `support@`, and every reply at `replies@` that no keyword acted on, is stored with sender, addresses, text and sanitized HTML in
   `mail_message` (`direction IN`) and grouped in `mail_conversation`. Same retention: deleted once
   the event date and the conversation's last activity are both older than 12 months, without an event
   by last activity. The body is in the database because the raw mail in S3 expires after 7 days (S3

@@ -332,7 +332,17 @@ public class EmailForwardingService {
      * The rewritten message and its recipients. {@code broadcast}: one send to all of
      * {@code recipients} (speaker alias, visible To + Cc); otherwise one private copy each.
      */
-    private record Delivery(byte[] message, List<String> recipients, boolean broadcast) {
+    private record Delivery(byte[] message, List<String> recipients, boolean broadcast, Recording recording) {
+        Delivery(byte[] message, List<String> recipients, boolean broadcast) {
+            this(message, recipients, broadcast, null);
+        }
+    }
+
+    /**
+     * Story 16.2b AC4: an organizer's mail to {@code -participants@} or {@code partner@} appears in
+     * "What went out" as one mail; each private copy to one of {@code recipients} is one recipient.
+     */
+    private record Recording(MailContext context, Set<String> recipients, String subject, String bodyHtml) {
     }
 
     /**
@@ -365,7 +375,35 @@ public class EmailForwardingService {
             return null;
         }
         byte[] rewritten = rewriter.rewrite(raw, senderName, sender, properties.sender(), null, null);
-        return new Delivery(rewritten, List.copyOf(plan.individual), false);
+        return new Delivery(rewritten, List.copyOf(plan.individual), false, recording(raw, plan, sender));
+    }
+
+    /** Null when no recorded alias was addressed. Reading the text never stops the forward. */
+    private Recording recording(byte[] raw, Plan plan, String sender) {
+        if (plan.recorded.isEmpty() || plan.recordedAudience == null) {
+            return null;
+        }
+        String subject = "";
+        String bodyHtml = "";
+        try {
+            InboundMail parsed = InboundMailParser.parse(raw);
+            subject = parsed.subject();
+            bodyHtml = InboundMailStore.bodyHtml(parsed);
+        } catch (RuntimeException e) {
+            log.warn("Forwarding: could not read the broadcast text for the record: {}", e.toString());
+        }
+        MailContext context = MailContext.ownText(MailTrigger.organizer(organizerUsername(sender)),
+                plan.recordedEventCode, plan.recordedAudience);
+        return new Recording(context, Set.copyOf(plan.recorded), subject, bodyHtml);
+    }
+
+    private String organizerUsername(String sender) {
+        try {
+            return directory.organizerUsernameFor(sender).orElse(null);
+        } catch (RuntimeException e) {
+            log.warn("Forwarding: sender of the broadcast not resolved: {}", e.toString());
+            return null;
+        }
     }
 
     private Plan plan(List<ForwardingAlias> aliases, String sender, MailAuthentication authentication) {
@@ -395,6 +433,16 @@ public class EmailForwardingService {
                     // Cc so a mail to both -speaker@ and -moderator@ still Cc's the moderator once.
                     plan.individual.addAll(resolved);
                     plan.moderatorCc.addAll(resolved);
+                }
+                case EVENT_PARTICIPANTS, EVENT_PARTICIPANTS_DEPRECATED, PARTNERS -> {
+                    plan.individual.addAll(resolved);
+                    plan.recorded.addAll(resolved);
+                    if (plan.recordedAudience == null) {
+                        boolean partners = alias.kind() == ForwardingAlias.Kind.PARTNERS;
+                        plan.recordedAudience = partners ? MailContext.Audience.PARTNERS
+                                : MailContext.Audience.REGISTRANTS;
+                        plan.recordedEventCode = partners ? null : alias.eventCode();
+                    }
                 }
                 default -> plan.individual.addAll(resolved);
             }
@@ -443,13 +491,7 @@ public class EmailForwardingService {
      * text to the speakers. A CUMS failure only leaves the sender empty.
      */
     private MailContext broadcastContext(Broadcast broadcast) {
-        String username = null;
-        try {
-            username = directory.organizerUsernameFor(broadcast.sender()).orElse(null);
-        } catch (RuntimeException e) {
-            log.warn("Forwarding: sender of the speaker broadcast not resolved: {}", e.toString());
-        }
-        return MailContext.ownText(MailTrigger.organizer(username), broadcast.eventCode(),
+        return MailContext.ownText(MailTrigger.organizer(organizerUsername(broadcast.sender())), broadcast.eventCode(),
                 MailContext.Audience.SPEAKERS);
     }
 
@@ -459,8 +501,14 @@ public class EmailForwardingService {
         int failed = 0;
         for (int i = 0; i < recipients.size(); i++) {
             try {
-                emailService.sendRawMessage(delivery.message(), List.of(recipients.get(i)),
-                        properties.configurationSet());
+                Recording recording = delivery.recording();
+                if (recording != null && recording.recipients().contains(recipients.get(i))) {
+                    emailService.sendRawMessage(recording.context(), delivery.message(), List.of(recipients.get(i)),
+                            List.of(), recording.subject(), recording.bodyHtml(), properties.configurationSet());
+                } else {
+                    emailService.sendRawMessage(delivery.message(), List.of(recipients.get(i)),
+                            properties.configurationSet());
+                }
                 sent++;
             } catch (RuntimeException e) {
                 failed++;
@@ -568,12 +616,17 @@ public class EmailForwardingService {
         private final Set<String> individual = new LinkedHashSet<>();
         private final Set<String> speakerTo = new LinkedHashSet<>();
         private final Set<String> moderatorCc = new LinkedHashSet<>();
+        /** Story 16.2b AC4: copies to people outside the team (participants, partners), recorded. */
+        private final Set<String> recorded = new LinkedHashSet<>();
+        private MailContext.Audience recordedAudience;
+        private String recordedEventCode;
 
         private void dropReserved() {
             int before = individual.size() + speakerTo.size() + moderatorCc.size();
             individual.removeIf(ReservedEmailDomain::isReserved);
             speakerTo.removeIf(ReservedEmailDomain::isReserved);
             moderatorCc.removeIf(ReservedEmailDomain::isReserved);
+            recorded.removeIf(ReservedEmailDomain::isReserved);
             int removed = before - individual.size() - speakerTo.size() - moderatorCc.size();
             if (removed > 0) {
                 log.warn("Forwarding: skipped {} reserved-domain recipient(s)", removed);

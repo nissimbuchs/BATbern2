@@ -138,9 +138,16 @@ const ConversationRow: React.FC<ConversationRowProps> = ({
   const { user } = useAuth();
   const patch = usePatchConversation(eventCode);
   const done = row.status === 'DONE';
+  // Story 16.2b AC9: a reply names the kind of mail it answers
+  const replyKey =
+    row.audience === 'REGISTRANTS'
+      ? 'viaReplyRegistrants'
+      : row.audience === 'NEWSLETTER'
+        ? 'viaReplyNewsletter'
+        : 'viaReply';
   const via =
     row.via === 'reply'
-      ? t('eventPage.mail.conversations.viaReply')
+      ? t(`eventPage.mail.conversations.${replyKey}`)
       : t('eventPage.mail.conversations.via', { address: row.via });
   const lastAt = new Date(row.lastMessageAt).toLocaleString(i18n.language, {
     dateStyle: 'medium',

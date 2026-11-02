@@ -555,6 +555,10 @@ components:
       - PARTNERS
       - ORGANIZERS
       - SYSTEM
+      - PUBLIC
+      description: |
+        Who a mail went to. `PUBLIC` (Story 16.2b) only on inbound mail and conversations: someone who is
+        not addressed as a group, e.g. a mail to info@. No outbound mail has it.
     MailMessageSummary:
       type: object
       required:

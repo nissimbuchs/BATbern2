@@ -602,6 +602,8 @@
         "openCount_other": "{{count}} open",
         "via": "via {{address}}",
         "viaReply": "reply to a mail",
+        "viaReplyRegistrants": "reply to a registrant mail",
+        "viaReplyNewsletter": "reply to the newsletter",
         "messages_one": "{{count}} message",
         "messages_other": "{{count}} messages",
         "status": {

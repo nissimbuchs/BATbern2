@@ -233,9 +233,20 @@ export interface components {
       data: components['schemas']['MailMessageSummary'][];
       pagination: components['schemas']['PaginationMetadata'];
     };
-    /** @enum {string} */
+    /**
+     * @description Who a mail went to. `PUBLIC` (Story 16.2b) only on inbound mail and conversations: someone who is
+     *     not addressed as a group, e.g. a mail to info@. No outbound mail has it.
+     * @enum {string}
+     */
     MailAudience:
-      'NEWSLETTER' | 'REGISTRANTS' | 'SPEAKERS' | 'VENUE' | 'PARTNERS' | 'ORGANIZERS' | 'SYSTEM';
+      | 'NEWSLETTER'
+      | 'REGISTRANTS'
+      | 'SPEAKERS'
+      | 'VENUE'
+      | 'PARTNERS'
+      | 'ORGANIZERS'
+      | 'SYSTEM'
+      | 'PUBLIC';
     MailMessageSummary: {
       /**
        * @description Key of the entry's newest mail; opens it with the detail operation.

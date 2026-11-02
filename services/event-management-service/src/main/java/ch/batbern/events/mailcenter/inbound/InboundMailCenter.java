@@ -38,9 +38,12 @@ import java.util.regex.Pattern;
  * The Mail Center's side of inbound mail (Story 16.2a): after the existing processing (keyword
  * router, forwarding) has run, an inbound mail is either stored in a conversation or counted.
  *
- * <p>16.2a opens a conversation only for a speaker: mail to {@code batbern{N}-moderator@}, or a reply
- * that names a {@code SPEAKERS} mail or an existing conversation. Everything else a person wrote is
- * left to forwarding (16.2b widens this). Automatic mail is counted per event, never stored.
+ * <p>Which human mail opens or joins a conversation (16.2a, widened by 16.2b): mail to
+ * {@code batbern{N}-moderator@}, {@code info@}, {@code events@} or {@code support@}; every reply at
+ * {@code replies@} the keyword router did not act on; a {@code replies+{token}@} reply. Not: organizer
+ * sends to {@code -speaker@}, {@code -participants@}, {@code partner@}, or {@code ok@}. An organizer
+ * is a counterpart only when writing to a contact alias. Without a match the conversation has no
+ * event and audience {@code PUBLIC}. Automatic mail is counted per event, never stored.
  *
  * <p>Never throws: forwarding is the safety net until Story 16.6, so a Mail Center failure is
  * logged and counted ({@code MailCenterIngestFailed}) and the caller carries on.
@@ -123,11 +126,14 @@ public class InboundMailCenter {
         }
         List<String> addresses = new ArrayList<>(mail.to());
         addresses.addAll(mail.cc());
-        Optional<ForwardingAlias> moderator = addresses.stream()
+        List<ForwardingAlias> aliases = addresses.stream()
                 .map(address -> ForwardingAlias.parse(address, domain))
                 .flatMap(Optional::stream)
+                .toList();
+        Optional<ForwardingAlias> moderator = aliases.stream()
                 .filter(alias -> alias.kind() == ForwardingAlias.Kind.EVENT_MODERATOR)
                 .findFirst();
+        Optional<ForwardingAlias> contact = aliases.stream().filter(InboundMailCenter::isContactAlias).findFirst();
         String aliasEvent = moderator.map(ForwardingAlias::eventCode).orElse(null);
 
         InboundClassifier.Kind kind = InboundClassifier.classify(mail, raw, domain);
@@ -139,35 +145,43 @@ public class InboundMailCenter {
             return;
         }
 
-        Optional<ConversationThreader.Target> target = threader.byToken(addresses, domain)
-                .or(() -> threader.byHeaders(mail).filter(InboundMailCenter::speakerThread))
-                .or(() -> Optional.ofNullable(aliasEvent).map(event ->
-                        new ConversationThreader.Target(null, event, null, MailCenterMetrics.THREAD_MATCHED_BY_ALIAS)));
-        if (target.isEmpty()) {
-            return; // 16.2a: only speaker mail opens a conversation; forwarding has it
+        Optional<ConversationThreader.Target> token = threader.byToken(addresses, domain);
+        boolean replyPath = PATH_REPLIES.equals(path);
+        if (token.isEmpty() && !replyPath && moderator.isEmpty() && contact.isEmpty()) {
+            return; // 16.2b: organizer sends (-speaker@, -participants@, partner@) and ok@ open nothing
         }
-        if (directory.organizerEmails().contains(mail.fromAddress())) {
-            return; // AC6: organizers are not counterparts
+        boolean organizer = directory.organizerEmails().contains(mail.fromAddress());
+        if (organizer && contact.isEmpty()) {
+            return; // 16.2a AC6 / 16.2b AC6: an organizer is a counterpart only on a contact alias
         }
 
-        ConversationThreader.Target t = target.get();
+        ConversationThreader.Target t = token
+                .or(() -> threader.byHeaders(mail))
+                .or(() -> Optional.ofNullable(aliasEvent).map(event -> new ConversationThreader.Target(null, event,
+                        MailContext.Audience.SPEAKERS.name(), MailCenterMetrics.THREAD_MATCHED_BY_ALIAS)))
+                .or(() -> threader.bySubject(mail.subject()))
+                .orElseGet(() -> new ConversationThreader.Target(null, null, null,
+                        MailCenterMetrics.THREAD_MATCHED_NONE));
         String eventCode = t.eventCode();
+        String audience = t.audience() != null ? t.audience() : MailContext.Audience.PUBLIC.name();
         UUID conversationId = t.conversationId() != null ? t.conversationId()
-                : eventCode == null ? null : threader.openConversationWith(eventCode, mail.fromAddress()).orElse(null);
-        String assignee = conversationId != null || eventCode == null ? null
+                : threader.openConversationWith(eventCode, mail.fromAddress()).orElse(null);
+        String assignee = conversationId != null || eventCode == null
+                || !MailContext.Audience.SPEAKERS.name().equals(audience) ? null
                 : events.findByEventCode(eventCode).map(Event::getOrganizerUsername)
                         .filter(username -> !username.isBlank()).orElse(null);
-        String key = store.store(mail, groupId, path, moderator.map(ForwardingAlias::localPart).orElse(null),
-                new InboundMailStore.Placement(conversationId, eventCode, MailContext.Audience.SPEAKERS.name(),
-                        assignee));
+        String aliasLocalPart = moderator.or(() -> contact).map(ForwardingAlias::localPart).orElse(null);
+        String key = store.store(mail, groupId, path, aliasLocalPart,
+                new InboundMailStore.Placement(conversationId, eventCode, audience, assignee));
         metrics.increment(t.metric());
         log.info("Mail Center: mail from {} stored in {} ({})", LoggingUtils.maskEmail(mail.fromAddress()), key,
                 t.metric());
     }
 
-    /** A header match opens or joins only a speaker thread in 16.2a: an existing conversation or a SPEAKERS mail. */
-    private static boolean speakerThread(ConversationThreader.Target target) {
-        return target.conversationId() != null || MailContext.Audience.SPEAKERS.name().equals(target.audience());
+    /** {@code info@}, {@code events@}, {@code support@}: open to anyone (not {@code ok@}). */
+    private static boolean isContactAlias(ForwardingAlias alias) {
+        return (alias.kind() == ForwardingAlias.Kind.ORGANIZERS || alias.kind() == ForwardingAlias.Kind.SUPPORT)
+                && alias.openToAnyone();
     }
 
     private void countAutomatic(InboundClassifier.Kind kind, InboundMail mail, byte[] raw, String groupId,

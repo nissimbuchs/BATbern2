@@ -588,6 +588,8 @@
         "openCount_other": "{{count}} averts",
         "via": "via {{address}}",
         "viaReply": "resposta ad in e-mail",
+        "viaReplyRegistrants": "resposta ad in e-mail als annunziads",
+        "viaReplyNewsletter": "resposta a la newsletter",
         "messages_one": "{{count}} messadi",
         "messages_other": "{{count}} messadis",
         "status": {

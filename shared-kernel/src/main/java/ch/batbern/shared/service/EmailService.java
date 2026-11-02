@@ -419,7 +419,10 @@ public class EmailService {
 
             // Build raw MIME message using JavaMail API
             Session session = Session.getInstance(new Properties());
-            MimeMessage message = new MimeMessage(session);
+            // Story 16.2b AC7: a recorded mail carries our own Message-ID, known to the recorder
+            String messageId = context != null ? newMessageId() : null;
+            MimeMessage message = messageId != null ? new FixedIdMimeMessage(session, messageId)
+                    : new MimeMessage(session);
 
             // Set headers
             message.setFrom(new InternetAddress(fromEmail, fromName));
@@ -482,7 +485,7 @@ public class EmailService {
             SendRawEmailResponse response = sesClient.sendRawEmail(rawRequestBuilder.build());
             log.info("Email with attachments sent successfully to {} recipient(s): {}, MessageId: {}",
                     toList.size(), LoggingUtils.maskEmail(to), response.messageId());
-            record(context, to, ccClean, subject, htmlBody, response.messageId(), null);
+            record(context, new OutboundMail(to, ccClean, subject, htmlBody, response.messageId(), null, messageId));
 
         } catch (MessagingException | IOException e) {
             log.error("Failed to create MIME message for: {}", to, e);
@@ -545,7 +548,10 @@ public class EmailService {
             log.debug("Sending HTML email (sync) with {} attachment(s) to: {}", attachments.size(), to);
 
             Session session = Session.getInstance(new Properties());
-            MimeMessage message = new MimeMessage(session);
+            // Story 16.2b AC7: a recorded mail carries our own Message-ID, known to the recorder
+            String messageId = context != null ? newMessageId() : null;
+            MimeMessage message = messageId != null ? new FixedIdMimeMessage(session, messageId)
+                    : new MimeMessage(session);
             message.setFrom(new InternetAddress(fromEmail, fromName));
             message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(EmailAddresses.toDeliveryForm(to)));
             message.setSubject(subject, "UTF-8");
@@ -587,7 +593,7 @@ public class EmailService {
 
             SendRawEmailResponse response = sesClient.sendRawEmail(rawRequestBuilder.build());
             log.info("Email with attachments sent (sync) to: {}, MessageId: {}", to, response.messageId());
-            record(context, to, List.of(), subject, htmlBody, response.messageId(), null);
+            record(context, new OutboundMail(to, List.of(), subject, htmlBody, response.messageId(), null, messageId));
 
         } catch (MessagingException | IOException e) {
             log.error("Failed to create MIME message for: {}", to, e);
@@ -677,6 +683,13 @@ public class EmailService {
         ByteArrayOutputStream out = new ByteArrayOutputStream();
         message.writeTo(out);
         return out.toByteArray();
+    }
+
+    /** {@code <{uuid}@{domain of the sender address}>}. */
+    private String newMessageId() {
+        String domain = fromEmail != null && fromEmail.contains("@")
+                ? fromEmail.substring(fromEmail.indexOf('@') + 1) : "batbern.ch";
+        return "<" + UUID.randomUUID() + "@" + domain + ">";
     }
 
     /** Keeps the caller's Message-ID: JavaMail would replace it in {@code saveChanges()}. */

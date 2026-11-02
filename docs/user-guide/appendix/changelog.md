@@ -49,6 +49,7 @@ Each release includes:
 - ✅ The event's mail page has a new first section, **Needs an answer**: what speakers wrote to the event's moderator address, grouped per speaker, with a status (open, waiting, done) and the organizer who answers. The lead organizer is assigned at first; "I'll take it" makes it yours. Forwarding to the moderator's inbox is unchanged.
 - ✅ **Handled automatically** now also counts out-of-office replies, bounce mails, calendar acceptances and declines, keyword replies that acted, and unsubscribes, without keeping their text.
 - ✅ A mail an organizer sends to `batbern{N}-speaker@` now appears under "What went out".
+- ✅ Replies to registration mails and newsletters, and mail to `info@`, `events@` and `support@`, become conversations like the speakers' mails: on the event they belong to, or kept for the coming Mail page when they belong to none. An organizer's mail to `batbern{N}-participants@` or `partner@` now appears under "What went out".
 - ✅ Organizers answer a conversation directly from the mail page. The answer goes out as "{name} via BATbern", the speaker's reply comes back into the same conversation, and every organizer sees who answered what. Handing a conversation to another organizer sends them one short mail with a link.
 
 **Bug Fixes — Clearer Registration Status on the Event Page (2026-11-02)**:

@@ -121,6 +121,55 @@ class EmailForwardingServiceTest {
     }
 
     @Test
+    @DisplayName("16.2b AC4: a participants broadcast is one recorded mail, one recipient per private copy")
+    void should_recordParticipantsBroadcast_when_organizerWritesToParticipants() {
+        Result result = service.forward(KEY, mail(ORGANIZER_2, "batbern60-participants@batbern.ch", null,
+                DMARC_PASS, null));
+
+        assertThat(result).isEqualTo(Result.FORWARDED);
+        ArgumentCaptor<MailContext> context = ArgumentCaptor.forClass(MailContext.class);
+        for (String p : List.of("success+p1" + SIM, "success+p2" + SIM, "success+p3" + SIM)) {
+            verify(emailService).sendRawMessage(context.capture(), any(), eq(List.of(p)), eq(List.of()),
+                    eq("Hallo"), org.mockito.ArgumentMatchers.contains("Hallo zusammen"),
+                    eq("batbern-staging-forwarder"));
+        }
+        assertThat(context.getAllValues()).hasSize(3).allSatisfy(c -> {
+            assertThat(c.eventCode()).isEqualTo("BATbern60");
+            assertThat(c.audience()).isEqualTo(MailContext.Audience.REGISTRANTS);
+            assertThat(c.contentSource()).isEqualTo(MailContext.ContentSource.OWN_TEXT);
+            assertThat(c.senderUsername()).isEqualTo("bob");
+        });
+        assertThat(context.getAllValues().stream().map(MailContext::sendGroupId).distinct()).hasSize(1);
+        verify(emailService, never()).sendRawMessage(any(), anyList(), anyString());
+    }
+
+    @Test
+    @DisplayName("16.2b AC4: partner@ is recorded with audience PARTNERS and no event")
+    void should_recordPartnerBroadcast_when_organizerWritesToPartner() {
+        when(userApiClient.getPartnerUsernames()).thenReturn(List.of("carol"));
+        when(userApiClient.getUserByUsername("carol")).thenReturn(new UserResponse().id("carol")
+                .email("success+carol" + SIM));
+
+        service.forward(KEY, mail(ORGANIZER_2, "partner@batbern.ch", null, DMARC_PASS, null));
+
+        ArgumentCaptor<MailContext> context = ArgumentCaptor.forClass(MailContext.class);
+        verify(emailService).sendRawMessage(context.capture(), any(), eq(List.of("success+carol" + SIM)),
+                eq(List.of()), anyString(), anyString(), anyString());
+        assertThat(context.getValue().eventCode()).isNull();
+        assertThat(context.getValue().audience()).isEqualTo(MailContext.Audience.PARTNERS);
+    }
+
+    @Test
+    @DisplayName("16.2b AC4: ok@ and info@ copies to organizers stay unrecorded")
+    void should_notRecord_when_internalOrContactAlias() {
+        service.forward(KEY, mail(ORGANIZER_2, "ok@batbern.ch", null, DMARC_PASS, null));
+        service.forward("forwarding/other", mail(STRANGER, "info@batbern.ch", null, null, null));
+
+        verify(emailService, never()).sendRawMessage(any(MailContext.class), any(), anyList(), anyList(),
+                anyString(), anyString(), anyString());
+    }
+
+    @Test
     @DisplayName("should_sendOneVisibleMailWithModeratorInCc_when_organizerWritesToSpeakerAlias")
     void should_sendOneVisibleMailWithModeratorInCc_when_organizerWritesToSpeakerAlias() throws Exception {
         Result result = service.forward(KEY, mail(ORGANIZER_2, "batbern60-speaker@batbern.ch", null, DMARC_PASS, null));
@@ -171,7 +220,9 @@ class EmailForwardingServiceTest {
                 DMARC_PASS, null));
 
         assertThat(result).isEqualTo(Result.FORWARDED);
-        verify(emailService, times(3)).sendRawMessage(any(), anyList(), anyString());
+        // Story 16.2b AC4: each private copy is a recorded recipient of one mail
+        verify(emailService, times(3)).sendRawMessage(any(MailContext.class), any(), anyList(), anyList(),
+                anyString(), anyString(), anyString());
         verify(forwardingLog).complete(KEY, EmailForwardingOutcome.FORWARDED, "batbern60-participants", 3, 0);
     }
 
@@ -403,7 +454,8 @@ class EmailForwardingServiceTest {
 
         service.forward(KEY, mail(ORGANIZER, "batbern60-participants@batbern.ch", null, DMARC_PASS, null));
 
-        verify(emailService, times(1)).sendRawMessage(any(), eq(List.of("success+p1" + SIM)), anyString());
+        verify(emailService, times(1)).sendRawMessage(any(MailContext.class), any(), eq(List.of("success+p1" + SIM)),
+                anyList(), anyString(), anyString(), anyString());
         verify(forwardingLog).complete(eq(KEY), eq(EmailForwardingOutcome.FORWARDED), anyString(), eq(1), anyInt());
     }
 

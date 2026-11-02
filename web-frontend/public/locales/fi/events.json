@@ -588,6 +588,8 @@
         "openCount_other": "{{count}} avointa",
         "via": "osoitteen {{address}} kautta",
         "viaReply": "vastaus viestiin",
+        "viaReplyRegistrants": "vastaus ilmoittautuneille lähetettyyn viestiin",
+        "viaReplyNewsletter": "vastaus uutiskirjeeseen",
         "messages_one": "{{count}} viesti",
         "messages_other": "{{count}} viestiä",
         "status": {
