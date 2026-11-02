@@ -31,6 +31,9 @@ import { forceUserProfileLanguage } from '../helpers/mock-user-profile';
 // env SES is live, so the whole group, INCLUDING the event-creating beforeAll, is skipped.
 // describe.skip (not test.skip) guarantees the beforeAll never runs, so no send is ever issued.
 const EMAIL_SAFE_ENV = (process.env.TEST_ENV ?? 'development') === 'development';
+// Local dev only (guarded above): the gateway and EMS's capture endpoint.
+const API_URL = process.env.E2E_API_URL || 'http://localhost:8000';
+const EMS_URL = 'http://localhost:8002';
 const describeSend = EMAIL_SAFE_ENV ? test.describe : test.describe.skip;
 
 describeSend('Organizer · Mail composer send', { tag: '@sends-real-email' }, () => {
@@ -98,5 +101,137 @@ describeSend('Organizer · Mail composer send', { tag: '@sends-real-email' }, ()
     // almost every subscriber is refused (reserved domain), so it ends PARTIAL. Accepting PARTIAL
     // can hide a real delivery failure; the owner accepted that trade-off in #1158.
     await expect(newest).not.toContainText('sending', { timeout: 150_000 });
+  });
+
+  test('own text to registrants: each gets their own filled mail, the record matches the capture', async ({
+    page,
+    request,
+  }) => {
+    const marker = `OwnText ${Date.now()}`;
+    await forceUserProfileLanguage(page, 'en');
+    await page.goto(`/organizer/events/${event.eventCode}`);
+    await waitForAppShell(page);
+    await page.getByTestId('event-tab-communications').click();
+    await page.getByTestId('new-mail-button').click();
+    await page.getByTestId('new-mail-registrants').click();
+    const composer = page.getByTestId('mail-composer-REGISTRANTS');
+    await expect(composer.getByTitle('Mail preview')).toBeVisible({ timeout: 15_000 });
+
+    await composer.getByTestId('composer-source-own').click();
+    await composer.getByTestId('composer-own-subject').fill(`${marker} {{eventNumber}}`);
+    await composer.frameLocator('iframe.tox-edit-area__iframe').locator('body').click();
+    await page.keyboard.type('Hello {{recipientName}}, see you soon.');
+    await expect(composer.getByTestId('composer-subject')).not.toContainText('{{', {
+      timeout: 15_000,
+    });
+
+    await composer.getByTestId('composer-send-button').click();
+    await composer.getByTestId('composer-confirm-yes').click();
+    await expect(page.getByTestId('compose-panel-registrants')).toBeHidden({ timeout: 15_000 });
+    const newest = page.locator('[data-testid^="mail-row-"]').first();
+    await expect(newest).toContainText(marker, { timeout: 15_000 });
+    await expect(newest).not.toContainText('sending', { timeout: 120_000 });
+
+    // The record: one mail with its recipients.
+    const headers = { Authorization: `Bearer ${token}` };
+    const list = await (
+      await request.get(`${API_URL}/api/v1/events/${event.eventCode}/mails`, { headers })
+    ).json();
+    const rows = list.data as Array<{
+      subject: string;
+      recipientCount: number;
+      deliveredCount: number;
+      failedCount: number;
+    }>;
+    const row = rows.find((r) => r.subject.startsWith(marker));
+    expect(row, 'the own-text mail is recorded').toBeTruthy();
+
+    // The capture: one mail per registrant, each with the name filled in and no placeholder left.
+    const captured = (await (await request.get(`${EMS_URL}/dev/emails`)).json()) as Array<{
+      to: string;
+      subject: string;
+      htmlBody: string;
+    }>;
+    const mine = captured.filter((m) => m.subject.startsWith(marker));
+    expect(mine.length).toBeGreaterThan(0);
+    expect(new Set(mine.map((m) => m.to)).size, 'one mail per recipient').toBe(mine.length);
+    for (const m of mine) {
+      expect(m.subject).toBe(`${marker} ${event.eventCode.replace('BATbern', '')}`);
+      expect(m.htmlBody).not.toContain('{{');
+    }
+    // The name comes from each registration; the shared test organizer has none, so its line is
+    // "Hello , ..." and at least one other auto-enrolled organizer must show a real name.
+    const names = mine.map((m) => /Hello ([^,<]*), see you soon\./.exec(m.htmlBody)?.[1]);
+    expect(
+      names.every((n) => n !== undefined),
+      'every mail carries the body'
+    ).toBe(true);
+    expect(
+      names.some((n) => (n ?? '').trim().length > 0),
+      'a name is filled in'
+    ).toBe(true);
+    expect(row?.subject).toBe(mine[0].subject);
+    // Delivered = what the capture holds. The anonymized local snapshot gives most auto-enrolled
+    // registrants a reserved address (refused, counted as failed) or none (skipped), so the
+    // registration count is only an upper bound here.
+    expect(row?.deliveredCount).toBe(mine.length);
+    expect(row!.deliveredCount + row!.failedCount).toBeLessThanOrEqual(row!.recipientCount);
+  });
+
+  test('own text to partners: every partner gets the mail on their own (16.9)', async ({
+    page,
+    request,
+  }) => {
+    const marker = `PartnerOwn ${Date.now()}`;
+    await forceUserProfileLanguage(page, 'en');
+    await page.goto(`/organizer/events/${event.eventCode}`);
+    await waitForAppShell(page);
+    await page.getByTestId('event-tab-communications').click();
+    await page.getByTestId('new-mail-button').click();
+    await page.getByTestId('new-mail-partners').click();
+    const composer = page.getByTestId('mail-composer-PARTNERS');
+
+    await composer.getByTestId('composer-source-own').click();
+    await composer.getByTestId('composer-own-subject').fill(marker);
+    await composer.frameLocator('iframe.tox-edit-area__iframe').locator('body').click();
+    await page.keyboard.type('Dear partners, a short update.');
+    await expect(composer.getByTitle('Mail preview')).toBeVisible({ timeout: 15_000 });
+
+    await composer.getByTestId('composer-send-button').click();
+    await composer.getByTestId('composer-confirm-yes').click();
+    await expect(page.getByTestId('compose-panel-partners')).toBeHidden({ timeout: 15_000 });
+    const newest = page.locator('[data-testid^="mail-row-"]').first();
+    await expect(newest).toContainText(marker, { timeout: 15_000 });
+    await expect(newest).not.toContainText('sending', { timeout: 120_000 });
+
+    const headers = { Authorization: `Bearer ${token}` };
+    const list = await (
+      await request.get(`${API_URL}/api/v1/events/${event.eventCode}/mails`, { headers })
+    ).json();
+    const row = (
+      list.data as Array<{
+        subject: string;
+        recipientCount: number;
+        deliveredCount: number;
+        failedCount: number;
+      }>
+    ).find((r) => r.subject === marker);
+    expect(row, 'the partner mail is recorded').toBeTruthy();
+    // A reserved address (most partners on the anonymized local snapshot) is refused before the
+    // send and not recorded at all (#1182), so only the captured ones can be compared here.
+
+    // Each captured mail names one recipient on To:, and nobody gets it twice.
+    const captured = (await (await request.get(`${EMS_URL}/dev/emails`)).json()) as Array<{
+      to: string;
+      cc: string | null;
+      subject: string;
+    }>;
+    const mine = captured.filter((m) => m.subject === marker);
+    expect(mine.length).toBe(row!.deliveredCount);
+    for (const m of mine) {
+      expect(m.to).not.toMatch(/[,;]/);
+      expect(m.cc ?? '').toBe('');
+    }
+    expect(new Set(mine.map((m) => m.to)).size).toBe(mine.length);
   });
 });

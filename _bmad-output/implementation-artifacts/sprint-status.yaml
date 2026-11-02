@@ -278,11 +278,11 @@ development_status:
   16-2b-all-alias-conversations: ready-for-dev
   16-3-communications-tab-becomes-mail-page: done
   16-4-new-mail-picker: done
-  16-5-own-text-placeholders-preview: review
+  16-5-own-text-placeholders-preview: done  # live via #1180 2026-11-02; Task 8 checks done 2026-11-02
   16-6-answer-from-mail-center: ready-for-dev
   16-7-global-mail-navigation: ready-for-dev
-  16-8-shared-composer: in-progress  # 16.8a + 16.8b in review (feature/16-8a-composer-api, feature/16-8b-composer-ui), 16.8c after one release
-  16-9-partner-meeting-mails: review
+  16-8-shared-composer: in-progress  # 16.8a + 16.8b live via #1174 2026-11-01; 16.8c open, after one release + owner go
+  16-9-partner-meeting-mails: done  # live via #1180 2026-11-02; Task 12 checks done 2026-11-02 (#1182 found)
   16-10-mail-tab-user-partner-detail: ready-for-dev
   16-11-mail-pipeline-variable-catalog: done  # merged #1177 2026-11-02
   16-12-html-in-java-mails-to-templates: backlog

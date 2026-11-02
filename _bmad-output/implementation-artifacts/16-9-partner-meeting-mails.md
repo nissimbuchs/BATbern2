@@ -1,6 +1,6 @@
 # Story 16.9: Partner meeting mails in the mail center
 
-Status: review
+Status: done
 
 ## Story
 
@@ -83,9 +83,9 @@ so that **the partner side of an event is visible to the whole team like everyth
   - [x] `composer/audiences/partners.tsx`: template list = pseudo-entry "Partner meeting invite with calendar" + PARTNER templates. The pseudo-entry renders the body of today's `PartnerMeetingsCompose` (meeting picker + `PartnerMeetingInviteAction`) in place of preview and footer, with the hint.
   - [x] `EventCommunicationsContainer.tsx`: Partners opens `MailComposer` (16.8 AC15 kept `PartnerMeetingsCompose` until now); `PartnerMeetingsCompose.tsx` becomes the pseudo-entry's body or is folded into it.
   - [x] Vitest (MSW): both paths; invite path keeps its confirmation and test ids.
-- [ ] **Task 12 — Verify Part B**
-  - [ ] Local dev: partner info mail preview (one mail, all partners on To:), test send, real send on a throwaway event; `/dev/emails` vs record; invite path still works.
-  - [ ] Playwright: extend `event-mail-composer.spec.ts` (no send). Any send spec stays `@sends-real-email`, local only.
+- [x] **Task 12 — Verify Part B**
+  - [x] Local dev: partner info mail preview (one mail, all partners on To:), test send, real send on a throwaway event; `/dev/emails` vs record; invite path still works.
+  - [x] Playwright: extend `event-mail-composer.spec.ts` (no send). Any send spec stays `@sends-real-email`, local only.
 
 ## Dev Notes
 
@@ -168,6 +168,8 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-11-01
 - **Correction (2026-11-01, later the same day):** the local-dev check above proves capture and record, NOT delivery. Local dev has no SesClient, so `EmailService` never reaches `EmailAddresses.toDeliveryForm(to)` (`EmailService.java:369`), which rejects a comma-joined To: as one invalid address. Since #1104 every partner meeting invite and cancellation fails in production: CloudWatch (PCS, last 90 days) shows exactly one invite, BATbern60 on 2026-10-30 18:59, "Failed to send partner meeting invite: Cannot deliver to email address: it is not a valid address". A separate session fixes it on `fix/partner-invite-multi-recipient` (commit 3af00710: `sendGroupHtmlEmailWithAttachments` / `sendGroupHtmlEmailSync` with `List<String> to`, recorded ONCE with `to` = comma-joined deliverable addresses, which matches the split here). **16.9a must be rebased onto develop after that hotfix merges, keeping the List<String> call and adding the MailContext; no PR before.**
 - Local-dev finding (pre-existing, not changed): the anonymized DB gives partners `@example.invalid` addresses, and `EmailService.assertSendable` refuses the whole one-To:-line invite, so locally nothing is sent and nothing recorded. For the check, 16 addresses were swapped to SES-simulator addresses in the local DB and restored afterwards (backup tables dropped).
 
+- **Task 12 done 2026-11-02, after #1180 was live** (develop 9ac37626, local dev). The task text "one mail, all partners on To:" is superseded by the owner decision of 2026-11-02 (each partner on their own). Playwright: the read-only spec previews own text for partners (meeting invite default, one unpersonalised text); the send spec sends own text to partners and checks each captured mail has one address on To:, no CC, nobody twice. On the anonymized snapshot all 10 partner contacts are reserved addresses, so nothing reached the capture and the per-recipient check passed with no mail to compare; the per-recipient split is proven by the backend integration tests, not by this run. Found: the refused addresses are not recorded at all, so the row shows 0 recipients (#1182). Not exercised in the browser: test send to partners and the meeting invite send.
+
 ### File List
 
 Part A:
@@ -229,3 +231,4 @@ Part B (branch `feature/16-9b-partner-adapter`, stacked on Part A):
 - 2026-11-01: Part B implemented except the delivery call (waits for the multi-recipient hotfix) and Task 12 verification.
 - 2026-11-02: Rebased onto #1176 + #1177; partner adapter on the pipeline; every partner mail per recipient (owner decision); status review.
 - 2026-11-01: Part A implemented (record partner meeting invites and cancellations, `/internal/mails`, reference filter, RSVP line, meeting panel mails).
+- 2026-11-02: Live via #1180. Task 12 checked in local dev after deploy (see Completion Notes); status done.

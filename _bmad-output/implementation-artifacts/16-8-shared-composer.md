@@ -1,6 +1,6 @@
 # Story 16.8: One shared composer for all audiences
 
-Status: in-progress (16.8a and 16.8b in review; 16.8c open, after one release)
+Status: in-progress (16.8a and 16.8b live via #1174, 2026-11-01; 16.8c open, after one release and owner go)
 
 ## Story
 
