@@ -1,6 +1,6 @@
 # Story 16.11: One mail pipeline and variable catalog
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -34,24 +34,25 @@ so that **any template can use any variable that its mail has the data for, a pr
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — RED: golden tests first** (AC: 6)
-  - [ ] `MailGoldenTest` (EMS, Testcontainers, real `EmailService` via `CALLS_REAL_METHODS`, fixed event/recipient fixtures, `currentYear` normalised): renders every template-based mail through today's service code and compares with `src/test/resources/mail-golden/{service}-{template}-{locale}.html|.subject`. First run writes the files (`-Dmail.golden.update=true`), committed as their own commit.
-- [ ] **Task 2 — Catalog** (AC: 1–4)
-  - [ ] `MailVariableCatalog` + `MailVariables` builder: `system()`, `event(Event, locale)`, `recipient(name…)`, `registration(...)`, `speaker(...)`, `subscriber(...)`, `venue(...)`, `task(...)`, `qna(...)`; aliases applied when the map is built (both names present).
-  - [ ] `MailFormats`: long date per locale, time, links.
-  - [ ] Unit tests: every seeded template placeholder known; aliases; formats.
-- [ ] **Task 3 — Pipeline** (AC: 5, 8)
-  - [ ] `MailContent`, `MailContentResolver`, `MailRenderer.render(MailContent, Map)`; keep `MailRenderer.body` delegating until the last caller is moved, then remove.
-  - [ ] Newsletter: `NewsletterDraft` carries `MailContent`; job and retry resolve once (AC8 test).
-- [ ] **Task 4 — Move the services, one commit each, goldens green after each** (AC: 2, 5, 6, 7)
-  - [ ] Registration (confirmation, organizer-added, waitlist confirmation), deregistration, waitlist promotion, inbound-confirmation, task reminder, Q&A notification, speaker invitation, speaker acceptance, speaker reminders, newsletter, registrant notices, venue, partners (16.9b, after rebase).
-- [ ] **Task 5 — Adapters** (AC: 9)
-  - [ ] `AudienceAdapter.variables(...)`; `allowedVariables()` from catalog scopes.
-- [ ] **Task 6 — Visible changes** (AC: 4, 6)
-  - [ ] Apply long `eventDate` and `supportUrl`; update the goldens in ONE commit whose diff shows exactly those changes.
+- [x] **Task 1 — RED: golden tests first** (AC: 6)
+  - [x] `MailGoldenTest` (EMS, Testcontainers, real `EmailService` via `CALLS_REAL_METHODS`, fixed event/recipient fixtures, `currentYear` normalised): renders every template-based mail through today's service code and compares with `src/test/resources/mail-golden/{service}-{template}-{locale}.html|.subject`. First run writes the files (`-Dmail.golden.update=true`), committed as their own commit.
+- [x] **Task 2 — Catalog** (AC: 1–4)
+  - [x] `MailVariableCatalog` + `MailVariables` builder: `system()`, `event(Event, locale)`, `recipient(name…)`, `registration(...)`, `speaker(...)`, `subscriber(...)`, `venue(...)`, `task(...)`, `qna(...)`; aliases applied when the map is built (both names present).
+  - [x] `MailFormats`: long date per locale, time, links.
+  - [x] Unit tests: every seeded template placeholder known; aliases; formats.
+- [x] **Task 3 — Pipeline** (AC: 5, 8)
+  - [x] `MailContent`, `MailContentResolver`, `MailRenderer.render(MailContent, Map)`; keep `MailRenderer.body` delegating until the last caller is moved, then remove.
+  - [x] Newsletter: `NewsletterDraft` carries `MailContent`; job and retry resolve once (AC8 test).
+- [x] **Task 4 — Move the services, one commit each, goldens green after each** (AC: 2, 5, 6, 7)
+  - [x] Registration (confirmation, organizer-added, waitlist confirmation), deregistration, waitlist promotion, inbound-confirmation, task reminder, Q&A notification, speaker invitation, speaker acceptance, speaker reminders, newsletter, registrant notices, venue. **Partners: not here.** The partner adapter exists only on the 16.9b branch; it moves onto the catalog when 16.9 is rebased onto this story.
+- [x] **Task 5 — Adapters** (AC: 9)
+  - [x] `AudienceAdapter.variables(...)`; `allowedVariables()` from catalog scopes.
+- [x] **Task 6 — Visible changes** (AC: 4, 6)
+  - [x] Apply long `eventDate` and `supportUrl`; update the goldens in ONE commit whose diff shows exactly those changes.
 - [ ] **Task 7 — Verify**
-  - [ ] Full EMS suite, Vitest unaffected, checkstyle; local dev: one mail of each kind in `/dev/emails`.
-  - [ ] Docs: `docs/architecture/06-backend-architecture.md` (pipeline + catalog), admin user guide (variable list).
+  - [x] Full EMS suite, shared-kernel suite, checkstyle. Vitest unaffected (no frontend change).
+  - [ ] Local dev: one mail of each kind in `/dev/emails`. **Not done**; the goldens render every template-based mail through the real service code against the seeded store (Testcontainers), which covers the same render path.
+  - [x] Docs: `docs/architecture/06-backend-architecture.md` (pipeline + catalog), admin user guide (variable list).
 
 ## Out of scope (follow-ups)
 
@@ -69,10 +70,32 @@ so that **any template can use any variable that its mail has the data for, a pr
 
 ### Agent Model Used
 
+Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-11-01/02.
+
 ### Completion Notes List
 
+- Names differ from the story text: the catalog is the enum `MailVariable` plus `MailVariables` (builder) and `MailVariableFactory` (SYSTEM and EVENT values, formats); the resolver is `MailPipeline.template` / `storedTemplate`, not a separate `MailContentResolver`. `MailFormats` was not needed as its own class (`MailVariableFactory.longDate`).
+- AC6: 42 goldens written before the refactor (commit `test(mail): golden files…`). Every service move kept them byte-identical, except three production defects the goldens exposed and the moves fixed, each in its own commit with the golden diff: deregistration mail (`{{logoUrl}}` and `{{currentYear}}` unfilled), waitlist promotion (`{{logoUrl}}` unfilled), unsubscribe confirmation (no layout, `{{baseUrl}}` unfilled).
+- AC4 visible commit: `eventDate` long in every mail. English is "Friday, 5 March 2027"; the newsletter used to print "Friday, 5. March 2027" (German ordinal dot) and is corrected with it. `supportUrl = {baseUrl}/support` everywhere; **no seeded template uses `supportUrl` today**, so it changes no mail yet.
+- Speaker reminder goldens normalise the deadline (today + 5 days) to `{DEADLINE}`; the first version was date-dependent and failed a day later.
+- AC9: adapters declare `scopes()`; `allowedVariables()` and `credentialVariables()` are interface defaults from the catalog; `variables(context, recipient, test)` returns the map `render` uses (newsletter IT proves equality). `MailRenderer.body` removed.
+- Extra in this PR (peer request, owner decision 2026-11-02): `fix(email)` masks every address of a joined group-mail To: in logs (`LoggingUtils.maskEmail`, `maskAll`).
+- **Open unification decisions for the owner** (kept as overrides, each marked in code): `eventTime` with "Uhr" also in English (registration confirmation, invitation, acceptance) and "ab X Uhr" / "from X" in the newsletter; `venueAddress` empty instead of "TBA" (waitlist), `venueName` empty instead of "TBA" (venue mail, newsletter); speaker invitation HTML-escapes values and derives `eventUrl`/`supportUrl`/`logoUrl` from the login URL host; `dashboardLink` differs by audience; the invitation still throws when its template is missing.
+- Results: full EMS suite 2249 tests, 0 failed, 18 skipped (before rebase onto 0a9591bc); shared-kernel suite green after the masking fix.
+
 ### File List
+
+New (EMS `services/event-management-service/src/`): `main/java/ch/batbern/events/mailcenter/render/{MailContent,MailPipeline,RenderedMail}.java`, `main/java/ch/batbern/events/mailcenter/variables/{MailVariable,MailVariables,MailVariableFactory}.java`, `test/java/ch/batbern/events/mailcenter/MailGoldenTest.java`, `test/java/ch/batbern/events/mailcenter/compose/AudienceAdapterVariablesTest.java`, `test/java/ch/batbern/events/mailcenter/render/MailPipelines.java`, `test/java/ch/batbern/events/mailcenter/variables/MailVariableCatalogTest.java`, `test/resources/mail-golden/*` (42 files).
+
+Modified (EMS main): `mailcenter/compose/{AudienceAdapter,MailRenderer,NewsletterAudienceAdapter,RegistrantAudienceAdapter,SpeakerAudienceAdapter,VenueAudienceAdapter}.java`, `service/{Deregistration,InboundEmailConfirmation,Newsletter,RegistrationEmail,SlidesOnline,SpeakerAcceptance,SpeakerInvitation,SpeakerReminder,TaskReminder,WaitlistPromotion}EmailService.java` (names abbreviated), `service/QnaNotificationService.java`, `service/VenueCoordinationService.java`.
+
+Modified (EMS test): `controller/VenueCoordinationControllerIntegrationTest.java`, `mailcenter/MailComposerControllerIntegrationTest.java`, `service/{DeregistrationEmailService,NewsletterEmailService,RegistrationEmailService,SlidesOnlineEmailService,SpeakerAcceptanceEmailService,SpeakerInvitationEmailService,SpeakerModeratorReplyTo,TaskReminderEmailService}Test.java`.
+
+Shared kernel: `src/main/java/ch/batbern/shared/utils/LoggingUtils.java`, `src/test/java/ch/batbern/shared/service/EmailServiceTest.java`, `src/test/java/ch/batbern/shared/unit/utils/LoggingUtilsTest.java`.
+
+Docs: `docs/architecture/06-backend-architecture.md`, `docs/user-guide/administration/email-templates.md`, `docs/user-guide/appendix/changelog.md`, `docs/prd/epic-16-mail-center.md`, `_bmad-output/implementation-artifacts/sprint-status.yaml`.
 
 ## Change Log
 
 - 2026-11-01: Story written from the owner discussion and Winston's review.
+- 2026-11-02: Implemented; status review. Masking fix added on request.

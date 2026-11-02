@@ -45,6 +45,13 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Improvements — One Way to Render Every Mail (2026-11-02)**:
+- ✅ Every BATbern mail is now built the same way, from one shared list of variables. A template can use any variable its mail has data for, and the old names (`venue`, `eventDetailLink`, `deregistrationLink`) keep working. The variable list is in [Email Templates](../administration/email-templates.md).
+- ✅ The event date reads the same in every mail: "Freitag, 5. März 2027" or "Friday, 5 March 2027". Registration, speaker, venue and other mails used to show "05.03.2027".
+- ✅ A newsletter send and its retry use the template as it was when the send started. Editing the template during a send no longer changes the mail for the remaining subscribers.
+- ✅ Deregistration and waitlist mails show the BATbern logo and the current year again; the unsubscribe confirmation has the BATbern layout.
+- ✅ Group mails no longer write the recipients' addresses into the server log.
+
 **Bug Fixes — Partner Meeting Invites (2026-11-01)**:
 - ✅ Partner meeting invites and cancellations are sent again. Since 24 October every one of them failed silently: the mail goes to all partners and organizers in one To: line, and the address check introduced with #1104 read that whole line as one invalid address. The organizer saw no error. An address that cannot be delivered is now left out with a warning, and the others still get the mail.
 - ✅ The meeting shows "invite sent" only when the invite really went out. Before, it was marked as sent as soon as the button was pressed, even when sending then failed (BATbern60, 30 October). A failed send now shows an error to the organizer and leaves the meeting unmarked, so it can simply be sent again.
