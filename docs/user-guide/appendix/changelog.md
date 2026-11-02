@@ -45,6 +45,9 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fixes — Clearer Registration Status on the Event Page (2026-11-02)**:
+- ✅ A logged-in visitor who is not registered no longer sees "Anmeldung stornieren". The page says instead under which address they are not registered, with a link for a registration made with another address. On 2 November a participant asked four times for a cancellation link and waited for it, although there was no registration to cancel. Registered visitors cancel directly in the event header, as before. Visitors who are not logged in still get the cancellation link by e-mail; the dialog now asks for the address they registered with and says that no mail means no registration under that address (#1183).
+
 **Bug Fixes — No Automatic Mail to All Registrants (2026-11-02)**:
 - ✅ The platform no longer sends mail to all registrants of an event on its own. On 2 November an automatic "Registration closes in 2 days" reminder went to all 267 BATbern60 registrations, including people who had cancelled or were on the waitlist. It would have repeated on the next two days. The reminder is removed, and so is the automatic "Event is now published" mail, which went to the same list when the agenda was published. A mail to many people now only goes out when an organizer sends it from the event's Mail page. Automatic mails still go to one person about their own case: confirmation links, waitlist moves, speaker deadlines and organizer tasks (#1179).
 

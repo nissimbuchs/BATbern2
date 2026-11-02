@@ -224,14 +224,16 @@
     },
     "modal": {
       "title": "Anmeldung stornieren",
-      "body": "Geben Sie Ihre E-Mail-Adresse ein und wir senden Ihnen einen Abmelde-Link.",
+      "body": "Geben Sie die E-Mail-Adresse ein, mit der Sie sich angemeldet haben. Der Abmelde-Link geht an diese Adresse.",
       "emailLabel": "E-Mail-Adresse",
       "emailError": "Bitte geben Sie eine gültige E-Mail-Adresse ein",
       "submitButton": "Abmelde-Link senden",
-      "successMessage": "Falls Sie für diese Veranstaltung angemeldet sind, erhalten Sie in Kürze eine E-Mail mit einem Abmelde-Link."
+      "successMessage": "Falls unter dieser Adresse eine Anmeldung für diese Veranstaltung besteht, erhalten Sie den Abmelde-Link in wenigen Minuten. Kommt keine E-Mail, besteht unter dieser Adresse keine Anmeldung."
     },
     "homepage": {
-      "cancelLink": "Anmeldung stornieren"
+      "cancelLink": "Anmeldung stornieren",
+      "notRegistered": "Mit {{email}} sind Sie für diese Veranstaltung nicht angemeldet.",
+      "otherAddressLink": "Mit einer anderen Adresse angemeldet? Abmelde-Link anfordern"
     },
     "wizard": {
       "cancelButton": "Anmeldung stornieren"

@@ -16,7 +16,7 @@
  * See homePagePhase.ts for the authoritative section visibility matrix.
  */
 
-import { lazy, Suspense, useState } from 'react';
+import { lazy, Suspense } from 'react';
 import { useParams, useSearchParams, useLocation, Link } from 'react-router-dom';
 import { useQuery } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
@@ -53,7 +53,8 @@ import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetail } from '@/types/event.types';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { RegistrationStatusBanner } from '@/components/public/RegistrationStatusBanner';
-import { DeregistrationByEmailModal } from '@/components/public/DeregistrationByEmailModal';
+import { DeregistrationEntry } from '@/components/public/DeregistrationEntry';
+import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import {
   getHomepagePhase,
@@ -67,8 +68,7 @@ const REGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 const HomePage = () => {
   const { t } = useTranslation('events');
   const { t: tCommon } = useTranslation('common');
-  const { t: tReg } = useTranslation('registration');
-  const [deregisterModalOpen, setDeregisterModalOpen] = useState(false);
+  const { isAuthenticated, user } = useAuth();
   const { eventCode } = useParams<{ eventCode?: string }>();
   const [searchParams] = useSearchParams();
   const location = useLocation();
@@ -294,23 +294,15 @@ const HomePage = () => {
           />
         )}
 
-        {/* Deregistration link (Story 10.12) */}
+        {/* Deregistration (Story 10.12; #1183: only where there is something to cancel) */}
         {registrationActive && canDeregister && (
-          <>
-            <div className="mt-2 text-center">
-              <button
-                onClick={() => setDeregisterModalOpen(true)}
-                className="text-sm text-zinc-400 hover:text-zinc-200 underline transition-colors"
-              >
-                {tReg('deregistration.homepage.cancelLink')}
-              </button>
-            </div>
-            <DeregistrationByEmailModal
-              open={deregisterModalOpen}
-              onClose={() => setDeregisterModalOpen(false)}
-              eventCode={event.eventCode ?? ''}
-            />
-          </>
+          <DeregistrationEntry
+            eventCode={event.eventCode ?? ''}
+            isAuthenticated={isAuthenticated}
+            status={myRegistration === undefined ? undefined : (myRegistration?.status ?? null)}
+            isLoading={isRegistrationLoading}
+            userEmail={user?.email}
+          />
         )}
 
         {/* Back to archive link — only in ARCHIVE mode (Story 4.2) */}

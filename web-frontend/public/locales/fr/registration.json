@@ -224,14 +224,16 @@
     },
     "modal": {
       "title": "Annuler l'inscription",
-      "body": "Saisissez votre adresse e-mail et nous vous enverrons un lien d'annulation.",
+      "body": "Saisissez l'adresse e-mail utilisée pour l'inscription. Le lien d'annulation sera envoyé à cette adresse.",
       "emailLabel": "Adresse e-mail",
       "emailError": "Veuillez saisir une adresse e-mail valide",
       "submitButton": "Envoyer le lien d'annulation",
-      "successMessage": "Si vous êtes inscrit à cet événement, vous recevrez sous peu un e-mail avec un lien d'annulation."
+      "successMessage": "Si une inscription existe pour cet événement sous cette adresse, le lien d'annulation arrivera dans quelques minutes. Si aucun e-mail n'arrive, il n'y a pas d'inscription sous cette adresse."
     },
     "homepage": {
-      "cancelLink": "Annuler votre inscription"
+      "cancelLink": "Annuler votre inscription",
+      "notRegistered": "Vous n'êtes pas inscrit·e à cet événement avec {{email}}.",
+      "otherAddressLink": "Inscrit·e avec une autre adresse ? Demander un lien d'annulation"
     },
     "wizard": {
       "cancelButton": "Annuler mon inscription"

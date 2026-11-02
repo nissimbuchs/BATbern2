@@ -224,14 +224,16 @@
     },
     "modal": {
       "title": "Annulla iscrizione",
-      "body": "Inserisci il tuo indirizzo e-mail e ti invieremo un link di annullamento.",
+      "body": "Inserisca l'indirizzo e-mail usato per l'iscrizione. Il link di annullamento verrà inviato a quell'indirizzo.",
       "emailLabel": "Indirizzo e-mail",
       "emailError": "Inserisci un indirizzo e-mail valido",
       "submitButton": "Invia link di annullamento",
-      "successMessage": "Se sei iscritto a questo evento, riceverai a breve un'e-mail con un link di annullamento."
+      "successMessage": "Se esiste un'iscrizione a questo evento con questo indirizzo, il link di annullamento arriverà entro pochi minuti. Se non arriva nessuna e-mail, con questo indirizzo non c'è alcuna iscrizione."
     },
     "homepage": {
-      "cancelLink": "Annulla la tua iscrizione"
+      "cancelLink": "Annulla la tua iscrizione",
+      "notRegistered": "Con {{email}} non è iscritto/a a questo evento.",
+      "otherAddressLink": "Iscritto/a con un altro indirizzo? Richiedi un link di annullamento"
     },
     "wizard": {
       "cancelButton": "Annulla la mia iscrizione"

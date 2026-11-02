@@ -224,14 +224,16 @@
     },
     "modal": {
       "title": "Aanmelding annuleren",
-      "body": "Voer uw e-mailadres in en wij sturen u een annuleringslink.",
+      "body": "Voer het e-mailadres in waarmee u zich hebt ingeschreven. We sturen de annuleringslink naar dat adres.",
       "emailLabel": "E-mailadres",
       "emailError": "Voer een geldig e-mailadres in",
       "submitButton": "Annuleringslink verzenden",
-      "successMessage": "Als u voor dit evenement bent aangemeld, ontvangt u binnenkort een e-mail met een annuleringslink."
+      "successMessage": "Als er onder dit adres een inschrijving voor dit evenement bestaat, ontvangt u de annuleringslink binnen enkele minuten. Komt er geen e-mail, dan is er onder dit adres geen inschrijving."
     },
     "homepage": {
-      "cancelLink": "Uw aanmelding annuleren"
+      "cancelLink": "Uw aanmelding annuleren",
+      "notRegistered": "U bent met {{email}} niet ingeschreven voor dit evenement.",
+      "otherAddressLink": "Ingeschreven met een ander adres? Vraag een annuleringslink aan"
     },
     "wizard": {
       "cancelButton": "Mijn aanmelding annuleren"

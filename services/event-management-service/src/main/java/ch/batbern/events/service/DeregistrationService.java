@@ -4,6 +4,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -136,10 +137,12 @@ public class DeregistrationService {
                     })
                     .orElse(false);
 
-            log.info("Deregistration by email requested for {}/{}: found={}", email, eventCode, found);
+            log.info("Deregistration by email requested for {}/{}: found={}",
+                    LoggingUtils.maskEmail(email), eventCode, found);
         } catch (Exception e) {
             // Anti-enumeration: never surface errors. Log for investigation.
-            log.error("Unexpected error during deregisterByEmail for {}/{}: {}", email, eventCode, e.getMessage(), e);
+            log.error("Unexpected error during deregisterByEmail for {}/{}: {}",
+                    LoggingUtils.maskEmail(email), eventCode, e.getMessage(), e);
         }
     }
 
