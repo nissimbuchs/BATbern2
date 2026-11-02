@@ -1,6 +1,7 @@
 package ch.batbern.events.mailcenter.compose;
 
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.mailcenter.variables.MailVariable.Scope;
 import ch.batbern.events.service.PrimarySpeakerResolver;
 import ch.batbern.events.service.PrimarySpeakerResolver.PrimarySpeakerProfile;
 import ch.batbern.events.service.SpeakerReminderEmailService;
@@ -78,14 +79,8 @@ public class SpeakerAudienceAdapter implements AudienceAdapter {
     }
 
     @Override
-    public Set<String> allowedVariables() {
-        return Set.of("speakerName", "eventTitle", "eventDate", "deadline", "daysRemaining", "portalLink",
-                "organizerName", "organizerEmail", "currentYear", "logoUrl");
-    }
-
-    @Override
-    public Set<String> credentialVariables() {
-        return Set.of();
+    public Set<Scope> scopes() {
+        return Set.of(Scope.RECIPIENT, Scope.SPEAKER);
     }
 
     @Override
@@ -139,6 +134,15 @@ public class SpeakerAudienceAdapter implements AudienceAdapter {
                         "Speaker " + recipient.displayName() + " has no address"));
         return new Rendering(mail.subject(), mail.html(), mail.templateKey(),
                 "de".equals(locale.getLanguage()) ? "de" : "en", mail.replyTo(), List.of(), List.of());
+    }
+
+    @Override
+    public Map<String, String> variables(ComposeContext context, ComposeRecipient recipient, boolean test) {
+        SpeakerPool speaker = (SpeakerPool) recipient.key();
+        LocalDate deadline = reminderService.deadlineFor(speaker, context.event(),
+                choice(context.request()).reminderType());
+        return reminderEmailService.variables(speaker, context.event(), deadline,
+                reminderService.speakerLocale(speaker));
     }
 
     @Override

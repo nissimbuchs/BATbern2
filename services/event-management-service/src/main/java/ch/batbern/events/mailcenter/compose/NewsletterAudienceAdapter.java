@@ -1,6 +1,7 @@
 package ch.batbern.events.mailcenter.compose;
 
 import ch.batbern.events.domain.NewsletterSubscriber;
+import ch.batbern.events.mailcenter.variables.MailVariable.Scope;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.service.EmailTemplateService;
 import ch.batbern.events.service.NewsletterEmailService;
@@ -12,6 +13,7 @@ import org.springframework.data.domain.Limit;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -51,15 +53,8 @@ public class NewsletterAudienceAdapter implements AudienceAdapter {
     }
 
     @Override
-    public Set<String> allowedVariables() {
-        return Set.of("reminderPrefix", "eventNumber", "eventType", "eventTitle", "eventDate", "eventTime", "venue",
-                "venueDirectionsUrl", "conferenceLanguage", "speakersSection", "currentYear", "eventDetailLink",
-                "registrationLink", "upcomingEventsSection", "unsubscribeLink", "preferencesLink", "logoUrl");
-    }
-
-    @Override
-    public Set<String> credentialVariables() {
-        return Set.of("unsubscribeLink");
+    public Set<Scope> scopes() {
+        return Set.of(Scope.SUBSCRIBER);
     }
 
     @Override
@@ -84,6 +79,12 @@ public class NewsletterAudienceAdapter implements AudienceAdapter {
         String html = newsletter.renderBody(draft, newsletter.unsubscribeLink(token));
         return new Rendering(draft.subject(), html, draft.templateKey(), request.locale(), null, List.of(),
                 newsletter.icsAttachments(draft, context.event()));
+    }
+
+    @Override
+    public Map<String, String> variables(ComposeContext context, ComposeRecipient recipient, boolean test) {
+        String token = test ? "TEST" : ((NewsletterSubscriber) recipient.key()).getUnsubscribeToken();
+        return newsletter.variables(draft(context), newsletter.unsubscribeLink(token));
     }
 
     /**

@@ -77,7 +77,7 @@ public class MailPipeline {
      */
     public MailContent storedTemplate(String templateKey, String locale) {
         String wanted = "en".equalsIgnoreCase(locale) ? "en" : DEFAULT_LOCALE;
-        // The layout is merged in the requested language, as MailRenderer.body did.
+        // The layout is merged in the requested language, as the per-service copies did.
         Optional<EmailTemplate> stored = templates.findByKeyAndLocale(templateKey, wanted);
         if (stored.isEmpty() && !wanted.equals(DEFAULT_LOCALE)) {
             stored = templates.findByKeyAndLocale(templateKey, DEFAULT_LOCALE);

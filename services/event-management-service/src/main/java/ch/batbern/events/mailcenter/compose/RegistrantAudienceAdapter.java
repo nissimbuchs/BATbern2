@@ -1,6 +1,7 @@
 package ch.batbern.events.mailcenter.compose;
 
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.mailcenter.variables.MailVariable.Scope;
 import ch.batbern.events.service.SlidesOnlineEmailService;
 import ch.batbern.events.service.SlidesOnlineEmailService.RegistrantAudience;
 import ch.batbern.events.service.SlidesOnlineEmailService.RenderedMail;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 
@@ -45,15 +47,8 @@ public class RegistrantAudienceAdapter implements AudienceAdapter {
     }
 
     @Override
-    public Set<String> allowedVariables() {
-        return Set.of("eventTitle", "eventNumber", "eventType", "eventDate", "eventDetailLink", "currentYear",
-                "logoUrl", "eventUrl", "dashboardLink", "supportUrl", "deregistrationUrl", "recipientName",
-                "attendeeFirstName");
-    }
-
-    @Override
-    public Set<String> credentialVariables() {
-        return Set.of("deregistrationUrl");
+    public Set<Scope> scopes() {
+        return Set.of(Scope.RECIPIENT, Scope.REGISTRATION);
     }
 
     @Override
@@ -84,6 +79,12 @@ public class RegistrantAudienceAdapter implements AudienceAdapter {
                 registration, test);
         return new Rendering(mail.subject(), mail.html(), templateKey, locale, null,
                 List.of(registration.getRegistrationCode()), List.of());
+    }
+
+    @Override
+    public Map<String, String> variables(ComposeContext context, ComposeRecipient recipient, boolean test) {
+        Registration registration = (Registration) recipient.key();
+        return notices.variables(context.event(), notices.recipientLocale(registration), registration, test);
     }
 
     /** The existing registrant-notice send; its record is grouped by its audit row. */

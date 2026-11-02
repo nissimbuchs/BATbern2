@@ -121,6 +121,15 @@ public class VenueCoordinationService {
             String replyTo) {
     }
 
+    /** The variables the venue mail for these roles is rendered with (Story 16.11 AC9). */
+    @Transactional(readOnly = true)
+    public Map<String, String> variablesFor(String eventCode, List<Role> recipients, String locale, String notes) {
+        List<Contact> contacts = resolveContactsOrThrow(recipients);
+        Event event = loadEventOrThrow(eventCode);
+        CoordinatorIdentity coordinator = resolveCoordinator(loadConfigOrThrow().getCoordinatorUsername());
+        return buildVariables(event, contacts, normaliseLocale(locale), notes, coordinator);
+    }
+
     @Transactional(readOnly = true)
     public VenueMail renderFor(String eventCode, String templateKey, List<Role> recipients, String locale,
             String notes) {

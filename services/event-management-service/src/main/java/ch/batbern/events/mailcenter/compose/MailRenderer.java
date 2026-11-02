@@ -3,7 +3,6 @@ package ch.batbern.events.mailcenter.compose;
 import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.service.EmailTemplateService;
-import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 
 import java.util.Map;
@@ -22,12 +21,6 @@ public final class MailRenderer {
     public static final String LAYOUT_KEY = "batbern-default";
 
     private MailRenderer() {
-    }
-
-    public static String body(EmailService emailService, EmailTemplateService templates, String contentTemplate,
-            String locale, Map<String, String> variables) {
-        return render(emailService, templates, new MailContent(null, locale, null, contentTemplate, LAYOUT_KEY,
-                MailContext.ContentSource.TEMPLATE), variables).html();
     }
 
     /**

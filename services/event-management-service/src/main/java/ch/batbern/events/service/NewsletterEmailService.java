@@ -48,6 +48,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -697,15 +698,20 @@ public class NewsletterEmailService {
         String subjectTemplate = content.subject() != null ? content.subject()
                 : (isReminder ? baseVars.get("reminderPrefix") : "") + event.getTitle() + " — BATbern";
         String subject = emailService.replaceVariables(subjectTemplate, baseVars);
-        return new NewsletterDraft(java.util.Collections.unmodifiableMap(baseVars), subject, effectiveKey, locale,
+        return new NewsletterDraft(Collections.unmodifiableMap(baseVars), subject, effectiveKey, locale,
                 content);
     }
 
     /** The body one subscriber gets: the draft with their unsubscribe link. */
     public String renderBody(NewsletterDraft draft, String unsubscribeLink) {
+        return mailPipeline.render(draft.content(), variables(draft, unsubscribeLink)).html();
+    }
+
+    /** The variables one subscriber's body is rendered with (Story 16.11 AC9). */
+    public Map<String, String> variables(NewsletterDraft draft, String unsubscribeLink) {
         Map<String, String> vars = new HashMap<>(draft.baseVars());
-        vars.put("unsubscribeLink", unsubscribeLink);
-        return mailPipeline.render(draft.content(), vars).html();
+        vars.put(MailVariable.UNSUBSCRIBE_LINK.placeholder(), unsubscribeLink);
+        return vars;
     }
 
     public String unsubscribeLink(String unsubscribeToken) {

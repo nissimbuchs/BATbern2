@@ -1,6 +1,7 @@
 package ch.batbern.events.mailcenter.compose;
 
 import ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig.Role;
+import ch.batbern.events.mailcenter.variables.MailVariable.Scope;
 import ch.batbern.events.service.EmailTemplateService;
 import ch.batbern.events.service.VenueCoordinationService;
 import ch.batbern.events.service.VenueCoordinationService.VenueMail;
@@ -10,6 +11,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 
 /**
@@ -47,14 +49,8 @@ public class VenueAudienceAdapter implements AudienceAdapter {
     }
 
     @Override
-    public Set<String> allowedVariables() {
-        return Set.of("eventDate", "eventTitle", "topicTitle", "venueName", "salutation", "agenda", "notes",
-                "organizerSignature", "currentYear", "logoUrl");
-    }
-
-    @Override
-    public Set<String> credentialVariables() {
-        return Set.of();
+    public Set<Scope> scopes() {
+        return Set.of(Scope.RECIPIENT, Scope.VENUE);
     }
 
     @Override
@@ -81,6 +77,13 @@ public class VenueAudienceAdapter implements AudienceAdapter {
         VenueMail mail = recipient.key() instanceof VenueMail rendered ? rendered : render(context);
         return new Rendering(mail.subject(), mail.body(), context.request().templateKey(), context.request().locale(),
                 mail.replyTo(), List.of(), List.of());
+    }
+
+    @Override
+    public Map<String, String> variables(ComposeContext context, ComposeRecipient recipient, boolean test) {
+        ComposeRequest request = context.request();
+        return venue.variablesFor(context.event().getEventCode(), roles(request), request.locale(),
+                request.venueNotes());
     }
 
     @Override

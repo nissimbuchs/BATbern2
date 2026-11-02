@@ -182,20 +182,7 @@ public class SpeakerReminderEmailService {
     ) {
         String lang = locale.getLanguage().equals("de") ? "de" : "en";
         String templateKey = templateKey(reminderType, tier);
-
-        ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
-        long daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), deadline);
-        // Story 11.F.1: Cognito-only dashboard link (no magic-link token query param).
-        String portalLink = baseUrl + "/speaker-portal/dashboard";
-
-        Map<String, String> variables = mailPipeline.variables().event(event, lang)
-                .put(MailVariable.SPEAKER_NAME, speakerName)
-                // Story 16.11: format kept until the owner-decided change (separate commit)
-                .put(MailVariable.EVENT_DATE, eventDateTime.format(DATE_FORMATTER))
-                .put(MailVariable.DEADLINE, deadline.format(DATE_FORMATTER))
-                .put(MailVariable.DAYS_REMAINING, Math.max(0, daysRemaining))
-                .put(MailVariable.PORTAL_LINK, portalLink)
-                .asMap();
+        Map<String, String> variables = variables(speakerName, event, deadline, lang);
 
         // Story 16.11: same pipeline as every other mail (was a private merge-then-replace copy).
         RenderedMail mail = mailPipeline.render(mailPipeline.template(templateKey, lang), variables);
@@ -203,5 +190,34 @@ public class SpeakerReminderEmailService {
         String subject = mail.subject() != null ? mail.subject()
                 : buildSubject(locale, reminderType, tier, event.getTitle());
         return new EmailContent(html, subject);
+    }
+
+    /**
+     * The variables a reminder to {@code speaker} is rendered with (Story 16.11 AC9). The name
+     * resolves as in {@link #render}.
+     */
+    public Map<String, String> variables(SpeakerPool speaker, Event event, LocalDate deadline, Locale locale) {
+        Optional<PrimarySpeakerResolver.PrimarySpeakerProfile> primary = primarySpeakerResolver.resolve(speaker);
+        String recipientName = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::fullName)
+                .filter(n -> !n.isEmpty())
+                .orElse(speaker.getSpeakerName());
+        String lang = locale != null && "de".equals(locale.getLanguage()) ? "de" : "en";
+        return variables(recipientName, event, deadline, lang);
+    }
+
+    private Map<String, String> variables(String speakerName, Event event, LocalDate deadline, String lang) {
+        ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
+        long daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), deadline);
+        // Story 11.F.1: Cognito-only dashboard link (no magic-link token query param).
+        String portalLink = baseUrl + "/speaker-portal/dashboard";
+
+        return mailPipeline.variables().event(event, lang)
+                .put(MailVariable.SPEAKER_NAME, speakerName)
+                // Story 16.11: format kept until the owner-decided change (separate commit)
+                .put(MailVariable.EVENT_DATE, eventDateTime.format(DATE_FORMATTER))
+                .put(MailVariable.DEADLINE, deadline.format(DATE_FORMATTER))
+                .put(MailVariable.DAYS_REMAINING, Math.max(0, daysRemaining))
+                .put(MailVariable.PORTAL_LINK, portalLink)
+                .asMap();
     }
 }

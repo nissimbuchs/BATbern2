@@ -457,12 +457,27 @@ public class SlidesOnlineEmailService {
      * them are unaffected. With {@code test} the cancel link is a dummy (Story 16.8 AC5).
      */
     public RenderedMail personalise(RenderedMail base, Registration registration, boolean test) {
-        Map<String, String> perRecipientVars = buildPerRecipientVariables(registration);
-        if (test) {
-            perRecipientVars.put("deregistrationUrl", baseUrl + "/deregister?token=TEST");
-        }
+        Map<String, String> perRecipientVars = perRecipientVariables(registration, test);
         return new RenderedMail(emailService.replaceVariables(base.subject(), perRecipientVars),
                 emailService.replaceVariables(base.html(), perRecipientVars));
+    }
+
+    /**
+     * Every variable one registrant's notice is rendered with: the shared per-locale values plus
+     * the registrant's own (Story 16.11 AC9). With {@code test} the cancel link is a dummy.
+     */
+    public Map<String, String> variables(Event event, String locale, Registration registration, boolean test) {
+        Map<String, String> vars = new HashMap<>(buildVariables(event, locale));
+        vars.putAll(perRecipientVariables(registration, test));
+        return vars;
+    }
+
+    private Map<String, String> perRecipientVariables(Registration registration, boolean test) {
+        Map<String, String> vars = buildPerRecipientVariables(registration);
+        if (test) {
+            vars.put(MailVariable.DEREGISTRATION_URL.placeholder(), baseUrl + "/deregister?token=TEST");
+        }
+        return vars;
     }
 
     /**

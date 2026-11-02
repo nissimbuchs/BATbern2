@@ -6,6 +6,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * The one catalog of mail variables (Story 16.11 AC1). Every {@code {{name}}} a BATbern mail may
@@ -142,7 +143,7 @@ public enum MailVariable {
 
     /** Canonical name plus aliases. */
     public List<String> names() {
-        return java.util.stream.Stream.concat(java.util.stream.Stream.of(name), aliases.stream()).toList();
+        return Stream.concat(Stream.of(name), aliases.stream()).toList();
     }
 
     /** The variable a placeholder name (canonical or alias) stands for. */
