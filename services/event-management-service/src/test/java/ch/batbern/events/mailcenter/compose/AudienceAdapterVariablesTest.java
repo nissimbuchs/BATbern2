@@ -37,7 +37,7 @@ class AudienceAdapterVariablesTest {
     @Test
     @DisplayName("speakers: catalog scopes cover the 16.8 list; no subscriber or registration variables")
     void speakers() {
-        AudienceAdapter adapter = new SpeakerAudienceAdapter(null, null, null);
+        AudienceAdapter adapter = new SpeakerAudienceAdapter(null, null, null, null, null);
         assertThat(adapter.allowedVariables()).contains("speakerName", "eventTitle", "eventDate", "deadline",
                 "daysRemaining", "portalLink", "organizerName", "organizerEmail", "currentYear", "logoUrl")
                 .doesNotContain("unsubscribeLink", "deregistrationUrl");

@@ -1,11 +1,13 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.forwarding.ModeratorReplyAddress;
 import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.mailcenter.variables.MailVariable;
+import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
@@ -38,6 +40,7 @@ public class SpeakerReminderEmailService {
     private final MailPipeline mailPipeline;
     private final PrimarySpeakerResolver primarySpeakerResolver;
     private final ModeratorReplyAddress moderatorReplyAddress;
+    private final SessionRepository sessionRepository;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -125,7 +128,8 @@ public class SpeakerReminderEmailService {
                 .filter(n -> !n.isEmpty())
                 .orElse(speaker.getSpeakerName());
         Locale emailLocale = (locale != null) ? locale : Locale.GERMAN;
-        EmailContent content = loadReminderTemplate(emailLocale, recipientName, event, reminderType, tier, deadline);
+        EmailContent content = loadReminderTemplate(emailLocale, recipientName, sessionTitle(speaker), event,
+                reminderType, tier, deadline);
         // Story 10.32: CC speaker's additional emails (empty list = unchanged behaviour)
         List<String> cc = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::additionalEmails)
                 .orElse(List.of());
@@ -172,6 +176,7 @@ public class SpeakerReminderEmailService {
     private EmailContent loadReminderTemplate(
             Locale locale,
             String speakerName,
+            String sessionTitle,
             Event event,
             String reminderType,
             String tier,
@@ -179,7 +184,7 @@ public class SpeakerReminderEmailService {
     ) {
         String lang = locale.getLanguage().equals("de") ? "de" : "en";
         String templateKey = templateKey(reminderType, tier);
-        Map<String, String> variables = variables(speakerName, event, deadline, lang);
+        Map<String, String> variables = variables(speakerName, sessionTitle, event, deadline, lang);
 
         // Story 16.11: same pipeline as every other mail (was a private merge-then-replace copy).
         RenderedMail mail = mailPipeline.render(mailPipeline.template(templateKey, lang), variables);
@@ -199,16 +204,24 @@ public class SpeakerReminderEmailService {
                 .filter(n -> !n.isEmpty())
                 .orElse(speaker.getSpeakerName());
         String lang = locale != null && "de".equals(locale.getLanguage()) ? "de" : "en";
-        return variables(recipientName, event, deadline, lang);
+        return variables(recipientName, sessionTitle(speaker), event, deadline, lang);
     }
 
-    private Map<String, String> variables(String speakerName, Event event, LocalDate deadline, String lang) {
+    /** Story 16.5 AC12: the title of the speaker's session, empty when none. */
+    private String sessionTitle(SpeakerPool speaker) {
+        return Optional.ofNullable(speaker.getSessionId()).flatMap(sessionRepository::findById)
+                .map(Session::getTitle).orElse("");
+    }
+
+    private Map<String, String> variables(String speakerName, String sessionTitle, Event event, LocalDate deadline,
+            String lang) {
         long daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), deadline);
         // Story 11.F.1: Cognito-only dashboard link (no magic-link token query param).
         String portalLink = baseUrl + "/speaker-portal/dashboard";
 
         return mailPipeline.variables().event(event, lang)
                 .put(MailVariable.SPEAKER_NAME, speakerName)
+                .put(MailVariable.SESSION_TITLE, sessionTitle)
                 .put(MailVariable.DEADLINE, deadline.format(DATE_FORMATTER))
                 .put(MailVariable.DAYS_REMAINING, Math.max(0, daysRemaining))
                 .put(MailVariable.PORTAL_LINK, portalLink)

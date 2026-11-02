@@ -8,6 +8,8 @@ import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.exception.SlidesOnlineAlreadySentException;
+import ch.batbern.events.mailcenter.compose.AlreadySentException;
+import ch.batbern.events.mailcenter.compose.OwnText;
 import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.variables.MailVariable;
@@ -20,6 +22,7 @@ import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -194,6 +197,64 @@ public class SlidesOnlineEmailService {
     }
 
     /**
+     * Story 16.5 AC9: own text to every active registrant. One-shot by subject: a completed send
+     * with the same subject needs {@code confirmResend}; any own-text send in progress is a 409.
+     * Everyone gets the text as written, with the layout in {@code locale}.
+     */
+    public SlidesOnlineSendResponse sendRegistrantOwnText(Event event, String ownSubject, String ownBodyHtml,
+            String locale, String sentByUsername, boolean confirmResend) {
+        UUID eventId = event.getId();
+        sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(eventId, OwnText.REGISTRANTS_ROW_KEY,
+                STATUS_IN_PROGRESS).ifPresent(active -> {
+                    throw new DuplicateNewsletterSendException("An own-text send to the registrants of "
+                            + event.getEventCode() + " is in progress (sendId=" + active.getId() + ")");
+                });
+        Optional<Instant> sentAt = ownTextAlreadySent(event, ownSubject);
+        if (sentAt.isPresent() && !confirmResend) {
+            throw new AlreadySentException(ownSubject, sentAt.get());
+        }
+        List<Registration> registrants =
+                registrationRepository.findByEventIdAndStatusIn(eventId, ACTIVE_REGISTRANT_STATUSES);
+        NewsletterSend saved = sendRepository.save(NewsletterSend.builder()
+                .eventId(eventId)
+                .templateKey(OwnText.REGISTRANTS_ROW_KEY)
+                .reminder(false)
+                .locale("en".equals(locale) ? "en" : "de")
+                .sentAt(Instant.now())
+                .sentByUsername(sentByUsername)
+                .recipientCount(registrants.size())
+                .status(STATUS_PENDING)
+                .testMode(false)
+                .contentSource("OWN_TEXT")
+                .ownSubject(ownSubject)
+                .ownBodyHtml(ownBodyHtml)
+                .build());
+        self.executeSlidesOnlineSendAsync(saved.getId(), event, OwnText.REGISTRANTS_ROW_KEY);
+        log.info("Registrant own-text send queued: sendId={}, event={}, registrants={}",
+                saved.getId(), event.getEventCode(), registrants.size());
+        return SlidesOnlineSendResponse.builder()
+                .sendId(saved.getId())
+                .status(SlidesOnlineSendResponse.StatusEnum.PENDING)
+                .recipientCount(registrants.size())
+                .build();
+    }
+
+    /** When own text with this subject last went to this event's registrants (COMPLETED or PARTIAL). */
+    public Optional<Instant> ownTextAlreadySent(Event event, String ownSubject) {
+        return sendRepository.findFirstByEventIdAndTemplateKeyAndOwnSubjectAndStatusInOrderBySentAtDesc(
+                        event.getId(), OwnText.REGISTRANTS_ROW_KEY, ownSubject,
+                        List.of(STATUS_COMPLETED, STATUS_PARTIAL))
+                .map(NewsletterSend::getSentAt);
+    }
+
+    /** Own text as one registrant language renders it: shared values only (see {@link #renderBase}). */
+    public RenderedMail renderOwnBase(Event event, MailContent content) {
+        ch.batbern.events.mailcenter.render.RenderedMail mail =
+                mailPipeline.render(content, buildVariables(event, content.locale()));
+        return new RenderedMail(mail.subject(), mail.html());
+    }
+
+    /**
      * Render a registrant-notice template for preview in a chosen language and report how many
      * active registrants would receive it. The actual SEND still resolves each registrant's own
      * language (AC4); this preview locale only controls what the organizer sees.
@@ -259,7 +320,13 @@ public class SlidesOnlineEmailService {
     void processSend(UUID sendId, Event event, String templateKey) {
         markInProgress(sendId);
         // Story 16.1a: the whole send is one recorded mail, linked to its newsletter_sends row.
-        MailContext sendContext = mailContextFor(sendId, event.getEventCode(), templateKey, sentBy(sendId));
+        // Story 16.5: an own-text send renders the row's text, in the row's language, for everyone.
+        Optional<NewsletterSend> ownRow = sendRepository.findById(sendId)
+                .filter(row -> "OWN_TEXT".equals(row.getContentSource()));
+        MailContext sendContext = ownRow.isPresent()
+                ? MailContext.ownText(MailTrigger.forSend(sendId, sentBy(sendId)), event.getEventCode(),
+                        MailContext.Audience.REGISTRANTS).forNewsletterSend(sendId, false)
+                : mailContextFor(sendId, event.getEventCode(), templateKey, sentBy(sendId));
 
         // Render once per locale (body + subject are identical for all recipients of a locale).
         Map<String, RenderedMail> renderedByLocale = new HashMap<>();
@@ -271,9 +338,10 @@ public class SlidesOnlineEmailService {
             for (RegistrantRecipient recipient : resolveRecipients(event).recipients()) {
                 Registration registration = recipient.registration();
                 String email = recipient.email();
-                String locale = recipientLocale(registration);
-                RenderedMail mail =
-                        renderedByLocale.computeIfAbsent(locale, l -> renderBase(event, templateKey, l));
+                String locale = ownRow.map(NewsletterSend::getLocale).orElseGet(() -> recipientLocale(registration));
+                RenderedMail mail = renderedByLocale.computeIfAbsent(locale, l -> ownRow
+                        .map(row -> renderOwnBase(event, OwnText.content(row.getOwnSubject(), row.getOwnBodyHtml(), l)))
+                        .orElseGet(() -> renderBase(event, templateKey, l)));
                 RenderedMail personalised = personalise(mail, registration, false);
 
                 String deliveryStatus = "sent";
@@ -283,7 +351,7 @@ public class SlidesOnlineEmailService {
                     sentCount++;
                 } catch (Exception e) {
                     // AC6: isolate a transient SES failure for one recipient.
-                    log.error("Slides-online send failed for {}", email, e);
+                    log.error("Slides-online send failed for {}", LoggingUtils.maskEmail(email), e);
                     deliveryStatus = "failed";
                     failedCount++;
                 }

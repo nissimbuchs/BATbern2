@@ -9,6 +9,7 @@ import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.mailcenter.compose.MailRenderer;
+import ch.batbern.events.mailcenter.compose.OwnText;
 import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.variables.MailVariable;
@@ -284,6 +285,32 @@ public class NewsletterEmailService {
                                                   @Nullable String templateKey,
                                                   @Nullable Integer maxRecipients,
                                                   boolean testMode) {
+        String effectiveKey = resolveTemplateKey(templateKey);
+        rejectRegistrantTemplate(effectiveKey, locale);
+        return queueSend(event, locale, sentByUsername, effectiveKey,
+                new SendMode(isReminder, maxRecipients, testMode, null, null));
+    }
+
+    /**
+     * Own text to every subscriber (Story 16.5). Stored on the send row, so the job and a later retry
+     * render exactly this text (16.11 AC8).
+     */
+    public NewsletterSendResponse sendNewsletterOwnText(Event event, String locale, String sentByUsername,
+                                                         String ownSubject, String ownBodyHtml) {
+        return queueSend(event, locale, sentByUsername, OwnText.NEWSLETTER_ROW_KEY,
+                new SendMode(false, null, false, ownSubject, ownBodyHtml));
+    }
+
+    /** How a send runs: reminder prefix, canary limit, test mode, and own text (both null for a template). */
+    private record SendMode(boolean reminder, @Nullable Integer maxRecipients, boolean testMode,
+            @Nullable String ownSubject, @Nullable String ownBodyHtml) {
+    }
+
+    private NewsletterSendResponse queueSend(Event event, String locale, String sentByUsername, String effectiveKey,
+                                              SendMode mode) {
+        boolean isReminder = mode.reminder();
+        Integer maxRecipients = mode.maxRecipients();
+        boolean testMode = mode.testMode();
         // Second wall of defence (incident 2026-07-01): refuse to bulk-mail the whole subscriber
         // list for a TEST event. The test suites stamp a canonical marker into the event
         // title/code (EmailContentTestMarker), so this fails fast BEFORE the async send loop even
@@ -298,9 +325,6 @@ public class NewsletterEmailService {
             throw new TestMarkedEmailException(
                     "newsletter for event " + event.getEventCode() + " (" + event.getTitle() + ")");
         }
-
-        String effectiveKey = resolveTemplateKey(templateKey);
-        rejectRegistrantTemplate(effectiveKey, locale);
 
         // Duplicate-send prevention: reject if a send is already in progress for this event.
         sendRepository.findFirstByEventIdAndStatus(event.getId(), STATUS_IN_PROGRESS)
@@ -327,6 +351,13 @@ public class NewsletterEmailService {
         // Persist PENDING audit record first (committed immediately in own transaction).
         NewsletterSend saved = createSendAuditRecord(event, isReminder, locale, sentByUsername,
                 effectiveCount, effectiveKey, testMode);
+        if (mode.ownBodyHtml() != null) {
+            // Story 16.5: own text lives on the row, so the job and a retry render exactly it.
+            saved.setContentSource("OWN_TEXT");
+            saved.setOwnSubject(mode.ownSubject());
+            saved.setOwnBodyHtml(mode.ownBodyHtml());
+            saved = sendRepository.save(saved);
+        }
 
         // Launch background send job — returns immediately.
         // Must call via `self` proxy so @Async is honoured (direct this.xxx() bypasses the proxy).
@@ -374,7 +405,7 @@ public class NewsletterEmailService {
         markInProgress(sendId);
         MailContext mailContext = mailContext(sendId, event, effectiveKey);
 
-        NewsletterDraft draft = prepare(event, locale, isReminder, effectiveKey);
+        NewsletterDraft draft = prepare(sendId, event, locale, isReminder, effectiveKey);
         String subject = draft.subject();
         if (testMode) {
             subject = "[Testmailing nur an OK] " + subject;
@@ -531,7 +562,7 @@ public class NewsletterEmailService {
         markInProgress(sendId);
         MailContext mailContext = mailContext(sendId, event, effectiveKey);
 
-        NewsletterDraft draft = prepare(event, locale, isReminder, effectiveKey);
+        NewsletterDraft draft = prepare(sendId, event, locale, isReminder, effectiveKey);
         String subject = draft.subject();
 
         // Recipients that previously failed (explicit delivery failure).
@@ -688,19 +719,55 @@ public class NewsletterEmailService {
      * editing the template while the send runs changes nothing for it.
      */
     public NewsletterDraft prepare(Event event, String locale, boolean isReminder, String effectiveKey) {
-        Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
         MailContent content = mailPipeline.storedTemplate(effectiveKey, locale);
         if (content.bodyHtml().isBlank()) {
             log.warn("Newsletter template '{}' locale '{}' not found in DB", effectiveKey, locale);
             content = new MailContent(effectiveKey, locale, content.subject(),
                     "<p>Newsletter template not available.</p>", MailRenderer.LAYOUT_KEY, content.contentSource());
         }
+        return prepare(event, locale, isReminder, content);
+    }
+
+    /** The draft of a queued send: its own text when the row has one, else the template. */
+    NewsletterDraft prepare(UUID sendId, Event event, String locale, boolean isReminder, String effectiveKey) {
+        Optional<NewsletterSend> row = sendRepository.findById(sendId)
+                .filter(send -> "OWN_TEXT".equals(send.getContentSource()));
+        return row.isPresent()
+                ? prepare(event, locale, false, OwnText.content(row.get().getOwnSubject(), row.get().getOwnBodyHtml(),
+                        locale))
+                : prepare(event, locale, isReminder, effectiveKey);
+    }
+
+    /** Any content: a stored template or own text (Story 16.5). */
+    public NewsletterDraft prepare(Event event, String locale, boolean isReminder, MailContent rawContent) {
+        Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
+        MailContent content = withUnsubscribeFooter(rawContent);
+        String effectiveKey = content.templateKey();
         String subjectTemplate = content.subject() != null ? content.subject()
                 : (isReminder ? baseVars.get("reminderPrefix") : "") + event.getTitle() + " — BATbern";
         String subject = emailService.replaceVariables(subjectTemplate, baseVars);
         return new NewsletterDraft(Collections.unmodifiableMap(baseVars), subject, effectiveKey, locale,
                 content);
     }
+
+    /**
+     * Story 16.5 AC3: newsletter content without {@code {{unsubscribeLink}}} (own text, or a template
+     * saved from it) gets the standard footer, so every subscriber can unsubscribe. Every seeded
+     * newsletter template has the link, so their mails do not change.
+     */
+    public static MailContent withUnsubscribeFooter(MailContent content) {
+        if (content.bodyHtml().contains("{{unsubscribeLink}}")) {
+            return content;
+        }
+        String footer = "en".equals(content.locale()) ? FOOTER_EN : FOOTER_DE;
+        return new MailContent(content.templateKey(), content.locale(), content.subject(),
+                content.bodyHtml() + footer, content.layoutKey(), content.contentSource());
+    }
+
+    private static final String FOOTER_DE = "\n<p style=\"font-size:12px;color:#666666;\">Sie erhalten diese Mail, "
+            + "weil Sie den BATbern-Newsletter abonniert haben. <a href=\"{{unsubscribeLink}}\">Abmelden</a></p>";
+    private static final String FOOTER_EN = "\n<p style=\"font-size:12px;color:#666666;\">You receive this mail "
+            + "because you subscribed to the BATbern newsletter. <a href=\"{{unsubscribeLink}}\">Unsubscribe</a></p>";
 
     /** The body one subscriber gets: the draft with their unsubscribe link. */
     public String renderBody(NewsletterDraft draft, String unsubscribeLink) {
@@ -728,6 +795,12 @@ public class NewsletterEmailService {
      * a retry joins it. Per-recipient status stays in {@code newsletter_recipients} (AC3). Public
      * for the composer, which opens the record under the same group (Story 16.8).
      */
+    /** Story 16.5: the record of an own-text newsletter send (no template key, OWN_TEXT). */
+    public static MailContext ownTextMailContextFor(UUID sendId, String eventCode, String sentBy, boolean testMode) {
+        return MailContext.ownText(MailTrigger.forSend(sendId, sentBy), eventCode, MailContext.Audience.NEWSLETTER)
+                .forNewsletterSend(sendId, testMode);
+    }
+
     public static MailContext mailContextFor(UUID sendId, String eventCode, String effectiveKey, String sentBy,
             boolean testMode) {
         return MailContext.of(MailTrigger.forSend(sendId, sentBy), eventCode, MailContext.Audience.NEWSLETTER,
@@ -770,6 +843,10 @@ public class NewsletterEmailService {
      */
     private MailContext mailContext(UUID sendId, Event event, String effectiveKey) {
         Optional<NewsletterSend> send = sendRepository.findById(sendId);
+        if (send.map(row -> "OWN_TEXT".equals(row.getContentSource())).orElse(false)) {
+            return ownTextMailContextFor(sendId, event.getEventCode(), send.get().getSentByUsername(),
+                    send.get().isTestMode());
+        }
         return mailContextFor(sendId, event.getEventCode(), effectiveKey,
                 send.map(NewsletterSend::getSentByUsername).orElse(null),
                 send.map(NewsletterSend::isTestMode).orElse(false));

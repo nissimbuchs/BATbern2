@@ -83,8 +83,13 @@ public class PartnerAudienceAdapter implements AudienceAdapter {
     }
 
     @Override
+    public List<String> offeredVariables() {
+        return List.of("eventTitle", "eventDate", "eventTime", "eventNumber", "venueName");
+    }
+
+    @Override
     public void validate(ComposeRequest request) {
-        if (request.templateKey() == null) {
+        if (!request.ownText() && request.templateKey() == null) {
             throw new IllegalArgumentException("templateKey is required for partners");
         }
     }
@@ -133,12 +138,13 @@ public class PartnerAudienceAdapter implements AudienceAdapter {
     public Rendering render(ComposeContext context, ComposeRecipient recipient, boolean test) {
         String templateKey = context.request().templateKey();
         String locale = locale(context.request().locale());
-        MailContent content = mailPipeline.storedTemplate(templateKey, locale);
+        MailContent content = context.request().ownText() ? ownTextContent(context)
+                : mailPipeline.storedTemplate(templateKey, locale);
         if (content.bodyHtml().isBlank()) {
             throw new IllegalArgumentException("Template not found: " + templateKey);
         }
         RenderedMail mail = mailPipeline.render(content, variables(context, recipient, test));
-        return new Rendering(Objects.requireNonNullElse(mail.subject(), ""), mail.html(), templateKey,
+        return new Rendering(Objects.requireNonNullElse(mail.subject(), ""), mail.html(), content.templateKey(),
                 content.locale(), replyTo(), List.of(), List.of());
     }
 
@@ -155,8 +161,10 @@ public class PartnerAudienceAdapter implements AudienceAdapter {
     public List<DeliveredMail> deliver(ComposeContext context, Recipients recipients, MailTrigger trigger) {
         ComposeRecipient all = recipients.recipients().get(0);
         Rendering rendering = render(context, all, false);
-        MailContext mailContext = MailContext.of(trigger, context.event().getEventCode(), MailContext.Audience.PARTNERS,
-                rendering.templateKey());
+        String eventCode = context.event().getEventCode();
+        MailContext mailContext = context.request().ownText()
+                ? MailContext.ownText(trigger, eventCode, MailContext.Audience.PARTNERS)
+                : MailContext.of(trigger, eventCode, MailContext.Audience.PARTNERS, rendering.templateKey());
         emailService.sendGroupHtmlEmailSync(mailContext, List.of(all.address().split(",")), List.of(),
                 rendering.subject(), rendering.html(), rendering.replyTo());
         return List.of(new DeliveredMail(mailContext, rendering));

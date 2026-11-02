@@ -1,6 +1,7 @@
 package ch.batbern.events.mailcenter.compose;
 
 import ch.batbern.events.domain.NewsletterSubscriber;
+import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.variables.MailVariable.Scope;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.service.EmailTemplateService;
@@ -52,6 +53,18 @@ public class NewsletterAudienceAdapter implements AudienceAdapter {
         return templateKey == null || TemplateCategories.has(templates, templateKey, "NEWSLETTER");
     }
 
+    /** Story 16.5 AC3: what the subscriber gets, footer included when the text has no unsubscribe link. */
+    @Override
+    public MailContent ownTextContent(ComposeContext context) {
+        return NewsletterEmailService.withUnsubscribeFooter(OwnText.content(context.request()));
+    }
+
+    @Override
+    public List<String> offeredVariables() {
+        return List.of("eventTitle", "eventDate", "eventTime", "venueName", "registrationLink", "eventUrl",
+                "eventNumber");
+    }
+
     @Override
     public Set<Scope> scopes() {
         return Set.of(Scope.SUBSCRIBER);
@@ -94,6 +107,13 @@ public class NewsletterAudienceAdapter implements AudienceAdapter {
     @Override
     public List<DeliveredMail> deliver(ComposeContext context, Recipients recipients, MailTrigger trigger) {
         ComposeRequest request = context.request();
+        if (request.ownText()) {
+            UUID sendId = newsletter.sendNewsletterOwnText(context.event(), request.locale(),
+                    context.organizerUsername(), request.ownSubject(), request.ownBodyHtml()).getId();
+            MailContext mailContext = NewsletterEmailService.ownTextMailContextFor(sendId,
+                    context.event().getEventCode(), context.organizerUsername(), false);
+            return List.of(new DeliveredMail(mailContext, render(context, recipients.recipients().get(0), false)));
+        }
         String templateKey = newsletter.effectiveTemplateKey(request.templateKey());
         UUID sendId = newsletter.sendNewsletter(context.event(), request.newsletterReminder(), request.locale(),
                 context.organizerUsername(), templateKey, null, false).getId();
@@ -104,6 +124,9 @@ public class NewsletterAudienceAdapter implements AudienceAdapter {
 
     private NewsletterDraft draft(ComposeContext context) {
         ComposeRequest request = context.request();
+        if (request.ownText()) {
+            return newsletter.prepare(context.event(), request.locale(), false, OwnText.content(request));
+        }
         return newsletter.prepare(context.event(), request.locale(), request.newsletterReminder(),
                 newsletter.effectiveTemplateKey(request.templateKey()));
     }

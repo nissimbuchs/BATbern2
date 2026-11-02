@@ -93,6 +93,16 @@ public record MailContext(
     }
 
     /** Story 16.9: the same context with what the mail is about, e.g. {@code partner-meeting:{id}}. */
+    /**
+     * The same send as own text (Story 16.5): no template key, so the group id ends in
+     * {@code own-text}, and {@code content_source = OWN_TEXT} in the record.
+     */
+    public static MailContext ownText(MailTrigger trigger, String eventCode, Audience audience) {
+        MailContext base = of(trigger, eventCode, audience, null);
+        return new MailContext(base.sendGroupId(), eventCode, audience, null, ContentSource.OWN_TEXT,
+                base.senderUsername(), null, false, List.of(), null);
+    }
+
     public MailContext withReference(String value) {
         return new MailContext(sendGroupId, eventCode, audience, templateKey, contentSource, senderUsername,
                 newsletterSendId, test, secrets, value);

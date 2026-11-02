@@ -6,6 +6,8 @@ import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.mailcenter.JpaOutboundMailRecorder;
 import ch.batbern.events.mailcenter.MailMessageQueryService;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.service.NewsletterEmailService;
@@ -19,6 +21,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
+import java.time.Instant;
 import java.util.ArrayList;
 import java.util.EnumMap;
 import java.util.LinkedHashMap;
@@ -27,6 +30,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
+import java.util.TreeSet;
 
 /**
  * One composer for every audience (Story 16.8, Winston's review 2026-10-30). The flow is the same
@@ -53,13 +57,15 @@ public class MailComposerService {
     private final MailMessageQueryService queries;
     private final NewsletterSendRepository newsletterSends;
     private final NewsletterEmailService newsletterEmailService;
+    private final MailPipeline mailPipeline;
 
     @Value("${batbern.ses.configuration-set-name:#{null}}")
     private String configurationSetName;
 
     public MailComposerService(List<AudienceAdapter> adapters, EventRepository events, UserApiClient userApiClient,
             EmailService emailService, JpaOutboundMailRecorder recorder, MailMessageQueryService queries,
-            NewsletterSendRepository newsletterSends, NewsletterEmailService newsletterEmailService) {
+            NewsletterSendRepository newsletterSends, NewsletterEmailService newsletterEmailService,
+            MailPipeline mailPipeline) {
         this.adapters = new EnumMap<>(MailContext.Audience.class);
         adapters.forEach(adapter -> this.adapters.put(adapter.audience(), adapter));
         this.events = events;
@@ -69,6 +75,7 @@ public class MailComposerService {
         this.queries = queries;
         this.newsletterSends = newsletterSends;
         this.newsletterEmailService = newsletterEmailService;
+        this.mailPipeline = mailPipeline;
     }
 
     /** Where a send goes. */
@@ -89,12 +96,19 @@ public class MailComposerService {
      * @param replyTo             Reply-To, or null for the default
      * @param organizerCount      how many organizers a test send reaches
      * @param skipped             who is left out, and why
-     * @param unknownPlaceholders placeholders left after rendering
+     * @param unknownPlaceholders placeholders left after rendering; for own text, the names the
+     *                            audience does not have (Story 16.5 AC2)
+     * @param highlightedSubject  own text only: the subject with values marked
+     * @param highlightedHtml     own text only: the body with values and unknown placeholders marked
+     * @param offeredVariables    chips for the own-text editor
+     * @param allowedVariables    every name own text for this audience may use
+     * @param alreadySent         registrants with own text: when this subject last went out, or null
      */
     public record Preview(String subject, String html, int recipientIndex, int recipientCount,
             ComposeRecipient recipient, List<String> sampleRecipients, boolean personalized, String templateKey,
             String locale, String replyTo, int organizerCount, List<SkippedRecipient> skipped,
-            List<String> unknownPlaceholders) {
+            List<String> unknownPlaceholders, String highlightedSubject, String highlightedHtml,
+            List<String> offeredVariables, List<String> allowedVariables, Instant alreadySent) {
     }
 
     /** What a send produced: the recorded mail key(s), how many it reached, who was left out. */
@@ -109,19 +123,54 @@ public class MailComposerService {
         Prepared prepared = prepare(eventCode, request, null);
         List<ComposeRecipient> recipients = prepared.recipients().recipients();
         ComposeRecipient recipient = recipients.get(request.recipientIndex());
-        Rendering rendering = prepared.adapter().render(prepared.context(), recipient, false);
+        AudienceAdapter adapter = prepared.adapter();
+        Rendering rendering = adapter.render(prepared.context(), recipient, false);
         String subject = MailRedaction.redact(rendering.subject(), rendering.secrets());
         String html = MailRedaction.redact(rendering.html(), rendering.secrets());
+        List<String> unknown = PlaceholderScanner.scan(subject, html);
+        String highlightedSubject = null;
+        String highlightedHtml = null;
+        Instant alreadySent = null;
+        Set<String> allowed = allowedVariables(prepared, recipient);
+        if (request.ownText()) {
+            unknown = PlaceholderValidator.unknown(allowed, request.ownSubject(), request.ownBodyHtml());
+            RenderedMail highlighted = PreviewHighlighter.highlight(mailPipeline,
+                    adapter.ownTextContent(prepared.context()),
+                    adapter.variables(prepared.context(), recipient, false));
+            highlightedSubject = MailRedaction.redact(highlighted.subject(), rendering.secrets());
+            highlightedHtml = MailRedaction.redact(highlighted.html(), rendering.secrets());
+            alreadySent = adapter.ownTextAlreadySent(prepared.context()).orElse(null);
+        }
         return new Preview(subject, html, request.recipientIndex(), recipients.size(),
                 new ComposeRecipient(recipient.displayName(), recipient.address(), recipient.cc(), null),
                 recipients.stream().limit(SAMPLE_SIZE).map(ComposeRecipient::displayName).toList(),
                 prepared.adapter().personalized(), rendering.templateKey(), rendering.locale(), rendering.replyTo(),
-                organizerAddresses().size(), prepared.recipients().skipped(),
-                PlaceholderScanner.scan(subject, html));
+                organizerAddresses().size(), prepared.recipients().skipped(), unknown, highlightedSubject,
+                highlightedHtml, adapter.offeredVariables(), allowed.stream().sorted().toList(), alreadySent);
+    }
+
+    /**
+     * The names own text may use: what the audience's variable map really fills for a recipient (a
+     * subset of its catalog scopes), never the layout's {@code content} slot.
+     */
+    private static Set<String> allowedVariables(Prepared prepared, ComposeRecipient recipient) {
+        Set<String> allowed = new TreeSet<>(prepared.adapter().variables(prepared.context(), recipient, false)
+                .keySet());
+        allowed.remove("content");
+        return allowed;
     }
 
     public SendResult send(String eventCode, ComposeRequest request, Target target, String organizerUsername) {
         Prepared prepared = prepare(eventCode, request, organizerUsername);
+        if (request.ownText()) {
+            // AC2/AC10: the backend refuses what the preview marked red, whatever the frontend did.
+            List<String> unknown = PlaceholderValidator.unknown(
+                    allowedVariables(prepared, prepared.recipients().recipients().get(0)),
+                    request.ownSubject(), request.ownBodyHtml());
+            if (!unknown.isEmpty()) {
+                throw new UnknownPlaceholderException(unknown);
+            }
+        }
         MailTrigger trigger = MailTrigger.organizer(organizerUsername);
         return target == Target.ORGANIZERS
                 ? sendTest(prepared, request.recipientIndex(), trigger)
@@ -140,8 +189,10 @@ public class MailComposerService {
             throw new IllegalArgumentException("No organizer has an email address for a test send");
         }
         String eventCode = prepared.context().event().getEventCode();
-        MailContext context = MailContext.of(trigger, eventCode, prepared.adapter().audience(),
-                        rendering.templateKey())
+        MailContext base = prepared.context().request().ownText()
+                ? MailContext.ownText(trigger, eventCode, prepared.adapter().audience())
+                : MailContext.of(trigger, eventCode, prepared.adapter().audience(), rendering.templateKey());
+        MailContext context = base
                 .withSecrets(rendering.secrets().toArray(String[]::new))
                 .asTest();
         String subject = TEST_PREFIX + rendering.subject();
@@ -207,15 +258,15 @@ public class MailComposerService {
     /** AC10: the backend owns validation; the frontend checks are convenience only. */
     private Prepared prepare(String eventCode, ComposeRequest request, String organizerUsername) {
         Event event = loadEvent(eventCode);
-        if (request.contentSource() == MailContext.ContentSource.OWN_TEXT) {
-            throw new IllegalArgumentException("Own text is not available yet (Story 16.5)");
-        }
         AudienceAdapter adapter = adapters.get(request.audience());
         if (adapter == null) {
             throw new IllegalArgumentException("The composer does not send to " + request.audience());
         }
+        if (request.ownText()) {
+            OwnText.validateShape(request);
+        }
         adapter.validate(request);
-        if (!adapter.allowsTemplate(request.templateKey())) {
+        if (!request.ownText() && !adapter.allowsTemplate(request.templateKey())) {
             throw new IllegalArgumentException("Template '" + request.templateKey() + "' cannot be sent to "
                     + request.audience().name().toLowerCase(Locale.ROOT));
         }

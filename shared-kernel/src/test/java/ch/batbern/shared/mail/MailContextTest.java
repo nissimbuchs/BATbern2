@@ -109,4 +109,17 @@ class MailContextTest {
         assertThat(referenced.forNewsletterSend(UUID.randomUUID(), false).reference())
                 .isEqualTo("partner-meeting:6f1c");
     }
+
+    @Test
+    @DisplayName("Story 16.5: own text has no template key, OWN_TEXT source and an own-text group id")
+    void ownText() {
+        MailContext context = MailContext.ownText(MailTrigger.organizer("anna"), "BATbern60",
+                MailContext.Audience.SPEAKERS);
+
+        assertThat(context.templateKey()).isNull();
+        assertThat(context.contentSource()).isEqualTo(MailContext.ContentSource.OWN_TEXT);
+        assertThat(context.sendGroupId()).endsWith("_BATbern60_own-text");
+        assertThat(context.senderUsername()).isEqualTo("anna");
+        assertThat(context.asTest().contentSource()).isEqualTo(MailContext.ContentSource.OWN_TEXT);
+    }
 }

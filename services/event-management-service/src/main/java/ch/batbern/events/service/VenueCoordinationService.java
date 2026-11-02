@@ -15,6 +15,7 @@ import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.mailcenter.compose.MailRenderer;
 import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.events.repository.EmailTemplateRepository;
 import ch.batbern.events.repository.EventRepository;
@@ -129,14 +130,22 @@ public class VenueCoordinationService {
     @Transactional(readOnly = true)
     public VenueMail renderFor(String eventCode, String templateKey, List<Role> recipients, String locale,
             String notes) {
+        EmailTemplate template = loadTemplateOrThrow(templateKey, normaliseLocale(locale));
+        return renderFor(eventCode, new MailContent(template.getTemplateKey(), normaliseLocale(locale),
+                Optional.ofNullable(template.getSubject()).orElse(""), template.getHtmlBody(), MailRenderer.LAYOUT_KEY,
+                MailContext.ContentSource.TEMPLATE), recipients, notes);
+    }
+
+    /** The venue mail from any content: a stored template or own text (Story 16.5). */
+    @Transactional(readOnly = true)
+    public VenueMail renderFor(String eventCode, MailContent content, List<Role> recipients, String notes) {
         List<Contact> contacts = resolveContactsOrThrow(recipients);
         Event event = loadEventOrThrow(eventCode);
-        String effectiveLocale = normaliseLocale(locale);
-        EmailTemplate template = loadTemplateOrThrow(templateKey, effectiveLocale);
+        String effectiveLocale = normaliseLocale(content.locale());
         CoordinatorIdentity coordinator = resolveCoordinator(loadConfigOrThrow().getCoordinatorUsername());
 
         Map<String, String> vars = buildVariables(event, contacts, effectiveLocale, notes, coordinator);
-        Rendered rendered = render(template, vars, effectiveLocale);
+        RenderedMail rendered = mailPipeline.render(content, vars);
 
         // Single SES send: first recipient → To, rest → Cc. Matches the user's expectation
         // that the email arrives as one thread with everyone addressed together.
@@ -145,7 +154,7 @@ public class VenueCoordinationService {
                 ? contacts.subList(1, contacts.size()).stream().map(Contact::getEmail).toList()
                 : List.of();
         List<String> names = contacts.stream().map(c -> safe(c.getName())).toList();
-        return new VenueMail(to, cc, names, rendered.subject(), rendered.body(), coordinator.email());
+        return new VenueMail(to, cc, names, rendered.subject(), rendered.html(), coordinator.email());
     }
 
     // ── Send ──────────────────────────────────────────────────────────────────
@@ -164,13 +173,26 @@ public class VenueCoordinationService {
                                                List<Role> recipients, String locale,
                                                String notes, String sentByUsername, MailTrigger trigger) {
         VenueMail mail = renderFor(eventCode, templateKey, recipients, locale, notes);
+        return deliver(mail, MailContext.of(trigger, eventCode, MailContext.Audience.VENUE, templateKey), recipients,
+                sentByUsername);
+    }
+
+    /** Own text (Story 16.5): the same single mail, rendered from the organizer's text. */
+    public VenueCoordinationSendResponse sendOwnText(String eventCode, MailContent content, List<Role> recipients,
+            String notes, String sentByUsername, MailTrigger trigger) {
+        VenueMail mail = renderFor(eventCode, content, recipients, notes);
+        return deliver(mail, MailContext.ownText(trigger, eventCode, MailContext.Audience.VENUE), recipients,
+                sentByUsername);
+    }
+
+    private VenueCoordinationSendResponse deliver(VenueMail mail, MailContext context, List<Role> recipients,
+            String sentByUsername) {
         List<Role> uniqueRoles = recipients.stream().distinct().toList();
 
         log.info("Venue-coordination send: event={}, template={}, roles={}, to={}, ccCount={}, replyTo={}, by={}",
-                eventCode, templateKey, uniqueRoles, mask(mail.to()), mail.cc().size(),
+                context.eventCode(), context.templateKey(), uniqueRoles, mask(mail.to()), mail.cc().size(),
                 mask(mail.replyTo()), sentByUsername);
 
-        MailContext context = MailContext.of(trigger, eventCode, MailContext.Audience.VENUE, templateKey);
         emailService.sendHtmlEmailSync(
                 context,
                 mail.to(),
@@ -185,15 +207,6 @@ public class VenueCoordinationService {
     }
 
     /** Story 16.11: the one pipeline; venue mail is always in the BATbern layout, as before. */
-    private Rendered render(EmailTemplate template, Map<String, String> vars, String locale) {
-        MailContent content = new MailContent(template.getTemplateKey(), locale,
-                Optional.ofNullable(template.getSubject()).orElse(""), template.getHtmlBody(), MailRenderer.LAYOUT_KEY,
-                MailContext.ContentSource.TEMPLATE);
-        ch.batbern.events.mailcenter.render.RenderedMail mail = mailPipeline.render(content, vars);
-        return new Rendered(mail.subject(), mail.html());
-    }
-
-    private record Rendered(String subject, String body) {}
 
     private List<Contact> resolveContactsOrThrow(List<Role> recipients) {
         if (recipients == null || recipients.isEmpty()) {

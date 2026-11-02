@@ -33,6 +33,7 @@ import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -94,7 +95,7 @@ class SpeakerModeratorReplyToTest {
     void should_replyToModeratorAlias_when_tieredReminderSent() {
         SpeakerReminderEmailService service = new SpeakerReminderEmailService(
                 emailService, MailPipelines.over(emailService, emailTemplateService), primarySpeakerResolver,
-                moderatorReplyAddress);
+                moderatorReplyAddress, mock(SessionRepository.class));
         ReflectionTestUtils.setField(service, "baseUrl", "https://batbern.ch");
 
         service.sendReminderEmail(speaker, event, "RESPONSE", "TIER_1", LocalDate.now().plusDays(7),

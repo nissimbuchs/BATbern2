@@ -33,6 +33,13 @@ public interface NewsletterSendRepository extends JpaRepository<NewsletterSend, 
     boolean existsByEventIdAndTemplateKeyAndStatusIn(
             UUID eventId, String templateKey, java.util.Collection<String> statuses);
 
+    /**
+     * Story 16.5 AC9: the latest own-text registrant send of this event with exactly this subject in
+     * one of {@code statuses} (one-shot guard by subject).
+     */
+    java.util.Optional<NewsletterSend> findFirstByEventIdAndTemplateKeyAndOwnSubjectAndStatusInOrderBySentAtDesc(
+            UUID eventId, String templateKey, String ownSubject, java.util.Collection<String> statuses);
+
     /** Validates that a send record belongs to a specific event (security guard). */
     java.util.Optional<NewsletterSend> findByIdAndEventId(UUID id, UUID eventId);
 
