@@ -1,6 +1,6 @@
 # Story 16.5: Own text with placeholders and per-recipient preview
 
-Status: ready-for-dev
+Status: in-progress
 
 ## Story
 
@@ -11,6 +11,18 @@ so that **I can send a one-off message (a room change, a personal note to all sp
 > Source: `docs/prd/epic-16-mail-center.md` → **Story 16.5**, decision 5 (Mustache placeholders, one render path) and the 16.8 decision on the registrant one-shot guard.
 > **Depends on 16.8** (built inside the shared composer, once, not per audience) and, for the Partners chips, on 16.9. Do not start before 16.8a and 16.8b are on `develop`.
 > **UX reference:** `docs/ux/mail-center-spec.md` → "Composer" steps 1–3, 5 and 7 ("Als Vorlage speichern").
+
+## Design update 2026-11-02 (after Story 16.11)
+
+Story 16.11 (one pipeline, one variable catalog, PR #1177) replaces the render design this story was drafted on. Where the tasks below say otherwise, this section wins.
+
+- **No `TemplateSource` / `OwnTextSource`.** Own text is one more `MailContent` (`contentSource = OWN_TEXT`, `templateKey` null, the organizer's subject and body, layout `batbern-default`, the chosen locale) rendered by `MailPipeline.render` with the map `AudienceAdapter.variables(context, recipient, test)` returns. Same renderer and same variables as the template path, so own text can use whatever a template of that audience can.
+- **Allowed variables come from the catalog** (`AudienceAdapter.allowedVariables()`, derived from the audience's scopes; aliases included). The validator checks subject and body against that set. **Chips** are a short per-audience subset, `offeredVariables()`, a new interface method (table in Dev Notes; Partners: `eventTitle`, `eventDate`, `eventNumber`, `eventTime`, `venueName`).
+- **`Rendering` gets no variable map** (it is the redacted "as sent" value). Highlighting re-renders with sentinel-wrapped values from `variables(...)`.
+- **Newsletter footer rule** stays as written: any newsletter content (own text or a stored template) without `{{unsubscribeLink}}` gets the DE/EN footer appended before the layout merge. All seeded newsletter templates contain the link, so no existing mail changes.
+- **Own text is stored on the `newsletter_sends` row** for the two async jobs (newsletter, registrants); the job and the newsletter retry render from the row (16.11 AC8: content fixed per send). Migration number: **V138** (V137 is 16.9a's `mail_message.reference`).
+- **Partners** (16.9 B, same PR): one mail to all partners, so system and event variables only; own text goes through `sendGroupHtmlEmailSync` like the template path.
+- **Owner pre-authorised** push and PR for this story (2026-11-01, overnight sequence 16.11 → 16.9 + 16.5); the PR ships 16.9 A, 16.9 B and 16.5 together.
 
 ## Acceptance Criteria
 

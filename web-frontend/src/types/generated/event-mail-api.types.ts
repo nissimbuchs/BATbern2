@@ -216,7 +216,9 @@ export interface components {
        */
       audience: 'NEWSLETTER' | 'REGISTRANTS' | 'SPEAKERS' | 'VENUE' | 'PARTNERS';
       /**
-       * @description OWN_TEXT is rejected with 400 until Story 16.5.
+       * @description OWN_TEXT (Story 16.5): `ownSubject` and `ownBodyHtml` instead of a template, rendered with
+       *     the same variables. Every `{{name}}` must be a variable of the audience (400
+       *     UNKNOWN_PLACEHOLDER otherwise).
        * @default TEMPLATE
        * @enum {string}
        */
@@ -248,6 +250,22 @@ export interface components {
       venueRecipients?: ('VENUE' | 'CATERING')[];
       /** @description VENUE only. */
       venueNotes?: string | null;
+      /** @description OWN_TEXT only, required. One line (no CR/LF). */
+      ownSubject?: string | null;
+      /** @description OWN_TEXT only, required. HTML; the BATbern layout is added. */
+      ownBodyHtml?: string | null;
+      /** @description SPEAKERS with OWN_TEXT only, at least one. Which speakers get the mail. */
+      speakerStatuses?: ('INVITED' | 'ACCEPTED' | 'CONTENT_SUBMITTED' | 'QUALITY_REVIEWED')[];
+      /**
+       * @description REGISTRANTS with OWN_TEXT only. Send although a mail with the same subject already went to this event's registrants (409 ALREADY_SENT otherwise).
+       * @default false
+       */
+      confirmResend: boolean;
+    };
+    MailAlreadySent: {
+      /** Format: date-time */
+      sentAt: string;
+      mailKey?: string | null;
     };
     MailSendRequest: components['schemas']['MailComposeRequest'] & {
       /** @enum {string} */
@@ -284,6 +302,16 @@ export interface components {
       organizerCount: number;
       skipped: components['schemas']['MailSkippedRecipient'][];
       unknownPlaceholders: string[];
+      /** @description OWN_TEXT only. The subject with every filled value marked (display only). */
+      highlightedSubject?: string | null;
+      /** @description OWN_TEXT only. `html` with every filled value in `<mark data-var>` and every unknown placeholder in `<mark class="unknown">` (display only; never sent). */
+      highlightedHtml?: string | null;
+      /** @description The variables offered as chips for this audience (Story 16.5). */
+      offeredVariables?: string[];
+      /** @description Every variable own text for this audience may use. */
+      allowedVariables?: string[];
+      /** @description REGISTRANTS with OWN_TEXT only. A mail with this subject already went to this event's registrants; the send needs `confirmResend`. */
+      alreadySent?: components['schemas']['MailAlreadySent'] | null;
     };
     MailSendResponse: {
       /** @description Keys of the recorded mail(s); speakers in automatic mode can give one per template. */
@@ -452,7 +480,7 @@ export interface operations {
           'application/json': components['schemas']['MailSendResponse'];
         };
       };
-      /** @description Invalid request (as for preview) */
+      /** @description Invalid request (as for preview). Own text with a placeholder the audience does not have answers `details.code = UNKNOWN_PLACEHOLDER` with `details.placeholders`. */
       400: {
         headers: {
           [name: string]: unknown;
@@ -480,7 +508,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description A newsletter send is running, or this registrant notice was already sent */
+      /** @description A newsletter send is running, or this registrant notice was already sent. Own text to registrants with a subject already sent answers `details.code = ALREADY_SENT` with `details.sentAt` unless `confirmResend` is true. */
       409: {
         headers: {
           [name: string]: unknown;
@@ -593,7 +621,7 @@ export interface operations {
           'application/json': components['schemas']['MailPreviewResponse'];
         };
       };
-      /** @description Invalid request (template not allowed for the audience, recipient index out of range, missing audience field, own text before Story 16.5) */
+      /** @description Invalid request (template not allowed for the audience, recipient index out of range, missing audience field, own text without subject or body or with a line break in the subject). An unknown placeholder in own text does NOT fail the preview; it is listed in `unknownPlaceholders` and marked in `highlightedHtml`. */
       400: {
         headers: {
           [name: string]: unknown;
