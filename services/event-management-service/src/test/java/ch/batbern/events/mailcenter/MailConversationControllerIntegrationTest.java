@@ -11,6 +11,10 @@ import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.mockito.ArgumentCaptor;
+import software.amazon.awssdk.services.s3.presigner.S3Presigner;
+import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
+import software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.TestPropertySource;
@@ -21,14 +25,19 @@ import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.net.URI;
 import java.sql.Timestamp;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.containsString;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -57,6 +66,9 @@ class MailConversationControllerIntegrationTest extends AbstractIntegrationTest 
     private JdbcTemplate jdbc;
     @MockitoBean
     private UserApiClient userApiClient;
+    /** Mocked here: TestAwsConfig's presigner mock does not reach this context (#1186), and CI has no credentials. */
+    @MockitoBean
+    private S3Presigner presigner;
 
     private final Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
 
@@ -128,7 +140,7 @@ class MailConversationControllerIntegrationTest extends AbstractIntegrationTest 
         mockMvc.perform(get("/api/v1/conversations/conv-9020"))
                 .andExpect(jsonPath("$.conversation.status").value("WAITING"))
                 .andExpect(jsonPath("$.conversation.assigneeUsername").value("second.organizer"));
-        org.assertj.core.api.Assertions.assertThat(jdbc.queryForObject(
+        assertThat(jdbc.queryForObject(
                 "SELECT updated_by FROM mail_conversation WHERE conversation_key = 'conv-9020'", String.class))
                 .isEqualTo("second.organizer");
 
@@ -159,6 +171,9 @@ class MailConversationControllerIntegrationTest extends AbstractIntegrationTest 
     @WithMockUser(roles = "ORGANIZER")
     @DisplayName("16.6: a kept attachment gets a short-lived link; one kept by name only, or unknown, is a 404")
     void should_linkKeptAttachment_when_requested() throws Exception {
+        PresignedGetObjectRequest presigned = mock(PresignedGetObjectRequest.class);
+        when(presigned.url()).thenReturn(URI.create("https://presigned.example.test/slides").toURL());
+        when(presigner.presignGetObject(any(GetObjectPresignRequest.class))).thenReturn(presigned);
         UUID id = conversation("conv-9060", "OPEN", now);
         message(id, "BATbern917-in-6", now, "Folien", "[{\"name\":\"slides.pdf\",\"contentType\":"
                 + "\"application/pdf\",\"size\":12,\"storageKey\":\"mail-attachments/in_x/0\"},"
@@ -171,8 +186,16 @@ class MailConversationControllerIntegrationTest extends AbstractIntegrationTest 
         mockMvc.perform(get("/api/v1/conversations/conv-9060/messages/BATbern917-in-6/attachments/0/download"))
                 .andExpect(status().isOk())
                 .andExpect(header().string("Cache-Control", containsString("no-store")))
-                .andExpect(jsonPath("$.downloadUrl", containsString("mail-attachments/in_x/0")))
-                .andExpect(jsonPath("$.downloadUrl", containsString("filename%2A%3DUTF-8%27%27slides.pdf")));
+                .andExpect(jsonPath("$.downloadUrl").value("https://presigned.example.test/slides"));
+        ArgumentCaptor<GetObjectPresignRequest> signed = ArgumentCaptor.forClass(GetObjectPresignRequest.class);
+        verify(presigner).presignGetObject(signed.capture());
+        assertThat(signed.getValue().getObjectRequest().bucket())
+                .isEqualTo("batbern-inbound-emails-test");
+        assertThat(signed.getValue().getObjectRequest().key())
+                .isEqualTo("mail-attachments/in_x/0");
+        assertThat(signed.getValue().getObjectRequest().responseContentDisposition())
+                .isEqualTo("attachment; filename*=UTF-8''slides.pdf");
+        assertThat(signed.getValue().signatureDuration()).hasMinutes(5);
         mockMvc.perform(get("/api/v1/conversations/conv-9060/messages/BATbern917-in-6/attachments/1/download"))
                 .andExpect(status().isNotFound());
         mockMvc.perform(get("/api/v1/conversations/conv-9060/messages/BATbern917-in-6/attachments/7/download"))
