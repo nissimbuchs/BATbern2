@@ -3,6 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
+import ch.batbern.events.mailcenter.render.MailPipelines;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -37,7 +38,8 @@ class DeregistrationEmailServiceTest {
 
     @BeforeEach
     void setUp() {
-        service = new DeregistrationEmailService(emailService, emailTemplateService, userApiClient);
+        service = new DeregistrationEmailService(emailService, userApiClient,
+                MailPipelines.over(emailService, emailTemplateService));
         registration = Registration.builder()
                 .attendeeUsername("jane.doe")
                 .attendeeEmail("jane@example.com")

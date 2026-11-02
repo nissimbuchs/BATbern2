@@ -7,17 +7,20 @@ import ch.batbern.events.domain.NewsletterRecipientId;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.exception.DuplicateNewsletterSendException;
+import ch.batbern.events.mailcenter.compose.MailRenderer;
+import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.events.newsletter.dto.generated.NewsletterPreviewResponse;
 import ch.batbern.events.newsletter.dto.generated.NewsletterSendResponse;
 import ch.batbern.events.newsletter.dto.generated.NewsletterSendStatusResponse;
-import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
-import ch.batbern.events.mailcenter.compose.MailRenderer;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
@@ -45,6 +48,7 @@ import java.time.ZoneOffset;
 import java.time.format.DateTimeFormatter;
 import java.util.Comparator;
 import java.util.EnumSet;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
@@ -90,7 +94,6 @@ public class NewsletterEmailService {
     // ── Constants ─────────────────────────────────────────────────────────────
 
     private static final String DEFAULT_TEMPLATE_KEY = "newsletter-event";
-    private static final String LAYOUT_KEY = "batbern-default";
     private static final int SEND_PAGE_SIZE = 50;
     /** Keyset cursor start: PostgreSQL orders the nil UUID before every other UUID. */
     private static final UUID KEYSET_START = new UUID(0L, 0L);
@@ -137,6 +140,7 @@ public class NewsletterEmailService {
 
     private final EmailService emailService;
     private final EmailTemplateService emailTemplateService;
+    private final MailPipeline mailPipeline;
     private final NewsletterSubscriberService subscriberService;
     private final NewsletterSubscriberRepository subscriberRepository;
     private final NewsletterSendRepository sendRepository;
@@ -224,12 +228,10 @@ public class NewsletterEmailService {
                                               @Nullable String templateKey, boolean testMode) {
         String effectiveKey = resolveTemplateKey(templateKey);
         rejectRegistrantTemplate(effectiveKey, locale);
-        Map<String, String> vars = buildVariables(event, locale, isReminder,
-                baseUrl + "/unsubscribe?token=PREVIEW");
-        String contentHtml = renderContent(locale, vars, effectiveKey);
-        String mergedHtml = emailService.replaceVariables(
-                emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), vars);
-        String subject = buildSubject(event, isReminder, locale, vars, effectiveKey);
+        // Story 16.11: the same draft and render the send uses
+        NewsletterDraft draft = prepare(event, locale, isReminder, effectiveKey);
+        String mergedHtml = renderBody(draft, baseUrl + "/unsubscribe?token=PREVIEW");
+        String subject = draft.subject();
         int count = testMode ? getTestModeRecipientCount() : (int) subscriberService.getActiveCount();
         return NewsletterPreviewResponse.builder()
                 .subject(subject)
@@ -378,13 +380,8 @@ public class NewsletterEmailService {
             subject = "[Testmailing nur an OK] " + subject;
         }
 
-        // Build iCal attachments once (same for all recipients).
-        // Check raw template HTML for variable markers to decide what to attach.
-        String rawTemplateHtml = emailTemplateService.findByKeyAndLocale(effectiveKey, locale)
-                .map(t -> t.getHtmlBody())
-                .orElse("");
-        List<EmailService.EmailAttachment> icsAttachments =
-                buildIcsAttachments(rawTemplateHtml, draft.baseVars(), event);
+        // Build iCal attachments once (same for all recipients), from the content resolved for this send.
+        List<EmailService.EmailAttachment> icsAttachments = icsAttachments(draft, event);
         if (!icsAttachments.isEmpty()) {
             log.info("Newsletter will include {} iCal attachment(s) for sendId={}", icsAttachments.size(), sendId);
         }
@@ -676,7 +673,8 @@ public class NewsletterEmailService {
      * Everything of a newsletter that is the same for every subscriber: the variables (they cost
      * several queries, so the job builds them once) and the subject.
      */
-    public record NewsletterDraft(Map<String, String> baseVars, String subject, String templateKey, String locale) {
+    public record NewsletterDraft(Map<String, String> baseVars, String subject, String templateKey, String locale,
+            MailContent content) {
     }
 
     /** The default newsletter template when none is chosen. */
@@ -684,25 +682,36 @@ public class NewsletterEmailService {
         return resolveTemplateKey(templateKey);
     }
 
-    /** Builds the part of the mail every subscriber shares. */
+    /**
+     * Builds the part of the mail every subscriber shares, and resolves the template content ONCE
+     * (Story 16.11 AC8): every recipient of this send renders from the same content, so an admin
+     * editing the template while the send runs changes nothing for it.
+     */
     public NewsletterDraft prepare(Event event, String locale, boolean isReminder, String effectiveKey) {
         Map<String, String> baseVars = buildVariables(event, locale, isReminder, "");
-        String subject = buildSubject(event, isReminder, locale, baseVars, effectiveKey);
-        return new NewsletterDraft(java.util.Collections.unmodifiableMap(baseVars), subject, effectiveKey, locale);
+        MailContent content = mailPipeline.storedTemplate(effectiveKey, locale);
+        if (content.bodyHtml().isBlank()) {
+            log.warn("Newsletter template '{}' locale '{}' not found in DB", effectiveKey, locale);
+            content = new MailContent(effectiveKey, locale, content.subject(),
+                    "<p>Newsletter template not available.</p>", MailRenderer.LAYOUT_KEY, content.contentSource());
+        }
+        String subjectTemplate = content.subject() != null ? content.subject()
+                : (isReminder ? baseVars.get("reminderPrefix") : "") + event.getTitle() + " — BATbern";
+        String subject = emailService.replaceVariables(subjectTemplate, baseVars);
+        return new NewsletterDraft(Collections.unmodifiableMap(baseVars), subject, effectiveKey, locale,
+                content);
     }
 
     /** The body one subscriber gets: the draft with their unsubscribe link. */
     public String renderBody(NewsletterDraft draft, String unsubscribeLink) {
+        return mailPipeline.render(draft.content(), variables(draft, unsubscribeLink)).html();
+    }
+
+    /** The variables one subscriber's body is rendered with (Story 16.11 AC9). */
+    public Map<String, String> variables(NewsletterDraft draft, String unsubscribeLink) {
         Map<String, String> vars = new HashMap<>(draft.baseVars());
-        vars.put("unsubscribeLink", unsubscribeLink);
-        String content = emailTemplateService.findByKeyAndLocale(draft.templateKey(), draft.locale())
-                .map(ch.batbern.events.domain.EmailTemplate::getHtmlBody)
-                .orElseGet(() -> {
-                    log.warn("Newsletter template '{}' locale '{}' not found in DB", draft.templateKey(),
-                            draft.locale());
-                    return "<p>Newsletter template not available.</p>";
-                });
-        return MailRenderer.body(emailService, emailTemplateService, content, draft.locale(), vars);
+        vars.put(MailVariable.UNSUBSCRIBE_LINK.placeholder(), unsubscribeLink);
+        return vars;
     }
 
     public String unsubscribeLink(String unsubscribeToken) {
@@ -711,10 +720,7 @@ public class NewsletterEmailService {
 
     /** The calendar entry the send job attaches, for the composer's test send. */
     public List<EmailService.EmailAttachment> icsAttachments(NewsletterDraft draft, Event event) {
-        String rawTemplateHtml = emailTemplateService.findByKeyAndLocale(draft.templateKey(), draft.locale())
-                .map(t -> t.getHtmlBody())
-                .orElse("");
-        return buildIcsAttachments(rawTemplateHtml, draft.baseVars(), event);
+        return buildIcsAttachments(draft.content().bodyHtml(), draft.baseVars(), event);
     }
 
     /**
@@ -733,27 +739,16 @@ public class NewsletterEmailService {
     Map<String, String> buildVariables(Event event, String locale, boolean isReminder,
                                         String unsubscribeLink) {
         boolean isDe = "de".equals(locale);
-        Locale javaLocale = isDe ? Locale.GERMAN : Locale.ENGLISH;
-
-        Map<String, String> vars = new HashMap<>();
-        vars.put("reminderPrefix", buildReminderPrefix(isReminder, isDe));
-        vars.put("eventNumber", String.valueOf(event.getEventNumber()));
-        vars.put("eventType", localizeEventType(event.getEventType(), isDe));
-        vars.put("eventTitle", event.getTitle());
-        vars.put("eventDate", formatEventDate(event, javaLocale));
-        vars.put("eventTime", formatEventTime(event, isDe));
-        vars.put("venue", event.getVenueName());
-        vars.put("venueDirectionsUrl", "");
-        vars.put("conferenceLanguage", isDe ? "Deutsch / Englisch" : "German / English");
-        vars.put("speakersSection", buildSpeakersSection(event, isDe));
-        vars.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
-        vars.put("eventDetailLink", baseUrl + "/events/" + event.getEventCode());
-        vars.put("registrationLink", baseUrl + "/register/" + event.getEventCode());
-        vars.put("upcomingEventsSection", buildUpcomingEventsSection(event.getId(), isDe));
-        vars.put("unsubscribeLink", unsubscribeLink);
-        vars.put("preferencesLink", baseUrl + "/account");
-        vars.put("logoUrl", baseUrl + "/BATbern_white_logo.png");
-        return vars;
+        return mailPipeline.variables().event(event, locale)
+                .put(MailVariable.REMINDER_PREFIX, buildReminderPrefix(isReminder, isDe))
+                // "ab 18:00 Uhr" / "from 18:00": open unification decision (Story 16.11)
+                .put(MailVariable.EVENT_TIME, formatEventTime(event, isDe))
+                .put(MailVariable.VENUE_NAME, event.getVenueName())
+                .put(MailVariable.SPEAKERS_SECTION, buildSpeakersSection(event, isDe))
+                .put(MailVariable.UPCOMING_EVENTS_SECTION, buildUpcomingEventsSection(event.getId(), isDe))
+                .put(MailVariable.UNSUBSCRIBE_LINK, unsubscribeLink)
+                .put(MailVariable.PREFERENCES_LINK, baseUrl + "/account")
+                .asMap();
     }
 
     // ── Send helper ───────────────────────────────────────────────────────────
@@ -1062,51 +1057,11 @@ public class NewsletterEmailService {
                 });
     }
 
-    private String renderContent(String locale, Map<String, String> vars, String templateKey) {
-        Optional<ch.batbern.events.domain.EmailTemplate> templateOpt =
-                emailTemplateService.findByKeyAndLocale(templateKey, locale);
-        if (templateOpt.isEmpty()) {
-            log.warn("Newsletter template '{}' locale '{}' not found in DB", templateKey, locale);
-            return "<p>Newsletter template not available.</p>";
-        }
-        return emailService.replaceVariables(templateOpt.get().getHtmlBody(), vars);
-    }
-
-    private String buildSubject(Event event, boolean isReminder, String locale,
-                                Map<String, String> vars, String templateKey) {
-        Optional<String> subjectTemplate = emailTemplateService.resolveSubject(templateKey, locale);
-        String subject = subjectTemplate.orElseGet(() ->
-                (isReminder ? vars.get("reminderPrefix") : "") + event.getTitle() + " — BATbern");
-        return emailService.replaceVariables(subject, vars);
-    }
-
     private String buildReminderPrefix(boolean isReminder, boolean isDe) {
         if (!isReminder) {
             return "";
         }
         return isDe ? "Erinnerung: " : "Reminder: ";
-    }
-
-    private String localizeEventType(ch.batbern.events.core.dto.generated.EventType eventType, boolean isDe) {
-        if (eventType == null) {
-            return isDe ? "Abend-BAT" : "Evening BAT";
-        }
-        return switch (eventType) {
-            case EVENING -> isDe ? "Abend-BAT" : "Evening BAT";
-            case FULL_DAY -> isDe ? "Ganztages-BAT" : "Full-Day BAT";
-            case AFTERNOON -> isDe ? "Nachmittags-BAT" : "Afternoon BAT";
-            default -> eventType.name().replace("_", " ");
-        };
-    }
-
-    private String formatEventDate(Event event, Locale locale) {
-        if (event.getDate() == null) {
-            return "";
-        }
-        DateTimeFormatter formatter = DateTimeFormatter
-                .ofPattern("EEEE, d. MMMM yyyy", locale)
-                .withZone(ZoneId.of("Europe/Zurich"));
-        return formatter.format(event.getDate());
     }
 
     private String formatEventTime(Event event, boolean isDe) {

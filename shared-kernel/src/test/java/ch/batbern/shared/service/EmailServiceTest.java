@@ -1,16 +1,23 @@
 package ch.batbern.shared.service;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.spi.ILoggingEvent;
+import ch.qos.logback.core.read.ListAppender;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
+import org.slf4j.LoggerFactory;
 import org.springframework.test.util.ReflectionTestUtils;
+import software.amazon.awssdk.awscore.exception.AwsErrorDetails;
 import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.ses.model.SendEmailRequest;
 import software.amazon.awssdk.services.ses.model.SendEmailResponse;
 import software.amazon.awssdk.services.ses.model.SendRawEmailRequest;
 import software.amazon.awssdk.services.ses.model.SendRawEmailResponse;
+import software.amazon.awssdk.services.ses.model.SesException;
 
 import jakarta.mail.Message;
 import jakarta.mail.Session;
@@ -494,6 +501,62 @@ class EmailServiceTest {
 
             // Then - entire block removed
             assertThat(result).isEqualTo("");
+        }
+    }
+
+    @Nested
+    @DisplayName("Group mail logs mask every recipient")
+    class GroupMailLogMasking {
+
+        private SesClient sesClient;
+        private ListAppender<ILoggingEvent> logs;
+        private Logger logger;
+
+        @BeforeEach
+        void wire() {
+            sesClient = mock(SesClient.class);
+            ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
+            ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
+            ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
+            ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
+            logger = (Logger) LoggerFactory.getLogger(EmailService.class);
+            logs = new ListAppender<>();
+            logs.start();
+            logger.addAppender(logs);
+        }
+
+        @AfterEach
+        void detach() {
+            logger.detachAppender(logs);
+        }
+
+        @Test
+        void should_logNoAddressInClear_when_groupSendWithAttachments() {
+            when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
+                    .thenReturn(SendRawEmailResponse.builder().messageId("test-id").build());
+
+            emailService.sendGroupHtmlEmailWithAttachments(List.of("anna@batbern.ch", "bert@batbern.ch"),
+                    "subj", "<p>body</p>", List.of(new EmailService.EmailAttachment("event.ics",
+                            "BEGIN:VCALENDAR\nEND:VCALENDAR".getBytes(), "text/calendar", true)));
+
+            assertThat(logText()).contains("a***@batbern.ch").contains("b***@batbern.ch")
+                    .doesNotContain("anna@").doesNotContain("bert@");
+        }
+
+        @Test
+        void should_logNoAddressInClear_when_groupSendFails() {
+            when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                    .thenThrow((SesException) SesException.builder().message("boom")
+                            .awsErrorDetails(AwsErrorDetails.builder().errorMessage("boom").build()).build());
+
+            assertThatThrownBy(() -> emailService.sendGroupHtmlEmailSync(null,
+                    List.of("anna@batbern.ch", "bert@batbern.ch"), List.of(), "subj", "<p>body</p>", null))
+                    .satisfies(e -> assertThat(e.getMessage()).doesNotContain("anna@").doesNotContain("bert@"));
+            assertThat(logText()).contains("b***@batbern.ch").doesNotContain("anna@").doesNotContain("bert@");
+        }
+
+        private String logText() {
+            return logs.list.stream().map(ILoggingEvent::getFormattedMessage).reduce("", (a, b) -> a + "\n" + b);
         }
     }
 

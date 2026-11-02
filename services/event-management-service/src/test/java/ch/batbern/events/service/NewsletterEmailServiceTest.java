@@ -1,12 +1,15 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Session;
-import ch.batbern.events.newsletter.dto.generated.NewsletterSendResponse;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.variables.MailVariableFactory;
+import ch.batbern.events.newsletter.dto.generated.NewsletterSendResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
@@ -15,7 +18,6 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.sessions.dto.generated.SessionSpeaker;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
-import org.springframework.data.domain.Limit;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -23,9 +25,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Limit;
 import org.springframework.test.util.ReflectionTestUtils;
-
-import ch.batbern.events.domain.EmailTemplate;
 
 import java.time.Instant;
 import java.util.List;
@@ -89,6 +90,9 @@ class NewsletterEmailServiceTest {
     @BeforeEach
     void setUp() {
         ReflectionTestUtils.setField(newsletterEmailService, "baseUrl", "https://batbern.ch");
+        // Story 16.11: the real pipeline and catalog over this test's mocks
+        ReflectionTestUtils.setField(newsletterEmailService, "mailPipeline", new MailPipeline(emailService,
+                emailTemplateService, new MailVariableFactory(eventTimeResolver)));
         // Wire self-reference so @Async proxy calls work (avoids NPE on this.self in tests).
         newsletterEmailService.setSelf(newsletterEmailService);
 
@@ -365,8 +369,6 @@ class NewsletterEmailServiceTest {
         when(emailTemplateService.mergeWithLayout(any(), eq("batbern-default"), eq("de")))
                 .thenReturn("merged");
         when(emailService.replaceVariables(any(), any())).thenReturn("final");
-        when(emailTemplateService.resolveSubject("custom-newsletter", "de"))
-                .thenReturn(Optional.of("Custom Subject"));
         when(subscriberService.getActiveCount()).thenReturn(5L);
         when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
 
@@ -385,8 +387,6 @@ class NewsletterEmailServiceTest {
                 .thenReturn(Optional.of(mockTemplate("newsletter-event", "de", "Default content")));
         when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
         when(emailService.replaceVariables(any(), any())).thenReturn("final");
-        when(emailTemplateService.resolveSubject("newsletter-event", "de"))
-                .thenReturn(Optional.of("Subject"));
         when(subscriberService.getActiveCount()).thenReturn(3L);
         when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
 
@@ -537,7 +537,6 @@ class NewsletterEmailServiceTest {
                 .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
         when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
         when(emailService.replaceVariables(any(), any())).thenReturn("final");
-        when(emailTemplateService.resolveSubject(any(), any())).thenReturn(java.util.Optional.of("Subject"));
         when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
 
         newsletterEmailService.executeNewsletterSendAsync(sendId, testEvent, false, "de", "newsletter-event");
@@ -620,7 +619,6 @@ class NewsletterEmailServiceTest {
                 .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
         when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
         when(emailService.replaceVariables(any(), any())).thenReturn("final");
-        when(emailTemplateService.resolveSubject(any(), any())).thenReturn(java.util.Optional.of("Subject"));
         when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
 
         newsletterEmailService.executeNewsletterSendAsync(sendId, testEvent, false, "de", "newsletter-event");
@@ -670,7 +668,6 @@ class NewsletterEmailServiceTest {
                 .thenReturn(java.util.Optional.of(mockTemplate("newsletter-event", "de", "body")));
         when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
         when(emailService.replaceVariables(any(), any())).thenReturn("final");
-        when(emailTemplateService.resolveSubject(any(), any())).thenReturn(java.util.Optional.of("Subject"));
         when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
 
         newsletterEmailService.executeNewsletterSendAsync(
@@ -795,7 +792,6 @@ class NewsletterEmailServiceTest {
                 .thenReturn(Optional.of(mockTemplate("newsletter-event", "de", "body")));
         when(emailTemplateService.mergeWithLayout(any(), any(), any())).thenReturn("merged");
         when(emailService.replaceVariables(any(), any())).thenReturn("final");
-        when(emailTemplateService.resolveSubject(any(), any())).thenReturn(Optional.of("Subject"));
         when(eventRepository.findByDateAfter(any())).thenReturn(List.of());
 
         newsletterEmailService.executeNewsletterSendAsync(

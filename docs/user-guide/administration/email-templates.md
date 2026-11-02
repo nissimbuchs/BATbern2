@@ -112,22 +112,29 @@ Custom templates automatically use the `batbern-default` layout.
 
 ## Variable Substitution
 
-Templates use `{{variableName}}` placeholders that are substituted at send time. Common variables:
+Templates use `{{variableName}}` placeholders that are substituted at send time. Every mail gets
+the same set of variables from one catalog: the **system** and **event** variables are in every
+mail about an event, the others only where the mail has that data (a speaker reminder has no
+unsubscribe link, a newsletter has no registration code). A placeholder whose value a mail does not
+have stays empty.
 
-| Variable | Available in |
-|----------|-------------|
-| `{{recipientName}}` | All templates |
-| `{{eventTitle}}` | All event-related templates |
-| `{{eventCode}}` | All event-related templates |
-| `{{eventDate}}` | All event-related templates |
-| `{{portalLink}}` | Speaker invitation templates (links to the Cognito-authenticated speaker portal) |
-| `{{responseDeadline}}` | Speaker invitation templates |
-| `{{contentDeadline}}` | Speaker reminder templates |
-| `{{taskName}}` | Task reminder templates |
-| `{{dueDate}}` | Task reminder templates |
-| `{{taskBoardLink}}` | Task reminder templates |
-| `{{unsubscribeLink}}` | Newsletter templates |
-| `{{content}}` | Layout templates only |
+| Group | Variables | Available in |
+|-------|-----------|-------------|
+| System | `currentYear`, `logoUrl`, `baseUrl`, `supportUrl` (the support page, `https://batbern.ch/support`), `organizerName`, `organizerEmail` | Every mail |
+| Event | `eventCode`, `eventNumber`, `eventTitle`, `eventType`, `eventDate`, `eventTime`, `venueName` (also `venue`), `venueAddress`, `venueDirectionsUrl`, `eventUrl` (also `eventDetailLink`), `registrationLink`, `conferenceLanguage`, `topicTitle`, `agenda`, `speakersSection`, `upcomingEventsSection` | Every mail about an event |
+| Recipient | `recipientName`, `salutation`, `dashboardLink` | Mails to one person or one venue contact |
+| Registration | `attendeeFirstName`, `attendeeLastName`, `attendeeName`, `registrationCode`, `confirmationUrl`, `deregistrationUrl` (also `deregistrationLink`), `waitlistPosition`, `createAccountUrl` | Registration, waitlist and registrant mails |
+| Speaker | `speakerName`, `sessionTitle`, `sessionDescription`, `deadline`, `daysRemaining`, `responseDeadline`, `contentDeadline`, `portalLink`, `profileUrl`, `contentUrl`, `loginUrl`, `usernameForLogin`, `temporaryPassword`, `tempPasswordValidityDays`, `useExistingPassword` | Speaker invitation, acceptance and reminders |
+| Newsletter | `unsubscribeLink`, `preferencesLink`, `reminderPrefix` | Newsletter |
+| Venue | `notes`, `organizerSignature` | Venue and catering mails |
+| Task | `taskName`, `dueDate`, `taskNotes`, `taskBoardLink` | Task reminder |
+| Q&A | `count`, `isSingle`, `isMultiple`, `qnaLink` | Session Q&A digest |
+| Layout | `content` | Layout templates only |
+
+`eventDate` is always the long form in the recipient's language: "Freitag, 5. März 2027" or
+"Friday, 5 March 2027". Links that act on the recipient's behalf (`deregistrationUrl`,
+`confirmationUrl`, `unsubscribeLink`, `registrationCode`, `temporaryPassword`) are replaced by
+dummies in a test send.
 
 > **Caution**: Do not remove `{{unsubscribeLink}}` from layout templates. This link is required for GDPR compliance and is automatically injected into every sent email.
 

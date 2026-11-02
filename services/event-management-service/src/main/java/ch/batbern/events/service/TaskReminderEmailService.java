@@ -1,11 +1,13 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.domain.EmailTemplate;
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventTask;
 import ch.batbern.events.dto.generated.users.UserResponse;
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.exception.UserNotFoundException;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
+import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
@@ -14,12 +16,9 @@ import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
 import java.util.Locale;
@@ -39,18 +38,12 @@ import java.util.Optional;
 public class TaskReminderEmailService {
 
     private final EmailService emailService;
-    private final EmailTemplateService emailTemplateService;
     private final UserApiClient userApiClient;
     private final EventRepository eventRepository;
+    private final MailPipeline mailPipeline;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
-
-    @Value("${app.email.organizer-name:BATbern Team}")
-    private String organizerName;
-
-    @Value("${app.email.organizer-email:events@batbern.ch}")
-    private String organizerEmail;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
@@ -120,12 +113,6 @@ public class TaskReminderEmailService {
 
     private EmailContent buildEmailBody(EventTask task, Event event, UserResponse organizer, Locale locale) {
         String localeStr = locale.getLanguage();
-        String classpathFallback = localeStr.equals("de")
-                ? "email-templates/task-reminder-de.html"
-                : "email-templates/task-reminder-en.html";
-
-        // DB-first template loading (Story 10.2)
-        String contentHtml = loadHtmlContent("task-reminder", localeStr, classpathFallback);
 
         String recipientName = (organizer.getFirstName() != null && !organizer.getFirstName().isBlank())
                 ? organizer.getFirstName()
@@ -135,55 +122,21 @@ public class TaskReminderEmailService {
                 ? task.getDueDate().atZone(SWISS_ZONE).format(DATE_FORMATTER)
                 : "";
 
-        String taskBoardLink = baseUrl + "/events/" + event.getEventCode() + "/tasks";
+        Map<String, String> variables = mailPipeline.variables().event(event, localeStr)
+                .put(MailVariable.RECIPIENT_NAME, recipientName)
+                .put(MailVariable.TASK_NAME, task.getTaskName())
+                .put(MailVariable.DUE_DATE, formattedDueDate)
+                .put(MailVariable.TASK_NOTES, task.getNotes())
+                .put(MailVariable.TASK_BOARD_LINK, baseUrl + "/events/" + event.getEventCode() + "/tasks")
+                .put(MailVariable.DASHBOARD_LINK, baseUrl + "/dashboard")
+                .asMap();
 
-        Map<String, String> variables = Map.ofEntries(
-                Map.entry("recipientName", recipientName),
-                Map.entry("taskName", task.getTaskName()),
-                Map.entry("eventTitle", event.getTitle()),
-                Map.entry("eventCode", event.getEventCode()),
-                Map.entry("dueDate", formattedDueDate),
-                Map.entry("taskNotes", task.getNotes() != null ? task.getNotes() : ""),
-                Map.entry("taskBoardLink", taskBoardLink),
-                Map.entry("organizerName", organizerName),
-                Map.entry("organizerEmail", organizerEmail),
-                Map.entry("dashboardLink", baseUrl + "/dashboard"),
-                Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
-                Map.entry("supportUrl", baseUrl + "/support"),
-                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
-                Map.entry("logoUrl", baseUrl + "/BATbern_white_logo.png")
-        );
-
-        String html = emailService.replaceVariables(contentHtml, variables);
-        String subject = emailTemplateService.resolveSubject("task-reminder", localeStr)
-                .map(s -> emailService.replaceVariables(s, variables))
-                .orElseGet(() -> localeStr.equals("de")
+        RenderedMail mail = mailPipeline.render(mailPipeline.template("task-reminder", localeStr), variables);
+        String html = mail.html();
+        String subject = mail.subject() != null ? mail.subject()
+                : localeStr.equals("de")
                         ? "Aufgabenerinnerung: " + task.getTaskName() + " fällig morgen"
-                        : "Task Reminder: " + task.getTaskName() + " due tomorrow");
+                        : "Task Reminder: " + task.getTaskName() + " due tomorrow";
         return new EmailContent(html, subject);
-    }
-
-    /**
-     * Load HTML content from DB (with optional layout merge) or fall back to classpath.
-     * Story 10.2 AC1: DB-first template loading.
-     */
-    private String loadHtmlContent(String templateKey, String localeStr, String classpathFallback) {
-        Optional<EmailTemplate> dbTemplate = emailTemplateService.findByKeyAndLocale(templateKey, localeStr);
-        if (dbTemplate.isPresent()) {
-            String contentHtml = dbTemplate.get().getHtmlBody();
-            String layoutKey = dbTemplate.get().getLayoutKey();
-            if (layoutKey != null) {
-                return emailTemplateService.mergeWithLayout(contentHtml, layoutKey, localeStr);
-            }
-            return contentHtml;
-        }
-        // Classpath fallback
-        try {
-            ClassPathResource resource = new ClassPathResource(classpathFallback);
-            return resource.getContentAsString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            log.error("Email template not found in DB or classpath: {}/{}", templateKey, localeStr);
-            return "";
-        }
     }
 }

@@ -6,9 +6,10 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.exception.SlidesOnlineAlreadySentException;
+import ch.batbern.events.mailcenter.render.MailPipelines;
+import ch.batbern.events.newsletter.dto.generated.SlidesOnlineSendResponse;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
@@ -75,6 +76,8 @@ class SlidesOnlineEmailServiceTest {
     void setUp() {
         ReflectionTestUtils.setField(service, "baseUrl", "https://batbern.ch");
         ReflectionTestUtils.setField(service, "sendRateDelayMs", 0L);
+        // Story 16.11: the real pipeline over this test's mocks
+        ReflectionTestUtils.setField(service, "mailPipeline", MailPipelines.over(emailService, emailTemplateService));
         service.setSelf(service);
 
         event = new Event();

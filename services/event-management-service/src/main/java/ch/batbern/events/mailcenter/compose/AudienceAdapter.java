@@ -1,10 +1,16 @@
 package ch.batbern.events.mailcenter.compose;
 
+import ch.batbern.events.mailcenter.variables.MailVariable;
+import ch.batbern.events.mailcenter.variables.MailVariable.Scope;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 
+import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Collectors;
 
 /**
  * Everything audience-specific about composing a mail (Story 16.8, Winston's review 2026-10-30).
@@ -25,11 +31,41 @@ public interface AudienceAdapter {
     /** Whether this template may be sent to this audience; null means the adapter's default. */
     boolean allowsTemplate(String templateKey);
 
-    /** Variables this audience provides (Story 16.5 turns a subset into chips). */
-    Set<String> allowedVariables();
+    /**
+     * Catalog scopes this audience fills beside {@code SYSTEM} and {@code EVENT}, which every
+     * composed mail has (Story 16.11 AC9).
+     */
+    Set<Scope> scopes();
 
-    /** Variables that carry a credential; a test send gets dummies instead. */
-    Set<String> credentialVariables();
+    /**
+     * Every placeholder name (canonical and alias) a template for this audience may use, derived
+     * from the catalog scopes (Story 16.5 turns a subset into chips).
+     */
+    default Set<String> allowedVariables() {
+        return MailVariable.namesOf(allScopes());
+    }
+
+    /** Variables of this audience's scopes that carry a credential; a test send gets dummies. */
+    default Set<String> credentialVariables() {
+        Set<Scope> scopes = allScopes();
+        return Arrays.stream(MailVariable.values())
+                .filter(v -> v.credential() && scopes.contains(v.scope()))
+                .flatMap(v -> v.names().stream())
+                .collect(Collectors.toUnmodifiableSet());
+    }
+
+    private Set<Scope> allScopes() {
+        Set<Scope> all = EnumSet.of(Scope.SYSTEM, Scope.EVENT);
+        all.addAll(scopes());
+        return all;
+    }
+
+    /**
+     * The variables {@link #render} fills for {@code recipient}, built from the catalog (Story 16.11
+     * AC9). With {@code test} every credential value is a dummy, as in {@link #render}. Own text
+     * (Story 16.5) renders with this map, so it can use what the template could.
+     */
+    Map<String, String> variables(ComposeContext context, ComposeRecipient recipient, boolean test);
 
     /** Audience-specific request checks; throws {@link IllegalArgumentException} (400). */
     void validate(ComposeRequest request);

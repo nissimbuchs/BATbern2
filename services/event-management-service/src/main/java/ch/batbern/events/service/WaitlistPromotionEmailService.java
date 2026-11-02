@@ -1,11 +1,14 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
+import ch.batbern.events.mailcenter.variables.MailVariable;
+import ch.batbern.events.mailcenter.variables.MailVariables;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
@@ -13,15 +16,9 @@ import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -42,16 +39,14 @@ import java.util.Optional;
 public class WaitlistPromotionEmailService {
 
     private final EmailService emailService;
-    private final EmailTemplateService emailTemplateService;
     private final UserApiClient userApiClient;
+    private final MailPipeline mailPipeline;
     private final EventRepository eventRepository;
     private final ConfirmationTokenService confirmationTokenService;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-    private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
 
     /**
      * Send waitlist-promotion email when a registration is promoted from waitlist to registered.
@@ -76,17 +71,14 @@ public class WaitlistPromotionEmailService {
             Locale locale = resolveLocale(attendee);
             String localeStr = locale.getLanguage();
 
-            String contentHtml = loadHtmlContent("waitlist-promotion", localeStr,
-                    "email-templates/waitlist-promotion-" + localeStr + ".html");
-
-            Map<String, String> variables = buildCommonVariables(registration, attendee, event);
-            String html = emailService.replaceVariables(contentHtml, variables);
-
-            String subject = emailTemplateService.resolveSubject("waitlist-promotion", localeStr)
-                    .map(s -> emailService.replaceVariables(s, variables))
-                    .orElseGet(() -> localeStr.equals("de")
+            Map<String, String> variables = buildCommonVariables(registration, attendee, event, localeStr).asMap();
+            RenderedMail mail = mailPipeline.render(mailPipeline.template("waitlist-promotion", localeStr),
+                    variables);
+            String html = mail.html();
+            String subject = mail.subject() != null ? mail.subject()
+                    : localeStr.equals("de")
                             ? "Sie wurden von der Warteliste registriert – " + event.getTitle()
-                            : "You've been promoted from the waitlist – " + event.getTitle());
+                            : "You've been promoted from the waitlist – " + event.getTitle();
 
             // Story 10.32: CC attendee's additional emails (empty list = unchanged behaviour)
             java.util.List<String> cc = additionalEmailsFor(attendee);
@@ -126,27 +118,17 @@ public class WaitlistPromotionEmailService {
             Locale locale = resolveLocale(attendee);
             String localeStr = locale.getLanguage();
 
-            String contentHtml = loadHtmlContent("registration-waitlist-confirmation", localeStr,
-                    "email-templates/registration-waitlist-confirmation-" + localeStr + ".html");
-
-            Map<String, String> baseVariables = buildCommonVariables(registration, attendee, event);
-            // Add waitlist-specific variable
-            final Map<String, String> variables;
+            MailVariables vars = buildCommonVariables(registration, attendee, event, localeStr);
             if (registration.getWaitlistPosition() != null) {
-                java.util.HashMap<String, String> extended = new java.util.HashMap<>(baseVariables);
-                extended.put("waitlistPosition", String.valueOf(registration.getWaitlistPosition()));
-                variables = extended;
-            } else {
-                variables = baseVariables;
+                vars.put(MailVariable.WAITLIST_POSITION, registration.getWaitlistPosition());
             }
-
-            String html = emailService.replaceVariables(contentHtml, variables);
-
-            String subject = emailTemplateService.resolveSubject("registration-waitlist-confirmation", localeStr)
-                    .map(s -> emailService.replaceVariables(s, variables))
-                    .orElseGet(() -> localeStr.equals("de")
+            RenderedMail mail = mailPipeline.render(
+                    mailPipeline.template("registration-waitlist-confirmation", localeStr), vars.asMap());
+            String html = mail.html();
+            String subject = mail.subject() != null ? mail.subject()
+                    : localeStr.equals("de")
                             ? "Sie stehen auf der Warteliste – " + event.getTitle()
-                            : "You're on the waitlist – " + event.getTitle());
+                            : "You're on the waitlist – " + event.getTitle();
 
             // Story 10.32: CC attendee's additional emails (empty list = unchanged behaviour)
             java.util.List<String> cc = additionalEmailsFor(attendee);
@@ -165,12 +147,11 @@ public class WaitlistPromotionEmailService {
 
     // ── helpers ───────────────────────────────────────────────────────────────
 
-    private Map<String, String> buildCommonVariables(Registration registration, UserResponse attendee, Event event) {
+    private MailVariables buildCommonVariables(Registration registration, UserResponse attendee, Event event,
+            String locale) {
         String recipientName = (attendee.getFirstName() != null && !attendee.getFirstName().isBlank())
                 ? attendee.getFirstName()
                 : attendee.getId();
-        String formattedDate = event.getDate() != null
-                ? event.getDate().atZone(SWISS_ZONE).format(DATE_FORMATTER) : "";
 
         // Story 10.12 (AC7-equiv): Generate confirmation token so promoted attendees can confirm
         // attendance, and expose deregistrationUrl so they can cancel via the self-service page.
@@ -182,18 +163,13 @@ public class WaitlistPromotionEmailService {
                 ? baseUrl + "/deregister?token=" + registration.getDeregistrationToken()
                 : "";
 
-        Map<String, String> vars = new LinkedHashMap<>();
-        vars.put("recipientName", recipientName);
-        vars.put("eventTitle", event.getTitle());
-        vars.put("eventCode", event.getEventCode());
-        vars.put("eventDate", formattedDate);
-        vars.put("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "");
-        vars.put("registrationCode", registration.getRegistrationCode());
-        vars.put("eventUrl", baseUrl + "/events/" + event.getEventCode());
-        vars.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
-        vars.put("confirmationUrl", confirmationUrl);
-        vars.put("deregistrationUrl", deregistrationUrl);
-        return vars;
+        return mailPipeline.variables().event(event, locale)
+                .put(MailVariable.RECIPIENT_NAME, recipientName)
+                // Empty, not "TBA", when the venue is unknown: open unification decision (16.11)
+                .put(MailVariable.VENUE_ADDRESS, event.getVenueAddress() != null ? event.getVenueAddress() : "")
+                .put(MailVariable.REGISTRATION_CODE, registration.getRegistrationCode())
+                .put(MailVariable.CONFIRMATION_URL, confirmationUrl)
+                .put(MailVariable.DEREGISTRATION_URL, deregistrationUrl);
     }
 
     private UserResponse resolveUser(String username) {
@@ -240,24 +216,5 @@ public class WaitlistPromotionEmailService {
         // preferredLanguage will be available when Story 10.15 adds it to UserResponse.
         // Default to German (BATbern primary language) until then.
         return Locale.GERMAN;
-    }
-
-    private String loadHtmlContent(String templateKey, String localeStr, String classpathFallback) {
-        Optional<EmailTemplate> dbTemplate = emailTemplateService.findByKeyAndLocale(templateKey, localeStr);
-        if (dbTemplate.isPresent()) {
-            String contentHtml = dbTemplate.get().getHtmlBody();
-            String layoutKey = dbTemplate.get().getLayoutKey();
-            if (layoutKey != null) {
-                return emailTemplateService.mergeWithLayout(contentHtml, layoutKey, localeStr);
-            }
-            return contentHtml;
-        }
-        try {
-            ClassPathResource resource = new ClassPathResource(classpathFallback);
-            return resource.getContentAsString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            log.error("Email template not found in DB or classpath: {}/{}", templateKey, localeStr);
-            return "";
-        }
     }
 }

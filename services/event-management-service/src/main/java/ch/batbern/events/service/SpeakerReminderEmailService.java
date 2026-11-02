@@ -1,24 +1,21 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.forwarding.ModeratorReplyAddress;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
+import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
-import ch.batbern.events.forwarding.ModeratorReplyAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -38,21 +35,15 @@ import java.util.Optional;
 public class SpeakerReminderEmailService {
 
     private final EmailService emailService;
-    private final EmailTemplateService emailTemplateService;
+    private final MailPipeline mailPipeline;
     private final PrimarySpeakerResolver primarySpeakerResolver;
     private final ModeratorReplyAddress moderatorReplyAddress;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
 
-    @Value("${app.email.organizer-name:BATbern Team}")
-    private String organizerName;
-
-    @Value("${app.email.organizer-email:events@batbern.ch}")
-    private String organizerEmail;
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-    private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
 
     /**
      * Send a reminder email to a speaker.
@@ -187,63 +178,40 @@ public class SpeakerReminderEmailService {
             LocalDate deadline
     ) {
         String lang = locale.getLanguage().equals("de") ? "de" : "en";
-        String type = reminderType.toLowerCase();
-        String tierNum = tier.toLowerCase().replace("_", "");
-
         String templateKey = templateKey(reminderType, tier);
-        // e.g., "email-templates/speaker-reminder-response-tier1-en.html"
-        String templateName = String.format("email-templates/speaker-reminder-%s-%s-%s.html",
-                type, tierNum, lang);
+        Map<String, String> variables = variables(speakerName, event, deadline, lang);
 
-        // Story 10.2: DB-first template loading
-        String template = loadHtmlContent(templateKey, lang, templateName);
-
-        ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
-        long daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), deadline);
-        // Story 11.F.1: Cognito-only dashboard link (no magic-link token query param).
-        String portalLink = baseUrl + "/speaker-portal/dashboard";
-
-        Map<String, String> variables = Map.ofEntries(
-                Map.entry("speakerName", speakerName != null ? speakerName : ""),
-                Map.entry("eventTitle", event.getTitle()),
-                Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
-                Map.entry("deadline", deadline.format(DATE_FORMATTER)),
-                Map.entry("daysRemaining", String.valueOf(Math.max(0, daysRemaining))),
-                Map.entry("portalLink", portalLink),
-                Map.entry("organizerName", organizerName),
-                Map.entry("organizerEmail", organizerEmail),
-                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
-                Map.entry("logoUrl", baseUrl + "/BATbern_white_logo.png")
-        );
-
-        String html = emailService.replaceVariables(template, variables);
-        String subject = emailTemplateService.resolveSubject(templateKey, lang)
-                .map(s -> emailService.replaceVariables(s, variables))
-                .orElseGet(() -> buildSubject(locale, reminderType, tier, event.getTitle()));
+        // Story 16.11: same pipeline as every other mail (was a private merge-then-replace copy).
+        RenderedMail mail = mailPipeline.render(mailPipeline.template(templateKey, lang), variables);
+        String html = mail.html();
+        String subject = mail.subject() != null ? mail.subject()
+                : buildSubject(locale, reminderType, tier, event.getTitle());
         return new EmailContent(html, subject);
     }
 
     /**
-     * Loads HTML content from DB (with optional layout merge) or falls back to classpath.
-     * Story 10.2 AC1: DB-first template loading.
+     * The variables a reminder to {@code speaker} is rendered with (Story 16.11 AC9). The name
+     * resolves as in {@link #render}.
      */
-    private String loadHtmlContent(String templateKey, String localeStr, String classpathFallback) {
-        Optional<EmailTemplate> dbTemplate = emailTemplateService.findByKeyAndLocale(templateKey, localeStr);
-        if (dbTemplate.isPresent()) {
-            String contentHtml = dbTemplate.get().getHtmlBody();
-            String layoutKey = dbTemplate.get().getLayoutKey();
-            if (layoutKey != null) {
-                return emailTemplateService.mergeWithLayout(contentHtml, layoutKey, localeStr);
-            }
-            return contentHtml;
-        }
-        // Classpath fallback
-        try {
-            ClassPathResource resource = new ClassPathResource(classpathFallback);
-            return resource.getContentAsString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            log.error("Email template not found in DB or classpath: {}/{}", templateKey, localeStr);
-            return "";
-        }
+    public Map<String, String> variables(SpeakerPool speaker, Event event, LocalDate deadline, Locale locale) {
+        Optional<PrimarySpeakerResolver.PrimarySpeakerProfile> primary = primarySpeakerResolver.resolve(speaker);
+        String recipientName = primary.map(PrimarySpeakerResolver.PrimarySpeakerProfile::fullName)
+                .filter(n -> !n.isEmpty())
+                .orElse(speaker.getSpeakerName());
+        String lang = locale != null && "de".equals(locale.getLanguage()) ? "de" : "en";
+        return variables(recipientName, event, deadline, lang);
+    }
+
+    private Map<String, String> variables(String speakerName, Event event, LocalDate deadline, String lang) {
+        long daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), deadline);
+        // Story 11.F.1: Cognito-only dashboard link (no magic-link token query param).
+        String portalLink = baseUrl + "/speaker-portal/dashboard";
+
+        return mailPipeline.variables().event(event, lang)
+                .put(MailVariable.SPEAKER_NAME, speakerName)
+                .put(MailVariable.DEADLINE, deadline.format(DATE_FORMATTER))
+                .put(MailVariable.DAYS_REMAINING, Math.max(0, daysRemaining))
+                .put(MailVariable.PORTAL_LINK, portalLink)
+                .asMap();
     }
 }

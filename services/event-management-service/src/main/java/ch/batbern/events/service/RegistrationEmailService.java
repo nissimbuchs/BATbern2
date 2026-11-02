@@ -1,9 +1,11 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
+import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.service.IcsCalendarService;
@@ -11,18 +13,14 @@ import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Service for sending registration confirmation emails.
@@ -47,8 +45,8 @@ public class RegistrationEmailService {
 
     private final EmailService emailService;
     private final IcsCalendarService icsCalendarService;
-    private final EmailTemplateService emailTemplateService;
     private final EventTimeResolver eventTimeResolver;
+    private final MailPipeline mailPipeline;
 
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
@@ -65,9 +63,7 @@ public class RegistrationEmailService {
     @Value("${app.email.calendar-organizer-email:calendar@batbern.ch}")
     private String calendarOrganizerEmail;
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
-    private static final java.time.ZoneId SWISS_ZONE = java.time.ZoneId.of("Europe/Zurich");
 
     /**
      * Send the "please confirm your registration" email asynchronously with i18n support.
@@ -222,38 +218,24 @@ public class RegistrationEmailService {
         String localeStr = emailLocale.getLanguage().equals("de") ? "de" : "en";
         ZonedDateTime eventDateTime = resolveEventDateTime(event);
 
-        String template = loadHtmlContent(templateKey, localeStr,
-                "email-templates/" + templateKey + "-" + localeStr + ".html");
-
         String deregistrationUrl = registration.getDeregistrationToken() != null
                 ? baseUrl + "/deregister?token=" + registration.getDeregistrationToken()
                 : baseUrl + "/events";
 
-        Map<String, String> variables = Map.ofEntries(
-                Map.entry("attendeeFirstName",
-                        userProfile.getFirstName() != null ? userProfile.getFirstName() : ""),
-                Map.entry("attendeeLastName",
-                        userProfile.getLastName() != null ? userProfile.getLastName() : ""),
-                Map.entry("eventCode", event.getEventCode()),
-                Map.entry("eventTitle", event.getTitle()),
-                Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
-                Map.entry("eventTime",
-                        eventDateTime.format(TIME_FORMATTER) + (localeStr.equals("de") ? " Uhr" : "")),
-                Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
-                Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
-                Map.entry("deregistrationUrl", deregistrationUrl),
-                Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
-                Map.entry("supportUrl", baseUrl + "/support"),
-                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
-                Map.entry("logoUrl", baseUrl + "/BATbern_white_logo.png")
-        );
+        Map<String, String> variables = mailPipeline.variables().event(event, localeStr)
+                .put(MailVariable.ATTENDEE_FIRST_NAME, userProfile.getFirstName())
+                .put(MailVariable.ATTENDEE_LAST_NAME, userProfile.getLastName())
+                .put(MailVariable.EVENT_TIME, eventDateTime.format(TIME_FORMATTER)
+                        + (localeStr.equals("de") ? " Uhr" : ""))
+                .put(MailVariable.DEREGISTRATION_URL, deregistrationUrl)
+                .asMap();
 
-        String html = emailService.replaceVariables(template, variables);
-        String subject = emailTemplateService.resolveSubject(templateKey, localeStr)
-                .map(s -> emailService.replaceVariables(s, variables))
-                .orElseGet(() -> localeStr.equals("de")
+        RenderedMail mail = mailPipeline.render(mailPipeline.template(templateKey, localeStr), variables);
+        String html = mail.html();
+        String subject = mail.subject() != null ? mail.subject()
+                : localeStr.equals("de")
                         ? fallbackSubjectPrefixDe + event.getTitle()
-                        : fallbackSubjectPrefixEn + event.getTitle());
+                        : fallbackSubjectPrefixEn + event.getTitle();
 
         // inline → accept/decline in Apple Mail, Outlook, Gmail
         byte[] icsFile = generateCalendarFile(registration, event);
@@ -298,69 +280,27 @@ public class RegistrationEmailService {
     private EmailContent loadEmailTemplate(Locale locale, Registration registration,
         UserResponse userProfile, Event event, ZonedDateTime eventDateTime, EmailTokens tokens) {
         String localeStr = locale.getLanguage().equals("de") ? "de" : "en";
-        String templateName = localeStr.equals("de")
-                ? "email-templates/registration-confirmation-de.html"
-                : "email-templates/registration-confirmation-en.html";
 
-        // Story 10.2: DB-first template loading
-        String template = loadHtmlContent("registration-confirmation", localeStr, templateName);
+        // Story 4.1.5c: JWT confirmation token in the URL; Story 10.12: self-service deregistration URL
+        Map<String, String> variables = mailPipeline.variables().event(event, localeStr)
+                .put(MailVariable.ATTENDEE_FIRST_NAME, userProfile.getFirstName())
+                .put(MailVariable.ATTENDEE_LAST_NAME, userProfile.getLastName())
+                .put(MailVariable.ATTENDEE_NAME, userProfile.getFirstName() + " " + userProfile.getLastName())
+                // Today's mail says "Uhr" in English too; open unification decision (story 16.11)
+                .put(MailVariable.EVENT_TIME, eventDateTime.format(TIME_FORMATTER) + " Uhr")
+                .put(MailVariable.CONFIRMATION_URL, baseUrl + "/events/" + event.getEventCode()
+                        + "/confirm-registration?token=" + tokens.confirmationToken())
+                .put(MailVariable.DEREGISTRATION_URL, tokens.deregistrationUrl())
+                .put(MailVariable.CREATE_ACCOUNT_URL, baseUrl + "/auth/signup?email=" + userProfile.getEmail())
+                .asMap();
 
-        // Prepare template variables
-        // Story 4.1.5c: Use JWT confirmation token instead of registration code in URLs
-        // Anonymous Cancellation Flow: Include cancellation link in email
-        // Story 10.12: Include self-service deregistration URL
-        Map<String, String> variables = Map.ofEntries(
-                Map.entry("attendeeFirstName", userProfile.getFirstName()),
-                Map.entry("attendeeLastName", userProfile.getLastName()),
-                Map.entry("attendeeName", userProfile.getFirstName() + " " + userProfile.getLastName()),
-                Map.entry("eventCode", event.getEventCode()),
-                Map.entry("eventTitle", event.getTitle()),
-                Map.entry("eventDate", eventDateTime.format(DATE_FORMATTER)),
-                Map.entry("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr"),
-                Map.entry("venueName", event.getVenueName() != null ? event.getVenueName() : "TBA"),
-                Map.entry("venueAddress", event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"),
-                Map.entry("confirmationUrl", baseUrl + "/events/" + event.getEventCode()
-                    + "/confirm-registration?token=" + tokens.confirmationToken()),
-                Map.entry("deregistrationUrl",
-                    tokens.deregistrationUrl() != null ? tokens.deregistrationUrl() : ""),
-                Map.entry("createAccountUrl", baseUrl + "/auth/signup?email=" + userProfile.getEmail()),
-                Map.entry("eventUrl", baseUrl + "/events/" + event.getEventCode()),
-                Map.entry("supportUrl", baseUrl + "/support"),
-                Map.entry("currentYear", String.valueOf(java.time.Year.now().getValue())),
-                Map.entry("logoUrl", baseUrl + "/BATbern_white_logo.png")
-        );
-
-        String html = emailService.replaceVariables(template, variables);
-        String subject = emailTemplateService.resolveSubject("registration-confirmation", localeStr)
-                .map(s -> emailService.replaceVariables(s, variables))
-                .orElseGet(() -> localeStr.equals("de")
+        RenderedMail mail = mailPipeline.render(mailPipeline.template("registration-confirmation", localeStr),
+                variables);
+        String subject = mail.subject() != null ? mail.subject()
+                : localeStr.equals("de")
                         ? "Bitte bestätigen: Ihre Anmeldung - " + event.getEventCode() + " - " + event.getTitle()
-                        : "Please confirm your registration - " + event.getEventCode() + " - " + event.getTitle());
-        return new EmailContent(html, subject);
-    }
-
-    /**
-     * Loads HTML content from DB (with optional layout merge) or falls back to classpath.
-     * Story 10.2 AC1: DB-first template loading.
-     */
-    private String loadHtmlContent(String templateKey, String localeStr, String classpathFallback) {
-        Optional<EmailTemplate> dbTemplate = emailTemplateService.findByKeyAndLocale(templateKey, localeStr);
-        if (dbTemplate.isPresent()) {
-            String contentHtml = dbTemplate.get().getHtmlBody();
-            String layoutKey = dbTemplate.get().getLayoutKey();
-            if (layoutKey != null) {
-                return emailTemplateService.mergeWithLayout(contentHtml, layoutKey, localeStr);
-            }
-            return contentHtml;
-        }
-        // Classpath fallback
-        try {
-            ClassPathResource resource = new ClassPathResource(classpathFallback);
-            return resource.getContentAsString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            log.error("Email template not found in DB or classpath: {}/{}", templateKey, localeStr);
-            return "";
-        }
+                        : "Please confirm your registration - " + event.getEventCode() + " - " + event.getTitle();
+        return new EmailContent(mail.html(), subject);
     }
 
     /**

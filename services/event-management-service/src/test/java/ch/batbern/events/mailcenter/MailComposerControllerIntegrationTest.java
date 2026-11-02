@@ -7,8 +7,16 @@ import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.mailcenter.compose.ComposeContext;
+import ch.batbern.events.mailcenter.compose.ComposeRecipient;
+import ch.batbern.events.mailcenter.compose.ComposeRequest;
+import ch.batbern.events.mailcenter.compose.NewsletterAudienceAdapter;
+import ch.batbern.events.mailcenter.compose.Rendering;
+import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
+import ch.batbern.events.service.NewsletterEmailService;
+import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -28,8 +36,10 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.when;
@@ -59,6 +69,12 @@ class MailComposerControllerIntegrationTest extends AbstractIntegrationTest {
     private NewsletterSubscriberRepository subscriberRepository;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private NewsletterAudienceAdapter newsletterAdapter;
+    @Autowired
+    private NewsletterEmailService newsletterEmailService;
+    @Autowired
+    private MailPipeline mailPipeline;
 
     @MockitoBean
     private UserApiClient userApiClient;
@@ -84,6 +100,30 @@ class MailComposerControllerIntegrationTest extends AbstractIntegrationTest {
                 .thenReturn(new UserResponse().email("success+org1@simulator.amazonses.com"));
         when(userApiClient.getUserByUsername("organizer2"))
                 .thenReturn(new UserResponse().email("success+org2@simulator.amazonses.com"));
+    }
+
+    // ── adapter variables (Story 16.11 AC9) ───────────────────────────────────
+
+    @Test
+    @DisplayName("AC9 (16.11): the newsletter adapter renders with exactly the catalog map variables() returns")
+    void newsletterVariables_areWhatRenderUses() {
+        Event event = eventRepository.findByEventCode(EVENT_CODE).orElseThrow();
+        ComposeContext context = new ComposeContext(event, new ComposeRequest(MailContext.Audience.NEWSLETTER,
+                null, null, "de", 0, false, null, null, null), "organizer");
+        ComposeRecipient recipient = newsletterAdapter.resolveRecipients(context).recipients().stream()
+                .filter(r -> r.address().equals("success+sub921@simulator.amazonses.com")).findFirst().orElseThrow();
+
+        Map<String, String> vars = newsletterAdapter.variables(context, recipient, false);
+        assertThat(newsletterAdapter.allowedVariables()).containsAll(vars.keySet());
+        assertThat(vars.get("unsubscribeLink")).contains("tok-921-");
+        assertThat(vars.get("eventTitle")).isEqualTo("BATbern Test Event #921");
+        assertThat(newsletterAdapter.variables(context, recipient, true).get("unsubscribeLink"))
+                .endsWith("token=TEST");
+
+        Rendering rendering = newsletterAdapter.render(context, recipient, false);
+        NewsletterEmailService.NewsletterDraft draft = newsletterEmailService.prepare(event, "de", false,
+                newsletterEmailService.effectiveTemplateKey(null));
+        assertThat(rendering.html()).isEqualTo(mailPipeline.render(draft.content(), vars).html());
     }
 
     // ── gate ──────────────────────────────────────────────────────────────────

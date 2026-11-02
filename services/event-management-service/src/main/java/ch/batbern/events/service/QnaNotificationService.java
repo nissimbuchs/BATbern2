@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.QnaWindowStatus;
 import ch.batbern.events.domain.Session;
@@ -7,7 +8,9 @@ import ch.batbern.events.domain.SessionQnaNotification;
 import ch.batbern.events.domain.SessionQnaPost;
 import ch.batbern.events.domain.SessionQnaWindow;
 import ch.batbern.events.domain.SessionUser;
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.variables.MailVariable;
+import ch.batbern.events.mailcenter.variables.MailVariables;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionQnaNotificationRepository;
 import ch.batbern.events.repository.SessionQnaPostRepository;
@@ -26,8 +29,6 @@ import org.springframework.stereotype.Service;
 
 import java.time.Duration;
 import java.time.Instant;
-import java.time.Year;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -65,7 +66,6 @@ import java.util.UUID;
 public class QnaNotificationService {
 
     static final String TEMPLATE_KEY = "qna-new-questions";
-    private static final String LAYOUT_KEY = "batbern-default";
 
     /**
      * Session-scoped Q&A recipients: the session's own presenters. PANELIST is intentionally
@@ -84,7 +84,7 @@ public class QnaNotificationService {
     private final EventRepository eventRepository;
     private final UserApiClient userApiClient;
     private final EmailService emailService;
-    private final EmailTemplateService emailTemplateService;
+    private final MailPipeline mailPipeline;
     private final QnaNotificationStateWriter stateWriter;
 
     @Value("${app.base-url:https://batbern.ch}")
@@ -244,49 +244,31 @@ public class QnaNotificationService {
 
     private RenderedMail renderMail(SessionQnaWindow window, Session session, Event event,
                                     String recipient, int count, String locale) {
-        Map<String, String> vars = buildVariables(window, session, event, recipient, count);
-
-        String contentHtml = emailTemplateService.findByKeyAndLocale(TEMPLATE_KEY, locale)
-                .map(t -> emailService.replaceVariables(t.getHtmlBody(), vars))
-                .orElseGet(() -> {
-                    log.warn("Q&A template '{}' locale '{}' not found in DB", TEMPLATE_KEY, locale);
-                    return "<p>New questions in your session Q&amp;A.</p>";
-                });
-        String mergedHtml = emailService.replaceVariables(
-                emailTemplateService.mergeWithLayout(contentHtml, LAYOUT_KEY, locale), vars);
-
-        String subject = emailTemplateService.resolveSubject(TEMPLATE_KEY, locale)
-                .map(s -> emailService.replaceVariables(s, vars))
-                .orElseGet(() -> ("de".equals(locale)
-                        ? "Neue Fragen in der Q&A — " : "New questions in your Q&A — ")
-                        + nullToEmpty(session.getTitle()));
-
-        return new RenderedMail(subject, mergedHtml);
+        Map<String, String> vars = buildVariables(window, session, event, recipient, count, locale);
+        ch.batbern.events.mailcenter.render.RenderedMail mail =
+                mailPipeline.render(mailPipeline.template(TEMPLATE_KEY, locale), vars);
+        String subject = mail.subject() != null ? mail.subject()
+                : ("de".equals(locale) ? "Neue Fragen in der Q&A — " : "New questions in your Q&A — ")
+                        + nullToEmpty(session.getTitle());
+        return new RenderedMail(subject, mail.html());
     }
 
     private Map<String, String> buildVariables(SessionQnaWindow window, Session session,
-                                               Event event, String recipient, int count) {
+                                               Event event, String recipient, int count, String locale) {
         String eventCode = window.getEventCode();
-        Map<String, String> vars = new HashMap<>();
-        vars.put("count", String.valueOf(count));
-        vars.put("isSingle", count == 1 ? "1" : "");
-        vars.put("isMultiple", count > 1 ? "1" : "");
-        vars.put("sessionTitle", nullToEmpty(session.getTitle()));
-        vars.put("eventTitle", event != null ? nullToEmpty(event.getTitle()) : "");
-        vars.put("eventNumber",
-                (event != null && event.getEventNumber() != null)
-                        ? String.valueOf(event.getEventNumber()) : "");
-        vars.put("recipientName", resolveFirstName(recipient));
-        // Deep link to the public event page, which hosts the per-session Q&A thread.
-        vars.put("qnaLink", baseUrl + "/events/" + eventCode);
-        vars.put("currentYear", String.valueOf(Year.now().getValue()));
-        // batbern-default layout variables (without these the merged email shows literal
-        // {{logoUrl}} etc. — replaceVariables leaves unmatched placeholders untouched).
-        vars.put("logoUrl", baseUrl + "/BATbern_white_logo.png");
-        vars.put("eventUrl", baseUrl + "/events/" + eventCode);
-        vars.put("dashboardLink", baseUrl);
-        vars.put("supportUrl", baseUrl);
-        return vars;
+        MailVariables vars = event != null ? mailPipeline.variables().event(event, locale)
+                : mailPipeline.variables().system();
+        return vars
+                .put(MailVariable.COUNT, count)
+                .put(MailVariable.IS_SINGLE, count == 1 ? "1" : "")
+                .put(MailVariable.IS_MULTIPLE, count > 1 ? "1" : "")
+                .put(MailVariable.SESSION_TITLE, session.getTitle())
+                .put(MailVariable.RECIPIENT_NAME, resolveFirstName(recipient))
+                // Deep link to the public event page, which hosts the per-session Q&A thread.
+                .put(MailVariable.QNA_LINK, baseUrl + "/events/" + eventCode)
+                .put(MailVariable.EVENT_URL, baseUrl + "/events/" + eventCode)
+                .put(MailVariable.DASHBOARD_LINK, baseUrl)
+                .asMap();
     }
 
     private static String nullToEmpty(String s) {

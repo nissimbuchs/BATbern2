@@ -1,28 +1,27 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
+import ch.batbern.events.forwarding.ModeratorReplyAddress;
+import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
+import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
-import ch.batbern.events.forwarding.ModeratorReplyAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.HashMap;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -48,7 +47,7 @@ public class SpeakerInvitationEmailService {
 
     private final EmailService emailService;
     private final SessionRepository sessionRepository;
-    private final EmailTemplateService emailTemplateService;
+    private final MailPipeline mailPipeline;
     // Phase B of the post-Epic-11 cleanup (2026-05-21): the linked User's identity is
     // now resolved through session_users + UserApiClient (PrimarySpeakerResolver) so
     // that organizer reassignments on the Sessions tab take effect on the next
@@ -56,12 +55,6 @@ public class SpeakerInvitationEmailService {
     // those columns went stale at reassign time.
     private final PrimarySpeakerResolver primarySpeakerResolver;
     private final ModeratorReplyAddress moderatorReplyAddress;
-
-    @Value("${app.email.organizer-name:BATbern Team}")
-    private String organizerName;
-
-    @Value("${app.email.organizer-email:events@batbern.ch}")
-    private String organizerEmail;
 
     @Value("${app.cognito.temp-password-validity-days:14}")
     private int tempPasswordValidityDays;
@@ -193,12 +186,14 @@ public class SpeakerInvitationEmailService {
         // Determine template file based on locale (de + en officially supported per CLAUDE.md
         // §Localization; other locales fall back to en at the repository layer).
         String localeStr = locale.getLanguage();
-        String templateName = localeStr.equals("de")
-                ? "email-templates/speaker-invitation-de.html"
-                : "email-templates/speaker-invitation-en.html";
 
-        // 1. Try DB lookup; fall back to classpath if absent (Story 10.2).
-        String template = loadHtmlContent("speaker-invitation", localeStr, templateName);
+        // Story 11.E.2 review patch (E10): never send an empty invitation after a Cognito password
+        // rotation (speaker locked out with no recovery). A missing template throws instead, so the
+        // caller's catch logs it and no mail leaves SES.
+        MailContent content = mailPipeline.template("speaker-invitation", localeStr);
+        if (content.bodyHtml().isBlank()) {
+            throw new IllegalStateException("Missing email template: key=speaker-invitation locale=" + localeStr);
+        }
 
         // Get session details if assigned.
         String sessionTitle = "";
@@ -227,94 +222,48 @@ public class SpeakerInvitationEmailService {
         String temporaryPasswordValue = isFresh ? credentials.getTemporaryPassword() : "";
         String useExistingPasswordFlag = isFresh ? "" : MUSTACHE_TRUTHY;
 
-        Map<String, String> variables = new HashMap<>();
-        // Epic 11 bug fix 2026-05-19 — resolve the linked User's first+last name for
-        // the email greeting. `speaker.getSpeakerName()` carries the brainstorm-stage
-        // placeholder (e.g. "Testreferent2"); by READY+ the real User exists in CUMS
-        // and that's the name the recipient expects to see.
-        // Fallback chain: linked-User name → brainstorm name → empty. The fallback
-        // protects against (1) UserApiClient transient failures and (2) the
-        // theoretical out-of-order case where invitation is sent before promote
-        // populates `speaker_pool.username` (should not happen via the workflow
-        // service but defensive in case of direct DB manipulation).
-        // Phase B: PrimarySpeakerResolver gives us the live User name (session_users ⨝
-        // CUMS). Invitations only send post-READY (session always exists), so primary
-        // should never be null here — but if CUMS degrades and resolver returns an
-        // empty profile, fall back to the brainstorm-stage speaker name on pool.
+        // Epic 11 bug fix 2026-05-19 / Phase B: the greeting uses the live User name
+        // (PrimarySpeakerResolver: session_users ⨝ CUMS), falling back to the brainstorm-stage
+        // speaker name when CUMS degrades.
         String speakerNameDisplay = primary != null && !primary.fullName().isEmpty()
                 ? primary.fullName()
                 : nullToEmpty(speaker.getSpeakerName());
-        variables.put("speakerName", escapeHtml(speakerNameDisplay));
-        variables.put("eventTitle", escapeHtml(nullToEmpty(event.getTitle())));
-        variables.put("eventDate", eventDateTime.format(DATE_FORMATTER));
-        variables.put("eventTime", eventDateTime.format(TIME_FORMATTER) + " Uhr");
-        variables.put("venueName", escapeHtml(event.getVenueName() != null ? event.getVenueName() : "TBA"));
-        variables.put("venueAddress", escapeHtml(event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"));
-        variables.put("sessionTitle", escapeHtml(sessionTitle));
-        variables.put("sessionDescription", escapeHtml(sessionDescription));
-        // Story 11.E.2 Cognito-flow variables. temporaryPassword may contain HTML-significant
-        // chars from PasswordGenerator's symbol alphabet (& < > ") — escape both values so the
-        // rendered email is well-formed and the password is preserved verbatim on copy/paste.
-        variables.put("loginUrl", loginUrl);
-        // Phase B: usernameForLogin must be the live recipient email — that's what the
-        // speaker types into Cognito at login. Falls back to the recipient address resolved
-        // by PrimarySpeakerResolver at the top of sendInvitationEmail.
-        variables.put("usernameForLogin", escapeHtml(nullToEmpty(recipientEmail)));
-        variables.put("temporaryPassword", escapeHtml(temporaryPasswordValue));
-        variables.put("useExistingPassword", useExistingPasswordFlag);
-        variables.put("tempPasswordValidityDays", String.valueOf(tempPasswordValidityDays));
-        // Existing deadline + organizer + branding variables (unchanged).
-        variables.put("responseDeadline", speaker.getResponseDeadline() != null
-                ? speaker.getResponseDeadline().format(DATE_FORMATTER)
-                : "");
-        variables.put("contentDeadline", speaker.getContentDeadline() != null
-                ? speaker.getContentDeadline().format(DATE_FORMATTER)
-                : "");
-        variables.put("organizerName", organizerName);
-        variables.put("organizerEmail", organizerEmail);
-        // Story 11.E.2: derive a public event URL from the login URL host (best-effort; the
-        // existing classpath templates retain {{eventUrl}}). Use the loginUrl host portion.
-        variables.put("eventUrl", deriveHostBase(loginUrl) + "/events/" + event.getEventCode());
-        variables.put("supportUrl", deriveHostBase(loginUrl) + "/support");
-        variables.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
-        variables.put("logoUrl", deriveHostBase(loginUrl) + "/BATbern_white_logo.png");
+        String hostBase = deriveHostBase(loginUrl);
+        // This mail HTML-escapes its values (temporary passwords contain & < > "); the other mails
+        // do not. Kept as is in Story 16.11.
+        Map<String, String> variables = mailPipeline.variables().event(event, localeStr)
+                .put(MailVariable.SPEAKER_NAME, escapeHtml(speakerNameDisplay))
+                .put(MailVariable.EVENT_TITLE, escapeHtml(nullToEmpty(event.getTitle())))
+                // "Uhr" in English too: open unification decision (Story 16.11)
+                .put(MailVariable.EVENT_TIME, eventDateTime.format(TIME_FORMATTER) + " Uhr")
+                .put(MailVariable.VENUE_NAME, escapeHtml(event.getVenueName() != null ? event.getVenueName() : "TBA"))
+                .put(MailVariable.VENUE_ADDRESS,
+                        escapeHtml(event.getVenueAddress() != null ? event.getVenueAddress() : "TBA"))
+                .put(MailVariable.SESSION_TITLE, escapeHtml(sessionTitle))
+                .put(MailVariable.SESSION_DESCRIPTION, escapeHtml(sessionDescription))
+                .put(MailVariable.LOGIN_URL, loginUrl)
+                // Phase B: the live recipient email is what the speaker types into Cognito.
+                .put(MailVariable.USERNAME_FOR_LOGIN, escapeHtml(nullToEmpty(recipientEmail)))
+                .put(MailVariable.TEMPORARY_PASSWORD, escapeHtml(temporaryPasswordValue))
+                .put(MailVariable.USE_EXISTING_PASSWORD, useExistingPasswordFlag)
+                .put(MailVariable.TEMP_PASSWORD_VALIDITY_DAYS, tempPasswordValidityDays)
+                .put(MailVariable.RESPONSE_DEADLINE, speaker.getResponseDeadline() != null
+                        ? speaker.getResponseDeadline().format(DATE_FORMATTER) : "")
+                .put(MailVariable.CONTENT_DEADLINE, speaker.getContentDeadline() != null
+                        ? speaker.getContentDeadline().format(DATE_FORMATTER) : "")
+                // Story 11.E.2: links from the login URL's host (best effort)
+                .put(MailVariable.EVENT_URL, hostBase + "/events/" + event.getEventCode())
+                .put(MailVariable.SUPPORT_URL, hostBase + "/support")
+                .put(MailVariable.LOGO_URL, hostBase + "/BATbern_white_logo.png")
+                .asMap();
 
-        String html = emailService.replaceVariables(template, variables);
-        String subject = emailTemplateService.resolveSubject("speaker-invitation", localeStr)
-                .map(s -> emailService.replaceVariables(s, variables))
-                .orElseGet(() -> localeStr.equals("de")
+        RenderedMail mail = mailPipeline.render(content, variables);
+        String html = mail.html();
+        String subject = mail.subject() != null ? mail.subject()
+                : localeStr.equals("de")
                         ? "Einladung als Referent - " + event.getTitle()
-                        : "Speaker Invitation - " + event.getTitle());
+                        : "Speaker Invitation - " + event.getTitle();
         return new EmailContent(html, subject);
-    }
-
-    /**
-     * Loads HTML content from DB (with optional layout merge) or falls back to classpath.
-     * Story 10.2 AC1: DB-first template loading.
-     */
-    private String loadHtmlContent(String templateKey, String localeStr, String classpathFallback) {
-        Optional<EmailTemplate> dbTemplate = emailTemplateService.findByKeyAndLocale(templateKey, localeStr);
-        if (dbTemplate.isPresent()) {
-            String contentHtml = dbTemplate.get().getHtmlBody();
-            String layoutKey = dbTemplate.get().getLayoutKey();
-            if (layoutKey != null) {
-                return emailTemplateService.mergeWithLayout(contentHtml, layoutKey, localeStr);
-            }
-            return contentHtml;
-        }
-        // Classpath fallback.
-        try {
-            ClassPathResource resource = new ClassPathResource(classpathFallback);
-            return resource.getContentAsString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            // Story 11.E.2 review patch (E10): a previous version returned "" here, which
-            // caused {@link #sendInvitationEmail} to send an empty-body email after a Cognito
-            // password rotation had already happened — speaker locked out with no recovery.
-            // Throw instead so the caller's catch logs the failure and no email leaves SES.
-            log.error("Email template not found in DB or classpath: {}/{}", templateKey, localeStr);
-            throw new IllegalStateException(
-                    "Missing email template: key=" + templateKey + " locale=" + localeStr, e);
-        }
     }
 
     private static String nullToEmpty(String s) {

@@ -5,6 +5,8 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.slf4j.MDC;
 
 import java.time.Instant;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -199,11 +201,25 @@ public class LoggingUtils {
         if (email == null || email.isEmpty()) {
             return "***";
         }
-        int atIndex = email.indexOf('@');
+        if (email.indexOf(',') >= 0 || email.indexOf(';') >= 0) {
+            // A group mail's joined To: line: mask each address, not only the first.
+            return maskAll(Arrays.asList(email.split("[,;]")));
+        }
+        String address = email.trim();
+        int atIndex = address.indexOf('@');
         if (atIndex > 1) {
-            return email.charAt(0) + "***" + email.substring(atIndex);
+            return address.charAt(0) + "***" + address.substring(atIndex);
         }
         return "***";
+    }
+
+    /** Every address masked on its own, comma-joined (for a group mail's recipients). */
+    public static String maskAll(Collection<String> emails) {
+        if (emails == null || emails.isEmpty()) {
+            return "***";
+        }
+        return emails.stream().map(String::trim).filter(e -> !e.isEmpty()).map(LoggingUtils::maskEmail)
+                .collect(Collectors.joining(","));
     }
 
     public static class LogContextBuilder {

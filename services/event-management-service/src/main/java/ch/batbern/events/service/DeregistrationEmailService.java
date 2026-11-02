@@ -1,27 +1,23 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
+import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
+import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ClassPathResource;
 import org.springframework.stereotype.Service;
 
-import java.io.IOException;
-import java.nio.charset.StandardCharsets;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
-import java.util.Optional;
 
 /**
  * Service for sending deregistration-related emails.
@@ -39,11 +35,8 @@ import java.util.Optional;
 public class DeregistrationEmailService {
 
     private final EmailService emailService;
-    private final EmailTemplateService emailTemplateService;
     private final UserApiClient userApiClient;
-
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-    private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
+    private final MailPipeline mailPipeline;
 
     /**
      * Send deregistration link email to the attendee.
@@ -58,33 +51,22 @@ public class DeregistrationEmailService {
         try {
             String locale = resolveLocale(registration.getAttendeeUsername());
             String templateKey = "deregistration-link";
-            String classpathFallback = "email-templates/deregistration-link-" + locale + ".html";
-
-            String template = loadHtmlContent(templateKey, locale, classpathFallback);
-            if (template.isBlank()) {
+            MailContent content = mailPipeline.template(templateKey, locale);
+            if (content.bodyHtml().isBlank()) {
                 log.warn("No deregistration-link template found for locale '{}', skipping email to {}",
                         locale, LoggingUtils.maskEmail(registration.getAttendeeEmail()));
                 return;
             }
 
-            ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
-            Map<String, String> variables = Map.of(
-                    "recipientName", registration.getAttendeeFirstName() != null
-                            ? registration.getAttendeeFirstName() : "",
-                    "eventTitle", event.getTitle(),
-                    "eventCode", event.getEventCode(),
-                    "eventDate", eventDateTime.format(DATE_FORMATTER),
-                    "deregistrationLink", deregistrationLink
-            );
+            Map<String, String> variables = mailPipeline.variables().event(event, locale)
+                    .put(MailVariable.RECIPIENT_NAME, registration.getAttendeeFirstName())
+                    .put(MailVariable.DEREGISTRATION_URL, deregistrationLink)
+                    .asMap();
 
-            String html = emailService.replaceVariables(template, variables);
-            String subject = emailTemplateService.resolveSubject(templateKey, locale)
-                    .map(s -> emailService.replaceVariables(s, variables))
-                    .orElse("Ihre Abmeldung / Your Cancellation Request");
+            RenderedMail mail = mailPipeline.render(content, variables);
+            String html = mail.html();
+            String subject = mail.subject() != null ? mail.subject() : "Ihre Abmeldung / Your Cancellation Request";
 
-            // Story 10.32 (P1-9 from 2026-05-22 review): CC attendee's additional emails so the
-            // deregistration link reaches every address they declared. Anonymous registrants
-            // (no attendeeUsername) and CUMS lookup failures degrade to primary-only.
             List<String> cc = additionalEmailsFor(registration.getAttendeeUsername());
             MailContext context = MailContext.individual(event.getEventCode(), MailContext.Audience.REGISTRANTS,
                     templateKey).withSecrets(registration.getRegistrationCode());
@@ -139,27 +121,5 @@ public class DeregistrationEmailService {
             return "de";
         }
         return EmailLocales.fromPreference(userApiClient.getPreferredLanguage(username)).getLanguage();
-    }
-
-    /**
-     * DB-first template loading with classpath fallback (Story 10.2 pattern).
-     */
-    private String loadHtmlContent(String templateKey, String locale, String classpathFallback) {
-        Optional<EmailTemplate> dbTemplate = emailTemplateService.findByKeyAndLocale(templateKey, locale);
-        if (dbTemplate.isPresent()) {
-            String contentHtml = dbTemplate.get().getHtmlBody();
-            String layoutKey = dbTemplate.get().getLayoutKey();
-            if (layoutKey != null) {
-                return emailTemplateService.mergeWithLayout(contentHtml, layoutKey, locale);
-            }
-            return contentHtml;
-        }
-        try {
-            ClassPathResource resource = new ClassPathResource(classpathFallback);
-            return resource.getContentAsString(StandardCharsets.UTF_8);
-        } catch (IOException e) {
-            log.warn("Email template not found in DB or classpath: {}/{}", templateKey, locale);
-            return "";
-        }
     }
 }
