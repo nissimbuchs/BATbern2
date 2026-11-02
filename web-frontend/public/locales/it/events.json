@@ -457,8 +457,7 @@
         "contentSource": "Contenuto",
         "source": {
           "template": "Modello",
-          "ownText": "Testo libero",
-          "ownTextSoon": "Il testo libero arriverà con un aggiornamento successivo."
+          "ownText": "Testo libero"
         },
         "template": "Modello",
         "automatic": "Automatico (livello per relatore)",
@@ -475,7 +474,14 @@
             "CONTENT": "Relatori confermati senza contenuti"
           },
           "goesTo": "Destinatari: {{target}}",
-          "detected": "Scelto automaticamente per {{name}}: {{templateKey}}"
+          "detected": "Scelto automaticamente per {{name}}: {{templateKey}}",
+          "status": {
+            "INVITED": "Invitati",
+            "ACCEPTED": "Hanno accettato",
+            "CONTENT_SUBMITTED": "Contenuti inviati",
+            "QUALITY_REVIEWED": "Qualità verificata"
+          },
+          "statusRequired": "Scegli almeno uno stato."
         },
         "recipients": {
           "count_one": "{{count}} destinatario",
@@ -520,6 +526,58 @@
         "partners": {
           "meetingInvite": "Invito alla riunione dei partner con voce di calendario",
           "fixedText": "Il testo di questo invito è ancora fisso. Parte come un'unica e-mail a tutti i partner e gli organizzatori, con la voce di calendario allegata."
+        },
+        "ownText": {
+          "subject": "Oggetto",
+          "body": "Testo",
+          "chips": "Inserisci un segnaposto:",
+          "noPersonalFields": "Nessun campo personale per destinatario: tutti ricevono gli stessi valori.",
+          "asWritten": "Tutti ricevono questo testo così come è scritto. La lingua scelta qui determina il layout per tutti.",
+          "unsubscribeAdded": "Il link per annullare l’iscrizione viene aggiunto automaticamente.",
+          "startingPoint": "Usa questo modello come punto di partenza e adattalo →",
+          "startingPointFailed": "Non è stato possibile caricare il modello in questa lingua.",
+          "empty": "Inserisci un oggetto e un testo per vedere l’anteprima.",
+          "tokenHint": "I link con un token personale sono nascosti qui; ogni destinatario riceve un link funzionante.",
+          "unknownPlaceholders": "Segnaposto sconosciuti: {{list}}. Correggi il testo prima dell’invio.",
+          "alreadySent": "Già inviato il {{date}}. Inviare di nuovo?",
+          "sendAgain": "Invia di nuovo"
+        },
+        "saveTemplate": {
+          "button": "Salva come modello",
+          "title": "Salva come modello",
+          "key": "Chiave del modello",
+          "keyHelp": "Lettere minuscole, cifre e trattini, ad es. cambio-sala",
+          "keyInvalid": "Solo lettere minuscole, cifre e trattini singoli, ad es. cambio-sala",
+          "save": "Salva",
+          "duplicate": "Esiste già un modello con questa chiave in questa lingua. Scegli un’altra chiave.",
+          "failed": "Non è stato possibile salvare il modello. Riprova.",
+          "saved": "Salvato come modello {{key}}."
+        },
+        "variables": {
+          "eventTitle": "Titolo dell’evento",
+          "eventDate": "Data",
+          "eventTime": "Ora",
+          "eventNumber": "Numero dell’evento",
+          "eventType": "Tipo di evento",
+          "venue": "Luogo",
+          "venueName": "Nome del luogo",
+          "registrationLink": "Link di iscrizione",
+          "eventDetailLink": "Link alla pagina dell’evento",
+          "speakerName": "Nome",
+          "sessionTitle": "Titolo dell’intervento",
+          "deadline": "Scadenza",
+          "daysRemaining": "Giorni rimanenti",
+          "portalLink": "Link al portale",
+          "organizerName": "Nome dell’organizzatore",
+          "organizerEmail": "E-mail dell’organizzatore",
+          "recipientName": "Nome",
+          "deregistrationUrl": "Link di cancellazione",
+          "salutation": "Saluto",
+          "topicTitle": "Tema",
+          "agenda": "Programma",
+          "notes": "Note",
+          "organizerSignature": "Firma dell’organizzatore",
+          "companyName": "Azienda"
         }
       },
       "rsvpSummary": "Risposte: {{accepted}} accettate · {{declined}} rifiutate · {{tentative}} provvisorie · {{noAnswer}} senza risposta"

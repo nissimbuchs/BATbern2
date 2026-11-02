@@ -457,8 +457,7 @@
         "contentSource": "Inhoud",
         "source": {
           "template": "Sjabloon",
-          "ownText": "Eigen tekst",
-          "ownTextSoon": "Eigen tekst komt met een latere update."
+          "ownText": "Eigen tekst"
         },
         "template": "Sjabloon",
         "automatic": "Automatisch (niveau per spreker)",
@@ -475,7 +474,14 @@
             "CONTENT": "Bevestigde sprekers zonder inhoud"
           },
           "goesTo": "Gaat naar: {{target}}",
-          "detected": "Automatisch gekozen voor {{name}}: {{templateKey}}"
+          "detected": "Automatisch gekozen voor {{name}}: {{templateKey}}",
+          "status": {
+            "INVITED": "Uitgenodigd",
+            "ACCEPTED": "Geaccepteerd",
+            "CONTENT_SUBMITTED": "Inhoud ingediend",
+            "QUALITY_REVIEWED": "Kwaliteit gecontroleerd"
+          },
+          "statusRequired": "Kies minstens één status."
         },
         "recipients": {
           "count_one": "{{count}} ontvanger",
@@ -520,6 +526,58 @@
         "partners": {
           "meetingInvite": "Uitnodiging partnervergadering met agenda-item",
           "fixedText": "De tekst van deze uitnodiging ligt nog vast. Ze gaat als één e-mail naar alle partners en organisatoren, met het agenda-item als bijlage."
+        },
+        "ownText": {
+          "subject": "Onderwerp",
+          "body": "Tekst",
+          "chips": "Plaatshouder invoegen:",
+          "noPersonalFields": "Geen persoonlijke velden per ontvanger: iedereen krijgt dezelfde waarden.",
+          "asWritten": "Iedereen krijgt deze tekst zoals hij hier staat. De hier gekozen taal bepaalt de lay-out voor iedereen.",
+          "unsubscribeAdded": "De afmeldlink wordt automatisch toegevoegd.",
+          "startingPoint": "Dit sjabloon als uitgangspunt gebruiken en aanpassen →",
+          "startingPointFailed": "Het sjabloon kon in deze taal niet worden geladen.",
+          "empty": "Vul een onderwerp en een tekst in om het voorbeeld te zien.",
+          "tokenHint": "Links met een persoonlijk token zijn hier verborgen; elke ontvanger krijgt een werkende link.",
+          "unknownPlaceholders": "Onbekende plaatshouders: {{list}}. Corrigeer de tekst voor het verzenden.",
+          "alreadySent": "Al verzonden op {{date}}. Opnieuw verzenden?",
+          "sendAgain": "Opnieuw verzenden"
+        },
+        "saveTemplate": {
+          "button": "Opslaan als sjabloon",
+          "title": "Opslaan als sjabloon",
+          "key": "Sjabloonsleutel",
+          "keyHelp": "Kleine letters, cijfers en koppeltekens, bijv. zaalwissel",
+          "keyInvalid": "Alleen kleine letters, cijfers en enkele koppeltekens, bijv. zaalwissel",
+          "save": "Opslaan",
+          "duplicate": "Er bestaat al een sjabloon met deze sleutel in deze taal. Kies een andere sleutel.",
+          "failed": "Het sjabloon kon niet worden opgeslagen. Probeer het opnieuw.",
+          "saved": "Opgeslagen als sjabloon {{key}}."
+        },
+        "variables": {
+          "eventTitle": "Titel van het evenement",
+          "eventDate": "Datum",
+          "eventTime": "Tijd",
+          "eventNumber": "Nummer van het evenement",
+          "eventType": "Soort evenement",
+          "venue": "Locatie",
+          "venueName": "Naam van de locatie",
+          "registrationLink": "Inschrijflink",
+          "eventDetailLink": "Link naar de evenementpagina",
+          "speakerName": "Naam",
+          "sessionTitle": "Titel van de presentatie",
+          "deadline": "Deadline",
+          "daysRemaining": "Resterende dagen",
+          "portalLink": "Portaallink",
+          "organizerName": "Naam organisator",
+          "organizerEmail": "E-mail organisator",
+          "recipientName": "Naam",
+          "deregistrationUrl": "Afmeldlink",
+          "salutation": "Aanhef",
+          "topicTitle": "Thema",
+          "agenda": "Programma",
+          "notes": "Notities",
+          "organizerSignature": "Handtekening organisator",
+          "companyName": "Bedrijf"
         }
       },
       "rsvpSummary": "Reacties: {{accepted}} geaccepteerd · {{declined}} afgewezen · {{tentative}} voorlopig · {{noAnswer}} geen antwoord"

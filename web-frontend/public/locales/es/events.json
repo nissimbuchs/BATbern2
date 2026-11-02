@@ -457,8 +457,7 @@
         "contentSource": "Contenido",
         "source": {
           "template": "Plantilla",
-          "ownText": "Texto propio",
-          "ownTextSoon": "El texto propio llegará con una actualización posterior."
+          "ownText": "Texto propio"
         },
         "template": "Plantilla",
         "automatic": "Automático (nivel por ponente)",
@@ -475,7 +474,14 @@
             "CONTENT": "Ponentes confirmados sin contenido"
           },
           "goesTo": "Para: {{target}}",
-          "detected": "Elegido automáticamente para {{name}}: {{templateKey}}"
+          "detected": "Elegido automáticamente para {{name}}: {{templateKey}}",
+          "status": {
+            "INVITED": "Invitados",
+            "ACCEPTED": "Aceptados",
+            "CONTENT_SUBMITTED": "Contenido enviado",
+            "QUALITY_REVIEWED": "Calidad revisada"
+          },
+          "statusRequired": "Elige al menos un estado."
         },
         "recipients": {
           "count_one": "{{count}} destinatario",
@@ -520,6 +526,58 @@
         "partners": {
           "meetingInvite": "Invitación a la reunión de socios con entrada de calendario",
           "fixedText": "El texto de esta invitación todavía es fijo. Se envía como un único correo a todos los socios y organizadores, con la entrada de calendario adjunta."
+        },
+        "ownText": {
+          "subject": "Asunto",
+          "body": "Texto",
+          "chips": "Insertar un marcador:",
+          "noPersonalFields": "Sin campos personales por destinatario: todos reciben los mismos valores.",
+          "asWritten": "Todos reciben este texto tal como está escrito. El idioma elegido aquí define el diseño para todos.",
+          "unsubscribeAdded": "El enlace para darse de baja se añade automáticamente.",
+          "startingPoint": "Usar esta plantilla como punto de partida y adaptarla →",
+          "startingPointFailed": "No se pudo cargar la plantilla en este idioma.",
+          "empty": "Escribe un asunto y un texto para ver la vista previa.",
+          "tokenHint": "Los enlaces con un token personal se ocultan aquí; cada destinatario recibe un enlace válido.",
+          "unknownPlaceholders": "Marcadores desconocidos: {{list}}. Corrige el texto antes de enviar.",
+          "alreadySent": "Ya se envió el {{date}}. ¿Enviar de nuevo?",
+          "sendAgain": "Enviar de nuevo"
+        },
+        "saveTemplate": {
+          "button": "Guardar como plantilla",
+          "title": "Guardar como plantilla",
+          "key": "Clave de la plantilla",
+          "keyHelp": "Minúsculas, cifras y guiones, p. ej. cambio-de-sala",
+          "keyInvalid": "Solo minúsculas, cifras y guiones simples, p. ej. cambio-de-sala",
+          "save": "Guardar",
+          "duplicate": "Ya existe una plantilla con esta clave en este idioma. Elige otra clave.",
+          "failed": "No se pudo guardar la plantilla. Inténtalo de nuevo.",
+          "saved": "Guardado como plantilla {{key}}."
+        },
+        "variables": {
+          "eventTitle": "Título del evento",
+          "eventDate": "Fecha",
+          "eventTime": "Hora",
+          "eventNumber": "Número del evento",
+          "eventType": "Tipo de evento",
+          "venue": "Lugar",
+          "venueName": "Nombre del lugar",
+          "registrationLink": "Enlace de inscripción",
+          "eventDetailLink": "Enlace a la página del evento",
+          "speakerName": "Nombre",
+          "sessionTitle": "Título de la charla",
+          "deadline": "Plazo",
+          "daysRemaining": "Días restantes",
+          "portalLink": "Enlace al portal",
+          "organizerName": "Nombre del organizador",
+          "organizerEmail": "Correo del organizador",
+          "recipientName": "Nombre",
+          "deregistrationUrl": "Enlace de baja",
+          "salutation": "Saludo",
+          "topicTitle": "Tema",
+          "agenda": "Programa",
+          "notes": "Notas",
+          "organizerSignature": "Firma del organizador",
+          "companyName": "Empresa"
         }
       },
       "rsvpSummary": "Respuestas: {{accepted}} aceptadas · {{declined}} rechazadas · {{tentative}} provisionales · {{noAnswer}} sin respuesta"

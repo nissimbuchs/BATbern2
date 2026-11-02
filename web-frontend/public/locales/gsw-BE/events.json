@@ -463,8 +463,7 @@
         "contentSource": "Inhaut",
         "source": {
           "template": "Vorlag",
-          "ownText": "Eigete Text",
-          "ownTextSoon": "Eigete Text chunnt mit emne spätere Update."
+          "ownText": "Eigete Text"
         },
         "template": "Vorlag",
         "automatic": "Automatisch (Stufe je Speaker)",
@@ -481,7 +480,14 @@
             "CONTENT": "Zuegseiti Speaker ohni Inhaut"
           },
           "goesTo": "Geit a: {{target}}",
-          "detected": "Für {{name}} automatisch gwäut: {{templateKey}}"
+          "detected": "Für {{name}} automatisch gwäut: {{templateKey}}",
+          "status": {
+            "INVITED": "Iiglade",
+            "ACCEPTED": "Zuegseit",
+            "CONTENT_SUBMITTED": "Inhaut iigreicht",
+            "QUALITY_REVIEWED": "Qualität prüeft"
+          },
+          "statusRequired": "Mindestens ei Status wähle."
         },
         "recipients": {
           "count_one": "{{count}} Empfänger:in",
@@ -526,6 +532,58 @@
         "partners": {
           "meetingInvite": "Partner-Meeting-Iiladig mit Kaländeiitrag",
           "fixedText": "Dr Text vo dere Iiladig isch no fescht vorgä. Si geit als ei Mail a aui Partner und Organisatore, mit em Kaländeiitrag im Ahang."
+        },
+        "ownText": {
+          "subject": "Betreff",
+          "body": "Text",
+          "chips": "Platzhalter iifüege:",
+          "noPersonalFields": "Kener persönleche Fälder pro Empfänger: Aui überchöme di glyche Wärt.",
+          "asWritten": "Aui überchöme dä Text so, wie-n-er da steit. D Sprach, wo hie gwäut isch, bestimmt ds Layout für aui.",
+          "unsubscribeAdded": "Dr Abmäudelink wird automatisch aaghänkt.",
+          "startingPoint": "Die Vorlag als Usgangspunkt näh und apasse →",
+          "startingPointFailed": "D Vorlag het i dere Sprach nid chönne glade wärde.",
+          "empty": "Betreff und Text iigä, de gseht me d Vorschou.",
+          "tokenHint": "Links mit emne persönleche Token sy hie usbländet; jede Empfänger überchunnt e Link, wo funktioniert.",
+          "unknownPlaceholders": "Unbekannti Platzhalter: {{list}}. Bitte dr Text vor em Sände korrigiere.",
+          "alreadySent": "Scho am {{date}} gsändet. Nomau sände?",
+          "sendAgain": "Nomau sände"
+        },
+        "saveTemplate": {
+          "button": "Als Vorlag spychere",
+          "title": "Als Vorlag spychere",
+          "key": "Vorlag-Schlüssu",
+          "keyHelp": "Chlybuechstabe, Ziffere und Bindestriche, z. B. ruumwächsu",
+          "keyInvalid": "Nume Chlybuechstabe, Ziffere und einzelni Bindestriche, z. B. ruumwächsu",
+          "save": "Spychere",
+          "duplicate": "E Vorlag mit däm Schlüssu gits i dere Sprach scho. Bitte en angere Schlüssu wähle.",
+          "failed": "D Vorlag het nid chönne gspycheret wärde. Bitte nomau probiere.",
+          "saved": "Als Vorlag {{key}} gspycheret."
+        },
+        "variables": {
+          "eventTitle": "Titel vom Aalass",
+          "eventDate": "Datum",
+          "eventTime": "Zyt",
+          "eventNumber": "Nummere vom Aalass",
+          "eventType": "Art vom Aalass",
+          "venue": "Ort",
+          "venueName": "Name vom Ort",
+          "registrationLink": "Aamäudelink",
+          "eventDetailLink": "Link zur Aalass-Syte",
+          "speakerName": "Name",
+          "sessionTitle": "Vortragstitel",
+          "deadline": "Frischt",
+          "daysRemaining": "Verblybendi Täg",
+          "portalLink": "Portal-Link",
+          "organizerName": "Name Organisator",
+          "organizerEmail": "E-Mail Organisator",
+          "recipientName": "Name",
+          "deregistrationUrl": "Abmäudelink",
+          "salutation": "Aared",
+          "topicTitle": "Thema",
+          "agenda": "Programm",
+          "notes": "Notize",
+          "organizerSignature": "Signatur Organisator",
+          "companyName": "Firma"
         }
       },
       "rsvpSummary": "Rückmäldige: {{accepted}} zuegseit · {{declined}} abgseit · {{tentative}} viilech · {{noAnswer}} ohni Antwort"

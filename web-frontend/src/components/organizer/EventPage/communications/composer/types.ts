@@ -12,9 +12,21 @@ import type { ComposeAudience, MailComposeRequest } from '@/services/mailMessage
 export type ComposerLocale = MailComposeRequest['locale'];
 export type SpeakerReminderType = NonNullable<MailComposeRequest['speakerReminderType']>;
 export type VenueRole = NonNullable<MailComposeRequest['venueRecipients']>[number];
+export type ContentSource = MailComposeRequest['contentSource'];
+export type SpeakerStatus = NonNullable<MailComposeRequest['speakerStatuses']>[number];
+
+/** Story 16.5: the speaker statuses own text can go to, in the order they are shown. */
+export const SPEAKER_STATUSES: SpeakerStatus[] = [
+  'INVITED',
+  'ACCEPTED',
+  'CONTENT_SUBMITTED',
+  'QUALITY_REVIEWED',
+];
 
 /** Everything the organizer has chosen so far. One shape for all audiences. */
 export interface ComposerState {
+  /** Story 16.5: a stored template, or the organizer's own subject and body. */
+  contentSource: ContentSource;
   /** null = the audience's automatic choice (speakers) or its default template. */
   templateKey: string | null;
   locale: ComposerLocale;
@@ -23,6 +35,12 @@ export interface ComposerState {
   speakerReminderType: SpeakerReminderType | null;
   venueRecipients: VenueRole[];
   venueNotes: string;
+  /** OWN_TEXT only. One line, at most 500 characters. */
+  ownSubject: string;
+  /** OWN_TEXT only. HTML from the editor; the BATbern layout is added by the server. */
+  ownBodyHtml: string;
+  /** SPEAKERS with OWN_TEXT only, at least one. */
+  speakerStatuses: SpeakerStatus[];
 }
 
 export interface ExtraFieldsProps {
@@ -59,6 +77,13 @@ export interface ComposerAudience {
   personalized: boolean;
   /** False when each recipient gets their own language (registrants, speakers). */
   organizerPicksLanguage: boolean;
+  /**
+   * Story 16.5: false when a template saved from own text could not be sent from this audience's
+   * template mode (speakers: the six reminder templates only). Default true.
+   */
+  canSaveAsTemplate?: boolean;
+  /** Story 16.5: a hint shown with own text, e.g. the newsletter's automatic unsubscribe link. */
+  ownTextHintKey?: string;
   initialState?: Partial<ComposerState>;
   ExtraFields?: React.FC<ExtraFieldsProps>;
   /** The request for this state, or null while something required is missing. */
@@ -66,6 +91,7 @@ export interface ComposerAudience {
 }
 
 export const INITIAL_STATE: ComposerState = {
+  contentSource: 'TEMPLATE',
   templateKey: null,
   locale: 'de',
   recipientIndex: 0,
@@ -73,16 +99,45 @@ export const INITIAL_STATE: ComposerState = {
   speakerReminderType: null,
   venueRecipients: [],
   venueNotes: '',
+  ownSubject: '',
+  ownBodyHtml: '',
+  speakerStatuses: [...SPEAKER_STATUSES],
 };
 
-/** The fields every audience sends. */
+export const isOwnText = (state: ComposerState): boolean => state.contentSource === 'OWN_TEXT';
+
+/** Own text with a subject and a body; empty own text is not previewed (AC13). */
+export const ownTextReady = (state: ComposerState): boolean =>
+  state.ownSubject.trim().length > 0 && state.ownBodyHtml.trim().length > 0;
+
+/**
+ * The fields every audience sends: the template, or (Story 16.5) the own subject and body without
+ * a template. `confirmResend` is added by the send only, never by the preview.
+ */
 export function baseRequest(audience: ComposeAudience, state: ComposerState): MailComposeRequest {
-  return {
+  const common = {
     audience,
-    contentSource: 'TEMPLATE',
-    templateKey: state.templateKey,
     locale: state.locale,
     recipientIndex: state.recipientIndex,
     newsletterReminder: false,
+    confirmResend: false,
   };
+  if (isOwnText(state)) {
+    return {
+      ...common,
+      contentSource: 'OWN_TEXT',
+      templateKey: null,
+      ownSubject: state.ownSubject,
+      ownBodyHtml: state.ownBodyHtml,
+    };
+  }
+  return { ...common, contentSource: 'TEMPLATE', templateKey: state.templateKey };
+}
+
+/**
+ * The request for an audience whose template path needs a chosen template: own text needs a
+ * subject and a body instead.
+ */
+export function contentReady(state: ComposerState): boolean {
+  return isOwnText(state) ? ownTextReady(state) : Boolean(state.templateKey);
 }

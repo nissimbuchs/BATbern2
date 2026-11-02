@@ -1,4 +1,4 @@
-import { baseRequest, type ComposerAudience } from '../types';
+import { baseRequest, contentReady, type ComposerAudience } from '../types';
 import { VenueFields } from './VenueFields';
 
 /**
@@ -13,7 +13,7 @@ export const venueAudience: ComposerAudience = {
   initialState: { venueRecipients: ['VENUE', 'CATERING'] },
   ExtraFields: VenueFields,
   toRequest: (state) =>
-    state.templateKey && state.venueRecipients.length > 0
+    contentReady(state) && state.venueRecipients.length > 0
       ? {
           ...baseRequest('VENUE', state),
           venueRecipients: state.venueRecipients,

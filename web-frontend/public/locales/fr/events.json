@@ -457,8 +457,7 @@
         "contentSource": "Contenu",
         "source": {
           "template": "Modèle",
-          "ownText": "Texte libre",
-          "ownTextSoon": "Le texte libre arrive avec une mise à jour ultérieure."
+          "ownText": "Texte libre"
         },
         "template": "Modèle",
         "automatic": "Automatique (niveau par intervenant)",
@@ -475,7 +474,14 @@
             "CONTENT": "Intervenants confirmés sans contenu"
           },
           "goesTo": "Destinataires : {{target}}",
-          "detected": "Choisi automatiquement pour {{name}} : {{templateKey}}"
+          "detected": "Choisi automatiquement pour {{name}} : {{templateKey}}",
+          "status": {
+            "INVITED": "Invités",
+            "ACCEPTED": "Acceptés",
+            "CONTENT_SUBMITTED": "Contenu soumis",
+            "QUALITY_REVIEWED": "Qualité vérifiée"
+          },
+          "statusRequired": "Choisissez au moins un statut."
         },
         "recipients": {
           "count_one": "{{count}} destinataire",
@@ -520,6 +526,58 @@
         "partners": {
           "meetingInvite": "Invitation à la réunion des partenaires avec entrée de calendrier",
           "fixedText": "Le texte de cette invitation est encore fixe. Elle part en un seul e-mail à tous les partenaires et organisateurs, avec l'entrée de calendrier en pièce jointe."
+        },
+        "ownText": {
+          "subject": "Objet",
+          "body": "Texte",
+          "chips": "Insérer un champ :",
+          "noPersonalFields": "Pas de champs personnels par destinataire : tous reçoivent les mêmes valeurs.",
+          "asWritten": "Tous reçoivent ce texte tel qu’il est écrit. La langue choisie ici définit la mise en page pour tous.",
+          "unsubscribeAdded": "Le lien de désinscription est ajouté automatiquement.",
+          "startingPoint": "Partir de ce modèle et l’adapter →",
+          "startingPointFailed": "Le modèle n’a pas pu être chargé dans cette langue.",
+          "empty": "Saisissez un objet et un texte pour voir l’aperçu.",
+          "tokenHint": "Les liens avec un jeton personnel sont masqués ici ; chaque destinataire reçoit un lien valide.",
+          "unknownPlaceholders": "Champs inconnus : {{list}}. Corrigez le texte avant l’envoi.",
+          "alreadySent": "Déjà envoyé le {{date}}. Envoyer à nouveau ?",
+          "sendAgain": "Envoyer à nouveau"
+        },
+        "saveTemplate": {
+          "button": "Enregistrer comme modèle",
+          "title": "Enregistrer comme modèle",
+          "key": "Clé du modèle",
+          "keyHelp": "Minuscules, chiffres et traits d’union, p. ex. changement-de-salle",
+          "keyInvalid": "Uniquement minuscules, chiffres et traits d’union simples, p. ex. changement-de-salle",
+          "save": "Enregistrer",
+          "duplicate": "Un modèle avec cette clé existe déjà dans cette langue. Choisissez une autre clé.",
+          "failed": "Le modèle n’a pas pu être enregistré. Veuillez réessayer.",
+          "saved": "Enregistré comme modèle {{key}}."
+        },
+        "variables": {
+          "eventTitle": "Titre de l’événement",
+          "eventDate": "Date",
+          "eventTime": "Heure",
+          "eventNumber": "Numéro de l’événement",
+          "eventType": "Type d’événement",
+          "venue": "Lieu",
+          "venueName": "Nom du lieu",
+          "registrationLink": "Lien d’inscription",
+          "eventDetailLink": "Lien vers la page de l’événement",
+          "speakerName": "Nom",
+          "sessionTitle": "Titre de la présentation",
+          "deadline": "Délai",
+          "daysRemaining": "Jours restants",
+          "portalLink": "Lien vers le portail",
+          "organizerName": "Nom de l’organisateur",
+          "organizerEmail": "E-mail de l’organisateur",
+          "recipientName": "Nom",
+          "deregistrationUrl": "Lien de désinscription",
+          "salutation": "Formule d’appel",
+          "topicTitle": "Thème",
+          "agenda": "Programme",
+          "notes": "Remarques",
+          "organizerSignature": "Signature de l’organisateur",
+          "companyName": "Entreprise"
         }
       },
       "rsvpSummary": "Réponses : {{accepted}} acceptées · {{declined}} refusées · {{tentative}} provisoires · {{noAnswer}} sans réponse"

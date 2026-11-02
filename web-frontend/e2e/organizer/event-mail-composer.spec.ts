@@ -65,7 +65,8 @@ describeComposer('Organizer · Mail composer (read-only)', () => {
     await expect(composer.getByTestId('composer-template-select')).toContainText(
       'newsletter-event'
     );
-    await expect(composer.getByTestId('composer-source-own')).toBeDisabled();
+    // Story 16.5: own text is offered next to the template.
+    await expect(composer.getByTestId('composer-source-own')).toBeEnabled();
     await expect(composer.getByTitle('Mail preview')).toBeVisible({ timeout: 15_000 });
     await expect(composer.getByTestId('composer-recipient-count')).toContainText('recipient');
     await expect(composer.getByTestId('composer-subject')).toContainText('Subject: ');

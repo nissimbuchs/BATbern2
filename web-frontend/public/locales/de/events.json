@@ -471,8 +471,7 @@
         "contentSource": "Inhalt",
         "source": {
           "template": "Vorlage",
-          "ownText": "Eigener Text",
-          "ownTextSoon": "Eigener Text folgt mit einem späteren Update."
+          "ownText": "Eigener Text"
         },
         "template": "Vorlage",
         "automatic": "Automatisch (Stufe je Speaker)",
@@ -489,7 +488,14 @@
             "CONTENT": "Zugesagte Speaker ohne Inhalte"
           },
           "goesTo": "Geht an: {{target}}",
-          "detected": "Für {{name}} automatisch gewählt: {{templateKey}}"
+          "detected": "Für {{name}} automatisch gewählt: {{templateKey}}",
+          "status": {
+            "INVITED": "Eingeladen",
+            "ACCEPTED": "Zugesagt",
+            "CONTENT_SUBMITTED": "Inhalte eingereicht",
+            "QUALITY_REVIEWED": "Qualität geprüft"
+          },
+          "statusRequired": "Mindestens einen Status wählen."
         },
         "recipients": {
           "count_one": "{{count}} Empfänger:in",
@@ -534,6 +540,58 @@
         "partners": {
           "meetingInvite": "Partner-Meeting-Einladung mit Kalendereintrag",
           "fixedText": "Der Text dieser Einladung ist noch fest vorgegeben. Sie geht als eine Mail an alle Partner und Organisatoren, mit dem Kalendereintrag im Anhang."
+        },
+        "ownText": {
+          "subject": "Betreff",
+          "body": "Text",
+          "chips": "Platzhalter einfügen:",
+          "noPersonalFields": "Keine persönlichen Felder pro Empfänger: Alle erhalten dieselben Werte.",
+          "asWritten": "Alle erhalten diesen Text so, wie er hier steht. Die gewählte Sprache bestimmt das Layout für alle Empfänger.",
+          "unsubscribeAdded": "Der Abmeldelink wird automatisch angefügt.",
+          "startingPoint": "Diese Vorlage als Ausgangspunkt nehmen und anpassen →",
+          "startingPointFailed": "Die Vorlage konnte in dieser Sprache nicht geladen werden.",
+          "empty": "Betreff und Text eingeben, um die Vorschau zu sehen.",
+          "tokenHint": "Links mit persönlichem Token sind hier ausgeblendet; jeder Empfänger erhält einen funktionierenden Link.",
+          "unknownPlaceholders": "Unbekannte Platzhalter: {{list}}. Bitte den Text vor dem Senden korrigieren.",
+          "alreadySent": "Bereits am {{date}} gesendet. Nochmals senden?",
+          "sendAgain": "Nochmals senden"
+        },
+        "saveTemplate": {
+          "button": "Als Vorlage speichern",
+          "title": "Als Vorlage speichern",
+          "key": "Vorlagen-Schlüssel",
+          "keyHelp": "Kleinbuchstaben, Ziffern und Bindestriche, z. B. raumwechsel",
+          "keyInvalid": "Nur Kleinbuchstaben, Ziffern und einzelne Bindestriche, z. B. raumwechsel",
+          "save": "Speichern",
+          "duplicate": "Eine Vorlage mit diesem Schlüssel gibt es in dieser Sprache schon. Bitte einen anderen Schlüssel wählen.",
+          "failed": "Die Vorlage konnte nicht gespeichert werden. Bitte nochmals versuchen.",
+          "saved": "Als Vorlage {{key}} gespeichert."
+        },
+        "variables": {
+          "eventTitle": "Veranstaltungstitel",
+          "eventDate": "Datum",
+          "eventTime": "Uhrzeit",
+          "eventNumber": "Veranstaltungsnummer",
+          "eventType": "Veranstaltungsart",
+          "venue": "Ort",
+          "venueName": "Name des Orts",
+          "registrationLink": "Anmeldelink",
+          "eventDetailLink": "Link zur Veranstaltungsseite",
+          "speakerName": "Name",
+          "sessionTitle": "Vortragstitel",
+          "deadline": "Frist",
+          "daysRemaining": "Verbleibende Tage",
+          "portalLink": "Portal-Link",
+          "organizerName": "Name Organisator",
+          "organizerEmail": "E-Mail Organisator",
+          "recipientName": "Name",
+          "deregistrationUrl": "Abmeldelink",
+          "salutation": "Anrede",
+          "topicTitle": "Thema",
+          "agenda": "Programm",
+          "notes": "Notizen",
+          "organizerSignature": "Signatur Organisator",
+          "companyName": "Firma"
         }
       },
       "rsvpSummary": "Rückmeldungen: {{accepted}} zugesagt · {{declined}} abgesagt · {{tentative}} vielleicht · {{noAnswer}} ohne Antwort"

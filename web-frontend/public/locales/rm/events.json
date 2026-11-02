@@ -457,8 +457,7 @@
         "contentSource": "Cuntegn",
         "source": {
           "template": "Model",
-          "ownText": "Agen text",
-          "ownTextSoon": "L'agen text vegn cun in update pli tard."
+          "ownText": "Agen text"
         },
         "template": "Model",
         "automatic": "Automatic (stgalim per referent)",
@@ -475,7 +474,14 @@
             "CONTENT": "Referents confermads senza cuntegn"
           },
           "goesTo": "Va a: {{target}}",
-          "detected": "Elegì automaticamain per {{name}}: {{templateKey}}"
+          "detected": "Elegì automaticamain per {{name}}: {{templateKey}}",
+          "status": {
+            "INVITED": "Envidads",
+            "ACCEPTED": "Acceptà",
+            "CONTENT_SUBMITTED": "Cuntegn inoltrà",
+            "QUALITY_REVIEWED": "Qualitad controllada"
+          },
+          "statusRequired": "Tscherna almain in status."
         },
         "recipients": {
           "count_one": "{{count}} destinatur",
@@ -520,6 +526,58 @@
         "partners": {
           "meetingInvite": "Invitaziun a la sesida dals partenaris cun endataziun en il chalender",
           "fixedText": "Il text da questa invitaziun è anc fixà. Ella vegn tramessa sco in e-mail a tut ils partenaris ed organisaturs, cun l'endataziun dal chalender en l'agiunta."
+        },
+        "ownText": {
+          "subject": "Object",
+          "body": "Text",
+          "chips": "Inserir in placeholder:",
+          "noPersonalFields": "Nagins champs persunals per destinatari: tuts survegnan las medemas valurs.",
+          "asWritten": "Tuts survegnan quest text sco ch’el è scrit. La lingua tschernida qua determinescha il layout per tuts.",
+          "unsubscribeAdded": "La colliaziun per sa deslocar vegn agiuntada automaticamain.",
+          "startingPoint": "Duvrar quest model sco punct da partenza ed al adattar →",
+          "startingPointFailed": "Il model n’ha betg pudì vegnir chargià en questa lingua.",
+          "empty": "Endatar in object ed in text per vesair la prevista.",
+          "tokenHint": "Colliaziuns cun in token persunal èn zuppadas qua; mintga destinatari survegn ina colliaziun che funcziuna.",
+          "unknownPlaceholders": "Placeholders nunenconuschents: {{list}}. Curreger il text avant che trametter.",
+          "alreadySent": "Gia tramess ils {{date}}. Trametter anc ina giada?",
+          "sendAgain": "Trametter anc ina giada"
+        },
+        "saveTemplate": {
+          "button": "Memorisar sco model",
+          "title": "Memorisar sco model",
+          "key": "Clav dal model",
+          "keyHelp": "Bustabs pitschens, cifras e lingiettas, p. ex. midada-da-local",
+          "keyInvalid": "Mo bustabs pitschens, cifras e lingiettas singulas, p. ex. midada-da-local",
+          "save": "Memorisar",
+          "duplicate": "In model cun questa clav exista gia en questa lingua. Tscherna in’autra clav.",
+          "failed": "Il model n’ha betg pudì vegnir memorisà. Emprova anc ina giada.",
+          "saved": "Memorisà sco model {{key}}."
+        },
+        "variables": {
+          "eventTitle": "Titel da l’occurrenza",
+          "eventDate": "Data",
+          "eventTime": "Ura",
+          "eventNumber": "Numer da l’occurrenza",
+          "eventType": "Tip d’occurrenza",
+          "venue": "Lieu",
+          "venueName": "Num dal lieu",
+          "registrationLink": "Colliaziun d’annunzia",
+          "eventDetailLink": "Colliaziun a la pagina da l’occurrenza",
+          "speakerName": "Num",
+          "sessionTitle": "Titel da la referata",
+          "deadline": "Termin",
+          "daysRemaining": "Dis restants",
+          "portalLink": "Colliaziun al portal",
+          "organizerName": "Num da l’organisatur",
+          "organizerEmail": "E-mail da l’organisatur",
+          "recipientName": "Num",
+          "deregistrationUrl": "Colliaziun da deslocaziun",
+          "salutation": "Salid",
+          "topicTitle": "Tema",
+          "agenda": "Program",
+          "notes": "Notizias",
+          "organizerSignature": "Suttascripziun da l’organisatur",
+          "companyName": "Interpresa"
         }
       },
       "rsvpSummary": "Respostas: {{accepted}} acceptadas · {{declined}} refusadas · {{tentative}} provisoricas · {{noAnswer}} senza resposta"

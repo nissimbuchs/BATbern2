@@ -1,5 +1,5 @@
 import { PartnerMeetingsCompose } from '../../PartnerMeetingsCompose';
-import { baseRequest, type ComposerAudience } from '../types';
+import { baseRequest, isOwnText, ownTextReady, type ComposerAudience } from '../types';
 
 /** Pseudo-template key of the partner meeting invite; never sent to the composer API. */
 export const PARTNER_MEETING_INVITE = '__partner-meeting-invite__';
@@ -24,8 +24,11 @@ export const partnersAudience: ComposerAudience = {
       Body: PartnerMeetingsCompose,
     },
   ],
-  toRequest: (state) =>
-    state.templateKey && state.templateKey !== PARTNER_MEETING_INVITE
+  toRequest: (state) => {
+    // Own text never uses the meeting invite: it has no stored text (AC7).
+    if (isOwnText(state)) return ownTextReady(state) ? baseRequest('PARTNERS', state) : null;
+    return state.templateKey && state.templateKey !== PARTNER_MEETING_INVITE
       ? baseRequest('PARTNERS', state)
-      : null,
+      : null;
+  },
 };

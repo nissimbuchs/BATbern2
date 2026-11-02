@@ -1,4 +1,4 @@
-import { baseRequest, type ComposerAudience } from '../types';
+import { baseRequest, isOwnText, ownTextReady, type ComposerAudience } from '../types';
 import { SpeakerFields } from './SpeakerFields';
 import { REMINDER_KEY } from './speakerTemplates';
 
@@ -13,9 +13,20 @@ export const speakersAudience: ComposerAudience = {
   allowsAutomatic: true,
   personalized: true,
   organizerPicksLanguage: false,
+  // Template mode sends the six reminders only; a saved speaker template could never be sent.
+  canSaveAsTemplate: false,
   initialState: { speakerReminderType: 'RESPONSE' },
   ExtraFields: SpeakerFields,
   toRequest: (state) => {
+    if (isOwnText(state)) {
+      // Own text goes to the chosen statuses, at least one (AC11).
+      if (!ownTextReady(state) || state.speakerStatuses.length === 0) return null;
+      return {
+        ...baseRequest('SPEAKERS', state),
+        speakerReminderType: null,
+        speakerStatuses: state.speakerStatuses,
+      };
+    }
     if (state.templateKey) {
       // An explicit template carries type and tier; the backend derives both from it.
       return { ...baseRequest('SPEAKERS', state), speakerReminderType: null };

@@ -471,8 +471,7 @@
         "contentSource": "Content",
         "source": {
           "template": "Template",
-          "ownText": "Own text",
-          "ownTextSoon": "Own text comes with a later update."
+          "ownText": "Own text"
         },
         "template": "Template",
         "automatic": "Automatic (each speaker's tier)",
@@ -489,7 +488,14 @@
             "CONTENT": "Accepted speakers whose content is missing"
           },
           "goesTo": "Goes to: {{target}}",
-          "detected": "Chosen automatically for {{name}}: {{templateKey}}"
+          "detected": "Chosen automatically for {{name}}: {{templateKey}}",
+          "status": {
+            "INVITED": "Invited",
+            "ACCEPTED": "Accepted",
+            "CONTENT_SUBMITTED": "Content submitted",
+            "QUALITY_REVIEWED": "Quality reviewed"
+          },
+          "statusRequired": "Choose at least one status."
         },
         "recipients": {
           "count_one": "{{count}} recipient",
@@ -534,6 +540,58 @@
         "partners": {
           "meetingInvite": "Partner meeting invite with calendar entry",
           "fixedText": "The text of this invitation is still fixed. It goes out as one mail to all partners and organizers, with the calendar entry attached."
+        },
+        "ownText": {
+          "subject": "Subject",
+          "body": "Text",
+          "chips": "Insert a placeholder:",
+          "noPersonalFields": "No personal fields per recipient: everyone gets the same values.",
+          "asWritten": "Everyone gets this text as written. The language chosen here sets the layout for all recipients.",
+          "unsubscribeAdded": "The unsubscribe link is added automatically.",
+          "startingPoint": "Use this template as a starting point and adapt it →",
+          "startingPointFailed": "The template could not be loaded in this language.",
+          "empty": "Write a subject and a text to see the preview.",
+          "tokenHint": "Links with a personal token are hidden here; each recipient gets a working link.",
+          "unknownPlaceholders": "Unknown placeholders: {{list}}. Fix the text before sending.",
+          "alreadySent": "Already sent on {{date}}. Send again?",
+          "sendAgain": "Send again"
+        },
+        "saveTemplate": {
+          "button": "Save as template",
+          "title": "Save as template",
+          "key": "Template key",
+          "keyHelp": "Lowercase letters, digits and hyphens, e.g. room-change",
+          "keyInvalid": "Only lowercase letters, digits and single hyphens, e.g. room-change",
+          "save": "Save",
+          "duplicate": "A template with this key already exists in this language. Choose another key.",
+          "failed": "The template could not be saved. Please try again.",
+          "saved": "Saved as template {{key}}."
+        },
+        "variables": {
+          "eventTitle": "Event title",
+          "eventDate": "Event date",
+          "eventTime": "Time",
+          "eventNumber": "Event number",
+          "eventType": "Event type",
+          "venue": "Venue",
+          "venueName": "Venue name",
+          "registrationLink": "Registration link",
+          "eventDetailLink": "Event page link",
+          "speakerName": "Name",
+          "sessionTitle": "Talk title",
+          "deadline": "Deadline",
+          "daysRemaining": "Days left",
+          "portalLink": "Portal link",
+          "organizerName": "Organizer name",
+          "organizerEmail": "Organizer email",
+          "recipientName": "Name",
+          "deregistrationUrl": "Deregistration link",
+          "salutation": "Salutation",
+          "topicTitle": "Topic",
+          "agenda": "Agenda",
+          "notes": "Notes",
+          "organizerSignature": "Organizer signature",
+          "companyName": "Company"
         }
       },
       "rsvpSummary": "RSVP: {{accepted}} accepted · {{declined}} declined · {{tentative}} tentative · {{noAnswer}} no answer"

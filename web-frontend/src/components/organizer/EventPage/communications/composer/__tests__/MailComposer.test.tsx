@@ -197,10 +197,10 @@ describe('MailComposer: steps', () => {
     }
   );
 
-  it('offers Own text only as a disabled toggle until Story 16.5', async () => {
+  it('starts on Template, with Own text offered next to it (Story 16.5)', async () => {
     renderComposer('NEWSLETTER');
     await waitForPreview();
-    expect(screen.getByTestId('composer-source-own')).toBeDisabled();
+    expect(screen.getByTestId('composer-source-own')).toBeEnabled();
     expect(screen.getByTestId('composer-source-template')).toHaveAttribute('aria-pressed', 'true');
   });
 

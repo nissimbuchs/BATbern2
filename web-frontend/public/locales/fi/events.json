@@ -457,8 +457,7 @@
         "contentSource": "Sisältö",
         "source": {
           "template": "Pohja",
-          "ownText": "Oma teksti",
-          "ownTextSoon": "Oma teksti tulee myöhemmässä päivityksessä."
+          "ownText": "Oma teksti"
         },
         "template": "Pohja",
         "automatic": "Automaattinen (taso puhujittain)",
@@ -475,7 +474,14 @@
             "CONTENT": "Hyväksyneet puhujat, joilta puuttuu sisältö"
           },
           "goesTo": "Vastaanottajat: {{target}}",
-          "detected": "Valittu automaattisesti ({{name}}): {{templateKey}}"
+          "detected": "Valittu automaattisesti ({{name}}): {{templateKey}}",
+          "status": {
+            "INVITED": "Kutsutut",
+            "ACCEPTED": "Hyväksyneet",
+            "CONTENT_SUBMITTED": "Sisältö toimitettu",
+            "QUALITY_REVIEWED": "Laatu tarkistettu"
+          },
+          "statusRequired": "Valitse vähintään yksi tila."
         },
         "recipients": {
           "count_one": "{{count}} vastaanottaja",
@@ -520,6 +526,58 @@
         "partners": {
           "meetingInvite": "Kumppanitapaamisen kutsu kalenterimerkinnällä",
           "fixedText": "Tämän kutsun teksti on vielä kiinteä. Se lähtee yhtenä viestinä kaikille kumppaneille ja järjestäjille, kalenterimerkintä liitteenä."
+        },
+        "ownText": {
+          "subject": "Aihe",
+          "body": "Teksti",
+          "chips": "Lisää paikkamerkki:",
+          "noPersonalFields": "Ei vastaanottajakohtaisia kenttiä: kaikki saavat samat arvot.",
+          "asWritten": "Kaikki saavat tämän tekstin sellaisenaan. Tässä valittu kieli määrää kaikkien asettelun.",
+          "unsubscribeAdded": "Tilauksen peruutuslinkki lisätään automaattisesti.",
+          "startingPoint": "Käytä tätä pohjaa lähtökohtana ja muokkaa →",
+          "startingPointFailed": "Pohjaa ei voitu ladata tällä kielellä.",
+          "empty": "Kirjoita aihe ja teksti nähdäksesi esikatselun.",
+          "tokenHint": "Henkilökohtaisen tunnisteen sisältävät linkit on piilotettu tässä; jokainen vastaanottaja saa toimivan linkin.",
+          "unknownPlaceholders": "Tuntemattomat paikkamerkit: {{list}}. Korjaa teksti ennen lähettämistä.",
+          "alreadySent": "Lähetetty jo {{date}}. Lähetetäänkö uudelleen?",
+          "sendAgain": "Lähetä uudelleen"
+        },
+        "saveTemplate": {
+          "button": "Tallenna pohjaksi",
+          "title": "Tallenna pohjaksi",
+          "key": "Pohjan avain",
+          "keyHelp": "Pienet kirjaimet, numerot ja yhdysmerkit, esim. salin-vaihto",
+          "keyInvalid": "Vain pieniä kirjaimia, numeroita ja yksittäisiä yhdysmerkkejä, esim. salin-vaihto",
+          "save": "Tallenna",
+          "duplicate": "Tällä avaimella on jo pohja tällä kielellä. Valitse toinen avain.",
+          "failed": "Pohjaa ei voitu tallentaa. Yritä uudelleen.",
+          "saved": "Tallennettu pohjaksi {{key}}."
+        },
+        "variables": {
+          "eventTitle": "Tapahtuman nimi",
+          "eventDate": "Päivämäärä",
+          "eventTime": "Kellonaika",
+          "eventNumber": "Tapahtuman numero",
+          "eventType": "Tapahtuman tyyppi",
+          "venue": "Paikka",
+          "venueName": "Paikan nimi",
+          "registrationLink": "Ilmoittautumislinkki",
+          "eventDetailLink": "Linkki tapahtumasivulle",
+          "speakerName": "Nimi",
+          "sessionTitle": "Esityksen otsikko",
+          "deadline": "Määräaika",
+          "daysRemaining": "Päiviä jäljellä",
+          "portalLink": "Portaalin linkki",
+          "organizerName": "Järjestäjän nimi",
+          "organizerEmail": "Järjestäjän sähköposti",
+          "recipientName": "Nimi",
+          "deregistrationUrl": "Ilmoittautumisen peruutuslinkki",
+          "salutation": "Tervehdys",
+          "topicTitle": "Aihe",
+          "agenda": "Ohjelma",
+          "notes": "Muistiinpanot",
+          "organizerSignature": "Järjestäjän allekirjoitus",
+          "companyName": "Yritys"
         }
       },
       "rsvpSummary": "Vastaukset: {{accepted}} hyväksytty · {{declined}} hylätty · {{tentative}} alustava · {{noAnswer}} ei vastausta"
