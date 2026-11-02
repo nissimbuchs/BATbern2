@@ -1,6 +1,6 @@
 # Story 16.9: Partner meeting mails in the mail center
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -76,8 +76,8 @@ so that **the partner side of an event is visible to the whole team like everyth
 - [x] **Task 9 — RED: adapter tests** (AC: 7, 8)
   - [x] `PartnerAudienceAdapterTest`: recipients from stubbed `UserApiClient.getPartnerUsernames()` (:129) + `getUserByUsername`; ONE recipient entry whose To: holds all addresses in order; skipped without email; only PARTNER templates allowed; no per-person variables; the record has one `mail_recipient` per address.
   - [x] Extend 16.8's byte-equal and test-send integration tests with PARTNERS.
-- [ ] **Task 10 — `PartnerAudienceAdapter`** (AC: 7, 8)
-  - [ ] Categories `PARTNER`; `personalized = false`; one recipient entry, all partner addresses on To: (as `VenueAudienceAdapter`, but To only, no Cc); variables (no per-person ones) `eventTitle`, `eventDate`, `eventNumber`, `currentYear`, `logoUrl`; Reply-To `partner@{forwarding domain}` (alias exists, `ForwardingAlias` :61-62); one `MailContext.of(trigger, eventCode, PARTNERS, templateKey)` per send.
+- [x] **Task 10 — `PartnerAudienceAdapter`** (AC: 7, 8)
+  - [x] Categories `PARTNER`; `personalized = false`; one recipient entry, all partner addresses on To: (as `VenueAudienceAdapter`, but To only, no Cc); variables (no per-person ones) `eventTitle`, `eventDate`, `eventNumber`, `currentYear`, `logoUrl`; Reply-To `partner@{forwarding domain}` (alias exists, `ForwardingAlias` :61-62); one `MailContext.of(trigger, eventCode, PARTNERS, templateKey)` per send.
   - [x] Add `PARTNERS` to `MailComposeRequest.audience` in the spec.
 - [x] **Task 11 — Frontend** (AC: 6, 7)
   - [x] `composer/audiences/partners.tsx`: template list = pseudo-entry "Partner meeting invite with calendar" + PARTNER templates. The pseudo-entry renders the body of today's `PartnerMeetingsCompose` (meeting picker + `PartnerMeetingInviteAction`) in place of preview and footer, with the hint.
@@ -139,6 +139,13 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-11-01
 ### Debug Log References
 
 ### Completion Notes List
+
+**2026-11-02: rebased onto #1176 and 16.11 (#1177); shipped with 16.5 in one PR (`feature/16-5-own-text`)**
+
+- Rebase onto #1176: invite synchronous with 502 kept, MailContext added to the hotfix's calls; partners.json `inviteFailed` + `mails` merged in all 10 locales.
+- `PartnerAudienceAdapter` on the 16.11 pipeline (`storedTemplate` + catalog SYSTEM/EVENT variables, `scopes()` empty) instead of its own variable map.
+- **Owner decision 2026-11-02 (supersedes #1163 and decision 3 of this story):** after a real invite to 20 recipients, invite, cancellation and the plain partner mail go to each recipient on their own; the invite ICS lists only that recipient as ATTENDEE. All sends of one action share a MailContext, so they stay ONE recorded mail with a row per address. One failed recipient is recorded FAILED and does not stop the others; the invite answers 502 only when nobody was reached, and its response counts the recipients reached. The 50-address guard of the plain partner mail is gone (no longer one SES message). Tests: PCS `PartnerInviteEmailServiceTest` (own ICS per recipient, same group, failure isolation, cancellation per recipient), PCS ITs, EMS `PartnerAudienceAdapterTest`, `MailComposerSendIntegrationTest` partners (one mail per partner, one record, two rows). PCS suite 228 / 0 failed.
+- Task 12 NOT done: no local-dev send check and no Playwright extension for Partners. Unit and integration tests cover render, record and the per-recipient sends; local dev cannot exercise SES address validation anyway (no SesClient).
 
 **Part B (branch `feature/16-9b-partner-adapter`), 2026-11-01, NOT complete**
 
@@ -220,4 +227,5 @@ Part B (branch `feature/16-9b-partner-adapter`, stacked on Part A):
 
 - 2026-11-01: Story drafted from Epic 16, grounded in code at 15a13959. Two parts (record, adapter).
 - 2026-11-01: Part B implemented except the delivery call (waits for the multi-recipient hotfix) and Task 12 verification.
+- 2026-11-02: Rebased onto #1176 + #1177; partner adapter on the pipeline; every partner mail per recipient (owner decision); status review.
 - 2026-11-01: Part A implemented (record partner meeting invites and cancellations, `/internal/mails`, reference filter, RSVP line, meeting panel mails).

@@ -45,6 +45,11 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**New Feature — Own Text and Partner Mails (2026-11-02)**:
+- ✅ Every audience in "+ New mail" can now get a text you write yourself: subject and text with placeholders inserted by click (name, talk title, deadline …), a preview that marks each filled value and refuses unknown placeholders, a template as starting point, and saving the text as a new template. Speakers are chosen by status. Registrants get a mail with the same subject only once unless you confirm a resend.
+- ✅ Partners: a plain mail to all partners from a template of the new category "Partner", and partner meeting invites and cancellations now appear in "What went out", also under "Mails of this meeting" in Partner meetings.
+- ✅ Partner meeting invites, cancellations and partner mails go to each recipient on their own. Before, every partner saw the addresses of all others in To: and in the calendar entry.
+
 **Improvements — One Way to Render Every Mail (2026-11-02)**:
 - ✅ Every BATbern mail is now built the same way, from one shared list of variables. A template can use any variable its mail has data for, and the old names (`venue`, `eventDetailLink`, `deregistrationLink`) keep working. The variable list is in [Email Templates](../administration/email-templates.md).
 - ✅ The event date reads the same in every mail: "Freitag, 5. März 2027" or "Friday, 5 March 2027". Registration, speaker, venue and other mails used to show "05.03.2027".

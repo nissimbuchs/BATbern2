@@ -1014,6 +1014,15 @@ Every template-based mail in event-management renders the same way:
 - **Golden files**: `MailGoldenTest` pins subject and HTML of every template-based mail
   (`src/test/resources/mail-golden/`); a mismatch writes the actual output to
   `build/mail-golden-actual`.
+- **Own text (Story 16.5)**: one more `MailContent` (`OWN_TEXT`, no template key) rendered with
+  `AudienceAdapter.variables(...)`, so it can use what a template of the audience can.
+  `PlaceholderValidator` checks every `{{name}}` against the names that map really fills (400
+  `UNKNOWN_PLACEHOLDER` on send; marked by `PreviewHighlighter` in the preview). The two async sends
+  store the text on their `newsletter_sends` row (V138: `content_source`, `own_subject`,
+  `own_body_html`; template key `own-text-newsletter` / `own-text-registrants`), so the job and the
+  newsletter retry render exactly it. Newsletter content without `{{unsubscribeLink}}` gets the DE/EN
+  footer. Registrants: one-shot by subject (409 `ALREADY_SENT` unless `confirmResend`). Speakers:
+  `SpeakerOwnTextMailService` (by status, outreach note, no reminder log). Recorded as `OWN_TEXT`.
 - Not yet on the pipeline: HTML built in Java (`NotificationService`, `QualityReviewService`, Story
   16.12), the partner invite in partner-coordination.
 
