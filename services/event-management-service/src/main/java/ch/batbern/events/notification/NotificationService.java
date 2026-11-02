@@ -1,22 +1,17 @@
 package ch.batbern.events.notification;
 
 import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.event.EventPublishedEvent;
-import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.context.event.EventListener;
 import org.springframework.messaging.simp.SimpMessagingTemplate;
-import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalTime;
-import java.util.List;
 import java.util.Locale;
 
 /**
@@ -36,46 +31,7 @@ public class NotificationService {
     private final NotificationRepository notificationRepository;
     private final EmailService emailService;
     private final UserApiClient userApiClient;
-    private final RegistrationRepository registrationRepository;
     private final SimpMessagingTemplate messagingTemplate;
-
-    /**
-     * Event listener for EventPublishedEvent
-     * Automatically creates and sends notifications when an event is published
-     */
-    @EventListener
-    @Async
-    @Transactional
-    public void onEventPublished(EventPublishedEvent event) {
-        log.info("Received EventPublishedEvent for event: {}", event.getEventCode());
-
-        // Find all registered attendees for this event
-        List<String> attendees = registrationRepository.findUsernamesByEventCode(event.getEventCode());
-        MailTrigger publication = MailTrigger.system();
-
-        log.info("Found {} attendees for event {}", attendees.size(), event.getEventCode());
-
-        // Send notification to each attendee
-        for (String username : attendees) {
-            try {
-                createAndSendEmailNotification(NotificationRequest.builder()
-                        .recipientUsername(username)
-                        .eventCode(event.getEventCode())
-                        .type("EVENT_PUBLISHED")
-                        .mailTrigger(publication)
-                        .channel("EMAIL")
-                        .subject("Event " + event.getTitle() + " is now published!")
-                        .body(buildEventPublishedEmailBody(event))
-                        .priority("NORMAL")
-                        .build());
-
-                log.debug("Sent notification to {} for event {}", username, event.getEventCode());
-            } catch (Exception e) {
-                log.error("Failed to send notification to {} for event {}: {}",
-                        username, event.getEventCode(), e.getMessage(), e);
-            }
-        }
-    }
 
     /**
      * Create notification record and send via email
@@ -204,25 +160,6 @@ public class NotificationService {
         html.append("</body></html>");
 
         return html.toString();
-    }
-
-    /**
-     * Build email body for EventPublishedEvent
-     */
-    private String buildEventPublishedEmailBody(EventPublishedEvent event) {
-        StringBuilder body = new StringBuilder();
-        body.append("Great news! The event '").append(event.getTitle()).append("' has been published.\n\n");
-        body.append("Event Code: ").append(event.getEventCode()).append("\n");
-        body.append("Event Number: ").append(event.getEventNumber()).append("\n");
-
-        if (event.getDate() != null) {
-            body.append("Date: ").append(event.getDate()).append("\n");
-        }
-
-        body.append("\nYou can now view the full event details and agenda.\n");
-        body.append("\nBest regards,\nBATbern Team");
-
-        return body.toString();
     }
 
     /**
