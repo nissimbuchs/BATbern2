@@ -650,6 +650,17 @@ exporting `AWS_PROFILE=batbern-dev` would otherwise point at the wrong account).
 distribution and CORS allow-listing of `https://beta.batbern.ch` (gateway `SecurityConfig` +
 `CorsHandler`) are already in place. Full design: `docs/plans/beta-frontend-canary.md`.
 
+### Mail Center switch: notification instead of forwarding (Story 16.6)
+
+Admin setting `mailcenter.notify-instead-of-forward` lists the alias groups answered in the Mail
+Center: `moderator` (`batbern{N}-moderator@`), `replies` (`replies@`, `replies+{token}@`), `contact`
+(`info@`, `events@`, `support@`; only after Story 16.7). For a listed group the recipients get a short
+notice with a link instead of the forwarded copy. Empty = forwarding as before. It is read for every mail,
+so no deploy is needed. **Only the owner switches a group on.** Never set it from code, tests or Bruno.
+Organizer sends (`-speaker@`, `-participants@`, `partner@`, `ok@`) are always forwarded.
+How to switch it and what to check: `docs/operations/runbooks.md` → "Mail Center: notification instead
+of forwarding"; design: `docs/architecture/06-backend-architecture.md` → "Attachments and the notify switch".
+
 ## AWS Monitoring & Logs
 
 ### AWS Profiles
