@@ -42,10 +42,10 @@ SES refused). Accepts, declines and out-of-office replies follow with Story 16.2
 
 ## + New mail
 
-The menu offers **Newsletter, Registrants, Speakers, Venue & Catering, Partners**. The first four
-open the same composer at the top of the page (full screen on a phone), with the same steps:
+The menu offers **Newsletter, Registrants, Speakers, Venue & Catering, Partners**. All five open the
+same composer at the top of the page (full screen on a phone), with the same steps:
 
-1. **Template.** *Own text* is shown but not available yet (Story 16.5).
+1. **Template or own text.** See "Own text" below.
    - Newsletter: `newsletter-event` is preselected; *Send as reminder* adds the reminder prefix.
    - Registrants: a registrant notice (for example `slides-online`).
    - Speakers: *Automatic* or one of the six reminder templates. Automatic picks each speaker's
@@ -53,6 +53,8 @@ open the same composer at the top of the page (full screen on a phone), with the
      without an answer, or accepted without content). A chosen template decides that itself.
    - Venue & Catering: the template, the roles (venue, catering: the first is To, the other Cc) and
      optional notes.
+   - Partners: the partner meeting invite (calendar entry, fixed text) or a template of category
+     Partner. Every partner gets the mail as their own; nobody sees the others' addresses.
 2. **Language.** Newsletter and venue: DE or EN for everyone. Registrants and speakers each get
    their own language; the preview shows the language of the recipient shown.
 3. **Recipients**, counted by the server, with up to eight names, and who is left out and why
@@ -69,7 +71,45 @@ After a real send the composer closes, a message confirms it, and the new mail i
 of "What went out" ("sending …" first, then the counts). If the send cannot happen (the registrant
 notice was already sent, a newsletter is still running), the composer says why.
 
-**Partners** still lists the event's partner meeting with its calendar invite. Without a meeting it
+### Own text
+
+Switch from *Template* to *Own text* to write the subject and the text yourself, for any audience.
+
+- **Placeholders.** The chips above the text insert a placeholder such as `{{speakerName}}` at the
+  cursor of the subject or the text. Each audience offers what it has: speakers their name, talk
+  title (`sessionTitle`), deadline and days left; registrants their name and cancel link;
+  newsletter and venue only event values, because everyone gets the same text. Every placeholder a
+  template of that audience can use also works when typed.
+- **Preview.** The values of the recipient shown are marked yellow. A placeholder the audience does
+  not have (a typo such as `{{deadlin}}`, or spaces inside the braces) is marked red and both send
+  buttons stay off; the server refuses such a mail too.
+- **Language.** Everyone gets the text as written; the chosen language sets the BATbern frame
+  around it (registrants and speakers included).
+- **Newsletter.** If your text has no `{{unsubscribeLink}}`, the standard unsubscribe line is added
+  at the end, with each subscriber's own link.
+- **Registrants.** Own text with the same subject goes to an event's registrants once. Sending it
+  again asks "Already sent on … Send again?".
+- **Speakers.** Choose by status: invited, accepted, content submitted, quality reviewed. Each
+  speaker gets their own values; replies go to the moderator. The speaker's history notes "Own text:
+  {subject}". It is not a reminder: no reminder log, no escalation, and it also reaches speakers who
+  turned reminders off.
+- **Starting point.** *Use template as starting point* copies a template's subject and text into
+  own text; the template stays as it is.
+- **Save as template** stores your text as a new template of the audience (not for speakers, whose
+  templates are the six reminders). It then appears in the template list.
+
+"What went out" shows such a mail as own text, without a template name.
+
+**Partners** also lists the event's partner meeting with its calendar invite. Without a meeting it
 links to the partner meetings page.
+
+Partner meeting invites and cancellations appear in "What went out" like every other mail: audience
+Partners, the organizer who clicked as sender, every partner and organizer address as a recipient
+with its own delivery status. An invite row also shows the meeting's answers (accepted, declined,
+tentative, no answer). Every partner and organizer gets the invite as their own mail, with a
+calendar entry that lists only them, so nobody sees the other addresses. The same holds for the
+cancellation and for a plain mail to all partners.
+
+In **Partner meetings**, the open meeting lists its own mails under "Mails of this meeting".
 
 Esc closes the composer; the focus goes back to "+ New mail".

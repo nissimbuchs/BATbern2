@@ -22,6 +22,8 @@ import java.util.UUID;
  * @param secrets          plain-text credentials in this mail (temporary password, registration
  *                         code) that must not be stored; token links are masked anyway, see
  *                         {@link MailRedaction}
+ * @param reference        what the mail is about beyond its event, e.g. {@code partner-meeting:{id}}
+ *                         (Story 16.9), or null. A meaningful id by value, never a foreign key (ADR-003)
  */
 public record MailContext(
         String sendGroupId,
@@ -32,7 +34,8 @@ public record MailContext(
         String senderUsername,
         UUID newsletterSendId,
         boolean test,
-        List<String> secrets) {
+        List<String> secrets,
+        String reference) {
 
     private static final int MAX_GROUP_ID_LENGTH = 256;
 
@@ -61,7 +64,7 @@ public record MailContext(
         String groupId = sanitize(trigger.runId() + "_" + (eventCode != null ? eventCode : "general")
                 + "_" + (templateKey != null ? templateKey : "own-text"));
         return new MailContext(groupId, eventCode, audience, templateKey, ContentSource.TEMPLATE,
-                trigger.senderUsername(), null, false, List.of());
+                trigger.senderUsername(), null, false, List.of(), null);
     }
 
     /** The same context with credentials that appear in this mail's text, to be redacted. */
@@ -71,13 +74,13 @@ public record MailContext(
             all.add(value);
         }
         return new MailContext(sendGroupId, eventCode, audience, templateKey, contentSource, senderUsername,
-                newsletterSendId, test, all);
+                newsletterSendId, test, all, reference);
     }
 
     /** The same context linked to its {@code newsletter_sends} row. */
     public MailContext forNewsletterSend(UUID sendId, boolean testSend) {
         return new MailContext(sendGroupId, eventCode, audience, templateKey, contentSource, senderUsername,
-                sendId, testSend, secrets);
+                sendId, testSend, secrets, reference);
     }
 
     /**
@@ -86,7 +89,23 @@ public record MailContext(
      */
     public MailContext asTest() {
         return new MailContext(sendGroupId, eventCode, audience, templateKey, contentSource, senderUsername,
-                newsletterSendId, true, secrets);
+                newsletterSendId, true, secrets, reference);
+    }
+
+    /** Story 16.9: the same context with what the mail is about, e.g. {@code partner-meeting:{id}}. */
+    /**
+     * The same send as own text (Story 16.5): no template key, so the group id ends in
+     * {@code own-text}, and {@code content_source = OWN_TEXT} in the record.
+     */
+    public static MailContext ownText(MailTrigger trigger, String eventCode, Audience audience) {
+        MailContext base = of(trigger, eventCode, audience, null);
+        return new MailContext(base.sendGroupId(), eventCode, audience, null, ContentSource.OWN_TEXT,
+                base.senderUsername(), null, false, List.of(), null);
+    }
+
+    public MailContext withReference(String value) {
+        return new MailContext(sendGroupId, eventCode, audience, templateKey, contentSource, senderUsername,
+                newsletterSendId, test, secrets, value);
     }
 
     private static String sanitize(String raw) {

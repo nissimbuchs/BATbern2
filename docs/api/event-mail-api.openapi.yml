@@ -61,6 +61,15 @@ paths:
         description: Only entries of this template (used to expand a collapsed entry).
         schema:
           type: string
+      - name: reference
+        in: query
+        required: false
+        description: |
+          Only mails about this subject, e.g. `partner-meeting:{meetingId}` for the invites and
+          cancellations of one partner meeting (Story 16.9).
+        schema:
+          type: string
+          maxLength: 100
       - name: date
         in: query
         required: false
@@ -156,7 +165,8 @@ paths:
                 recipientCount: 1052
                 skipped: []
         '400':
-          description: Invalid request (as for preview)
+          description: Invalid request (as for preview). Own text with a placeholder the audience does
+            not have answers `details.code = UNKNOWN_PLACEHOLDER` with `details.placeholders`.
         '401':
           description: Not authenticated
         '403':
@@ -164,7 +174,9 @@ paths:
         '404':
           description: Event not found
         '409':
-          description: A newsletter send is running, or this registrant notice was already sent
+          description: A newsletter send is running, or this registrant notice was already sent. Own
+            text to registrants with a subject already sent answers `details.code = ALREADY_SENT`
+            with `details.sentAt` unless `confirmResend` is true.
   /events/{eventCode}/mails/counts:
     get:
       tags:
@@ -262,7 +274,9 @@ paths:
                 unknownPlaceholders: []
         '400':
           description: Invalid request (template not allowed for the audience, recipient index out of
-            range, missing audience field, own text before Story 16.5)
+            range, missing audience field, own text without subject or body or with a line break in
+            the subject). An unknown placeholder in own text does NOT fail the preview; it is listed
+            in `unknownPlaceholders` and marked in `highlightedHtml`.
         '401':
           description: Not authenticated
         '403':
@@ -428,6 +442,13 @@ components:
         test:
           type: boolean
           description: Test send to the organizers.
+        reference:
+          type: string
+          nullable: true
+          description: |
+            What the mail is about beyond its event, e.g. `partner-meeting:{meetingId}` for a partner
+            meeting invite or cancellation (Story 16.9). The meeting id is the partner meeting's public id.
+          example: partner-meeting:3f2a9c1e-7b4d-4e2a-9c1e-7b4d4e2a9c1e
     MailMessageDetail:
       type: object
       required:
@@ -483,18 +504,25 @@ components:
       properties:
         audience:
           type: string
+          description: |
+            PARTNERS (Story 16.9): one mail with every PARTNER-role user on the To: line, sorted by
+            company then name; PARTNER templates only, no per-person placeholders.
           enum:
           - NEWSLETTER
           - REGISTRANTS
           - SPEAKERS
           - VENUE
+          - PARTNERS
         contentSource:
           type: string
           enum:
           - TEMPLATE
           - OWN_TEXT
           default: TEMPLATE
-          description: OWN_TEXT is rejected with 400 until Story 16.5.
+          description: |
+            OWN_TEXT (Story 16.5): `ownSubject` and `ownBodyHtml` instead of a template, rendered with
+            the same variables. Every `{{name}}` must be a variable of the audience (400
+            UNKNOWN_PLACEHOLDER otherwise).
         templateKey:
           type: string
           nullable: true
@@ -537,6 +565,42 @@ components:
           maxLength: 4000
           nullable: true
           description: VENUE only.
+        ownSubject:
+          type: string
+          maxLength: 500
+          nullable: true
+          description: OWN_TEXT only, required. One line (no CR/LF).
+        ownBodyHtml:
+          type: string
+          maxLength: 204800
+          nullable: true
+          description: OWN_TEXT only, required. HTML; the BATbern layout is added.
+        speakerStatuses:
+          type: array
+          items:
+            type: string
+            enum:
+            - INVITED
+            - ACCEPTED
+            - CONTENT_SUBMITTED
+            - QUALITY_REVIEWED
+          description: SPEAKERS with OWN_TEXT only, at least one. Which speakers get the mail.
+        confirmResend:
+          type: boolean
+          default: false
+          description: REGISTRANTS with OWN_TEXT only. Send although a mail with the same subject
+            already went to this event's registrants (409 ALREADY_SENT otherwise).
+    MailAlreadySent:
+      type: object
+      required:
+      - sentAt
+      properties:
+        sentAt:
+          type: string
+          format: date-time
+        mailKey:
+          type: string
+          nullable: true
     MailSendRequest:
       allOf:
       - $ref: '#/components/schemas/MailComposeRequest'
@@ -638,6 +702,31 @@ components:
           type: array
           items:
             type: string
+        highlightedSubject:
+          type: string
+          nullable: true
+          description: OWN_TEXT only. The subject with every filled value marked (display only).
+        highlightedHtml:
+          type: string
+          nullable: true
+          description: OWN_TEXT only. `html` with every filled value in `<mark data-var>` and every
+            unknown placeholder in `<mark class="unknown">` (display only; never sent).
+        offeredVariables:
+          type: array
+          items:
+            type: string
+          description: The variables offered as chips for this audience (Story 16.5).
+        allowedVariables:
+          type: array
+          items:
+            type: string
+          description: Every variable own text for this audience may use.
+        alreadySent:
+          allOf:
+          - $ref: '#/components/schemas/MailAlreadySent'
+          nullable: true
+          description: REGISTRANTS with OWN_TEXT only. A mail with this subject already went to
+            this event's registrants; the send needs `confirmResend`.
     MailSendResponse:
       type: object
       required:

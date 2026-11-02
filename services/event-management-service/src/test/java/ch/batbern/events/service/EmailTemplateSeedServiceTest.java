@@ -54,6 +54,12 @@ class EmailTemplateSeedServiceTest {
     }
 
     @Test
+    @DisplayName("Story 16.9 AC9: should derive PARTNER category for partner-* template keys")
+    void should_deriveCategory_partner_when_keyHasPartnerPrefix() {
+        assertThat(emailTemplateSeedService.deriveCategory("partner-info")).isEqualTo("PARTNER");
+    }
+
+    @Test
     @DisplayName("should derive SPEAKER category for speaker-* template keys")
     void should_deriveCategory_forSpeakerKey() {
         String category = emailTemplateSeedService.deriveCategory("speaker-invitation");

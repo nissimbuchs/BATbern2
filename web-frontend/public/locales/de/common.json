@@ -631,7 +631,8 @@
       "TASK_REMINDER": "Aufgaben-Erinnerungen",
       "NEWSLETTER": "Newsletter",
       "VENUE_COORDINATION": "Veranstaltungsort & Catering",
-      "REGISTRANT_NOTICE": "Teilnehmer-Infos"
+      "REGISTRANT_NOTICE": "Teilnehmer-Infos",
+      "PARTNER": "Partner"
     },
     "layoutKey": "Layout",
     "standalone": "Kein Layout (eigenständig)",

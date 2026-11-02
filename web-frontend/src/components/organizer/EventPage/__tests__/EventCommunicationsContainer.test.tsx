@@ -131,7 +131,7 @@ describe('EventCommunicationsContainer', () => {
     ['registrants', 'stub-composer-REGISTRANTS'],
     ['speakers', 'stub-composer-SPEAKERS'],
     ['venue', 'stub-composer-VENUE'],
-    ['partners', 'stub-partners'],
+    ['partners', 'stub-composer-PARTNERS'],
   ])('opens the %s composer inline above the list', async (audience, stubId) => {
     renderContainer();
     fireEvent.click(screen.getByTestId('new-mail-button'));
@@ -196,14 +196,12 @@ describe('EventCommunicationsContainer', () => {
     expect(sentListProps.highlightKeys).toEqual(['BAT54-7']);
   });
 
-  it('partners still opens PartnerMeetingsCompose; its send refreshes without a highlight (AC15)', async () => {
-    const { invalidate } = renderContainer();
+  it('partners opens the shared MailComposer (Story 16.9 AC6)', async () => {
+    renderContainer();
     fireEvent.click(screen.getByTestId('new-mail-button'));
     fireEvent.click(screen.getByTestId('new-mail-partners'));
-    fireEvent.click(await screen.findByText('send-stub-partners'));
 
-    await waitFor(() => expect(screen.queryByTestId('stub-partners')).not.toBeInTheDocument());
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['mails', 'BAT54'] });
-    expect(sentListProps.highlightKeys ?? []).toEqual([]);
+    expect(await screen.findByTestId('stub-composer-PARTNERS')).toBeInTheDocument();
+    expect(screen.queryByTestId('stub-partners')).not.toBeInTheDocument();
   });
 });

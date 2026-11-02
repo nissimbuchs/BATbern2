@@ -12,6 +12,7 @@ import ch.batbern.events.mailcenter.compose.MailComposerService.SendResult;
 import ch.batbern.events.mailcenter.compose.SkippedRecipient;
 import ch.batbern.events.mailcenter.dto.generated.MailAudience;
 import ch.batbern.events.mailcenter.dto.generated.MailComposeRecipient;
+import ch.batbern.events.mailcenter.dto.generated.MailAlreadySent;
 import ch.batbern.events.mailcenter.dto.generated.MailComposeRequest;
 import ch.batbern.events.mailcenter.dto.generated.MailCounts;
 import ch.batbern.events.mailcenter.dto.generated.MailMessageDetail;
@@ -58,8 +59,9 @@ public class EventMailController implements EventMailApi {
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<MailMessagePage> listEventMails(String eventCode, MailAudience audience,
-            String templateKey, LocalDate date, Boolean grouped, Boolean includeTests, Integer page, Integer limit) {
-        MailFilter filter = new MailFilter(audience == null ? null : audience.getValue(), templateKey, date,
+            String templateKey, String reference, LocalDate date, Boolean grouped, Boolean includeTests, Integer page,
+            Integer limit) {
+        MailFilter filter = new MailFilter(audience == null ? null : audience.getValue(), templateKey, reference, date,
                 !Boolean.FALSE.equals(grouped), Boolean.TRUE.equals(includeTests));
         MailPage result = queries.list(eventCode, filter, page, limit);
         return noStore(new MailMessagePage()
@@ -117,7 +119,13 @@ public class EventMailController implements EventMailApi {
                 .replyTo(preview.replyTo())
                 .organizerCount(preview.organizerCount())
                 .skipped(skipped(preview.skipped()))
-                .unknownPlaceholders(preview.unknownPlaceholders()));
+                .unknownPlaceholders(preview.unknownPlaceholders())
+                .highlightedSubject(preview.highlightedSubject())
+                .highlightedHtml(preview.highlightedHtml())
+                .offeredVariables(preview.offeredVariables())
+                .allowedVariables(preview.allowedVariables())
+                .alreadySent(preview.alreadySent() == null ? null
+                        : new MailAlreadySent().sentAt(preview.alreadySent().atOffset(ZoneOffset.UTC))));
     }
 
     @Override
@@ -147,7 +155,12 @@ public class EventMailController implements EventMailApi {
                 request.getSpeakerReminderType() == null ? null : request.getSpeakerReminderType().getValue(),
                 request.getVenueRecipients() == null ? List.of()
                         : request.getVenueRecipients().stream().map(r -> r.getValue()).toList(),
-                request.getVenueNotes());
+                request.getVenueNotes(),
+                request.getOwnSubject(),
+                request.getOwnBodyHtml(),
+                request.getSpeakerStatuses() == null ? List.of()
+                        : request.getSpeakerStatuses().stream().map(st -> st.getValue()).toList(),
+                Boolean.TRUE.equals(request.getConfirmResend()));
     }
 
     /** The send DTO is a separate generated class with the compose fields plus {@code target}. */
@@ -167,7 +180,13 @@ public class EventMailController implements EventMailApi {
                 .venueRecipients(send.getVenueRecipients() == null ? null
                         : send.getVenueRecipients().stream()
                                 .map(r -> MailComposeRequest.VenueRecipientsEnum.fromValue(r.getValue())).toList())
-                .venueNotes(send.getVenueNotes());
+                .venueNotes(send.getVenueNotes())
+                .ownSubject(send.getOwnSubject())
+                .ownBodyHtml(send.getOwnBodyHtml())
+                .speakerStatuses(send.getSpeakerStatuses() == null ? null
+                        : send.getSpeakerStatuses().stream()
+                                .map(st -> MailComposeRequest.SpeakerStatusesEnum.fromValue(st.getValue())).toList())
+                .confirmResend(send.getConfirmResend());
     }
 
     private static List<MailSkippedRecipient> skipped(List<SkippedRecipient> skipped) {
@@ -201,7 +220,8 @@ public class EventMailController implements EventMailApi {
                 .messageCount(e.messageCount())
                 .newsletterSendId(e.newsletterSendId())
                 .newsletterStatus(e.newsletterStatus())
-                .test(e.test());
+                .test(e.test())
+                .reference(e.reference());
     }
 
     private static <T> ResponseEntity<T> noStore(T body) {

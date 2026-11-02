@@ -1,15 +1,21 @@
 package ch.batbern.events.mailcenter.compose;
 
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.mailcenter.variables.MailVariable.Scope;
 import ch.batbern.events.service.PrimarySpeakerResolver;
 import ch.batbern.events.service.PrimarySpeakerResolver.PrimarySpeakerProfile;
+import ch.batbern.events.service.SpeakerOwnTextMailService;
 import ch.batbern.events.service.SpeakerReminderEmailService;
 import ch.batbern.events.service.SpeakerReminderEmailService.RenderedReminder;
 import ch.batbern.events.service.SpeakerReminderService;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
+import ch.batbern.shared.types.SpeakerWorkflowState;
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
 import java.time.LocalDate;
@@ -33,16 +39,22 @@ import java.util.regex.Pattern;
  * run server-side under one trigger, with reminder log, outreach history and escalation.
  */
 @Component
+@Slf4j
 @RequiredArgsConstructor
 public class SpeakerAudienceAdapter implements AudienceAdapter {
 
     static final String RESPONSE = "RESPONSE";
     static final String CONTENT = "CONTENT";
+    /** Speaker states own text may go to (Story 16.5 AC11). */
+    static final Set<String> OWN_TEXT_STATUSES = Set.of("INVITED", "ACCEPTED", "CONTENT_SUBMITTED",
+            "QUALITY_REVIEWED");
     private static final Pattern REMINDER_KEY = Pattern.compile("speaker-reminder-(response|content)-tier([123])");
 
     private final SpeakerReminderService reminderService;
     private final SpeakerReminderEmailService reminderEmailService;
     private final PrimarySpeakerResolver primarySpeakerResolver;
+    private final SpeakerOwnTextMailService ownTextMail;
+    private final MailPipeline mailPipeline;
 
     /** Reminder type and, for a chosen template, its tier; tier null = automatic. */
     record Choice(String reminderType, String tier) {
@@ -79,12 +91,27 @@ public class SpeakerAudienceAdapter implements AudienceAdapter {
     }
 
     @Override
+    public List<String> offeredVariables() {
+        return List.of("speakerName", "sessionTitle", "deadline", "daysRemaining", "portalLink", "organizerName",
+                "organizerEmail", "eventTitle", "eventDate");
+    }
+
+    @Override
     public Set<Scope> scopes() {
         return Set.of(Scope.RECIPIENT, Scope.SPEAKER);
     }
 
     @Override
     public void validate(ComposeRequest request) {
+        if (request.ownText()) {
+            if (request.speakerStatuses().isEmpty()) {
+                throw new IllegalArgumentException("speakerStatuses needs at least one status for own text");
+            }
+            if (!OWN_TEXT_STATUSES.containsAll(request.speakerStatuses())) {
+                throw new IllegalArgumentException("speakerStatuses may contain " + OWN_TEXT_STATUSES + " only");
+            }
+            return;
+        }
         String type = choice(request).reminderType();
         if (type == null) {
             throw new IllegalArgumentException(
@@ -97,11 +124,16 @@ public class SpeakerAudienceAdapter implements AudienceAdapter {
 
     @Override
     public Recipients resolveRecipients(ComposeContext context) {
-        String type = choice(context.request()).reminderType();
+        boolean ownText = context.request().ownText();
+        List<SpeakerPool> audience = ownText
+                ? ownTextMail.audience(context.event(), context.request().speakerStatuses().stream()
+                        .map(SpeakerWorkflowState::valueOf).toList())
+                : reminderService.manualAudience(context.event(), choice(context.request()).reminderType());
         List<ComposeRecipient> recipients = new ArrayList<>();
         List<SkippedRecipient> skipped = new ArrayList<>();
-        for (SpeakerPool speaker : reminderService.manualAudience(context.event(), type)) {
-            if (Boolean.TRUE.equals(speaker.getRemindersDisabled())) {
+        for (SpeakerPool speaker : audience) {
+            // Own text is not a reminder: the reminder opt-out does not apply to it.
+            if (!ownText && Boolean.TRUE.equals(speaker.getRemindersDisabled())) {
                 skipped.add(new SkippedRecipient(speaker.getSpeakerName(), SkippedRecipient.REMINDERS_DISABLED));
                 continue;
             }
@@ -124,6 +156,11 @@ public class SpeakerAudienceAdapter implements AudienceAdapter {
     @Override
     public Rendering render(ComposeContext context, ComposeRecipient recipient, boolean test) {
         SpeakerPool speaker = (SpeakerPool) recipient.key();
+        if (context.request().ownText()) {
+            RenderedMail mail = mailPipeline.render(ownTextContent(context), variables(context, recipient, test));
+            return new Rendering(mail.subject(), mail.html(), null, context.request().locale(),
+                    ownTextMail.replyTo(context.event()), List.of(), List.of());
+        }
         Choice choice = choice(context.request());
         LocalDate deadline = reminderService.deadlineFor(speaker, context.event(), choice.reminderType());
         String tier = choice.tier() != null ? choice.tier() : reminderService.autoDetectTier(LocalDate.now(), deadline);
@@ -139,6 +176,10 @@ public class SpeakerAudienceAdapter implements AudienceAdapter {
     @Override
     public Map<String, String> variables(ComposeContext context, ComposeRecipient recipient, boolean test) {
         SpeakerPool speaker = (SpeakerPool) recipient.key();
+        if (context.request().ownText()) {
+            // Everyone gets the text as written: the chosen language, not each speaker's.
+            return ownTextMail.variables(speaker, context.event(), context.request().locale());
+        }
         LocalDate deadline = reminderService.deadlineFor(speaker, context.event(),
                 choice(context.request()).reminderType());
         return reminderEmailService.variables(speaker, context.event(), deadline,
@@ -147,6 +188,9 @@ public class SpeakerAudienceAdapter implements AudienceAdapter {
 
     @Override
     public List<DeliveredMail> deliver(ComposeContext context, Recipients recipients, MailTrigger trigger) {
+        if (context.request().ownText()) {
+            return deliverOwnText(context, recipients, trigger);
+        }
         Choice choice = choice(context.request());
         // Render first: the first rendering per template key opens that key's record.
         Map<String, Rendering> firstByKey = new LinkedHashMap<>();
@@ -163,5 +207,25 @@ public class SpeakerAudienceAdapter implements AudienceAdapter {
                         MailContext.of(trigger, context.event().getEventCode(), MailContext.Audience.SPEAKERS, key),
                         firstByKey.getOrDefault(key, fallback)))
                 .toList();
+    }
+
+    /** Story 16.5: one mail per speaker, one record for the send; a failed speaker does not stop the rest. */
+    private List<DeliveredMail> deliverOwnText(ComposeContext context, Recipients recipients, MailTrigger trigger) {
+        MailContext mailContext = MailContext.ownText(trigger, context.event().getEventCode(),
+                MailContext.Audience.SPEAKERS);
+        Rendering first = null;
+        for (ComposeRecipient recipient : recipients.recipients()) {
+            Rendering rendering = render(context, recipient, false);
+            first = first == null ? rendering : first;
+            try {
+                ownTextMail.send(mailContext, (SpeakerPool) recipient.key(), recipient.address(), recipient.cc(),
+                        new RenderedMail(rendering.subject(), rendering.html()), rendering.replyTo(),
+                        context.organizerUsername());
+            } catch (RuntimeException e) {
+                log.error("Own text to speaker {} failed: {}", LoggingUtils.maskEmail(recipient.address()),
+                        e.getClass().getSimpleName());
+            }
+        }
+        return List.of(new DeliveredMail(mailContext, first));
     }
 }

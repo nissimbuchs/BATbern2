@@ -178,6 +178,9 @@
         "declined": "Rechazado",
         "tentative": "Provisional"
       }
+    },
+    "mails": {
+      "title": "Correos de esta reunión"
     }
   },
   "portal": {

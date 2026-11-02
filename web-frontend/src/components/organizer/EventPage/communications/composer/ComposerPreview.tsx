@@ -5,12 +5,16 @@
  * The body is shown in a sandboxed iframe without scripts, as in MailDetail. Personalised audiences
  * step through the recipients with ‹ › and "(i/n)". An unknown placeholder is shown in red; the
  * composer then disables both send buttons.
+ *
+ * Story 16.5: for own text the server's highlighted rendering is shown (filled values marked, an
+ * unknown placeholder red). It is display only; what is sent is `html`/`subject`.
  */
 import React from 'react';
 import { Alert, Box, IconButton, LinearProgress, Stack, Typography } from '@mui/material';
 import { ChevronLeft as PrevIcon, ChevronRight as NextIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import type { MailPreviewResponse } from '@/services/mailMessageService';
+import { parseHighlightedSubject } from './highlightedSubject';
 
 interface ComposerPreviewProps {
   preview: MailPreviewResponse;
@@ -18,6 +22,32 @@ interface ComposerPreviewProps {
   /** A newer preview is on its way; the one shown is the previous request's. */
   updating: boolean;
   onStep: (recipientIndex: number) => void;
+  /** Story 16.5: own text shows the highlighted rendering and the redaction hint. */
+  ownText?: boolean;
+}
+
+/** The highlighted subject as text with styled spans; parsed, never rendered as HTML. */
+function renderHighlightedSubject(highlighted: string): React.ReactNode[] {
+  return parseHighlightedSubject(highlighted).map((segment, i) =>
+    segment.mark ? (
+      <Box
+        component="span"
+        key={i}
+        data-var={segment.mark.kind === 'var' ? segment.mark.name : undefined}
+        data-unknown={segment.mark.kind === 'unknown' || undefined}
+        sx={{
+          bgcolor: segment.mark.kind === 'unknown' ? '#ffcdd2' : '#fff59d',
+          color: segment.mark.kind === 'unknown' ? 'error.dark' : 'common.black',
+          px: 0.25,
+          borderRadius: 0.5,
+        }}
+      >
+        {segment.text}
+      </Box>
+    ) : (
+      <React.Fragment key={i}>{segment.text}</React.Fragment>
+    )
+  );
 }
 
 export const ComposerPreview: React.FC<ComposerPreviewProps> = ({
@@ -25,11 +55,17 @@ export const ComposerPreview: React.FC<ComposerPreviewProps> = ({
   personalized,
   updating,
   onStep,
+  ownText = false,
 }) => {
   const { t } = useTranslation('events');
   const { recipient } = preview;
   const index = preview.recipientIndex;
   const stepping = personalized && preview.recipientCount > 1;
+  const html = (ownText && preview.highlightedHtml) || preview.html;
+  const subject =
+    ownText && preview.highlightedSubject
+      ? renderHighlightedSubject(preview.highlightedSubject)
+      : preview.subject;
 
   return (
     <Stack spacing={1}>
@@ -87,14 +123,17 @@ export const ComposerPreview: React.FC<ComposerPreviewProps> = ({
         sx={{ overflowWrap: 'anywhere' }}
         data-testid="composer-subject"
       >
-        {t('eventPage.mail.composer.preview.subject')}: {preview.subject}
+        {t('eventPage.mail.composer.preview.subject')}: {subject}
       </Typography>
 
       {preview.unknownPlaceholders.length > 0 && (
         <Alert severity="error" data-testid="composer-unknown-placeholders">
-          {t('eventPage.mail.composer.preview.unknownPlaceholders', {
-            list: preview.unknownPlaceholders.join(', '),
-          })}
+          {t(
+            ownText
+              ? 'eventPage.mail.composer.ownText.unknownPlaceholders'
+              : 'eventPage.mail.composer.preview.unknownPlaceholders',
+            { list: preview.unknownPlaceholders.join(', ') }
+          )}
         </Alert>
       )}
 
@@ -103,7 +142,7 @@ export const ComposerPreview: React.FC<ComposerPreviewProps> = ({
         <Box
           component="iframe"
           title={t('eventPage.mail.composer.preview.frameTitle')}
-          srcDoc={preview.html}
+          srcDoc={html}
           sandbox=""
           sx={{
             width: '100%',
@@ -116,6 +155,12 @@ export const ComposerPreview: React.FC<ComposerPreviewProps> = ({
           }}
         />
       </Box>
+
+      {ownText && (
+        <Typography variant="caption" color="text.secondary" data-testid="composer-token-hint">
+          {t('eventPage.mail.composer.ownText.tokenHint')}
+        </Typography>
+      )}
 
       <Typography variant="caption" color="text.secondary" data-testid="composer-reply-note">
         {preview.replyTo

@@ -39,7 +39,7 @@ public class MailMessageQueryService {
     /** One row per recorded mail, with its counts; newsletter counts from newsletter_recipients. */
     private static final String RECORDED = """
             SELECT m.mail_key, m.created_at AS sent_at, m.sender_username, m.audience, m.template_key,
-                   m.content_source, m.subject, m.newsletter_send_id, m.is_test,
+                   m.content_source, m.subject, m.newsletter_send_id, m.is_test, m.reference,
                    COALESCE(ns.recipient_count, m.recipient_count) AS recipient_count,
                    CASE WHEN m.newsletter_send_id IS NULL THEN COALESCE(r.delivered, 0)
                         ELSE COALESCE(nr.total, 0) - COALESCE(nr.failed, 0) END AS delivered,
@@ -67,7 +67,8 @@ public class MailMessageQueryService {
             SELECT '%1$s' || s.id AS mail_key, s.sent_at, s.sent_by_username,
                    CASE WHEN t.category = 'REGISTRANT_NOTICE' THEN 'REGISTRANTS' ELSE 'NEWSLETTER' END AS audience,
                    s.template_key, 'TEMPLATE' AS content_source, NULL AS subject, s.id AS newsletter_send_id,
-                   s.test_mode AS is_test, COALESCE(s.recipient_count, 0) AS recipient_count,
+                   s.test_mode AS is_test, CAST(NULL AS VARCHAR) AS reference,
+                   COALESCE(s.recipient_count, 0) AS recipient_count,
                    COALESCE(nr.total, 0) - COALESCE(nr.failed, 0) AS delivered, COALESCE(nr.failed, 0) AS failed,
                    s.status AS newsletter_status, '%1$s' || s.id AS grp
               FROM newsletter_sends s
@@ -89,6 +90,7 @@ public class MailMessageQueryService {
                     WHERE (CAST(:includeTests AS BOOLEAN) OR NOT is_test)
                       AND (CAST(:audience AS TEXT) IS NULL OR audience = :audience)
                       AND (CAST(:templateKey AS TEXT) IS NULL OR template_key = :templateKey)
+                      AND (CAST(:reference AS TEXT) IS NULL OR reference = :reference)
                       AND (CAST(:day AS DATE) IS NULL
                            OR CAST(sent_at AT TIME ZONE '%s' AS DATE) = CAST(:day AS DATE))),
                  entries AS (
@@ -101,6 +103,7 @@ public class MailMessageQueryService {
                           (array_agg(subject ORDER BY sent_at DESC))[1] AS subject,
                           (array_agg(newsletter_send_id ORDER BY sent_at DESC))[1] AS newsletter_send_id,
                           (array_agg(newsletter_status ORDER BY sent_at DESC))[1] AS newsletter_status,
+                          (array_agg(reference ORDER BY sent_at DESC))[1] AS reference,
                           bool_or(is_test) AS is_test,
                           sum(recipient_count) AS recipient_count, sum(delivered) AS delivered,
                           sum(failed) AS failed, count(*) AS message_count
@@ -115,6 +118,7 @@ public class MailMessageQueryService {
         MapSqlParameterSource params = params(eventCode, filter.grouped(), filter.includeTests())
                 .addValue("audience", filter.audience())
                 .addValue("templateKey", filter.templateKey())
+                .addValue("reference", filter.reference())
                 .addValue("day", filter.day())
                 .addValue("limit", limit)
                 .addValue("offset", (long) (page - 1) * limit);
@@ -131,14 +135,15 @@ public class MailMessageQueryService {
         requireEvent(eventCode);
         return Optional.ofNullable(jdbc.queryForObject(ENTRIES + " SELECT COALESCE(sum(failed), 0) FROM entries",
                 params(eventCode, false, includeTests).addValue("audience", null).addValue("templateKey", null)
-                        .addValue("day", null), Long.class)).orElse(0L);
+                        .addValue("reference", null).addValue("day", null), Long.class)).orElse(0L);
     }
 
     public Optional<MailDetail> get(String eventCode, String mailKey) {
         requireEvent(eventCode);
         // A test send opens by its key even though the list hides it (Story 16.8 AC9).
         MapSqlParameterSource params = params(eventCode, false, true).addValue("audience", null)
-                .addValue("templateKey", null).addValue("day", null).addValue("mailKey", mailKey);
+                .addValue("templateKey", null).addValue("reference", null).addValue("day", null)
+                .addValue("mailKey", mailKey);
         List<MailEntry> found = jdbc.query(ENTRIES + " SELECT * FROM entries WHERE mail_key = :mailKey",
                 params, MailMessageQueryService::entry);
         if (found.isEmpty()) {
@@ -211,12 +216,12 @@ public class MailMessageQueryService {
                 rs.getString("content_source"), rs.getString("subject"), rs.getInt("recipient_count"),
                 rs.getInt("delivered"), rs.getInt("failed"), rs.getInt("message_count"),
                 rs.getObject("newsletter_send_id", UUID.class), rs.getString("newsletter_status"),
-                rs.getBoolean("is_test"));
+                rs.getBoolean("is_test"), rs.getString("reference"));
     }
 
     /** Filters of the list operation; null means no filter. Test sends are hidden unless asked for. */
-    public record MailFilter(String audience, String templateKey, LocalDate day, boolean grouped,
-            boolean includeTests) {
+    public record MailFilter(String audience, String templateKey, String reference, LocalDate day,
+            boolean grouped, boolean includeTests) {
     }
 
     public record MailPage(List<MailEntry> data, long total) {
@@ -224,7 +229,8 @@ public class MailMessageQueryService {
 
     public record MailEntry(String mailKey, Instant sentAt, String senderUsername, String audience,
             String templateKey, String contentSource, String subject, int recipientCount, int deliveredCount,
-            int failedCount, int messageCount, UUID newsletterSendId, String newsletterStatus, boolean test) {
+            int failedCount, int messageCount, UUID newsletterSendId, String newsletterStatus, boolean test,
+            String reference) {
     }
 
     public record RecipientEntry(String address, String kind, String status, String failureReason) {

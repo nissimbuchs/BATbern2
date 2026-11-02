@@ -1,6 +1,6 @@
 # Story 16.11: One mail pipeline and variable catalog
 
-Status: review
+Status: done
 
 ## Story
 

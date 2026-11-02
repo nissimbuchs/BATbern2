@@ -127,6 +127,7 @@ the VPC through Service Connect. Callers send **no** JWT.
 | `GET /internal/users/{username}[?include=…]` | Company-User Management | EMS user lookups (incl. preferred language, Q&A cadence), PCS contact enrichment, gateway `is_active` gate |
 | `GET /internal/users?role=&company=&page=&limit=` | Company-User Management | EMS organizer/partner lists, PCS partner contacts by company and users by role |
 | `POST /internal/partner-meetings/rsvps` | Partner Coordination | EMS inbound iCal REPLY handling |
+| `POST /internal/mails` | Event Management | PCS records its partner meeting invites and cancellations in "What went out" (Story 16.9) |
 
 Why a separate API rather than forwarding the user's JWT: the public user directory
 (`GET /api/v1/users`, `/users/search`, `/users/{username}`) is ORGANIZER/ADMIN only, while EMS and
@@ -882,6 +883,34 @@ went out (Mail Center, Epic 16). Record only; the Communications page (16.3) rea
 - **Retention**: `MailMessageRetentionScheduler` (03:30 Europe/Zurich, ShedLock) deletes a mail once
   its event date and the mail itself are older than 12 months; mail without an event after 12 months.
 
+### Mail of other services (Story 16.9)
+
+Partner-coordination sends the partner meeting invite and, when a meeting whose invite went out is
+deleted, the cancellation. Both are recorded in the event's mail like EMS's own.
+
+- **Context**: `PartnerInviteEmailService` sends through the context-taking `EmailService` overload
+  with `MailContext.of(MailTrigger.organizer(clicker), eventCode, PARTNERS,
+  "partner-meeting-invite" | "partner-meeting-cancellation").withReference("partner-meeting:{id}")`.
+  The organizer's username comes from `PartnerMeetingController` (send-invite, delete).
+- **Transport**: PCS's `HttpOutboundMailRecorder` (the `OutboundMailRecorder` bean of that service)
+  posts the redacted mail to EMS `POST /internal/mails` (`InternalMailController`), no JWT, 2 s
+  connect / 5 s read. Best effort: EMS down or an error status costs the record, never the send; one
+  WARN with reference, group and status or exception class, no addresses, no body, no retry.
+- **Endpoint limits**: audience `PARTNERS` only, subject ≤ 1000, body ≤ 2 MB, ≤ 500 addresses;
+  anything else is a 400. Permitted in the EMS production chain like every `/internal/**` path; the
+  gateway denies it (`InternalPathSecurityTest` covers the EMS chain).
+- **One mail per recipient, one record** (owner decision 2026-11-02, replacing the shared To: line of
+  #1163): invite and cancellation go to each partner and organizer on their own, the invite with an
+  ICS that carries only that recipient's ATTENDEE line. All sends share one `MailContext`, so
+  `JpaOutboundMailRecorder` joins them into one mail with a `mail_recipient` row per address. A
+  failed recipient is recorded FAILED and the others still get it; only when nobody is reached does
+  the invite answer 502. The plain partner mail (16.9 B) is sent the same way. The recorder still
+  splits a comma-separated To: into rows, for any other multi-address caller.
+- **Reference** (`V137`): `mail_message.reference VARCHAR(100)`, what the mail is about beyond its
+  event, by value (ADR-003, no FK). `GET /events/{code}/mails?reference=` filters by it and the
+  summary carries it; the partner meeting panel lists its mails with it and shows the meeting's RSVP
+  summary on the invite row.
+
 ### Delivery status (Story 16.1b)
 
 SES events of the transactional configuration set move each `mail_recipient` from `SENT` to
@@ -899,7 +928,7 @@ SES events of the transactional configuration set move each `mail_recipient` fro
 - **Never backwards** (`DeliveryStatusRule`): `SENT` → `DELIVERED` → `FAILED`. `FAILED` is final and
   keeps its first reason; a complaint after delivery still fails. The rule is applied in the UPDATE's
   `WHERE status IN (...)`, so concurrent events cannot reorder it.
-- **Unknown Message-IDs** (system mail without context, forwarding, partner mail, mail before 16.1a)
+- **Unknown Message-IDs** (system mail without context, forwarding, mail before 16.1a)
   are ignored and counted as `BATbern/MailCenter DeliveryEventsUnmatched`.
 - **Failures**: an unreadable message throws; SQS retries it and moves it to
   `mail-delivery-status-dlq` after 3 attempts (alarm in `MonitoringStack`).
@@ -985,6 +1014,15 @@ Every template-based mail in event-management renders the same way:
 - **Golden files**: `MailGoldenTest` pins subject and HTML of every template-based mail
   (`src/test/resources/mail-golden/`); a mismatch writes the actual output to
   `build/mail-golden-actual`.
+- **Own text (Story 16.5)**: one more `MailContent` (`OWN_TEXT`, no template key) rendered with
+  `AudienceAdapter.variables(...)`, so it can use what a template of the audience can.
+  `PlaceholderValidator` checks every `{{name}}` against the names that map really fills (400
+  `UNKNOWN_PLACEHOLDER` on send; marked by `PreviewHighlighter` in the preview). The two async sends
+  store the text on their `newsletter_sends` row (V138: `content_source`, `own_subject`,
+  `own_body_html`; template key `own-text-newsletter` / `own-text-registrants`), so the job and the
+  newsletter retry render exactly it. Newsletter content without `{{unsubscribeLink}}` gets the DE/EN
+  footer. Registrants: one-shot by subject (409 `ALREADY_SENT` unless `confirmResend`). Speakers:
+  `SpeakerOwnTextMailService` (by status, outreach note, no reminder log). Recorded as `OWN_TEXT`.
 - Not yet on the pipeline: HTML built in Java (`NotificationService`, `QualityReviewService`, Story
   16.12), the partner invite in partner-coordination.
 

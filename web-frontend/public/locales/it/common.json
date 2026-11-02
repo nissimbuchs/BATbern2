@@ -629,7 +629,8 @@
       "TASK_REMINDER": "Promemoria attività",
       "NEWSLETTER": "Newsletter",
       "VENUE_COORDINATION": "Sede & Catering",
-      "REGISTRANT_NOTICE": "Avvisi iscritti"
+      "REGISTRANT_NOTICE": "Avvisi iscritti",
+      "PARTNER": "Partner"
     },
     "layoutKey": "Layout",
     "standalone": "Nessuno (autonomo)",

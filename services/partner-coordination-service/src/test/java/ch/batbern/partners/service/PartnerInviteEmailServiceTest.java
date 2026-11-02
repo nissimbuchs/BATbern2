@@ -1,5 +1,6 @@
 package ch.batbern.partners.service;
 
+import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -13,10 +14,12 @@ import org.springframework.test.util.ReflectionTestUtils;
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.verify;
 
@@ -41,15 +44,24 @@ class PartnerInviteEmailServiceTest {
         ReflectionTestUtils.setField(service, "baseUrl", "https://batbern.ch");
     }
 
+    private static final UUID MEETING_ID = UUID.fromString("6f1c0000-0000-4000-8000-000000000001");
+
+    private ArgumentCaptor<MailContext> context;
+
+    /** Captures the mail to partner@example.com (each recipient gets their own, owner decision 2026-11-02). */
     private String captureSentHtml(String expectedSubjectPrefix) {
+        context = ArgumentCaptor.forClass(MailContext.class);
         ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
         ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
-        // One mail, every recipient as its own To: address (a comma-joined string broke in #1104).
-        verify(emailService).sendGroupHtmlEmailWithAttachments(
-                eq(List.of("partner@example.com", "organizer@batbern.ch")),
-                subject.capture(), html.capture(), anyList());
+        verify(emailService).sendHtmlEmailWithAttachments(context.capture(), eq("partner@example.com"),
+                eq(List.of()), subject.capture(), html.capture(), anyList());
         assertThat(subject.getValue()).startsWith(expectedSubjectPrefix);
         return html.getValue();
+    }
+
+    /** A distinct ICS per recipient, so the tests can see which one went where. */
+    private static byte[] ics(String recipient) {
+        return ("ATTENDEE:mailto:" + recipient).getBytes(java.nio.charset.StandardCharsets.UTF_8);
     }
 
     @Test
@@ -60,7 +72,8 @@ class PartnerInviteEmailServiceTest {
                 LocalDate.of(2026, 9, 3), LocalTime.of(16, 0), LocalTime.of(17, 0), "Welle7, Bern");
 
         service.sendCalendarInvites(
-                List.of("partner@example.com", "organizer@batbern.ch"), details, new byte[]{1, 2, 3});
+                List.of("partner@example.com", "organizer@batbern.ch"), details, PartnerInviteEmailServiceTest::ics,
+                MEETING_ID, "organizer1");
 
         String html = captureSentHtml("Einladung / Invitation:");
         // Branding (batbern-default look)
@@ -87,7 +100,8 @@ class PartnerInviteEmailServiceTest {
                 LocalDate.of(2026, 9, 3), LocalTime.of(16, 0), LocalTime.of(17, 0), "  ");
 
         service.sendCalendarInvites(
-                List.of("partner@example.com", "organizer@batbern.ch"), details, new byte[]{1});
+                List.of("partner@example.com", "organizer@batbern.ch"), details, PartnerInviteEmailServiceTest::ics,
+                MEETING_ID, "organizer1");
 
         String html = captureSentHtml("Einladung / Invitation:");
         assertThat(html).doesNotContain(">Ort<").doesNotContain(">Location<");
@@ -99,7 +113,7 @@ class PartnerInviteEmailServiceTest {
         service.sendCancellationNotice(
                 List.of("partner@example.com", "organizer@batbern.ch"),
                 "KI in der Software-Architektur", "BATbern61",
-                LocalDate.of(2026, 9, 3), new byte[]{9});
+                LocalDate.of(2026, 9, 3), new byte[]{9}, MEETING_ID, "organizer1");
 
         String html = captureSentHtml("Absage / Cancellation:");
         assertThat(html).contains("background-color:#1976d2");
@@ -116,7 +130,8 @@ class PartnerInviteEmailServiceTest {
                 LocalDate.of(2026, 9, 3), LocalTime.of(16, 0), LocalTime.of(17, 0), null);
 
         service.sendCalendarInvites(
-                List.of("partner@example.com", "organizer@batbern.ch"), details, new byte[]{1});
+                List.of("partner@example.com", "organizer@batbern.ch"), details, PartnerInviteEmailServiceTest::ics,
+                MEETING_ID, "organizer1");
 
         String html = captureSentHtml("Einladung / Invitation:");
         assertThat(html).contains("&lt;script&gt;");
@@ -130,10 +145,11 @@ class PartnerInviteEmailServiceTest {
                 "Event", "BATbern61",
                 LocalDate.of(2026, 9, 3), LocalTime.of(16, 0), LocalTime.of(17, 0), "Bern");
 
-        service.sendCalendarInvites(List.of(), details, new byte[]{1});
+        service.sendCalendarInvites(List.of(), details, PartnerInviteEmailServiceTest::ics, MEETING_ID, "organizer1");
 
         verify(emailService, org.mockito.Mockito.never())
-                .sendGroupHtmlEmailWithAttachments(anyList(), any(), any(), anyList());
+                .sendHtmlEmailWithAttachments(any(MailContext.class), anyString(), anyList(), any(), any(),
+                        anyList());
     }
 
     @Test
@@ -142,11 +158,104 @@ class PartnerInviteEmailServiceTest {
         var details = new PartnerInviteEmailService.MeetingInviteDetails(
                 "Event", "BATbern61",
                 LocalDate.of(2026, 9, 3), LocalTime.of(16, 0), LocalTime.of(17, 0), "Bern");
-        org.mockito.Mockito.doThrow(new IllegalArgumentException("none deliverable"))
-                .when(emailService).sendGroupHtmlEmailWithAttachments(anyList(), any(), any(), anyList());
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("not deliverable"))
+                .when(emailService).sendHtmlEmailWithAttachments(any(MailContext.class), anyString(), anyList(),
+                        any(), any(), anyList());
 
         org.assertj.core.api.Assertions.assertThatThrownBy(() -> service.sendCalendarInvites(
-                        List.of("partner@example.com"), details, new byte[]{1}))
-                .isInstanceOf(IllegalArgumentException.class);
+                        List.of("partner@example.com"), details, PartnerInviteEmailServiceTest::ics, MEETING_ID,
+                        "organizer1"))
+                .isInstanceOf(IllegalStateException.class);
+    }
+
+    @Test
+    @DisplayName("16.9 AC1/AC3: the invite carries a PARTNERS context with sender, event and meeting reference")
+    void should_passInviteContext() {
+        var details = new PartnerInviteEmailService.MeetingInviteDetails(
+                "Event", "BATbern61", LocalDate.of(2026, 9, 3), LocalTime.of(16, 0), LocalTime.of(17, 0), "Bern");
+
+        service.sendCalendarInvites(
+                List.of("partner@example.com", "organizer@batbern.ch"), details, PartnerInviteEmailServiceTest::ics,
+                MEETING_ID, "organizer1");
+
+        captureSentHtml("Einladung / Invitation:");
+        MailContext sent = context.getValue();
+        assertThat(sent.audience()).isEqualTo(MailContext.Audience.PARTNERS);
+        assertThat(sent.templateKey()).isEqualTo("partner-meeting-invite");
+        assertThat(sent.eventCode()).isEqualTo("BATbern61");
+        assertThat(sent.senderUsername()).isEqualTo("organizer1");
+        assertThat(sent.reference()).isEqualTo("partner-meeting:" + MEETING_ID);
+        assertThat(sent.contentSource()).isEqualTo(MailContext.ContentSource.TEMPLATE);
+        assertThat(sent.test()).isFalse();
+    }
+
+    @Test
+    @DisplayName("16.9 AC1: the cancellation carries the cancellation template key and the same reference")
+    void should_passCancellationContext() {
+        service.sendCancellationNotice(List.of("partner@example.com", "organizer@batbern.ch"),
+                "Event", "BATbern61", LocalDate.of(2026, 9, 3), new byte[]{9}, MEETING_ID, "organizer1");
+
+        captureSentHtml("Absage / Cancellation:");
+        MailContext sent = context.getValue();
+        assertThat(sent.audience()).isEqualTo(MailContext.Audience.PARTNERS);
+        assertThat(sent.templateKey()).isEqualTo("partner-meeting-cancellation");
+        assertThat(sent.senderUsername()).isEqualTo("organizer1");
+        assertThat(sent.reference()).isEqualTo("partner-meeting:" + MEETING_ID);
+    }
+
+    @Test
+    @DisplayName("owner decision 2026-11-02: one mail per recipient, each with only their own ICS, one record")
+    void should_sendEachRecipientTheirOwnMailAndIcs() {
+        var details = new PartnerInviteEmailService.MeetingInviteDetails(
+                "Event", "BATbern61", LocalDate.of(2026, 9, 3), LocalTime.of(16, 0), LocalTime.of(17, 0), "Bern");
+
+        int sent = service.sendCalendarInvites(List.of("partner@example.com", "organizer@batbern.ch"), details,
+                PartnerInviteEmailServiceTest::ics, MEETING_ID, "organizer1");
+
+        ArgumentCaptor<MailContext> contexts = ArgumentCaptor.forClass(MailContext.class);
+        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
+        @SuppressWarnings("unchecked")
+        ArgumentCaptor<List<EmailService.EmailAttachment>> attachments = ArgumentCaptor.forClass(List.class);
+        verify(emailService, org.mockito.Mockito.times(2)).sendHtmlEmailWithAttachments(contexts.capture(),
+                to.capture(), eq(List.of()), any(), any(), attachments.capture());
+        assertThat(sent).isEqualTo(2);
+        assertThat(to.getAllValues()).containsExactly("partner@example.com", "organizer@batbern.ch");
+        assertThat(new String(attachments.getAllValues().get(0).get(0).content()))
+                .isEqualTo("ATTENDEE:mailto:partner@example.com");
+        assertThat(new String(attachments.getAllValues().get(1).get(0).content()))
+                .isEqualTo("ATTENDEE:mailto:organizer@batbern.ch");
+        assertThat(contexts.getAllValues().get(0).sendGroupId())
+                .isEqualTo(contexts.getAllValues().get(1).sendGroupId());
+        verify(emailService, org.mockito.Mockito.never()).sendGroupHtmlEmailWithAttachments(any(MailContext.class),
+                anyList(), anyList(), any(), any(), anyList());
+    }
+
+    @Test
+    @DisplayName("one failed recipient does not stop the others; the invite counts the ones reached")
+    void should_continue_whenOneRecipientFails() {
+        var details = new PartnerInviteEmailService.MeetingInviteDetails(
+                "Event", "BATbern61", LocalDate.of(2026, 9, 3), LocalTime.of(16, 0), LocalTime.of(17, 0), "Bern");
+        org.mockito.Mockito.doThrow(new IllegalArgumentException("bad address"))
+                .when(emailService).sendHtmlEmailWithAttachments(any(MailContext.class), eq("broken@example.com"),
+                        anyList(), any(), any(), anyList());
+
+        int sent = service.sendCalendarInvites(List.of("broken@example.com", "partner@example.com"), details,
+                PartnerInviteEmailServiceTest::ics, MEETING_ID, "organizer1");
+
+        assertThat(sent).isEqualTo(1);
+        verify(emailService).sendHtmlEmailWithAttachments(any(MailContext.class), eq("partner@example.com"),
+                anyList(), any(), any(), anyList());
+    }
+
+    @Test
+    @DisplayName("the cancellation also goes to each recipient on their own")
+    void should_sendCancellationPerRecipient() {
+        service.sendCancellationNotice(List.of("partner@example.com", "organizer@batbern.ch"), "Event", "BATbern61",
+                LocalDate.of(2026, 9, 3), new byte[]{9}, MEETING_ID, "organizer1");
+
+        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
+        verify(emailService, org.mockito.Mockito.times(2)).sendHtmlEmailWithAttachments(any(MailContext.class),
+                to.capture(), eq(List.of()), any(), any(), anyList());
+        assertThat(to.getAllValues()).containsExactly("partner@example.com", "organizer@batbern.ch");
     }
 }

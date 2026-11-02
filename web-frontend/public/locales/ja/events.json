@@ -457,8 +457,7 @@
         "contentSource": "内容",
         "source": {
           "template": "テンプレート",
-          "ownText": "独自テキスト",
-          "ownTextSoon": "独自テキストは今後のアップデートで追加されます。"
+          "ownText": "独自テキスト"
         },
         "template": "テンプレート",
         "automatic": "自動（登壇者ごとの段階）",
@@ -475,7 +474,14 @@
             "CONTENT": "コンテンツ未提出の承諾済み登壇者"
           },
           "goesTo": "送信先: {{target}}",
-          "detected": "{{name}} に自動選択: {{templateKey}}"
+          "detected": "{{name}} に自動選択: {{templateKey}}",
+          "status": {
+            "INVITED": "招待済み",
+            "ACCEPTED": "承諾済み",
+            "CONTENT_SUBMITTED": "資料提出済み",
+            "QUALITY_REVIEWED": "品質確認済み"
+          },
+          "statusRequired": "少なくとも 1 つのステータスを選んでください。"
         },
         "recipients": {
           "count_one": "受信者 {{count}} 名",
@@ -516,8 +522,65 @@
           "yes": "はい、送信"
         },
         "testSent_one": "主催者 {{count}} 名にテストを送信しました",
-        "testSent_other": "主催者 {{count}} 名にテストを送信しました"
-      }
+        "testSent_other": "主催者 {{count}} 名にテストを送信しました",
+        "partners": {
+          "meetingInvite": "カレンダー付きパートナーミーティング招待",
+          "fixedText": "この招待の本文はまだ固定です。各パートナーと主催者には、カレンダー項目を添付した個別のメールが届きます。他の人のアドレスは表示されません。"
+        },
+        "ownText": {
+          "subject": "件名",
+          "body": "本文",
+          "chips": "プレースホルダーを挿入:",
+          "noPersonalFields": "受信者ごとの個人フィールドはありません。全員に同じ値が入ります。",
+          "asWritten": "全員がこのテキストをそのまま受け取ります。ここで選んだ言語で全員のレイアウトが決まります。",
+          "unsubscribeAdded": "配信停止リンクは自動的に追加されます。",
+          "startingPoint": "このテンプレートを元にして編集する →",
+          "startingPointFailed": "この言語のテンプレートを読み込めませんでした。",
+          "empty": "件名と本文を入力するとプレビューが表示されます。",
+          "tokenHint": "個人トークン付きのリンクはここでは非表示です。各受信者には有効なリンクが届きます。",
+          "unknownPlaceholders": "不明なプレースホルダー: {{list}}。送信前に本文を修正してください。",
+          "alreadySent": "{{date}} に送信済みです。再送しますか？",
+          "sendAgain": "再送する"
+        },
+        "saveTemplate": {
+          "button": "テンプレートとして保存",
+          "title": "テンプレートとして保存",
+          "key": "テンプレートキー",
+          "keyHelp": "小文字、数字、ハイフン（例: room-change）",
+          "keyInvalid": "小文字、数字、単独のハイフンのみ使用できます（例: room-change）",
+          "save": "保存",
+          "duplicate": "この言語には同じキーのテンプレートが既にあります。別のキーを選んでください。",
+          "failed": "テンプレートを保存できませんでした。もう一度お試しください。",
+          "saved": "テンプレート {{key}} として保存しました。"
+        },
+        "variables": {
+          "eventTitle": "イベント名",
+          "eventDate": "日付",
+          "eventTime": "時刻",
+          "eventNumber": "イベント番号",
+          "eventType": "イベント種別",
+          "venue": "会場",
+          "venueName": "会場名",
+          "registrationLink": "登録リンク",
+          "eventDetailLink": "イベントページのリンク",
+          "speakerName": "名前",
+          "sessionTitle": "講演タイトル",
+          "deadline": "締切",
+          "daysRemaining": "残り日数",
+          "portalLink": "ポータルのリンク",
+          "organizerName": "主催者名",
+          "organizerEmail": "主催者のメール",
+          "recipientName": "名前",
+          "deregistrationUrl": "登録取消リンク",
+          "salutation": "敬称",
+          "topicTitle": "テーマ",
+          "agenda": "プログラム",
+          "notes": "メモ",
+          "organizerSignature": "主催者の署名",
+          "companyName": "会社"
+        }
+      },
+      "rsvpSummary": "出欠: 参加 {{accepted}} · 不参加 {{declined}} · 未定 {{tentative}} · 未回答 {{noAnswer}}"
     }
   },
   "dashboard": {

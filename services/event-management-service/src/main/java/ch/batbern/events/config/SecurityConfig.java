@@ -157,6 +157,11 @@ public class SecurityConfig {
                 // Story 10.16: AI feature flag endpoint (public — no auth required)
                 .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/features").permitAll()
 
+                // Story 16.9: internal service API (InternalMailController, partner-coordination records
+                // its partner meeting mails). Not routed by the API gateway, which also denies
+                // /internal/** explicitly: reachable only in the VPC.
+                .requestMatchers("/internal/**").permitAll()
+
                 // Dev tool: local email inbox (controller is @Profile("local") — safe in prod)
                 .requestMatchers("/dev/emails/**").permitAll()
 

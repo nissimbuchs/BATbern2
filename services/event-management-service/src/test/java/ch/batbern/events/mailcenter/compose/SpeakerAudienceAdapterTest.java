@@ -2,11 +2,17 @@ package ch.batbern.events.mailcenter.compose;
 
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
+import ch.batbern.events.mailcenter.render.MailPipelines;
+import ch.batbern.events.mailcenter.render.RenderedMail;
+import ch.batbern.events.service.EmailTemplateService;
 import ch.batbern.events.service.PrimarySpeakerResolver;
+import ch.batbern.events.service.SpeakerOwnTextMailService;
 import ch.batbern.events.service.SpeakerReminderEmailService;
 import ch.batbern.events.service.SpeakerReminderService;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
+import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.types.SpeakerWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -45,6 +51,12 @@ class SpeakerAudienceAdapterTest {
     private SpeakerReminderEmailService reminderEmailService;
     @Mock
     private PrimarySpeakerResolver primarySpeakerResolver;
+    @Mock
+    private SpeakerOwnTextMailService ownTextMail;
+    @Mock
+    private EmailService emailService;
+    @Mock
+    private EmailTemplateService templates;
 
     private SpeakerAudienceAdapter adapter;
     private final Event event = Event.builder().id(UUID.randomUUID()).eventCode("BATbern60").title("BATbern60")
@@ -52,7 +64,12 @@ class SpeakerAudienceAdapterTest {
 
     @BeforeEach
     void setUp() {
-        adapter = new SpeakerAudienceAdapter(reminderService, reminderEmailService, primarySpeakerResolver);
+        adapter = new SpeakerAudienceAdapter(reminderService, reminderEmailService, primarySpeakerResolver,
+                ownTextMail, MailPipelines.over(emailService, templates));
+        when(emailService.replaceVariables(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyMap())).thenCallRealMethod();
+        when(templates.mergeWithLayout(org.mockito.ArgumentMatchers.anyString(), any(), any()))
+                .thenAnswer(i -> i.getArgument(0));
     }
 
     @Test
@@ -184,5 +201,74 @@ class SpeakerAudienceAdapterTest {
         when(primarySpeakerResolver.resolve(pool)).thenReturn(Optional.of(
                 new PrimarySpeakerResolver.PrimarySpeakerProfile(parts[0].toLowerCase(), email, parts[0], parts[1],
                         null, List.of())));
+    }
+
+    // ── Story 16.5: own text ─────────────────────────────────────────────────
+
+    private ComposeRequest ownText(List<String> statuses) {
+        return new ComposeRequest(MailContext.Audience.SPEAKERS, MailContext.ContentSource.OWN_TEXT, null, "en", 0,
+                false, null, List.of(), null, "Room change", "<p>Hi {{speakerName}}, {{sessionTitle}}</p>",
+                statuses, false);
+    }
+
+    @Test
+    @DisplayName("16.5 AC11: own text needs at least one known speaker status")
+    void ownText_needsStatuses() {
+        assertThatThrownBy(() -> adapter.validate(ownText(List.of())))
+                .isInstanceOf(IllegalArgumentException.class).hasMessageContaining("speakerStatuses");
+        assertThatThrownBy(() -> adapter.validate(ownText(List.of("DECLINED"))))
+                .isInstanceOf(IllegalArgumentException.class);
+        adapter.validate(ownText(List.of("ACCEPTED", "INVITED")));
+    }
+
+    @Test
+    @DisplayName("16.5 AC11: own text goes to the chosen statuses, reminder opt-out does not apply")
+    void ownText_recipientsByStatus() {
+        SpeakerPool anna = SpeakerPool.builder().id(UUID.randomUUID()).speakerName("Anna Alpha")
+                .remindersDisabled(true).build();
+        when(ownTextMail.audience(eq(event), eq(List.of(SpeakerWorkflowState.ACCEPTED)))).thenReturn(List.of(anna));
+        when(primarySpeakerResolver.resolve(anna)).thenReturn(Optional.of(
+                new PrimarySpeakerResolver.PrimarySpeakerProfile("anna", "anna@example.com", "Anna", "Alpha", "AcmeAG",
+                        List.of())));
+
+        Recipients recipients = adapter.resolveRecipients(context(ownText(List.of("ACCEPTED"))));
+
+        assertThat(recipients.recipients()).extracting(ComposeRecipient::address).containsExactly("anna@example.com");
+        assertThat(recipients.skipped()).isEmpty();
+    }
+
+    @Test
+    @DisplayName("16.5: one mail per speaker with their values, one OWN_TEXT record; a failure does not stop the rest")
+    void ownText_deliverPerSpeaker() {
+        SpeakerPool anna = SpeakerPool.builder().id(UUID.randomUUID()).speakerName("Anna Alpha").build();
+        SpeakerPool ben = SpeakerPool.builder().id(UUID.randomUUID()).speakerName("Ben Beta").build();
+        when(ownTextMail.variables(eq(anna), eq(event), eq("en")))
+                .thenReturn(java.util.Map.of("speakerName", "Anna", "sessionTitle", "Talk A"));
+        when(ownTextMail.variables(eq(ben), eq(event), eq("en")))
+                .thenReturn(java.util.Map.of("speakerName", "Ben", "sessionTitle", "Talk B"));
+        when(ownTextMail.replyTo(event)).thenReturn("batbern60-moderator@batbern.ch");
+        org.mockito.Mockito.doThrow(new IllegalStateException("SES down")).when(ownTextMail).send(any(), eq(anna),
+                any(), any(), any(), any(), any());
+        Recipients recipients = new Recipients(List.of(
+                new ComposeRecipient("Anna Alpha", "anna@example.com", List.of(), anna),
+                new ComposeRecipient("Ben Beta", "ben@example.com", List.of("ben.private@example.com"), ben)),
+                List.of());
+
+        List<DeliveredMail> delivered = adapter.deliver(context(ownText(List.of("ACCEPTED"))), recipients,
+                MailTrigger.organizer("organizer1"));
+
+        org.mockito.ArgumentCaptor<MailContext> mailContext = org.mockito.ArgumentCaptor.forClass(MailContext.class);
+        org.mockito.ArgumentCaptor<RenderedMail> mail = org.mockito.ArgumentCaptor.forClass(RenderedMail.class);
+        verify(ownTextMail).send(mailContext.capture(), eq(ben), eq("ben@example.com"),
+                eq(List.of("ben.private@example.com")), mail.capture(), eq("batbern60-moderator@batbern.ch"),
+                eq("organizer1"));
+        assertThat(mail.getValue().subject()).isEqualTo("Room change");
+        assertThat(mail.getValue().html()).contains("Hi Ben, Talk B");
+        assertThat(mailContext.getValue().contentSource()).isEqualTo(MailContext.ContentSource.OWN_TEXT);
+        assertThat(mailContext.getValue().templateKey()).isNull();
+        assertThat(delivered).singleElement().satisfies(d -> {
+            assertThat(d.context().contentSource()).isEqualTo(MailContext.ContentSource.OWN_TEXT);
+            assertThat(d.rendering().html()).contains("Hi Anna, Talk A");
+        });
     }
 }

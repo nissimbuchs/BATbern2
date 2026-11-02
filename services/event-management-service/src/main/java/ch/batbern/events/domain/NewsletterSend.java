@@ -86,6 +86,17 @@ public class NewsletterSend {
     @Builder.Default
     private boolean testMode = false;
 
+    /** Story 16.5: TEMPLATE, or OWN_TEXT with {@link #ownSubject} and {@link #ownBodyHtml}. */
+    @Column(name = "content_source", nullable = false, length = 10)
+    @Builder.Default
+    private String contentSource = "TEMPLATE";
+
+    @Column(name = "own_subject", columnDefinition = "TEXT")
+    private String ownSubject;
+
+    @Column(name = "own_body_html", columnDefinition = "TEXT")
+    private String ownBodyHtml;
+
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 

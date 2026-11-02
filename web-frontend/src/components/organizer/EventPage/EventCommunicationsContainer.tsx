@@ -8,8 +8,8 @@
  * "+ New mail" opens the composer inline at the top of the page on desktop and as a full-screen
  * dialog on mobile (owner decision 2026-10-31, `docs/ux/mail-center-layouts.html` variant A and
  * `docs/ux/mail-center-mobile.html`); a sent mail likewise opens below its row. Newsletter,
- * registrants, speakers and venue share one MailComposer (16.8b); Partners keeps
- * PartnerMeetingsCompose until 16.9. After a send the composer closes, the list refreshes and the
+ * registrants, speakers and venue share one MailComposer (16.8b); Partners joins it with 16.9
+ * (its template list starts with the partner meeting invite). After a send the composer closes, the list refreshes and the
  * new row is highlighted on top.
  */
 
@@ -50,7 +50,6 @@ import { MAIL_MESSAGE_QUERY_KEYS, useMailCounts } from '@/hooks/useMailMessages/
 import type { ComposeAudience, MailSendResponse } from '@/services/mailMessageService';
 import type { Event, EventDetailUI } from '@/types/event.types';
 import { MailSentList } from './communications/MailSentList';
-import { PartnerMeetingsCompose } from './communications/PartnerMeetingsCompose';
 import { MailComposer } from './communications/composer/MailComposer';
 
 interface EventCommunicationsContainerProps {
@@ -60,12 +59,13 @@ interface EventCommunicationsContainerProps {
 
 type PickerAudience = 'newsletter' | 'registrants' | 'speakers' | 'venue' | 'partners';
 
-/** The picker entries the shared composer serves; Partners is not among them yet (AC15). */
-const COMPOSER_AUDIENCE: Partial<Record<PickerAudience, ComposeAudience>> = {
+/** Every picker entry opens the shared composer (Partners since Story 16.9). */
+const COMPOSER_AUDIENCE: Record<PickerAudience, ComposeAudience> = {
   newsletter: 'NEWSLETTER',
   registrants: 'REGISTRANTS',
   speakers: 'SPEAKERS',
   venue: 'VENUE',
+  partners: 'PARTNERS',
 };
 
 export const EventCommunicationsContainer: React.FC<EventCommunicationsContainerProps> = ({
@@ -121,20 +121,13 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
 
   const composeLabel = audiences.find((a) => a.value === compose)?.label;
   const composerAudience = compose ? COMPOSER_AUDIENCE[compose] : undefined;
-  const composer = (
-    <>
-      {composerAudience && (
-        <MailComposer
-          key={composerAudience}
-          eventCode={eventCode}
-          audience={composerAudience}
-          onSent={handleSent}
-        />
-      )}
-      {compose === 'partners' && (
-        <PartnerMeetingsCompose eventCode={eventCode} onSent={() => handleSent()} />
-      )}
-    </>
+  const composer = composerAudience && (
+    <MailComposer
+      key={composerAudience}
+      eventCode={eventCode}
+      audience={composerAudience}
+      onSent={handleSent}
+    />
   );
 
   return (

@@ -130,14 +130,16 @@ public class PartnerMeetingService {
      * 1. Load meeting + fetch BATbern event details
      * 2. Generate ICS file with two VEVENTs
      * 3. Collect all partner contact emails via UserServiceClient
-     * 4. Send via PartnerInviteEmailService (synchronous: one SES call for all recipients)
+     * 4. Send via PartnerInviteEmailService (synchronous: one mail and ICS per recipient)
      * 5. Update invite_sent_at timestamp, only when the send succeeded
      *
      * A failed send answers 502 and rolls back, so the meeting is never shown as invited
      * when nothing went out.
+     *
+     * @param senderUsername the organizer who clicked; recorded as the sender (Story 16.9)
      */
     @Transactional
-    public SendInviteResponse sendInvite(UUID meetingId) {
+    public SendInviteResponse sendInvite(UUID meetingId, String senderUsername) {
         PartnerMeeting meeting = findMeetingById(meetingId);
 
         log.info("Sending partner meeting invite: meetingId={}, eventCode={}", meetingId, meeting.getEventCode());
@@ -145,14 +147,14 @@ public class PartnerMeetingService {
         // Fetch linked event details for ICS
         EventSummaryDTO event = eventManagementClient.getEventSummary(meeting.getEventCode());
 
-        // Collect all invite recipients BEFORE ICS generation so ATTENDEE lines are included (AC1)
+        // Collect all invite recipients; each gets their own mail and ICS (AC1)
         List<String> emails = collectInviteRecipientEmails();
 
         // Increment SEQUENCE before ICS generation (RFC 5545: higher SEQUENCE = update)
         meeting.setInviteSequence(meeting.getInviteSequence() + 1);
 
-        // Generate ICS content with recipient emails for ATTENDEE fields (Story 10.27 AC1)
-        byte[] icsContent = icsGeneratorService.generate(meeting, event, emails);
+        // One ICS per recipient with only their own ATTENDEE line (Story 10.27 AC1; owner decision
+        // 2026-11-02: nobody sees the other recipients' addresses).
 
         var inviteDetails = new PartnerInviteEmailService.MeetingInviteDetails(
                 event.title(),
@@ -162,8 +164,11 @@ public class PartnerMeetingService {
                 meeting.getEndTime(),
                 meeting.getLocation()
         );
+        int sent;
         try {
-            inviteEmailService.sendCalendarInvites(emails, inviteDetails, icsContent);
+            sent = inviteEmailService.sendCalendarInvites(emails, inviteDetails,
+                    recipient -> icsGeneratorService.generate(meeting, event, List.of(recipient)), meetingId,
+                    senderUsername);
         } catch (RuntimeException e) {
             // Rolls back the sequence increment; invite_sent_at stays as it was.
             log.error("Partner meeting invite NOT sent: meetingId={}, recipients={}, reason={}",
@@ -176,12 +181,14 @@ public class PartnerMeetingService {
         meeting.setInviteSentAt(Instant.now());
         meetingRepository.save(meeting);
 
-        log.info("Partner meeting invite sent to {} recipients, meetingId={}", emails.size(), meetingId);
+        log.info("Partner meeting invite sent to {} of {} recipients, meetingId={}", sent, emails.size(), meetingId);
 
         return new SendInviteResponse()
-                .message("Calendar invite was sent to all partner contacts")
+                .message(sent == emails.size() ? "Calendar invite was sent to all partner contacts"
+                        : "Calendar invite was sent to " + sent + " of " + emails.size()
+                                + " partner contacts; see the mail record for the others")
                 .meetingId(meetingId)
-                .recipientCount(emails.size());
+                .recipientCount(sent);
     }
 
     /**
@@ -194,9 +201,10 @@ public class PartnerMeetingService {
      * RSVPs are removed automatically via ON DELETE CASCADE (V9 migration).
      *
      * @param meetingId the meeting to delete
+     * @param senderUsername the organizer who deleted it; recorded as the cancellation's sender (Story 16.9)
      */
     @Transactional
-    public void deleteMeeting(UUID meetingId) {
+    public void deleteMeeting(UUID meetingId, String senderUsername) {
         PartnerMeeting meeting = findMeetingById(meetingId);
         log.info("Deleting partner meeting: id={}, eventCode={}, inviteSent={}",
                 meetingId, meeting.getEventCode(), meeting.getInviteSentAt() != null);
@@ -211,7 +219,9 @@ public class PartnerMeetingService {
                     event.title(),
                     meeting.getEventCode(),
                     meeting.getMeetingDate(),
-                    cancelIcs
+                    cancelIcs,
+                    meetingId,
+                    senderUsername
             );
             log.info("Cancellation notice queued for {} recipients, meetingId={}", emails.size(), meetingId);
         }

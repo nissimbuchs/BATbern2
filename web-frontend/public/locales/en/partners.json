@@ -186,6 +186,9 @@
         "declined": "Declined",
         "tentative": "Tentative"
       }
+    },
+    "mails": {
+      "title": "Mails of this meeting"
     }
   },
   "portal": {

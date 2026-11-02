@@ -56,6 +56,7 @@ import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -236,6 +237,54 @@ class MailComposerSendIntegrationTest extends AbstractIntegrationTest {
                 .containsExactly("TO", "CC");
     }
 
+    @Test
+    @WithMockUser(username = "organizer1", roles = "ORGANIZER")
+    @DisplayName("16.9 partners: one mail per partner, sorted; preview equals sent; one record, a row per partner")
+    void partners_previewEqualsSent_oneRowPerAddress() throws Exception {
+        partners();
+        String request = "{\"audience\":\"PARTNERS\",\"templateKey\":\"partner-info\",\"locale\":\"de\"}";
+
+        JsonNode preview = preview(request);
+        JsonNode sent = send(request, "RECIPIENTS");
+
+        assertThat(preview.get("personalized").asBoolean()).isFalse();
+        assertThat(preview.get("recipientCount").asInt()).isEqualTo(2);
+        assertThat(preview.at("/recipient/address").asText()).isEqualTo(PARTNER_A);
+        assertThat(preview.get("replyTo").asText()).isEqualTo("partner@batbern.ch");
+        assertThat(preview.at("/skipped/0/reason").asText()).isEqualTo("NO_EMAIL");
+        assertThat(preview.get("unknownPlaceholders")).isEmpty();
+        String mailKey = sent.get("mailKeys").get(0).asText();
+        assertRecordedEquals(mailKey, PARTNER_A, preview);
+        assertThat(jdbc.queryForList("SELECT r.address FROM mail_recipient r JOIN mail_message m"
+                + " ON m.id = r.mail_message_id WHERE m.mail_key = ? AND r.kind = 'TO' ORDER BY r.address",
+                String.class, mailKey)).containsExactly(PARTNER_A, PARTNER_B);
+        assertThat(recipientCount(mailKey)).isEqualTo(2);
+        assertThat(jdbc.queryForObject("SELECT audience FROM mail_message WHERE mail_key = ?", String.class,
+                mailKey)).isEqualTo("PARTNERS");
+        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
+        verify(emailService, atLeastOnce()).sendHtmlEmailSync(any(), to.capture(), any(), anyString(), anyString(),
+                any(), any());
+        assertThat(to.getAllValues()).containsExactly(PARTNER_A, PARTNER_B);
+    }
+
+    @Test
+    @WithMockUser(username = "organizer1", roles = "ORGANIZER")
+    @DisplayName("16.9 AC7 partners: a test send reaches the organizers only, [TEST] subject, no partner")
+    void partnersTestSend_reachesOrganizersOnly() throws Exception {
+        partners();
+        String request = "{\"audience\":\"PARTNERS\",\"templateKey\":\"partner-info\",\"locale\":\"de\"}";
+
+        JsonNode sent = send(request, "ORGANIZERS");
+
+        String mailKey = sent.get("mailKeys").get(0).asText();
+        assertThat(jdbc.queryForObject("SELECT is_test FROM mail_message WHERE mail_key = ?", Boolean.class,
+                mailKey)).isTrue();
+        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
+        verify(emailService, atLeastOnce()).sendHtmlEmailSync(any(), to.capture(), any(), anyString(), anyString(),
+                any(), any());
+        assertThat(to.getAllValues()).containsExactlyInAnyOrder(ORG1, ORG2);
+    }
+
     // ── AC5: test send ───────────────────────────────────────────────────────
 
     @Test
@@ -289,6 +338,20 @@ class MailComposerSendIntegrationTest extends AbstractIntegrationTest {
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private static final String PARTNER_A = "success+partner922a" + SIM;
+    private static final String PARTNER_B = "success+partner922b" + SIM;
+
+    /** Two partners in two companies (AlphaAG sorts first) and one without an address. */
+    private void partners() {
+        when(userApiClient.getPartnerUsernames()).thenReturn(List.of("p.beta", "p.alpha", "p.none"));
+        when(userApiClient.getUserByUsername("p.beta")).thenReturn(new UserResponse().id("p.beta").email(PARTNER_B)
+                .firstName("Berta").lastName("Beta").companyId("BetaGmbH"));
+        when(userApiClient.getUserByUsername("p.alpha")).thenReturn(new UserResponse().id("p.alpha")
+                .email(PARTNER_A).firstName("Alma").lastName("Alpha").companyId("AlphaAG"));
+        when(userApiClient.getUserByUsername("p.none")).thenReturn(new UserResponse().id("p.none")
+                .firstName("Nora").lastName("None").companyId("AlphaAG"));
+    }
 
     private JsonNode preview(String request) throws Exception {
         String body = mockMvc.perform(post(BASE + "/preview").contentType(MediaType.APPLICATION_JSON).content(request))

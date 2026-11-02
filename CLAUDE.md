@@ -899,6 +899,11 @@ anything you could not verify. Silence reads as coverage.
 - Update OpenAPI specs when changing APIs
 - Regenerate types after API changes
 - instead of running the test suites several times and grep the output, dump the output to a temp file and grep that file. this saves time
+- **One heavy build at a time on rack.** Never run Gradle test suites, `git commit`/`git push`
+  (their hooks run Gradle), Vitest or Playwright in parallel with each other, and never next to a
+  subagent that runs them. Wait for one to finish before starting the next. On 2026-11-02 an EMS
+  suite, a PCS suite, pre-commit hooks and a frontend agent's Vitest ran together and drove the load
+  average to 264; the owner had to kill every java/claude process to get the machine back.
 - whenever you run make, gradlew or git push or git comit, output result via tee to a temp file and then analyse or grep that one. ALWAYS prefix such pipelines with `set -o pipefail` (or check `${PIPESTATUS[0]}`) — without it the pipeline's exit code is `tee`'s (always 0), which silently hides a failed `git push` (rejected by the pre-push hook), a `BUILD FAILED`, or a non-zero `git commit`. A green-looking command that actually failed is worse than no check.
 
 ## Localization — Email Templates: DE + EN Only; UI i18n: All 10 Locales

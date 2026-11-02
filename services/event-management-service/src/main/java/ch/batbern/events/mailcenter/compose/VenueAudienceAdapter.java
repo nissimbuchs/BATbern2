@@ -54,8 +54,13 @@ public class VenueAudienceAdapter implements AudienceAdapter {
     }
 
     @Override
+    public List<String> offeredVariables() {
+        return List.of("salutation", "eventDate", "topicTitle", "agenda", "notes", "organizerSignature");
+    }
+
+    @Override
     public void validate(ComposeRequest request) {
-        if (request.templateKey() == null) {
+        if (!request.ownText() && request.templateKey() == null) {
             throw new IllegalArgumentException("templateKey is required for venue and catering");
         }
         if (request.venueRecipients().isEmpty()) {
@@ -75,7 +80,8 @@ public class VenueAudienceAdapter implements AudienceAdapter {
     @Override
     public Rendering render(ComposeContext context, ComposeRecipient recipient, boolean test) {
         VenueMail mail = recipient.key() instanceof VenueMail rendered ? rendered : render(context);
-        return new Rendering(mail.subject(), mail.body(), context.request().templateKey(), context.request().locale(),
+        String templateKey = context.request().ownText() ? null : context.request().templateKey();
+        return new Rendering(mail.subject(), mail.body(), templateKey, context.request().locale(),
                 mail.replyTo(), List.of(), List.of());
     }
 
@@ -89,15 +95,26 @@ public class VenueAudienceAdapter implements AudienceAdapter {
     @Override
     public List<DeliveredMail> deliver(ComposeContext context, Recipients recipients, MailTrigger trigger) {
         ComposeRequest request = context.request();
-        venue.send(context.event().getEventCode(), request.templateKey(), roles(request), request.locale(),
-                request.venueNotes(), context.organizerUsername(), trigger);
-        MailContext mailContext = MailContext.of(trigger, context.event().getEventCode(), MailContext.Audience.VENUE,
-                request.templateKey());
+        String eventCode = context.event().getEventCode();
+        MailContext mailContext;
+        if (request.ownText()) {
+            venue.sendOwnText(eventCode, ownTextContent(context), roles(request), request.venueNotes(),
+                    context.organizerUsername(), trigger);
+            mailContext = MailContext.ownText(trigger, eventCode, MailContext.Audience.VENUE);
+        } else {
+            venue.send(eventCode, request.templateKey(), roles(request), request.locale(), request.venueNotes(),
+                    context.organizerUsername(), trigger);
+            mailContext = MailContext.of(trigger, eventCode, MailContext.Audience.VENUE, request.templateKey());
+        }
         return List.of(new DeliveredMail(mailContext, render(context, recipients.recipients().get(0), false)));
     }
 
     private VenueMail render(ComposeContext context) {
         ComposeRequest request = context.request();
+        if (request.ownText()) {
+            return venue.renderFor(context.event().getEventCode(), ownTextContent(context), roles(request),
+                    request.venueNotes());
+        }
         return venue.renderFor(context.event().getEventCode(), request.templateKey(), roles(request),
                 request.locale(), request.venueNotes());
     }

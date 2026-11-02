@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.forwarding.EmailForwardingProperties;
 import ch.batbern.events.forwarding.ModeratorReplyAddress;
@@ -28,11 +29,13 @@ import java.util.Locale;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -94,7 +97,7 @@ class SpeakerModeratorReplyToTest {
     void should_replyToModeratorAlias_when_tieredReminderSent() {
         SpeakerReminderEmailService service = new SpeakerReminderEmailService(
                 emailService, MailPipelines.over(emailService, emailTemplateService), primarySpeakerResolver,
-                moderatorReplyAddress);
+                moderatorReplyAddress, mock(SessionRepository.class));
         ReflectionTestUtils.setField(service, "baseUrl", "https://batbern.ch");
 
         service.sendReminderEmail(speaker, event, "RESPONSE", "TIER_1", LocalDate.now().plusDays(7),
@@ -115,5 +118,25 @@ class SpeakerModeratorReplyToTest {
         service.rejectContent(speaker.getId().toString(), "Please shorten the abstract", "organizer");
 
         verify(emailService).sendHtmlEmail(any(), eq("speaker@example.com"), anyList(), anyString(), anyString(), eq(MODERATOR));
+    }
+
+    @Test
+    @DisplayName("Story 16.5 AC12: reminders carry the speaker's session title as sessionTitle, empty without one")
+    void should_offerSessionTitle_inReminderVariables() {
+        SpeakerReminderEmailService service = new SpeakerReminderEmailService(
+                emailService, MailPipelines.over(emailService, emailTemplateService), primarySpeakerResolver,
+                moderatorReplyAddress, sessionRepository);
+        ReflectionTestUtils.setField(service, "baseUrl", "https://batbern.ch");
+        UUID sessionId = UUID.randomUUID();
+        Session session = new Session();
+        session.setTitle("Clean Architecture in Practice");
+        when(sessionRepository.findById(sessionId)).thenReturn(Optional.of(session));
+
+        assertThat(service.variables(speaker, event, LocalDate.of(2026, 11, 20), Locale.GERMAN))
+                .containsEntry("sessionTitle", "");
+        speaker.setSessionId(sessionId);
+        assertThat(service.variables(speaker, event, LocalDate.of(2026, 11, 20), Locale.GERMAN))
+                .containsEntry("sessionTitle", "Clean Architecture in Practice")
+                .containsEntry("speakerName", "Test Speaker");
     }
 }

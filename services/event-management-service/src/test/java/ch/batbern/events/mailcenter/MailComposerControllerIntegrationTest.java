@@ -177,8 +177,8 @@ class MailComposerControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "organizer1", roles = "ORGANIZER")
-    @DisplayName("AC10: own text is rejected until Story 16.5")
-    void ownText_rejected() throws Exception {
+    @DisplayName("16.5 AC13: own text without subject and body is a 400")
+    void ownText_withoutText_rejected() throws Exception {
         preview("{\"audience\":\"NEWSLETTER\",\"contentSource\":\"OWN_TEXT\"}")
                 .andExpect(status().isBadRequest());
     }

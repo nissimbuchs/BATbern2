@@ -178,6 +178,9 @@
         "declined": "Afgewezen",
         "tentative": "Voorlopig"
       }
+    },
+    "mails": {
+      "title": "E-mails van deze vergadering"
     }
   },
   "portal": {

@@ -214,6 +214,11 @@ describe('EmailTemplatesTab', () => {
     expect(screen.getByText('Task Reminders')).toBeInTheDocument();
   });
 
+  it('should list the Partners category when the tab renders (Story 16.9 AC9)', () => {
+    renderTab();
+    expect(screen.getByRole('button', { name: 'Partners' })).toBeInTheDocument();
+  });
+
   it('renders locale filter buttons', () => {
     renderTab();
     // Use button role to find the toggle filter buttons specifically (DE/EN also appear as chips)
@@ -306,10 +311,11 @@ describe('EmailTemplatesTab', () => {
     expect(select).toBeInTheDocument();
     const combobox = screen.getByRole('combobox');
     await user.click(combobox);
-    // All 6 category options appear in the opened listbox
-    // (Speaker, Registration, Task Reminders, Newsletter, Venue & Catering, Registrant Notices)
+    // All 7 category options appear in the opened listbox
+    // (Speaker, Registration, Task Reminders, Newsletter, Venue & Catering, Registrant Notices,
+    // Partners — Story 16.9)
     const options = await screen.findAllByRole('option');
-    expect(options).toHaveLength(6);
+    expect(options).toHaveLength(7);
   });
 
   it('should_renderCategoryToggleGroup_when_desktopViewport', () => {

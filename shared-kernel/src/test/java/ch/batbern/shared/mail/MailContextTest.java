@@ -91,4 +91,35 @@ class MailContextTest {
         assertThat(test.senderUsername()).isEqualTo("organizer1");
         assertThat(test.secrets()).containsExactly("REG-CODE-1");
     }
+
+    @Test
+    @DisplayName("Story 16.9: withReference names what the mail is about and keeps everything else")
+    void withReference_keepsGroupAndDetail() {
+        MailContext base = MailContext.of(MailTrigger.organizer("organizer1"), "BATbern60",
+                MailContext.Audience.PARTNERS, "partner-meeting-invite").withSecrets("SECRET-1");
+
+        MailContext referenced = base.withReference("partner-meeting:6f1c");
+
+        assertThat(base.reference()).isNull();
+        assertThat(referenced.reference()).isEqualTo("partner-meeting:6f1c");
+        assertThat(referenced.sendGroupId()).isEqualTo(base.sendGroupId());
+        assertThat(referenced.secrets()).containsExactly("SECRET-1");
+        assertThat(referenced.asTest().reference()).isEqualTo("partner-meeting:6f1c");
+        assertThat(referenced.withSecrets("SECRET-2").reference()).isEqualTo("partner-meeting:6f1c");
+        assertThat(referenced.forNewsletterSend(UUID.randomUUID(), false).reference())
+                .isEqualTo("partner-meeting:6f1c");
+    }
+
+    @Test
+    @DisplayName("Story 16.5: own text has no template key, OWN_TEXT source and an own-text group id")
+    void ownText() {
+        MailContext context = MailContext.ownText(MailTrigger.organizer("anna"), "BATbern60",
+                MailContext.Audience.SPEAKERS);
+
+        assertThat(context.templateKey()).isNull();
+        assertThat(context.contentSource()).isEqualTo(MailContext.ContentSource.OWN_TEXT);
+        assertThat(context.sendGroupId()).endsWith("_BATbern60_own-text");
+        assertThat(context.senderUsername()).isEqualTo("anna");
+        assertThat(context.asTest().contentSource()).isEqualTo(MailContext.ContentSource.OWN_TEXT);
+    }
 }

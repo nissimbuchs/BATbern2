@@ -23,6 +23,12 @@ const { breakpoints } = vi.hoisted(() => ({
   breakpoints: { isMobile: false, isTablet: false, isDesktop: true },
 }));
 vi.mock('@/hooks/useBreakpoints', () => ({ useBreakpoints: () => breakpoints }));
+// Story 16.9: the partner meeting invite keeps its own body (meeting picker + invite action).
+vi.mock('../../PartnerMeetingsCompose', () => ({
+  PartnerMeetingsCompose: ({ eventCode }: { eventCode: string }) => (
+    <div data-testid="partner-meetings-compose-stub">{eventCode}</div>
+  ),
+}));
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, opts?: Record<string, unknown> | string) =>
@@ -52,6 +58,7 @@ const TEMPLATES: Record<string, string[]> = {
     'qna-new-questions',
   ],
   VENUE_COORDINATION: ['venue-timetable'],
+  PARTNER: ['partner-info'],
 };
 
 const VENUE_CONFIG = JSON.stringify({
@@ -68,7 +75,11 @@ let sendBody: unknown = null;
 
 function previewFor(req: MailComposeRequest): MailPreviewResponse {
   const personalized = req.audience === 'REGISTRANTS' || req.audience === 'SPEAKERS';
-  const count = personalized ? 3 : req.audience === 'VENUE' ? 1 : 120;
+  const count = personalized
+    ? 3
+    : req.audience === 'VENUE' || req.audience === 'PARTNERS'
+      ? 1
+      : 120;
   return {
     subject: `Subject ${req.audience} #${req.recipientIndex}`,
     html: `<p>Hello recipient ${req.recipientIndex}</p>`,
@@ -186,10 +197,10 @@ describe('MailComposer: steps', () => {
     }
   );
 
-  it('offers Own text only as a disabled toggle until Story 16.5', async () => {
+  it('starts on Template, with Own text offered next to it (Story 16.5)', async () => {
     renderComposer('NEWSLETTER');
     await waitForPreview();
-    expect(screen.getByTestId('composer-source-own')).toBeDisabled();
+    expect(screen.getByTestId('composer-source-own')).toBeEnabled();
     expect(screen.getByTestId('composer-source-template')).toHaveAttribute('aria-pressed', 'true');
   });
 
@@ -444,5 +455,57 @@ describe('MailComposer: audience fields', () => {
     await waitForPreview();
     fireEvent.click(screen.getByTestId('composer-newsletter-reminder').querySelector('input')!);
     await waitFor(() => expect(lastPreview().newsletterReminder).toBe(true));
+  });
+});
+
+// ── Story 16.9: Partners ──────────────────────────────────────────────────────
+
+/** The template list is disabled until the store answered. */
+async function waitForTemplates() {
+  await waitFor(() =>
+    expect(
+      screen.getByRole('combobox', { name: /eventPage.mail.composer.template/ })
+    ).not.toHaveAttribute('aria-disabled', 'true')
+  );
+}
+
+describe('MailComposer: partners (Story 16.9)', () => {
+  it('lists the meeting invite first, then the PARTNER templates; the invite keeps its own body', async () => {
+    renderComposer('PARTNERS');
+
+    expect(await screen.findByTestId('partner-meetings-compose-stub')).toHaveTextContent('BAT1');
+    expect(screen.getByTestId('composer-fixed-text-hint')).toBeInTheDocument();
+    await waitForTemplates();
+    fireEvent.mouseDown(screen.getByRole('combobox', { name: /eventPage.mail.composer.template/ }));
+    const options = within(screen.getByRole('listbox')).getAllByRole('option');
+    expect(options.map((o) => o.textContent)).toEqual([
+      'eventPage.mail.composer.partners.meetingInvite',
+      'partner-info',
+    ]);
+    fireEvent.keyDown(screen.getByRole('listbox'), { key: 'Escape' });
+    // No preview, no test send, no send for the fixed-text invite (spec).
+    expect(previews).toHaveLength(0);
+    expect(screen.queryByTestId('composer-test-button')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('composer-send-button')).not.toBeInTheDocument();
+  });
+
+  it('a PARTNER template previews one mail for all partners and offers test send and send', async () => {
+    renderComposer('PARTNERS');
+    await screen.findByTestId('partner-meetings-compose-stub');
+    await waitForTemplates();
+
+    chooseTemplate('partner-info');
+
+    await waitForPreview();
+    expect(lastPreview()).toMatchObject({
+      audience: 'PARTNERS',
+      templateKey: 'partner-info',
+      locale: 'de',
+      contentSource: 'TEMPLATE',
+    });
+    expect(screen.queryByTestId('partner-meetings-compose-stub')).not.toBeInTheDocument();
+    expect(screen.getByTestId('composer-test-button')).toBeEnabled();
+    expect(screen.getByTestId('composer-send-button')).toBeEnabled();
+    expect(screen.queryByRole('button', { name: /next/i })).not.toBeInTheDocument();
   });
 });

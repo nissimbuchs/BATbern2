@@ -629,7 +629,8 @@
       "TASK_REMINDER": "Tehtävämuistutukset",
       "NEWSLETTER": "Uutiskirje",
       "VENUE_COORDINATION": "Tila & Catering",
-      "REGISTRANT_NOTICE": "Ilmoittautuneiden tiedotteet"
+      "REGISTRANT_NOTICE": "Ilmoittautuneiden tiedotteet",
+      "PARTNER": "Kumppanit"
     },
     "layoutKey": "Asettelu",
     "standalone": "Ei mitään (itsenäinen)",

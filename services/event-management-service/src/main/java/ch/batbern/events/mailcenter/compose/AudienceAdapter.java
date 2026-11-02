@@ -1,14 +1,17 @@
 package ch.batbern.events.mailcenter.compose;
 
+import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.events.mailcenter.variables.MailVariable.Scope;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 
+import java.time.Instant;
 import java.util.Arrays;
 import java.util.EnumSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.stream.Collectors;
 
@@ -43,6 +46,28 @@ public interface AudienceAdapter {
      */
     default Set<String> allowedVariables() {
         return MailVariable.namesOf(allScopes());
+    }
+
+    /**
+     * The variables offered as chips in the own-text editor (Story 16.5 AC6): a short, plain subset
+     * of {@link #allowedVariables()}, in display order.
+     */
+    List<String> offeredVariables();
+
+    /**
+     * Own text as this audience sends it (Story 16.5): the request's subject and body in the chosen
+     * language with the BATbern layout. The newsletter adds its unsubscribe footer.
+     */
+    default MailContent ownTextContent(ComposeContext context) {
+        return OwnText.content(context.request());
+    }
+
+    /**
+     * When own text with this request's subject already went to this audience for the event, or
+     * empty (Story 16.5 AC9; only registrants have a one-shot guard).
+     */
+    default Optional<Instant> ownTextAlreadySent(ComposeContext context) {
+        return Optional.empty();
     }
 
     /** Variables of this audience's scopes that carry a credential; a test send gets dummies. */

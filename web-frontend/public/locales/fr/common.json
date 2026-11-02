@@ -629,7 +629,8 @@
       "TASK_REMINDER": "Rappels de tâches",
       "NEWSLETTER": "Newsletter",
       "VENUE_COORDINATION": "Lieu & Restauration",
-      "REGISTRANT_NOTICE": "Infos participants"
+      "REGISTRANT_NOTICE": "Infos participants",
+      "PARTNER": "Partenaires"
     },
     "layoutKey": "Mise en page",
     "standalone": "Aucune (autonome)",

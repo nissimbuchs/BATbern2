@@ -11,6 +11,10 @@
  * Story 16.8b: the row(s) of a mail just sent are highlighted and show "sending …" until the job
  * reports progress; a newsletter that ended PARTIAL or FAILED offers Retry on its row; organizer
  * test sends are hidden unless "show test sends" is on.
+ *
+ * Story 16.9: a partner meeting invite shows that meeting's RSVPs beside its counts. With
+ * `audience` + `reference` the list is scoped to one subject (the mails of one partner meeting, in
+ * its detail panel) and the audience chips are hidden.
  */
 
 import React, { useEffect, useState } from 'react';
@@ -34,6 +38,8 @@ import axios from 'axios';
 import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useMailMessages, useRetryMail } from '@/hooks/useMailMessages/useMailMessages';
+import { MeetingRsvpSummary } from './MeetingRsvpSummary';
+import { partnerMeetingId } from './partnerMeetingReference';
 import type { MailAudience, MailMessageSummary } from '@/services/mailMessageService';
 import { MailDetail, MailDetailDialog } from './MailDetail';
 
@@ -53,6 +59,10 @@ interface MailSentListProps {
   eventCode: string;
   /** Story 16.8b: the mail(s) just sent; their rows are highlighted. */
   highlightKeys?: string[];
+  /** Story 16.9: fixed audience; the audience chips are hidden. */
+  audience?: MailAudience;
+  /** Story 16.9: only mails about this subject, e.g. `partner-meeting:{meetingId}`. */
+  reference?: string;
 }
 
 /** The mail that is open, and the title the mobile dialog shows for it. */
@@ -66,7 +76,12 @@ function zurichDay(iso: string): string {
   return new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Zurich' }).format(new Date(iso));
 }
 
-export const MailSentList: React.FC<MailSentListProps> = ({ eventCode, highlightKeys }) => {
+export const MailSentList: React.FC<MailSentListProps> = ({
+  eventCode,
+  highlightKeys,
+  audience,
+  reference,
+}) => {
   const { t } = useTranslation('events');
   const { isMobile } = useBreakpoints();
   const [filter, setFilter] = useState<MailAudience | 'ALL'>('ALL');
@@ -96,8 +111,10 @@ export const MailSentList: React.FC<MailSentListProps> = ({ eventCode, highlight
     retryingKey: retry.isPending ? (retry.variables ?? null) : null,
     onRetry: (mailKey) => retry.mutate(mailKey),
   };
+  const scoped = audience !== undefined;
   const query = useMailMessages(eventCode, {
-    audience: filter === 'ALL' ? undefined : filter,
+    audience: scoped ? audience : filter === 'ALL' ? undefined : filter,
+    reference,
     includeTests,
     page,
     limit: PAGE_SIZE,
@@ -114,7 +131,7 @@ export const MailSentList: React.FC<MailSentListProps> = ({ eventCode, highlight
   return (
     <Box data-testid="mail-sent-list">
       <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 2 }}>
-        {FILTERS.map((f) => (
+        {(scoped ? [] : FILTERS).map((f) => (
           <Chip
             key={f}
             label={t(`eventPage.mail.filters.${f}`)}
@@ -160,7 +177,9 @@ export const MailSentList: React.FC<MailSentListProps> = ({ eventCode, highlight
         </Typography>
       ) : rows.length === 0 ? (
         <Typography variant="body2" color="text.secondary" data-testid="mail-sent-empty">
-          {filter === 'ALL' ? t('eventPage.mail.emptyAll') : t('eventPage.mail.emptyFilter')}
+          {filter === 'ALL' && !scoped
+            ? t('eventPage.mail.emptyAll')
+            : t('eventPage.mail.emptyFilter')}
         </Typography>
       ) : (
         <List disablePadding>
@@ -300,6 +319,7 @@ const MailRow: React.FC<RowProps & { row: MailMessageSummary }> = (props) => {
     eventCode,
     {
       templateKey: row.templateKey ?? undefined,
+      reference: row.reference ?? undefined,
       date: zurichDay(row.sentAt),
       audience: row.audience,
       grouped: false,
@@ -357,6 +377,7 @@ const MailRowContent: React.FC<{ row: MailMessageSummary }> = ({ row }) => {
         })
       : (row.subject ?? row.templateKey ?? '');
   const active = row.newsletterStatus && ACTIVE_NEWSLETTER.includes(row.newsletterStatus);
+  const meetingId = partnerMeetingId(row);
 
   return (
     <Box sx={{ display: 'flex', width: '100%', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
@@ -395,6 +416,13 @@ const MailRowContent: React.FC<{ row: MailMessageSummary }> = ({ row }) => {
         <Typography variant="caption" color="text.secondary" component="div">
           {t('eventPage.mail.recipients', { count: row.recipientCount })}
         </Typography>
+        {meetingId && (
+          <MeetingRsvpSummary
+            meetingId={meetingId}
+            mailKey={row.mailKey}
+            recipientCount={row.recipientCount}
+          />
+        )}
       </Box>
     </Box>
   );

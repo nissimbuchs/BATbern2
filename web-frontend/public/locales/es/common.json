@@ -629,7 +629,8 @@
       "TASK_REMINDER": "Recordatorios de tareas",
       "NEWSLETTER": "Boletín",
       "VENUE_COORDINATION": "Lugar y Catering",
-      "REGISTRANT_NOTICE": "Avisos a inscritos"
+      "REGISTRANT_NOTICE": "Avisos a inscritos",
+      "PARTNER": "Socios"
     },
     "layoutKey": "Diseño",
     "standalone": "Ninguno (independiente)",

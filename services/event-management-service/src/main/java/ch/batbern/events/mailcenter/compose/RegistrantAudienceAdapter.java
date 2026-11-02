@@ -10,8 +10,10 @@ import ch.batbern.shared.mail.MailTrigger;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 
+import java.time.Instant;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
 
@@ -52,8 +54,18 @@ public class RegistrantAudienceAdapter implements AudienceAdapter {
     }
 
     @Override
+    public Optional<Instant> ownTextAlreadySent(ComposeContext context) {
+        return notices.ownTextAlreadySent(context.event(), context.request().ownSubject());
+    }
+
+    @Override
+    public List<String> offeredVariables() {
+        return List.of("recipientName", "deregistrationUrl", "eventTitle", "eventDate", "eventNumber", "eventType");
+    }
+
+    @Override
     public void validate(ComposeRequest request) {
-        if (request.templateKey() == null) {
+        if (!request.ownText() && request.templateKey() == null) {
             throw new IllegalArgumentException("templateKey is required for registrants");
         }
     }
@@ -73,10 +85,12 @@ public class RegistrantAudienceAdapter implements AudienceAdapter {
     @Override
     public Rendering render(ComposeContext context, ComposeRecipient recipient, boolean test) {
         Registration registration = (Registration) recipient.key();
-        String templateKey = context.request().templateKey();
-        String locale = notices.recipientLocale(registration);
-        RenderedMail mail = notices.personalise(notices.renderBase(context.event(), templateKey, locale),
-                registration, test);
+        String templateKey = context.request().ownText() ? null : context.request().templateKey();
+        String locale = locale(context, registration);
+        RenderedMail base = context.request().ownText()
+                ? notices.renderOwnBase(context.event(), ownTextContent(context))
+                : notices.renderBase(context.event(), templateKey, locale);
+        RenderedMail mail = notices.personalise(base, registration, test);
         return new Rendering(mail.subject(), mail.html(), templateKey, locale, null,
                 List.of(registration.getRegistrationCode()), List.of());
     }
@@ -84,12 +98,25 @@ public class RegistrantAudienceAdapter implements AudienceAdapter {
     @Override
     public Map<String, String> variables(ComposeContext context, ComposeRecipient recipient, boolean test) {
         Registration registration = (Registration) recipient.key();
-        return notices.variables(context.event(), notices.recipientLocale(registration), registration, test);
+        return notices.variables(context.event(), locale(context, registration), registration, test);
+    }
+
+    /** Own text is in the organizer's language for everyone (Story 16.5); a template in each registrant's. */
+    private String locale(ComposeContext context, Registration registration) {
+        return context.request().ownText() ? context.request().locale() : notices.recipientLocale(registration);
     }
 
     /** The existing registrant-notice send; its record is grouped by its audit row. */
     @Override
     public List<DeliveredMail> deliver(ComposeContext context, Recipients recipients, MailTrigger trigger) {
+        ComposeRequest request = context.request();
+        if (request.ownText()) {
+            UUID sendId = notices.sendRegistrantOwnText(context.event(), request.ownSubject(), request.ownBodyHtml(),
+                    request.locale(), context.organizerUsername(), request.confirmResend()).getSendId();
+            MailContext mailContext = MailContext.ownText(MailTrigger.forSend(sendId, context.organizerUsername()),
+                    context.event().getEventCode(), MailContext.Audience.REGISTRANTS).forNewsletterSend(sendId, false);
+            return List.of(new DeliveredMail(mailContext, render(context, recipients.recipients().get(0), false)));
+        }
         String templateKey = context.request().templateKey();
         UUID sendId = notices.sendRegistrantNotice(context.event(), templateKey, context.organizerUsername())
                 .getSendId();

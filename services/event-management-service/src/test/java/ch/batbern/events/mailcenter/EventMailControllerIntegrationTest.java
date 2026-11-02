@@ -93,6 +93,29 @@ class EventMailControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("16.9 AC5: the reference filter lists only the mails of one meeting and the summary carries it")
+    void referenceFilter_listsOneMeeting() throws Exception {
+        UUID invite = message(new Mail("BATbern915-7", "PARTNERS", "partner-meeting-invite", "TEMPLATE", "organizer1",
+                null, "Invite", now.minus(2, ChronoUnit.HOURS), EVENT_CODE));
+        UUID other = message(new Mail("BATbern915-8", "PARTNERS", "partner-meeting-invite", "TEMPLATE", "organizer1",
+                null, "Invite 2", now.minus(1, ChronoUnit.HOURS), EVENT_CODE));
+        message(new Mail("BATbern915-9", "SPEAKERS", null, "OWN_TEXT", "organizer1", null, "Hi",
+                now.minus(3, ChronoUnit.HOURS), EVENT_CODE));
+        jdbc.update("UPDATE mail_message SET reference = ? WHERE id = ?", "partner-meeting:m-1", invite);
+        jdbc.update("UPDATE mail_message SET reference = ? WHERE id = ?", "partner-meeting:m-2", other);
+
+        mockMvc.perform(get(BASE).param("reference", "partner-meeting:m-1"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].mailKey", contains("BATbern915-7")))
+                .andExpect(jsonPath("$.data[0].reference").value("partner-meeting:m-1"));
+
+        mockMvc.perform(get(BASE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(3)));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
     @DisplayName("AC1/AC6: a newsletter without a record is backfilled from newsletter_sends, newest first")
     void newsletterWithoutRecord_backfilled() throws Exception {
         UUID sendId = newsletterSend("newsletter-event", now.minus(2, ChronoUnit.DAYS), 3);
