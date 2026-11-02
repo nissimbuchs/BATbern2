@@ -24,8 +24,9 @@ import java.util.UUID;
  * delivery status from 16.1b) and, for newsletter sends made before the record existed,
  * {@code newsletter_sends} (read-time union, no data migration, AC6).
  *
- * <p>Automatic mails (no sender, from a template, not a newsletter) are collapsed per template and
- * day (Europe/Zurich) unless {@code grouped=false}. Newsletter counts come from
+ * <p>Automatic mails (no sender, from a template, not a newsletter) are collapsed per event, template
+ * and day (Europe/Zurich) unless {@code grouped=false}; the event matters across events
+ * (Story 16.7). Newsletter counts come from
  * {@code newsletter_recipients}: failed = refused by SES or bounced, delivered = the rest, because the
  * newsletter configuration set reports no deliveries.
  */
@@ -63,7 +64,8 @@ public class MailMessageQueryService {
                    ns.status AS newsletter_status,
                    CASE WHEN :grouped AND m.sender_username IS NULL AND m.content_source = 'TEMPLATE'
                              AND m.newsletter_send_id IS NULL AND m.template_key IS NOT NULL
-                        THEN m.template_key || '|' || to_char(m.created_at AT TIME ZONE '%1$s', 'YYYY-MM-DD')
+                        THEN m.template_key || '|' || COALESCE(m.event_code, '') || '|'
+                             || to_char(m.created_at AT TIME ZONE '%1$s', 'YYYY-MM-DD')
                         ELSE m.mail_key END AS grp
               FROM mail_message m
               LEFT JOIN mail_conversation c ON c.id = m.conversation_id

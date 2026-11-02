@@ -311,6 +311,21 @@ class GlobalMailCenterIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("AC9: automatic mails collapse per event, template and day, never across events")
+    void should_groupPerEvent_when_sameTemplateSameDayInTwoEvents() throws Exception {
+        automatic(EVENT_A + "-a1", EVENT_A, now.minus(2, ChronoUnit.MINUTES));
+        automatic(EVENT_A + "-a2", EVENT_A, now.minus(1, ChronoUnit.MINUTES));
+        automatic(EVENT_B + "-b1", EVENT_B, now);
+
+        organizer(get("/api/v1/mails"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(2))
+                .andExpect(jsonPath("$.data[0].eventCode").value(EVENT_B))
+                .andExpect(jsonPath("$.data[0].messageCount").value(1))
+                .andExpect(jsonPath("$.data[1].eventCode").value(EVENT_A))
+                .andExpect(jsonPath("$.data[1].messageCount").value(2));
+    }
+
+    @Test
     @DisplayName("AC10: the event list keeps its contract: direction OUT by default, IN on request")
     void should_keepEventListOutbound_when_noDirectionGiven() throws Exception {
         outbound(EVENT_A + "-1", EVENT_A, "REGISTRANTS", now.minus(3, ChronoUnit.HOURS), BOB);
@@ -442,5 +457,13 @@ class GlobalMailCenterIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("INSERT INTO mail_recipient (mail_message_id, address, kind, ses_message_id, status) "
                 + "VALUES (?, ?, 'TO', ?, 'SENT')", id, recipient, "ses-" + key);
         return id;
+    }
+
+    /** An automatic mail (no sender, from a template), the kind the list collapses per template and day. */
+    private void automatic(String key, String eventCode, Instant at) {
+        jdbc.update("INSERT INTO mail_message (id, mail_key, send_group_id, event_code, audience, template_key, "
+                + "content_source, subject, body_html, created_at) "
+                + "VALUES (?, ?, ?, ?, 'REGISTRANTS', 'registration-reminder', 'TEMPLATE', 'Reminder', '<p>x</p>', ?)",
+                UUID.randomUUID(), key, "grp-" + key, eventCode, Timestamp.from(at));
     }
 }
