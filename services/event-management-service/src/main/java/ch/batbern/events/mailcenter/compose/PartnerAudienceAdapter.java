@@ -1,23 +1,20 @@
 package ch.batbern.events.mailcenter.compose;
 
 import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.domain.EmailTemplate;
-import ch.batbern.events.domain.Event;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.forwarding.EmailForwardingProperties;
+import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.render.RenderedMail;
+import ch.batbern.events.mailcenter.variables.MailVariable.Scope;
 import ch.batbern.events.service.EmailTemplateService;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
-import java.time.Year;
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
@@ -48,19 +45,15 @@ public class PartnerAudienceAdapter implements AudienceAdapter {
     private final EmailTemplateService templates;
     private final EmailService emailService;
     private final EmailForwardingProperties forwarding;
-
-    @Value("${app.base-url:https://batbern.ch}")
-    private String baseUrl = "https://batbern.ch";
-
-    @Value("${batbern.ses.configuration-set-name:#{null}}")
-    private String configurationSetName;
+    private final MailPipeline mailPipeline;
 
     public PartnerAudienceAdapter(UserApiClient userApiClient, EmailTemplateService templates,
-            EmailService emailService, EmailForwardingProperties forwarding) {
+            EmailService emailService, EmailForwardingProperties forwarding, MailPipeline mailPipeline) {
         this.userApiClient = userApiClient;
         this.templates = templates;
         this.emailService = emailService;
         this.forwarding = forwarding;
+        this.mailPipeline = mailPipeline;
     }
 
     @Override
@@ -83,13 +76,9 @@ public class PartnerAudienceAdapter implements AudienceAdapter {
         return TemplateCategories.has(templates, templateKey, CATEGORY);
     }
 
+    /** System and event variables only: one mail to all partners, no per-person values. */
     @Override
-    public Set<String> allowedVariables() {
-        return Set.of("eventTitle", "eventDate", "eventNumber", "currentYear", "logoUrl");
-    }
-
-    @Override
-    public Set<String> credentialVariables() {
+    public Set<Scope> scopes() {
         return Set.of();
     }
 
@@ -144,41 +133,37 @@ public class PartnerAudienceAdapter implements AudienceAdapter {
     public Rendering render(ComposeContext context, ComposeRecipient recipient, boolean test) {
         String templateKey = context.request().templateKey();
         String locale = locale(context.request().locale());
-        EmailTemplate template = templates.findByKeyAndLocale(templateKey, locale)
-                .or(() -> templates.findByKeyAndLocale(templateKey, "de"))
-                .orElseThrow(() -> new IllegalArgumentException("Template not found: " + templateKey));
-        Map<String, String> vars = variables(context.event(), locale);
-        String subject = emailService.replaceVariables(Objects.requireNonNullElse(template.getSubject(), ""), vars);
-        String html = MailRenderer.body(emailService, templates, template.getHtmlBody(), template.getLocale(), vars);
-        return new Rendering(subject, html, templateKey, template.getLocale(), replyTo(), List.of(), List.of());
+        MailContent content = mailPipeline.storedTemplate(templateKey, locale);
+        if (content.bodyHtml().isBlank()) {
+            throw new IllegalArgumentException("Template not found: " + templateKey);
+        }
+        RenderedMail mail = mailPipeline.render(content, variables(context, recipient, test));
+        return new Rendering(Objects.requireNonNullElse(mail.subject(), ""), mail.html(), templateKey,
+                content.locale(), replyTo(), List.of(), List.of());
     }
 
-    /** One synchronous send to the whole To: line; {@code EmailService} records it with this context. */
+    @Override
+    public Map<String, String> variables(ComposeContext context, ComposeRecipient recipient, boolean test) {
+        return mailPipeline.variables().event(context.event(), locale(context.request().locale())).asMap();
+    }
+
+    /**
+     * One synchronous send to every partner in To:, each address handed over on its own (a joined
+     * To: string is one invalid address for SES, #1176); {@code EmailService} records it once.
+     */
     @Override
     public List<DeliveredMail> deliver(ComposeContext context, Recipients recipients, MailTrigger trigger) {
         ComposeRecipient all = recipients.recipients().get(0);
         Rendering rendering = render(context, all, false);
         MailContext mailContext = MailContext.of(trigger, context.event().getEventCode(), MailContext.Audience.PARTNERS,
                 rendering.templateKey());
-        emailService.sendHtmlEmailSync(mailContext, all.address(), null, rendering.subject(), rendering.html(),
-                configurationSetName, rendering.replyTo());
+        emailService.sendGroupHtmlEmailSync(mailContext, List.of(all.address().split(",")), List.of(),
+                rendering.subject(), rendering.html(), rendering.replyTo());
         return List.of(new DeliveredMail(mailContext, rendering));
     }
 
     private String replyTo() {
         return "partner@" + forwarding.domain();
-    }
-
-    private Map<String, String> variables(Event event, String locale) {
-        Map<String, String> vars = new HashMap<>();
-        vars.put("eventTitle", Objects.requireNonNullElse(event.getTitle(), ""));
-        vars.put("eventNumber", event.getEventNumber() == null ? "" : String.valueOf(event.getEventNumber()));
-        vars.put("eventDate", event.getDate() == null ? ""
-                : DateTimeFormatter.ofPattern("EEEE, d. MMMM yyyy", "en".equals(locale) ? Locale.ENGLISH
-                        : Locale.GERMAN).withZone(ZoneId.of("Europe/Zurich")).format(event.getDate()));
-        vars.put("currentYear", String.valueOf(Year.now().getValue()));
-        vars.put("logoUrl", baseUrl + "/BATbern_white_logo.png");
-        return vars;
     }
 
     private static String locale(String requested) {

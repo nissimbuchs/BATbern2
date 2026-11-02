@@ -5,8 +5,10 @@ import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.forwarding.EmailForwardingProperties;
+import ch.batbern.events.mailcenter.render.MailPipelines;
 import ch.batbern.events.service.EmailTemplateService;
 import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -51,7 +53,8 @@ class PartnerAudienceAdapterTest {
     @BeforeEach
     void setUp() {
         adapter = new PartnerAudienceAdapter(userApiClient, templates, emailService,
-                new EmailForwardingProperties(false, null, "batbern.ch", null, null, 0));
+                new EmailForwardingProperties(false, null, "batbern.ch", null, null, 0),
+                MailPipelines.over(emailService, templates));
     }
 
     @Test
@@ -83,11 +86,47 @@ class PartnerAudienceAdapterTest {
     }
 
     @Test
-    @DisplayName("AC8: event variables only, nothing per person, no credential")
+    @DisplayName("AC8: system and event variables only (catalog, Story 16.11), nothing per person, no credential")
     void noPerPersonVariables() {
         assertThat(adapter.allowedVariables())
-                .containsExactlyInAnyOrder("eventTitle", "eventDate", "eventNumber", "currentYear", "logoUrl");
+                .contains("eventTitle", "eventDate", "eventNumber", "currentYear", "logoUrl", "supportUrl")
+                .doesNotContain("recipientName", "salutation", "deregistrationUrl", "unsubscribeLink");
         assertThat(adapter.credentialVariables()).isEmpty();
+        assertThat(adapter.variables(context("partner-info"), null, false))
+                .containsEntry("eventTitle", "BATbern60")
+                .containsEntry("eventDate", "Freitag, 5. März 2027")
+                .doesNotContainKey("recipientName");
+    }
+
+    @Test
+    @DisplayName("AC8 + #1176: deliver hands every partner address to the group send on its own")
+    void deliver_groupSendWithEachAddress() {
+        when(emailService.replaceVariables(org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.anyMap())).thenCallRealMethod();
+        EmailTemplate stored = template("PARTNER");
+        stored.setSubject("Info {{eventTitle}}");
+        stored.setHtmlBody("<p>{{eventTitle}}</p>");
+        stored.setLocale("de");
+        when(templates.findByKeyAndLocale("partner-info", "de")).thenReturn(Optional.of(stored));
+        when(templates.mergeWithLayout(org.mockito.ArgumentMatchers.anyString(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any())).thenAnswer(i -> i.getArgument(0));
+        Recipients recipients = new Recipients(List.of(new ComposeRecipient("Ann Able, Bob Brown",
+                "success+ann@simulator.amazonses.com,success+bob@simulator.amazonses.com", List.of(), null)),
+                List.of());
+
+        adapter.deliver(context("partner-info"), recipients, MailTrigger.forSend(UUID.randomUUID(), "organizer1"));
+
+        org.mockito.Mockito.verify(emailService).sendGroupHtmlEmailSync(org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.eq(List.of("success+ann@simulator.amazonses.com",
+                        "success+bob@simulator.amazonses.com")),
+                org.mockito.ArgumentMatchers.eq(List.of()), org.mockito.ArgumentMatchers.eq("Info BATbern60"),
+                org.mockito.ArgumentMatchers.eq("<p>BATbern60</p>"),
+                org.mockito.ArgumentMatchers.eq("partner@batbern.ch"));
+        org.mockito.Mockito.verify(emailService, org.mockito.Mockito.never()).sendHtmlEmailSync(
+                org.mockito.ArgumentMatchers.any(MailContext.class), org.mockito.ArgumentMatchers.anyString(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any(), org.mockito.ArgumentMatchers.any(),
+                org.mockito.ArgumentMatchers.any());
     }
 
     @Test
