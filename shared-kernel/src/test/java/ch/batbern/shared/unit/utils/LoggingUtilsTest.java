@@ -7,6 +7,7 @@ import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Nested;
 import org.slf4j.MDC;
 
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -307,6 +308,18 @@ class LoggingUtilsTest {
             assertThat(LoggingUtils.maskEmail("john.doe@example.com")).isEqualTo("j***@example.com");
             assertThat(LoggingUtils.maskEmail("speaker@batbern.ch")).isEqualTo("s***@batbern.ch");
             assertThat(LoggingUtils.maskEmail("ab@test.org")).isEqualTo("a***@test.org");
+        }
+
+        @Test
+        void should_maskEveryAddress_when_joinedListProvided() {
+            // A group mail's To: is comma-joined; masking only the first address leaked the rest
+            // into CloudWatch (production, 2026-11-02 06:08).
+            assertThat(LoggingUtils.maskEmail("anna@example.com,bert@example.org"))
+                    .isEqualTo("a***@example.com,b***@example.org");
+            assertThat(LoggingUtils.maskEmail("anna@example.com, bert@example.org;carl@example.net"))
+                    .isEqualTo("a***@example.com,b***@example.org,c***@example.net");
+            assertThat(LoggingUtils.maskAll(List.of("anna@example.com", "bert@example.org")))
+                    .isEqualTo("a***@example.com,b***@example.org");
         }
 
         @Test
