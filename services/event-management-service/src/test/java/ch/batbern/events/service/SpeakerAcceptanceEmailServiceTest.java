@@ -254,7 +254,7 @@ class SpeakerAcceptanceEmailServiceTest {
             verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
             String emailBody = bodyCaptor.getValue();
             assertThat(emailBody).contains("BATbern 2026");
-            assertThat(emailBody).contains("15.03.2026");
+            assertThat(emailBody).contains("Sunday, 15 March 2026");
         }
 
         @Test

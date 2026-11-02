@@ -63,10 +63,6 @@ import java.util.stream.Collectors;
 public class VenueCoordinationService {
 
     private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
-    private static final DateTimeFormatter DATE_DE = DateTimeFormatter.ofPattern("dd.MM.yyyy")
-            .withZone(ZURICH);
-    private static final DateTimeFormatter DATE_EN = DateTimeFormatter.ofPattern("d MMM yyyy")
-            .withLocale(Locale.ENGLISH).withZone(ZURICH);
     private static final DateTimeFormatter TIME = DateTimeFormatter.ofPattern("HH.mm")
             .withZone(ZURICH);
     private static final String DEFAULT_LOCALE = "de";
@@ -219,8 +215,6 @@ public class VenueCoordinationService {
     private Map<String, String> buildVariables(Event event, List<Contact> contacts, String locale,
                                                 String notes, CoordinatorIdentity coordinator) {
         return mailPipeline.variables().event(event, locale)
-                // Story 16.11: format kept until the owner-decided change (separate commit)
-                .put(MailVariable.EVENT_DATE, formatEventDate(event, locale))
                 .put(MailVariable.EVENT_TITLE, safe(event.getTitle()))
                 .put(MailVariable.TOPIC_TITLE, resolveTopicTitle(event))
                 // Empty, not "TBA", when the venue is unknown: open unification decision (16.11)
@@ -300,14 +294,6 @@ public class VenueCoordinationService {
         }
         String[] parts = fullName.trim().split("\\s+");
         return parts[parts.length - 1];
-    }
-
-    private String formatEventDate(Event event, String locale) {
-        if (event.getDate() == null) {
-            return "";
-        }
-        DateTimeFormatter fmt = "en".equals(locale) ? DATE_EN : DATE_DE;
-        return fmt.format(event.getDate());
     }
 
     private String resolveTopicTitle(Event event) {

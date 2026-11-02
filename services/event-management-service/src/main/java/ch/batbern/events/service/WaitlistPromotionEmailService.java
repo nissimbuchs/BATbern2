@@ -19,8 +19,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
-import java.time.ZoneId;
-import java.time.format.DateTimeFormatter;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
@@ -49,8 +47,6 @@ public class WaitlistPromotionEmailService {
     @Value("${app.base-url:https://batbern.ch}")
     private String baseUrl;
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-    private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
 
     /**
      * Send waitlist-promotion email when a registration is promoted from waitlist to registered.
@@ -156,8 +152,6 @@ public class WaitlistPromotionEmailService {
         String recipientName = (attendee.getFirstName() != null && !attendee.getFirstName().isBlank())
                 ? attendee.getFirstName()
                 : attendee.getId();
-        String formattedDate = event.getDate() != null
-                ? event.getDate().atZone(SWISS_ZONE).format(DATE_FORMATTER) : "";
 
         // Story 10.12 (AC7-equiv): Generate confirmation token so promoted attendees can confirm
         // attendance, and expose deregistrationUrl so they can cancel via the self-service page.
@@ -171,8 +165,6 @@ public class WaitlistPromotionEmailService {
 
         return mailPipeline.variables().event(event, locale)
                 .put(MailVariable.RECIPIENT_NAME, recipientName)
-                // Story 16.11: format kept until the owner-decided change (separate commit)
-                .put(MailVariable.EVENT_DATE, formattedDate)
                 // Empty, not "TBA", when the venue is unknown: open unification decision (16.11)
                 .put(MailVariable.VENUE_ADDRESS, event.getVenueAddress() != null ? event.getVenueAddress() : "")
                 .put(MailVariable.REGISTRATION_CODE, registration.getRegistrationCode())

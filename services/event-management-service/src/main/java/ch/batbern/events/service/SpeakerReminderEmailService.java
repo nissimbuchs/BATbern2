@@ -16,8 +16,6 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.time.temporal.ChronoUnit;
 import java.util.List;
@@ -46,7 +44,6 @@ public class SpeakerReminderEmailService {
 
 
     private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-    private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
 
     /**
      * Send a reminder email to a speaker.
@@ -206,15 +203,12 @@ public class SpeakerReminderEmailService {
     }
 
     private Map<String, String> variables(String speakerName, Event event, LocalDate deadline, String lang) {
-        ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
         long daysRemaining = ChronoUnit.DAYS.between(LocalDate.now(), deadline);
         // Story 11.F.1: Cognito-only dashboard link (no magic-link token query param).
         String portalLink = baseUrl + "/speaker-portal/dashboard";
 
         return mailPipeline.variables().event(event, lang)
                 .put(MailVariable.SPEAKER_NAME, speakerName)
-                // Story 16.11: format kept until the owner-decided change (separate commit)
-                .put(MailVariable.EVENT_DATE, eventDateTime.format(DATE_FORMATTER))
                 .put(MailVariable.DEADLINE, deadline.format(DATE_FORMATTER))
                 .put(MailVariable.DAYS_REMAINING, Math.max(0, daysRemaining))
                 .put(MailVariable.PORTAL_LINK, portalLink)

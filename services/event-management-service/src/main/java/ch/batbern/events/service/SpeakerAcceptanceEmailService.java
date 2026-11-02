@@ -169,8 +169,6 @@ public class SpeakerAcceptanceEmailService {
 
         Map<String, String> variables = mailPipeline.variables().event(event, localeStr)
                 .put(MailVariable.SPEAKER_NAME, speakerDisplayName)
-                // Story 16.11: format kept until the owner-decided change (separate commit)
-                .put(MailVariable.EVENT_DATE, eventDateTime.format(DATE_FORMATTER))
                 // "Uhr" in English too: open unification decision (Story 16.11)
                 .put(MailVariable.EVENT_TIME, eventDateTime.format(TIME_FORMATTER) + " Uhr")
                 .put(MailVariable.SESSION_TITLE, sessionTitle)

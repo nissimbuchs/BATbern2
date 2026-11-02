@@ -444,8 +444,6 @@ public class SlidesOnlineEmailService {
     private Map<String, String> buildVariables(Event event, String locale) {
         return mailPipeline.variables().event(event, locale)
                 .put(MailVariable.DASHBOARD_LINK, baseUrl)
-                // Story 16.11: value kept until the owner-decided change (separate commit)
-                .put(MailVariable.SUPPORT_URL, baseUrl)
                 .asMap();
     }
 

@@ -75,7 +75,8 @@ public class MailVariableFactory {
         if (event.getDate() == null) {
             return "";
         }
-        return DateTimeFormatter.ofPattern("EEEE, d. MMMM yyyy", de ? Locale.GERMAN : Locale.ENGLISH)
+        return DateTimeFormatter.ofPattern(de ? "EEEE, d. MMMM yyyy" : "EEEE, d MMMM yyyy",
+                        de ? Locale.GERMAN : Locale.ENGLISH)
                 .withZone(ZURICH).format(event.getDate());
     }
 

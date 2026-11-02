@@ -16,9 +16,6 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
-import java.time.ZoneId;
-import java.time.ZonedDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.List;
 import java.util.Map;
 
@@ -41,9 +38,6 @@ public class DeregistrationEmailService {
     private final UserApiClient userApiClient;
     private final MailPipeline mailPipeline;
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
-    private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
-
     /**
      * Send deregistration link email to the attendee.
      * Called asynchronously from DeregistrationService.deregisterByEmail().
@@ -64,11 +58,8 @@ public class DeregistrationEmailService {
                 return;
             }
 
-            ZonedDateTime eventDateTime = event.getDate().atZone(SWISS_ZONE);
             Map<String, String> variables = mailPipeline.variables().event(event, locale)
                     .put(MailVariable.RECIPIENT_NAME, registration.getAttendeeFirstName())
-                    // Story 16.11: format kept until the owner-decided change (separate commit)
-                    .put(MailVariable.EVENT_DATE, eventDateTime.format(DATE_FORMATTER))
                     .put(MailVariable.DEREGISTRATION_URL, deregistrationLink)
                     .asMap();
 

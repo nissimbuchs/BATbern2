@@ -268,8 +268,6 @@ public class QnaNotificationService {
                 .put(MailVariable.QNA_LINK, baseUrl + "/events/" + eventCode)
                 .put(MailVariable.EVENT_URL, baseUrl + "/events/" + eventCode)
                 .put(MailVariable.DASHBOARD_LINK, baseUrl)
-                // Story 16.11: value kept until the owner-decided change (separate commit)
-                .put(MailVariable.SUPPORT_URL, baseUrl)
                 .asMap();
     }
 

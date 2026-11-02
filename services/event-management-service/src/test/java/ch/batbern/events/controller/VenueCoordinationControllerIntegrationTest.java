@@ -168,7 +168,7 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(jsonPath("$.ccEmails").isArray())
                 .andExpect(jsonPath("$.ccEmails", org.hamcrest.Matchers.empty()))
                 .andExpect(jsonPath("$.replyToEmail", is("nissim.buchs@elca.ch")))
-                .andExpect(jsonPath("$.subject", containsString("15.08.2026")))
+                .andExpect(jsonPath("$.subject", containsString("Samstag, 15. August 2026")))
                 .andExpect(content().string(containsString("Frau Senn")))
                 // Notes preserve their newlines as <br>
                 .andExpect(content().string(containsString("Drei Headsets reichen wieder.<br>")))

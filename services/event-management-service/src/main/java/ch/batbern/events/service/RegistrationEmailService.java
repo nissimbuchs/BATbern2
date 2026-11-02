@@ -63,9 +63,7 @@ public class RegistrationEmailService {
     @Value("${app.email.calendar-organizer-email:calendar@batbern.ch}")
     private String calendarOrganizerEmail;
 
-    private static final DateTimeFormatter DATE_FORMATTER = DateTimeFormatter.ofPattern("dd.MM.yyyy");
     private static final DateTimeFormatter TIME_FORMATTER = DateTimeFormatter.ofPattern("HH:mm");
-    private static final java.time.ZoneId SWISS_ZONE = java.time.ZoneId.of("Europe/Zurich");
 
     /**
      * Send the "please confirm your registration" email asynchronously with i18n support.
@@ -227,8 +225,6 @@ public class RegistrationEmailService {
         Map<String, String> variables = mailPipeline.variables().event(event, localeStr)
                 .put(MailVariable.ATTENDEE_FIRST_NAME, userProfile.getFirstName())
                 .put(MailVariable.ATTENDEE_LAST_NAME, userProfile.getLastName())
-                // Story 16.11: format kept until the owner-decided change (separate commit)
-                .put(MailVariable.EVENT_DATE, eventDateTime.format(DATE_FORMATTER))
                 .put(MailVariable.EVENT_TIME, eventDateTime.format(TIME_FORMATTER)
                         + (localeStr.equals("de") ? " Uhr" : ""))
                 .put(MailVariable.DEREGISTRATION_URL, deregistrationUrl)
@@ -290,8 +286,6 @@ public class RegistrationEmailService {
                 .put(MailVariable.ATTENDEE_FIRST_NAME, userProfile.getFirstName())
                 .put(MailVariable.ATTENDEE_LAST_NAME, userProfile.getLastName())
                 .put(MailVariable.ATTENDEE_NAME, userProfile.getFirstName() + " " + userProfile.getLastName())
-                // Story 16.11: format kept until the owner-decided change (separate commit)
-                .put(MailVariable.EVENT_DATE, eventDateTime.format(DATE_FORMATTER))
                 // Today's mail says "Uhr" in English too; open unification decision (story 16.11)
                 .put(MailVariable.EVENT_TIME, eventDateTime.format(TIME_FORMATTER) + " Uhr")
                 .put(MailVariable.CONFIRMATION_URL, baseUrl + "/events/" + event.getEventCode()

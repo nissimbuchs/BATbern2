@@ -269,7 +269,7 @@ class SpeakerInvitationEmailServiceTest {
             verify(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), bodyCaptor.capture(), nullable(String.class));
             String body = bodyCaptor.getValue();
             assertThat(body).contains("BATbern 2026");
-            assertThat(body).contains("15.03.2026");
+            assertThat(body).contains("Sunday, 15 March 2026");
             assertThat(body).contains("Kursaal Bern");
             assertThat(body).contains("John Doe");
             assertThat(body).contains("Cloud Architecture Patterns");
