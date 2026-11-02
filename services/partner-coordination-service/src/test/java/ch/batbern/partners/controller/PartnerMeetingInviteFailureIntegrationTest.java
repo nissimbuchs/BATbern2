@@ -9,6 +9,7 @@ import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.domain.MeetingType;
 import ch.batbern.partners.domain.PartnerMeeting;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
+import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.AfterEach;
@@ -91,7 +92,8 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
                 .createdBy("organizer")
                 .build());
         doThrow(new IllegalArgumentException("Cannot send group mail: none of the 1 recipients is deliverable"))
-                .when(emailService).sendGroupHtmlEmailWithAttachments(anyList(), any(), any(), anyList());
+                .when(emailService).sendGroupHtmlEmailWithAttachments(any(MailContext.class), anyList(), anyList(),
+                        any(), any(), anyList());
 
         mockMvc.perform(post("/api/v1/partner-meetings/" + meeting.getId() + "/send-invite")
                         .with(user("organizer").roles("ORGANIZER")))
