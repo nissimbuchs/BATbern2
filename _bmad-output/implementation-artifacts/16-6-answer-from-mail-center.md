@@ -1,6 +1,6 @@
 # Story 16.6: Answer from the mail center
 
-Status: review
+Status: done
 
 ## Story
 
@@ -338,3 +338,4 @@ PR 2:
 - 2026-11-01: Story drafted from Epic 16 Story 16.6.
 - 2026-11-02: PR 1 (Tasks 1–6) implemented: answer, token replies on both paths, reassign notification.
 - 2026-11-02: PR 2 implemented: attachments kept (25 MB), notify-instead-of-forward switch (off), runbook; status review.
+- 2026-11-02: Live via #1189 (merge 4c83dbcb, 22:40Z); production EMS image c62cc3f migrated to V142, no checksum mismatch. Status done. No inbound mail yet since the deploy, so the threading metrics are not observed yet.

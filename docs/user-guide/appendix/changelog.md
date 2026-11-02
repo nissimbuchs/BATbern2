@@ -45,6 +45,11 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**New Feature — Mail Page Across Events, Spam Filter, Mail Tab per Person (2026-11-02)**:
+- ✅ **Mail** in the top navigation, after Events: everything that needs an answer across all events, the mail to `info@`, `events@` and `support@` that belongs to no event (put it on an event with "Assign to event"), the spam, and what went out across all events. The number on the entry counts the open conversations.
+- ✅ The mail server now scans incoming mail. Mail with a virus is neither kept nor forwarded. Spam is no longer forwarded to anyone's inbox; it waits 30 days in the Spam list, where "Not spam" moves it to where it belongs.
+- ✅ A **Mail** tab on a user's page and on a partner's page lists every mail sent to them and every mail they sent, across events and all their addresses, with each mail's delivery status.
+
 **New Feature — Speaker Replies in the Mail Page (2026-11-02)**:
 - ✅ The event's mail page has a new first section, **Needs an answer**: what speakers wrote to the event's moderator address, grouped per speaker, with a status (open, waiting, done) and the organizer who answers. The lead organizer is assigned at first; "I'll take it" makes it yours. Forwarding to the moderator's inbox is unchanged.
 - ✅ **Handled automatically** now also counts out-of-office replies, bounce mails, calendar acceptances and declines, keyword replies that acted, and unsubscribes, without keeping their text.

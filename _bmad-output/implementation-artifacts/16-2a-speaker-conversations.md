@@ -1,6 +1,6 @@
 # Story 16.2a: Speaker replies become conversations
 
-Status: review
+Status: done
 
 ## Story
 
@@ -222,3 +222,4 @@ Docs: `docs/architecture/06-backend-architecture.md`, `docs/architecture/08-oper
 
 - 2026-11-01: Story drafted from Epic 16 Story 16.2, speaker part (split 16.2a/16.2b per owner sequence #3).
 - 2026-11-02: Implemented, backend (a467afef) and frontend; local-dev and Playwright checks done; status review. PR not opened (owner reviews first).
+- 2026-11-02: Live via #1189 (merge 4c83dbcb, 22:40Z); production EMS image c62cc3f migrated to V142, no checksum mismatch. Status done. No inbound mail yet since the deploy, so the threading metrics are not observed yet.
