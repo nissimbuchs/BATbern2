@@ -35,7 +35,10 @@
       "speaker": "Relatur",
       "partner": "Partenari",
       "attendee": "Participant"
-    }
+    },
+    "mail": "Mail",
+    "mailOpenCount_one": "{{count}} conversaziun averta",
+    "mailOpenCount_other": "{{count}} conversaziuns avertas"
   },
   "public": {
     "login": "Annunziar",

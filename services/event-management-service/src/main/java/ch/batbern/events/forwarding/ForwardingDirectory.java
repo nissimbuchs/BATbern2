@@ -64,18 +64,27 @@ public class ForwardingDirectory {
         return emailsOf(userApiClient.getPartnerUsernames());
     }
 
+    /**
+     * Every address of one user: primary plus every additional email (verified or not), lowercased.
+     * Story 16.10 reads the mail of a person with the same rule.
+     */
+    public static Set<String> addressesOf(UserResponse user) {
+        Set<String> emails = new LinkedHashSet<>();
+        add(user.getEmail(), emails);
+        List<AdditionalEmail> additional = user.getAdditionalEmails();
+        if (additional != null) {
+            for (AdditionalEmail extra : additional) {
+                add(extra.getEmail(), emails);
+            }
+        }
+        return emails;
+    }
+
     private Set<String> emailsOf(List<String> usernames) {
         Set<String> emails = new LinkedHashSet<>();
         for (String username : usernames) {
             try {
-                UserResponse user = userApiClient.getUserByUsername(username);
-                add(user.getEmail(), emails);
-                List<AdditionalEmail> additional = user.getAdditionalEmails();
-                if (additional != null) {
-                    for (AdditionalEmail extra : additional) {
-                        add(extra.getEmail(), emails);
-                    }
-                }
+                emails.addAll(addressesOf(userApiClient.getUserByUsername(username)));
             } catch (UserNotFoundException e) {
                 log.warn("Forwarding directory: user '{}' not found in CUMS, skipping", username);
             }

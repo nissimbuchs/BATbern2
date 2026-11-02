@@ -80,4 +80,31 @@ class InboundClassifierTest {
         assertThat(classify(headers, "BEGIN:VCALENDAR\r\nMETHOD:REPLY\r\nEND:VCALENDAR"))
                 .isEqualTo(InboundClassifier.Kind.CALENDAR_REPLY);
     }
+
+    // ── Story 16.7 AC3/AC4 ───────────────────────────────────────────────────────────────────
+
+    @Test
+    void should_beVirus_when_virusVerdictFails_evenForCalendarReply() {
+        String headers = base("Accepted: Vortrag") + "X-SES-Virus-Verdict: FAIL\r\n"
+                + "Content-Type: text/calendar; method=REPLY\r\n";
+        assertThat(classify(headers, "BEGIN:VCALENDAR")).isEqualTo(InboundClassifier.Kind.VIRUS);
+    }
+
+    @Test
+    void should_beSpam_when_spamVerdictFails() {
+        assertThat(classify(base("You won") + "X-SES-Spam-Verdict: FAIL\r\n", "Click here"))
+                .isEqualTo(InboundClassifier.Kind.SPAM);
+    }
+
+    @Test
+    void should_countOutOfOffice_when_spamVerdictFailsOnAutoReply() {
+        assertThat(classify(base("Out of Office: x") + "X-SES-Spam-Verdict: FAIL\r\n", "away"))
+                .isEqualTo(InboundClassifier.Kind.OUT_OF_OFFICE);
+    }
+
+    @Test
+    void should_beHuman_when_verdictGray() {
+        assertThat(classify(base("Frage") + "X-SES-Spam-Verdict: GRAY\r\n", "text"))
+                .isEqualTo(InboundClassifier.Kind.HUMAN);
+    }
 }

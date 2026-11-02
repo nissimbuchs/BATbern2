@@ -1398,5 +1398,31 @@
     "featureToggle": "Mostra sul banner pubblico",
     "cannotFeatureAnonymous": "I ringraziamenti anonimi non possono essere messi in evidenza (nessun nome).",
     "loadError": "Impossibile caricare i messaggi di ringraziamento."
+  },
+  "mailCenter": {
+    "title": "Mail",
+    "open": "Aperte",
+    "nothingOpen": "Nulla attende una risposta.",
+    "noEvent": "Senza evento",
+    "noEventHint": "Mail a info@, events@ e support@ che non appartengono a nessun evento. Assegnale a un evento per rispondere lì.",
+    "nothingWithoutEvent": "Nessuna mail senza evento.",
+    "spam": "Spam",
+    "spamHint": "Segnalata come spam dal server di posta. Non inoltrata; eliminata dopo 30 giorni.",
+    "noSpam": "Nessuno spam.",
+    "notSpam": "Non è spam",
+    "notSpamError": "Non è stato possibile spostare la mail. Riprova.",
+    "whatWentOut": "Cosa è stato inviato (tutti gli eventi)",
+    "event": "Evento",
+    "allEvents": "Tutti gli eventi",
+    "assignToEvent": "Assegna a un evento",
+    "noEventOption": "(nessun evento)",
+    "noEventChip": "Senza evento",
+    "receivedFrom": "Ricevuta da {{sender}}",
+    "received": "Ricevuta",
+    "openConversation": "Apri la conversazione",
+    "participant": {
+      "limits": "Ogni mail che abbiamo inviato e ogni mail ricevuta, su tutti gli eventi. Non elencate: newsletter, mail precedenti alla registrazione nel Mail Center e mail a un indirizzo che non hanno più.",
+      "empty": "Ancora nessuna mail verso o da questa persona."
+    }
   }
 }

@@ -283,7 +283,8 @@
     "tabs": {
       "overview": "Overview",
       "eventsParticipated": "Events Participated",
-      "ariaLabel": "User detail tabs"
+      "ariaLabel": "User detail tabs",
+      "mail": "Mail"
     },
     "overviewText": "User profile overview. Additional information can be added here.",
     "eventsTable": {

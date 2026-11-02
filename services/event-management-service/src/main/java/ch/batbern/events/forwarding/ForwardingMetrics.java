@@ -33,6 +33,9 @@ public class ForwardingMetrics {
     /** Story 16.6: notifications sent instead of forwarded copies (a switched group). */
     static final String NOTIFICATIONS_SENT = "NotificationsSent";
     static final String BOUNCES_DROPPED = "BouncesDropped";
+    /** Story 16.7: SES verdict FAIL, never forwarded. */
+    static final String SPAM_DROPPED = "SpamDropped";
+    static final String VIRUS_DROPPED = "VirusDropped";
     /** Story 16.0 Part B: a calendar "Declined" to calendar@ that led to the deregistration-link mail. */
     static final String CALENDAR_DECLINE_LINK_SENT = "CalendarDeclineLinkSent";
     /** A decline that matched no single registration (AC7). */

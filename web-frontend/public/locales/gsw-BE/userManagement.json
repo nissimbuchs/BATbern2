@@ -9,7 +9,8 @@
   },
   "userDetail": {
     "tabs": {
-      "ariaLabel": "User detail tabs"
+      "ariaLabel": "User detail tabs",
+      "mail": "Mail"
     }
   },
   "table": {

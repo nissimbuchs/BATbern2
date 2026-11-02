@@ -36,7 +36,10 @@
       "speaker": "Speaker",
       "partner": "Partner",
       "attendee": "Attendee"
-    }
+    },
+    "mail": "Mail",
+    "mailOpenCount_one": "{{count}} open conversation",
+    "mailOpenCount_other": "{{count}} open conversations"
   },
   "public": {
     "login": "Login",

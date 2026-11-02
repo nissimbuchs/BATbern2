@@ -35,7 +35,10 @@
       "speaker": "講演者",
       "partner": "パートナー",
       "attendee": "参加者"
-    }
+    },
+    "mail": "メール",
+    "mailOpenCount_one": "未対応の会話 {{count}} 件",
+    "mailOpenCount_other": "未対応の会話 {{count}} 件"
   },
   "public": {
     "login": "ログイン",

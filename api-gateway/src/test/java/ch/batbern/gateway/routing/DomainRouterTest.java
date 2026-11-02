@@ -202,6 +202,18 @@ class DomainRouterTest {
                 .isEqualTo("event-management-service");
     }
 
+    // Story 16.7: the mail of all events (GET /mails) is the same resource as the event's mail,
+    // without the event in the path.
+    @Test
+    @DisplayName("should_routeToEventService_when_globalMailCalled")
+    void should_routeToEventService_when_globalMailCalled() {
+        assertThat(domainRouter.determineTargetService("/api/v1/mails")).isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/mails/general-12"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/conversations/counts"))
+                .isEqualTo("event-management-service");
+    }
+
     // Test Story 7.6: attendee dashboard must route to event-management-service
     @Test
     @DisplayName("should_routeToEventService_when_attendeePortalDashboardCalled")

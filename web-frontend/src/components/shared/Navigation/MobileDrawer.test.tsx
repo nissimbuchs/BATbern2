@@ -6,17 +6,31 @@
 import { describe, test, expect, beforeEach, vi } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MobileDrawer } from './MobileDrawer';
+
+// Story 16.7: the Mail badge's counts (no network in unit tests)
+const getConversationCounts = vi.fn();
+vi.mock('@/services/mailConversationService', () => ({
+  getConversationCounts: () => getConversationCounts(),
+}));
 
 describe('MobileDrawer Component', () => {
   const mockOnClose = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
+    getConversationCounts.mockResolvedValue({ open: 0, waiting: 0, noEvent: 0, spam: 0 });
   });
 
   const renderWithRouter = (component: React.ReactElement) => {
-    return render(<BrowserRouter>{component}</BrowserRouter>);
+    // Story 16.7: the Mail entry's badge reads the conversation counts
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>{component}</BrowserRouter>
+      </QueryClientProvider>
+    );
   };
 
   describe('Basic Rendering', () => {

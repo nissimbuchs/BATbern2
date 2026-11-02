@@ -707,31 +707,42 @@ public class UserApiClientImpl implements UserApiClient {
      * enrolled; the organizer list sent no limit and received only the first 20.
      */
     private java.util.List<String> fetchUsernamesByRole(String role, String label) {
-        log.debug("Fetching {} usernames", label);
-        java.util.List<String> usernames = new java.util.ArrayList<>();
+        return fetchUsers(role, null, label).stream().map(UserResponse::getId).toList();
+    }
+
+    @Override
+    public java.util.List<UserResponse> getUsersByCompany(String companyName, String role) {
+        return fetchUsers(role, companyName, "company " + role.toLowerCase(java.util.Locale.ROOT));
+    }
+
+    /** All users holding {@code role} (and of {@code company}, when given), read page by page. */
+    private java.util.List<UserResponse> fetchUsers(String role, String company, String label) {
+        log.debug("Fetching {} users", label);
+        java.util.List<UserResponse> users = new java.util.ArrayList<>();
         try {
             HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
             for (int page = 1; page <= MAX_PAGES; page++) {
-                URI url = UriComponentsBuilder
+                UriComponentsBuilder builder = UriComponentsBuilder
                         .fromUriString(userServiceBaseUrl + INTERNAL_USERS_PATH)
                         .queryParam("role", role)
                         .queryParam("page", page)
-                        .queryParam("limit", MAX_PAGE_SIZE)
-                        .build()
-                        .encode()
-                        .toUri();
+                        .queryParam("limit", MAX_PAGE_SIZE);
+                if (company != null) {
+                    builder.queryParam("company", company);
+                }
+                URI url = builder.build().encode().toUri();
                 PaginatedUserResponse body = restTemplate.exchange(
                         url, HttpMethod.GET, request, PaginatedUserResponse.class).getBody();
                 if (body == null || body.getData() == null) {
                     break;
                 }
-                body.getData().stream().map(UserResponse::getId).forEach(usernames::add);
+                users.addAll(body.getData());
                 if (body.getPagination() == null || !body.getPagination().isHasNext()) {
                     break;
                 }
             }
-            log.debug("Successfully fetched {} {} usernames", usernames.size(), label);
-            return usernames;
+            log.debug("Successfully fetched {} {} users", users.size(), label);
+            return users;
 
         } catch (HttpClientErrorException e) {
             log.error("Client error fetching {} list: {} - {}", label, e.getStatusCode(), e.getMessage());

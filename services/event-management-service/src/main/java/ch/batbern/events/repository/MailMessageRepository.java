@@ -34,4 +34,9 @@ public interface MailMessageRepository extends JpaRepository<MailMessage, UUID> 
             + "SELECT 1 FROM events e WHERE e.event_code = m.event_code AND e.event_date >= :cutoff)",
             nativeQuery = true)
     int deleteExpired(@Param("cutoff") Instant cutoff);
+
+    /** Story 16.7 AC7: spam is kept 30 days after receipt, not 12 months. */
+    @Modifying
+    @Query(value = "DELETE FROM mail_message WHERE is_spam AND created_at < :cutoff", nativeQuery = true)
+    int deleteSpamReceivedBefore(@Param("cutoff") Instant cutoff);
 }

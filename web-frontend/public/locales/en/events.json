@@ -1422,5 +1422,31 @@
     "featureToggle": "Feature on public marquee",
     "cannotFeatureAnonymous": "Anonymous thank-yous cannot be featured (no name).",
     "loadError": "Could not load thank-you notes."
+  },
+  "mailCenter": {
+    "title": "Mail",
+    "open": "Open",
+    "nothingOpen": "Nothing needs an answer.",
+    "noEvent": "No event",
+    "noEventHint": "Mail to info@, events@ and support@ that belongs to no event. Assign it to an event to answer it there.",
+    "nothingWithoutEvent": "No mail without an event.",
+    "spam": "Spam",
+    "spamHint": "Flagged as spam by the mail server. Not forwarded; deleted after 30 days.",
+    "noSpam": "No spam.",
+    "notSpam": "Not spam",
+    "notSpamError": "The mail could not be moved. Please try again.",
+    "whatWentOut": "What went out (all events)",
+    "event": "Event",
+    "allEvents": "All events",
+    "assignToEvent": "Assign to event",
+    "noEventOption": "(no event)",
+    "noEventChip": "No event",
+    "receivedFrom": "Received from {{sender}}",
+    "received": "Received",
+    "openConversation": "Open the conversation",
+    "participant": {
+      "limits": "Every mail we sent to them and every mail they sent us, across events. Not listed: newsletters, mail from before the Mail Center recorded it, and mail to an address they no longer have.",
+      "empty": "No mail to or from this person yet."
+    }
   }
 }

@@ -34,8 +34,24 @@ export interface MailMessageListParams {
   grouped?: boolean;
   /** Story 16.8: organizer test sends are hidden unless this is true. */
   includeTests?: boolean;
+  /** Story 16.7: OUT (default), IN or ANY. */
+  direction?: 'OUT' | 'IN' | 'ANY';
+  /** Story 16.7: true lists only spam; spam is never listed otherwise. */
+  spam?: boolean;
   page?: number;
   limit?: number;
+}
+
+/** Story 16.7/16.10: the list without the event in the path (`GET /mails`). */
+export interface GlobalMailListParams extends MailMessageListParams {
+  /** Only mail of this event. */
+  eventCode?: string;
+  /** Only mail without an event. */
+  noEvent?: boolean;
+  /** Story 16.10: mail to or from this user, by every address they have. */
+  participantUsername?: string;
+  /** Story 16.10: mail to or from the PARTNER contacts of this company. */
+  participantCompany?: string;
 }
 
 const base = (eventCode: string) => `/events/${encodeURIComponent(eventCode)}/mails`;
@@ -56,6 +72,27 @@ export async function getMailMessage(
 ): Promise<MailMessageDetail> {
   const response = await apiClient.get<MailMessageDetail>(
     `${base(eventCode)}/${encodeURIComponent(mailKey)}`
+  );
+  return response.data;
+}
+
+/** Story 16.7: what went out across events (and, with filters, without event or for one person). */
+export async function listMails(params: GlobalMailListParams = {}): Promise<MailMessagePage> {
+  const response = await apiClient.get<MailMessagePage>('/mails', { params });
+  return response.data;
+}
+
+/** Story 16.7: one mail by its key, of any event or none. */
+export async function getMail(mailKey: string): Promise<MailMessageDetail> {
+  const response = await apiClient.get<MailMessageDetail>(`/mails/${encodeURIComponent(mailKey)}`);
+  return response.data;
+}
+
+/** Story 16.7 AC3: "Not spam". The mail is threaded like a new arrival. Sends nothing. */
+export async function markNotSpam(mailKey: string): Promise<MailMessageDetail> {
+  const response = await apiClient.patch<MailMessageDetail>(
+    `/mails/${encodeURIComponent(mailKey)}`,
+    { spam: false }
   );
   return response.data;
 }

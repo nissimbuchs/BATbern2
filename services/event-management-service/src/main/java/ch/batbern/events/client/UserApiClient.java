@@ -129,6 +129,14 @@ public interface UserApiClient {
     List<String> getPartnerUsernames();
 
     /**
+     * Story 16.10: the users of one company holding {@code role} (CUMS {@code GET /internal/users}),
+     * with their additional emails, every page.
+     *
+     * @throws UserServiceException if API communication fails (5xx, timeout, network error)
+     */
+    List<UserResponse> getUsersByCompany(String companyName, String role);
+
+    /**
      * Get all companies (basic info) from the company-user-management-service.
      * Used for the companies[] list in the legacy BAT export envelope.
      * Story 10.20: AC1

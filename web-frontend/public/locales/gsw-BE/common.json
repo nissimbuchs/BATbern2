@@ -35,7 +35,10 @@
       "speaker": "Referänt",
       "partner": "Partner",
       "attendee": "Teilnähmer"
-    }
+    },
+    "mail": "Mail",
+    "mailOpenCount_one": "{{count}} offeni Underhaltig",
+    "mailOpenCount_other": "{{count}} offeni Underhaltige"
   },
   "public": {
     "login": "Ämälde",

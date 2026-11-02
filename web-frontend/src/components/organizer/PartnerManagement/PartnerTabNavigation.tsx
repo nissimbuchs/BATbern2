@@ -27,15 +27,22 @@ export const PartnerTabNavigation: React.FC<PartnerTabNavigationProps> = ({
     { key: 'notes', label: t('common:labels.notes') },
     { key: 'topics', label: t('common:labels.topics') },
     { key: 'settings', label: t('detail.tabs.settings') },
+    // Story 16.10: appended, tabs are addressed by index
+    { key: 'mail', label: t('detail.tabs.mail') },
   ];
 
   // Story 8.0: Settings tab hidden for PARTNER role
   // Story 8.4: Notes tab also hidden for PARTNER (organizer-internal notes)
   // Topics tab: hidden for PARTNER — organizer-only meeting workflow
+  // Story 16.10: Mail tab hidden for PARTNER (organizer-only API)
   const visibleTabs =
     role === 'PARTNER'
       ? allTabs.filter(
-          (tab) => tab.key !== 'settings' && tab.key !== 'notes' && tab.key !== 'topics'
+          (tab) =>
+            tab.key !== 'settings' &&
+            tab.key !== 'notes' &&
+            tab.key !== 'topics' &&
+            tab.key !== 'mail'
         )
       : allTabs;
 

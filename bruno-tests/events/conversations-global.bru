@@ -1,0 +1,31 @@
+meta {
+  name: Mail page — open conversations across events (organizer)
+  type: http
+  seq: 34
+}
+
+get {
+  url: {{baseUrl}}/conversations?status=OPEN&status=WAITING&noEvent=false
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 200 with open and waiting conversations of events, never cached", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("cache-control")).to.contain("no-store");
+    res.getBody().data.forEach(function(row) {
+      expect(["OPEN", "WAITING"]).to.include(row.status);
+      expect(row.eventCode).to.be.a("string");
+    });
+  });
+}
+
+docs {
+  Story 16.7 AC8/AC10: GET /conversations with repeated status and noEvent=false. Read-only: no PATCH
+  here, Bruno runs against production.
+}

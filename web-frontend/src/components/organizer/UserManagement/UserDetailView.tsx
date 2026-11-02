@@ -28,10 +28,12 @@ import {
   Delete as DeleteIcon,
   Person as OverviewIcon,
   Event as EventIcon,
+  MailOutline as MailIcon,
   Cloud as CloudIcon,
   CloudOff as CloudOffIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { ParticipantMailList } from '@/components/organizer/MailCenter/ParticipantMailList';
 import { useLocation } from 'react-router-dom';
 import type { User } from '../../../types/user.types';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs/Breadcrumbs';
@@ -273,6 +275,11 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
               id="user-tab-1"
               aria-controls="user-tabpanel-1"
             />
+            <Tab
+              label={t('userDetail.tabs.mail')}
+              id="user-tab-2"
+              aria-controls="user-tabpanel-2"
+            />
           </Tabs>
         </Box>
       )}
@@ -286,6 +293,11 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
 
       <TabPanel value={activeTab} index={1}>
         <EventsParticipatedTable userId={user.id} />
+      </TabPanel>
+
+      {/* Story 16.10: mounted only when open, so a user view does not call /mails */}
+      <TabPanel value={activeTab} index={2}>
+        {activeTab === 2 && <ParticipantMailList participant={{ participantUsername: user.id }} />}
       </TabPanel>
 
       {/* Bottom Navigation — mobile only */}
@@ -303,6 +315,11 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
         <BottomNavigation value={activeTab} onChange={(_, v) => setActiveTab(v)}>
           <BottomNavigationAction icon={<OverviewIcon />} sx={{ minWidth: 0, flex: 1 }} />
           <BottomNavigationAction icon={<EventIcon />} sx={{ minWidth: 0, flex: 1 }} />
+          <BottomNavigationAction
+            icon={<MailIcon />}
+            aria-label={t('userDetail.tabs.mail')}
+            sx={{ minWidth: 0, flex: 1 }}
+          />
         </BottomNavigation>
       </Paper>
     </Box>

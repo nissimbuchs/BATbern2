@@ -109,7 +109,7 @@ describe('PartnerTabNavigation', () => {
     const tablist = screen.getByRole('tablist');
     fireEvent.keyDown(tablist, { key: 'End' });
 
-    expect(mockOnTabChange).toHaveBeenCalledWith(6); // 7 tabs: 0-6
+    expect(mockOnTabChange).toHaveBeenCalledWith(7); // 8 tabs: 0-7 (Story 16.10: Mail last)
   });
 
   // Story 8.4: should hide Notes tab for PARTNER role
@@ -143,9 +143,9 @@ describe('PartnerTabNavigation', () => {
 
   // Additional test: should wrap around when using arrow keys at boundaries
   it('should_wrapAround_when_arrowKeyAtBoundary', () => {
-    // At last tab (index 6 = Settings), right arrow should wrap to first (0)
+    // At last tab (index 7 = Mail), right arrow should wrap to first (0)
     const { unmount } = render(
-      <PartnerTabNavigation activeTab={6} onTabChange={mockOnTabChange} />
+      <PartnerTabNavigation activeTab={7} onTabChange={mockOnTabChange} />
     );
     const tablist = screen.getByRole('tablist');
     fireEvent.keyDown(tablist, { key: 'ArrowRight' });
@@ -154,11 +154,11 @@ describe('PartnerTabNavigation', () => {
 
     mockOnTabChange.mockClear();
 
-    // At first tab, left arrow should wrap to last (index 6 = Settings)
+    // At first tab, left arrow should wrap to last (index 7 = Mail)
     render(<PartnerTabNavigation activeTab={0} onTabChange={mockOnTabChange} />);
     const tablist2 = screen.getByRole('tablist');
     fireEvent.keyDown(tablist2, { key: 'ArrowLeft' });
-    expect(mockOnTabChange).toHaveBeenCalledWith(6);
+    expect(mockOnTabChange).toHaveBeenCalledWith(7);
   });
 
   // Additional test: should display all 7 tab labels (including new Topics tab)
@@ -172,5 +172,19 @@ describe('PartnerTabNavigation', () => {
     expect(screen.getByRole('tab', { name: /notes/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /topics/i })).toBeInTheDocument();
     expect(screen.getByRole('tab', { name: /settings/i })).toBeInTheDocument();
+  });
+
+  // Story 16.10 AC3: the Mail tab is the last tab for organizers and absent for partners
+  it('should_showMailTabLast_when_organizerRole', () => {
+    render(<PartnerTabNavigation activeTab={0} onTabChange={mockOnTabChange} role="ORGANIZER" />);
+
+    const tabs = screen.getAllByRole('tab');
+    expect(tabs[tabs.length - 1]).toHaveTextContent(/^mail$/i);
+  });
+
+  it('should_hideMailTab_when_partnerRole', () => {
+    render(<PartnerTabNavigation activeTab={0} onTabChange={mockOnTabChange} role="PARTNER" />);
+
+    expect(screen.queryByRole('tab', { name: /^mail$/i })).not.toBeInTheDocument();
   });
 });

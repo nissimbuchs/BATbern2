@@ -22,8 +22,10 @@ import {
   Note as NotesIcon,
   Lightbulb as TopicsIcon,
   Settings as SettingsIcon,
+  MailOutline as MailIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
+import { ParticipantMailList } from '@/components/organizer/MailCenter/ParticipantMailList';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { usePartnerDetail } from '@/hooks/usePartnerDetail';
 import { deactivatePartner, reactivatePartner } from '@/services/api/partnerApi';
@@ -274,9 +276,11 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
     { key: 'notes', label: tPartners('detail.tabs.notes'), icon: <NotesIcon /> },
     { key: 'topics', label: tPartners('detail.tabs.topics'), icon: <TopicsIcon /> },
     { key: 'settings', label: tPartners('detail.tabs.settings'), icon: <SettingsIcon /> },
+    // Story 16.10: appended, because tabs are addressed by index (partnerDetailStore.activeTab)
+    { key: 'mail', label: tPartners('detail.tabs.mail'), icon: <MailIcon /> },
   ];
   const visibleTabs = isPartner
-    ? allTabs.filter((tab) => tab.key !== 'settings' && tab.key !== 'notes')
+    ? allTabs.filter((tab) => tab.key !== 'settings' && tab.key !== 'notes' && tab.key !== 'mail')
     : allTabs;
 
   return (
@@ -339,6 +343,11 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
               onUpdateStatus={(active) => updateStatusMutation.mutate(active)}
               isUpdatingStatus={updateStatusMutation.isPending}
             />
+          )}
+
+          {/* Mail Tab — Story 16.10: organizer only, the mail to and from the partner's contacts */}
+          {effectiveTab === 7 && currentUser.role !== 'PARTNER' && (
+            <ParticipantMailList participant={{ participantCompany: partner.companyName }} />
           )}
         </Box>
 

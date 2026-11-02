@@ -28,6 +28,30 @@ export async function listEventConversations(
   return response.data;
 }
 
+export type MailConversationCounts = components['schemas']['MailConversationCounts'];
+
+/** Story 16.7: conversations of all events and without event (global Mail page). */
+export async function listConversations(
+  params: {
+    status?: MailConversationStatus[];
+    eventCode?: string;
+    /** true: only without event; false: only with one; absent: both. */
+    noEvent?: boolean;
+    page?: number;
+    limit?: number;
+  } = {}
+): Promise<MailConversationPage> {
+  // apiClient sends arrays as status=OPEN&status=WAITING, as the API expects
+  const response = await apiClient.get<MailConversationPage>('/conversations', { params });
+  return response.data;
+}
+
+/** Story 16.7 AC2: the Mail badge and the section counts. */
+export async function getConversationCounts(): Promise<MailConversationCounts> {
+  const response = await apiClient.get<MailConversationCounts>('/conversations/counts');
+  return response.data;
+}
+
 export async function getConversation(conversationKey: string): Promise<MailConversationDetail> {
   const response = await apiClient.get<MailConversationDetail>(
     `/conversations/${encodeURIComponent(conversationKey)}`

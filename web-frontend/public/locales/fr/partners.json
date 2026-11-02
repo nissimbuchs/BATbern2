@@ -104,7 +104,8 @@
       "meetings": "Réunions",
       "analytics": "Analyses",
       "settings": "Paramètres",
-      "partnerDetailTabs": "Onglets de détail partenaire"
+      "partnerDetailTabs": "Onglets de détail partenaire",
+      "mail": "Mail"
     },
     "overviewTab": {
       "title": "Détails du partenariat",

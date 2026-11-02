@@ -1,0 +1,30 @@
+meta {
+  name: Mail page — badge counts (organizer), partner forbidden
+  type: http
+  seq: 35
+}
+
+get {
+  url: {{baseUrl}}/conversations/counts
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns the four counts, never cached", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getHeader("cache-control")).to.contain("no-store");
+    const body = res.getBody();
+    ["open", "waiting", "noEvent", "spam"].forEach(function(key) {
+      expect(body[key]).to.be.a("number");
+    });
+  });
+}
+
+docs {
+  Story 16.7 AC2: GET /conversations/counts feeds the Mail entry's badge and the section headers.
+}

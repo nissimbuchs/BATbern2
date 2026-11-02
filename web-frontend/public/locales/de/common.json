@@ -36,7 +36,10 @@
       "speaker": "Referent",
       "partner": "Partner",
       "attendee": "Teilnehmer"
-    }
+    },
+    "mail": "Mail",
+    "mailOpenCount_one": "{{count}} offene Unterhaltung",
+    "mailOpenCount_other": "{{count}} offene Unterhaltungen"
   },
   "public": {
     "login": "Anmelden",

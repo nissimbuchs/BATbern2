@@ -8,6 +8,7 @@ import ch.batbern.events.mailcenter.api.generated.MailConversationApi;
 import ch.batbern.events.mailcenter.dto.generated.MailAttachment;
 import ch.batbern.events.mailcenter.dto.generated.DownloadUrlResponse;
 import ch.batbern.events.mailcenter.dto.generated.MailAudience;
+import ch.batbern.events.mailcenter.dto.generated.MailConversationCounts;
 import ch.batbern.events.mailcenter.dto.generated.MailConversationDetail;
 import ch.batbern.events.mailcenter.dto.generated.MailConversationPage;
 import ch.batbern.events.mailcenter.dto.generated.MailConversationPatch;
@@ -56,6 +57,27 @@ public class MailConversationController implements MailConversationApi {
                 .pagination(PaginationUtils.generateMetadata(page, limit, result.total())));
     }
 
+    /** Story 16.7: the global Mail page. */
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<MailConversationPage> listConversations(List<MailConversationStatus> status,
+            String eventCode, Boolean noEvent, Integer page, Integer limit) {
+        ConversationPage result = queries.listAll(status == null ? List.of()
+                : status.stream().map(MailConversationStatus::getValue).toList(), eventCode, noEvent, page, limit);
+        return noStore(new MailConversationPage()
+                .data(result.data().stream().map(MailConversationController::summary).toList())
+                .pagination(PaginationUtils.generateMetadata(page, limit, result.total())));
+    }
+
+    /** Story 16.7 AC2: the badge and the section headers. */
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<MailConversationCounts> getConversationCounts() {
+        ConversationQueryService.ConversationCounts counts = queries.counts();
+        return noStore(new MailConversationCounts().open(counts.open()).waiting(counts.waiting())
+                .noEvent(counts.noEvent()).spam(counts.spam()));
+    }
+
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<MailConversationDetail> getConversation(String conversationKey) {
@@ -73,8 +95,8 @@ public class MailConversationController implements MailConversationApi {
             MailConversationPatch patch) {
         conversations.patch(conversationKey,
                 patch.getStatus() == null ? null : MailConversation.Status.valueOf(patch.getStatus().getValue()),
-                patch.getAssigneeUsername(), Boolean.TRUE.equals(patch.getClearAssignee()),
-                securityContextHelper.getCurrentUsername());
+                patch.getAssigneeUsername(), Boolean.TRUE.equals(patch.getClearAssignee()), patch.getEventCode(),
+                Boolean.TRUE.equals(patch.getClearEvent()), securityContextHelper.getCurrentUsername());
         return noStore(summary(queries.find(conversationKey)
                 .orElseThrow(() -> new NotFoundException("Conversation", conversationKey))));
     }

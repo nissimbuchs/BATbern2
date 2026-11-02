@@ -199,6 +199,8 @@ export class InboundEmailStack extends cdk.Stack {
         new sesActions.Stop(),
       ],
       enabled: true,
+      // Story 16.7: SES writes X-SES-Spam-Verdict / X-SES-Virus-Verdict; EMS drops FAIL mail
+      scanEnabled: true,
     });
 
     // Rule 2: Route named forwarding addresses to S3 forwarding/ prefix (Story 10.26)
@@ -220,6 +222,8 @@ export class InboundEmailStack extends cdk.Stack {
         new sesActions.Stop(),
       ],
       enabled: true,
+      // Story 16.7: SES writes X-SES-Spam-Verdict / X-SES-Virus-Verdict; EMS drops FAIL mail
+      scanEnabled: true,
     });
 
     // Rule 3 (lowest priority): Catch-all domain rule for batbern{N}@ addresses (Story 10.26)
@@ -232,6 +236,7 @@ export class InboundEmailStack extends cdk.Stack {
         }),
       ],
       enabled: true,
+      scanEnabled: true,
     });
 
     // Ensure ordering: replies first, named forwarding second, catch-all third

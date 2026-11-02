@@ -12,6 +12,9 @@
  * reports progress; a newsletter that ended PARTIAL or FAILED offers Retry on its row; organizer
  * test sends are hidden unless "show test sends" is on.
  *
+ * Story 16.7/16.10: without `eventCode` it lists `GET /mails` (all events, or one person or partner
+ * with `listParams`); every row then names its event, and a received mail its sender.
+ *
  * Story 16.9: a partner meeting invite shows that meeting's RSVPs beside its counts. With
  * `audience` + `reference` the list is scoped to one subject (the mails of one partner meeting, in
  * its detail panel) and the audience chips are hidden.
@@ -40,7 +43,11 @@ import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { useMailMessages, useRetryMail } from '@/hooks/useMailMessages/useMailMessages';
 import { MeetingRsvpSummary } from './MeetingRsvpSummary';
 import { partnerMeetingId } from './partnerMeetingReference';
-import type { MailAudience, MailMessageSummary } from '@/services/mailMessageService';
+import type {
+  GlobalMailListParams,
+  MailAudience,
+  MailMessageSummary,
+} from '@/services/mailMessageService';
 import { MailDetail, MailDetailDialog } from './MailDetail';
 
 const FILTERS: Array<MailAudience | 'ALL'> = [
@@ -56,7 +63,17 @@ const ACTIVE_NEWSLETTER = ['PENDING', 'IN_PROGRESS'];
 const RETRYABLE_NEWSLETTER = ['PARTIAL', 'FAILED'];
 
 interface MailSentListProps {
-  eventCode: string;
+  /**
+   * The event whose mail is listed. Without it the list reads `GET /mails` (Story 16.7: all events;
+   * Story 16.10: one person or partner, via `listParams`), and every row names its event.
+   */
+  eventCode?: string;
+  /** Story 16.7/16.10: extra filters of `GET /mails` (event filter, participant, direction). */
+  listParams?: GlobalMailListParams;
+  /** Story 16.10: audiences offered as filter chips (default: all). */
+  filters?: Array<MailAudience | 'ALL'>;
+  /** Story 16.10 AC7: the line shown when there is no mail at all. */
+  emptyText?: string;
   /** Story 16.8b: the mail(s) just sent; their rows are highlighted. */
   highlightKeys?: string[];
   /** Story 16.9: fixed audience; the audience chips are hidden. */
@@ -78,6 +95,9 @@ function zurichDay(iso: string): string {
 
 export const MailSentList: React.FC<MailSentListProps> = ({
   eventCode,
+  listParams,
+  filters = FILTERS,
+  emptyText,
   highlightKeys,
   audience,
   reference,
@@ -88,7 +108,8 @@ export const MailSentList: React.FC<MailSentListProps> = ({
   const [page, setPage] = useState(1);
   const [includeTests, setIncludeTests] = useState(false);
   const [open, setOpen] = useState<OpenMail | null>(null);
-  const retry = useRetryMail(eventCode);
+  // Retry is per event (the newsletter's send job); the lists across events do not offer it
+  const retry = useRetryMail(eventCode ?? '');
   const toggle = (mail: OpenMail) =>
     setOpen((current) => (current?.mailKey === mail.mailKey ? null : mail));
 
@@ -103,6 +124,7 @@ export const MailSentList: React.FC<MailSentListProps> = ({
 
   const rowProps: RowProps = {
     eventCode,
+    listParams,
     openKey: open?.mailKey ?? null,
     inline: !isMobile,
     onToggle: toggle,
@@ -112,7 +134,8 @@ export const MailSentList: React.FC<MailSentListProps> = ({
     onRetry: (mailKey) => retry.mutate(mailKey),
   };
   const scoped = audience !== undefined;
-  const query = useMailMessages(eventCode, {
+  const query = useMailMessages(eventCode ?? null, {
+    ...listParams,
     audience: scoped ? audience : filter === 'ALL' ? undefined : filter,
     reference,
     includeTests,
@@ -131,7 +154,7 @@ export const MailSentList: React.FC<MailSentListProps> = ({
   return (
     <Box data-testid="mail-sent-list">
       <Stack direction="row" spacing={1} useFlexGap flexWrap="wrap" sx={{ mb: 2 }}>
-        {(scoped ? [] : FILTERS).map((f) => (
+        {(scoped ? [] : filters).map((f) => (
           <Chip
             key={f}
             label={t(`eventPage.mail.filters.${f}`)}
@@ -178,7 +201,7 @@ export const MailSentList: React.FC<MailSentListProps> = ({
       ) : rows.length === 0 ? (
         <Typography variant="body2" color="text.secondary" data-testid="mail-sent-empty">
           {filter === 'ALL' && !scoped
-            ? t('eventPage.mail.emptyAll')
+            ? (emptyText ?? t('eventPage.mail.emptyAll'))
             : t('eventPage.mail.emptyFilter')}
         </Typography>
       ) : (
@@ -216,7 +239,8 @@ export const MailSentList: React.FC<MailSentListProps> = ({
 };
 
 interface RowProps {
-  eventCode: string;
+  eventCode?: string;
+  listParams?: GlobalMailListParams;
   openKey: string | null;
   /** Desktop: the open mail renders below its row. Mobile: the list's dialog shows it. */
   inline: boolean;
@@ -252,6 +276,7 @@ const SingleMail: React.FC<RowProps & { row: MailMessageSummary }> = ({
   const isOpen = openKey === row.mailKey;
   const highlighted = highlightKeys.includes(row.mailKey);
   const retryable =
+    eventCode !== undefined &&
     row.audience === 'NEWSLETTER' &&
     Boolean(row.newsletterStatus && RETRYABLE_NEWSLETTER.includes(row.newsletterStatus));
   const button = (
@@ -264,7 +289,7 @@ const SingleMail: React.FC<RowProps & { row: MailMessageSummary }> = ({
       data-highlighted={highlighted || undefined}
       sx={{ alignItems: 'flex-start', gap: 2, px: 1, ...(highlighted && HIGHLIGHT_SX) }}
     >
-      <MailRowContent row={row} />
+      <MailRowContent row={row} showEvent={eventCode === undefined} />
     </ListItemButton>
   );
   return (
@@ -311,13 +336,19 @@ const SingleMail: React.FC<RowProps & { row: MailMessageSummary }> = ({
 };
 
 const MailRow: React.FC<RowProps & { row: MailMessageSummary }> = (props) => {
-  const { eventCode, row, includeTests } = props;
+  const { eventCode, listParams, row, includeTests } = props;
   const { t } = useTranslation('events');
   const [expanded, setExpanded] = useState(false);
   const collapsed = row.messageCount > 1;
   const singles = useMailMessages(
-    eventCode,
+    eventCode ?? null,
     {
+      // Across events: the singles of this row's event (or of no event)
+      ...(eventCode === undefined && {
+        ...listParams,
+        eventCode: row.eventCode ?? undefined,
+        noEvent: row.eventCode ? undefined : true,
+      }),
       templateKey: row.templateKey ?? undefined,
       reference: row.reference ?? undefined,
       date: zurichDay(row.sentAt),
@@ -340,7 +371,7 @@ const MailRow: React.FC<RowProps & { row: MailMessageSummary }> = (props) => {
         data-testid={`mail-row-${row.mailKey}`}
         sx={{ alignItems: 'flex-start', gap: 2, px: 1 }}
       >
-        <MailRowContent row={row} />
+        <MailRowContent row={row} showEvent={eventCode === undefined} />
       </ListItemButton>
       <Collapse in={expanded} unmountOnExit>
         <List disablePadding sx={{ pl: 2 }} data-testid={`mail-group-${row.mailKey}`}>
@@ -359,8 +390,12 @@ const MailRow: React.FC<RowProps & { row: MailMessageSummary }> = (props) => {
   );
 };
 
-const MailRowContent: React.FC<{ row: MailMessageSummary }> = ({ row }) => {
+const MailRowContent: React.FC<{ row: MailMessageSummary; showEvent: boolean }> = ({
+  row,
+  showEvent,
+}) => {
   const { t, i18n } = useTranslation('events');
+  const received = row.direction === 'IN';
   const sentAt = new Date(row.sentAt).toLocaleString(i18n.language, {
     dateStyle: 'medium',
     timeStyle: 'short',
@@ -383,7 +418,20 @@ const MailRowContent: React.FC<{ row: MailMessageSummary }> = ({ row }) => {
     <Box sx={{ display: 'flex', width: '100%', gap: 2, flexWrap: { xs: 'wrap', sm: 'nowrap' } }}>
       <Box sx={{ flex: '1 1 auto', minWidth: 0 }}>
         <Typography variant="caption" color="text.secondary" component="div">
-          {sentAt} · {sender} → {audience} · {source}
+          {showEvent && (
+            <Chip
+              size="small"
+              variant="outlined"
+              label={row.eventCode ?? t('mailCenter.noEventChip')}
+              sx={{ mr: 1, height: 18 }}
+              data-testid={`mail-event-${row.mailKey}`}
+            />
+          )}
+          {received
+            ? `${sentAt} · ${t('mailCenter.receivedFrom', {
+                sender: row.fromName ?? row.fromAddress ?? '',
+              })}`
+            : `${sentAt} · ${sender} → ${audience} · ${source}`}
           {row.test && (
             <Chip label="TEST" size="small" color="warning" variant="outlined" sx={{ ml: 1 }} />
           )}
@@ -393,7 +441,26 @@ const MailRowContent: React.FC<{ row: MailMessageSummary }> = ({ row }) => {
         </Typography>
       </Box>
       <Box sx={{ flex: '0 0 auto', textAlign: { xs: 'left', sm: 'right' } }}>
-        {active ? (
+        {received ? (
+          <Typography variant="caption" color="text.secondary">
+            {t('mailCenter.received')}
+          </Typography>
+        ) : row.participantStatus ? (
+          // Story 16.10 AC1: that person's own delivery status
+          <Chip
+            size="small"
+            variant="outlined"
+            label={t(`eventPage.mail.status.${row.participantStatus}`)}
+            color={
+              row.participantStatus === 'FAILED'
+                ? 'error'
+                : row.participantStatus === 'DELIVERED'
+                  ? 'success'
+                  : 'default'
+            }
+            data-testid={`mail-participant-status-${row.mailKey}`}
+          />
+        ) : active ? (
           <Typography variant="caption" color="text.secondary">
             {row.newsletterStatus === 'PENDING' || row.recipientCount === 0
               ? t('eventPage.mail.sending')
@@ -413,9 +480,11 @@ const MailRowContent: React.FC<{ row: MailMessageSummary }> = ({ row }) => {
             )}
           </Typography>
         )}
-        <Typography variant="caption" color="text.secondary" component="div">
-          {t('eventPage.mail.recipients', { count: row.recipientCount })}
-        </Typography>
+        {!received && !row.participantStatus && (
+          <Typography variant="caption" color="text.secondary" component="div">
+            {t('eventPage.mail.recipients', { count: row.recipientCount })}
+          </Typography>
+        )}
         {meetingId && (
           <MeetingRsvpSummary
             meetingId={meetingId}

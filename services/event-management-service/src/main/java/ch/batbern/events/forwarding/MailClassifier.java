@@ -1,6 +1,7 @@
 package ch.batbern.events.forwarding;
 
 import java.util.Locale;
+import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 /**
@@ -16,6 +17,10 @@ public final class MailClassifier {
     private static final Pattern CONTENT_TYPE_LINE = Pattern.compile("^content-type\\s*:", Pattern.CASE_INSENSITIVE);
     private static final Pattern CALENDAR = Pattern.compile("text/calendar", Pattern.CASE_INSENSITIVE);
     private static final Pattern METHOD_REPLY = Pattern.compile("method\\s*=\\s*\"?reply\"?", Pattern.CASE_INSENSITIVE);
+
+    /** Story 16.7: a verdict header SES adds when the receipt rule scans (RouteReplies, RouteForwarding*). */
+    private static final Pattern SES_VERDICT = Pattern.compile(
+            "^x-ses-(spam|virus)-verdict\\s*:\\s*fail\\s*$", Pattern.CASE_INSENSITIVE);
 
     private static final Pattern DELIVERY_REPORT = Pattern.compile("^\\s*multipart/report", Pattern.CASE_INSENSITIVE);
 
@@ -72,5 +77,36 @@ public final class MailClassifier {
             return true;
         }
         return returnPath != null && returnPath.trim().equals("<>");
+    }
+
+    /** Story 16.7: what SES found when it scanned the mail. */
+    public enum SesVerdict { CLEAN, SPAM, VIRUS }
+
+    /**
+     * Story 16.7 AC6: the SES scan verdicts in the header block. Only {@code FAIL} counts; {@code PASS},
+     * {@code GRAY}, {@code PROCESSING_FAILED} and a missing header are clean. A virus wins over spam. Any
+     * FAIL header counts, also a forged one: it can only ever hold the sender's own mail back.
+     */
+    public static SesVerdict sesVerdict(String raw) {
+        boolean spam = false;
+        String unfolded = FOLD.matcher(raw).replaceAll(" ");
+        for (String line : unfolded.split("\\r?\\n")) {
+            if (line.isEmpty()) {
+                break; // end of the header block
+            }
+            Matcher m = SES_VERDICT.matcher(line);
+            if (m.find()) {
+                if (m.group(1).equalsIgnoreCase("virus")) {
+                    return SesVerdict.VIRUS;
+                }
+                spam = true;
+            }
+        }
+        return spam ? SesVerdict.SPAM : SesVerdict.CLEAN;
+    }
+
+    /** {@link #sesVerdict(String)} on the raw bytes (headers are ASCII). */
+    public static SesVerdict sesVerdict(byte[] raw) {
+        return sesVerdict(new String(raw, java.nio.charset.StandardCharsets.ISO_8859_1));
     }
 }

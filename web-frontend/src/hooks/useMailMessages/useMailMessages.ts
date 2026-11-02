@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-query';
 import * as mailMessageService from '@/services/mailMessageService';
 import type {
+  GlobalMailListParams,
   MailComposeRequest,
   MailCounts,
   MailMessageDetail,
@@ -22,7 +23,15 @@ import type {
   MailSendRequest,
 } from '@/services/mailMessageService';
 
+/**
+ * Story 16.7: the scope of the queries without an event in the path (`GET /mails`). Every mail query
+ * starts with `'mails'`, so invalidating `['mails']` refreshes the event pages and the Mail page.
+ */
+export const ALL_EVENTS = '_all';
+
 export const MAIL_MESSAGE_QUERY_KEYS = {
+  /** Every mail query, of every event and of the Mail page. */
+  all: ['mails'] as const,
   /** Prefix of every mail query of an event; invalidate it after a send (Story 16.4). */
   event: (eventCode: string) => ['mails', eventCode] as const,
   list: (eventCode: string, params: MailMessageListParams) =>
@@ -37,14 +46,21 @@ export const MAIL_MESSAGE_QUERY_KEYS = {
 const ACTIVE_NEWSLETTER_STATUSES = ['PENDING', 'IN_PROGRESS'];
 const ACTIVE_POLL_MS = 3000;
 
+/**
+ * What went out. `eventCode` null = `GET /mails` (Story 16.7/16.10), where `params` may also carry
+ * `eventCode`, `noEvent` or a participant.
+ */
 export function useMailMessages(
-  eventCode: string,
-  params: MailMessageListParams,
+  eventCode: string | null,
+  params: GlobalMailListParams,
   enabled = true
 ): UseQueryResult<MailMessagePage, Error> {
   return useQuery({
-    queryKey: MAIL_MESSAGE_QUERY_KEYS.list(eventCode, params),
-    queryFn: () => mailMessageService.listMailMessages(eventCode, params),
+    queryKey: MAIL_MESSAGE_QUERY_KEYS.list(eventCode ?? ALL_EVENTS, params),
+    queryFn: () =>
+      eventCode === null
+        ? mailMessageService.listMails(params)
+        : mailMessageService.listMailMessages(eventCode, params),
     staleTime: 30 * 1000,
     enabled,
     // Story 16.4 AC3: a newsletter shows its live progress, so poll while one is still sending.
@@ -62,13 +78,16 @@ export function useMailMessages(
  * (`progress.status` PENDING or IN_PROGRESS), as the old `useSendStatus` did (Story 16.8 AC13).
  */
 export function useMailMessage(
-  eventCode: string,
+  eventCode: string | null,
   mailKey: string | null,
   options: { poll?: boolean } = {}
 ): UseQueryResult<MailMessageDetail, Error> {
   return useQuery({
-    queryKey: MAIL_MESSAGE_QUERY_KEYS.detail(eventCode, mailKey ?? ''),
-    queryFn: () => mailMessageService.getMailMessage(eventCode, mailKey as string),
+    queryKey: MAIL_MESSAGE_QUERY_KEYS.detail(eventCode ?? ALL_EVENTS, mailKey ?? ''),
+    queryFn: () =>
+      eventCode === null
+        ? mailMessageService.getMail(mailKey as string)
+        : mailMessageService.getMailMessage(eventCode, mailKey as string),
     enabled: mailKey !== null,
     staleTime: 30 * 1000,
     refetchInterval: (query) => {
@@ -132,5 +151,19 @@ export function useMailCounts(eventCode: string): UseQueryResult<MailCounts, Err
     queryKey: MAIL_MESSAGE_QUERY_KEYS.counts(eventCode),
     queryFn: () => mailMessageService.getMailCounts(eventCode),
     staleTime: 30 * 1000,
+  });
+}
+
+/**
+ * Story 16.7 AC3: "Not spam". The mail moves into a conversation, so every mail query (Spam list,
+ * counts, the event's "Needs an answer") is refreshed.
+ */
+export function useMarkNotSpam() {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: (mailKey: string) => mailMessageService.markNotSpam(mailKey),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: MAIL_MESSAGE_QUERY_KEYS.all });
+    },
   });
 }

@@ -174,7 +174,8 @@
     "tabs": {
       "overview": "Aperçu",
       "eventsParticipated": "Événements auxquels il a participé",
-      "ariaLabel": "User detail tabs"
+      "ariaLabel": "User detail tabs",
+      "mail": "Mail"
     },
     "overviewText": "Aperçu du profil utilisateur. Des informations supplémentaires peuvent être ajoutées ici.",
     "eventsTable": {

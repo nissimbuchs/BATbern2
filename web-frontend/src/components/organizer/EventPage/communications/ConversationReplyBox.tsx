@@ -26,7 +26,6 @@ import { useUserProfile } from '@/hooks/useUserProfile/useUserProfile';
 const MAX_LENGTH = 20000;
 
 interface ConversationReplyBoxProps {
-  eventCode: string;
   conversationKey: string;
 }
 
@@ -34,14 +33,11 @@ function status(error: unknown): number | undefined {
   return (error as { response?: { status?: number } } | null)?.response?.status;
 }
 
-export const ConversationReplyBox: React.FC<ConversationReplyBoxProps> = ({
-  eventCode,
-  conversationKey,
-}) => {
+export const ConversationReplyBox: React.FC<ConversationReplyBoxProps> = ({ conversationKey }) => {
   const { t } = useTranslation('events');
   const { user } = useAuth();
   const { userProfile } = useUserProfile();
-  const reply = useReplyToConversation(eventCode);
+  const reply = useReplyToConversation();
   const [text, setText] = useState('');
   const [markDone, setMarkDone] = useState(false);
   const [confirming, setConfirming] = useState(false);

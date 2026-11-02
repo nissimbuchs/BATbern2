@@ -1,6 +1,7 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.forwarding.EmailForwardingService;
+import ch.batbern.events.forwarding.MailClassifier;
 import ch.batbern.events.mailcenter.ConversationNotices;
 import ch.batbern.events.mailcenter.MailCenterSwitch;
 import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
@@ -28,6 +29,7 @@ import java.util.regex.Pattern;
  * in Story 16.2a so the local dev simulator runs the same code as production).
  *
  * <ol>
+ *   <li>Story 16.7: SES spam or virus verdict FAIL → nothing below runs; dropped and recorded</li>
  *   <li>MIME parsed via jakarta.mail: From, Subject, first non-quoted plain-text line</li>
  *   <li>An iCal REPLY goes to {@link InboundEmailRouter#routeIcsReply}; nothing else runs</li>
  *   <li>A reply to an organizer's answer ({@code replies+{token}@} of a known conversation) skips the
@@ -58,6 +60,13 @@ public class InboundReplyProcessor {
      * @param raw   the raw MIME
      */
     public void process(String s3Key, byte[] raw) {
+        if (MailClassifier.sesVerdict(raw) != MailClassifier.SesVerdict.CLEAN) {
+            // Story 16.7 AC3–AC5: no keyword action, no calendar RSVP, not forwarded (both record the
+            // drop); the Mail Center keeps spam in its Spam list and only counts a virus.
+            forwardingService.forwardUnrecognizedReply(s3Key, raw);
+            mailCenter.ingestReply(s3Key, raw, null);
+            return;
+        }
         InboundEmailRouter.RouteResult result;
         try {
             MimeMessage message = new MimeMessage(Session.getInstance(new Properties()), new ByteArrayInputStream(raw));

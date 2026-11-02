@@ -1,0 +1,36 @@
+meta {
+  name: Mail page — what went out across events (organizer)
+  type: http
+  seq: 30
+}
+
+get {
+  url: {{baseUrl}}/mails?limit=5
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 200 with a page of mail, never cached", function() {
+    expect(res.getStatus()).to.equal(200);
+    expect(res.getBody().data).to.be.an("array");
+    expect(res.getBody().pagination).to.be.an("object");
+    expect(res.getHeader("cache-control")).to.contain("no-store");
+  });
+
+  test("lists outbound mail only by default, with its event", function() {
+    res.getBody().data.forEach(function(row) {
+      expect(row.direction).to.not.equal("IN");
+      expect(row.spam).to.not.equal(true);
+    });
+  });
+}
+
+docs {
+  Story 16.7 AC9/AC10: GET /mails, the event's mail list without the event in the path. Read-only on
+  purpose: Bruno runs against production after every deploy.
+}

@@ -62,6 +62,13 @@ sends for an event, so they fall under the same rules as registration data:
   only prefixes SES writes). EMS may put and delete only under `mail-attachments/`. Organizers
   download a file through a 5-minute presigned link (`getConversationAttachmentDownloadUrl`). HTML is sanitized at receipt (no images,
   styles or scripts), so opening a mail never loads remote content in an organizer's browser.
+- **Spam and virus scanning (Story 16.7):** the SES receipt rules `RouteReplies`,
+  `RouteForwardingNamed` and `RouteForwardingCatchAll` have scanning on, so SES adds
+  `X-SES-Spam-Verdict` / `X-SES-Virus-Verdict` to every stored mail. Mail with a virus verdict `FAIL` is
+  neither forwarded nor stored (counted, the log names only the S3 key; the raw object expires with the
+  bucket's 7-day rule). Spam `FAIL` is not forwarded any more (owner decision 2026-11-01): organizers see
+  it in the Mail page's Spam list, kept 30 days. `PASS`, `GRAY`, `PROCESSING_FAILED` and a missing
+  header are treated as clean.
 - **Automatic mail is counted, not kept (Story 16.2a):** out-of-office replies, bounce mails,
   calendar replies, keyword replies that acted and loops are one row each in `mail_automatic_event`
   with kind, event and time, no address, no subject, no body. Same retention.

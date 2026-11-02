@@ -1,0 +1,26 @@
+meta {
+  name: Mail page — partner cannot read mail across events (403)
+  type: http
+  seq: 31
+}
+
+get {
+  url: {{baseUrl}}/mails
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{partnerAuthToken}}
+}
+
+tests {
+  test("a non-organizer never receives 200", function() {
+    // 401 when no partner token is loaded in the env (CI fallback).
+    expect([401, 403]).to.include(res.getStatus());
+  });
+}
+
+docs {
+  Story 16.7 AC10: GET /mails is ORGANIZER only (@PreAuthorize("hasRole('ORGANIZER')")).
+}

@@ -79,6 +79,48 @@ public class ConversationQueryService {
         return new ConversationPage(data, total == null ? 0 : total);
     }
 
+    /**
+     * Story 16.7: conversations of all events and without event, same order as {@link #list}.
+     *
+     * @param statuses only these statuses; empty for all
+     * @param eventCode only this event, or null
+     * @param noEvent  true: only without event; false: only with one; null: both
+     */
+    public ConversationPage listAll(List<String> statuses, String eventCode, Boolean noEvent, int page, int limit) {
+        MapSqlParameterSource params = new MapSqlParameterSource()
+                .addValue("statuses", statuses.isEmpty() ? List.of("") : statuses)
+                .addValue("anyStatus", statuses.isEmpty())
+                .addValue("eventCode", eventCode)
+                .addValue("noEvent", noEvent)
+                .addValue("limit", limit)
+                .addValue("offset", (long) (page - 1) * limit);
+        String where = """
+                 WHERE (:anyStatus OR c.status IN (:statuses))
+                   AND (CAST(:eventCode AS TEXT) IS NULL OR c.event_code = :eventCode)
+                   AND (CAST(:noEvent AS BOOLEAN) IS NULL OR (c.event_code IS NULL) = CAST(:noEvent AS BOOLEAN))
+                """;
+        Long total = jdbc.queryForObject("SELECT count(*) FROM mail_conversation c" + where, params, Long.class);
+        List<ConversationEntry> data = jdbc.query(SELECT + where
+                + " ORDER BY CASE WHEN c.status = 'DONE' THEN 1 ELSE 0 END, c.last_message_at DESC"
+                + " LIMIT :limit OFFSET :offset", params, this::entry);
+        return new ConversationPage(data, total == null ? 0 : total);
+    }
+
+    /** Story 16.7 AC2: badge and section counts across all events. */
+    public record ConversationCounts(int open, int waiting, int noEvent, int spam) {
+    }
+
+    public ConversationCounts counts() {
+        return jdbc.queryForObject("""
+                SELECT (SELECT count(*) FROM mail_conversation WHERE status = 'OPEN') AS open,
+                       (SELECT count(*) FROM mail_conversation WHERE status = 'WAITING') AS waiting,
+                       (SELECT count(*) FROM mail_conversation
+                         WHERE event_code IS NULL AND status <> 'DONE') AS no_event,
+                       (SELECT count(*) FROM mail_message WHERE is_spam) AS spam
+                """, new MapSqlParameterSource(), (rs, i) -> new ConversationCounts(rs.getInt("open"),
+                rs.getInt("waiting"), rs.getInt("no_event"), rs.getInt("spam")));
+    }
+
     public Optional<ConversationEntry> find(String conversationKey) {
         return jdbc.query(SELECT + " WHERE c.conversation_key = :key",
                 new MapSqlParameterSource("key", conversationKey), this::entry).stream().findFirst();

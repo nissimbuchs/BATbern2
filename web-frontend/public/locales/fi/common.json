@@ -35,7 +35,10 @@
       "speaker": "Puhuja",
       "partner": "Kumppani",
       "attendee": "Osallistuja"
-    }
+    },
+    "mail": "Posti",
+    "mailOpenCount_one": "{{count}} avoin keskustelu",
+    "mailOpenCount_other": "{{count}} avointa keskustelua"
   },
   "public": {
     "login": "Kirjaudu sisään",
