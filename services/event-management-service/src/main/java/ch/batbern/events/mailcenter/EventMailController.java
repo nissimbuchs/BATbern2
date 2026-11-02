@@ -10,6 +10,7 @@ import ch.batbern.events.mailcenter.compose.MailComposerService;
 import ch.batbern.events.mailcenter.compose.MailComposerService.Preview;
 import ch.batbern.events.mailcenter.compose.MailComposerService.SendResult;
 import ch.batbern.events.mailcenter.compose.SkippedRecipient;
+import ch.batbern.events.mailcenter.inbound.AutomaticMailCounter;
 import ch.batbern.events.mailcenter.dto.generated.MailAudience;
 import ch.batbern.events.mailcenter.dto.generated.MailComposeRecipient;
 import ch.batbern.events.mailcenter.dto.generated.MailAlreadySent;
@@ -40,6 +41,7 @@ import org.springframework.web.bind.annotation.RestController;
 import java.time.LocalDate;
 import java.time.ZoneOffset;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Story 16.3: what went out for an event (Mail Center); Story 16.8: preview, send and retry through
@@ -72,8 +74,20 @@ public class EventMailController implements EventMailApi {
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<MailCounts> getEventMailCounts(String eventCode, Boolean includeTests) {
-        return noStore(new MailCounts().failedDeliveries(
-                (int) queries.failedDeliveries(eventCode, Boolean.TRUE.equals(includeTests))));
+        Map<String, Long> automatic = queries.automaticCounts(eventCode);
+        return noStore(new MailCounts()
+                .failedDeliveries((int) queries.failedDeliveries(eventCode, Boolean.TRUE.equals(includeTests)))
+                .outOfOffice(count(automatic, AutomaticMailCounter.Kind.OUT_OF_OFFICE))
+                .bounces(count(automatic, AutomaticMailCounter.Kind.BOUNCE))
+                .calendarAccepts(count(automatic, AutomaticMailCounter.Kind.CALENDAR_ACCEPTED))
+                .calendarDeclines(count(automatic, AutomaticMailCounter.Kind.CALENDAR_DECLINED))
+                .keywordAccepts(count(automatic, AutomaticMailCounter.Kind.KEYWORD_ACCEPT))
+                .keywordCancels(count(automatic, AutomaticMailCounter.Kind.KEYWORD_CANCEL))
+                .unsubscribes(count(automatic, AutomaticMailCounter.Kind.UNSUBSCRIBE)));
+    }
+
+    private static int count(Map<String, Long> counts, AutomaticMailCounter.Kind kind) {
+        return counts.getOrDefault(kind.name(), 0L).intValue();
     }
 
     @Override

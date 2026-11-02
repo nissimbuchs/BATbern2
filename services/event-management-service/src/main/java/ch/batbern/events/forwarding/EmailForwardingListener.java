@@ -29,16 +29,16 @@ public class EmailForwardingListener {
     private static final String PREFIX = "forwarding/";
 
     private final S3Client s3Client;
-    private final EmailForwardingService forwardingService;
+    private final AliasMailProcessor processor;
     private final ObjectMapper objectMapper;
     private final String bucketName;
 
     public EmailForwardingListener(S3Client s3Client,
-                                   EmailForwardingService forwardingService,
+                                   AliasMailProcessor processor,
                                    ObjectMapper objectMapper,
                                    @Value("${aws.inbound-email.bucket-name:}") String bucketName) {
         this.s3Client = s3Client;
-        this.forwardingService = forwardingService;
+        this.processor = processor;
         this.objectMapper = objectMapper;
         this.bucketName = bucketName;
     }
@@ -60,7 +60,7 @@ public class EmailForwardingListener {
             }
             byte[] raw = s3Client.getObjectAsBytes(GetObjectRequest.builder().bucket(bucket).key(key).build())
                     .asByteArray();
-            forwardingService.forward(key, raw);
+            processor.process(key, raw);
         }
     }
 

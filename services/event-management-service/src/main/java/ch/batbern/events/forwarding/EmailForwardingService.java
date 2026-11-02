@@ -1,7 +1,12 @@
 package ch.batbern.events.forwarding;
 
 import ch.batbern.events.domain.EmailForwardingOutcome;
+import ch.batbern.events.mailcenter.inbound.InboundMail;
+import ch.batbern.events.mailcenter.inbound.InboundMailParser;
+import ch.batbern.events.mailcenter.inbound.InboundMailStore;
 import ch.batbern.events.service.CalendarDeclineService;
+import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.util.ReservedEmailDomain;
 import ch.batbern.shared.utils.LoggingUtils;
@@ -80,6 +85,7 @@ public class EmailForwardingService {
     private final ForwardingMetrics metrics;
     private final EmailService emailService;
     private final CalendarDeclineService calendarDeclineService;
+    private final ForwardingDirectory directory;
 
     /** Alias name recorded in the log and in log lines for {@link #forwardUnrecognizedReply}. */
     static final String REPLIES = "replies";
@@ -147,6 +153,7 @@ public class EmailForwardingService {
         MailAuthentication authentication = MailAuthentication.fromHeaders(headers(message, "Authentication-Results"));
         String maskedSender = LoggingUtils.maskEmail(sender);
         Delivery delivery;
+        Broadcast broadcast;
         // Everything between the claim and markSending is retryable: nothing has been sent yet.
         // Any failure here gives the claim back and rethrows, so SQS redelivers (then DLQ + alarm).
         try {
@@ -161,6 +168,7 @@ public class EmailForwardingService {
             if (delivery == null) {
                 return unresolved(s3Key, aliasNames);
             }
+            broadcast = delivery.broadcast() ? broadcast(raw, plan, sender) : null;
             forwardingLog.markSending(s3Key);
         } catch (RuntimeException e) {
             // With the DB down, release fails too. Keep the original cause and attach that
@@ -177,7 +185,7 @@ public class EmailForwardingService {
         // 300 s visibility timeout; the duration in the log shows how close a large alias gets.
         long started = System.nanoTime();
         Result result = delivery.broadcast()
-                ? sendBroadcast(s3Key, delivery, aliasNames)
+                ? sendBroadcast(s3Key, delivery, broadcast, aliasNames)
                 : sendIndividually(s3Key, delivery, aliasNames, ForwardingMetrics.FORWARDED);
         long elapsedMs = (System.nanoTime() - started) / 1_000_000;
         log.info("Forwarding: {} from {} to {} → {} ({} recipient(s) in {} ms)", s3Key, maskedSender, aliasNames,
@@ -322,6 +330,14 @@ public class EmailForwardingService {
     private record Delivery(byte[] message, List<String> recipients, boolean broadcast) {
     }
 
+    /**
+     * Story 16.2a AC5: what the record of a {@code -speaker@} broadcast shows. {@code to} are the
+     * speakers (plus any extra addressees), {@code cc} the moderator.
+     */
+    private record Broadcast(String eventCode, String sender, List<String> to, List<String> cc, String subject,
+            String bodyHtml) {
+    }
+
     /** @return null when no recipient is left to send to */
     private Delivery prepare(byte[] raw, Plan plan, String senderName, String sender) {
         if (plan.speakerMode) {
@@ -382,9 +398,10 @@ public class EmailForwardingService {
         return plan;
     }
 
-    private Result sendBroadcast(String s3Key, Delivery delivery, String aliasNames) {
+    private Result sendBroadcast(String s3Key, Delivery delivery, Broadcast broadcast, String aliasNames) {
         try {
-            emailService.sendRawMessage(delivery.message(), delivery.recipients(), properties.configurationSet());
+            emailService.sendRawMessage(broadcastContext(broadcast), delivery.message(), broadcast.to(), broadcast.cc(),
+                    broadcast.subject(), broadcast.bodyHtml(), properties.configurationSet());
         } catch (RuntimeException e) {
             log.error("Forwarding: speaker broadcast {} failed: {}", s3Key, e.toString());
             metrics.increment(ForwardingMetrics.FAILED);
@@ -394,6 +411,41 @@ public class EmailForwardingService {
         metrics.increment(ForwardingMetrics.FORWARDED);
         forwardingLog.complete(s3Key, EmailForwardingOutcome.FORWARDED, aliasNames, delivery.recipients().size(), 0);
         return Result.FORWARDED;
+    }
+
+    /**
+     * The speaker and moderator split of the broadcast, as {@link #prepare} builds it, and the text
+     * of the organizer's mail. Parsing the text never stops the broadcast.
+     */
+    private Broadcast broadcast(byte[] raw, Plan plan, String sender) {
+        Set<String> to = new LinkedHashSet<>(plan.speakerTo);
+        to.addAll(plan.individual);
+        List<String> cc = plan.moderatorCc.stream().filter(m -> !to.contains(m)).toList();
+        String subject = "";
+        String bodyHtml = "";
+        try {
+            InboundMail parsed = InboundMailParser.parse(raw);
+            subject = parsed.subject();
+            bodyHtml = InboundMailStore.bodyHtml(parsed);
+        } catch (RuntimeException e) {
+            log.warn("Forwarding: could not read the speaker broadcast text for the record: {}", e.toString());
+        }
+        return new Broadcast(plan.speakerEventCode, sender, List.copyOf(to), cc, subject, bodyHtml);
+    }
+
+    /**
+     * Story 16.2a AC5: the broadcast appears in the event's "What went out" as the organizer's own
+     * text to the speakers. A CUMS failure only leaves the sender empty.
+     */
+    private MailContext broadcastContext(Broadcast broadcast) {
+        String username = null;
+        try {
+            username = directory.organizerUsernameFor(broadcast.sender()).orElse(null);
+        } catch (RuntimeException e) {
+            log.warn("Forwarding: sender of the speaker broadcast not resolved: {}", e.toString());
+        }
+        return MailContext.ownText(MailTrigger.organizer(username), broadcast.eventCode(),
+                MailContext.Audience.SPEAKERS);
     }
 
     private Result sendIndividually(String s3Key, Delivery delivery, String aliasNames, String forwardedMetric) {

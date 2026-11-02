@@ -274,7 +274,7 @@ development_status:
   16-0-stop-losing-replies-and-calendar-declines: done
   16-1a-record-outbound-mail: done
   16-1b-delivery-status: done
-  16-2a-speaker-conversations: ready-for-dev
+  16-2a-speaker-conversations: in-progress  # backend done 2026-11-02, frontend (Task 9) next
   16-2b-all-alias-conversations: ready-for-dev
   16-3-communications-tab-becomes-mail-page: done
   16-4-new-mail-picker: done

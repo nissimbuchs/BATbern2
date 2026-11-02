@@ -50,6 +50,16 @@ sends for an event, so they fall under the same rules as registration data:
 - **Delivery status (Story 16.1b):** a bounce or complaint stores only the SES bounce type/subtype,
   `complaint`, or the reject reason, not the remote server's diagnostic text. Transactional bounces
   never feed newsletter suppression.
+- **Inbound mail and conversations (Story 16.2a):** a speaker's mail to the event's moderator alias
+  (or a reply to a speaker mail) is stored with sender, addresses, text and sanitized HTML in
+  `mail_message` (`direction IN`) and grouped in `mail_conversation`. Same retention: deleted once
+  the event date and the conversation's last activity are both older than 12 months, without an event
+  by last activity. The body is in the database because the raw mail in S3 expires after 7 days (S3
+  lifecycle unchanged); attachments are kept as names only. HTML is sanitized at receipt (no images,
+  styles or scripts), so opening a mail never loads remote content in an organizer's browser.
+- **Automatic mail is counted, not kept (Story 16.2a):** out-of-office replies, bounce mails,
+  calendar replies, keyword replies that acted and loops are one row each in `mail_automatic_event`
+  with kind, event and time, no address, no subject, no body. Same retention.
 
 ### AI / LLM Security (OWASP-LLM, Story 15.9)
 - The AI surface lives in `event-management-service` (event description, theme image, abstract

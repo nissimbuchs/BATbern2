@@ -1,0 +1,25 @@
+meta {
+  name: Mail page — unknown conversation returns 404
+  type: http
+  seq: 29
+}
+
+get {
+  url: {{baseUrl}}/conversations/conv-0
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 404 for an unknown conversation", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Story 16.2a AC13: GET /conversations/{conversationKey} with a key that cannot exist (keys start at conv-1).
+}

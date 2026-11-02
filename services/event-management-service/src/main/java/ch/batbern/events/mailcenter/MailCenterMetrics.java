@@ -24,6 +24,18 @@ public class MailCenterMetrics {
      */
     static final String DELIVERY_EVENTS_UNMATCHED = "DeliveryEventsUnmatched";
 
+    /** Story 16.2a: storing or counting an inbound mail failed; forwarding was not affected. */
+    public static final String INGEST_FAILED = "MailCenterIngestFailed";
+
+    /**
+     * Story 16.2a: which AC3 rule threaded an inbound mail. Shows in production which Message-ID
+     * match carries the traffic (Dev Notes, "Message-ID trap").
+     */
+    public static final String THREAD_MATCHED_BY_TOKEN = "ThreadMatchedByToken";
+    public static final String THREAD_MATCHED_BY_HEADER = "ThreadMatchedByHeader";
+    public static final String THREAD_MATCHED_BY_SES_ID = "ThreadMatchedBySesId";
+    public static final String THREAD_MATCHED_BY_ALIAS = "ThreadMatchedByAlias";
+
     private final ObjectProvider<CloudWatchClient> cloudWatch;
 
     public MailCenterMetrics(ObjectProvider<CloudWatchClient> cloudWatch) {

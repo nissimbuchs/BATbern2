@@ -31,6 +31,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 import java.util.Properties;
@@ -610,6 +611,33 @@ public class EmailService {
      * @param configurationSetOverride SES configuration set; null falls back to the default
      */
     public void sendRawMessage(byte[] mime, List<String> destinations, String configurationSetOverride) {
+        sendRaw(mime, destinations, configurationSetOverride);
+    }
+
+    /**
+     * Story 16.2a: send an already-built MIME message to {@code to} + {@code cc} in one SES call and
+     * record it as one mail (the {@code batbern{N}-speaker@} broadcast: speakers in To, moderator in
+     * Cc). {@code subject} and {@code htmlBody} are what the record shows; the MIME goes out unchanged.
+     * A refused send is recorded with the SES error code and rethrown.
+     */
+    public void sendRawMessage(MailContext context, byte[] mime, List<String> to, List<String> cc, String subject,
+            String htmlBody, String configurationSetOverride) {
+        List<String> destinations = new ArrayList<>(to);
+        destinations.addAll(cc);
+        String messageId;
+        try {
+            messageId = sendRaw(mime, destinations, configurationSetOverride);
+        } catch (EmailSendException e) {
+            if (e.getCause() instanceof SesException ses) {
+                record(context, String.join(",", to), cc, subject, htmlBody, null, errorCode(ses));
+            }
+            throw e;
+        }
+        record(context, String.join(",", to), cc, subject, htmlBody, messageId, null);
+    }
+
+    /** @return the SES Message-ID, {@code local-{id}} when captured on local dev, or null */
+    private String sendRaw(byte[] mime, List<String> destinations, String configurationSetOverride) {
         Objects.requireNonNull(mime, "mime must not be null");
         if (destinations == null || destinations.isEmpty()) {
             throw new IllegalArgumentException("destinations must not be empty");
@@ -622,13 +650,13 @@ public class EmailService {
         if (sesClient == null) {
             log.warn("SES client not configured - skipping raw email send (local/test mode)");
             if (localEmailCapture != null) {
-                localEmailCapture.capture(destinations.get(0),
+                UUID captured = localEmailCapture.capture(destinations.get(0),
                         List.copyOf(destinations.subList(1, destinations.size())),
                         subject, "<pre>" + escapeHtml(raw) + "</pre>", fromEmail, fromName, List.of());
-            } else {
-                log.info("Would send raw email to {} recipient(s), subject: {}", destinations.size(), subject);
+                return "local-" + captured;
             }
-            return;
+            log.info("Would send raw email to {} recipient(s), subject: {}", destinations.size(), subject);
+            return null;
         }
 
         assertNotTestMarked(subject, raw);
@@ -645,6 +673,7 @@ public class EmailService {
         try {
             SendRawEmailResponse response = sesClient.sendRawEmail(request.build());
             log.info("Raw email sent to {} recipient(s), MessageId: {}", destinations.size(), response.messageId());
+            return response.messageId();
         } catch (SesException e) {
             log.error("Failed to send raw email to {} recipient(s): {}",
                     destinations.size(), e.awsErrorDetails().errorMessage(), e);

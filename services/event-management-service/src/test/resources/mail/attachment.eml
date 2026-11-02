@@ -1,0 +1,18 @@
+From: success+slides@simulator.amazonses.com
+To: batbern60-moderator@batbern.ch
+Subject: Meine Folien
+Message-ID: <attachment-1@simulator.amazonses.com>
+MIME-Version: 1.0
+Content-Type: multipart/mixed; boundary="MIX"
+
+--MIX
+Content-Type: text/plain; charset=UTF-8
+
+Anbei meine Folien.
+--MIX
+Content-Type: application/pdf; name="slides.pdf"
+Content-Disposition: attachment; filename="slides.pdf"
+Content-Transfer-Encoding: base64
+
+JVBERi0xLjQKJcOkw7zDtsOfCg==
+--MIX--

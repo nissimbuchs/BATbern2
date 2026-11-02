@@ -1,5 +1,6 @@
 package ch.batbern.events.forwarding;
 
+import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -36,11 +37,16 @@ class EmailForwardingListenerTest {
     @Mock
     private EmailForwardingService forwardingService;
 
+    @Mock
+    private InboundMailCenter mailCenter;
+
     private EmailForwardingListener listener;
 
     @BeforeEach
     void setUp() {
-        listener = new EmailForwardingListener(s3Client, forwardingService, new ObjectMapper(), BUCKET);
+        // Story 16.2a: the listener delegates to the processor; the Mail Center is mocked here.
+        listener = new EmailForwardingListener(s3Client, new AliasMailProcessor(forwardingService, mailCenter),
+                new ObjectMapper(), BUCKET);
     }
 
     private static String event(String bucket, String key) {

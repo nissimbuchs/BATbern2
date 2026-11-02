@@ -1,0 +1,35 @@
+meta {
+  name: Mail page — needs an answer, conversations of an event (organizer)
+  type: http
+  seq: 28
+}
+
+get {
+  url: {{baseUrl}}/events/BATbern59/conversations
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 200 (404 where BATbern59 is not seeded)", function() {
+    expect([200, 404]).to.include(res.getStatus());
+  });
+
+  test("a page of conversations, never cached", function() {
+    if (res.getStatus() === 200) {
+      expect(res.getBody().data).to.be.an("array");
+      expect(res.getBody().pagination).to.be.an("object");
+      expect(res.getHeader("cache-control")).to.contain("no-store");
+    }
+  });
+}
+
+docs {
+  Story 16.2a AC13: GET /events/{eventCode}/conversations. Read-only on purpose: Bruno runs against
+  production after every deploy, so no PATCH of a conversation here (status and assignee are
+  covered by MailConversationControllerIntegrationTest).
+}

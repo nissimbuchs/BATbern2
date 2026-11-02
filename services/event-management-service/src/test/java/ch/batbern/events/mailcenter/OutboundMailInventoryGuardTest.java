@@ -31,7 +31,8 @@ class OutboundMailInventoryGuardTest {
 
     /** Classes allowed to send without a record, with the reason. */
     private static final Map<String, String> ALLOW_LIST = Map.of(
-            "EmailForwardingService.java", "forwards inbound mail unchanged; recorded by Story 16.2 as inbound",
+            "EmailForwardingService.java", "forwards inbound mail unchanged (private copies; the mail is recorded as"
+                    + " inbound by Story 16.2a). Its -speaker@ broadcast passes a context (16.2a AC5); the guard is per file",
             "InboundEmailConfirmationEmailService.java",
             "newsletter unsubscribe acknowledgement: no event, asked for by the recipient");
 

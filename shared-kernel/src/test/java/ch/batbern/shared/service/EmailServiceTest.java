@@ -8,6 +8,10 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.mail.MailTrigger;
+import ch.batbern.shared.mail.OutboundMail;
+import ch.batbern.shared.mail.OutboundMailRecorder;
 import org.mockito.ArgumentCaptor;
 import org.slf4j.LoggerFactory;
 import org.springframework.test.util.ReflectionTestUtils;
@@ -989,6 +993,30 @@ class EmailServiceTest {
             ArgumentCaptor<SendRawEmailRequest> captor = ArgumentCaptor.forClass(SendRawEmailRequest.class);
             verify(sesClient).sendRawEmail(captor.capture());
             assertThat(captor.getValue().configurationSetName()).isEqualTo("batbern-transactional");
+        }
+
+        @Test
+        @DisplayName("16.2a: a raw send with a context is recorded once: To, Cc and the SES Message-ID")
+        void should_recordBroadcast_when_rawMessageSentWithContext() {
+            OutboundMailRecorder recorder = mock(OutboundMailRecorder.class);
+            ReflectionTestUtils.setField(emailService, "outboundMailRecorder", recorder);
+            MailContext context = MailContext.ownText(MailTrigger.organizer("organizer1"), "BATbern60",
+                    MailContext.Audience.SPEAKERS);
+
+            emailService.sendRawMessage(context, RAW.getBytes(java.nio.charset.StandardCharsets.UTF_8),
+                    List.of("s1@batbern.ch", "s2@batbern.ch"), List.of("m@batbern.ch"), "Frage", "<p>Frage</p>",
+                    "batbern-staging-forwarder");
+
+            ArgumentCaptor<SendRawEmailRequest> request = ArgumentCaptor.forClass(SendRawEmailRequest.class);
+            verify(sesClient).sendRawEmail(request.capture());
+            assertThat(request.getValue().destinations()).containsExactly("s1@batbern.ch", "s2@batbern.ch",
+                    "m@batbern.ch");
+            ArgumentCaptor<OutboundMail> mail = ArgumentCaptor.forClass(OutboundMail.class);
+            verify(recorder).record(org.mockito.ArgumentMatchers.eq(context), mail.capture());
+            assertThat(mail.getValue().to()).isEqualTo("s1@batbern.ch,s2@batbern.ch");
+            assertThat(mail.getValue().cc()).containsExactly("m@batbern.ch");
+            assertThat(mail.getValue().sesMessageId()).isEqualTo("m-1");
+            assertThat(mail.getValue().subject()).isEqualTo("Frage");
         }
 
         @Test

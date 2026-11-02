@@ -1,5 +1,6 @@
 package ch.batbern.events.forwarding;
 
+import ch.batbern.shared.mail.MailContext;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.EmailForwardingOutcome;
 import ch.batbern.events.dto.generated.users.UserResponse;
@@ -87,7 +88,7 @@ class EmailForwardingServiceTest {
                 new EmailForwardingProperties(true, "q", "batbern.ch", null, "batbern-staging-forwarder", 0);
         service = new EmailForwardingService(properties, new ForwardingSenderAuthorizer(directory),
                 new ForwardingRecipientResolver(directory, adminSettingsService, distributionListService),
-                new ForwardedMessageRewriter(), forwardingLog, metrics, emailService, calendarDeclineService);
+                new ForwardedMessageRewriter(), forwardingLog, metrics, emailService, calendarDeclineService, directory);
 
         when(forwardingLog.claim(anyString())).thenReturn(true);
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("alice", "bob"));
@@ -126,8 +127,15 @@ class EmailForwardingServiceTest {
 
         assertThat(result).isEqualTo(Result.FORWARDED);
         ArgumentCaptor<byte[]> body = ArgumentCaptor.forClass(byte[].class);
-        verify(emailService, times(1)).sendRawMessage(body.capture(),
-                eq(List.of("success+s1" + SIM, "success+s2" + SIM, ORGANIZER)), eq("batbern-staging-forwarder"));
+        ArgumentCaptor<MailContext> context = ArgumentCaptor.forClass(MailContext.class);
+        // Story 16.2a AC5: one SES call to speakers + moderator, recorded as one sent mail
+        verify(emailService, times(1)).sendRawMessage(context.capture(), body.capture(),
+                eq(List.of("success+s1" + SIM, "success+s2" + SIM)), eq(List.of(ORGANIZER)), eq("Hallo"),
+                org.mockito.ArgumentMatchers.contains("Hallo zusammen"), eq("batbern-staging-forwarder"));
+        assertThat(context.getValue().eventCode()).isEqualTo("BATbern60");
+        assertThat(context.getValue().audience()).isEqualTo(MailContext.Audience.SPEAKERS);
+        assertThat(context.getValue().contentSource()).isEqualTo(MailContext.ContentSource.OWN_TEXT);
+        assertThat(context.getValue().senderUsername()).isEqualTo("bob");
         MimeMessage sent = parse(body.getValue());
         assertThat(sent.getHeader("To", null)).isEqualTo("success+s1" + SIM + ", success+s2" + SIM);
         assertThat(sent.getHeader("Cc", null)).isEqualTo(ORGANIZER);
@@ -142,8 +150,9 @@ class EmailForwardingServiceTest {
                 DMARC_PASS, null));
 
         // The moderator is folded into To with the extras of a mixed mail, so it is not Cc'd again.
-        verify(emailService, times(1)).sendRawMessage(any(),
-                eq(List.of("success+s1" + SIM, "success+s2" + SIM, ORGANIZER)), anyString());
+        verify(emailService, times(1)).sendRawMessage(any(MailContext.class), any(),
+                eq(List.of("success+s1" + SIM, "success+s2" + SIM, ORGANIZER)), eq(List.of()), anyString(),
+                anyString(), anyString());
     }
 
     @Test
@@ -341,7 +350,7 @@ class EmailForwardingServiceTest {
                 new EmailForwardingProperties(true, "q", "batbern.ch", null, "cs", 0),
                 new ForwardingSenderAuthorizer(directory),
                 new ForwardingRecipientResolver(directory, adminSettingsService, distributionListService),
-                failingRewriter, forwardingLog, metrics, emailService, calendarDeclineService);
+                failingRewriter, forwardingLog, metrics, emailService, calendarDeclineService, directory);
 
         assertThatThrownBy(() -> withFailingRewriter.forward(KEY, mail(STRANGER, "info@batbern.ch", null, null, null)))
                 .isInstanceOf(IllegalStateException.class);

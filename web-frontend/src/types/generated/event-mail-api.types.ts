@@ -56,7 +56,10 @@ export interface paths {
      * @description **Security**: ORGANIZER role required; any other role gets 403.
      *
      *     Failed deliveries (SES errors, bounces, complaints, rejects) of this event's mail, newsletter
-     *     included. Accepts, declines and out-of-office counts are added by Story 16.2.
+     *     included. Since Story 16.2a also the automatic inbound mail of the event, counted without
+     *     storing it: out-of-office replies, bounces, calendar accepts and declines, keyword replies
+     *     that acted (accept, cancel) and unsubscribes. An inbound mail is attributed to an event by the
+     *     mail it answers (In-Reply-To), the registration's calendar UID or the event code in the subject.
      */
     get: operations['getEventMailCounts'];
     put?: never;
@@ -117,6 +120,58 @@ export interface paths {
     options?: never;
     head?: never;
     patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/conversations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The event's conversations, open first (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Story 16.2a "Needs an answer". `OPEN` and `WAITING` first, then `DONE`; within each, newest
+     *     activity first.
+     */
+    get: operations['listEventConversations'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/conversations/{conversationKey}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One conversation with every message, oldest first (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Inbound bodies were sanitized when they arrived (no images, styles or scripts).
+     */
+    get: operations['getConversation'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Set status and assignee (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Only the fields present change. `assigneeUsername: null` with `clearAssignee: true` leaves the
+     *     conversation unassigned. No mail is sent (the assignment notification is Story 16.6).
+     */
+    patch: operations['patchConversation'];
     trace?: never;
   };
   '/events/{eventCode}/mails/{mailKey}/retry': {
@@ -189,6 +244,62 @@ export interface components {
        * @example partner-meeting:3f2a9c1e-7b4d-4e2a-9c1e-7b4d4e2a9c1e
        */
       reference?: string | null;
+      /**
+       * @description Story 16.2a. `IN` for mail a person wrote to the platform; absent means `OUT`.
+       * @enum {string}
+       */
+      direction?: 'OUT' | 'IN';
+      /** @description Story 16.2a. Sender of an inbound mail. */
+      fromAddress?: string | null;
+      fromName?: string | null;
+      eventCode?: string | null;
+      /** @description Story 16.2a. The conversation an inbound mail belongs to. */
+      conversationKey?: string | null;
+      /** @description Story 16.2a. Attachments of an inbound mail, names only (the files are not kept). */
+      attachments?: components['schemas']['MailAttachment'][];
+    };
+    MailAttachment: {
+      name: string;
+      contentType?: string;
+      /** Format: int64 */
+      size?: number;
+    };
+    /**
+     * @description Open needs an answer; waiting is answered, waiting for the counterpart; done needs nothing.
+     * @enum {string}
+     */
+    MailConversationStatus: 'OPEN' | 'WAITING' | 'DONE';
+    MailConversationSummary: {
+      /** @example conv-12 */
+      conversationKey: string;
+      eventCode?: string | null;
+      audience: components['schemas']['MailAudience'];
+      subject: string;
+      counterpartAddress: string;
+      counterpartName?: string | null;
+      status: components['schemas']['MailConversationStatus'];
+      assigneeUsername?: string | null;
+      /** @description Where the first mail arrived, e.g. `batbern60-moderator@batbern.ch`, or `reply` for a reply to a mail. */
+      via: string;
+      /** Format: date-time */
+      lastMessageAt: string;
+      messageCount: number;
+    };
+    MailConversationPage: {
+      data: components['schemas']['MailConversationSummary'][];
+      pagination: components['schemas']['PaginationMetadata'];
+    };
+    MailConversationDetail: {
+      conversation: components['schemas']['MailConversationSummary'];
+      /** @description Every message, oldest first. */
+      messages: components['schemas']['MailMessageDetail'][];
+    };
+    MailConversationPatch: {
+      status?: components['schemas']['MailConversationStatus'];
+      /** @description An organizer's username. */
+      assigneeUsername?: string | null;
+      /** @description Leave the conversation unassigned. */
+      clearAssignee?: boolean;
     };
     MailMessageDetail: {
       message: components['schemas']['MailMessageSummary'];
@@ -332,6 +443,17 @@ export interface components {
     };
     MailCounts: {
       failedDeliveries: number;
+      /** @description Story 16.2a. Out-of-office replies to the event's mail. */
+      outOfOffice: number;
+      /** @description Story 16.2a. Bounce messages that arrived as mail (not SES bounce events). */
+      bounces: number;
+      calendarAccepts: number;
+      calendarDeclines: number;
+      /** @description Replies "accept" that confirmed a registration. */
+      keywordAccepts: number;
+      /** @description Replies "cancel" that sent the deregistration link. */
+      keywordCancels: number;
+      unsubscribes: number;
     };
     /**
      * @description Page-based pagination metadata returned with every paginated list response.
@@ -687,6 +809,153 @@ export interface operations {
         content?: never;
       };
       /** @description Event or mail not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  listEventConversations: {
+    parameters: {
+      query?: {
+        /** @description Only conversations in this status. */
+        status?: components['schemas']['MailConversationStatus'];
+        /** @description Page number (1-based) */
+        page?: number;
+        /** @description Items per page (max 100) */
+        limit?: number;
+      };
+      header?: never;
+      path: {
+        eventCode: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Conversations */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MailConversationPage'];
+        };
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Event not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getConversation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversationKey: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The conversation */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MailConversationDetail'];
+        };
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Conversation not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  patchConversation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversationKey: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MailConversationPatch'];
+      };
+    };
+    responses: {
+      /** @description The conversation after the change */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MailConversationSummary'];
+        };
+      };
+      /** @description The assignee is not an organizer */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Conversation not found */
       404: {
         headers: {
           [name: string]: unknown;

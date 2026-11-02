@@ -4,12 +4,13 @@ import java.util.Locale;
 import java.util.regex.Pattern;
 
 /**
- * Header-level checks on a raw inbound mail that decide whether it is forwarded at all.
+ * Header-level checks on a raw inbound mail that decide whether it is forwarded at all. Public since
+ * Story 16.2a: the Mail Center classifies with the same rules ({@code InboundClassifier}).
  */
-final class MailClassifier {
+public final class MailClassifier {
 
     /** Marker header set on every mail we forward; seeing it inbound means a loop. */
-    static final String FORWARDED_MARKER_HEADER = "X-BATbern-Forwarded";
+    public static final String FORWARDED_MARKER_HEADER = "X-BATbern-Forwarded";
 
     private static final Pattern FOLD = Pattern.compile("\\r?\\n[ \\t]+");
     private static final Pattern CONTENT_TYPE_LINE = Pattern.compile("^content-type\\s*:", Pattern.CASE_INSENSITIVE);
@@ -27,7 +28,7 @@ final class MailClassifier {
      * to every organizer, so they are dropped. Checks every Content-Type line, top level and
      * inside every MIME part, after unfolding (port of the Lambda's {@code isCalendarReply}).
      */
-    static boolean isCalendarReply(String raw) {
+    public static boolean isCalendarReply(String raw) {
         String unfolded = FOLD.matcher(raw).replaceAll(" ");
         for (String line : unfolded.split("\\r?\\n")) {
             if (CONTENT_TYPE_LINE.matcher(line).find()
@@ -45,7 +46,7 @@ final class MailClassifier {
      * {@code Precedence: bulk/list} is deliberately NOT a signal: it also marks newsletters an
      * organizer may have subscribed {@code info@} to, which the Lambda forwarded too.
      */
-    static boolean isAutoReply(String autoSubmitted, String precedence, String xAutoreply, String xAutorespond) {
+    public static boolean isAutoReply(String autoSubmitted, String precedence, String xAutoreply, String xAutorespond) {
         if (autoSubmitted != null && !autoSubmitted.trim().toLowerCase(Locale.ROOT).startsWith("no")) {
             return true;
         }
@@ -60,7 +61,7 @@ final class MailClassifier {
      * as {@code multipart/report} (RFC 6522), or with the null reverse path {@code Return-Path: <>}
      * that RFC 5321 requires for them. Never a person, never worth forwarding.
      */
-    static boolean isBounce(String fromAddress, String contentType, String returnPath) {
+    public static boolean isBounce(String fromAddress, String contentType, String returnPath) {
         if (fromAddress != null) {
             String lower = fromAddress.trim().toLowerCase(Locale.ROOT);
             if (lower.startsWith("mailer-daemon@") || lower.startsWith("postmaster@")) {

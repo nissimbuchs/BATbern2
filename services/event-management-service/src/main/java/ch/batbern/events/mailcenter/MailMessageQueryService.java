@@ -12,7 +12,9 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.time.Instant;
 import java.time.LocalDate;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -136,6 +138,21 @@ public class MailMessageQueryService {
         return Optional.ofNullable(jdbc.queryForObject(ENTRIES + " SELECT COALESCE(sum(failed), 0) FROM entries",
                 params(eventCode, false, includeTests).addValue("audience", null).addValue("templateKey", null)
                         .addValue("reference", null).addValue("day", null), Long.class)).orElse(0L);
+    }
+
+    /**
+     * Story 16.2a AC8: automatic inbound mail of the event by kind ({@code mail_automatic_event}),
+     * counted without storing it.
+     */
+    public Map<String, Long> automaticCounts(String eventCode) {
+        requireEvent(eventCode);
+        Map<String, Long> counts = new HashMap<>();
+        jdbc.query("SELECT kind, count(*) AS n FROM mail_automatic_event WHERE event_code = :eventCode GROUP BY kind",
+                new MapSqlParameterSource("eventCode", eventCode),
+                rs -> {
+                    counts.put(rs.getString("kind"), rs.getLong("n"));
+                });
+        return counts;
     }
 
     public Optional<MailDetail> get(String eventCode, String mailKey) {

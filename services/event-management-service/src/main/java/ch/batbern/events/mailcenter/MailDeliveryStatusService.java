@@ -77,6 +77,7 @@ public class MailDeliveryStatusService {
         if (sesMessageId.isBlank()) {
             throw new UnreadableEventException("SES event without mail.messageId", null);
         }
+        recordHeader(sesMessageId, event.path("mail").path("commonHeaders").path("messageId").asText(""));
 
         return switch (eventType) {
             case "Delivery" -> apply(sesMessageId, addresses(event.path("delivery").path("recipients"), null),
@@ -94,6 +95,20 @@ public class MailDeliveryStatusService {
                 yield NOTHING_TO_MATCH;
             }
         };
+    }
+
+    /**
+     * Story 16.2a: keep the Message-ID header SES sent, so a reply's {@code In-Reply-To} finds the
+     * mail even when it does not have the {@code {MessageId}@{region}.amazonses.com} form.
+     */
+    private void recordHeader(String sesMessageId, String header) {
+        String id = header.trim();
+        if (id.startsWith("<") && id.endsWith(">")) {
+            id = id.substring(1, id.length() - 1);
+        }
+        if (!id.isBlank() && recipients.existsBySesMessageId(sesMessageId)) {
+            recipients.recordMessageIdHeader(sesMessageId, id);
+        }
     }
 
     /** {@code addresses == null} means every recipient of the message (reject). */

@@ -193,6 +193,15 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("company-user-management-service");
     }
 
+    // Story 16.2a: conversations (Mail Center) live in event-management-service; keys are global,
+    // so the path is not under /events.
+    @Test
+    @DisplayName("should_routeToEventService_when_conversationCalled")
+    void should_routeToEventService_when_conversationCalled() {
+        assertThat(domainRouter.determineTargetService("/api/v1/conversations/conv-12"))
+                .isEqualTo("event-management-service");
+    }
+
     // Test Story 7.6: attendee dashboard must route to event-management-service
     @Test
     @DisplayName("should_routeToEventService_when_attendeePortalDashboardCalled")

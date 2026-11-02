@@ -7,10 +7,13 @@ import jakarta.persistence.EnumType;
 import jakarta.persistence.Enumerated;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import org.hibernate.annotations.JdbcTypeCode;
+import org.hibernate.type.SqlTypes;
 import lombok.Getter;
 import lombok.Setter;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -74,4 +77,50 @@ public class MailMessage {
 
     @Column(name = "created_at", nullable = false)
     private Instant createdAt;
+
+    // ── Story 16.2a: inbound mail (direction IN) and threading; null on outbound rows ──────────
+
+    /** The conversation an inbound (and, from 16.6, an answering outbound) mail belongs to. */
+    @Column(name = "conversation_id")
+    private UUID conversationId;
+
+    @Column(name = "from_address")
+    private String fromAddress;
+
+    @Column(name = "from_name")
+    private String fromName;
+
+    /** To and Cc of an inbound mail, comma-separated. */
+    @Column(name = "to_addresses")
+    private String toAddresses;
+
+    /** The mail's own Message-ID header, without angle brackets. */
+    @Column(name = "message_id_header")
+    private String messageIdHeader;
+
+    @Column(name = "in_reply_to")
+    private String inReplyTo;
+
+    @Column(name = "references_header")
+    private String referencesHeader;
+
+    /** Plain text of an inbound mail, as received. */
+    @Column(name = "body_text")
+    private String bodyText;
+
+    /** {@code REPLIES} ({@code replies@}) or {@code ALIAS} ({@code batbern{N}-moderator@} and co). */
+    @Column(name = "inbound_path")
+    private String inboundPath;
+
+    @Column(name = "alias_local_part")
+    private String aliasLocalPart;
+
+    /** Names, types and sizes only: the content stays in S3 (7 days). */
+    @JdbcTypeCode(SqlTypes.JSON)
+    @Column(name = "attachments")
+    private List<Attachment> attachments;
+
+    /** One attachment of an inbound mail. */
+    public record Attachment(String name, String contentType, long size) {
+    }
 }

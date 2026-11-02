@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
 import ch.batbern.events.forwarding.EmailForwardingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
@@ -45,14 +46,18 @@ class InboundEmailListenerServiceTest {
     @Mock
     private EmailForwardingService forwardingService;
 
+    @Mock
+    private InboundMailCenter mailCenter;
+
     private InboundEmailListenerService listenerService;
 
     private static final String BUCKET_NAME = "batbern-inbound-emails-staging";
 
     @BeforeEach
     void setUp() {
-        listenerService = new InboundEmailListenerService(s3Client, router, forwardingService, BUCKET_NAME,
-                new ObjectMapper());
+        // Story 16.2a: the listener delegates to the processor; the Mail Center is mocked here.
+        listenerService = new InboundEmailListenerService(s3Client,
+                new InboundReplyProcessor(router, forwardingService, mailCenter), BUCKET_NAME, new ObjectMapper());
     }
 
     /**
@@ -241,7 +246,7 @@ class InboundEmailListenerServiceTest {
     @Test
     void handleS3Notification_whenRouterHandledKeyword_doesNotForward() {
         mockS3Return(RAW_EMAIL.getBytes(StandardCharsets.UTF_8));
-        when(router.route(any())).thenReturn(InboundEmailRouter.RouteResult.HANDLED);
+        when(router.route(any())).thenReturn(InboundEmailRouter.RouteResult.DEREGISTRATION_LINK);
 
         listenerService.handleS3Notification(s3NotificationJson("emails/keyword"));
 
