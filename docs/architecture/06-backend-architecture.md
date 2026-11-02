@@ -962,6 +962,32 @@ One composer for every audience, on the same resource (no second mail resource).
 - The old compose endpoints (newsletter, registrant notices, venue, speaker send-reminder) stay
   until the clean-up release (16.8c).
 
+### One mail pipeline and variable catalog (Story 16.11)
+
+Every template-based mail in event-management renders the same way:
+
+- **`MailVariable`** (`mailcenter.variables`) is the only place that defines placeholder names:
+  canonical name, scope (`SYSTEM`, `EVENT`, `RECIPIENT`, `REGISTRATION`, `SPEAKER`, `SUBSCRIBER`,
+  `VENUE`, `TASK`, `QNA`, `LAYOUT`), credential flag and old aliases (`venue`, `eventDetailLink`,
+  `deregistrationLink`). `MailVariableCatalogTest` fails when a seeded template uses an unknown name.
+- **`MailVariableFactory`** builds the `SYSTEM` and `EVENT` values once (`eventDate` long form per
+  language, `supportUrl = {baseUrl}/support`, `logoUrl`, `eventUrl`, `eventTime`); services add the
+  scopes they have data for through `MailVariables`, which also writes the aliases.
+- **`MailPipeline`** resolves a `MailContent` (store template, DE fallback, classpath fallback, in
+  one place; `storedTemplate` for store-only mails with the default layout) and renders it with
+  `MailRenderer.render` (content variables → layout → variables again → subject). The eight copied
+  `loadHtmlContent` methods are gone.
+- **Newsletter**: `prepare` resolves the content once per send (`NewsletterDraft.content`), so an
+  admin edit during a send or before a retry changes nothing for that send.
+- **Adapters** declare `scopes()`; `allowedVariables()` and `credentialVariables()` derive from the
+  catalog, and `variables(context, recipient, test)` returns the map `render` uses (input for the
+  own text of Story 16.5).
+- **Golden files**: `MailGoldenTest` pins subject and HTML of every template-based mail
+  (`src/test/resources/mail-golden/`); a mismatch writes the actual output to
+  `build/mail-golden-actual`.
+- Not yet on the pipeline: HTML built in Java (`NotificationService`, `QualityReviewService`, Story
+  16.12), the partner invite in partner-coordination.
+
 ## Auto-Enrollment on Event Creation
 
 When a new event is created, an `EventCreatedEvent` listener automatically enrolls all active organizers and partner contacts as stakeholders. A manual quick-action button is also available for idempotent re-enrollment (`POST` endpoint returns success even if already enrolled).
