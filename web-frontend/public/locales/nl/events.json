@@ -580,7 +580,58 @@
           "companyName": "Bedrijf"
         }
       },
-      "rsvpSummary": "Reacties: {{accepted}} geaccepteerd · {{declined}} afgewezen · {{tentative}} voorlopig · {{noAnswer}} geen antwoord"
+      "rsvpSummary": "Reacties: {{accepted}} geaccepteerd · {{declined}} afgewezen · {{tentative}} voorlopig · {{noAnswer}} geen antwoord",
+      "conversations": {
+        "title": "Wacht op antwoord",
+        "nothingOpen": "Niets open.",
+        "openCount_one": "{{count}} open",
+        "openCount_other": "{{count}} open",
+        "via": "via {{address}}",
+        "viaReply": "antwoord op een e-mail",
+        "viaReplyRegistrants": "antwoord op een mail aan aangemelden",
+        "viaReplyNewsletter": "antwoord op de nieuwsbrief",
+        "messages_one": "{{count}} bericht",
+        "messages_other": "{{count}} berichten",
+        "status": {
+          "OPEN": "Open",
+          "WAITING": "Wacht",
+          "DONE": "Afgehandeld"
+        },
+        "statusLabel": "Status",
+        "assignee": "Wie antwoordt",
+        "takeIt": "Ik neem het op me",
+        "attachmentsLabel": "Bijlagen:",
+        "nameOnly": "alleen naam",
+        "notKept": "Groter dan 25 MB: alleen de naam wordt bewaard. Het bestand zit in de doorgestuurde kopie.",
+        "downloadError": "De bijlage kon niet worden geopend. Probeer het opnieuw.",
+        "patchError": "De wijziging is niet opgeslagen. Probeer het opnieuw.",
+        "reply": {
+          "label": "Je antwoord",
+          "hint": "Verzonden als ‘{{name}} via BATbern’. Het antwoord komt hier terecht.",
+          "markDone": "Markeren als afgehandeld",
+          "send": "Antwoord versturen",
+          "confirm": "Dit antwoord echt versturen?",
+          "sent": "Antwoord verstuurd.",
+          "error": "Het antwoord is niet verstuurd. Probeer het opnieuw.",
+          "noAddress": "Dit gesprek heeft geen adres waarnaar per e-mail geantwoord kan worden."
+        }
+      },
+      "automaticCounts": {
+        "outOfOffice_one": "{{count}} afwezigheidsbericht",
+        "outOfOffice_other": "{{count}} afwezigheidsberichten",
+        "bounces_one": "{{count}} onbestelbaarheidsbericht",
+        "bounces_other": "{{count}} onbestelbaarheidsberichten",
+        "calendarAccepts_one": "{{count}} agenda-acceptatie",
+        "calendarAccepts_other": "{{count}} agenda-acceptaties",
+        "calendarDeclines_one": "{{count}} agenda-afwijzing",
+        "calendarDeclines_other": "{{count}} agenda-afwijzingen",
+        "keywordAccepts_one": "{{count}} inschrijving bevestigd per antwoord",
+        "keywordAccepts_other": "{{count}} inschrijvingen bevestigd per antwoord",
+        "keywordCancels_one": "{{count}} afmeldlink verstuurd na een antwoord",
+        "keywordCancels_other": "{{count}} afmeldlinks verstuurd na een antwoord",
+        "unsubscribes_one": "{{count}} nieuwsbriefafmelding per antwoord",
+        "unsubscribes_other": "{{count}} nieuwsbriefafmeldingen per antwoord"
+      }
     }
   },
   "dashboard": {

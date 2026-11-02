@@ -1,0 +1,12 @@
+From: "HTML Only" <success+html@simulator.amazonses.com>
+To: batbern60-moderator@batbern.ch
+Subject: Frage zum Ablauf
+Message-ID: <html-only-1@simulator.amazonses.com>
+MIME-Version: 1.0
+Content-Type: text/html; charset=UTF-8
+
+<html><head><style>p{color:red}</style><script>alert(1)</script></head><body>
+<p style="color:red" onclick="x()">Wann beginnt <b>mein</b> Slot?</p>
+<img src="https://tracker.example.com/pixel.gif" width="1" height="1">
+<a href="https://example.com/agenda" onclick="y()">Agenda</a>
+</body></html>

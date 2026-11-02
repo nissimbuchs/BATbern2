@@ -580,7 +580,58 @@
           "companyName": "Entreprise"
         }
       },
-      "rsvpSummary": "Réponses : {{accepted}} acceptées · {{declined}} refusées · {{tentative}} provisoires · {{noAnswer}} sans réponse"
+      "rsvpSummary": "Réponses : {{accepted}} acceptées · {{declined}} refusées · {{tentative}} provisoires · {{noAnswer}} sans réponse",
+      "conversations": {
+        "title": "Réponse attendue",
+        "nothingOpen": "Rien en attente.",
+        "openCount_one": "{{count}} ouvert",
+        "openCount_other": "{{count}} ouverts",
+        "via": "via {{address}}",
+        "viaReply": "réponse à un e-mail",
+        "viaReplyRegistrants": "réponse à un e-mail aux inscrits",
+        "viaReplyNewsletter": "réponse à la newsletter",
+        "messages_one": "{{count}} message",
+        "messages_other": "{{count}} messages",
+        "status": {
+          "OPEN": "Ouvert",
+          "WAITING": "En attente",
+          "DONE": "Terminé"
+        },
+        "statusLabel": "Statut",
+        "assignee": "Qui répond",
+        "takeIt": "Je m’en occupe",
+        "attachmentsLabel": "Pièces jointes :",
+        "nameOnly": "nom seulement",
+        "notKept": "Plus de 25 Mo : seul le nom est conservé. Le fichier se trouve dans la copie transférée.",
+        "downloadError": "La pièce jointe n'a pas pu être ouverte. Veuillez réessayer.",
+        "patchError": "La modification n’a pas été enregistrée. Veuillez réessayer.",
+        "reply": {
+          "label": "Votre réponse",
+          "hint": "Envoyé en tant que « {{name}} via BATbern ». La réponse arrive ici.",
+          "markDone": "Marquer comme terminé",
+          "send": "Envoyer la réponse",
+          "confirm": "Vraiment envoyer cette réponse ?",
+          "sent": "Réponse envoyée.",
+          "error": "La réponse n'a pas été envoyée. Veuillez réessayer.",
+          "noAddress": "Cette conversation n'a pas d'adresse à laquelle répondre par e-mail."
+        }
+      },
+      "automaticCounts": {
+        "outOfOffice_one": "{{count}} réponse d’absence",
+        "outOfOffice_other": "{{count}} réponses d’absence",
+        "bounces_one": "{{count}} message de non-remise",
+        "bounces_other": "{{count}} messages de non-remise",
+        "calendarAccepts_one": "{{count}} acceptation dans le calendrier",
+        "calendarAccepts_other": "{{count}} acceptations dans le calendrier",
+        "calendarDeclines_one": "{{count}} refus dans le calendrier",
+        "calendarDeclines_other": "{{count}} refus dans le calendrier",
+        "keywordAccepts_one": "{{count}} inscription confirmée par réponse",
+        "keywordAccepts_other": "{{count}} inscriptions confirmées par réponse",
+        "keywordCancels_one": "{{count}} lien de désinscription envoyé après une réponse",
+        "keywordCancels_other": "{{count}} liens de désinscription envoyés après une réponse",
+        "unsubscribes_one": "{{count}} désabonnement de la newsletter par réponse",
+        "unsubscribes_other": "{{count}} désabonnements de la newsletter par réponse"
+      }
     }
   },
   "dashboard": {

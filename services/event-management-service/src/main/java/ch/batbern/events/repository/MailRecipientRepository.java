@@ -19,6 +19,15 @@ public interface MailRecipientRepository extends JpaRepository<MailRecipient, UU
 
     boolean existsBySesMessageId(String sesMessageId);
 
+    /**
+     * Story 16.2a: the Message-ID header SES sent, for threading replies (AC3). Set once; a later
+     * event of the same message carries the same header.
+     */
+    @Modifying
+    @Query("UPDATE MailRecipient r SET r.messageIdHeader = :header"
+            + " WHERE r.sesMessageId = :sesMessageId AND r.messageIdHeader IS NULL")
+    int recordMessageIdHeader(@Param("sesMessageId") String sesMessageId, @Param("header") String header);
+
     /** Story 16.1b: one recipient of an SES message, only from the statuses in {@code from}. */
     @Modifying
     @Query("UPDATE MailRecipient r SET r.status = :status, r.failureReason = :reason, r.updatedAt = :now"

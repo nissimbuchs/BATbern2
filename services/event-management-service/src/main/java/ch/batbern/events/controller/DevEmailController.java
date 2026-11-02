@@ -1,9 +1,12 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.forwarding.AliasMailProcessor;
 import ch.batbern.events.forwarding.EmailForwardingService;
 import ch.batbern.events.service.InboundEmailRouter;
+import ch.batbern.events.service.InboundReplyProcessor;
 import ch.batbern.shared.service.CapturedEmail;
 import ch.batbern.shared.service.LocalEmailCapture;
+import jakarta.mail.internet.InternetAddress;
 import jakarta.mail.internet.MimeUtility;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Profile;
@@ -22,6 +25,8 @@ import org.springframework.web.bind.annotation.RestController;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.StandardCharsets;
 import java.util.List;
+import java.util.Locale;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -34,6 +39,8 @@ import java.util.UUID;
  *   GET    /dev/emails/{id}/preview                 — render full HTML body in browser
  *   GET    /dev/emails/{id}/attachments/{filename}  — download raw attachment bytes
  *   POST   /dev/emails/{id}/reply                   — simulate an inbound reply (routes via InboundEmailRouter)
+ *   POST   /dev/emails/inbound                      — simulate any inbound mail through the production path
+ *                                                     (Story 16.2a: replies@ or an alias, Mail Center included)
  *   DELETE /dev/emails                              — clear all captured emails
  *
  * Browse from the frontend at http://localhost:8100/dev/emails
@@ -47,6 +54,8 @@ public class DevEmailController {
     private final LocalEmailCapture localEmailCapture;
     private final InboundEmailRouter inboundEmailRouter;
     private final EmailForwardingService forwardingService;
+    private final InboundReplyProcessor replyProcessor;
+    private final AliasMailProcessor aliasProcessor;
 
     @GetMapping
     public List<CapturedEmail> listEmails() {
@@ -123,6 +132,26 @@ public class DevEmailController {
             .orElse(ResponseEntity.notFound().build());
     }
 
+    /**
+     * Story 16.2a Task 7: simulate any inbound mail on local dev, through the same processing as
+     * production. {@code replies@} (and {@code replies+{token}@}) runs {@link InboundReplyProcessor},
+     * anything else {@link AliasMailProcessor}. With {@code inReplyToCaptureId} the mail answers a
+     * captured mail: local sends are recorded with {@code ses_message_id = local-{captureId}}, so
+     * {@code In-Reply-To: <local-{captureId}@localhost>} threads exactly like an SES id does.
+     */
+    @PostMapping("/inbound")
+    public ResponseEntity<String> simulateInbound(@RequestBody InboundRequest request) {
+        byte[] mime = inboundMime(request);
+        String key = "dev/" + UUID.randomUUID();
+        String to = request.to() == null ? "" : request.to().trim().toLowerCase(Locale.ROOT);
+        if (to.startsWith("replies@") || to.startsWith("replies+")) {
+            replyProcessor.process(key, mime);
+            return ResponseEntity.ok("Processed as replies@ mail: " + key);
+        }
+        aliasProcessor.process(key, mime);
+        return ResponseEntity.ok("Processed as alias mail: " + key);
+    }
+
     @DeleteMapping
     public ResponseEntity<Void> clearInbox() {
         localEmailCapture.clear();
@@ -150,4 +179,47 @@ public class DevEmailController {
 
     /** Request body for reply simulation. */
     record ReplyRequest(String replyBody) {}
+
+    /**
+     * Request body for {@link #simulateInbound}.
+     *
+     * @param headers extra headers, e.g. {@code Auto-Submitted: auto-replied} to simulate an out-of-office;
+     *                a {@code Message-ID} here replaces the generated one
+     */
+    record InboundRequest(String from, String fromName, String to, String cc, String subject, String body,
+            UUID inReplyToCaptureId, Map<String, String> headers) {}
+
+    private static byte[] inboundMime(InboundRequest request) {
+        try {
+            StringBuilder mime = new StringBuilder();
+            String from = request.fromName() == null || request.fromName().isBlank()
+                ? request.from()
+                : new InternetAddress(request.from(), request.fromName(), "UTF-8").toString();
+            mime.append("From: ").append(from).append("\r\n")
+                .append("To: ").append(request.to()).append("\r\n");
+            if (request.cc() != null && !request.cc().isBlank()) {
+                mime.append("Cc: ").append(request.cc()).append("\r\n");
+            }
+            mime.append("Subject: ").append(MimeUtility.encodeText(
+                    request.subject() == null ? "" : request.subject(), "UTF-8", "B")).append("\r\n");
+            // A Message-ID in headers replaces the generated one: send it twice to simulate a redelivery.
+            boolean ownMessageId = request.headers() != null
+                && request.headers().keySet().stream().anyMatch("Message-ID"::equalsIgnoreCase);
+            if (!ownMessageId) {
+                mime.append("Message-ID: <").append(UUID.randomUUID()).append("@localhost>\r\n");
+            }
+            if (request.inReplyToCaptureId() != null) {
+                mime.append("In-Reply-To: <local-").append(request.inReplyToCaptureId()).append("@localhost>\r\n");
+            }
+            if (request.headers() != null) {
+                request.headers().forEach((name, value) -> mime.append(name).append(": ").append(value).append("\r\n"));
+            }
+            mime.append("MIME-Version: 1.0\r\n")
+                .append("Content-Type: text/plain; charset=UTF-8\r\n\r\n")
+                .append(request.body() == null ? "" : request.body()).append("\r\n");
+            return mime.toString().getBytes(StandardCharsets.UTF_8);
+        } catch (UnsupportedEncodingException e) {
+            throw new IllegalStateException(e);
+        }
+    }
 }

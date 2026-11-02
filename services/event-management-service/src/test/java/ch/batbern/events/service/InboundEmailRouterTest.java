@@ -5,6 +5,7 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
@@ -106,7 +107,7 @@ class InboundEmailRouterTest {
         InboundEmailRouter.ParsedEmail email = new InboundEmailRouter.ParsedEmail(
                 "user@example.com", "Re: BATbern42 Registration Confirmation", "cancel");
 
-        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.HANDLED);
+        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.DEREGISTRATION_LINK);
 
         verify(deregistrationService).requestDeregistrationLinkByReply("user@example.com", "BATbern42");
         verifyNoInteractions(registrationService, confirmationEmailService, newsletterSubscriberService);
@@ -138,14 +139,18 @@ class InboundEmailRouterTest {
     // ─── Short-line rule (Story 16.0 AC12, AC13) ─────────────────────────────────
 
     @ParameterizedTest
-    @ValueSource(strings = {
-        "cancel", "Cancel please", "Absagen", "Bitte absagen.", "deregister me", "abmelden",
-        "UNSUBSCRIBE", "Bitte abmelden!", "accept", "Ja bestätigen"})
-    void route_withKeywordAloneOnFirstLine_acts(String firstLine) {
+    @CsvSource({
+        "cancel, DEREGISTRATION_LINK", "Cancel please, DEREGISTRATION_LINK", "Absagen, DEREGISTRATION_LINK",
+        "Bitte absagen., DEREGISTRATION_LINK", "deregister me, DEREGISTRATION_LINK", "abmelden, UNSUBSCRIBED",
+        "UNSUBSCRIBE, UNSUBSCRIBED", "Bitte abmelden!, UNSUBSCRIBED", "accept, CONFIRMED",
+        "Ja bestätigen, CONFIRMED"})
+    void route_withKeywordAloneOnFirstLine_acts(String firstLine, InboundEmailRouter.RouteResult expected) {
         InboundEmailRouter.ParsedEmail email = new InboundEmailRouter.ParsedEmail(
                 "user@example.com", "Re: BATbern42 Anmeldung", firstLine);
 
-        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.HANDLED);
+        // Story 16.2a: the result names the keyword that acted, so the Mail Center can count it.
+        assertThat(router.route(email)).isEqualTo(expected);
+        assertThat(expected.acted()).isTrue();
     }
 
     @ParameterizedTest
@@ -182,11 +187,11 @@ class InboundEmailRouterTest {
     }
 
     @Test
-    void route_withKeywordHandled_returnsHandled() {
+    void route_withKeywordHandled_returnsUnsubscribed() {
         InboundEmailRouter.ParsedEmail email = new InboundEmailRouter.ParsedEmail(
                 "user@example.com", "Re: BATbern newsletter", "unsubscribe");
 
-        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.HANDLED);
+        assertThat(router.route(email)).isEqualTo(InboundEmailRouter.RouteResult.UNSUBSCRIBED);
     }
 
     // ─── Acceptance routing ──────────────────────────────────────────────────────

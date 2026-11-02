@@ -1,5 +1,8 @@
 package ch.batbern.events.scheduler;
 
+import ch.batbern.events.mailcenter.inbound.AutomaticMailCounter;
+import ch.batbern.events.mailcenter.inbound.InboundAttachmentStore;
+import ch.batbern.events.repository.MailConversationRepository;
 import ch.batbern.events.repository.MailMessageRepository;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
@@ -8,13 +11,17 @@ import org.springframework.scheduling.annotation.Scheduled;
 import org.springframework.stereotype.Component;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
+import java.util.List;
 
 /**
  * Nightly retention for recorded mail (Story 16.1a AC6, owner decision 1): a mail is deleted once
  * its event date and the mail itself are older than 12 months; mail without an event after 12
  * months. Recorded mail holds addresses and texts, i.e. personal data, so it is not kept longer.
+ * Since Story 16.2a the same rule covers conversations (by last activity, with their inbound mail)
+ * and the automatic counts (by receipt).
  *
  * <p>Uses ShedLock to prevent duplicate execution in multi-instance ECS deployments.
  */
@@ -27,6 +34,9 @@ public class MailMessageRetentionScheduler {
     private static final ZoneId ZURICH = ZoneId.of("Europe/Zurich");
 
     private final MailMessageRepository mailMessages;
+    private final MailConversationRepository conversations;
+    private final AutomaticMailCounter automaticMail;
+    private final InboundAttachmentStore attachments;
 
     @Scheduled(cron = "${batbern.mail-message-retention.cron:0 30 3 * * *}", zone = "Europe/Zurich")
     @SchedulerLock(
@@ -37,9 +47,17 @@ public class MailMessageRetentionScheduler {
     @Transactional
     public void purgeExpired() {
         try {
-            int deleted = mailMessages.deleteExpired(
-                    ZonedDateTime.now(ZURICH).minusMonths(RETENTION_MONTHS).toInstant());
-            log.info("Mail message retention: {} mail(s) older than {} months deleted", deleted, RETENTION_MONTHS);
+            Instant cutoff = ZonedDateTime.now(ZURICH).minusMonths(RETENTION_MONTHS).toInstant();
+            // Story 16.2a AC14: conversations first (their messages go with them), then recorded mail,
+            // then the automatic counts, all by the same rule.
+            // Story 16.6: the kept attachment files of the conversations about to go
+            List<String> files = conversations.expiredAttachmentKeys(cutoff);
+            int conversationsDeleted = conversations.deleteExpired(cutoff);
+            int deleted = mailMessages.deleteExpired(cutoff);
+            int countsDeleted = automaticMail.deleteExpired(cutoff);
+            attachments.delete(files);
+            log.info("Mail message retention: {} conversation(s), {} mail(s) and {} automatic count(s) older than {}"
+                    + " months deleted", conversationsDeleted, deleted, countsDeleted, RETENTION_MONTHS);
         } catch (Exception e) {
             log.error("Mail message retention failed: {}", e.getMessage(), e);
         }

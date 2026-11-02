@@ -630,7 +630,8 @@
       "NEWSLETTER": "Uutiskirje",
       "VENUE_COORDINATION": "Tila & Catering",
       "REGISTRANT_NOTICE": "Ilmoittautuneiden tiedotteet",
-      "PARTNER": "Kumppanit"
+      "PARTNER": "Kumppanit",
+      "MAIL_CENTER": "Postikeskus"
     },
     "layoutKey": "Asettelu",
     "standalone": "Ei mitään (itsenäinen)",

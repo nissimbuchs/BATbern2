@@ -122,6 +122,18 @@ public class JpaOutboundMailRecorder implements OutboundMailRecorder {
         return parts.isEmpty() ? List.of(to) : parts;
     }
 
+    /**
+     * Stories 16.6, 16.2b: a Message-ID we set ourselves, stored like every other id in the Mail
+     * Center: without angle brackets, as {@code InboundMailParser} and the SES events store it.
+     */
+    static String bareMessageId(String header) {
+        if (header == null || header.isBlank()) {
+            return null;
+        }
+        String id = header.trim();
+        return id.startsWith("<") && id.endsWith(">") ? id.substring(1, id.length() - 1) : id;
+    }
+
     private static MailRecipient recipient(MailMessage message, OutboundMail mail, String address,
             MailRecipient.Kind kind, String ownBody) {
         MailRecipient row = new MailRecipient();
@@ -132,6 +144,7 @@ public class JpaOutboundMailRecorder implements OutboundMailRecorder {
         row.setStatus(mail.failed() ? MailRecipient.Status.FAILED : MailRecipient.Status.SENT);
         row.setFailureReason(mail.failureReason());
         row.setBodyHtml(ownBody);
+        row.setMessageIdHeader(bareMessageId(mail.messageIdHeader()));
         row.setUpdatedAt(Instant.now());
         return row;
     }

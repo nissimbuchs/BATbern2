@@ -535,7 +535,8 @@
       "NEWSLETTER": "Newsletter",
       "VENUE_COORDINATION": "Lokau & Catering",
       "REGISTRANT_NOTICE": "Teilnähmer-Infos",
-      "PARTNER": "Partner"
+      "PARTNER": "Partner",
+      "MAIL_CENTER": "Mail-Center"
     },
     "layoutKey": "Layout",
     "standalone": "Keis (eigenständig)",

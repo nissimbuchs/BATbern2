@@ -31,5 +31,10 @@ public enum EmailForwardingOutcome {
     /** Story 16.0, replies@ only: mail from our own domain or a copy we forwarded, not forwarded. */
     DROPPED_LOOP,
     /** Story 16.0, replies@ only: no single parseable From, not forwarded. */
-    DROPPED_MALFORMED
+    DROPPED_MALFORMED,
+    /**
+     * Story 16.6: the group is answered in the Mail Center; every recipient got a short
+     * notification instead of the forwarded copy.
+     */
+    NOTIFIED
 }

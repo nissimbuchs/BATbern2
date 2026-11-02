@@ -152,6 +152,80 @@ describeComposer('Organizer · Mail composer (read-only)', () => {
     await expect(composer.getByTestId('composer-send-button')).toBeDisabled();
   });
 
+  test('registrants, own text: chips insert placeholders, the preview marks filled values, an unknown one blocks sending', async ({
+    page,
+  }) => {
+    await gotoMailPage(page);
+    await openComposer(page, 'registrants');
+    const composer = page.getByTestId('mail-composer-REGISTRANTS');
+    await expect(composer.getByTitle('Mail preview')).toBeVisible({ timeout: 15_000 });
+
+    await composer.getByTestId('composer-source-own').click();
+    await expect(composer.getByTestId('composer-own-text')).toBeVisible();
+    const subject = composer.getByTestId('composer-own-subject');
+    await subject.fill('Your seat at ');
+
+    const body = composer.frameLocator('iframe.tox-edit-area__iframe').locator('body');
+    await body.click();
+    await page.keyboard.type('Hello, see you soon.');
+
+    // The chips arrive with the first preview and insert at the cursor of the last field.
+    await expect(composer.getByTestId('composer-chip-eventTitle')).toBeVisible({ timeout: 15_000 });
+    await subject.click();
+    await subject.press('End');
+    await composer.getByTestId('composer-chip-eventTitle').click();
+    await expect(subject).toHaveValue('Your seat at {{eventTitle}}');
+    await body.click();
+    await composer.getByTestId('composer-chip-recipientName').click();
+    await expect(body).toContainText('{{recipientName}}');
+
+    // The preview fills both and marks the filled value; nothing unknown.
+    const previewSubject = composer.getByTestId('composer-subject');
+    await expect(previewSubject.locator('[data-var="eventTitle"]')).toBeVisible({
+      timeout: 15_000,
+    });
+    await expect(previewSubject).not.toContainText('{{');
+    await expect(page.getByTestId('composer-unknown-placeholders')).toHaveCount(0);
+    await expect(composer.getByTestId('composer-send-button')).toBeEnabled();
+
+    // An unknown placeholder is named and nothing can be sent.
+    await subject.fill('Your seat at {{eventTitle}} {{bogusField}}');
+    await expect(page.getByTestId('composer-unknown-placeholders').first()).toContainText(
+      'bogusField',
+      { timeout: 15_000 }
+    );
+    await expect(composer.getByTestId('composer-send-button')).toBeDisabled();
+    await expect(composer.getByTestId('composer-test-button')).toBeDisabled();
+
+    await page.keyboard.press('Escape');
+  });
+
+  test('partners: the meeting invite first, own text previews one mail for all partners', async ({
+    page,
+  }) => {
+    await gotoMailPage(page);
+    await openComposer(page, 'partners');
+    const composer = page.getByTestId('mail-composer-PARTNERS');
+    // The meeting invite is the default and keeps its own fixed body (16.9).
+    await expect(composer.getByTestId('composer-template-select')).toContainText(/meeting/i, {
+      timeout: 15_000,
+    });
+
+    await composer.getByTestId('composer-source-own').click();
+    await composer.getByTestId('composer-own-subject').fill('Partner update {{eventTitle}}');
+    await composer.frameLocator('iframe.tox-edit-area__iframe').locator('body').click();
+    await page.keyboard.type('Dear partners, a short update.');
+
+    await expect(composer.getByTitle('Mail preview')).toBeVisible({ timeout: 15_000 });
+    await expect(composer.getByTestId('composer-recipient-count')).toContainText('recipient');
+    // Not personalised: the same text for everyone, no stepping through recipients.
+    await expect(composer.getByTestId('composer-next')).toHaveCount(0);
+    await expect(composer.getByTestId('composer-subject')).not.toContainText('{{');
+    await expect(composer.getByTestId('composer-send-button')).toBeEnabled();
+
+    await page.keyboard.press('Escape');
+  });
+
   test('phone width: full-screen dialog, no horizontal scroll, footer buttons visible', async ({
     page,
   }) => {

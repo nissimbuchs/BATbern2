@@ -25,6 +25,11 @@ security:
 tags:
 - name: EventMail
   description: Outbound mail of an event, newest first (Story 16.3), preview and send (Story 16.8)
+- name: MailConversation
+  description: |
+    Mail people wrote to the platform, threaded per counterpart, with a status and an organizer who
+    answers it (Story 16.2a: speakers). Keys are global (`conv-{n}`): a conversation can move to
+    another event (Story 16.7), so the per-conversation operations are not nested under an event.
 paths:
   /events/{eventCode}/mails:
     get:
@@ -187,7 +192,10 @@ paths:
         **Security**: ORGANIZER role required; any other role gets 403.
 
         Failed deliveries (SES errors, bounces, complaints, rejects) of this event's mail, newsletter
-        included. Accepts, declines and out-of-office counts are added by Story 16.2.
+        included. Since Story 16.2a also the automatic inbound mail of the event, counted without
+        storing it: out-of-office replies, bounces, calendar accepts and declines, keyword replies
+        that acted (accept, cancel) and unsubscribes. An inbound mail is attributed to an event by the
+        mail it answers (In-Reply-To), the registration's calendar UID or the event code in the subject.
       parameters:
       - name: eventCode
         in: path
@@ -320,6 +328,214 @@ paths:
           description: Forbidden (ORGANIZER role required)
         '404':
           description: Event or mail not found
+  /events/{eventCode}/conversations:
+    get:
+      tags:
+      - MailConversation
+      operationId: listEventConversations
+      summary: The event's conversations, open first (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.2a "Needs an answer". `OPEN` and `WAITING` first, then `DONE`; within each, newest
+        activity first.
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: status
+        in: query
+        required: false
+        description: Only conversations in this status.
+        schema:
+          $ref: '#/components/schemas/MailConversationStatus'
+      - name: page
+        in: query
+        description: Page number (1-based)
+        schema:
+          type: integer
+          default: 1
+          minimum: 1
+      - name: limit
+        in: query
+        description: Items per page (max 100)
+        schema:
+          type: integer
+          default: 50
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailConversationPage'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Event not found
+  /conversations/{conversationKey}:
+    get:
+      tags:
+      - MailConversation
+      operationId: getConversation
+      summary: One conversation with every message, oldest first (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Inbound bodies were sanitized when they arrived (no images, styles or scripts).
+      parameters:
+      - name: conversationKey
+        in: path
+        required: true
+        schema:
+          type: string
+          example: conv-12
+      responses:
+        '200':
+          description: The conversation
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailConversationDetail'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Conversation not found
+    patch:
+      tags:
+      - MailConversation
+      operationId: patchConversation
+      summary: Set status and assignee (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Only the fields present change. `assigneeUsername: null` with `clearAssignee: true` leaves the
+        conversation unassigned. Story 16.6: when the assignee changes to another organizer than the
+        caller, that organizer gets one notification mail (template `mailcenter-assigned`). Assigning
+        yourself, clearing the assignee or saving the same assignee sends nothing.
+      parameters:
+      - name: conversationKey
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailConversationPatch'
+      responses:
+        '200':
+          description: The conversation after the change
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailConversationSummary'
+        '400':
+          description: The assignee is not an organizer
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Conversation not found
+  /conversations/{conversationKey}/replies:
+    post:
+      tags:
+      - MailConversation
+      operationId: replyToConversation
+      summary: Answer the conversation by mail (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.6. Sends one mail to the counterpart (the last inbound mail's Reply-To, else its From),
+        from `"{organizer name} via BATbern" <noreply@…>` with Reply-To `replies+{token}@…`, so the next
+        reply lands in this conversation. The answer is recorded in the conversation, not as a separate
+        entry in "What went out". The conversation becomes `WAITING`, or `DONE` with `markDone`.
+        **Sends a real mail**: never call this from an automated test against production.
+      parameters:
+      - name: conversationKey
+        in: path
+        required: true
+        schema:
+          type: string
+          example: conv-12
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailConversationReply'
+      responses:
+        '201':
+          description: The answer as recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMessageDetail'
+        '400':
+          description: Empty or too long text
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Conversation not found
+        '409':
+          description: The conversation has no counterpart address that can be mailed
+  /conversations/{conversationKey}/messages/{mailKey}/attachments/{index}/download:
+    get:
+      tags:
+      - MailConversation
+      operationId: getConversationAttachmentDownloadUrl
+      summary: Get a presigned download URL for a kept attachment (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.6. Inbound attachments up to 25 MB per file are kept with their conversation (deleted
+        with it, 12 months after the last activity); larger ones keep only their name. Returns a
+        presigned link valid for 5 minutes that downloads the file under its original name, like the
+        session materials' `getMaterialDownloadUrl`.
+      parameters:
+      - name: conversationKey
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: mailKey
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: index
+        in: path
+        required: true
+        description: Position of the attachment in the message's `attachments`, from 0.
+        schema:
+          type: integer
+          minimum: 0
+      responses:
+        '200':
+          description: The link
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/DownloadUrlResponse
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: No such message in the conversation, or the file was not kept
   /events/{eventCode}/mails/{mailKey}/retry:
     post:
       tags:
@@ -383,6 +599,10 @@ components:
       - PARTNERS
       - ORGANIZERS
       - SYSTEM
+      - PUBLIC
+      description: |
+        Who a mail went to. `PUBLIC` (Story 16.2b) only on inbound mail and conversations: someone who is
+        not addressed as a group, e.g. a mail to info@. No outbound mail has it.
     MailMessageSummary:
       type: object
       required:
@@ -449,6 +669,145 @@ components:
             What the mail is about beyond its event, e.g. `partner-meeting:{meetingId}` for a partner
             meeting invite or cancellation (Story 16.9). The meeting id is the partner meeting's public id.
           example: partner-meeting:3f2a9c1e-7b4d-4e2a-9c1e-7b4d4e2a9c1e
+        direction:
+          type: string
+          enum:
+          - OUT
+          - IN
+          description: Story 16.2a. `IN` for mail a person wrote to the platform; absent means `OUT`.
+        fromAddress:
+          type: string
+          nullable: true
+          description: Story 16.2a. Sender of an inbound mail.
+        fromName:
+          type: string
+          nullable: true
+        eventCode:
+          type: string
+          nullable: true
+        conversationKey:
+          type: string
+          nullable: true
+          description: Story 16.2a. The conversation an inbound mail belongs to.
+        attachments:
+          type: array
+          description: |
+            Story 16.2a. Attachments of an inbound mail. Story 16.6: files up to 25 MB are kept (`kept`),
+            larger ones by name only.
+          items:
+            $ref: '#/components/schemas/MailAttachment'
+    MailAttachment:
+      type: object
+      required:
+      - name
+      properties:
+        name:
+          type: string
+        contentType:
+          type: string
+        size:
+          type: integer
+          format: int64
+        kept:
+          type: boolean
+          description: Story 16.6. The file is kept and can be downloaded (getConversationAttachmentDownloadUrl).
+    MailConversationStatus:
+      type: string
+      enum:
+      - OPEN
+      - WAITING
+      - DONE
+      description: Open needs an answer; waiting is answered, waiting for the counterpart; done needs nothing.
+    MailConversationSummary:
+      type: object
+      required:
+      - conversationKey
+      - audience
+      - subject
+      - counterpartAddress
+      - status
+      - via
+      - lastMessageAt
+      - messageCount
+      properties:
+        conversationKey:
+          type: string
+          example: conv-12
+        eventCode:
+          type: string
+          nullable: true
+        audience:
+          $ref: '#/components/schemas/MailAudience'
+        subject:
+          type: string
+        counterpartAddress:
+          type: string
+        counterpartName:
+          type: string
+          nullable: true
+        status:
+          $ref: '#/components/schemas/MailConversationStatus'
+        assigneeUsername:
+          type: string
+          nullable: true
+        via:
+          type: string
+          description: Where the first mail arrived, e.g. `batbern60-moderator@batbern.ch`, or `reply` for a reply to a mail.
+        lastMessageAt:
+          type: string
+          format: date-time
+        messageCount:
+          type: integer
+    MailConversationPage:
+      type: object
+      required:
+      - data
+      - pagination
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailConversationSummary'
+        pagination:
+          $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+    MailConversationDetail:
+      type: object
+      required:
+      - conversation
+      - messages
+      properties:
+        conversation:
+          $ref: '#/components/schemas/MailConversationSummary'
+        messages:
+          type: array
+          description: Every message, oldest first.
+          items:
+            $ref: '#/components/schemas/MailMessageDetail'
+    MailConversationPatch:
+      type: object
+      properties:
+        status:
+          $ref: '#/components/schemas/MailConversationStatus'
+        assigneeUsername:
+          type: string
+          nullable: true
+          description: An organizer's username.
+        clearAssignee:
+          type: boolean
+          description: Leave the conversation unassigned.
+    MailConversationReply:
+      type: object
+      required:
+      - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 20000
+          description: The answer as plain text. The last inbound mail is quoted below it.
+        markDone:
+          type: boolean
+          description: Set the conversation to DONE instead of WAITING.
     MailMessageDetail:
       type: object
       required:
@@ -779,8 +1138,33 @@ components:
       type: object
       required:
       - failedDeliveries
+      - outOfOffice
+      - bounces
+      - calendarAccepts
+      - calendarDeclines
+      - keywordAccepts
+      - keywordCancels
+      - unsubscribes
       properties:
         failedDeliveries:
+          type: integer
+        outOfOffice:
+          type: integer
+          description: Story 16.2a. Out-of-office replies to the event's mail.
+        bounces:
+          type: integer
+          description: Story 16.2a. Bounce messages that arrived as mail (not SES bounce events).
+        calendarAccepts:
+          type: integer
+        calendarDeclines:
+          type: integer
+        keywordAccepts:
+          type: integer
+          description: Replies "accept" that confirmed a registration.
+        keywordCancels:
+          type: integer
+          description: Replies "cancel" that sent the deregistration link.
+        unsubscribes:
           type: integer
   securitySchemes:
     BearerAuth:

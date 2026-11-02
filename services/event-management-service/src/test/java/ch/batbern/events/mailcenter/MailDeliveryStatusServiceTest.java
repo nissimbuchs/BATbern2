@@ -41,6 +41,33 @@ class MailDeliveryStatusServiceTest {
         verify(metrics, never()).increment(MailCenterMetrics.DELIVERY_EVENTS_UNMATCHED);
     }
 
+    @Test
+    @DisplayName("16.2a: the Message-ID header SES sent is stored on the recipients, without brackets")
+    void commonHeaderMessageId_stored() {
+        when(recipients.existsBySesMessageId("known-id")).thenReturn(true);
+
+        service.process(deliveryWithHeader("known-id", "<custom-42@mailer.example.com>"));
+
+        verify(recipients).recordMessageIdHeader("known-id", "custom-42@mailer.example.com");
+    }
+
+    @Test
+    @DisplayName("16.2a: no header in the event, or an unknown Message-ID: nothing stored")
+    void noHeaderOrUnknown_nothingStored() {
+        when(recipients.existsBySesMessageId("known-id")).thenReturn(true);
+        service.process(delivery("known-id"));
+        service.process(deliveryWithHeader("unknown-id", "<x@y>"));
+
+        verify(recipients, never()).recordMessageIdHeader(anyString(), anyString());
+    }
+
+    private static String deliveryWithHeader(String messageId, String header) {
+        String event = "{\"eventType\":\"Delivery\",\"mail\":{\"messageId\":\"" + messageId + "\","
+                + "\"commonHeaders\":{\"messageId\":\"" + header + "\"}},"
+                + "\"delivery\":{\"recipients\":[\"success@simulator.amazonses.com\"]}}";
+        return "{\"Type\":\"Notification\",\"Message\":" + new ObjectMapper().valueToTree(event) + "}";
+    }
+
     private static String delivery(String messageId) {
         String event = "{\"eventType\":\"Delivery\",\"mail\":{\"messageId\":\"" + messageId + "\"},"
                 + "\"delivery\":{\"recipients\":[\"success@simulator.amazonses.com\"]}}";

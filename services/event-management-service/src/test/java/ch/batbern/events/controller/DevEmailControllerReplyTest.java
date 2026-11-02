@@ -1,7 +1,10 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.forwarding.AliasMailProcessor;
 import ch.batbern.events.forwarding.EmailForwardingService;
+import ch.batbern.events.mailcenter.inbound.InboundMailParser;
 import ch.batbern.events.service.InboundEmailRouter;
+import ch.batbern.events.service.InboundReplyProcessor;
 import ch.batbern.shared.service.CapturedEmail;
 import ch.batbern.shared.service.LocalEmailCapture;
 import org.junit.jupiter.api.Test;
@@ -15,6 +18,7 @@ import org.springframework.http.ResponseEntity;
 import java.nio.charset.StandardCharsets;
 import java.time.Instant;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -39,8 +43,64 @@ class DevEmailControllerReplyTest {
     @Mock
     private EmailForwardingService forwardingService;
 
+    @Mock
+    private InboundReplyProcessor replyProcessor;
+
+    @Mock
+    private AliasMailProcessor aliasProcessor;
+
     @InjectMocks
     private DevEmailController controller;
+
+    // ── Story 16.2a Task 7: POST /dev/emails/inbound ─────────────────────────────────────────
+
+    @Test
+    void inbound_toModeratorAlias_runsTheAliasPathWithInReplyToTheCapture() {
+        UUID captureId = UUID.randomUUID();
+
+        ResponseEntity<String> response = controller.simulateInbound(new DevEmailController.InboundRequest(
+            "success+speaker@simulator.amazonses.com", "Jürg Müller", "batbern60-moderator@batbern.ch", null,
+            "Frage zum Beamer", "Brauche HDMI.", captureId, Map.of("X-Test", "1")));
+
+        assertThat(response.getStatusCode().value()).isEqualTo(200);
+        ArgumentCaptor<byte[]> raw = ArgumentCaptor.forClass(byte[].class);
+        verify(aliasProcessor).process(startsWith("dev/"), raw.capture());
+        verifyNoInteractions(replyProcessor);
+        String mime = new String(raw.getValue(), StandardCharsets.UTF_8);
+        assertThat(mime).contains("<success+speaker@simulator.amazonses.com>")
+            .contains("To: batbern60-moderator@batbern.ch")
+            .contains("Subject: Frage zum Beamer")
+            .contains("In-Reply-To: <local-" + captureId + "@localhost>")
+            .contains("Message-ID: <")
+            .contains("X-Test: 1")
+            .contains("Brauche HDMI.");
+        assertThat(InboundMailParser.parse(raw.getValue()).fromName()).isEqualTo("Jürg Müller");
+        assertThat(InboundMailParser.parse(raw.getValue()).subject()).isEqualTo("Frage zum Beamer");
+    }
+
+    @Test
+    void inbound_toReplies_runsTheRepliesPath() {
+        controller.simulateInbound(new DevEmailController.InboundRequest("a@example.com", null,
+            "replies+abcdefghijklmnop@batbern.ch", "cc@example.com", "Re: x", "Hallo", null, null));
+
+        ArgumentCaptor<byte[]> raw = ArgumentCaptor.forClass(byte[].class);
+        verify(replyProcessor).process(startsWith("dev/"), raw.capture());
+        verifyNoInteractions(aliasProcessor);
+        String mime = new String(raw.getValue(), StandardCharsets.UTF_8);
+        assertThat(mime).contains("Cc: cc@example.com").doesNotContain("In-Reply-To");
+    }
+
+    @Test
+    void inbound_withOwnMessageId_usesItOnce() {
+        controller.simulateInbound(new DevEmailController.InboundRequest("a@example.com", null,
+            "batbern60-moderator@batbern.ch", null, "x", "y", null, Map.of("Message-ID", "<same@localhost>")));
+
+        ArgumentCaptor<byte[]> raw = ArgumentCaptor.forClass(byte[].class);
+        verify(aliasProcessor).process(startsWith("dev/"), raw.capture());
+        String mime = new String(raw.getValue(), StandardCharsets.UTF_8);
+        assertThat(mime.split("Message-ID:", -1)).hasSize(2);
+        assertThat(InboundMailParser.parse(raw.getValue()).messageId()).isEqualTo("same@localhost");
+    }
 
     @Test
     void simulateReply_withKnownId_routesViaInboundEmailRouter() {

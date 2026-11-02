@@ -11,6 +11,7 @@ import org.springframework.stereotype.Component;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Locale;
+import java.util.Optional;
 import java.util.Set;
 
 /**
@@ -30,6 +31,33 @@ public class ForwardingDirectory {
 
     public Set<String> organizerEmails() {
         return emailsOf(userApiClient.getOrganizerUsernames());
+    }
+
+    /**
+     * Story 16.2a: the organizer who owns {@code email} (primary or additional), for the sender of a
+     * recorded {@code -speaker@} broadcast. Empty when no organizer has it.
+     */
+    public Optional<String> organizerUsernameFor(String email) {
+        if (email == null) {
+            return Optional.empty();
+        }
+        String wanted = email.trim().toLowerCase(Locale.ROOT);
+        for (String username : userApiClient.getOrganizerUsernames()) {
+            try {
+                UserResponse user = userApiClient.getUserByUsername(username);
+                Set<String> emails = new LinkedHashSet<>();
+                add(user.getEmail(), emails);
+                if (user.getAdditionalEmails() != null) {
+                    user.getAdditionalEmails().forEach(extra -> add(extra.getEmail(), emails));
+                }
+                if (emails.contains(wanted)) {
+                    return Optional.of(username);
+                }
+            } catch (UserNotFoundException e) {
+                log.warn("Forwarding directory: user '{}' not found in CUMS, skipping", username);
+            }
+        }
+        return Optional.empty();
     }
 
     public Set<String> partnerEmails() {

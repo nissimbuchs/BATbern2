@@ -46,6 +46,10 @@ public class MailRecipient {
     @Column(name = "ses_message_id")
     private String sesMessageId;
 
+    /** Story 16.2a: the Message-ID header as SES sent it, from the SES delivery event. */
+    @Column(name = "message_id_header")
+    private String messageIdHeader;
+
     @Enumerated(EnumType.STRING)
     @Column(name = "status", nullable = false)
     private Status status;

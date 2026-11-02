@@ -580,7 +580,58 @@
           "companyName": "Yritys"
         }
       },
-      "rsvpSummary": "Vastaukset: {{accepted}} hyväksytty · {{declined}} hylätty · {{tentative}} alustava · {{noAnswer}} ei vastausta"
+      "rsvpSummary": "Vastaukset: {{accepted}} hyväksytty · {{declined}} hylätty · {{tentative}} alustava · {{noAnswer}} ei vastausta",
+      "conversations": {
+        "title": "Odottaa vastausta",
+        "nothingOpen": "Ei mitään avoinna.",
+        "openCount_one": "{{count}} avoin",
+        "openCount_other": "{{count}} avointa",
+        "via": "osoitteen {{address}} kautta",
+        "viaReply": "vastaus viestiin",
+        "viaReplyRegistrants": "vastaus ilmoittautuneille lähetettyyn viestiin",
+        "viaReplyNewsletter": "vastaus uutiskirjeeseen",
+        "messages_one": "{{count}} viesti",
+        "messages_other": "{{count}} viestiä",
+        "status": {
+          "OPEN": "Avoin",
+          "WAITING": "Odottaa",
+          "DONE": "Valmis"
+        },
+        "statusLabel": "Tila",
+        "assignee": "Kuka vastaa",
+        "takeIt": "Hoidan tämän",
+        "attachmentsLabel": "Liitteet:",
+        "nameOnly": "vain nimi",
+        "notKept": "Yli 25 Mt: vain nimi tallennetaan. Tiedosto on välitetyssä kopiossa.",
+        "downloadError": "Liitettä ei voitu avata. Yritä uudelleen.",
+        "patchError": "Muutosta ei tallennettu. Yritä uudelleen.",
+        "reply": {
+          "label": "Vastauksesi",
+          "hint": "Lähetetään nimellä ”{{name}} via BATbern”. Vastaus tulee tänne.",
+          "markDone": "Merkitse valmiiksi",
+          "send": "Lähetä vastaus",
+          "confirm": "Lähetetäänkö vastaus varmasti?",
+          "sent": "Vastaus lähetetty.",
+          "error": "Vastausta ei lähetetty. Yritä uudelleen.",
+          "noAddress": "Tällä keskustelulla ei ole osoitetta, johon voisi vastata sähköpostilla."
+        }
+      },
+      "automaticCounts": {
+        "outOfOffice_one": "{{count}} poissaoloviesti",
+        "outOfOffice_other": "{{count}} poissaoloviestiä",
+        "bounces_one": "{{count}} palautusviesti",
+        "bounces_other": "{{count}} palautusviestiä",
+        "calendarAccepts_one": "{{count}} kalenterihyväksyntä",
+        "calendarAccepts_other": "{{count}} kalenterihyväksyntää",
+        "calendarDeclines_one": "{{count}} kalenterihylkäys",
+        "calendarDeclines_other": "{{count}} kalenterihylkäystä",
+        "keywordAccepts_one": "{{count}} ilmoittautuminen vahvistettu vastauksella",
+        "keywordAccepts_other": "{{count}} ilmoittautumista vahvistettu vastauksella",
+        "keywordCancels_one": "{{count}} peruutuslinkki lähetetty vastauksen jälkeen",
+        "keywordCancels_other": "{{count}} peruutuslinkkiä lähetetty vastauksen jälkeen",
+        "unsubscribes_one": "{{count}} uutiskirjeen peruutus vastauksella",
+        "unsubscribes_other": "{{count}} uutiskirjeen peruutusta vastauksella"
+      }
     }
   },
   "dashboard": {

@@ -580,7 +580,58 @@
           "companyName": "Empresa"
         }
       },
-      "rsvpSummary": "Respuestas: {{accepted}} aceptadas · {{declined}} rechazadas · {{tentative}} provisionales · {{noAnswer}} sin respuesta"
+      "rsvpSummary": "Respuestas: {{accepted}} aceptadas · {{declined}} rechazadas · {{tentative}} provisionales · {{noAnswer}} sin respuesta",
+      "conversations": {
+        "title": "Necesita respuesta",
+        "nothingOpen": "Nada pendiente.",
+        "openCount_one": "{{count}} abierta",
+        "openCount_other": "{{count}} abiertas",
+        "via": "vía {{address}}",
+        "viaReply": "respuesta a un correo",
+        "viaReplyRegistrants": "respuesta a un correo a los inscritos",
+        "viaReplyNewsletter": "respuesta al boletín",
+        "messages_one": "{{count}} mensaje",
+        "messages_other": "{{count}} mensajes",
+        "status": {
+          "OPEN": "Abierta",
+          "WAITING": "En espera",
+          "DONE": "Hecho"
+        },
+        "statusLabel": "Estado",
+        "assignee": "Quién responde",
+        "takeIt": "Me encargo yo",
+        "attachmentsLabel": "Adjuntos:",
+        "nameOnly": "solo nombre",
+        "notKept": "Más de 25 MB: solo se guarda el nombre. El archivo está en la copia reenviada.",
+        "downloadError": "No se pudo abrir el adjunto. Inténtalo de nuevo.",
+        "patchError": "El cambio no se guardó. Inténtalo de nuevo.",
+        "reply": {
+          "label": "Tu respuesta",
+          "hint": "Se envía como «{{name}} via BATbern». La respuesta llega aquí.",
+          "markDone": "Marcar como hecho",
+          "send": "Enviar respuesta",
+          "confirm": "¿Enviar realmente esta respuesta?",
+          "sent": "Respuesta enviada.",
+          "error": "La respuesta no se ha enviado. Inténtalo de nuevo.",
+          "noAddress": "Esta conversación no tiene una dirección a la que responder por correo."
+        }
+      },
+      "automaticCounts": {
+        "outOfOffice_one": "{{count}} respuesta de ausencia",
+        "outOfOffice_other": "{{count}} respuestas de ausencia",
+        "bounces_one": "{{count}} mensaje de no entrega",
+        "bounces_other": "{{count}} mensajes de no entrega",
+        "calendarAccepts_one": "{{count}} aceptación en el calendario",
+        "calendarAccepts_other": "{{count}} aceptaciones en el calendario",
+        "calendarDeclines_one": "{{count}} rechazo en el calendario",
+        "calendarDeclines_other": "{{count}} rechazos en el calendario",
+        "keywordAccepts_one": "{{count}} inscripción confirmada por respuesta",
+        "keywordAccepts_other": "{{count}} inscripciones confirmadas por respuesta",
+        "keywordCancels_one": "{{count}} enlace de baja enviado tras una respuesta",
+        "keywordCancels_other": "{{count}} enlaces de baja enviados tras una respuesta",
+        "unsubscribes_one": "{{count}} baja del boletín por respuesta",
+        "unsubscribes_other": "{{count}} bajas del boletín por respuesta"
+      }
     }
   },
   "dashboard": {

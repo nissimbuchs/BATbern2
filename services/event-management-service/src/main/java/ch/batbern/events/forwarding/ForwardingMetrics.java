@@ -30,6 +30,8 @@ public class ForwardingMetrics {
     static final String DUPLICATES_SKIPPED = "DuplicatesSkipped";
     /** Story 16.0: unrecognized replies@ mail handed to the organizers (kept apart from alias forwards). */
     static final String REPLIES_FORWARDED = "RepliesForwarded";
+    /** Story 16.6: notifications sent instead of forwarded copies (a switched group). */
+    static final String NOTIFICATIONS_SENT = "NotificationsSent";
     static final String BOUNCES_DROPPED = "BouncesDropped";
     /** Story 16.0 Part B: a calendar "Declined" to calendar@ that led to the deregistration-link mail. */
     static final String CALENDAR_DECLINE_LINK_SENT = "CalendarDeclineLinkSent";

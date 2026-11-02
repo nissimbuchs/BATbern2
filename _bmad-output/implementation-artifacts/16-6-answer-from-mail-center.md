@@ -1,6 +1,6 @@
 # Story 16.6: Answer from the mail center
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -42,38 +42,38 @@ so that **the team sees who answered what, and nobody has to forward mail to a p
 
 ### PR 1 — Reply and reassign
 
-- [ ] **Task 1 — Compose and send through the shared kernel** (AC: 1, 2, 6; TDD first)
-  - [ ] RED: shared-kernel `EmailServiceComposedMailTest`: From display name, Reply-To, `In-Reply-To`, `References`, the given `Message-ID` survives serialisation (JavaMail regenerates it on `saveChanges()`; use a `MimeMessage` subclass with a no-op `updateMessageID()`, like `ForwardedMessageRewriter.PreservingMimeMessage`), test-marked subject refused, recorder called once with the SES id; local mode captures to the dev inbox and records `local-{captureId}`.
-  - [ ] `shared-kernel/.../mail/ComposedMail` record (fromName, to, subject, html, text, replyTo, messageId, inReplyTo, references) and `EmailService.sendComposed(MailContext, ComposedMail)`. Build the MIME as `sendHtmlEmailSyncWithAttachments` does (`EmailService.java:442–531`: multipart/alternative, From with `fromEmail`), send with `SendRawEmail`, record. Do not reuse `sendHtmlEmail`: `SendEmail` cannot carry `In-Reply-To`/`References`, and the display name is the global `app.email.from-name` (`EmailService.java:95–96`).
-- [ ] **Task 2 — Reply service and endpoint** (AC: 1–3, 6)
-  - [ ] Spec first (`docs/api/event-mail-api.openapi.yml`): `POST /conversations/{conversationKey}/replies`, body `{ text: string (1..20000), markDone?: boolean }`, 201 → `MailMessageDetail`; 400, 403, 404, 409.
-  - [ ] `mailcenter/ConversationReplyService`: load conversation + last inbound message; organizer name via `UserApiClient.getUserByUsername`; body = the organizer's text as plain text and as minimal HTML (escaped, line breaks, no BATbern layout), followed by a quote of the last inbound text ("On {date}, {name} wrote:", `>`-prefixed in the text part, `<blockquote>` in HTML); `MailContext.individual(eventCode, audience, null)` with `contentSource OWN_TEXT` and the sender; after the send set `mail_message.conversation_id` and `message_id_header` for the recorded group (by `send_group_id`), then status `WAITING` or `DONE`, `last_message_at`.
-  - [ ] Integration test (Testcontainers, SES mocked as in `MailRecordingIntegrationTest`): headers, record linked, status, 409, 403.
-- [ ] **Task 3 — Token replies on both paths** (AC: 4)
-  - [ ] RED: `TokenReplyRoutingTest` for both processors (`InboundReplyProcessor`, `AliasMailProcessor`, both from 16.2a Task 3): a mail addressed to `replies+{token}@` with first line "accept" runs no router action and joins the conversation; unknown token → treated like a plain `replies@` mail (router, then 16.2a rules).
-  - [ ] `ForwardingAlias.classify` (`ForwardingAlias.java:57`): local part `replies` or `replies+…` → new kind `CONVERSATION_REPLY`, `forwardable() == false`, so `forward()` returns early instead of `UNRESOLVED` (today it would be dropped at `EmailForwardingService.java:125–133`). `AliasMailProcessor` hands such mail to the mail center and, while the `replies` group is off, forwards it with `forwardUnrecognizedReply` (same recipients as today's `replies@`).
-  - [ ] `InboundReplyProcessor`: detect the token in To/Cc before calling the router.
-  - [ ] Metric `ConversationReplies` with dimension `path=replies|alias`, so the first production reply shows which SES rule took it.
-- [ ] **Task 4 — Reassign notification** (AC: 5)
-  - [ ] Templates `email-templates/mailcenter-assigned-{de,en}.html` with `<!-- subject: … -->` header (`EmailTemplateSeedService` parses it). Add a `mailcenter-` branch in `EmailTemplateSeedService.deriveCategory` (line 151): otherwise the key falls through to `"LAYOUT"` (line 200) and is seeded as a layout. Category value `MAIL_CENTER`: add it to the category enum in `docs/api/event-newsletter-api.openapi.yml` (lines 51–60 and 1161), `EmailTemplatesTab.tsx` (lines 68, 84, 93) and `EmailTemplateEditModal.tsx` (line 192). 16.9 adds `PARTNER` to the same enum in parallel: rebase carefully.
-  - [ ] `ConversationAssignmentNotifier`, shaped like `TaskReminderEmailService` (DB-first template, classpath fallback, `MailContext.of(..., Audience.ORGANIZERS, "mailcenter-assigned")`). Called by `ConversationService.patch` only when the assignee changes to someone other than the caller. Test: self, same, cleared, changed (one mail).
-- [ ] **Task 5 — Frontend** (AC: 1–3, 5, 11; Vitest first)
-  - [ ] `communications/ConversationReplyBox.tsx` under the messages in `ConversationDetail` (16.2a): text field, "Mark as done" checkbox, the hint "Sent as '{name} via BATbern'. The reply lands here." (`mail-center-prototype.html`), inline confirm like the composer, Send disabled while empty or pending, toast after send, list refresh. Full width in the mobile dialog; the send button stays visible above the keyboard.
-  - [ ] Service + hook `useReplyToConversation` (invalidates the conversation and `['mails', eventCode]`).
-  - [ ] Vitest: disabled states, markDone, error 409 shown, after send status chip shows Waiting. Playwright: local dev only, tagged `@sends-real-email` so the staging guard skips it.
-- [ ] **Task 6 — Docs** — user guide `event-mail.md` (answering, reassigning), `06-backend-architecture.md` (reply headers, token routing), shared kernel change noted.
+- [x] **Task 1 — Compose and send through the shared kernel** (AC: 1, 2, 6; TDD first)
+  - [x] RED: shared-kernel `EmailServiceComposedMailTest`: From display name, Reply-To, `In-Reply-To`, `References`, the given `Message-ID` survives serialisation (JavaMail regenerates it on `saveChanges()`; use a `MimeMessage` subclass with a no-op `updateMessageID()`, like `ForwardedMessageRewriter.PreservingMimeMessage`), test-marked subject refused, recorder called once with the SES id; local mode captures to the dev inbox and records `local-{captureId}`.
+  - [x] `shared-kernel/.../mail/ComposedMail` record (fromName, to, subject, html, text, replyTo, messageId, inReplyTo, references) and `EmailService.sendComposed(MailContext, ComposedMail)`. Build the MIME as `sendHtmlEmailSyncWithAttachments` does (`EmailService.java:442–531`: multipart/alternative, From with `fromEmail`), send with `SendRawEmail`, record. Do not reuse `sendHtmlEmail`: `SendEmail` cannot carry `In-Reply-To`/`References`, and the display name is the global `app.email.from-name` (`EmailService.java:95–96`).
+- [x] **Task 2 — Reply service and endpoint** (AC: 1–3, 6)
+  - [x] Spec first (`docs/api/event-mail-api.openapi.yml`): `POST /conversations/{conversationKey}/replies`, body `{ text: string (1..20000), markDone?: boolean }`, 201 → `MailMessageDetail`; 400, 403, 404, 409.
+  - [x] `mailcenter/ConversationReplyService`: load conversation + last inbound message; organizer name via `UserApiClient.getUserByUsername`; body = the organizer's text as plain text and as minimal HTML (escaped, line breaks, no BATbern layout), followed by a quote of the last inbound text ("On {date}, {name} wrote:", `>`-prefixed in the text part, `<blockquote>` in HTML); `MailContext.individual(eventCode, audience, null)` with `contentSource OWN_TEXT` and the sender; after the send set `mail_message.conversation_id` and `message_id_header` for the recorded group (by `send_group_id`), then status `WAITING` or `DONE`, `last_message_at`.
+  - [x] Integration test (Testcontainers, SES mocked as in `MailRecordingIntegrationTest`): headers, record linked, status, 409, 403.
+- [x] **Task 3 — Token replies on both paths** (AC: 4)
+  - [x] RED: `TokenReplyRoutingTest` for both processors (`InboundReplyProcessor`, `AliasMailProcessor`, both from 16.2a Task 3): a mail addressed to `replies+{token}@` with first line "accept" runs no router action and joins the conversation; unknown token → treated like a plain `replies@` mail (router, then 16.2a rules).
+  - [x] `ForwardingAlias.classify` (`ForwardingAlias.java:57`): local part `replies` or `replies+…` → new kind `CONVERSATION_REPLY`, `forwardable() == false`, so `forward()` returns early instead of `UNRESOLVED` (today it would be dropped at `EmailForwardingService.java:125–133`). `AliasMailProcessor` hands such mail to the mail center and, while the `replies` group is off, forwards it with `forwardUnrecognizedReply` (same recipients as today's `replies@`).
+  - [x] `InboundReplyProcessor`: detect the token in To/Cc before calling the router.
+  - [x] Metric `ConversationReplies` with dimension `path=replies|alias`, so the first production reply shows which SES rule took it.
+- [x] **Task 4 — Reassign notification** (AC: 5)
+  - [x] Templates `email-templates/mailcenter-assigned-{de,en}.html` with `<!-- subject: … -->` header (`EmailTemplateSeedService` parses it). Add a `mailcenter-` branch in `EmailTemplateSeedService.deriveCategory` (line 151): otherwise the key falls through to `"LAYOUT"` (line 200) and is seeded as a layout. Category value `MAIL_CENTER`: add it to the category enum in `docs/api/event-newsletter-api.openapi.yml` (lines 51–60 and 1161), `EmailTemplatesTab.tsx` (lines 68, 84, 93) and `EmailTemplateEditModal.tsx` (line 192). 16.9 adds `PARTNER` to the same enum in parallel: rebase carefully.
+  - [x] `ConversationAssignmentNotifier`, shaped like `TaskReminderEmailService` (DB-first template, classpath fallback, `MailContext.of(..., Audience.ORGANIZERS, "mailcenter-assigned")`). Called by `ConversationService.patch` only when the assignee changes to someone other than the caller. Test: self, same, cleared, changed (one mail).
+- [x] **Task 5 — Frontend** (AC: 1–3, 5, 11; Vitest first)
+  - [x] `communications/ConversationReplyBox.tsx` under the messages in `ConversationDetail` (16.2a): text field, "Mark as done" checkbox, the hint "Sent as '{name} via BATbern'. The reply lands here." (`mail-center-prototype.html`), inline confirm like the composer, Send disabled while empty or pending, toast after send, list refresh. Full width in the mobile dialog; the send button stays visible above the keyboard.
+  - [x] Service + hook `useReplyToConversation` (invalidates the conversation and `['mails', eventCode]`).
+  - [x] Vitest: disabled states, markDone, error 409 shown, after send status chip shows Waiting. Playwright: local dev only, tagged `@sends-real-email` so the staging guard skips it.
+- [x] **Task 6 — Docs** — user guide `event-mail.md` (answering, reassigning), `06-backend-architecture.md` (reply headers, token routing), shared kernel change noted.
 
 ### PR 2 — Notification instead of forwarding (code ships switched off; switching on needs the owner's go)
 
-- [ ] **Prerequisite (owner decision 2026-11-01, from 16.2a):** inbound attachments are kept, not only their names. At receipt, copy each attachment up to a size cap to a new S3 prefix, show it in the conversation view, delete it in the retention job (CDK: EMS write grant on the prefix + a lifecycle backstop; needs the Doc Drift doc change). No forwarding group is switched to notification before this is live.
+- [x] **Prerequisite (owner decision 2026-11-01, from 16.2a):** inbound attachments are kept, not only their names. At receipt, copy each attachment up to a size cap (owner 2026-11-02: **25 MB per file**; larger ones keep only the name) to a new S3 prefix, show it in the conversation view, delete it in the retention job (CDK: EMS write grant on the prefix + a lifecycle backstop; needs the Doc Drift doc change). No forwarding group is switched to notification before this is live.
 
-- [ ] **Task 7 — Switch and notification** (AC: 7–9)
-  - [ ] Setting key `mailcenter.notify-instead-of-forward` read via `AdminSettingsService.getSetting` (line 18), parsed into a set; unknown values ignored and logged.
-  - [ ] Templates `mailcenter-new-mail-{de,en}.html`, category `MAIL_CENTER`.
-  - [ ] `AliasMailProcessor` / `InboundReplyProcessor`: when the mail's group is on, ingest first (rethrow on failure), and if a conversation was stored, send the notification to the resolved recipients instead of the forwarded copy; otherwise forward as today. Speaker broadcasts (`-speaker@`), `-participants@`, `partner@` and `ok@` are organizer sends to other people and are always forwarded, whatever the setting.
-  - [ ] Keep the forwarding log honest: new outcome `NOTIFIED` in `EmailForwardingOutcome` + migration extending the CHECK constraint (same pattern as V131); metric `NotificationsSent`.
-  - [ ] Tests per group on and off; storage failure with the group on → rethrown, nothing sent.
-- [ ] **Task 8 — Runbook and go** — `docs/operations/runbooks.md`: how to switch a group on and back (admin settings), what to check first (`NotificationsSent`, `MailCenterIngestFailed`, replies DLQ alarm). Do not set the value in production; the owner does, per group.
+- [x] **Task 7 — Switch and notification** (AC: 7–9)
+  - [x] Setting key `mailcenter.notify-instead-of-forward` read via `AdminSettingsService.getSetting` (line 18), parsed into a set; unknown values ignored and logged.
+  - [x] Templates `mailcenter-new-mail-{de,en}.html`, category `MAIL_CENTER`.
+  - [x] `AliasMailProcessor` / `InboundReplyProcessor`: when the mail's group is on, ingest first (rethrow on failure), and if a conversation was stored, send the notification to the resolved recipients instead of the forwarded copy; otherwise forward as today. Speaker broadcasts (`-speaker@`), `-participants@`, `partner@` and `ok@` are organizer sends to other people and are always forwarded, whatever the setting.
+  - [x] Keep the forwarding log honest: new outcome `NOTIFIED` in `EmailForwardingOutcome` + migration extending the CHECK constraint (same pattern as V131); metric `NotificationsSent`.
+  - [x] Tests per group on and off; storage failure with the group on → rethrown, nothing sent.
+- [x] **Task 8 — Runbook and go** — `docs/operations/runbooks.md`: how to switch a group on and back (admin settings), what to check first (`NotificationsSent`, `MailCenterIngestFailed`, replies DLQ alarm). Do not set the value in production; the owner does, per group.
 
 ## Dev Notes
 
@@ -124,12 +124,217 @@ so that **the team sees who answered what, and nobody has to forward mail to a p
 
 ### Agent Model Used
 
+Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-11-02
+
 ### Debug Log References
 
 ### Completion Notes List
 
+**PR 1 (reply and reassign), 2026-11-02, on `feature/16-2a-speaker-conversations`, rebased on develop after #1185:**
+- Shared kernel: `ComposedMail` + `EmailService.sendComposed` (SendRawEmail, multipart/alternative,
+  caller's Message-ID kept by a `MimeMessage` subclass, same walls, local capture → `local-{id}`).
+  `OutboundMail` gained `messageIdHeader` (6-arg constructor kept; the partner HTTP recorder maps
+  fields explicitly and ignores it). `JpaOutboundMailRecorder` writes it, without brackets, to
+  `mail_recipient.message_id_header`.
+- V140 `mail_message.reply_to_address`: 16.2a parsed Reply-To but did not store it; AC1 needs it.
+  `InboundMailStore` writes it.
+- `POST /conversations/{key}/replies` (`ConversationReplyService`): Reply-To else From, 409 when the
+  address cannot be mailed (unacceptable or reserved domain, checked before the send), 400 on empty
+  or >20000 text. "What went out" now excludes rows with a `conversation_id`.
+- Token replies: `ForwardingAlias.Kind.CONVERSATION_REPLY`, `Result.CONVERSATION_REPLY`;
+  `AliasMailProcessor` stores + forwards (organizers, as `forwardUnrecognizedReply`) a known token and
+  hands an unknown one to `InboundReplyProcessor`; `InboundReplyProcessor` skips the router for a
+  known token. Metric `ConversationReplies{path}` (MailCenterMetrics got a one-dimension overload).
+- Reassign: `ConversationAssignmentNotifier` (template `mailcenter-assigned` DE/EN, category
+  `MAIL_CENTER`, new variable scope MAIL_CENTER: conversationSubject, counterpartName,
+  conversationLink); called from `ConversationService.patch` only when the assignee changes to
+  someone other than the caller. No-event link: `/organizer/mail?conversation=` (16.7 route).
+- Frontend: `ConversationReplyBox` (sticky, inline confirm, Mark as done, 409 message, toast),
+  `useReplyToConversation`, MAIL_CENTER in the admin template tabs; i18n in all 10 locales.
+  The sender hint takes the name from `/users/me` (`useUserProfile`); `useAuth` has no names.
+- Tests: `EmailServiceComposedMailTest` (5), `ConversationReplyIntegrationTest` (4),
+  `TokenReplyRoutingIntegrationTest` (3), `ConversationServiceAssignmentTest` (4), golden files
+  `mailcenter-assigned-{de,en}`, `ConversationReplyBox.test.tsx` (5), Playwright
+  `conversation-reply.spec.ts` (@sends-real-email, local dev only). No Bruno request added (AC10).
+- Live on local dev (2026-11-02, event BATbern63, synthetic simulator address): moderator mail →
+  conv; answer via gateway 201, captured "Re: …" to the speaker; status WAITING; speaker reply
+  "Accept" to `replies+{token}@` → same conversation, OPEN, 3 messages; answer not in "What went out".
+  Reassign: 4 PATCHes (other, same, self, clear) → exactly 1 captured mail with the deep link. The
+  local test organizer has no first/last name, so the display name fell back to the username (by
+  design). The test rows of BATbern63 stay in the local DB (local only).
+- Not verified: how SES routes `replies+{token}@` in production (rule inference only; the metric will
+  show it), and whether SES keeps our Message-ID (threading does not depend on it: token first).
+
+**PR 2 (attachments + notify switch, shipped OFF), 2026-11-02, after 16.2b, same branch:**
+- Attachments (owner cap 25 MB): `InboundAttachmentStore` puts each file within the cap to the
+  private inbound bucket `mail-attachments/{send_group_id}/{index}`; key in the attachments JSON
+  (`storageKey`, API shows `kept`). Not the content bucket: it is served whole by CloudFront.
+  Reuse per owner remark (2026-11-02): injected `S3Client`/`S3Presigner` like the other EMS S3
+  services (there is no shared S3 helper), download as the session materials do
+  (`GET …/attachments/{index}/download` → `{downloadUrl}`, now `_shared` `DownloadUrlResponse`;
+  frontend opens it with `window.open(url, '_blank', 'noopener,noreferrer')` like
+  `SessionEditModal`). Retention deletes the files of expiring conversations; CDK: lifecycle by
+  prefix (`emails/`, `forwarding/` 7 days, `mail-attachments/` 400 days backstop) and EMS
+  put/delete on `mail-attachments/*` only. The grant sits on the EMS task role (EMS stack), so it
+  deploys with the EMS image. Server-side put (no presigned PUT): the file comes from SES, not a
+  browser.
+- Switch: `MailCenterSwitch` (setting `mailcenter.notify-instead-of-forward`, read per mail),
+  `ConversationNotices` (template `mailcenter-new-mail` DE/EN), `EmailForwardingService.forward(…,
+  notice)` / `forwardUnrecognizedReply(…, notice)` (same checks/claim/recipients), outcome
+  `NOTIFIED` (V142), metric `NotificationsSent`, `InboundMailCenter.ingest*Strict` (throws; a
+  redelivery of a stored mail returns its conversation). `AliasMailProcessor` switches only when
+  every addressed alias maps to a switched group; `InboundReplyProcessor` for `replies`.
+  `ConversationLinks` shared by both notifications. **Not switched on anywhere**; the owner does
+  it per group (runbook).
+- Tests: `InboundAttachmentStoreTest` (4), parser bytes (1), conversation API link/kept/404/403,
+  retention deletes the files (folded into the one purge test, ShedLock), `MailCenterSwitchTest`
+  (3), `AliasMailProcessorSwitchTest` (5), `InboundReplyProcessorSwitchTest` (4),
+  `EmailForwardingServiceTest` notice mode (+2), golden `mailcenter-new-mail-{de,en}`, CDK (+2),
+  Vitest attachment link/error (+1). Full: shared kernel 484/0, EMS 2389/0, PCS 231/0, CDK inbound
+  stack 32/32, frontend Vitest 2416 passed, Playwright mail specs 4/4 (local dev).
+- Live on local dev (BATbern63, synthetic address): setting `moderator` → the 3 resolved recipients
+  got the notice (link, no text), log `notified|3`; setting cleared → forwarded copies with the text.
+  Rows removed. Local dev has no inbound bucket, so attachment upload was verified by tests only.
+- Not verified: attachment upload against the real bucket (needs the deploy); first production
+  notification (owner's go).
+
+
 ### File List
+
+PR 1:
+- _bmad-output/implementation-artifacts/16-6-answer-from-mail-center.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- docs/api/event-mail-api.openapi.yml
+- docs/api/event-newsletter-api.openapi.yml
+- docs/architecture/06-backend-architecture.md
+- docs/user-guide/appendix/changelog.md
+- docs/user-guide/features/event-mail.md
+- services/event-management-service/src/main/java/ch/batbern/events/forwarding/AliasMailProcessor.java
+- services/event-management-service/src/main/java/ch/batbern/events/forwarding/EmailForwardingService.java
+- services/event-management-service/src/main/java/ch/batbern/events/forwarding/ForwardingAlias.java
+- services/event-management-service/src/main/java/ch/batbern/events/forwarding/ForwardingRecipientResolver.java
+- (new) services/event-management-service/src/main/java/ch/batbern/events/mailcenter/ConversationAssignmentNotifier.java
+- (new) services/event-management-service/src/main/java/ch/batbern/events/mailcenter/ConversationReplyService.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/ConversationService.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/JpaOutboundMailRecorder.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailCenterMetrics.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailConversationController.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailMessageQueryService.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/inbound/InboundMailCenter.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/inbound/InboundMailStore.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/variables/MailVariable.java
+- services/event-management-service/src/main/java/ch/batbern/events/service/EmailTemplateSeedService.java
+- services/event-management-service/src/main/java/ch/batbern/events/service/InboundReplyProcessor.java
+- (new) services/event-management-service/src/main/resources/db/migration/V140__mail_message_reply_to.sql
+- (new) services/event-management-service/src/main/resources/email-templates/mailcenter-assigned-de.html
+- (new) services/event-management-service/src/main/resources/email-templates/mailcenter-assigned-en.html
+- services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingListenerTest.java
+- (new) services/event-management-service/src/test/java/ch/batbern/events/mailcenter/ConversationReplyIntegrationTest.java
+- (new) services/event-management-service/src/test/java/ch/batbern/events/mailcenter/ConversationServiceAssignmentTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailGoldenTest.java
+- (new) services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/TokenReplyRoutingIntegrationTest.java
+- (new) services/event-management-service/src/test/resources/mail-golden/mailcenter-assigned-de.html
+- (new) services/event-management-service/src/test/resources/mail-golden/mailcenter-assigned-en.html
+- (new) shared-kernel/src/main/java/ch/batbern/shared/mail/ComposedMail.java
+- shared-kernel/src/main/java/ch/batbern/shared/mail/OutboundMail.java
+- shared-kernel/src/main/java/ch/batbern/shared/service/EmailService.java
+- (new) shared-kernel/src/test/java/ch/batbern/shared/service/EmailServiceComposedMailTest.java
+- (new) web-frontend/e2e/organizer/conversation-reply.spec.ts
+- web-frontend/public/locales/de/common.json
+- web-frontend/public/locales/de/events.json
+- web-frontend/public/locales/en/common.json
+- web-frontend/public/locales/en/events.json
+- web-frontend/public/locales/es/common.json
+- web-frontend/public/locales/es/events.json
+- web-frontend/public/locales/fi/common.json
+- web-frontend/public/locales/fi/events.json
+- web-frontend/public/locales/fr/common.json
+- web-frontend/public/locales/fr/events.json
+- web-frontend/public/locales/gsw-BE/common.json
+- web-frontend/public/locales/gsw-BE/events.json
+- web-frontend/public/locales/it/common.json
+- web-frontend/public/locales/it/events.json
+- web-frontend/public/locales/ja/common.json
+- web-frontend/public/locales/ja/events.json
+- web-frontend/public/locales/nl/common.json
+- web-frontend/public/locales/nl/events.json
+- web-frontend/public/locales/rm/common.json
+- web-frontend/public/locales/rm/events.json
+- web-frontend/src/components/organizer/Admin/EmailTemplateEditModal.tsx
+- web-frontend/src/components/organizer/Admin/EmailTemplatesTab.test.tsx
+- web-frontend/src/components/organizer/Admin/EmailTemplatesTab.tsx
+- web-frontend/src/components/organizer/EventPage/communications/ConversationDetail.tsx
+- (new) web-frontend/src/components/organizer/EventPage/communications/ConversationReplyBox.tsx
+- (new) web-frontend/src/components/organizer/EventPage/communications/__tests__/ConversationReplyBox.test.tsx
+- web-frontend/src/components/organizer/EventPage/communications/__tests__/NeedsAnswerSection.test.tsx
+- web-frontend/src/hooks/useMailConversations/useMailConversations.ts
+- web-frontend/src/services/mailConversationService.ts
+- web-frontend/src/types/generated/event-mail-api.types.ts
+- web-frontend/src/types/generated/event-newsletter-api.types.ts
+
+PR 2:
+- _bmad-output/implementation-artifacts/16-6-answer-from-mail-center.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- docs/api/_shared.openapi.yml
+- docs/api/event-mail-api.openapi.yml
+- docs/architecture/06-backend-architecture.md
+- docs/architecture/08-operations-security.md
+- docs/operations/runbooks.md
+- docs/user-guide/appendix/changelog.md
+- docs/user-guide/features/event-mail.md
+- infrastructure/lib/stacks/inbound-email-stack.ts
+- infrastructure/test/unit/inbound-email-stack.test.ts
+- services/event-management-service/src/main/java/ch/batbern/events/domain/EmailForwardingOutcome.java
+- services/event-management-service/src/main/java/ch/batbern/events/domain/MailMessage.java
+- services/event-management-service/src/main/java/ch/batbern/events/forwarding/AliasMailProcessor.java
+- services/event-management-service/src/main/java/ch/batbern/events/forwarding/EmailForwardingService.java
+- services/event-management-service/src/main/java/ch/batbern/events/forwarding/ForwardingMetrics.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/ConversationAssignmentNotifier.java
+- (new) services/event-management-service/src/main/java/ch/batbern/events/mailcenter/ConversationAttachmentService.java
+- (new) services/event-management-service/src/main/java/ch/batbern/events/mailcenter/ConversationLinks.java
+- (new) services/event-management-service/src/main/java/ch/batbern/events/mailcenter/ConversationNotices.java
+- (new) services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailCenterSwitch.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailConversationController.java
+- (new) services/event-management-service/src/main/java/ch/batbern/events/mailcenter/inbound/InboundAttachmentStore.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/inbound/InboundMail.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/inbound/InboundMailCenter.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/inbound/InboundMailParser.java
+- services/event-management-service/src/main/java/ch/batbern/events/repository/MailConversationRepository.java
+- services/event-management-service/src/main/java/ch/batbern/events/scheduler/MailMessageRetentionScheduler.java
+- services/event-management-service/src/main/java/ch/batbern/events/service/InboundReplyProcessor.java
+- (new) services/event-management-service/src/main/resources/db/migration/V142__email_forwarding_log_notified.sql
+- (new) services/event-management-service/src/main/resources/email-templates/mailcenter-new-mail-de.html
+- (new) services/event-management-service/src/main/resources/email-templates/mailcenter-new-mail-en.html
+- (new) services/event-management-service/src/test/java/ch/batbern/events/forwarding/AliasMailProcessorSwitchTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingListenerTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingServiceTest.java
+- (new) services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailCenterSwitchTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailConversationControllerIntegrationTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailGoldenTest.java
+- (new) services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/InboundAttachmentStoreTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/InboundMailParserTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/MailConversationRetentionIntegrationTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/service/InboundEmailListenerServiceTest.java
+- (new) services/event-management-service/src/test/java/ch/batbern/events/service/InboundReplyProcessorSwitchTest.java
+- (new) services/event-management-service/src/test/resources/mail-golden/mailcenter-new-mail-de.html
+- (new) services/event-management-service/src/test/resources/mail-golden/mailcenter-new-mail-en.html
+- web-frontend/public/locales/de/events.json
+- web-frontend/public/locales/en/events.json
+- web-frontend/public/locales/es/events.json
+- web-frontend/public/locales/fi/events.json
+- web-frontend/public/locales/fr/events.json
+- web-frontend/public/locales/gsw-BE/events.json
+- web-frontend/public/locales/it/events.json
+- web-frontend/public/locales/ja/events.json
+- web-frontend/public/locales/nl/events.json
+- web-frontend/public/locales/rm/events.json
+- web-frontend/src/components/organizer/EventPage/communications/ConversationDetail.tsx
+- web-frontend/src/components/organizer/EventPage/communications/__tests__/NeedsAnswerSection.test.tsx
+- web-frontend/src/services/mailConversationService.ts
+- web-frontend/src/types/generated/event-mail-api.types.ts
 
 ## Change Log
 
 - 2026-11-01: Story drafted from Epic 16 Story 16.6.
+- 2026-11-02: PR 1 (Tasks 1–6) implemented: answer, token replies on both paths, reassign notification.
+- 2026-11-02: PR 2 implemented: attachments kept (25 MB), notify-instead-of-forward switch (off), runbook; status review.

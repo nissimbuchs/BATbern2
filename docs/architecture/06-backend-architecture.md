@@ -816,7 +816,11 @@ SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → E
   callers can reach it.** Machine callers use queues and IAM, not anonymous HTTP.
 - **Delivery modes**: `batbern{N}-speaker@` sends one visible mail (speakers in To, event moderator
   in Cc, Reply-To `batbern{N}-moderator@`); every other alias sends one private copy per recipient
-  with Reply-To = the original sender.
+  with Reply-To = the original sender. Since Story 16.2a the speaker broadcast is recorded in the
+  event's "What went out" (audience SPEAKERS, own text, sender = the organizer's username via
+  `ForwardingDirectory.organizerUsernameFor`) through the context-taking
+  `EmailService.sendRawMessage(MailContext, mime, to, cc, subject, html, configSet)`. Private copies
+  are not recorded; the Mail Center stores the inbound mail itself (below).
 - **Unrecognized `replies@` mail** (Story 16.0, #1160): `InboundEmailListenerService` hands every
   reply that `InboundEmailRouter` cannot act on (`RouteResult.UNRECOGNIZED`) to
   `EmailForwardingService.forwardUnrecognizedReply`, which forwards it to all organizers like
@@ -878,10 +882,13 @@ went out (Mail Center, Epic 16). Record only; the Communications page (16.3) rea
   (confirmation, deregistration, unsubscribe) and the plain-text secrets the caller names
   (`MailContext.withSecrets`: registration code, temporary password).
 - **Guard**: `OutboundMailInventoryGuardTest` scans EMS sources and fails for a send through
-  `EmailService` without a context. Allow-listed: forwarding (inbound, Story 16.2) and the newsletter
+  `EmailService` without a context. Allow-listed: forwarding (private copies of inbound mail; its
+  speaker broadcast passes a context since 16.2a, the guard works per file) and the newsletter
   unsubscribe acknowledgement.
 - **Retention**: `MailMessageRetentionScheduler` (03:30 Europe/Zurich, ShedLock) deletes a mail once
   its event date and the mail itself are older than 12 months; mail without an event after 12 months.
+  Since Story 16.2a, in the same transaction and by the same rule: conversations (by last activity,
+  with their inbound mail) and the automatic counts (by receipt).
 
 ### Mail of other services (Story 16.9)
 
@@ -930,6 +937,9 @@ SES events of the transactional configuration set move each `mail_recipient` fro
   `WHERE status IN (...)`, so concurrent events cannot reorder it.
 - **Unknown Message-IDs** (system mail without context, forwarding, mail before 16.1a)
   are ignored and counted as `BATbern/MailCenter DeliveryEventsUnmatched`.
+- **Message-ID header** (Story 16.2a): when the event carries `mail.commonHeaders.messageId`, it is
+  stored once on the message's recipients (`mail_recipient.message_id_header`, V139), so a reply's
+  `In-Reply-To` finds the mail whatever form the header has.
 - **Failures**: an unreadable message throws; SQS retries it and moves it to
   `mail-delivery-status-dlq` after 3 attempts (alarm in `MonitoringStack`).
 - **Newsletter suppression untouched**: the newsletter set keeps its own bounce queue and
@@ -949,9 +959,145 @@ SES events of the transactional configuration set move each `mail_recipient` fro
   `newsletter_recipients` (failed = SES refused or bounced; the newsletter set has no delivery
   events).
 - `GET .../mails/{mailKey}`: body and recipients; for a newsletter only the failed ones.
-- `GET .../mails/counts`: failed deliveries of the event ("Handled automatically").
+- `GET .../mails/counts`: failed deliveries of the event ("Handled automatically"); since 16.2a also
+  the automatic inbound mail by kind (out-of-office, bounce mail, calendar accepts/declines, keyword
+  accepts/cancels, unsubscribes) from `mail_automatic_event`.
+- `GET .../mails` stays outbound-only (`direction = 'OUT'`); inbound mail is read through its
+  conversation (below).
 - List and counts hide organizer test sends (`is_test`) unless `includeTests=true` (Story 16.8);
   the detail opens a test send by its key.
+
+### Inbound mail and conversations (Story 16.2a)
+
+Speaker replies land in the event's "Needs an answer" list with a status and an assignee instead of
+one organizer's private inbox. Forwarding is unchanged and stays the safety net until the 16.6
+switch is turned on per alias group.
+
+```
+replies@  → SQS → InboundEmailListenerService → InboundReplyProcessor ─┐  router, forwardUnrecognizedReply
+aliases   → SQS → EmailForwardingListener     → AliasMailProcessor    ─┤  EmailForwardingService.forward
+local dev → POST /dev/emails/inbound (same processors)                  ─┘
+                                   then InboundMailCenter.ingestReply / ingestAlias (never throws)
+                                   ├─ InboundMailParser: headers, text, sanitized HTML (jsoup), attachment names
+                                   ├─ keyword that acted / InboundClassifier (OOO, bounce, iMIP, loop)
+                                   │     → AutomaticMailCounter: mail_automatic_event (no address, no text)
+                                   └─ HUMAN → ConversationThreader → InboundMailStore (own transaction)
+```
+
+- **Classification** (`InboundClassifier`, reuses `forwarding/MailClassifier`): iMIP REPLY, loop
+  (our marker header or our domain), bounce, automatic reply (RFC 3834 headers, or a subject that
+  starts with Out of Office, Automatic reply, Auto-Reply, Autoreply, Abwesenheitsnotiz, Automatische
+  Antwort, Abwesend, Réponse automatique, Absence, Risposta automatica), else HUMAN. Runs on both
+  paths, so the alias path now notices bounces too.
+- **Counts** (`mail_automatic_event`, V139): one row per mail, deduplicated by its key. Event: the
+  mail it answers (In-Reply-To/References), else the moderator alias; calendar replies by
+  `CalendarInviteUid` → registration → event; keyword actions by the event code in the subject.
+  `InboundEmailRouter.RouteResult` names the keyword that acted (`UNSUBSCRIBED`,
+  `DEREGISTRATION_LINK`, `CONFIRMED`).
+- **Threading** (`ConversationThreader`, first hit wins): token in `replies+{token}@` (handed out
+  as Reply-To of an organizer's answer, 16.6); In-Reply-To, then References newest first: full id against
+  `mail_message.message_id_header` (inbound) and `mail_recipient.message_id_header` (from the SES
+  event), local part against `mail_recipient.ses_message_id`; then the event of
+  `batbern{N}-moderator@`. Within the event, the OPEN or WAITING conversation with the same
+  counterpart is joined, else one is opened (assignee `Event.organizerUsername`). New inbound mail
+  sets the conversation OPEN. Metrics `ThreadMatchedByToken|Header|SesId|Alias` show which rule
+  carries production traffic.
+- **Message-ID format**, verified 2026-11-02 on platform mail in an organizer's own mailbox: SES writes
+  `<{SES MessageId}@eu-central-1.amazonses.com>` for `SendEmail` and also for `SendRawEmail` (the
+  registration ICS mail, forwarded copies): JavaMail's own id is replaced. So the local-part match
+  is the production branch; the header columns cover anything else.
+- **Gate (16.2a, widened by 16.2b)**: a HUMAN mail opens or joins a conversation when it is a
+  `replies+{token}@` reply, any reply at `replies@` the keyword router did not act on, or alias mail
+  to `batbern{N}-moderator@`, `info@`, `events@` or `support@`. Organizer sends to `-speaker@`,
+  `-participants@`, `batbern{N}@`, `partner@` and mail to `ok@` open nothing. An organizer
+  (primary or additional email, `ForwardingDirectory`) is a counterpart only on a contact alias
+  (16.2b AC6; organizer mail to `-moderator@` still opens nothing). Audience: the matched mail's,
+  else `SPEAKERS` for the moderator alias, else `PUBLIC` (V141, inbound only). Assignee: the lead
+  organizer for a new `SPEAKERS` conversation, otherwise unassigned. Without any match the
+  conversation has no event (listed by Story 16.7) and joins the person's open no-event
+  conversation. Metric `ThreadMatchedNone`.
+- **Subject fallback (16.2b AC3, owner decision 2026-11-01)**: after token, headers and alias,
+  exactly one `BATbern\d+` code of an existing event in the subject puts the conversation on that
+  event; several distinct codes give none. Counted as `ThreadMatchedBySubject`, so the owner can
+  judge the rule.
+- **Broadcasts recorded (16.2b AC4)**: an organizer's mail to `-participants@` (or the deprecated
+  `batbern{N}@`) or `partner@` is one `mail_message` (OUT, own text, sender = organizer, audience
+  `REGISTRANTS` on the event or `PARTNERS` without event), each private copy one recipient with its
+  SES id. Copies to organizers (forwarded inbound mail) stay unrecorded.
+- **Message-ID on raw sends (16.2b AC7)**: `sendHtmlEmailWithAttachments` and
+  `sendHtmlEmailSyncWithAttachments` with a `MailContext` (registration mails with ICS, newsletter)
+  set `Message-ID: <{uuid}@{sender domain}>` and hand it to the recorder
+  (`mail_recipient.message_id_header`), so replies match whatever SES does with the header. Without
+  a context the header stays JavaMail's. Local dev has no SES branch, so locally the
+  `local-{captureId}` id threads instead.
+- **Storage**: inbound rows are `mail_message` with `direction = 'IN'`, `content_source = 'OWN_TEXT'`,
+  no recipients, `send_group_id = in_ + 40 hex of sha256(Message-ID, else S3 key)`; the unique
+  constraint makes a redelivery or a mail to two aliases one row. Text and sanitized HTML (no images,
+  styles, scripts; links kept) are stored at receipt, so the 7-day S3 expiry does not matter.
+  Attachments: names, types and sizes only.
+- **Failure**: `InboundMailCenter` logs and counts `MailCenterIngestFailed`; it never throws into the
+  listeners, so forwarding and SQS retries behave as before.
+- **API** (`MailConversationController`, ORGANIZER, `no-store`): `GET /events/{code}/conversations`
+  (OPEN and WAITING first, then DONE), `GET /conversations/{key}` (messages oldest first as
+  `MailMessageDetail`), `PATCH /conversations/{key}` (status, assignee, which must hold ORGANIZER;
+  `updated_by` = caller). Keys `conv-{n}` are global, so the gateway routes `/api/v1/conversations`
+  to EMS. Bruno covers the reads only.
+
+#### Answers and token replies (Story 16.6)
+
+- **Answer** (`POST /conversations/{key}/replies`, ORGANIZER, `ConversationReplyService`): one mail
+  to the last inbound mail's Reply-To (`mail_message.reply_to_address`, V140), else its From. Built by
+  the shared kernel's `EmailService.sendComposed(MailContext, ComposedMail)` through
+  `SendRawEmail`, because `SendEmail` carries neither `In-Reply-To`/`References` nor a per-mail
+  display name: From `"{first last} via BATbern" <noreply@…>`, Reply-To `replies+{token}@…`,
+  subject `Re: …` (no second prefix after `Re:`/`AW:`), `In-Reply-To` = the last inbound id,
+  `References` = its References plus that id, and our own `Message-ID: <{uuid}@{domain}>`, kept
+  through `saveChanges()` by a `MimeMessage` subclass. Body: the organizer's text as plain text
+  and minimal HTML, then the quoted inbound text; no BATbern layout. Same walls as every send
+  (reserved domain, test marker); a counterpart that cannot be mailed is a 409.
+- **Record**: `MailContext.ownText` (sender = organizer), recorded by the 16.1a recorder with
+  `OutboundMail.messageIdHeader` → `mail_recipient.message_id_header` (stored without brackets, like
+  every id in the Mail Center); then the row gets `conversation_id` and `message_id_header` by its
+  send group. "What went out" excludes rows with a `conversation_id`, so an answer shows once,
+  inside its conversation. Status `WAITING`, or `DONE` with `markDone`.
+- **Token replies**: SES rule `RouteReplies` lists `replies@` exactly, so `replies+{token}@` most
+  likely arrives through the domain catch-all (alias path). `ForwardingAlias` classifies `replies`
+  and `replies+…` as `CONVERSATION_REPLY` (not forwardable); `forward()` returns
+  `CONVERSATION_REPLY` instead of `UNRESOLVED`, and `AliasMailProcessor` hands it on: a known token
+  is forwarded to the organizers like an unrecognized reply (until the `replies` switch, 16.6 PR 2)
+  and stored; an unknown token goes through `InboundReplyProcessor` like any `replies@` mail.
+  `InboundReplyProcessor` checks for a known token before the keyword router, so "accept" in an
+  answer never confirms a registration. Metric `ConversationReplies` with dimension
+  `path=replies|alias` shows which rule took the first real reply.
+- **Reassign** (`ConversationService.patch` → `ConversationAssignmentNotifier`): when the assignee
+  changes to another organizer than the caller, that organizer gets template `mailcenter-assigned`
+  (category `MAIL_CENTER`, DE/EN by preferred language) with a link to
+  `/organizer/events/{code}?tab=communications&conversation={key}` (no event: `/organizer/mail`,
+  Story 16.7). Self-assignment, clearing, or the same assignee send nothing. A failed notification
+  is logged, the assignment stays.
+
+#### Attachments and the notify switch (Story 16.6 PR 2)
+
+- **Attachments** (`InboundAttachmentStore`): at receipt, each attachment up to 25 MB is put to the
+  private inbound bucket as `mail-attachments/{send_group_id}/{index}`; its key is stored in the
+  message's `attachments` JSON (`storageKey`, not exposed; the API shows `kept`). Larger files keep
+  only their name. Server-side `putObject` with the injected `S3Client`, like the other EMS S3
+  writers; download follows the session materials pattern (`GET …/attachments/{index}/download` →
+  `{downloadUrl}`, `_shared` `DownloadUrlResponse`, injected `S3Presigner`, 5 minutes, original
+  file name). The retention job collects the keys of expiring conversations
+  (`MailConversationRepository.expiredAttachmentKeys`) and deletes them after the rows; a 400-day
+  lifecycle rule is the backstop. Without a configured bucket (local dev) only names are kept.
+- **Switch** (`MailCenterSwitch`, admin setting `mailcenter.notify-instead-of-forward`, read per
+  mail): groups `moderator`, `replies`, `contact`. `AliasMailProcessor` switches only when every
+  addressed alias maps to a switched group (`-speaker@`, `-participants@`, `batbern{N}@`,
+  `partner@`, `ok@` never do). Then `InboundMailCenter.ingest*Strict` stores first and throws on
+  failure (SQS retry, DLQ), and `EmailForwardingService.forward(…, notice)` /
+  `forwardUnrecognizedReply(…, notice)` run the same checks, claim, authorization and recipient
+  resolution as forwarding, but send each recipient `ConversationNotices` (template
+  `mailcenter-new-mail`, DE/EN by the organizer's preference) instead of the copy. Outcome
+  `NOTIFIED` (V142), metric `NotificationsSent`. Mail that was not stored is forwarded as before.
+  A redelivery of a stored mail finds its conversation by group id and is notified once
+  (forwarding log claim).
 
 ### Composer API (Story 16.8a)
 

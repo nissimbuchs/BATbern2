@@ -166,6 +166,29 @@ invitations, registration confirmations and the newsletter at once.
    (2026-07-01). Both walls exist now (Playwright `@sends-real-email` guard and the backend
    `EmailContentTestMarker` send-block) — verify which one was bypassed.
 
+### Mail Center: notification instead of forwarding (Story 16.6)
+
+Admin setting `mailcenter.notify-instead-of-forward` lists the alias groups answered in the Mail
+Center, comma or space separated: `moderator` (`batbern{N}-moderator@`), `replies` (unrecognized
+mail and `replies+{token}@` replies at `replies@`), `contact` (`info@`, `events@`, `support@`;
+only once Story 16.7 lists conversations without an event). Empty or missing = forwarding as before.
+It is read per mail, so a change applies to the next mail without a deploy. **The owner switches
+each group on; nobody else does.** Attachment storage (up to 25 MB per file) is live, so switched
+mail keeps its files.
+
+- **Switch on:** Admin → settings, key `mailcenter.notify-instead-of-forward`, add the group
+  (e.g. `moderator`). Send a test mail from a private address to the alias; the recipients should
+  get "New mail … Open it here" and the conversation should appear on the event's mail page.
+- **Switch back:** remove the group from the value (or clear it). The next mail is forwarded again.
+- **Check first after switching on:** CloudWatch `BATbern/EmailForwarder` `NotificationsSent`
+  (should rise with the alias traffic), `BATbern/MailCenter` `MailCenterIngestFailed` (should stay 0),
+  the `replies-dlq` / `forwarding-dlq` alarms. With a group on, a storage failure is rethrown, so
+  the mail is retried and dead-letters instead of being lost: redrive as in step 3 once the cause is
+  fixed. `email_forwarding_log.outcome = 'notified'` marks mail that was notified, not forwarded.
+- **What is never replaced:** organizer sends to `batbern{N}-speaker@`, `-participants@`,
+  `batbern{N}@`, `partner@` and mail to `ok@` are always forwarded. Mail the Mail Center did not
+  store (out-of-office, bounces, malformed) is forwarded as before.
+
 ---
 
 ## Identity and user sync

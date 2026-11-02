@@ -67,7 +67,8 @@ type Category =
   | 'NEWSLETTER'
   | 'VENUE_COORDINATION'
   | 'REGISTRANT_NOTICE'
-  | 'PARTNER';
+  | 'PARTNER'
+  | 'MAIL_CENTER';
 
 const formatDate = (dateStr: string) => {
   try {
@@ -85,6 +86,7 @@ const CATEGORY_OPTIONS: Category[] = [
   'VENUE_COORDINATION',
   'REGISTRANT_NOTICE',
   'PARTNER',
+  'MAIL_CENTER',
 ];
 
 const CATEGORY_LABEL_KEYS: Record<Category, [string, string]> = {
@@ -95,6 +97,7 @@ const CATEGORY_LABEL_KEYS: Record<Category, [string, string]> = {
   VENUE_COORDINATION: ['emailTemplates.categories.VENUE_COORDINATION', 'Venue & Catering'],
   REGISTRANT_NOTICE: ['emailTemplates.categories.REGISTRANT_NOTICE', 'Registrant Notices'],
   PARTNER: ['emailTemplates.categories.PARTNER', 'Partners'],
+  MAIL_CENTER: ['emailTemplates.categories.MAIL_CENTER', 'Mail Center'],
 };
 
 export const EmailTemplatesTab: React.FC = () => {

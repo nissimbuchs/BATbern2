@@ -49,7 +49,7 @@ public class ForwardingRecipientResolver {
                             alias.localPart(), alias.localPart());
                     yield distributionListService.resolveParticipants(alias.eventCode());
                 }
-                case NO_REPLY, UNKNOWN -> Set.of();
+                case NO_REPLY, UNKNOWN, CONVERSATION_REPLY -> Set.of();
             };
         } catch (NotFoundException e) {
             log.warn("Forwarding alias {}@ names an unknown event {}", alias.localPart(), alias.eventCode());

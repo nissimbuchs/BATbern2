@@ -48,7 +48,7 @@ paths:
       - name: category
         in: query
         required: false
-        description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION, REGISTRANT_NOTICE, PARTNER)
+        description: Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION, REGISTRANT_NOTICE, PARTNER, MAIL_CENTER)
         schema:
           type: string
           enum:
@@ -60,6 +60,7 @@ paths:
           - VENUE_COORDINATION
           - REGISTRANT_NOTICE
           - PARTNER
+          - MAIL_CENTER
       - name: isLayout
         in: query
         required: false
@@ -1162,6 +1163,7 @@ components:
           - VENUE_COORDINATION
           - REGISTRANT_NOTICE
           - PARTNER
+          - MAIL_CENTER
         subject:
           type: string
           nullable: true
@@ -1219,6 +1221,7 @@ components:
           - VENUE_COORDINATION
           - REGISTRANT_NOTICE
           - PARTNER
+          - MAIL_CENTER
         subject:
           type: string
           nullable: true

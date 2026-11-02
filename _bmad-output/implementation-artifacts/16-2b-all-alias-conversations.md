@@ -1,6 +1,6 @@
 # Story 16.2b: Conversations for every alias, registrant replies and mail without an event
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -28,20 +28,20 @@ so that **every question that needs a person is in one place, with or without an
 
 ## Tasks / Subtasks
 
-- [ ] **Task 1 — Widen the ingestion gate** (AC: 1, 2, 5, 6; TDD first)
-  - [ ] RED: extend `ConversationThreadingIntegrationTest` (16.2a): `info@` without match → no-event conversation; `support@` with In-Reply-To of a registrant mail → that event; `replies@` UNRECOGNIZED reply to a newsletter → event, audience `NEWSLETTER`; organizer to `info@` → conversation; organizer to `-moderator@` → none; OOO to `info@` → counted only.
-  - [ ] `InboundMailCenter`: replace the 16.2a speaker-only gate by: open for every `HUMAN` mail on the alias path whose addressed aliases include `ORGANIZERS` (except `ok@`), `SUPPORT` or `EVENT_MODERATOR`, and for every `UNRECOGNIZED` human mail on the replies path. Audience from the matched outbound mail, else `SPEAKERS` for `-moderator@`, else `PUBLIC`.
-- [ ] **Task 2 — Subject fallback** (AC: 3) — step 4 in `ConversationThreader`, after the alias step; event must exist (`EventRepository.existsByEventCode`); several distinct codes → no event. Unit tests incl. `Re: AW: BATbern60 …`, two codes, unknown code.
-- [ ] **Task 3 — Broadcasts recorded** (AC: 4)
-  - [ ] `EmailForwardingService`: the private-copy path (`sendIndividually`, line 399) for `EVENT_PARTICIPANTS`, `EVENT_PARTICIPANTS_DEPRECATED` and `PARTNERS` aliases records one `mail_message` per inbound mail with one `mail_recipient` per copy (SES id per copy), through the `sendRawMessage(MailContext, …)` overload from 16.2a. The other aliases' copies (to organizers) stay unrecorded: they are the forwarded inbound mail, already stored as `IN`.
-  - [ ] Test: participants broadcast → one OUT row with N recipients on the event; partner@ → PARTNERS, no event; ok@ → nothing.
-- [ ] **Task 4 — Explicit Message-ID on raw sends** (AC: 7)
-  - [ ] Shared kernel `EmailService.sendHtmlEmailWithAttachments` / `sendHtmlEmailSyncWithAttachments` (lines 295–531): when a `MailContext` is given, set `Message-ID: <{uuid}@{domain of fromEmail}>` with a `MimeMessage` subclass whose `updateMessageID()` keeps it, and pass it to the recorder. `OutboundMail` gets an optional `messageIdHeader`; `JpaOutboundMailRecorder` writes it to `mail_recipient.message_id_header` (column from 16.2a). The 16.9 HTTP recorder ignores the new field if it does not need it; coordinate the record shape with the 16.9 author (`OutboundMail` is the SPI payload).
-  - [ ] Test: header present in the raw bytes, equal to the recorded value; no context → unchanged behaviour.
-- [ ] **Task 5 — Audience `PUBLIC`** (AC: 8) — migration `V{next}__mail_audience_public.sql` (re-check the head; 16.8/16.9 may have added migrations): drop and re-add `chk_mail_message_audience` and the conversation's audience CHECK with `PUBLIC`. Shared-kernel enum, spec enum, regenerate frontend types; `MailSentList` `FILTERS` (line 30) unchanged.
-- [ ] **Task 6 — UI wording** (AC: 9, 11) — "via" labels for the new paths in `ConversationRow`; i18n keys in all 10 locales. No new component.
-- [ ] **Task 7 — Local dev check** (AC: 11) — with the 16.2a simulator: `info@` mail without match, registrant reply (capture a local registration confirmation, simulate the reply with its capture id), participants broadcast. Rows deleted afterwards; results in Completion Notes.
-- [ ] **Task 8 — Docs** — user guide `event-mail.md` (which mail becomes a conversation), `06-backend-architecture.md` (gate, subject fallback, Message-ID on raw sends), `08-operations-security.md` (no change to retention; confirm the text still matches).
+- [x] **Task 1 — Widen the ingestion gate** (AC: 1, 2, 5, 6; TDD first)
+  - [x] RED: extend `ConversationThreadingIntegrationTest` (16.2a): `info@` without match → no-event conversation; `support@` with In-Reply-To of a registrant mail → that event; `replies@` UNRECOGNIZED reply to a newsletter → event, audience `NEWSLETTER`; organizer to `info@` → conversation; organizer to `-moderator@` → none; OOO to `info@` → counted only.
+  - [x] `InboundMailCenter`: replace the 16.2a speaker-only gate by: open for every `HUMAN` mail on the alias path whose addressed aliases include `ORGANIZERS` (except `ok@`), `SUPPORT` or `EVENT_MODERATOR`, and for every `UNRECOGNIZED` human mail on the replies path. Audience from the matched outbound mail, else `SPEAKERS` for `-moderator@`, else `PUBLIC`.
+- [x] **Task 2 — Subject fallback** (AC: 3) — step 4 in `ConversationThreader`, after the alias step; event must exist (`EventRepository.existsByEventCode`); several distinct codes → no event. Unit tests incl. `Re: AW: BATbern60 …`, two codes, unknown code.
+- [x] **Task 3 — Broadcasts recorded** (AC: 4)
+  - [x] `EmailForwardingService`: the private-copy path (`sendIndividually`, line 399) for `EVENT_PARTICIPANTS`, `EVENT_PARTICIPANTS_DEPRECATED` and `PARTNERS` aliases records one `mail_message` per inbound mail with one `mail_recipient` per copy (SES id per copy), through the `sendRawMessage(MailContext, …)` overload from 16.2a. The other aliases' copies (to organizers) stay unrecorded: they are the forwarded inbound mail, already stored as `IN`.
+  - [x] Test: participants broadcast → one OUT row with N recipients on the event; partner@ → PARTNERS, no event; ok@ → nothing.
+- [x] **Task 4 — Explicit Message-ID on raw sends** (AC: 7)
+  - [x] Shared kernel `EmailService.sendHtmlEmailWithAttachments` / `sendHtmlEmailSyncWithAttachments` (lines 295–531): when a `MailContext` is given, set `Message-ID: <{uuid}@{domain of fromEmail}>` with a `MimeMessage` subclass whose `updateMessageID()` keeps it, and pass it to the recorder. `OutboundMail` gets an optional `messageIdHeader`; `JpaOutboundMailRecorder` writes it to `mail_recipient.message_id_header` (column from 16.2a). The 16.9 HTTP recorder ignores the new field if it does not need it; coordinate the record shape with the 16.9 author (`OutboundMail` is the SPI payload).
+  - [x] Test: header present in the raw bytes, equal to the recorded value; no context → unchanged behaviour.
+- [x] **Task 5 — Audience `PUBLIC`** (AC: 8) — migration `V{next}__mail_audience_public.sql` (re-check the head; 16.8/16.9 may have added migrations): drop and re-add `chk_mail_message_audience` and the conversation's audience CHECK with `PUBLIC`. Shared-kernel enum, spec enum, regenerate frontend types; `MailSentList` `FILTERS` (line 30) unchanged.
+- [x] **Task 6 — UI wording** (AC: 9, 11) — "via" labels for the new paths in `ConversationRow`; i18n keys in all 10 locales. No new component.
+- [x] **Task 7 — Local dev check** (AC: 11) — with the 16.2a simulator: `info@` mail without match, registrant reply (capture a local registration confirmation, simulate the reply with its capture id), participants broadcast. Rows deleted afterwards; results in Completion Notes.
+- [x] **Task 8 — Docs** — user guide `event-mail.md` (which mail becomes a conversation), `06-backend-architecture.md` (gate, subject fallback, Message-ID on raw sends), `08-operations-security.md` (no change to retention; confirm the text still matches).
 
 ### Suggested PR split
 
@@ -86,12 +86,85 @@ About 6 human mails a week across all inbound, about 51 alias forwards in 6 mont
 
 ### Agent Model Used
 
+Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-11-02
+
 ### Debug Log References
 
 ### Completion Notes List
 
+Built after 16.6 PR 1 (epic order), on `feature/16-2a-speaker-conversations`; ships in the same PR.
+- Gate (`InboundMailCenter`): token reply, any unrecognized `replies@` reply, alias mail to
+  `-moderator@`/`info@`/`events@`/`support@`. Organizer sends to `-speaker@`, `-participants@`,
+  `batbern{N}@`, `partner@` and `ok@` open nothing. An organizer is a counterpart only on a contact
+  alias (AC6). Audience from the matched mail, else SPEAKERS (moderator), else PUBLIC. Assignee only
+  for new SPEAKERS conversations (lead organizer); AC1/AC2 conversations are unassigned. A person's
+  next no-event mail joins their open no-event conversation (`openConversationWith` now
+  `IS NOT DISTINCT FROM`). Metric `ThreadMatchedNone` for no-match.
+- Subject fallback (`ConversationThreader.bySubject`, metric `ThreadMatchedBySubject`): exactly one
+  distinct code, event must exist.
+- Broadcasts (`EmailForwardingService`): `Plan.recorded` + `Recording`; recorded copies go through
+  the 16.2a `sendRawMessage(MailContext, …)` overload with one shared context, so one OUT row with
+  one recipient per copy. Two existing forwarding tests now verify the recorded overload.
+- AC7: `FixedIdMimeMessage` in both attachment send paths when a context is given; recorder gets
+  `messageIdHeader`. Only the SES branch: local dev threads by `local-{captureId}` as before.
+  This changes the headers of registration and newsletter mail in production. The story suggests
+  a separate deploy for it; it ships in the one PR per the handover, so watch the first replies.
+- V141 PUBLIC (both CHECKs), shared-kernel enum, spec enum (+ description), types regenerated;
+  `MailSentList` FILTERS unchanged.
+- UI: "via" for replies by audience (`viaReplyRegistrants`, `viaReplyNewsletter`), 10 locales.
+- Tests: `ConversationThreadingIntegrationTest` (+11, two 16.2a scope tests replaced by their 16.2b
+  counterparts), `ConversationThreaderSubjectTest` (3), `EmailForwardingServiceTest` (+3),
+  `EmailServiceRawMessageIdTest` (3, RED confirmed first), retention AC10 folded into the existing
+  purge test (ShedLock skips a second purge in the same JVM within lockAtLeastFor),
+  `NeedsAnswerSection.test.tsx` (+1). The Task 1/2 tests were written before the code but not run
+  RED separately (builds paused during the PR 1 push).
+- Local dev check (2026-11-02, BATbern63, synthetic simulator addresses): info@ without match →
+  no-event PUBLIC unassigned OPEN conversation; public registration → captured confirmation
+  (REGISTRANTS, `local-…`); reply with its capture id at `replies@` → conversation on BATbern63,
+  REGISTRANTS, unassigned, "via reply"; organizer broadcast to `batbern63-participants@` → 2 copies,
+  one OUT row REGISTRANTS/OWN_TEXT with 2 recipients, no conversation (the other 15 registrations of
+  the anonymized local data were not delivered to; most likely reserved-domain addresses, not
+  verified). All test rows, the registration and its user profile deleted afterwards.
+- 08-operations-security: retention text still matches; scope sentence updated.
+- Not done: AC5's partner-meeting RSVP event attribution (needs 16.9 to make the meeting's event
+  known to EMS; RSVPs stay counted without event as before).
+
 ### File List
+
+- _bmad-output/implementation-artifacts/16-2b-all-alias-conversations.md
+- _bmad-output/implementation-artifacts/sprint-status.yaml
+- docs/api/event-mail-api.openapi.yml
+- docs/architecture/06-backend-architecture.md
+- docs/architecture/08-operations-security.md
+- docs/user-guide/appendix/changelog.md
+- docs/user-guide/features/event-mail.md
+- services/event-management-service/src/main/java/ch/batbern/events/forwarding/EmailForwardingService.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/MailCenterMetrics.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/inbound/ConversationThreader.java
+- services/event-management-service/src/main/java/ch/batbern/events/mailcenter/inbound/InboundMailCenter.java
+- (new) services/event-management-service/src/main/resources/db/migration/V141__mail_audience_public.sql
+- services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingServiceTest.java
+- (new) services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/ConversationThreaderSubjectTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/ConversationThreadingIntegrationTest.java
+- services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/MailConversationRetentionIntegrationTest.java
+- shared-kernel/src/main/java/ch/batbern/shared/mail/MailContext.java
+- shared-kernel/src/main/java/ch/batbern/shared/service/EmailService.java
+- (new) shared-kernel/src/test/java/ch/batbern/shared/service/EmailServiceRawMessageIdTest.java
+- web-frontend/public/locales/de/events.json
+- web-frontend/public/locales/en/events.json
+- web-frontend/public/locales/es/events.json
+- web-frontend/public/locales/fi/events.json
+- web-frontend/public/locales/fr/events.json
+- web-frontend/public/locales/gsw-BE/events.json
+- web-frontend/public/locales/it/events.json
+- web-frontend/public/locales/ja/events.json
+- web-frontend/public/locales/nl/events.json
+- web-frontend/public/locales/rm/events.json
+- web-frontend/src/components/organizer/EventPage/communications/NeedsAnswerSection.tsx
+- web-frontend/src/components/organizer/EventPage/communications/__tests__/NeedsAnswerSection.test.tsx
+- web-frontend/src/types/generated/event-mail-api.types.ts
 
 ## Change Log
 
 - 2026-11-01: Story drafted from Epic 16 Story 16.2, all-alias part (split 16.2a/16.2b per owner sequence #3).
+- 2026-11-02: Implemented (all tasks); status review.

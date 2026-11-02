@@ -35,6 +35,12 @@ public record ForwardingAlias(String localPart, Kind kind, String eventCode) {
         EVENT_PARTICIPANTS_DEPRECATED,
         /** {@code noreply@}, {@code calendar@}: auto-replies to our own mail land here. Dropped. */
         NO_REPLY,
+        /**
+         * Story 16.6: {@code replies@} and {@code replies+{token}@}, the Reply-To of platform mail and of
+         * an organizer's answer. Not forwarded as an alias: {@code AliasMailProcessor} hands it to the
+         * replies path (keyword router, Mail Center), because SES may deliver a plus address here.
+         */
+        CONVERSATION_REPLY,
         UNKNOWN
     }
 
@@ -55,6 +61,9 @@ public record ForwardingAlias(String localPart, Kind kind, String eventCode) {
     }
 
     private static ForwardingAlias classify(String localPart) {
+        if (localPart.equals("replies") || localPart.startsWith("replies+")) {
+            return new ForwardingAlias(localPart, Kind.CONVERSATION_REPLY, null);
+        }
         switch (localPart) {
             case "ok", "info", "events":
                 return new ForwardingAlias(localPart, Kind.ORGANIZERS, null);
@@ -113,6 +122,6 @@ public record ForwardingAlias(String localPart, Kind kind, String eventCode) {
 
     /** Whether mail to this alias is forwarded at all. */
     public boolean forwardable() {
-        return kind != Kind.NO_REPLY && kind != Kind.UNKNOWN;
+        return kind != Kind.NO_REPLY && kind != Kind.UNKNOWN && kind != Kind.CONVERSATION_REPLY;
     }
 }

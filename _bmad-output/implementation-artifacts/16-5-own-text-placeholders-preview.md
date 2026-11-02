@@ -1,6 +1,6 @@
 # Story 16.5: Own text with placeholders and per-recipient preview
 
-Status: review
+Status: done
 
 ## Story
 
@@ -76,10 +76,10 @@ Story 16.11 (one pipeline, one variable catalog, PR #1177) replaces the render d
   - [x] Starting point: `GET /email-templates/{key}/{locale}` through the existing service; save as template: existing `createEmailTemplate` service, key input with the spec's kebab-case pattern.
   - [x] Preview shows `highlightedHtml` (sandboxed iframe, no scripts); the yellow `mark` and red `mark.unknown` styles are part of the preview HTML (inline `<style>` added by `PreviewHighlighter`), not of the sent mail.
   - [x] i18n keys in all 10 locales.
-- [ ] **Task 8 — Verify** (AC: all)
-  - [ ] Full EMS suite and Vitest to files (`set -o pipefail; ... | tee`).
-  - [ ] Local dev: own text per audience on a throwaway event; preview stepping; test send; real send; compare `/dev/emails` with the record; registrant guard prompt; newsletter footer link works on local (`/unsubscribe?token=...` resolves).
-  - [ ] Playwright: extend `event-mail-composer.spec.ts` (no send) with own text + chips + red placeholder; the send spec stays `@sends-real-email`, local only.
+- [x] **Task 8 — Verify** (AC: all)
+  - [x] Full EMS suite and Vitest to files (`set -o pipefail; ... | tee`).
+  - [x] Local dev: own text per audience on a throwaway event; preview stepping; test send; real send; compare `/dev/emails` with the record; registrant guard prompt; newsletter footer link works on local (`/unsubscribe?token=...` resolves).
+  - [x] Playwright: extend `event-mail-composer.spec.ts` (no send) with own text + chips + red placeholder; the send spec stays `@sends-real-email`, local only.
   - [x] Docs: user guide `docs/user-guide/features/event-mail.md` (own text, placeholders), architecture note on own-text storage.
 
 ## Dev Notes
@@ -160,7 +160,8 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-11-02. Frontend (Tasks 6, 7) by a
 - Contract gaps reported by the frontend agent, not fixed: chips need one preview first (template mode previews before the toggle in practice); the 400/409 error body has no OpenAPI schema (frontend reads `details.code`); `CreateEmailTemplateRequest` has no `isSystemTemplate` (backend default false).
 - Also in this PR: 16.9 A + B, and the owner decision of 2026-11-02 that every partner mail (invite with its own ICS, cancellation, plain partner mail) goes to each recipient on their own (see 16.9).
 - Tests: `PlaceholderValidatorTest` (4), `PreviewHighlighterTest` (5), `SpeakerAudienceAdapterTest` own-text cases (3), `OwnTextComposerIntegrationTest` (8: newsletter footer + per-recipient link + byte-equal + row; retry from the row; registrants guard/409/confirmResend; speakers by status + outreach note + no reminder log; venue; unknown placeholder 400 for both targets, nothing recorded; limits; test send), `MailContextTest.ownText`, `SpeakerModeratorReplyToTest` sessionTitle (AC12). Frontend: `MailComposerOwnText.test.tsx` (25), `highlightedSubject.test.ts` (4), EventPage Vitest 428 passed / 0 failed, type-check and lint clean (agent's runs).
-- **Not done:** local-dev send per audience (Task 8) and the Playwright own-text extension (only the toggle assertion in `event-mail-composer.spec.ts` was updated). Local dev would show capture and record only, not SES delivery (no SesClient locally).
+- **Not done at merge:** local-dev send per audience (Task 8) and the Playwright own-text extension. Local dev would show capture and record only, not SES delivery (no SesClient locally).
+- **Task 8 done 2026-11-02, after #1180 was live** (on develop 9ac37626, local dev): `event-mail-composer.spec.ts` gained "registrants, own text" (chips insert at the cursor of subject and body, the preview marks `data-var`, `{{bogusField}}` is named and disables send and test) and "partners" (meeting invite default, own text previews one unpersonalised mail). `event-mail-composer-send.spec.ts` gained a real own-text send to registrants, compared with `/dev/emails`: one mail per recipient, subject filled, no `{{` left, a name filled, the record's subject and delivered count equal the capture. 12 of 12 pass. Covered by `OwnTextComposerIntegrationTest` only, not clicked in the browser: the registrant resend guard (409 + confirmResend) and the newsletter unsubscribe footer. Finding: reserved-domain refusals are not recorded as failed (#1182).
 
 ### File List
 
@@ -178,3 +179,4 @@ Docs: `docs/user-guide/features/event-mail.md`, `docs/user-guide/appendix/change
 
 - 2026-11-01: Story drafted from Epic 16 on top of the 16.8 design, grounded in code at 15a13959.
 - 2026-11-02: Design update for 16.11; implemented (backend, frontend, docs); status review. Local-dev and Playwright checks open.
+- 2026-11-02: Live via #1180. Task 8 local-dev and Playwright checks done; status done.

@@ -1,6 +1,7 @@
 import { App } from 'aws-cdk-lib';
 import { Template, Match } from 'aws-cdk-lib/assertions';
 import * as sns from 'aws-cdk-lib/aws-sns';
+import * as iam from 'aws-cdk-lib/aws-iam';
 import { Stack } from 'aws-cdk-lib';
 import { InboundEmailStack } from '../../lib/stacks/inbound-email-stack';
 import { stagingConfig } from '../../lib/config/staging-config';
@@ -79,6 +80,47 @@ describe('InboundEmailStack', () => {
         ]),
       }),
     });
+  });
+
+  // Story 16.6: raw mail still expires after 7 days; kept attachments live under mail-attachments/
+  // until the retention job deletes them, with a 400-day lifecycle backstop.
+  test('should_expireRawMailAfter7Days_and_keepAttachmentsUntilBackstop', () => {
+    template.hasResourceProperties('AWS::S3::Bucket', {
+      BucketName: 'batbern-inbound-emails-staging',
+      LifecycleConfiguration: {
+        Rules: Match.arrayWith([
+          Match.objectLike({ Prefix: 'emails/', ExpirationInDays: 7, Status: 'Enabled' }),
+          Match.objectLike({ Prefix: 'forwarding/', ExpirationInDays: 7, Status: 'Enabled' }),
+          Match.objectLike({
+            Prefix: 'mail-attachments/',
+            ExpirationInDays: 400,
+            Status: 'Enabled',
+          }),
+        ]),
+      },
+    });
+  });
+
+  test('should_grantEmsWriteAndDelete_onAttachmentPrefixOnly', () => {
+    const roleApp = new App();
+    const env = { account: '123456789012', region: 'eu-west-1' };
+    const roleStack = new Stack(roleApp, 'RoleStack', { env });
+    const role = new iam.Role(roleStack, 'EmsRole', {
+      assumedBy: new iam.ServicePrincipal('ecs-tasks.amazonaws.com'),
+    });
+    const withRole = new InboundEmailStack(roleApp, 'InboundWithRole', {
+      config: stagingConfig,
+      env,
+      emsTaskRole: role,
+    });
+    // The grant lands on the role's own stack.
+    const statements = JSON.stringify([
+      Template.fromStack(roleStack).findResources('AWS::IAM::Policy'),
+      Template.fromStack(withRole).findResources('AWS::IAM::Policy'),
+    ]);
+    expect(statements).toContain('mail-attachments/*');
+    expect(statements).toContain('s3:PutObject');
+    expect(statements).toContain('s3:DeleteObject');
   });
 
   // AC1: SQS queue exists (standard, not FIFO)

@@ -24,8 +24,19 @@ tests {
       expect(res.getBody().failedDeliveries).to.be.at.least(0);
     }
   });
+
+  test("Story 16.2a: the automatic inbound counts are present", function() {
+    if (res.getStatus() === 200) {
+      const body = res.getBody();
+      ["outOfOffice", "bounces", "calendarAccepts", "calendarDeclines", "keywordAccepts", "keywordCancels",
+       "unsubscribes"].forEach(function(field) {
+        expect(body[field]).to.be.at.least(0);
+      });
+    }
+  });
 }
 
 docs {
   Story 16.3 AC3: GET /events/{eventCode}/mails/counts. Read-only.
+  Story 16.2a AC8: also the automatic inbound counts per kind.
 }

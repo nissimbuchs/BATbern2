@@ -45,6 +45,14 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**New Feature — Speaker Replies in the Mail Page (2026-11-02)**:
+- ✅ The event's mail page has a new first section, **Needs an answer**: what speakers wrote to the event's moderator address, grouped per speaker, with a status (open, waiting, done) and the organizer who answers. The lead organizer is assigned at first; "I'll take it" makes it yours. Forwarding to the moderator's inbox is unchanged.
+- ✅ **Handled automatically** now also counts out-of-office replies, bounce mails, calendar acceptances and declines, keyword replies that acted, and unsubscribes, without keeping their text.
+- ✅ A mail an organizer sends to `batbern{N}-speaker@` now appears under "What went out".
+- ✅ Replies to registration mails and newsletters, and mail to `info@`, `events@` and `support@`, become conversations like the speakers' mails: on the event they belong to, or kept for the coming Mail page when they belong to none. An organizer's mail to `batbern{N}-participants@` or `partner@` now appears under "What went out".
+- ✅ Attachments of incoming mail up to 25 MB are kept with the conversation and open with a click; they are deleted together with the conversation.
+- ✅ Organizers answer a conversation directly from the mail page. The answer goes out as "{name} via BATbern", the speaker's reply comes back into the same conversation, and every organizer sees who answered what. Handing a conversation to another organizer sends them one short mail with a link.
+
 **Bug Fixes — Clearer Registration Status on the Event Page (2026-11-02)**:
 - ✅ A logged-in visitor who is not registered no longer sees "Anmeldung stornieren". The page says instead under which address they are not registered, with a link for a registration made with another address. On 2 November a participant asked four times for a cancellation link and waited for it, although there was no registration to cancel. Registered visitors cancel directly in the event header, as before. Visitors who are not logged in still get the cancellation link by e-mail; the dialog now asks for the address they registered with and says that no mail means no registration under that address (#1183).
 

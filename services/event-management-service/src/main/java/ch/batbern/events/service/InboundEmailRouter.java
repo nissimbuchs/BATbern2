@@ -55,12 +55,21 @@ public class InboundEmailRouter {
 
     /** What {@link #route} did with a mail. */
     public enum RouteResult {
-        /** A keyword action ran. */
-        HANDLED,
+        /** "unsubscribe" acted: the sender left the newsletter. */
+        UNSUBSCRIBED,
+        /** "cancel" acted: the deregistration-link mail went out (Story 16.0 AC11). */
+        DEREGISTRATION_LINK,
+        /** "accept" acted: the registration is confirmed. */
+        CONFIRMED,
         /** The sender exceeded the rate limit; nothing ran and nothing is forwarded. */
         RATE_LIMITED,
         /** No action could run; a person has to read it (Story 16.0 AC3). */
-        UNRECOGNIZED
+        UNRECOGNIZED;
+
+        /** A keyword action ran. Story 16.2a counts these per event ("Handled automatically"). */
+        public boolean acted() {
+            return this == UNSUBSCRIBED || this == DEREGISTRATION_LINK || this == CONFIRMED;
+        }
     }
 
     /**
@@ -107,7 +116,7 @@ public class InboundEmailRouter {
             newsletterSubscriberService.unsubscribeByEmail(email.senderEmail());
             confirmationEmailService.sendUnsubscribeConfirmation(email.senderEmail(), locale);
             log.info("Processed unsubscribe reply from: {}***", senderPrefix);
-            return RouteResult.HANDLED;
+            return RouteResult.UNSUBSCRIBED;
         }
 
         // 4. Deregistration variants: cancel, deregister, absagen
@@ -121,7 +130,7 @@ public class InboundEmailRouter {
                         deregistrationService.requestDeregistrationLinkByReply(email.senderEmail(), eventCode);
                 log.info("Processed deregistration reply from: {}*** for event: {} → {}", senderPrefix, eventCode,
                         result);
-                return RouteResult.HANDLED;
+                return RouteResult.DEREGISTRATION_LINK;
             }
             log.warn("Deregistration keyword but no event code in subject from: {}*** — forwarding", senderPrefix);
             return RouteResult.UNRECOGNIZED;
@@ -134,7 +143,7 @@ public class InboundEmailRouter {
             if (eventCode != null) {
                 registrationService.confirmByEmail(email.senderEmail(), eventCode);
                 log.info("Processed acceptance reply from: {}*** for event: {}", senderPrefix, eventCode);
-                return RouteResult.HANDLED;
+                return RouteResult.CONFIRMED;
             }
             log.warn("Acceptance keyword but no event code in subject from: {}*** — forwarding", senderPrefix);
             return RouteResult.UNRECOGNIZED;

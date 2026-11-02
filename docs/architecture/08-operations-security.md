@@ -50,6 +50,21 @@ sends for an event, so they fall under the same rules as registration data:
 - **Delivery status (Story 16.1b):** a bounce or complaint stores only the SES bounce type/subtype,
   `complaint`, or the reject reason, not the remote server's diagnostic text. Transactional bounces
   never feed newsletter suppression.
+- **Inbound mail and conversations (Stories 16.2a, 16.2b):** a person's mail to the moderator alias,
+  `info@`, `events@` or `support@`, and every reply at `replies@` that no keyword acted on, is stored with sender, addresses, text and sanitized HTML in
+  `mail_message` (`direction IN`) and grouped in `mail_conversation`. Same retention: deleted once
+  the event date and the conversation's last activity are both older than 12 months, without an event
+  by last activity. The body is in the database because the raw mail in S3 expires after 7 days.
+  Story 16.6: attachments up to 25 MB per file are kept in the same private inbound bucket under
+  `mail-attachments/` (owner decision 2026-11-01, cap 2026-11-02); larger ones by name only. They are
+  deleted with their conversation by the nightly retention job; a 400-day S3 lifecycle rule on the
+  prefix is the backstop. The bucket's 7-day rule now applies to `emails/` and `forwarding/` (the
+  only prefixes SES writes). EMS may put and delete only under `mail-attachments/`. Organizers
+  download a file through a 5-minute presigned link (`getConversationAttachmentDownloadUrl`). HTML is sanitized at receipt (no images,
+  styles or scripts), so opening a mail never loads remote content in an organizer's browser.
+- **Automatic mail is counted, not kept (Story 16.2a):** out-of-office replies, bounce mails,
+  calendar replies, keyword replies that acted and loops are one row each in `mail_automatic_event`
+  with kind, event and time, no address, no subject, no body. Same retention.
 
 ### AI / LLM Security (OWASP-LLM, Story 15.9)
 - The AI surface lives in `event-management-service` (event description, theme image, abstract

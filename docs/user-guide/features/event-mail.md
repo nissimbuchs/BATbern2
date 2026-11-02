@@ -1,9 +1,50 @@
 # Event mail page (Communications tab)
 
-> **Last Updated:** 2026-11-01 · Epic 16, Stories 16.3, 16.4, 16.8a, 16.8b
+> **Last Updated:** 2026-11-02 · Epic 16, Stories 16.3, 16.4, 16.8a, 16.8b, 16.2a
 
 The **Communications** tab of an event is its mail page. It answers "did the speakers get the
 slides mail?" without asking the team.
+
+## Needs an answer
+
+What speakers wrote to the team for this event, so everyone sees the question and who answers it,
+instead of it sitting in one private inbox (Story 16.2a).
+
+- **What lands here:** a speaker's mail to the event's moderator address
+  (`batbern{N}-moderator@batbern.ch`, the Reply-To of every speaker mail), replies to registration
+  mails and newsletters, and mail to `info@`, `events@` or `support@` that belongs to the event (it
+  answers one of the event's mails, or its subject names the event, e.g. "BATbern60"). Contact mail
+  that belongs to no event is kept too and will be listed on the Mail page (Story 16.7). An
+  organizer's mail to `info@` counts like anyone's; organizer mail to the moderator address or to
+  `ok@` does not. A row says where the mail came from: "via info@batbern.ch", "reply to a registrant
+  mail", "reply to the newsletter".
+- **Broadcasts are sends:** an organizer's mail to `batbern{N}-participants@` or `partner@` appears
+  under "What went out" as one mail to all recipients.
+- **Forwarding is unchanged** until the owner switches an address group to the Mail Center. Then the
+  people who got the forwarded copy get a short notice with a link to the conversation instead.
+- **Each row:** a status dot, date, who wrote, where it arrived, the subject, and the avatar of the
+  organizer who answers. Open and waiting first, newest first; done ones below, greyed. The number
+  beside the heading counts the open ones.
+- **Who answers:** the event's lead organizer at first. **I'll take it** on an unassigned row makes
+  it yours; inside the conversation you can pick any organizer or nobody.
+- **Status:** *Open* (needs an answer), *Waiting* (answered, waiting for the speaker), *Done*. A new
+  mail from the speaker sets it back to *Open*. Changing the status sends no mail.
+- **Answering:** below the messages, write your answer and click **Send answer**, then confirm. The
+  mail goes out as "{your name} via BATbern" and quotes the speaker's last mail. When the speaker
+  replies, the reply lands in the same conversation, not in your inbox. Sending sets the
+  conversation to *Waiting*; tick **Mark as done** first if nothing more is expected. Your answer
+  appears in the conversation for every organizer; it is not listed again under "What went out".
+- **Reassigning:** when you give a conversation to another organizer, they get one short mail with a
+  link to it. Taking it yourself, clearing the assignee, or choosing the same organizer again sends
+  nothing.
+- **A click** opens the conversation below its row: every mail, oldest first, with sender, time,
+  text and attachments (on a phone: full screen). Attachments up to 25 MB open with a click; larger
+  ones show their name only ("name only") and are in the forwarded copy. Images and formatting from the sender's mail are
+  not shown, so opening a mail never loads anything from outside.
+- **Link to a conversation:** the address bar shows `?conversation=conv-…` while one is open; that
+  link opens it directly.
+- **Nothing yet?** The section shows one line, "Nothing open."
+- Conversations are kept like the rest of the event's mail: 12 months after the event.
 
 ## What went out
 
@@ -13,6 +54,8 @@ Every mail sent for the event, newest first, the newsletter included.
   how many were delivered and how many failed. "automatic" means no organizer sent it (a
   scheduler or a registration).
 - **Filters:** All · Newsletter · Registrants · Speakers · Venue & Catering · Partners.
+- **A mail an organizer sends to `batbern{N}-speaker@`** is listed as own text to the speakers, sent
+  by that organizer (since 2 November 2026).
 - **Automatic mails** (confirmations, reminders) are collapsed per template and day
   ("registration-confirmation · 14 mails"). A click expands them into single mails.
 - **A click on a mail** opens it below its row, exactly as it was sent, with its recipients beside
@@ -37,10 +80,24 @@ Limits:
 
 ## Handled automatically
 
-Collapsed, counts only. Today: failed deliveries for the event (bounces, complaints, rejects, sends
-SES refused). Accepts, declines and out-of-office replies follow with Story 16.2.
+Collapsed, counts only. Failed deliveries for the event (bounces, complaints, rejects, sends SES
+refused), and since Story 16.2a every mail that came back without needing a person, each kind on
+its own line when there is at least one:
+
+- out-of-office replies;
+- bounce messages that arrived as mail;
+- calendar acceptances and declines of the registration invite;
+- replies "accept" that confirmed a registration, and replies "cancel" that sent the cancellation
+  link;
+- newsletter unsubscribes by reply.
+
+These mails are only counted: no sender, subject or text is kept. A mail counts for this event when
+it answers one of the event's mails, names the event code in its subject, or (calendar replies)
+belongs to one of its registrations.
 
 ## + New mail
+
+The button sits in the header of **Needs an answer**.
 
 The menu offers **Newsletter, Registrants, Speakers, Venue & Catering, Partners**. All five open the
 same composer at the top of the page (full screen on a phone), with the same steps:

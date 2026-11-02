@@ -1,9 +1,14 @@
 /**
- * Event Detail → Communications: the mail page (Epic 16, Stories 16.3 + 16.4). READ-ONLY.
+ * Event Detail → Communications: the mail page (Epic 16, Stories 16.3 + 16.4 + 16.2a). READ-ONLY.
  *
  * Opens "What went out", "Handled automatically" and every "+ New mail" composer (inline on desktop,
  * full-screen dialog on mobile), and closes each again without sending anything. No compose action
  * is confirmed in this spec.
+ *
+ * Story 16.2a: "Needs an answer". A speaker's mail is simulated with the local dev inbound endpoint
+ * (`POST /dev/emails/inbound`, EMS profile `local`), which runs the production processing; the
+ * forwarded copy lands in the local capture. Conversations of the deleted fixture event stay in the
+ * local DB until retention, like its mail.
  *
  * Guarded to LOCAL DEV like the newsletter spec: the fixture event is created through the API,
  * and on staging (= production) the AWS account is live (ADR-015). Never tag it @gate.
@@ -20,6 +25,7 @@ import { waitForAppShell } from '../helpers/app-shell';
 import { forceUserProfileLanguage } from '../helpers/mock-user-profile';
 
 const LOCAL_DEV = (process.env.TEST_ENV ?? 'development') === 'development';
+const EMS_URL = 'http://localhost:8002';
 const describeMailPage = LOCAL_DEV ? test.describe : test.describe.skip;
 
 describeMailPage('Organizer · Event mail page (read-only)', () => {
@@ -64,6 +70,65 @@ describeMailPage('Organizer · Event mail page (read-only)', () => {
     }
   });
 
+  test('needs an answer: a speaker mail appears, opens inline, status and deep link work', async ({
+    page,
+    request,
+  }) => {
+    await forceUserProfileLanguage(page, 'en');
+    await page.goto(`/organizer/events/${event.eventCode}`);
+    await waitForAppShell(page);
+    await page.getByTestId('event-tab-communications').click();
+
+    // A fresh event: one line, no table; "+ New mail" sits in this section's header.
+    await expect(page.getByTestId('needs-answer-empty')).toHaveText('Nothing open.', {
+      timeout: 15_000,
+    });
+    await expect(page.getByTestId('needs-answer').getByTestId('new-mail-button')).toBeVisible();
+
+    const subject = `Beamer question ${Date.now()}`;
+    const simulated = await request.post(`${EMS_URL}/dev/emails/inbound`, {
+      data: {
+        from: 'success+speaker@simulator.amazonses.com',
+        fromName: 'A Speaker',
+        to: `${event.eventCode.toLowerCase()}-moderator@batbern.ch`,
+        subject,
+        body: 'Do I need HDMI or USB-C?',
+      },
+    });
+    expect(simulated.ok()).toBeTruthy();
+
+    await page.reload();
+    await waitForAppShell(page);
+    await page.getByTestId('event-tab-communications').click();
+    const row = page.locator('[data-testid^="conversation-row-"]').filter({ hasText: subject });
+    await expect(row).toBeVisible({ timeout: 15_000 });
+    await expect(row).toHaveAttribute('data-status', 'OPEN');
+    await expect(page.getByTestId('needs-answer-badge')).toHaveText('1');
+    const key = ((await row.getAttribute('data-testid')) ?? '').replace('conversation-row-', '');
+
+    // Opens inline below the row, with the speaker's text in the sandboxed frame.
+    await row.getByTestId(`conversation-open-${key}`).click();
+    const inline = page.getByTestId(`conversation-inline-${key}`);
+    await expect(inline.getByTestId('conversation-detail')).toBeVisible();
+    await expect(
+      inline.frameLocator('iframe').first().getByText('Do I need HDMI or USB-C?')
+    ).toBeVisible();
+    await expect(page).toHaveURL(new RegExp(`conversation=${key}`));
+
+    // Done: greyed, no longer counted.
+    await inline.getByRole('combobox', { name: 'Status' }).click();
+    await page.getByTestId('conversation-status-DONE').click();
+    await expect(row).toHaveAttribute('data-status', 'DONE', { timeout: 15_000 });
+    await expect(page.getByTestId('needs-answer-badge')).toHaveCount(0);
+
+    // A second click closes it; the deep link opens it again.
+    await row.getByTestId(`conversation-open-${key}`).click();
+    await expect(inline).toBeHidden();
+    await page.goto(`/organizer/events/${event.eventCode}?tab=communications&conversation=${key}`);
+    await waitForAppShell(page);
+    await expect(page.getByTestId(`conversation-inline-${key}`)).toBeVisible({ timeout: 15_000 });
+  });
+
   test('has no horizontal scroll at phone width', async ({ page }) => {
     await page.setViewportSize({ width: 375, height: 800 });
     await forceUserProfileLanguage(page, 'en');
@@ -87,5 +152,16 @@ describeMailPage('Organizer · Event mail page (read-only)', () => {
     await page.keyboard.press('Escape');
     await expect(page.getByTestId('compose-panel-speakers')).toBeHidden();
     await expect(page.getByTestId('new-mail-button')).toBeFocused();
+
+    // Story 16.2a: a conversation opens as a full-screen dialog, still without horizontal scroll.
+    const row = page.locator('[data-testid^="conversation-open-"]').first();
+    await row.click();
+    const conversation = page.getByRole('dialog');
+    await expect(conversation.getByTestId('conversation-detail')).toBeVisible();
+    const dialogOverflow = await conversation.evaluate((el) => {
+      const paper = el.querySelector('.MuiDialog-paper') ?? el;
+      return paper.scrollWidth - paper.clientWidth;
+    });
+    expect(dialogOverflow).toBeLessThanOrEqual(0);
   });
 });
