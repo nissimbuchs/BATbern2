@@ -167,17 +167,6 @@ public interface RegistrationRepository
     long countByEventId(UUID eventId);
 
     /**
-     * Find usernames of attendees registered for a specific event (by event code)
-     * Story BAT-7: Used for notification delivery (deadline reminders, event updates)
-     *
-     * @param eventCode Event code (e.g., "BATbern123")
-     * @return List of usernames registered for this event
-     */
-    @Query("SELECT r.attendeeUsername FROM Registration r JOIN Event e "
-            + "ON r.eventId = e.id WHERE e.eventCode = :eventCode")
-    List<String> findUsernamesByEventCode(@Param("eventCode") String eventCode);
-
-    /**
      * Find registration for a specific event (by event code) and authenticated user.
      * Story 10.10: GET /events/{eventCode}/my-registration (AC1)
      *

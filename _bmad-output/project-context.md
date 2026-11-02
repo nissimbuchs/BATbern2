@@ -431,6 +431,13 @@ type(scope): description
   first: Spring web exceptions keep their 4xx (missing parameter/header, 404, 405, 415) and a NUL
   byte (SQLState 22021) is a 400, all at severity LOW. `ClientErrorContract.verify(handler)`
   (shared-kernel test fixtures) asserts it per service through the real resolver chain (#1148).
+- **No automatic mail to a whole audience (#1179).** Schedulers and listeners may mail one person
+  about their own case, or organizers. A mail to all registrants, speakers or partners goes out only
+  when an organizer sends it from the Mail Center. `AutomaticTriggerAudienceGuardTest` (EMS) lists
+  every `@Scheduled`/`@EventListener`/`@SqsListener` method with its audience; a new one fails the
+  build until reviewed. A fix that makes a dead send path work again also wakes up every dormant
+  caller of it: list those callers and what they would send BEFORE merging (#1159 woke
+  `DeadlineReminderJob`, which mailed 267 BATbern60 registrations on 2026-11-02).
 - `@ElementCollection(fetch = FetchType.EAGER)` causes N+1 on every list query — always LAZY.
 - Never use `findAll()` then filter/paginate in memory — always paginate at the DB level.
 - Flyway migration filenames must be strictly sequential: `V{n}__{description}.sql`.

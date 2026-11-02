@@ -48,10 +48,6 @@ class NotificationServiceTest {
     @Mock
     private UserApiClient userApiClient;
 
-
-    @Mock
-    private ch.batbern.events.repository.RegistrationRepository registrationRepository;
-
     @Mock
     private org.springframework.messaging.simp.SimpMessagingTemplate messagingTemplate;
 
@@ -66,7 +62,6 @@ class NotificationServiceTest {
                 notificationRepository,
                 emailService,
                 userApiClient,
-                registrationRepository,
                 messagingTemplate
         );
 

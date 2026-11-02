@@ -99,28 +99,8 @@ public class NotificationService {
     private final UserApiClient userApiClient;
     private final EventRepository eventRepository;
 
-    /**
-     * Send email notification (creates audit trail record)
-     */
-    @EventListener
-    @Async
-    public void onEventPublished(EventPublishedEvent event) {
-        // Get all registered attendees
-        List<String> attendees = registrationRepository
-            .findUsernamesByEventId(event.getEventId());
-
-        // Create email notifications (audit trail)
-        for (String username : attendees) {
-            createAndSendEmailNotification(NotificationRequest.builder()
-                .recipientUsername(username)
-                .eventCode(event.getEventCode())
-                .type("EVENT_PUBLISHED")
-                .channel("EMAIL")
-                .subject("Event " + event.getTitle() + " is now published")
-                .body(buildEmailBody(event))
-                .build());
-        }
-    }
+    // No listener on EventPublishedEvent any more (#1179): publishing the agenda
+    // mailed every registration, cancelled ones included, without anyone deciding to.
 
     /**
      * Create notification record and send via email
@@ -247,7 +227,7 @@ public enum NotificationType {
     QUALITY_REVIEW_APPROVED,
     QUALITY_REVIEW_REQUIRES_CHANGES,
     SLOT_ASSIGNED,          // ⚠️ Superseded by ADR-009 — to be removed in Epic 11 Phase B/C (no SLOT_ASSIGNED speaker state in the 8-state workflow; slot assignment is derived from session.start_time).
-    DEADLINE_WARNING,       // Used by DeadlineReminderJob for registration deadline reminders
+    DEADLINE_WARNING,       // Historic only: DeadlineReminderJob, removed by #1179
     DEADLINE_REMINDER,      // Used in NotificationControllerIntegrationTest (VARCHAR column allows this value)
     OVERFLOW_DETECTED,      // ⚠️ Superseded by ADR-009 — to be removed in Epic 11 Phase B/C (overflow is replaced by the slot-capacity gate at READY → INVITED; no overflow detection occurs).
     VOTING_REQUIRED,
@@ -678,71 +658,22 @@ questions arrive in a session's Q&A: that **session's own presenters** (`PRIMARY
   Email body is **DE + EN only** (`qna-new-questions-{de,en}.html`); non-DE/EN → EN. The template
   is categorised `SPEAKER` (admin-editable under the Speakers tab).
 
-### Deadline Reminder Job
+### No automatic mail to a whole audience (#1179)
 
-```java
-@Service
-@Slf4j
-@RequiredArgsConstructor
-public class DeadlineReminderJob {
+`DeadlineReminderJob` (registration deadline reminder) and `NotificationService.onEventPublished`
+were **removed on 2026-11-02**. Both sat dormant from January, because every send on their path
+failed on a wrong preferences URL. #1159 fixed that URL on 2026-10-29, and the next morning the
+deadline job mailed all 267 BATbern60 registrations, cancelled and waitlisted included, in English,
+with a raw ISO timestamp.
 
-    private final EventRepository eventRepository;
-    private final RegistrationRepository registrationRepository;
-    private final NotificationService notificationService;
+The rule since then: **a mail to many people goes out only when an organizer sends it from the Mail
+Center.** Automatic triggers may mail one person about their own case (their confirmation link,
+their speaker deadline, their task) or organizers. `AutomaticTriggerAudienceGuardTest` lists every
+`@Scheduled`, `@EventListener`, `@TransactionalEventListener` and `@SqsListener` method in EMS with
+the audience it can reach. A new trigger fails the build until it is added there.
 
-    @Scheduled(cron = "0 0 9 * * *") // 9 AM daily
-    public void sendDeadlineReminders() {
-        log.info("Starting deadline reminder job");
-
-        Instant now = Instant.now();
-        Instant threeDaysFromNow = now.plus(Duration.ofDays(3));
-
-        // Find events with upcoming registration deadlines
-        List<Event> upcomingDeadlines = eventRepository
-            .findByRegistrationDeadlineBetween(now, threeDaysFromNow);
-
-        int notificationsSent = 0;
-
-        for (Event event : upcomingDeadlines) {
-            Duration timeUntilDeadline = Duration.between(now, event.getRegistrationDeadline());
-
-            // Get all registered attendees for this event
-            List<String> attendeeUsernames = registrationRepository
-                .findUsernamesByEventCode(event.getEventCode());
-
-            // Send reminder to each attendee
-            for (String username : attendeeUsernames) {
-                notificationService.createAndSendEmailNotification(
-                    NotificationRequest.builder()
-                        .recipientUsername(username)
-                        .eventCode(event.getEventCode())
-                        .type("DEADLINE_WARNING")
-                        .channel("EMAIL")
-                        .priority("HIGH")
-                        .subject(String.format("Registration for %s closes in %d days",
-                            event.getTitle(), timeUntilDeadline.toDays()))
-                        .body(buildDeadlineReminderBody(event, timeUntilDeadline))
-                        .build()
-                );
-                notificationsSent++;
-            }
-        }
-
-        log.info("Deadline reminder job completed: {} events, {} reminders sent",
-            upcomingDeadlines.size(), notificationsSent);
-    }
-
-    private String buildDeadlineReminderBody(Event event, Duration timeUntilDeadline) {
-        return String.format(
-            "This is a reminder that registration for %s will close in %d days on %s. " +
-            "Please ensure you have completed all required actions.",
-            event.getTitle(),
-            timeUntilDeadline.toDays(),
-            event.getRegistrationDeadline()
-        );
-    }
-}
-```
+The `DEADLINE_WARNING` and `EVENT_PUBLISHED` values stay valid in the `notifications` table because
+the 2026-11-02 rows carry them.
 
 ### Task Deadline Reminder (Integration with Task System)
 

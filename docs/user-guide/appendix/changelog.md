@@ -45,6 +45,9 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fixes — No Automatic Mail to All Registrants (2026-11-02)**:
+- ✅ The platform no longer sends mail to all registrants of an event on its own. On 2 November an automatic "Registration closes in 2 days" reminder went to all 267 BATbern60 registrations, including people who had cancelled or were on the waitlist. It would have repeated on the next two days. The reminder is removed, and so is the automatic "Event is now published" mail, which went to the same list when the agenda was published. A mail to many people now only goes out when an organizer sends it from the event's Mail page. Automatic mails still go to one person about their own case: confirmation links, waitlist moves, speaker deadlines and organizer tasks (#1179).
+
 **New Feature — Own Text and Partner Mails (2026-11-02)**:
 - ✅ Every audience in "+ New mail" can now get a text you write yourself: subject and text with placeholders inserted by click (name, talk title, deadline …), a preview that marks each filled value and refuses unknown placeholders, a template as starting point, and saving the text as a new template. Speakers are chosen by status. Registrants get a mail with the same subject only once unless you confirm a resend.
 - ✅ Partners: a plain mail to all partners from a template of the new category "Partner", and partner meeting invites and cancellations now appear in "What went out", also under "Mails of this meeting" in Partner meetings.
