@@ -4,6 +4,7 @@ import ch.batbern.shared.security.ClientIp;
 import ch.batbern.gateway.auth.model.UserContext;
 import ch.batbern.gateway.security.exception.RateLimitExceededException;
 import ch.batbern.gateway.util.LogSanitizer;
+import ch.batbern.shared.utils.LoggingUtils;
 import jakarta.servlet.Filter;
 import jakarta.servlet.FilterChain;
 import jakarta.servlet.FilterConfig;
@@ -185,7 +186,7 @@ public class RateLimitingFilter implements Filter {
                 }
 
                 log.info("Extracted user context from JWT - userId: {}, email: {}, role: {}, rolesString: {}",
-                    userId, email, role, rolesString);
+                    userId, LoggingUtils.maskEmail(email), role, rolesString);
 
                 return UserContext.builder()
                     .userId(userId)

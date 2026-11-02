@@ -224,14 +224,16 @@
     },
     "modal": {
       "title": "Peru ilmoittautuminen",
-      "body": "Anna sähköpostiosoitteesi, niin lähetämme sinulle peruutuslinkin.",
+      "body": "Anna sähköpostiosoite, jolla ilmoittauduit. Lähetämme peruutuslinkin siihen osoitteeseen.",
       "emailLabel": "Sähköpostiosoite",
       "emailError": "Anna kelvollinen sähköpostiosoite",
       "submitButton": "Lähetä peruutuslinkki",
-      "successMessage": "Jos olet ilmoittautunut tähän tapahtumaan, saat pian sähköpostin, jossa on peruutuslinkki."
+      "successMessage": "Jos tällä osoitteella on ilmoittautuminen tähän tapahtumaan, peruutuslinkki saapuu muutamassa minuutissa. Jos sähköpostia ei tule, tällä osoitteella ei ole ilmoittautumista."
     },
     "homepage": {
-      "cancelLink": "Peru ilmoittautumisesi"
+      "cancelLink": "Peru ilmoittautumisesi",
+      "notRegistered": "Et ole ilmoittautunut tähän tapahtumaan osoitteella {{email}}.",
+      "otherAddressLink": "Ilmoittauduitko toisella osoitteella? Pyydä peruutuslinkki"
     },
     "wizard": {
       "cancelButton": "Peru ilmoittautumiseni"

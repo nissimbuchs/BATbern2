@@ -224,14 +224,16 @@
     },
     "modal": {
       "title": "Cancelar inscripción",
-      "body": "Introduce tu dirección de correo y te enviaremos un enlace de cancelación.",
+      "body": "Introduzca la dirección de correo con la que se inscribió. Enviaremos el enlace de cancelación a esa dirección.",
       "emailLabel": "Dirección de correo electrónico",
       "emailError": "Introduce una dirección de correo válida",
       "submitButton": "Enviar enlace de cancelación",
-      "successMessage": "Si estás inscrito en este evento, recibirás en breve un correo con un enlace de cancelación."
+      "successMessage": "Si existe una inscripción para este evento con esta dirección, el enlace de cancelación llegará en unos minutos. Si no llega ningún correo, no hay inscripción con esta dirección."
     },
     "homepage": {
-      "cancelLink": "Cancelar tu inscripción"
+      "cancelLink": "Cancelar tu inscripción",
+      "notRegistered": "No está inscrito/a en este evento con {{email}}.",
+      "otherAddressLink": "¿Inscrito/a con otra dirección? Solicitar un enlace de cancelación"
     },
     "wizard": {
       "cancelButton": "Cancelar mi inscripción"

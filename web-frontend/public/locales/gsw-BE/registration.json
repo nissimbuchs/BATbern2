@@ -38,14 +38,16 @@
     },
     "modal": {
       "title": "Aamäudig storniere",
-      "body": "Gib dini E-Mail-Adrässe ii, när schicke mir dir e Abmäude-Link.",
+      "body": "Gät d E-Mail-Adrässe y, mit dere dir öich aagmäldet heit. Dr Abmäldelink geit a die Adrässe.",
       "emailLabel": "E-Mail-Adrässe",
       "emailError": "Bitte gib e gültigi E-Mail-Adrässe ii",
       "submitButton": "Abmäude-Link schicke",
-      "successMessage": "Wenn du für dä Aalass aagmäudet bisch, chunnsch gli es E-Mail mit emne Abmäude-Link über."
+      "successMessage": "Wenn under dere Adrässe e Aamäldig für dä Aalass besteit, chunnt dr Abmäldelink i es paar Minute. Chunnt kei E-Mail, de git es under dere Adrässe kei Aamäldig."
     },
     "homepage": {
-      "cancelLink": "Aamäudig storniere"
+      "cancelLink": "Aamäudig storniere",
+      "notRegistered": "Mit {{email}} sit dir für dä Aalass nid aagmäldet.",
+      "otherAddressLink": "Mit ere angere Adrässe aagmäldet? Abmäldelink aafordere"
     },
     "wizard": {
       "cancelButton": "Mini Aamäudig storniere"

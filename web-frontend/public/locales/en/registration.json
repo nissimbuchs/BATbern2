@@ -224,14 +224,16 @@
     },
     "modal": {
       "title": "Cancel Registration",
-      "body": "Enter your email address and we'll send you a cancellation link.",
+      "body": "Enter the email address you registered with. We'll send the cancellation link to that address.",
       "emailLabel": "Email address",
       "emailError": "Please enter a valid email address",
       "submitButton": "Send cancellation link",
-      "successMessage": "If you have a registration for this event, you'll receive an email with a cancellation link shortly."
+      "successMessage": "If there is a registration for this event under this address, the cancellation link will arrive within a few minutes. If no email arrives, there is no registration under this address."
     },
     "homepage": {
-      "cancelLink": "Cancel your registration"
+      "cancelLink": "Cancel your registration",
+      "notRegistered": "You are not registered for this event with {{email}}.",
+      "otherAddressLink": "Registered with another address? Request a cancellation link"
     },
     "wizard": {
       "cancelButton": "Cancel my registration"

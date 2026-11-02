@@ -224,14 +224,16 @@
     },
     "modal": {
       "title": "Annullar l'annunzia",
-      "body": "Endatai Vossa adressa d'e-mail e nus As tramettain in link per annullar.",
+      "body": "Endatai l'adressa d'e-mail cun la quala Vus essas s'annunzià/ada. La colliaziun da revocaziun vegn tramessa a questa adressa.",
       "emailLabel": "Adressa d'e-mail",
       "emailError": "Endatai p.pl. ina adressa d'e-mail valida",
       "submitButton": "Trametter il link per annullar",
-      "successMessage": "Sche Vus essas annunzià per questa occurrenza, survegnis Vus prest in e-mail cun in link per annullar."
+      "successMessage": "Sch'i dat ina annunzia per quest arranschament sut questa adressa, arriva la colliaziun da revocaziun en paucs minutas. Sch'i na vegn nagin e-mail, na dat i nagina annunzia sut questa adressa."
     },
     "homepage": {
-      "cancelLink": "Annullar Vossa annunzia"
+      "cancelLink": "Annullar Vossa annunzia",
+      "notRegistered": "Cun {{email}} n'essas Vus betg annunzià/ada per quest arranschament.",
+      "otherAddressLink": "Annunzià/ada cun in'autra adressa? Dumandar ina colliaziun da revocaziun"
     },
     "wizard": {
       "cancelButton": "Annullar mia annunzia"

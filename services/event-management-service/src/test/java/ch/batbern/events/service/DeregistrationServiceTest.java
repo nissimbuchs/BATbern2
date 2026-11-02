@@ -12,6 +12,8 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.boot.test.system.CapturedOutput;
+import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
@@ -38,7 +40,7 @@ import static org.mockito.Mockito.when;
  * - deregisterByEmail() with valid email/eventCode → sends email
  * - deregisterByEmail() with unknown email → no error (anti-enumeration)
  */
-@ExtendWith(MockitoExtension.class)
+@ExtendWith({MockitoExtension.class, OutputCaptureExtension.class})
 @DisplayName("DeregistrationService Unit Tests")
 class DeregistrationServiceTest {
 
@@ -193,6 +195,17 @@ class DeregistrationServiceTest {
             deregistrationService.deregisterByEmail("ghost@example.com", EVENT_CODE);
 
             verify(deregistrationEmailService, never()).sendDeregistrationLinkEmail(any(), any(), any());
+        }
+
+        @Test
+        @DisplayName("#1183: the requested address is not written to the log in full")
+        void deregisterByEmail_logsMaskedAddressOnly(CapturedOutput output) {
+            when(registrationRepository.findByAttendeeEmailAndEventCode("ghost.person@example.com", EVENT_CODE))
+                    .thenReturn(Optional.empty());
+
+            deregistrationService.deregisterByEmail("ghost.person@example.com", EVENT_CODE);
+
+            assertThat(output).contains("found=false").doesNotContain("ghost.person@example.com");
         }
 
         @Test
