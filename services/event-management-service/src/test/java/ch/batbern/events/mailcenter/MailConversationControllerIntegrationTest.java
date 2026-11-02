@@ -13,6 +13,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -40,6 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * counts. Synthetic SES simulator addresses only.
  */
 @Transactional
+@TestPropertySource(properties = "aws.inbound-email.bucket-name=batbern-inbound-emails-test")
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("Story 16.2a: conversation API")
 class MailConversationControllerIntegrationTest extends AbstractIntegrationTest {
@@ -154,12 +156,40 @@ class MailConversationControllerIntegrationTest extends AbstractIntegrationTest 
     }
 
     @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("16.6: a kept attachment gets a short-lived link; one kept by name only, or unknown, is a 404")
+    void should_linkKeptAttachment_when_requested() throws Exception {
+        UUID id = conversation("conv-9060", "OPEN", now);
+        message(id, "BATbern917-in-6", now, "Folien", "[{\"name\":\"slides.pdf\",\"contentType\":"
+                + "\"application/pdf\",\"size\":12,\"storageKey\":\"mail-attachments/in_x/0\"},"
+                + "{\"name\":\"video.mp4\",\"contentType\":\"video/mp4\",\"size\":99999999}]");
+
+        mockMvc.perform(get("/api/v1/conversations/conv-9060"))
+                .andExpect(jsonPath("$.messages[1].message.attachments[0].kept").value(true))
+                .andExpect(jsonPath("$.messages[1].message.attachments[1].kept").value(false))
+                .andExpect(jsonPath("$.messages[1].message.attachments[0].storageKey").doesNotExist());
+        mockMvc.perform(get("/api/v1/conversations/conv-9060/messages/BATbern917-in-6/attachments/0/download"))
+                .andExpect(status().isOk())
+                .andExpect(header().string("Cache-Control", containsString("no-store")))
+                .andExpect(jsonPath("$.downloadUrl", containsString("mail-attachments/in_x/0")))
+                .andExpect(jsonPath("$.downloadUrl", containsString("filename%2A%3DUTF-8%27%27slides.pdf")));
+        mockMvc.perform(get("/api/v1/conversations/conv-9060/messages/BATbern917-in-6/attachments/1/download"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/conversations/conv-9060/messages/BATbern917-in-6/attachments/7/download"))
+                .andExpect(status().isNotFound());
+        mockMvc.perform(get("/api/v1/conversations/conv-9010/messages/BATbern917-in-6/attachments/0/download"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
     @WithMockUser(roles = "SPEAKER")
     @DisplayName("AC13: anyone but an organizer gets 403")
     void should_forbid_when_notOrganizer() throws Exception {
         conversation("conv-9040", "OPEN", now);
         mockMvc.perform(get("/api/v1/events/" + EVENT + "/conversations")).andExpect(status().isForbidden());
         mockMvc.perform(get("/api/v1/conversations/conv-9040")).andExpect(status().isForbidden());
+        mockMvc.perform(get("/api/v1/conversations/conv-9040/messages/conv-9040-first/attachments/0/download"))
+                .andExpect(status().isForbidden());
         mockMvc.perform(patch("/api/v1/conversations/conv-9040").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"status\":\"DONE\"}")).andExpect(status().isForbidden());
     }

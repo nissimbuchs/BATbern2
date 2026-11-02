@@ -9,19 +9,28 @@ import { NeedsAnswerSection } from '../NeedsAnswerSection';
 import { initials } from '../initials';
 import type { MailConversationSummary } from '@/services/mailConversationService';
 
-const { listEventConversations, getConversation, patchConversation, breakpoints, auth } =
-  vi.hoisted(() => ({
-    listEventConversations: vi.fn(),
-    getConversation: vi.fn(),
-    patchConversation: vi.fn(),
-    breakpoints: { isMobile: false, isTablet: false, isDesktop: true },
-    auth: { user: { username: 'me.organizer' } as { username: string } | null },
-  }));
+const {
+  listEventConversations,
+  getConversation,
+  patchConversation,
+  getConversationAttachmentDownloadUrl,
+  breakpoints,
+  auth,
+} = vi.hoisted(() => ({
+  getConversationAttachmentDownloadUrl: vi.fn(),
+  listEventConversations: vi.fn(),
+  getConversation: vi.fn(),
+  patchConversation: vi.fn(),
+  breakpoints: { isMobile: false, isTablet: false, isDesktop: true },
+  auth: { user: { username: 'me.organizer' } as { username: string } | null },
+}));
 
 vi.mock('@/services/mailConversationService', () => ({
   listEventConversations: (...args: unknown[]) => listEventConversations(...args),
   getConversation: (...args: unknown[]) => getConversation(...args),
   patchConversation: (...args: unknown[]) => patchConversation(...args),
+  getConversationAttachmentDownloadUrl: (...args: unknown[]) =>
+    getConversationAttachmentDownloadUrl(...args),
 }));
 vi.mock('@/hooks/useBreakpoints', () => ({ useBreakpoints: () => breakpoints }));
 vi.mock('@/hooks/useAuth/useAuth', () => ({ useAuth: () => auth }));
@@ -102,7 +111,10 @@ const detail = (status = 'OPEN', assigneeUsername: string | null = 'lead.organiz
         direction: 'IN',
         fromAddress: 'success+speaker@simulator.amazonses.com',
         fromName: 'A Speaker',
-        attachments: [{ name: 'slides.pdf', contentType: 'application/pdf', size: 12 }],
+        attachments: [
+          { name: 'slides.pdf', contentType: 'application/pdf', size: 12, kept: true },
+          { name: 'video.mp4', contentType: 'video/mp4', size: 99999999, kept: false },
+        ],
       },
       bodyHtml: '<p>HDMI?</p>',
       recipients: [],
@@ -213,12 +225,36 @@ describe('NeedsAnswerSection', () => {
     const message = await within(inline).findByTestId('conversation-message-BATbern60-30');
     expect(message).toHaveTextContent('A Speaker');
     expect(message.querySelector('iframe')).toHaveAttribute('sandbox', '');
+    expect(within(message).getByTestId('conversation-attachments')).toHaveTextContent('slides.pdf');
     expect(within(message).getByTestId('conversation-attachments')).toHaveTextContent(
-      'names=slides.pdf'
+      'video.mp4 (eventPage.mail.conversations.nameOnly)'
     );
     // A second click closes it.
     fireEvent.click(screen.getByTestId('conversation-open-conv-1'));
     expect(onOpenChange).toHaveBeenCalledWith(null);
+  });
+
+  it('16.6: a kept attachment opens through its presigned URL; a failure shows an error', async () => {
+    listEventConversations.mockResolvedValue(page([conv({})]));
+    getConversationAttachmentDownloadUrl.mockResolvedValueOnce('https://s3.example.test/slides');
+    const open = vi.spyOn(window, 'open').mockReturnValue(null);
+    renderSection('conv-1');
+    const link = await screen.findByTestId('conversation-attachment-BATbern60-30-0');
+    fireEvent.click(link);
+    await waitFor(() =>
+      expect(open).toHaveBeenCalledWith(
+        'https://s3.example.test/slides',
+        '_blank',
+        'noopener,noreferrer'
+      )
+    );
+    expect(getConversationAttachmentDownloadUrl).toHaveBeenCalledWith('conv-1', 'BATbern60-30', 0);
+    expect(screen.queryByTestId('conversation-attachment-BATbern60-30-1')).toBeNull();
+
+    getConversationAttachmentDownloadUrl.mockRejectedValueOnce(new Error('404'));
+    fireEvent.click(link);
+    expect(await screen.findByTestId('conversation-attachment-error')).toBeInTheDocument();
+    open.mockRestore();
   });
 
   it('AC11 mobile: the open conversation is a full-screen dialog, not inline', async () => {

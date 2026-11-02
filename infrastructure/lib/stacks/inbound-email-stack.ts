@@ -147,16 +147,18 @@ export class InboundEmailStack extends cdk.Stack {
       })
     );
 
-    // S3 bucket for raw inbound emails (7-day auto-purge)
+    // S3 bucket for raw inbound emails (7-day auto-purge of the raw mail). Story 16.6: EMS keeps
+    // inbound attachments up to 25 MB under mail-attachments/; the retention job deletes them with
+    // their conversation (12 months after the last activity), the 400-day rule is the backstop.
+    // SES writes only emails/ and forwarding/ (receipt rules below).
     const inboundBucket = new s3.Bucket(this, 'InboundEmailBucket', {
       bucketName: `batbern-inbound-emails-${envName}`,
       encryption: s3.BucketEncryption.S3_MANAGED,
       blockPublicAccess: s3.BlockPublicAccess.BLOCK_ALL,
       lifecycleRules: [
-        {
-          expiration: cdk.Duration.days(7),
-          enabled: true,
-        },
+        { prefix: 'emails/', expiration: cdk.Duration.days(7), enabled: true },
+        { prefix: 'forwarding/', expiration: cdk.Duration.days(7), enabled: true },
+        { prefix: 'mail-attachments/', expiration: cdk.Duration.days(400), enabled: true },
       ],
     });
     this.inboundBucket = inboundBucket;
@@ -438,6 +440,9 @@ export class InboundEmailStack extends cdk.Stack {
       inboundQueue.grantConsumeMessages(props.emsTaskRole);
       forwardingQueue.grantConsumeMessages(props.emsTaskRole);
       inboundBucket.grantRead(props.emsTaskRole);
+      // Story 16.6: kept inbound attachments (written at receipt, deleted by the retention job)
+      inboundBucket.grantPut(props.emsTaskRole, 'mail-attachments/*');
+      inboundBucket.grantDelete(props.emsTaskRole, 'mail-attachments/*');
     }
 
     // CloudFormation outputs for EMS env var injection

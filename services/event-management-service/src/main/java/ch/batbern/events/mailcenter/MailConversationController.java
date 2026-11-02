@@ -6,6 +6,7 @@ import ch.batbern.events.mailcenter.ConversationQueryService.ConversationMessage
 import ch.batbern.events.mailcenter.ConversationQueryService.ConversationPage;
 import ch.batbern.events.mailcenter.api.generated.MailConversationApi;
 import ch.batbern.events.mailcenter.dto.generated.MailAttachment;
+import ch.batbern.events.mailcenter.dto.generated.DownloadUrlResponse;
 import ch.batbern.events.mailcenter.dto.generated.MailAudience;
 import ch.batbern.events.mailcenter.dto.generated.MailConversationDetail;
 import ch.batbern.events.mailcenter.dto.generated.MailConversationPage;
@@ -42,6 +43,7 @@ public class MailConversationController implements MailConversationApi {
     private final ConversationQueryService queries;
     private final ConversationService conversations;
     private final ConversationReplyService replies;
+    private final ConversationAttachmentService attachmentLinks;
     private final SecurityContextHelper securityContextHelper;
 
     @Override
@@ -93,6 +95,14 @@ public class MailConversationController implements MailConversationApi {
         return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(sent);
     }
 
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<DownloadUrlResponse> getConversationAttachmentDownloadUrl(String conversationKey,
+            String mailKey, Integer index) {
+        return noStore(new DownloadUrlResponse().downloadUrl(attachmentLinks.downloadUrl(conversationKey, mailKey,
+                index)));
+    }
+
     private static MailConversationSummary summary(ConversationEntry c) {
         return new MailConversationSummary()
                 .conversationKey(c.conversationKey())
@@ -110,7 +120,8 @@ public class MailConversationController implements MailConversationApi {
 
     private static MailMessageDetail message(ConversationMessage m, String conversationKey) {
         List<MailAttachment> attachments = m.attachments().stream()
-                .map(a -> new MailAttachment().name(a.name()).contentType(a.contentType()).size(a.size()))
+                .map(a -> new MailAttachment().name(a.name()).contentType(a.contentType()).size(a.size())
+                        .kept(a.storageKey() != null))
                 .toList();
         return new MailMessageDetail()
                 .message(new MailMessageSummary()

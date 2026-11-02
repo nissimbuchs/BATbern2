@@ -130,6 +130,18 @@ components:
         - hasNext
         - hasPrev
 
+    DownloadUrlResponse:
+      type: object
+      description: |
+        A time-limited presigned link to download one private file. Same shape as the session materials'
+        `MaterialDownloadUrlResponse` (Story 5.9); Story 16.6 inbound mail attachments use it.
+      required:
+      - downloadUrl
+      properties:
+        downloadUrl:
+          type: string
+          description: Presigned URL; downloads the file under its original name
+          example: https://batbern-inbound-emails-staging.s3.eu-central-1.amazonaws.com/...&X-Amz-Signature=...
     PaginatedResponse:
       type: object
       description: |

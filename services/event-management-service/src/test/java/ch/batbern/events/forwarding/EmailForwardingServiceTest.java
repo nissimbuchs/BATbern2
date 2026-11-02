@@ -170,6 +170,35 @@ class EmailForwardingServiceTest {
     }
 
     @Test
+    @DisplayName("16.6 AC8: with a notice, each recipient gets the short notification instead of the copy")
+    void should_sendNotice_when_noticeGiven() {
+        Result result = service.forward(KEY, mail(STRANGER, "info@batbern.ch", null, null, null),
+                recipient -> new EmailForwardingService.Notice("Neue Mail für BATbern60", "<p>Hier öffnen</p>"));
+
+        assertThat(result).isEqualTo(Result.NOTIFIED);
+        verify(emailService).sendHtmlEmailSync(eq(ORGANIZER), eq(List.of()), eq("Neue Mail für BATbern60"),
+                eq("<p>Hier öffnen</p>"), eq("batbern-staging-forwarder"));
+        verify(emailService).sendHtmlEmailSync(eq(ORGANIZER_2), eq(List.of()), anyString(), anyString(),
+                anyString());
+        verify(emailService, never()).sendRawMessage(any(), anyList(), anyString());
+        verify(forwardingLog).complete(KEY, EmailForwardingOutcome.NOTIFIED, "info", 2, 0);
+        verify(metrics).increment(ForwardingMetrics.NOTIFICATIONS_SENT);
+    }
+
+    @Test
+    @DisplayName("16.6 AC8: an unrecognized reply with a notice notifies the organizers instead of forwarding")
+    void should_sendNotice_when_unrecognizedReplyHasNotice() {
+        Result result = service.forwardUnrecognizedReply(KEY, mail(STRANGER, "replies@batbern.ch", null, null, null),
+                recipient -> new EmailForwardingService.Notice("Neue Mail", "<p>x</p>"));
+
+        assertThat(result).isEqualTo(Result.NOTIFIED);
+        verify(emailService, times(2)).sendHtmlEmailSync(anyString(), eq(List.of()), eq("Neue Mail"), eq("<p>x</p>"),
+                any());
+        verify(emailService, never()).sendRawMessage(any(), anyList(), anyString());
+        verify(forwardingLog).complete(KEY, EmailForwardingOutcome.NOTIFIED, "replies", 2, 0);
+    }
+
+    @Test
     @DisplayName("should_sendOneVisibleMailWithModeratorInCc_when_organizerWritesToSpeakerAlias")
     void should_sendOneVisibleMailWithModeratorInCc_when_organizerWritesToSpeakerAlias() throws Exception {
         Result result = service.forward(KEY, mail(ORGANIZER_2, "batbern60-speaker@batbern.ch", null, DMARC_PASS, null));

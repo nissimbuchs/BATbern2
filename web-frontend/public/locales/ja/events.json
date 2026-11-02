@@ -600,7 +600,10 @@
         "statusLabel": "ステータス",
         "assignee": "担当者",
         "takeIt": "担当する",
-        "attachments": "添付ファイル: {{names}}",
+        "attachmentsLabel": "添付ファイル:",
+        "nameOnly": "名前のみ",
+        "notKept": "25 MB を超えるため、名前のみ保存されています。ファイルは転送されたコピーにあります。",
+        "downloadError": "添付ファイルを開けませんでした。もう一度お試しください。",
         "patchError": "変更を保存できませんでした。もう一度お試しください。",
         "reply": {
           "label": "返信",

@@ -97,6 +97,40 @@ public final class InboundMailParser {
                 header(message, "X-BATbern-Forwarded") != null);
     }
 
+    /**
+     * Story 16.6: the bytes of each attachment, in the order of {@link InboundMail#attachments()}.
+     * Kept apart from {@link #parse} so the parsed mail never holds file content.
+     */
+    public static List<byte[]> attachmentContents(byte[] raw) {
+        List<byte[]> contents = new ArrayList<>();
+        try {
+            collect(new MimeMessage(SESSION, new ByteArrayInputStream(raw)), contents);
+        } catch (MessagingException | IOException e) {
+            log.warn("Inbound mail: could not read every attachment: {}", e.getMessage());
+        }
+        return contents;
+    }
+
+    private static void collect(Part part, List<byte[]> contents) throws MessagingException, IOException {
+        if (isAttachment(part)) {
+            try (InputStream in = part.getInputStream()) {
+                contents.add(in.readAllBytes());
+            }
+            return;
+        }
+        if (part.isMimeType("multipart/*")) {
+            MimeMultipart multipart = (MimeMultipart) part.getContent();
+            for (int i = 0; i < multipart.getCount(); i++) {
+                collect(multipart.getBodyPart(i), contents);
+            }
+        }
+    }
+
+    private static boolean isAttachment(Part part) throws MessagingException {
+        return Part.ATTACHMENT.equalsIgnoreCase(part.getDisposition())
+                || (fileName(part) != null && !part.isMimeType("multipart/*"));
+    }
+
     /** Sanitized HTML: what {@link #parse} stores for an HTML-only mail. */
     public static String sanitize(String html) {
         return Jsoup.clean(html, SAFELIST);
@@ -109,11 +143,8 @@ public final class InboundMailParser {
     }
 
     private static void walk(Part part, Body body) throws MessagingException, IOException {
-        String disposition = part.getDisposition();
         String fileName = fileName(part);
-        boolean attachment = Part.ATTACHMENT.equalsIgnoreCase(disposition)
-                || (fileName != null && !part.isMimeType("multipart/*"));
-        if (attachment) {
+        if (isAttachment(part)) {
             body.attachments.add(new MailMessage.Attachment(
                     fileName != null ? fileName : "attachment",
                     baseType(part.getContentType()),

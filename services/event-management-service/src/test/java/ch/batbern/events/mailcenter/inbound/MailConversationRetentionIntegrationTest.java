@@ -11,9 +11,15 @@ import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
+import org.mockito.ArgumentCaptor;
+import software.amazon.awssdk.services.s3.S3Client;
+import software.amazon.awssdk.services.s3.model.DeleteObjectsRequest;
+import software.amazon.awssdk.services.s3.model.ObjectIdentifier;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.test.context.TestPropertySource;
+import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.sql.Timestamp;
@@ -22,12 +28,14 @@ import java.time.temporal.ChronoUnit;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.verify;
 
 /**
  * Story 16.2a AC14: the nightly retention removes conversations, their inbound mail and the
  * automatic counts by the same rule as recorded mail (event date and own age both past 12 months;
  * without an event, own age alone), and nothing else.
  */
+@TestPropertySource(properties = "aws.inbound-email.bucket-name=batbern-inbound-emails-test")
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("Stories 16.2a, 16.2b: retention of conversations and automatic counts")
 class MailConversationRetentionIntegrationTest extends AbstractIntegrationTest {
@@ -41,6 +49,8 @@ class MailConversationRetentionIntegrationTest extends AbstractIntegrationTest {
     private EventRepository eventRepository;
     @Autowired
     private JdbcTemplate jdbc;
+    @MockitoBean
+    private S3Client s3;
 
     private final Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
 
@@ -74,6 +84,13 @@ class MailConversationRetentionIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("UPDATE mail_conversation SET audience = 'PUBLIC' WHERE id IN (?, ?)", infoOld, infoRecent);
         jdbc.update("UPDATE mail_message SET audience = 'PUBLIC', alias_local_part = 'info' "
                 + "WHERE conversation_id IN (?, ?)", infoOld, infoRecent);
+        // 16.6: kept attachment files go with their conversation
+        jdbc.update("UPDATE mail_message SET attachments = CAST(? AS JSONB) WHERE conversation_id = ?",
+                "[{\"name\":\"a.pdf\",\"size\":1,\"storageKey\":\"mail-attachments/in_old/0\"},"
+                        + "{\"name\":\"big.mp4\",\"size\":9}]", infoOld);
+        jdbc.update("UPDATE mail_message SET attachments = CAST(? AS JSONB) WHERE conversation_id = ?",
+                "[{\"name\":\"b.pdf\",\"size\":1,\"storageKey\":\"mail-attachments/in_new/0\"}]",
+                infoRecent);
         automatic("ret-1", OLD_EVENT, 420);
         automatic("ret-2", OLD_EVENT, 10);
         automatic("ret-3", FUTURE_EVENT, 420);
@@ -88,6 +105,10 @@ class MailConversationRetentionIntegrationTest extends AbstractIntegrationTest {
         assertThat(exists(noEventRecent)).isTrue();
         assertThat(exists(infoOld)).isFalse();
         assertThat(exists(infoRecent)).isTrue();
+        ArgumentCaptor<DeleteObjectsRequest> deleted = ArgumentCaptor.forClass(DeleteObjectsRequest.class);
+        verify(s3).deleteObjects(deleted.capture());
+        assertThat(deleted.getValue().delete().objects()).extracting(ObjectIdentifier::key)
+                .containsExactly("mail-attachments/in_old/0");
         assertThat(jdbc.queryForObject("SELECT count(*) FROM mail_message WHERE conversation_id IN (?, ?)",
                 Integer.class, oldEventOld, noEventOld)).isZero();
         assertThat(jdbc.queryForList("SELECT dedupe_key FROM mail_automatic_event WHERE dedupe_key LIKE 'ret-%'"

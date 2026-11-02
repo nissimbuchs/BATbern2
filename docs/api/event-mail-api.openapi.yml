@@ -492,6 +492,50 @@ paths:
           description: Conversation not found
         '409':
           description: The conversation has no counterpart address that can be mailed
+  /conversations/{conversationKey}/messages/{mailKey}/attachments/{index}/download:
+    get:
+      tags:
+      - MailConversation
+      operationId: getConversationAttachmentDownloadUrl
+      summary: Get a presigned download URL for a kept attachment (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.6. Inbound attachments up to 25 MB per file are kept with their conversation (deleted
+        with it, 12 months after the last activity); larger ones keep only their name. Returns a
+        presigned link valid for 5 minutes that downloads the file under its original name, like the
+        session materials' `getMaterialDownloadUrl`.
+      parameters:
+      - name: conversationKey
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: mailKey
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: index
+        in: path
+        required: true
+        description: Position of the attachment in the message's `attachments`, from 0.
+        schema:
+          type: integer
+          minimum: 0
+      responses:
+        '200':
+          description: The link
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/DownloadUrlResponse
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: No such message in the conversation, or the file was not kept
   /events/{eventCode}/mails/{mailKey}/retry:
     post:
       tags:
@@ -647,7 +691,9 @@ components:
           description: Story 16.2a. The conversation an inbound mail belongs to.
         attachments:
           type: array
-          description: Story 16.2a. Attachments of an inbound mail, names only (the files are not kept).
+          description: |
+            Story 16.2a. Attachments of an inbound mail. Story 16.6: files up to 25 MB are kept (`kept`),
+            larger ones by name only.
           items:
             $ref: '#/components/schemas/MailAttachment'
     MailAttachment:
@@ -662,6 +708,9 @@ components:
         size:
           type: integer
           format: int64
+        kept:
+          type: boolean
+          description: Story 16.6. The file is kept and can be downloaded (getConversationAttachmentDownloadUrl).
     MailConversationStatus:
       type: string
       enum:

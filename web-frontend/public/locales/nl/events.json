@@ -600,7 +600,10 @@
         "statusLabel": "Status",
         "assignee": "Wie antwoordt",
         "takeIt": "Ik neem het op me",
-        "attachments": "Bijlagen: {{names}}",
+        "attachmentsLabel": "Bijlagen:",
+        "nameOnly": "alleen naam",
+        "notKept": "Groter dan 25 MB: alleen de naam wordt bewaard. Het bestand zit in de doorgestuurde kopie.",
+        "downloadError": "De bijlage kon niet worden geopend. Probeer het opnieuw.",
         "patchError": "De wijziging is niet opgeslagen. Probeer het opnieuw.",
         "reply": {
           "label": "Je antwoord",

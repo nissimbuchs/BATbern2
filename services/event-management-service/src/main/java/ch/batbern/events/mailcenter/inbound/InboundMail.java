@@ -58,4 +58,11 @@ public record InboundMail(
         subject = subject == null ? "" : subject;
         text = text == null ? "" : text;
     }
+
+    /** The same mail with these attachments (Story 16.6: with the keys of the kept files). */
+    public InboundMail withAttachments(List<MailMessage.Attachment> kept) {
+        return new InboundMail(messageId, inReplyTo, references, fromAddress, fromName, replyTo, to, cc, subject,
+                text, html, kept, contentType, returnPath, autoSubmitted, precedence, xAutoreply, xAutorespond,
+                forwarded);
+    }
 }

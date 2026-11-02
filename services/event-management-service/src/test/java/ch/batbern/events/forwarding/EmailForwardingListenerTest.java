@@ -1,5 +1,7 @@
 package ch.batbern.events.forwarding;
 
+import ch.batbern.events.mailcenter.ConversationNotices;
+import ch.batbern.events.mailcenter.MailCenterSwitch;
 import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
 import ch.batbern.events.service.InboundReplyProcessor;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -42,13 +44,18 @@ class EmailForwardingListenerTest {
     private InboundMailCenter mailCenter;
     @Mock
     private InboundReplyProcessor replyProcessor;
+    @Mock
+    private MailCenterSwitch mailSwitch;
+    @Mock
+    private ConversationNotices notices;
 
     private EmailForwardingListener listener;
 
     @BeforeEach
     void setUp() {
         // Story 16.2a: the listener delegates to the processor; the Mail Center is mocked here.
-        listener = new EmailForwardingListener(s3Client, new AliasMailProcessor(forwardingService, mailCenter, replyProcessor),
+        listener = new EmailForwardingListener(s3Client, new AliasMailProcessor(forwardingService, mailCenter, replyProcessor,
+                mailSwitch, notices, new EmailForwardingProperties(true, "q", "batbern.ch", null, "cfg", 0)),
                 new ObjectMapper(), BUCKET);
     }
 

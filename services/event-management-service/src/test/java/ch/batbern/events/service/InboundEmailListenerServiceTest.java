@@ -1,5 +1,7 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.mailcenter.ConversationNotices;
+import ch.batbern.events.mailcenter.MailCenterSwitch;
 import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
 import ch.batbern.events.forwarding.EmailForwardingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -21,6 +23,7 @@ import java.nio.charset.StandardCharsets;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.mockito.Mockito.mock;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
@@ -57,7 +60,9 @@ class InboundEmailListenerServiceTest {
     void setUp() {
         // Story 16.2a: the listener delegates to the processor; the Mail Center is mocked here.
         listenerService = new InboundEmailListenerService(s3Client,
-                new InboundReplyProcessor(router, forwardingService, mailCenter), BUCKET_NAME, new ObjectMapper());
+                new InboundReplyProcessor(router, forwardingService, mailCenter,
+                        mock(MailCenterSwitch.class),
+                        mock(ConversationNotices.class)), BUCKET_NAME, new ObjectMapper());
     }
 
     /**

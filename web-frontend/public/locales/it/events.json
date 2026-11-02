@@ -600,7 +600,10 @@
         "statusLabel": "Stato",
         "assignee": "Chi risponde",
         "takeIt": "Me ne occupo io",
-        "attachments": "Allegati: {{names}}",
+        "attachmentsLabel": "Allegati:",
+        "nameOnly": "solo nome",
+        "notKept": "Oltre 25 MB: viene conservato solo il nome. Il file è nella copia inoltrata.",
+        "downloadError": "Impossibile aprire l'allegato. Riprova.",
         "patchError": "La modifica non è stata salvata. Riprova.",
         "reply": {
           "label": "La tua risposta",

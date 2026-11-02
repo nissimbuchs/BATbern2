@@ -600,7 +600,10 @@
         "statusLabel": "Estado",
         "assignee": "Quién responde",
         "takeIt": "Me encargo yo",
-        "attachments": "Adjuntos: {{names}}",
+        "attachmentsLabel": "Adjuntos:",
+        "nameOnly": "solo nombre",
+        "notKept": "Más de 25 MB: solo se guarda el nombre. El archivo está en la copia reenviada.",
+        "downloadError": "No se pudo abrir el adjunto. Inténtalo de nuevo.",
         "patchError": "El cambio no se guardó. Inténtalo de nuevo.",
         "reply": {
           "label": "Tu respuesta",

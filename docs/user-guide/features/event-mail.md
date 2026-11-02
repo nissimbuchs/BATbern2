@@ -20,7 +20,8 @@ instead of it sitting in one private inbox (Story 16.2a).
   mail", "reply to the newsletter".
 - **Broadcasts are sends:** an organizer's mail to `batbern{N}-participants@` or `partner@` appears
   under "What went out" as one mail to all recipients.
-- **Forwarding is unchanged.** The moderator still gets the mail in their own inbox as before.
+- **Forwarding is unchanged** until the owner switches an address group to the Mail Center. Then the
+  people who got the forwarded copy get a short notice with a link to the conversation instead.
 - **Each row:** a status dot, date, who wrote, where it arrived, the subject, and the avatar of the
   organizer who answers. Open and waiting first, newest first; done ones below, greyed. The number
   beside the heading counts the open ones.
@@ -37,8 +38,8 @@ instead of it sitting in one private inbox (Story 16.2a).
   link to it. Taking it yourself, clearing the assignee, or choosing the same organizer again sends
   nothing.
 - **A click** opens the conversation below its row: every mail, oldest first, with sender, time,
-  text and the names of attachments (on a phone: full screen). Attachments themselves are in the
-  forwarded copy; the page keeps only their names. Images and formatting from the sender's mail are
+  text and attachments (on a phone: full screen). Attachments up to 25 MB open with a click; larger
+  ones show their name only ("name only") and are in the forwarded copy. Images and formatting from the sender's mail are
   not shown, so opening a mail never loads anything from outside.
 - **Link to a conversation:** the address bar shows `?conversation=conv-…` while one is open; that
   link opens it directly.

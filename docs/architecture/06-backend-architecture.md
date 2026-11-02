@@ -1076,6 +1076,29 @@ local dev → POST /dev/emails/inbound (same processors)                  ─┘
   Story 16.7). Self-assignment, clearing, or the same assignee send nothing. A failed notification
   is logged, the assignment stays.
 
+#### Attachments and the notify switch (Story 16.6 PR 2)
+
+- **Attachments** (`InboundAttachmentStore`): at receipt, each attachment up to 25 MB is put to the
+  private inbound bucket as `mail-attachments/{send_group_id}/{index}`; its key is stored in the
+  message's `attachments` JSON (`storageKey`, not exposed; the API shows `kept`). Larger files keep
+  only their name. Server-side `putObject` with the injected `S3Client`, like the other EMS S3
+  writers; download follows the session materials pattern (`GET …/attachments/{index}/download` →
+  `{downloadUrl}`, `_shared` `DownloadUrlResponse`, injected `S3Presigner`, 5 minutes, original
+  file name). The retention job collects the keys of expiring conversations
+  (`MailConversationRepository.expiredAttachmentKeys`) and deletes them after the rows; a 400-day
+  lifecycle rule is the backstop. Without a configured bucket (local dev) only names are kept.
+- **Switch** (`MailCenterSwitch`, admin setting `mailcenter.notify-instead-of-forward`, read per
+  mail): groups `moderator`, `replies`, `contact`. `AliasMailProcessor` switches only when every
+  addressed alias maps to a switched group (`-speaker@`, `-participants@`, `batbern{N}@`,
+  `partner@`, `ok@` never do). Then `InboundMailCenter.ingest*Strict` stores first and throws on
+  failure (SQS retry, DLQ), and `EmailForwardingService.forward(…, notice)` /
+  `forwardUnrecognizedReply(…, notice)` run the same checks, claim, authorization and recipient
+  resolution as forwarding, but send each recipient `ConversationNotices` (template
+  `mailcenter-new-mail`, DE/EN by the organizer's preference) instead of the copy. Outcome
+  `NOTIFIED` (V142), metric `NotificationsSent`. Mail that was not stored is forwarded as before.
+  A redelivery of a stored mail finds its conversation by group id and is notified once
+  (forwarding log claim).
+
 ### Composer API (Story 16.8a)
 
 One composer for every audience, on the same resource (no second mail resource). Package

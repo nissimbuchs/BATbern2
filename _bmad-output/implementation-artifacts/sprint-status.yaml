@@ -279,7 +279,7 @@ development_status:
   16-3-communications-tab-becomes-mail-page: done
   16-4-new-mail-picker: done
   16-5-own-text-placeholders-preview: done  # live via #1180 2026-11-02; Task 8 checks done 2026-11-02
-  16-6-answer-from-mail-center: in-progress
+  16-6-answer-from-mail-center: review  # PR 1 + PR 2 implemented 2026-11-02 on feature/16-2a-speaker-conversations; switch OFF, owner turns groups on
   16-7-global-mail-navigation: ready-for-dev
   16-8-shared-composer: in-progress  # 16.8a + 16.8b live via #1174 2026-11-01; 16.8c open, after one release + owner go
   16-9-partner-meeting-mails: done  # live via #1180 2026-11-02; Task 12 checks done 2026-11-02 (#1182 found)

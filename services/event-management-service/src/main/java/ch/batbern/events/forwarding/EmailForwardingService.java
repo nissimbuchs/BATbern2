@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.Set;
+import java.util.function.Function;
 import java.util.stream.Collectors;
 
 /**
@@ -75,6 +76,8 @@ public class EmailForwardingService {
         /** Story 16.6: addressed to {@code replies@} or {@code replies+{token}@}; the replies path takes it. */
         CONVERSATION_REPLY,
         FORWARDED,
+        /** Story 16.6: every recipient got the Mail Center notification instead of the copy. */
+        NOTIFIED,
         PARTIAL,
         FAILED
     }
@@ -92,7 +95,25 @@ public class EmailForwardingService {
     /** Alias name recorded in the log and in log lines for {@link #forwardUnrecognizedReply}. */
     static final String REPLIES = "replies";
 
+    /**
+     * Story 16.6 AC8: what a recipient gets instead of the forwarded copy when the mail's group is
+     * answered in the Mail Center: a short mail with a link, no body, no attachment.
+     */
+    public record Notice(String subject, String html) {
+    }
+
     public Result forward(String s3Key, byte[] raw) {
+        return forward(s3Key, raw, null);
+    }
+
+    /**
+     * As {@link #forward(String, byte[])}, with the same checks, claim, authorization and
+     * recipients; with a {@code notice}, each private copy is replaced by the recipient's notice.
+     * A speaker broadcast is never replaced.
+     *
+     * @param notice the notice per recipient address, or null to forward the mail itself
+     */
+    public Result forward(String s3Key, byte[] raw, Function<String, Notice> notice) {
         if (MailClassifier.isCalendarReply(new String(raw, StandardCharsets.ISO_8859_1))) {
             return calendarReply(s3Key, raw);
         }
@@ -191,7 +212,7 @@ public class EmailForwardingService {
         long started = System.nanoTime();
         Result result = delivery.broadcast()
                 ? sendBroadcast(s3Key, delivery, broadcast, aliasNames)
-                : sendIndividually(s3Key, delivery, aliasNames, ForwardingMetrics.FORWARDED);
+                : sendIndividually(s3Key, delivery, aliasNames, ForwardingMetrics.FORWARDED, notice);
         long elapsedMs = (System.nanoTime() - started) / 1_000_000;
         log.info("Forwarding: {} from {} to {} → {} ({} recipient(s) in {} ms)", s3Key, maskedSender, aliasNames,
                 result, delivery.recipients().size(), elapsedMs);
@@ -244,6 +265,11 @@ public class EmailForwardingService {
      * claim and rethrows; after it nothing is retried.
      */
     public Result forwardUnrecognizedReply(String s3Key, byte[] raw) {
+        return forwardUnrecognizedReply(s3Key, raw, null);
+    }
+
+    /** Story 16.6: as above; with a {@code notice}, the organizers get it instead of the copy. */
+    public Result forwardUnrecognizedReply(String s3Key, byte[] raw, Function<String, Notice> notice) {
         if (!forwardingLog.claim(s3Key)) {
             return duplicateOrStalled(s3Key, REPLIES);
         }
@@ -297,7 +323,7 @@ public class EmailForwardingService {
             throw e;
         }
 
-        Result result = sendIndividually(s3Key, delivery, REPLIES, ForwardingMetrics.REPLIES_FORWARDED);
+        Result result = sendIndividually(s3Key, delivery, REPLIES, ForwardingMetrics.REPLIES_FORWARDED, notice);
         log.info("Forwarding: unrecognized reply {} from {} → {} ({} organizer(s))", s3Key,
                 LoggingUtils.maskEmail(sender), result, delivery.recipients().size());
         return result;
@@ -495,14 +521,19 @@ public class EmailForwardingService {
                 MailContext.Audience.SPEAKERS);
     }
 
-    private Result sendIndividually(String s3Key, Delivery delivery, String aliasNames, String forwardedMetric) {
+    private Result sendIndividually(String s3Key, Delivery delivery, String aliasNames, String forwardedMetric,
+            Function<String, Notice> notice) {
         List<String> recipients = delivery.recipients();
         int sent = 0;
         int failed = 0;
         for (int i = 0; i < recipients.size(); i++) {
             try {
                 Recording recording = delivery.recording();
-                if (recording != null && recording.recipients().contains(recipients.get(i))) {
+                if (notice != null) {
+                    Notice n = notice.apply(recipients.get(i));
+                    emailService.sendHtmlEmailSync(recipients.get(i), List.of(), n.subject(), n.html(),
+                            properties.configurationSet());
+                } else if (recording != null && recording.recipients().contains(recipients.get(i))) {
                     emailService.sendRawMessage(recording.context(), delivery.message(), List.of(recipients.get(i)),
                             List.of(), recording.subject(), recording.bodyHtml(), properties.configurationSet());
                 } else {
@@ -521,7 +552,10 @@ public class EmailForwardingService {
         }
         EmailForwardingOutcome outcome;
         Result result;
-        if (failed == 0) {
+        if (failed == 0 && notice != null) {
+            outcome = EmailForwardingOutcome.NOTIFIED;
+            result = Result.NOTIFIED;
+        } else if (failed == 0) {
             outcome = EmailForwardingOutcome.FORWARDED;
             result = Result.FORWARDED;
         } else if (sent == 0) {
@@ -532,7 +566,7 @@ public class EmailForwardingService {
             result = Result.PARTIAL;
         }
         if (sent > 0) {
-            metrics.increment(forwardedMetric);
+            metrics.increment(notice != null ? ForwardingMetrics.NOTIFICATIONS_SENT : forwardedMetric);
         }
         if (failed > 0) {
             metrics.increment(ForwardingMetrics.FAILED);

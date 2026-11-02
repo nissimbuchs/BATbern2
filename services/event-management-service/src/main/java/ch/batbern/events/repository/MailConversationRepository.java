@@ -8,6 +8,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
@@ -28,4 +29,12 @@ public interface MailConversationRepository extends JpaRepository<MailConversati
             + "SELECT 1 FROM events e WHERE e.event_code = c.event_code AND e.event_date >= :cutoff)",
             nativeQuery = true)
     int deleteExpired(@Param("cutoff") Instant cutoff);
+
+    /** Story 16.6: keys of the kept attachment files of the conversations {@link #deleteExpired} removes. */
+    @Query(value = "SELECT a->>'storageKey' FROM mail_conversation c JOIN mail_message m ON m.conversation_id = c.id "
+            + "CROSS JOIN LATERAL jsonb_array_elements(COALESCE(m.attachments, '[]'::jsonb)) a "
+            + "WHERE a->>'storageKey' IS NOT NULL AND c.last_message_at < :cutoff AND NOT EXISTS ("
+            + "SELECT 1 FROM events e WHERE e.event_code = c.event_code AND e.event_date >= :cutoff)",
+            nativeQuery = true)
+    List<String> expiredAttachmentKeys(@Param("cutoff") Instant cutoff);
 }

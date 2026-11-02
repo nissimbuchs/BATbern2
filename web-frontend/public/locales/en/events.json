@@ -614,7 +614,10 @@
         "statusLabel": "Status",
         "assignee": "Who answers",
         "takeIt": "I'll take it",
-        "attachments": "Attachments: {{names}}",
+        "attachmentsLabel": "Attachments:",
+        "nameOnly": "name only",
+        "notKept": "Larger than 25 MB: only the name is kept. The file is in the forwarded copy.",
+        "downloadError": "The attachment could not be opened. Please try again.",
         "patchError": "The change was not saved. Please try again.",
         "reply": {
           "label": "Your answer",

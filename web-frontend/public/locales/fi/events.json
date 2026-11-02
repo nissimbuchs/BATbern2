@@ -600,7 +600,10 @@
         "statusLabel": "Tila",
         "assignee": "Kuka vastaa",
         "takeIt": "Hoidan tämän",
-        "attachments": "Liitteet: {{names}}",
+        "attachmentsLabel": "Liitteet:",
+        "nameOnly": "vain nimi",
+        "notKept": "Yli 25 Mt: vain nimi tallennetaan. Tiedosto on välitetyssä kopiossa.",
+        "downloadError": "Liitettä ei voitu avata. Yritä uudelleen.",
         "patchError": "Muutosta ei tallennettu. Yritä uudelleen.",
         "reply": {
           "label": "Vastauksesi",

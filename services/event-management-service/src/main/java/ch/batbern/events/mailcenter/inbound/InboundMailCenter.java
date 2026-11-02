@@ -31,6 +31,7 @@ import java.util.List;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
+import java.util.function.Supplier;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -45,8 +46,10 @@ import java.util.regex.Pattern;
  * is a counterpart only when writing to a contact alias. Without a match the conversation has no
  * event and audience {@code PUBLIC}. Automatic mail is counted per event, never stored.
  *
- * <p>Never throws: forwarding is the safety net until Story 16.6, so a Mail Center failure is
- * logged and counted ({@code MailCenterIngestFailed}) and the caller carries on.
+ * <p>{@code ingestReply}/{@code ingestAlias} never throw: while forwarding is the safety net, a Mail
+ * Center failure is logged and counted ({@code MailCenterIngestFailed}) and the caller carries on.
+ * Story 16.6: with a group switched to the Mail Center, the {@code *Strict} variants run first and
+ * throw, so the mail is retried instead of being notified without being stored.
  */
 @Service
 @RequiredArgsConstructor
@@ -59,6 +62,7 @@ public class InboundMailCenter {
 
     private final ConversationThreader threader;
     private final InboundMailStore store;
+    private final InboundAttachmentStore attachments;
     private final AutomaticMailCounter counter;
     private final ForwardingDirectory directory;
     private final EventRepository events;
@@ -78,6 +82,52 @@ public class InboundMailCenter {
     /** A mail to one or more aliases, after {@link EmailForwardingService#forward}. */
     public void ingestAlias(String s3Key, byte[] raw, EmailForwardingService.Result forwardResult) {
         safely(s3Key, () -> ingest(s3Key, raw, PATH_ALIAS, null));
+    }
+
+    /**
+     * What a stored mail became, for the notification that replaces its forwarded copy (Story 16.6).
+     *
+     * @param eventCode the conversation's event, or null
+     */
+    public record Stored(String conversationKey, String eventCode, String fromName, String subject) {
+    }
+
+    /**
+     * Story 16.6 AC9: with a group switched on, the mail is stored before anything is sent. Same
+     * rules as {@link #ingestReply}, but a failure is thrown, so SQS retries and dead-letters.
+     *
+     * @return the conversation it was stored in (also when it was stored already); empty when the
+     *         mail was not stored (automatic mail, out of scope)
+     */
+    public Optional<Stored> ingestReplyStrict(String s3Key, byte[] raw, InboundEmailRouter.RouteResult routeResult) {
+        return strictly(s3Key, raw, () -> ingest(s3Key, raw, PATH_REPLIES, routeResult));
+    }
+
+    /** As {@link #ingestReplyStrict}, for mail to the aliases. */
+    public Optional<Stored> ingestAliasStrict(String s3Key, byte[] raw) {
+        return strictly(s3Key, raw, () -> ingest(s3Key, raw, PATH_ALIAS, null));
+    }
+
+    private Optional<Stored> strictly(String s3Key, byte[] raw, Supplier<Optional<Stored>> work) {
+        try {
+            return work.get();
+        } catch (InboundMailStore.DuplicateInboundMailException e) {
+            return storedFor(groupId(InboundMailParser.parse(raw), s3Key));
+        } catch (RuntimeException e) {
+            metrics.increment(MailCenterMetrics.INGEST_FAILED);
+            throw e;
+        }
+    }
+
+    /** The conversation a stored mail belongs to, by its group id. */
+    private Optional<Stored> storedFor(String groupId) {
+        return jdbc.query("""
+                SELECT c.conversation_key, c.event_code, m.from_name, m.subject
+                  FROM mail_message m JOIN mail_conversation c ON c.id = m.conversation_id
+                 WHERE m.send_group_id = :groupId
+                """, new MapSqlParameterSource("groupId", groupId),
+                (rs, i) -> new Stored(rs.getString(1), rs.getString(2), rs.getString(3), rs.getString(4)))
+                .stream().findFirst();
     }
 
     /**
@@ -104,9 +154,9 @@ public class InboundMailCenter {
         }
     }
 
-    private void safely(String s3Key, Runnable work) {
+    private void safely(String s3Key, Supplier<Optional<Stored>> work) {
         try {
-            work.run();
+            work.get();
         } catch (InboundMailStore.DuplicateInboundMailException e) {
             log.info("Mail Center: {} stored already", s3Key);
         } catch (RuntimeException e) {
@@ -115,14 +165,15 @@ public class InboundMailCenter {
         }
     }
 
-    private void ingest(String s3Key, byte[] raw, String path, InboundEmailRouter.RouteResult routeResult) {
+    private Optional<Stored> ingest(String s3Key, byte[] raw, String path,
+            InboundEmailRouter.RouteResult routeResult) {
         InboundMail mail = InboundMailParser.parse(raw);
         String groupId = groupId(mail, s3Key);
         String domain = forwarding.domain();
 
         if (routeResult != null && routeResult.acted()) {
             counter.count(keywordKind(routeResult), eventInSubject(mail.subject()), groupId);
-            return;
+            return Optional.empty();
         }
         List<String> addresses = new ArrayList<>(mail.to());
         addresses.addAll(mail.cc());
@@ -139,20 +190,24 @@ public class InboundMailCenter {
         InboundClassifier.Kind kind = InboundClassifier.classify(mail, raw, domain);
         if (kind != InboundClassifier.Kind.HUMAN) {
             countAutomatic(kind, mail, raw, groupId, aliasEvent);
-            return;
+            return Optional.empty();
         }
-        if (mail.fromAddress() == null || store.exists(groupId)) {
-            return;
+        if (mail.fromAddress() == null) {
+            return Optional.empty();
+        }
+        if (store.exists(groupId)) {
+            return storedFor(groupId);
         }
 
         Optional<ConversationThreader.Target> token = threader.byToken(addresses, domain);
         boolean replyPath = PATH_REPLIES.equals(path);
         if (token.isEmpty() && !replyPath && moderator.isEmpty() && contact.isEmpty()) {
-            return; // 16.2b: organizer sends (-speaker@, -participants@, partner@) and ok@ open nothing
+            // 16.2b: organizer sends (-speaker@, -participants@, partner@) and ok@ open nothing
+            return Optional.empty();
         }
         boolean organizer = directory.organizerEmails().contains(mail.fromAddress());
         if (organizer && contact.isEmpty()) {
-            return; // 16.2a AC6 / 16.2b AC6: an organizer is a counterpart only on a contact alias
+            return Optional.empty(); // 16.2a AC6 / 16.2b AC6: an organizer is a counterpart only on a contact alias
         }
 
         ConversationThreader.Target t = token
@@ -171,11 +226,22 @@ public class InboundMailCenter {
                 : events.findByEventCode(eventCode).map(Event::getOrganizerUsername)
                         .filter(username -> !username.isBlank()).orElse(null);
         String aliasLocalPart = moderator.or(() -> contact).map(ForwardingAlias::localPart).orElse(null);
-        String key = store.store(mail, groupId, path, aliasLocalPart,
+        InboundMail kept = mail.attachments().isEmpty() || !attachments.enabled() ? mail
+                : mail.withAttachments(attachments.store(groupId, mail.attachments(),
+                        InboundMailParser.attachmentContents(raw)));
+        String key = store.store(kept, groupId, path, aliasLocalPart,
                 new InboundMailStore.Placement(conversationId, eventCode, audience, assignee));
         metrics.increment(t.metric());
         log.info("Mail Center: mail from {} stored in {} ({})", LoggingUtils.maskEmail(mail.fromAddress()), key,
                 t.metric());
+        return Optional.of(new Stored(key, eventCode != null ? eventCode : eventOf(key), mail.fromName(),
+                mail.subject()));
+    }
+
+    private String eventOf(String conversationKey) {
+        return jdbc.query("SELECT event_code FROM mail_conversation WHERE conversation_key = :key",
+                new MapSqlParameterSource("key", conversationKey), (rs, i) -> rs.getString(1))
+                .stream().findFirst().orElse(null);
     }
 
     /** {@code info@}, {@code events@}, {@code support@}: open to anyone (not {@code ok@}). */

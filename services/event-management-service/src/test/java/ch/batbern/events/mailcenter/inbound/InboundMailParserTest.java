@@ -53,6 +53,16 @@ class InboundMailParserTest {
     }
 
     @Test
+    @DisplayName("16.6: the attachment's bytes, in the order of the metadata")
+    void should_returnAttachmentBytes_when_attachmentPresent() throws IOException {
+        byte[] raw = fixture("attachment.eml");
+        InboundMail mail = InboundMailParser.parse(raw);
+
+        assertThat(InboundMailParser.attachmentContents(raw)).singleElement()
+                .satisfies(bytes -> assertThat((long) bytes.length).isEqualTo(mail.attachments().get(0).size()));
+    }
+
+    @Test
     @DisplayName("attachment: metadata only, the text part is the body")
     void should_listAttachmentMetadata_when_attachmentPresent() throws IOException {
         InboundMail mail = InboundMailParser.parse(fixture("attachment.eml"));

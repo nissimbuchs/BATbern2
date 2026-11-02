@@ -57,3 +57,20 @@ export async function replyToConversation(
   );
   return response.data;
 }
+
+/**
+ * Story 16.6: presigned download URL of a kept inbound attachment (5 minutes), same shape as the
+ * session materials' download URL.
+ */
+export async function getConversationAttachmentDownloadUrl(
+  conversationKey: string,
+  mailKey: string,
+  index: number
+): Promise<string> {
+  const response = await apiClient.get<{ downloadUrl: string }>(
+    `/conversations/${encodeURIComponent(conversationKey)}/messages/${encodeURIComponent(
+      mailKey
+    )}/attachments/${index}/download`
+  );
+  return response.data.downloadUrl;
+}

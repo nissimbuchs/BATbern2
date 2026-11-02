@@ -14,11 +14,8 @@ import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.util.Optional;
 
 /**
@@ -37,9 +34,7 @@ public class ConversationAssignmentNotifier {
     private final UserApiClient userApiClient;
     private final EventRepository eventRepository;
     private final MailPipeline mailPipeline;
-
-    @Value("${app.base-url:https://batbern.ch}")
-    private String baseUrl = "https://batbern.ch";
+    private final ConversationLinks links;
 
     public void notifyAssigned(MailConversation conversation, String assignee) {
         try {
@@ -58,7 +53,8 @@ public class ConversationAssignmentNotifier {
                             ? user.getFirstName() : assignee)
                     .put(MailVariable.COUNTERPART_NAME, counterpart(conversation))
                     .put(MailVariable.CONVERSATION_SUBJECT, conversation.getSubject())
-                    .put(MailVariable.CONVERSATION_LINK, link(conversation));
+                    .put(MailVariable.CONVERSATION_LINK,
+                            links.link(conversation.getEventCode(), conversation.getConversationKey()));
             RenderedMail mail = mailPipeline.render(mailPipeline.template(TEMPLATE_KEY, locale), variables.asMap());
             String subject = mail.subject() != null ? mail.subject()
                     : ("en".equals(locale) ? "Assigned to you: " : "Dir zugewiesen: ") + conversation.getSubject();
@@ -73,15 +69,5 @@ public class ConversationAssignmentNotifier {
     private static String counterpart(MailConversation conversation) {
         String name = conversation.getCounterpartName();
         return name != null && !name.isBlank() ? name : conversation.getCounterpartAddress();
-    }
-
-    /** The event's mail page, or the global Mail page (Story 16.7) for a conversation without an event. */
-    String link(MailConversation conversation) {
-        String key = URLEncoder.encode(conversation.getConversationKey(), StandardCharsets.UTF_8);
-        if (conversation.getEventCode() == null) {
-            return baseUrl + "/organizer/mail?conversation=" + key;
-        }
-        return baseUrl + "/organizer/events/" + conversation.getEventCode() + "?tab=communications&conversation="
-                + key;
     }
 }

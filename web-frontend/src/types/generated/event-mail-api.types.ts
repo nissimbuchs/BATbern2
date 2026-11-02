@@ -202,6 +202,31 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/conversations/{conversationKey}/messages/{mailKey}/attachments/{index}/download': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Get a presigned download URL for a kept attachment (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Story 16.6. Inbound attachments up to 25 MB per file are kept with their conversation (deleted
+     *     with it, 12 months after the last activity); larger ones keep only their name. Returns a
+     *     presigned link valid for 5 minutes that downloads the file under its original name, like the
+     *     session materials' `getMaterialDownloadUrl`.
+     */
+    get: operations['getConversationAttachmentDownloadUrl'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/events/{eventCode}/mails/{mailKey}/retry': {
     parameters: {
       query?: never;
@@ -294,7 +319,10 @@ export interface components {
       eventCode?: string | null;
       /** @description Story 16.2a. The conversation an inbound mail belongs to. */
       conversationKey?: string | null;
-      /** @description Story 16.2a. Attachments of an inbound mail, names only (the files are not kept). */
+      /**
+       * @description Story 16.2a. Attachments of an inbound mail. Story 16.6: files up to 25 MB are kept (`kept`),
+       *     larger ones by name only.
+       */
       attachments?: components['schemas']['MailAttachment'][];
     };
     MailAttachment: {
@@ -302,6 +330,8 @@ export interface components {
       contentType?: string;
       /** Format: int64 */
       size?: number;
+      /** @description Story 16.6. The file is kept and can be downloaded (getConversationAttachmentDownloadUrl). */
+      kept?: boolean;
     };
     /**
      * @description Open needs an answer; waiting is answered, waiting for the counterpart; done needs nothing.
@@ -531,6 +561,17 @@ export interface components {
       hasNext: boolean;
       /** @description Whether a previous page exists. */
       hasPrev: boolean;
+    };
+    /**
+     * @description A time-limited presigned link to download one private file. Same shape as the session materials'
+     *     `MaterialDownloadUrlResponse` (Story 5.9); Story 16.6 inbound mail attachments use it.
+     */
+    DownloadUrlResponse: {
+      /**
+       * @description Presigned URL; downloads the file under its original name
+       * @example https://batbern-inbound-emails-staging.s3.eu-central-1.amazonaws.com/...&X-Amz-Signature=...
+       */
+      downloadUrl: string;
     };
   };
   responses: never;
@@ -1063,6 +1104,52 @@ export interface operations {
       };
       /** @description The conversation has no counterpart address that can be mailed */
       409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getConversationAttachmentDownloadUrl: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversationKey: string;
+        mailKey: string;
+        /** @description Position of the attachment in the message's `attachments`, from 0. */
+        index: number;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The link */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DownloadUrlResponse'];
+        };
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description No such message in the conversation, or the file was not kept */
+      404: {
         headers: {
           [name: string]: unknown;
         };

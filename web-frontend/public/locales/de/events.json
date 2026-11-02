@@ -614,7 +614,10 @@
         "statusLabel": "Status",
         "assignee": "Wer antwortet",
         "takeIt": "Ich übernehme",
-        "attachments": "Anhänge: {{names}}",
+        "attachmentsLabel": "Anhänge:",
+        "nameOnly": "nur Name",
+        "notKept": "Grösser als 25 MB: nur der Name ist gespeichert. Die Datei ist in der weitergeleiteten Kopie.",
+        "downloadError": "Der Anhang konnte nicht geöffnet werden. Bitte nochmals versuchen.",
         "patchError": "Die Änderung wurde nicht gespeichert. Bitte nochmals versuchen.",
         "reply": {
           "label": "Deine Antwort",

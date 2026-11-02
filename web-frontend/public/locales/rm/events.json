@@ -600,7 +600,10 @@
         "statusLabel": "Status",
         "assignee": "Tgi che respunda",
         "takeIt": "Jau surpigl quai",
-        "attachments": "Agiuntas: {{names}}",
+        "attachmentsLabel": "Agiuntas:",
+        "nameOnly": "mo il num",
+        "notKept": "Pli grond che 25 MB: mo il num vegn memorisà. La datoteca è en la copia renviada.",
+        "downloadError": "L'agiunta n'ha betg pudì vegnir averta. Emprova anc ina giada.",
         "patchError": "La midada n’è betg vegnida memorisada. Emprova anc ina giada.",
         "reply": {
           "label": "Tia resposta",

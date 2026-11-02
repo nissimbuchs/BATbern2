@@ -4,8 +4,8 @@
  *
  * Story 16.6: the answer box under the messages (`ConversationReplyBox`).
  *
- * Bodies render in the same sandboxed frame as "What went out" (`MailBodyFrame`). Attachments are
- * names only: the files reach the organizers through forwarding, the Mail Center does not keep them.
+ * Bodies render in the same sandboxed frame as "What went out" (`MailBodyFrame`). Story 16.6:
+ * attachments up to 25 MB are kept and open through a presigned link; larger ones show their name.
  */
 
 import React from 'react';
@@ -15,6 +15,7 @@ import {
   Button,
   FormControl,
   InputLabel,
+  Link,
   MenuItem,
   Select,
   Skeleton,
@@ -29,7 +30,10 @@ import {
   useConversation,
   usePatchConversation,
 } from '@/hooks/useMailConversations/useMailConversations';
-import type { MailConversationStatus } from '@/services/mailConversationService';
+import {
+  getConversationAttachmentDownloadUrl,
+  type MailConversationStatus,
+} from '@/services/mailConversationService';
 import { ConversationReplyBox } from './ConversationReplyBox';
 import { MailBodyFrame } from './MailBodyFrame';
 
@@ -47,6 +51,7 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const { t, i18n } = useTranslation('events');
   const { user } = useAuth();
   const query = useConversation(conversationKey);
+  const [downloadFailed, setDownloadFailed] = React.useState(false);
   const patch = usePatchConversation(eventCode);
   const detail = query.data;
 
@@ -58,6 +63,16 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
   const me = user?.username;
   const save = (change: Parameters<typeof patch.mutate>[0]['patch']) =>
     patch.mutate({ key: conversationKey, patch: change });
+  // Story 16.6: same flow as the session materials: fetch a presigned URL, open it in a new tab.
+  const download = async (mailKey: string, index: number) => {
+    setDownloadFailed(false);
+    try {
+      const url = await getConversationAttachmentDownloadUrl(conversationKey, mailKey, index);
+      window.open(url, '_blank', 'noopener,noreferrer');
+    } catch {
+      setDownloadFailed(true);
+    }
+  };
 
   return (
     <Stack spacing={2} data-testid="conversation-detail">
@@ -108,6 +123,16 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
         )}
       </Stack>
 
+      {downloadFailed && (
+        <Alert
+          severity="error"
+          onClose={() => setDownloadFailed(false)}
+          data-testid="conversation-attachment-error"
+        >
+          {t('eventPage.mail.conversations.downloadError')}
+        </Alert>
+      )}
+
       {patch.isError && (
         <Alert severity="error" onClose={() => patch.reset()}>
           {t('eventPage.mail.conversations.patchError')}
@@ -140,13 +165,31 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
                 variant="caption"
                 color="text.secondary"
                 component="div"
-                sx={{ mt: 0.5, display: 'flex', alignItems: 'center', gap: 0.5 }}
+                sx={{ mt: 0.5, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}
                 data-testid="conversation-attachments"
               >
                 <AttachmentIcon fontSize="inherit" />
-                {t('eventPage.mail.conversations.attachments', {
-                  names: attachments.map((a) => a.name).join(', '),
-                })}
+                {t('eventPage.mail.conversations.attachmentsLabel')}
+                {attachments.map((a, index) =>
+                  a.kept ? (
+                    <Link
+                      key={`${a.name}-${index}`}
+                      component="button"
+                      variant="caption"
+                      onClick={() => download(message.mailKey, index)}
+                      data-testid={`conversation-attachment-${message.mailKey}-${index}`}
+                    >
+                      {a.name}
+                    </Link>
+                  ) : (
+                    <span
+                      key={`${a.name}-${index}`}
+                      title={t('eventPage.mail.conversations.notKept')}
+                    >
+                      {a.name} ({t('eventPage.mail.conversations.nameOnly')})
+                    </span>
+                  )
+                )}
               </Typography>
             )}
           </Box>

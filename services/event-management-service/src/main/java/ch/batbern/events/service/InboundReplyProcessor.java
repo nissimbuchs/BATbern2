@@ -1,6 +1,8 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.forwarding.EmailForwardingService;
+import ch.batbern.events.mailcenter.ConversationNotices;
+import ch.batbern.events.mailcenter.MailCenterSwitch;
 import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
 import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
@@ -16,6 +18,7 @@ import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.io.InputStream;
 import java.nio.charset.StandardCharsets;
+import java.util.Optional;
 import java.util.Properties;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -33,6 +36,8 @@ import java.util.regex.Pattern;
  *   <li>Mail the router cannot act on → {@link EmailForwardingService#forwardUnrecognizedReply}
  *       (Story 16.0, #1160)</li>
  *   <li>Then the Mail Center records or counts it (Story 16.2a). That step never throws.</li>
+ *   <li>Story 16.6: with group {@code replies} switched on, the Mail Center stores the mail first and
+ *       the organizers get a notification instead of the copy.</li>
  * </ol>
  *
  * <p>Not conditional: it has no AWS dependency of its own.
@@ -45,6 +50,8 @@ public class InboundReplyProcessor {
     private final InboundEmailRouter router;
     private final EmailForwardingService forwardingService;
     private final InboundMailCenter mailCenter;
+    private final MailCenterSwitch mailSwitch;
+    private final ConversationNotices notices;
 
     /**
      * @param s3Key where SES stored the mail (or a synthetic key on local dev)
@@ -100,6 +107,17 @@ public class InboundReplyProcessor {
         // Story 16.0 AC3: outside the catch-all on purpose. The router ran no action, so a
         // redelivery is harmless, and a failure before the first send (e.g. CUMS down) must reach
         // SQS so the reply is retried and lands in the DLQ instead of being lost.
+        if (mailSwitch.isOn(MailCenterSwitch.Group.REPLIES)) {
+            // Story 16.6 AC9: stored first (a failure is rethrown, SQS retries); the organizers get a
+            // notification instead of the copy; mail that was not stored is forwarded as today
+            Optional<InboundMailCenter.Stored> stored = mailCenter.ingestReplyStrict(s3Key, raw, result);
+            if (stored.isPresent()) {
+                forwardingService.forwardUnrecognizedReply(s3Key, raw, notices.forStored(stored.get()));
+            } else {
+                forwardingService.forwardUnrecognizedReply(s3Key, raw);
+            }
+            return;
+        }
         forwardingService.forwardUnrecognizedReply(s3Key, raw);
         mailCenter.ingestReply(s3Key, raw, result);
     }

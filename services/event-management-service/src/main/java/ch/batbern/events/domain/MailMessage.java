@@ -1,6 +1,7 @@
 package ch.batbern.events.domain;
 
 import ch.batbern.shared.mail.MailContext;
+import com.fasterxml.jackson.annotation.JsonInclude;
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
 import jakarta.persistence.EnumType;
@@ -115,12 +116,28 @@ public class MailMessage {
     @Column(name = "alias_local_part")
     private String aliasLocalPart;
 
-    /** Names, types and sizes only: the content stays in S3 (7 days). */
+    /**
+     * Names, types and sizes; Story 16.6: files up to 25 MB also have the key under which they are
+     * kept ({@code mail-attachments/} in the inbound bucket), larger ones only their name.
+     */
     @JdbcTypeCode(SqlTypes.JSON)
     @Column(name = "attachments")
     private List<Attachment> attachments;
 
-    /** One attachment of an inbound mail. */
-    public record Attachment(String name, String contentType, long size) {
+    /**
+     * One attachment of an inbound mail.
+     *
+     * @param storageKey S3 key of the kept file, or null when only the name is kept
+     */
+    @JsonInclude(JsonInclude.Include.NON_NULL)
+    public record Attachment(String name, String contentType, long size, String storageKey) {
+
+        public Attachment(String name, String contentType, long size) {
+            this(name, contentType, size, null);
+        }
+
+        public Attachment withStorageKey(String key) {
+            return new Attachment(name, contentType, size, key);
+        }
     }
 }

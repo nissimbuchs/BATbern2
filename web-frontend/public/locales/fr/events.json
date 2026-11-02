@@ -600,7 +600,10 @@
         "statusLabel": "Statut",
         "assignee": "Qui répond",
         "takeIt": "Je m’en occupe",
-        "attachments": "Pièces jointes : {{names}}",
+        "attachmentsLabel": "Pièces jointes :",
+        "nameOnly": "nom seulement",
+        "notKept": "Plus de 25 Mo : seul le nom est conservé. Le fichier se trouve dans la copie transférée.",
+        "downloadError": "La pièce jointe n'a pas pu être ouverte. Veuillez réessayer.",
         "patchError": "La modification n’a pas été enregistrée. Veuillez réessayer.",
         "reply": {
           "label": "Votre réponse",

@@ -606,7 +606,10 @@
         "statusLabel": "Status",
         "assignee": "Wär antwortet",
         "takeIt": "I übernimes",
-        "attachments": "Aahäng: {{names}}",
+        "attachmentsLabel": "Aahäng:",
+        "nameOnly": "nume dr Name",
+        "notKept": "Grösser aus 25 MB: nume dr Name isch gspicheret. D Datei isch i dr wytergleitete Kopie.",
+        "downloadError": "Dr Aahang het nid chönne göffnet wärde. Bitte nomau probiere.",
         "patchError": "D Änderig isch nid gspicheret worde. Bitte nomau probiere.",
         "reply": {
           "label": "Dini Antwort",
