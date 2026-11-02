@@ -1,22 +1,25 @@
 package ch.batbern.events.service;
 
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.core.dto.generated.VenueCoordinationPreviewResponse;
+import ch.batbern.events.core.dto.generated.VenueCoordinationSendResponse;
 import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.users.UserResponse;
-import ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig;
 import ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig.Contact;
 import ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig.Role;
-import ch.batbern.events.core.dto.generated.VenueCoordinationPreviewResponse;
-import ch.batbern.events.core.dto.generated.VenueCoordinationSendResponse;
+import ch.batbern.events.dto.venuecoordination.VenueCoordinationConfig;
 import ch.batbern.events.exception.EventNotFoundException;
+import ch.batbern.events.mailcenter.compose.MailRenderer;
+import ch.batbern.events.mailcenter.render.MailContent;
+import ch.batbern.events.mailcenter.render.MailPipeline;
+import ch.batbern.events.mailcenter.variables.MailVariable;
 import ch.batbern.events.repository.EmailTemplateRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
-import ch.batbern.events.mailcenter.compose.MailRenderer;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;
@@ -32,7 +35,6 @@ import org.springframework.web.server.ResponseStatusException;
 
 import java.time.ZoneId;
 import java.time.format.DateTimeFormatter;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -72,7 +74,7 @@ public class VenueCoordinationService {
     private final AdminSettingsService adminSettingsService;
     private final EventRepository eventRepository;
     private final EmailTemplateRepository emailTemplateRepository;
-    private final EmailTemplateService emailTemplateService;
+    private final MailPipeline mailPipeline;
     private final EmailService emailService;
     private final SessionRepository sessionRepository;
     private final SpeakerPoolRepository speakerPoolRepository;
@@ -177,12 +179,13 @@ public class VenueCoordinationService {
         return VenueCoordinationSendResponse.builder().sentTo(uniqueRoles).build();
     }
 
+    /** Story 16.11: the one pipeline; venue mail is always in the BATbern layout, as before. */
     private Rendered render(EmailTemplate template, Map<String, String> vars, String locale) {
-        String mergedHtml = MailRenderer.body(emailService, emailTemplateService, template.getHtmlBody(), locale,
-                vars);
-        String subject = emailService.replaceVariables(
-                Optional.ofNullable(template.getSubject()).orElse(""), vars);
-        return new Rendered(subject, mergedHtml);
+        MailContent content = new MailContent(template.getTemplateKey(), locale,
+                Optional.ofNullable(template.getSubject()).orElse(""), template.getHtmlBody(), MailRenderer.LAYOUT_KEY,
+                MailContext.ContentSource.TEMPLATE);
+        ch.batbern.events.mailcenter.render.RenderedMail mail = mailPipeline.render(content, vars);
+        return new Rendered(mail.subject(), mail.html());
     }
 
     private record Rendered(String subject, String body) {}
@@ -206,26 +209,21 @@ public class VenueCoordinationService {
 
     private Map<String, String> buildVariables(Event event, List<Contact> contacts, String locale,
                                                 String notes, CoordinatorIdentity coordinator) {
-        Map<String, String> vars = new LinkedHashMap<>();
-        vars.put("eventDate", formatEventDate(event, locale));
-        vars.put("eventTitle", safe(event.getTitle()));
-        vars.put("topicTitle", resolveTopicTitle(event));
-        vars.put("venueName", safe(event.getVenueName()));
-        vars.put("salutation", formatCombinedSalutation(contacts, locale));
-        vars.put("agenda", renderAgenda(event));
-        // Notes is a plain-text textarea on the frontend; preserve user line breaks by
-        // turning them into <br>. HTML-escape special chars first so notes can't inject
-        // markup (the field is organizer-authored but defence-in-depth is cheap here).
-        vars.put("notes", renderNotesHtml(notes));
-        vars.put("organizerSignature", coordinator.displayName());
-        // Required by the shared batbern-default layout footer ("© {{currentYear}} BATbern").
-        // Same pattern as NewsletterEmailService / SpeakerInvitationEmailService.
-        vars.put("currentYear", String.valueOf(java.time.Year.now().getValue()));
-        // Required by the shared batbern-default layout header <img src="{{logoUrl}}">.
-        // Without this the literal {{logoUrl}} placeholder leaks into the sent email.
-        // Same asset + pattern as RegistrationEmailService / SpeakerInvitationEmailService.
-        vars.put("logoUrl", baseUrl + "/BATbern_white_logo.png");
-        return vars;
+        return mailPipeline.variables().event(event, locale)
+                // Story 16.11: format kept until the owner-decided change (separate commit)
+                .put(MailVariable.EVENT_DATE, formatEventDate(event, locale))
+                .put(MailVariable.EVENT_TITLE, safe(event.getTitle()))
+                .put(MailVariable.TOPIC_TITLE, resolveTopicTitle(event))
+                // Empty, not "TBA", when the venue is unknown: open unification decision (16.11)
+                .put(MailVariable.VENUE_NAME, safe(event.getVenueName()))
+                .put(MailVariable.SALUTATION, formatCombinedSalutation(contacts, locale))
+                .put(MailVariable.AGENDA, renderAgenda(event))
+                // Notes is a plain-text textarea on the frontend; preserve user line breaks by
+                // turning them into <br>. HTML-escape special chars first so notes can't inject
+                // markup (the field is organizer-authored but defence-in-depth is cheap here).
+                .put(MailVariable.NOTES, renderNotesHtml(notes))
+                .put(MailVariable.ORGANIZER_SIGNATURE, coordinator.displayName())
+                .asMap();
     }
 
     /**
