@@ -11,6 +11,7 @@ import type {
   MailConversationDetail,
   MailConversationPage,
   MailConversationPatch,
+  MailConversationReply,
 } from '@/services/mailConversationService';
 
 /** One page holds every conversation of an event at today's volume (~6 human mails a week). */
@@ -54,6 +55,22 @@ export function usePatchConversation(eventCode: string) {
         queryKey: MAIL_CONVERSATION_QUERY_KEYS.list(eventCode),
       });
       void queryClient.invalidateQueries({ queryKey: MAIL_CONVERSATION_QUERY_KEYS.detail(key) });
+    },
+  });
+}
+
+/**
+ * Story 16.6: answer a conversation. Refreshes the conversation and the whole mail page of the
+ * event (`['mails', eventCode]`), whose list shows the new status.
+ */
+export function useReplyToConversation(eventCode: string) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ key, reply }: { key: string; reply: MailConversationReply }) =>
+      conversationService.replyToConversation(key, reply),
+    onSuccess: (_result, { key }) => {
+      void queryClient.invalidateQueries({ queryKey: MAIL_CONVERSATION_QUERY_KEYS.detail(key) });
+      void queryClient.invalidateQueries({ queryKey: ['mails', eventCode] });
     },
   });
 }

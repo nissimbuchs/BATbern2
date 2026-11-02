@@ -1,0 +1,23 @@
+<!-- subject: Assigned to you: {{conversationSubject}} -->
+<p class="lbl lbl-blue">Mail Center</p>
+<h2>A conversation is assigned to you</h2>
+
+<p>Hello {{recipientName}},</p>
+<p>From now on you answer this conversation{{#eventCode}} about {{eventCode}}{{/eventCode}}.</p>
+
+<div class="event-card">
+  <table class="detail-table">
+    <tr>
+      <td class="detail-label">From</td>
+      <td class="detail-value">{{counterpartName}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Subject</td>
+      <td class="detail-value">{{conversationSubject}}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="cta-section">
+  <a href="{{conversationLink}}" class="btn btn-accept">Open the conversation</a>
+</div>

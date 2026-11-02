@@ -61,7 +61,7 @@ public class MailMessageQueryService {
               LEFT JOIN (SELECT send_id, count(*) AS total,
                                 count(*) FILTER (WHERE delivery_status = 'failed' OR bounce_type IS NOT NULL) AS failed
                            FROM newsletter_recipients GROUP BY send_id) nr ON nr.send_id = m.newsletter_send_id
-             WHERE m.event_code = :eventCode AND m.direction = 'OUT'
+             WHERE m.event_code = :eventCode AND m.direction = 'OUT' AND m.conversation_id IS NULL
             """.formatted(ZONE);
 
     /** Newsletter-table sends (newsletter and registrant notices) the record does not know (AC6). */

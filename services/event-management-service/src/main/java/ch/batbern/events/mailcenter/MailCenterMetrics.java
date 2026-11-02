@@ -4,6 +4,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.stereotype.Component;
 import software.amazon.awssdk.services.cloudwatch.CloudWatchClient;
+import software.amazon.awssdk.services.cloudwatch.model.Dimension;
 import software.amazon.awssdk.services.cloudwatch.model.MetricDatum;
 import software.amazon.awssdk.services.cloudwatch.model.PutMetricDataRequest;
 import software.amazon.awssdk.services.cloudwatch.model.StandardUnit;
@@ -36,6 +37,13 @@ public class MailCenterMetrics {
     public static final String THREAD_MATCHED_BY_SES_ID = "ThreadMatchedBySesId";
     public static final String THREAD_MATCHED_BY_ALIAS = "ThreadMatchedByAlias";
 
+    /**
+     * Story 16.6: a reply to an organizer's answer ({@code replies+{token}@}), with dimension
+     * {@code path} = {@code replies} or {@code alias}, so the first production reply shows which SES
+     * rule received it.
+     */
+    public static final String CONVERSATION_REPLIES = "ConversationReplies";
+
     private final ObjectProvider<CloudWatchClient> cloudWatch;
 
     public MailCenterMetrics(ObjectProvider<CloudWatchClient> cloudWatch) {
@@ -43,19 +51,27 @@ public class MailCenterMetrics {
     }
 
     public void increment(String metricName) {
+        increment(metricName, null, null);
+    }
+
+    /** As {@link #increment(String)}, with one dimension (none when {@code dimension} is null). */
+    public void increment(String metricName, String dimension, String value) {
         CloudWatchClient client = cloudWatch.getIfAvailable();
         if (client == null) {
-            log.debug("Mail Center metric {} +1 (no CloudWatch client)", metricName);
+            log.debug("Mail Center metric {} {}={} +1 (no CloudWatch client)", metricName, dimension, value);
             return;
         }
         try {
+            MetricDatum.Builder datum = MetricDatum.builder()
+                    .metricName(metricName)
+                    .value(1.0)
+                    .unit(StandardUnit.COUNT);
+            if (dimension != null) {
+                datum.dimensions(Dimension.builder().name(dimension).value(value).build());
+            }
             client.putMetricData(PutMetricDataRequest.builder()
                     .namespace(NAMESPACE)
-                    .metricData(MetricDatum.builder()
-                            .metricName(metricName)
-                            .value(1.0)
-                            .unit(StandardUnit.COUNT)
-                            .build())
+                    .metricData(datum.build())
                     .build());
         } catch (RuntimeException e) {
             log.warn("Failed to publish Mail Center metric {}: {}", metricName, e.toString());

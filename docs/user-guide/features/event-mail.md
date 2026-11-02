@@ -21,7 +21,15 @@ instead of it sitting in one private inbox (Story 16.2a).
 - **Who answers:** the event's lead organizer at first. **I'll take it** on an unassigned row makes
   it yours; inside the conversation you can pick any organizer or nobody.
 - **Status:** *Open* (needs an answer), *Waiting* (answered, waiting for the speaker), *Done*. A new
-  mail from the speaker sets it back to *Open*. Changing status or assignee sends no mail.
+  mail from the speaker sets it back to *Open*. Changing the status sends no mail.
+- **Answering:** below the messages, write your answer and click **Send answer**, then confirm. The
+  mail goes out as "{your name} via BATbern" and quotes the speaker's last mail. When the speaker
+  replies, the reply lands in the same conversation, not in your inbox. Sending sets the
+  conversation to *Waiting*; tick **Mark as done** first if nothing more is expected. Your answer
+  appears in the conversation for every organizer; it is not listed again under "What went out".
+- **Reassigning:** when you give a conversation to another organizer, they get one short mail with a
+  link to it. Taking it yourself, clearing the assignee, or choosing the same organizer again sends
+  nothing.
 - **A click** opens the conversation below its row: every mail, oldest first, with sender, time,
   text and the names of attachments (on a phone: full screen). Attachments themselves are in the
   forwarded copy; the page keeps only their names. Images and formatting from the sender's mail are

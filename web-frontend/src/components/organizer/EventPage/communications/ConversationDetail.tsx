@@ -2,6 +2,8 @@
  * ConversationDetail (Story 16.2a AC11, AC12): every message of a conversation, oldest first, with
  * sender, time, text and attachment names; above them the status and who answers.
  *
+ * Story 16.6: the answer box under the messages (`ConversationReplyBox`).
+ *
  * Bodies render in the same sandboxed frame as "What went out" (`MailBodyFrame`). Attachments are
  * names only: the files reach the organizers through forwarding, the Mail Center does not keep them.
  */
@@ -28,6 +30,7 @@ import {
   usePatchConversation,
 } from '@/hooks/useMailConversations/useMailConversations';
 import type { MailConversationStatus } from '@/services/mailConversationService';
+import { ConversationReplyBox } from './ConversationReplyBox';
 import { MailBodyFrame } from './MailBodyFrame';
 
 const CONVERSATION_STATUSES: MailConversationStatus[] = ['OPEN', 'WAITING', 'DONE'];
@@ -149,6 +152,8 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
           </Box>
         );
       })}
+
+      <ConversationReplyBox eventCode={eventCode} conversationKey={conversationKey} />
     </Stack>
   );
 };

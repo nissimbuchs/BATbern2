@@ -14,6 +14,8 @@ export type MailConversationSummary = components['schemas']['MailConversationSum
 export type MailConversationPage = components['schemas']['MailConversationPage'];
 export type MailConversationDetail = components['schemas']['MailConversationDetail'];
 export type MailConversationPatch = components['schemas']['MailConversationPatch'];
+export type MailConversationReply = components['schemas']['MailConversationReply'];
+export type MailMessageDetail = components['schemas']['MailMessageDetail'];
 
 export async function listEventConversations(
   eventCode: string,
@@ -40,6 +42,18 @@ export async function patchConversation(
   const response = await apiClient.patch<MailConversationSummary>(
     `/conversations/${encodeURIComponent(conversationKey)}`,
     patch
+  );
+  return response.data;
+}
+
+/** Story 16.6: answer the conversation by mail. Sends a real mail. */
+export async function replyToConversation(
+  conversationKey: string,
+  reply: MailConversationReply
+): Promise<MailMessageDetail> {
+  const response = await apiClient.post<MailMessageDetail>(
+    `/conversations/${encodeURIComponent(conversationKey)}/replies`,
+    reply
   );
   return response.data;
 }

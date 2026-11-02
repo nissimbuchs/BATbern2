@@ -605,7 +605,17 @@
         "assignee": "Wär antwortet",
         "takeIt": "I übernimes",
         "attachments": "Aahäng: {{names}}",
-        "patchError": "D Änderig isch nid gspicheret worde. Bitte nomau probiere."
+        "patchError": "D Änderig isch nid gspicheret worde. Bitte nomau probiere.",
+        "reply": {
+          "label": "Dini Antwort",
+          "hint": "Geit use als „{{name}} via BATbern“. D Antwort landet wider hie.",
+          "markDone": "Als erlediget markiere",
+          "send": "Antwort schicke",
+          "confirm": "Antwort würklech schicke?",
+          "sent": "Antwort gschickt.",
+          "error": "D Antwort isch nid gschickt worde. Bitte nomau probiere.",
+          "noAddress": "Die Unterhautig het ke Adrässe, wo ä Antwort cha häre gah."
+        }
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} Abwäseheitsnotiz",

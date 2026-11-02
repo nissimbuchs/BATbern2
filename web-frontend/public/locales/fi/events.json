@@ -599,7 +599,17 @@
         "assignee": "Kuka vastaa",
         "takeIt": "Hoidan tämän",
         "attachments": "Liitteet: {{names}}",
-        "patchError": "Muutosta ei tallennettu. Yritä uudelleen."
+        "patchError": "Muutosta ei tallennettu. Yritä uudelleen.",
+        "reply": {
+          "label": "Vastauksesi",
+          "hint": "Lähetetään nimellä ”{{name}} via BATbern”. Vastaus tulee tänne.",
+          "markDone": "Merkitse valmiiksi",
+          "send": "Lähetä vastaus",
+          "confirm": "Lähetetäänkö vastaus varmasti?",
+          "sent": "Vastaus lähetetty.",
+          "error": "Vastausta ei lähetetty. Yritä uudelleen.",
+          "noAddress": "Tällä keskustelulla ei ole osoitetta, johon voisi vastata sähköpostilla."
+        }
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} poissaoloviesti",

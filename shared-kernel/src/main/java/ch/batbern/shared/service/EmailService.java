@@ -1,5 +1,6 @@
 package ch.batbern.shared.service;
 
+import ch.batbern.shared.mail.ComposedMail;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailRedaction;
 import ch.batbern.shared.mail.OutboundMail;
@@ -599,6 +600,101 @@ public class EmailService {
     }
 
     /**
+     * Story 16.6: send a personal mail with headers the caller owns (an organizer's answer to a
+     * conversation) through {@code SendRawEmail}, and record it with its {@code Message-ID}. The
+     * same walls as every other send apply; on local dev the mail is captured to the dev inbox.
+     * A refused send is recorded with the SES error code and rethrown.
+     */
+    public void sendComposed(MailContext context, ComposedMail mail) {
+        assertSendable(mail.to());
+        if (sesClient == null) {
+            log.warn("SES client not configured - skipping composed email send (local/test mode)");
+            String captured = null;
+            if (localEmailCapture != null) {
+                captured = "local-" + localEmailCapture.capture(mail.to(), List.of(), mail.subject(), mail.html(),
+                        fromEmail, mail.fromName(), List.of());
+            }
+            record(context, composedRecord(mail, captured, null));
+            return;
+        }
+        assertNotTestMarked(mail.subject(), mail.html());
+        byte[] mime;
+        try {
+            mime = composedMime(mail);
+        } catch (MessagingException | IOException e) {
+            throw new EmailSendException("Failed to create email message", e);
+        }
+        SendRawEmailRequest.Builder request = SendRawEmailRequest.builder()
+                .rawMessage(RawMessage.builder().data(SdkBytes.fromByteArray(mime)).build());
+        if (configurationSetName != null && !configurationSetName.isBlank()) {
+            request.configurationSetName(configurationSetName);
+        }
+        if (context != null) {
+            request.tags(mailGroupTag(context));
+        }
+        try {
+            SendRawEmailResponse response = sesClient.sendRawEmail(request.build());
+            log.info("Composed email sent to {}, MessageId: {}", LoggingUtils.maskEmail(mail.to()),
+                    response.messageId());
+            record(context, composedRecord(mail, response.messageId(), null));
+        } catch (SesException e) {
+            log.error("Failed to send composed email to {}: {}", LoggingUtils.maskEmail(mail.to()),
+                    e.awsErrorDetails() != null ? e.awsErrorDetails().errorMessage() : e.getMessage(), e);
+            record(context, composedRecord(mail, null, errorCode(e)));
+            throw new EmailSendException("Failed to send email to: " + LoggingUtils.maskEmail(mail.to()), e);
+        }
+    }
+
+    private static OutboundMail composedRecord(ComposedMail mail, String sesMessageId, String failureReason) {
+        return new OutboundMail(mail.to(), List.of(), mail.subject(), mail.html(), sesMessageId, failureReason,
+                mail.messageId());
+    }
+
+    private byte[] composedMime(ComposedMail mail) throws MessagingException, IOException {
+        MimeMessage message = new FixedIdMimeMessage(Session.getInstance(new Properties()), mail.messageId());
+        message.setFrom(new InternetAddress(fromEmail, mail.fromName(), "UTF-8"));
+        message.setRecipients(Message.RecipientType.TO,
+                InternetAddress.parse(EmailAddresses.toDeliveryForm(mail.to())));
+        message.setSubject(mail.subject(), "UTF-8");
+        if (mail.replyTo() != null && !mail.replyTo().isBlank()) {
+            message.setReplyTo(InternetAddress.parse(mail.replyTo()));
+        }
+        if (mail.inReplyTo() != null && !mail.inReplyTo().isBlank()) {
+            message.setHeader("In-Reply-To", mail.inReplyTo());
+        }
+        if (!mail.references().isEmpty()) {
+            message.setHeader("References", String.join(" ", mail.references()));
+        }
+        MimeMultipart alternative = new MimeMultipart("alternative");
+        MimeBodyPart textPart = new MimeBodyPart();
+        textPart.setText(mail.text() != null ? mail.text() : "", "UTF-8");
+        alternative.addBodyPart(textPart);
+        MimeBodyPart htmlPart = new MimeBodyPart();
+        htmlPart.setContent(mail.html() != null ? mail.html() : "", "text/html; charset=UTF-8");
+        alternative.addBodyPart(htmlPart);
+        message.setContent(alternative);
+        message.saveChanges();
+        ByteArrayOutputStream out = new ByteArrayOutputStream();
+        message.writeTo(out);
+        return out.toByteArray();
+    }
+
+    /** Keeps the caller's Message-ID: JavaMail would replace it in {@code saveChanges()}. */
+    private static final class FixedIdMimeMessage extends MimeMessage {
+        private final String messageId;
+
+        FixedIdMimeMessage(Session session, String messageId) {
+            super(session);
+            this.messageId = messageId;
+        }
+
+        @Override
+        protected void updateMessageID() throws MessagingException {
+            setHeader("Message-ID", messageId);
+        }
+    }
+
+    /**
      * Send an already-built MIME message unchanged (email forwarding). The caller owns every
      * header, including From; SES only adds its own Return-Path and DKIM signature.
      *
@@ -687,13 +783,19 @@ public class EmailService {
      */
     private void record(MailContext context, String to, List<String> cc, String subject, String htmlBody,
             String messageId, String failureReason) {
+        record(context, new OutboundMail(to, cc, subject, htmlBody, messageId, failureReason));
+    }
+
+    /** As above, for a mail whose subject and body are still to be redacted. */
+    private void record(MailContext context, OutboundMail mail) {
         if (context == null || outboundMailRecorder == null) {
             return;
         }
         try {
-            outboundMailRecorder.record(context, new OutboundMail(to, cc,
-                    MailRedaction.redact(subject, context.secrets()),
-                    MailRedaction.redact(htmlBody, context.secrets()), messageId, failureReason));
+            outboundMailRecorder.record(context, new OutboundMail(mail.to(), mail.cc(),
+                    MailRedaction.redact(mail.subject(), context.secrets()),
+                    MailRedaction.redact(mail.htmlBody(), context.secrets()), mail.sesMessageId(),
+                    mail.failureReason(), mail.messageIdHeader()));
         } catch (RuntimeException e) {
             log.error("Failed to record outbound mail (group {}): {}", context.sendGroupId(), e.getMessage(), e);
         }

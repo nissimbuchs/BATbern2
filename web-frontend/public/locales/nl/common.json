@@ -630,7 +630,8 @@
       "NEWSLETTER": "Nieuwsbrief",
       "VENUE_COORDINATION": "Locatie & Catering",
       "REGISTRANT_NOTICE": "Deelnemersberichten",
-      "PARTNER": "Partners"
+      "PARTNER": "Partners",
+      "MAIL_CENTER": "Mailcentrum"
     },
     "layoutKey": "Lay-out",
     "standalone": "Geen (zelfstandig)",

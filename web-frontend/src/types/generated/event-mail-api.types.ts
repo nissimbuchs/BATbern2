@@ -169,9 +169,37 @@ export interface paths {
      * @description **Security**: ORGANIZER role required; any other role gets 403.
      *
      *     Only the fields present change. `assigneeUsername: null` with `clearAssignee: true` leaves the
-     *     conversation unassigned. No mail is sent (the assignment notification is Story 16.6).
+     *     conversation unassigned. Story 16.6: when the assignee changes to another organizer than the
+     *     caller, that organizer gets one notification mail (template `mailcenter-assigned`). Assigning
+     *     yourself, clearing the assignee or saving the same assignee sends nothing.
      */
     patch: operations['patchConversation'];
+    trace?: never;
+  };
+  '/conversations/{conversationKey}/replies': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Answer the conversation by mail (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Story 16.6. Sends one mail to the counterpart (the last inbound mail's Reply-To, else its From),
+     *     from `"{organizer name} via BATbern" <noreply@…>` with Reply-To `replies+{token}@…`, so the next
+     *     reply lands in this conversation. The answer is recorded in the conversation, not as a separate
+     *     entry in "What went out". The conversation becomes `WAITING`, or `DONE` with `markDone`.
+     *     **Sends a real mail**: never call this from an automated test against production.
+     */
+    post: operations['replyToConversation'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
     trace?: never;
   };
   '/events/{eventCode}/mails/{mailKey}/retry': {
@@ -300,6 +328,12 @@ export interface components {
       assigneeUsername?: string | null;
       /** @description Leave the conversation unassigned. */
       clearAssignee?: boolean;
+    };
+    MailConversationReply: {
+      /** @description The answer as plain text. The last inbound mail is quoted below it. */
+      text: string;
+      /** @description Set the conversation to DONE instead of WAITING. */
+      markDone?: boolean;
     };
     MailMessageDetail: {
       message: components['schemas']['MailMessageSummary'];
@@ -957,6 +991,67 @@ export interface operations {
       };
       /** @description Conversation not found */
       404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  replyToConversation: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        conversationKey: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MailConversationReply'];
+      };
+    };
+    responses: {
+      /** @description The answer as recorded */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MailMessageDetail'];
+        };
+      };
+      /** @description Empty or too long text */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Conversation not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description The conversation has no counterpart address that can be mailed */
+      409: {
         headers: {
           [name: string]: unknown;
         };

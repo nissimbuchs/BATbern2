@@ -630,7 +630,8 @@
       "NEWSLETTER": "Boletín",
       "VENUE_COORDINATION": "Lugar y Catering",
       "REGISTRANT_NOTICE": "Avisos a inscritos",
-      "PARTNER": "Socios"
+      "PARTNER": "Socios",
+      "MAIL_CENTER": "Centro de correo"
     },
     "layoutKey": "Diseño",
     "standalone": "Ninguno (independiente)",

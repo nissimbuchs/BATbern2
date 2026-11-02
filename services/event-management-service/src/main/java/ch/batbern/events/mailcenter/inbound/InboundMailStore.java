@@ -35,11 +35,11 @@ public class InboundMailStore {
             INSERT INTO mail_message (mail_key, send_group_id, event_code, direction, audience, content_source,
                 subject, body_html, recipient_count, conversation_id, from_address, from_name, to_addresses,
                 message_id_header, in_reply_to, references_header, body_text, inbound_path, alias_local_part,
-                attachments)
+                attachments, reply_to_address)
             VALUES (COALESCE(:eventCode, 'general') || '-' || nextval('mail_message_seq'), :groupId, :eventCode,
                 'IN', :audience, 'OWN_TEXT', :subject, :bodyHtml, 0, :conversationId, :fromAddress, :fromName,
                 :toAddresses, :messageId, :inReplyTo, :references, :bodyText, :path, :aliasLocalPart,
-                CAST(:attachments AS JSONB))
+                CAST(:attachments AS JSONB), :replyTo)
             ON CONFLICT (send_group_id) DO NOTHING
             """;
 
@@ -101,7 +101,8 @@ public class InboundMailStore {
                 .addValue("bodyText", mail.text())
                 .addValue("path", path)
                 .addValue("aliasLocalPart", aliasLocalPart)
-                .addValue("attachments", json(mail)));
+                .addValue("attachments", json(mail))
+                .addValue("replyTo", mail.replyTo()));
         if (inserted == 0) {
             throw new DuplicateInboundMailException(groupId);
         }

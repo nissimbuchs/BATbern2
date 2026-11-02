@@ -613,7 +613,17 @@
         "assignee": "Who answers",
         "takeIt": "I'll take it",
         "attachments": "Attachments: {{names}}",
-        "patchError": "The change was not saved. Please try again."
+        "patchError": "The change was not saved. Please try again.",
+        "reply": {
+          "label": "Your answer",
+          "hint": "Sent as “{{name}} via BATbern”. The reply lands here.",
+          "markDone": "Mark as done",
+          "send": "Send answer",
+          "confirm": "Really send this answer?",
+          "sent": "Answer sent.",
+          "error": "The answer was not sent. Please try again.",
+          "noAddress": "This conversation has no address that can be answered by mail."
+        }
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} out-of-office reply",

@@ -630,7 +630,8 @@
       "NEWSLETTER": "Newsletter",
       "VENUE_COORDINATION": "Sede & Catering",
       "REGISTRANT_NOTICE": "Avvisi iscritti",
-      "PARTNER": "Partner"
+      "PARTNER": "Partner",
+      "MAIL_CENTER": "Centro posta"
     },
     "layoutKey": "Layout",
     "standalone": "Nessuno (autonomo)",

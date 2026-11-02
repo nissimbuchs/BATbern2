@@ -1,0 +1,23 @@
+<!-- subject: Dir zugewiesen: {{conversationSubject}} -->
+<p class="lbl lbl-blue">Mail-Center</p>
+<h2>Eine Unterhaltung ist dir zugewiesen</h2>
+
+<p>Hallo {{recipientName}},</p>
+<p>du beantwortest ab jetzt diese Unterhaltung{{#eventCode}} zu {{eventCode}}{{/eventCode}}.</p>
+
+<div class="event-card">
+  <table class="detail-table">
+    <tr>
+      <td class="detail-label">Von</td>
+      <td class="detail-value">{{counterpartName}}</td>
+    </tr>
+    <tr>
+      <td class="detail-label">Betreff</td>
+      <td class="detail-value">{{conversationSubject}}</td>
+    </tr>
+  </table>
+</div>
+
+<div class="cta-section">
+  <a href="{{conversationLink}}" class="btn btn-accept">Unterhaltung öffnen</a>
+</div>

@@ -564,7 +564,8 @@ export interface components {
         | 'NEWSLETTER'
         | 'VENUE_COORDINATION'
         | 'REGISTRANT_NOTICE'
-        | 'PARTNER';
+        | 'PARTNER'
+        | 'MAIL_CENTER';
       /** @description Email subject line (null for layout templates) */
       subject?: string | null;
       /** @description HTML body content */
@@ -603,7 +604,8 @@ export interface components {
         | 'NEWSLETTER'
         | 'VENUE_COORDINATION'
         | 'REGISTRANT_NOTICE'
-        | 'PARTNER';
+        | 'PARTNER'
+        | 'MAIL_CENTER';
       /** @description Email subject (required for content templates, null for layout) */
       subject?: string | null;
       /** @description HTML body content */
@@ -782,7 +784,7 @@ export interface operations {
   listEmailTemplates: {
     parameters: {
       query?: {
-        /** @description Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION, REGISTRANT_NOTICE, PARTNER) */
+        /** @description Filter by category (SPEAKER, REGISTRATION, TASK_REMINDER, LAYOUT, NEWSLETTER, VENUE_COORDINATION, REGISTRANT_NOTICE, PARTNER, MAIL_CENTER) */
         category?:
           | 'SPEAKER'
           | 'REGISTRATION'
@@ -791,7 +793,8 @@ export interface operations {
           | 'NEWSLETTER'
           | 'VENUE_COORDINATION'
           | 'REGISTRANT_NOTICE'
-          | 'PARTNER';
+          | 'PARTNER'
+          | 'MAIL_CENTER';
         /** @description Filter to layout templates only (true) or content templates only (false) */
         isLayout?: boolean;
       };

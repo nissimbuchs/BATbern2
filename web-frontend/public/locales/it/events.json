@@ -599,7 +599,17 @@
         "assignee": "Chi risponde",
         "takeIt": "Me ne occupo io",
         "attachments": "Allegati: {{names}}",
-        "patchError": "La modifica non è stata salvata. Riprova."
+        "patchError": "La modifica non è stata salvata. Riprova.",
+        "reply": {
+          "label": "La tua risposta",
+          "hint": "Inviato come «{{name}} via BATbern». La risposta arriva qui.",
+          "markDone": "Segna come completato",
+          "send": "Invia risposta",
+          "confirm": "Inviare davvero questa risposta?",
+          "sent": "Risposta inviata.",
+          "error": "La risposta non è stata inviata. Riprova.",
+          "noAddress": "Questa conversazione non ha un indirizzo a cui rispondere via e-mail."
+        }
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} risposta di assenza",

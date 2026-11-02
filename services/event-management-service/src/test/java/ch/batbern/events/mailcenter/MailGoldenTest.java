@@ -5,6 +5,7 @@ import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.MailConversation;
 import ch.batbern.events.domain.EventTask;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Session;
@@ -122,6 +123,8 @@ class MailGoldenTest extends AbstractIntegrationTest {
     private SlidesOnlineEmailService slidesOnlineEmailService;
     @Autowired
     private VenueCoordinationService venueCoordinationService;
+    @Autowired
+    private ConversationAssignmentNotifier conversationAssignmentNotifier;
 
     private final LocalEmailCapture capture = new LocalEmailCapture();
     private final List<String> mismatches = new ArrayList<>();
@@ -220,6 +223,13 @@ class MailGoldenTest extends AbstractIntegrationTest {
         check("registration-waitlist-confirmation-de", () -> waitlistPromotionEmailService.sendWaitlistConfirmationEmail(de));
         check("waitlist-promotion-de", () -> waitlistPromotionEmailService.sendPromotionEmail(de));
         check("task-reminder-de", () -> taskReminderEmailService.sendTaskDeadlineReminder(task(), Locale.GERMAN));
+        lenient().when(userApiClient.getUserByUsername("olga.organizer"))
+                .thenReturn(user("olga.organizer", "success+olga931" + SIM, "Olga", "Organizer"));
+        for (String locale : List.of("de", "en")) {
+            lenient().when(userApiClient.getPreferredLanguage("olga.organizer")).thenReturn(locale);
+            check("mailcenter-assigned-" + locale, () -> conversationAssignmentNotifier.notifyAssigned(
+                    assignedConversation(), "olga.organizer"));
+        }
 
         assertThat(mismatches).as("mails that differ from their golden file (actual output in %s)",
                 ACTUAL.toAbsolutePath()).isEmpty();
@@ -245,6 +255,16 @@ class MailGoldenTest extends AbstractIntegrationTest {
             jdbc.update("UPDATE email_templates SET html_body = ? WHERE template_key = 'newsletter-event'"
                     + " AND locale = 'de'", original);
         }
+    }
+
+    private static MailConversation assignedConversation() {
+        MailConversation conversation = new MailConversation();
+        conversation.setConversationKey("conv-931");
+        conversation.setEventCode(EVENT_CODE);
+        conversation.setSubject("Frage zu den Folien");
+        conversation.setCounterpartName("Sara Speaker");
+        conversation.setCounterpartAddress("success+sara931" + SIM);
+        return conversation;
     }
 
     private void compareQna(String locale) {

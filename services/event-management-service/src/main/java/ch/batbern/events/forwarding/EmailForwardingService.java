@@ -72,6 +72,8 @@ public class EmailForwardingService {
         STALLED,
         REJECTED,
         UNRESOLVED,
+        /** Story 16.6: addressed to {@code replies@} or {@code replies+{token}@}; the replies path takes it. */
+        CONVERSATION_REPLY,
         FORWARDED,
         PARTIAL,
         FAILED
@@ -129,6 +131,9 @@ public class EmailForwardingService {
         List<ForwardingAlias> forwardable = addressed.stream().filter(ForwardingAlias::forwardable).toList();
         String aliasNames = forwardable.stream().map(ForwardingAlias::localPart).collect(Collectors.joining(","));
         if (forwardable.isEmpty()) {
+            if (addressed.stream().anyMatch(a -> a.kind() == ForwardingAlias.Kind.CONVERSATION_REPLY)) {
+                return Result.CONVERSATION_REPLY;
+            }
             if (addressed.stream().anyMatch(a -> a.kind() == ForwardingAlias.Kind.NO_REPLY)) {
                 metrics.increment(ForwardingMetrics.NO_REPLY_DROPPED);
                 return Result.DROPPED_NO_REPLY;

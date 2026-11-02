@@ -311,11 +311,11 @@ describe('EmailTemplatesTab', () => {
     expect(select).toBeInTheDocument();
     const combobox = screen.getByRole('combobox');
     await user.click(combobox);
-    // All 7 category options appear in the opened listbox
+    // All 8 category options appear in the opened listbox
     // (Speaker, Registration, Task Reminders, Newsletter, Venue & Catering, Registrant Notices,
-    // Partners — Story 16.9)
+    // Partners — Story 16.9, Mail Center — Story 16.6)
     const options = await screen.findAllByRole('option');
-    expect(options).toHaveLength(7);
+    expect(options).toHaveLength(8);
   });
 
   it('should_renderCategoryToggleGroup_when_desktopViewport', () => {

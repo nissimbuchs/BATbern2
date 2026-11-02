@@ -171,6 +171,10 @@ public class EmailTemplateSeedService {
         if (templateKey.equals("accept-confirmation") || templateKey.equals("unsubscribe-confirmation")) {
             return "REGISTRATION";
         }
+        // Story 16.6: notifications to organizers about conversations (assigned, new mail).
+        if (templateKey.startsWith("mailcenter-")) {
+            return "MAIL_CENTER";
+        }
         if (templateKey.startsWith("task-reminder")) {
             return "TASK_REMINDER";
         }

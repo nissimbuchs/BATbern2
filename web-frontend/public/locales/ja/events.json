@@ -599,7 +599,17 @@
         "assignee": "担当者",
         "takeIt": "担当する",
         "attachments": "添付ファイル: {{names}}",
-        "patchError": "変更を保存できませんでした。もう一度お試しください。"
+        "patchError": "変更を保存できませんでした。もう一度お試しください。",
+        "reply": {
+          "label": "返信",
+          "hint": "「{{name}} via BATbern」として送信されます。返信はここに届きます。",
+          "markDone": "完了にする",
+          "send": "返信を送信",
+          "confirm": "この返信を送信しますか？",
+          "sent": "返信を送信しました。",
+          "error": "返信を送信できませんでした。もう一度お試しください。",
+          "noAddress": "この会話にはメールで返信できるアドレスがありません。"
+        }
       },
       "automaticCounts": {
         "outOfOffice_one": "不在通知 {{count}} 件",

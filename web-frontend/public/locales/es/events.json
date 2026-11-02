@@ -599,7 +599,17 @@
         "assignee": "Quién responde",
         "takeIt": "Me encargo yo",
         "attachments": "Adjuntos: {{names}}",
-        "patchError": "El cambio no se guardó. Inténtalo de nuevo."
+        "patchError": "El cambio no se guardó. Inténtalo de nuevo.",
+        "reply": {
+          "label": "Tu respuesta",
+          "hint": "Se envía como «{{name}} via BATbern». La respuesta llega aquí.",
+          "markDone": "Marcar como hecho",
+          "send": "Enviar respuesta",
+          "confirm": "¿Enviar realmente esta respuesta?",
+          "sent": "Respuesta enviada.",
+          "error": "La respuesta no se ha enviado. Inténtalo de nuevo.",
+          "noAddress": "Esta conversación no tiene una dirección a la que responder por correo."
+        }
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} respuesta de ausencia",

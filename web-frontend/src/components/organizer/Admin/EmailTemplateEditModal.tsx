@@ -194,7 +194,8 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
             | 'NEWSLETTER'
             | 'VENUE_COORDINATION'
             | 'REGISTRANT_NOTICE'
-            | 'PARTNER',
+            | 'PARTNER'
+            | 'MAIL_CENTER',
           isLayout: false,
           subject,
           htmlBody: currentHtmlBody,

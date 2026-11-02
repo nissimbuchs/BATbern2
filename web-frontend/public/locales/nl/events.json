@@ -599,7 +599,17 @@
         "assignee": "Wie antwoordt",
         "takeIt": "Ik neem het op me",
         "attachments": "Bijlagen: {{names}}",
-        "patchError": "De wijziging is niet opgeslagen. Probeer het opnieuw."
+        "patchError": "De wijziging is niet opgeslagen. Probeer het opnieuw.",
+        "reply": {
+          "label": "Je antwoord",
+          "hint": "Verzonden als ‘{{name}} via BATbern’. Het antwoord komt hier terecht.",
+          "markDone": "Markeren als afgehandeld",
+          "send": "Antwoord versturen",
+          "confirm": "Dit antwoord echt versturen?",
+          "sent": "Antwoord verstuurd.",
+          "error": "Het antwoord is niet verstuurd. Probeer het opnieuw.",
+          "noAddress": "Dit gesprek heeft geen adres waarnaar per e-mail geantwoord kan worden."
+        }
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} afwezigheidsbericht",

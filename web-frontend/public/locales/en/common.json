@@ -667,7 +667,8 @@
       "NEWSLETTER": "Newsletter",
       "VENUE_COORDINATION": "Venue & Catering",
       "REGISTRANT_NOTICE": "Registrant Notices",
-      "PARTNER": "Partners"
+      "PARTNER": "Partners",
+      "MAIL_CENTER": "Mail Center"
     },
     "layoutKey": "Layout",
     "standalone": "None (standalone)",

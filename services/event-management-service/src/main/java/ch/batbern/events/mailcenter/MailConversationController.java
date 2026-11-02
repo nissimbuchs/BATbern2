@@ -10,6 +10,7 @@ import ch.batbern.events.mailcenter.dto.generated.MailAudience;
 import ch.batbern.events.mailcenter.dto.generated.MailConversationDetail;
 import ch.batbern.events.mailcenter.dto.generated.MailConversationPage;
 import ch.batbern.events.mailcenter.dto.generated.MailConversationPatch;
+import ch.batbern.events.mailcenter.dto.generated.MailConversationReply;
 import ch.batbern.events.mailcenter.dto.generated.MailConversationStatus;
 import ch.batbern.events.mailcenter.dto.generated.MailConversationSummary;
 import ch.batbern.events.mailcenter.dto.generated.MailMessageDetail;
@@ -19,6 +20,7 @@ import ch.batbern.shared.api.PaginationUtils;
 import ch.batbern.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -39,6 +41,7 @@ public class MailConversationController implements MailConversationApi {
 
     private final ConversationQueryService queries;
     private final ConversationService conversations;
+    private final ConversationReplyService replies;
     private final SecurityContextHelper securityContextHelper;
 
     @Override
@@ -72,6 +75,22 @@ public class MailConversationController implements MailConversationApi {
                 securityContextHelper.getCurrentUsername());
         return noStore(summary(queries.find(conversationKey)
                 .orElseThrow(() -> new NotFoundException("Conversation", conversationKey))));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<MailMessageDetail> replyToConversation(String conversationKey,
+            MailConversationReply reply) {
+        String mailKey = replies.reply(conversationKey, reply.getText(), Boolean.TRUE.equals(reply.getMarkDone()),
+                securityContextHelper.getCurrentUsername());
+        ConversationQueryService.ConversationDetail detail = queries.get(conversationKey)
+                .orElseThrow(() -> new NotFoundException("Conversation", conversationKey));
+        MailMessageDetail sent = detail.messages().stream()
+                .filter(m -> mailKey.equals(m.mailKey()))
+                .findFirst()
+                .map(m -> message(m, conversationKey))
+                .orElseThrow(() -> new NotFoundException("Mail", mailKey));
+        return ResponseEntity.status(HttpStatus.CREATED).cacheControl(CacheControl.noStore()).body(sent);
     }
 
     private static MailConversationSummary summary(ConversationEntry c) {

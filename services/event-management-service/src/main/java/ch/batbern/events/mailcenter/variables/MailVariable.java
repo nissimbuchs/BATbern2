@@ -97,11 +97,17 @@ public enum MailVariable {
     IS_MULTIPLE("isMultiple", Scope.QNA),
     QNA_LINK("qnaLink", Scope.QNA),
 
+    // ── MAIL_CENTER (Story 16.6: assignment and new-mail notifications) ─────
+    CONVERSATION_SUBJECT("conversationSubject", Scope.MAIL_CENTER),
+    COUNTERPART_NAME("counterpartName", Scope.MAIL_CENTER),
+    CONVERSATION_LINK("conversationLink", Scope.MAIL_CENTER),
+
     // ── LAYOUT: filled by the layout merge, never by a caller ───────────────
     CONTENT("content", Scope.LAYOUT);
 
     /** Who provides a variable's value. */
-    public enum Scope { SYSTEM, EVENT, RECIPIENT, REGISTRATION, SPEAKER, SUBSCRIBER, VENUE, TASK, QNA, LAYOUT }
+    public enum Scope { SYSTEM, EVENT, RECIPIENT, REGISTRATION, SPEAKER, SUBSCRIBER, VENUE, TASK, QNA, MAIL_CENTER,
+        LAYOUT }
 
     private static final Map<String, MailVariable> BY_NAME = Arrays.stream(values())
             .flatMap(v -> v.names().stream().map(n -> Map.entry(n, v)))

@@ -599,7 +599,17 @@
         "assignee": "Tgi che respunda",
         "takeIt": "Jau surpigl quai",
         "attachments": "Agiuntas: {{names}}",
-        "patchError": "La midada n’è betg vegnida memorisada. Emprova anc ina giada."
+        "patchError": "La midada n’è betg vegnida memorisada. Emprova anc ina giada.",
+        "reply": {
+          "label": "Tia resposta",
+          "hint": "Tramess sco «{{name}} via BATbern». La resposta arriva qua.",
+          "markDone": "Marcar sco terminà",
+          "send": "Trametter la resposta",
+          "confirm": "Propi trametter questa resposta?",
+          "sent": "Resposta tramessa.",
+          "error": "La resposta n'è betg vegnida tramessa. Emprova anc ina giada.",
+          "noAddress": "Questa conversaziun n'ha nagina adressa per respunder per e-mail."
+        }
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} resposta d’absenza",

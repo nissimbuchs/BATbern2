@@ -77,6 +77,30 @@ public class InboundMailCenter {
         safely(s3Key, () -> ingest(s3Key, raw, PATH_ALIAS, null));
     }
 
+    /**
+     * Story 16.6 AC4: whether the mail is addressed to {@code replies+{token}@} with the token of an
+     * existing conversation. Such a reply skips the keyword router. Counted per path
+     * ({@code ConversationReplies}). Never throws: when in doubt, false, and the mail is handled
+     * like any other {@code replies@} mail.
+     *
+     * @param path {@code replies} or {@code alias}, the SES rule that received it
+     */
+    public boolean isConversationReply(byte[] raw, String path) {
+        try {
+            InboundMail mail = InboundMailParser.parse(raw);
+            List<String> addresses = new ArrayList<>(mail.to());
+            addresses.addAll(mail.cc());
+            boolean known = threader.byToken(addresses, forwarding.domain()).isPresent();
+            if (known) {
+                metrics.increment(MailCenterMetrics.CONVERSATION_REPLIES, "path", path);
+            }
+            return known;
+        } catch (RuntimeException e) {
+            log.warn("Mail Center: could not check for a conversation token: {}", e.toString());
+            return false;
+        }
+    }
+
     private void safely(String s3Key, Runnable work) {
         try {
             work.run();

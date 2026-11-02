@@ -27,6 +27,8 @@ import java.util.regex.Pattern;
  * <ol>
  *   <li>MIME parsed via jakarta.mail: From, Subject, first non-quoted plain-text line</li>
  *   <li>An iCal REPLY goes to {@link InboundEmailRouter#routeIcsReply}; nothing else runs</li>
+ *   <li>A reply to an organizer's answer ({@code replies+{token}@} of a known conversation) skips the
+ *       router (Story 16.6 AC4)</li>
  *   <li>Otherwise routed to {@link InboundEmailRouter}</li>
  *   <li>Mail the router cannot act on → {@link EmailForwardingService#forwardUnrecognizedReply}
  *       (Story 16.0, #1160)</li>
@@ -73,15 +75,20 @@ public class InboundReplyProcessor {
                 return; // Always skip plain-text routing when a calendar part is present
             }
 
-            String subject = message.getSubject();
-            String bodyFirstLine = extractFirstPlainTextLine(message);
-            result = router.route(
-                    new InboundEmailRouter.ParsedEmail(from, subject != null ? subject : "", bodyFirstLine));
-            if (result != InboundEmailRouter.RouteResult.UNRECOGNIZED) {
-                if (result.acted()) {
-                    mailCenter.ingestReply(s3Key, raw, result);
+            if (mailCenter.isConversationReply(raw, "replies")) {
+                // Story 16.6 AC4: a reply to an organizer's answer never triggers a keyword action
+                result = InboundEmailRouter.RouteResult.UNRECOGNIZED;
+            } else {
+                String subject = message.getSubject();
+                String bodyFirstLine = extractFirstPlainTextLine(message);
+                result = router.route(
+                        new InboundEmailRouter.ParsedEmail(from, subject != null ? subject : "", bodyFirstLine));
+                if (result != InboundEmailRouter.RouteResult.UNRECOGNIZED) {
+                    if (result.acted()) {
+                        mailCenter.ingestReply(s3Key, raw, result);
+                    }
+                    return;
                 }
-                return;
             }
 
         } catch (Exception e) {

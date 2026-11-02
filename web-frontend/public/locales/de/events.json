@@ -613,7 +613,17 @@
         "assignee": "Wer antwortet",
         "takeIt": "Ich übernehme",
         "attachments": "Anhänge: {{names}}",
-        "patchError": "Die Änderung wurde nicht gespeichert. Bitte nochmals versuchen."
+        "patchError": "Die Änderung wurde nicht gespeichert. Bitte nochmals versuchen.",
+        "reply": {
+          "label": "Deine Antwort",
+          "hint": "Geht raus als „{{name}} via BATbern“. Die Antwort landet wieder hier.",
+          "markDone": "Als erledigt markieren",
+          "send": "Antwort senden",
+          "confirm": "Antwort wirklich senden?",
+          "sent": "Antwort gesendet.",
+          "error": "Die Antwort wurde nicht gesendet. Bitte nochmals versuchen.",
+          "noAddress": "Diese Unterhaltung hat keine Adresse, an die eine Antwort gehen kann."
+        }
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} Abwesenheitsnotiz",

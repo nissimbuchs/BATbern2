@@ -599,7 +599,17 @@
         "assignee": "Qui répond",
         "takeIt": "Je m’en occupe",
         "attachments": "Pièces jointes : {{names}}",
-        "patchError": "La modification n’a pas été enregistrée. Veuillez réessayer."
+        "patchError": "La modification n’a pas été enregistrée. Veuillez réessayer.",
+        "reply": {
+          "label": "Votre réponse",
+          "hint": "Envoyé en tant que « {{name}} via BATbern ». La réponse arrive ici.",
+          "markDone": "Marquer comme terminé",
+          "send": "Envoyer la réponse",
+          "confirm": "Vraiment envoyer cette réponse ?",
+          "sent": "Réponse envoyée.",
+          "error": "La réponse n'a pas été envoyée. Veuillez réessayer.",
+          "noAddress": "Cette conversation n'a pas d'adresse à laquelle répondre par e-mail."
+        }
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} réponse d’absence",

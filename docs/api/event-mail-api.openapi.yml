@@ -418,7 +418,9 @@ paths:
         **Security**: ORGANIZER role required; any other role gets 403.
 
         Only the fields present change. `assigneeUsername: null` with `clearAssignee: true` leaves the
-        conversation unassigned. No mail is sent (the assignment notification is Story 16.6).
+        conversation unassigned. Story 16.6: when the assignee changes to another organizer than the
+        caller, that organizer gets one notification mail (template `mailcenter-assigned`). Assigning
+        yourself, clearing the assignee or saving the same assignee sends nothing.
       parameters:
       - name: conversationKey
         in: path
@@ -446,6 +448,50 @@ paths:
           description: Forbidden (ORGANIZER role required)
         '404':
           description: Conversation not found
+  /conversations/{conversationKey}/replies:
+    post:
+      tags:
+      - MailConversation
+      operationId: replyToConversation
+      summary: Answer the conversation by mail (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.6. Sends one mail to the counterpart (the last inbound mail's Reply-To, else its From),
+        from `"{organizer name} via BATbern" <noreply@…>` with Reply-To `replies+{token}@…`, so the next
+        reply lands in this conversation. The answer is recorded in the conversation, not as a separate
+        entry in "What went out". The conversation becomes `WAITING`, or `DONE` with `markDone`.
+        **Sends a real mail**: never call this from an automated test against production.
+      parameters:
+      - name: conversationKey
+        in: path
+        required: true
+        schema:
+          type: string
+          example: conv-12
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailConversationReply'
+      responses:
+        '201':
+          description: The answer as recorded
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMessageDetail'
+        '400':
+          description: Empty or too long text
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Conversation not found
+        '409':
+          description: The conversation has no counterpart address that can be mailed
   /events/{eventCode}/mails/{mailKey}/retry:
     post:
       tags:
@@ -696,6 +742,19 @@ components:
         clearAssignee:
           type: boolean
           description: Leave the conversation unassigned.
+    MailConversationReply:
+      type: object
+      required:
+      - text
+      properties:
+        text:
+          type: string
+          minLength: 1
+          maxLength: 20000
+          description: The answer as plain text. The last inbound mail is quoted below it.
+        markDone:
+          type: boolean
+          description: Set the conversation to DONE instead of WAITING.
     MailMessageDetail:
       type: object
       required:

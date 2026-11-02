@@ -630,7 +630,8 @@
       "NEWSLETTER": "Newsletter",
       "VENUE_COORDINATION": "Lieu & Restauration",
       "REGISTRANT_NOTICE": "Infos participants",
-      "PARTNER": "Partenaires"
+      "PARTNER": "Partenaires",
+      "MAIL_CENTER": "Centre de messagerie"
     },
     "layoutKey": "Mise en page",
     "standalone": "Aucune (autonome)",

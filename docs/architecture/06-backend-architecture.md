@@ -970,7 +970,8 @@ SES events of the transactional configuration set move each `mail_recipient` fro
 ### Inbound mail and conversations (Story 16.2a)
 
 Speaker replies land in the event's "Needs an answer" list with a status and an assignee instead of
-one organizer's private inbox. Forwarding is unchanged and stays the safety net until Story 16.6.
+one organizer's private inbox. Forwarding is unchanged and stays the safety net until the 16.6
+switch is turned on per alias group.
 
 ```
 replies@  → SQS → InboundEmailListenerService → InboundReplyProcessor ─┐  router, forwardUnrecognizedReply
@@ -993,8 +994,8 @@ local dev → POST /dev/emails/inbound (same processors)                  ─┘
   `CalendarInviteUid` → registration → event; keyword actions by the event code in the subject.
   `InboundEmailRouter.RouteResult` names the keyword that acted (`UNSUBSCRIBED`,
   `DEREGISTRATION_LINK`, `CONFIRMED`).
-- **Threading** (`ConversationThreader`, first hit wins): token in `replies+{token}@` (column now,
-  handed out by 16.6); In-Reply-To, then References newest first: full id against
+- **Threading** (`ConversationThreader`, first hit wins): token in `replies+{token}@` (handed out
+  as Reply-To of an organizer's answer, 16.6); In-Reply-To, then References newest first: full id against
   `mail_message.message_id_header` (inbound) and `mail_recipient.message_id_header` (from the SES
   event), local part against `mail_recipient.ses_message_id`; then the event of
   `batbern{N}-moderator@`. Within the event, the OPEN or WAITING conversation with the same
@@ -1020,6 +1021,39 @@ local dev → POST /dev/emails/inbound (same processors)                  ─┘
   `MailMessageDetail`), `PATCH /conversations/{key}` (status, assignee, which must hold ORGANIZER;
   `updated_by` = caller). Keys `conv-{n}` are global, so the gateway routes `/api/v1/conversations`
   to EMS. Bruno covers the reads only.
+
+#### Answers and token replies (Story 16.6)
+
+- **Answer** (`POST /conversations/{key}/replies`, ORGANIZER, `ConversationReplyService`): one mail
+  to the last inbound mail's Reply-To (`mail_message.reply_to_address`, V140), else its From. Built by
+  the shared kernel's `EmailService.sendComposed(MailContext, ComposedMail)` through
+  `SendRawEmail`, because `SendEmail` carries neither `In-Reply-To`/`References` nor a per-mail
+  display name: From `"{first last} via BATbern" <noreply@…>`, Reply-To `replies+{token}@…`,
+  subject `Re: …` (no second prefix after `Re:`/`AW:`), `In-Reply-To` = the last inbound id,
+  `References` = its References plus that id, and our own `Message-ID: <{uuid}@{domain}>`, kept
+  through `saveChanges()` by a `MimeMessage` subclass. Body: the organizer's text as plain text
+  and minimal HTML, then the quoted inbound text; no BATbern layout. Same walls as every send
+  (reserved domain, test marker); a counterpart that cannot be mailed is a 409.
+- **Record**: `MailContext.ownText` (sender = organizer), recorded by the 16.1a recorder with
+  `OutboundMail.messageIdHeader` → `mail_recipient.message_id_header` (stored without brackets, like
+  every id in the Mail Center); then the row gets `conversation_id` and `message_id_header` by its
+  send group. "What went out" excludes rows with a `conversation_id`, so an answer shows once,
+  inside its conversation. Status `WAITING`, or `DONE` with `markDone`.
+- **Token replies**: SES rule `RouteReplies` lists `replies@` exactly, so `replies+{token}@` most
+  likely arrives through the domain catch-all (alias path). `ForwardingAlias` classifies `replies`
+  and `replies+…` as `CONVERSATION_REPLY` (not forwardable); `forward()` returns
+  `CONVERSATION_REPLY` instead of `UNRESOLVED`, and `AliasMailProcessor` hands it on: a known token
+  is forwarded to the organizers like an unrecognized reply (until the `replies` switch, 16.6 PR 2)
+  and stored; an unknown token goes through `InboundReplyProcessor` like any `replies@` mail.
+  `InboundReplyProcessor` checks for a known token before the keyword router, so "accept" in an
+  answer never confirms a registration. Metric `ConversationReplies` with dimension
+  `path=replies|alias` shows which rule took the first real reply.
+- **Reassign** (`ConversationService.patch` → `ConversationAssignmentNotifier`): when the assignee
+  changes to another organizer than the caller, that organizer gets template `mailcenter-assigned`
+  (category `MAIL_CENTER`, DE/EN by preferred language) with a link to
+  `/organizer/events/{code}?tab=communications&conversation={key}` (no event: `/organizer/mail`,
+  Story 16.7). Self-assignment, clearing, or the same assignee send nothing. A failed notification
+  is logged, the assignment stays.
 
 ### Composer API (Story 16.8a)
 

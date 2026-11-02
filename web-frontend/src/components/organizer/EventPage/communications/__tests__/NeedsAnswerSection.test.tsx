@@ -25,6 +25,9 @@ vi.mock('@/services/mailConversationService', () => ({
 }));
 vi.mock('@/hooks/useBreakpoints', () => ({ useBreakpoints: () => breakpoints }));
 vi.mock('@/hooks/useAuth/useAuth', () => ({ useAuth: () => auth }));
+vi.mock('@/hooks/useUserProfile/useUserProfile', () => ({
+  useUserProfile: () => ({ userProfile: undefined }),
+}));
 vi.mock('@/components/shared/OrganizerSelect/OrganizerSelect', () => ({
   OrganizerSelect: ({ value, onChange }: { value: string; onChange: (v: string) => void }) => (
     <select
