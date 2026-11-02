@@ -580,7 +580,43 @@
           "companyName": "会社"
         }
       },
-      "rsvpSummary": "出欠: 参加 {{accepted}} · 不参加 {{declined}} · 未定 {{tentative}} · 未回答 {{noAnswer}}"
+      "rsvpSummary": "出欠: 参加 {{accepted}} · 不参加 {{declined}} · 未定 {{tentative}} · 未回答 {{noAnswer}}",
+      "conversations": {
+        "title": "要返信",
+        "nothingOpen": "未対応はありません。",
+        "openCount_one": "未対応 {{count}} 件",
+        "openCount_other": "未対応 {{count}} 件",
+        "via": "{{address}} 経由",
+        "viaReply": "メールへの返信",
+        "messages_one": "{{count}} 件のメッセージ",
+        "messages_other": "{{count}} 件のメッセージ",
+        "status": {
+          "OPEN": "未対応",
+          "WAITING": "返答待ち",
+          "DONE": "完了"
+        },
+        "statusLabel": "ステータス",
+        "assignee": "担当者",
+        "takeIt": "担当する",
+        "attachments": "添付ファイル: {{names}}",
+        "patchError": "変更を保存できませんでした。もう一度お試しください。"
+      },
+      "automaticCounts": {
+        "outOfOffice_one": "不在通知 {{count}} 件",
+        "outOfOffice_other": "不在通知 {{count}} 件",
+        "bounces_one": "配信不能通知 {{count}} 件",
+        "bounces_other": "配信不能通知 {{count}} 件",
+        "calendarAccepts_one": "カレンダー承諾 {{count}} 件",
+        "calendarAccepts_other": "カレンダー承諾 {{count}} 件",
+        "calendarDeclines_one": "カレンダー辞退 {{count}} 件",
+        "calendarDeclines_other": "カレンダー辞退 {{count}} 件",
+        "keywordAccepts_one": "返信による登録確定 {{count}} 件",
+        "keywordAccepts_other": "返信による登録確定 {{count}} 件",
+        "keywordCancels_one": "返信後に送信した登録解除リンク {{count}} 件",
+        "keywordCancels_other": "返信後に送信した登録解除リンク {{count}} 件",
+        "unsubscribes_one": "返信によるニュースレター配信停止 {{count}} 件",
+        "unsubscribes_other": "返信によるニュースレター配信停止 {{count}} 件"
+      }
     }
   },
   "dashboard": {

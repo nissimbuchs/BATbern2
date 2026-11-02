@@ -594,7 +594,43 @@
           "companyName": "Firma"
         }
       },
-      "rsvpSummary": "Rückmeldungen: {{accepted}} zugesagt · {{declined}} abgesagt · {{tentative}} vielleicht · {{noAnswer}} ohne Antwort"
+      "rsvpSummary": "Rückmeldungen: {{accepted}} zugesagt · {{declined}} abgesagt · {{tentative}} vielleicht · {{noAnswer}} ohne Antwort",
+      "conversations": {
+        "title": "Braucht eine Antwort",
+        "nothingOpen": "Nichts offen.",
+        "openCount_one": "{{count}} offen",
+        "openCount_other": "{{count}} offen",
+        "via": "über {{address}}",
+        "viaReply": "Antwort auf eine Mail",
+        "messages_one": "{{count}} Nachricht",
+        "messages_other": "{{count}} Nachrichten",
+        "status": {
+          "OPEN": "Offen",
+          "WAITING": "Wartet",
+          "DONE": "Erledigt"
+        },
+        "statusLabel": "Status",
+        "assignee": "Wer antwortet",
+        "takeIt": "Ich übernehme",
+        "attachments": "Anhänge: {{names}}",
+        "patchError": "Die Änderung wurde nicht gespeichert. Bitte nochmals versuchen."
+      },
+      "automaticCounts": {
+        "outOfOffice_one": "{{count}} Abwesenheitsnotiz",
+        "outOfOffice_other": "{{count}} Abwesenheitsnotizen",
+        "bounces_one": "{{count}} Unzustellbarkeitsmeldung",
+        "bounces_other": "{{count}} Unzustellbarkeitsmeldungen",
+        "calendarAccepts_one": "{{count}} Kalenderzusage",
+        "calendarAccepts_other": "{{count}} Kalenderzusagen",
+        "calendarDeclines_one": "{{count}} Kalenderabsage",
+        "calendarDeclines_other": "{{count}} Kalenderabsagen",
+        "keywordAccepts_one": "{{count}} Anmeldung per Antwort bestätigt",
+        "keywordAccepts_other": "{{count}} Anmeldungen per Antwort bestätigt",
+        "keywordCancels_one": "{{count}} Abmeldelink nach einer Antwort verschickt",
+        "keywordCancels_other": "{{count}} Abmeldelinks nach einer Antwort verschickt",
+        "unsubscribes_one": "{{count}} Newsletter-Abmeldung per Antwort",
+        "unsubscribes_other": "{{count}} Newsletter-Abmeldungen per Antwort"
+      }
     }
   },
   "dashboard": {

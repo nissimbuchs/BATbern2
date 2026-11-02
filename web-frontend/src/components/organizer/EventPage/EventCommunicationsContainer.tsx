@@ -1,9 +1,10 @@
 /**
- * EventCommunicationsContainer (Epic 16, Stories 16.3, 16.4, 16.8b): the event's mail page.
+ * EventCommunicationsContainer (Epic 16, Stories 16.3, 16.4, 16.8b, 16.2a): the event's mail page.
  *
- * One column, newest first: "What went out" (every recorded send, the newsletter included, with
- * delivered/failed counts) and "Handled automatically" (collapsed, counts only). Section 1,
- * "Needs an answer", is added by Story 16.2 above them.
+ * One column: "Needs an answer" (Story 16.2a: what people wrote, with status and who answers; the
+ * "+ New mail" button sits in its header), "What went out" (every recorded send, the newsletter
+ * included, with delivered/failed counts) and "Handled automatically" (collapsed, counts only).
+ * `?conversation={key}` opens a conversation directly.
  *
  * "+ New mail" opens the composer inline at the top of the page on desktop and as a full-screen
  * dialog on mobile (owner decision 2026-10-31, `docs/ux/mail-center-layouts.html` variant A and
@@ -44,12 +45,14 @@ import {
   StorefrontOutlined as VenueIcon,
 } from '@mui/icons-material';
 import { useQueryClient } from '@tanstack/react-query';
+import { useSearchParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { MAIL_MESSAGE_QUERY_KEYS, useMailCounts } from '@/hooks/useMailMessages/useMailMessages';
 import type { ComposeAudience, MailSendResponse } from '@/services/mailMessageService';
 import type { Event, EventDetailUI } from '@/types/event.types';
 import { MailSentList } from './communications/MailSentList';
+import { NeedsAnswerSection } from './communications/NeedsAnswerSection';
 import { MailComposer } from './communications/composer/MailComposer';
 
 interface EventCommunicationsContainerProps {
@@ -58,6 +61,17 @@ interface EventCommunicationsContainerProps {
 }
 
 type PickerAudience = 'newsletter' | 'registrants' | 'speakers' | 'venue' | 'partners';
+
+/** Story 16.2a AC8: automatic inbound mail, counted per event. */
+const AUTOMATIC_COUNTS = [
+  'outOfOffice',
+  'bounces',
+  'calendarAccepts',
+  'calendarDeclines',
+  'keywordAccepts',
+  'keywordCancels',
+  'unsubscribes',
+] as const;
 
 /** Every picker entry opens the shared composer (Partners since Story 16.9). */
 const COMPOSER_AUDIENCE: Record<PickerAudience, ComposeAudience> = {
@@ -81,6 +95,19 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
   const [sentToast, setSentToast] = useState(false);
   const [highlightKeys, setHighlightKeys] = useState<string[]>([]);
   const counts = useMailCounts(eventCode);
+  const [searchParams, setSearchParams] = useSearchParams();
+  const openConversation = searchParams.get('conversation');
+  // AC11: the open conversation lives in the URL, so a link (16.6 notifications) opens it.
+  const setOpenConversation = (key: string | null) =>
+    setSearchParams(
+      (params) => {
+        const next = new URLSearchParams(params);
+        if (key) next.set('conversation', key);
+        else next.delete('conversation');
+        return next;
+      },
+      { replace: true }
+    );
 
   const audiences: Array<{ value: PickerAudience; icon: React.ReactNode; label: string }> = [
     {
@@ -130,48 +157,47 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
     />
   );
 
+  const newMail = (
+    <>
+      <Button
+        ref={newMailButton}
+        variant="contained"
+        startIcon={<AddIcon />}
+        onClick={() => setMenuOpen(true)}
+        aria-haspopup="menu"
+        aria-expanded={menuOpen}
+        aria-controls={menuOpen ? 'new-mail-menu' : undefined}
+        data-testid="new-mail-button"
+      >
+        {t('eventPage.mail.newMail')}
+      </Button>
+      <Menu
+        id="new-mail-menu"
+        anchorEl={newMailButton.current}
+        open={menuOpen}
+        onClose={() => setMenuOpen(false)}
+        anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
+        transformOrigin={{ vertical: 'top', horizontal: 'right' }}
+      >
+        {audiences.map((a) => (
+          <MenuItem
+            key={a.value}
+            onClick={() => {
+              setMenuOpen(false);
+              setCompose(a.value);
+            }}
+            data-testid={`new-mail-${a.value}`}
+          >
+            <ListItemIcon>{a.icon}</ListItemIcon>
+            <ListItemText>{a.label}</ListItemText>
+          </MenuItem>
+        ))}
+      </Menu>
+    </>
+  );
+
   return (
     <Box sx={{ maxWidth: 1100 }}>
-      <Box sx={{ display: 'flex', alignItems: 'center', mb: 2, gap: 2 }}>
-        <Typography variant="h6" sx={{ flex: 1 }}>
-          {t('eventPage.mail.whatWentOut')}
-        </Typography>
-        <Button
-          ref={newMailButton}
-          variant="contained"
-          startIcon={<AddIcon />}
-          onClick={() => setMenuOpen(true)}
-          aria-haspopup="menu"
-          aria-expanded={menuOpen}
-          aria-controls={menuOpen ? 'new-mail-menu' : undefined}
-          data-testid="new-mail-button"
-        >
-          {t('eventPage.mail.newMail')}
-        </Button>
-        <Menu
-          id="new-mail-menu"
-          anchorEl={newMailButton.current}
-          open={menuOpen}
-          onClose={() => setMenuOpen(false)}
-          anchorOrigin={{ vertical: 'bottom', horizontal: 'right' }}
-          transformOrigin={{ vertical: 'top', horizontal: 'right' }}
-        >
-          {audiences.map((a) => (
-            <MenuItem
-              key={a.value}
-              onClick={() => {
-                setMenuOpen(false);
-                setCompose(a.value);
-              }}
-              data-testid={`new-mail-${a.value}`}
-            >
-              <ListItemIcon>{a.icon}</ListItemIcon>
-              <ListItemText>{a.label}</ListItemText>
-            </MenuItem>
-          ))}
-        </Menu>
-      </Box>
-
       {!isMobile && (
         <Collapse in={compose !== null} unmountOnExit>
           <Paper
@@ -202,6 +228,18 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
       )}
 
       <Paper variant="outlined" sx={{ p: { xs: 1, sm: 2 }, mb: 3 }}>
+        <NeedsAnswerSection
+          eventCode={eventCode}
+          openKey={openConversation}
+          onOpenChange={setOpenConversation}
+          headerAction={newMail}
+        />
+      </Paper>
+
+      <Paper variant="outlined" sx={{ p: { xs: 1, sm: 2 }, mb: 3 }}>
+        <Typography variant="h6" sx={{ mb: 2 }}>
+          {t('eventPage.mail.whatWentOut')}
+        </Typography>
         <MailSentList eventCode={eventCode} highlightKeys={highlightKeys} />
       </Paper>
 
@@ -213,6 +251,12 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
           <Typography variant="body2" data-testid="mail-automatic-failed">
             {t('eventPage.mail.failedDeliveries', { count: counts.data?.failedDeliveries ?? 0 })}
           </Typography>
+          {/* Story 16.2a AC8: each non-zero count of automatic inbound mail on its own line. */}
+          {AUTOMATIC_COUNTS.filter((key) => (counts.data?.[key] ?? 0) > 0).map((key) => (
+            <Typography key={key} variant="body2" data-testid={`mail-automatic-${key}`}>
+              {t(`eventPage.mail.automaticCounts.${key}`, { count: counts.data?.[key] ?? 0 })}
+            </Typography>
+          ))}
         </AccordionDetails>
       </Accordion>
 

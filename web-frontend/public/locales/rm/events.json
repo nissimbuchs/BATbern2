@@ -580,7 +580,43 @@
           "companyName": "Interpresa"
         }
       },
-      "rsvpSummary": "Respostas: {{accepted}} acceptadas · {{declined}} refusadas · {{tentative}} provisoricas · {{noAnswer}} senza resposta"
+      "rsvpSummary": "Respostas: {{accepted}} acceptadas · {{declined}} refusadas · {{tentative}} provisoricas · {{noAnswer}} senza resposta",
+      "conversations": {
+        "title": "Basegna ina resposta",
+        "nothingOpen": "Nagut avert.",
+        "openCount_one": "{{count}} avert",
+        "openCount_other": "{{count}} averts",
+        "via": "via {{address}}",
+        "viaReply": "resposta ad in e-mail",
+        "messages_one": "{{count}} messadi",
+        "messages_other": "{{count}} messadis",
+        "status": {
+          "OPEN": "Avert",
+          "WAITING": "Spetga",
+          "DONE": "Fatg"
+        },
+        "statusLabel": "Status",
+        "assignee": "Tgi che respunda",
+        "takeIt": "Jau surpigl quai",
+        "attachments": "Agiuntas: {{names}}",
+        "patchError": "La midada n’è betg vegnida memorisada. Emprova anc ina giada."
+      },
+      "automaticCounts": {
+        "outOfOffice_one": "{{count}} resposta d’absenza",
+        "outOfOffice_other": "{{count}} respostas d’absenza",
+        "bounces_one": "{{count}} messadi da betg-consegna",
+        "bounces_other": "{{count}} messadis da betg-consegna",
+        "calendarAccepts_one": "{{count}} acceptanza en il chalender",
+        "calendarAccepts_other": "{{count}} acceptanzas en il chalender",
+        "calendarDeclines_one": "{{count}} refus en il chalender",
+        "calendarDeclines_other": "{{count}} refus en il chalender",
+        "keywordAccepts_one": "{{count}} annunzia confermada per resposta",
+        "keywordAccepts_other": "{{count}} annunzias confermadas per resposta",
+        "keywordCancels_one": "{{count}} link da deannunzia tramess suenter ina resposta",
+        "keywordCancels_other": "{{count}} links da deannunzia tramess suenter ina resposta",
+        "unsubscribes_one": "{{count}} deannunzia dal newsletter per resposta",
+        "unsubscribes_other": "{{count}} deannunzias dal newsletter per resposta"
+      }
     }
   },
   "dashboard": {

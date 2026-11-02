@@ -594,7 +594,43 @@
           "companyName": "Company"
         }
       },
-      "rsvpSummary": "RSVP: {{accepted}} accepted · {{declined}} declined · {{tentative}} tentative · {{noAnswer}} no answer"
+      "rsvpSummary": "RSVP: {{accepted}} accepted · {{declined}} declined · {{tentative}} tentative · {{noAnswer}} no answer",
+      "conversations": {
+        "title": "Needs an answer",
+        "nothingOpen": "Nothing open.",
+        "openCount_one": "{{count}} open",
+        "openCount_other": "{{count}} open",
+        "via": "via {{address}}",
+        "viaReply": "reply to a mail",
+        "messages_one": "{{count}} message",
+        "messages_other": "{{count}} messages",
+        "status": {
+          "OPEN": "Open",
+          "WAITING": "Waiting",
+          "DONE": "Done"
+        },
+        "statusLabel": "Status",
+        "assignee": "Who answers",
+        "takeIt": "I'll take it",
+        "attachments": "Attachments: {{names}}",
+        "patchError": "The change was not saved. Please try again."
+      },
+      "automaticCounts": {
+        "outOfOffice_one": "{{count}} out-of-office reply",
+        "outOfOffice_other": "{{count}} out-of-office replies",
+        "bounces_one": "{{count}} bounce message",
+        "bounces_other": "{{count}} bounce messages",
+        "calendarAccepts_one": "{{count}} calendar acceptance",
+        "calendarAccepts_other": "{{count}} calendar acceptances",
+        "calendarDeclines_one": "{{count}} calendar decline",
+        "calendarDeclines_other": "{{count}} calendar declines",
+        "keywordAccepts_one": "{{count}} registration confirmed by reply",
+        "keywordAccepts_other": "{{count}} registrations confirmed by reply",
+        "keywordCancels_one": "{{count}} cancellation link sent after a reply",
+        "keywordCancels_other": "{{count}} cancellation links sent after a reply",
+        "unsubscribes_one": "{{count}} newsletter unsubscribe by reply",
+        "unsubscribes_other": "{{count}} newsletter unsubscribes by reply"
+      }
     }
   },
   "dashboard": {

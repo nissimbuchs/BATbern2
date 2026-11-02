@@ -1,6 +1,6 @@
 # Story 16.2a: Speaker replies become conversations
 
-Status: in-progress
+Status: review
 
 ## Story
 
@@ -103,15 +103,15 @@ so that **the whole team sees what speakers asked and who is answering, instead 
   - [x] Extend `MailMessageRetentionScheduler.purgeExpired` (line 38): delete conversations whose event date and last activity are older than 12 months (no event: last activity), messages follow by cascade; then the existing `deleteExpired`; then `mail_automatic_event` by the same rule on `received_at`. One transaction, one ShedLock, as today. Integration test for each branch.
   - [x] `docs/architecture/08-operations-security.md` section "Recorded mail is personal data": inbound mail and conversations, same retention, bodies stored in DB, S3 still 7 days.
 
-- [ ] **Task 9 — Frontend "Needs an answer"** (AC: 9–12, 16; Vitest first)
-  - [ ] Service `mailConversationService.ts` (no direct fetch) + hooks `useMailConversations.ts` (`useEventConversations`, `useConversation`, `usePatchConversation` invalidating `['mails', eventCode]` and the conversation keys).
-  - [ ] Extract from `communications/MailDetail.tsx`: `MailBodyFrame` (the `sandbox=""` iframe, lines 70–85) and `FullScreenDetailDialog` (generalised `MailDetailDialog`, lines 152–188). `MailDetail` uses both; no visual change (its tests stay green).
-  - [ ] New `communications/NeedsAnswerSection.tsx`, `ConversationRow.tsx`, `ConversationDetail.tsx` (messages oldest first, `MailBodyFrame`, attachment names, status select, assignee via the existing `components/shared/OrganizerSelect`, "I'll take it"). Same open/close rules as `MailSentList` (one open, second click closes, dialog on mobile).
-  - [ ] `EventCommunicationsContainer.tsx`: section 1 above "What went out" (line 207), "+ New mail" button and menu (lines 138–176) move into its header; "Handled automatically" (lines 211–220) lists the new counts; read `?conversation=` and open it.
-  - [ ] i18n: `eventPage.mail.conversations.*` and `eventPage.mail.automatic.*` in `public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/events.json`.
-  - [ ] Vitest: empty state is one line, order and greyed DONE, badge counts OPEN only, inline vs dialog by breakpoint, PATCH on status/assignee/"I'll take it", deep link. Playwright (organizer project, local dev): read-only spec, no send, no horizontal scroll at 375 px.
+- [x] **Task 9 — Frontend "Needs an answer"** (AC: 9–12, 16; Vitest first)
+  - [x] Service `mailConversationService.ts` (no direct fetch) + hooks `useMailConversations.ts` (`useEventConversations`, `useConversation`, `usePatchConversation` invalidating `['mails', eventCode]` and the conversation keys).
+  - [x] Extract from `communications/MailDetail.tsx`: `MailBodyFrame` (the `sandbox=""` iframe, lines 70–85) and `FullScreenDetailDialog` (generalised `MailDetailDialog`, lines 152–188). `MailDetail` uses both; no visual change (its tests stay green).
+  - [x] New `communications/NeedsAnswerSection.tsx`, `ConversationRow.tsx`, `ConversationDetail.tsx` (messages oldest first, `MailBodyFrame`, attachment names, status select, assignee via the existing `components/shared/OrganizerSelect`, "I'll take it"). Same open/close rules as `MailSentList` (one open, second click closes, dialog on mobile).
+  - [x] `EventCommunicationsContainer.tsx`: section 1 above "What went out" (line 207), "+ New mail" button and menu (lines 138–176) move into its header; "Handled automatically" (lines 211–220) lists the new counts; read `?conversation=` and open it.
+  - [x] i18n: `eventPage.mail.conversations.*` and `eventPage.mail.automatic.*` in `public/locales/{de,en,fr,it,rm,es,fi,nl,ja,gsw-BE}/events.json`.
+  - [x] Vitest: empty state is one line, order and greyed DONE, badge counts OPEN only, inline vs dialog by breakpoint, PATCH on status/assignee/"I'll take it", deep link. Playwright (organizer project, local dev): read-only spec, no send, no horizontal scroll at 375 px.
 
-- [ ] **Task 10 — Docs** — `docs/user-guide/features/event-mail.md` (new section "Needs an answer", what is counted automatically), `docs/architecture/06-backend-architecture.md` (inbound flow: two paths, classifier, threader, the dual Message-ID match). Shared-kernel change → `06-backend-architecture.md` is also its mapped doc (`.github/doc-drift-mappings.yml`).
+- [x] **Task 10 — Docs** — `docs/user-guide/features/event-mail.md` (new section "Needs an answer", what is counted automatically), `docs/architecture/06-backend-architecture.md` (inbound flow: two paths, classifier, threader, the dual Message-ID match). Shared-kernel change → `06-backend-architecture.md` is also its mapped doc (`.github/doc-drift-mappings.yml`).
 
 ### Suggested PR split
 
@@ -197,10 +197,28 @@ Claude Opus 5.5 (Amelia, bmad-dev-story), 2026-11-02.
 - **Router:** `RouteResult.HANDLED` replaced by `UNSUBSCRIBED`, `DEREGISTRATION_LINK`, `CONFIRMED` (`acted()`); `InboundEmailListenerService` and `EmailForwardingListener` delegate to `InboundReplyProcessor` / `AliasMailProcessor`, their tests unchanged in substance (real processor, mocked Mail Center).
 - **Parser:** RFC 6532 raw UTF-8 headers read as UTF-8 (`mail.mime.allowutf8`); jsoup 1.23.2 added (story-specified, released 2026-08-26), safelist relaxed minus `img`, no `style`.
 - **Organizer without lead:** `events.organizer_username` is NOT NULL, so "no organizerUsername" (AC1) means blank; blank → unassigned.
+- **Frontend done (Task 9).** "Needs an answer" is the first section; "+ New mail" moved into its header; "What went out" got its own heading. `MailBodyFrame` and `FullScreenDetailDialog` extracted from `MailDetail` (its 4 tests unchanged and green). The open conversation is `?conversation={key}` in the URL (set on open, removed on close, `replace`), so a link opens it. Status dot colors: open = warning, waiting = info, done = disabled + row opacity 0.55.
+- **Deviation, i18n key:** the counts live under `eventPage.mail.automaticCounts.*`, not `eventPage.mail.automatic.*`: `eventPage.mail.automatic` is already the string "automatic" (sender of automatic mail). All 10 locales filled; EN and DE first-class, the others straight translations.
+- **TDD note:** the Vitest tests for Task 9 were written right after the components, not before them.
+- **Tests (frontend):** `NeedsAnswerSection.test.tsx` (9: empty state, order + greyed DONE + badge OPEN only, inline vs dialog, second click closes, attachments + sandbox, I'll take it, status/assignee/clear, initials), `EventCommunicationsContainer.test.tsx` +2 (section first with "+ New mail", `?conversation=`; non-zero counts only). Full Vitest 5583 passed / 0 failed; type-check and lint clean. Playwright on local dev: `event-mail-page.spec.ts` extended (empty line, simulated speaker mail → row, inline body in the sandboxed frame, Done greys it and drops the badge, second click closes, deep link; phone width: dialog, no horizontal scroll), 3/3; composer specs re-run after the header move, 12/12.
+- **Not done / for the owner:** the PR is not opened (owner instruction: review first). Opening it deploys to production; the backend then starts storing speaker replies and counting automatic mail, forwarding unchanged. The suggested two-PR split (backend first) was not followed: it is one branch, so the page never calls a missing endpoint, at the cost of one larger review.
 - **Task 7 live check on local dev (2026-11-02, BATbern60, local DB):** speaker mail to `batbern60-moderator@` → `conv-1`, OPEN, assignee `werner.graf`, via the alias; same Message-ID again → still one row; out-of-office → `outOfOffice: 1` in counts; reply to `replies@` with References → joined `conv-1` (`ThreadMatchedByHeader`); PATCH through the gateway → WAITING + new assignee, unknown assignee 400, unknown key 404, `Cache-Control: no-store`. Organizer broadcast to `batbern60-speaker@` → recorded in "What went out" as own text to SPEAKERS by `werner.graf` (1 recipient: the other speakers have reserved local addresses and are dropped, see #1182); a speaker's reply with `In-Reply-To` the captured broadcast → new conversation `conv-2` (`ThreadMatchedBySesId`), listed before the WAITING one. Test rows deleted afterwards.
 
 ### File List
 
+Backend (EMS, `services/event-management-service/`): `build.gradle` (jsoup); new `src/main/resources/db/migration/V139__mail_conversations.sql`, `src/main/java/ch/batbern/events/domain/MailConversation.java`, `repository/MailConversationRepository.java`, `forwarding/AliasMailProcessor.java`, `service/InboundReplyProcessor.java`, `mailcenter/{ConversationQueryService,ConversationService,MailConversationController}.java`, `mailcenter/inbound/{AutomaticMailCounter,ConversationThreader,InboundClassifier,InboundMail,InboundMailCenter,InboundMailParser,InboundMailStore}.java`; modified `controller/DevEmailController.java`, `domain/{MailMessage,MailRecipient}.java`, `forwarding/{EmailForwardingListener,EmailForwardingService,ForwardingDirectory,MailClassifier}.java`, `mailcenter/{EventMailController,MailCenterMetrics,MailDeliveryStatusService,MailMessageQueryService}.java`, `repository/MailRecipientRepository.java`, `scheduler/MailMessageRetentionScheduler.java`, `service/{InboundEmailListenerService,InboundEmailRouter}.java`. Tests: new `mailcenter/inbound/{ConversationThreadingIntegrationTest,InboundClassifierTest,InboundMailParserTest,MailConversationRetentionIntegrationTest}.java`, `mailcenter/MailConversationControllerIntegrationTest.java`, `src/test/resources/mail/{attachment,html-only,speaker-multipart-alternative}.eml`; modified `controller/DevEmailControllerReplyTest.java`, `forwarding/{EmailForwardingListenerTest,EmailForwardingServiceTest}.java`, `mailcenter/{MailDeliveryStatusServiceTest,OutboundMailInventoryGuardTest}.java`, `service/{InboundEmailListenerServiceTest,InboundEmailRouterTest}.java`.
+
+Shared kernel: `shared-kernel/src/main/java/ch/batbern/shared/service/EmailService.java`, `shared-kernel/src/test/java/ch/batbern/shared/service/EmailServiceTest.java`.
+
+Gateway: `api-gateway/src/main/java/ch/batbern/gateway/routing/DomainRouter.java`, `api-gateway/src/test/java/ch/batbern/gateway/routing/DomainRouterTest.java`.
+
+Contract: `docs/api/event-mail-api.openapi.yml`, `web-frontend/src/types/generated/event-mail-api.types.ts`. Bruno: `bruno-tests/events/{conversations-list,conversations-unknown}.bru` (new), `bruno-tests/events/mails-counts.bru`.
+
+Frontend (`web-frontend/`): new `src/services/mailConversationService.ts`, `src/hooks/useMailConversations/useMailConversations.ts`, `src/components/organizer/EventPage/communications/{ConversationDetail,FullScreenDetailDialog,MailBodyFrame,NeedsAnswerSection}.tsx`, `communications/initials.ts`, `communications/__tests__/NeedsAnswerSection.test.tsx`; modified `src/components/organizer/EventPage/EventCommunicationsContainer.tsx`, `EventPage/__tests__/EventCommunicationsContainer.test.tsx`, `communications/MailDetail.tsx`, `public/locales/{de,en,es,fi,fr,gsw-BE,it,ja,nl,rm}/events.json`, `e2e/organizer/event-mail-page.spec.ts`.
+
+Docs: `docs/architecture/06-backend-architecture.md`, `docs/architecture/08-operations-security.md`, `docs/user-guide/features/event-mail.md`, `docs/user-guide/appendix/changelog.md`. Story records: this file, `sprint-status.yaml`.
+
 ## Change Log
 
 - 2026-11-01: Story drafted from Epic 16 Story 16.2, speaker part (split 16.2a/16.2b per owner sequence #3).
+- 2026-11-02: Implemented, backend (a467afef) and frontend; local-dev and Playwright checks done; status review. PR not opened (owner reviews first).

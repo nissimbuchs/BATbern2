@@ -13,23 +13,20 @@
 import React from 'react';
 import {
   Alert,
-  AppBar,
   Box,
   Chip,
-  Dialog,
-  IconButton,
   List,
   ListItem,
   ListItemText,
   Skeleton,
   Stack,
-  Toolbar,
   Typography,
 } from '@mui/material';
-import { Close as CloseIcon } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useMailMessage } from '@/hooks/useMailMessages/useMailMessages';
 import type { MailRecipientEntry } from '@/services/mailMessageService';
+import { FullScreenDetailDialog } from './FullScreenDetailDialog';
+import { MailBodyFrame } from './MailBodyFrame';
 
 interface MailDetailProps {
   eventCode: string;
@@ -68,19 +65,9 @@ export const MailDetail: React.FC<MailDetailProps> = ({ eventCode, mailKey }) =>
     >
       <Box sx={{ order: { xs: 2, md: 1 }, minWidth: 0 }}>
         {detail.bodyHtml ? (
-          <Box
-            component="iframe"
+          <MailBodyFrame
+            html={detail.bodyHtml}
             title={t('eventPage.mail.bodyTitle')}
-            srcDoc={detail.bodyHtml}
-            sandbox=""
-            sx={{
-              width: '100%',
-              height: { xs: '70vh', md: 560 },
-              border: 1,
-              borderColor: 'divider',
-              borderRadius: 1,
-              bgcolor: 'background.paper',
-            }}
             data-testid="mail-detail-body"
           />
         ) : (
@@ -154,37 +141,10 @@ export const MailDetailDialog: React.FC<MailDetailDialogProps> = ({
   mailKey,
   title,
   onClose,
-}) => {
-  const { t } = useTranslation('events');
-  return (
-    <Dialog
-      fullScreen
-      open={mailKey !== null}
-      onClose={onClose}
-      aria-labelledby="mail-detail-title"
-    >
-      <AppBar
-        position="sticky"
-        color="default"
-        elevation={0}
-        sx={{ borderBottom: 1, borderColor: 'divider' }}
-      >
-        <Toolbar sx={{ gap: 1 }}>
-          <IconButton
-            edge="start"
-            onClick={onClose}
-            aria-label={t('common:actions.close', 'Close')}
-          >
-            <CloseIcon />
-          </IconButton>
-          <Typography id="mail-detail-title" variant="subtitle1" noWrap sx={{ flex: 1 }}>
-            {title ?? mailKey}
-          </Typography>
-        </Toolbar>
-      </AppBar>
-      <Box sx={{ p: 2 }}>{mailKey && <MailDetail eventCode={eventCode} mailKey={mailKey} />}</Box>
-    </Dialog>
-  );
-};
+}) => (
+  <FullScreenDetailDialog open={mailKey !== null} title={title ?? mailKey ?? ''} onClose={onClose}>
+    {mailKey && <MailDetail eventCode={eventCode} mailKey={mailKey} />}
+  </FullScreenDetailDialog>
+);
 
 export default MailDetail;

@@ -586,7 +586,43 @@
           "companyName": "Firma"
         }
       },
-      "rsvpSummary": "Rückmäldige: {{accepted}} zuegseit · {{declined}} abgseit · {{tentative}} viilech · {{noAnswer}} ohni Antwort"
+      "rsvpSummary": "Rückmäldige: {{accepted}} zuegseit · {{declined}} abgseit · {{tentative}} viilech · {{noAnswer}} ohni Antwort",
+      "conversations": {
+        "title": "Bruucht e Antwort",
+        "nothingOpen": "Nüt offe.",
+        "openCount_one": "{{count}} offe",
+        "openCount_other": "{{count}} offe",
+        "via": "über {{address}}",
+        "viaReply": "Antwort uf es Mail",
+        "messages_one": "{{count}} Nachricht",
+        "messages_other": "{{count}} Nachrichte",
+        "status": {
+          "OPEN": "Offe",
+          "WAITING": "Wartet",
+          "DONE": "Erledigt"
+        },
+        "statusLabel": "Status",
+        "assignee": "Wär antwortet",
+        "takeIt": "I übernimes",
+        "attachments": "Aahäng: {{names}}",
+        "patchError": "D Änderig isch nid gspicheret worde. Bitte nomau probiere."
+      },
+      "automaticCounts": {
+        "outOfOffice_one": "{{count}} Abwäseheitsnotiz",
+        "outOfOffice_other": "{{count}} Abwäseheitsnotize",
+        "bounces_one": "{{count}} Unzuestellbarkeitsmäldig",
+        "bounces_other": "{{count}} Unzuestellbarkeitsmäldige",
+        "calendarAccepts_one": "{{count}} Kaländerzuesag",
+        "calendarAccepts_other": "{{count}} Kaländerzuesage",
+        "calendarDeclines_one": "{{count}} Kaländerabsag",
+        "calendarDeclines_other": "{{count}} Kaländerabsage",
+        "keywordAccepts_one": "{{count}} Aamäldig per Antwort bestätiget",
+        "keywordAccepts_other": "{{count}} Aamäldige per Antwort bestätiget",
+        "keywordCancels_one": "{{count}} Abmäldelink nach ere Antwort verschickt",
+        "keywordCancels_other": "{{count}} Abmäldelinks nach ere Antwort verschickt",
+        "unsubscribes_one": "{{count}} Newsletter-Abmäldig per Antwort",
+        "unsubscribes_other": "{{count}} Newsletter-Abmäldige per Antwort"
+      }
     }
   },
   "dashboard": {

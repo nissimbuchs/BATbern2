@@ -1,9 +1,35 @@
 # Event mail page (Communications tab)
 
-> **Last Updated:** 2026-11-01 · Epic 16, Stories 16.3, 16.4, 16.8a, 16.8b
+> **Last Updated:** 2026-11-02 · Epic 16, Stories 16.3, 16.4, 16.8a, 16.8b, 16.2a
 
 The **Communications** tab of an event is its mail page. It answers "did the speakers get the
 slides mail?" without asking the team.
+
+## Needs an answer
+
+What speakers wrote to the team for this event, so everyone sees the question and who answers it,
+instead of it sitting in one private inbox (Story 16.2a).
+
+- **What lands here:** a speaker's mail to the event's moderator address
+  (`batbern{N}-moderator@batbern.ch`, the Reply-To of every speaker mail), and a reply to a speaker
+  mail that still goes to `replies@`. Mail from organizers does not. Other addresses (`info@`,
+  registrant replies) follow with Story 16.2b.
+- **Forwarding is unchanged.** The moderator still gets the mail in their own inbox as before.
+- **Each row:** a status dot, date, who wrote, where it arrived, the subject, and the avatar of the
+  organizer who answers. Open and waiting first, newest first; done ones below, greyed. The number
+  beside the heading counts the open ones.
+- **Who answers:** the event's lead organizer at first. **I'll take it** on an unassigned row makes
+  it yours; inside the conversation you can pick any organizer or nobody.
+- **Status:** *Open* (needs an answer), *Waiting* (answered, waiting for the speaker), *Done*. A new
+  mail from the speaker sets it back to *Open*. Changing status or assignee sends no mail.
+- **A click** opens the conversation below its row: every mail, oldest first, with sender, time,
+  text and the names of attachments (on a phone: full screen). Attachments themselves are in the
+  forwarded copy; the page keeps only their names. Images and formatting from the sender's mail are
+  not shown, so opening a mail never loads anything from outside.
+- **Link to a conversation:** the address bar shows `?conversation=conv-…` while one is open; that
+  link opens it directly.
+- **Nothing yet?** The section shows one line, "Nothing open."
+- Conversations are kept like the rest of the event's mail: 12 months after the event.
 
 ## What went out
 
@@ -13,6 +39,8 @@ Every mail sent for the event, newest first, the newsletter included.
   how many were delivered and how many failed. "automatic" means no organizer sent it (a
   scheduler or a registration).
 - **Filters:** All · Newsletter · Registrants · Speakers · Venue & Catering · Partners.
+- **A mail an organizer sends to `batbern{N}-speaker@`** is listed as own text to the speakers, sent
+  by that organizer (since 2 November 2026).
 - **Automatic mails** (confirmations, reminders) are collapsed per template and day
   ("registration-confirmation · 14 mails"). A click expands them into single mails.
 - **A click on a mail** opens it below its row, exactly as it was sent, with its recipients beside
@@ -37,10 +65,24 @@ Limits:
 
 ## Handled automatically
 
-Collapsed, counts only. Today: failed deliveries for the event (bounces, complaints, rejects, sends
-SES refused). Accepts, declines and out-of-office replies follow with Story 16.2.
+Collapsed, counts only. Failed deliveries for the event (bounces, complaints, rejects, sends SES
+refused), and since Story 16.2a every mail that came back without needing a person, each kind on
+its own line when there is at least one:
+
+- out-of-office replies;
+- bounce messages that arrived as mail;
+- calendar acceptances and declines of the registration invite;
+- replies "accept" that confirmed a registration, and replies "cancel" that sent the cancellation
+  link;
+- newsletter unsubscribes by reply.
+
+These mails are only counted: no sender, subject or text is kept. A mail counts for this event when
+it answers one of the event's mails, names the event code in its subject, or (calendar replies)
+belongs to one of its registrations.
 
 ## + New mail
+
+The button sits in the header of **Needs an answer**.
 
 The menu offers **Newsletter, Registrants, Speakers, Venue & Catering, Partners**. All five open the
 same composer at the top of the page (full screen on a phone), with the same steps:

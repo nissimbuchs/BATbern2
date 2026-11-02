@@ -1,11 +1,12 @@
 /**
- * EventCommunicationsContainer tests (Epic 16, Stories 16.3, 16.4, 16.8b)
+ * EventCommunicationsContainer tests (Epic 16, Stories 16.3, 16.4, 16.8b, 16.2a)
  *
  * The mail page: "What went out" and "Handled automatically", plus the "+ New mail" picker. Since
  * 16.8b four audiences open the shared MailComposer and Partners keeps PartnerMeetingsCompose
  * (AC15), inline at the top (desktop) or full screen (mobile). Composers and the list have their
  * own tests, so they are stubbed here; the stubs expose `onSent` to drive the after-send path.
  */
+import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -62,6 +63,21 @@ vi.mock('../communications/composer/MailComposer', () => ({
 vi.mock('../communications/PartnerMeetingsCompose', () => ({
   PartnerMeetingsCompose: stub('stub-partners'),
 }));
+// Story 16.2a: the section has its own tests; the stub renders the header action ("+ New mail")
+// and exposes the open conversation.
+vi.mock('../communications/NeedsAnswerSection', () => ({
+  NeedsAnswerSection: ({
+    openKey,
+    headerAction,
+  }: {
+    openKey: string | null;
+    headerAction?: React.ReactNode;
+  }) => (
+    <div data-testid="stub-needs-answer" data-open={openKey ?? ''}>
+      {headerAction}
+    </div>
+  ),
+}));
 vi.mock('../communications/MailSentList', () => ({
   MailSentList: ({ highlightKeys }: { highlightKeys?: string[] }) => {
     sentListProps.highlightKeys = highlightKeys;
@@ -78,12 +94,12 @@ vi.mock('react-i18next', () => ({
 
 const mockEvent = { eventCode: 'BAT54', title: 'Spring Conf' } as Event;
 
-function renderContainer() {
+function renderContainer(initialEntry = '/') {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const invalidate = vi.spyOn(queryClient, 'invalidateQueries');
   render(
     <QueryClientProvider client={queryClient}>
-      <MemoryRouter>
+      <MemoryRouter initialEntries={[initialEntry]}>
         <EventCommunicationsContainer event={mockEvent} eventCode="BAT54" />
       </MemoryRouter>
     </QueryClientProvider>
@@ -116,6 +132,38 @@ describe('EventCommunicationsContainer', () => {
       )
     );
     expect(getMailCounts).toHaveBeenCalledWith('BAT54');
+  });
+
+  it('16.2a AC9/AC11: "Needs an answer" comes first, holds "+ New mail" and opens ?conversation=', () => {
+    renderContainer('/organizer/events/BAT54?tab=communications&conversation=conv-7');
+    const section = screen.getByTestId('stub-needs-answer');
+    expect(section).toHaveAttribute('data-open', 'conv-7');
+    expect(within(section).getByTestId('new-mail-button')).toBeInTheDocument();
+    expect(
+      section.compareDocumentPosition(screen.getByTestId('stub-sent-list')) &
+        Node.DOCUMENT_POSITION_FOLLOWING
+    ).toBeTruthy();
+  });
+
+  it('16.2a AC8: each non-zero automatic count on its own line, zeros hidden', async () => {
+    getMailCounts.mockResolvedValue({
+      failedDeliveries: 0,
+      outOfOffice: 2,
+      bounces: 0,
+      calendarAccepts: 1,
+      calendarDeclines: 0,
+      keywordAccepts: 0,
+      keywordCancels: 3,
+      unsubscribes: 0,
+    });
+    renderContainer();
+    expect(await screen.findByTestId('mail-automatic-outOfOffice')).toHaveTextContent(
+      'eventPage.mail.automaticCounts.outOfOffice:2'
+    );
+    expect(screen.getByTestId('mail-automatic-calendarAccepts')).toHaveTextContent(':1');
+    expect(screen.getByTestId('mail-automatic-keywordCancels')).toHaveTextContent(':3');
+    expect(screen.queryByTestId('mail-automatic-bounces')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('mail-automatic-unsubscribes')).not.toBeInTheDocument();
   });
 
   it('offers the five audiences in the "+ New mail" menu', () => {

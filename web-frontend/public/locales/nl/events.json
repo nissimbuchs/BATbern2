@@ -580,7 +580,43 @@
           "companyName": "Bedrijf"
         }
       },
-      "rsvpSummary": "Reacties: {{accepted}} geaccepteerd · {{declined}} afgewezen · {{tentative}} voorlopig · {{noAnswer}} geen antwoord"
+      "rsvpSummary": "Reacties: {{accepted}} geaccepteerd · {{declined}} afgewezen · {{tentative}} voorlopig · {{noAnswer}} geen antwoord",
+      "conversations": {
+        "title": "Wacht op antwoord",
+        "nothingOpen": "Niets open.",
+        "openCount_one": "{{count}} open",
+        "openCount_other": "{{count}} open",
+        "via": "via {{address}}",
+        "viaReply": "antwoord op een e-mail",
+        "messages_one": "{{count}} bericht",
+        "messages_other": "{{count}} berichten",
+        "status": {
+          "OPEN": "Open",
+          "WAITING": "Wacht",
+          "DONE": "Afgehandeld"
+        },
+        "statusLabel": "Status",
+        "assignee": "Wie antwoordt",
+        "takeIt": "Ik neem het op me",
+        "attachments": "Bijlagen: {{names}}",
+        "patchError": "De wijziging is niet opgeslagen. Probeer het opnieuw."
+      },
+      "automaticCounts": {
+        "outOfOffice_one": "{{count}} afwezigheidsbericht",
+        "outOfOffice_other": "{{count}} afwezigheidsberichten",
+        "bounces_one": "{{count}} onbestelbaarheidsbericht",
+        "bounces_other": "{{count}} onbestelbaarheidsberichten",
+        "calendarAccepts_one": "{{count}} agenda-acceptatie",
+        "calendarAccepts_other": "{{count}} agenda-acceptaties",
+        "calendarDeclines_one": "{{count}} agenda-afwijzing",
+        "calendarDeclines_other": "{{count}} agenda-afwijzingen",
+        "keywordAccepts_one": "{{count}} inschrijving bevestigd per antwoord",
+        "keywordAccepts_other": "{{count}} inschrijvingen bevestigd per antwoord",
+        "keywordCancels_one": "{{count}} afmeldlink verstuurd na een antwoord",
+        "keywordCancels_other": "{{count}} afmeldlinks verstuurd na een antwoord",
+        "unsubscribes_one": "{{count}} nieuwsbriefafmelding per antwoord",
+        "unsubscribes_other": "{{count}} nieuwsbriefafmeldingen per antwoord"
+      }
     }
   },
   "dashboard": {

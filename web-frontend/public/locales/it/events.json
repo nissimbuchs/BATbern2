@@ -580,7 +580,43 @@
           "companyName": "Azienda"
         }
       },
-      "rsvpSummary": "Risposte: {{accepted}} accettate · {{declined}} rifiutate · {{tentative}} provvisorie · {{noAnswer}} senza risposta"
+      "rsvpSummary": "Risposte: {{accepted}} accettate · {{declined}} rifiutate · {{tentative}} provvisorie · {{noAnswer}} senza risposta",
+      "conversations": {
+        "title": "Serve una risposta",
+        "nothingOpen": "Niente in sospeso.",
+        "openCount_one": "{{count}} aperta",
+        "openCount_other": "{{count}} aperte",
+        "via": "tramite {{address}}",
+        "viaReply": "risposta a un’e-mail",
+        "messages_one": "{{count}} messaggio",
+        "messages_other": "{{count}} messaggi",
+        "status": {
+          "OPEN": "Aperta",
+          "WAITING": "In attesa",
+          "DONE": "Fatto"
+        },
+        "statusLabel": "Stato",
+        "assignee": "Chi risponde",
+        "takeIt": "Me ne occupo io",
+        "attachments": "Allegati: {{names}}",
+        "patchError": "La modifica non è stata salvata. Riprova."
+      },
+      "automaticCounts": {
+        "outOfOffice_one": "{{count}} risposta di assenza",
+        "outOfOffice_other": "{{count}} risposte di assenza",
+        "bounces_one": "{{count}} messaggio di mancato recapito",
+        "bounces_other": "{{count}} messaggi di mancato recapito",
+        "calendarAccepts_one": "{{count}} accettazione nel calendario",
+        "calendarAccepts_other": "{{count}} accettazioni nel calendario",
+        "calendarDeclines_one": "{{count}} rifiuto nel calendario",
+        "calendarDeclines_other": "{{count}} rifiuti nel calendario",
+        "keywordAccepts_one": "{{count}} iscrizione confermata via risposta",
+        "keywordAccepts_other": "{{count}} iscrizioni confermate via risposta",
+        "keywordCancels_one": "{{count}} link di disiscrizione inviato dopo una risposta",
+        "keywordCancels_other": "{{count}} link di disiscrizione inviati dopo una risposta",
+        "unsubscribes_one": "{{count}} disiscrizione dalla newsletter via risposta",
+        "unsubscribes_other": "{{count}} disiscrizioni dalla newsletter via risposta"
+      }
     }
   },
   "dashboard": {
