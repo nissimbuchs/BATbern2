@@ -614,7 +614,8 @@
           "sent": "Vastaus lähetetty.",
           "error": "Vastausta ei lähetetty. Yritä uudelleen.",
           "noAddress": "Tällä keskustelulla ei ole osoitetta, johon voisi vastata sähköpostilla."
-        }
+        },
+        "expandAll": "Näytä kaikki {{count}} viestiä"
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} poissaoloviesti",

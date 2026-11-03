@@ -628,7 +628,8 @@
           "sent": "Answer sent.",
           "error": "The answer was not sent. Please try again.",
           "noAddress": "This conversation has no address that can be answered by mail."
-        }
+        },
+        "expandAll": "Show all {{count}} mails"
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} out-of-office reply",

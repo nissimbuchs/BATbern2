@@ -63,19 +63,10 @@ vi.mock('../communications/composer/MailComposer', () => ({
 vi.mock('../communications/PartnerMeetingsCompose', () => ({
   PartnerMeetingsCompose: stub('stub-partners'),
 }));
-// Story 16.2a: the section has its own tests; the stub renders the header action ("+ New mail")
-// and exposes the open conversation.
+// Story 16.2a: the section has its own tests; the stub exposes the open conversation.
 vi.mock('../communications/NeedsAnswerSection', () => ({
-  NeedsAnswerSection: ({
-    openKey,
-    headerAction,
-  }: {
-    openKey: string | null;
-    headerAction?: React.ReactNode;
-  }) => (
-    <div data-testid="stub-needs-answer" data-open={openKey ?? ''}>
-      {headerAction}
-    </div>
+  NeedsAnswerSection: ({ openKey }: { openKey: string | null }) => (
+    <div data-testid="stub-needs-answer" data-open={openKey ?? ''} />
   ),
 }));
 vi.mock('../communications/MailSentList', () => ({
@@ -134,11 +125,14 @@ describe('EventCommunicationsContainer', () => {
     expect(getMailCounts).toHaveBeenCalledWith('BAT54');
   });
 
-  it('16.2a AC9/AC11: "Needs an answer" comes first, holds "+ New mail" and opens ?conversation=', () => {
+  it('16.2a AC9/AC11: "Needs an answer" comes first and opens ?conversation=; "+ New mail" sits above it, outside', () => {
     renderContainer('/organizer/events/BAT54?tab=communications&conversation=conv-7');
     const section = screen.getByTestId('stub-needs-answer');
     expect(section).toHaveAttribute('data-open', 'conv-7');
-    expect(within(section).getByTestId('new-mail-button')).toBeInTheDocument();
+    // Owner 2026-11-03: inside the box it read as an action on the open mails.
+    const button = screen.getByTestId('new-mail-button');
+    expect(within(section).queryByTestId('new-mail-button')).not.toBeInTheDocument();
+    expect(button.compareDocumentPosition(section) & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
     expect(
       section.compareDocumentPosition(screen.getByTestId('stub-sent-list')) &
         Node.DOCUMENT_POSITION_FOLLOWING

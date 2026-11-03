@@ -33,15 +33,17 @@ instead of it sitting in one private inbox (Story 16.2a).
 - **Status:** *Open* (needs an answer), *Waiting* (answered, waiting for the speaker), *Done*. A new
   mail from the speaker sets it back to *Open*. Changing the status sends no mail.
 - **Answering:** below the messages, write your answer and click **Send answer**, then confirm. The
-  mail goes out as "{your name} via BATbern" and quotes the speaker's last mail. When the speaker
+  mail goes out as "{your name} via BATbern" from `info@batbern.ch` and quotes the speaker's last mail. When the speaker
   replies, the reply lands in the same conversation, not in your inbox. Sending sets the
   conversation to *Waiting*; tick **Mark as done** first if nothing more is expected. Your answer
   appears in the conversation for every organizer; it is not listed again under "What went out".
 - **Reassigning:** when you give a conversation to another organizer, they get one short mail with a
   link to it. Taking it yourself, clearing the assignee, or choosing the same organizer again sends
   nothing.
-- **A click** opens the conversation below its row: every mail, oldest first, with sender, time,
-  text and attachments (on a phone: full screen). Attachments up to 25 MB open with a click; larger
+- **A click** opens the conversation below its row (on a phone: full screen). The newest mail is
+  on top and open; older ones are one line each with sender, time and the start of the text. Click a
+  line to open it, or **Show all** to open every mail. Each open mail shows sender, time, text and
+  attachments. Attachments up to 25 MB open with a click; larger
   ones show their name only ("name only") and are in the forwarded copy. Images and formatting from the sender's mail are
   not shown, so opening a mail never loads anything from outside.
 - **Link to a conversation:** the address bar shows `?conversation=conv-…` while one is open; that
@@ -100,7 +102,7 @@ belongs to one of its registrations.
 
 ## + New mail
 
-The button sits in the header of **Needs an answer**.
+The button sits at the top right of the communication tab, above all sections.
 
 The menu offers **Newsletter, Registrants, Speakers, Venue & Catering, Partners**. All five open the
 same composer at the top of the page (full screen on a phone), with the same steps:

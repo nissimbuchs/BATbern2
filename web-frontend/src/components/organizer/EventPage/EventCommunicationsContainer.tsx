@@ -198,6 +198,10 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
 
   return (
     <Box sx={{ maxWidth: 1100 }}>
+      {/* Owner 2026-11-03: a page action, not part of "Needs an answer" (inside it, it read as an
+          action on the open mails). */}
+      <Box sx={{ display: 'flex', justifyContent: 'flex-end', mb: 2 }}>{newMail}</Box>
+
       {!isMobile && (
         <Collapse in={compose !== null} unmountOnExit>
           <Paper
@@ -232,7 +236,6 @@ export const EventCommunicationsContainer: React.FC<EventCommunicationsContainer
           eventCode={eventCode}
           openKey={openConversation}
           onOpenChange={setOpenConversation}
-          headerAction={newMail}
         />
       </Paper>
 

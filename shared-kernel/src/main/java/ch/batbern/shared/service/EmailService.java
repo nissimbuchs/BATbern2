@@ -618,7 +618,7 @@ public class EmailService {
             String captured = null;
             if (localEmailCapture != null) {
                 captured = "local-" + localEmailCapture.capture(mail.to(), List.of(), mail.subject(), mail.html(),
-                        fromEmail, mail.fromName(), List.of());
+                        composedFrom(mail), mail.fromName(), List.of());
             }
             record(context, composedRecord(mail, captured, null));
             return;
@@ -651,6 +651,10 @@ public class EmailService {
         }
     }
 
+    private String composedFrom(ComposedMail mail) {
+        return mail.fromAddress() != null && !mail.fromAddress().isBlank() ? mail.fromAddress() : fromEmail;
+    }
+
     private static OutboundMail composedRecord(ComposedMail mail, String sesMessageId, String failureReason) {
         return new OutboundMail(mail.to(), List.of(), mail.subject(), mail.html(), sesMessageId, failureReason,
                 mail.messageId());
@@ -658,7 +662,7 @@ public class EmailService {
 
     private byte[] composedMime(ComposedMail mail) throws MessagingException, IOException {
         MimeMessage message = new FixedIdMimeMessage(Session.getInstance(new Properties()), mail.messageId());
-        message.setFrom(new InternetAddress(fromEmail, mail.fromName(), "UTF-8"));
+        message.setFrom(new InternetAddress(composedFrom(mail), mail.fromName(), "UTF-8"));
         message.setRecipients(Message.RecipientType.TO,
                 InternetAddress.parse(EmailAddresses.toDeliveryForm(mail.to())));
         message.setSubject(mail.subject(), "UTF-8");

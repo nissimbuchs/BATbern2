@@ -614,7 +614,8 @@
           "sent": "Antwoord verstuurd.",
           "error": "Het antwoord is niet verstuurd. Probeer het opnieuw.",
           "noAddress": "Dit gesprek heeft geen adres waarnaar per e-mail geantwoord kan worden."
-        }
+        },
+        "expandAll": "Alle {{count}} mails tonen"
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} afwezigheidsbericht",

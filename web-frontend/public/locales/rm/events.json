@@ -614,7 +614,8 @@
           "sent": "Resposta tramessa.",
           "error": "La resposta n'è betg vegnida tramessa. Emprova anc ina giada.",
           "noAddress": "Questa conversaziun n'ha nagina adressa per respunder per e-mail."
-        }
+        },
+        "expandAll": "Mussar tut ils {{count}} mails"
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} resposta d’absenza",

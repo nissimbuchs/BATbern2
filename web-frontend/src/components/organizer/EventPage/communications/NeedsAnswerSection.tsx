@@ -19,15 +19,12 @@ interface NeedsAnswerSectionProps {
   /** The open conversation (e.g. from `?conversation=`), or null. */
   openKey: string | null;
   onOpenChange: (conversationKey: string | null) => void;
-  /** Right side of the section header: the "+ New mail" button and its menu. */
-  headerAction?: React.ReactNode;
 }
 
 export const NeedsAnswerSection: React.FC<NeedsAnswerSectionProps> = ({
   eventCode,
   openKey,
   onOpenChange,
-  headerAction,
 }) => {
   const { t } = useTranslation('events');
   const query = useEventConversations(eventCode);
@@ -49,7 +46,6 @@ export const NeedsAnswerSection: React.FC<NeedsAnswerSectionProps> = ({
             />
           )}
         </Box>
-        {headerAction}
       </Box>
 
       <ConversationList

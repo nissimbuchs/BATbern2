@@ -1,6 +1,8 @@
 /**
- * ConversationDetail (Story 16.2a AC11, AC12): every message of a conversation, oldest first, with
- * sender, time, text and attachment names; above them the status and who answers.
+ * ConversationDetail (Story 16.2a AC11, AC12): every message of a conversation with sender, time, text
+ * and attachment names; above them the status and who answers. Newest first (owner 2026-11-03): the
+ * newest is open, older ones are one line (sender, time, start of the text) that opens on click;
+ * "Show all" opens every one.
  *
  * Story 16.6: the answer box under the messages (`ConversationReplyBox`). Story 16.7: the event it
  * belongs to can be changed here.
@@ -14,6 +16,7 @@ import {
   Alert,
   Box,
   Button,
+  ButtonBase,
   FormControl,
   InputLabel,
   Link,
@@ -39,6 +42,20 @@ import { ConversationReplyBox } from './ConversationReplyBox';
 import { EventSelect } from './EventSelect';
 import { MailBodyFrame } from './MailBodyFrame';
 
+/**
+ * The start of a mail's own text for its collapsed line: quoted earlier mails (blockquote) dropped,
+ * block elements separated by a space. The body is sanitized HTML, parsed inertly (no scripts run).
+ */
+function preview(html: string | undefined | null): string {
+  if (!html) return '';
+  const body = new DOMParser().parseFromString(html, 'text/html').body;
+  body.querySelectorAll('blockquote').forEach((quote) => quote.remove());
+  body
+    .querySelectorAll('p, div, br, li, tr, h1, h2, h3, h4, h5, h6')
+    .forEach((block) => block.after(' '));
+  return (body.textContent ?? '').replace(/\s+/g, ' ').trim().slice(0, 160);
+}
+
 const CONVERSATION_STATUSES: MailConversationStatus[] = ['OPEN', 'WAITING', 'DONE'];
 
 interface ConversationDetailProps {
@@ -50,6 +67,8 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({ conversa
   const { user } = useAuth();
   const query = useConversation(conversationKey);
   const [downloadFailed, setDownloadFailed] = React.useState(false);
+  // Messages the organizer opened or closed; any other is open only when it is the newest.
+  const [toggled, setToggled] = React.useState<Record<string, boolean>>({});
   const patch = usePatchConversation();
   const detail = query.data;
 
@@ -59,6 +78,17 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({ conversa
   }
   const { conversation, messages } = detail;
   const me = user?.username;
+  // Newest first; only the newest is open unless the organizer opens more (owner 2026-11-03).
+  const newestFirst = [...messages].sort(
+    (a, b) => new Date(b.message.sentAt).getTime() - new Date(a.message.sentAt).getTime()
+  );
+  const newestKey = newestFirst[0]?.message.mailKey;
+  const isOpen = (mailKey: string) => toggled[mailKey] ?? mailKey === newestKey;
+  const allOpen = newestFirst.every(({ message }) => isOpen(message.mailKey));
+  const toggle = (mailKey: string) =>
+    setToggled((current) => ({ ...current, [mailKey]: !isOpen(mailKey) }));
+  const openAll = () =>
+    setToggled(Object.fromEntries(newestFirst.map(({ message }) => [message.mailKey, true])));
   const save = (change: Parameters<typeof patch.mutate>[0]['patch']) =>
     patch.mutate({ key: conversationKey, patch: change });
   // Story 16.6: same flow as the session materials: fetch a presigned URL, open it in a new tab.
@@ -147,58 +177,109 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({ conversa
         </Alert>
       )}
 
-      {messages.map(({ message, bodyHtml }) => {
+      {newestFirst.length > 1 && !allOpen && (
+        <Box>
+          <Link
+            component="button"
+            variant="body2"
+            onClick={openAll}
+            data-testid="conversation-expand-all"
+          >
+            {t('eventPage.mail.conversations.expandAll', { count: newestFirst.length })}
+          </Link>
+        </Box>
+      )}
+
+      {newestFirst.map(({ message, bodyHtml }) => {
         const sender =
           message.direction === 'IN'
             ? (message.fromName ?? message.fromAddress ?? '')
             : (message.senderUsername ?? t('eventPage.mail.automatic'));
         const attachments = message.attachments ?? [];
+        const open = isOpen(message.mailKey);
         return (
-          <Box key={message.mailKey} data-testid={`conversation-message-${message.mailKey}`}>
-            <Typography variant="caption" color="text.secondary" component="div">
-              {sender}
-              {message.direction === 'IN' && message.fromName && message.fromAddress
-                ? ` <${message.fromAddress}>`
-                : ''}{' '}
-              · {new Date(message.sentAt).toLocaleString(i18n.language)}
-            </Typography>
-            <Typography variant="body2" sx={{ mb: 1, overflowWrap: 'anywhere' }}>
-              {message.subject}
-            </Typography>
-            {bodyHtml && (
-              <MailBodyFrame html={bodyHtml} title={t('eventPage.mail.bodyTitle')} height={280} />
-            )}
-            {attachments.length > 0 && (
-              <Typography
-                variant="caption"
-                color="text.secondary"
-                component="div"
-                sx={{ mt: 0.5, display: 'flex', alignItems: 'center', flexWrap: 'wrap', gap: 0.5 }}
-                data-testid="conversation-attachments"
-              >
-                <AttachmentIcon fontSize="inherit" />
-                {t('eventPage.mail.conversations.attachmentsLabel')}
-                {attachments.map((a, index) =>
-                  a.kept ? (
-                    <Link
-                      key={`${a.name}-${index}`}
-                      component="button"
-                      variant="caption"
-                      onClick={() => download(message.mailKey, index)}
-                      data-testid={`conversation-attachment-${message.mailKey}-${index}`}
-                    >
-                      {a.name}
-                    </Link>
-                  ) : (
-                    <span
-                      key={`${a.name}-${index}`}
-                      title={t('eventPage.mail.conversations.notKept')}
-                    >
-                      {a.name} ({t('eventPage.mail.conversations.nameOnly')})
-                    </span>
-                  )
+          <Box
+            key={message.mailKey}
+            sx={{ borderBottom: 1, borderColor: 'divider', pb: open ? 2 : 1 }}
+            data-testid={`conversation-message-${message.mailKey}`}
+          >
+            <ButtonBase
+              onClick={() => toggle(message.mailKey)}
+              aria-expanded={open}
+              sx={{ display: 'block', width: '100%', textAlign: 'left', borderRadius: 1, py: 0.5 }}
+              data-testid={`conversation-message-toggle-${message.mailKey}`}
+            >
+              <Typography variant="caption" color="text.secondary" component="div">
+                {sender}
+                {message.direction === 'IN' && message.fromName && message.fromAddress
+                  ? ` <${message.fromAddress}>`
+                  : ''}{' '}
+                · {new Date(message.sentAt).toLocaleString(i18n.language)}
+                {!open && attachments.length > 0 && (
+                  <AttachmentIcon fontSize="inherit" sx={{ ml: 0.5, verticalAlign: 'middle' }} />
                 )}
               </Typography>
+              {!open && (
+                <Typography
+                  variant="body2"
+                  noWrap
+                  data-testid={`conversation-message-preview-${message.mailKey}`}
+                >
+                  {preview(bodyHtml) || message.subject}
+                </Typography>
+              )}
+            </ButtonBase>
+            {open && (
+              <Box sx={{ mt: 0.5 }}>
+                <Typography variant="body2" sx={{ mb: 1, overflowWrap: 'anywhere' }}>
+                  {message.subject}
+                </Typography>
+                {bodyHtml && (
+                  <MailBodyFrame
+                    html={bodyHtml}
+                    title={t('eventPage.mail.bodyTitle')}
+                    height={280}
+                  />
+                )}
+                {attachments.length > 0 && (
+                  <Typography
+                    variant="caption"
+                    color="text.secondary"
+                    component="div"
+                    sx={{
+                      mt: 0.5,
+                      display: 'flex',
+                      alignItems: 'center',
+                      flexWrap: 'wrap',
+                      gap: 0.5,
+                    }}
+                    data-testid="conversation-attachments"
+                  >
+                    <AttachmentIcon fontSize="inherit" />
+                    {t('eventPage.mail.conversations.attachmentsLabel')}
+                    {attachments.map((a, index) =>
+                      a.kept ? (
+                        <Link
+                          key={`${a.name}-${index}`}
+                          component="button"
+                          variant="caption"
+                          onClick={() => download(message.mailKey, index)}
+                          data-testid={`conversation-attachment-${message.mailKey}-${index}`}
+                        >
+                          {a.name}
+                        </Link>
+                      ) : (
+                        <span
+                          key={`${a.name}-${index}`}
+                          title={t('eventPage.mail.conversations.notKept')}
+                        >
+                          {a.name} ({t('eventPage.mail.conversations.nameOnly')})
+                        </span>
+                      )
+                    )}
+                  </Typography>
+                )}
+              </Box>
             )}
           </Box>
         );

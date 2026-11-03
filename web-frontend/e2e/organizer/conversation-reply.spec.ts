@@ -88,10 +88,13 @@ describeReply('Organizer · Answer a conversation', { tag: '@sends-real-email' }
       to: string;
       subject: string;
       fromName: string;
+      fromEmail: string;
     }>;
     const answer = captured.find((m) => m.subject === `Re: ${subject}`);
     expect(answer?.to).toBe(SPEAKER);
     expect(answer?.fromName).toMatch(/ via BATbern$/);
+    // Owner 2026-11-03: from info@, not noreply@; the Reply-To token still threads the reply.
+    expect(answer?.fromEmail).toBe('info@batbern.ch');
 
     // The speaker replies to the answer: same conversation, back to Open. The token is in the
     // conversation's Reply-To; the reply names our Message-ID too, so header threading also works.
@@ -114,6 +117,13 @@ describeReply('Organizer · Answer a conversation', { tag: '@sends-real-email' }
     await page.getByTestId('event-tab-communications').click();
     await expect(row).toHaveAttribute('data-status', 'OPEN', { timeout: 15_000 });
     await row.getByTestId(`conversation-open-${key}`).click();
-    await expect(inline.locator('[data-testid^="conversation-message-"]')).toHaveCount(3);
+    // The message boxes only, not their toggle/preview children (newest first since 2026-11-03).
+    const messages = inline.locator(
+      '[data-testid^="conversation-message-"]:not([data-testid*="-toggle-"]):not([data-testid*="-preview-"])'
+    );
+    await expect(messages).toHaveCount(3);
+    // the newest (the reply) is open, the two older ones are one line each
+    await expect(messages.first().locator('iframe')).toHaveCount(1);
+    await expect(messages.nth(2).locator('iframe')).toHaveCount(0);
   });
 });

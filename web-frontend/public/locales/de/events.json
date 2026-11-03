@@ -628,7 +628,8 @@
           "sent": "Antwort gesendet.",
           "error": "Die Antwort wurde nicht gesendet. Bitte nochmals versuchen.",
           "noAddress": "Diese Unterhaltung hat keine Adresse, an die eine Antwort gehen kann."
-        }
+        },
+        "expandAll": "Alle {{count}} Mails anzeigen"
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} Abwesenheitsnotiz",

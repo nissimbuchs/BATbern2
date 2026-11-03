@@ -117,6 +117,8 @@ class ConversationReplyIntegrationTest extends AbstractIntegrationTest {
         ComposedMail sent = mail.getValue();
         assertThat(sent.to()).isEqualTo(SPEAKER_REPLY_TO);
         assertThat(sent.fromName()).isEqualTo("Anna Muster via BATbern");
+        // Owner 2026-11-03: answers come from info@, not noreply@; Reply-To keeps the thread
+        assertThat(sent.fromAddress()).isEqualTo("info@batbern.ch");
         assertThat(sent.replyTo()).isEqualTo("replies+" + TOKEN + "@batbern.ch");
         assertThat(sent.subject()).isEqualTo("Re: Slides");
         assertThat(sent.inReplyTo()).isEqualTo("<in-2@mail.batbern-test.ch>");

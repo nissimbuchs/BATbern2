@@ -614,7 +614,8 @@
           "sent": "Risposta inviata.",
           "error": "La risposta non è stata inviata. Riprova.",
           "noAddress": "Questa conversazione non ha un indirizzo a cui rispondere via e-mail."
-        }
+        },
+        "expandAll": "Mostra tutte le {{count}} mail"
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} risposta di assenza",

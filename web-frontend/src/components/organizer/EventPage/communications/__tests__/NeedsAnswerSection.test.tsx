@@ -126,12 +126,7 @@ function renderSection(openKey: string | null = null, onOpenChange = vi.fn()) {
   const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   const view = render(
     <QueryClientProvider client={queryClient}>
-      <NeedsAnswerSection
-        eventCode="BATbern60"
-        openKey={openKey}
-        onOpenChange={onOpenChange}
-        headerAction={<button>new-mail</button>}
-      />
+      <NeedsAnswerSection eventCode="BATbern60" openKey={openKey} onOpenChange={onOpenChange} />
     </QueryClientProvider>
   );
   return { onOpenChange, rerender: view.rerender, queryClient };
@@ -154,7 +149,6 @@ describe('NeedsAnswerSection', () => {
     );
     expect(screen.queryByTestId('needs-answer-list')).not.toBeInTheDocument();
     expect(screen.queryByTestId('needs-answer-badge')).not.toBeInTheDocument();
-    expect(screen.getByText('new-mail')).toBeInTheDocument();
   });
 
   it('AC9: rows in server order, DONE greyed, the badge counts OPEN only', async () => {

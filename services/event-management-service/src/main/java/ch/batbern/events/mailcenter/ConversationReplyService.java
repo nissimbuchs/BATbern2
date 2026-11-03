@@ -34,7 +34,8 @@ import java.util.regex.Pattern;
 
 /**
  * Story 16.6 AC1–AC3, AC6: an organizer answers a conversation by mail. The answer goes to the
- * counterpart from {@code "{name} via BATbern" <noreply@…>} with Reply-To {@code replies+{token}@…},
+ * counterpart from {@code "{name} via BATbern" <info@…>} (owner 2026-11-03, was noreply@) with Reply-To
+ * {@code replies+{token}@…},
  * so the next reply threads back into the conversation; it is recorded through the 16.1a recorder
  * and linked to the conversation by its send group.
  */
@@ -44,6 +45,8 @@ import java.util.regex.Pattern;
 public class ConversationReplyService {
 
     static final int MAX_TEXT_LENGTH = 20_000;
+    /** Answers come from info@: a reply typed to the sender by hand still reaches the Mail Center. */
+    static final String FROM_LOCAL_PART = "info";
     private static final Pattern REPLY_PREFIX = Pattern.compile("^(re|aw)\\s*:", Pattern.CASE_INSENSITIVE);
     private static final DateTimeFormatter QUOTE_DATE =
             DateTimeFormatter.ofPattern("d.M.yyyy HH:mm", Locale.ROOT).withZone(ZoneId.of("Europe/Zurich"));
@@ -96,7 +99,8 @@ public class ConversationReplyService {
         }
 
         String trimmed = text.strip();
-        ComposedMail mail = new ComposedMail(displayName(organizer), to, subject(conversation.getSubject()),
+        ComposedMail mail = new ComposedMail(displayName(organizer), FROM_LOCAL_PART + "@" + domain, to,
+                subject(conversation.getSubject()),
                 html(trimmed, last), plain(trimmed, last), "replies+" + conversation.getReplyToken() + "@" + domain,
                 messageId, inReplyTo, references);
         MailContext context = MailContext.ownText(MailTrigger.organizer(organizer), conversation.getEventCode(),

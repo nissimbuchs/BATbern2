@@ -45,6 +45,11 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Improvement — Easier to read conversations (2026-11-03)**:
+- ✅ A conversation shows the newest mail first and open. Older mails are one line each and open with a click, or all at once with "Show all".
+- ✅ "+ New mail" moved to the top right of the communication tab, outside "Needs an answer". It writes a new mail and is not related to the open conversations.
+- ✅ Answers from the Mail Center now come from `info@batbern.ch` instead of `noreply@batbern.ch`. Replies still land in the same conversation.
+
 **Improvement — Mail Center switch in the settings (2026-11-03)**:
 - ✅ Administration → Settings now has "Mail Center: notice instead of forwarding". Per group (speaker mail, replies, general mail) you choose whether the mail is still forwarded to the inbox or whether a short notice points to the Mail Center, where it is answered.
 

@@ -61,7 +61,11 @@ class EmailServiceComposedMailTest {
     }
 
     private static ComposedMail mail(String subject) {
-        return new ComposedMail("Anna Muster via BATbern", "speaker@batbern-test.ch", subject,
+        return mail(subject, null);
+    }
+
+    private static ComposedMail mail(String subject, String fromAddress) {
+        return new ComposedMail("Anna Muster via BATbern", fromAddress, "speaker@batbern-test.ch", subject,
                 "<p>Thanks, see you.</p>", "Thanks, see you.", "replies+abcdefghijklmnop@batbern.ch",
                 MESSAGE_ID, "<in-1@mail.batbern-test.ch>", List.of("<root@mail.batbern-test.ch>",
                         "<in-1@mail.batbern-test.ch>"));
@@ -97,6 +101,19 @@ class EmailServiceComposedMailTest {
     }
 
     @Test
+    @DisplayName("From: the given address when set, with the display name")
+    void fromAddress() throws Exception {
+        when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
+                .thenReturn(SendRawEmailResponse.builder().messageId("ses-1").build());
+
+        emailService.sendComposed(context, mail("Re: Slides", "info@batbern.ch"));
+
+        InternetAddress from = (InternetAddress) sentMime().getFrom()[0];
+        assertThat(from.getPersonal()).isEqualTo("Anna Muster via BATbern");
+        assertThat(from.getAddress()).isEqualTo("info@batbern.ch");
+    }
+
+    @Test
     @DisplayName("recorded once with the SES id")
     void recorded() {
         when(sesClient.sendRawEmail(any(SendRawEmailRequest.class)))
@@ -124,7 +141,7 @@ class EmailServiceComposedMailTest {
     @Test
     @DisplayName("ADR-015: a reserved-domain recipient is refused")
     void reserved() {
-        ComposedMail toReserved = new ComposedMail("A via BATbern", "someone@example.com", "Re: x", "<p>x</p>",
+        ComposedMail toReserved = new ComposedMail("A via BATbern", null, "someone@example.com", "Re: x", "<p>x</p>",
                 "x", "replies+abcdefghijklmnop@batbern.ch", MESSAGE_ID, null, List.of());
         assertThatThrownBy(() -> emailService.sendComposed(context, toReserved))
                 .isInstanceOf(ReservedEmailRecipientException.class);
