@@ -131,7 +131,7 @@ describe('Responsive Layout', () => {
         isMobile: true,
         isTablet: false,
         isDesktop: false,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(
@@ -151,7 +151,7 @@ describe('Responsive Layout', () => {
         isMobile: true,
         isTablet: false,
         isDesktop: false,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(
@@ -168,7 +168,7 @@ describe('Responsive Layout', () => {
         isMobile: true,
         isTablet: false,
         isDesktop: false,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(
@@ -188,7 +188,7 @@ describe('Responsive Layout', () => {
         isMobile: true,
         isTablet: false,
         isDesktop: false,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(
@@ -208,7 +208,7 @@ describe('Responsive Layout', () => {
         isMobile: false,
         isTablet: true,
         isDesktop: false,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(
@@ -228,7 +228,7 @@ describe('Responsive Layout', () => {
         isMobile: false,
         isTablet: true,
         isDesktop: false,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(
@@ -249,7 +249,7 @@ describe('Responsive Layout', () => {
         isMobile: false,
         isTablet: true,
         isDesktop: false,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(
@@ -270,7 +270,7 @@ describe('Responsive Layout', () => {
         isMobile: false,
         isTablet: false,
         isDesktop: true,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(
@@ -285,11 +285,12 @@ describe('Responsive Layout', () => {
     });
 
     it('should_displayFullNavigationItems_when_desktopLayout', () => {
+      // #1198: labels need the wide desktop (>= 1440 px)
       vi.mocked(useBreakpoints).mockReturnValue({
         isMobile: false,
         isTablet: false,
         isDesktop: true,
-        isLargeDesktop: false,
+        isWideDesktop: true,
       });
 
       renderWithProviders(
@@ -311,7 +312,7 @@ describe('Responsive Layout', () => {
         isMobile: false,
         isTablet: false,
         isDesktop: true,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       const { container } = renderWithProviders(
@@ -336,7 +337,7 @@ describe('Responsive Layout', () => {
         isMobile: false,
         isTablet: false,
         isDesktop: true,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(
@@ -359,7 +360,7 @@ describe('Responsive Layout', () => {
         isMobile: true,
         isTablet: false,
         isDesktop: false,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       const { unmount } = renderWithProviders(
@@ -376,7 +377,7 @@ describe('Responsive Layout', () => {
         isMobile: false,
         isTablet: false,
         isDesktop: true,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(

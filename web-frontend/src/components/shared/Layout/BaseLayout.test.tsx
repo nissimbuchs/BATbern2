@@ -68,7 +68,7 @@ vi.mock('@/hooks/useBreakpoints', () => ({
     isMobile: false,
     isTablet: false,
     isDesktop: true,
-    isLargeDesktop: false,
+    isWideDesktop: false,
   })),
 }));
 

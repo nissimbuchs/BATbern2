@@ -173,7 +173,7 @@ const AppHeader = React.memo(function AppHeader({
                 />
               )}
               {/* #1198: labels need ~1395 px for an organizer; below 1440 icons with tooltips. */}
-              <NavigationMenu userRoles={navRoles} showText={isWideDesktop} />
+              <NavigationMenu userRoles={navRoles} showText={isWideDesktop === true} />
             </Box>
           )}
 
