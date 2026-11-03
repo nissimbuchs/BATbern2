@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import AppHeader from './AppHeader';
@@ -37,7 +37,7 @@ vi.mock('@/hooks/useBreakpoints', () => ({
     isMobile: false,
     isTablet: false,
     isDesktop: true,
-    isLargeDesktop: false,
+    isWideDesktop: true,
   })),
 }));
 
@@ -314,6 +314,41 @@ describe('AppHeader Component', () => {
   // Language Switcher test removed - language switcher is now in UserMenuDropdown
   // See UserMenuDropdown.test.tsx for language switcher tests
 
+  // #1198: between 1200 and 1440 px the labelled bar did not fit; icons with names instead.
+  describe('Navigation width', () => {
+    test('should_showIconsOnly_when_desktopNarrowerThan1440', async () => {
+      const { useBreakpoints } = await import('@/hooks/useBreakpoints');
+      vi.mocked(useBreakpoints).mockReturnValue({
+        isMobile: false,
+        isTablet: false,
+        isDesktop: true,
+        isWideDesktop: false,
+      });
+
+      renderWithProviders(<AppHeader />);
+
+      const events = screen.getByTestId('nav-organizer-events');
+      expect(events).toHaveAccessibleName('Events');
+      expect(within(events).queryByText('Events')).not.toBeInTheDocument();
+    });
+
+    test('should_showLabels_when_1440OrWider', async () => {
+      const { useBreakpoints } = await import('@/hooks/useBreakpoints');
+      vi.mocked(useBreakpoints).mockReturnValue({
+        isMobile: false,
+        isTablet: false,
+        isDesktop: true,
+        isWideDesktop: true,
+      });
+
+      renderWithProviders(<AppHeader />);
+
+      expect(
+        within(screen.getByTestId('nav-organizer-events')).getByText('Events')
+      ).toBeInTheDocument();
+    });
+  });
+
   describe('Mobile Responsive', () => {
     test('should_renderHamburgerMenu_when_mobile', async () => {
       // Mock useBreakpoints to return mobile
@@ -322,7 +357,7 @@ describe('AppHeader Component', () => {
         isMobile: true,
         isTablet: false,
         isDesktop: false,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(<AppHeader />);
@@ -339,7 +374,7 @@ describe('AppHeader Component', () => {
         isMobile: true,
         isTablet: false,
         isDesktop: false,
-        isLargeDesktop: false,
+        isWideDesktop: false,
       });
 
       renderWithProviders(<AppHeader />);

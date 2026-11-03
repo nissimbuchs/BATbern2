@@ -4,7 +4,7 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NavigationMenu } from './NavigationMenu';
@@ -84,6 +84,36 @@ describe('NavigationMenu Component', () => {
       expect(
         screen.getByTestId('nav-mail-badge').querySelector('.MuiBadge-invisible')
       ).not.toBeNull();
+    });
+  });
+
+  // #1198: below 1440 px the bar shows icons only; each one keeps its name for screen readers and
+  // shows it as a tooltip on hover.
+  describe('icon-only bar (showText=false)', () => {
+    test('should_nameEveryItem_when_textIsHidden', () => {
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} showText={false} />);
+
+      const events = screen.getByTestId('nav-organizer-events');
+      expect(events).toHaveAccessibleName(/events/i);
+      expect(within(events).queryByText(/events/i)).not.toBeInTheDocument();
+      expect(screen.getByTestId('nav-organizer-mail')).toHaveAccessibleName(/mail/i);
+      // a group (Partners) is named too
+      expect(screen.getByTestId('nav-group-organizer-partners')).toHaveAccessibleName(/partners/i);
+    });
+
+    test('should_showTooltip_when_iconHovered', async () => {
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} showText={false} />);
+
+      fireEvent.mouseOver(screen.getByTestId('nav-organizer-events'));
+      expect(await screen.findByRole('tooltip')).toHaveTextContent(/events/i);
+    });
+
+    test('should_notAddTooltip_when_textIsShown', async () => {
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
+
+      fireEvent.mouseOver(screen.getByTestId('nav-organizer-events'));
+      await new Promise((resolve) => setTimeout(resolve, 150));
+      expect(screen.queryByRole('tooltip')).not.toBeInTheDocument();
     });
   });
 

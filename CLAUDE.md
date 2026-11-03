@@ -881,13 +881,19 @@ family, and say which. A bad `docker compose` call means grepping all call sites
 manifests means enumerating every manifest in the repo and diffing against the config. Fixing the
 reported instance while siblings survive is how the same defect gets rediscovered three times.
 
-**Capture every finding before the turn ends.** Anything you notice and do not act on becomes a
-GitHub issue in the same turn — with the evidence, the options, and what you would do. A finding
-mentioned in chat is lost the moment the conversation scrolls.
+**Fix what you find, directly.** (Owner, 2026-11-03.) A bug or an improvement you notice along the
+way is fixed in the same session: test first, its own commit (or its own PR when the current one is
+already open), verified like any other change. Do not stop at filing an issue, and do not ask first.
+Say in the summary what you fixed and why. **Exceptions** — record these as an issue and ask:
+- the fix needs a decision that is the owner's (product behaviour, a design choice with real
+  trade-offs, anything already marked "owner decides" or scheduled by him);
+- it is destructive or irreversible (deleting data, snapshots, users; history rewrites);
+- it changes a production setting or production data (e.g. `mailcenter.notify-instead-of-forward`);
+- it is infrastructure that needs a maintenance window, or it lands on an event day.
 
-> **Recording is not acting.** Doing unrequested work warrants a check-in; *writing down* what you
-> found never does. Do not conflate "don't widen scope" with "don't report what you saw" — an
-> issue is free, reversible, and touches nothing.
+**Capture what you cannot fix.** A finding under one of those exceptions becomes a GitHub issue in
+the same turn — with the evidence, the options, and what you would do. A finding mentioned in chat
+is lost the moment the conversation scrolls.
 
 **Use judgment about what deserves an issue.** A tracker nobody reads is worse than no tracker.
 File what has a real cost or a real decision behind it; leave cosmetics in the commit message

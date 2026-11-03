@@ -23,6 +23,7 @@ import {
   MenuItem,
   Collapse,
   Typography,
+  Tooltip,
 } from '@mui/material';
 import { ExpandLess, ExpandMore, ArrowDropDown } from '@mui/icons-material';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
@@ -113,6 +114,16 @@ export const NavigationMenu = React.memo(function NavigationMenu({
     '&:hover': { backgroundColor: 'action.hover' },
   };
 
+  /** #1198: with icons only, the name is the tooltip and the accessible name. */
+  const named = (label: string, button: React.ReactElement) =>
+    showText ? (
+      button
+    ) : (
+      <Tooltip title={label} placement="bottom">
+        {button}
+      </Tooltip>
+    );
+
   const renderItem = (item: NavigationItem) => {
     const Icon = item.icon;
 
@@ -125,35 +136,39 @@ export const NavigationMenu = React.memo(function NavigationMenu({
       return (
         <React.Fragment key={item.path}>
           <ListItem disablePadding>
-            <ListItemButton
-              selected={groupActive}
-              onClick={(e) => handleGroupClick(e, item.path)}
-              data-testid={`nav-group-${item.path.split('/').filter(Boolean).join('-')}`}
-              aria-haspopup={variant === 'horizontal' ? 'true' : undefined}
-              aria-expanded={isOpen}
-              sx={itemSx}
-            >
-              <ListItemIcon sx={{ minWidth: showText ? 40 : 'auto', color: 'inherit' }}>
-                <Icon />
-              </ListItemIcon>
-              {showText && (
-                <ListItemText
-                  primary={t(item.labelKey)}
-                  primaryTypographyProps={{
-                    variant: 'body2',
-                    sx: { fontWeight: groupActive ? 600 : 400 },
-                  }}
-                />
-              )}
-              {showText &&
-                (variant === 'horizontal' ? (
-                  <ArrowDropDown sx={{ ml: 0.5, fontSize: 20 }} />
-                ) : isOpen ? (
-                  <ExpandLess />
-                ) : (
-                  <ExpandMore />
-                ))}
-            </ListItemButton>
+            {named(
+              t(item.labelKey),
+              <ListItemButton
+                selected={groupActive}
+                aria-label={showText ? undefined : t(item.labelKey)}
+                onClick={(e) => handleGroupClick(e, item.path)}
+                data-testid={`nav-group-${item.path.split('/').filter(Boolean).join('-')}`}
+                aria-haspopup={variant === 'horizontal' ? 'true' : undefined}
+                aria-expanded={isOpen}
+                sx={itemSx}
+              >
+                <ListItemIcon sx={{ minWidth: showText ? 40 : 'auto', color: 'inherit' }}>
+                  <Icon />
+                </ListItemIcon>
+                {showText && (
+                  <ListItemText
+                    primary={t(item.labelKey)}
+                    primaryTypographyProps={{
+                      variant: 'body2',
+                      sx: { fontWeight: groupActive ? 600 : 400 },
+                    }}
+                  />
+                )}
+                {showText &&
+                  (variant === 'horizontal' ? (
+                    <ArrowDropDown sx={{ ml: 0.5, fontSize: 20 }} />
+                  ) : isOpen ? (
+                    <ExpandLess />
+                  ) : (
+                    <ExpandMore />
+                  ))}
+              </ListItemButton>
+            )}
           </ListItem>
 
           {/* Horizontal: popover Menu */}
@@ -226,33 +241,37 @@ export const NavigationMenu = React.memo(function NavigationMenu({
     const active = isPathActive(item.path, location.pathname);
     return (
       <ListItem key={item.path} disablePadding>
-        <ListItemButton
-          component={NavLink}
-          to={item.path}
-          selected={active}
-          onClick={onItemClick}
-          data-testid={`nav-${item.path.split('/').filter(Boolean).join('-')}`}
-          sx={itemSx}
-        >
-          <ListItemIcon sx={{ minWidth: showText ? 40 : 'auto', color: 'inherit' }}>
-            {item.badge === 'mailOpen' ? (
-              <MailOpenBadge>
+        {named(
+          t(item.labelKey),
+          <ListItemButton
+            component={NavLink}
+            to={item.path}
+            selected={active}
+            aria-label={showText ? undefined : t(item.labelKey)}
+            onClick={onItemClick}
+            data-testid={`nav-${item.path.split('/').filter(Boolean).join('-')}`}
+            sx={itemSx}
+          >
+            <ListItemIcon sx={{ minWidth: showText ? 40 : 'auto', color: 'inherit' }}>
+              {item.badge === 'mailOpen' ? (
+                <MailOpenBadge>
+                  <Icon />
+                </MailOpenBadge>
+              ) : (
                 <Icon />
-              </MailOpenBadge>
-            ) : (
-              <Icon />
+              )}
+            </ListItemIcon>
+            {showText && (
+              <ListItemText
+                primary={t(item.labelKey)}
+                primaryTypographyProps={{
+                  variant: 'body2',
+                  sx: { fontWeight: active ? 600 : 400 },
+                }}
+              />
             )}
-          </ListItemIcon>
-          {showText && (
-            <ListItemText
-              primary={t(item.labelKey)}
-              primaryTypographyProps={{
-                variant: 'body2',
-                sx: { fontWeight: active ? 600 : 400 },
-              }}
-            />
-          )}
-        </ListItemButton>
+          </ListItemButton>
+        )}
       </ListItem>
     );
   };

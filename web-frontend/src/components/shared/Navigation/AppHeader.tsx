@@ -35,7 +35,7 @@ const AppHeader = React.memo(function AppHeader({
   notifications: notificationsProp,
 }: AppHeaderProps = {}) {
   const { t } = useTranslation();
-  const { isMobile, isTablet } = useBreakpoints();
+  const { isMobile, isTablet, isWideDesktop } = useBreakpoints();
   const [mobileDrawerOpen, setMobileDrawerOpen] = useState(false);
   const [userMenuOpen, setUserMenuOpen] = useState(false);
   const [userMenuAnchorEl, setUserMenuAnchorEl] = useState<null | HTMLElement>(null);
@@ -172,7 +172,8 @@ const AppHeader = React.memo(function AppHeader({
                   onChange={(role) => setActiveNavRole(role)}
                 />
               )}
-              <NavigationMenu userRoles={navRoles} showText={!isTablet} />
+              {/* #1198: labels need ~1395 px for an organizer; below 1440 icons with tooltips. */}
+              <NavigationMenu userRoles={navRoles} showText={isWideDesktop} />
             </Box>
           )}
 
