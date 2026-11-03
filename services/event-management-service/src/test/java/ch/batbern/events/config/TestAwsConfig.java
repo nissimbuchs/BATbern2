@@ -69,9 +69,11 @@ public class TestAwsConfig {
      * Mock S3Client for testing GenericLogoService
      * Story 2.5.3a: Event Theme Image Upload
      */
+    // #1186: not named s3Client. The test profile allows bean overriding, so a test bean with the
+    // production bean's name was silently replaced by AwsConfig's real client and @Primary never applied.
     @Bean
     @Primary
-    public S3Client s3Client() {
+    public S3Client testS3Client() {
         S3Client mockS3Client = Mockito.mock(S3Client.class);
 
         // Configure mock to return successful response for copyObject
@@ -92,9 +94,10 @@ public class TestAwsConfig {
      * Mock S3Presigner for testing MaterialsUploadService
      * Story 5.9: Session Materials Upload
      */
+    // #1186: see testS3Client, same reason.
     @Bean
     @Primary
-    public S3Presigner s3Presigner() {
+    public S3Presigner testS3Presigner() {
         S3Presigner mockS3Presigner = Mockito.mock(S3Presigner.class);
 
         // Configure mock to return presigned URL
