@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.speakers.api.generated.SpeakerInvitationApi;
 import ch.batbern.events.speakers.dto.generated.BatchInviteRequest;
 import ch.batbern.events.speakers.dto.generated.BatchInviteResponse;
@@ -52,7 +53,7 @@ public class SpeakerInvitationController implements SpeakerInvitationApi {
     public ResponseEntity<InviteSpeakerResponse> inviteSpeaker(
             String eventCode, InviteSpeakerRequest inviteSpeakerRequest) {
         log.info("POST /api/v1/events/{}/speakers/invite - email: {}",
-                eventCode, inviteSpeakerRequest.getEmail());
+                eventCode, LoggingUtils.maskEmail(inviteSpeakerRequest.getEmail()));
 
         InviteSpeakerResponse response = speakerInvitationService.inviteSpeaker(eventCode, inviteSpeakerRequest);
 

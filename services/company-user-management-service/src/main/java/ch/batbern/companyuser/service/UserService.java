@@ -543,8 +543,9 @@ public class UserService {
      * docs/plans/user-identity-collision-fix-plan.md.
      */
     public GetOrCreateUserResponse getOrCreateUser(GetOrCreateUserRequest request) {
-        log.info("Get-or-create user for email: {}, name: {} {}, company: {}",
-                request.getEmail(), request.getFirstName(), request.getLastName(), request.getCompanyId());
+        // #1184: no name next to the masked address, it would undo the masking
+        log.info("Get-or-create user for email: {}, company: {}",
+                LoggingUtils.maskEmail(request.getEmail()), request.getCompanyId());
 
         Optional<User> userByEmail = userRepository.findByEmailIgnoreCase(request.getEmail().trim())
                 .or(() -> additionalEmailRepository.findVerifiedByEmailIgnoreCase(request.getEmail())
@@ -568,8 +569,7 @@ public class UserService {
             if (additionalEmailRepository.existsByEmailIgnoreCase(request.getEmail())) {
                 throw new EmailLinkedToAccountException(request.getEmail());
             }
-            log.info("Creating new user: {} (name: {} {})",
-                    request.getEmail(), request.getFirstName(), request.getLastName());
+            log.info("Creating new user: {}", LoggingUtils.maskEmail(request.getEmail()));
             User newUser = createNewUser(request);
             return new GetOrCreateUserResponse()
                     .username(newUser.getUsername())
@@ -1028,7 +1028,7 @@ public class UserService {
      */
     @Transactional
     public UserResponse createUser(ch.batbern.companyuser.dto.generated.CreateUserRequest request) {
-        log.info("Creating new user: {}", request.getEmail());
+        log.info("Creating new user: {}", LoggingUtils.maskEmail(request.getEmail()));
 
         // Check if user already exists
         if (userRepository.existsByEmailIgnoreCase(request.getEmail().trim())) {

@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterRecipient;
@@ -438,7 +439,7 @@ public class NewsletterEmailService {
                         sentCount++;
                     } catch (Exception e) {
                         log.error("Test mode send failed for {}: {}",
-                                subscriber.getEmail(), e.getMessage());
+                                LoggingUtils.maskEmail(subscriber.getEmail()), e.getMessage());
                         deliveryStatus = "failed";
                         failedCount++;
                     }
@@ -494,7 +495,8 @@ public class NewsletterEmailService {
                                 subscriber.getEmail(), subject, mergedHtml, icsAttachments);
                         sentCount++;
                     } catch (Exception e) {
-                        log.error("Newsletter send failed for {}: {}", subscriber.getEmail(), e.getMessage());
+                        log.error("Newsletter send failed for {}: {}",
+                                LoggingUtils.maskEmail(subscriber.getEmail()), e.getMessage());
                         deliveryStatus = "failed";
                         failedCount++;
                     }
@@ -603,7 +605,8 @@ public class NewsletterEmailService {
                             configurationSetName, null);
                     newlySent++;
                 } catch (Exception e) {
-                    log.error("Newsletter retry (failed) failed for {}: {}", email, e.getMessage());
+                    log.error("Newsletter retry (failed) failed for {}: {}", LoggingUtils.maskEmail(email),
+                            e.getMessage());
                     deliveryStatus = "failed";
                     newlyFailed++;
                 }
@@ -626,7 +629,8 @@ public class NewsletterEmailService {
                             configurationSetName, null);
                     newlySent++;
                 } catch (Exception e) {
-                    log.error("Newsletter retry (uncontacted) failed for {}: {}", email, e.getMessage());
+                    log.error("Newsletter retry (uncontacted) failed for {}: {}", LoggingUtils.maskEmail(email),
+                            e.getMessage());
                     deliveryStatus = "failed";
                     newlyFailed++;
                 }

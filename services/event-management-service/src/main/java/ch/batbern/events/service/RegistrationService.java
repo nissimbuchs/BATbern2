@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
@@ -107,7 +108,7 @@ public class RegistrationService {
         boolean companyUpdated = Boolean.TRUE.equals(userResponse.getCompanyUpdated());
         log.info("Got/created user profile for email: {}, username: {}, created: {}, "
                         + "typedCompany: '{}', companyUpdated: {}",
-                request.getEmail(), username, userResponse.getCreated(),
+                LoggingUtils.maskEmail(request.getEmail()), username, userResponse.getCreated(),
                 request.getCompany(), companyUpdated);
 
         // QA Fix (VALID-001): Check for duplicate registration (same event + attendee)
@@ -202,13 +203,16 @@ public class RegistrationService {
                 String displayName = (request.getFirstName() + " " + request.getLastName()).trim();
                 newsletterSubscriberService.subscribe(
                         request.getEmail(), displayName, "de", "registration", username);
-                log.info("Auto-subscribed {} to newsletter via registration", request.getEmail());
+                log.info("Auto-subscribed {} to newsletter via registration",
+                        LoggingUtils.maskEmail(request.getEmail()));
             } catch (DuplicateSubscriberException e) {
                 // Already subscribed — silently ignore (AC6)
-                log.debug("Newsletter auto-subscribe: {} already active, skipping", request.getEmail());
+                log.debug("Newsletter auto-subscribe: {} already active, skipping",
+                        LoggingUtils.maskEmail(request.getEmail()));
             } catch (ch.batbern.events.exception.ReservedEmailDomainException e) {
                 // Reserved/test domain (RFC 2606) — let registration succeed but skip subscribe
-                log.warn("Newsletter auto-subscribe skipped for reserved domain: {}", request.getEmail());
+                log.warn("Newsletter auto-subscribe skipped for reserved domain: {}",
+                        LoggingUtils.maskEmail(request.getEmail()));
             }
         }
 
@@ -353,7 +357,8 @@ public class RegistrationService {
      */
     @Transactional
     public BatchRegistrationResponse createBatchRegistrations(BatchRegistrationRequest request) {
-        log.debug("Creating batch registrations for participant: {}", request.getParticipantEmail());
+        log.debug("Creating batch registrations for participant: {}",
+                LoggingUtils.maskEmail(request.getParticipantEmail()));
 
         // 1. Get or create user via User Management Service
         GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();

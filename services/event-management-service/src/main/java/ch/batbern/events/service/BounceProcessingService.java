@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
@@ -109,17 +110,18 @@ public class BounceProcessingService {
             } else if ("Transient".equals(bounceType)) {
                 handleSoftBounce(email, sendId);
             } else {
-                log.info("Bounce event for {} with type '{}' — treating as soft bounce", email, bounceType);
+                log.info("Bounce event for {} with type '{}' — treating as soft bounce",
+                        LoggingUtils.maskEmail(email), bounceType);
                 handleSoftBounce(email, sendId);
             }
         }
     }
 
     void handleHardBounce(String email, UUID sendId) {
-        log.info("Hard bounce for {}", email);
+        log.info("Hard bounce for {}", LoggingUtils.maskEmail(email));
         Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmailIgnoreCase(email);
         if (optSub.isEmpty()) {
-            log.warn("Hard bounce for unknown subscriber: {}", email);
+            log.warn("Hard bounce for unknown subscriber: {}", LoggingUtils.maskEmail(email));
             return;
         }
 
@@ -139,10 +141,10 @@ public class BounceProcessingService {
     }
 
     void handleSoftBounce(String email, UUID sendId) {
-        log.info("Soft bounce for {}", email);
+        log.info("Soft bounce for {}", LoggingUtils.maskEmail(email));
         Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmailIgnoreCase(email);
         if (optSub.isEmpty()) {
-            log.warn("Soft bounce for unknown subscriber: {}", email);
+            log.warn("Soft bounce for unknown subscriber: {}", LoggingUtils.maskEmail(email));
             return;
         }
 
@@ -156,7 +158,8 @@ public class BounceProcessingService {
         // Suppress if threshold reached — COALESCE: don't overwrite earlier suppression
         if (sub.getBounceCount() >= softBounceThreshold && sub.getSuppressedAt() == null) {
             sub.setSuppressedAt(now);
-            log.info("Soft bounce threshold ({}) reached for {} — suppressing", softBounceThreshold, email);
+            log.info("Soft bounce threshold ({}) reached for {} — suppressing", softBounceThreshold,
+                    LoggingUtils.maskEmail(email));
         }
         subscriberRepository.save(sub);
 
@@ -179,10 +182,10 @@ public class BounceProcessingService {
     }
 
     void handleComplaintForEmail(String email, UUID sendId) {
-        log.info("Complaint for {}", email);
+        log.info("Complaint for {}", LoggingUtils.maskEmail(email));
         Optional<NewsletterSubscriber> optSub = subscriberRepository.findByEmailIgnoreCase(email);
         if (optSub.isEmpty()) {
-            log.warn("Complaint for unknown subscriber: {}", email);
+            log.warn("Complaint for unknown subscriber: {}", LoggingUtils.maskEmail(email));
             return;
         }
 
@@ -216,7 +219,7 @@ public class BounceProcessingService {
             });
         } catch (Exception e) {
             log.warn("Failed to update recipient bounce record for {} / send {}: {}",
-                    email, sendId, e.getMessage());
+                    LoggingUtils.maskEmail(email), sendId, e.getMessage());
         }
     }
 
