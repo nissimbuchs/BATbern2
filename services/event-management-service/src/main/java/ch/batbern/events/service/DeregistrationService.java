@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.repository.EventRepository;
@@ -14,8 +15,12 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Duration;
 import java.time.Instant;
+import java.util.List;
 import java.util.NoSuchElementException;
+import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Stream;
 
 /**
  * Service for self-service deregistration flows.
@@ -39,6 +44,8 @@ public class DeregistrationService {
     private final RegistrationService registrationService;
     private final DeregistrationEmailService deregistrationEmailService;
     private final EventRepository eventRepository;
+    private final UserApiClient userApiClient; // #1183
+    private final PersonAddresses personAddresses; // #1183
 
     @Value("${app.base-url:https://batbern.ch}")
     private String appBaseUrl;
@@ -118,8 +125,12 @@ public class DeregistrationService {
     @Transactional(readOnly = true)
     public void deregisterByEmail(String email, String eventCode) {
         try {
-            boolean found = registrationRepository.findByAttendeeEmailAndEventCode(email, eventCode)
-                    .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()))
+            Optional<Registration> direct = registrationRepository.findByAttendeeEmailAndEventCode(email, eventCode)
+                    .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()));
+            // #1183: else a registration of the person who owns the address, on another profile or
+            // under another of their verified addresses; the link then goes to the typed address
+            String recipient = direct.map(Registration::getAttendeeEmail).orElse(email);
+            boolean found = direct.or(() -> ownersRegistration(email, eventCode))
                     .map(registration -> {
                         Event event = eventRepository.findById(registration.getEventId())
                                 .orElse(null);
@@ -130,7 +141,8 @@ public class DeregistrationService {
                         }
                         String deregistrationLink = appBaseUrl + "/deregister?token="
                                 + registration.getDeregistrationToken();
-                        deregistrationEmailService.sendDeregistrationLinkEmail(registration, event, deregistrationLink);
+                        deregistrationEmailService.sendDeregistrationLinkEmail(registration, event, deregistrationLink,
+                                recipient);
                         log.info("Deregistration by email: registration={}, event={}, email sent",
                                 registration.getRegistrationCode(), event.getEventCode());
                         return true;
@@ -144,6 +156,22 @@ public class DeregistrationService {
             log.error("Unexpected error during deregisterByEmail for {}/{}: {}",
                     LoggingUtils.maskEmail(email), eventCode, e.getMessage(), e);
         }
+    }
+
+    /** #1183: the best active registration for the event of whoever owns {@code email}. */
+    private Optional<Registration> ownersRegistration(String email, String eventCode) {
+        return userApiClient.getEmailOwners(email).stream()
+                .flatMap(owner -> {
+                    Set<String> addresses = personAddresses.verified(owner);
+                    List<Registration> byAddress = addresses.isEmpty() ? List.of()
+                            : registrationRepository.findByEventCodeAndAttendeeEmailIn(eventCode, addresses);
+                    return Stream.concat(
+                            registrationRepository.findByEventCodeAndAttendeeUsername(eventCode, owner).stream(),
+                            byAddress.stream())
+                            .filter(r -> !"cancelled".equalsIgnoreCase(r.getStatus()))
+                            .sorted(PersonAddresses.best(owner));
+                })
+                .findFirst();
     }
 
     /**

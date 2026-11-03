@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.repository.EventRepository;
@@ -18,12 +19,15 @@ import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
 import java.util.NoSuchElementException;
+import java.util.List;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -55,6 +59,12 @@ class DeregistrationServiceTest {
 
     @Mock
     private EventRepository eventRepository;
+
+    @Mock
+    private UserApiClient userApiClient;
+
+    @Mock
+    private PersonAddresses personAddresses;
 
     @InjectMocks
     private DeregistrationService deregistrationService;
@@ -182,7 +192,9 @@ class DeregistrationServiceTest {
 
             deregistrationService.deregisterByEmail("alice@example.com", EVENT_CODE);
 
-            verify(deregistrationEmailService).sendDeregistrationLinkEmail(any(), any(), any());
+            // the registration's own address, as before #1183
+            verify(deregistrationEmailService).sendDeregistrationLinkEmail(eq(reg), eq(event), any(),
+                    eq(reg.getAttendeeEmail()));
         }
 
         @Test
@@ -194,7 +206,7 @@ class DeregistrationServiceTest {
             // Must NOT throw — anti-enumeration
             deregistrationService.deregisterByEmail("ghost@example.com", EVENT_CODE);
 
-            verify(deregistrationEmailService, never()).sendDeregistrationLinkEmail(any(), any(), any());
+            verify(deregistrationEmailService, never()).sendDeregistrationLinkEmail(any(), any(), any(), any());
         }
 
         @Test
@@ -218,7 +230,61 @@ class DeregistrationServiceTest {
 
             deregistrationService.deregisterByEmail("alice@example.com", EVENT_CODE);
 
+            verify(deregistrationEmailService, never()).sendDeregistrationLinkEmail(any(), any(), any(), any());
+        }
+
+        // ── #1183: the address belongs to a profile whose registration is under another address ──
+
+        @Test
+        @DisplayName("#1183: no registration under the typed address → the owner's registration, link to the typed address")
+        void deregisterByEmail_ownersRegistration_linkToTypedAddress() {
+            Registration reg = buildActiveRegistration(TOKEN, EVENT_ID, "registered");
+            Event event = buildEvent(EVENT_ID, EVENT_CODE, EVENT_TITLE);
+            when(registrationRepository.findByAttendeeEmailAndEventCode("work@example.com", EVENT_CODE))
+                    .thenReturn(Optional.empty());
+            when(userApiClient.getEmailOwners("work@example.com")).thenReturn(List.of("hans.login"));
+            when(registrationRepository.findByEventCodeAndAttendeeUsername(EVENT_CODE, "hans.login"))
+                    .thenReturn(Optional.of(reg));
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+
+            deregistrationService.deregisterByEmail("work@example.com", EVENT_CODE);
+
+            verify(deregistrationEmailService).sendDeregistrationLinkEmail(eq(reg), eq(event),
+                    eq("https://batbern.ch/deregister?token=" + TOKEN), eq("work@example.com"));
+        }
+
+        @Test
+        @DisplayName("#1183: the owner's registration as a guest under another verified address is found too")
+        void deregisterByEmail_ownersVerifiedAddress_found() {
+            Registration reg = buildActiveRegistration(TOKEN, EVENT_ID, "confirmed");
+            Event event = buildEvent(EVENT_ID, EVENT_CODE, EVENT_TITLE);
+            when(registrationRepository.findByAttendeeEmailAndEventCode("work@example.com", EVENT_CODE))
+                    .thenReturn(Optional.empty());
+            when(userApiClient.getEmailOwners("work@example.com")).thenReturn(List.of("hans.login"));
+            when(registrationRepository.findByEventCodeAndAttendeeUsername(EVENT_CODE, "hans.login"))
+                    .thenReturn(Optional.empty());
+            when(personAddresses.verified("hans.login")).thenReturn(Set.of("hans@private.example"));
+            when(registrationRepository.findByEventCodeAndAttendeeEmailIn(EVENT_CODE, Set.of("hans@private.example")))
+                    .thenReturn(List.of(reg));
+            when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(event));
+
+            deregistrationService.deregisterByEmail("work@example.com", EVENT_CODE);
+
+            verify(deregistrationEmailService).sendDeregistrationLinkEmail(eq(reg), eq(event), any(),
+                    eq("work@example.com"));
+        }
+
+        @Test
+        @DisplayName("#1183: nobody owns the address → nothing sent, no error")
+        void deregisterByEmail_noOwner_nothingSent() {
+            when(registrationRepository.findByAttendeeEmailAndEventCode("ghost@example.com", EVENT_CODE))
+                    .thenReturn(Optional.empty());
+            when(userApiClient.getEmailOwners("ghost@example.com")).thenReturn(List.of());
+
+            deregistrationService.deregisterByEmail("ghost@example.com", EVENT_CODE);
+
             verify(deregistrationEmailService, never()).sendDeregistrationLinkEmail(any(), any(), any());
+            verify(deregistrationEmailService, never()).sendDeregistrationLinkEmail(any(), any(), any(), any());
         }
     }
 

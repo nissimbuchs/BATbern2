@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.controller;
 
+import java.util.List;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserResponse;
 import ch.batbern.companyuser.dto.generated.PaginatedUserResponse;
@@ -48,6 +49,16 @@ public class InternalUserController {
                 ? userService.getUserByUsername(username, include)
                 : userService.getUserByUsername(username);
         return ResponseEntity.ok(response);
+    }
+
+    /**
+     * #1183: the usernames owning an address (primary, or verified additional); {@code []} if none.
+     * EMS uses it for the by-email deregistration across a person's profiles. Internal only: it
+     * reveals whether an address is known, so it must never be routed publicly.
+     */
+    @GetMapping("/internal/email-owners")
+    public ResponseEntity<List<String>> emailOwners(@RequestParam String email) {
+        return ResponseEntity.ok(userService.ownersOfEmail(email));
     }
 
     /** Users filtered by {@code role} and/or {@code company}, 1-based paging. */

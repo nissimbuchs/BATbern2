@@ -32,9 +32,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.List;
 import java.net.URI;
 
 /**
@@ -839,6 +841,25 @@ public class UserApiClientImpl implements UserApiClient {
      * {@code @Cacheable} unwraps Optional results before evaluating the {@code unless}
      * SpEL — an empty Optional would cause {@code #result.isEmpty()} to NPE.
      */
+    @Override
+    public List<String> getEmailOwners(String email) {
+        if (email == null || email.isBlank()) {
+            return List.of();
+        }
+        String url = UriComponentsBuilder.fromUriString(userServiceBaseUrl + "/internal/email-owners")
+                .queryParam("email", email.trim()).encode().toUriString();
+        try {
+            ResponseEntity<String[]> response = restTemplate.exchange(
+                    url, HttpMethod.GET, new HttpEntity<>(new HttpHeaders()), String[].class);
+            String[] owners = response.getBody();
+            return owners == null ? List.of() : List.of(owners);
+        } catch (RestClientException e) {
+            // Best effort: the caller falls back to the address match alone, as before #1183.
+            log.warn("Email owner lookup failed: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
     @Override
     @Cacheable(value = "userApiCache",
             key = "'company:' + #companySlug",

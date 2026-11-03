@@ -1,5 +1,7 @@
 package ch.batbern.companyuser.service;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
@@ -519,6 +521,25 @@ public class UserService {
         eventPublisher.publish(event);
 
         log.info("User deleted successfully: {}", username);
+    }
+
+    /**
+     * #1183: the username that owns {@code email}: the profile whose primary address it is, or the
+     * profile that holds it as a VERIFIED additional address. An unverified additional address is a
+     * claim and owns nothing. A DB trigger keeps an address from being both, so the list has at most one
+     * entry; it is a list so the contract survives a future merge of profiles. Empty when nobody owns it.
+     */
+    @Transactional(readOnly = true)
+    public List<String> ownersOfEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return List.of();
+        }
+        String address = email.trim();
+        LinkedHashSet<String> owners = new LinkedHashSet<>();
+        userRepository.findByEmailIgnoreCase(address).ifPresent(user -> owners.add(user.getUsername()));
+        additionalEmailRepository.findVerifiedByEmailIgnoreCase(address)
+                .ifPresent(extra -> owners.add(extra.getUser().getUsername()));
+        return List.copyOf(owners);
     }
 
     /**

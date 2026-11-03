@@ -1,5 +1,8 @@
 package ch.batbern.companyuser.controller;
 
+import java.time.Instant;
+import ch.batbern.companyuser.domain.UserAdditionalEmail;
+import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
@@ -126,5 +129,47 @@ class InternalUserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.pagination.page").value(2))
                 .andExpect(jsonPath("$.pagination.limit").value(3))
                 .andExpect(jsonPath("$.pagination.totalItems").value(4));
+    }
+
+    // #1183: who owns an address. The by-email deregistration finds a person's registrations on all
+    // their profiles. Primary address or VERIFIED additional address only; an unverified one is a claim.
+    @Autowired
+    private UserAdditionalEmailRepository additionalEmailRepository;
+
+    private void additional(String username, String email, boolean verified) {
+        User owner = userRepository.findByUsername(username).orElseThrow();
+        additionalEmailRepository.save(UserAdditionalEmail.builder()
+                .user(owner).email(email).createdAt(Instant.now())
+                .verifiedAt(verified ? Instant.now() : null).build());
+    }
+
+    @Test
+    @DisplayName("#1183: the owner of a primary address, and of a verified additional address")
+    void should_returnOwner_when_addressIsPrimaryOrVerifiedAdditional() throws Exception {
+        // A DB trigger keeps an address from being both a primary and an additional one, so an
+        // address has at most one owner.
+        additional("anna.organizer", "Anna.Work@example.com", true);
+
+        mockMvc.perform(get("/internal/email-owners").param("email", "paul@EXAMPLE.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0]").value("paul.partner"));
+        mockMvc.perform(get("/internal/email-owners").param("email", "anna.work@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(1))
+                .andExpect(jsonPath("$[0]").value("anna.organizer"));
+    }
+
+    @Test
+    @DisplayName("#1183: an unverified additional address owns nothing; an unknown address gives []")
+    void should_ignoreUnverified_and_returnEmpty_when_unknown() throws Exception {
+        additional("anna.organizer", "claim@example.com", false);
+
+        mockMvc.perform(get("/internal/email-owners").param("email", "claim@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
+        mockMvc.perform(get("/internal/email-owners").param("email", "nobody@example.com"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.length()").value(0));
     }
 }
