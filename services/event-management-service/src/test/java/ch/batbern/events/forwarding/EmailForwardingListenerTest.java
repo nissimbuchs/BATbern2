@@ -109,4 +109,13 @@ class EmailForwardingListenerTest {
         assertThatThrownBy(() -> listener.handleS3Notification(event(BUCKET, "forwarding/x")))
                 .isInstanceOf(IllegalStateException.class);
     }
+
+    @Test
+    @DisplayName("should_ignore_when_sesSetupNotification (#1195)")
+    void should_ignore_when_sesSetupNotification() throws Exception {
+        // SES writes this test object on every receipt-rule create or update; it is no mail.
+        listener.handleS3Notification(event(BUCKET, "forwarding/AMAZON_SES_SETUP_NOTIFICATION"));
+
+        verifyNoInteractions(s3Client, forwardingService, mailCenter);
+    }
 }

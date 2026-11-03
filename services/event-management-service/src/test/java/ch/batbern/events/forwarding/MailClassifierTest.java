@@ -127,4 +127,15 @@ class MailClassifierTest {
         assertThat(MailClassifier.sesVerdict("From: a@example.org\r\n\r\nX-SES-Spam-Verdict: FAIL\r\n"))
                 .isEqualTo(MailClassifier.SesVerdict.CLEAN);
     }
+
+    @Test
+    @DisplayName("should_detectSesSetupNotification_onlyForTheExactObjectName (#1195)")
+    void should_detectSesSetupNotification_onlyForTheExactObjectName() {
+        assertThat(MailClassifier.isSesSetupNotification("emails/AMAZON_SES_SETUP_NOTIFICATION")).isTrue();
+        assertThat(MailClassifier.isSesSetupNotification("forwarding/AMAZON_SES_SETUP_NOTIFICATION")).isTrue();
+        assertThat(MailClassifier.isSesSetupNotification("AMAZON_SES_SETUP_NOTIFICATION")).isTrue();
+        assertThat(MailClassifier.isSesSetupNotification("emails/AMAZON_SES_SETUP_NOTIFICATION-x")).isFalse();
+        assertThat(MailClassifier.isSesSetupNotification("emails/0abc123")).isFalse();
+        assertThat(MailClassifier.isSesSetupNotification(null)).isFalse();
+    }
 }

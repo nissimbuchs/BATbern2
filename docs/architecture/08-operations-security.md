@@ -68,7 +68,8 @@ sends for an event, so they fall under the same rules as registration data:
   neither forwarded nor stored (counted, the log names only the S3 key; the raw object expires with the
   bucket's 7-day rule). Spam `FAIL` is not forwarded any more (owner decision 2026-11-01): organizers see
   it in the Mail page's Spam list, kept 30 days. `PASS`, `GRAY`, `PROCESSING_FAILED` and a missing
-  header are treated as clean.
+  header are treated as clean. The test object SES writes on every receipt-rule change
+  (`AMAZON_SES_SETUP_NOTIFICATION`) is skipped by both listeners (#1195).
 - **Automatic mail is counted, not kept (Story 16.2a):** out-of-office replies, bounce mails,
   calendar replies, keyword replies that acted and loops are one row each in `mail_automatic_event`
   with kind, event and time, no address, no subject, no body. Same retention.
