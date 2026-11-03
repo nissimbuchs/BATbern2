@@ -36,20 +36,16 @@
         <appender-ref ref="CONSOLE" />
     </root>
 
-    <!-- Service-specific logging -->
-    <logger name="ch.batbern.companyuser" level="DEBUG" additivity="false">
-        <appender-ref ref="CONSOLE" />
-    </logger>
+    <!-- No ch.batbern.companyuser logger here: application.yml sets ch.batbern (LOG_LEVEL, INFO by
+         default), and a more specific logger in this file kept DEBUG in production, so every
+         DEBUG line, search queries with addresses included, reached CloudWatch (#1184, 2026-11-03). -->
 
     <!-- Spring framework logging -->
     <logger name="org.springframework" level="INFO" additivity="false">
         <appender-ref ref="CONSOLE" />
     </logger>
 
-    <!-- Hibernate SQL logging (for debugging) -->
-    <logger name="org.hibernate.SQL" level="DEBUG" additivity="false">
-        <appender-ref ref="CONSOLE" />
-    </logger>
+    <!-- Hibernate SQL: level in application.yml (INFO; DEBUG only in the local profile). -->
 
     <!-- AWS SDK logging -->
     <logger name="software.amazon.awssdk" level="WARN" additivity="false">

@@ -304,6 +304,19 @@ class LoggingUtilsTest {
         }
 
         @Test
+        @DisplayName("should mask every address inside free text: URL paths, query strings, exception messages")
+        void should_maskEmailsIn_freeText() {
+            assertThat(LoggingUtils.maskEmailsIn("DELETE /api/v1/users/me/additional-emails/john.doe@example.com"))
+                    .isEqualTo("DELETE /api/v1/users/me/additional-emails/j***@example.com");
+            assertThat(LoggingUtils.maskEmailsIn("/api/v1/users/search?query=anna.b%40example.ch&limit=5"))
+                    .isEqualTo("/api/v1/users/search?query=a***%40example.ch&limit=5");
+            assertThat(LoggingUtils.maskEmailsIn("Email 'x+tag@sub.example.org' is already registered, also b@example.net"))
+                    .isEqualTo("Email 'x***@sub.example.org' is already registered, also b***@example.net");
+            assertThat(LoggingUtils.maskEmailsIn("/api/v1/events/BATbern60/sessions")).isEqualTo("/api/v1/events/BATbern60/sessions");
+            assertThat(LoggingUtils.maskEmailsIn(null)).isNull();
+        }
+
+        @Test
         void should_maskEmail_when_validEmailProvided() {
             assertThat(LoggingUtils.maskEmail("john.doe@example.com")).isEqualTo("j***@example.com");
             assertThat(LoggingUtils.maskEmail("speaker@batbern.ch")).isEqualTo("s***@batbern.ch");

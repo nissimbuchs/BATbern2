@@ -2,6 +2,7 @@ package ch.batbern.gateway.routing;
 
 import ch.batbern.gateway.routing.exception.RouteNotFoundException;
 import ch.batbern.gateway.routing.exception.RoutingException;
+import ch.batbern.gateway.util.LogSanitizer;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
@@ -58,7 +59,7 @@ public class DomainRouter {
         // Remove query parameters for routing decisions
         String cleanPath = requestPath.split("\\?")[0];
 
-        log.debug("Determining target service for path: {}", cleanPath);
+        log.debug("Determining target service for path: {}", LogSanitizer.sanitize(cleanPath));
 
         // Route based on path patterns - /api/v1/{domain}
         // Note: Check specific patterns BEFORE general prefix matches
@@ -203,10 +204,12 @@ public class DomainRouter {
                 ? rawUri.substring(0, rawUri.length() - 1)
                 : rawUri;
         if (!requestUri.equals(rawUri)) {
-            log.debug("Normalized trailing slash: {} -> {}", rawUri, requestUri);
+            log.debug("Normalized trailing slash: {} -> {}", LogSanitizer.sanitize(rawUri),
+                    LogSanitizer.sanitize(requestUri));
         }
 
-        log.info("Routing {} request to service: {} for path: {}", method, targetService, requestUri);
+        log.info("Routing {} request to service: {} for path: {}", method, targetService,
+                LogSanitizer.sanitize(requestUri));
 
         // Read request body BEFORE async execution (input stream can only be read once)
         String requestBody = null;
@@ -271,7 +274,7 @@ public class DomainRouter {
 
                 // Forward request to target service using URI (not String) to avoid template expansion
                 log.debug("Forwarding {} request to: {} (body: {} bytes)",
-                    method, targetUri, finalRequestBody != null ? finalRequestBody.length() : 0);
+                    method, LogSanitizer.sanitize(targetUri), finalRequestBody != null ? finalRequestBody.length() : 0);
                 ResponseEntity<byte[]> response = restTemplate.exchange(
                     targetUri,
                     HttpMethod.valueOf(method),
@@ -293,7 +296,7 @@ public class DomainRouter {
             } catch (HttpStatusCodeException e) {
                 // Forward error responses from downstream services
                 log.warn("Downstream service {} returned error: {} - {}",
-                    targetService, e.getStatusCode(), e.getResponseBodyAsString());
+                    targetService, e.getStatusCode(), LogSanitizer.sanitize(e.getResponseBodyAsString()));
 
                 // Remove security headers from error responses too
                 HttpHeaders cleanedHeaders = removeSecurityHeaders(e.getResponseHeaders());

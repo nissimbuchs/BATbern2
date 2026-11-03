@@ -1,10 +1,13 @@
 package ch.batbern.gateway.util;
 
+import ch.batbern.shared.utils.LoggingUtils;
+
 /**
  * Utility class to sanitize user input before logging
  *
  * Prevents log injection attacks by removing/encoding newlines and carriage returns
- * that could be used to inject fake log entries.
+ * that could be used to inject fake log entries, and masks e-mail addresses ({@code a***@example.ch}):
+ * request paths and downstream error bodies can carry them (#1184).
  */
 public final class LogSanitizer {
 
@@ -23,11 +26,11 @@ public final class LogSanitizer {
             return "null";
         }
 
-        // Replace newlines, carriage returns, and tabs with spaces
-        return input
+        // Replace newlines, carriage returns, and tabs with spaces; mask addresses
+        return LoggingUtils.maskEmailsIn(input
                 .replace('\n', ' ')
                 .replace('\r', ' ')
-                .replace('\t', ' ');
+                .replace('\t', ' '));
     }
 
     /**

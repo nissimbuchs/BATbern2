@@ -185,9 +185,11 @@ logging:
     # implicit coupling that hid #990. Opt IN to DEBUG, never out of it.
     ch.batbern: ${LOG_LEVEL:INFO}
     org.springframework.web: INFO
-    org.springframework.security: DEBUG
-    org.hibernate.SQL: DEBUG
-    org.hibernate.type.descriptor.sql.BasicBinder: TRACE
+    # INFO in every deployed profile: Spring Security DEBUG logged each request URL, addresses
+    # included (e.g. /users/me/additional-emails/{address}), and production runs the base +
+    # staging documents (seen 2026-11-03, #1184). Local dev opts in below.
+    org.springframework.security: INFO
+    org.hibernate.SQL: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -298,3 +300,5 @@ logging:
   level:
     root: INFO
     ch.batbern: DEBUG
+    org.springframework.security: DEBUG
+    org.hibernate.SQL: DEBUG

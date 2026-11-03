@@ -85,6 +85,24 @@ CUMS, PCS and the shared kernel (helper `LogAddressGuard` in the shared-kernel t
 deliberate exception (local-dev capture only) carries the comment `log-address-ok` with the reason.
 Lines written before 2026-11-03 stay in the log groups until their retention runs out.
 
+Second pass, after the first production hour (2026-11-03): addresses also reached CloudWatch through
+text, not arguments. Fixed:
+- **Framework DEBUG in production.** CUMS and PCS set `org.springframework.security: DEBUG` (CUMS
+  also Hibernate SQL) in the base `application.yml`, and production runs base + `staging`, so every
+  request URL was logged. CUMS's `logback-spring.xml` kept `ch.batbern.companyuser` at DEBUG,
+  which `logging.level.ch.batbern` does not override. Now INFO; DEBUG only in the `local` profile.
+  `LogAddressGuardTest` also fails on a DEBUG/TRACE framework logger in the base or `staging`
+  document, or any DEBUG/TRACE `<logger>` in `logback-spring.xml`.
+- **Paths and error bodies.** `LoggingUtils.maskEmailsIn(text)` masks every address in free text
+  (also `%40`-encoded). The gateway's `LogSanitizer.sanitize` applies it, and `DomainRouter` logs
+  paths and downstream error bodies through it; CUMS's `GlobalExceptionHandler` masks exception
+  messages.
+- **Guard gaps.** The scan now also covers `LOG.`, `logger.`, `LOGGER.` and camel-case names
+  (`normalizedEmail`).
+
+Not covered yet: an exception message elsewhere that contains an address, and stack traces. The
+class fix is masking in the log encoder for all services (#1202, planned for the week after BATbern60).
+
 ### AI / LLM Security (OWASP-LLM, Story 15.9)
 - The AI surface lives in `event-management-service` (event description, theme image, abstract
   analysis, trending topics, organizer-editable prompts), is ORGANIZER-gated, AI-feature-flagged
