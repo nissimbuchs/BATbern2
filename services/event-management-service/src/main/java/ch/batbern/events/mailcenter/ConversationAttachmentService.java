@@ -1,16 +1,13 @@
 package ch.batbern.events.mailcenter;
 
+import ch.batbern.shared.utils.S3Links;
 import ch.batbern.events.domain.MailMessage;
 import ch.batbern.events.mailcenter.inbound.InboundAttachmentStore;
 import ch.batbern.shared.exception.NotFoundException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
-import software.amazon.awssdk.services.s3.model.GetObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest;
 
-import java.net.URLEncoder;
-import java.nio.charset.StandardCharsets;
 import java.time.Duration;
 import java.util.List;
 
@@ -47,14 +44,7 @@ public class ConversationAttachmentService {
             throw new NotFoundException("Attachment", mailKey + "/" + index);
         }
         MailMessage.Attachment attachment = attachments.get(index);
-        String filename = URLEncoder.encode(attachment.name(), StandardCharsets.UTF_8).replace("+", "%20");
-        return presigner.presignGetObject(GetObjectPresignRequest.builder()
-                .signatureDuration(LINK_VALIDITY)
-                .getObjectRequest(GetObjectRequest.builder()
-                        .bucket(store.bucket())
-                        .key(attachment.storageKey())
-                        .responseContentDisposition("attachment; filename*=UTF-8''" + filename)
-                        .build())
-                .build()).url().toString();
+        return S3Links.downloadUrl(presigner, store.bucket(), attachment.storageKey(), LINK_VALIDITY,
+                attachment.name());
     }
 }

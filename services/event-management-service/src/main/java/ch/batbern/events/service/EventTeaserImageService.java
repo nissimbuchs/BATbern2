@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.utils.S3Links;
 import ch.batbern.events.domain.EventTeaserImage;
 import ch.batbern.events.core.dto.generated.TeaserImageItem;
 import ch.batbern.events.core.dto.generated.TeaserImagePresentationPosition;
@@ -17,9 +18,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.net.URI;
 import java.time.Duration;
@@ -84,18 +83,8 @@ public class EventTeaserImageService {
                 ? String.format("events/%s/teaser/%s.%s", eventCode, UUID.randomUUID(), ext)
                 : String.format("global/teaser/%s.%s", UUID.randomUUID(), ext);
 
-        PutObjectRequest putRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(s3Key)
-                .contentType(contentType)
-                .build();
-
-        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofSeconds(PRESIGNED_URL_EXPIRY_SECONDS))
-                .putObjectRequest(putRequest)
-                .build();
-
-        String uploadUrl = s3Presigner.presignPutObject(presignRequest).url().toString();
+        String uploadUrl = S3Links.uploadUrl(s3Presigner, bucketName, s3Key, contentType, null,
+                Duration.ofSeconds(PRESIGNED_URL_EXPIRY_SECONDS));
 
         return new TeaserImageUploadUrlResponse(
                 URI.create(uploadUrl),

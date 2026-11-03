@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.utils.S3Links;
 import ch.batbern.events.domain.SessionMaterialType;
 import ch.batbern.events.media.dto.generated.PresignedMaterialUploadUrl;
 import ch.batbern.events.exception.FileSizeExceededException;
@@ -11,10 +12,7 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.time.Duration;
 import java.util.Map;
@@ -143,19 +141,8 @@ public class MaterialsUploadService {
         String s3Key = String.format("materials/temp/%s/file-%s.%s", uploadId, uploadId, fileExtension);
 
         // Generate presigned PUT URL (15-minute expiration)
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(s3Key)
-                .contentType(mimeType)
-                .build();
-
-        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(PRESIGNED_URL_EXPIRATION_MINUTES))
-                .putObjectRequest(putObjectRequest)
-                .build();
-
-        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
-        String presignedUrl = presignedRequest.url().toString();
+        String presignedUrl = S3Links.uploadUrl(s3Presigner, bucketName, s3Key, mimeType, null,
+                Duration.ofMinutes(PRESIGNED_URL_EXPIRATION_MINUTES));
 
         log.info("Generated presigned URL for upload ID: {}, S3 key: {}", uploadId, s3Key);
 

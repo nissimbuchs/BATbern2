@@ -1580,7 +1580,7 @@ paths:
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/MaterialDownloadUrlResponse'
+                $ref: ./_shared.openapi.yml#/components/schemas/DownloadUrlResponse
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -2287,16 +2287,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SessionMaterialResponse'
-    MaterialDownloadUrlResponse:
-      type: object
-      description: 'Story 5.9: time-limited presigned download URL for a single session material.'
-      required:
-      - downloadUrl
-      properties:
-        downloadUrl:
-          type: string
-          description: Presigned URL to download the material
-          example: https://s3.eu-central-1.amazonaws.com/batbern-materials/...&X-Amz-Signature=...
     UploadMaterialFromUrlRequest:
       type: object
       description: 'Batch-import helper: fetch a material from a source URL and associate it with

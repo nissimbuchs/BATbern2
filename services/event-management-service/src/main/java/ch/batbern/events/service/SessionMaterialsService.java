@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.utils.S3Links;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.event.SessionMaterialsUploadedEvent;
@@ -21,6 +22,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 
+import java.time.Duration;
 import java.time.Year;
 import java.time.ZoneOffset;
 import java.util.ArrayList;
@@ -185,23 +187,9 @@ public class SessionMaterialsService {
 
         // Generate presigned URL valid for 1 hour using injected presigner
         try {
-            software.amazon.awssdk.services.s3.model.GetObjectRequest getObjectRequest =
-                    software.amazon.awssdk.services.s3.model.GetObjectRequest.builder()
-                            .bucket(bucketName)
-                            .key(material.getS3Key())
-                            .build();
-
-            software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest presignRequest =
-                    software.amazon.awssdk.services.s3.presigner.model.GetObjectPresignRequest.builder()
-                            .signatureDuration(java.time.Duration.ofHours(1))
-                            .getObjectRequest(getObjectRequest)
-                            .build();
-
-            software.amazon.awssdk.services.s3.presigner.model.PresignedGetObjectRequest presignedRequest =
-                    s3Presigner.presignGetObject(presignRequest);
-
-            String url = presignedRequest.url().toString();
-            log.info("Generated download URL for material {}: {}", materialId, url);
+            String url = S3Links.downloadUrl(s3Presigner, bucketName, material.getS3Key(), Duration.ofHours(1));
+            // #1187: never log the link itself, it is a bearer credential for an hour
+            log.info("Generated download URL for material {} (key {})", materialId, material.getS3Key());
             return url;
         } catch (Exception e) {
             log.error("Failed to generate download URL for material {}", materialId, e);

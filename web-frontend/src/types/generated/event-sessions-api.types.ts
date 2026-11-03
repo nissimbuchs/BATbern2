@@ -1131,14 +1131,6 @@ export interface components {
     SessionMaterialsResponse: {
       materials: components['schemas']['SessionMaterialResponse'][];
     };
-    /** @description Story 5.9: time-limited presigned download URL for a single session material. */
-    MaterialDownloadUrlResponse: {
-      /**
-       * @description Presigned URL to download the material
-       * @example https://s3.eu-central-1.amazonaws.com/batbern-materials/...&X-Amz-Signature=...
-       */
-      downloadUrl: string;
-    };
     /** @description Batch-import helper: fetch a material from a source URL and associate it with a session (organizer-only). Used by historical-data import. */
     UploadMaterialFromUrlRequest: {
       /**
@@ -1589,6 +1581,17 @@ export interface components {
       };
       /** @description Present only in dev/staging diagnostics — never in production. */
       stackTrace?: string;
+    };
+    /**
+     * @description A time-limited presigned link to download one private file: session materials (Story 5.9) and
+     *     inbound mail attachments (Story 16.6). Built by `S3Links.downloadUrl` (#1187).
+     */
+    DownloadUrlResponse: {
+      /**
+       * @description Presigned URL; downloads the file under its original name
+       * @example https://batbern-inbound-emails-staging.s3.eu-central-1.amazonaws.com/...&X-Amz-Signature=...
+       */
+      downloadUrl: string;
     };
   };
   responses: {
@@ -2780,7 +2783,7 @@ export interface operations {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['MaterialDownloadUrlResponse'];
+          'application/json': components['schemas']['DownloadUrlResponse'];
         };
       };
       404: components['responses']['NotFound'];

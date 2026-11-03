@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.utils.S3Links;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionMaterial;
 import ch.batbern.events.domain.SpeakerPool;
@@ -19,10 +20,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.time.Duration;
 import java.time.Year;
@@ -122,19 +120,8 @@ public class SpeakerPortalMaterialsService {
         String s3Key = String.format("materials/temp/%s/file-%s.%s", uploadId, uploadId, fileExtension);
 
         // Generate presigned PUT URL
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(s3Key)
-                .contentType(request.getMimeType())
-                .build();
-
-        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(PRESIGNED_URL_EXPIRATION_MINUTES))
-                .putObjectRequest(putObjectRequest)
-                .build();
-
-        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
-        String presignedUrl = presignedRequest.url().toString();
+        String presignedUrl = S3Links.uploadUrl(s3Presigner, bucketName, s3Key, request.getMimeType(), null,
+                Duration.ofMinutes(PRESIGNED_URL_EXPIRATION_MINUTES));
 
         log.info("Generated presigned URL for speaker {}, uploadId: {}",
                 speaker.getSpeakerName(), uploadId);

@@ -58,6 +58,7 @@ dependencies {
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:ses' // Email service (Story 2.2a Task B12)
     implementation 'software.amazon.awssdk:sts' // STS for role assumption in local dev
+    implementation 'software.amazon.awssdk:s3' // S3Links: presigned links (#1187)
 
     // Resilience4j for circuit breaker, bulkhead, and retry patterns
     // Epic 13 (SB4): the Spring Boot integration module is renamed -spring-boot3 -> -spring-boot4.

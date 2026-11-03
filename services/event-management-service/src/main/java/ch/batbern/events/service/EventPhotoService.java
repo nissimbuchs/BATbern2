@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.utils.S3Links;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.EventPhoto;
 import ch.batbern.events.exception.EventNotFoundException;
@@ -21,9 +22,7 @@ import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.HeadObjectRequest;
 import software.amazon.awssdk.services.s3.model.NoSuchKeyException;
-import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -102,18 +101,8 @@ public class EventPhotoService {
         String ext = resolveExtension(request.getFilename(), request.getContentType());
         String s3Key = String.format("events/%s/photos/%s.%s", eventCode, photoId, ext);
 
-        PutObjectRequest putRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(s3Key)
-                .contentType(request.getContentType())
-                .build();
-
-        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofSeconds(PRESIGNED_URL_EXPIRY_SECONDS))
-                .putObjectRequest(putRequest)
-                .build();
-
-        String uploadUrl = s3Presigner.presignPutObject(presignRequest).url().toString();
+        String uploadUrl = S3Links.uploadUrl(s3Presigner, bucketName, s3Key, request.getContentType(), null,
+                Duration.ofSeconds(PRESIGNED_URL_EXPIRY_SECONDS));
 
         return EventPhotoUploadResponse.builder()
                 .photoId(photoId)
