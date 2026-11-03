@@ -1,5 +1,8 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.dto.generated.users.AdditionalEmail;
+import java.time.OffsetDateTime;
+import java.util.List;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.events.client.UserApiClient;
@@ -258,6 +261,47 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
     }
 
     // ── Helpers ───────────────────────────────────────────────────────────────
+
+    // ── #1183: a registration on another profile of the same person ───────────
+
+    private void userWithAdditionalEmails(String username, String primary, String verified, String unverified) {
+        lenient().when(userApiClient.getUserByUsername(username)).thenReturn(new UserResponse()
+                .id(username).email(primary)
+                .additionalEmails(List.of(
+                        new AdditionalEmail().email(verified)
+                                .verifiedAt(OffsetDateTime.now()),
+                        new AdditionalEmail().email(unverified))));
+    }
+
+    @Test
+    @DisplayName("#1183: finds the registration made as a guest under a verified additional address")
+    @WithMockUser(username = USERNAME)
+    void should_findRegistration_underVerifiedAdditionalAddress() throws Exception {
+        userWithAdditionalEmails(USERNAME, "private@example.com", "Work@Example.com", "other@example.com");
+        Registration guest = saveRegistration(testEvent, "guest.profile", "confirmed");
+        guest.setAttendeeEmail("work@example.com");
+        registrationRepository.save(guest);
+
+        mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registered", is(true)))
+                .andExpect(jsonPath("$.status", is("CONFIRMED")))
+                .andExpect(jsonPath("$.registrationCode", is(guest.getRegistrationCode())));
+    }
+
+    @Test
+    @DisplayName("#1183: an unverified additional address does not reveal anyone's registration")
+    @WithMockUser(username = USERNAME)
+    void should_notFindRegistration_underUnverifiedAddress() throws Exception {
+        userWithAdditionalEmails(USERNAME, "private@example.com", "work@example.com", "other@example.com");
+        Registration someone = saveRegistration(testEvent, "someone.else", "confirmed");
+        someone.setAttendeeEmail("other@example.com");
+        registrationRepository.save(someone);
+
+        mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.registered", is(false)));
+    }
 
     private Registration saveRegistration(Event event, String username, String status) {
         return registrationRepository.save(Registration.builder()

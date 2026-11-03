@@ -1,5 +1,9 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.dto.generated.users.UserResponse;
+import ch.batbern.events.dto.generated.users.AdditionalEmail;
+import java.time.OffsetDateTime;
+import java.util.List;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
@@ -117,7 +121,7 @@ class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("Greets with the CUMS profile first name, not the login username")
     void should_greetWithProfileFirstName() throws Exception {
         when(userApiClient.getUserByUsername(ATTENDEE)).thenReturn(
-                new ch.batbern.events.dto.generated.users.UserResponse()
+                new UserResponse()
                         .firstName("Jane").lastName("Müller"));
         Event e = saveEvent("BATbern974", Instant.now().plus(20, ChronoUnit.DAYS),
                 EventWorkflowState.AGENDA_PUBLISHED);
@@ -126,6 +130,55 @@ class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/attendee-portal/dashboard"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.attendeeName", is("Jane")));
+    }
+
+    // ==================== #1183: all of a person's verified addresses ====================
+
+    private void addresses(String verified, String unverified) {
+        when(userApiClient.getUserByUsername(ATTENDEE)).thenReturn(
+                new UserResponse()
+                        .firstName("Jane").email("jane@private.example")
+                        .additionalEmails(List.of(
+                                new AdditionalEmail().email(verified)
+                                        .verifiedAt(OffsetDateTime.now()),
+                                new AdditionalEmail().email(unverified))));
+    }
+
+    @Test
+    @WithMockUser(username = ATTENDEE, roles = {"ATTENDEE"})
+    @DisplayName("#1183: history on an imported profile under a verified address shows; unverified does not")
+    void should_includeRegistrations_underVerifiedAddressesOnly() throws Exception {
+        addresses("jane@work.example", "not-mine@example.org");
+        Event attended = saveEvent("BATbern975", Instant.now().minus(400, ChronoUnit.DAYS), EventWorkflowState.ARCHIVED);
+        Event foreign = saveEvent("BATbern976", Instant.now().minus(300, ChronoUnit.DAYS), EventWorkflowState.ARCHIVED);
+        Registration imported = saveRegistration("jane.imported", attended, "attended");
+        imported.setAttendeeEmail("JANE@work.example");
+        registrationRepository.save(imported);
+        Registration notMine = saveRegistration("someone.else", foreign, "attended");
+        notMine.setAttendeeEmail("not-mine@example.org");
+        registrationRepository.save(notMine);
+
+        mockMvc.perform(get("/api/v1/attendee-portal/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pastEvents.length()", is(1)))
+                .andExpect(jsonPath("$.pastEvents[0].eventCode", is("BATbern975")));
+    }
+
+    @Test
+    @WithMockUser(username = ATTENDEE, roles = {"ATTENDEE"})
+    @DisplayName("#1183: one card per event when both profiles registered for it")
+    void should_showEventOnce_when_registeredOnTwoProfiles() throws Exception {
+        addresses("jane@work.example", "x@example.org");
+        Event e = saveEvent("BATbern977", Instant.now().plus(10, ChronoUnit.DAYS), EventWorkflowState.AGENDA_PUBLISHED);
+        saveRegistration(ATTENDEE, e, "confirmed");
+        Registration second = saveRegistration("jane.guest", e, "waitlist");
+        second.setAttendeeEmail("jane@work.example");
+        registrationRepository.save(second);
+
+        mockMvc.perform(get("/api/v1/attendee-portal/dashboard"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.upcomingEvents.length()", is(1)))
+                .andExpect(jsonPath("$.upcomingEvents[0].registrationStatus", is("confirmed")));
     }
 
     // ==================== Helpers ====================

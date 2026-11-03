@@ -37,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -66,6 +67,7 @@ public class RegistrationService {
     private final NewsletterSubscriberService newsletterSubscriberService;
     private final WaitlistPromotionEmailService waitlistPromotionEmailService; // Story 10.11
     private final WaitlistPromotionService waitlistPromotionService; // Story 10.12
+    private final PersonAddresses personAddresses; // #1183
 
     /**
      * Create a new anonymous registration for an event (ADR-005).
@@ -321,6 +323,13 @@ public class RegistrationService {
         log.debug("Getting registration for event: {} and user: {}", eventCode, authenticatedUsername);
 
         return registrationRepository.findByEventCodeAndAttendeeUsername(eventCode, authenticatedUsername)
+                // #1183: else a registration of the same person under another profile (verified address)
+                .or(() -> {
+                    Set<String> addresses = personAddresses.verified(authenticatedUsername);
+                    return addresses.isEmpty() ? Optional.empty()
+                            : registrationRepository.findByEventCodeAndAttendeeEmailIn(eventCode, addresses)
+                                    .stream().min(PersonAddresses.best(authenticatedUsername));
+                })
                 .map(registration -> {
                     // Map DB status to API enum. DB uses 'waitlisted'; API enum uses WAITLIST.
                     String dbStatus = registration.getStatus() != null
