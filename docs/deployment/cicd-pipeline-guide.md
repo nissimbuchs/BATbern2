@@ -82,6 +82,11 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
      merges the blob reports and enforces the coverage threshold on the merged result
    - Before #1074 one job ran it all, and the test step alone took 9-12 minutes (5,600+ tests on a
      4-vCPU runner). Coverage is not the cost: 274 s without, 312 s with it, measured locally.
+   - Skipped shards would skip `deploy-to-staging` too: a job without a status function gets an
+     implicit `success()` over ALL ancestors. That happened to #1201 (auto-merged without a deploy,
+     2026-11-03), so the deploy's `if:` starts with `!cancelled()` and checks each direct need's
+     result. `scripts/ci/check-skip-propagation.py` (in `verify-hooks`) fails for any job that a
+     skipped ancestor would skip silently.
 
 4. **Integration Tests**
    - Spins up PostgreSQL containers

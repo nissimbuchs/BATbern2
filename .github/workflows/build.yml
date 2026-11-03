@@ -73,6 +73,11 @@ jobs:
           python3 scripts/ci/access-control-check.py --check-allowlist
           python3 scripts/ci/check-zap-spec-coverage.py
 
+      # 2026-11-03: a job downstream of a conditional job (frontend shards) was skipped with it:
+      # deploy-to-staging never ran on PRs without frontend changes. pyyaml installed above.
+      - name: Verify no job is skipped silently by a skipped ancestor
+        run: python3 scripts/ci/check-skip-propagation.py .github/workflows/build.yml .github/workflows/deploy-staging.yml
+
       # #1140: the deploy waits for stacks a previous deploy left in *_IN_PROGRESS.
       - name: Verify the deploy waits for in-progress CloudFormation stacks
         run: ./scripts/ci/test-wait-for-stable-stacks.sh
@@ -1021,12 +1026,22 @@ jobs:
     # Dependabot branch with GITHUB_TOKEN makes github-actions[bot] the actor, and
     # approving those action_required runs would otherwise deploy a Dependabot
     # branch to production (#1076).
+    #
+    # The explicit result checks matter: without a status function GitHub applies success() to
+    # EVERY ancestor, and the frontend test shards are skipped on a PR without frontend changes,
+    # so the deploy was skipped too (#1201 auto-merged undeployed, 2026-11-03).
+    # scripts/ci/check-skip-propagation.py guards this.
     if: |
-      (github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
-      (github.event_name == 'pull_request' &&
-       github.event.pull_request.base.ref == 'develop' &&
-       github.actor != 'dependabot[bot]' &&
-       github.event.pull_request.user.login != 'dependabot[bot]')
+      !cancelled() &&
+      needs.build-shared-kernel.result == 'success' &&
+      needs.build-services.result == 'success' &&
+      needs.build-frontend.result == 'success' &&
+      needs.build-infrastructure.result == 'success' &&
+      ((github.event_name == 'push' && github.ref == 'refs/heads/develop') ||
+       (github.event_name == 'pull_request' &&
+        github.event.pull_request.base.ref == 'develop' &&
+        github.actor != 'dependabot[bot]' &&
+        github.event.pull_request.user.login != 'dependabot[bot]'))
     uses: ./.github/workflows/deploy-staging.yml
     secrets: inherit
     permissions:
