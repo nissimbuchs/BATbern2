@@ -606,7 +606,11 @@ git commit -m "test(integration): add company API contract tests"
 # Production deploy (auto-deploy on push to develop — AND on any PR targeting develop)
 git push origin develop
 
-# Tagged releases (manual — 3 steps)
+# Tagged releases: NOT USABLE TODAY (checked 2026-11-03). deploy-production.yml and
+# promote-to-production.yml still point to the decommissioned account 422940799530
+# (batbern-prod-postgres) and fail at the first AWS step. Production is deployed by every
+# PR to develop (above). Kept on purpose by owner decision 2026-11-03; do not rely on them.
+# The former 3 steps, for reference:
 # 1. Merge develop → main via a PR on GitHub
 #    This builds images and pushes them to ECR with the merge commit SHA as the tag.
 # 2. Note the 7-char SHA of the merge commit (visible in the commit list or build run)
@@ -881,13 +885,19 @@ family, and say which. A bad `docker compose` call means grepping all call sites
 manifests means enumerating every manifest in the repo and diffing against the config. Fixing the
 reported instance while siblings survive is how the same defect gets rediscovered three times.
 
-**Capture every finding before the turn ends.** Anything you notice and do not act on becomes a
-GitHub issue in the same turn — with the evidence, the options, and what you would do. A finding
-mentioned in chat is lost the moment the conversation scrolls.
+**Fix what you find, directly.** (Owner, 2026-11-03.) A bug or an improvement you notice along the
+way is fixed in the same session: test first, its own commit (or its own PR when the current one is
+already open), verified like any other change. Do not stop at filing an issue, and do not ask first.
+Say in the summary what you fixed and why. **Exceptions** — record these as an issue and ask:
+- the fix needs a decision that is the owner's (product behaviour, a design choice with real
+  trade-offs, anything already marked "owner decides" or scheduled by him);
+- it is destructive or irreversible (deleting data, snapshots, users; history rewrites);
+- it changes a production setting or production data (e.g. `mailcenter.notify-instead-of-forward`);
+- it is infrastructure that needs a maintenance window, or it lands on an event day.
 
-> **Recording is not acting.** Doing unrequested work warrants a check-in; *writing down* what you
-> found never does. Do not conflate "don't widen scope" with "don't report what you saw" — an
-> issue is free, reversible, and touches nothing.
+**Capture what you cannot fix.** A finding under one of those exceptions becomes a GitHub issue in
+the same turn — with the evidence, the options, and what you would do. A finding mentioned in chat
+is lost the moment the conversation scrolls.
 
 **Use judgment about what deserves an issue.** A tracker nobody reads is worse than no tracker.
 File what has a real cost or a real decision behind it; leave cosmetics in the commit message

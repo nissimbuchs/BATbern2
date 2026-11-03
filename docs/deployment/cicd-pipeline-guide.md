@@ -73,12 +73,15 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
    - Until 2026-10-07 this job ran on x86 `ubuntu-latest`, and the whole Docker build ran under
      QEMU: 20-29 minutes per changed service for the image step alone (PR #1072)
 
-3. **Build Frontend**
-   - Installs npm dependencies with caching
-   - Runs ESLint and tests with Vitest
-   - Builds production bundle with Vite
-   - Uploads build artifacts
-   - Duration: ~3-4 minutes
+3. **Build Frontend** (four jobs since #1074)
+   - `frontend-changes`: skips everything below when nothing under `web-frontend/` changed
+   - `test-frontend (1/3..3/3)`: Vitest in 3 shards in parallel, each writes a blob report with
+     coverage; the coverage threshold is off per shard (a shard alone covers ~30%)
+   - `frontend-static`: API types up to date, ESLint, Prettier, Vite production build, `frontend-dist`
+   - `build-frontend` (the required check, name unchanged): waits for both, fails if either failed,
+     merges the blob reports and enforces the coverage threshold on the merged result
+   - Before #1074 one job ran it all, and the test step alone took 9-12 minutes (5,600+ tests on a
+     4-vCPU runner). Coverage is not the cost: 274 s without, 312 s with it, measured locally.
 
 4. **Integration Tests**
    - Spins up PostgreSQL containers
@@ -234,8 +237,15 @@ Until then: **work one PR to `develop` at a time.**
    - Analyzes changed components via git diff
    - Selects deployment strategy (fast-path, hotswap, or full CDK)
 
-2. **Database Backup** (if migrations detected)
-   - Creates RDS snapshot before deployment
+2. **Database Backup** (if migrations or infrastructure changed)
+   - Creates the manual RDS snapshot `batbern-staging-pre-deploy-{timestamp}` before deployment
+   - Keeps the newest 3 `pre-deploy` snapshots and deletes older ones (owner decision 2026-11-03).
+     Hand-made snapshots with another prefix (e.g. `batbern-staging-pre-v103-*`) are never touched;
+     the role may delete only the `pre-deploy` prefix
+   - A failure shows as an `::error::` annotation with the AWS message. From Dec 2025 to 2026-11-03
+     no backup was taken: the role policy named the instance `BATbern-staging-*` (IAM compares ARNs
+     case-sensitively, the instance is lowercase) and a `2>/dev/null` reported it as "instance not
+     found" (#1032). Daily automatic backups (7 days, point-in-time restore) were unaffected
 
 3. **Deploy**
    - Deploys with AWS CDK (layer-based for infrastructure changes)

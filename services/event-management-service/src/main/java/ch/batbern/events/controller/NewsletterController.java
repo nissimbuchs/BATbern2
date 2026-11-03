@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.newsletter.api.generated.NewsletterApi;
@@ -66,7 +67,7 @@ public class NewsletterController implements NewsletterApi {
     @Override
     @PreAuthorize("permitAll()")
     public ResponseEntity<Void> subscribeNewsletter(NewsletterSubscribeRequest request) {
-        log.info("Newsletter subscribe request for email: {}", request.getEmail());
+        log.info("Newsletter subscribe request for email: {}", LoggingUtils.maskEmail(request.getEmail()));
         subscriberService.subscribe(
                 request.getEmail(),
                 request.getFirstName(),

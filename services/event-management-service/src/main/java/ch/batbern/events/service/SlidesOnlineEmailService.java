@@ -409,7 +409,7 @@ public class SlidesOnlineEmailService {
             }
             // AC3: honour the global newsletter opt-out (registrations have no own flag).
             if (isOptedOut(email)) {
-                log.debug("Slides-online: skipping {} — global newsletter opt-out", email);
+                log.debug("Slides-online: skipping {} — global newsletter opt-out", LoggingUtils.maskEmail(email));
                 skipped.add(new SkippedRegistrant(displayName, "OPTED_OUT"));
                 continue;
             }

@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
@@ -36,6 +37,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Optional;
+import java.util.Set;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -65,6 +67,7 @@ public class RegistrationService {
     private final NewsletterSubscriberService newsletterSubscriberService;
     private final WaitlistPromotionEmailService waitlistPromotionEmailService; // Story 10.11
     private final WaitlistPromotionService waitlistPromotionService; // Story 10.12
+    private final PersonAddresses personAddresses; // #1183
 
     /**
      * Create a new anonymous registration for an event (ADR-005).
@@ -107,7 +110,7 @@ public class RegistrationService {
         boolean companyUpdated = Boolean.TRUE.equals(userResponse.getCompanyUpdated());
         log.info("Got/created user profile for email: {}, username: {}, created: {}, "
                         + "typedCompany: '{}', companyUpdated: {}",
-                request.getEmail(), username, userResponse.getCreated(),
+                LoggingUtils.maskEmail(request.getEmail()), username, userResponse.getCreated(),
                 request.getCompany(), companyUpdated);
 
         // QA Fix (VALID-001): Check for duplicate registration (same event + attendee)
@@ -202,13 +205,16 @@ public class RegistrationService {
                 String displayName = (request.getFirstName() + " " + request.getLastName()).trim();
                 newsletterSubscriberService.subscribe(
                         request.getEmail(), displayName, "de", "registration", username);
-                log.info("Auto-subscribed {} to newsletter via registration", request.getEmail());
+                log.info("Auto-subscribed {} to newsletter via registration",
+                        LoggingUtils.maskEmail(request.getEmail()));
             } catch (DuplicateSubscriberException e) {
                 // Already subscribed — silently ignore (AC6)
-                log.debug("Newsletter auto-subscribe: {} already active, skipping", request.getEmail());
+                log.debug("Newsletter auto-subscribe: {} already active, skipping",
+                        LoggingUtils.maskEmail(request.getEmail()));
             } catch (ch.batbern.events.exception.ReservedEmailDomainException e) {
                 // Reserved/test domain (RFC 2606) — let registration succeed but skip subscribe
-                log.warn("Newsletter auto-subscribe skipped for reserved domain: {}", request.getEmail());
+                log.warn("Newsletter auto-subscribe skipped for reserved domain: {}",
+                        LoggingUtils.maskEmail(request.getEmail()));
             }
         }
 
@@ -317,6 +323,13 @@ public class RegistrationService {
         log.debug("Getting registration for event: {} and user: {}", eventCode, authenticatedUsername);
 
         return registrationRepository.findByEventCodeAndAttendeeUsername(eventCode, authenticatedUsername)
+                // #1183: else a registration of the same person under another profile (verified address)
+                .or(() -> {
+                    Set<String> addresses = personAddresses.verified(authenticatedUsername);
+                    return addresses.isEmpty() ? Optional.empty()
+                            : registrationRepository.findByEventCodeAndAttendeeEmailIn(eventCode, addresses)
+                                    .stream().min(PersonAddresses.best(authenticatedUsername));
+                })
                 .map(registration -> {
                     // Map DB status to API enum. DB uses 'waitlisted'; API enum uses WAITLIST.
                     String dbStatus = registration.getStatus() != null
@@ -353,7 +366,8 @@ public class RegistrationService {
      */
     @Transactional
     public BatchRegistrationResponse createBatchRegistrations(BatchRegistrationRequest request) {
-        log.debug("Creating batch registrations for participant: {}", request.getParticipantEmail());
+        log.debug("Creating batch registrations for participant: {}",
+                LoggingUtils.maskEmail(request.getParticipantEmail()));
 
         // 1. Get or create user via User Management Service
         GetOrCreateUserRequest userRequest = new GetOrCreateUserRequest();

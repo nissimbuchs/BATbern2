@@ -74,6 +74,17 @@ sends for an event, so they fall under the same rules as registration data:
   calendar replies, keyword replies that acted and loops are one row each in `mail_automatic_event`
   with kind, event and time, no address, no subject, no body. Same retention.
 
+### E-mail addresses in logs are masked (#1184)
+
+Production logs go to CloudWatch and are read by everyone with log access for as long as the log
+group keeps them. An address of a participant, subscriber, speaker or partner is logged only through
+`LoggingUtils.maskEmail(...)` (`a***@example.ch`; a joined To: line is masked per address), and never
+next to the person's name, which would undo the masking. `LogAddressGuardTest` in the gateway, EMS,
+CUMS, PCS and the shared kernel (helper `LogAddressGuard` in the shared-kernel test fixtures) scans
+`src/main/java` and fails the build for a log call that passes an address-like argument unmasked. A
+deliberate exception (local-dev capture only) carries the comment `log-address-ok` with the reason.
+Lines written before 2026-11-03 stay in the log groups until their retention runs out.
+
 ### AI / LLM Security (OWASP-LLM, Story 15.9)
 - The AI surface lives in `event-management-service` (event description, theme image, abstract
   analysis, trending topics, organizer-editable prompts), is ORGANIZER-gated, AI-feature-flagged

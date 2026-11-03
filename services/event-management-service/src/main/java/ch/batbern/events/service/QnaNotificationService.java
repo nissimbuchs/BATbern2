@@ -150,23 +150,23 @@ public class QnaNotificationService {
         recipients.addAll(sessionUserRepository.findModeratorUsernamesByEventCode(window.getEventCode()));
 
         int sent = 0;
-        for (String recipient : recipients) {
+        for (String recipientUsername : recipients) {
             try {
-                if (notifyRecipient(window, session, event, recipient, run)) {
+                if (notifyRecipient(window, session, event, recipientUsername, run)) {
                     sent++;
                 }
             } catch (Exception e) {
                 // Per-recipient isolation — one recipient's failure must not abort the others.
                 log.error("qnaDigestFlush: recipient {} on window {} failed: {}",
-                        recipient, window.getId(), e.getMessage(), e);
+                        recipientUsername, window.getId(), e.getMessage(), e);
             }
         }
         return sent;
     }
 
     private boolean notifyRecipient(SessionQnaWindow window, Session session, Event event,
-                                    String recipient, MailTrigger run) {
-        String freq = Optional.ofNullable(userApiClient.getQnaNotificationFrequency(recipient))
+                                    String recipientUsername, MailTrigger run) {
+        String freq = Optional.ofNullable(userApiClient.getQnaNotificationFrequency(recipientUsername))
                 .orElse("live");
         if ("off".equals(freq)) {
             return false;
@@ -176,7 +176,7 @@ public class QnaNotificationService {
                 : Duration.ofMinutes(liveWindowMinutes);
 
         SessionQnaNotification state = notificationRepository
-                .findByIdWindowIdAndIdRecipientUsername(window.getId(), recipient)
+                .findByIdWindowIdAndIdRecipientUsername(window.getId(), recipientUsername)
                 .orElse(null);
         Instant now = Instant.now();
         if (state != null && state.getLastNotifiedAt() != null
@@ -187,49 +187,49 @@ public class QnaNotificationService {
         Instant since = (state != null && state.getNotifiedThrough() != null)
                 ? state.getNotifiedThrough() : Instant.EPOCH;
         List<SessionQnaPost> newPosts = postRepository.findNewTopLevelQuestionsForRecipient(
-                window.getId(), since, recipient);
+                window.getId(), since, recipientUsername);
         if (newPosts.isEmpty()) {
             return false;
         }
         int count = newPosts.size();
         Instant newWatermark = newPosts.get(newPosts.size() - 1).getCreatedAt(); // oldest-first
 
-        String email = resolveEmail(recipient);
+        String email = resolveEmail(recipientUsername);
         if (email == null || email.isBlank()) {
-            log.warn("qnaDigestFlush: no email for recipient {} — skipping", recipient);
+            log.warn("qnaDigestFlush: no email for recipient {} — skipping", recipientUsername);
             return false;
         }
-        String locale = localeFor(userApiClient.getPreferredLanguage(recipient));
+        String locale = localeFor(userApiClient.getPreferredLanguage(recipientUsername));
 
-        RenderedMail mail = renderMail(window, session, event, recipient, count, locale);
+        RenderedMail mail = renderMail(window, session, event, recipientUsername, count, locale);
         MailContext context = MailContext.of(run, window.getEventCode(), MailContext.Audience.SPEAKERS,
                 "qna-new-questions");
         emailService.sendHtmlEmailSync(context, email, null, mail.subject(), mail.html(), null, null);
 
         // Commit the throttle/water-mark in its own transaction, immediately after the send, so a
         // later recipient's failure can't roll it back and trigger a duplicate digest next flush.
-        stateWriter.recordSent(window.getId(), recipient, now, newWatermark);
+        stateWriter.recordSent(window.getId(), recipientUsername, now, newWatermark);
 
         log.info("qnaDigestFlush: notified {} of {} new question(s) on session {} (event {})",
-                recipient, count, session.getSessionSlug(), window.getEventCode());
+                recipientUsername, count, session.getSessionSlug(), window.getEventCode());
         return true;
     }
 
-    private String resolveEmail(String recipient) {
+    private String resolveEmail(String recipientUsername) {
         try {
-            return userApiClient.getUserByUsername(recipient).getEmail();
+            return userApiClient.getUserByUsername(recipientUsername).getEmail();
         } catch (Exception e) {
-            log.warn("qnaDigestFlush: could not resolve email for {} ({})", recipient, e.getMessage());
+            log.warn("qnaDigestFlush: could not resolve email for {} ({})", recipientUsername, e.getMessage());
             return null;
         }
     }
 
-    private String resolveFirstName(String recipient) {
+    private String resolveFirstName(String recipientUsername) {
         try {
-            String first = userApiClient.getUserByUsername(recipient).getFirstName();
-            return (first != null && !first.isBlank()) ? first : recipient;
+            String first = userApiClient.getUserByUsername(recipientUsername).getFirstName();
+            return (first != null && !first.isBlank()) ? first : recipientUsername;
         } catch (Exception e) {
-            return recipient;
+            return recipientUsername;
         }
     }
 
@@ -243,8 +243,8 @@ public class QnaNotificationService {
     }
 
     private RenderedMail renderMail(SessionQnaWindow window, Session session, Event event,
-                                    String recipient, int count, String locale) {
-        Map<String, String> vars = buildVariables(window, session, event, recipient, count, locale);
+                                    String recipientUsername, int count, String locale) {
+        Map<String, String> vars = buildVariables(window, session, event, recipientUsername, count, locale);
         ch.batbern.events.mailcenter.render.RenderedMail mail =
                 mailPipeline.render(mailPipeline.template(TEMPLATE_KEY, locale), vars);
         String subject = mail.subject() != null ? mail.subject()
@@ -254,7 +254,7 @@ public class QnaNotificationService {
     }
 
     private Map<String, String> buildVariables(SessionQnaWindow window, Session session,
-                                               Event event, String recipient, int count, String locale) {
+                                               Event event, String recipientUsername, int count, String locale) {
         String eventCode = window.getEventCode();
         MailVariables vars = event != null ? mailPipeline.variables().event(event, locale)
                 : mailPipeline.variables().system();
@@ -263,7 +263,7 @@ public class QnaNotificationService {
                 .put(MailVariable.IS_SINGLE, count == 1 ? "1" : "")
                 .put(MailVariable.IS_MULTIPLE, count > 1 ? "1" : "")
                 .put(MailVariable.SESSION_TITLE, session.getTitle())
-                .put(MailVariable.RECIPIENT_NAME, resolveFirstName(recipient))
+                .put(MailVariable.RECIPIENT_NAME, resolveFirstName(recipientUsername))
                 // Deep link to the public event page, which hosts the per-session Q&A thread.
                 .put(MailVariable.QNA_LINK, baseUrl + "/events/" + eventCode)
                 .put(MailVariable.EVENT_URL, baseUrl + "/events/" + eventCode)

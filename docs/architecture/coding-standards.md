@@ -9,6 +9,7 @@
 - **State Updates:** Never mutate state directly - use proper state management patterns
 - **Company Management:** Always check for existing companies before creating new ones
 - **File Uploads:** Use presigned URLs for direct S3 uploads, never proxy through backend
+- **Presigned links:** build them with `ch.batbern.shared.utils.S3Links` (`uploadUrl`, `downloadUrl`), never with an inline `Put/GetObjectPresignRequest` (#1187). A presigned link is a bearer credential until it expires: never log it, log the S3 key.
 - **Role-Based Access:** Always check user roles before displaying/executing functionality
 
 ## Naming Conventions

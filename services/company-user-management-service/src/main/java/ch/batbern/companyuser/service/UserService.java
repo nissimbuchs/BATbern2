@@ -1,5 +1,7 @@
 package ch.batbern.companyuser.service;
 
+import java.util.LinkedHashSet;
+import java.util.List;
 import ch.batbern.companyuser.domain.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
@@ -522,6 +524,25 @@ public class UserService {
     }
 
     /**
+     * #1183: the username that owns {@code email}: the profile whose primary address it is, or the
+     * profile that holds it as a VERIFIED additional address. An unverified additional address is a
+     * claim and owns nothing. A DB trigger keeps an address from being both, so the list has at most one
+     * entry; it is a list so the contract survives a future merge of profiles. Empty when nobody owns it.
+     */
+    @Transactional(readOnly = true)
+    public List<String> ownersOfEmail(String email) {
+        if (email == null || email.isBlank()) {
+            return List.of();
+        }
+        String address = email.trim();
+        LinkedHashSet<String> owners = new LinkedHashSet<>();
+        userRepository.findByEmailIgnoreCase(address).ifPresent(user -> owners.add(user.getUsername()));
+        additionalEmailRepository.findVerifiedByEmailIgnoreCase(address)
+                .ifPresent(extra -> owners.add(extra.getUser().getUsername()));
+        return List.copyOf(owners);
+    }
+
+    /**
      * Get-or-create pattern for domain services.
      *
      * Email is the only identity key. If the email exists, return the user; if
@@ -543,8 +564,9 @@ public class UserService {
      * docs/plans/user-identity-collision-fix-plan.md.
      */
     public GetOrCreateUserResponse getOrCreateUser(GetOrCreateUserRequest request) {
-        log.info("Get-or-create user for email: {}, name: {} {}, company: {}",
-                request.getEmail(), request.getFirstName(), request.getLastName(), request.getCompanyId());
+        // #1184: no name next to the masked address, it would undo the masking
+        log.info("Get-or-create user for email: {}, company: {}",
+                LoggingUtils.maskEmail(request.getEmail()), request.getCompanyId());
 
         Optional<User> userByEmail = userRepository.findByEmailIgnoreCase(request.getEmail().trim())
                 .or(() -> additionalEmailRepository.findVerifiedByEmailIgnoreCase(request.getEmail())
@@ -568,8 +590,7 @@ public class UserService {
             if (additionalEmailRepository.existsByEmailIgnoreCase(request.getEmail())) {
                 throw new EmailLinkedToAccountException(request.getEmail());
             }
-            log.info("Creating new user: {} (name: {} {})",
-                    request.getEmail(), request.getFirstName(), request.getLastName());
+            log.info("Creating new user: {}", LoggingUtils.maskEmail(request.getEmail()));
             User newUser = createNewUser(request);
             return new GetOrCreateUserResponse()
                     .username(newUser.getUsername())
@@ -1028,7 +1049,7 @@ public class UserService {
      */
     @Transactional
     public UserResponse createUser(ch.batbern.companyuser.dto.generated.CreateUserRequest request) {
-        log.info("Creating new user: {}", request.getEmail());
+        log.info("Creating new user: {}", LoggingUtils.maskEmail(request.getEmail()));
 
         // Check if user already exists
         if (userRepository.existsByEmailIgnoreCase(request.getEmail().trim())) {

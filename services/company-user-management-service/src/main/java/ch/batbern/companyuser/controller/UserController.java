@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.controller;
 
+import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.companyuser.api.generated.DomainIntegrationApi;
 import ch.batbern.companyuser.api.generated.GdprComplianceApi;
 import ch.batbern.companyuser.api.generated.ProfilePictureApi;
@@ -142,7 +143,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
             description = "Time to create new user (admin/organizer)",
             percentiles = {0.5, 0.95, 0.99})
     public ResponseEntity<UserResponse> createUser(CreateUserRequest createUserRequest) {
-        log.info("Creating new user: {}", createUserRequest.getEmail());
+        log.info("Creating new user: {}", LoggingUtils.maskEmail(createUserRequest.getEmail()));
 
         UserResponse response = userService.createUser(createUserRequest);
 
@@ -331,7 +332,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
                             + provisionUserRequest.getAdditionalProperties().keySet());
         }
         log.info("POST /api/v1/users/provision — email: {}, role: {}",
-                provisionUserRequest.getEmail(), provisionUserRequest.getRole());
+                LoggingUtils.maskEmail(provisionUserRequest.getEmail()), provisionUserRequest.getRole());
 
         ProvisionUserResponse response = userService.provisionUserWithRole(provisionUserRequest);
 

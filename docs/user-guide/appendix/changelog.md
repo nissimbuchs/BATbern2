@@ -45,6 +45,13 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fix — Top menu fits on laptop screens (2026-11-03)**:
+- ✅ On screens between 1200 and 1440 pixels wide, the organizer menu was wider than the window and the page scrolled sideways (bell and profile cut off). There the menu now shows icons only; hovering an icon shows its name. From 1440 pixels the names show as before.
+
+**Improvement — Registrations under your other addresses (2026-11-03)**:
+- ✅ Your dashboard and an event's registration status now also show registrations made under another of your addresses, for example a guest registration with your work address, once that address is confirmed in your profile (Profile → additional e-mail addresses).
+- ✅ "Cancel registration" by e-mail also finds the registration when it was made under another of your addresses or profiles. The link goes to the address you typed in.
+
 **Improvement — Easier to read conversations (2026-11-03)**:
 - ✅ A conversation shows the newest mail first and open. Older mails are one line each and open with a click, or all at once with "Show all".
 - ✅ "+ New mail" moved to the top right of the communication tab, outside "Needs an answer". It writes a new mail and is not related to the open conversations.

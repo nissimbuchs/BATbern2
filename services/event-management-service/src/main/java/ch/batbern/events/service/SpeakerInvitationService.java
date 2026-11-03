@@ -94,7 +94,8 @@ public class SpeakerInvitationService {
         boolean userCreated = userResponse.getCreated();
 
         log.debug("User {} for speaker {}, username: {}",
-                userCreated ? "created" : "found", request.getEmail(), userResponse.getUsername());
+                userCreated ? "created" : "found", LoggingUtils.maskEmail(request.getEmail()),
+                userResponse.getUsername());
 
         // 3. Create SpeakerPool entry (AC1) — initial status assignment on INSERT bypasses
         // transition() by design (ADR-009: speakers enter the workflow at IDENTIFIED).

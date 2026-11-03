@@ -14,6 +14,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.time.Instant;
+import java.util.Collection;
 import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
@@ -84,7 +85,7 @@ public interface RegistrationRepository
      * Story 7.3: used to resolve the "active registrants" (registered/confirmed) recipient
      * list for the slides-online mail.
      */
-    List<Registration> findByEventIdAndStatusIn(UUID eventId, java.util.Collection<String> statuses);
+    List<Registration> findByEventIdAndStatusIn(UUID eventId, Collection<String> statuses);
 
     /**
      * Delete all registrations for a specific event
@@ -183,6 +184,19 @@ public interface RegistrationRepository
     Optional<Registration> findByEventCodeAndAttendeeUsername(
             @Param("eventCode") String eventCode,
             @Param("username") String username);
+
+    /**
+     * #1183: registrations under any of a person's addresses (lowercased), across profiles.
+     */
+    @Query("SELECT r FROM Registration r WHERE LOWER(r.attendeeEmail) IN :emails")
+    List<Registration> findByAttendeeEmailIn(@Param("emails") Collection<String> emails);
+
+    /** #1183: as above, for one event. */
+    @Query("SELECT r FROM Registration r JOIN Event e ON r.eventId = e.id "
+            + "WHERE e.eventCode = :eventCode AND LOWER(r.attendeeEmail) IN :emails")
+    List<Registration> findByEventCodeAndAttendeeEmailIn(
+            @Param("eventCode") String eventCode,
+            @Param("emails") Collection<String> emails);
 
     // ── Story 10.12: Deregistration Methods ───────────────────────────────────
 

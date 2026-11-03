@@ -1,5 +1,6 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.notification.NotificationRepository;
 import ch.batbern.events.config.CacheConfig;
 import ch.batbern.events.domain.Event;
@@ -1798,7 +1799,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         );
 
         log.info("Confirmation email resent for registration {}: attendee={}", registrationCode,
-                userProfile.getEmail());
+                LoggingUtils.maskEmail(userProfile.getEmail()));
 
         return ResponseEntity.ok(new ResendConfirmationResponse().message(
                 "Confirmation email resent to " + userProfile.getEmail()));
@@ -2271,7 +2272,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
     public ResponseEntity<BatchRegistrationResponse> createBatchRegistrations(
             @Valid @RequestBody BatchRegistrationRequest request) {
         log.debug("POST /api/v1/events/batch_registrations - Participant: {}, Events: {}",
-                request.getParticipantEmail(), request.getRegistrations().size());
+                LoggingUtils.maskEmail(request.getParticipantEmail()), request.getRegistrations().size());
 
         BatchRegistrationResponse response = registrationService.createBatchRegistrations(request);
 

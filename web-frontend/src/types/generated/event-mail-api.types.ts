@@ -693,8 +693,8 @@ export interface components {
       hasPrev: boolean;
     };
     /**
-     * @description A time-limited presigned link to download one private file. Same shape as the session materials'
-     *     `MaterialDownloadUrlResponse` (Story 5.9); Story 16.6 inbound mail attachments use it.
+     * @description A time-limited presigned link to download one private file: session materials (Story 5.9) and
+     *     inbound mail attachments (Story 16.6). Built by `S3Links.downloadUrl` (#1187).
      */
     DownloadUrlResponse: {
       /**

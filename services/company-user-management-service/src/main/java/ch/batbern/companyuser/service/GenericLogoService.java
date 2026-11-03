@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.service;
 
+import ch.batbern.shared.utils.S3Links;
 import ch.batbern.companyuser.domain.Logo;
 import ch.batbern.companyuser.domain.LogoStatus;
 import ch.batbern.companyuser.dto.generated.LogoPresignedUploadUrl;
@@ -17,8 +18,6 @@ import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
 import software.amazon.awssdk.services.s3.model.DeleteObjectRequest;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.time.Duration;
 import java.time.Instant;
@@ -123,20 +122,8 @@ public class GenericLogoService {
         logoRepository.save(logo);
 
         // Generate presigned URL
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(tempS3Key)
-                .contentType(mimeType)
-                .contentLength(fileSize)
-                .build();
-
-        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(PRESIGNED_URL_EXPIRATION_MINUTES))
-                .putObjectRequest(putObjectRequest)
-                .build();
-
-        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
-        String uploadUrl = presignedRequest.url().toString();
+        String uploadUrl = S3Links.uploadUrl(s3Presigner, bucketName, tempS3Key, mimeType, fileSize,
+                Duration.ofMinutes(PRESIGNED_URL_EXPIRATION_MINUTES));
 
         log.info("Generated presigned URL for upload ID: {}, S3 key: {}", uploadId, tempS3Key);
 

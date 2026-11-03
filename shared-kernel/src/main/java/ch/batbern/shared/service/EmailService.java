@@ -488,10 +488,11 @@ public class EmailService {
             record(context, new OutboundMail(to, ccClean, subject, htmlBody, response.messageId(), null, messageId));
 
         } catch (MessagingException | IOException e) {
-            log.error("Failed to create MIME message for: {}", to, e);
+            log.error("Failed to create MIME message for: {}", LoggingUtils.maskEmail(to), e);
             throw new EmailSendException("Failed to create email message", e);
         } catch (SesException e) {
-            log.error("Failed to send email to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);
+            log.error("Failed to send email to: {}, Error: {}", LoggingUtils.maskEmail(to),
+                    e.awsErrorDetails().errorMessage(), e);
             record(context, to, ccClean, subject, htmlBody, null, errorCode(e));
             throw new EmailSendException("Failed to send email to: " + to, e);
         }
@@ -545,7 +546,8 @@ public class EmailService {
         assertNotTestMarked(subject, htmlBody);
 
         try {
-            log.debug("Sending HTML email (sync) with {} attachment(s) to: {}", attachments.size(), to);
+            log.debug("Sending HTML email (sync) with {} attachment(s) to: {}", attachments.size(),
+                    LoggingUtils.maskEmail(to));
 
             Session session = Session.getInstance(new Properties());
             // Story 16.2b AC7: a recorded mail carries our own Message-ID, known to the recorder
@@ -592,14 +594,16 @@ public class EmailService {
             }
 
             SendRawEmailResponse response = sesClient.sendRawEmail(rawRequestBuilder.build());
-            log.info("Email with attachments sent (sync) to: {}, MessageId: {}", to, response.messageId());
+            log.info("Email with attachments sent (sync) to: {}, MessageId: {}", LoggingUtils.maskEmail(to),
+                    response.messageId());
             record(context, new OutboundMail(to, List.of(), subject, htmlBody, response.messageId(), null, messageId));
 
         } catch (MessagingException | IOException e) {
-            log.error("Failed to create MIME message for: {}", to, e);
+            log.error("Failed to create MIME message for: {}", LoggingUtils.maskEmail(to), e);
             throw new EmailSendException("Failed to create email message", e);
         } catch (SesException e) {
-            log.error("Failed to send email to: {}, Error: {}", to, e.awsErrorDetails().errorMessage(), e);
+            log.error("Failed to send email to: {}, Error: {}", LoggingUtils.maskEmail(to),
+                    e.awsErrorDetails().errorMessage(), e);
             record(context, to, List.of(), subject, htmlBody, null, errorCode(e));
             throw new EmailSendException("Failed to send email to: " + to, e);
         }

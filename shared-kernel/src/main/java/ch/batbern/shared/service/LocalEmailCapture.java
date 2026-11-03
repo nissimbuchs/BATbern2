@@ -69,6 +69,7 @@ public class LocalEmailCapture {
             attachmentBytes.remove(removed.id());
         }
         log.info("📧 [LOCAL] Email captured to={} ccCount={} subject='{}' attachments={}",
+                // log-address-ok: local dev capture only, never active in production
                 to, email.cc().size(), subject, email.attachments().size());
         return id;
     }

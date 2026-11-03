@@ -7,7 +7,7 @@ import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.SessionMaterialsService;
 import ch.batbern.events.sessions.api.generated.SessionMaterialsApi;
-import ch.batbern.events.sessions.dto.generated.MaterialDownloadUrlResponse;
+import ch.batbern.events.sessions.dto.generated.DownloadUrlResponse;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialAssociationRequest;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialsResponse;
@@ -92,14 +92,14 @@ public class SessionMaterialsController implements SessionMaterialsApi {
     }
 
     @Override
-    public ResponseEntity<MaterialDownloadUrlResponse> getMaterialDownloadUrl(
+    public ResponseEntity<DownloadUrlResponse> getMaterialDownloadUrl(
             String eventCode,
             String sessionSlug,
             UUID materialId) {
 
         String downloadUrl = sessionMaterialsService.generateDownloadUrl(materialId);
 
-        return ResponseEntity.ok(new MaterialDownloadUrlResponse().downloadUrl(downloadUrl));
+        return ResponseEntity.ok(new DownloadUrlResponse().downloadUrl(downloadUrl));
     }
 
     @Override

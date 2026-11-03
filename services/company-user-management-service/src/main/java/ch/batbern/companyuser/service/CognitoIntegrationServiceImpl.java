@@ -56,7 +56,8 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
     public String createCognitoUser(GetOrCreateUserRequest request) {
         // NO-OP: invitation-based flow — user signs up via registration page and
         // PreTokenGeneration Lambda populates cognitoUserId at first login.
-        log.debug("Cognito user creation disabled - invitation flow for user: {}", request.getEmail());
+        log.debug("Cognito user creation disabled - invitation flow for user: {}",
+                LoggingUtils.maskEmail(request.getEmail()));
         return null;
     }
 

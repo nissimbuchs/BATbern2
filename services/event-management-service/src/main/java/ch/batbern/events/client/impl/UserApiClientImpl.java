@@ -32,9 +32,11 @@ import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.List;
 import java.net.URI;
 
 /**
@@ -194,7 +196,7 @@ public class UserApiClientImpl implements UserApiClient {
     @Override
     @Cacheable(value = "userApiCache", key = "#request.email")
     public GetOrCreateUserResponse getOrCreateUser(GetOrCreateUserRequest request) {
-        log.debug("Getting or creating user for email: {}", request.getEmail());
+        log.debug("Getting or creating user for email: {}", LoggingUtils.maskEmail(request.getEmail()));
 
         String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/get-or-create";
 
@@ -211,7 +213,7 @@ public class UserApiClientImpl implements UserApiClient {
 
             GetOrCreateUserResponse result = response.getBody();
             log.info("Successfully got/created user profile for email: {}, username: {}, created: {}",
-                    request.getEmail(),
+                    LoggingUtils.maskEmail(request.getEmail()),
                     result != null ? result.getUsername() : "null",
                     result != null ? result.getCreated() : "null");
             return result;
@@ -228,7 +230,7 @@ public class UserApiClientImpl implements UserApiClient {
                         409, e);
             }
             log.error("Client error getting/creating user for email {}: {} - {}",
-                    request.getEmail(), e.getStatusCode(), e.getMessage());
+                    LoggingUtils.maskEmail(request.getEmail()), e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
                     "Client error getting/creating user for email: " + request.getEmail(),
                     e.getStatusCode().value(),
@@ -237,7 +239,7 @@ public class UserApiClientImpl implements UserApiClient {
 
         } catch (HttpServerErrorException e) {
             log.error("Server error from User Management Service for email {}: {} - {}",
-                    request.getEmail(), e.getStatusCode(), e.getMessage());
+                    LoggingUtils.maskEmail(request.getEmail()), e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
                     "User Management Service error for email: " + request.getEmail(),
                     e.getStatusCode().value(),
@@ -246,7 +248,7 @@ public class UserApiClientImpl implements UserApiClient {
 
         } catch (ResourceAccessException e) {
             log.error("Network error connecting to User Management Service for email {}: {}",
-                    request.getEmail(), e.getMessage());
+                    LoggingUtils.maskEmail(request.getEmail()), e.getMessage());
             throw new UserServiceException(
                     "Failed to connect to User Management Service for email: " + request.getEmail(),
                     e
@@ -254,7 +256,7 @@ public class UserApiClientImpl implements UserApiClient {
 
         } catch (Exception e) {
             log.error("Unexpected error getting/creating user for email {}: {}",
-                    request.getEmail(), e.getMessage(), e);
+                    LoggingUtils.maskEmail(request.getEmail()), e.getMessage(), e);
             throw new UserServiceException(
                     "Unexpected error getting/creating user for email: " + request.getEmail(),
                     e
@@ -448,7 +450,7 @@ public class UserApiClientImpl implements UserApiClient {
     @Override
     public ProvisionUserResponse provisionUserWithRole(ProvisionUserRequest request) {
         log.debug("Provisioning user (Story 11.C.2): email={}, role={}",
-                request.getEmail(), request.getRole());
+                LoggingUtils.maskEmail(request.getEmail()), request.getRole());
 
         String url = userServiceBaseUrl + "/api/v1/users/provision";
 
@@ -466,7 +468,7 @@ public class UserApiClientImpl implements UserApiClient {
 
             ProvisionUserResponse result = response.getBody();
             log.info("Provisioned user: email={}, username={}, created={}",
-                    request.getEmail(),
+                    LoggingUtils.maskEmail(request.getEmail()),
                     result != null ? result.getUsername() : "null",
                     result != null ? result.getCreated() : "null");
             // P1 (review patch): use CacheManager directly. Self-invoking `this.evictUserCache(...)`
@@ -479,7 +481,7 @@ public class UserApiClientImpl implements UserApiClient {
 
         } catch (HttpClientErrorException e) {
             log.error("Client error provisioning user {}: {} - {}",
-                    request.getEmail(), e.getStatusCode(), e.getMessage());
+                    LoggingUtils.maskEmail(request.getEmail()), e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
                     "Client error provisioning user: " + request.getEmail(),
                     e.getStatusCode().value(),
@@ -488,7 +490,7 @@ public class UserApiClientImpl implements UserApiClient {
 
         } catch (HttpServerErrorException e) {
             log.error("Server error from User Management Service for provision {}: {} - {}",
-                    request.getEmail(), e.getStatusCode(), e.getMessage());
+                    LoggingUtils.maskEmail(request.getEmail()), e.getStatusCode(), e.getMessage());
             throw new UserServiceException(
                     "User Management Service error provisioning user: " + request.getEmail(),
                     e.getStatusCode().value(),
@@ -497,14 +499,15 @@ public class UserApiClientImpl implements UserApiClient {
 
         } catch (ResourceAccessException e) {
             log.error("Network error connecting to User Management Service for provision {}: {}",
-                    request.getEmail(), e.getMessage());
+                    LoggingUtils.maskEmail(request.getEmail()), e.getMessage());
             throw new UserServiceException(
                     "Failed to connect to User Management Service for user: " + request.getEmail(),
                     e
             );
 
         } catch (Exception e) {
-            log.error("Unexpected error provisioning user {}: {}", request.getEmail(), e.getMessage(), e);
+            log.error("Unexpected error provisioning user {}: {}", LoggingUtils.maskEmail(request.getEmail()),
+                    e.getMessage(), e);
             throw new UserServiceException(
                     "Unexpected error provisioning user: " + request.getEmail(),
                     e
@@ -838,6 +841,25 @@ public class UserApiClientImpl implements UserApiClient {
      * {@code @Cacheable} unwraps Optional results before evaluating the {@code unless}
      * SpEL — an empty Optional would cause {@code #result.isEmpty()} to NPE.
      */
+    @Override
+    public List<String> getEmailOwners(String email) {
+        if (email == null || email.isBlank()) {
+            return List.of();
+        }
+        String url = UriComponentsBuilder.fromUriString(userServiceBaseUrl + "/internal/email-owners")
+                .queryParam("email", email.trim()).encode().toUriString();
+        try {
+            ResponseEntity<String[]> response = restTemplate.exchange(
+                    url, HttpMethod.GET, new HttpEntity<>(new HttpHeaders()), String[].class);
+            String[] owners = response.getBody();
+            return owners == null ? List.of() : List.of(owners);
+        } catch (RestClientException e) {
+            // Best effort: the caller falls back to the address match alone, as before #1183.
+            log.warn("Email owner lookup failed: {}", e.getMessage());
+            return List.of();
+        }
+    }
+
     @Override
     @Cacheable(value = "userApiCache",
             key = "'company:' + #companySlug",

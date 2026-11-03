@@ -404,8 +404,16 @@ jobs:
   # ═══════════════════════════════════════════════════════════
   # BUILD PHASE: Frontend Application
   # ═══════════════════════════════════════════════════════════
-  build-frontend:
+  # #1074: the frontend tests took 9-12 min in one job (5,600+ tests on a 4-vCPU runner; coverage
+  # adds only ~14%, measured 274 s vs 312 s locally). They now run in 3 shards in parallel with the
+  # static checks and the build. `build-frontend` keeps its name, so the required check is unchanged:
+  # it waits for both, merges the shards' blob reports and enforces the coverage threshold on the
+  # merged result (a shard alone covers ~30% and must not check it). The blob path is explicit:
+  # vitest 5 writes to .vitest/blob/ by default, vitest 4 to .vitest-reports/ (first run of #1200).
+  frontend-changes:
     runs-on: ubuntu-latest
+    outputs:
+      run: ${{ steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true' }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -472,8 +480,20 @@ jobs:
             echo "changed=false" >> $GITHUB_OUTPUT
           fi
 
-      - name: Set up Node.js 20
-        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
+  test-frontend:
+    name: test-frontend (${{ matrix.shard }}/3)
+    needs: frontend-changes
+    if: needs.frontend-changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        shard: [1, 2, 3]
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js 22
         uses: actions/setup-node@v6
         with:
           node-version: '22'
@@ -481,12 +501,46 @@ jobs:
           cache-dependency-path: web-frontend/package-lock.json
 
       - name: Install dependencies
-        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
+        working-directory: ./web-frontend
+        run: npm ci
+
+      - name: Run tests (shard ${{ matrix.shard }}/3, blob report)
+        working-directory: ./web-frontend
+        run: |
+          mkdir -p test-results/assets
+          npx vitest run --shard=${{ matrix.shard }}/3 --coverage --coverage.thresholds.statements=0 --reporter=blob --outputFile.blob=.vitest-reports/blob-${{ matrix.shard }}-3.json
+
+      - name: Upload blob report
+        if: always()
+        uses: actions/upload-artifact@v7
+        with:
+          name: vitest-blob-${{ matrix.shard }}
+          path: web-frontend/.vitest-reports/
+          include-hidden-files: true
+          retention-days: 1
+          if-no-files-found: error
+
+  frontend-static:
+    needs: frontend-changes
+    if: needs.frontend-changes.outputs.run == 'true'
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web-frontend/package-lock.json
+
+      - name: Install dependencies
         working-directory: ./web-frontend
         run: npm ci
 
       - name: Verify API types are up-to-date
-        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
+        if: needs.frontend-changes.outputs.run == 'true'
         working-directory: ./web-frontend
         run: |
           # Generate types in a temp location
@@ -508,7 +562,6 @@ jobs:
           echo "✅ API types are up-to-date"
 
       - name: Run linter
-        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         working-directory: ./web-frontend
         run: npm run lint:ci
 
@@ -517,19 +570,68 @@ jobs:
       # had drifted and `make format-check` was red on develop with nobody looking. Mirrors the
       # `Prettier format check` step in build-infrastructure added by #1007.
       - name: Prettier format check
-        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
         working-directory: ./web-frontend
         run: npm run format:check
 
-      - name: Run tests with coverage
-        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
+      - name: Build frontend
         working-directory: ./web-frontend
-        run: npm test -- --coverage --run
-        # Coverage threshold enforced: 80% for statements
-        # Configured in vite.config.ts - tests will fail if coverage drops below threshold
+        run: npm run build  # Run full build including TypeScript checking
+        env:
+          VITE_API_URL: https://api.batbern.ch
+
+      - name: Upload build artifacts
+        uses: actions/upload-artifact@v7
+        with:
+          name: frontend-dist
+          path: web-frontend/dist/
+          retention-days: 7
+
+  build-frontend:
+    needs: [frontend-changes, test-frontend, frontend-static]
+    if: always()
+    runs-on: ubuntu-latest
+    steps:
+      - name: Fail when a shard or the static checks failed
+        if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
+        run: |
+          echo "frontend-changes=${{ needs.frontend-changes.result }} test-frontend=${{ needs.test-frontend.result }} frontend-static=${{ needs.frontend-static.result }}"
+          exit 1
+
+      - name: Checkout code
+        if: needs.frontend-changes.outputs.run == 'true'
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js 22
+        if: needs.frontend-changes.outputs.run == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web-frontend/package-lock.json
+
+      - name: Install dependencies
+        if: needs.frontend-changes.outputs.run == 'true'
+        working-directory: ./web-frontend
+        run: npm ci
+
+      - name: Download blob reports
+        if: needs.frontend-changes.outputs.run == 'true'
+        uses: actions/download-artifact@v8
+        with:
+          pattern: vitest-blob-*
+          path: web-frontend/.vitest-reports/
+          merge-multiple: true
+
+      - name: Merge test reports and enforce coverage threshold
+        if: needs.frontend-changes.outputs.run == 'true'
+        working-directory: ./web-frontend
+        run: |
+          mkdir -p test-results/assets
+          npx vitest run --merge-reports=.vitest-reports --coverage
+        # Coverage threshold enforced on the merged result (vite.config.ts, statements)
 
       - name: Upload test reports artifact
-        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true' && always()
+        if: needs.frontend-changes.outputs.run == 'true' && always()
         uses: actions/upload-artifact@v7
         with:
           name: test-reports-frontend
@@ -539,23 +641,8 @@ jobs:
           retention-days: 7
           if-no-files-found: ignore
 
-      - name: Build frontend
-        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
-        working-directory: ./web-frontend
-        run: npm run build  # Run full build including TypeScript checking
-        env:
-          VITE_API_URL: https://api.batbern.ch
-
-      - name: Upload build artifacts
-        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true'
-        uses: actions/upload-artifact@v7
-        with:
-          name: frontend-dist
-          path: web-frontend/dist/
-          retention-days: 7
-
       - name: Upload coverage reports
-        if: steps.check-frontend.outputs.exists == 'true' && steps.frontend-changes.outputs.changed == 'true' && always()
+        if: needs.frontend-changes.outputs.run == 'true' && always()
         uses: codecov/codecov-action@v7
         with:
           files: web-frontend/coverage/coverage-final.json

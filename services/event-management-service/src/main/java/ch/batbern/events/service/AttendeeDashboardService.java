@@ -23,6 +23,7 @@ import java.util.Set;
 import java.util.UUID;
 import java.util.function.Function;
 import java.util.stream.Collectors;
+import java.util.stream.Stream;
 
 /**
  * Builds the attendee dashboard (Story 7.6): every event the attendee participated in.
@@ -41,11 +42,21 @@ public class AttendeeDashboardService {
     private final RegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
     private final UserApiClient userApiClient;
+    private final PersonAddresses personAddresses;
 
     @Transactional(readOnly = true)
     public AttendeeDashboardResponse getDashboard(String username) {
-        List<Registration> registrations = registrationRepository.findByAttendeeUsername(username).stream()
+        // #1183: the person's own profile plus registrations under their verified addresses (a guest
+        // registration, an imported history profile); one per event, the best one
+        List<Registration> own = registrationRepository.findByAttendeeUsername(username);
+        Set<String> addresses = personAddresses.verified(username);
+        List<Registration> byAddress = addresses.isEmpty() ? List.of()
+                : registrationRepository.findByAttendeeEmailIn(addresses);
+        List<Registration> registrations = Stream.concat(own.stream(), byAddress.stream())
                 .filter(r -> !CANCELLED.equalsIgnoreCase(r.getStatus()))
+                .collect(Collectors.groupingBy(Registration::getEventId))
+                .values().stream()
+                .map(perEvent -> perEvent.stream().min(PersonAddresses.best(username)).orElseThrow())
                 .toList();
 
         Set<UUID> eventIds = registrations.stream()

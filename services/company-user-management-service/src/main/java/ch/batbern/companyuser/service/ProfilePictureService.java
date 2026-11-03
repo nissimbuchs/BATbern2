@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.service;
 
+import ch.batbern.shared.utils.S3Links;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.generated.PresignedUploadUrl;
 import ch.batbern.companyuser.exception.FileSizeExceededException;
@@ -15,8 +16,6 @@ import software.amazon.awssdk.core.sync.RequestBody;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.PutObjectRequest;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
-import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
-import software.amazon.awssdk.services.s3.presigner.model.PutObjectPresignRequest;
 
 import java.net.URI;
 import java.time.Duration;
@@ -97,23 +96,9 @@ public class ProfilePictureService {
         String s3Key = generateS3Key(username, fileId, fileExtension);
         String mimeType = getMimeType(fileExtension);
 
-        // Build S3 PutObjectRequest
-        PutObjectRequest putObjectRequest = PutObjectRequest.builder()
-                .bucket(bucketName)
-                .key(s3Key)
-                .contentType(mimeType)
-                .contentLength(fileSizeBytes)
-                .build();
-
-        // Create presigned PUT request with 15-minute expiration
-        PutObjectPresignRequest presignRequest = PutObjectPresignRequest.builder()
-                .signatureDuration(Duration.ofMinutes(PRESIGNED_URL_EXPIRATION_MINUTES))
-                .putObjectRequest(putObjectRequest)
-                .build();
-
-        // Generate presigned URL
-        PresignedPutObjectRequest presignedRequest = s3Presigner.presignPutObject(presignRequest);
-        String uploadUrl = presignedRequest.url().toString();
+        // Presigned PUT, 15 minutes; content type and size are signed into the link
+        String uploadUrl = S3Links.uploadUrl(s3Presigner, bucketName, s3Key, mimeType, fileSizeBytes,
+                Duration.ofMinutes(PRESIGNED_URL_EXPIRATION_MINUTES));
 
         log.info("Generated presigned URL for file ID: {}, S3 key: {}", fileId, s3Key);
 

@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.newsletter.dto.generated.NewsletterSubscriptionStatusResponse;
 import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
@@ -87,7 +88,7 @@ public class NewsletterSubscriberService {
         // Block RFC 2606 / RFC 6761 reserved domains so test fixtures and scanners
         // (e.g. zaproxy@example.com, speaker-test-…@example.com) can't pollute prod.
         if (isReservedDomain(email)) {
-            log.warn("Rejected newsletter subscribe for reserved domain: {}", email);
+            log.warn("Rejected newsletter subscribe for reserved domain: {}", LoggingUtils.maskEmail(email));
             throw new ReservedEmailDomainException(email);
         }
         // Addresses are stored lower-cased and matched case-insensitively (#1099): "X@ace.ch" and
@@ -118,7 +119,7 @@ public class NewsletterSubscriberService {
             if (username != null) {
                 sub.setUsername(username);
             }
-            log.info("Reactivated newsletter subscriber: {}", email);
+            log.info("Reactivated newsletter subscriber: {}", LoggingUtils.maskEmail(email));
             return subscriberRepository.save(sub);
         }
 
@@ -131,7 +132,7 @@ public class NewsletterSubscriberService {
                 .username(username)
                 .unsubscribeToken(UUID.randomUUID().toString())
                 .build();
-        log.info("Created newsletter subscriber: {}", email);
+        log.info("Created newsletter subscriber: {}", LoggingUtils.maskEmail(email));
         return subscriberRepository.save(sub);
     }
 
@@ -161,7 +162,7 @@ public class NewsletterSubscriberService {
                 .orElseThrow(() -> new NoSuchElementException("Unsubscribe token not found: " + token));
         sub.setUnsubscribedAt(Instant.now());
         subscriberRepository.save(sub);
-        log.info("Unsubscribed newsletter subscriber via token: {}", sub.getEmail());
+        log.info("Unsubscribed newsletter subscriber via token: {}", LoggingUtils.maskEmail(sub.getEmail()));
     }
 
     /**
@@ -261,7 +262,8 @@ public class NewsletterSubscriberService {
                 .ifPresent(sub -> {
                     sub.setUnsubscribedAt(Instant.now());
                     subscriberRepository.save(sub);
-                    log.info("Unsubscribed newsletter subscriber via inbound email: {}", sub.getEmail());
+                    log.info("Unsubscribed newsletter subscriber via inbound email: {}",
+                            LoggingUtils.maskEmail(sub.getEmail()));
                 });
     }
 
@@ -350,7 +352,7 @@ public class NewsletterSubscriberService {
             throw new IllegalStateException("Subscriber is already unsubscribed: " + sub.getEmail());
         }
         sub.setUnsubscribedAt(Instant.now());
-        log.info("Organizer unsubscribed subscriber: {}", sub.getEmail());
+        log.info("Organizer unsubscribed subscriber: {}", LoggingUtils.maskEmail(sub.getEmail()));
         return subscriberRepository.save(sub);
     }
 
@@ -369,7 +371,7 @@ public class NewsletterSubscriberService {
         }
         sub.setUnsubscribedAt(null);
         sub.setSubscribedAt(Instant.now());
-        log.info("Organizer re-subscribed subscriber: {}", sub.getEmail());
+        log.info("Organizer re-subscribed subscriber: {}", LoggingUtils.maskEmail(sub.getEmail()));
         return subscriberRepository.save(sub);
     }
 
@@ -390,7 +392,7 @@ public class NewsletterSubscriberService {
         sub.setSuppressedAt(null);
         sub.setBounceCount(0);
         sub.setBounceType(null);
-        log.info("Organizer unsuppressed subscriber: {}", sub.getEmail());
+        log.info("Organizer unsuppressed subscriber: {}", LoggingUtils.maskEmail(sub.getEmail()));
         return subscriberRepository.save(sub);
     }
 
@@ -404,7 +406,7 @@ public class NewsletterSubscriberService {
         NewsletterSubscriber sub = subscriberRepository.findById(id)
                 .orElseThrow(() -> new NoSuchElementException("Subscriber not found: " + id));
         subscriberRepository.delete(sub);
-        log.info("Organizer deleted subscriber: {}", sub.getEmail());
+        log.info("Organizer deleted subscriber: {}", LoggingUtils.maskEmail(sub.getEmail()));
     }
 
     /**

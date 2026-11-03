@@ -1,5 +1,6 @@
 package ch.batbern.events.service.workflow;
 
+import ch.batbern.shared.utils.LoggingUtils;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
 
@@ -16,7 +17,7 @@ public class NoOpSpeakerProvisioningHook implements SpeakerProvisioningHook {
         log.info(
                 "Stub: SPEAKER role grant deferred to Story 11.E.2 for username={} email={}",
                 username,
-                email
+                LoggingUtils.maskEmail(email)
         );
     }
 }

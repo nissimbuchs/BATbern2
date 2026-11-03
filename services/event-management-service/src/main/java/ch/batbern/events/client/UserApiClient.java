@@ -137,6 +137,13 @@ public interface UserApiClient {
     List<UserResponse> getUsersByCompany(String companyName, String role);
 
     /**
+     * #1183: the usernames owning {@code email} as primary or VERIFIED additional address (CUMS
+     * {@code GET /internal/email-owners}); empty if nobody does or CUMS cannot answer. Uncached: a
+     * public by-email form calls it, and a cached "nobody" would hide a profile created a minute ago.
+     */
+    List<String> getEmailOwners(String email);
+
+    /**
      * Get all companies (basic info) from the company-user-management-service.
      * Used for the companies[] list in the legacy BAT export envelope.
      * Story 10.20: AC1

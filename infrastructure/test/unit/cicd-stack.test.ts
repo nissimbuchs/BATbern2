@@ -180,6 +180,36 @@ describe('CICDStack — GitHub Actions role permissions', () => {
     expect(hasAction(template, 'rds:DescribeDBInstances')).toBe(true);
   });
 
+  // #1032: `aws rds wait db-snapshot-completed` polls DescribeDBSnapshots; the retention step deletes.
+  test('should_grantRdsSnapshotWaitAndRetention_for_preDeployBackup', () => {
+    expect(hasAction(template, 'rds:DescribeDBSnapshots')).toBe(true);
+    expect(hasAction(template, 'rds:DeleteDBSnapshot')).toBe(true);
+  });
+
+  // #1032: IAM matches ARNs case-sensitively. The rule allowed `db:BATbern-staging-*`, the instance
+  // is `batbern-staging-postgres`, so every pre-migration backup since Dec 2025 was silently denied.
+  test('should_scopePreDeployBackup_to_theRealLowercaseInstanceAndSnapshots', () => {
+    const policies = template.findResources('AWS::IAM::ManagedPolicy');
+    const runtime = Object.values(policies).find((p) =>
+      JSON.stringify(
+        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? ''
+      ).includes('github-workflow-runtime')
+    ) as {
+      Properties: { PolicyDocument: { Statement: Array<{ Action: unknown; Resource: unknown }> } };
+    };
+    const rds = runtime.Properties.PolicyDocument.Statement.filter((st) =>
+      JSON.stringify(st.Action).includes('rds:')
+    );
+    const resources = JSON.stringify(rds.map((st) => st.Resource));
+    expect(resources).toContain(':db:batbern-staging-postgres');
+    expect(resources).toContain(':snapshot:batbern-staging-pre-deploy-*');
+    expect(resources).not.toContain(':db:BATbern-');
+    // Delete only ever touches the pipeline's own pre-deploy snapshots
+    const del = rds.filter((st) => JSON.stringify(st.Action).includes('rds:DeleteDBSnapshot'));
+    expect(JSON.stringify(del.map((st) => st.Resource))).not.toContain(':db:');
+    expect(JSON.stringify(del.map((st) => st.Resource))).not.toContain('pre-v');
+  });
+
   // ── Cognito ──────────────────────────────────────────────────────────────
   // Used by: deploy-staging.yml authenticate test users step (cognito-idp initiate-auth)
 

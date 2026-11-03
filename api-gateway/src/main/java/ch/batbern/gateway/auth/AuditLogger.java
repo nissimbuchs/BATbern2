@@ -1,5 +1,6 @@
 package ch.batbern.gateway.auth;
 
+import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.gateway.auth.model.AuthenticationEvent;
 import ch.batbern.gateway.auth.model.AuthorizationEvent;
 import lombok.RequiredArgsConstructor;
@@ -33,14 +34,15 @@ public class AuditLogger {
 
     public void logFailedAuthentication(AuthenticationEvent authEvent) {
         log.warn("Failed authentication - User: {}, Email: {}, Error: {}, IP: {}",
-            authEvent.getUserId(), authEvent.getEmail(), authEvent.getErrorMessage(), authEvent.getClientIp());
+            authEvent.getUserId(), LoggingUtils.maskEmail(authEvent.getEmail()), authEvent.getErrorMessage(),
+            authEvent.getClientIp());
 
         auditEventRepository.save(authEvent);
     }
 
     public void logSuccessfulAuthentication(AuthenticationEvent authEvent) {
         log.info("Successful authentication - User: {}, Email: {}, IP: {}",
-            authEvent.getUserId(), authEvent.getEmail(), authEvent.getClientIp());
+            authEvent.getUserId(), LoggingUtils.maskEmail(authEvent.getEmail()), authEvent.getClientIp());
 
         auditEventRepository.save(authEvent);
     }

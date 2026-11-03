@@ -48,13 +48,23 @@ public class DeregistrationEmailService {
      */
     // Not @Async: always called from DeregistrationService.deregisterByEmail() which is itself @Async
     public void sendDeregistrationLinkEmail(Registration registration, Event event, String deregistrationLink) {
+        sendDeregistrationLinkEmail(registration, event, deregistrationLink, registration.getAttendeeEmail());
+    }
+
+    /**
+     * #1183: the same mail to {@code recipient}, the address the person typed into the by-email form,
+     * when the registration was found under another of their verified addresses: the link goes where
+     * they asked for it, an address proven to be theirs.
+     */
+    public void sendDeregistrationLinkEmail(Registration registration, Event event, String deregistrationLink,
+            String recipient) {
         try {
             String locale = resolveLocale(registration.getAttendeeUsername());
             String templateKey = "deregistration-link";
             MailContent content = mailPipeline.template(templateKey, locale);
             if (content.bodyHtml().isBlank()) {
                 log.warn("No deregistration-link template found for locale '{}', skipping email to {}",
-                        locale, LoggingUtils.maskEmail(registration.getAttendeeEmail()));
+                        locale, LoggingUtils.maskEmail(recipient));
                 return;
             }
 
@@ -70,14 +80,14 @@ public class DeregistrationEmailService {
             List<String> cc = additionalEmailsFor(registration.getAttendeeUsername());
             MailContext context = MailContext.individual(event.getEventCode(), MailContext.Audience.REGISTRANTS,
                     templateKey).withSecrets(registration.getRegistrationCode());
-            emailService.sendHtmlEmail(context, registration.getAttendeeEmail(), cc, subject, html, null);
+            emailService.sendHtmlEmail(context, recipient, cc, subject, html, null);
             log.info("Deregistration link email sent to {} for event {} (ccCount={})",
-                    LoggingUtils.maskEmail(registration.getAttendeeEmail()),
+                    LoggingUtils.maskEmail(recipient),
                     event.getEventCode(),
                     cc.size());
         } catch (Exception e) {
             log.error("Failed to send deregistration link email to {}: {}",
-                    LoggingUtils.maskEmail(registration.getAttendeeEmail()), e.getMessage(), e);
+                    LoggingUtils.maskEmail(recipient), e.getMessage(), e);
         }
     }
 
