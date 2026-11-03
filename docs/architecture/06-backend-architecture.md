@@ -1119,7 +1119,8 @@ local dev → POST /dev/emails/inbound (same processors)                  ─┘
   (`MailConversationRepository.expiredAttachmentKeys`) and deletes them after the rows; a 400-day
   lifecycle rule is the backstop. Without a configured bucket (local dev) only names are kept.
 - **Switch** (`MailCenterSwitch`, admin setting `mailcenter.notify-instead-of-forward`, read per
-  mail): groups `moderator`, `replies`, `contact`. `AliasMailProcessor` switches only when every
+  mail): groups `moderator`, `replies`, `contact`. Set in Administration → Settings
+  (`MailCenterSwitchSettings.tsx`, writes the checked groups comma separated, nothing = empty). `AliasMailProcessor` switches only when every
   addressed alias maps to a switched group (`-speaker@`, `-participants@`, `batbern{N}@`,
   `partner@`, `ok@` never do). Then `InboundMailCenter.ingest*Strict` stores first and throws on
   failure (SQS retry, DLQ), and `EmailForwardingService.forward(…, notice)` /

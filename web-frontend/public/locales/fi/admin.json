@@ -44,6 +44,25 @@
       "salutation": "Tervehdys",
       "name": "Nimi",
       "email": "Sähköposti"
+    },
+    "mailCenterSwitch": {
+      "title": "Mail Center: ilmoitus edelleenlähetyksen sijaan",
+      "subtitle": "Valitun ryhmän vastaanottajat saavat edelleenlähetetyn viestin sijaan lyhyen ilmoituksen linkillä, ja viestiin vastataan Mail Centerissä. Valitsematta: edelleenlähetys kuten ennen. Muutos koskee seuraavaa viestiä.",
+      "groups": {
+        "moderator": {
+          "label": "Puhujien viestit (batbern{N}-moderator@)",
+          "help": "Mitä puhujat kirjoittavat tapahtuman moderaattoriosoitteeseen. Ota tämä käyttöön ensin."
+        },
+        "replies": {
+          "label": "Vastaukset (replies@)",
+          "help": "Vastaukset BATbernin lähettämiin viesteihin ja replies@-osoitteeseen tulevat viestit, joita järjestelmä ei tunnista."
+        },
+        "contact": {
+          "label": "Yleiset viestit (info@, events@, support@)",
+          "help": "Kenen tahansa viestit ilman tapahtumaa. Ne näkyvät Posti-sivulla kohdassa Ei tapahtumaa."
+        }
+      },
+      "alwaysForwarded": "Aina edelleenlähetetään: mitä järjestäjät lähettävät listoille -speaker@, -participants@, batbern{N}@ ja partner@, viestit osoitteeseen ok@ sekä automaattiset viestit, kuten poissaoloilmoitukset ja palautukset."
     }
   }
 }

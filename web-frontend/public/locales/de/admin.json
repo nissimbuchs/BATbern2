@@ -44,6 +44,25 @@
       "salutation": "Anrede",
       "name": "Name",
       "email": "E-Mail"
+    },
+    "mailCenterSwitch": {
+      "title": "Mail Center: Hinweis statt Weiterleitung",
+      "subtitle": "Für eine angekreuzte Gruppe erhalten die Empfänger einen kurzen Hinweis mit Link statt der weitergeleiteten Mail, beantwortet wird im Mail Center. Nicht angekreuzt: Weiterleitung wie bisher. Eine Änderung gilt ab der nächsten Mail.",
+      "groups": {
+        "moderator": {
+          "label": "Mails von Referierenden (batbern{N}-moderator@)",
+          "help": "Was Referierende an die Moderationsadresse eines Events schreiben. Als Erstes einschalten."
+        },
+        "replies": {
+          "label": "Antworten (replies@)",
+          "help": "Antworten auf Mails, die BATbern verschickt hat, und Mails an replies@, die das System nicht zuordnen kann."
+        },
+        "contact": {
+          "label": "Allgemeine Mails (info@, events@, support@)",
+          "help": "Mails von allen, ohne Event. Sie erscheinen auf der Seite Mail unter Ohne Event."
+        }
+      },
+      "alwaysForwarded": "Immer weitergeleitet: was Organisatoren an die Listen -speaker@, -participants@, batbern{N}@ und partner@ schicken, Mails an ok@ sowie automatische Mails wie Abwesenheitsnotizen und Unzustellbarkeitsmeldungen."
     }
   }
 }

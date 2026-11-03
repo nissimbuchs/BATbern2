@@ -176,10 +176,13 @@ It is read per mail, so a change applies to the next mail without a deploy. **Th
 each group on; nobody else does.** Attachment storage (up to 25 MB per file) is live, so switched
 mail keeps its files.
 
-- **Switch on:** Admin → settings, key `mailcenter.notify-instead-of-forward`, add the group
-  (e.g. `moderator`). Send a test mail from a private address to the alias; the recipients should
-  get "New mail … Open it here" and the conversation should appear on the event's mail page.
-- **Switch back:** remove the group from the value (or clear it). The next mail is forwarded again.
+- **Switch on:** Verwaltung (Administration) → tab Settings → "Mail Center: notice instead of
+  forwarding", tick the group (e.g. speaker mail = `moderator`), Save. The screen writes the setting
+  `mailcenter.notify-instead-of-forward` (`PUT /api/v1/admin/settings/{key}`, organizer only).
+  Send a test mail from a private address to the alias; the recipients should get "New mail … Open
+  it here" and the conversation should appear on the event's mail page.
+- **Switch back:** untick the group and Save. Nothing ticked = an empty value. The next mail is
+  forwarded again.
 - **Check first after switching on:** CloudWatch `BATbern/EmailForwarder` `NotificationsSent`
   (should rise with the alias traffic), `BATbern/MailCenter` `MailCenterIngestFailed` (should stay 0),
   the `replies-dlq` / `forwarding-dlq` alarms. With a group on, a storage failure is rethrown, so

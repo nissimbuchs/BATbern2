@@ -92,7 +92,7 @@ describe('AdminSettingsTab', () => {
     await user.clear(input);
     await user.type(input, 'new@test.ch');
 
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByTestId('support-contacts-save');
     await user.click(saveButton);
 
     await waitFor(() => {
@@ -111,7 +111,7 @@ describe('AdminSettingsTab', () => {
       expect(screen.getByLabelText('support contacts')).toBeInTheDocument();
     });
 
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByTestId('support-contacts-save');
     await user.click(saveButton);
 
     await waitFor(() => {
@@ -128,7 +128,7 @@ describe('AdminSettingsTab', () => {
       expect(screen.getByLabelText('support contacts')).toBeInTheDocument();
     });
 
-    const saveButton = screen.getByRole('button', { name: /save/i });
+    const saveButton = screen.getByTestId('support-contacts-save');
     await user.click(saveButton);
 
     await waitFor(() => {
@@ -140,5 +140,11 @@ describe('AdminSettingsTab', () => {
     mockGetAdminSetting.mockReturnValue(new Promise(() => {})); // Never resolves
     renderTab();
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
+  });
+
+  it('should show the Mail Center switch below the forwarding settings (Story 16.6)', async () => {
+    renderTab();
+    expect(await screen.findByTestId('mail-center-switch-settings')).toBeInTheDocument();
+    expect(mockGetAdminSetting).toHaveBeenCalledWith('mailcenter.notify-instead-of-forward');
   });
 });

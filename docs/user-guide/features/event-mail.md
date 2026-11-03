@@ -22,6 +22,9 @@ instead of it sitting in one private inbox (Story 16.2a).
   under "What went out" as one mail to all recipients.
 - **Forwarding is unchanged** until the owner switches an address group to the Mail Center. Then the
   people who got the forwarded copy get a short notice with a link to the conversation instead.
+  The switch is in Administration → Settings, "Mail Center: notice instead of forwarding", one
+  checkbox per group: speaker mail (`batbern{N}-moderator@`), replies (`replies@`), general mail
+  (`info@`, `events@`, `support@`).
 - **Each row:** a status dot, date, who wrote, where it arrived, the subject, and the avatar of the
   organizer who answers. Open and waiting first, newest first; done ones below, greyed. The number
   beside the heading counts the open ones.

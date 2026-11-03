@@ -44,6 +44,25 @@
       "salutation": "Aanhef",
       "name": "Naam",
       "email": "E-mail"
+    },
+    "mailCenterSwitch": {
+      "title": "Mail Center: melding in plaats van doorsturen",
+      "subtitle": "Voor een aangevinkte groep krijgen de ontvangers een korte melding met een link in plaats van de doorgestuurde mail, en wordt in het Mail Center geantwoord. Niet aangevinkt: doorsturen zoals voorheen. Een wijziging geldt vanaf de volgende mail.",
+      "groups": {
+        "moderator": {
+          "label": "Mail van sprekers (batbern{N}-moderator@)",
+          "help": "Wat sprekers naar het moderatoradres van een evenement schrijven. Zet dit als eerste aan."
+        },
+        "replies": {
+          "label": "Antwoorden (replies@)",
+          "help": "Antwoorden op mails die BATbern verstuurde, en mail aan replies@ die het systeem niet herkent."
+        },
+        "contact": {
+          "label": "Algemene mail (info@, events@, support@)",
+          "help": "Mail van iedereen, zonder evenement. Verschijnt op de pagina Mail onder Zonder evenement."
+        }
+      },
+      "alwaysForwarded": "Altijd doorgestuurd: wat organisatoren naar de lijsten -speaker@, -participants@, batbern{N}@ en partner@ sturen, mail aan ok@ en automatische mail zoals afwezigheidsberichten en bounces."
     }
   }
 }

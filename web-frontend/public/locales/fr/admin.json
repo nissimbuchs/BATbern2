@@ -44,6 +44,25 @@
       "salutation": "Civilité",
       "name": "Nom",
       "email": "E-mail"
+    },
+    "mailCenterSwitch": {
+      "title": "Mail Center : avis au lieu du transfert",
+      "subtitle": "Pour un groupe coché, les destinataires reçoivent un court avis avec un lien au lieu du mail transféré, et la réponse se fait dans le Mail Center. Non coché : transfert comme avant. Un changement s'applique au mail suivant.",
+      "groups": {
+        "moderator": {
+          "label": "Mails des intervenants (batbern{N}-moderator@)",
+          "help": "Ce que les intervenants écrivent à l'adresse de modération d'un événement. À activer en premier."
+        },
+        "replies": {
+          "label": "Réponses (replies@)",
+          "help": "Réponses aux mails envoyés par BATbern, et mails à replies@ que le système ne reconnaît pas."
+        },
+        "contact": {
+          "label": "Mails généraux (info@, events@, support@)",
+          "help": "Mails de tout le monde, sans événement. Ils apparaissent sur la page Mail sous Sans événement."
+        }
+      },
+      "alwaysForwarded": "Toujours transférés : ce que les organisateurs envoient aux listes -speaker@, -participants@, batbern{N}@ et partner@, les mails à ok@, et les mails automatiques comme les réponses d'absence et les rejets."
     }
   }
 }

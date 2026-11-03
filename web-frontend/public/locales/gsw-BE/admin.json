@@ -44,6 +44,25 @@
       "salutation": "Aaräd",
       "name": "Name",
       "email": "E-Mail"
+    },
+    "mailCenterSwitch": {
+      "title": "Mail Center: Hiwis statt Wyterleitig",
+      "subtitle": "Für ä aagchrüzti Gruppe überchöme d Empfänger ä churze Hiwis mit Link statt dr wytergleitete Mail, gantwortet wird im Mail Center. Nid aagchrüzt: Wyterleitig wie bis itze. Ä Änderig gilt ab dr nächschte Mail.",
+      "groups": {
+        "moderator": {
+          "label": "Mails vo Referierende (batbern{N}-moderator@)",
+          "help": "Was Referierendi a d Moderationsadrässe vomne Event schrybe. Als Erschts yschalte."
+        },
+        "replies": {
+          "label": "Antworte (replies@)",
+          "help": "Antworte uf Mails, wo BATbern verschickt het, und Mails a replies@, wo ds System nid cha zuordne."
+        },
+        "contact": {
+          "label": "Allgemeini Mails (info@, events@, support@)",
+          "help": "Mails vo allne, ohni Event. Si erschyne uf dr Syte Mail under Ohni Event."
+        }
+      },
+      "alwaysForwarded": "Immer wytergleitet: was Organisatore a d Liste -speaker@, -participants@, batbern{N}@ und partner@ schicke, Mails a ok@ und automatischi Mails wie Abwäseheitsnotize und Unzuestellbarkeitsmäldige."
     }
   }
 }
