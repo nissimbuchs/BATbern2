@@ -408,7 +408,8 @@ jobs:
   # adds only ~14%, measured 274 s vs 312 s locally). They now run in 3 shards in parallel with the
   # static checks and the build. `build-frontend` keeps its name, so the required check is unchanged:
   # it waits for both, merges the shards' blob reports and enforces the coverage threshold on the
-  # merged result (a shard alone covers ~30% and must not check it).
+  # merged result (a shard alone covers ~30% and must not check it). The blob path is explicit:
+  # vitest 5 writes to .vitest/blob/ by default, vitest 4 to .vitest-reports/ (first run of #1200).
   frontend-changes:
     runs-on: ubuntu-latest
     outputs:
@@ -507,7 +508,7 @@ jobs:
         working-directory: ./web-frontend
         run: |
           mkdir -p test-results/assets
-          npx vitest run --shard=${{ matrix.shard }}/3 --coverage --coverage.thresholds.statements=0 --reporter=blob
+          npx vitest run --shard=${{ matrix.shard }}/3 --coverage --coverage.thresholds.statements=0 --reporter=blob --outputFile.blob=.vitest-reports/blob-${{ matrix.shard }}-3.json
 
       - name: Upload blob report
         if: always()
@@ -626,7 +627,7 @@ jobs:
         working-directory: ./web-frontend
         run: |
           mkdir -p test-results/assets
-          npx vitest run --merge-reports --coverage
+          npx vitest run --merge-reports=.vitest-reports --coverage
         # Coverage threshold enforced on the merged result (vite.config.ts, statements)
 
       - name: Upload test reports artifact

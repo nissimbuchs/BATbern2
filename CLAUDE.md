@@ -606,7 +606,11 @@ git commit -m "test(integration): add company API contract tests"
 # Production deploy (auto-deploy on push to develop — AND on any PR targeting develop)
 git push origin develop
 
-# Tagged releases (manual — 3 steps)
+# Tagged releases: NOT USABLE TODAY (checked 2026-11-03). deploy-production.yml and
+# promote-to-production.yml still point to the decommissioned account 422940799530
+# (batbern-prod-postgres) and fail at the first AWS step. Production is deployed by every
+# PR to develop (above). Kept on purpose by owner decision 2026-11-03; do not rely on them.
+# The former 3 steps, for reference:
 # 1. Merge develop → main via a PR on GitHub
 #    This builds images and pushes them to ECR with the merge commit SHA as the tag.
 # 2. Note the 7-char SHA of the merge commit (visible in the commit list or build run)
