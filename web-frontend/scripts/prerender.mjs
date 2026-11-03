@@ -56,7 +56,10 @@ const ROUTES = [
     // stays the SPA fallback for non-prerendered routes (admin/archive/events) — no
     // homepage-shell flash on those. The CloudFront function maps `/` → /home/index.html.
     out: 'home/index.html',
-    hangApi: /\/api\/v1\/events\/current/,
+    // The homepage reads the public read model (/public/events/current) since #1072; the old
+    // /events/current is matched too. Without the public path the request failed fast, the page
+    // left its loading state, and every deploy from 2026-10 on shipped CSR-only (warning only).
+    hangApi: /\/api\/v1\/(public\/)?events\/current/,
     waitForSelector: '[data-testid="homepage-loading"]',
     waitUntil: 'commit',
   },
