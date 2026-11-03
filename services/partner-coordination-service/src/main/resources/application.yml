@@ -148,7 +148,8 @@ logging:
     # implicit coupling that hid #990. Opt IN to DEBUG, never out of it.
     ch.batbern: ${LOG_LEVEL:INFO}
     org.springframework.web: INFO
-    org.springframework.security: DEBUG
+    # INFO: production runs this base document (+ staging); Security DEBUG logs every request URL (#1184).
+    org.springframework.security: INFO
   pattern:
     console: "%d{yyyy-MM-dd HH:mm:ss} - %msg%n"
     file: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level %logger{36} - %msg%n"
@@ -183,6 +184,7 @@ logging:
   level:
     root: INFO
     ch.batbern: DEBUG
+    org.springframework.security: DEBUG
 
 ---
 # Test Profile Configuration

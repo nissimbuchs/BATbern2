@@ -4,6 +4,7 @@ import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.ClientErrorClassifier;
 import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.util.CorrelationIdGenerator;
+import ch.batbern.shared.utils.LoggingUtils;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.dao.DataIntegrityViolationException;
@@ -35,7 +36,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleCompanyNotFoundException(
             CompanyNotFoundException ex,
             HttpServletRequest request) {
-        log.error("Company not found: {}", ex.getMessage());
+        log.error("Company not found: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -52,7 +53,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUserNotFoundException(
             UserNotFoundException ex,
             HttpServletRequest request) {
-        log.warn("User not found: {}", ex.getMessage());
+        log.warn("User not found: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -69,7 +70,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAdditionalEmailDuplicateException(
             AdditionalEmailDuplicateException ex,
             HttpServletRequest request) {
-        log.warn("Additional email duplicate: {}", ex.getMessage());
+        log.warn("Additional email duplicate: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -87,7 +88,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleEmailLinkedToAccountException(
             EmailLinkedToAccountException ex,
             HttpServletRequest request) {
-        log.warn("Email linked to account: {}", ex.getMessage());
+        log.warn("Email linked to account: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -105,7 +106,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAdditionalEmailLimitReachedException(
             AdditionalEmailLimitReachedException ex,
             HttpServletRequest request) {
-        log.warn("Additional email limit reached: {}", ex.getMessage());
+        log.warn("Additional email limit reached: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -123,7 +124,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAdditionalEmailNotFoundException(
             AdditionalEmailNotFoundException ex,
             HttpServletRequest request) {
-        log.warn("Additional email not found: {}", ex.getMessage());
+        log.warn("Additional email not found: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -145,7 +146,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleVerificationTokenInvalidException(
             VerificationTokenInvalidException ex,
             HttpServletRequest request) {
-        log.warn("Verification token invalid: {}", ex.getMessage());
+        log.warn("Verification token invalid: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -167,7 +168,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleVerificationTokenExpiredException(
             VerificationTokenExpiredException ex,
             HttpServletRequest request) {
-        log.warn("Verification token expired: {}", ex.getMessage());
+        log.warn("Verification token expired: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -189,7 +190,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAdditionalEmailAlreadyVerifiedException(
             AdditionalEmailAlreadyVerifiedException ex,
             HttpServletRequest request) {
-        log.warn("Additional email already verified: {}", ex.getMessage());
+        log.warn("Additional email already verified: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -233,7 +234,7 @@ public class GlobalExceptionHandler {
                 || (causeMessage.contains("user_additional_emails") && causeMessage.contains("duplicate"));
 
         if (isAdditionalEmailDuplicate) {
-            log.warn("Additional email duplicate (DB-level): {}", ex.getMessage());
+            log.warn("Additional email duplicate (DB-level): {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
             ErrorResponse error = ErrorResponse.builder()
                     .timestamp(Instant.now())
                     .path(request.getRequestURI())
@@ -272,7 +273,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUserValidationException(
             UserValidationException ex,
             HttpServletRequest request) {
-        log.warn("User validation error: {}", ex.getMessage());
+        log.warn("User validation error: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -290,7 +291,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMinimumOrganizersException(
             MinimumOrganizersException ex,
             HttpServletRequest request) {
-        log.warn("Business rule violation: {}", ex.getMessage());
+        log.warn("Business rule violation: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -308,7 +309,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleCompanyValidationException(
             CompanyValidationException ex,
             HttpServletRequest request) {
-        log.error("Company validation failed: {}", ex.getMessage());
+        log.error("Company validation failed: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -325,7 +326,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMaxWatchesExceededException(
             MaxWatchesExceededException ex,
             HttpServletRequest request) {
-        log.warn("Max watches exceeded: {}", ex.getMessage());
+        log.warn("Max watches exceeded: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -342,7 +343,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleWatchPairingNotFoundException(
             WatchPairingNotFoundException ex,
             HttpServletRequest request) {
-        log.warn("Watch pairing not found: {}", ex.getMessage());
+        log.warn("Watch pairing not found: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -359,7 +360,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleValidationExceptions(
             MethodArgumentNotValidException ex,
             HttpServletRequest request) {
-        log.error("Validation error: {}", ex.getMessage());
+        log.error("Validation error: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
 
         Map<String, Object> validationErrors = new HashMap<>();
         StringBuilder messageBuilder = new StringBuilder("Validation failed: ");
@@ -399,7 +400,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleSharedValidationException(
             ValidationException ex,
             HttpServletRequest request) {
-        log.error("Query parameter validation error: {}", ex.getMessage());
+        log.error("Query parameter validation error: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -425,7 +426,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleConstraintViolationException(
             jakarta.validation.ConstraintViolationException ex,
             HttpServletRequest request) {
-        log.warn("Parameter constraint violation: {}", ex.getMessage());
+        log.warn("Parameter constraint violation: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -446,7 +447,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAuthorizationDeniedException(
             AuthorizationDeniedException ex,
             HttpServletRequest request) {
-        log.error("Authorization denied: {}", ex.getMessage());
+        log.error("Authorization denied: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
 
         // Check if the user is anonymous (not authenticated)
         org.springframework.security.core.Authentication auth =
@@ -491,7 +492,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleAccessDeniedException(
             AccessDeniedException ex,
             HttpServletRequest request) {
-        log.error("Access denied: {}", ex.getMessage());
+        log.error("Access denied: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -511,7 +512,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleFileSizeExceededException(
             FileSizeExceededException ex,
             HttpServletRequest request) {
-        log.warn("File size exceeded: {}", ex.getMessage());
+        log.warn("File size exceeded: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -531,7 +532,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleInvalidFileTypeException(
             InvalidFileTypeException ex,
             HttpServletRequest request) {
-        log.warn("Invalid file type: {}", ex.getMessage());
+        log.warn("Invalid file type: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -551,7 +552,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleLogoNotFoundException(
             LogoNotFoundException ex,
             HttpServletRequest request) {
-        log.warn("Logo not found: {}", ex.getMessage());
+        log.warn("Logo not found: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -572,7 +573,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleIllegalStateException(
             IllegalStateException ex,
             HttpServletRequest request) {
-        log.warn("Illegal state: {}", ex.getMessage());
+        log.warn("Illegal state: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -593,7 +594,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleMethodArgumentTypeMismatchException(
             MethodArgumentTypeMismatchException ex,
             HttpServletRequest request) {
-        log.warn("Invalid parameter type for '{}': {}", ex.getName(), ex.getMessage());
+        log.warn("Invalid parameter type for '{}': {}", ex.getName(), LoggingUtils.maskEmailsIn(ex.getMessage()));
 
         String requiredType = ex.getRequiredType() != null ? ex.getRequiredType().getSimpleName() : "unknown";
         ErrorResponse error = ErrorResponse.builder()
@@ -617,7 +618,7 @@ public class GlobalExceptionHandler {
             CognitoOperationException ex,
             HttpServletRequest request) {
         log.error("Cognito operation failed (action={}, user={}): {}",
-                ex.getAction(), ex.getMaskedEmail(), ex.getMessage(), ex);
+                ex.getAction(), ex.getMaskedEmail(), LoggingUtils.maskEmailsIn(ex.getMessage()), ex);
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -640,7 +641,7 @@ public class GlobalExceptionHandler {
     public ResponseEntity<ErrorResponse> handleUnprocessableInvitationState(
             UnprocessableInvitationStateException ex,
             HttpServletRequest request) {
-        log.warn("Unprocessable invitation state: {}", ex.getMessage());
+        log.warn("Unprocessable invitation state: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
         ErrorResponse error = ErrorResponse.builder()
                 .timestamp(Instant.now())
                 .path(request.getRequestURI())
@@ -716,7 +717,8 @@ public class GlobalExceptionHandler {
         Optional<ClientErrorClassifier.ClientError> clientError = ClientErrorClassifier.classify(ex);
         if (clientError.isPresent()) {
             log.warn("Client error {} [correlationId={}] {} {}: {}", clientError.get().status().value(),
-                    correlationId, request.getMethod(), request.getRequestURI(), ex.getMessage());
+                    correlationId, request.getMethod(), LoggingUtils.maskEmailsIn(request.getRequestURI()),
+                    LoggingUtils.maskEmailsIn(ex.getMessage()));
             return clientError.get().toResponseEntity(request.getRequestURI(), correlationId);
         }
         log.error("Unexpected error [correlationId={}]", correlationId, ex);

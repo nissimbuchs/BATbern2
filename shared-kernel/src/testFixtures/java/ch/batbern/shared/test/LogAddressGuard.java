@@ -26,11 +26,14 @@ import java.util.stream.Stream;
  */
 public final class LogAddressGuard {
 
-    private static final Pattern LOG_CALL = Pattern.compile("\\blog\\.(trace|debug|info|warn|error)\\s*\\(");
+    private static final Pattern LOG_CALL =
+            Pattern.compile("\\b(log|LOG|logger|LOGGER)\\.(trace|debug|info|warn|error)\\s*\\(");
 
     private static final Pattern ADDRESS = Pattern.compile(
             "(?i)(^|[^a-z])(e?mail|email\\w*|address(es)?|recipients?|attendeeEmail|fromAddress|replyTo|to)"
                     + "\\s*(\\(\\))?$"
+                    // camel case: normalizedEmail, primaryEmail(), recipientAddress
+                    + "|(?-i:[a-z0-9](Email|Emails|Address|Addresses))\\s*(\\(\\))?$"
                     + "|getEmail\\(\\)|getAttendeeEmail\\(\\)|Email\\(\\)$|getAddress\\(\\)|getTo\\(\\)"
                     + "|\\.to\\(\\)|\\.from\\(\\)|fromAddress\\(\\)|address\\(\\)");
 
@@ -57,6 +60,75 @@ public final class LogAddressGuard {
             throw new UncheckedIOException(e);
         }
         return found;
+    }
+
+    /**
+     * Framework loggers at DEBUG or TRACE that production would run with: the base and the
+     * {@code staging} document of {@code application.yml} (production runs the {@code staging}
+     * profile), and every {@code <logger>} in {@code logback-spring.xml} (Spring Boot applies
+     * {@code logging.level} after the XML, but only for the names it lists; a more specific XML
+     * logger keeps its level). {@code ch.batbern} itself is set by {@code LOG_LEVEL} and allowed.
+     * Seen 2026-11-03: Spring Security DEBUG logged every request URL, addresses included.
+     *
+     * @param resources e.g. {@code src/main/resources}
+     */
+    public static List<String> verboseProductionLevels(Path resources) {
+        List<String> found = new ArrayList<>();
+        try {
+            Path yml = resources.resolve("application.yml");
+            if (Files.exists(yml)) {
+                for (Object doc : new org.yaml.snakeyaml.Yaml().loadAll(Files.readString(yml))) {
+                    if (!(doc instanceof java.util.Map<?, ?> map)) {
+                        continue;
+                    }
+                    String profile = profileOf(map);
+                    if (!profile.equals("base") && !profile.equals("staging")) {
+                        continue;
+                    }
+                    Object levels = path(map, "logging", "level");
+                    if (levels instanceof java.util.Map<?, ?> lv) {
+                        lv.forEach((k, v) -> {
+                            if (verbose(String.valueOf(v)) && !String.valueOf(k).equals("ch.batbern")) {
+                                found.add("application.yml [" + profile + "]: " + k + "=" + v);
+                            }
+                        });
+                    }
+                }
+            }
+            Path xml = resources.resolve("logback-spring.xml");
+            if (Files.exists(xml)) {
+                Matcher m = Pattern.compile("<logger\\s+name=\"([^\"]+)\"\\s+level=\"(\\w+)\"")
+                        .matcher(Files.readString(xml));
+                while (m.find()) {
+                    if (verbose(m.group(2))) {
+                        found.add("logback-spring.xml: " + m.group(1) + "=" + m.group(2));
+                    }
+                }
+            }
+        } catch (IOException e) {
+            throw new UncheckedIOException(e);
+        }
+        return found;
+    }
+
+    private static boolean verbose(String level) {
+        return level.equalsIgnoreCase("DEBUG") || level.equalsIgnoreCase("TRACE");
+    }
+
+    private static String profileOf(java.util.Map<?, ?> doc) {
+        Object p = path(doc, "spring", "config", "activate", "on-profile");
+        return p == null ? "base" : String.valueOf(p);
+    }
+
+    private static Object path(java.util.Map<?, ?> map, String... keys) {
+        Object cur = map;
+        for (String k : keys) {
+            if (!(cur instanceof java.util.Map<?, ?> m)) {
+                return null;
+            }
+            cur = m.get(k);
+        }
+        return cur;
     }
 
     static void scan(String name, String source, List<String> found) {

@@ -213,6 +213,21 @@ public class LoggingUtils {
         return "***";
     }
 
+    private static final java.util.regex.Pattern ADDRESS_IN_TEXT = java.util.regex.Pattern.compile(
+            "([A-Za-z0-9._+-])[A-Za-z0-9._%+-]*(@|%40)([A-Za-z0-9-]+(?:\\.[A-Za-z0-9-]+)*\\.[A-Za-z]{2,})");
+
+    /**
+     * Every address inside free text masked ({@code a***@example.ch}): URL paths and query strings
+     * (also {@code %40}-encoded), exception messages. For a value that is only an address, use
+     * {@link #maskEmail(String)}.
+     */
+    public static String maskEmailsIn(String text) {
+        if (text == null || (text.indexOf('@') < 0 && !text.contains("%40"))) {
+            return text;
+        }
+        return ADDRESS_IN_TEXT.matcher(text).replaceAll("$1***$2$3");
+    }
+
     /** Every address masked on its own, comma-joined (for a group mail's recipients). */
     public static String maskAll(Collection<String> emails) {
         if (emails == null || emails.isEmpty()) {

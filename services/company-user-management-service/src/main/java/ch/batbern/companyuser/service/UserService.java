@@ -698,7 +698,8 @@ public class UserService {
         // "Jane@x.com" and "jane@x.com" resolve to the same User row. Idempotency claim now holds.
         String normalizedEmail = request.getEmail().trim().toLowerCase();
 
-        log.info("Provisioning user (Story 11.C.2): email={}, role={}", normalizedEmail, roleToGrant);
+        log.info("Provisioning user (Story 11.C.2): email={}, role={}",
+                LoggingUtils.maskEmail(normalizedEmail), roleToGrant);
 
         // 1. Look up existing user by email (case-insensitive). Matches the getOrCreateUser contract.
         Optional<User> existingUser = userRepository.findByEmailIgnoreCase(normalizedEmail);
@@ -783,7 +784,7 @@ public class UserService {
             // and won. The email UNIQUE constraint fired. Treat as idempotent: re-fetch and
             // grant the role.
             log.info("Provisioning: lost create race for email={} — re-fetching as idempotent existing-user case",
-                    normalizedEmail);
+                    LoggingUtils.maskEmail(normalizedEmail));
             User user = userRepository.findByEmailIgnoreCase(normalizedEmail)
                     .orElseThrow(() -> new IllegalStateException(
                             "DataIntegrityViolation on createNewUser but email not found on re-fetch: "

@@ -22,4 +22,13 @@ class LogAddressGuardTest {
                 .as("log calls passing an address without LoggingUtils.maskEmail")
                 .isEmpty();
     }
+
+    @Test
+    @DisplayName("should_runNoFrameworkLoggerAtDebug_inProduction")
+    void should_runNoFrameworkLoggerAtDebug_inProduction() {
+        // production runs the staging profile; DEBUG framework logs wrote request URLs with addresses
+        assertThat(LogAddressGuard.verboseProductionLevels(Path.of("src/main/resources")))
+                .as("DEBUG/TRACE loggers active in production (application.yml base/staging, logback-spring.xml)")
+                .isEmpty();
+    }
 }
