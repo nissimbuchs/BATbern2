@@ -229,6 +229,112 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/{username}/merge-preview': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Preview merging another profile into this one (Organizer)
+     * @description #1183 C. Shows both profiles and what a merge of `source` into `{username}` would move:
+     *     rows per table, rows that collide (same event, same session) and blockers. Changes nothing.
+     *
+     *     `canMerge` is false, with the reasons in `reasons`, when the source has a login (merge in
+     *     the other direction instead), both have a login, they are the same profile, or a blocker
+     *     exists (both lead a different talk at the same event).
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    get: operations['getUserMergePreview'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/{username}/merge': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Merge another profile into this one (Organizer)
+     * @description #1183 C. Moves the source's registrations, speaker slots, history, roles and addresses to
+     *     `{username}`, adds the source's address as a verified additional address, and deletes the
+     *     source profile. Where both hold a registration for the same event, the better one stays
+     *     (attended, confirmed, registered, waitlist, cancelled). Every moved and removed row is
+     *     logged in `user_merge_log` (event-management) so a merge can be undone by hand.
+     *
+     *     Refused with 409 `MERGE_NOT_ALLOWED` when the preview's `canMerge` is false.
+     *
+     *     **Authorization**: ORGANIZER role required
+     */
+    post: operations['mergeUserProfile'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/me/profile-claims': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Earlier profiles under the caller's name
+     * @description #1183 D. Profiles without a login whose first and last name equal the caller's (case
+     *     insensitive). Shows only a masked address and the company, so the person can recognise the
+     *     profile; the full address is never returned.
+     */
+    get: operations['listProfileClaimCandidates'];
+    put?: never;
+    /**
+     * Send a confirmation link to the address of an earlier profile
+     * @description #1183 D. Sends a signed link (48 h) to the address of the candidate profile. Opening it
+     *     while logged in as the caller merges the candidate into the caller's profile. The candidate
+     *     must be one of `GET /users/me/profile-claims`; anything else is 404.
+     */
+    post: operations['requestProfileClaim'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/me/profile-claims/confirm': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Confirm a profile claim with the link from the mail
+     * @description #1183 D. Merges the earlier profile into the caller's, like an organizer merge. The token
+     *     is bound to the caller: a link opened under another login is refused with 403
+     *     `CLAIM_OTHER_ACCOUNT`. A link for a profile that is already merged returns
+     *     `alreadyMerged: true`.
+     */
+    post: operations['confirmProfileClaim'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/admin/reconcile': {
     parameters: {
       query?: never;
@@ -1098,6 +1204,66 @@ export interface components {
        *     senders by the Story 10.26 alias forwarding (EMS). Always present; may be empty.
        */
       additionalEmails?: components['schemas']['AdditionalEmail'][];
+    };
+    /** @description One side of a merge, as the organizer sees it */
+    UserMergeProfileSummary: {
+      username: string;
+      firstName: string;
+      lastName: string;
+      email: string;
+      companyId?: string | null;
+      /** @description The profile has a Cognito user, i.e. the person can log in with it */
+      hasLogin: boolean;
+      roles: string[];
+      additionalEmails: string[];
+    };
+    UserMergePreview: {
+      target: components['schemas']['UserMergeProfileSummary'];
+      source: components['schemas']['UserMergeProfileSummary'];
+      /** @description Rows that move to the target, per `table.column` */
+      moves: {
+        [key: string]: number;
+      };
+      /** @description Rows per table where both hold one for the same event or session */
+      conflicts: {
+        [key: string]: number;
+      };
+      /** @description Events where both lead a different talk; the merge is refused until resolved */
+      blockers: string[];
+      canMerge: boolean;
+      /** @description Why `canMerge` is false: `SOURCE_HAS_LOGIN`, `BOTH_HAVE_LOGIN`, `SAME_PROFILE`, `BLOCKED` */
+      reasons: string[];
+    };
+    UserMergeRequest: {
+      sourceUsername: string;
+    };
+    UserMergeResult: {
+      targetUsername: string;
+      sourceUsername: string;
+      moved: {
+        [key: string]: number;
+      };
+      removed: {
+        [key: string]: number;
+      };
+    };
+    ProfileClaimCandidate: {
+      /** Format: uuid */
+      candidateId: string;
+      /** @example h***@example.ch */
+      maskedEmail: string;
+      companyName?: string | null;
+    };
+    ProfileClaimRequest: {
+      /** Format: uuid */
+      candidateId: string;
+    };
+    ConfirmProfileClaimRequest: {
+      token: string;
+    };
+    ProfileClaimConfirmResponse: {
+      merged: boolean;
+      alreadyMerged: boolean;
     };
     /** @description Story 10.32 — one additional email address registered on a user profile. */
     AdditionalEmail: {
@@ -2100,6 +2266,153 @@ export interface operations {
         };
         content?: never;
       };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getUserMergePreview: {
+    parameters: {
+      query: {
+        /** @description The profile that is merged in and then deleted */
+        source: string;
+      };
+      header?: never;
+      path: {
+        /** @description The profile that stays (target) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Merge preview */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserMergePreview'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  mergeUserProfile: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description The profile that stays (target) */
+        username: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UserMergeRequest'];
+      };
+    };
+    responses: {
+      /** @description Merged */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['UserMergeResult'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      409: components['responses']['Conflict'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  listProfileClaimCandidates: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Candidates (empty when none) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProfileClaimCandidate'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  requestProfileClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProfileClaimRequest'];
+      };
+    };
+    responses: {
+      /** @description The confirmation link is on its way */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  confirmProfileClaim: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ConfirmProfileClaimRequest'];
+      };
+    };
+    responses: {
+      /** @description Merged (or already merged) */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProfileClaimConfirmResponse'];
+        };
+      };
+      /** @description Token is invalid (`TOKEN_INVALID`) or expired (`TOKEN_EXPIRED`). */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
     };
   };

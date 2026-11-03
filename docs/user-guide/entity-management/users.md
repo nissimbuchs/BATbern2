@@ -306,6 +306,30 @@ Any user (primarily organizers) can register **additional email addresses** on t
 ℹ️ <strong>Note:</strong> v1 does not verify ownership of an added address (no confirmation email yet). Newsletter delivery to additional addresses is also out of scope (the newsletter keeps its own subscriber list).
 </div>
 
+## Merging Two Profiles of One Person
+
+<span class="feature-status implemented">Implemented</span> (#1183)
+
+A person sometimes has two profiles: one from a registration without an account or from the historical
+import, and one they log in with. Their dashboard then misses registrations and past events.
+
+**Organizers**: open the user, click **Merge profile**, pick the other profile. The preview shows both
+profiles side by side and what moves: registrations, talks, arrivals, notifications, newsletter
+subscriptions, roles and addresses. Confirm with **Merge and delete**.
+
+- Only a profile **without a login** is merged in and deleted; the profile with the login stays. If you
+  picked them the other way round, click **Swap direction**.
+- Two profiles that both have a login cannot be merged here.
+- Both registered for the same event: the better registration stays (attended, confirmed, registered,
+  waitlist, cancelled), the other is removed.
+- Both lead a different talk at the same event: the merge is refused until you remove one from the talk.
+- The address of the deleted profile becomes a confirmed additional address of the one that stays.
+- Every merge is logged with everything it moved and removed, so it can be undone by hand if needed.
+
+**Participants** see earlier profiles under their own name on the dashboard and in the account settings
+(masked address only). **This is me** sends a confirmation link to that profile's address. Opening it while
+logged in with the account that asked merges the profile the same way.
+
 ## GDPR Compliance
 
 <span class="feature-status implemented">Implemented</span>

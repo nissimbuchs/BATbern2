@@ -31,6 +31,7 @@ import {
   MailOutline as MailIcon,
   Cloud as CloudIcon,
   CloudOff as CloudOffIcon,
+  MergeType as MergeIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { ParticipantMailList } from '@/components/organizer/MailCenter/ParticipantMailList';
@@ -39,6 +40,7 @@ import type { User } from '../../../types/user.types';
 import { Breadcrumbs } from '@/components/shared/Breadcrumbs/Breadcrumbs';
 import { EventsParticipatedTable } from './EventsParticipatedTable';
 import { useCompany } from '@/hooks/useCompany/useCompany';
+import { MergeProfileDialog } from './MergeProfileDialog';
 
 interface TabPanelProps {
   children?: React.ReactNode;
@@ -83,6 +85,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
   const backPath = locationState?.from ?? '/organizer/users';
   const backLabel = locationState?.fromLabel ?? t('title');
   const [activeTab, setActiveTab] = useState(0);
+  const [mergeOpen, setMergeOpen] = useState(false);
 
   // Fetch company with logo if user has a company
   const { data: companyWithLogo } = useCompany(user.company?.name || '', { expand: ['logo'] });
@@ -106,6 +109,13 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
 
   return (
     <Box sx={{ p: 3, pb: 8 }} data-testid="user-detail-view">
+      {canEdit && (
+        <MergeProfileDialog
+          open={mergeOpen}
+          onClose={() => setMergeOpen(false)}
+          username={user.id}
+        />
+      )}
       {/* Breadcrumbs */}
       <Breadcrumbs items={[{ label: backLabel, path: backPath }, { label: fullName }]} />
 
@@ -121,6 +131,16 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
                 onClick={() => onDelete(user)}
               >
                 {t('common:actions.delete')}
+              </Button>
+            )}
+            {canEdit && (
+              <Button
+                variant="outlined"
+                startIcon={<MergeIcon />}
+                onClick={() => setMergeOpen(true)}
+                data-testid="merge-profile-button"
+              >
+                {t('merge.button')}
               </Button>
             )}
             {canEdit && onEdit && (

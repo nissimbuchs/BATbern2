@@ -48,6 +48,7 @@ import {
   useUpdateUserSettings,
 } from '@/hooks/useUserAccount/useUserAccount';
 import { useTranslation } from 'react-i18next';
+import { EarlierProfilesSection } from '@/components/user/EarlierProfilesSection/EarlierProfilesSection';
 import { useMySubscription, usePatchMySubscription } from '@/hooks/useNewsletter/useNewsletter';
 
 const ADDITIONAL_EMAILS_LIMIT = 5;
@@ -591,6 +592,9 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
 
           {/* Story 10.32: Additional emails section */}
           <AdditionalEmailsSection additionalEmails={additionalEmails ?? []} />
+
+          {/* #1183 D: earlier profiles under the same name */}
+          <EarlierProfilesSection />
         </Paper>
       </TabPanel>
 

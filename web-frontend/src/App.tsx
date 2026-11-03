@@ -165,6 +165,8 @@ const UnsubscribePage = React.lazy(() => import('@pages/public/UnsubscribePage')
 const VerifyAdditionalEmailPage = React.lazy(
   () => import('@pages/public/VerifyAdditionalEmailPage')
 );
+// #1183 D: confirm a profile claim (protected: the link only works under the claimer's login)
+const ClaimProfilePage = React.lazy(() => import('@pages/public/ClaimProfilePage'));
 
 // Story 10.12: Self-service deregistration page
 const DeregistrationPage = React.lazy(() => import('@pages/public/DeregistrationPage'));
@@ -349,6 +351,16 @@ function App() {
 
                     {/* Additional-email verification (v2): public token-credentialed verify */}
                     <Route path="/verify-email" element={<VerifyAdditionalEmailPage />} />
+
+                    {/* #1183 D: merge an earlier profile (link from the claim mail) */}
+                    <Route
+                      path="/claim-profile"
+                      element={
+                        <ProtectedRoute>
+                          <ClaimProfilePage />
+                        </ProtectedRoute>
+                      }
+                    />
 
                     {/* Story 10.12: Self-service deregistration (token-protected, no auth required) */}
                     <Route path="/deregister" element={<DeregistrationPage />} />

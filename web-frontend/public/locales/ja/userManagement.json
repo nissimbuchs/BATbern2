@@ -316,5 +316,60 @@
     "homeLink": "batbern.ch へ移動",
     "invalidToken": "この確認リンクは無効または期限切れです。アカウント設定から新しいリンクをリクエストしてください。",
     "notFound": "このメールアドレスは、追加された元のプロフィールにはもう登録されていません。再度追加した場合は、最新の確認メールのリンクをご利用ください。"
+  },
+  "merge": {
+    "button": "プロフィールを統合",
+    "title": "同一人物の2つのプロフィールを統合",
+    "intro": "Pick the other profile of this person. The profile without a login is merged into the other one and then deleted: its registrations, talks, history, roles and addresses move over.",
+    "pickOther": "もう一方のプロフィール",
+    "previewFailed": "The preview could not be loaded.",
+    "keeps": "残す",
+    "deletes": "統合して削除",
+    "hasLogin": "ログインあり",
+    "noLogin": "ログインなし",
+    "additionalEmails": "Additional addresses",
+    "moves": "Moves to the profile that stays",
+    "nothingToMove": "移動するものはありません。",
+    "conflicts": "Both profiles have an entry for the same event or session ({{list}}). The better registration stays, the other one is removed. Everything removed is logged.",
+    "swap": "方向を入れ替える",
+    "reason": {
+      "SOURCE_HAS_LOGIN": "The profile to be deleted has a login. Merge in the other direction: the profile with the login stays.",
+      "BOTH_HAVE_LOGIN": "Both profiles have a login. They cannot be merged here.",
+      "SAME_PROFILE": "This is the same profile.",
+      "BLOCKED": "Both profiles lead a different talk at {{events}}. Remove one of them from the talk first."
+    },
+    "warning": "Profile {{source}} will be deleted. The merge is logged and can be undone by hand only.",
+    "confirm": "統合して削除",
+    "success": "Merged: {{source}} is now part of {{target}}.",
+    "failed": "The merge failed. Nothing was changed; try again.",
+    "tables": {
+      "registrations": "登録",
+      "session_users": "講演",
+      "speaker_arrivals": "Speaker arrivals",
+      "session_qna_notification": "Q&A notifications",
+      "live_timing_presence": "Live timing",
+      "session_proposals": "Talk proposals",
+      "organizer_thanks": "Thanks to the organizers",
+      "notifications": "Notifications",
+      "session_qna_post": "Q&A posts",
+      "session_content_history": "Content submissions",
+      "newsletter_subscribers": "Newsletter subscriptions"
+    }
+  },
+  "claim": {
+    "sectionTitle": "あなたの名前での過去の登録",
+    "sectionHelp": "We found an earlier profile with your name, for example from a registration without an account. If it is yours, we send a confirmation link to its address. After you confirm, its registrations and past events appear in your account.",
+    "thisIsMe": "私です",
+    "sent": "Link sent to {{email}}",
+    "sendFailed": "The link could not be sent. Try again later.",
+    "title": "登録を統合",
+    "confirmMessage": "Combine the earlier registrations from this link with the account you are logged in with?",
+    "confirmButton": "統合",
+    "merged": "Done. Your earlier registrations and events are now in your account.",
+    "alreadyMerged": "These registrations are already in your account.",
+    "otherAccount": "This link belongs to another account. Log in with the account that asked for it.",
+    "invalid": "This link is invalid or has expired. Request a new one in your account settings.",
+    "failed": "This did not work. Nothing was changed; try again later.",
+    "dashboardLink": "ダッシュボードへ"
   }
 }

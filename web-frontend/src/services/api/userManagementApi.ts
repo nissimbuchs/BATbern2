@@ -23,6 +23,7 @@ import type {
   UserPagination,
   Role,
 } from '@/types/user.types';
+import type { components } from '@/types/generated/user-api.types';
 
 // API base path for user endpoints
 // Note: apiClient baseURL is set from runtime config to 'http://localhost:8080/api/v1'
@@ -245,6 +246,37 @@ export const checkSyncStatus = async (): Promise<SyncStatusResponse> => {
 export const reconcileUsers = async (): Promise<ReconciliationReportResponse> => {
   const response = await apiClient.post<ReconciliationReportResponse>(
     `${USER_API_PATH}/admin/reconcile`
+  );
+  return response.data;
+};
+
+// =====================================================================
+// #1183 C — an organizer merges a profile without login into another profile
+// =====================================================================
+
+export type UserMergePreview = components['schemas']['UserMergePreview'];
+export type UserMergeResult = components['schemas']['UserMergeResult'];
+
+/** What merging `source` into `target` would move; changes nothing. */
+export const getUserMergePreview = async (
+  target: string,
+  source: string
+): Promise<UserMergePreview> => {
+  const response = await apiClient.get<UserMergePreview>(
+    `${USER_API_PATH}/${encodeURIComponent(target)}/merge-preview`,
+    { params: { source } }
+  );
+  return response.data;
+};
+
+/** Merges `source` into `target` and deletes `source`. */
+export const mergeUserProfile = async (
+  target: string,
+  source: string
+): Promise<UserMergeResult> => {
+  const response = await apiClient.post<UserMergeResult>(
+    `${USER_API_PATH}/${encodeURIComponent(target)}/merge`,
+    { sourceUsername: source }
   );
   return response.data;
 };

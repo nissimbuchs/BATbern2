@@ -48,6 +48,10 @@ Each release includes:
 **Bug Fix — Top menu fits on laptop screens (2026-11-03)**:
 - ✅ On screens between 1200 and 1440 pixels wide, the organizer menu was wider than the window and the page scrolled sideways (bell and profile cut off). There the menu now shows icons only; hovering an icon shows its name. From 1440 pixels the names show as before.
 
+**New — Two profiles of the same person become one (2026-11-03)**:
+- ✅ Organizers: on a user's page, "Merge profile" folds another profile of the same person into this one: registrations, talks, history, roles and addresses move over, and the other profile is deleted. A preview shows both profiles and what moves before anything changes. Only a profile without a login can be merged in; the dialog offers to swap the direction.
+- ✅ Participants: if an earlier profile exists under your name, for example from a registration without an account, your dashboard and your account settings show it with a masked address. "This is me" sends a confirmation link to that address; open it while logged in and confirm, and the earlier registrations and events appear in your account.
+
 **Improvement — Registrations under your other addresses (2026-11-03)**:
 - ✅ Your dashboard and an event's registration status now also show registrations made under another of your addresses, for example a guest registration with your work address, once that address is confirmed in your profile (Profile → additional e-mail addresses).
 - ✅ "Cancel registration" by e-mail also finds the registration when it was made under another of your addresses or profiles. The link goes to the address you typed in.
