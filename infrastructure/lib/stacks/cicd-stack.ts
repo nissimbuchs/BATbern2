@@ -198,13 +198,29 @@ export class CICDStack extends cdk.Stack {
             ],
           }),
 
-          // RDS — pre-deploy database snapshot backup
+          // RDS — pre-deploy database snapshot backup (deploy-staging.yml "Create database backup")
+          // #1032: IAM matches ARNs case-sensitively. The instance and the snapshots are lowercase
+          // (`batbern-staging-postgres`, `batbern-staging-pre-deploy-*`); the old `BATbern-` pattern
+          // denied every backup since Dec 2025 while the step reported "instance not found".
           new iam.PolicyStatement({
             effect: iam.Effect.ALLOW,
-            actions: ['rds:CreateDBSnapshot', 'rds:DescribeDBInstances'],
+            actions: [
+              'rds:DescribeDBInstances', // instance check
+              'rds:CreateDBSnapshot', // snapshot (needs the db and the snapshot ARN)
+              'rds:DescribeDBSnapshots', // aws rds wait db-snapshot-completed, retention listing
+            ],
             resources: [
-              `arn:aws:rds:${this.region}:${this.account}:db:BATbern-${config.envName}-*`,
-              `arn:aws:rds:${this.region}:${this.account}:snapshot:BATbern-${config.envName}-*`,
+              `arn:aws:rds:${this.region}:${this.account}:db:batbern-${config.envName}-postgres`,
+              `arn:aws:rds:${this.region}:${this.account}:snapshot:batbern-${config.envName}-pre-deploy-*`,
+            ],
+          }),
+          // Retention: keep the newest 3 pre-deploy snapshots. Scoped to the pipeline's own prefix,
+          // so hand-made snapshots (e.g. `batbern-staging-pre-v103-*`) can never be deleted.
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['rds:DeleteDBSnapshot'],
+            resources: [
+              `arn:aws:rds:${this.region}:${this.account}:snapshot:batbern-${config.envName}-pre-deploy-*`,
             ],
           }),
 

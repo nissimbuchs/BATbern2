@@ -237,8 +237,15 @@ Until then: **work one PR to `develop` at a time.**
    - Analyzes changed components via git diff
    - Selects deployment strategy (fast-path, hotswap, or full CDK)
 
-2. **Database Backup** (if migrations detected)
-   - Creates RDS snapshot before deployment
+2. **Database Backup** (if migrations or infrastructure changed)
+   - Creates the manual RDS snapshot `batbern-staging-pre-deploy-{timestamp}` before deployment
+   - Keeps the newest 3 `pre-deploy` snapshots and deletes older ones (owner decision 2026-11-03).
+     Hand-made snapshots with another prefix (e.g. `batbern-staging-pre-v103-*`) are never touched;
+     the role may delete only the `pre-deploy` prefix
+   - A failure shows as an `::error::` annotation with the AWS message. From Dec 2025 to 2026-11-03
+     no backup was taken: the role policy named the instance `BATbern-staging-*` (IAM compares ARNs
+     case-sensitively, the instance is lowercase) and a `2>/dev/null` reported it as "instance not
+     found" (#1032). Daily automatic backups (7 days, point-in-time restore) were unaffected
 
 3. **Deploy**
    - Deploys with AWS CDK (layer-based for infrastructure changes)
