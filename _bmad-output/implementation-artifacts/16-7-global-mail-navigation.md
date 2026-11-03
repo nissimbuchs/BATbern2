@@ -1,6 +1,6 @@
 # Story 16.7: Global "Mail" navigation, mail without an event, and spam
 
-Status: review
+Status: done
 
 ## Story
 

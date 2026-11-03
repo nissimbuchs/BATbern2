@@ -79,6 +79,17 @@ public final class MailClassifier {
         return returnPath != null && returnPath.trim().equals("<>");
     }
 
+    /** The object SES writes into the bucket when a receipt rule is created or updated. */
+    static final String SES_SETUP_NOTIFICATION = "AMAZON_SES_SETUP_NOTIFICATION";
+
+    /**
+     * #1195: SES writes {@value #SES_SETUP_NOTIFICATION} under every rule's prefix whenever a receipt rule is
+     * created or updated (a CDK deploy). It is no mail: not forwarded, not stored in the Mail Center.
+     */
+    public static boolean isSesSetupNotification(String s3Key) {
+        return s3Key != null && s3Key.substring(s3Key.lastIndexOf('/') + 1).equals(SES_SETUP_NOTIFICATION);
+    }
+
     /** Story 16.7: what SES found when it scanned the mail. */
     public enum SesVerdict { CLEAN, SPAM, VIRUS }
 

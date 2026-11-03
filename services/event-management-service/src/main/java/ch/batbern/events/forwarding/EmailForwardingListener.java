@@ -58,6 +58,10 @@ public class EmailForwardingListener {
                 log.warn("Forwarding queue: ignoring object outside {}/{}", bucketName, PREFIX);
                 continue;
             }
+            if (MailClassifier.isSesSetupNotification(key)) {
+                log.info("Forwarding queue: SES receipt-rule setup notification {}, ignoring", key);
+                continue;
+            }
             byte[] raw = s3Client.getObjectAsBytes(GetObjectRequest.builder().bucket(bucket).key(key).build())
                     .asByteArray();
             processor.process(key, raw);

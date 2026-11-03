@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.forwarding.MailClassifier;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import io.awspring.cloud.sqs.annotation.SqsListener;
@@ -74,6 +75,10 @@ public class InboundEmailListenerService {
 
             if (key.isBlank()) {
                 log.warn("Inbound email: empty S3 object key — discarding");
+                return;
+            }
+            if (MailClassifier.isSesSetupNotification(key)) {
+                log.info("Inbound email: SES receipt-rule setup notification {}, ignoring", key);
                 return;
             }
 

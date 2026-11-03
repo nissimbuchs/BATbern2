@@ -1060,6 +1060,9 @@ local dev → POST /dev/emails/inbound (same processors)                  ─┘
   (`InboundMailCenter.releaseSpam`) threads the stored mail like a new arrival (token, headers,
   moderator alias, subject, else no event) and `InboundMailStore.release` clears the flag. The
   retention job deletes spam 30 days after receipt.
+- **SES setup notification (#1195)**: on every receipt-rule create or update SES writes the object
+  `AMAZON_SES_SETUP_NOTIFICATION` under each rule's prefix. Both S3 listeners skip that key before the
+  download (`MailClassifier.isSesSetupNotification`): not forwarded, not stored, one INFO line.
 - **API** (`MailConversationController`, ORGANIZER, `no-store`): `GET /events/{code}/conversations`
   (OPEN and WAITING first, then DONE), `GET /conversations/{key}` (messages oldest first as
   `MailMessageDetail`), `PATCH /conversations/{key}` (status, assignee, which must hold ORGANIZER;

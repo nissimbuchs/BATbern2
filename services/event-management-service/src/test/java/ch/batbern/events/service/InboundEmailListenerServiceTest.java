@@ -6,6 +6,7 @@ import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
 import ch.batbern.events.forwarding.EmailForwardingService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.ArgumentCaptor;
@@ -293,5 +294,14 @@ class InboundEmailListenerServiceTest {
                 + "\r\n"
                 + icsBody
                 + "--" + boundary + "--\r\n";
+    }
+
+    @Test
+    @DisplayName("should_ignore_when_sesSetupNotification (#1195)")
+    void should_ignore_when_sesSetupNotification() {
+        // SES writes this test object on every receipt-rule create or update: not forwarded, not stored.
+        listenerService.handleS3Notification(s3NotificationJson("emails/AMAZON_SES_SETUP_NOTIFICATION"));
+
+        verifyNoInteractions(s3Client, router, forwardingService, mailCenter);
     }
 }

@@ -45,6 +45,9 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Bug Fix — Amazon notice no longer forwarded (2026-11-03)**:
+- ✅ When the mail server's rules change, Amazon writes a short setup notice. It went to every organizer's inbox and into the Mail page. It is now ignored.
+
 **New Feature — Mail Page Across Events, Spam Filter, Mail Tab per Person (2026-11-02)**:
 - ✅ **Mail** in the top navigation, after Events: everything that needs an answer across all events, the mail to `info@`, `events@` and `support@` that belongs to no event (put it on an event with "Assign to event"), the spam, and what went out across all events. The number on the entry counts the open conversations.
 - ✅ The mail server now scans incoming mail. Mail with a virus is neither kept nor forwarded. Spam is no longer forwarded to anyone's inbox; it waits 30 days in the Spam list, where "Not spam" moves it to where it belongs.

@@ -1,6 +1,6 @@
 # Story 16.10: Mail tab on the user and partner detail pages
 
-Status: review
+Status: done
 
 ## Story
 
