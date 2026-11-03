@@ -280,7 +280,8 @@ jobs:
           # (case-sensitive ARN in the role policy) into "instance not found", and no backup was
           # taken before any migration from Dec 2025 on, while the step stayed green.
           if ! OUT=$(aws rds describe-db-instances --db-instance-identifier "$DB" --region ${{ env.AWS_REGION }} 2>&1); then
-            echo "::error::Pre-deploy database backup NOT taken: $OUT"
+            # one line: an annotation shows only the first line, and the CLI error starts with a newline
+            echo "::error::Pre-deploy database backup NOT taken: $(echo "$OUT" | tr '\n' ' ' | sed 's/^ *//')"
             exit 0  # non-fatal: the CICD stack (Layer 0) that fixes the role deploys later in this run
           fi
           aws rds create-db-snapshot \
@@ -298,10 +299,15 @@ jobs:
 
           # #1032: keep the newest 3 pre-deploy snapshots (owner 2026-11-03). Only this prefix:
           # hand-made snapshots (e.g. batbern-staging-pre-v103-*) are never touched.
-          aws rds describe-db-snapshots --db-instance-identifier "$DB" --snapshot-type manual \
+          # Listing failures must be visible: in a pipeline they would only empty the loop.
+          if ! KEEP=$(aws rds describe-db-snapshots --db-instance-identifier "$DB" --snapshot-type manual \
             --region ${{ env.AWS_REGION }} \
             --query "sort_by(DBSnapshots[?starts_with(DBSnapshotIdentifier, 'batbern-staging-pre-deploy-')], &SnapshotCreateTime)[].DBSnapshotIdentifier" \
-            --output text | tr '\t' '\n' | grep -v '^$' | head -n -3 | while read -r OLD; do
+            --output text 2>&1); then
+            echo "::warning::Snapshot retention skipped: $(echo "$KEEP" | tr '\n' ' ' | sed 's/^ *//')"
+            KEEP=""
+          fi
+          echo "$KEEP" | tr '\t' '\n' | grep -v '^$' | head -n -3 | while read -r OLD; do
               echo "Retention: deleting $OLD"
               aws rds delete-db-snapshot --db-snapshot-identifier "$OLD" --region ${{ env.AWS_REGION }} >/dev/null \
                 || echo "::warning::Could not delete old snapshot $OLD"

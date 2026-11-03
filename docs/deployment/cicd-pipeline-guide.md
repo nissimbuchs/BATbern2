@@ -246,6 +246,8 @@ Until then: **work one PR to `develop` at a time.**
      no backup was taken: the role policy named the instance `BATbern-staging-*` (IAM compares ARNs
      case-sensitively, the instance is lowercase) and a `2>/dev/null` reported it as "instance not
      found" (#1032). Daily automatic backups (7 days, point-in-time restore) were unaffected
+   - Listing snapshots is allowed account-wide (read-only); create and delete stay on the
+     `pre-deploy` prefix. A failed listing shows as a `::warning::` "Snapshot retention skipped"
 
 3. **Deploy**
    - Deploys with AWS CDK (layer-based for infrastructure changes)
