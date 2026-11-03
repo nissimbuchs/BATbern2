@@ -1065,7 +1065,7 @@ local dev → POST /dev/emails/inbound (same processors)                  ─┘
   download (`MailClassifier.isSesSetupNotification`): not forwarded, not stored, one INFO line.
 - **API** (`MailConversationController`, ORGANIZER, `no-store`): `GET /events/{code}/conversations`
   (OPEN and WAITING first, then DONE), `GET /conversations/{key}` (messages oldest first as
-  `MailMessageDetail`), `PATCH /conversations/{key}` (status, assignee, which must hold ORGANIZER;
+  `MailMessageDetail`; the UI shows them newest first, older ones collapsed), `PATCH /conversations/{key}` (status, assignee, which must hold ORGANIZER;
   `updated_by` = caller). Keys `conv-{n}` are global, so the gateway routes `/api/v1/conversations`
   to EMS. Bruno covers the reads only.
 - **Across events (Story 16.7)**: `GET /conversations` (filters `status` repeated, `eventCode`,
@@ -1080,7 +1080,9 @@ local dev → POST /dev/emails/inbound (same processors)                  ─┘
   to the last inbound mail's Reply-To (`mail_message.reply_to_address`, V140), else its From. Built by
   the shared kernel's `EmailService.sendComposed(MailContext, ComposedMail)` through
   `SendRawEmail`, because `SendEmail` carries neither `In-Reply-To`/`References` nor a per-mail
-  display name: From `"{first last} via BATbern" <noreply@…>`, Reply-To `replies+{token}@…`,
+  display name: From `"{first last} via BATbern" <info@…>` (`ComposedMail.fromAddress`; was
+  `noreply@` until 2026-11-03, owner: a reply typed to the sender by hand reaches the Mail Center),
+  Reply-To `replies+{token}@…`,
   subject `Re: …` (no second prefix after `Re:`/`AW:`), `In-Reply-To` = the last inbound id,
   `References` = its References plus that id, and our own `Message-ID: <{uuid}@{domain}>`, kept
   through `saveChanges()` by a `MimeMessage` subclass. Body: the organizer's text as plain text

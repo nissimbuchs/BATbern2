@@ -620,7 +620,8 @@
           "sent": "Antwort gschickt.",
           "error": "D Antwort isch nid gschickt worde. Bitte nomau probiere.",
           "noAddress": "Die Unterhautig het ke Adrässe, wo ä Antwort cha häre gah."
-        }
+        },
+        "expandAll": "Aui {{count}} Mails aazeige"
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} Abwäseheitsnotiz",

@@ -614,7 +614,8 @@
           "sent": "返信を送信しました。",
           "error": "返信を送信できませんでした。もう一度お試しください。",
           "noAddress": "この会話にはメールで返信できるアドレスがありません。"
-        }
+        },
+        "expandAll": "{{count}} 件のメールをすべて表示"
       },
       "automaticCounts": {
         "outOfOffice_one": "不在通知 {{count}} 件",

@@ -7,9 +7,11 @@ import java.util.Objects;
  * A personal mail with headers the caller owns (Story 16.6: an organizer's answer to a
  * conversation). Sent by {@code EmailService.sendComposed} through {@code SendRawEmail}, because
  * {@code SendEmail} can carry neither {@code In-Reply-To}/{@code References} nor a per-mail display
- * name. The From address stays the platform's sender address.
+ * name. The From address is the given one (an address of the platform's verified domain), else the
+ * platform's sender address.
  *
- * @param fromName   display name, e.g. {@code Anna Muster via BATbern}
+ * @param fromName    display name, e.g. {@code Anna Muster via BATbern}
+ * @param fromAddress From address, e.g. {@code info@batbern.ch}; null = the platform's sender address
  * @param to         the one recipient
  * @param subject    subject as sent
  * @param html       HTML part
@@ -21,6 +23,7 @@ import java.util.Objects;
  */
 public record ComposedMail(
         String fromName,
+        String fromAddress,
         String to,
         String subject,
         String html,

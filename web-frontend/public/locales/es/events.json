@@ -614,7 +614,8 @@
           "sent": "Respuesta enviada.",
           "error": "La respuesta no se ha enviado. Inténtalo de nuevo.",
           "noAddress": "Esta conversación no tiene una dirección a la que responder por correo."
-        }
+        },
+        "expandAll": "Mostrar los {{count}} correos"
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} respuesta de ausencia",

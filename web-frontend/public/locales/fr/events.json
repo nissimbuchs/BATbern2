@@ -614,7 +614,8 @@
           "sent": "Réponse envoyée.",
           "error": "La réponse n'a pas été envoyée. Veuillez réessayer.",
           "noAddress": "Cette conversation n'a pas d'adresse à laquelle répondre par e-mail."
-        }
+        },
+        "expandAll": "Afficher les {{count}} mails"
       },
       "automaticCounts": {
         "outOfOffice_one": "{{count}} réponse d’absence",
