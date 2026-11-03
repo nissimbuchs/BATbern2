@@ -44,6 +44,25 @@
       "salutation": "敬称",
       "name": "氏名",
       "email": "メール"
+    },
+    "mailCenterSwitch": {
+      "title": "Mail Center: 転送の代わりに通知",
+      "subtitle": "チェックしたグループでは、受信者には転送メールの代わりにリンク付きの短い通知が届き、返信は Mail Center で行います。チェックなし: これまでどおり転送します。変更は次のメールから有効です。",
+      "groups": {
+        "moderator": {
+          "label": "講演者からのメール (batbern{N}-moderator@)",
+          "help": "講演者がイベントのモデレーター宛てに書いたメール。最初にこれを有効にしてください。"
+        },
+        "replies": {
+          "label": "返信 (replies@)",
+          "help": "BATbern が送信したメールへの返信と、システムが認識できない replies@ 宛てのメール。"
+        },
+        "contact": {
+          "label": "一般メール (info@, events@, support@)",
+          "help": "イベントに属さない、誰からでも届くメール。メール ページの「イベントなし」に表示されます。"
+        }
+      },
+      "alwaysForwarded": "常に転送されるもの: 主催者が -speaker@、-participants@、batbern{N}@、partner@ の各リストに送るメール、ok@ 宛てのメール、不在通知や配信エラーなどの自動メール。"
     }
   }
 }

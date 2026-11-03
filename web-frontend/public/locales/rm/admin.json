@@ -44,6 +44,25 @@
       "salutation": "Salidaziun",
       "name": "Num",
       "email": "E-mail"
+    },
+    "mailCenterSwitch": {
+      "title": "Mail Center: avis empè da renviar",
+      "subtitle": "Per ina gruppa marcada retschaivan ils destinaturs in curt avis cun ina colliaziun empè dal mail renvià, e la resposta vegn fatga en il Mail Center. Betg marcà: renviar sco fin ussa. Ina midada vala a partir dal proxim mail.",
+      "groups": {
+        "moderator": {
+          "label": "Mails dals referents (batbern{N}-moderator@)",
+          "help": "Quai che referents scrivan a l'adressa da moderaziun d'in eveniment. Activar quai l'emprim."
+        },
+        "replies": {
+          "label": "Respostas (replies@)",
+          "help": "Respostas a mails che BATbern ha tramess, e mails a replies@ che il sistem na renconuscha betg."
+        },
+        "contact": {
+          "label": "Mails generals (info@, events@, support@)",
+          "help": "Mails da tuts, senza eveniment. Els cumparan sin la pagina Mail sut Senza eveniment."
+        }
+      },
+      "alwaysForwarded": "Adina renviads: quai che organisaturs tramettan a las glistas -speaker@, -participants@, batbern{N}@ e partner@, mails ad ok@ e mails automatics sco respostas d'absenza e mails betg consegnads."
     }
   }
 }

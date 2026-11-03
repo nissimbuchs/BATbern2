@@ -45,6 +45,9 @@ Each release includes:
 - 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
 
+**Improvement — Mail Center switch in the settings (2026-11-03)**:
+- ✅ Administration → Settings now has "Mail Center: notice instead of forwarding". Per group (speaker mail, replies, general mail) you choose whether the mail is still forwarded to the inbox or whether a short notice points to the Mail Center, where it is answered.
+
 **Bug Fix — Amazon notice no longer forwarded (2026-11-03)**:
 - ✅ When the mail server's rules change, Amazon writes a short setup notice. It went to every organizer's inbox and into the Mail page. It is now ignored.
 

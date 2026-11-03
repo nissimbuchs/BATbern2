@@ -44,6 +44,25 @@
       "salutation": "Saluto",
       "name": "Nome",
       "email": "E-mail"
+    },
+    "mailCenterSwitch": {
+      "title": "Mail Center: avviso invece dell'inoltro",
+      "subtitle": "Per un gruppo selezionato i destinatari ricevono un breve avviso con un link invece della mail inoltrata, e si risponde nel Mail Center. Non selezionato: inoltro come prima. Una modifica vale dalla mail successiva.",
+      "groups": {
+        "moderator": {
+          "label": "Mail dei relatori (batbern{N}-moderator@)",
+          "help": "Ciò che i relatori scrivono all'indirizzo di moderazione di un evento. Da attivare per primo."
+        },
+        "replies": {
+          "label": "Risposte (replies@)",
+          "help": "Risposte alle mail inviate da BATbern e mail a replies@ che il sistema non riconosce."
+        },
+        "contact": {
+          "label": "Mail generali (info@, events@, support@)",
+          "help": "Mail di chiunque, senza evento. Compaiono nella pagina Mail sotto Senza evento."
+        }
+      },
+      "alwaysForwarded": "Sempre inoltrate: ciò che gli organizzatori inviano alle liste -speaker@, -participants@, batbern{N}@ e partner@, le mail a ok@ e le mail automatiche come risposte di assenza e mancati recapiti."
     }
   }
 }

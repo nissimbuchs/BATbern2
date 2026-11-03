@@ -5,6 +5,7 @@
  * Allows organizers to configure support@batbern.ch forwarding recipients.
  *
  * AC #8: Support contacts in Admin Settings tab
+ * Story 16.6 AC7: below it, the Mail Center switch (notification instead of forwarding).
  */
 
 import React, { useEffect, useState } from 'react';
@@ -13,6 +14,7 @@ import {
   Box,
   Button,
   CircularProgress,
+  Divider,
   Snackbar,
   TextField,
   Typography,
@@ -20,6 +22,7 @@ import {
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { getAdminSetting, updateAdminSetting } from '@/services/adminSettingsService';
+import { MailCenterSwitchSettings } from './MailCenterSwitchSettings';
 
 const SUPPORT_CONTACTS_KEY = 'email-forwarding.support-contacts';
 
@@ -98,6 +101,7 @@ export const AdminSettingsTab: React.FC = () => {
             mutation.mutate();
           }}
           disabled={mutation.isPending}
+          data-testid="support-contacts-save"
           startIcon={
             mutation.isPending ? <CircularProgress size={16} color="inherit" /> : undefined
           }
@@ -105,6 +109,9 @@ export const AdminSettingsTab: React.FC = () => {
           {t('settings.save', 'Save')}
         </Button>
       </Box>
+
+      <Divider sx={{ my: 4 }} />
+      <MailCenterSwitchSettings />
 
       <Snackbar
         open={snackbarOpen}

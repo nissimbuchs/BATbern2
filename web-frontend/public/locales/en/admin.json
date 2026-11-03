@@ -44,6 +44,25 @@
       "salutation": "Salutation",
       "name": "Name",
       "email": "Email"
+    },
+    "mailCenterSwitch": {
+      "title": "Mail Center: notice instead of forwarding",
+      "subtitle": "For a checked group the recipients get a short notice with a link instead of the forwarded mail, and the mail is answered in the Mail Center. Unchecked: forwarded as before. A change applies to the next mail.",
+      "groups": {
+        "moderator": {
+          "label": "Speaker mail (batbern{N}-moderator@)",
+          "help": "What speakers write to an event's moderator address. Switch this on first."
+        },
+        "replies": {
+          "label": "Replies (replies@)",
+          "help": "Answers to mails BATbern sent, and mail at replies@ that the system does not recognise."
+        },
+        "contact": {
+          "label": "General mail (info@, events@, support@)",
+          "help": "Mail from anyone, without an event. It appears on the Mail page under No event."
+        }
+      },
+      "alwaysForwarded": "Always forwarded: what organizers send to the -speaker@, -participants@, batbern{N}@ and partner@ lists, mail to ok@, and automatic mail such as out-of-office replies and bounces."
     }
   }
 }

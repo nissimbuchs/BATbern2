@@ -658,7 +658,8 @@ Center: `moderator` (`batbern{N}-moderator@`), `replies` (`replies@`, `replies+{
 notice with a link instead of the forwarded copy. Empty = forwarding as before. It is read for every mail,
 so no deploy is needed. **Only the owner switches a group on.** Never set it from code, tests or Bruno.
 Organizer sends (`-speaker@`, `-participants@`, `partner@`, `ok@`) are always forwarded.
-How to switch it and what to check: `docs/operations/runbooks.md` → "Mail Center: notification instead
+The owner switches it in Administration → Settings (one checkbox per group). How to switch it and
+what to check: `docs/operations/runbooks.md` → "Mail Center: notification instead
 of forwarding"; design: `docs/architecture/06-backend-architecture.md` → "Attachments and the notify switch".
 
 ## AWS Monitoring & Logs

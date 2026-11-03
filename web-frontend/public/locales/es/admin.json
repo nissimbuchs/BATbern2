@@ -44,6 +44,25 @@
       "salutation": "Saludo",
       "name": "Nombre",
       "email": "Correo"
+    },
+    "mailCenterSwitch": {
+      "title": "Mail Center: aviso en lugar de reenvío",
+      "subtitle": "Para un grupo marcado, los destinatarios reciben un breve aviso con un enlace en lugar del correo reenviado, y se responde en el Mail Center. Sin marcar: reenvío como antes. Un cambio se aplica al siguiente correo.",
+      "groups": {
+        "moderator": {
+          "label": "Correos de ponentes (batbern{N}-moderator@)",
+          "help": "Lo que los ponentes escriben a la dirección de moderación de un evento. Actívelo primero."
+        },
+        "replies": {
+          "label": "Respuestas (replies@)",
+          "help": "Respuestas a correos enviados por BATbern y correos a replies@ que el sistema no reconoce."
+        },
+        "contact": {
+          "label": "Correos generales (info@, events@, support@)",
+          "help": "Correos de cualquier persona, sin evento. Aparecen en la página Correo bajo Sin evento."
+        }
+      },
+      "alwaysForwarded": "Siempre reenviados: lo que los organizadores envían a las listas -speaker@, -participants@, batbern{N}@ y partner@, los correos a ok@ y los correos automáticos como respuestas de ausencia y rebotes."
     }
   }
 }

@@ -45,6 +45,17 @@ test.describe('AdminTabs · render (Story 10.1)', { tag: '@gate' }, () => {
     });
   }
 
+  // Story 16.6: the Mail Center switch renders in Settings. Read only: it is a production setting
+  // that only the owner changes, so this test never clicks a checkbox or Save.
+  test('should_renderMailCenterSwitch_when_settingsTabOpened', async ({ page }) => {
+    await page.goto(`${ADMIN_URL}?tab=6`);
+    await expect(page.getByTestId('mail-center-switch-settings')).toBeVisible({ timeout: 20_000 });
+    for (const group of ['moderator', 'replies', 'contact']) {
+      await expect(page.getByTestId(`mail-switch-${group}`)).toBeAttached();
+    }
+    await expect(page.getByTestId('mail-switch-save')).toBeDisabled();
+  });
+
   test('should_renderAnalyticsDashboard_when_pageOpened', async ({ page }) => {
     await page.goto('/organizer/analytics');
     await expect(page.getByTestId('organizer-analytics-page')).toBeVisible({ timeout: 20_000 });
