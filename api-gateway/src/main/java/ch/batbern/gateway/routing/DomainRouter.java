@@ -99,6 +99,8 @@ public class DomainRouter {
                 || cleanPath.startsWith("/api/v1/newsletter") // Story 10.7: Newsletter
                 || cleanPath.startsWith("/api/v1/thanks") // Story 7.7: Public featured thank-you marquee
                 || cleanPath.startsWith("/api/v1/conversations") // Story 16.2a: Mail Center conversations
+                || cleanPath.equals("/api/v1/mails") // Story 16.7: mail of all events
+                || cleanPath.startsWith("/api/v1/mails/")
                 || cleanPath.startsWith("/api/v1/ai") // Story 10.16: AI content generation
                 || cleanPath.equals("/api/v1/public/settings/features") // Story 10.16: Feature flags
                 || cleanPath.equals("/api/v1/public/events") // Public Events read model (website)

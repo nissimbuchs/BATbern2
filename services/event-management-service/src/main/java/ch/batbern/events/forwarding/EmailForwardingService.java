@@ -39,6 +39,7 @@ import java.util.stream.Collectors;
  *
  * <p>Order of checks, each one cheaper and earlier than the next:
  * <ol>
+ *   <li>Story 16.7: SES spam or virus verdict {@code FAIL} → dropped (the Mail Center keeps spam)</li>
  *   <li>iMIP calendar replies, mail we forwarded ourselves (loop), mail without From → dropped</li>
  *   <li>only {@code noreply@}/{@code calendar@}/unknown aliases → dropped, not counted as a rejection</li>
  *   <li>automatic replies (out-of-office) → dropped</li>
@@ -68,6 +69,10 @@ public class EmailForwardingService {
         DROPPED_NO_REPLY,
         DROPPED_AUTO_REPLY,
         DROPPED_BOUNCE,
+        /** Story 16.7: SES spam verdict FAIL; only the Mail Center keeps it (Spam list). */
+        DROPPED_SPAM,
+        /** Story 16.7: SES virus verdict FAIL; nothing keeps it. */
+        DROPPED_VIRUS,
         DUPLICATE,
         /** Sending began earlier and never finished; recorded once, never retried (#1139). */
         STALLED,
@@ -114,6 +119,14 @@ public class EmailForwardingService {
      * @param notice the notice per recipient address, or null to forward the mail itself
      */
     public Result forward(String s3Key, byte[] raw, Function<String, Notice> notice) {
+        // Story 16.7 AC5: checked before the calendar branch, calendar replies carry the verdicts too
+        MailClassifier.SesVerdict verdict = MailClassifier.sesVerdict(raw);
+        if (verdict != MailClassifier.SesVerdict.CLEAN) {
+            log.info("Forwarding: not forwarding {} (SES verdict {})", s3Key, verdict);
+            metrics.increment(verdict == MailClassifier.SesVerdict.VIRUS
+                    ? ForwardingMetrics.VIRUS_DROPPED : ForwardingMetrics.SPAM_DROPPED);
+            return verdict == MailClassifier.SesVerdict.VIRUS ? Result.DROPPED_VIRUS : Result.DROPPED_SPAM;
+        }
         if (MailClassifier.isCalendarReply(new String(raw, StandardCharsets.ISO_8859_1))) {
             return calendarReply(s3Key, raw);
         }
@@ -272,6 +285,15 @@ public class EmailForwardingService {
     public Result forwardUnrecognizedReply(String s3Key, byte[] raw, Function<String, Notice> notice) {
         if (!forwardingLog.claim(s3Key)) {
             return duplicateOrStalled(s3Key, REPLIES);
+        }
+        MailClassifier.SesVerdict verdict = MailClassifier.sesVerdict(raw);
+        if (verdict == MailClassifier.SesVerdict.VIRUS) {
+            return dropReply(s3Key, Result.DROPPED_VIRUS, EmailForwardingOutcome.DROPPED_VIRUS,
+                    ForwardingMetrics.VIRUS_DROPPED);
+        }
+        if (verdict == MailClassifier.SesVerdict.SPAM) {
+            return dropReply(s3Key, Result.DROPPED_SPAM, EmailForwardingOutcome.DROPPED_SPAM,
+                    ForwardingMetrics.SPAM_DROPPED);
         }
 
         MimeMessage message;

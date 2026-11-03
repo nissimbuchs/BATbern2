@@ -962,8 +962,20 @@ SES events of the transactional configuration set move each `mail_recipient` fro
 - `GET .../mails/counts`: failed deliveries of the event ("Handled automatically"); since 16.2a also
   the automatic inbound mail by kind (out-of-office, bounce mail, calendar accepts/declines, keyword
   accepts/cancels, unsubscribes) from `mail_automatic_event`.
-- `GET .../mails` stays outbound-only (`direction = 'OUT'`); inbound mail is read through its
-  conversation (below).
+- `GET .../mails` lists outbound mail by default (`direction=OUT`, conversation answers left out);
+  `direction=IN|ANY` adds inbound mail (Story 16.7). Spam is never listed unless `spam=true`.
+- **Across events (Story 16.7):** `GET /mails` and `GET /mails/{mailKey}` are the same resource with
+  the event as an optional filter (`eventCode`, or `noEvent=true` for mail without event). One query
+  builder (`MailMessageQueryService`, `MailScope` + `MailFilter`) serves the event list, the global
+  list and the participant view, so they cannot drift. `PATCH /mails/{mailKey}` accepts only
+  `{ spam: false }` ("Not spam", below). The gateway routes `/api/v1/mails` to EMS.
+- **Participant view (Story 16.10):** `GET /mails?participantUsername=` or `?participantCompany=`
+  (exclusive, 400 if both; unknown → 404). `MailParticipantResolver` resolves at read time: a user's
+  primary and every additional email (verified or not, `ForwardingDirectory.addressesOf`), a company's
+  PARTNER users (`UserApiClient.getUsersByCompany`, CUMS `GET /internal/users?role=&company=`, paged).
+  Rows match on `lower(mail_recipient.address)` (OUT) or `lower(from_address)` (IN), V143 indexes;
+  conversation answers are included, newsletters, test sends and spam are not.
+  `participantStatus` is that address's delivery status (the worst when several match).
 - List and counts hide organizer test sends (`is_test`) unless `includeTests=true` (Story 16.8);
   the detail opens a test send by its key.
 
@@ -1037,11 +1049,27 @@ local dev → POST /dev/emails/inbound (same processors)                  ─┘
   Attachments: names, types and sizes only.
 - **Failure**: `InboundMailCenter` logs and counts `MailCenterIngestFailed`; it never throws into the
   listeners, so forwarding and SQS retries behave as before.
+- **Spam and virus (Story 16.7)**: the three SES receipt rules scan (`scanEnabled`), so SES writes
+  `X-SES-Spam-Verdict` and `X-SES-Virus-Verdict`. Only `FAIL` counts (`MailClassifier.sesVerdict`,
+  header block only; a virus wins). Virus: nothing stored or forwarded, counted `VIRUS`, logged with the
+  S3 key. Spam: stored as inbound `mail_message` with `is_spam` (V143), no event, no conversation, key
+  `general-{n}`, attachments by name only, counted `SPAM`; listed only by `GET /mails?spam=true`.
+  `InboundReplyProcessor` skips the keyword router and iCal routing for both; `EmailForwardingService`
+  drops both before the calendar branch (`DROPPED_SPAM`/`DROPPED_VIRUS`, metrics `SpamDropped`,
+  `VirusDropped`; the replies@ path writes the outcome to the forwarding log). "Not spam"
+  (`InboundMailCenter.releaseSpam`) threads the stored mail like a new arrival (token, headers,
+  moderator alias, subject, else no event) and `InboundMailStore.release` clears the flag. The
+  retention job deletes spam 30 days after receipt.
 - **API** (`MailConversationController`, ORGANIZER, `no-store`): `GET /events/{code}/conversations`
   (OPEN and WAITING first, then DONE), `GET /conversations/{key}` (messages oldest first as
   `MailMessageDetail`), `PATCH /conversations/{key}` (status, assignee, which must hold ORGANIZER;
   `updated_by` = caller). Keys `conv-{n}` are global, so the gateway routes `/api/v1/conversations`
   to EMS. Bruno covers the reads only.
+- **Across events (Story 16.7)**: `GET /conversations` (filters `status` repeated, `eventCode`,
+  `noEvent` true/false) and `GET /conversations/counts` (`open`, `waiting`, `noEvent` = without event
+  and not done, `spam`) for the global Mail page and its navigation badge. `PATCH` takes `eventCode`
+  (must exist, else 404) or `clearEvent: true`; the conversation and all its messages move in one
+  transaction, keys unchanged, retention follows the new event.
 
 #### Answers and token replies (Story 16.6)
 

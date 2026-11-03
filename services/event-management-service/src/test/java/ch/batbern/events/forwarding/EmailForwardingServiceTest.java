@@ -40,6 +40,7 @@ import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -183,6 +184,46 @@ class EmailForwardingServiceTest {
         verify(emailService, never()).sendRawMessage(any(), anyList(), anyString());
         verify(forwardingLog).complete(KEY, EmailForwardingOutcome.NOTIFIED, "info", 2, 0);
         verify(metrics).increment(ForwardingMetrics.NOTIFICATIONS_SENT);
+    }
+
+    @Test
+    @DisplayName("16.7 AC5: a spam-FAIL mail to info@ is not forwarded")
+    void should_notForward_when_spamVerdictFails() {
+        Result result = service.forward(KEY, mail(STRANGER, "info@batbern.ch", null, null,
+                "X-SES-Spam-Verdict: FAIL\r\nX-SES-Virus-Verdict: PASS\r\n"));
+
+        assertThat(result).isEqualTo(Result.DROPPED_SPAM);
+        verify(emailService, never()).sendRawMessage(any(), anyList(), anyString());
+        verify(metrics).increment(ForwardingMetrics.SPAM_DROPPED);
+    }
+
+    @Test
+    @DisplayName("16.7 AC4/AC5: a virus-FAIL calendar reply is dropped before the calendar branch")
+    void should_dropVirus_when_virusVerdictFailsOnCalendarReply() {
+        Result result = service.forward(KEY, mail(STRANGER, "calendar@batbern.ch", null, null,
+                "X-SES-Virus-Verdict: FAIL\r\nContent-Type: text/calendar; method=REPLY\r\n"));
+
+        assertThat(result).isEqualTo(Result.DROPPED_VIRUS);
+        verify(metrics).increment(ForwardingMetrics.VIRUS_DROPPED);
+        verifyNoInteractions(calendarDeclineService);
+    }
+
+    @Test
+    @DisplayName("16.7 AC5: a spam-FAIL unrecognized reply is not forwarded and the log says why")
+    void should_logDroppedSpam_when_unrecognizedReplyIsSpam() {
+        Result result = service.forwardUnrecognizedReply(KEY, mail(STRANGER, "replies@batbern.ch", null, null,
+                "X-SES-Spam-Verdict: FAIL\r\n"));
+
+        assertThat(result).isEqualTo(Result.DROPPED_SPAM);
+        verify(emailService, never()).sendRawMessage(any(), anyList(), anyString());
+        verify(forwardingLog).complete(KEY, EmailForwardingOutcome.DROPPED_SPAM, "replies", 0, 0);
+    }
+
+    @Test
+    @DisplayName("16.7 AC6: a GRAY verdict is clean and forwarded")
+    void should_forward_when_spamVerdictGray() {
+        assertThat(service.forward(KEY, mail(STRANGER, "info@batbern.ch", null, null,
+                "X-SES-Spam-Verdict: GRAY\r\n"))).isEqualTo(Result.FORWARDED);
     }
 
     @Test

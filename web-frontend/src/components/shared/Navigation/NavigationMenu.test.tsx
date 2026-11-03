@@ -4,11 +4,18 @@
  */
 
 import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
+import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { NavigationMenu } from './NavigationMenu';
 
 // Mock i18next with actual translations
+// Story 16.7: the Mail badge's counts (no network in unit tests)
+const getConversationCounts = vi.fn();
+vi.mock('@/services/mailConversationService', () => ({
+  getConversationCounts: () => getConversationCounts(),
+}));
+
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string) => {
@@ -45,11 +52,40 @@ vi.mock('react-i18next', () => ({
 describe('NavigationMenu Component', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    getConversationCounts.mockResolvedValue({ open: 0, waiting: 0, noEvent: 0, spam: 0 });
   });
 
   const renderWithRouter = (component: React.ReactElement) => {
-    return render(<BrowserRouter>{component}</BrowserRouter>);
+    // Story 16.7: the Mail entry's badge reads the conversation counts
+    const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+    return render(
+      <QueryClientProvider client={queryClient}>
+        <BrowserRouter>{component}</BrowserRouter>
+      </QueryClientProvider>
+    );
   };
+
+  describe('Story 16.7: Mail entry', () => {
+    test('should_showOpenCount_when_conversationsAreOpen', async () => {
+      getConversationCounts.mockResolvedValue({ open: 3, waiting: 1, noEvent: 0, spam: 2 });
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
+
+      expect(screen.getByTestId('nav-organizer-mail')).toHaveAttribute('href', '/organizer/mail');
+      await waitFor(() =>
+        expect(screen.getByTestId('nav-mail-badge')).toHaveAttribute('data-count', '3')
+      );
+      expect(screen.getByText('3')).toBeInTheDocument();
+    });
+
+    test('should_hideBadge_when_nothingOpen', async () => {
+      renderWithRouter(<NavigationMenu userRoles={['organizer']} />);
+
+      await waitFor(() => expect(getConversationCounts).toHaveBeenCalled());
+      expect(
+        screen.getByTestId('nav-mail-badge').querySelector('.MuiBadge-invisible')
+      ).not.toBeNull();
+    });
+  });
 
   describe('Organizer Navigation', () => {
     test('should_renderOrganizerMenuItems_when_roleIsOrganizer', () => {

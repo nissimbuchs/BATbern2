@@ -28,6 +28,15 @@ describe('InboundEmailStack', () => {
     });
   });
 
+  // Story 16.7 AC6: SES scans every inbound mail and writes X-SES-Spam-Verdict / X-SES-Virus-Verdict
+  test('should_enableSpamAndVirusScanning_onEveryReceiptRule', () => {
+    const rules = template.findResources('AWS::SES::ReceiptRule');
+    expect(Object.keys(rules)).toHaveLength(3);
+    for (const rule of Object.values(rules)) {
+      expect(rule.Properties.Rule.ScanEnabled).toBe(true);
+    }
+  });
+
   // AC1: SES ReceiptRule routes replies to S3
   test('should_createSesReceiptRuleWithS3Action_when_inboundEmailStackDeployed', () => {
     template.hasResourceProperties('AWS::SES::ReceiptRule', {

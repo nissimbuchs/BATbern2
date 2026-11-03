@@ -14,7 +14,7 @@ import java.util.regex.Pattern;
 public final class InboundClassifier {
 
     /** What an inbound mail is. */
-    public enum Kind { HUMAN, OUT_OF_OFFICE, BOUNCE, CALENDAR_REPLY, LOOP }
+    public enum Kind { HUMAN, OUT_OF_OFFICE, BOUNCE, CALENDAR_REPLY, LOOP, SPAM, VIRUS }
 
     /**
      * Subjects of automatic replies, DE + EN + FR + IT, matched at the start, case-insensitive.
@@ -28,7 +28,15 @@ public final class InboundClassifier {
     private InboundClassifier() {
     }
 
+    /**
+     * Story 16.7: a virus before everything (never stored), spam just before {@link Kind#HUMAN}, so an
+     * automatic reply SES flagged as spam is still only counted as what it is.
+     */
     public static Kind classify(InboundMail mail, byte[] raw, String ownDomain) {
+        MailClassifier.SesVerdict verdict = MailClassifier.sesVerdict(raw);
+        if (verdict == MailClassifier.SesVerdict.VIRUS) {
+            return Kind.VIRUS;
+        }
         if (MailClassifier.isCalendarReply(new String(raw, StandardCharsets.ISO_8859_1))) {
             return Kind.CALENDAR_REPLY;
         }
@@ -44,6 +52,6 @@ public final class InboundClassifier {
                 mail.xAutorespond()) || AUTO_REPLY_SUBJECT.matcher(mail.subject()).find()) {
             return Kind.OUT_OF_OFFICE;
         }
-        return Kind.HUMAN;
+        return verdict == MailClassifier.SesVerdict.SPAM ? Kind.SPAM : Kind.HUMAN;
     }
 }

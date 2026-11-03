@@ -36,5 +36,9 @@ public enum EmailForwardingOutcome {
      * Story 16.6: the group is answered in the Mail Center; every recipient got a short
      * notification instead of the forwarded copy.
      */
-    NOTIFIED
+    NOTIFIED,
+    /** Story 16.7, replies@ only: SES flagged the mail as spam; kept in the Mail Center's Spam list only. */
+    DROPPED_SPAM,
+    /** Story 16.7, replies@ only: SES found a virus; neither stored nor forwarded. */
+    DROPPED_VIRUS
 }

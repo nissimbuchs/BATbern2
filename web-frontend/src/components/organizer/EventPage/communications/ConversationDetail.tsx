@@ -2,7 +2,8 @@
  * ConversationDetail (Story 16.2a AC11, AC12): every message of a conversation, oldest first, with
  * sender, time, text and attachment names; above them the status and who answers.
  *
- * Story 16.6: the answer box under the messages (`ConversationReplyBox`).
+ * Story 16.6: the answer box under the messages (`ConversationReplyBox`). Story 16.7: the event it
+ * belongs to can be changed here.
  *
  * Bodies render in the same sandboxed frame as "What went out" (`MailBodyFrame`). Story 16.6:
  * attachments up to 25 MB are kept and open through a presigned link; larger ones show their name.
@@ -35,24 +36,21 @@ import {
   type MailConversationStatus,
 } from '@/services/mailConversationService';
 import { ConversationReplyBox } from './ConversationReplyBox';
+import { EventSelect } from './EventSelect';
 import { MailBodyFrame } from './MailBodyFrame';
 
 const CONVERSATION_STATUSES: MailConversationStatus[] = ['OPEN', 'WAITING', 'DONE'];
 
 interface ConversationDetailProps {
-  eventCode: string;
   conversationKey: string;
 }
 
-export const ConversationDetail: React.FC<ConversationDetailProps> = ({
-  eventCode,
-  conversationKey,
-}) => {
+export const ConversationDetail: React.FC<ConversationDetailProps> = ({ conversationKey }) => {
   const { t, i18n } = useTranslation('events');
   const { user } = useAuth();
   const query = useConversation(conversationKey);
   const [downloadFailed, setDownloadFailed] = React.useState(false);
-  const patch = usePatchConversation(eventCode);
+  const patch = usePatchConversation();
   const detail = query.data;
 
   if (query.isLoading) return <Skeleton variant="rectangular" height={240} />;
@@ -109,6 +107,16 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
           disabled={patch.isPending}
           sx={{ minWidth: 220 }}
           data-testid="conversation-assignee"
+        />
+        {/* Story 16.7 AC1: which event the conversation belongs to */}
+        <EventSelect
+          value={conversation.eventCode ?? ''}
+          onChange={(eventCode) => save(eventCode ? { eventCode } : { clearEvent: true })}
+          label={t('mailCenter.event')}
+          noneLabel={t('mailCenter.noEventOption')}
+          disabled={patch.isPending}
+          sx={{ minWidth: 200 }}
+          data-testid="conversation-event"
         />
         {!conversation.assigneeUsername && me && (
           <Button
@@ -196,7 +204,7 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({
         );
       })}
 
-      <ConversationReplyBox eventCode={eventCode} conversationKey={conversationKey} />
+      <ConversationReplyBox conversationKey={conversationKey} />
     </Stack>
   );
 };

@@ -3,6 +3,9 @@
   "detail": {
     "settingsTab": {
       "autoRenewal": "Auto-Renewal"
+    },
+    "tabs": {
+      "mail": "Mail"
     }
   },
   "portal": {

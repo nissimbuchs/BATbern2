@@ -14,6 +14,12 @@ vi.mock('@/components/shared/Breadcrumbs/Breadcrumbs', () => ({
     <nav data-testid="breadcrumbs">{items.map((i: any) => i.label).join(' > ')}</nav>
   ),
 }));
+// Story 16.10: the Mail tab's list (its own tests live with it)
+vi.mock('@/components/organizer/MailCenter/ParticipantMailList', () => ({
+  ParticipantMailList: ({ participant }: { participant: { participantUsername: string } }) => (
+    <div data-testid="participant-mail-mock">{participant.participantUsername}</div>
+  ),
+}));
 vi.mock('./EventsParticipatedTable', () => ({
   EventsParticipatedTable: ({ userId }: any) => <div data-testid="events-table">{userId}</div>,
 }));
@@ -116,5 +122,15 @@ describe('UserDetailView', () => {
     const updatedDate = new Date('2026-02-01T00:00:00Z').toLocaleDateString();
     expect(screen.getByText(createdDate)).toBeInTheDocument();
     expect(screen.getByText(updatedDate)).toBeInTheDocument();
+  });
+
+  // Story 16.10 AC1: the Mail tab lists the user's mail, mounted only when opened
+  it('mounts the mail list only when the Mail tab is opened', () => {
+    render(<UserDetailView {...defaultProps} />);
+    expect(screen.queryByTestId('participant-mail-mock')).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('tab', { name: /^mail$/i }));
+
+    expect(screen.getByTestId('participant-mail-mock')).toHaveTextContent(defaultProps.user.id);
   });
 });

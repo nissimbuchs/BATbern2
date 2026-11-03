@@ -33,6 +33,7 @@ import {
   isPathActive,
 } from '@/config/navigationConfig';
 import type { NavigationItem } from '@/config/navigationConfig';
+import { MailOpenBadge } from './MailOpenBadge';
 import type { UserRole } from '@/types/auth';
 
 interface NavigationMenuProps {
@@ -234,7 +235,13 @@ export const NavigationMenu = React.memo(function NavigationMenu({
           sx={itemSx}
         >
           <ListItemIcon sx={{ minWidth: showText ? 40 : 'auto', color: 'inherit' }}>
-            <Icon />
+            {item.badge === 'mailOpen' ? (
+              <MailOpenBadge>
+                <Icon />
+              </MailOpenBadge>
+            ) : (
+              <Icon />
+            )}
           </ListItemIcon>
           {showText && (
             <ListItemText

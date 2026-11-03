@@ -1398,5 +1398,31 @@
     "featureToggle": "Tonen op publieke banner",
     "cannotFeatureAnonymous": "Anonieme bedankjes kunnen niet worden uitgelicht (geen naam).",
     "loadError": "Kon bedankberichten niet laden."
+  },
+  "mailCenter": {
+    "title": "Mail",
+    "open": "Open",
+    "nothingOpen": "Niets wacht op een antwoord.",
+    "noEvent": "Zonder evenement",
+    "noEventHint": "Mails aan info@, events@ en support@ die bij geen evenement horen. Wijs ze toe aan een evenement om ze daar te beantwoorden.",
+    "nothingWithoutEvent": "Geen mails zonder evenement.",
+    "spam": "Spam",
+    "spamHint": "Door de mailserver als spam gemarkeerd. Niet doorgestuurd; na 30 dagen verwijderd.",
+    "noSpam": "Geen spam.",
+    "notSpam": "Geen spam",
+    "notSpamError": "De mail kon niet worden verplaatst. Probeer het opnieuw.",
+    "whatWentOut": "Wat er verstuurd is (alle evenementen)",
+    "event": "Evenement",
+    "allEvents": "Alle evenementen",
+    "assignToEvent": "Aan evenement toewijzen",
+    "noEventOption": "(geen evenement)",
+    "noEventChip": "Zonder evenement",
+    "receivedFrom": "Ontvangen van {{sender}}",
+    "received": "Ontvangen",
+    "openConversation": "Gesprek openen",
+    "participant": {
+      "limits": "Elke mail die we hun stuurden en elke mail die zij ons stuurden, over alle evenementen. Niet vermeld: nieuwsbrieven, mails van voordat het Mail Center ze vastlegde en mails aan een adres dat ze niet meer hebben.",
+      "empty": "Nog geen mails aan of van deze persoon."
+    }
   }
 }

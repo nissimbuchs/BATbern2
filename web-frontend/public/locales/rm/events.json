@@ -1398,5 +1398,31 @@
     "featureToggle": "Mussar sin il bandero public",
     "cannotFeatureAnonymous": "Engraziaments anonims na pon betg vegnir relevads (nagin num).",
     "loadError": "Impussibel da chargiar ils messadis da gratituded."
+  },
+  "mailCenter": {
+    "title": "Mail",
+    "open": "Avert",
+    "nothingOpen": "Nagut na spetga ina resposta.",
+    "noEvent": "Senza eveniment",
+    "noEventHint": "Mails a info@, events@ e support@ che na tutgan tar nagin eveniment. Attribui ad in eveniment per respunder là.",
+    "nothingWithoutEvent": "Nagins mails senza eveniment.",
+    "spam": "Spam",
+    "spamHint": "Renconuschì sco spam dal server da mail. Betg renvià; stizzà suenter 30 dis.",
+    "noSpam": "Nagin spam.",
+    "notSpam": "Betg spam",
+    "notSpamError": "Il mail n’ha betg pudì vegnir spustà. Emprova anc ina giada.",
+    "whatWentOut": "Tge ch’è vegnì tramess (tut ils eveniments)",
+    "event": "Eveniment",
+    "allEvents": "Tut ils eveniments",
+    "assignToEvent": "Attribuir ad in eveniment",
+    "noEventOption": "(nagin eveniment)",
+    "noEventChip": "Senza eveniment",
+    "receivedFrom": "Retschavì da {{sender}}",
+    "received": "Retschavì",
+    "openConversation": "Avrir la conversaziun",
+    "participant": {
+      "limits": "Mintga mail che nus avain tramess e mintga mail retschavì, sur tut ils eveniments. Betg enumerads: newsletters, mails avant che il Mail Center als ha registrads e mails ad ina adressa che na vala betg pli.",
+      "empty": "Anc nagins mails a u da questa persuna."
+    }
   }
 }

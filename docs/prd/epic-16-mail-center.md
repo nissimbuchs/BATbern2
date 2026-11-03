@@ -45,8 +45,9 @@ So this is **not a helpdesk**. It is a per-event log with a short "needs an answ
 1. 16.0 Part A, B, C: live (#1164, #1165)
 2. 16.1a, 16.1b, 16.3, 16.4: live 2026-10-31 (#1166)
 3. 16.8 (as 16.8a backend, 16.8b frontend; 16.8c clean-up one release later, owner go), then 16.9
-4. 16.2a + 16.6 (speakers)
-5. 16.2b (all aliases), 16.5, 16.7, 16.10
+4. 16.2a + 16.6 + 16.2b: live 2026-11-02 (#1189); 16.5 live 2026-11-02 (#1180)
+5. 16.7 + 16.10: one PR from `feature/16-7-global-mail` (2026-11-02)
+6. 16.8c clean-up: one release after 16.8, owner go. 16.12, 16.13: backlog
 
 All story files exist in `_bmad-output/implementation-artifacts/16-*.md` (written 2026-11-01).
 

@@ -1,0 +1,26 @@
+meta {
+  name: Mail tab — unknown user returns 404
+  type: http
+  seq: 33
+}
+
+get {
+  url: {{baseUrl}}/mails?participantUsername=no.such.user.bruno&direction=ANY
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 404 for a user that does not exist", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Story 16.10 AC4: GET /mails?participantUsername= resolves the user's addresses in CUMS; an unknown
+  username is a 404. Read-only.
+}

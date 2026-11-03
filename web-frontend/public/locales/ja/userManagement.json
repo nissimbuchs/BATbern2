@@ -174,7 +174,8 @@
     "tabs": {
       "overview": "概要",
       "eventsParticipated": "参加イベント",
-      "ariaLabel": "User detail tabs"
+      "ariaLabel": "User detail tabs",
+      "mail": "メール"
     },
     "overviewText": "ユーザープロフィールの概要。ここに追加情報を記載できます。",
     "eventsTable": {

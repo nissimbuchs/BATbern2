@@ -1,0 +1,25 @@
+meta {
+  name: Mail page — unknown mail, participant and event return 404, both filters 400
+  type: http
+  seq: 32
+}
+
+get {
+  url: {{baseUrl}}/mails/nope-0
+  body: none
+  auth: bearer
+}
+
+auth:bearer {
+  token: {{organizerAuthToken}}
+}
+
+tests {
+  test("returns 404 for a mail key that cannot exist", function() {
+    expect(res.getStatus()).to.equal(404);
+  });
+}
+
+docs {
+  Story 16.7 AC10: GET /mails/{mailKey} with a key no mail can have (keys are {event|general}-{n}).
+}

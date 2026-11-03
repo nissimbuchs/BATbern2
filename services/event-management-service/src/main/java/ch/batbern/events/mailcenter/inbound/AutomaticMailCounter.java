@@ -18,10 +18,12 @@ import java.time.Instant;
 @RequiredArgsConstructor
 public class AutomaticMailCounter {
 
-    /** What was counted; the V139 CHECK lists the same values. */
+    /** What was counted; the V139/V143 CHECK lists the same values. */
     public enum Kind {
         OUT_OF_OFFICE, BOUNCE, CALENDAR_ACCEPTED, CALENDAR_DECLINED, CALENDAR_TENTATIVE,
-        KEYWORD_ACCEPT, KEYWORD_CANCEL, UNSUBSCRIBE, LOOP
+        KEYWORD_ACCEPT, KEYWORD_CANCEL, UNSUBSCRIBE, LOOP,
+        /** Story 16.7 (V143): SES verdicts FAIL. Spam is also stored (Spam list); a virus is only counted. */
+        SPAM, VIRUS
     }
 
     private static final String INSERT = """

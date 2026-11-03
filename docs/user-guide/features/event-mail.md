@@ -1,6 +1,6 @@
 # Event mail page (Communications tab)
 
-> **Last Updated:** 2026-11-02 · Epic 16, Stories 16.3, 16.4, 16.8a, 16.8b, 16.2a
+> **Last Updated:** 2026-11-02 · Epic 16, Stories 16.3, 16.4, 16.8a, 16.8b, 16.2a, 16.7, 16.10
 
 The **Communications** tab of an event is its mail page. It answers "did the speakers get the
 slides mail?" without asking the team.
@@ -14,7 +14,7 @@ instead of it sitting in one private inbox (Story 16.2a).
   (`batbern{N}-moderator@batbern.ch`, the Reply-To of every speaker mail), replies to registration
   mails and newsletters, and mail to `info@`, `events@` or `support@` that belongs to the event (it
   answers one of the event's mails, or its subject names the event, e.g. "BATbern60"). Contact mail
-  that belongs to no event is kept too and will be listed on the Mail page (Story 16.7). An
+  that belongs to no event is listed on the **Mail** page (below), where you can put it on an event. An
   organizer's mail to `info@` counts like anyone's; organizer mail to the moderator address or to
   `ok@` does not. A row says where the mail came from: "via info@batbern.ch", "reply to a registrant
   mail", "reply to the newsletter".
@@ -170,3 +170,35 @@ cancellation and for a plain mail to all partners.
 In **Partner meetings**, the open meeting lists its own mails under "Mails of this meeting".
 
 Esc closes the composer; the focus goes back to "+ New mail".
+
+## The Mail page (all events)
+
+**Mail** in the top navigation, right after Events, shows everything across events (Story 16.7). The
+number on the entry counts the open conversations of all events and of mail without an event; it
+disappears at zero and refreshes every minute.
+
+- **Open:** every open or waiting conversation, of every event. Each row names its event. A click
+  opens it below the row, exactly as on the event page.
+- **No event:** mail to `info@`, `events@` or `support@` that belongs to no event. **Assign to event**
+  beside a row puts the conversation and all its mails on that event: it then shows in that event's
+  "Needs an answer". Choosing "(no event)" takes it off again. Inside any conversation the **Event**
+  field does the same.
+- **Spam (collapsed):** mail the mail server flagged as spam. It is not forwarded to anyone and never
+  shows as open. **Not spam** moves it where it belongs, as if it had just arrived: to an event's
+  "Needs an answer" or to "No event". Spam is deleted after 30 days. Mail with a virus is not kept at
+  all and never reaches anyone.
+- **What went out (all events, collapsed):** the "What went out" list of every event together, each
+  row with its event; pick an event to narrow it.
+
+## Mail of one person or partner
+
+The **Mail** tab on a user's page (Users → a user) and on a partner's page (Partners → a partner)
+lists every mail we sent to that person, or to the partner's contacts, and every mail they sent us,
+across all events, newest first (Story 16.10).
+
+- All their addresses count: the main one and every additional one.
+- A sent mail shows that person's delivery status; a received one shows who wrote it and, when it is
+  part of a conversation, a link to it.
+- Not listed: newsletters, mail from before the Mail Center recorded it (sent mail since 31 Oct 2026,
+  received mail since 2 Nov 2026), and mail to an address the person no longer has.
+- Partners do not see the tab on their own company page.

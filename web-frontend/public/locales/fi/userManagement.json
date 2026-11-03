@@ -174,7 +174,8 @@
     "tabs": {
       "overview": "Yleiskatsaus",
       "eventsParticipated": "Osallistutut tapahtumat",
-      "ariaLabel": "User detail tabs"
+      "ariaLabel": "User detail tabs",
+      "mail": "Posti"
     },
     "overviewText": "Käyttäjäprofiilin yleiskatsaus. Lisätietoja voidaan lisätä tähän.",
     "eventsTable": {

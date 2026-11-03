@@ -11,6 +11,8 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.service.CalendarInviteUid;
 import ch.batbern.events.service.InboundEmailRouter;
 import ch.batbern.shared.mail.MailContext;
+import ch.batbern.shared.exception.NotFoundException;
+import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.utils.LoggingUtils;
 import jakarta.mail.MessagingException;
 import jakarta.mail.Session;
@@ -26,8 +28,10 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.security.NoSuchAlgorithmException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HexFormat;
 import java.util.List;
+import java.util.Objects;
 import java.util.Optional;
 import java.util.Properties;
 import java.util.UUID;
@@ -188,6 +192,23 @@ public class InboundMailCenter {
         String aliasEvent = moderator.map(ForwardingAlias::eventCode).orElse(null);
 
         InboundClassifier.Kind kind = InboundClassifier.classify(mail, raw, domain);
+        if (kind == InboundClassifier.Kind.VIRUS) {
+            // Story 16.7 AC4: never stored; the S3 key is the only trace
+            log.warn("Mail Center: virus verdict on {}, not stored", s3Key);
+            counter.count(AutomaticMailCounter.Kind.VIRUS, aliasEvent, groupId);
+            return Optional.empty();
+        }
+        if (kind == InboundClassifier.Kind.SPAM) {
+            // Story 16.7 AC3: Spam list only, no conversation, not open
+            Optional<String> key = store.storeSpam(mail, groupId, path,
+                    moderator.or(() -> contact).map(ForwardingAlias::localPart).orElse(null));
+            if (key.isPresent()) {
+                counter.count(AutomaticMailCounter.Kind.SPAM, aliasEvent, groupId);
+                log.info("Mail Center: spam from {} stored as {}", LoggingUtils.maskEmail(mail.fromAddress()),
+                        key.get());
+            }
+            return Optional.empty();
+        }
         if (kind != InboundClassifier.Kind.HUMAN) {
             countAutomatic(kind, mail, raw, groupId, aliasEvent);
             return Optional.empty();
@@ -210,6 +231,26 @@ public class InboundMailCenter {
             return Optional.empty(); // 16.2a AC6 / 16.2b AC6: an organizer is a counterpart only on a contact alias
         }
 
+        Placed placed = place(mail, token, aliasEvent);
+        String eventCode = placed.placement().eventCode();
+        String aliasLocalPart = moderator.or(() -> contact).map(ForwardingAlias::localPart).orElse(null);
+        InboundMail kept = mail.attachments().isEmpty() || !attachments.enabled() ? mail
+                : mail.withAttachments(attachments.store(groupId, mail.attachments(),
+                        InboundMailParser.attachmentContents(raw)));
+        String key = store.store(kept, groupId, path, aliasLocalPart, placed.placement());
+        ConversationThreader.Target t = placed.target();
+        metrics.increment(t.metric());
+        log.info("Mail Center: mail from {} stored in {} ({})", LoggingUtils.maskEmail(mail.fromAddress()), key,
+                t.metric());
+        return Optional.of(new Stored(key, eventCode != null ? eventCode : eventOf(key), mail.fromName(),
+                mail.subject()));
+    }
+
+    /** Where a human mail goes, by the 16.2a/16.2b rules after the token: headers, alias, subject, none. */
+    private record Placed(ConversationThreader.Target target, InboundMailStore.Placement placement) {
+    }
+
+    private Placed place(InboundMail mail, Optional<ConversationThreader.Target> token, String aliasEvent) {
         ConversationThreader.Target t = token
                 .or(() -> threader.byHeaders(mail))
                 .or(() -> Optional.ofNullable(aliasEvent).map(event -> new ConversationThreader.Target(null, event,
@@ -225,23 +266,66 @@ public class InboundMailCenter {
                 || !MailContext.Audience.SPEAKERS.name().equals(audience) ? null
                 : events.findByEventCode(eventCode).map(Event::getOrganizerUsername)
                         .filter(username -> !username.isBlank()).orElse(null);
-        String aliasLocalPart = moderator.or(() -> contact).map(ForwardingAlias::localPart).orElse(null);
-        InboundMail kept = mail.attachments().isEmpty() || !attachments.enabled() ? mail
-                : mail.withAttachments(attachments.store(groupId, mail.attachments(),
-                        InboundMailParser.attachmentContents(raw)));
-        String key = store.store(kept, groupId, path, aliasLocalPart,
-                new InboundMailStore.Placement(conversationId, eventCode, audience, assignee));
-        metrics.increment(t.metric());
-        log.info("Mail Center: mail from {} stored in {} ({})", LoggingUtils.maskEmail(mail.fromAddress()), key,
-                t.metric());
-        return Optional.of(new Stored(key, eventCode != null ? eventCode : eventOf(key), mail.fromName(),
-                mail.subject()));
+        return new Placed(t, new InboundMailStore.Placement(conversationId, eventCode, audience, assignee));
     }
 
+    /**
+     * Story 16.7 AC3 ("Not spam"): threads a stored spam mail like a new arrival, from the headers it
+     * was stored with, so it lands in an event's conversation or in "No event". Sends nothing.
+     *
+     * @return the conversation key
+     * @throws NotFoundException   no such mail
+     * @throws ValidationException the mail is not spam
+     */
+    public String releaseSpam(String mailKey) {
+        List<SpamRow> rows = jdbc.query("""
+                SELECT id, is_spam, from_address, from_name, reply_to_address, to_addresses, subject, body_text,
+                       message_id_header, in_reply_to, references_header, alias_local_part
+                  FROM mail_message WHERE mail_key = :key
+                """, new MapSqlParameterSource("key", mailKey), (rs, i) -> new SpamRow(rs.getObject("id", UUID.class),
+                rs.getBoolean("is_spam"), new InboundMail(rs.getString("message_id_header"),
+                rs.getString("in_reply_to"), splitOn(rs.getString("references_header"), " "),
+                rs.getString("from_address"), rs.getString("from_name"), rs.getString("reply_to_address"),
+                splitOn(rs.getString("to_addresses"), ","), List.of(), rs.getString("subject"),
+                rs.getString("body_text"), null, null, null, null, null, null, null, null, false),
+                rs.getString("alias_local_part")));
+        SpamRow row = rows.stream().findFirst()
+                .orElseThrow(() -> new NotFoundException("Mail", mailKey));
+        if (row.mail().fromAddress() == null) {
+            throw new ValidationException("spam", "Mail has no sender to answer: " + mailKey);
+        }
+        if (!row.spam()) {
+            throw new ValidationException("spam", "Mail is not flagged as spam: " + mailKey);
+        }
+        String domain = forwarding.domain();
+        String aliasEvent = row.mail().to().stream()
+                .map(address -> ForwardingAlias.parse(address, domain))
+                .flatMap(Optional::stream)
+                .filter(alias -> alias.kind() == ForwardingAlias.Kind.EVENT_MODERATOR)
+                .map(ForwardingAlias::eventCode)
+                .findFirst().orElse(null);
+        Placed placed = place(row.mail(), threader.byToken(row.mail().to(), domain), aliasEvent);
+        String key = store.release(row.id(), row.mail(), placed.placement());
+        log.info("Mail Center: {} is not spam, now in {}", mailKey, key);
+        return key;
+    }
+
+    private record SpamRow(UUID id, boolean spam, InboundMail mail, String aliasLocalPart) {
+    }
+
+    private static List<String> splitOn(String value, String separator) {
+        if (value == null || value.isBlank()) {
+            return List.of();
+        }
+        return Arrays.stream(value.split(separator)).map(String::trim).filter(v -> !v.isEmpty()).toList();
+    }
+
+    /** The conversation's event, or null for a conversation without one. */
     private String eventOf(String conversationKey) {
+        // filter, not findFirst alone: a no-event row maps to null, and findFirst throws on a null element
         return jdbc.query("SELECT event_code FROM mail_conversation WHERE conversation_key = :key",
                 new MapSqlParameterSource("key", conversationKey), (rs, i) -> rs.getString(1))
-                .stream().findFirst().orElse(null);
+                .stream().filter(Objects::nonNull).findFirst().orElse(null);
     }
 
     /** {@code info@}, {@code events@}, {@code support@}: open to anyone (not {@code ok@}). */
@@ -261,6 +345,8 @@ public class InboundMailCenter {
         AutomaticMailCounter.Kind counted = switch (kind) {
             case OUT_OF_OFFICE -> AutomaticMailCounter.Kind.OUT_OF_OFFICE;
             case BOUNCE -> AutomaticMailCounter.Kind.BOUNCE;
+            case SPAM -> AutomaticMailCounter.Kind.SPAM;
+            case VIRUS -> AutomaticMailCounter.Kind.VIRUS;
             default -> AutomaticMailCounter.Kind.LOOP;
         };
         counter.count(counted, eventCode, groupId);

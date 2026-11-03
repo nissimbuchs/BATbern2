@@ -89,4 +89,42 @@ class MailClassifierTest {
                 "<anna@example.org>")).isFalse();
         assertThat(MailClassifier.isBounce("postmaster.fan@example.org", "multipart/mixed", null)).isFalse();
     }
+
+    // ── Story 16.7 AC6: SES spam and virus verdicts ────────────────────────────────────────────
+
+    private static String withHeaders(String headers) {
+        return "From: a@example.org\r\nSubject: x\r\n" + headers + "\r\nbody\r\n";
+    }
+
+    @Test
+    @DisplayName("should_beVirus_when_virusVerdictFails")
+    void should_beVirus_when_virusVerdictFails() {
+        assertThat(MailClassifier.sesVerdict(withHeaders("X-SES-Spam-Verdict: FAIL\r\nX-SES-Virus-Verdict: FAIL\r\n")))
+                .isEqualTo(MailClassifier.SesVerdict.VIRUS);
+    }
+
+    @Test
+    @DisplayName("should_beSpam_when_spamVerdictFails")
+    void should_beSpam_when_spamVerdictFails() {
+        assertThat(MailClassifier.sesVerdict(withHeaders("X-SES-Spam-Verdict: FAIL\r\nX-SES-Virus-Verdict: PASS\r\n")))
+                .isEqualTo(MailClassifier.SesVerdict.SPAM);
+        assertThat(MailClassifier.sesVerdict(withHeaders("x-ses-spam-verdict:fail\r\n")))
+                .isEqualTo(MailClassifier.SesVerdict.SPAM);
+    }
+
+    @org.junit.jupiter.params.ParameterizedTest
+    @org.junit.jupiter.params.provider.ValueSource(strings = {"PASS", "GRAY", "PROCESSING_FAILED", "DISABLED"})
+    @DisplayName("should_beClean_when_verdictIsNotFail")
+    void should_beClean_when_verdictIsNotFail(String verdict) {
+        assertThat(MailClassifier.sesVerdict(withHeaders("X-SES-Spam-Verdict: " + verdict
+                + "\r\nX-SES-Virus-Verdict: " + verdict + "\r\n"))).isEqualTo(MailClassifier.SesVerdict.CLEAN);
+    }
+
+    @Test
+    @DisplayName("should_beClean_when_noVerdictHeader_or_onlyInBody")
+    void should_beClean_when_noVerdictHeader_or_onlyInBody() {
+        assertThat(MailClassifier.sesVerdict(withHeaders(""))).isEqualTo(MailClassifier.SesVerdict.CLEAN);
+        assertThat(MailClassifier.sesVerdict("From: a@example.org\r\n\r\nX-SES-Spam-Verdict: FAIL\r\n"))
+                .isEqualTo(MailClassifier.SesVerdict.CLEAN);
+    }
 }

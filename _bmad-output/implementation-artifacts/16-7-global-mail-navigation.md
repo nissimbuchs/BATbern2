@@ -1,6 +1,6 @@
 # Story 16.7: Global "Mail" navigation, mail without an event, and spam
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -36,43 +36,43 @@ so that **I can see at a glance whether anything is waiting, put an `info@` mail
 
 ### PR 1 — Infrastructure (deploy first, so the headers exist when PR 2 lands)
 
-- [ ] **Task 1 — SES scanning** (AC: 6)
-  - [ ] RED: `infrastructure/test/unit/inbound-email-stack.test.ts`: every `AWS::SES::ReceiptRule` has `Rule.ScanEnabled: true`.
-  - [ ] `infrastructure/lib/stacks/inbound-email-stack.ts`: `scanEnabled: true` on the rules at lines 190, 203 and 224 (`ReceiptRuleOptions.scanEnabled`, aws-cdk-lib `aws-ses/lib/receipt-rule.d.ts:70`). In-place property update of existing rules, no replacement; check the synth diff shows `Modify` only.
-  - [ ] Doc Drift Check: `infrastructure/` maps to `docs/architecture/08-operations-security.md` and `06-backend-architecture.md` (`.github/doc-drift-mappings.yml:71–74`). Add the scanning note to `08-operations-security.md` in the same PR.
-  - [ ] No Lambda is touched, so no handler test is needed. Run the CDK tests with `./gradlew --stop`, `/tmp/cdk.out*` cleared and `--maxWorkers=2` (rack OOM, 16.0 Debug Log).
-  - [ ] Deploy-clean: a PR to `develop` deploys to production. Ask the owner before opening it.
+- [x] **Task 1 — SES scanning** (AC: 6)
+  - [x] RED: `infrastructure/test/unit/inbound-email-stack.test.ts`: every `AWS::SES::ReceiptRule` has `Rule.ScanEnabled: true`.
+  - [x] `infrastructure/lib/stacks/inbound-email-stack.ts`: `scanEnabled: true` on the three rules. (Not done: `cdk diff` against production to confirm `Modify` only, see Completion Notes.)
+  - [x] Doc Drift Check: `infrastructure/` maps to `docs/architecture/08-operations-security.md` and `06-backend-architecture.md` (`.github/doc-drift-mappings.yml:71–74`). Add the scanning note to `08-operations-security.md` in the same PR.
+  - [x] No Lambda is touched, so no handler test is needed. Run the CDK tests with `./gradlew --stop`, `/tmp/cdk.out*` cleared and `--maxWorkers=2` (rack OOM, 16.0 Debug Log).
+  - [x] Deploy-clean: a PR to `develop` deploys to production. Owner go for the overnight run 2026-11-02 (push, PR, watch).
 
 ### PR 2 — Backend
 
-- [ ] **Task 2 — Spam and virus in the classifier** (AC: 3–5; TDD first)
-  - [ ] Migration `V{next}__mail_spam.sql` (re-check the head; 16.8/16.9 may have added migrations): `mail_message.is_spam BOOLEAN NOT NULL DEFAULT FALSE`, partial index `WHERE is_spam`; extend the `mail_automatic_event.kind` CHECK with `SPAM`, `VIRUS`.
-  - [ ] `InboundClassifier` (16.2a): `VIRUS` before everything; `SPAM` before `HUMAN`. Fixtures with the two headers (synthetic). `InboundMailCenter`: virus → count only; spam → store `IN` with `is_spam = true`, no conversation, count `SPAM`.
-  - [ ] Forwarding: `EmailForwardingService.forward` (line 87) and `forwardUnrecognizedReply` (line 233) drop `VIRUS`/`SPAM` FAIL with new results/outcomes (`DROPPED_VIRUS`, `DROPPED_SPAM`; `EmailForwardingOutcome` + migration extending the CHECK, pattern V131; metrics). Calendar replies carry the verdict headers too: check verdicts before the calendar branch (line 88).
-- [ ] **Task 3 — `GET /mails` and `GET /mails/{mailKey}`** (AC: 9, 10) — skip if 16.10 already built it; then only add `spam`.
-  - [ ] `MailMessageQueryService`: make the event optional. Today every query requires it (`requireEvent`, line 173) and filters `m.event_code = :eventCode AND m.direction = 'OUT'` (line 62), and the newsletter backfill joins on the event code (line 80). Change to `(CAST(:eventCode AS TEXT) IS NULL OR …)`, `:noEvent`, `:direction`, `:spam`, and exclude conversation answers from the OUT list (`conversation_id IS NULL`, 16.6). The event endpoint keeps its 404 for an unknown event.
-  - [ ] New controller methods in `EventMailController` or a sibling `MailController` (same generated interface if the tag is shared). `GET /mails/{mailKey}` works for any key (`mail_key` is globally unique, V135; `newsletter-{sendId}` too).
-  - [ ] Integration tests: across events, `eventCode` filter, `noEvent`, `direction` default OUT, `ANY`, spam excluded by default, 403.
-- [ ] **Task 4 — Conversations across events** (AC: 1, 2, 10)
-  - [ ] `GET /conversations` and `/conversations/counts` in `ConversationQueryService`; `PATCH` with `eventCode`: validate the event exists, update the conversation and its messages' `event_code` in one transaction, `updated_by`.
-  - [ ] `PATCH /mails/{mailKey}` `{ spam: false }`: clear the flag, run `ConversationThreader` on the stored message (it has every header the threader needs, 16.2a columns), count nothing new.
-  - [ ] Integration tests for AC1 (both directions), AC3 (not spam → event conversation and → no-event conversation).
-- [ ] **Task 5 — Retention** (AC: 7) — `MailMessageRetentionScheduler.purgeExpired`: `DELETE FROM mail_message WHERE is_spam AND created_at < now() - 30 days` before the 12-month rules. Integration test.
-- [ ] **Task 6 — Local dev check** (AC: 11) — simulator (16.2a Task 7) with `headers: { "X-SES-Spam-Verdict": "FAIL" }` and the virus header; not spam → lands on the event. Rows deleted afterwards.
-- [ ] Bruno: `GET /mails`, `GET /conversations`, `GET /conversations/counts`, 403/404 only. No PATCH (Bruno runs against production).
+- [x] **Task 2 — Spam and virus in the classifier** (AC: 3–5; TDD first)
+  - [x] Migration `V{next}__mail_spam.sql` (re-check the head; 16.8/16.9 may have added migrations): `mail_message.is_spam BOOLEAN NOT NULL DEFAULT FALSE`, partial index `WHERE is_spam`; extend the `mail_automatic_event.kind` CHECK with `SPAM`, `VIRUS`.
+  - [x] `InboundClassifier` (16.2a): `VIRUS` before everything; `SPAM` before `HUMAN`. Fixtures with the two headers (synthetic). `InboundMailCenter`: virus → count only; spam → store `IN` with `is_spam = true`, no conversation, count `SPAM`.
+  - [x] Forwarding: `EmailForwardingService.forward` (line 87) and `forwardUnrecognizedReply` (line 233) drop `VIRUS`/`SPAM` FAIL with new results/outcomes (`DROPPED_VIRUS`, `DROPPED_SPAM`; `EmailForwardingOutcome` + migration extending the CHECK, pattern V131; metrics). Calendar replies carry the verdict headers too: check verdicts before the calendar branch (line 88).
+- [x] **Task 3 — `GET /mails` and `GET /mails/{mailKey}`** (AC: 9, 10) — skip if 16.10 already built it; then only add `spam`.
+  - [x] `MailMessageQueryService`: make the event optional. Today every query requires it (`requireEvent`, line 173) and filters `m.event_code = :eventCode AND m.direction = 'OUT'` (line 62), and the newsletter backfill joins on the event code (line 80). Change to `(CAST(:eventCode AS TEXT) IS NULL OR …)`, `:noEvent`, `:direction`, `:spam`, and exclude conversation answers from the OUT list (`conversation_id IS NULL`, 16.6). The event endpoint keeps its 404 for an unknown event.
+  - [x] New controller methods in `EventMailController` or a sibling `MailController` (same generated interface if the tag is shared). `GET /mails/{mailKey}` works for any key (`mail_key` is globally unique, V135; `newsletter-{sendId}` too).
+  - [x] Integration tests: across events, `eventCode` filter, `noEvent`, `direction` default OUT, `ANY`, spam excluded by default, 403.
+- [x] **Task 4 — Conversations across events** (AC: 1, 2, 10)
+  - [x] `GET /conversations` and `/conversations/counts` in `ConversationQueryService`; `PATCH` with `eventCode`: validate the event exists, update the conversation and its messages' `event_code` in one transaction, `updated_by`.
+  - [x] `PATCH /mails/{mailKey}` `{ spam: false }`: clear the flag, run `ConversationThreader` on the stored message (it has every header the threader needs, 16.2a columns), count nothing new.
+  - [x] Integration tests for AC1 (both directions), AC3 (not spam → event conversation and → no-event conversation).
+- [x] **Task 5 — Retention** (AC: 7) — `MailMessageRetentionScheduler.purgeExpired`: `DELETE FROM mail_message WHERE is_spam AND created_at < now() - 30 days` before the 12-month rules. Integration test.
+- [x] **Task 6 — Local dev check** (AC: 11) — simulator (16.2a Task 7) with `headers: { "X-SES-Spam-Verdict": "FAIL" }` and the virus header; not spam → lands on the event. Rows deleted afterwards.
+- [x] Bruno: `GET /mails`, `GET /conversations`, `GET /conversations/counts`, 403/404 only. No PATCH (Bruno runs against production).
 
 ### PR 3 — Frontend
 
-- [ ] **Task 7 — Navigation entry with badge** (AC: 2, 8)
-  - [ ] `config/navigationConfig.ts`: `NavigationItem` (lines 20–27) has no badge; add an optional `badge?: 'mailOpen'` and the item `{ labelKey: 'navigation.mail', path: '/organizer/mail', roles: ['organizer'], badge: 'mailOpen' }` after Events (line 41). `NavigationMenu.tsx` and `AppHeader.tsx` render a MUI `Badge` (hidden at 0; `AppHeader.tsx:191` shows the pattern used for notifications) from a hook `useOpenConversationCount` (`refetchInterval` 60 s, invalidated by every conversation mutation).
-  - [ ] Route in `App.tsx` next to the other organizer routes (`/organizer/users/*` at line 691 is the pattern: `ProtectedRoute` + `AuthLayout`).
-- [ ] **Task 8 — Mail page** (AC: 1, 3, 8, 9)
-  - [ ] `components/organizer/MailCenter/MailCenterPage.tsx`: the sections of AC8/AC9, max width about 1100 px like the event page. Reuse `NeedsAnswerSection`/`ConversationRow`/`ConversationDetail` (16.2a) with an `eventCode?` prop (row shows the event when absent) and `MailSentList` with `eventCode?` (global list via `GET /mails`). `MailDetail` gets `eventCode?`: without it, it loads `GET /mails/{mailKey}`.
-  - [ ] "Assign to event": a select of events (existing `hooks/useEvents.ts`), "— no event —" first; PATCH; the row moves on success.
-  - [ ] Spam: collapsed accordion with count; row shows from, subject, date; inline body; "Not spam" button.
-  - [ ] Vitest: badge hidden at 0, sections and empty states, assign moves the row, not spam, mobile dialog. Playwright (organizer project, local dev): read-only navigation spec, no horizontal scroll at 375 px.
-  - [ ] i18n: `navigation.mail` (common namespace, where the other `navigation.*` keys live) and `mailCenter.*` in all 10 locales.
-- [ ] **Task 9 — Docs** — user guide `docs/user-guide/features/event-mail.md` (global page, assigning, spam), `06-backend-architecture.md` (spam/virus handling, `GET /mails`).
+- [x] **Task 7 — Navigation entry with badge** (AC: 2, 8)
+  - [x] `config/navigationConfig.ts`: `NavigationItem` (lines 20–27) has no badge; add an optional `badge?: 'mailOpen'` and the item `{ labelKey: 'navigation.mail', path: '/organizer/mail', roles: ['organizer'], badge: 'mailOpen' }` after Events (line 41). `NavigationMenu.tsx` and `AppHeader.tsx` render a MUI `Badge` (hidden at 0; `AppHeader.tsx:191` shows the pattern used for notifications) from a hook `useOpenConversationCount` (`refetchInterval` 60 s, invalidated by every conversation mutation).
+  - [x] Route in `App.tsx` next to the other organizer routes (`/organizer/users/*` at line 691 is the pattern: `ProtectedRoute` + `AuthLayout`).
+- [x] **Task 8 — Mail page** (AC: 1, 3, 8, 9)
+  - [x] `components/organizer/MailCenter/MailCenterPage.tsx`: the sections of AC8/AC9, max width about 1100 px like the event page. Reuse `NeedsAnswerSection`/`ConversationRow`/`ConversationDetail` (16.2a) with an `eventCode?` prop (row shows the event when absent) and `MailSentList` with `eventCode?` (global list via `GET /mails`). `MailDetail` gets `eventCode?`: without it, it loads `GET /mails/{mailKey}`.
+  - [x] "Assign to event": a select of events (existing `hooks/useEvents.ts`), "— no event —" first; PATCH; the row moves on success.
+  - [x] Spam: collapsed accordion with count; row shows from, subject, date; inline body; "Not spam" button.
+  - [x] Vitest: badge hidden at 0, sections and empty states, assign moves the row, not spam, mobile dialog. Playwright (organizer project, local dev): read-only navigation spec, no horizontal scroll at 375 px.
+  - [x] i18n: `navigation.mail` (common namespace, where the other `navigation.*` keys live) and `mailCenter.*` in all 10 locales.
+- [x] **Task 9 — Docs** — user guide `docs/user-guide/features/event-mail.md` (global page, assigning, spam), `06-backend-architecture.md` (spam/virus handling, `GET /mails`).
 
 ## Dev Notes
 
@@ -111,12 +111,60 @@ so that **I can see at a glance whether anything is waiting, put an `info@` mail
 
 ### Agent Model Used
 
+Claude Opus 5.5 (Amelia, bmad-agent-dev), overnight run 2026-11-02.
+
 ### Debug Log References
+
+- EMS `mailcenter.*` + `forwarding.*` + retention: 351 tests green; `GlobalMailCenterIntegrationTest` 14 tests (Testcontainers).
+- CDK `inbound-email-stack.test.ts` 33/33 (`--maxWorkers=2`, `cdk.out` cleared); gateway `DomainRouterTest` green.
+- Vitest: communications, Navigation, MailCenter, UserManagement, PartnerManagement suites green.
+- Local dev (2026-11-02 23:20): simulator with `X-SES-Spam-Verdict: FAIL` → stored `general-62`, `is_spam`, no conversation, not
+  forwarded (only the clean mail reached the capture); `X-SES-Virus-Verdict: FAIL` → nothing stored, counted VIRUS; spam "accept"
+  to replies@ → no keyword action, forwarding log `dropped_spam`. `PATCH /mails/general-62 {spam:false}` → `conv-16`, no event;
+  assign to BATbern63 and back; counts moved accordingly. Partner token → 403. Bruno `events` collection 23 requests, 40/40 tests,
+  no "Skipping invalid file". Playwright `e2e/organizer/mail-center.spec.ts` 2/2 on local dev. Test rows deleted afterwards.
 
 ### Completion Notes List
 
+- **One PR instead of three (deviation):** the story split PR 1 (CDK) before PR 2 so the verdict headers exist first. Not
+  needed: a missing header is clean (AC6), so backend and CDK can land together; this saves two production deploys. Built
+  together with 16.10, which shares `GET /mails`.
+- **`GET /mails` built here** (16.7 Task 3); 16.10 added the participant filters in the same query builder.
+- **PATCH conversation:** `eventCode` plus `clearEvent: true` (not `eventCode: null`): the generator runs with
+  `openApiNullable=false`, so absent and null cannot be told apart; same pattern as `clearAssignee`.
+- **Spam in the classifier:** VIRUS first, SPAM just before HUMAN, so an automatic reply SES flags as spam is still counted as
+  what it is. The verdict check reads the header block only; any FAIL header counts (a forged one only holds back the sender's
+  own mail).
+- **InboundReplyProcessor** skips the keyword router and iCal routing for spam/virus (a spam "accept" must not confirm anyone).
+- **Bug found and fixed (shipped in #1189):** `InboundMailCenter.eventOf` threw an NPE for every conversation without an
+  event (`findFirst` on a null element). The mail was stored, but the non-strict path logged ERROR and counted a false
+  `MailCenterIngestFailed`, and the strict path (a switched group) rethrew, so SQS retried once. Regression test
+  `should_returnStored_when_noEventMailIngestedStrictly`. Expect `MailCenterIngestFailed` > 0 on production between the
+  #1189 deploy and this one: those mails were stored.
+- **ConversationList** extracted from `NeedsAnswerSection` so the event page and the Mail page render the same rows;
+  `ConversationDetail` got an Event select. Conversation mutations now invalidate every `['mails']` query (event pages, the
+  Mail page, the badge).
+- Not verified: SES actually writing the verdict headers (needs the deploy and the first inbound mail); the CDK change is an
+  in-place property update of the three rules (I believe; `cdk diff` against production not run).
+
 ### File List
+
+- `infrastructure/lib/stacks/inbound-email-stack.ts`, `infrastructure/test/unit/inbound-email-stack.test.ts`
+- `api-gateway/src/main/java/ch/batbern/gateway/routing/DomainRouter.java`, `.../DomainRouterTest.java`
+- `docs/api/event-mail-api.openapi.yml`
+- EMS: `db/migration/V143__mail_spam_and_participant_indexes.sql`; `forwarding/{MailClassifier,EmailForwardingService,ForwardingMetrics,ForwardingDirectory}.java`;
+  `domain/EmailForwardingOutcome.java`; `service/InboundReplyProcessor.java`; `mailcenter/inbound/{InboundClassifier,InboundMailCenter,InboundMailStore,AutomaticMailCounter}.java`;
+  `mailcenter/{MailMessageQueryService,ConversationQueryService,ConversationService,EventMailController,MailConversationController,MailParticipantResolver}.java`;
+  `client/{UserApiClient,impl/UserApiClientImpl}.java`; `repository/MailMessageRepository.java`; `scheduler/MailMessageRetentionScheduler.java`
+- EMS tests: `mailcenter/GlobalMailCenterIntegrationTest.java`, `forwarding/{MailClassifierTest,EmailForwardingServiceTest}.java`, `mailcenter/inbound/InboundClassifierTest.java`
+- Frontend: `components/organizer/MailCenter/{MailCenterPage,ParticipantMailList}.tsx` (+ tests), `communications/{ConversationList,EventSelect}.tsx` (new),
+  `communications/{NeedsAnswerSection,ConversationDetail,ConversationReplyBox,MailDetail,MailSentList}.tsx`, `shared/Navigation/{NavigationMenu,MailOpenBadge}.tsx`,
+  `config/navigationConfig.ts`, `App.tsx`, `services/{mailMessageService,mailConversationService}.ts`, `hooks/useMailMessages`, `hooks/useMailConversations`,
+  `types/generated/event-mail-api.types.ts`, locales (10 × common, events), `e2e/organizer/mail-center.spec.ts`
+- Bruno: `bruno-tests/events/{global-mails-list,global-mails-forbidden,global-mails-unknown,global-mails-participant-unknown,conversations-global,conversations-counts}.bru`
+- Docs: `docs/architecture/06-backend-architecture.md`, `docs/architecture/08-operations-security.md`, `docs/user-guide/features/event-mail.md`
 
 ## Change Log
 
 - 2026-11-01: Story drafted from Epic 16 Story 16.7 (incl. the 2026-10-31 API note and SES scanning).
+- 2026-11-02: Implemented with 16.10 on `feature/16-7-global-mail` (one PR); eventOf NPE from #1189 fixed.

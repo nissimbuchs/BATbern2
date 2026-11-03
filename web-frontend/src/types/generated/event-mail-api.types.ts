@@ -145,6 +145,111 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/mails': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Mail of all events and without event, newest first (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Story 16.7: the same entries, schema and filters as `GET /events/{eventCode}/mails`, with the
+     *     event as an optional filter instead of the path. `noEvent=true` lists mail that belongs to no
+     *     event (e.g. to info@). Story 16.10: `participantUsername` or `participantCompany` lists the mail
+     *     to and from one person or the PARTNER contacts of one company, matched on every address they
+     *     have (primary and additional, case-insensitive, resolved at read time). That view never lists
+     *     newsletters, test sends or spam, and lists the answers in conversations too; use it with
+     *     `direction=ANY` and `grouped=false`.
+     */
+    get: operations['listMails'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/mails/{mailKey}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * One mail, of any event or none (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Story 16.7: as `GET /events/{eventCode}/mails/{mailKey}` for any key (keys are global), inbound
+     *     and spam included.
+     */
+    get: operations['getMail'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    /**
+     * Mark an inbound mail as not spam (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Story 16.7 AC3. Only `{ "spam": false }` is accepted: the flag is cleared and the mail is
+     *     threaded like a new arrival (16.2a/16.2b rules), so it lands in an event's conversations or in
+     *     "No event". Sends nothing.
+     */
+    patch: operations['patchMail'];
+    trace?: never;
+  };
+  '/conversations': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Conversations of all events and without event, open first (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Story 16.7 (global Mail page). Same order as the event's list. `noEvent=true`: only
+     *     conversations without an event; `noEvent=false`: only those with one; absent: both.
+     */
+    get: operations['listConversations'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/conversations/counts': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Counts for the Mail badge and the sections of the Mail page (ORGANIZER)
+     * @description **Security**: ORGANIZER role required; any other role gets 403.
+     *
+     *     Story 16.7 AC2. `open` (the badge) and `waiting` across all events and without event;
+     *     `noEvent`: conversations without an event that are not done; `spam`: inbound mail flagged spam.
+     */
+    get: operations['getConversationCounts'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/conversations/{conversationKey}': {
     parameters: {
       query?: never;
@@ -172,6 +277,9 @@ export interface paths {
      *     conversation unassigned. Story 16.6: when the assignee changes to another organizer than the
      *     caller, that organizer gets one notification mail (template `mailcenter-assigned`). Assigning
      *     yourself, clearing the assignee or saving the same assignee sends nothing.
+     *
+     *     Story 16.7 AC1: `eventCode` puts the conversation and all its messages on that event;
+     *     `clearEvent: true` takes them off any event ("No event"). Keys do not change.
      */
     patch: operations['patchConversation'];
     trace?: never;
@@ -319,6 +427,14 @@ export interface components {
       eventCode?: string | null;
       /** @description Story 16.2a. The conversation an inbound mail belongs to. */
       conversationKey?: string | null;
+      /** @description Story 16.7. Inbound mail flagged spam by SES; shown only in the Spam list. */
+      spam?: boolean;
+      /**
+       * @description Story 16.10. In the participant view: the delivery status of the participant's own address
+       *     (the worst when several). Absent for received mail.
+       * @enum {string|null}
+       */
+      participantStatus?: 'SENT' | 'DELIVERED' | 'FAILED' | null;
       /**
        * @description Story 16.2a. Attachments of an inbound mail. Story 16.6: files up to 25 MB are kept (`kept`),
        *     larger ones by name only.
@@ -332,6 +448,16 @@ export interface components {
       size?: number;
       /** @description Story 16.6. The file is kept and can be downloaded (getConversationAttachmentDownloadUrl). */
       kept?: boolean;
+    };
+    MailMessagePatch: {
+      /** @description Only `false` is accepted. */
+      spam: boolean;
+    };
+    MailConversationCounts: {
+      open: number;
+      waiting: number;
+      noEvent: number;
+      spam: number;
     };
     /**
      * @description Open needs an answer; waiting is answered, waiting for the counterpart; done needs nothing.
@@ -369,6 +495,10 @@ export interface components {
       assigneeUsername?: string | null;
       /** @description Leave the conversation unassigned. */
       clearAssignee?: boolean;
+      /** @description Story 16.7. Put the conversation on this (existing) event. */
+      eventCode?: string | null;
+      /** @description Story 16.7. Take the conversation off its event ("No event"). */
+      clearEvent?: boolean;
     };
     MailConversationReply: {
       /** @description The answer as plain text. The last inbound mail is quoted below it. */
@@ -575,7 +705,15 @@ export interface components {
     };
   };
   responses: never;
-  parameters: never;
+  parameters: {
+    /**
+     * @description Story 16.7. `OUT` (default): what went out, without the answers in conversations; `IN`: mail
+     *     people wrote; `ANY`: both.
+     */
+    MailDirection: 'OUT' | 'IN' | 'ANY';
+    /** @description Story 16.7. `true` lists only inbound mail flagged spam. Default `false`: spam is never listed otherwise. */
+    MailSpam: boolean;
+  };
   requestBodies: never;
   headers: never;
   pathItems: never;
@@ -600,6 +738,13 @@ export interface operations {
         grouped?: boolean;
         /** @description Include organizer test sends (Story 16.8, hidden by default). */
         includeTests?: boolean;
+        /**
+         * @description Story 16.7. `OUT` (default): what went out, without the answers in conversations; `IN`: mail
+         *     people wrote; `ANY`: both.
+         */
+        direction?: components['parameters']['MailDirection'];
+        /** @description Story 16.7. `true` lists only inbound mail flagged spam. Default `false`: spam is never listed otherwise. */
+        spam?: components['parameters']['MailSpam'];
         /** @description Page number (1-based) */
         page?: number;
         /** @description Items per page (max 100) */
@@ -953,6 +1098,255 @@ export interface operations {
       };
     };
   };
+  listMails: {
+    parameters: {
+      query?: {
+        /** @description Only mail of this event. */
+        eventCode?: string;
+        /** @description Only mail without an event. Not together with `eventCode`. */
+        noEvent?: boolean;
+        /** @description Story 16.10. Mail to or from this user. Not together with `participantCompany`. */
+        participantUsername?: string;
+        /** @description Story 16.10. Mail to or from the PARTNER contacts of this company. */
+        participantCompany?: string;
+        audience?: components['schemas']['MailAudience'];
+        templateKey?: string;
+        reference?: string;
+        /** @description Only entries sent on this day, Europe/Zurich. */
+        date?: string;
+        grouped?: boolean;
+        includeTests?: boolean;
+        /**
+         * @description Story 16.7. `OUT` (default): what went out, without the answers in conversations; `IN`: mail
+         *     people wrote; `ANY`: both.
+         */
+        direction?: components['parameters']['MailDirection'];
+        /** @description Story 16.7. `true` lists only inbound mail flagged spam. Default `false`: spam is never listed otherwise. */
+        spam?: components['parameters']['MailSpam'];
+        /** @description Page number (1-based) */
+        page?: number;
+        /** @description Items per page (max 100) */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Paginated entries, newest first */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MailMessagePage'];
+        };
+      };
+      /** @description `eventCode` with `noEvent`, or both participant filters */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Event, user or company not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getMail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        mailKey: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The mail */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MailMessageDetail'];
+        };
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Mail not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  patchMail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        mailKey: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['MailMessagePatch'];
+      };
+    };
+    responses: {
+      /** @description The mail after the change */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MailMessageDetail'];
+        };
+      };
+      /** @description Anything else than `spam=false`, or the mail is not spam */
+      400: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Mail not found */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  listConversations: {
+    parameters: {
+      query?: {
+        /** @description Only conversations in one of these statuses (repeat the parameter). */
+        status?: components['schemas']['MailConversationStatus'][];
+        eventCode?: string;
+        noEvent?: boolean;
+        /** @description Page number (1-based) */
+        page?: number;
+        /** @description Items per page (max 100) */
+        limit?: number;
+      };
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Conversations */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MailConversationPage'];
+        };
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
+  getConversationCounts: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Counts */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MailConversationCounts'];
+        };
+      };
+      /** @description Not authenticated */
+      401: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      /** @description Forbidden (ORGANIZER role required) */
+      403: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+    };
+  };
   getConversation: {
     parameters: {
       query?: never;
@@ -1020,7 +1414,7 @@ export interface operations {
           'application/json': components['schemas']['MailConversationSummary'];
         };
       };
-      /** @description The assignee is not an organizer */
+      /** @description The assignee is not an organizer, or `eventCode` with `clearEvent` */
       400: {
         headers: {
           [name: string]: unknown;
@@ -1041,7 +1435,7 @@ export interface operations {
         };
         content?: never;
       };
-      /** @description Conversation not found */
+      /** @description Conversation or event not found */
       404: {
         headers: {
           [name: string]: unknown;

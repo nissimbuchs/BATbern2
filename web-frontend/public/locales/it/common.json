@@ -35,7 +35,10 @@
       "speaker": "Relatore",
       "partner": "Partner",
       "attendee": "Partecipante"
-    }
+    },
+    "mail": "Mail",
+    "mailOpenCount_one": "{{count}} conversazione aperta",
+    "mailOpenCount_other": "{{count}} conversazioni aperte"
   },
   "public": {
     "login": "Accedi",

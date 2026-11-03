@@ -1,6 +1,6 @@
 # Story 16.2b: Conversations for every alias, registrant replies and mail without an event
 
-Status: review
+Status: done
 
 ## Story
 
@@ -168,3 +168,4 @@ Built after 16.6 PR 1 (epic order), on `feature/16-2a-speaker-conversations`; sh
 
 - 2026-11-01: Story drafted from Epic 16 Story 16.2, all-alias part (split 16.2a/16.2b per owner sequence #3).
 - 2026-11-02: Implemented (all tasks); status review.
+- 2026-11-02: Live via #1189 (merge 4c83dbcb, 22:40Z); production EMS image c62cc3f migrated to V142, no checksum mismatch. Status done. No inbound mail yet since the deploy, so the threading metrics are not observed yet.

@@ -174,7 +174,8 @@
     "tabs": {
       "overview": "Survista",
       "eventsParticipated": "Occurrenzas participadas",
-      "ariaLabel": "User detail tabs"
+      "ariaLabel": "User detail tabs",
+      "mail": "Mail"
     },
     "overviewText": "Survista dal profil dal utilisader. Infurmaziuns supplementaras pon vegnir agiuntadas qua.",
     "eventsTable": {

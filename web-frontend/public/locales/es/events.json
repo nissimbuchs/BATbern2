@@ -1398,5 +1398,31 @@
     "featureToggle": "Mostrar en el carrusel público",
     "cannotFeatureAnonymous": "Los agradecimientos anónimos no se pueden destacar (sin nombre).",
     "loadError": "No se pudieron cargar los mensajes de agradecimiento."
+  },
+  "mailCenter": {
+    "title": "Correo",
+    "open": "Abiertas",
+    "nothingOpen": "Nada espera respuesta.",
+    "noEvent": "Sin evento",
+    "noEventHint": "Correos a info@, events@ y support@ que no pertenecen a ningún evento. Asígnalos a un evento para responderlos allí.",
+    "nothingWithoutEvent": "No hay correos sin evento.",
+    "spam": "Spam",
+    "spamHint": "Marcado como spam por el servidor de correo. No reenviado; se elimina a los 30 días.",
+    "noSpam": "No hay spam.",
+    "notSpam": "No es spam",
+    "notSpamError": "No se pudo mover el correo. Inténtalo de nuevo.",
+    "whatWentOut": "Lo que se envió (todos los eventos)",
+    "event": "Evento",
+    "allEvents": "Todos los eventos",
+    "assignToEvent": "Asignar a un evento",
+    "noEventOption": "(sin evento)",
+    "noEventChip": "Sin evento",
+    "receivedFrom": "Recibido de {{sender}}",
+    "received": "Recibido",
+    "openConversation": "Abrir la conversación",
+    "participant": {
+      "limits": "Cada correo que les enviamos y cada correo que nos enviaron, en todos los eventos. No se muestran: boletines, correos anteriores al registro del Mail Center ni correos a una dirección que ya no tienen.",
+      "empty": "Todavía no hay correos de ni para esta persona."
+    }
   }
 }

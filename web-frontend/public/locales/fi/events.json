@@ -1398,5 +1398,31 @@
     "featureToggle": "Näytä julkisessa palkissa",
     "cannotFeatureAnonymous": "Nimettömiä kiitoksia ei voi nostaa esiin (ei nimeä).",
     "loadError": "Kiitosviestien lataaminen epäonnistui."
+  },
+  "mailCenter": {
+    "title": "Posti",
+    "open": "Avoimet",
+    "nothingOpen": "Mikään ei odota vastausta.",
+    "noEvent": "Ei tapahtumaa",
+    "noEventHint": "Viestit osoitteisiin info@, events@ ja support@, jotka eivät kuulu mihinkään tapahtumaan. Liitä tapahtumaan vastataksesi siellä.",
+    "nothingWithoutEvent": "Ei viestejä ilman tapahtumaa.",
+    "spam": "Roskaposti",
+    "spamHint": "Postipalvelin merkitsi roskapostiksi. Ei välitetty; poistetaan 30 päivän kuluttua.",
+    "noSpam": "Ei roskapostia.",
+    "notSpam": "Ei roskapostia",
+    "notSpamError": "Viestiä ei voitu siirtää. Yritä uudelleen.",
+    "whatWentOut": "Mitä lähetettiin (kaikki tapahtumat)",
+    "event": "Tapahtuma",
+    "allEvents": "Kaikki tapahtumat",
+    "assignToEvent": "Liitä tapahtumaan",
+    "noEventOption": "(ei tapahtumaa)",
+    "noEventChip": "Ei tapahtumaa",
+    "receivedFrom": "Vastaanotettu lähettäjältä {{sender}}",
+    "received": "Vastaanotettu",
+    "openConversation": "Avaa keskustelu",
+    "participant": {
+      "limits": "Jokainen heille lähettämämme ja heiltä saamamme viesti kaikista tapahtumista. Ei näytetä: uutiskirjeitä, viestejä ajalta ennen Mail Centerin tallennusta eikä viestejä osoitteeseen, jota heillä ei enää ole.",
+      "empty": "Ei vielä viestejä tälle henkilölle tai häneltä."
+    }
   }
 }

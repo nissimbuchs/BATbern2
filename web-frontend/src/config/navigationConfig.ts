@@ -15,6 +15,7 @@ import {
   Public,
   Lightbulb,
   CalendarMonth,
+  MailOutline,
 } from '@mui/icons-material';
 
 export interface NavigationItem {
@@ -24,6 +25,8 @@ export interface NavigationItem {
   roles: UserRole[];
   description?: string;
   children?: NavigationItem[];
+  /** Story 16.7 AC2: a count shown on the entry; hidden at zero. */
+  badge?: 'mailOpen';
 }
 
 /**
@@ -38,6 +41,15 @@ export const navigationConfig: NavigationItem[] = [
     icon: Event,
     roles: ['organizer'],
     description: 'Manage all events',
+  },
+  {
+    // Story 16.7: everything that needs an answer, across events, plus no-event mail and spam
+    labelKey: 'navigation.mail',
+    path: '/organizer/mail',
+    icon: MailOutline,
+    roles: ['organizer'],
+    description: 'Mail of all events',
+    badge: 'mailOpen',
   },
   {
     labelKey: 'navigation.partners',

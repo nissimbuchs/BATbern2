@@ -12,6 +12,12 @@ vi.mock('@/hooks/useAuth', () => ({
 }));
 
 // Mock hooks
+// Story 16.10: the Mail tab's list (its own tests live with it)
+vi.mock('@/components/organizer/MailCenter/ParticipantMailList', () => ({
+  ParticipantMailList: ({ participant }: { participant: { participantCompany: string } }) => (
+    <div data-testid="participant-mail-mock">{participant.participantCompany}</div>
+  ),
+}));
 vi.mock('@/hooks/usePartnerDetail', () => ({
   usePartnerDetail: vi.fn(),
 }));
@@ -578,6 +584,24 @@ describe('PartnerDetailScreen - Role-Based Rendering (Story 8.0)', () => {
       // Add Note button must not appear
       expect(screen.queryByTestId('add-note-button')).not.toBeInTheDocument();
     });
+  });
+
+  // Story 16.10 AC3: the Mail tab (index 7) shows the partner's mail to organizers only
+  it('should_renderMailTab_when_organizerOpensIt', async () => {
+    renderAsRole('organizer', 7);
+
+    await waitFor(() => {
+      expect(screen.getByTestId('participant-mail-mock')).toHaveTextContent('Acme Corp');
+    });
+  });
+
+  it('should_notRenderMailTab_when_partnerRole', async () => {
+    renderAsRole('partner', 7);
+
+    await waitFor(() => {
+      expect(screen.getByText(/Partnership Details/i)).toBeInTheDocument();
+    });
+    expect(screen.queryByTestId('participant-mail-mock')).not.toBeInTheDocument();
   });
 
   it('should_usePropsCompanyName_when_companyNamePropProvided', async () => {

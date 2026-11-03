@@ -35,7 +35,10 @@
       "speaker": "Intervenant",
       "partner": "Partenaire",
       "attendee": "Participant"
-    }
+    },
+    "mail": "Mail",
+    "mailOpenCount_one": "{{count}} conversation ouverte",
+    "mailOpenCount_other": "{{count}} conversations ouvertes"
   },
   "public": {
     "login": "Connexion",

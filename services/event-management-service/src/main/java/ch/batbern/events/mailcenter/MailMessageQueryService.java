@@ -2,6 +2,7 @@ package ch.batbern.events.mailcenter;
 
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.shared.exception.ValidationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.jdbc.core.namedparam.MapSqlParameterSource;
 import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
@@ -23,8 +24,9 @@ import java.util.UUID;
  * delivery status from 16.1b) and, for newsletter sends made before the record existed,
  * {@code newsletter_sends} (read-time union, no data migration, AC6).
  *
- * <p>Automatic mails (no sender, from a template, not a newsletter) are collapsed per template and
- * day (Europe/Zurich) unless {@code grouped=false}. Newsletter counts come from
+ * <p>Automatic mails (no sender, from a template, not a newsletter) are collapsed per event, template
+ * and day (Europe/Zurich) unless {@code grouped=false}; the event matters across events
+ * (Story 16.7). Newsletter counts come from
  * {@code newsletter_recipients}: failed = refused by SES or bounced, delivered = the rest, because the
  * newsletter configuration set reports no deliveries.
  */
@@ -38,10 +40,22 @@ public class MailMessageQueryService {
 
     private static final String ZONE = "Europe/Zurich";
 
-    /** One row per recorded mail, with its counts; newsletter counts from newsletter_recipients. */
+    /**
+     * One row per recorded mail, with its counts; newsletter counts from newsletter_recipients.
+     * Story 16.7: the event is an optional filter ({@code :eventCode} null = all events,
+     * {@code :noEvent} = only mail without event), plus direction and spam. Story 16.10: with
+     * {@code :byParticipant}, only mail to (recipient) or from (inbound sender) one of {@code :addresses},
+     * conversation answers included, never newsletters, test sends or spam.
+     */
     private static final String RECORDED = """
             SELECT m.mail_key, m.created_at AS sent_at, m.sender_username, m.audience, m.template_key,
                    m.content_source, m.subject, m.newsletter_send_id, m.is_test, m.reference,
+                   m.event_code, m.direction, m.from_address, m.from_name, c.conversation_key, m.is_spam,
+                   CASE WHEN :byParticipant AND m.direction = 'OUT' THEN (
+                        SELECT pr.status FROM mail_recipient pr
+                         WHERE pr.mail_message_id = m.id AND lower(pr.address) IN (:addresses)
+                         ORDER BY CASE pr.status WHEN 'FAILED' THEN 0 WHEN 'SENT' THEN 1 ELSE 2 END LIMIT 1)
+                   END AS participant_status,
                    COALESCE(ns.recipient_count, m.recipient_count) AS recipient_count,
                    CASE WHEN m.newsletter_send_id IS NULL THEN COALESCE(r.delivered, 0)
                         ELSE COALESCE(nr.total, 0) - COALESCE(nr.failed, 0) END AS delivered,
@@ -50,9 +64,11 @@ public class MailMessageQueryService {
                    ns.status AS newsletter_status,
                    CASE WHEN :grouped AND m.sender_username IS NULL AND m.content_source = 'TEMPLATE'
                              AND m.newsletter_send_id IS NULL AND m.template_key IS NOT NULL
-                        THEN m.template_key || '|' || to_char(m.created_at AT TIME ZONE '%1$s', 'YYYY-MM-DD')
+                        THEN m.template_key || '|' || COALESCE(m.event_code, '') || '|'
+                             || to_char(m.created_at AT TIME ZONE '%1$s', 'YYYY-MM-DD')
                         ELSE m.mail_key END AS grp
               FROM mail_message m
+              LEFT JOIN mail_conversation c ON c.id = m.conversation_id
               LEFT JOIN (SELECT mail_message_id,
                                 count(*) FILTER (WHERE status = 'DELIVERED') AS delivered,
                                 count(*) FILTER (WHERE status = 'FAILED') AS failed
@@ -61,15 +77,29 @@ public class MailMessageQueryService {
               LEFT JOIN (SELECT send_id, count(*) AS total,
                                 count(*) FILTER (WHERE delivery_status = 'failed' OR bounce_type IS NOT NULL) AS failed
                            FROM newsletter_recipients GROUP BY send_id) nr ON nr.send_id = m.newsletter_send_id
-             WHERE m.event_code = :eventCode AND m.direction = 'OUT' AND m.conversation_id IS NULL
+             WHERE (CAST(:eventCode AS TEXT) IS NULL OR m.event_code = :eventCode)
+               AND (NOT :noEvent OR m.event_code IS NULL)
+               AND (CAST(:direction AS TEXT) = 'ANY' OR m.direction = :direction)
+               AND (CAST(:spam AS BOOLEAN) IS NULL OR m.is_spam = CAST(:spam AS BOOLEAN))
+               AND (:byParticipant OR m.direction = 'IN' OR m.conversation_id IS NULL)
+               AND (NOT :byParticipant OR (m.newsletter_send_id IS NULL AND NOT m.is_test AND NOT m.is_spam AND (
+                        (m.direction = 'OUT' AND EXISTS (SELECT 1 FROM mail_recipient pa
+                              WHERE pa.mail_message_id = m.id AND lower(pa.address) IN (:addresses)))
+                     OR (m.direction = 'IN' AND lower(m.from_address) IN (:addresses)))))
             """.formatted(ZONE);
 
-    /** Newsletter-table sends (newsletter and registrant notices) the record does not know (AC6). */
+    /**
+     * Newsletter-table sends (newsletter and registrant notices) the record does not know (AC6). Only
+     * outbound, never spam, never in the participant view; always belong to an event.
+     */
     private static final String BACKFILL = """
             SELECT '%1$s' || s.id AS mail_key, s.sent_at, s.sent_by_username,
                    CASE WHEN t.category = 'REGISTRANT_NOTICE' THEN 'REGISTRANTS' ELSE 'NEWSLETTER' END AS audience,
                    s.template_key, 'TEMPLATE' AS content_source, NULL AS subject, s.id AS newsletter_send_id,
                    s.test_mode AS is_test, CAST(NULL AS VARCHAR) AS reference,
+                   e.event_code, 'OUT' AS direction, CAST(NULL AS VARCHAR) AS from_address,
+                   CAST(NULL AS VARCHAR) AS from_name, CAST(NULL AS VARCHAR) AS conversation_key, FALSE AS is_spam,
+                   CAST(NULL AS VARCHAR) AS participant_status,
                    COALESCE(s.recipient_count, 0) AS recipient_count,
                    COALESCE(nr.total, 0) - COALESCE(nr.failed, 0) AS delivered, COALESCE(nr.failed, 0) AS failed,
                    s.status AS newsletter_status, '%1$s' || s.id AS grp
@@ -80,7 +110,9 @@ public class MailMessageQueryService {
               LEFT JOIN (SELECT send_id, count(*) AS total,
                                 count(*) FILTER (WHERE delivery_status = 'failed' OR bounce_type IS NOT NULL) AS failed
                            FROM newsletter_recipients GROUP BY send_id) nr ON nr.send_id = s.id
-             WHERE e.event_code = :eventCode
+             WHERE (CAST(:eventCode AS TEXT) IS NULL OR e.event_code = :eventCode)
+               AND NOT :noEvent AND NOT :byParticipant AND CAST(:direction AS TEXT) <> 'IN'
+               AND NOT COALESCE(CAST(:spam AS BOOLEAN), FALSE)
                AND NOT EXISTS (SELECT 1 FROM mail_message mm WHERE mm.newsletter_send_id = s.id)
             """.formatted(NEWSLETTER_KEY_PREFIX);
 
@@ -106,6 +138,13 @@ public class MailMessageQueryService {
                           (array_agg(newsletter_send_id ORDER BY sent_at DESC))[1] AS newsletter_send_id,
                           (array_agg(newsletter_status ORDER BY sent_at DESC))[1] AS newsletter_status,
                           (array_agg(reference ORDER BY sent_at DESC))[1] AS reference,
+                          (array_agg(event_code ORDER BY sent_at DESC))[1] AS event_code,
+                          (array_agg(direction ORDER BY sent_at DESC))[1] AS direction,
+                          (array_agg(from_address ORDER BY sent_at DESC))[1] AS from_address,
+                          (array_agg(from_name ORDER BY sent_at DESC))[1] AS from_name,
+                          (array_agg(conversation_key ORDER BY sent_at DESC))[1] AS conversation_key,
+                          bool_or(is_spam) AS is_spam,
+                          (array_agg(participant_status ORDER BY sent_at DESC))[1] AS participant_status,
                           bool_or(is_test) AS is_test,
                           sum(recipient_count) AS recipient_count, sum(delivered) AS delivered,
                           sum(failed) AS failed, count(*) AS message_count
@@ -117,7 +156,19 @@ public class MailMessageQueryService {
 
     public MailPage list(String eventCode, MailFilter filter, int page, int limit) {
         requireEvent(eventCode);
-        MapSqlParameterSource params = params(eventCode, filter.grouped(), filter.includeTests())
+        return list(MailScope.event(eventCode), filter, page, limit);
+    }
+
+    /**
+     * Story 16.7/16.10: the same list across events ({@code scope.eventCode} null), without event, or
+     * for one participant's addresses. An unknown event is a 404, as on the event's own list.
+     */
+    public MailPage list(MailScope scope, MailFilter filter, int page, int limit) {
+        if (scope.eventCode() != null) {
+            requireEvent(scope.eventCode());
+        }
+        MapSqlParameterSource params = params(scope, filter.grouped(), filter.includeTests(), filter.direction(),
+                filter.spam())
                 .addValue("audience", filter.audience())
                 .addValue("templateKey", filter.templateKey())
                 .addValue("reference", filter.reference())
@@ -136,7 +187,8 @@ public class MailMessageQueryService {
     public long failedDeliveries(String eventCode, boolean includeTests) {
         requireEvent(eventCode);
         return Optional.ofNullable(jdbc.queryForObject(ENTRIES + " SELECT COALESCE(sum(failed), 0) FROM entries",
-                params(eventCode, false, includeTests).addValue("audience", null).addValue("templateKey", null)
+                params(MailScope.event(eventCode), false, includeTests, MailFilter.OUT, false)
+                        .addValue("audience", null).addValue("templateKey", null)
                         .addValue("reference", null).addValue("day", null), Long.class)).orElse(0L);
     }
 
@@ -157,8 +209,18 @@ public class MailMessageQueryService {
 
     public Optional<MailDetail> get(String eventCode, String mailKey) {
         requireEvent(eventCode);
+        return find(eventCode, mailKey);
+    }
+
+    /** Story 16.7: one mail by its key, of any event or none, inbound and spam included. */
+    public Optional<MailDetail> get(String mailKey) {
+        return find(null, mailKey);
+    }
+
+    private Optional<MailDetail> find(String eventCode, String mailKey) {
         // A test send opens by its key even though the list hides it (Story 16.8 AC9).
-        MapSqlParameterSource params = params(eventCode, false, true).addValue("audience", null)
+        MapSqlParameterSource params = params(MailScope.event(eventCode), false, true, MailFilter.ANY, null)
+                .addValue("audience", null)
                 .addValue("templateKey", null).addValue("reference", null).addValue("day", null)
                 .addValue("mailKey", mailKey);
         List<MailEntry> found = jdbc.query(ENTRIES + " SELECT * FROM entries WHERE mail_key = :mailKey",
@@ -222,8 +284,18 @@ public class MailMessageQueryService {
         }
     }
 
-    private static MapSqlParameterSource params(String eventCode, boolean grouped, boolean includeTests) {
-        return new MapSqlParameterSource("eventCode", eventCode).addValue("grouped", grouped)
+    private static MapSqlParameterSource params(MailScope scope, boolean grouped, boolean includeTests,
+            String direction, Boolean spam) {
+        boolean byParticipant = scope.participantAddresses() != null;
+        return new MapSqlParameterSource("eventCode", scope.eventCode())
+                .addValue("noEvent", scope.noEvent())
+                .addValue("byParticipant", byParticipant)
+                // IN () is not valid SQL: a placeholder no stored address can equal
+                .addValue("addresses", byParticipant && !scope.participantAddresses().isEmpty()
+                        ? scope.participantAddresses() : List.of(""))
+                .addValue("direction", direction)
+                .addValue("spam", spam)
+                .addValue("grouped", grouped)
                 .addValue("includeTests", includeTests);
     }
 
@@ -233,12 +305,51 @@ public class MailMessageQueryService {
                 rs.getString("content_source"), rs.getString("subject"), rs.getInt("recipient_count"),
                 rs.getInt("delivered"), rs.getInt("failed"), rs.getInt("message_count"),
                 rs.getObject("newsletter_send_id", UUID.class), rs.getString("newsletter_status"),
-                rs.getBoolean("is_test"), rs.getString("reference"));
+                rs.getBoolean("is_test"), rs.getString("reference"), rs.getString("event_code"),
+                rs.getString("direction"), rs.getString("from_address"), rs.getString("from_name"),
+                rs.getString("conversation_key"), rs.getBoolean("is_spam"), rs.getString("participant_status"));
     }
 
-    /** Filters of the list operation; null means no filter. Test sends are hidden unless asked for. */
+    /**
+     * Filters of the list operation; null means no filter. Test sends are hidden unless asked for.
+     * Story 16.7: {@code direction} OUT (default), IN or ANY; {@code spam} true (only spam), false
+     * (default: no spam) or null (both, for the detail).
+     */
     public record MailFilter(String audience, String templateKey, String reference, LocalDate day,
-            boolean grouped, boolean includeTests) {
+            boolean grouped, boolean includeTests, String direction, Boolean spam) {
+
+        public static final String OUT = "OUT";
+        public static final String IN = "IN";
+        public static final String ANY = "ANY";
+
+        public MailFilter {
+            direction = direction == null ? OUT : direction;
+            if (!List.of(OUT, IN, ANY).contains(direction)) {
+                throw new ValidationException("direction", "direction must be OUT, IN or ANY");
+            }
+        }
+
+        public MailFilter(String audience, String templateKey, String reference, LocalDate day, boolean grouped,
+                boolean includeTests) {
+            this(audience, templateKey, reference, day, grouped, includeTests, OUT, false);
+        }
+
+        /** The same filter with Story 16.7's direction and spam. */
+        public MailFilter with(String newDirection, Boolean newSpam) {
+            return new MailFilter(audience, templateKey, reference, day, grouped, includeTests, newDirection, newSpam);
+        }
+    }
+
+    /**
+     * Story 16.7/16.10: whose mail. {@code eventCode} null = all events; {@code noEvent} = only mail
+     * without event; {@code participantAddresses} non-null = only mail to or from these (lowercased)
+     * addresses.
+     */
+    public record MailScope(String eventCode, boolean noEvent, List<String> participantAddresses) {
+
+        public static MailScope event(String eventCode) {
+            return new MailScope(eventCode, false, null);
+        }
     }
 
     public record MailPage(List<MailEntry> data, long total) {
@@ -247,7 +358,8 @@ public class MailMessageQueryService {
     public record MailEntry(String mailKey, Instant sentAt, String senderUsername, String audience,
             String templateKey, String contentSource, String subject, int recipientCount, int deliveredCount,
             int failedCount, int messageCount, UUID newsletterSendId, String newsletterStatus, boolean test,
-            String reference) {
+            String reference, String eventCode, String direction, String fromAddress, String fromName,
+            String conversationKey, boolean spam, String participantStatus) {
     }
 
     public record RecipientEntry(String address, String kind, String status, String failureReason) {

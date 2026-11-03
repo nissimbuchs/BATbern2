@@ -1401,5 +1401,31 @@
     "featureToggle": "Im öffentleche Banner zeige",
     "cannotFeatureAnonymous": "Anonymi Merci chöi nid häärvorghobe wärde (kä Name).",
     "loadError": "D Danke-Nachrichte hei nid chöne glade wärde."
+  },
+  "mailCenter": {
+    "title": "Mail",
+    "open": "Offe",
+    "nothingOpen": "Nüt wartet uf e Antwort.",
+    "noEvent": "Ohni Event",
+    "noEventHint": "Mails a info@, events@ und support@, wo zu keim Event ghöre. Emne Event zuordne, für se dert z beantworte.",
+    "nothingWithoutEvent": "Keni Mails ohni Event.",
+    "spam": "Spam",
+    "spamHint": "Vom Mailserver als Spam erkennt. Nid witergleitet, nach 30 Täg glöscht.",
+    "noSpam": "Kei Spam.",
+    "notSpam": "Kei Spam",
+    "notSpamError": "D Mail het nid chönne verschobe wärde. Bitte nomau probiere.",
+    "whatWentOut": "Was usegange isch (aui Events)",
+    "event": "Event",
+    "allEvents": "Aui Events",
+    "assignToEvent": "Event zuordne",
+    "noEventOption": "(kei Event)",
+    "noEventChip": "Ohni Event",
+    "receivedFrom": "Übercho vo {{sender}}",
+    "received": "Übercho",
+    "openConversation": "Underhaltig öffne",
+    "participant": {
+      "limits": "Jedi Mail a die Person und jedi Mail vo ihre, über aui Events. Nid ufgfüehrt: Newsletter, Mails vo bevor ds Mail Center se erfasst het, und Mails a Adresse, wo nümm hinterleit si.",
+      "empty": "No keni Mails a oder vo dere Person."
+    }
   }
 }

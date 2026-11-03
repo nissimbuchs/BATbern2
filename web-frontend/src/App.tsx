@@ -95,6 +95,8 @@ const CompanyManagement = React.lazy(
 const UserManagement = React.lazy(
   () => import('@components/organizer/UserManagement/UserManagement')
 );
+// Story 16.7: the Mail page (all events, no-event mail, spam)
+const MailCenterPage = React.lazy(() => import('@components/organizer/MailCenter/MailCenterPage'));
 const NewsletterSubscribers = React.lazy(
   () => import('@components/organizer/NewsletterSubscribers/NewsletterSubscribers')
 );
@@ -693,6 +695,18 @@ function App() {
                         <ProtectedRoute>
                           <AuthLayout>
                             <UserManagement />
+                          </AuthLayout>
+                        </ProtectedRoute>
+                      }
+                    />
+
+                    {/* Mail page - Story 16.7, organizer only */}
+                    <Route
+                      path="/organizer/mail"
+                      element={
+                        <ProtectedRoute allowedRoles={['organizer']}>
+                          <AuthLayout>
+                            <MailCenterPage />
                           </AuthLayout>
                         </ProtectedRoute>
                       }

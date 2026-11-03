@@ -35,7 +35,10 @@
       "speaker": "Ponente",
       "partner": "Socio",
       "attendee": "Participante"
-    }
+    },
+    "mail": "Correo",
+    "mailOpenCount_one": "{{count}} conversación abierta",
+    "mailOpenCount_other": "{{count}} conversaciones abiertas"
   },
   "public": {
     "login": "Iniciar sesión",

@@ -1398,5 +1398,31 @@
     "featureToggle": "Afficher sur le bandeau public",
     "cannotFeatureAnonymous": "Les remerciements anonymes ne peuvent pas être mis en avant (pas de nom).",
     "loadError": "Impossible de charger les messages de remerciement."
+  },
+  "mailCenter": {
+    "title": "Mail",
+    "open": "Ouvert",
+    "nothingOpen": "Rien n’attend de réponse.",
+    "noEvent": "Sans événement",
+    "noEventHint": "Mails à info@, events@ et support@ qui n’appartiennent à aucun événement. Attribuez-les à un événement pour y répondre.",
+    "nothingWithoutEvent": "Aucun mail sans événement.",
+    "spam": "Spam",
+    "spamHint": "Signalé comme spam par le serveur de messagerie. Non transféré ; supprimé après 30 jours.",
+    "noSpam": "Aucun spam.",
+    "notSpam": "Pas un spam",
+    "notSpamError": "Le mail n’a pas pu être déplacé. Veuillez réessayer.",
+    "whatWentOut": "Ce qui a été envoyé (tous les événements)",
+    "event": "Événement",
+    "allEvents": "Tous les événements",
+    "assignToEvent": "Attribuer à un événement",
+    "noEventOption": "(aucun événement)",
+    "noEventChip": "Sans événement",
+    "receivedFrom": "Reçu de {{sender}}",
+    "received": "Reçu",
+    "openConversation": "Ouvrir la conversation",
+    "participant": {
+      "limits": "Chaque mail que nous leur avons envoyé et chaque mail reçu d’eux, tous événements confondus. Non listés : newsletters, mails antérieurs à l’enregistrement par le Mail Center et mails à une adresse qu’ils n’ont plus.",
+      "empty": "Aucun mail vers ou de cette personne pour l’instant."
+    }
   }
 }

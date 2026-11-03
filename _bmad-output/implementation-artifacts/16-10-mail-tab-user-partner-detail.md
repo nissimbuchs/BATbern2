@@ -1,6 +1,6 @@
 # Story 16.10: Mail tab on the user and partner detail pages
 
-Status: ready-for-dev
+Status: review
 
 ## Story
 
@@ -27,27 +27,27 @@ so that **before I write to a speaker, registrant or partner I can see in one pl
 
 ## Tasks / Subtasks
 
-- [ ] **Task 0 — `GET /mails` present?** — If 16.7 Task 3 has not shipped, build it here first, exactly as specified there (contract, query refactor, tests). Note in Completion Notes which story built it.
-- [ ] **Task 1 — Resolve participants to addresses** (AC: 2, 3; TDD first)
-  - [ ] RED: `MailParticipantResolverTest` (CUMS client mocked): primary + verified + unverified additional, lowercased, deduplicated; company → PARTNER users of that company, all addresses; unknown user → `UserNotFoundException` → 404; company without contacts → empty set (200 with empty list).
-  - [ ] `mailcenter/MailParticipantResolver`. User: `UserApiClient.getUserByUsername` (`client/UserApiClient.java:37`; `UserResponse.additionalEmails` is always present, CUMS `UserResponseMapper.java:66`); same extraction as `ForwardingDirectory.emailsOf` (`forwarding/ForwardingDirectory.java:40–56`). Company: new `UserApiClient.getUsersByCompany(String companyName, String role)` calling CUMS `GET /internal/users?role=PARTNER&company=…` (`InternalUserController.java:54–64`), paged with the existing `MAX_PAGE_SIZE`/`MAX_PAGES` guards of `UserApiClientImpl` (around line 696–700).
-- [ ] **Task 2 — Query** (AC: 1, 4, 6)
-  - [ ] Spec first: the two query parameters on `GET /mails` in `docs/api/event-mail-api.openapi.yml`, 400/404 documented; `MailMessageSummary` already carries `direction`, `eventCode`, `fromAddress` (16.2a). Add `participantStatus` (the matched recipient's `SENT|DELIVERED|FAILED`, null for received mail).
-  - [ ] `MailMessageQueryService`: with `:addresses` (lowercased text array): OUT rows `EXISTS (SELECT 1 FROM mail_recipient r WHERE r.mail_message_id = m.id AND lower(r.address) = ANY(:addresses))`, IN rows `lower(m.from_address) = ANY(:addresses)`; no newsletter backfill branch and no newsletter rows (AC6); `is_spam` excluded; test sends (`is_test`) excluded.
-  - [ ] Migration `V{next}__mail_participant_indexes.sql` (re-check the head; 16.2a/16.7/16.8/16.9 add migrations): `CREATE INDEX … ON mail_recipient (lower(address))`, and on `mail_message (lower(from_address))` if 16.2a did not create it.
-  - [ ] Integration test (Testcontainers): to primary, to unverified additional, Cc, inbound from additional, other user's mail not listed, newsletter not listed, both filters → 400, unknown → 404, non-organizer → 403.
-  - [ ] Bruno: `GET /mails?participantUsername=` with an unknown name → 404; read-only, prose in `docs { }`.
-- [ ] **Task 3 — Reusable list component** (AC: 1, 5, 7, 8; Vitest first)
-  - [ ] Generalise `communications/MailSentList.tsx` (it is event-bound: `eventCode` prop and `useMailMessages(eventCode, …)`): accept either `eventCode` or a `scope` `{ participantUsername } | { participantCompany }`; in participant scope hide the audience filter chips that make no sense (keep them, minus Newsletter), show event code and direction per row, use `GET /mails` via a new `listMails(params)` in `mailMessageService.ts` and a `useMails(params)` hook. 16.7 needs the same global mode; if it already exists, only add the participant scope.
-  - [ ] `MailDetail.tsx`: `eventCode?`; without it, load `GET /mails/{mailKey}`; for direction `IN` show sender instead of the recipient list and the conversation link (AC5). `MailDetailDialog` (or 16.2a's `FullScreenDetailDialog`) unchanged for mobile.
-  - [ ] Vitest: participant scope renders direction + event, empty state, inline vs dialog by breakpoint, IN row shows conversation link.
-- [ ] **Task 4 — User detail tab** (AC: 1, 7, 8, 9)
-  - [ ] `components/organizer/UserManagement/UserDetailView.tsx`: third tab "Mail" (`user-tab-2`, after "Events participated", lines 266–275), panel `<TabPanel value={activeTab} index={2}>` (pattern at 281–289) rendering the list with `participantUsername={user.id}` (`user.id` is the username: `EventsParticipatedTable` sends it as `X-Attendee-Username`, `EventsParticipatedTable.tsx:57`); a third `BottomNavigationAction` with a mail icon (lines 303–306). Mount the list only when the tab is active, so the page does not call `/mails` for every user view.
-- [ ] **Task 5 — Partner detail tab** (AC: 3, 7, 8, 9)
-  - [ ] `PartnerDetailScreen.tsx` and `PartnerTabNavigation.tsx` both define the tab list (`allTabs`, lines 269–277 and 22–30). Append `{ key: 'mail' }` **at the end** (index 7): tabs are addressed by index (`partnerDetailStore.activeTab`), so inserting in the middle would shift Notes/Topics/Settings. Filter it out for PARTNER in both lists; render `effectiveTab === 7 && currentUser.role !== 'PARTNER'` with `participantCompany={partner.companyName}`; add the bottom-navigation icon.
-  - [ ] Vitest: tab visible for ORGANIZER, absent for PARTNER, list mounted with the company scope. Update `PartnerTabNavigation.test.tsx`, `PartnerDetailScreen.test.tsx`.
-- [ ] **Task 6 — Local dev check** — anonymized local data has `@example.invalid` addresses that `EmailService` refuses (16.1a Completion Notes), so create a synthetic user with an SES-simulator primary address and one additional address, send a deregistration-link mail to each, simulate an inbound reply (16.2a simulator), and check both tabs. Delete the test rows afterwards.
-- [ ] **Task 7 — Docs** — user guide: `docs/user-guide/features/event-mail.md` (new section "Mail of one person or partner"); `06-backend-architecture.md` (participant filter resolves addresses at read time).
+- [x] **Task 0 — `GET /mails` present?** — If 16.7 Task 3 has not shipped, build it here first, exactly as specified there (contract, query refactor, tests). Note in Completion Notes which story built it.
+- [x] **Task 1 — Resolve participants to addresses** (AC: 2, 3; TDD first)
+  - [x] RED: `MailParticipantResolverTest` (CUMS client mocked): primary + verified + unverified additional, lowercased, deduplicated; company → PARTNER users of that company, all addresses; unknown user → `UserNotFoundException` → 404; company without contacts → empty set (200 with empty list).
+  - [x] `mailcenter/MailParticipantResolver`. User: `UserApiClient.getUserByUsername` (`client/UserApiClient.java:37`; `UserResponse.additionalEmails` is always present, CUMS `UserResponseMapper.java:66`); same extraction as `ForwardingDirectory.emailsOf` (`forwarding/ForwardingDirectory.java:40–56`). Company: new `UserApiClient.getUsersByCompany(String companyName, String role)` calling CUMS `GET /internal/users?role=PARTNER&company=…` (`InternalUserController.java:54–64`), paged with the existing `MAX_PAGE_SIZE`/`MAX_PAGES` guards of `UserApiClientImpl` (around line 696–700).
+- [x] **Task 2 — Query** (AC: 1, 4, 6)
+  - [x] Spec first: the two query parameters on `GET /mails` in `docs/api/event-mail-api.openapi.yml`, 400/404 documented; `MailMessageSummary` already carries `direction`, `eventCode`, `fromAddress` (16.2a). Add `participantStatus` (the matched recipient's `SENT|DELIVERED|FAILED`, null for received mail).
+  - [x] `MailMessageQueryService`: with `:addresses` (lowercased text array): OUT rows `EXISTS (SELECT 1 FROM mail_recipient r WHERE r.mail_message_id = m.id AND lower(r.address) = ANY(:addresses))`, IN rows `lower(m.from_address) = ANY(:addresses)`; no newsletter backfill branch and no newsletter rows (AC6); `is_spam` excluded; test sends (`is_test`) excluded.
+  - [x] Migration `V{next}__mail_participant_indexes.sql` (re-check the head; 16.2a/16.7/16.8/16.9 add migrations): `CREATE INDEX … ON mail_recipient (lower(address))`, and on `mail_message (lower(from_address))` if 16.2a did not create it.
+  - [x] Integration test (Testcontainers): to primary, to unverified additional, Cc, inbound from additional, other user's mail not listed, newsletter not listed, both filters → 400, unknown → 404, non-organizer → 403.
+  - [x] Bruno: `GET /mails?participantUsername=` with an unknown name → 404; read-only, prose in `docs { }`.
+- [x] **Task 3 — Reusable list component** (AC: 1, 5, 7, 8; Vitest first)
+  - [x] Generalise `communications/MailSentList.tsx` (it is event-bound: `eventCode` prop and `useMailMessages(eventCode, …)`): accept either `eventCode` or a `scope` `{ participantUsername } | { participantCompany }`; in participant scope hide the audience filter chips that make no sense (keep them, minus Newsletter), show event code and direction per row, use `GET /mails` via a new `listMails(params)` in `mailMessageService.ts` and a `useMails(params)` hook. 16.7 needs the same global mode; if it already exists, only add the participant scope.
+  - [x] `MailDetail.tsx`: `eventCode?`; without it, load `GET /mails/{mailKey}`; for direction `IN` show sender instead of the recipient list and the conversation link (AC5). `MailDetailDialog` (or 16.2a's `FullScreenDetailDialog`) unchanged for mobile.
+  - [x] Vitest: participant scope renders direction + event, empty state, inline vs dialog by breakpoint, IN row shows conversation link.
+- [x] **Task 4 — User detail tab** (AC: 1, 7, 8, 9)
+  - [x] `components/organizer/UserManagement/UserDetailView.tsx`: third tab "Mail" (`user-tab-2`, after "Events participated", lines 266–275), panel `<TabPanel value={activeTab} index={2}>` (pattern at 281–289) rendering the list with `participantUsername={user.id}` (`user.id` is the username: `EventsParticipatedTable` sends it as `X-Attendee-Username`, `EventsParticipatedTable.tsx:57`); a third `BottomNavigationAction` with a mail icon (lines 303–306). Mount the list only when the tab is active, so the page does not call `/mails` for every user view.
+- [x] **Task 5 — Partner detail tab** (AC: 3, 7, 8, 9)
+  - [x] `PartnerDetailScreen.tsx` and `PartnerTabNavigation.tsx` both define the tab list (`allTabs`, lines 269–277 and 22–30). Append `{ key: 'mail' }` **at the end** (index 7): tabs are addressed by index (`partnerDetailStore.activeTab`), so inserting in the middle would shift Notes/Topics/Settings. Filter it out for PARTNER in both lists; render `effectiveTab === 7 && currentUser.role !== 'PARTNER'` with `participantCompany={partner.companyName}`; add the bottom-navigation icon.
+  - [x] Vitest: tab visible for ORGANIZER, absent for PARTNER, list mounted with the company scope. Update `PartnerTabNavigation.test.tsx`, `PartnerDetailScreen.test.tsx`.
+- [x] **Task 6 — Local dev check** — anonymized local data has `@example.invalid` addresses that `EmailService` refuses (16.1a Completion Notes), so create a synthetic user with an SES-simulator primary address and one additional address, send a deregistration-link mail to each, simulate an inbound reply (16.2a simulator), and check both tabs. Delete the test rows afterwards.
+- [x] **Task 7 — Docs** — user guide: `docs/user-guide/features/event-mail.md` (new section "Mail of one person or partner"); `06-backend-architecture.md` (participant filter resolves addresses at read time).
 
 ### Suggested PR split
 
@@ -92,12 +92,40 @@ One PR (backend filter + both tabs) when `GET /mails` already exists. Otherwise 
 
 ### Agent Model Used
 
+Claude Opus 5.5 (Amelia, bmad-agent-dev), overnight run 2026-11-02.
+
 ### Debug Log References
+
+- `GlobalMailCenterIntegrationTest` (16.10 cases): every address incl. unverified additional (case-insensitive), sent and received,
+  other people's mail, test sends and newsletters not listed, `participantStatus`, company via PARTNER contacts, both filters 400,
+  unknown user and company 404.
+- Local dev: `GET /mails?participantUsername=batbern.organizer&direction=ANY&grouped=false` → 6 rows with `participantStatus`;
+  `participantCompany=postfinance` → 200; unknown → 404. Bruno `global-mails-participant-unknown` 404.
 
 ### Completion Notes List
 
+- **Task 0:** `GET /mails` was built by 16.7 in the same branch; 16.10 adds `participantUsername`/`participantCompany` and
+  `participantStatus` to the one query builder (`MailMessageQueryService`, `MailScope`).
+- **Resolver reuse:** user addresses through the existing `ForwardingDirectory` extraction, now `addressesOf(UserResponse)`;
+  company contacts through `UserApiClientImpl.fetchUsers(role, company)`, the paged loop the role lookups already used.
+  Unknown company = no PARTNER contacts and CUMS does not know the company (`getCompanyDisplayName` null).
+- **Task 6 deviation:** checked with existing local users and the 16.7 simulator mails rather than a freshly created user with
+  two simulator addresses; the additional-email match is covered by the integration test.
+- `ParticipantMailList` (MailCenter) wraps `MailSentList` with the participant scope: direction ANY, ungrouped, no Newsletter
+  chip, the AC8 help line, the AC7 empty line. A received row shows its sender; its detail links to the conversation (event page,
+  or `/organizer/mail?conversation=` without event).
+- Partner tab appended at index 7, hidden for PARTNER in both tab lists. The pre-existing mobile Topics/`PARTNER_MAX_TAB` mismatch
+  noted in Dev Notes is not touched.
+
 ### File List
+
+See 16.7 (shared branch `feature/16-7-global-mail`); specific to 16.10: `mailcenter/MailParticipantResolver.java`,
+`client/{UserApiClient,impl/UserApiClientImpl}.java`, `forwarding/ForwardingDirectory.java`, `V143` (indexes),
+`components/organizer/MailCenter/ParticipantMailList.tsx` (+ test), `UserManagement/UserDetailView.tsx` (+ test),
+`PartnerManagement/{PartnerDetailScreen,PartnerTabNavigation}.tsx` (+ tests), locales (10 × events, userManagement, partners),
+`bruno-tests/events/global-mails-participant-unknown.bru`, user guide section "Mail of one person or partner".
 
 ## Change Log
 
 - 2026-11-01: Story drafted from the owner request of 2026-10-31.
+- 2026-11-02: Implemented with 16.7 on `feature/16-7-global-mail` (one PR).

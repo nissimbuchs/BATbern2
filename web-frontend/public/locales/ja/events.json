@@ -1398,5 +1398,31 @@
     "featureToggle": "公開バナーに表示",
     "cannotFeatureAnonymous": "匿名の感謝は注目に設定できません（名前なし）。",
     "loadError": "感謝のメッセージを読み込めませんでした。"
+  },
+  "mailCenter": {
+    "title": "メール",
+    "open": "未対応",
+    "nothingOpen": "返信待ちはありません。",
+    "noEvent": "イベントなし",
+    "noEventHint": "どのイベントにも属さない info@、events@、support@ 宛のメール。イベントに割り当てるとそこで返信できます。",
+    "nothingWithoutEvent": "イベントなしのメールはありません。",
+    "spam": "迷惑メール",
+    "spamHint": "メールサーバーが迷惑メールと判定しました。転送されず、30日後に削除されます。",
+    "noSpam": "迷惑メールはありません。",
+    "notSpam": "迷惑メールではない",
+    "notSpamError": "メールを移動できませんでした。もう一度お試しください。",
+    "whatWentOut": "送信済み（全イベント）",
+    "event": "イベント",
+    "allEvents": "全イベント",
+    "assignToEvent": "イベントに割り当て",
+    "noEventOption": "（イベントなし）",
+    "noEventChip": "イベントなし",
+    "receivedFrom": "{{sender}} から受信",
+    "received": "受信",
+    "openConversation": "会話を開く",
+    "participant": {
+      "limits": "全イベントで、この方に送ったメールとこの方から受け取ったメール。表示されないもの：ニュースレター、メールセンターが記録を始める前のメール、現在は登録されていないアドレス宛のメール。",
+      "empty": "この方とのメールはまだありません。"
+    }
   }
 }

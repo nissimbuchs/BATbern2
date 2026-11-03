@@ -35,7 +35,10 @@
       "speaker": "Spreker",
       "partner": "Partner",
       "attendee": "Deelnemer"
-    }
+    },
+    "mail": "Mail",
+    "mailOpenCount_one": "{{count}} open gesprek",
+    "mailOpenCount_other": "{{count}} open gesprekken"
   },
   "public": {
     "login": "Inloggen",

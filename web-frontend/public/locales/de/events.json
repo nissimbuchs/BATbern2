@@ -1422,5 +1422,31 @@
     "featureToggle": "Im öffentlichen Banner zeigen",
     "cannotFeatureAnonymous": "Anonyme Dankeschöns können nicht hervorgehoben werden (kein Name).",
     "loadError": "Dankesnachrichten konnten nicht geladen werden."
+  },
+  "mailCenter": {
+    "title": "Mail",
+    "open": "Offen",
+    "nothingOpen": "Nichts wartet auf eine Antwort.",
+    "noEvent": "Ohne Event",
+    "noEventHint": "Mails an info@, events@ und support@, die zu keinem Event gehören. Einem Event zuordnen, um sie dort zu beantworten.",
+    "nothingWithoutEvent": "Keine Mails ohne Event.",
+    "spam": "Spam",
+    "spamHint": "Vom Mailserver als Spam erkannt. Nicht weitergeleitet, nach 30 Tagen gelöscht.",
+    "noSpam": "Kein Spam.",
+    "notSpam": "Kein Spam",
+    "notSpamError": "Die Mail konnte nicht verschoben werden. Bitte erneut versuchen.",
+    "whatWentOut": "Was rausging (alle Events)",
+    "event": "Event",
+    "allEvents": "Alle Events",
+    "assignToEvent": "Event zuordnen",
+    "noEventOption": "(kein Event)",
+    "noEventChip": "Ohne Event",
+    "receivedFrom": "Erhalten von {{sender}}",
+    "received": "Erhalten",
+    "openConversation": "Unterhaltung öffnen",
+    "participant": {
+      "limits": "Jede Mail an diese Person und jede Mail von ihr, über alle Events. Nicht aufgeführt: Newsletter, Mails aus der Zeit, bevor das Mail Center sie erfasste, und Mails an Adressen, die nicht mehr hinterlegt sind.",
+      "empty": "Noch keine Mails an oder von dieser Person."
+    }
   }
 }

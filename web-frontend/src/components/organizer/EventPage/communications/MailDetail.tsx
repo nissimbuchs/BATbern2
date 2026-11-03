@@ -7,7 +7,8 @@
  * (`docs/ux/mail-center-mobile.html`).
  *
  * The body is rendered in a sandboxed iframe without scripts. Failed recipients are listed first
- * with the reason (AC4).
+ * with the reason (AC4). Story 16.7/16.10: without an event it loads the mail by its key; a received
+ * mail shows its sender and a link to its conversation.
  */
 
 import React from 'react';
@@ -15,6 +16,7 @@ import {
   Alert,
   Box,
   Chip,
+  Link,
   List,
   ListItem,
   ListItemText,
@@ -23,13 +25,15 @@ import {
   Typography,
 } from '@mui/material';
 import { useTranslation } from 'react-i18next';
+import { Link as RouterLink } from 'react-router-dom';
 import { useMailMessage } from '@/hooks/useMailMessages/useMailMessages';
 import type { MailRecipientEntry } from '@/services/mailMessageService';
 import { FullScreenDetailDialog } from './FullScreenDetailDialog';
 import { MailBodyFrame } from './MailBodyFrame';
 
 interface MailDetailProps {
-  eventCode: string;
+  /** Without it the mail is loaded by its key alone (`GET /mails/{mailKey}`, Story 16.7). */
+  eventCode?: string;
   mailKey: string;
 }
 
@@ -42,7 +46,7 @@ const STATUS_ORDER: Record<MailRecipientEntry['status'], number> = {
 /** The mail and its facts. Two columns from `md` up, stacked below. */
 export const MailDetail: React.FC<MailDetailProps> = ({ eventCode, mailKey }) => {
   const { t, i18n } = useTranslation('events');
-  const query = useMailMessage(eventCode, mailKey);
+  const query = useMailMessage(eventCode ?? null, mailKey);
   const detail = query.data;
   const recipients = [...(detail?.recipients ?? [])].sort(
     (a, b) => STATUS_ORDER[a.status] - STATUS_ORDER[b.status]
@@ -52,6 +56,14 @@ export const MailDetail: React.FC<MailDetailProps> = ({ eventCode, mailKey }) =>
   if (query.isError || !detail) {
     return <Alert severity="error">{t('eventPage.mail.loadError')}</Alert>;
   }
+
+  const received = detail.message.direction === 'IN';
+  const conversationKey = detail.message.conversationKey;
+  const conversationLink = !conversationKey
+    ? null
+    : detail.message.eventCode
+      ? `/organizer/events/${encodeURIComponent(detail.message.eventCode)}?tab=communications&conversation=${encodeURIComponent(conversationKey)}`
+      : `/organizer/mail?conversation=${encodeURIComponent(conversationKey)}`;
 
   return (
     <Box
@@ -78,13 +90,37 @@ export const MailDetail: React.FC<MailDetailProps> = ({ eventCode, mailKey }) =>
       </Box>
 
       <Stack spacing={2} sx={{ order: { xs: 1, md: 2 }, minWidth: 0 }}>
-        <Typography variant="caption" color="text.secondary">
-          {new Date(detail.message.sentAt).toLocaleString(i18n.language)} ·{' '}
-          {detail.message.senderUsername ?? t('eventPage.mail.automatic')} ·{' '}
-          {t('eventPage.mail.delivered', { count: detail.message.deliveredCount })}
-          {detail.message.failedCount > 0 &&
-            ` · ${t('eventPage.mail.failed', { count: detail.message.failedCount })}`}
-        </Typography>
+        {received ? (
+          // Story 16.10 AC5: a received mail names its sender and links to its conversation
+          <Stack spacing={0.5}>
+            <Typography variant="caption" color="text.secondary">
+              {new Date(detail.message.sentAt).toLocaleString(i18n.language)} ·{' '}
+              {t('mailCenter.receivedFrom', {
+                sender: detail.message.fromName
+                  ? `${detail.message.fromName} <${detail.message.fromAddress ?? ''}>`
+                  : (detail.message.fromAddress ?? ''),
+              })}
+            </Typography>
+            {conversationLink && (
+              <Link
+                component={RouterLink}
+                to={conversationLink}
+                variant="body2"
+                data-testid="mail-detail-conversation-link"
+              >
+                {t('mailCenter.openConversation')}
+              </Link>
+            )}
+          </Stack>
+        ) : (
+          <Typography variant="caption" color="text.secondary">
+            {new Date(detail.message.sentAt).toLocaleString(i18n.language)} ·{' '}
+            {detail.message.senderUsername ?? t('eventPage.mail.automatic')} ·{' '}
+            {t('eventPage.mail.delivered', { count: detail.message.deliveredCount })}
+            {detail.message.failedCount > 0 &&
+              ` · ${t('eventPage.mail.failed', { count: detail.message.failedCount })}`}
+          </Typography>
+        )}
 
         {recipients.length > 0 && (
           <Box>
@@ -129,7 +165,7 @@ export const MailDetail: React.FC<MailDetailProps> = ({ eventCode, mailKey }) =>
 };
 
 interface MailDetailDialogProps {
-  eventCode: string;
+  eventCode?: string;
   mailKey: string | null;
   title?: string;
   onClose: () => void;

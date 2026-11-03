@@ -96,6 +96,8 @@ paths:
         schema:
           type: boolean
           default: false
+      - $ref: '#/components/parameters/MailDirection'
+      - $ref: '#/components/parameters/MailSpam'
       - name: page
         in: query
         description: Page number (1-based)
@@ -379,6 +381,265 @@ paths:
           description: Forbidden (ORGANIZER role required)
         '404':
           description: Event not found
+  /mails:
+    get:
+      tags:
+      - EventMail
+      operationId: listMails
+      summary: Mail of all events and without event, newest first (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.7: the same entries, schema and filters as `GET /events/{eventCode}/mails`, with the
+        event as an optional filter instead of the path. `noEvent=true` lists mail that belongs to no
+        event (e.g. to info@). Story 16.10: `participantUsername` or `participantCompany` lists the mail
+        to and from one person or the PARTNER contacts of one company, matched on every address they
+        have (primary and additional, case-insensitive, resolved at read time). That view never lists
+        newsletters, test sends or spam, and lists the answers in conversations too; use it with
+        `direction=ANY` and `grouped=false`.
+      parameters:
+      - name: eventCode
+        in: query
+        required: false
+        description: Only mail of this event.
+        schema:
+          type: string
+      - name: noEvent
+        in: query
+        required: false
+        description: Only mail without an event. Not together with `eventCode`.
+        schema:
+          type: boolean
+          default: false
+      - name: participantUsername
+        in: query
+        required: false
+        description: Story 16.10. Mail to or from this user. Not together with `participantCompany`.
+        schema:
+          type: string
+          maxLength: 100
+      - name: participantCompany
+        in: query
+        required: false
+        description: Story 16.10. Mail to or from the PARTNER contacts of this company.
+        schema:
+          type: string
+          maxLength: 100
+      - name: audience
+        in: query
+        required: false
+        schema:
+          $ref: '#/components/schemas/MailAudience'
+      - name: templateKey
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: reference
+        in: query
+        required: false
+        schema:
+          type: string
+          maxLength: 100
+      - name: date
+        in: query
+        required: false
+        description: Only entries sent on this day, Europe/Zurich.
+        schema:
+          type: string
+          format: date
+      - name: grouped
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: true
+      - name: includeTests
+        in: query
+        required: false
+        schema:
+          type: boolean
+          default: false
+      - $ref: '#/components/parameters/MailDirection'
+      - $ref: '#/components/parameters/MailSpam'
+      - name: page
+        in: query
+        description: Page number (1-based)
+        schema:
+          type: integer
+          default: 1
+          minimum: 1
+      - name: limit
+        in: query
+        description: Items per page (max 100)
+        schema:
+          type: integer
+          default: 20
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Paginated entries, newest first
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMessagePage'
+        '400':
+          description: '`eventCode` with `noEvent`, or both participant filters'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Event, user or company not found
+  /mails/{mailKey}:
+    get:
+      tags:
+      - EventMail
+      operationId: getMail
+      summary: One mail, of any event or none (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.7: as `GET /events/{eventCode}/mails/{mailKey}` for any key (keys are global), inbound
+        and spam included.
+      parameters:
+      - name: mailKey
+        in: path
+        required: true
+        schema:
+          type: string
+      responses:
+        '200':
+          description: The mail
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMessageDetail'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Mail not found
+    patch:
+      tags:
+      - EventMail
+      operationId: patchMail
+      summary: Mark an inbound mail as not spam (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.7 AC3. Only `{ "spam": false }` is accepted: the flag is cleared and the mail is
+        threaded like a new arrival (16.2a/16.2b rules), so it lands in an event's conversations or in
+        "No event". Sends nothing.
+      parameters:
+      - name: mailKey
+        in: path
+        required: true
+        schema:
+          type: string
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MailMessagePatch'
+      responses:
+        '200':
+          description: The mail after the change
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailMessageDetail'
+        '400':
+          description: Anything else than `spam=false`, or the mail is not spam
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+        '404':
+          description: Mail not found
+  /conversations:
+    get:
+      tags:
+      - MailConversation
+      operationId: listConversations
+      summary: Conversations of all events and without event, open first (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.7 (global Mail page). Same order as the event's list. `noEvent=true`: only
+        conversations without an event; `noEvent=false`: only those with one; absent: both.
+      parameters:
+      - name: status
+        in: query
+        required: false
+        description: Only conversations in one of these statuses (repeat the parameter).
+        style: form
+        explode: true
+        schema:
+          type: array
+          items:
+            $ref: '#/components/schemas/MailConversationStatus'
+      - name: eventCode
+        in: query
+        required: false
+        schema:
+          type: string
+      - name: noEvent
+        in: query
+        required: false
+        schema:
+          type: boolean
+      - name: page
+        in: query
+        description: Page number (1-based)
+        schema:
+          type: integer
+          default: 1
+          minimum: 1
+      - name: limit
+        in: query
+        description: Items per page (max 100)
+        schema:
+          type: integer
+          default: 50
+          minimum: 1
+          maximum: 100
+      responses:
+        '200':
+          description: Conversations
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailConversationPage'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
+  /conversations/counts:
+    get:
+      tags:
+      - MailConversation
+      operationId: getConversationCounts
+      summary: Counts for the Mail badge and the sections of the Mail page (ORGANIZER)
+      description: |
+        **Security**: ORGANIZER role required; any other role gets 403.
+
+        Story 16.7 AC2. `open` (the badge) and `waiting` across all events and without event;
+        `noEvent`: conversations without an event that are not done; `spam`: inbound mail flagged spam.
+      responses:
+        '200':
+          description: Counts
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MailConversationCounts'
+        '401':
+          description: Not authenticated
+        '403':
+          description: Forbidden (ORGANIZER role required)
   /conversations/{conversationKey}:
     get:
       tags:
@@ -421,6 +682,9 @@ paths:
         conversation unassigned. Story 16.6: when the assignee changes to another organizer than the
         caller, that organizer gets one notification mail (template `mailcenter-assigned`). Assigning
         yourself, clearing the assignee or saving the same assignee sends nothing.
+
+        Story 16.7 AC1: `eventCode` puts the conversation and all its messages on that event;
+        `clearEvent: true` takes them off any event ("No event"). Keys do not change.
       parameters:
       - name: conversationKey
         in: path
@@ -441,13 +705,13 @@ paths:
               schema:
                 $ref: '#/components/schemas/MailConversationSummary'
         '400':
-          description: The assignee is not an organizer
+          description: The assignee is not an organizer, or `eventCode` with `clearEvent`
         '401':
           description: Not authenticated
         '403':
           description: Forbidden (ORGANIZER role required)
         '404':
-          description: Conversation not found
+          description: Conversation or event not found
   /conversations/{conversationKey}/replies:
     post:
       tags:
@@ -689,6 +953,19 @@ components:
           type: string
           nullable: true
           description: Story 16.2a. The conversation an inbound mail belongs to.
+        spam:
+          type: boolean
+          description: Story 16.7. Inbound mail flagged spam by SES; shown only in the Spam list.
+        participantStatus:
+          type: string
+          nullable: true
+          enum:
+          - SENT
+          - DELIVERED
+          - FAILED
+          description: |
+            Story 16.10. In the participant view: the delivery status of the participant's own address
+            (the worst when several). Absent for received mail.
         attachments:
           type: array
           description: |
@@ -711,6 +988,30 @@ components:
         kept:
           type: boolean
           description: Story 16.6. The file is kept and can be downloaded (getConversationAttachmentDownloadUrl).
+    MailMessagePatch:
+      type: object
+      required:
+      - spam
+      properties:
+        spam:
+          type: boolean
+          description: Only `false` is accepted.
+    MailConversationCounts:
+      type: object
+      required:
+      - open
+      - waiting
+      - noEvent
+      - spam
+      properties:
+        open:
+          type: integer
+        waiting:
+          type: integer
+        noEvent:
+          type: integer
+        spam:
+          type: integer
     MailConversationStatus:
       type: string
       enum:
@@ -795,6 +1096,13 @@ components:
         clearAssignee:
           type: boolean
           description: Leave the conversation unassigned.
+        eventCode:
+          type: string
+          nullable: true
+          description: Story 16.7. Put the conversation on this (existing) event.
+        clearEvent:
+          type: boolean
+          description: Story 16.7. Take the conversation off its event ("No event").
     MailConversationReply:
       type: object
       required:
@@ -1166,6 +1474,29 @@ components:
           description: Replies "cancel" that sent the deregistration link.
         unsubscribes:
           type: integer
+  parameters:
+    MailDirection:
+      name: direction
+      in: query
+      required: false
+      description: |
+        Story 16.7. `OUT` (default): what went out, without the answers in conversations; `IN`: mail
+        people wrote; `ANY`: both.
+      schema:
+        type: string
+        enum:
+        - OUT
+        - IN
+        - ANY
+        default: OUT
+    MailSpam:
+      name: spam
+      in: query
+      required: false
+      description: 'Story 16.7. `true` lists only inbound mail flagged spam. Default `false`: spam is never listed otherwise.'
+      schema:
+        type: boolean
+        default: false
   securitySchemes:
     BearerAuth:
       type: http

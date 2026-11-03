@@ -35,7 +35,7 @@ function renderBox(client = new QueryClient({ defaultOptions: { queries: { retry
   const invalidate = vi.spyOn(client, 'invalidateQueries');
   render(
     <QueryClientProvider client={client}>
-      <ConversationReplyBox eventCode="BATbern60" conversationKey="conv-7" />
+      <ConversationReplyBox conversationKey="conv-7" />
     </QueryClientProvider>
   );
   return { invalidate };
@@ -82,7 +82,7 @@ describe('ConversationReplyBox', () => {
     );
     await waitFor(() => expect(screen.getByTestId('conversation-reply-sent')).toBeInTheDocument());
     expect(invalidate).toHaveBeenCalledWith({ queryKey: ['conversations', 'conv-7'] });
-    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['mails', 'BATbern60'] });
+    expect(invalidate).toHaveBeenCalledWith({ queryKey: ['mails'] });
     expect(
       (
         screen

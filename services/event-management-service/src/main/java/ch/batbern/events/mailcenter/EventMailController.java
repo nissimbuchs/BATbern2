@@ -3,6 +3,7 @@ package ch.batbern.events.mailcenter;
 import ch.batbern.events.mailcenter.MailMessageQueryService.MailEntry;
 import ch.batbern.events.mailcenter.MailMessageQueryService.MailFilter;
 import ch.batbern.events.mailcenter.MailMessageQueryService.MailPage;
+import ch.batbern.events.mailcenter.MailMessageQueryService.MailScope;
 import ch.batbern.events.mailcenter.api.generated.EventMailApi;
 import ch.batbern.events.mailcenter.compose.ComposeRecipient;
 import ch.batbern.events.mailcenter.compose.ComposeRequest;
@@ -11,12 +12,14 @@ import ch.batbern.events.mailcenter.compose.MailComposerService.Preview;
 import ch.batbern.events.mailcenter.compose.MailComposerService.SendResult;
 import ch.batbern.events.mailcenter.compose.SkippedRecipient;
 import ch.batbern.events.mailcenter.inbound.AutomaticMailCounter;
+import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
 import ch.batbern.events.mailcenter.dto.generated.MailAudience;
 import ch.batbern.events.mailcenter.dto.generated.MailComposeRecipient;
 import ch.batbern.events.mailcenter.dto.generated.MailAlreadySent;
 import ch.batbern.events.mailcenter.dto.generated.MailComposeRequest;
 import ch.batbern.events.mailcenter.dto.generated.MailCounts;
 import ch.batbern.events.mailcenter.dto.generated.MailMessageDetail;
+import ch.batbern.events.mailcenter.dto.generated.MailMessagePatch;
 import ch.batbern.events.mailcenter.dto.generated.MailMessagePage;
 import ch.batbern.events.mailcenter.dto.generated.MailMessageSummary;
 import ch.batbern.events.mailcenter.dto.generated.MailPreviewResponse;
@@ -29,6 +32,7 @@ import ch.batbern.events.mailcenter.dto.generated.MailSkippedRecipient;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.shared.api.PaginationUtils;
 import ch.batbern.shared.exception.NotFoundException;
+import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.mail.MailContext;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.CacheControl;
@@ -56,16 +60,65 @@ public class EventMailController implements EventMailApi {
 
     private final MailMessageQueryService queries;
     private final MailComposerService composer;
+    private final MailParticipantResolver participants;
+    private final InboundMailCenter inbound;
     private final SecurityContextHelper securityContextHelper;
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<MailMessagePage> listEventMails(String eventCode, MailAudience audience,
-            String templateKey, String reference, LocalDate date, Boolean grouped, Boolean includeTests, Integer page,
-            Integer limit) {
-        MailFilter filter = new MailFilter(audience == null ? null : audience.getValue(), templateKey, reference, date,
+            String templateKey, String reference, LocalDate date, Boolean grouped, Boolean includeTests,
+            String direction, Boolean spam, Integer page, Integer limit) {
+        MailFilter filter = filter(audience, templateKey, reference, date, grouped, includeTests)
+                .with(direction, Boolean.TRUE.equals(spam));
+        return page(queries.list(eventCode, filter, page, limit), page, limit);
+    }
+
+    /** Story 16.7 AC9 and Story 16.10 AC4: the same list without the event in the path. */
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<MailMessagePage> listMails(String eventCode, Boolean noEvent, String participantUsername,
+            String participantCompany, MailAudience audience, String templateKey, String reference, LocalDate date,
+            Boolean grouped, Boolean includeTests, String direction, Boolean spam, Integer page, Integer limit) {
+        boolean withoutEvent = Boolean.TRUE.equals(noEvent);
+        if (eventCode != null && withoutEvent) {
+            throw new ValidationException("noEvent", "eventCode and noEvent exclude each other");
+        }
+        if (participantUsername != null && participantCompany != null) {
+            throw new ValidationException("participantUsername",
+                    "participantUsername and participantCompany exclude each other");
+        }
+        List<String> addresses = participantUsername != null ? participants.ofUser(participantUsername)
+                : participantCompany != null ? participants.ofCompany(participantCompany) : null;
+        MailFilter filter = filter(audience, templateKey, reference, date, grouped, includeTests)
+                .with(direction, Boolean.TRUE.equals(spam));
+        return page(queries.list(new MailScope(eventCode, withoutEvent, addresses), filter, page, limit), page, limit);
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<MailMessageDetail> getMail(String mailKey) {
+        return noStore(detail(queries.get(mailKey).orElseThrow(() -> new NotFoundException("Mail", mailKey))));
+    }
+
+    /** Story 16.7 AC3: "Not spam" threads the mail like a new arrival. */
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<MailMessageDetail> patchMail(String mailKey, MailMessagePatch patch) {
+        if (!Boolean.FALSE.equals(patch.getSpam())) {
+            throw new ValidationException("spam", "Only spam=false is accepted");
+        }
+        inbound.releaseSpam(mailKey);
+        return getMail(mailKey);
+    }
+
+    private static MailFilter filter(MailAudience audience, String templateKey, String reference, LocalDate date,
+            Boolean grouped, Boolean includeTests) {
+        return new MailFilter(audience == null ? null : audience.getValue(), templateKey, reference, date,
                 !Boolean.FALSE.equals(grouped), Boolean.TRUE.equals(includeTests));
-        MailPage result = queries.list(eventCode, filter, page, limit);
+    }
+
+    private static ResponseEntity<MailMessagePage> page(MailPage result, int page, int limit) {
         return noStore(new MailMessagePage()
                 .data(result.data().stream().map(EventMailController::summary).toList())
                 .pagination(PaginationUtils.generateMetadata(page, limit, result.total())));
@@ -93,9 +146,12 @@ public class EventMailController implements EventMailApi {
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
     public ResponseEntity<MailMessageDetail> getEventMail(String eventCode, String mailKey) {
-        MailMessageQueryService.MailDetail detail = queries.get(eventCode, mailKey)
-                .orElseThrow(() -> new NotFoundException("Mail not found: " + mailKey));
-        return noStore(new MailMessageDetail()
+        return noStore(detail(queries.get(eventCode, mailKey)
+                .orElseThrow(() -> new NotFoundException("Mail not found: " + mailKey))));
+    }
+
+    private static MailMessageDetail detail(MailMessageQueryService.MailDetail detail) {
+        return new MailMessageDetail()
                 .message(summary(detail.entry()))
                 .bodyHtml(detail.bodyHtml())
                 .recipients(detail.recipients().stream()
@@ -110,7 +166,7 @@ public class EventMailController implements EventMailApi {
                         .total(detail.progress().total())
                         .sent(detail.progress().sent())
                         .failed(detail.progress().failed())
-                        .retryable(detail.progress().retryable())));
+                        .retryable(detail.progress().retryable()));
     }
 
     @Override
@@ -235,7 +291,15 @@ public class EventMailController implements EventMailApi {
                 .newsletterSendId(e.newsletterSendId())
                 .newsletterStatus(e.newsletterStatus())
                 .test(e.test())
-                .reference(e.reference());
+                .reference(e.reference())
+                .direction(e.direction() == null ? null : MailMessageSummary.DirectionEnum.fromValue(e.direction()))
+                .fromAddress(e.fromAddress())
+                .fromName(e.fromName())
+                .eventCode(e.eventCode())
+                .conversationKey(e.conversationKey())
+                .spam(e.spam())
+                .participantStatus(e.participantStatus() == null ? null
+                        : MailMessageSummary.ParticipantStatusEnum.fromValue(e.participantStatus()));
     }
 
     private static <T> ResponseEntity<T> noStore(T body) {
