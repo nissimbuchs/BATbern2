@@ -210,6 +210,37 @@ describe('CICDStack — GitHub Actions role permissions', () => {
     expect(JSON.stringify(del.map((st) => st.Resource))).not.toContain('pre-v');
   });
 
+  // #1032 follow-up: the retention step lists every snapshot of the instance. RDS may authorize that
+  // listing against `snapshot:*`, which the prefix rule does not cover, and the loop would hide the
+  // denial. Listing is read-only, so it is granted account-wide; writes stay on the pipeline's prefix.
+  test('should_allowSnapshotListing_accountWide_but_writesOnlyOnPreDeployPrefix', () => {
+    const policies = template.findResources('AWS::IAM::ManagedPolicy');
+    const runtime = Object.values(policies).find((p) =>
+      JSON.stringify(
+        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? ''
+      ).includes('github-workflow-runtime')
+    ) as {
+      Properties: { PolicyDocument: { Statement: Array<{ Action: unknown; Resource: unknown }> } };
+    };
+    const rds = runtime.Properties.PolicyDocument.Statement.filter((st) =>
+      JSON.stringify(st.Action).includes('rds:')
+    );
+    const listing = rds.filter((st) =>
+      JSON.stringify(st.Action).includes('rds:DescribeDBSnapshots')
+    );
+    expect(JSON.stringify(listing.map((st) => st.Resource))).toContain(':snapshot:*');
+    for (const st of listing) {
+      // never bundle a write with the account-wide listing
+      expect(JSON.stringify(st.Action)).not.toMatch(/Create|Delete|Modify|Restore/);
+    }
+    const writes = rds.filter((st) =>
+      /rds:(Create|Delete)DBSnapshot/.test(JSON.stringify(st.Action))
+    );
+    for (const st of writes) {
+      expect(JSON.stringify(st.Resource)).not.toContain(':snapshot:*');
+    }
+  });
+
   // ── Cognito ──────────────────────────────────────────────────────────────
   // Used by: deploy-staging.yml authenticate test users step (cognito-idp initiate-auth)
 

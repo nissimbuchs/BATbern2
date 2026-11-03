@@ -207,11 +207,21 @@ export class CICDStack extends cdk.Stack {
             actions: [
               'rds:DescribeDBInstances', // instance check
               'rds:CreateDBSnapshot', // snapshot (needs the db and the snapshot ARN)
-              'rds:DescribeDBSnapshots', // aws rds wait db-snapshot-completed, retention listing
             ],
             resources: [
               `arn:aws:rds:${this.region}:${this.account}:db:batbern-${config.envName}-postgres`,
               `arn:aws:rds:${this.region}:${this.account}:snapshot:batbern-${config.envName}-pre-deploy-*`,
+            ],
+          }),
+          // `aws rds wait db-snapshot-completed` and the retention listing. Read-only, so account-wide:
+          // RDS may authorize a listing by instance against `snapshot:*`, which a prefix rule misses,
+          // and the retention loop would hide that denial.
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['rds:DescribeDBSnapshots'],
+            resources: [
+              `arn:aws:rds:${this.region}:${this.account}:db:batbern-${config.envName}-postgres`,
+              `arn:aws:rds:${this.region}:${this.account}:snapshot:*`,
             ],
           }),
           // Retention: keep the newest 3 pre-deploy snapshots. Scoped to the pipeline's own prefix,
