@@ -86,7 +86,8 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
      implicit `success()` over ALL ancestors. That happened to #1201 (auto-merged without a deploy,
      2026-11-03), so the deploy's `if:` starts with `!cancelled()` and checks each direct need's
      result. `scripts/ci/check-skip-propagation.py` (in `verify-hooks`) fails for any job that a
-     skipped ancestor would skip silently.
+     skipped ancestor would skip silently. `auto-merge.yml` also refuses to merge a PR whose
+     `deploy-to-staging / deploy-to-staging` check did not succeed.
 
 4. **Integration Tests**
    - Spins up PostgreSQL containers

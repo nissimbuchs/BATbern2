@@ -25,6 +25,7 @@ concurrency:
 permissions:
   contents: write
   pull-requests: write
+  checks: read  # the deploy-succeeded guard reads check runs
 
 jobs:
   auto-merge:
@@ -72,6 +73,24 @@ jobs:
           # - CodeQL App (we use custom CodeQL workflow instead)
           # - SonarCloud Code Analysis (advisory only, not blocking)
           check-regexp: '^(?!CodeQL$|SonarCloud Code Analysis$).*'
+
+      # `skipped` is allowed above for the many conditional checks, which also let a SKIPPED deploy
+      # through: #1201 merged on 2026-11-03 without ever reaching production. Every PR this job
+      # merges is one build.yml deploys (Dependabot is excluded from both), so require the deploy.
+      - name: Refuse to merge a PR that was not deployed
+        if: steps.should-automerge.outputs.should_merge == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          DEPLOYED=$(gh api --paginate \
+            "repos/${{ github.repository }}/commits/${{ github.event.pull_request.head.sha }}/check-runs?per_page=100" \
+            --jq '.check_runs[] | select(.name=="deploy-to-staging / deploy-to-staging") | .conclusion' \
+            | grep -x success | head -1 || true)
+          if [ "$DEPLOYED" != "success" ]; then
+            echo "::error::Not merging: deploy-to-staging did not succeed for this head (skipped or failed). Production would not match develop."
+            exit 1
+          fi
+          echo "deploy-to-staging succeeded for ${{ github.event.pull_request.head.sha }}"
 
       - name: Enable auto-merge
         if: steps.should-automerge.outputs.should_merge == 'true'
