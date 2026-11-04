@@ -20,7 +20,7 @@ Comprehensive glossary of terms used throughout the BATbern platform. Terms are 
 ## Events & Sessions
 
 ### Event
-A single BATbern gathering (e.g., "BATbern 2025"). Each event has a unique eventCode, date, venue, and progresses through a 9-state workflow from creation to archival.
+A single BATbern gathering (e.g., "BATbern 2025"). Each event has a unique eventCode, date, venue, and progresses through an 8-state workflow from creation to archival.
 
 **Types**:
 - **FULL_DAY**: 8+ hour event (typically 9 AM - 6 PM) with 8-12 sessions
@@ -114,8 +114,8 @@ Organization associated with users, speakers, or partners. Includes:
 ### Workflow
 BATbern uses **3 independent workflow systems** that operate in parallel:
 
-1. **Event Workflow** (9 states):
-   - CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
+1. **Event Workflow** (8 states):
+   - CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 
 2. **Speaker Workflow** (8 states per speaker — see [8-State Speaker Workflow](#8-state-speaker-workflow)):
    - the unified 8-state model introduced by Epic 11; `SpeakerWorkflowService` is the sole status writer
@@ -131,14 +131,14 @@ Staged release of event content to the public website, managed automatically:
 2. **Full agenda** (sessions + slots) auto-published 14 days before event
 3. Organizers can override and publish manually at any point
 
-Triggered by the `AGENDA_FINALIZED` state; run by a scheduled job in the event-management-service.
+Run by a daily scheduled job in the event-management-service. The agenda is only auto-published once speakers are published and every session has a time slot.
 
 ### Phase
 Conceptual grouping of workflow activities for documentation purposes:
 - **Phase A**: Setup (Event creation, topic selection, speaker brainstorming)
 - **Phase B**: Outreach (Speaker engagement, content collection)
 - **Phase C**: Quality (Content review, quality scoring)
-- **Phase D**: Assignment (Slot assignment, agenda finalization)
+- **Phase D**: Assignment (Slot assignment, agenda publishing)
 - **Phase E**: Lifecycle (Auto-publishing, auto-transitions, archival)
 - **Phase F**: Tasks (Parallel task management system)
 
@@ -156,16 +156,17 @@ See [Workflow](#workflow) for how the speaker workflow runs in parallel with the
 ### State / Status
 Current condition of an entity. Uses lowercase snake_case in database, UPPERCASE in some UI displays.
 
-**Event States** (9 states):
+**Event States** (8 states):
 - `CREATED` - Event configured, ready for topic selection
 - `TOPIC_SELECTION` - Topics being selected
 - `SPEAKER_IDENTIFICATION` - Speakers being identified and progressing through their own workflows
 - `SLOT_ASSIGNMENT` - Quality-reviewed speakers being assigned to time slots
-- `AGENDA_PUBLISHED` - Agenda ready for finalization
-- `AGENDA_FINALIZED` - Locked agenda, ready for event execution
+- `AGENDA_PUBLISHED` - Agenda public; moves to `EVENT_LIVE` automatically on event day
 - `EVENT_LIVE` - Event currently happening (auto-transition on event day)
 - `EVENT_COMPLETED` - Event finished (auto-transition after event ends)
-- `ARCHIVED` - Historical record, read-only
+- `ARCHIVED` - Historical record, read-only (automatic 14 days after the event)
+
+The former `AGENDA_FINALIZED` state was removed in March 2026 (migration V84).
 
 **Speaker States** — see [8-State Speaker Workflow](#8-state-speaker-workflow). Epic 11 (ADR-009) consolidated the speaker lifecycle to an 8-state model; `SpeakerWorkflowService` is the sole writer of speaker status. The longer list of lowercase states below reflects the pre-Epic-11 model and is retained for historical reference:
 - `identified` - Added to brainstorm list
@@ -428,16 +429,15 @@ Process of releasing new code to an environment:
 
 Quick reference for all workflow states:
 
-**Event Workflow** (9 states - linear progression):
+**Event Workflow** (8 states - linear progression):
 
 | State | Key Activities | Next State |
 |-------|----------------|------------|
 | CREATED | Event configured with basic info | TOPIC_SELECTION |
 | TOPIC_SELECTION | Select topics using heat map, auto-creates 4 tasks | SPEAKER_IDENTIFICATION |
-| SPEAKER_IDENTIFICATION | Speakers progress through their own workflow (identified → confirmed) | SLOT_ASSIGNMENT |
+| SPEAKER_IDENTIFICATION | Speakers progress through their own workflow (IDENTIFIED → QUALITY_REVIEWED) | SLOT_ASSIGNMENT |
 | SLOT_ASSIGNMENT | Assign quality-reviewed speakers to time slots | AGENDA_PUBLISHED |
-| AGENDA_PUBLISHED | Agenda ready, auto-creates "Newsletter: Speakers" task | AGENDA_FINALIZED |
-| AGENDA_FINALIZED | Finalized agenda, auto-creates 2 tasks, triggers 14-day auto-publish | EVENT_LIVE |
+| AGENDA_PUBLISHED | Agenda public, activates the tasks triggered on this state | EVENT_LIVE (automatic on event day) |
 | EVENT_LIVE | Event currently executing (auto-transition on event day) | EVENT_COMPLETED |
 | EVENT_COMPLETED | Event finished (auto-transition after event ends) | ARCHIVED |
 | ARCHIVED | Historical record, read-only | Terminal |
@@ -520,7 +520,7 @@ See [Partner Portal documentation](../partner-portal/README.md) for full details
 | **E2E** | End-to-End | Full workflow testing |
 | **GDPR** | General Data Protection Regulation | Privacy compliance |
 | **ICS** | iCalendar | Calendar invite file format (RFC 5545) |
-| **JWT** | JSON Web Token | Authentication token format (used for magic links) |
+| **JWT** | JSON Web Token | Authentication token format (issued by AWS Cognito at login) |
 | **MFA** | Multi-Factor Authentication | Enhanced security (planned) |
 | **MVP** | Minimum Viable Product | Initial feature release |
 | **NPS** | Net Promoter Score | Recommendation metric (-100 to +100) |

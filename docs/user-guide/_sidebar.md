@@ -13,6 +13,7 @@
   * [Companies](entity-management/companies.md)
   * [Users](entity-management/users.md)
   * [Events](entity-management/events.md)
+  * [The Event Page](entity-management/event-page.md)
   * [Partners](entity-management/partners.md)
   * [Speakers](entity-management/speakers.md)
 
@@ -48,6 +49,8 @@
 
 * ✨ Advanced Features
   * [Overview](features/README.md)
+  * [Cockpit & Event Day](features/cockpit-and-event-day.md)
+  * [Event Mail (Mail Center)](features/event-mail.md)
   * [Topic Heat Map](features/heat-maps.md)
   * [Notification System](features/notifications.md)
   * [File Uploads](features/file-uploads.md)

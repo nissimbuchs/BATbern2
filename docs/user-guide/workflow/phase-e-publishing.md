@@ -2,19 +2,21 @@
 
 > Archive completed events and manage publication workflows
 
-> **Last Updated:** 2026-06-13 — Verified the 9-state EVENT workflow (Epic 5, unchanged); speaker publish-readiness now uses the derived `is_publishable` flag (ADR-009 / Epic 11) rather than a `confirmed` state.
+> **Last Updated:** 2026-11-04 — 8-state EVENT workflow: `AGENDA_FINALIZED` and the "Finalize Agenda" step were removed (V84, #552); state changes and archiving now live in **Details → Settings → Event state**; automatic archiving after 14 days.
+>
+> **2026-06-13** — Speaker publish-readiness now uses the derived `is_publishable` flag (ADR-009 / Epic 11) rather than a `confirmed` state.
 
 <div class="workflow-phase phase-e">
 <strong>Phase E: Event Lifecycle & Archival</strong><br>
 Status: <span class="feature-status implemented">Implemented</span><br>
-Event State Transitions: AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED<br>
+Event State Transitions: AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED<br>
 Auto-Publishing: Implemented (30-day speaker publish, 14-day agenda publish)<br>
-Auto-Transitions: Implemented (EVENT_LIVE on event day, EVENT_COMPLETED after event ends)
+Auto-Transitions: Implemented (EVENT_LIVE on event day, EVENT_COMPLETED after event ends, ARCHIVED 14 days after the event)
 </div>
 
 ## Overview
 
-Phase E manages the event lifecycle from agenda finalization through execution to archival. The system includes automated publishing (speakers @ 30 days, agenda @ 14 days) and automated state transitions (EVENT_LIVE on event day, EVENT_COMPLETED after event ends).
+Phase E manages the event lifecycle from the published agenda through execution to archival. The system includes automated publishing (speakers @ 30 days, agenda @ 14 days) and automated state transitions (EVENT_LIVE on event day, EVENT_COMPLETED after event ends, ARCHIVED 14 days after the event).
 
 **Key Deliverable**: Executed event with complete historical archive and automated lifecycle management
 
@@ -28,41 +30,25 @@ Archive completed events to preserve historical data and free up the active even
 
 ### When to Archive
 
-Archive events after:
-- Event has concluded
-- Post-event follow-up completed
-- Attendee feedback collected
-- All financial transactions settled
+You normally do not need to archive by hand: a nightly job archives every event in `EVENT_COMPLETED` whose date is more than 14 days in the past. Archive manually only when an event must leave the active list earlier, for example a cancelled event.
 
-### How to Archive an Event
+### How to Archive an Event Manually
 
 <div class="step" data-step="1">
 
-**Navigate to Event Overview**
+**Open the Event State Settings**
 
-From the event dashboard, open the event you want to archive and navigate to the Overview tab.
-
-![Overview Tab Before Archival](../assets/screenshots/workflow/phase-e-archival/e-01-overview-tab-before-archival.png)
-
-Click the edit button to open the event configuration modal.
-
-![Event Edit Modal](../assets/screenshots/workflow/phase-e-archival/e-02-edit-modal-opened.png)
+Open the event and go to **Details → Settings**. The first card is **Event state**.
 
 </div>
 
 <div class="step" data-step="2">
 
-**Change Status to ARCHIVED**
+**Select Archived**
 
-In the edit modal, locate the status dropdown and select **ARCHIVED**.
+In the **Status** dropdown, select **Archived**.
 
-![Status Dropdown Opened](../assets/screenshots/workflow/phase-e-archival/e-03-status-dropdown-opened.png)
-
-![Status Changed to Archived](../assets/screenshots/workflow/phase-e-archival/e-04-status-changed-to-archived.png)
-
-The system will initially show a validation error if the event hasn't completed all workflow steps.
-
-![Validation Error Shown](../assets/screenshots/workflow/phase-e-archival/e-05-validation-error-shown.png)
+If the event has not reached `EVENT_COMPLETED`, the normal transition rules reject the change and an error is shown.
 
 </div>
 
@@ -70,9 +56,7 @@ The system will initially show a validation error if the event hasn't completed 
 
 **Override Workflow Validation**
 
-To archive an event that hasn't completed all workflow steps, check the **Override Workflow Validation** checkbox.
-
-![Override Checkbox Checked](../assets/screenshots/workflow/phase-e-archival/e-06-override-checkbox-checked.png)
+To archive an event that has not completed all workflow steps, tick **Override workflow validation (allows any state transition)** and enter a reason. The reason is required: **Change state** stays disabled until it is filled in.
 
 This allows archival regardless of workflow state, useful for cancelled events or special circumstances.
 
@@ -80,13 +64,9 @@ This allows archival regardless of workflow state, useful for cancelled events o
 
 <div class="step" data-step="4">
 
-**Save and Verify**
+**Change State and Verify**
 
-Save the changes and verify the event now shows the ARCHIVED badge.
-
-![Event Archived Successfully](../assets/screenshots/workflow/phase-e-archival/e-07-event-archived-successfully.png)
-
-![Archived Badge Visible](../assets/screenshots/workflow/phase-e-archival/e-08-archived-badge-visible.png)
+Click **Change state**. The card confirms with "Event state changed." and the event shows the Archived state.
 
 Archived events are:
 - Moved to archived events section
@@ -96,7 +76,7 @@ Archived events are:
 
 Event state: Any workflow state → **ARCHIVED**
 
-**Note**: Events can be archived from any state using the override validation checkbox (useful for cancelled events).
+**Note**: Events can be archived from any state using the override checkbox (useful for cancelled events).
 
 </div>
 
@@ -109,15 +89,15 @@ Event state: Any workflow state → **ARCHIVED**
 BATbern automatically publishes event content on a fixed schedule to reduce manual work and ensure timely publication:
 
 **Speaker Profiles** (30 days before event):
-- Cron job runs daily at 00:00 UTC
+- Scheduled job runs daily at 01:00
 - Checks all events where `currentPublishedPhase` has not yet reached "speakers" (i.e. speakers not yet published), regardless of event workflow state
 - For events exactly 30 days away (or past this date if not yet published):
   - Publishes all **publishable** speaker profiles (`is_publishable` = `QUALITY_REVIEWED AND is_slot_assigned`) to the public website
   - Sets speaker.publishedAt timestamp
-  - Auto-creates "Newsletter: Speakers" task (if not exists)
+  - Activates the "Newsletter: Speaker Lineup" task
 
 **Full Agenda** (14 days before event):
-- Cron job runs daily at 00:00 UTC
+- Scheduled job runs daily at 01:00
 - Checks all events where `currentPublishedPhase = "speakers"` (speakers already published) **and** all sessions have timing configured
 - For events exactly 14 days away (or past this date if not yet published):
   - Publishes complete session schedule with time slots
@@ -127,7 +107,7 @@ BATbern automatically publishes event content on a fixed schedule to reduce manu
     config if none are stored yet. Manual and automatic publishing both do this; an existing,
     edited structure is never overwritten. Before this, the website showed the talks only until
     someone pressed **Generate structure** in the Slots view (#1108).
-  - Auto-creates "Newsletter: Final" task (if not exists)
+  - Activates the default tasks triggered on AGENDA_PUBLISHED (see [Task Templates](../administration/task-templates.md))
 
 **Manual Override**:
 - Organizers can manually publish speakers/agenda before auto-publish dates
@@ -139,26 +119,26 @@ BATbern automatically publishes event content on a fixed schedule to reduce manu
 <span class="feature-status implemented">Implemented</span>
 
 **EVENT_LIVE Transition** (on event day):
-- Cron job runs hourly
-- Checks all events in AGENDA_FINALIZED state
-- For events where current date/time >= event start time:
-  - Automatically transitions event to EVENT_LIVE state
-  - Sends real-time notification to organizers
-  - Triggers day-of-event systems (check-in, live updates)
+- Nightly job, shortly after midnight on event day
+- Checks all events in AGENDA_PUBLISHED state whose event date is today
+- Automatically transitions each of them to EVENT_LIVE state
+- No organizer action needed: there is no separate "finalize agenda" step
 
 **EVENT_COMPLETED Transition** (after all sessions end via Watch mode):
 - Primary mechanism: organizer uses the live **Watch feature** to call `endSession()` for each completeable session
 - When the last completeable session is ended, the system automatically transitions the event to EVENT_COMPLETED state
 - Only session types that count toward completion: **keynote**, **presentation**, **workshop**, **panel_discussion**
 - Excluded from completion check: **break**, **lunch**, **networking** — these do not need to be ended by the organizer
-- Sends post-event notification to organizers
-- Triggers post-event workflows (feedback collection, archival preparation)
+- **Fallback**: a nightly job transitions every EVENT_LIVE event whose date has passed to EVENT_COMPLETED. The same job catches up an event still in AGENDA_PUBLISHED after its date.
 
 See [Live Event Management (Watch Mode)](#live-event-management-watch-mode) below for full details.
 
+**EVENT_COMPLETED → ARCHIVED** (14 days after the event):
+- Nightly job archives every EVENT_COMPLETED event whose date is more than 14 days in the past
+- Keeps the public homepage clear of past events
+
 **Configuration**:
-- Uses event.eventDate and event.eventTime for EVENT_LIVE transition trigger
-- Handles timezone correctly (all times stored as UTC)
+- The EVENT_LIVE and EVENT_COMPLETED jobs compare the event date with the current day in Swiss time (Europe/Zurich)
 
 ### Live Event Management (Watch Mode)
 
@@ -183,7 +163,7 @@ The **Watch** feature lets organizers manage the event in real time on the event
 - lunch
 - networking
 
-If organizers do not use Watch mode, the event remains in `EVENT_LIVE` indefinitely — there is no automatic time-based fallback that transitions to `EVENT_COMPLETED`.
+If organizers do not use Watch mode, the nightly job transitions the event to `EVENT_COMPLETED` once the event date has passed.
 
 ---
 
@@ -198,9 +178,8 @@ Published content is served through **AWS CloudFront CDN** for low-latency deliv
 ### Archival Best Practices
 
 **When to Archive**:
-- Immediately after post-event activities complete
-- Typically 1-2 weeks after event date
-- After attendee feedback window closes
+- Automatic: 14 days after the event date
+- Manually earlier only for special cases (for example a cancelled event)
 
 **What Gets Preserved**:
 - Complete event configuration
@@ -216,23 +195,20 @@ Published content is served through **AWS CloudFront CDN** for low-latency deliv
 
 ---
 
-## Agenda Finalization
+## Final Agenda Check
 
 <span class="feature-status implemented">Implemented</span>
 
 ### Purpose
 
-Lock the final agenda approximately 2 weeks before the event to allow for printing and final communications.
+About 2 weeks before the event, check that the published agenda is complete before final communications go out. This is a check only: there is no "Finalize Agenda" action and no state change. The former `AGENDA_FINALIZED` state was removed (migration V84) because, if nobody set it, the event never went live automatically. The event stays in `AGENDA_PUBLISHED` until it moves to `EVENT_LIVE` by itself on event day, and the agenda stays editable until then.
 
-### When to Finalize
+### What to Check
 
-Typically 14 days before the event, after:
+Typically 14 days before the event:
 - All speakers confirmed and reconfirmed
 - All slot assignments complete
 - Any last-minute dropouts resolved
-- Ready to send to printer
-
-### How to Finalize
 
 <div class="step" data-step="1">
 
@@ -244,25 +220,17 @@ Verify all slots are filled and all speakers are **publishable** (`is_publishabl
 
 <div class="step" data-step="2">
 
-**Finalize Agenda**
+**Check the Agenda Is Published**
 
-In the event edit modal, advance event state from AGENDA_PUBLISHED to **AGENDA_FINALIZED**.
-
-Event state: AGENDA_PUBLISHED → **AGENDA_FINALIZED**
-
-**Auto-created Tasks**:
-- Newsletter: Final (due: 14 days before event)
-- Catering (due: 30 days before event)
+If the agenda has not been published yet, the system auto-publishes it 14 days before the event (once speakers are published and all sessions have a time slot). You can also publish immediately via the Publishing tab.
 
 </div>
 
 <div class="step" data-step="3">
 
-**Automatic Publishing Triggers**
+**Check the Pre-Event Tasks**
 
-Once finalized, the 14-day auto-publish countdown begins:
-- System will auto-publish full agenda at 00:00 UTC 14 days before event
-- Or you can manually publish immediately via Publishing tab
+The final-agenda newsletter, catering, name badge and wine tasks are default tasks triggered on `AGENDA_PUBLISHED` (or activated 14 days before they are due). Their due dates are listed in [Task Templates](../administration/task-templates.md).
 
 </div>
 
@@ -486,14 +454,14 @@ Notify stakeholders at each stage:
 
 ### Purpose
 
-Lock the final agenda while managing any last-minute speaker withdrawals.
+Keep the published agenda correct while managing any last-minute speaker withdrawals.
 
 ### Acceptance Criteria
 
 - ✅ All speakers reconfirmed within 1 week of event
 - ✅ Dropout procedures executed (if needed)
-- ✅ Agenda finalized and locked
-- ✅ Event state = **AGENDA_FINALIZED**
+- ✅ Published agenda reflects all changes
+- ✅ Event state = **AGENDA_PUBLISHED** (moves to EVENT_LIVE automatically on event day)
 
 ### Reconfirmation Process
 
@@ -638,31 +606,9 @@ If no replacement available:
 
 <div class="step" data-step="6">
 
-**Finalize Agenda**
+**Confirm the Agenda Is Current**
 
-Once all speakers confirmed and dropouts resolved:
-
-```
-[Finalize Agenda]
-
-Final Status:
-────────────────────────────────────────
-Total Sessions: 12
-Confirmed Speakers: 12 ✅
-Dropouts Resolved: 1 (Sophie Keller replacement) ✅
-Last Change: March 8, 2025
-
-Lock agenda? After locking:
-- No further changes allowed
-- Printed materials can be produced
-- Final attendee notification sent
-
-[Lock Agenda] [Cancel]
-```
-
-Click **Lock Agenda**
-
-Event state: AGENDA_PUBLISHED → **AGENDA_FINALIZED**
+Once all speakers are confirmed and dropouts resolved, check that the public agenda shows the final line-up. There is no lock step: the agenda stays editable until the event, and the event state stays **AGENDA_PUBLISHED**.
 
 Phase E complete! ✅ The event will automatically transition to EVENT_LIVE when the event day arrives.
 </div>
@@ -710,7 +656,7 @@ Anna
 
 ### Success Criteria (Complete Lifecycle)
 
-- ✅ Agenda finalized (AGENDA_FINALIZED state)
+- ✅ Agenda published (AGENDA_PUBLISHED state)
 - ✅ Auto-publishing configured (speakers @ 30 days, agenda @ 14 days)
 - ✅ Event executed successfully (EVENT_LIVE → EVENT_COMPLETED auto-transitions)
 - ✅ Post-event activities completed
@@ -732,7 +678,7 @@ After archival:
 **Problem**: System prevents archiving because workflow steps incomplete.
 
 **Solution**:
-- Check **Override Workflow Validation** checkbox in edit modal
+- Open **Details → Settings → Event state** and tick **Override workflow validation (allows any state transition)**, with a reason
 - This allows archival for cancelled events or special cases
 - Verify all important data is preserved before archiving
 
@@ -742,7 +688,7 @@ After archival:
 
 **Solution**:
 - Refresh the page to update the event list
-- Check that status was saved correctly (re-open edit modal)
+- Check that the state was saved correctly (**Details → Settings → Event state**)
 - Clear browser cache if issue persists
 - Verify event state in database if problem continues
 
@@ -751,10 +697,11 @@ After archival:
 **Problem**: Event was archived prematurely or by mistake.
 
 **Solution**:
-- Re-open the event edit modal
-- Change status back to appropriate workflow state (e.g., AGENDA_PUBLISHED)
-- Uncheck override validation if needed
-- Save changes to restore event to active status
+- Open **Details → Settings → Event state**
+- Select the appropriate workflow state (e.g., EVENT_COMPLETED) in the **Status** dropdown
+- Tick **Override workflow validation (allows any state transition)** and enter a reason if the normal rules reject the change
+- Click **Change state** to restore the event to active status
+- Note: an EVENT_COMPLETED event more than 14 days past its date is archived again by the nightly job
 
 ## Related Topics
 
@@ -765,10 +712,8 @@ After archival:
 ## API Reference
 
 ```
-PUT  /api/events/{id}/status                Update event status (including ARCHIVED)
-GET  /api/events?status=ARCHIVED            List archived events
-GET  /api/events/{id}/history               Get event workflow history
-POST /api/events/{id}/restore               Restore archived event to active status
+POST /api/v1/events/{eventCode}/workflow/transition   Change event state (including ARCHIVED; optional override + reason)
+GET  /api/v1/events/{eventCode}/workflow/status       Current workflow state
 ```
 
 See [API Documentation](../../api/) for complete specifications.

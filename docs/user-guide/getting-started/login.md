@@ -4,7 +4,7 @@
 
 <span class="feature-status implemented">Implemented</span>
 
-> **Last Updated**: 2026-06-13
+> **Last Updated**: 2026-11-04 — Google login via a verified additional address (#745); "Send new confirmation link" for unconfirmed accounts (#1145)
 
 ## Overview
 
@@ -96,7 +96,7 @@ Sign in with your Google account (or pick an already-signed-in account). Google 
 
 **Account Linking**
 
-If a BATbern account already exists with the same email address, the Google identity is **transparently linked** to it — you keep your existing roles and data. If no account exists, one is provisioned automatically (just-in-time) with the default **Attendee** role.
+If a BATbern account already exists with the same email address, the Google identity is **transparently linked** to it — you keep your existing roles and data. The same applies when the Google address is one of your **verified** additional email addresses (see [Additional Email Addresses](../entity-management/users.md#additional-email-addresses)): Google is linked to your existing account instead of creating a second one. An unverified additional address is not used for linking. If no account matches, one is provisioned automatically (just-in-time) with the default **Attendee** role.
 </div>
 
 <div class="step" data-step="4">
@@ -273,14 +273,16 @@ This error means:
 
 **Solution**: Use the "Forgot Password?" flow to reset your credentials, or contact support.
 
-### "User is not confirmed"
+### "Your email address is not confirmed yet"
 
-This error means you haven't verified your email address.
+This message means you registered but have not confirmed your email address.
 
 **Solution**:
-1. Check your email for the verification link
-2. Click the link to verify your account
+1. Click **Send new confirmation link** below the message. BATbern sends a new confirmation mail and opens the verification page.
+2. Click the link in the mail to confirm your account
 3. Try logging in again
+
+The same **Send new confirmation link** button appears on the "Forgot password" page and in sign-up step 2, so an unconfirmed account can always recover. Until #1145 (2026-10-27) the resend sent nothing.
 
 ### "Password attempts exceeded"
 

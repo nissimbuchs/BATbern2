@@ -4,7 +4,7 @@
 
 <span class="feature-status implemented">Implemented</span>
 
-> **Last Updated:** 2026-06-13
+> **Last Updated:** 2026-11-04 — additional addresses are verified by mail (#745)
 
 ## Overview
 
@@ -302,8 +302,26 @@ Any user (primarily organizers) can register **additional email addresses** on t
 - Addresses must be **globally unique** across all users' primary and additional emails; a collision is rejected.
 - **Public event registration** with an additional address: a *verified* address registers the owning account (no second account is created); an *unverified* address is refused with "this address is linked to an existing account, please sign in" (CUMS `get-or-create` → 409 `EMAIL_LINKED_TO_ACCOUNT`). Before 2026-10-18 both cases failed with a generic server error.
 
+### Verifying an Additional Address
+
+<span class="feature-status implemented">Implemented</span> (#745)
+
+When you add an address, BATbern sends a verification mail to it. Each additional address shows a pill in the Account settings: **Unverified** or **Verified**.
+
+1. Open the link in the verification mail. The page "Confirm your email address" opens.
+2. Click **Confirm email address**. The pill changes to **Verified**.
+3. If the mail did not arrive or the link has expired (it is valid for 48 hours), click **Resend** next to the address.
+
+Removing and re-adding an address invalidates earlier links; use the link from the newest mail.
+
+**What a verified address enables**:
+- **"Continue with Google" with this address** — when you sign in with a Google account whose address is one of your *verified* additional addresses, Google is linked to your existing BATbern account instead of creating a second account. Google must also confirm the address. An unverified address is never used for this.
+- **Public event registration** with the address registers your account (see above).
+
+Receive-at and send-as work for unverified addresses too.
+
 <div class="alert info">
-ℹ️ <strong>Note:</strong> v1 does not verify ownership of an added address (no confirmation email yet). Newsletter delivery to additional addresses is also out of scope (the newsletter keeps its own subscriber list).
+ℹ️ <strong>Note:</strong> Newsletter delivery to additional addresses is out of scope (the newsletter keeps its own subscriber list).
 </div>
 
 ## Merging Two Profiles of One Person

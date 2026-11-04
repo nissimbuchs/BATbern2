@@ -2,7 +2,9 @@
 
 > Event lifecycle management through state machines and task coordination
 
-> **Last Updated:** 2026-06-13 — Speaker workflow aligned to the unified 8-state model (ADR-009 / Epic 11). The legacy lowercase free-form speaker states (`overflow`, `withdrew`, `confirmed`, `slot_assigned`, `tentative`) are removed.
+> **Last Updated:** 2026-11-04 — Event workflow is 8 states: `AGENDA_FINALIZED` was removed (migration V84, #552); `AGENDA_PUBLISHED` moves to `EVENT_LIVE` automatically on event day. Default task list moved to [Task Templates](../administration/task-templates.md).
+>
+> **2026-06-13** — Speaker workflow aligned to the unified 8-state model (ADR-009 / Epic 11). The legacy lowercase free-form speaker states (`overflow`, `withdrew`, `confirmed`, `slot_assigned`, `tentative`) are removed.
 
 ## 🎥 Video Tutorials
 
@@ -28,7 +30,7 @@ These screencasts demonstrate the complete event lifecycle from creation to arch
 
 BATbern uses **three independent workflow systems** to manage event planning and execution:
 
-1. **Event Workflow** - 9-state lifecycle for high-level event progression
+1. **Event Workflow** - 8-state lifecycle for high-level event progression
 2. **Speaker Workflow** - Per-speaker state management with parallel progression
 3. **Task System** - Configurable assignable tasks (newsletters, catering, etc.)
 
@@ -36,7 +38,7 @@ BATbern uses **three independent workflow systems** to manage event planning and
 
 ---
 
-## 1. Event Workflow (9 States)
+## 1. Event Workflow (8 States)
 
 The **Event Workflow** tracks the high-level lifecycle of each event from creation to archival.
 
@@ -44,8 +46,10 @@ The **Event Workflow** tracks the high-level lifecycle of each event from creati
 
 ```
 CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT →
-AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
+AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 ```
+
+> **Note**: There is no separate "finalize agenda" step any more. The former `AGENDA_FINALIZED` state was removed (migration V84) because it was a manual gate: if nobody set it, the event never went live automatically. An event in `AGENDA_PUBLISHED` now moves to `EVENT_LIVE` by itself on event day.
 
 > **Note**: TOPIC_SELECTION is not a mandatory stop from CREATED. When a topic is confirmed from CREATED state, the event transitions directly to **SPEAKER_IDENTIFICATION**. CREATED → SPEAKER_IDENTIFICATION is also a valid direct transition (e.g., when re-creating an event with a pre-known topic).
 
@@ -57,15 +61,14 @@ AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARC
 | **TOPIC_SELECTION**        | Topics selected, ready for speakers     | Minimum 1 topic selected          | Minimum speakers in pool             |
 | **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach ongoing | Min speaker candidates identified | All slots filled                     |
 | **SLOT_ASSIGNMENT**        | Assigning speakers to time slots        | Publishable speakers assigned     | Agenda published                     |
-| **AGENDA_PUBLISHED**       | Public agenda, accepting registrations  | Publish agenda action             | Manual finalization (2 weeks before) |
-| **AGENDA_FINALIZED**       | Agenda locked for printing              | Finalize agenda action            | Event day arrives                    |
-| **EVENT_LIVE**             | Event currently happening               | Automatic when event start time passed (hourly check) | Automatic when event end time passed |
-| **EVENT_COMPLETED**        | Event finished, post-processing         | All completeable sessions ended via Watch mode (organizer calls endSession() for every keynote/presentation/workshop/panel) | Manual archival |
-| **ARCHIVED**               | Event archived for history              | Archival action                   | Terminal state                       |
+| **AGENDA_PUBLISHED**       | Public agenda, accepting registrations  | Publish agenda action (manual or auto-publish) | Event day arrives (automatic) |
+| **EVENT_LIVE**             | Event currently happening               | Automatic: nightly job on event day | All talk sessions ended, or event date passed |
+| **EVENT_COMPLETED**        | Event finished, post-processing         | All completeable sessions ended via Watch mode, or nightly job after the event date | Automatic archival 14 days after the event, or manual |
+| **ARCHIVED**               | Event archived for history              | Automatic (14 days after the event) or manual state change | Terminal state |
 
 ### Workflow Phases (User Guide Organization)
 
-For documentation purposes, we organize the 9 states into user-friendly phases:
+For documentation purposes, we organize the 8 states into user-friendly phases:
 
 **Phase A: Setup** <span class="feature-status implemented">Implemented</span>
 
@@ -94,8 +97,8 @@ For documentation purposes, we organize the 9 states into user-friendly phases:
 
 **Phase E: Publishing & Lifecycle** <span class="feature-status implemented">Implemented</span>
 
-- States: AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
-- Actions: Auto-publish speakers (30 days before) and agenda (14 days before) via CloudFront CDN; automated EVENT_LIVE and EVENT_COMPLETED transitions; manual archival
+- States: AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
+- Actions: Auto-publish speakers (30 days before) and agenda (14 days before) via CloudFront CDN; automated EVENT_LIVE, EVENT_COMPLETED and ARCHIVED transitions
 - [Learn more →](phase-e-publishing.md)
 
 **Phase F: Communication** <span class="feature-status implemented">Implemented</span>
@@ -172,15 +175,9 @@ The removed `confirmed` and `slot_assigned` states are now **derived flags**, co
 
 ### Task Types
 
-**Default System Tasks (7):**
+**Default System Tasks (10):**
 
-1. **Venue Booking** - Triggered: TOPIC_SELECTION, Due: 90 days before event
-2. **Partner Meeting** - Triggered: TOPIC_SELECTION, Due: event day
-3. **Moderator Assignment** - Triggered: TOPIC_SELECTION, Due: 14 days before event
-4. **Newsletter: Topic** - Triggered: TOPIC_SELECTION, Due: immediately
-5. **Newsletter: Speakers** - Triggered: AGENDA_PUBLISHED, Due: 30 days before event
-6. **Newsletter: Final** - Triggered: AGENDA_FINALIZED, Due: 14 days before event
-7. **Catering** - Triggered: AGENDA_FINALIZED, Due: 30 days before event
+Venue booking, partner meeting, moderator assignment, four newsletters (topic, speaker lineup, final agenda, slides online), catering, name badges (Namensschilder) and wine (Wein). Trigger states and due dates for each are listed in [Task Templates](../administration/task-templates.md).
 
 **Custom Tasks:**
 Organizers can create custom tasks with:
@@ -206,13 +203,9 @@ Tasks appear in the task list with four statuses:
 Tasks use a **two-phase lifecycle**:
 
 1. **Pre-created as `pending`** — All default task templates are silently pre-created with `status = "pending"` when the event is first created. They do not yet appear on the task dashboard.
-2. **Activated to `todo`** — When the event transitions to a task's configured trigger state, the matching pending tasks are activated to `status = "todo"` and become visible in the task dashboard.
+2. **Activated to `todo`** — A pending task becomes `todo` at whichever comes first: the event reaches the task's trigger state, or the task is within its activation lead time of the due date (14 days for the default templates). Post-event tasks (trigger EVENT_LIVE, EVENT_COMPLETED or ARCHIVED) activate only on their trigger state.
 
-Activation happens at:
-
-- Event reaches TOPIC_SELECTION → activates Venue Booking, Partner Meeting, Moderator Assignment, Newsletter: Topic tasks
-- Event reaches AGENDA_PUBLISHED → activates Newsletter: Speakers task
-- Event reaches AGENDA_FINALIZED → activates Newsletter: Final, Catering tasks
+The trigger state of each default template is listed in [Task Templates](../administration/task-templates.md).
 
 ---
 
@@ -237,10 +230,12 @@ Both run via a daily cron job (00:00 UTC). If the event has already passed the 3
 
 | Transition | Trigger | Check Frequency |
 |------------|---------|----------------|
-| `AGENDA_FINALIZED` → `EVENT_LIVE` | Event start date/time reached | Hourly |
+| `AGENDA_PUBLISHED` → `EVENT_LIVE` | Event day reached | Nightly job, shortly after midnight on event day |
 | `EVENT_LIVE` → `EVENT_COMPLETED` | Organizer ends all completeable sessions via Watch mode | On each endSession() call |
+| `EVENT_LIVE` → `EVENT_COMPLETED` (fallback) | Event date has passed | Nightly job |
+| `EVENT_COMPLETED` → `ARCHIVED` | Event date more than 14 days in the past | Nightly job |
 
-The `AGENDA_FINALIZED` → `EVENT_LIVE` transition requires no organizer action (hourly cron). The `EVENT_LIVE` → `EVENT_COMPLETED` transition is driven by the **Watch feature**: when an organizer calls `endSession()` for every completeable session (keynote, presentation, workshop, panel_discussion), the event automatically transitions to `EVENT_COMPLETED`. Break, lunch, and networking sessions are excluded from this check. The event then moves to `ARCHIVED` via a manual organizer action.
+None of these transitions needs organizer action. The `EVENT_LIVE` → `EVENT_COMPLETED` transition is normally driven by the **Watch feature**: when an organizer calls `endSession()` for every completeable session (keynote, presentation, workshop, panel_discussion), the event automatically transitions to `EVENT_COMPLETED`. Break, lunch, and networking sessions are excluded from this check. If that does not happen, the nightly job completes the event once its date has passed; it also catches up an event still in `AGENDA_PUBLISHED` after its date. An event can still be archived earlier by hand under **Details → Settings → Event state**.
 
 See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full details including dropout handling and CDN configuration.
 
@@ -335,13 +330,12 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
    - Auto-creates: Newsletter: Speakers task
    - Public agenda visible to attendees
 
-9. **Finalize Agenda** (Phase E)
-   - Event state: AGENDA_PUBLISHED → AGENDA_FINALIZED
-   - Auto-creates: Newsletter: Final, Catering tasks
-   - Agenda locked for printing
+9. **Event Day** (Phase E)
+   - Event state: AGENDA_PUBLISHED → EVENT_LIVE (automatic on event day)
+   - No finalize step: the agenda stays editable until the event
 
 10. **Archive Event** (Phase E)
-    - Event state: Any state → ARCHIVED
+    - Event state: EVENT_COMPLETED → ARCHIVED, automatically 14 days after the event, or by hand under **Details → Settings → Event state**
     - Historical data preserved
     - Event removed from active workflows
 
@@ -434,10 +428,9 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
 3. **SPEAKER_IDENTIFICATION** - Building speaker pool
 4. **SLOT_ASSIGNMENT** - Assigning to time slots
 5. **AGENDA_PUBLISHED** - Public agenda live
-6. **AGENDA_FINALIZED** - Agenda locked
-7. **EVENT_LIVE** - Event happening now
-8. **EVENT_COMPLETED** - Event finished
-9. **ARCHIVED** - Historical record
+6. **EVENT_LIVE** - Event happening now
+7. **EVENT_COMPLETED** - Event finished
+8. **ARCHIVED** - Historical record
 
 ### Complete Speaker State List (8 states — ADR-009)
 
@@ -486,7 +479,7 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
 
 **Solution**:
 
-- Check task templates exist (7 default templates)
+- Check task templates exist (10 default templates, see [Task Templates](../administration/task-templates.md))
 - Verify templates have correct trigger_state
 - Review application event logs for errors
 
@@ -496,7 +489,7 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
 
 **Solution**:
 
-- Check override validation checkbox in edit modal
+- Open **Details → Settings → Event state**, choose **Archived** and tick **Override workflow validation (allows any state transition)** with a reason
 - Allows archival for cancelled events or special cases
 - Documents that normal workflow wasn't completed
 
@@ -521,7 +514,8 @@ See [Phase E: Publishing & Lifecycle →](phase-e-publishing.md) for full detail
 
 - [Event Management →](../entity-management/events.md) - Create and configure events
 - [Speaker Management →](../entity-management/speakers.md) - Speaker profiles and status
-- [Task Management →](../entity-management/tasks.md) - Task assignment and tracking
+- [Phase F: Communication →](phase-f-communication.md) - Tasks, newsletters and logistics
+- [Task Templates →](../administration/task-templates.md) - Default and custom task templates
 
 ---
 

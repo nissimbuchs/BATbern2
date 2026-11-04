@@ -1,6 +1,6 @@
 # Notification System
 
-> **Last Updated:** 2026-06-13
+> **Last Updated:** 2026-11-04 — Newsletter sending moved to Communications → New mail; alias forwarding runs in the event-management service since #1137; in-app Notifications page documented.
 
 ## Overview
 
@@ -21,7 +21,8 @@ The system is designed to reduce manual monitoring while respecting subscriber p
 | Newsletter System (Epic 10) | ✅ `[IMPLEMENTED]` | Account-free subscription, organizer sending with template selection, subscriber-management admin page |
 | Inbound Email Handling (Epic 10) | ✅ `[IMPLEMENTED]` | Reply-based unsubscribe / cancel / accept, SES forwarding & distribution lists, bounce processing & list hygiene |
 | Partner Calendar Invites (Epic 8) | ✅ `[IMPLEMENTED]` | `.ics` meeting invites with iCal RSVP reply parsing |
-| In-App Notification Center | 📋 `[PLANNED]` | Real-time in-app notification feed with mark-as-read, priority levels, and preference rules |
+| In-App Notifications | ✅ `[IMPLEMENTED]` (basic) | Bell in the top bar opens the Notifications page: one entry per platform event for every organizer, hide read, mark all as read, delete |
+| Notification preferences, digests, escalation | 📋 `[PLANNED]` | Priority levels, escalation chains, quiet hours and per-category preference rules |
 
 ---
 
@@ -60,7 +61,7 @@ RFC 5545 `.ics` calendar invites delivered via email to partners. Each file cont
 
 ### Task Deadline Reminders (Epic 5 / Epic 10)
 
-Organizers receive email reminders for tasks approaching their due dates. Timing is controlled by the task template's trigger configuration (e.g., 1 day before deadline). See [Task System](../workflow/task-system.md).
+Organizers receive an email reminder for open tasks the day before they are due: a daily job runs at 08:00 (Swiss time) and mails every task due the next day. See [Phase F: Task Management](../workflow/phase-f-communication.md).
 
 ### "The Slides Are Online" Mail (Epic 7)
 
@@ -81,11 +82,13 @@ The platform includes an in-house newsletter system that replaced the previous M
 
 ### Sending & Template Selection
 
-Organizers send newsletters directly from the event newsletter tab:
+Organizers send newsletters from the event's **Communications** tab: click **New mail** and choose **Newsletter**. The same composer serves every audience (see [Event Mail](event-mail.md)):
 
-- **Template dropdown** — choose any `NEWSLETTER`-category email template (e.g., general newsletter, event reminder, partner announcement) without a code deploy. Templates are managed in the admin **Email Templates** tab (TinyMCE for content, Monaco for layout).
-- **Locale toggle** — switching DE↔EN re-filters the template list and the preview to the selected locale.
-- **Preview & confirm** — a preview renders the chosen template; the confirmation dialog names the template and the recipient count before sending.
+- **Content** — choose **Template** (any `NEWSLETTER`-category email template, managed in the admin **Email Templates** tab) or **Own text**.
+- **Language** — selects the template language; with own text it sets the layout for all recipients.
+- **Preview & confirm** — the preview renders the mail per recipient; **Send to organizers (test)** sends a test first, and the confirmation asks "Really send to N recipients?" before sending.
+
+Sent newsletters appear under **What went out** on the same tab.
 
 ### Subscriber Management (Story 10.28)
 
@@ -106,18 +109,19 @@ Subscribers and attendees can manage their preferences simply by **replying** to
 - Any other reply is **forwarded to the organizers** (one private copy each, Reply-To = the original sender), exactly like mail to `info@`. Automatic replies (out-of-office), bounces and mail from our own domain are not forwarded; each one is counted and logged. Until Story 16.0 (#1160, 2026-10) such replies were silently discarded. An anti-abuse rate limiter caps replies from a single sender.
 - **Speaker mails** (invitation, acceptance, tiered reminders, quality-review revision requests) carry `Reply-To: batbern{N}-moderator@batbern.ch` instead of `replies@`, so a speaker's answer reaches the event's moderator directly (Story 16.0).
 
-### Email Forwarding & Distribution Lists (2026-03)
+### Email Forwarding & Distribution Lists (2026-03, in the event-management service since 2026-10)
 
-The platform provides serverless email forwarding for 6 inboxes: `ok@`, `info@`, `events@`, `partner@`, `support@`, and `batbernNN@batbern.ch` (including the per-event aliases `batbernNN-speaker@`, `batbernNN-moderator@` and `batbernNN-participants@`). Emails received at these addresses are automatically forwarded to the appropriate recipients based on their role or event registration status:
+Since #1137 (2026-10-27) forwarding runs inside the event-management service (SES → S3 → SQS → EMS); the former forwarder Lambda was removed. Each mail is forwarded at most once. The platform provides email forwarding for 6 inboxes: `ok@`, `info@`, `events@`, `partner@`, `support@`, and `batbernNN@batbern.ch` (including the per-event aliases `batbernNN-speaker@`, `batbernNN-moderator@` and `batbernNN-participants@`). Emails received at these addresses are automatically forwarded to the appropriate recipients based on their role or event registration status:
 
-- **Dynamic recipient resolution** — Lambda resolves recipients via role-based and registration-based API calls
+- **Dynamic recipient resolution** — the event-management service resolves recipients by role and registration status, without a public API call
+- **Who may send** — contact aliases (`info@`, `events@`, `support@`, `batbernNN-moderator@`) accept mail from anyone. All other aliases accept mail only from organizers (primary or additional address), and the sender's address must be authenticated (DMARC pass, or a DKIM signature of the sender's domain). A mailbox provider that does neither is rejected on organizer-only aliases
 - **Sender exclusion** — Original sender is excluded from forwarding to prevent bounce loops
 - **CC address forwarding** — CC recipients on inbound emails are recognised as mailing-list addresses and resolved through the same recipient-resolution pipeline; they are forwarded alongside the primary recipients
 - **All mailing list variants recognised** — All `batbernNN@batbern.ch` series addresses (e.g. `batbern44@batbern.ch`) are detected and handled correctly, not only the latest series
 - **Event-specific aliases** — The `-speaker@` alias resolves to both the primary speaker and co-speakers on the event's scheduled sessions, delivered as a single visible message (all speakers in `To:`, the event organizer in `Cc:`) so the recipient list is verifiable at a glance. Its `Reply-To` is `batbernNN-moderator@`, so speakers answer the moderator, not the organizer who wrote the broadcast (Story 16.0). The `-moderator@` alias reaches the event organizer. Other aliases keep one-copy-per-recipient delivery for privacy.
 - **Environment isolation** — Staging uses `replies@staging.batbern.ch` with `noreply@batbern.ch`; production uses `replies@batbern.ch` with `noreply@batbern.ch`
-- **Admin configuration** — Organizers manage forwarding rules via Admin Settings UI
-- **Additional user emails** (Story 10.32) — A user can register additional email addresses on their profile. Those addresses then both **receive** fan-out mail destined for the user's primary email and are treated as **authorised senders** by the forwarder's sender-auth check (so mail sent from a legacy/shared/personal address is not silently dropped).
+- **Admin configuration** — **Administration → Settings** holds the **support@batbern.ch recipients** (comma-separated; if empty, mail to support@ goes to all organizers) and the **Mail Center: notice instead of forwarding** switch. For each checked group (speaker mail to `batbernNN-moderator@`, replies to `replies@`, general mail to `info@`/`events@`/`support@`) the recipients get a short notice with a link instead of the forwarded mail, and the mail is answered in the Mail Center. Organizer lists (`-speaker@`, `-participants@`, `batbernNN@`, `partner@`), `ok@` and automatic mail are always forwarded. Only the platform owner switches groups on
+- **Additional user emails** (Story 10.32) — A user can register additional email addresses on their profile. Those addresses then both **receive** fan-out mail destined for the user's primary email and are treated as **authorised senders** by the forwarding sender check (so mail sent from a legacy/shared/personal address is not silently dropped).
 - **SES delivery tracking** — Forwarded mail is routed through a dedicated SES configuration set, so delivery/bounce/complaint events are tracked separately from newsletter sends (forwarder bounces do not affect newsletter list hygiene).
 
 ### Partner Meeting iCal RSVP Parsing (2026-03)
@@ -130,9 +134,11 @@ Emails that permanently bounce or generate spam complaints are automatically sup
 
 ---
 
-## Planned: In-App Notification Center
+## In-App Notifications (basic) and Planned Notification Center
 
-A real-time, in-app notification center (bell icon in the navigation bar) is designed but **not yet built**. The sections below document the intended behaviour — notification feed, priority levels, escalation chains, quiet hours, and per-category preference rules. Today, notifications are delivered by email (see the Implemented sections above). Note that the organizer dashboard's **Team Activity Feed** (Epic 5) provides a chronological log of organizer actions and is a separate, already-shipped capability — see [Analytics](analytics.md).
+**Implemented today:** the bell icon in the top bar opens the **Notifications** page (`/organizer/notifications`). Every platform event (for example a state change or a speaker response) creates one in-app entry for each organizer. On the page you can switch **Hide read**, **Mark all as read**, and delete single entries. The bell itself does not show an unread count at the moment.
+
+**Planned, not yet built:** the sections below document the intended behaviour of a full notification center — priority levels, escalation chains, quiet hours, digests, and per-category preference rules. Everything else is delivered by email (see the Implemented sections above). Note that the organizer dashboard's **Team Activity Feed** (Epic 5) provides a chronological log of organizer actions and is a separate, already-shipped capability — see [Analytics](analytics.md).
 
 ---
 

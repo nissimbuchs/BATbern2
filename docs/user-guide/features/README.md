@@ -1,6 +1,6 @@
 # Platform Features
 
-> **Last Updated:** 2026-06-13
+> **Last Updated:** 2026-11-04
 
 ## Overview
 
@@ -12,11 +12,15 @@ BATbern provides a comprehensive set of features designed to streamline event ma
 - **[Topic Heat Maps](heat-maps.md)** - Visual exploration of historical topic patterns `[IMPLEMENTED]`
 - **[Event Analytics](analytics.md)** - Tabbed analytics dashboard + partner attendance analytics `[IMPLEMENTED]`
 
+### Event Operations
+- **[Cockpit and Event Day](cockpit-and-event-day.md)** - Attention cards per event, event-day controls, Live Control, event-day walkthrough `[IMPLEMENTED]`
+- **[The Event Page](../entity-management/event-page.md)** - All tabs of an event, registrations, waitlist and name badges `[IMPLEMENTED]`
+
 ### Communication & Notifications
 - **[Notification System](notifications.md)** - Email notifications, newsletter, and inbound email handling `[IMPLEMENTED]`
-- **[Event mail page](event-mail.md)** - What went out for an event, delivery results, "+ New mail" `[IMPLEMENTED]`
+- **[Event mail page](event-mail.md)** (Mail Center) - What went out for an event, delivery results, "+ New mail", the Mail page across all events `[IMPLEMENTED]`
 - Email templates for speaker outreach and attendee communications `[IMPLEMENTED]`
-- In-app notification center (real-time alerts) `[PLANNED]`
+- In-app notifications: the bell in the top bar opens the Notifications page (`/organizer/notifications`) `[IMPLEMENTED]`. The bell shows no unread count.
 
 ### Media & Content
 - **[Media & Content](media-and-content.md)** - Event photos, teaser images, AI-assisted content, moderator presentation `[IMPLEMENTED]`
@@ -61,6 +65,9 @@ Each feature page follows a consistent structure:
 
 | Feature | Status | Primary Use Case | Documentation |
 |---------|--------|------------------|---------------|
+| Cockpit & Event Day | `IMPLEMENTED` | What to do now for an event; presentation and Live Control on the day | [View →](cockpit-and-event-day.md) |
+| Event Page | `IMPLEMENTED` | All tabs of an event; registrations, waitlist, name badges | [View →](../entity-management/event-page.md) |
+| Mail Center | `IMPLEMENTED` | Event mail page, answering mail, + New mail, newsletters | [View →](event-mail.md) |
 | Topic Heat Maps | `IMPLEMENTED` | Historical topic analysis for event planning | [View →](heat-maps.md) |
 | File Uploads | `IMPLEMENTED` | Company logos, speaker materials | [View →](file-uploads.md) |
 | Notifications | `IMPLEMENTED` | Email, newsletter & inbound email handling | [View →](notifications.md) |

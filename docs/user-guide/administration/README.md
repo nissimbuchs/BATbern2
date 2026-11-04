@@ -1,8 +1,8 @@
 # Administration
 
-> <span class="feature-status implemented">Implemented</span> — The Administration page and all its tabs are live (Epic 10). Email-template management (Story 10.2), task deadline reminder emails (Story 10.3), and legacy BAT-format export/import (Story 10.20) are all delivered.
+> <span class="feature-status implemented">Implemented</span> — The Administration page and all its tabs are live (Epic 10, extended since). Email-template management (Story 10.2) and task deadline reminder emails (Story 10.3) are delivered.
 
-**Last Updated:** 2026-06-13
+**Last Updated:** 2026-11-04
 
 ## Overview
 
@@ -16,21 +16,25 @@ This replaces scattered configuration entry points that were previously spread a
 
 ## The Tabs
 
-| Tab | Name | Contents | Status |
-|-----|------|----------|--------|
-| 0 | **Event Types** | Configure slot templates for FULL_DAY, AFTERNOON, EVENING | <span class="feature-status implemented">Implemented</span> |
-| 1 | **Import Data** | Batch import modals for all 5 entity types | <span class="feature-status implemented">Implemented</span> |
-| 2 | **Task Templates** | Manage default and custom task templates | <span class="feature-status implemented">Implemented</span> |
-| 3 | **Email Templates** | Edit email subjects and content without a code deploy | <span class="feature-status implemented">Implemented</span> |
-| 4 | **Export / Import** | Legacy BAT-format JSON export and import (data + assets) | <span class="feature-status implemented">Implemented</span> |
+| Tab | Name | Contents |
+|-----|------|----------|
+| 0 | **Event Types** | Slot templates for FULL_DAY, AFTERNOON, EVENING |
+| 1 | **Import Data** | Batch import for events, sessions, companies, speakers, participants |
+| 2 | **Task Templates** | Default and custom task templates |
+| 3 | **Email Templates** | Email subjects and content, without a code deploy |
+| 4 | **Presentation** | About text and partner count shown on the moderator presentation (`/present/{eventCode}`) |
+| 5 | **AI Prompts** | The prompts for the AI event description, theme image and abstract quality review |
+| 6 | **Settings** | Recipients of support@batbern.ch, and the Mail Center switch (notice instead of forwarding) |
+| 7 | **Global Images** | Teaser images shown as slides in every event's presentation |
+| 8 | **Venue & Catering** | Venue contact, catering contact and venue coordinator, used for the venue and catering mails |
+
+The tab is kept in the URL: `/organizer/admin?tab=N`.
 
 ---
 
 ## Access & Permissions
 
-The Administration page is available to users with the **ORGANIZER** or **ADMIN** role. Partners, speakers, and attendees do not have access.
-
-The menu item appears as **Administration** (DE: *Administration*) in the user menu dropdown. The page enforces an ORGANIZER role guard, and the active tab is persisted in the URL query param (`?tab=N`).
+The Administration page is for organizers only. The menu item **Administration** appears in the user menu (avatar, top right) for users with the organizer role; anyone else who opens `/organizer/admin` sees *"Access Denied"*.
 
 ---
 
@@ -68,11 +72,35 @@ View and edit the email templates the platform sends — speaker invitations, de
 
 See [Email Templates](email-templates.md) for full details.
 
-### Tab 4 — Export / Import (Legacy BAT Format)
+### Tab 4 — Presentation
 
-Export the full BATbern data set in the legacy BAT JSON format (and an accompanying asset manifest), and import data in that same format. Used to migrate data between system versions and to interoperate with the old BATspa platform.
+The **About Text** and the **Partner Count** shown on the moderator presentation page. See
+[Media & Content](../features/media-and-content.md).
 
-See [Import Data](import-data.md#legacy-bat-format-export--import) for full details.
+### Tab 5 — AI Prompts
+
+The three prompts the AI features use: event description, theme image, and abstract quality review.
+Each can be edited and saved, or reset to its default.
+
+### Tab 6 — Settings
+
+- **Email Forwarding**: the recipients of mail to `support@batbern.ch`. Empty means all organizers.
+- **Mail Center: notice instead of forwarding**: one checkbox per address group. Checked groups are
+  answered in the Mail Center instead of being forwarded. See
+  [Event mail page](../features/event-mail.md).
+
+### Tab 7 — Global Images
+
+Teaser images shown as full-screen slides on **all** event presentations. Images for one event only
+are added in that event's **Details → Settings → Teaser Images**.
+
+### Tab 8 — Venue & Catering
+
+The venue contact, the catering contact (salutation, name, email each) and the venue coordinator,
+an organizer whose address is the Reply-To of the venue and catering mails. They are the same for
+every event.
+
+The legacy BAT-format export/import tab (Story 10.20) no longer exists.
 
 ---
 
@@ -86,17 +114,17 @@ Several organizer-only administration surfaces from Epic 10 live elsewhere in th
 
 A dedicated **top-level navigation item** — **Newsletter Subscribers** (`/organizer/newsletter-subscribers`, organizer-only) — provides a paginated, searchable, sortable list of every newsletter subscriber. From it you can **unsubscribe**, **re-subscribe**, or **delete** a subscriber without touching the database. Search matches email or first name; filters cover active / unsubscribed / all. List hygiene is reinforced by SES bounce processing (Story 10.29), which auto-unsubscribes hard-bounced addresses.
 
-Newsletter *sending* and *template selection* (Story 10.14) happen per-event from the event's Newsletter tab, using the **Newsletter** category in [Email Templates](email-templates.md).
+Newsletters are sent per event from the event page: **Communications → + New mail → Newsletter** (see [Event mail page](../features/event-mail.md)). The templates are in the **Newsletter** category of [Email Templates](email-templates.md).
 
 ### Registration, Waitlist & Deregistration Administration
 
 <span class="feature-status implemented">Implemented</span> (Stories 10.10, 10.11, 10.12)
 
-These surfaces live on the **event's Participants/Attendees tab** (and on the public homepage for attendees), not on the Administration page:
+These live on the **Registrations** tab of the event page (and on the public website for attendees), not on the Administration page. See [The Event Page → Registrations](../entity-management/event-page.md#registrations).
 
-- **Registration status indicator** (10.10) — attendees see their current registration state; organizers see status chips in the attendees table.
-- **Venue capacity enforcement + waitlist** (10.11) — set a `registrationCapacity` per event; once full, new registrations join a **waitlist**, and cancellations auto-promote the next waitlisted attendee. The public homepage hero shows a "X spots remaining" / "Full — join waitlist" badge.
-- **Self-service deregistration** (10.12) — attendees cancel via a token link in their confirmation email or by entering their email on the event page; cancelled registrations appear with a grey `CANCELLED` chip in the organizer attendees table and trigger waitlist promotion.
+- **Registration status** (10.10) — attendees see their current registration state; organizers see status chips in the participant list.
+- **Capacity and waitlist** (10.11) — the **Registration Capacity** is set per event in **Details → Settings**. Once it is reached, new sign-ups join the **waitlist**. Free places are filled from the waitlist in order, with a mail to each person who moves up: when the capacity is saved (every free place at once), and when a registration is cancelled. Organizers can also promote a person by hand with **Promote to Registered**. Details: [Waitlist and capacity](../entity-management/event-page.md#waitlist-and-capacity).
+- **Self-service deregistration** (10.12) — attendees cancel via a token link in their confirmation email or by entering their email on the event page; cancelled registrations appear with a grey **Cancelled** chip in the participant list and free their place for the waitlist.
 
 Email-reply-based unsubscribe/deregistration (Story 10.17) and SES forwarding / distribution lists (Story 10.26) further reduce manual organizer effort.
 

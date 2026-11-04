@@ -2,7 +2,9 @@
 
 > Assign speakers to time slots and publish the agenda
 
-> **Last Updated:** 2026-06-13 — Speaker states aligned to the 8-state model (ADR-009 / Epic 11); the removed `slot_assigned` / `confirmed` states replaced by derived `is_slot_assigned` / `is_publishable` flags.
+> **Last Updated:** 2026-11-04 — insert / swap with live preview, remove from slot, tap-to-assign on mobile (Story 15.3, #806); per-event **Edit event type** (Story 15.2, #805).
+>
+> **2026-06-13** — Speaker states aligned to the 8-state model (ADR-009 / Epic 11); the removed `slot_assigned` / `confirmed` states replaced by derived `is_slot_assigned` / `is_publishable` flags.
 
 <div class="workflow-phase phase-d">
 <strong>Phase D: Assignment</strong><br>
@@ -108,12 +110,24 @@ Review the proposed assignments and confirm.
 
 **Manual Adjustments** (Optional)
 
-After auto-assignment, you can manually adjust the schedule:
-- Drag presentations to different slots
-- Swap presentations between tracks
-- Adjust timing to accommodate speaker constraints
+After auto-assignment, you can manually adjust the schedule. What a drop does depends on the target slot:
 
-All changes are validated to prevent conflicts.
+| You drop… | onto… | Result |
+|-----------|-------|--------|
+| a session from the speaker pool | an empty slot | **Assign** — the session takes the slot |
+| a session from the speaker pool | an occupied slot | **Insert** — "↓ Insert — later talks shift down": the occupant and all later talks move one slot later and their times are recalculated |
+| a session already in a slot | another occupied slot | **Swap** — "⇅ Swap with this session": the two sessions exchange slots |
+
+- **Live preview** — while you drag over a slot, the agenda shows the result before you drop: the dropped session in its target and the talks that would move, marked as moved.
+- **Full agenda** — an insert that would push a talk past the last slot is refused; free a slot first.
+- **Remove from slot** — the ✕ on an assigned slot sends the session back to the speaker pool.
+- **Mobile** — dragging does not work on touch screens. Tap a session in the pool (or in a slot), then tap a highlighted slot to place it ("↓ Now tap a highlighted slot to place it"). The same assign / insert / swap rules apply.
+
+Each change is saved in one step; if it fails, the agenda returns to its previous state.
+
+**Changing the agenda shape for this event only — Edit event type**
+
+Click **Edit event type** above the slot grid to change this event's slot count and duration, breaks, lunch and apéro without touching the shared event-type template in Administration. The dialog shows a live schedule preview. The first save creates a per-event copy; from then on the event uses its own copy, and later changes to the template no longer reach it. If speakers are already assigned, the dialog warns: "Changing the structure may move them — review the agenda after saving." 
 
 </div>
 

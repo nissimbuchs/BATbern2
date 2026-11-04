@@ -4,7 +4,7 @@
 
 <span class="feature-status implemented">Implemented</span>
 
-> **Last Updated:** 2026-06-13
+> **Last Updated:** 2026-11-04
 
 ## Overview
 
@@ -75,72 +75,54 @@ BATbern supports 3 distinct event formats:
 
 <div class="step" data-step="1">
 
-**Navigate to Events**
+**Open the Events page**
 
-Click **📅 Events** in the left sidebar.
+Click **Events** in the top navigation (`/organizer/events`).
 </div>
 
 <div class="step" data-step="2">
 
-**Click "Create New Event"**
+**Click "New Event"**
 
-Click the **+ Create New Event** button (top-right).
+Click **New Event** under **Quick Actions**. The dialog **Create New Event** opens.
 </div>
 
 <div class="step" data-step="3">
 
-**Fill Event Details**
+**Fill in the Info tab**
 
-Complete the event creation form:
-
-**Basic Information**:
-- **Event Name*** - Unique name (e.g., "BATbern 2025")
-- **Event Code*** - Auto-generated public identifier (e.g., "BAT-2025-001") - used in URLs and QR codes
-- **Event Type*** - Select: Full-Day, Afternoon, or Evening
-- **Description** - Event overview (optional, supports Markdown)
-- **Max Attendees** - Registration capacity limit (optional)
-- **Waitlist Enabled** - Allow waitlist when capacity reached
-
-**Timeline**:
-- **Event Date*** - Main conference date
-- **Event Time*** - Start and end times
-- **Registration Opens*** - When attendees can register
-- **Registration Closes*** - Registration deadline
-
-**Location**:
-- **Venue Name** - Location name (e.g., "Kursaal Bern")
-- **Address** - Full street address
-- **City*** - Bern or other Swiss city
-- **Canton** - Swiss canton (BE, ZH, etc.)
-- **Postal Code** - Swiss postal code
-
-**Publishing Settings**:
-- **Auto-publish Speakers** - Automatically publish speaker profiles 30 days before event (default: enabled)
-- **Auto-publish Agenda** - Automatically publish full agenda 14 days before event (default: enabled)
-- **Auto-transition to Live** - Automatically transition to EVENT_LIVE state on event day (default: enabled)
-- **Auto-transition to Completed** - Automatically transition to EVENT_COMPLETED state after event ends (default: enabled)
-
+- **Event Number** and **Title**
+- **Description**
+- **Event Date** and **Registration Deadline**
+- **Event Type** - Full-Day, Afternoon or Evening
+- **Capacity** - the venue's capacity (required). The number of places people can book is set
+  later as **Registration Capacity** in Details → Settings of the event page.
+- **Venue** and **Venue Address**
 </div>
 
 <div class="step" data-step="4">
 
+**Check the Tasks tab**
+
+All default task templates are ticked. Untick what this event does not need and pick an organizer
+for each task. See [Task Templates](../administration/task-templates.md).
+</div>
+
+<div class="step" data-step="5">
+
 **Save**
 
-Click **Save** to create the event.
+Click **Save & Create**, or **Save as Draft**.
 
-Event is created with initial state: **CREATED**
-
-Success message: "Event 'BATbern 2025' created successfully. Ready to begin workflow."
-
-![Event Dashboard](../assets/screenshots/workflow/phase-a-setup/a-01-event-dashboard.png)
-
+The event starts in state **CREATED**. All organizers and partners are registered for it
+automatically (see [Registrations](event-page.md#registrations)).
 </div>
 
 ## Event Workflow States
 
 <span class="feature-status implemented">Implemented</span>
 
-Events progress through a **9-state workflow** that tracks the high-level event lifecycle.
+Events progress through an **8-state workflow** that tracks the high-level event lifecycle.
 
 ### State Machine Overview
 
@@ -150,25 +132,31 @@ graph LR
     B --> C[SPEAKER_IDENTIFICATION]
     C --> D[SLOT_ASSIGNMENT]
     D --> E[AGENDA_PUBLISHED]
-    E --> F[AGENDA_FINALIZED]
-    F --> G[EVENT_LIVE]
-    G --> H[EVENT_COMPLETED]
-    H --> I[ARCHIVED]
+    E --> F[EVENT_LIVE]
+    F --> G[EVENT_COMPLETED]
+    G --> H[ARCHIVED]
 ```
 
 ### State Descriptions
 
 | State | Description | How Reached |
 |-------|-------------|-------------|
-| **CREATED** | Event record created | Event creation form submitted |
-| **TOPIC_SELECTION** | Topics chosen using heat map | Minimum 1 topic selected |
-| **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach ongoing | Minimum speaker candidates identified |
-| **SLOT_ASSIGNMENT** | Assigning speakers to time slots | All confirmed speakers assigned |
-| **AGENDA_PUBLISHED** | Public agenda live, accepting registrations | Publish agenda action |
-| **AGENDA_FINALIZED** | Agenda locked for printing | Manual finalization (2 weeks before) |
-| **EVENT_LIVE** | Event currently happening | Event day arrives |
-| **EVENT_COMPLETED** | Event finished, post-processing | Manual transition after event |
-| **ARCHIVED** | Event archived for historical reference | Manual archival action |
+| **CREATED** | Event record created | Event creation |
+| **TOPIC_SELECTION** | Topic being chosen, e.g. with the heat map | Workflow |
+| **SPEAKER_IDENTIFICATION** | Building the speaker pool, outreach ongoing | Workflow |
+| **SLOT_ASSIGNMENT** | Assigning speakers to time slots | Workflow |
+| **AGENDA_PUBLISHED** | Public agenda live, accepting registrations | Agenda published (by hand on the Publishing tab, or automatically 14 days before the event) |
+| **EVENT_LIVE** | Event day | Automatically, by a nightly job on the event day |
+| **EVENT_COMPLETED** | Event over, wrap-up | Automatically, by a job at the end of the event day |
+| **ARCHIVED** | Event archived for historical reference | Manual archival |
+
+There is no separate "agenda finalized" step any more: it was removed in March 2026 (migration V84,
+#552) because, when nobody set it by hand, the event never went live automatically. Events that
+were in that state were moved back to `AGENDA_PUBLISHED`, and tasks triggered by it now trigger on
+`AGENDA_PUBLISHED`.
+
+The state can also be changed by hand in **Details → Settings → Event state** on the
+[event page](event-page.md#settings), with **Override workflow validation** for any transition.
 
 **Note**: Speakers progress through their own independent workflow (identified → contacted → ready → accepted → content_submitted → quality_reviewed → confirmed) in parallel with the event workflow.
 
@@ -335,110 +323,40 @@ See [Partner Management](partners.md) for details.
 
 ## Viewing Event Details
 
-Event detail view shows comprehensive information:
+Click an event in the list to open its event page. It has these tabs:
 
-### Tabs
+| Tab | Content |
+|-----|---------|
+| **Cockpit** | Lifecycle, attention cards, key figures, event-day controls |
+| **Speakers & Agenda** | Speaker pool (kanban), agenda, slot assignment |
+| **Registrations** | Participants, waitlist, capacity, name-badge exports |
+| **Communications** | The event's mail page and **+ New mail** |
+| **Publishing** | Publishing topic, speakers and agenda to the public website |
+| **Wrap-up** | Event photos and thank-you notes (from `EVENT_LIVE` on) |
+| **Details** | Sub-tabs **Info**, **Tasks**, **Settings** |
 
-**General**:
-- Basic information (name, type, description)
-- Timeline (dates, registration window)
-- Location and venue
-
-**Sessions** <span class="feature-status implemented">Implemented</span>:
-- List of all sessions
-- Session schedule (timeline view)
-- Speaker assignments
-
-**Speakers** <span class="feature-status implemented">Implemented</span>:
-- List of speakers (per-event pool entries — Epic 11 / ADR-009)
-- 8-state speaker workflow status (identified → … → confirmed)
-- Contact history
-
-**Partners** <span class="feature-status implemented">Implemented</span>:
-- List of event partners
-- Partner tier badges
-- Meeting coordination
-
-**Attendees** <span class="feature-status planned">Planned</span>:
-- Registration list
-- Attendance tracking
-- Check-in status
-
-**Analytics** <span class="feature-status planned">Planned</span>:
-- Registration funnel
-- Speaker engagement
-- Attendee demographics
+See **[The Event Page](event-page.md)** for every tab, and
+**[Cockpit and Event Day](../features/cockpit-and-event-day.md)** for the Cockpit and Live Control.
 
 ## Editing an Event
 
-<div class="step" data-step="1">
+Edit the event on its event page:
 
-**Find the Event**
-
-Search or browse the event list.
-</div>
-
-<div class="step" data-step="2">
-
-**Click Edit**
-
-Click **📝 Edit** icon in event row.
-</div>
-
-<div class="step" data-step="3">
-
-**Modify Fields**
-
-Update event information. Note:
-- Event type can be changed (affects session structure)
-- Timeline dates can be adjusted (with validation)
-- Workflow state cannot be manually changed (use workflow)
-
-</div>
-
-<div class="step" data-step="4">
-
-**Save Changes**
-
-Click **Save Changes** to persist updates.
-</div>
+- **Details → Info** - title, description, topic, date, registration deadline, venue, theme image
+  (**Save changes**)
+- **Details → Settings** - event state, moderator, registration capacity, Session Q&A, teaser images
+- **Details → Tasks** - the event's tasks
 
 ## Deleting an Event
 
-<div class="alert error">
-❌ <strong>Caution:</strong> Deleting an event removes all associated sessions, speaker assignments, and registrations. This action cannot be undone.
-</div>
+**Details → Settings → Danger Zone → Delete Event** deletes the event permanently, after a
+confirmation. It is only possible while the event has no attendee registrations; otherwise the page
+says *"Cannot delete event with attendee registrations. Cancel the event instead."* Organizers and
+partners enrolled automatically do not count as attendee registrations.
 
-<div class="step" data-step="1">
-
-**Click Delete**
-
-Click **🗑️ Delete** icon in event row.
-</div>
-
-<div class="step" data-step="2">
-
-**Confirm Deletion**
-
-```
-Delete Event?
-────────────────────────────────────
-Delete "BATbern 2025"?
-
-This will permanently delete:
-- 8 sessions
-- 12 speaker assignments
-- 237 attendee registrations
-- Event timeline and data
-
-This action CANNOT be undone.
-
-[Cancel]           [Delete]
-```
-
-Type event name to confirm: `BATbern 2025`
-
-Click **Delete** to confirm.
+<div class="alert warning">
+⚠️ The <strong>Cancel Event</strong> button next to it does not cancel the event: confirming the
+dialog changes nothing and sends no mail.
 </div>
 
 ## Resource Expansion
@@ -523,7 +441,7 @@ Click **Continue Workflow** to jump to the current workflow step.
 
 ## Related Topics
 
-- [Workflow System →](../workflow/README.md) - 9-state event workflow, per-speaker workflow, task system
+- [Workflow System →](../workflow/README.md) - 8-state event workflow, per-speaker workflow, task system
 - [Phase A: Setup →](../workflow/phase-a-setup.md) - Event creation and initial configuration
 - [Speaker Management →](speakers.md) - Manage event speakers
 - [Partner Management →](partners.md) - Coordinate event partners

@@ -415,4 +415,3 @@ On mobile/tablet:
 
 - [Dashboard Navigation](dashboard.md) - Dashboard layout and features
 - [Feature Status](../appendix/feature-status.md) - What's implemented vs planned
-- [Accessibility Guide](../appendix/accessibility.md) <span class="feature-status planned">Planned</span>

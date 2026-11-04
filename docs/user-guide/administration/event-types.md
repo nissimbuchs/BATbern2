@@ -2,7 +2,7 @@
 
 > <span class="feature-status implemented">Implemented</span> — Tab 0 of the Administration page (Story 10.1).
 
-**Last Updated:** 2026-06-13
+**Last Updated:** 2026-11-04 — template changes reach every event without its own copy (#805)
 
 ## Overview
 
@@ -39,7 +39,7 @@ Each event type has a configurable slot template that defines:
 1. Navigate to **Administration → Event Types**
 2. Click the event type you want to configure (FULL_DAY, AFTERNOON, or EVENING)
 3. Adjust slot counts and timing defaults
-4. Save changes — these apply to all **future** events created with this type (existing events are not affected)
+4. Save changes — these apply to every event of this type that has **no per-event copy**, existing events included. Events whose organizers used **Edit event type** on the slot assignment page (see [Phase D](../workflow/phase-d-assignment.md)) keep their own copy and are not affected.
 
 ---
 
@@ -51,7 +51,7 @@ When an organiser creates a new event (Phase A — Setup), they select an event 
 - The slot template for the slot assignment drag-and-drop interface (Phase D)
 - Default deadlines and timeline for the workflow
 
-Changes to event type configuration take effect for new events only. Previously created events retain the slot structure they were created with.
+Changes to event type configuration take effect for every event of that type without a per-event copy, including events already created: their computed slot times, auto-assign and slot capacity follow the template (#805). If speakers are already assigned at fixed times, review the agenda of upcoming events after changing a template. An event gets its own copy the first time an organizer saves **Edit event type** for it; from then on, template changes no longer reach that event.
 
 ---
 

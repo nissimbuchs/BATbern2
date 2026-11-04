@@ -8,7 +8,7 @@ Welcome to the BATbern Organizer Guide. This documentation provides complete cov
 
 **Target Audience**: Event organizers and coordinators responsible for planning, executing, and managing BATbern conferences.
 
-**Platform Version**: Production Ready — Epics 1–6, 8, 10, 11, 12 Complete; Epic 7 (Attendee Experience) in review
+**Platform Version**: Production Ready — Epics 1–8, 10, 11, 12, 14 Complete; Epic 13 live with close-out open; Epics 15 and 16 largely live (status 2026-11-04)
 
 ## Platform Status
 
@@ -18,15 +18,18 @@ Welcome to the BATbern Organizer Guide. This documentation provides complete cov
 | **Epic 2: Entity CRUD**                    | ✅ Complete        | Company, User, Event, Partner Management                                                               |
 | **Epic 3: Data Migration**                 | ✅ Complete        | Historical data import tooling (production import pending)                                             |
 | **Epic 4: Public Website**                 | ✅ Complete        | Landing pages, Registration flow, Archive Browsing, Content Search, SEO                               |
-| **Epic 5: Organizer Workflows**            | ✅ Complete        | 9-state event workflow, Speaker workflow, Task system, Auto-publishing, Lifecycle automation          |
+| **Epic 5: Organizer Workflows**            | ✅ Complete        | 8-state event workflow, Speaker workflow, Task system, Auto-publishing, Lifecycle automation          |
 | **Epic 6: Speaker Portal**                 | ✅ Complete        | Cognito-authenticated invitations, self-service response/content submission, dashboard (WCAG 2.1 AA)  |
-| **Epic 7: Attendee Experience**            | 🔨 In review       | Topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, post-event Q&A, event history |
+| **Epic 7: Attendee Experience**            | ✅ Complete        | Topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, session Q&A, event history, thank-you marquee |
 | **Epic 8: Partner Coordination**           | ✅ Complete        | Attendance analytics (XLSX export), topic voting, meeting coordination (ICS), partner notes, iCal RSVP |
 | **Epic 9: Speaker Auth (original plan)**   | ⛔ Superseded      | Replaced by Epic 11 (unified workflow) + Epic 12 (SSO) — speaker auth is now Cognito-based             |
 | **Epic 10: Admin, Newsletter & Public**    | ✅ Complete        | Administration page, newsletter system, registration lifecycle/waitlist, photo gallery, moderator page, Turnstile, legacy export/import |
 | **Epic 11: Unified Speaker Workflow**      | ✅ Complete        | 8-state workflow (ADR-009), Cognito speaker auth (magic-link removed), kanban redesign, company self-service |
 | **Epic 12: "Continue with Google" SSO**    | ✅ Complete        | Federated login with account linking, JIT provisioning, ToS consent, avatar import (Apple OIDC deferred) |
-| **Epic 13: Spring Boot 4 Migration**       | 📋 Planned         | Staged per-module upgrade (SB 3.5 OSS support ends 2026-06-30)                                         |
+| **Epic 13: Spring Boot 4 Migration**       | ✅ Live, close-out open | All Java services on Spring Boot 4 (#797, 2026-06-19); Jackson 3 switch-over and dependency-pin cleanup still open |
+| **Epic 14: Event Page Redesign**           | ✅ Complete        | Lifecycle-aware event page: Cockpit, Speakers & Agenda, Registrations, Communications, Publishing, Wrap-up, Details (#788) |
+| **Epic 15: Post-Event #2 Hardening**       | 🔨 In progress     | Live agenda via polling, per-event event-type settings, stable slot assignment, speaker logos in presenter/Live Control, Q&A notifications; LinkedIn post drafts in backlog |
+| **Epic 16: Mail Center**                   | 🔨 Largely live    | Mail page and Communications tab, delivery status, conversations and answers, one composer for every audience, Mail tab on user and partner; last composer step open |
 
 ## Quick Navigation
 

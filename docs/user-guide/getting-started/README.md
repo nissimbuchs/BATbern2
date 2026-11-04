@@ -67,7 +67,7 @@ Understand how to create and manage companies, users, events, and partners. See 
 <div class="step" data-step="4">
 
 ### Learn the Workflow System
-Master the 3 workflow systems: Event lifecycle (9 states), Speaker coordination (per-speaker progression), and Task management. See [Workflow System](../workflow/README.md).
+Master the 3 workflow systems: Event lifecycle (8 states), Speaker coordination (per-speaker progression), and Task management. See [Workflow System](../workflow/README.md).
 </div>
 
 ## Platform Environments
@@ -101,11 +101,13 @@ Topics are subject areas for conference sessions (e.g., "Sustainable Building Ma
 ### Workflow Systems
 The platform uses 3 independent workflow systems:
 
-**Event Workflow (9 states)**:
-- CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
+**Event Workflow (8 states)**:
+- CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
+- AGENDA_PUBLISHED moves to EVENT_LIVE automatically on event day; there is no separate finalize step
 
 **Speaker Workflow (8-state model, per-speaker, parallel — unified into event-management following Epic 11)**:
-- IDENTIFIED → CONTACTED → READY → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED → CONFIRMED (plus a declined/closed terminal state)
+- IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED, plus the terminal DECLINED state
+- "Publishable" (content approved and slot assigned) is a derived flag, not a state
 - `SpeakerWorkflowService` is the sole status writer; a Cognito user is provisioned at the `READY` transition
 
 **Task System**:

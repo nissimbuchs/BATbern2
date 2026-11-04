@@ -50,7 +50,7 @@ Partners see only their own company's data. Organizers can access any company's 
 
 Built into the organizer dashboard:
 
-- **Event workflow progress** — Visual progress bar showing current state in the 9-state machine with completion percentage
+- **Event workflow progress** — Visual progress bar showing current state in the 8-state machine with completion percentage
 - **Speaker pipeline** — Status breakdown across all speaker states (Invited / Accepted / Content Submitted / Approved / Published)
 - **Team Activity Feed** — Chronological log of organizer actions (edits, state transitions, assignments) with mark-as-read and delete
 

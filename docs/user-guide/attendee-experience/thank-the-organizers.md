@@ -2,7 +2,7 @@
 
 > One-click gratitude for the volunteers who have run BATbern — free, ad-free, on their own time — for 20 years
 
-> **Last Updated**: 2026-06-13
+> **Last Updated**: 2026-11-04 — curated thank-you marquee (Story 7.7) live
 
 <span class="feature-status implemented">Implemented</span> — Epic 7.4
 
@@ -39,13 +39,13 @@ The thank-you lives on the **public event / archive page**. A missing or invalid
 
 ## For organizers
 
-On the appreciation surface you see the **aggregate count** for an event and **any notes** attendees submitted. There is nothing to moderate or approve for the count itself — it just accumulates.
+Open the event's **Wrap-up** tab. Under **Thank-you notes** you see the **aggregate count** for the event and **every note** attendees submitted (a thank-you without text shows as "(clap with no note)"). There is nothing to moderate or approve for the count itself — it just accumulates.
 
 ## Story 7.7 — Curated Thank-You Marquee
 
-<span class="feature-status in-progress">In Progress</span>
+<span class="feature-status implemented">Implemented</span> (#785)
 
-An upcoming extension lets you **feature selected thank-you notes** so they intermingle into the **public homepage partner marquee** — surfacing genuine attendee gratitude alongside partner logos. You curate which notes appear (they are not auto-published). This is in development and not yet available; the rest of Thank-the-Organizers is live.
+You can **feature selected thank-you notes** so they intermingle into the **public homepage partner marquee** — surfacing genuine attendee gratitude alongside partner logos. In the **Wrap-up** tab, switch **Feature on public marquee** on for a note; it is then marked **Featured**. You curate which notes appear: nothing is auto-published. Anonymous thank-yous cannot be featured, because they carry no name.
 
 ## What's in scope (and what isn't)
 

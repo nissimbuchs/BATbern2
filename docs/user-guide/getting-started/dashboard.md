@@ -4,109 +4,78 @@
 
 <span class="feature-status implemented">Implemented</span>
 
-> **Last Updated**: 2026-06-13
+> **Last Updated**: 2026-11-04
 
 ## Overview
 
-The BATbern organizer dashboard is your central hub for event planning and management. The interface adapts to your role(s), showing only the relevant features and actions.
+After login, organizers land in the organizer interface: a top bar with the navigation, and the page
+content below it. There is no left sidebar.
 
-> **Multiple roles in one session**: If your account holds more than one role (e.g. Organizer **and** Speaker), you don't log in separately for each. After a single login the navigation presents **all** your roles' features, **grouped under per-role section dividers**. Switching between organizing an event and managing your own speaker session is just scrolling the same menu — no re-authentication. See [Multi-Role Navigation](navigation.md#multi-role-single-session-navigation).
+> **Organizer and partner in one account**: if your account holds both roles, a role selector next
+> to the logo switches the navigation between the organizer and the partner items. Speaker and
+> attendee features live on the public website, so they do not appear there. See
+> [Multi-Role Navigation](navigation.md#multi-role-single-session-navigation).
 
-## Dashboard Layout
-
-The dashboard follows a clean, Swiss design aesthetic with three main areas:
+## The Top Bar
 
 ```
-┌─────────────────────────────────────────────────────┐
-│  Top Navigation Bar (Logo, Search, Profile)        │
-├──────────┬──────────────────────────────────────────┤
-│          │                                          │
-│  Left    │  Main Content Area                       │
-│  Sidebar │  (Event Cards, Tables, Forms)            │
-│          │                                          │
-│  Entity  │                                          │
-│  Nav     │                                          │
-│          │                                          │
-└──────────┴──────────────────────────────────────────┘
+┌──────────────────────────────────────────────────────────────────────────────────────────┐
+│ BATbern  Events  Mail(3)  Partners ▾  Companies  Users  Newsletter Subscribers           │
+│          Analytics  Public Website                              🔔   ✓   (N)            │
+└──────────────────────────────────────────────────────────────────────────────────────────┘
 ```
 
-### Top Navigation Bar
+### Navigation items
 
-The top bar provides quick access to global functions:
+| Item | Opens |
+|------|-------|
+| **Events** | The events page `/organizer/events` (see below) |
+| **Mail** | The Mail page `/organizer/mail`, all conversations across events. A badge shows the number of open conversations; it is hidden at zero and refreshes every minute. See [Event mail page](../features/event-mail.md). |
+| **Partners ▾** | A menu with **Partners**, **Partner Topics** and **Partner Meetings** |
+| **Companies** | `/organizer/companies` |
+| **Users** | `/organizer/users` |
+| **Newsletter Subscribers** | `/organizer/newsletter-subscribers` |
+| **Analytics** | `/organizer/analytics` |
+| **Public Website** | The public website `/` |
 
-- **BATbern Logo** (top-left) - Click to return to dashboard home
-- **Global Search** (center) - Search across companies, users, events, speakers
-- **Notifications** (top-right) - Bell icon shows recent alerts <span class="feature-status planned">Planned</span>
-- **Profile Menu** (top-right) - Avatar dropdown (shows your imported Google avatar when you signed in with SSO) with:
-  - Profile settings
-  - Language selection (10 locales) <span class="feature-status implemented">Implemented</span>
-  - Logout
+### Right side
 
-### Left Sidebar Navigation
+- **🔔 Notifications** opens the Notifications page (`/organizer/notifications`): the in-app
+  notifications the platform creates for organizers when something changes, with **Hide read**,
+  **Mark all as read**, and per notification mark-as-read and delete. The bell itself shows no
+  unread count.
+- **✓ Tasks** (organizer only) opens the **Task Board** (`/organizer/tasks`): all tasks as columns
+  **Pending**, **To Do**, **In Progress**, **Completed**, filter **My Tasks** / **All Tasks**,
+  **Mark Complete**, **Add Custom Task**.
+- **Avatar** (the first letter of your email address) opens the user menu: your email and roles,
+  then **Profile**, **Settings**, **Administration** (organizers only, see
+  [Administration](../administration/README.md)), the language selector, **Help** and **Logout**.
 
-The sidebar organizes features by entity type:
+### Screen width
 
-**Entity Management**:
-- 🏢 **Companies** - Manage architectural firms
-- 👥 **Users** - Manage organizers, speakers, attendees
-- 📅 **Events** - Plan and coordinate conferences
-- 🤝 **Partners** - Coordinate partner relationships
-- 🎤 **Speakers** - Track speaker profiles and status
+| Width | Top bar |
+|-------|---------|
+| 1440 px and wider | Icons with labels |
+| 900 to 1439 px | Icons only; the name appears as a tooltip on hover |
+| below 900 px | A ☰ menu button opens the navigation as a drawer |
 
-**Advanced Features** <span class="feature-status planned">Planned</span>:
-- 📊 **Analytics** - Event metrics and reports
-- 📧 **Notifications** - Manage alerts and escalations
-- ⚙️ **Settings** - Platform configuration
+The BATbern logo is not a link; use **Events** to get back to the start.
 
-### Main Content Area
+## The Events Page
 
-The main content area displays:
+**Events** (`/organizer/events`) is the organizer start page, titled **Event Management**:
 
-- **Dashboard Home**: Event cards and quick actions
-- **Entity Lists**: Paginated tables with search/filter
-- **Entity Details**: Forms and detailed views
-- **Workflow Views**: Specialized interfaces for event workflow system
-
-## Dashboard Home
-
-After logging in, you'll see the **Dashboard Home** with:
-
-### Current Event Card
-
-<div class="workflow-phase phase-a">
-
-**Current Active Event** (if one exists)
-
-Displays:
-- Event name (e.g., "BATbern 2025")
-- Event type badge (Full-Day / Afternoon / Evening)
-- Current event state (e.g., "TOPIC_SELECTION")
-- Days until event
-- Quick actions:
-  - **Continue Workflow** → Jump to current workflow phase
-  - **View Details** → See full event information
-  - **Edit** → Modify event properties
-</div>
-
-### Recent Activity
-
-A timeline showing recent platform activity:
-- New user registrations
-- Speaker status changes
-- Partner meeting requests
-- Workflow state transitions
-
-### Quick Actions
-
-Shortcuts to common organizer tasks:
-- ➕ **Create New Event** - Start planning a new conference
-- 👤 **Add Speaker** - Add a new speaker profile
-- 🏢 **Register Company** - Add a new architectural firm
-- 🤝 **Invite Partner** - Onboard a new partner organization
+- **Search and filters** for the event list at the top.
+- **Active Events**: the event list, paginated. Click an event to open its
+  [event page](../entity-management/event-page.md).
+- **Quick Actions**: **New Event**, **Event Types**, **Manage Topics**.
+- **My open tasks**: your open tasks across all events, with **View All Tasks** (the Task Board).
+- **Notifications**: the latest in-app notifications, with **Mark all as read**, **Reload** and
+  **View All**.
 
 ## Entity List Views
 
-Clicking an entity in the sidebar navigates to the list view:
+Clicking an entity in the top bar navigates to the list view:
 
 ### Table Features
 
@@ -191,22 +160,11 @@ See [Keyboard Shortcuts Reference](../appendix/keyboard-shortcuts.md) for the co
 
 ## Responsive Design
 
-The dashboard adapts to different screen sizes:
-
-### Desktop (1920x1080+)
-- Full sidebar visible
-- Multi-column layouts
-- Advanced filters expanded
-
-### Tablet (768x1024)
-- Collapsible sidebar
-- Two-column layouts
-- Simplified filters
-
-### Mobile (375x667)
-- Hamburger menu navigation
-- Single-column layouts
-- Touch-optimized controls
+- **1440 px and wider**: top bar with labels.
+- **900 to 1439 px**: top bar with icons only.
+- **Below 900 px**: ☰ menu drawer. On an event page the tabs move to a bottom bar (Cockpit,
+  Speakers & Agenda, Registrations, Communications, ⋯ More); see
+  [The Event Page](../entity-management/event-page.md#on-a-phone).
 
 ## Workflow-Specific Views
 
@@ -250,24 +208,15 @@ See [Phase D: Assignment](../workflow/phase-d-assignment.md) for details.
 
 ## Tips for Efficient Navigation
 
-### Use Global Search
-
-The global search (top-center) searches across:
-- Company names
-- User names and email addresses
-- Event names and topics
-- Speaker names and expertise
-- Partner names
-
-**Pro Tip**: Use partial matches (e.g., "Zür" finds "Zürich")
-
 ### Bookmark Common Views
 
 Bookmark frequently used pages in your browser:
-- Dashboard home: `/dashboard`
-- Event list: `/events`
-- Speaker list: `/speakers`
-- Current event workflow: `/events/{event-id}/workflow`
+- Events: `/organizer/events`
+- Mail: `/organizer/mail`
+- Task Board: `/organizer/tasks`
+- An event page: `/organizer/events/{eventCode}`, for example `/organizer/events/BATbern60`
+- A tab of it: `/organizer/events/{eventCode}?tab=registrations`
+- Live Control on the event day: `/organizer/events/{eventCode}/live-control`
 
 ### Resource Expansion
 
