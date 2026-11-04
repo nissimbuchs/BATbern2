@@ -24,6 +24,12 @@ vi.mock('./EventsParticipatedTable', () => ({
   EventsParticipatedTable: ({ userId }: any) => <div data-testid="events-table">{userId}</div>,
 }));
 
+// #1183 C: the dialog has its own test; here only whether the page opens it
+vi.mock('./MergeProfileDialog', () => ({
+  MergeProfileDialog: ({ open, username }: any) =>
+    open ? <div data-testid="merge-dialog-open">{username}</div> : null,
+}));
+
 const mockUser = {
   id: 'user-1',
   firstName: 'Alice',
@@ -109,6 +115,13 @@ describe('UserDetailView', () => {
     render(<UserDetailView {...defaultProps} canEdit={true} onEdit={onEdit} />);
     fireEvent.click(screen.getByText('Edit'));
     expect(onEdit).toHaveBeenCalledWith(mockUser);
+  });
+
+  it('opens the merge dialog for this profile (#1183 C)', () => {
+    render(<UserDetailView {...defaultProps} canEdit={true} />);
+    expect(screen.queryByTestId('merge-dialog-open')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByTestId('merge-profile-button'));
+    expect(screen.getByTestId('merge-dialog-open')).toHaveTextContent(mockUser.id);
   });
 
   it('shows breadcrumbs', () => {

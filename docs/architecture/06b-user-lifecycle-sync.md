@@ -914,6 +914,43 @@ homoglyph spoofing, for no gain to the person, whose name is displayed as entere
 `.` for CJK names; reconciliation's fallback `user.<timestamp>` always violated the constraint. The CUMS
 integration tests had mocked the generator, which is why none of this surfaced in CI.
 
+## Merging two profiles of one person (#1183 C/D)
+
+**One person often exists as several profiles**: a guest registration or an imported profile without a
+login, and later an account with another address (`name.2`). Measured on production 2026-11-03: 165 pairs
+of a profile without login and a login profile with the same first and last name; 7 of them hold a
+registration for the same event, 19 of the profiles without login carry speaker history.
+
+**Two ways in, one merge:**
+
+| | Who | How |
+|---|---|---|
+| **C: organizer merge** | ORGANIZER | User page → "Merge profile" → pick the other profile → preview → confirm. `GET /users/{target}/merge-preview?source=`, `POST /users/{target}/merge` |
+| **D: claim** | the person, logged in | Account settings and the attendee dashboard list profiles **without login** under the same first and last name (case-insensitive), with a masked address only. "This is me" mails a signed link (48 h, JWT type `profile-claim`) **to the earlier profile's address**; `/claim-profile?token=` confirms it, and only under the login that asked for it (else 403 `CLAIM_OTHER_ACCOUNT`). `GET/POST /users/me/profile-claims`, `POST /users/me/profile-claims/confirm` |
+
+**Rules** (`UserMergeService` in company-user-management):
+- The **source must have no login**. A Cognito user is someone's account; deleting it would lock them out.
+  The login profile is always the target; the organizer dialog offers to swap the direction. Two login
+  profiles are not merged.
+- **Order**: lock both profiles → event-management moves its rows (`POST /internal/users/merge`, Service
+  Connect, no JWT) and commits → company-user-management moves roles, `activity_history`,
+  `watch_pairings`, `role_assignments.granted_by`, fills an empty company and bio, deletes the source and
+  adds its address (verified, label "merged profile") and its additional addresses to the target. If the
+  second step fails, the source still exists and owns nothing in event-management; running the merge again
+  finishes it (event-management's part is idempotent).
+- **What moves in event-management** (`UserMergeService` there): registrations, speaker slots
+  (`session_users`), speaker arrivals, notifications, Q&A posts and notifications, talk proposals, content
+  submissions, organizer thanks, live-timing presence, newsletter rows. **Not moved**: audit columns
+  (`created_by`, `changed_by_username`, …) and organizer columns; a source without login never acted as
+  organizer. Partner topic suggestions live in partner-coordination and are made by partner logins.
+- **Collisions**: same session, same event (arrivals, proposals, thanks) → the source row goes. Two
+  registrations for one event → the better one stays (attended, confirmed, registered, waitlist, cancelled;
+  the target's on a tie), because every `my-registration` lookup expects one row.
+- **Refused**: both lead a different talk at the same event (409 `MERGE_BLOCKED`); the organizer removes
+  one first.
+- **Undo** is by hand, from `user_merge_log` (event-management, V144): the moved row keys per column, every
+  removed row in full, and the deleted source profile with its roles and addresses.
+
 ## Database Schema
 
 ### user_profiles Table

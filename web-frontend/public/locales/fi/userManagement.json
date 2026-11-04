@@ -316,5 +316,60 @@
     "homeLink": "Siirry osoitteeseen batbern.ch",
     "invalidToken": "Tämä vahvistuslinkki on virheellinen tai vanhentunut. Pyydä uusi tilisi asetuksista.",
     "notFound": "Tätä sähköpostiosoitetta ei enää ole profiilissa, johon se lisättiin. Jos lisäsit sen uudelleen, käytä uusimman vahvistussähköpostin linkkiä."
+  },
+  "merge": {
+    "button": "Yhdistä profiili",
+    "title": "Yhdistä saman henkilön kaksi profiilia",
+    "intro": "Pick the other profile of this person. The profile without a login is merged into the other one and then deleted: its registrations, talks, history, roles and addresses move over.",
+    "pickOther": "Toinen profiili",
+    "previewFailed": "The preview could not be loaded.",
+    "keeps": "Säilyy",
+    "deletes": "Yhdistetään ja poistetaan",
+    "hasLogin": "Kirjautuminen",
+    "noLogin": "Ei kirjautumista",
+    "additionalEmails": "Additional addresses",
+    "moves": "Moves to the profile that stays",
+    "nothingToMove": "Nothing to move.",
+    "conflicts": "Both profiles have an entry for the same event or session ({{list}}). The better registration stays, the other one is removed. Everything removed is logged.",
+    "swap": "Vaihda suunta",
+    "reason": {
+      "SOURCE_HAS_LOGIN": "The profile to be deleted has a login. Merge in the other direction: the profile with the login stays.",
+      "BOTH_HAVE_LOGIN": "Both profiles have a login. They cannot be merged here.",
+      "SAME_PROFILE": "This is the same profile.",
+      "BLOCKED": "Both profiles lead a different talk at {{events}}. Remove one of them from the talk first."
+    },
+    "warning": "Profile {{source}} will be deleted. The merge is logged and can be undone by hand only.",
+    "confirm": "Yhdistä ja poista",
+    "success": "Merged: {{source}} is now part of {{target}}.",
+    "failed": "The merge failed. Nothing was changed; try again.",
+    "tables": {
+      "registrations": "Ilmoittautumiset",
+      "session_users": "Esitykset",
+      "speaker_arrivals": "Speaker arrivals",
+      "session_qna_notification": "Q&A notifications",
+      "live_timing_presence": "Live timing",
+      "session_proposals": "Talk proposals",
+      "organizer_thanks": "Thanks to the organizers",
+      "notifications": "Notifications",
+      "session_qna_post": "Q&A posts",
+      "session_content_history": "Content submissions",
+      "newsletter_subscribers": "Newsletter subscriptions"
+    }
+  },
+  "claim": {
+    "sectionTitle": "Aiemmat ilmoittautumiset nimelläsi",
+    "sectionHelp": "We found an earlier profile with your name, for example from a registration without an account. If it is yours, we send a confirmation link to its address. After you confirm, its registrations and past events appear in your account.",
+    "thisIsMe": "Tämä olen minä",
+    "sent": "Link sent to {{email}}",
+    "sendFailed": "The link could not be sent. Try again later.",
+    "title": "Yhdistä ilmoittautumiset",
+    "confirmMessage": "Combine the earlier registrations from this link with the account you are logged in with?",
+    "confirmButton": "Yhdistä",
+    "merged": "Done. Your earlier registrations and events are now in your account.",
+    "alreadyMerged": "These registrations are already in your account.",
+    "otherAccount": "This link belongs to another account. Log in with the account that asked for it.",
+    "invalid": "This link is invalid or has expired. Request a new one in your account settings.",
+    "failed": "This did not work. Nothing was changed; try again later.",
+    "dashboardLink": "Omaan näkymään"
   }
 }

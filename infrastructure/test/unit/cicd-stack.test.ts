@@ -241,6 +241,29 @@ describe('CICDStack — GitHub Actions role permissions', () => {
     }
   });
 
+  // #1032 / #1204: the instance has CopyTagsToSnapshot=true, so CreateDBSnapshot also tags the new
+  // snapshot. Without rds:AddTagsToResource on the pre-deploy prefix every backup was denied
+  // (first real run with a migration, PR #1204, 2026-11-03). Never account-wide.
+  test('should_allowTaggingThePreDeploySnapshot_it_creates', () => {
+    const policies = template.findResources('AWS::IAM::ManagedPolicy');
+    const runtime = Object.values(policies).find((p) =>
+      JSON.stringify(
+        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? ''
+      ).includes('github-workflow-runtime')
+    ) as {
+      Properties: { PolicyDocument: { Statement: Array<{ Action: unknown; Resource: unknown }> } };
+    };
+    const tagging = runtime.Properties.PolicyDocument.Statement.find(
+      (st) => JSON.stringify(st.Action) === JSON.stringify('rds:AddTagsToResource')
+    );
+    expect(tagging).toBeDefined();
+    // the pre-deploy snapshots only: not the instance, not every snapshot
+    expect(JSON.stringify(tagging!.Resource)).toContain(':snapshot:batbern-');
+    expect(JSON.stringify(tagging!.Resource)).toContain('-pre-deploy-*');
+    expect(JSON.stringify(tagging!.Resource)).not.toContain(':db:');
+    expect(JSON.stringify(tagging!.Resource)).not.toContain(':snapshot:*');
+  });
+
   // ── Cognito ──────────────────────────────────────────────────────────────
   // Used by: deploy-staging.yml authenticate test users step (cognito-idp initiate-auth)
 

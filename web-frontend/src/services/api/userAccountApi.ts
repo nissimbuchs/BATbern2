@@ -14,6 +14,7 @@ import type {
   LogoConfirmRequest,
   LogoConfirmResponse,
 } from '@/types/userAccount.types';
+import type { components } from '@/types/generated/user-api.types';
 
 const USER_API_PATH = '/users';
 
@@ -440,6 +441,35 @@ export const resendAdditionalEmailVerification = async (email: string): Promise<
   await apiClient.post(
     `${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}/resend-verification`
   );
+};
+
+// =====================================================================
+// #1183 D — claim an earlier profile under the caller's name
+// =====================================================================
+
+export type ProfileClaimCandidate = components['schemas']['ProfileClaimCandidate'];
+export type ProfileClaimConfirmResponse = components['schemas']['ProfileClaimConfirmResponse'];
+
+/** Earlier profiles without a login under the caller's name (masked address only). */
+export const listProfileClaimCandidates = async (): Promise<ProfileClaimCandidate[]> => {
+  const response = await apiClient.get<ProfileClaimCandidate[]>(
+    `${USER_API_PATH}/me/profile-claims`
+  );
+  return response.data;
+};
+
+/** Sends a confirmation link to the earlier profile's address. 202. */
+export const requestProfileClaim = async (candidateId: string): Promise<void> => {
+  await apiClient.post(`${USER_API_PATH}/me/profile-claims`, { candidateId });
+};
+
+/** Confirms the link from the mail while logged in as the claimer; merges the earlier profile. */
+export const confirmProfileClaim = async (token: string): Promise<ProfileClaimConfirmResponse> => {
+  const response = await apiClient.post<ProfileClaimConfirmResponse>(
+    `${USER_API_PATH}/me/profile-claims/confirm`,
+    { token }
+  );
+  return response.data;
 };
 
 // Admin endpoints for uploading profile pictures for other users

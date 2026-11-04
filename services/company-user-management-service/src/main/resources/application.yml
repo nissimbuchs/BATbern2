@@ -109,6 +109,11 @@ jwt:
 app:
   base-url: ${APP_BASE_URL:https://www.batbern.ch}
 
+# #1183 C/D: a profile merge moves event-management's rows through POST /internal/users/merge.
+# Service Connect name, like the other services use for each other (no infra variable needed).
+event-management-service:
+  base-url: ${EVENT_MANAGEMENT_SERVICE_URL:http://event-management:8080}
+
 batbern:
   user:
     additional-emails:

@@ -213,6 +213,15 @@ export class CICDStack extends cdk.Stack {
               `arn:aws:rds:${this.region}:${this.account}:snapshot:batbern-${config.envName}-pre-deploy-*`,
             ],
           }),
+          // CopyTagsToSnapshot=true on the instance: creating the snapshot also tags it. Without
+          // this every backup was denied (#1204, 2026-11-03). Only the pre-deploy snapshots.
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['rds:AddTagsToResource'],
+            resources: [
+              `arn:aws:rds:${this.region}:${this.account}:snapshot:batbern-${config.envName}-pre-deploy-*`,
+            ],
+          }),
           // `aws rds wait db-snapshot-completed` and the retention listing. Read-only, so account-wide:
           // RDS may authorize a listing by instance against `snapshot:*`, which a prefix rule misses,
           // and the retention loop would hide that denial.

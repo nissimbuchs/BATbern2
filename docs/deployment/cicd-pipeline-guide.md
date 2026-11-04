@@ -254,6 +254,11 @@ Until then: **work one PR to `develop` at a time.**
      found" (#1032). Daily automatic backups (7 days, point-in-time restore) were unaffected
    - Listing snapshots is allowed account-wide (read-only); create and delete stay on the
      `pre-deploy` prefix. A failed listing shows as a `::warning::` "Snapshot retention skipped"
+   - Creating a snapshot also tags it, because the instance has `CopyTagsToSnapshot=true`; the role
+     needs `rds:AddTagsToResource` on the `pre-deploy` prefix (not on the instance). Missing until
+     2026-11-03: the first deploy with a migration after #1201 stopped at this step (#1204). The CICD
+     stack that grants it deploys after this step, so a change to this permission must be deployed
+     first (`cdk deploy BATbern-staging-CICD --exclusively`)
 
 3. **Deploy**
    - Deploys with AWS CDK (layer-based for infrastructure changes)

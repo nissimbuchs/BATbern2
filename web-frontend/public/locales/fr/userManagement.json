@@ -316,5 +316,60 @@
     "homeLink": "Aller sur batbern.ch",
     "invalidToken": "Ce lien de vérification est invalide ou a expiré. Veuillez en demander un nouveau dans les paramètres de votre compte.",
     "notFound": "Cette adresse e-mail ne figure plus sur le profil auquel elle avait été ajoutée. Si vous l'avez ajoutée à nouveau, utilisez le lien du dernier e-mail de vérification."
+  },
+  "merge": {
+    "button": "Fusionner le profil",
+    "title": "Fusionner deux profils de la même personne",
+    "intro": "Choisissez l'autre profil de cette personne. Le profil sans connexion est fusionné dans l'autre puis supprimé : inscriptions, exposés, historique, rôles et adresses sont transférés.",
+    "pickOther": "Autre profil",
+    "previewFailed": "L'aperçu n'a pas pu être chargé.",
+    "keeps": "Conservé",
+    "deletes": "Fusionné puis supprimé",
+    "hasLogin": "Avec connexion",
+    "noLogin": "Sans connexion",
+    "additionalEmails": "Adresses supplémentaires",
+    "moves": "Transféré au profil conservé",
+    "nothingToMove": "Rien à transférer.",
+    "conflicts": "Les deux profils ont une entrée pour le même événement ou la même session ({{list}}). La meilleure inscription est conservée, l'autre est supprimée et journalisée.",
+    "swap": "Inverser le sens",
+    "reason": {
+      "SOURCE_HAS_LOGIN": "Le profil à supprimer a une connexion. Fusionnez dans l'autre sens : le profil avec connexion est conservé.",
+      "BOTH_HAVE_LOGIN": "Les deux profils ont une connexion. Ils ne peuvent pas être fusionnés ici.",
+      "SAME_PROFILE": "C'est le même profil.",
+      "BLOCKED": "Les deux profils présentent un exposé différent à {{events}}. Retirez d'abord l'un d'eux de l'exposé."
+    },
+    "warning": "Le profil {{source}} sera supprimé. La fusion est journalisée et ne peut être annulée que manuellement.",
+    "confirm": "Fusionner et supprimer",
+    "success": "Fusionné : {{source}} fait maintenant partie de {{target}}.",
+    "failed": "La fusion a échoué. Rien n'a été modifié ; réessayez.",
+    "tables": {
+      "registrations": "Inscriptions",
+      "session_users": "Exposés",
+      "speaker_arrivals": "Speaker arrivals",
+      "session_qna_notification": "Q&A notifications",
+      "live_timing_presence": "Live timing",
+      "session_proposals": "Talk proposals",
+      "organizer_thanks": "Thanks to the organizers",
+      "notifications": "Notifications",
+      "session_qna_post": "Q&A posts",
+      "session_content_history": "Content submissions",
+      "newsletter_subscribers": "Abonnements à la newsletter"
+    }
+  },
+  "claim": {
+    "sectionTitle": "Inscriptions antérieures à votre nom",
+    "sectionHelp": "Nous avons trouvé un profil antérieur à votre nom, par exemple d'une inscription sans compte. S'il est à vous, nous envoyons un lien de confirmation à son adresse. Après confirmation, ses inscriptions et événements passés apparaissent dans votre compte.",
+    "thisIsMe": "C'est moi",
+    "sent": "Lien envoyé à {{email}}",
+    "sendFailed": "Le lien n'a pas pu être envoyé. Réessayez plus tard.",
+    "title": "Regrouper les inscriptions",
+    "confirmMessage": "Regrouper les inscriptions antérieures de ce lien avec le compte avec lequel vous êtes connecté ?",
+    "confirmButton": "Regrouper",
+    "merged": "Terminé. Vos inscriptions et événements antérieurs sont maintenant dans votre compte.",
+    "alreadyMerged": "Ces inscriptions sont déjà dans votre compte.",
+    "otherAccount": "Ce lien appartient à un autre compte. Connectez-vous avec le compte qui l'a demandé.",
+    "invalid": "Ce lien est invalide ou a expiré. Demandez-en un nouveau dans les paramètres du compte.",
+    "failed": "Cela n'a pas fonctionné. Rien n'a été modifié ; réessayez plus tard.",
+    "dashboardLink": "Vers mon tableau de bord"
   }
 }

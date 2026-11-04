@@ -17,6 +17,7 @@ import { Card } from '@/components/public/ui/card';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { CommunityTopicSuggestPanel } from '@/components/attendee/CommunityTopicSuggestPanel';
 import { useAuth } from '@/hooks/useAuth';
+import { EarlierProfilesSection } from '@/components/user/EarlierProfilesSection/EarlierProfilesSection';
 import * as attendeeDashboardService from '@/services/attendeeDashboardService';
 import type { AttendeeEventCard } from '@/services/attendeeDashboardService';
 
@@ -96,6 +97,9 @@ const AttendeeDashboardPage = () => {
               ? t('attendee.dashboard.titleWithName', { name: greetingName })
               : t('attendee.dashboard.title')}
           </h1>
+
+          {/* #1183 D: earlier registrations under the same name, on a profile without login */}
+          <EarlierProfilesSection variant="banner" />
 
           {isLoading && (
             <div className="flex flex-col items-center justify-center py-20">

@@ -1,5 +1,7 @@
 package ch.batbern.shared.service;
 
+import ch.batbern.shared.utils.LoggingUtils;
+
 /**
  * Thrown by {@link EmailService} when an outbound email targets a recipient on
  * a reserved RFC 2606 / RFC 6761 domain (example.com, *.test, *.invalid, …).
@@ -21,7 +23,9 @@ public class ReservedEmailRecipientException extends RuntimeException {
     private final String recipient;
 
     public ReservedEmailRecipientException(String recipient) {
-        super("Refusing to send to reserved RFC 2606/6761 domain: " + recipient);
+        // masked: the message lands in logs and stack traces (#1184); the full address stays in getRecipient()
+        super("Refusing to send to reserved RFC 2606/6761 domain: "
+                + LoggingUtils.maskEmail(recipient));
         this.recipient = recipient;
     }
 

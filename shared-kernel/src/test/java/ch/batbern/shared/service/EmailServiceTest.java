@@ -776,11 +776,15 @@ class EmailServiceTest {
         @Test
         @DisplayName("should_throwAndSkipSes_when_simpleSendToReservedDomain")
         void should_throwAndSkipSes_when_simpleSendToReservedDomain() {
-            org.junit.jupiter.api.Assertions.assertThrows(
+            ReservedEmailRecipientException e = org.junit.jupiter.api.Assertions.assertThrows(
                     ReservedEmailRecipientException.class,
                     () -> emailService.sendHtmlEmailSync("zaproxy@example.com", "subj", "<p>body</p>")
             );
             org.mockito.Mockito.verifyNoInteractions(sesClient);
+            // the message ends up in logs and stack traces: masked, like every logged address (#1184)
+            org.assertj.core.api.Assertions.assertThat(e.getMessage())
+                    .doesNotContain("zaproxy@example.com").contains("z***@example.com");
+            org.assertj.core.api.Assertions.assertThat(e.getRecipient()).isEqualTo("zaproxy@example.com");
         }
 
         @Test

@@ -1497,7 +1497,7 @@ public class UserService {
             verificationEmailService.sendVerificationEmail(entity.getEmail(), token, locale);
         } catch (Exception e) {
             log.warn("Failed to send additional-email verification to: {} — {}",
-                    LoggingUtils.maskEmail(entity.getEmail()), e.getMessage());
+                    LoggingUtils.maskEmail(entity.getEmail()), LoggingUtils.maskEmailsIn(e.getMessage()));
         }
     }
 

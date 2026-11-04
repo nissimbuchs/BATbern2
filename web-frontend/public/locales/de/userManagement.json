@@ -316,5 +316,60 @@
     "homeLink": "Zu batbern.ch",
     "invalidToken": "Dieser Bestätigungslink ist ungültig oder abgelaufen. Bitte fordern Sie in Ihren Kontoeinstellungen einen neuen an.",
     "notFound": "Diese E-Mail-Adresse befindet sich nicht mehr auf dem Profil, zu dem sie hinzugefügt wurde. Falls Sie sie erneut hinzugefügt haben, verwenden Sie den Link aus der neuesten Bestätigungs-E-Mail."
+  },
+  "merge": {
+    "button": "Profil zusammenführen",
+    "title": "Zwei Profile derselben Person zusammenführen",
+    "intro": "Wählen Sie das andere Profil dieser Person. Das Profil ohne Login wird in das andere übernommen und danach gelöscht: Anmeldungen, Vorträge, Verlauf, Rollen und Adressen wechseln mit.",
+    "pickOther": "Anderes Profil",
+    "previewFailed": "Die Vorschau konnte nicht geladen werden.",
+    "keeps": "Bleibt",
+    "deletes": "Wird übernommen und gelöscht",
+    "hasLogin": "Hat Login",
+    "noLogin": "Kein Login",
+    "additionalEmails": "Weitere Adressen",
+    "moves": "Wechselt zum bleibenden Profil",
+    "nothingToMove": "Nichts zu übernehmen.",
+    "conflicts": "Beide Profile haben einen Eintrag für denselben Anlass oder dieselbe Session ({{list}}). Die bessere Anmeldung bleibt, die andere wird entfernt. Alles Entfernte wird protokolliert.",
+    "swap": "Richtung tauschen",
+    "reason": {
+      "SOURCE_HAS_LOGIN": "Das zu löschende Profil hat ein Login. Führen Sie in die andere Richtung zusammen: Das Profil mit Login bleibt.",
+      "BOTH_HAVE_LOGIN": "Beide Profile haben ein Login. Sie können hier nicht zusammengeführt werden.",
+      "SAME_PROFILE": "Das ist dasselbe Profil.",
+      "BLOCKED": "Beide Profile halten an {{events}} einen anderen Vortrag. Entfernen Sie zuerst eines davon aus dem Vortrag."
+    },
+    "warning": "Das Profil {{source}} wird gelöscht. Die Zusammenführung wird protokolliert und kann nur von Hand rückgängig gemacht werden.",
+    "confirm": "Zusammenführen und löschen",
+    "success": "Zusammengeführt: {{source}} ist jetzt Teil von {{target}}.",
+    "failed": "Die Zusammenführung ist fehlgeschlagen. Es wurde nichts geändert; bitte erneut versuchen.",
+    "tables": {
+      "registrations": "Anmeldungen",
+      "session_users": "Vorträge",
+      "speaker_arrivals": "Ankünfte Referierende",
+      "session_qna_notification": "Q&A-Benachrichtigungen",
+      "live_timing_presence": "Live-Timing",
+      "session_proposals": "Vortragsvorschläge",
+      "organizer_thanks": "Dank an die Organisatoren",
+      "notifications": "Benachrichtigungen",
+      "session_qna_post": "Q&A-Beiträge",
+      "session_content_history": "Eingereichte Inhalte",
+      "newsletter_subscribers": "Newsletter-Abos"
+    }
+  },
+  "claim": {
+    "sectionTitle": "Frühere Anmeldungen unter Ihrem Namen",
+    "sectionHelp": "Wir haben ein früheres Profil mit Ihrem Namen gefunden, zum Beispiel von einer Anmeldung ohne Konto. Wenn es Ihres ist, senden wir einen Bestätigungslink an dessen Adresse. Nach der Bestätigung erscheinen die Anmeldungen und bisherigen Anlässe in Ihrem Konto.",
+    "thisIsMe": "Das bin ich",
+    "sent": "Link an {{email}} gesendet",
+    "sendFailed": "Der Link konnte nicht gesendet werden. Bitte später erneut versuchen.",
+    "title": "Anmeldungen zusammenführen",
+    "confirmMessage": "Die früheren Anmeldungen aus diesem Link mit dem Konto zusammenführen, mit dem Sie angemeldet sind?",
+    "confirmButton": "Zusammenführen",
+    "merged": "Erledigt. Ihre früheren Anmeldungen und Anlässe sind jetzt in Ihrem Konto.",
+    "alreadyMerged": "Diese Anmeldungen sind bereits in Ihrem Konto.",
+    "otherAccount": "Dieser Link gehört zu einem anderen Konto. Melden Sie sich mit dem Konto an, das ihn angefordert hat.",
+    "invalid": "Dieser Link ist ungültig oder abgelaufen. Fordern Sie in den Kontoeinstellungen einen neuen an.",
+    "failed": "Das hat nicht geklappt. Es wurde nichts geändert; bitte später erneut versuchen.",
+    "dashboardLink": "Zu meinem Dashboard"
   }
 }
