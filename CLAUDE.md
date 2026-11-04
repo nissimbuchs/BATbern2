@@ -753,22 +753,23 @@ AWS_PROFILE=batbern-staging aws ecs list-clusters
 # Check service status
 AWS_PROFILE=batbern-staging aws ecs describe-services \
   --cluster batbern-staging \
-  --services BATbern-staging-EventManagement-ServiceD69D759B-nKXW8QZhG6Gy \
+  --services BATbern-staging-EventManagement-ServiceD69D759B-sc5swSoc6iyQ \
   --query 'services[0].{Status:status,Running:runningCount,Desired:desiredCount,Events:events[:5]}'
 
 # View running tasks
 AWS_PROFILE=batbern-staging aws ecs list-tasks \
   --cluster batbern-staging \
-  --service-name BATbern-staging-EventManagement-ServiceD69D759B-nKXW8QZhG6Gy
+  --service-name BATbern-staging-EventManagement-ServiceD69D759B-sc5swSoc6iyQ
 ```
 
 ### Common Issues
 
-**Fargate Spot Interruptions:**
-- Services use FARGATE_SPOT (70%) + FARGATE (30%) capacity providers
-- Spot interruptions cause 4-5 minute service restarts (no logs, silent task termination)
-- ECS automatically replaces with FARGATE task
-- Check deployment history for task replacement events
+**No Fargate Spot in production:**
+- Production services run on plain `FARGATE` (no capacity-provider strategy; checked live
+  2026-11-04). The 70% Spot / 30% On-Demand split in `domain-service-construct.ts` applies only
+  when `isProduction` is false, i.e. never in the production account.
+- Service physical names change when a stack replaces the service. Look them up instead of
+  copying: `aws ecs list-services --cluster batbern-staging`
 
 **Log Stream Naming:**
 - Pattern: `{service-name}/Container/{task-id}`
