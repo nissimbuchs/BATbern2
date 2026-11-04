@@ -27,9 +27,9 @@
 | Enums | UPPER_CASE | UPPER_CASE (Java/API) → lowercase_snake_case (DB via AttributeConverter) | `RegistrationStatus.CONFIRMED` → `'confirmed'` |
 
 **Enum Value Flow (Important!):**
-- **Database Storage**: `lowercase_snake_case` (e.g., `'confirmed'`, `'speaker_brainstorming'`)
-- **Java Code**: `UPPER_CASE` (e.g., `RegistrationStatus.CONFIRMED`, `EventWorkflowState.SPEAKER_BRAINSTORMING`)
-- **JSON/API Request/Response**: `UPPER_CASE` (e.g., `"CONFIRMED"`, `"SPEAKER_BRAINSTORMING"`)
+- **Database Storage**: `lowercase_snake_case` (e.g., `'confirmed'`, `'agenda_published'`)
+- **Java Code**: `UPPER_CASE` (e.g., `RegistrationStatus.CONFIRMED`, `EventWorkflowState.AGENDA_PUBLISHED`)
+- **JSON/API Request/Response**: `UPPER_CASE` (e.g., `"CONFIRMED"`, `"AGENDA_PUBLISHED"`)
 - **Frontend TypeScript**: `UPPER_CASE` (e.g., `RegistrationStatus.CONFIRMED`)
 - **Conversion**: JPA `@Converter` (AttributeConverter) handles Java ↔ Database. Jackson uses default serialization (UPPER_CASE).
 

@@ -1,40 +1,46 @@
 # Frontend Architecture
 
 ## Component Organization
+
+Top-level layout of `web-frontend/src/` (develop c4593449). Components are grouped partly by role
+and partly by feature; the tree below lists folders only, not individual files.
+
 ```
 web-frontend/src/
+├── App.tsx                        # Route table (see Routing Architecture)
+├── main.tsx                       # Bootstrap (see Bootstrap & Prerendering)
 ├── components/
-│   ├── shared/                    # Reusable components across roles
-│   │   ├── Layout/
-│   │   ├── Navigation/
-│   │   ├── Forms/
-│   │   └── Company/
-│   ├── organizer/                 # Organizer-specific components
-│   │   ├── EventManagement/
-│   │   ├── SpeakerCoordination/
-│   │   ├── UserManagement/         # User Management (Organizer-only)
-│   │   │   ├── UserList.tsx        # User list table with filters
-│   │   │   ├── UserEditModal.tsx   # User detail edit modal
-│   │   │   ├── UserCreateModal.tsx # Create new user modal
-│   │   │   ├── UserFilters.tsx     # Search and filter controls
-│   │   │   └── RoleManager.tsx     # Role assignment component
-│   │   └── Analytics/
-│   ├── speaker/                   # Speaker-specific components
-│   │   ├── Dashboard/
-│   │   ├── Submissions/
-│   │   └── Profile/
-│   ├── partner/                   # Partner-specific components
-│   │   ├── Analytics/
-│   │   └── StrategicInput/
-│   └── attendee/                  # Attendee-specific components
-│       ├── Discovery/
-│       ├── Events/
-│       └── Content/
-├── hooks/                         # Custom React hooks
-├── services/                      # API client services
-├── stores/                        # Zustand state stores
-├── types/                         # TypeScript type definitions
-└── utils/                         # Utility functions
+│   ├── auth/                      # Login, registration wizard, password reset, ProtectedRoute, AuthCallbackPage
+│   ├── shared/                    # Layout, Navigation, Breadcrumbs, Company, Event, Session, FileUpload,
+│   │                              # LanguageSwitcher, LanguageSync, Notifications, OrganizerSelect, ErrorBoundary, ...
+│   ├── organizer/                 # Admin, Analytics, EventManagement, EventPage, EventTypeConfigurationForm,
+│   │                              # EventTypeSelector, LiveControl, MailCenter, NewsletterSubscribers,
+│   │                              # PartnerManagement, SlotTemplatePreview, SpeakerDrawer, SpeakerOutreach,
+│   │                              # SpeakerStatus, Tasks, UserManagement
+│   ├── partner/                   # Partner portal layout, attendance dashboard, topic suggestions
+│   ├── attendee/                  # Community topic suggestion, speaker self-nomination panels
+│   ├── speaker-portal/            # Presentation and profile photo upload
+│   ├── public/                    # Public website: Hero, Navigation, Footer, Event, EventPhotos, Partners,
+│   │                              # Registration, Testimonials, About, ui
+│   ├── user/                      # Account page tabs: profile, settings, earlier profiles
+│   ├── Publishing/                # LivePreview, PublishingControls, PublishingTimeline, ValidationDashboard
+│   ├── SlotAssignment/            # Drag-and-drop slot assignment, conflict detection, preferences
+│   ├── SpeakerBrainstormingPanel/
+│   ├── TopicBacklogManager/
+│   ├── TopicHeatMap/
+│   ├── BlobTopicSelector/
+│   └── SEO/                       # EventSchema, OpenGraphTags
+├── pages/                         # Route-level pages (organizer/, public/, speaker-portal/, attendee/,
+│                                  # presentation/, profile/, UserAccountPage/, LiveControlPage/, dev/, ...)
+├── features/profile/              # Apple Watch pairing section
+├── contexts/                      # AuthContext, ConfigContext, feature/environment hooks
+├── hooks/                         # Custom React hooks (TanStack Query wrappers per domain)
+├── services/                      # API client services (one per domain, plus services/api/)
+├── stores/                        # Zustand stores
+├── i18n/                          # i18next config and locale parity test
+├── types/                         # Hand-written types; types/generated/ holds the OpenAPI-generated types
+├── schemas/                       # Validation schemas
+├── utils/  lib/  theme/  styles/  config/  data/  pwa/  mocks/  test/
 ```
 
 ## Type Safety & API Contract
@@ -59,11 +65,11 @@ web-frontend/src/
    - Generates: `src/types/generated/company-api.types.ts`
    - Types are **committed to repository**
 
-3. **Git Hook Integration** (Husky pre-commit):
-   - Detects when OpenAPI spec changes
-   - Auto-regenerates TypeScript types
-   - Auto-stages generated files
-   - Ensures types are always in sync
+3. **Git Hook Integration** (`.githooks/pre-commit`, not Husky):
+   - Triggers when `docs/api/`, `web-frontend/package(-lock).json` or
+     `web-frontend/src/types/generated/` is staged
+   - Runs `npm run check:api-types`: regenerates the types and fails the commit if they differ
+     from what is committed, leaving the corrected files in the working tree (not auto-staged)
 
 4. **CI/CD Validation** (GitHub Actions):
    - Verifies committed types match OpenAPI spec
@@ -1323,77 +1329,137 @@ class ComponentErrorBoundary extends React.Component<
 
 ## Routing Architecture
 
+The route table lives in `web-frontend/src/App.tsx` (React Router 7). Routes that use MUI sit
+under a lazy `<MuiLayout>` boundary; the public Tailwind-only routes (`/`, `/events/:eventCode`,
+`/archive`, `/archive/:eventCode`, `/about`, `/privacy`, `/support`) are declared as siblings so
+that the public homepage never loads MUI. Unknown paths (`*`) redirect to `/`.
+
+Guards: **P** = `ProtectedRoute` (any authenticated role, then the path-prefix check below),
+**S** = `SpeakerRoute` (speaker role), **Pa** = `PartnerRoute` (organizer or partner),
+**O** = `ProtectedRoute allowedRoles={['organizer']}`. Unmarked routes are public.
+
 ```
-/                              # Public home page
-/current-event                 # Current BATbern event landing
-/auth/login                    # Authentication
+# Public website (Tailwind-only, no MUI)
+/                                         # Homepage, current event
+/events/:eventCode                        # Public event page (HomePage, preview mode)
+/archive                                  # Archive list
+/archive/:eventCode                       # Archived event (HomePage)
+/about  /privacy  /support
 
-# Organizer routes
-/organizer/dashboard          # Organizer main dashboard
-/organizer/events             # Event management
-/organizer/speakers           # Speaker database
-/organizer/analytics          # Cross-domain analytics
+# Public, MUI layout
+/register/:eventCode                      # Registration wizard
+/registration-success
+/events/:eventCode/confirm-registration
+/registration-confirmation/:confirmationCode
+/unsubscribe                              # Newsletter unsubscribe
+/verify-email                             # Additional-email verification (token)
+/deregister                               # Self-service deregistration (token)
+/present/:eventCode                       # Fullscreen moderator presentation page
+/dev/emails                               # Local dev mail inbox
 
-# Speaker routes
-/speaker/dashboard            # Speaker main dashboard
-/speaker/invitations          # Speaking invitations
-/speaker/sessions             # My sessions
-/speaker-portal/profile       # → redirects to /profile (Story 12.11 — profile is role-neutral)
+# Authentication
+/login  /auth/login  /auth/register  /auth/forgot-password  /auth/reset-password  /auth/verify-email
+/auth/callback                            # Federated login callback (Story 12.7)
+/logout
 
-# Partner routes
-/partner/dashboard            # Partner main dashboard (voting, meetings, profile)
-/partner/voting               # Topic voting interface
+# Any authenticated role
+/dashboard                          P
+/profile                            P     # Role-neutral profile; onboarding gate target /profile?onboarding=1
+/account/:tab?                      P     # profile (default) | settings
+/claim-profile                      P     # Merge an earlier profile (#1183 D)
 
-# Attendee routes
-/attendee/dashboard           # Attendee main dashboard
-/attendee/events              # Event discovery
-/attendee/search              # Content search
-/attendee/content             # My bookmarked content
+# Organizer
+/organizer/events                   P
+/organizer/events/:eventCode        P     # Unified event page
+/organizer/events/:eventCode/live-control   P
+/organizer/events/:eventCode/topic-blob     P
+/organizer/events/:eventCode/slot-assignment P  # redirect-only, to ?tab=speakers&view=slots
+/organizer/events/:eventCode/edit           # redirects to the event page
+/organizer/admin                    P     # Tabs: event types, import, task/email templates, presentation, AI prompts, settings, ...
+/organizer/event-types                    # redirects to /organizer/admin?tab=0
+/organizer/topics                   P
+/organizer/tasks                    P
+/organizer/speakers                 P
+/organizer/partners                 P
+/organizer/partners/:companyName    P
+/organizer/partner-topics           P
+/organizer/partner-meetings         P
+/organizer/companies/*              P
+/organizer/users/*                  P
+/organizer/notifications            P
+/organizer/analytics                P     # also reachable by partners
+/organizer/newsletter-subscribers   P
+/organizer/mail                     O     # Mail Center (Story 16.7)
 
-# Shared routes (role-adaptive)
-/companies                    # Company management
-/profile                      # User profile (role-neutral, Story 12.11: tabs Profile | Consent & Newsletter;
-                              # also the onboarding-gate target /profile?onboarding=1)
+# Speaker
+/speaker-portal/dashboard           S
+/speaker-portal/respond/:eventCode  S
+/speaker-portal/content/:eventCode  S
+/speaker-portal/respond                   # redirects to /speaker-portal/dashboard (old mail links)
+/speaker-portal/profile[/:eventCode]      # redirect to /profile (Story 12.11)
+/speakers                           S
+/speaker/company/*                  S
+
+# Partner
+/partners                           Pa    # Partner portal; index redirects to company
+/partners/company  /partners/analytics  /partners/topics
+/analytics                                # redirects to /partners/analytics
+
+# Attendee
+/attendee/dashboard                 P     # Event history (Story 7.6)
+/attendee                                 # redirects to /attendee/dashboard
 ```
 
 ### Route Guards (`ProtectedRoute`)
 
 All authenticated routes render through `ProtectedRoute`
-(`src/components/auth/ProtectedRoute/ProtectedRoute.tsx`), which enforces two checks:
+(`src/components/auth/ProtectedRoute/ProtectedRoute.tsx`), which enforces these checks in order:
 
-1. **Role-based access** — roles come from the hydrated auth user (`AuthContext`,
-   including the Pattern 3b DB fallback for empty JWT roles — see
-   `06b-user-lifecycle-sync.md`); unauthorized roles are redirected away before the
-   component tree renders.
-2. **ToS/Privacy consent gate** _(Story 12.11, "Pattern C" in 06b)_ — if the hydrated
+1. **ToS/Privacy consent gate** _(Story 12.11, "Pattern C" in 06b)_: if the hydrated
    user's `termsAcceptedAt` is `null` (consent confirmed absent), every protected path
    except `/profile` and `/logout` redirects to `/profile?onboarding=1`, where the
    Consent tab is preselected; a successful accept calls `refreshUser()` and the gate
-   lifts. `undefined` (hydration failed) **fails open** — a transient `/users/me`
+   lifts. `undefined` (hydration failed) **fails open**: a transient `/users/me`
    failure never locks users out.
+2. **Role check against `allowedRoles`**: roles come from the hydrated auth user
+   (`AuthContext`, including the Pattern 3b DB fallback for empty JWT roles, see
+   `06b-user-lifecycle-sync.md`). Any of the user's roles suffices; otherwise redirect to
+   `/dashboard`.
+3. **Path-prefix check** `canAccess(pathname)` in `src/contexts/AuthContext.tsx`: a static
+   map of path prefixes per role (for example organizer: `/organizer`, `/events`,
+   `/speakers`, ...). A path no role's prefix list covers redirects to `/dashboard`.
+
+These guards are UX only. Authorization is enforced in the backend services
+(`@PreAuthorize`, ADR-008).
 
 ## Internationalization (i18n) Architecture
 
 ### Supported Languages & Locales
 
-**Primary Language**: German (de-CH) - Swiss German locale
-**Secondary Language**: English (en-US)
-**Default/Fallback**: German (de-CH)
+Ten locales, each with the same namespace files under `web-frontend/public/locales/{locale}/`:
+`de`, `en`, `fr`, `it`, `rm`, `es`, `fi`, `nl`, `ja`, `gsw-BE`. All are bundled at build time
+by `src/i18n/config.ts` (static JSON imports, no HTTP backend).
 
-**Rationale**: BATbern serves a primarily Swiss German-speaking audience. German is the default language with English as an optional alternative for international attendees and speakers.
+- **Fallback**: `fallbackLng: 'de'`.
+- **Detection**: `localStorage` (key `batbern-language`), then the `<html lang>` attribute.
+  Every `changeLanguage()` is written back to `localStorage`. For logged-in users
+  `LanguageSync` applies the language from the user profile (`preferences.language`).
+- **Namespaces**: `common` (default), `auth`, `validation`, `userManagement`, `events`,
+  `partners`, `organizer`, `about`, `registration`, `admin`, `newsletterSubscribers`.
+
+New UI keys must be populated in all ten locales (see CLAUDE.md, "Localization"). Backend email
+templates are a separate rule: DE and EN only.
 
 ### Library Stack
 
+Versions as declared in `web-frontend/package.json` (develop c4593449):
+
 | Library | Version | Purpose |
 |---------|---------|---------|
-| **i18next** | ^23.7.0 | Core i18n framework with namespace support, pluralization, interpolation |
-| **react-i18next** | ^14.0.0 | React bindings with hooks (`useTranslation`) and Suspense support |
-| **i18next-browser-languagedetector** | ^7.2.0 | Automatic language detection from browser, localStorage, user profile |
-| **date-fns** | ^3.0.0 | Date/time formatting with locale support (de, enUS) |
-
-**Bundle Impact**: ~14KB gzipped (i18next ecosystem)
-
-**Rationale**: react-i18next provides the most flexible and feature-rich solution with excellent TypeScript support, namespace-based code splitting, and seamless integration with React 18.2+ and our existing tech stack.
+| **i18next** | ^25.5.3 | Core i18n framework (namespaces, pluralization, interpolation) |
+| **react-i18next** | ^16.1.0 | React bindings (`useTranslation`), on React ^19.3.0 |
+| **i18next-browser-languagedetector** | ^8.2.0 | Language detection from localStorage and the html tag |
+| **date-fns** | ^4.1.0 | Date and time formatting with locale support |
 
 ### Translation File Structure
 
@@ -1801,77 +1867,20 @@ https://batbern.ch/current-event?lang=en
 
 ### CI/CD Translation Validation
 
-**Pre-commit Hook: Translation Key Parity Check**
+There is no pre-commit translation check and no dedicated translation workflow. What runs:
 
-```bash
-#!/bin/bash
-# .githooks/pre-commit
-
-# Validate that all translation keys exist in both de and en
-node scripts/validate-translations.js
-
-if [ $? -ne 0 ]; then
-  echo "❌ Translation validation failed. Ensure all keys exist in both de and en."
-  exit 1
-fi
-```
-
-**Validation Script**:
-```javascript
-// scripts/validate-translations.js
-const fs = require('fs');
-const path = require('path');
-
-const namespaces = ['common', 'auth', 'validation', 'organizer', 'speaker', 'partner', 'attendee'];
-const languages = ['de', 'en'];
-
-function flattenKeys(obj, prefix = '') {
-  return Object.keys(obj).reduce((acc, key) => {
-    const fullKey = prefix ? `${prefix}.${key}` : key;
-    if (typeof obj[key] === 'object' && obj[key] !== null) {
-      return acc.concat(flattenKeys(obj[key], fullKey));
-    }
-    return acc.concat(fullKey);
-  }, []);
-}
-
-let hasErrors = false;
-
-namespaces.forEach(ns => {
-  const deFile = path.join(__dirname, `../public/locales/de/${ns}.json`);
-  const enFile = path.join(__dirname, `../public/locales/en/${ns}.json`);
-
-  const deKeys = flattenKeys(JSON.parse(fs.readFileSync(deFile, 'utf-8')));
-  const enKeys = flattenKeys(JSON.parse(fs.readFileSync(enFile, 'utf-8')));
-
-  const missingInEn = deKeys.filter(k => !enKeys.includes(k));
-  const missingInDe = enKeys.filter(k => !deKeys.includes(k));
-
-  if (missingInEn.length > 0) {
-    console.error(`❌ [${ns}] Missing in English:`, missingInEn);
-    hasErrors = true;
-  }
-
-  if (missingInDe.length > 0) {
-    console.error(`❌ [${ns}] Missing in German:`, missingInDe);
-    hasErrors = true;
-  }
-});
-
-if (hasErrors) {
-  process.exit(1);
-} else {
-  console.log('✅ All translation keys are in sync between de and en.');
-  process.exit(0);
-}
-```
-
-**GitHub Actions CI Check**:
-```yaml
-# .github/workflows/ci.yml
-- name: Validate Translations
-  run: npm run validate:translations
-```
+- **`src/i18n/localesComplete.test.ts`** (Vitest; in CI part of the sharded Vitest job in `build.yml`, which runs when `web-frontend/` changed):
+  scans every JSON file of every locale and fails if any value contains a `[MISSING]`
+  placeholder, because visitors would see it verbatim (#1149). It does **not** compare key sets
+  between locales; a key that exists in `de` but is absent in another locale falls back to
+  `de` at runtime without failing the build.
+- **`src/i18n/config.test.ts`**: checks the i18next configuration (namespaces, German fallback,
+  detection, default namespace).
+- **Type safety**: `src/i18n/react-i18next.d.ts` types `t()` keys against the German `common`,
+  `auth` and `validation` files only.
+- **Formatting**: the `.githooks/pre-commit` hook runs lint-staged for anything under
+  `web-frontend/`, which includes the locale JSON files (formatting, not content).
+- `web-frontend/scripts/i18n/analyze-unused.py` is a manual helper to find unused keys.
 
 ### Testing Strategy
 

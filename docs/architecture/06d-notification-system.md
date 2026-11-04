@@ -1,16 +1,24 @@
 # Notification & Delivery System
 
-This document outlines the notification and delivery system for the BATbern Event Management Platform, including email notifications, delivery tracking, and automatic escalation logic.
+This document outlines the notification and delivery system for the BATbern Event Management Platform: email notifications, in-app notifications for organizers, and delivery tracking.
 
 ## Overview
 
-The notification system provides multi-channel communication (email, SMS) with delivery tracking and intelligent escalation based on workflow state, user preferences, and deadline proximity.
+The notification system has two channels in use: **EMAIL** (AWS SES via the shared-kernel
+`EmailService`) and **IN_APP** (organizer activity feed). Both are recorded in the `notifications`
+table. There is no SMS channel: the `channel` column comment (V33, V34) and the entity still name
+`SMS`, but no code path sends one.
+
+The only escalation that exists is `SpeakerReminderService`: when a speaker has not responded or
+not submitted content after the third reminder, it emails the assigned organizer (or the event's
+organizer) a `SPEAKER_ESCALATION` notification. There is no rule engine (see
+[Not implemented](#not-implemented)).
 
 **Implementation Pattern**: Single table in shared `public` schema, following Task System pattern (Story 5.5).
 
 **Key Characteristics**:
 - ✅ Single `notifications` table owned by Event Management Service
-- ✅ Hybrid storage: email audit trail (create rows), in-app queries (no rows)
+- ✅ Rows for both channels: email audit trail, and one IN_APP row per organizer per domain event (see the correction below)
 - ✅ ADR-003 compliant (meaningful IDs: `recipient_username`, `event_code`)
 - ✅ No cross-service aggregation (simple REST API queries)
 
@@ -60,8 +68,8 @@ CREATE INDEX idx_notifications_recipient_status ON notifications(recipient_usern
 
 ### Hybrid Storage Strategy
 
-**Email/SMS Notifications** (Eager - Create Records):
-- Create notification record when email/SMS sent
+**Email Notifications** (Eager - Create Records):
+- Create notification record when an email is sent
 - Track delivery status (audit trail, compliance)
 - Storage: ~150,000 rows/year (3000 users × 50 emails/year)
 
@@ -88,223 +96,55 @@ CREATE INDEX idx_notifications_recipient_status ON notifications(recipient_usern
 
 ### Implementation
 
-```java
-@Service
-@Slf4j
-@RequiredArgsConstructor
-public class NotificationService {
+`services/event-management-service/src/main/java/ch/batbern/events/notification/`:
 
-    private final NotificationRepository notificationRepository;
-    private final EmailService emailService;
-    private final UserApiClient userApiClient;
-    private final EventRepository eventRepository;
+- **`NotificationService.createAndSendEmailNotification(NotificationRequest)`**: reads the
+  recipient's preferences from CUMS (`UserApiClient.getPreferences`), skips the send when email
+  notifications are disabled or the recipient is in quiet hours, saves a `PENDING` row, sends
+  via `EmailService.sendHtmlEmail(...)` with a `MailContext` (so the send is recorded in the
+  Mail Center, Story 16.1a), then sets `SENT` or `FAILED`. Its only caller in `src/main` is
+  `SpeakerReminderService` (type `SPEAKER_ESCALATION`, priority `HIGH`).
+- **`NotificationService.pushNotificationViaWebSocket(Notification)`**: sends the row to the STOMP
+  destination `/topic/notifications/{username}`. Failures are logged and ignored.
+- **`OrganizerNotificationListener`**: listens to domain events and writes one `IN_APP` row per
+  organizer per event (see the correction above), with `notification_type` set to the domain
+  event type and a priority derived from the event type name (`Cancelled`/`Failed`/`Error` HIGH,
+  `Deadline`/`Urgent` URGENT, `Updated`/`Modified` LOW, else NORMAL). It then calls
+  `pushNotificationViaWebSocket`.
+- **`NotificationController`**: REST read and status API for the rows.
 
-    // No listener on EventPublishedEvent any more (#1179): publishing the agenda
-    // mailed every registration, cancelled ones included, without anyone deciding to.
-
-    /**
-     * Create notification record and send via email
-     */
-    @Transactional
-    public void createAndSendEmailNotification(NotificationRequest request) {
-        // Check user preferences (via HTTP call to User Service)
-        UserPreferences prefs = userApiClient
-            .getPreferences(request.getRecipientUsername());
-
-        if (!shouldSend(prefs, request)) {
-            return;  // Skip if user opted out or in quiet hours
-        }
-
-        // Create notification record (audit trail)
-        Notification notification = notificationRepository.save(Notification.builder()
-            .recipientUsername(request.getRecipientUsername())
-            .eventCode(request.getEventCode())
-            .notificationType(request.getType())
-            .channel("EMAIL")
-            .subject(request.getSubject())
-            .body(request.getBody())
-            .status("PENDING")
-            .build());
-
-        // Send via AWS SES
-        try {
-            String recipientEmail = userApiClient.getUserByUsername(notification.getRecipientUsername()).getEmail();
-            String htmlContent = buildEmailContent(notification);
-            emailService.sendHtmlEmail(recipientEmail, notification.getSubject(), htmlContent);
-
-            // Update status after delivery
-            notification.setStatus("SENT");
-            notification.setSentAt(Instant.now());
-            notificationRepository.save(notification);
-
-        } catch (Exception e) {
-            notification.setStatus("FAILED");
-            notification.setFailedAt(Instant.now());
-            notification.setFailureReason(e.getMessage());
-            notificationRepository.save(notification);
-            log.error("Failed to send email notification", e);
-        }
-    }
-
-    /**
-     * Query in-app notifications dynamically (no rows created)
-     */
-    public List<InAppNotification> getInAppNotifications(String username) {
-        // Find events published since user's last login
-        Instant lastLogin = userApiClient.getLastLogin(username);
-
-        List<Event> newEvents = eventRepository.findByPublishedAtAfter(lastLogin);
-
-        // Convert to notifications on-the-fly
-        return newEvents.stream()
-            .map(event -> InAppNotification.builder()
-                .type("EVENT_PUBLISHED")
-                .title(event.getTitle() + " is now published")
-                .eventCode(event.getEventCode())
-                .createdAt(event.getPublishedAt())
-                .build())
-            .collect(Collectors.toList());
-    }
-
-    /**
-     * Check for escalation requirements
-     */
-    private void checkEscalationNeeded(WorkflowNotificationEvent event) {
-        if (event.getType() == NotificationType.DEADLINE_WARNING) {
-            Duration timeUntilDeadline = Duration.between(Instant.now(), event.getDeadline());
-
-            if (timeUntilDeadline.toDays() <= 3) {
-                escalateToOrganizers(event);
-            }
-        }
-    }
-
-    /**
-     * Escalate to all organizers
-     */
-    private void escalateToOrganizers(WorkflowNotificationEvent event) {
-        List<String> organizerUsernames = userServiceClient.getOrganizerUsernames();
-
-        for (String username : organizerUsernames) {
-            createAndSendEmailNotification(NotificationRequest.builder()
-                .recipientUsername(username)
-                .eventCode(event.getEventCode())
-                .type("DEADLINE_WARNING")
-                .channel("EMAIL")
-                .priority("URGENT")
-                .subject("URGENT: " + event.getTitle())
-                .body(buildEscalationEmailBody(event))
-                .build());
-        }
-    }
-}
-```
+There is no `EventPublishedEvent` listener any more (#1179): publishing the agenda used to mail
+every registration, cancelled ones included, without anyone deciding to.
 
 ## Notification Types
 
-### WorkflowNotificationEvent
+`notification_type` is a free `VARCHAR(50)`; there is no backend enum. Values written by
+`src/main` code today:
 
-```java
-@Data
-@Builder
-public class WorkflowNotificationEvent {
-    private String eventId;
-    private NotificationType type;
-    private String title;
-    private String message;
-    private Instant deadline;
-    private Map<String, Object> metadata;
-    private List<String> recipientIds;
-    private NotificationPriority priority;
-}
+| Value | Channel | Written by |
+|---|---|---|
+| Domain event type (for example `SpeakerWorkflowStateChange`) | `IN_APP` | `OrganizerNotificationListener` |
+| `SPEAKER_ESCALATION` | `EMAIL` | `SpeakerReminderService` (after three unanswered reminders) |
 
-public enum NotificationType {
-    SPEAKER_INVITED,
-    SPEAKER_ACCEPTED,
-    SPEAKER_DECLINED,
-    CONTENT_SUBMITTED,
-    QUALITY_REVIEW_PENDING,
-    QUALITY_REVIEW_APPROVED,
-    QUALITY_REVIEW_REQUIRES_CHANGES,
-    SLOT_ASSIGNED,          // ⚠️ Superseded by ADR-009 — to be removed in Epic 11 Phase B/C (no SLOT_ASSIGNED speaker state in the 8-state workflow; slot assignment is derived from session.start_time).
-    DEADLINE_WARNING,       // Historic only: DeadlineReminderJob, removed by #1179
-    DEADLINE_REMINDER,      // Used in NotificationControllerIntegrationTest (VARCHAR column allows this value)
-    OVERFLOW_DETECTED,      // ⚠️ Superseded by ADR-009 — to be removed in Epic 11 Phase B/C (overflow is replaced by the slot-capacity gate at READY → INVITED; no overflow detection occurs).
-    VOTING_REQUIRED,
-    EVENT_PUBLISHED
-    // Note: TASK_DEADLINE_WARNING is NOT written to the notifications table —
-    // TaskDeadlineReminderScheduler delegates directly to TaskReminderEmailService, bypassing this system.
-}
+Task deadline reminders do not use this table: `TaskDeadlineReminderScheduler` delegates to
+`TaskReminderEmailService` directly.
 
-public enum NotificationPriority {
-    LOW,
-    MEDIUM,
-    HIGH,
-    URGENT
-}
-```
+The frontend union in `web-frontend/src/types/notification.ts` lists more values (including
+`VOTING_REQUIRED`), which `TeamActivityFeed` can display; the backend does not produce them.
 
-## Escalation Configuration
+## Not implemented
 
-### Escalation Rules
+Earlier versions of this document described the following. None of it exists in the code
+(checked by grep on develop c4593449); it is kept here only so that nobody looks for it:
 
-```java
-@Component
-public class EscalationRuleEngine {
-
-    public boolean shouldEscalate(WorkflowNotificationEvent event) {
-        return switch (event.getType()) {
-            case DEADLINE_WARNING -> checkDeadlineProximity(event.getDeadline());
-            case QUALITY_REVIEW_PENDING -> checkReviewAge(event);
-            case VOTING_REQUIRED -> checkVotingStagnation(event);
-            default -> false;
-        };
-    }
-
-    private boolean checkDeadlineProximity(Instant deadline) {
-        Duration timeUntilDeadline = Duration.between(Instant.now(), deadline);
-        return timeUntilDeadline.toDays() <= 3;
-    }
-
-    private boolean checkReviewAge(WorkflowNotificationEvent event) {
-        Instant submittedAt = (Instant) event.getMetadata().get("submittedAt");
-        Duration age = Duration.between(submittedAt, Instant.now());
-        return age.toDays() >= 7; // Review pending for 7+ days
-    }
-
-    private boolean checkVotingStagnation(WorkflowNotificationEvent event) {
-        Integer totalOrganizers = (Integer) event.getMetadata().get("totalOrganizers");
-        Integer votesReceived = (Integer) event.getMetadata().get("votesReceived");
-        Instant votingStarted = (Instant) event.getMetadata().get("votingStartedAt");
-
-        Duration votingAge = Duration.between(votingStarted, Instant.now());
-
-        // Escalate if less than 50% voted after 3 days
-        return votingAge.toDays() >= 3 && votesReceived < (totalOrganizers / 2);
-    }
-}
-```
-
-### Escalation Levels
-
-```java
-public enum EscalationLevel {
-    TEAM_LEAD,        // Escalate to team lead
-    ORGANIZER_TEAM,   // Escalate to all organizers
-    SYSTEM_ADMIN      // Escalate to system administrators
-}
-
-@Data
-@Builder
-public class EscalationNotification {
-    private WorkflowNotificationEvent originalEvent;
-    private Instant escalatedAt;
-    private EscalationLevel escalationLevel;
-    private UrgencyLevel urgency;
-    private String escalationReason;
-    private List<String> escalatedTo;
-}
-```
+- an **SMS** channel;
+- an **`EscalationRuleEngine`** with deadline-proximity, review-age and voting-stagnation rules,
+  `EscalationLevel` / `EscalationNotification` types and automatic escalation to all organizers;
+- a **`WorkflowNotificationEvent`** class and backend `NotificationType` / `NotificationPriority`
+  enums (`VOTING_REQUIRED`, `OVERFLOW_DETECTED`, `SLOT_ASSIGNED`, ...). Overflow voting was
+  removed from scope (ADR-009 replaced it with the slot-capacity gate);
+- **dynamically computed** in-app notifications (`getInAppNotifications`, "events published since
+  last login").
 
 ## User Notification Preferences
 
@@ -401,20 +241,18 @@ public class UserApiClient {
 }
 ```
 
-## Real-Time Notifications (Partial — WebSocket Infrastructure Wired)
+## Real-Time Notifications (WebSocket push, organizer dashboard)
 
-**Status**: `SimpMessagingTemplate` (`org.springframework.messaging.simp.SimpMessagingTemplate`) is already injected into the `NotificationService` constructor, indicating WebSocket infrastructure is in place. Full real-time push to connected clients is not yet exercised in production flows and remains a future story.
+What the code does: `OrganizerNotificationListener` calls
+`NotificationService.pushNotificationViaWebSocket`, which publishes to
+`/topic/notifications/{username}` via `SimpMessagingTemplate`. On the frontend,
+`EventManagementDashboard` subscribes through `useNotificationWebSocket`
+(`web-frontend/src/hooks/useNotificationWebSocket.ts`, `services/notificationWebSocketClient.ts`).
 
-**Planned Approach**: WebSocket integration using Spring WebSocket + STOMP for real-time in-app notifications
-
-**Implementation Notes**:
-- Email/SMS notifications provide baseline coverage
-- In-app notifications queried dynamically on page load (acceptable UX for MVP)
-- Real-time WebSocket can be added later without changing database schema
-- Would use same `notifications` table for persistence
-- Frontend would receive live updates when notification created
-
-**Future Story**: Will implement WebSocket server, connection management, and React hooks for real-time updates
+Not verified for this document: whether the push reaches clients in production when EMS runs
+more than one task. Story 15.1 replaced WebSockets with REST polling for the live agenda for
+exactly that multi-task reason (see the V119 migration comment); the notification push was not
+part of that change. The rows themselves are always persisted, so the feed is correct on reload.
 
 ## Email Notification Templates
 
@@ -549,7 +387,7 @@ public class Notification {
     private String notificationType;
 
     @Column(name = "channel", nullable = false, length = 20)
-    private String channel;  // EMAIL, SMS
+    private String channel;  // EMAIL or IN_APP (the source comment still says "EMAIL, SMS"; SMS is never sent)
 
     @Column(name = "priority", length = 20)
     private String priority;  // LOW, NORMAL, HIGH, URGENT
@@ -736,8 +574,8 @@ public class TaskDeadlineReminderScheduler {
 
 ### Stories
 
-- [Story 1.15a.10: Notifications API Consolidation](../stories/1.15a.10.notifications-api-consolidation.md) - **This story** - implementation details
-- [Story 5.5: Task System](../stories/5.5-speaker-content-quality-review-task-system.md) - **Reference pattern** - single table in shared schema with ADR-003 compliance
+- [Story 1.15a.10: Notifications API Consolidation](../stories/archived/epic-1/1.15a.10.notifications-api-consolidation.md) - **This story** - implementation details
+- [Story 5.5: Task System](../stories/archived/epic-5/5.5-speaker-content-quality-review-task-system.md) - **Reference pattern** - single table in shared schema with ADR-003 compliance
 
 ### Implementation Patterns
 

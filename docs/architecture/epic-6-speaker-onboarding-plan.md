@@ -1,5 +1,11 @@
 # Epic 6: Automated Speaker Onboarding - Architecture Plan
 
+> **Historical, superseded.** This 2026-01 draft was superseded by
+> [ADR-009 Unified Speaker Workflow](./ADR-009-unified-speaker-workflow.md) and delivered in a
+> different form by Epic 11 (`docs/prd/epic-11-speaker-workflow-refactor.md`). The state model,
+> magic-link authentication and endpoints below are not the current system. For the current
+> speaker workflow see [06a-workflow-state-machines.md](./06a-workflow-state-machines.md).
+
 **Created**: 2026-01-22
 **Author**: Winston (Architect Agent)
 **Status**: DRAFT - Pending Review

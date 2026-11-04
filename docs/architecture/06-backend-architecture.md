@@ -5,10 +5,10 @@ This document outlines the core backend architecture for the BATbern Event Manag
 ## Related Documentation
 
 For detailed information on specific subsystems, see:
-- **[Workflow State Machines](./06a-workflow-state-machines.md)** - Event workflow, speaker coordination, slot assignment, quality review, and overflow voting
+- **[Workflow State Machines](./06a-workflow-state-machines.md)** - Event workflow, speaker coordination, slot assignment and quality review
 - **[User Lifecycle Sync Patterns](./06b-user-lifecycle-sync.md)** - Unidirectional Cognito → PostgreSQL sync with Lambda triggers
 - **[Testing Strategy](./06c-testing-strategy.md)** - Testcontainers PostgreSQL setup, integration and unit testing patterns
-- **[Notification System](./06d-notification-system.md)** - Real-time notifications, escalation rules, and multi-channel delivery
+- **[Notification System](./06d-notification-system.md)** - Email (SES) and in-app organizer notifications, the `notifications` audit table, speaker escalation after unanswered reminders
 
 ---
 
@@ -394,57 +394,52 @@ been 400s:
   punctuation — the injection vector Spring Data's guard exists to stop — out of sort expressions
   entirely. (Issue #903.)
 
-### Circuit Breaker Pattern Implementation
+### Circuit Breaker, Bulkhead and Retry (EventBridge publishing)
 
-The platform uses **Resilience4j** circuit breakers (not a bespoke `CircuitBreakerService`). Configuration is rate-based, not count-based:
+The platform uses **Resilience4j** (`resilience4j-*` 2.4.0 in `shared-kernel/build.gradle`). The
+only place it is applied is `shared-kernel/.../events/EventBridgeEventPublisher`, which decorates
+the EventBridge `putEvents` call programmatically, not with annotations:
+
+```java
+// EventBridgeEventPublisher.publish(...)
+Bulkhead.decorateSupplier(bulkhead,
+    CircuitBreaker.decorateSupplier(circuitBreaker,
+        Retry.decorateSupplier(retry, publishSupplier)));
+```
+
+The instances are configured in `shared-kernel/src/main/resources/application-shared.yml`:
 
 ```yaml
-# application-shared.yml (shared across services)
 resilience4j:
   circuitbreaker:
     instances:
       eventBridgePublisher:
-        failureRateThreshold: 60          # open after 60% failure rate (not a fixed count)
-        waitDurationInOpenState: 10s       # 10 seconds in open state (not 60 000 ms)
+        slidingWindowSize: 50
+        failureRateThreshold: 60          # open after 60% failures
+        waitDurationInOpenState: 10s
         permittedNumberOfCallsInHalfOpenState: 5
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
+  bulkhead:
+    instances:
+      eventBridgePublisher:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 100ms
+  retry:
+    instances:
+      eventBridgePublisher:
+        maxAttempts: 3
+        waitDuration: 1000ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
 ```
 
-```java
-// Usage via Resilience4j annotation
-@CircuitBreaker(name = "eventBridgePublisher", fallbackMethod = "storeForRetry")
-public void publishEvent(DomainEvent event) {
-    // Implementation details - see source code
-}
+Failed entries in a `putEvents` response are handled in `handleFailedEntries`; there is no
+fallback store for events that could not be published.
 
-private void storeForRetry(DomainEvent event, Exception ex) {
-    // Store event for later retry
-    failedEventStore.store(event);
-}
-```
-
-### Retry Mechanism with Exponential Backoff
-
-```java
-@Component
-public class RetryService {
-
-    @Retryable(
-        value = {TransientException.class, TemporaryUnavailableException.class},
-        maxAttempts = 3,
-        backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000)
-    )
-    public void executeWithRetry(Runnable operation) {
-        // Implementation details - see source code
-    }
-
-    @Recover
-    public void recover(Exception ex) {
-        // Implementation details - see source code
-    }
-}
-```
+There is no generic retry service: no `RetryService` class, no Spring Retry dependency and no
+`@Retryable` in the codebase. Other outbound calls (SES, S3, cross-service HTTP) do not go
+through Resilience4j. partner-coordination-service declares circuit breaker instances
+`companyService` and `userService` in its `application.yml`, but no code in `services/*/src/main`
+references Resilience4j, so those instances are configuration only.
 
 ### Request Correlation and Context
 
@@ -603,7 +598,6 @@ The BATbern platform implements sophisticated state machines to manage the compl
 - **Speaker Workflow Management** - Tracks speaker states from invitation to final agenda
 - **Slot Assignment Algorithm** - Optimally assigns speakers to presentation slots
 - **Quality Review Workflow** - Manages content review and approval process
-- **Overflow Management & Voting** - Handles speaker overflow situations with voting
 
 **See [Workflow State Machines](./06a-workflow-state-machines.md) for complete implementation details.**
 

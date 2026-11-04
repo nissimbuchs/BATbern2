@@ -23,26 +23,29 @@ The BATbern backend uses PostgreSQL-specific features (JSONB columns, PostgreSQL
 └─────────────────────────────────────────────────────────────┘
                             │
 ┌─────────────────────────────────────────────────────────────┐
-│ Unit Tests (JUnit 5 + Mockito)                             │
+│ Unit Tests (JUnit Jupiter 6 + Mockito)                      │
 │ Business logic in isolation (services, domain logic)        │
 └─────────────────────────────────────────────────────────────┘
 ```
 
 ## AbstractIntegrationTest Base Class
 
-**All integration tests must extend this base class:**
+**All integration tests must extend this base class.** It lives in the shared-kernel
+**test fixtures** (`shared-kernel/src/testFixtures/java/ch/batbern/shared/test/AbstractIntegrationTest.java`);
+services consume it via `testImplementation testFixtures(project(':shared-kernel'))`.
+(speaker-coordination-service still has its own copy under `src/test`.) Current content:
 
 ```java
 package ch.batbern.shared.test;
 
-import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
+import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
+import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.testcontainers.containers.PostgreSQLContainer;
-import org.testcontainers.junit.jupiter.Container;
-import org.testcontainers.junit.jupiter.Testcontainers;
 
 /**
  * Abstract base class for integration tests using Testcontainers PostgreSQL.
@@ -53,40 +56,77 @@ import org.testcontainers.junit.jupiter.Testcontainers;
  * - Verify Flyway migrations work correctly
  * - Catch database-specific issues early
  *
- * The container is shared across all test classes for performance (singleton pattern).
+ * The container is shared across all test classes for performance (manual singleton pattern).
+ * We do NOT use @Testcontainers/@Container to avoid premature container shutdown.
+ *
+ * Usage:
+ * ```java
+ * @Transactional
+ * @Import(TestSecurityConfig.class) // If needed
+ * public class MyServiceIntegrationTest extends AbstractIntegrationTest {
+ *     // Test implementation
+ * }
+ * ```
+ *
+ * Architecture Reference: docs/architecture/06-backend-architecture.md (Production Parity Testing)
  */
 @SpringBootTest
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Testcontainers
+@AutoConfigureTestDatabase(replace = AutoConfigureTestDatabase.Replace.NONE)
+// Epic 13 (SB4): re-apply springSecurity() to the auto-configured MockMvc — SB4 dropped the
+// auto-config that used to do this, which otherwise drops the @WithMockUser SecurityContext and
+// makes every @PreAuthorize request return 403. Inherited by all integration tests.
+@Import(MockMvcSecuritySetup.class)
 public abstract class AbstractIntegrationTest {
 
     /**
-     * Shared PostgreSQL container for all tests.
-     * Using singleton pattern with reuse=true for optimal performance.
+     * Shared PostgreSQL container for all tests using manual singleton pattern.
+     * The container is started once and reused across all test classes.
+     * It will be automatically cleaned up by Testcontainers Ryuk when the JVM exits.
+     *
+     * PostgreSQL 16 Alpine is used to match production environment.
      */
-    @Container
-    static final PostgreSQLContainer<?> postgres = new PostgreSQLContainer<>("postgres:16-alpine")
-            .withDatabaseName("testdb")
-            .withUsername("test")
-            .withPassword("test")
-            .withReuse(true);
+    private static final PostgreSQLContainer<?> POSTGRES;
+
+    static {
+        @SuppressWarnings("resource") // Container managed by Testcontainers Ryuk lifecycle
+        PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:16-alpine")
+                .withDatabaseName("testdb")
+                .withUsername("test")
+                .withPassword("test");
+        POSTGRES = container;
+        POSTGRES.start();
+    }
 
     /**
      * Dynamically configure Spring datasource properties from the Testcontainers instance.
+     * This overrides any static configuration in application-test.yml.
      */
     @DynamicPropertySource
     static void configureProperties(DynamicPropertyRegistry registry) {
-        registry.add("spring.datasource.url", postgres::getJdbcUrl);
-        registry.add("spring.datasource.username", postgres::getUsername);
-        registry.add("spring.datasource.password", postgres::getPassword);
+        registry.add("spring.datasource.url", POSTGRES::getJdbcUrl);
+        registry.add("spring.datasource.username", POSTGRES::getUsername);
+        registry.add("spring.datasource.password", POSTGRES::getPassword);
     }
 }
 ```
 
+Notes on Spring Boot 4 (Epic 13):
+
+- The MockMvc and test-database annotations moved packages:
+  `org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc` and
+  `org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase`
+  (the Spring Boot 3 `org.springframework.boot.test.autoconfigure.web.servlet` package is gone).
+- `MockMvcSecuritySetup` (same fixtures package) re-applies `springSecurity()` to MockMvc,
+  otherwise `@WithMockUser` is lost and every `@PreAuthorize` request returns 403.
+- The container is a manual singleton started in a static block; no `@Testcontainers` /
+  `@Container`, no `withReuse(true)`. Ryuk removes it when the JVM exits.
+- JUnit: Jupiter **6** (6.0.3 from the Spring Boot 4.0.7 BOM; `api-gateway` pins 6.1.3).
+
 ## Test Configuration (application-test.properties)
 
-**Required configuration for test profile:**
+**Excerpt from `services/event-management-service/src/test/resources/application-test.properties`** (other services use `application-test.properties` or `application-test.yml` with the same intent). EMS adds `classpath:db/testmigration` to `spring.flyway.locations`.
 
 ```properties
 # PostgreSQL via Testcontainers (configured dynamically in AbstractIntegrationTest)
@@ -118,6 +158,8 @@ logging.level.org.hibernate.SQL=DEBUG
 ```
 
 ## Integration Test Example
+
+Illustrative (request fields simplified); see the `*IntegrationTest` classes in each service for real ones.
 
 ```java
 package ch.batbern.events.controller;
@@ -343,7 +385,7 @@ public class EventTestDataBuilder {
 ### Performance Considerations
 
 - Container starts once per test suite (~5-10 seconds overhead)
-- Singleton pattern with `withReuse(true)` optimizes performance
+- Manual singleton: one container per test JVM
 - Subsequent tests reuse the same container
 - Still faster than manual PostgreSQL setup
 
@@ -366,10 +408,13 @@ public class EventTestDataBuilder {
 ./gradlew test --tests "*IntegrationTest"
 ```
 
-### Run Unit Tests Only
+### Run One Service or One Class
 ```bash
-./gradlew test --tests "*Test" --exclude-tests "*IntegrationTest"
+./gradlew :services:event-management-service:test
+./gradlew :api-gateway:test --tests CompanyControllerIntegrationTest
 ```
+To skip the Testcontainers `*IntegrationTest` classes locally (CI never does), pass
+`-PskipIntegration`, for example `./gradlew :services:event-management-service:test -PskipIntegration`.
 
 ### Generate Coverage Report
 ```bash
@@ -379,56 +424,59 @@ open build/reports/jacoco/test/html/index.html
 
 ## Continuous Integration
 
-Tests run automatically on:
-- Every pull request
-- Every commit to `main` branch
-- Nightly builds (full test suite + coverage report)
+The pipeline is `.github/workflows/build.yml` (Java 21). It runs on a push to `develop` or
+`main`, on every pull request targeting `develop` (which also deploys to production, see
+CLAUDE.md), and on manual dispatch. Read the workflow itself for the jobs; in short:
+`build-shared-kernel` and `build-services` run the Gradle tests including Testcontainers,
+`test-frontend` runs Vitest in three shards when `web-frontend/` changed, `build-infrastructure`
+runs the CDK Jest tests under `infrastructure/test/unit` only, and `deploy-to-staging` calls `deploy-staging.yml`, which runs the
+post-deploy layers below. `nightly-e2e.yml` runs the full Playwright `@gate` suite against
+production every night, plus `infrastructure/test/integration` and `infrastructure/test/e2e`.
 
-### GitHub Actions Configuration
+## Test Layers Beyond Unit and Integration (4-layer E2E framework)
 
-```yaml
-name: Backend Tests
+| Layer | Where | Runs |
+|---|---|---|
+| 1. Shell checks | `scripts/ci/smoke-tests.sh`, `cors-validation-tests.sh`, `header-propagation-tests.sh`, `access-control-check.py` (every operation in `docs/api/*.openapi.yml` not on the public allowlist `access-control-public.txt` must answer an anonymous call with 401/403) | After each deploy, in `deploy-staging.yml` |
+| 2. Bruno API contract tests | `bruno-tests/` (one folder per API), runner `scripts/ci/run-bruno-tests.sh` | `bruno-tests` job after each deploy; failure rolls back |
+| 3. Playwright UI E2E | `web-frontend/e2e/` (projects `chromium` = organizer, `speaker`, `partner`), runner `scripts/ci/run-playwright-tests.sh` | `@smoke` after each deploy (after Bruno); full `@gate` nightly |
+| 4. Infrastructure tests | `infrastructure/test/e2e/` (Jest against AWS; `monitoring/` holds `alert-scenarios.spec.ts` and `incident-response.spec.ts`); CDK unit tests in `infrastructure/test/unit` | `test/e2e` and `test/integration` nightly in `nightly-e2e.yml`; `test/unit` in `build.yml` |
 
-on:
-  pull_request:
-  push:
-    branches: [main, develop]
+Bruno `.bru` files accept prose only inside `docs { }`; a top-level `#` comment makes Bruno skip
+the whole file silently (see CLAUDE.md). `scripts/ci/test-bruno-collection-guard.sh` (in the `verify-hooks` job of `build.yml`) fails a
+PR when a `bruno-tests/` folder is neither run nor explicitly excluded by `run-bruno-tests.sh`.
 
-jobs:
-  test:
-    runs-on: ubuntu-latest
+### Test data markers and email send guards (ADR-015)
 
-    steps:
-      - uses: actions/checkout@v3
+Production is the only shared environment, so no test may mail a real person. See
+[ADR-015](./ADR-015-test-data-markers-and-email-send-guards.md). In short:
 
-      - name: Set up JDK 17
-        uses: actions/setup-java@v3
-        with:
-          java-version: '17'
-          distribution: 'temurin'
+- Test data carries canonical markers: `BATPW-E2E` (Playwright titles), `BRUNO-TEST-` (Bruno
+  event codes), `BRUNOTESTCO` (company names), `bruno.test` (usernames). Synthetic recipients use
+  `@e2e.batbern.invalid`.
+- `EmailService` (shared-kernel) refuses reserved recipient domains (`example.com`, `*.test`,
+  `*.invalid`, `*.localhost`, `*.local`) and, on the real SES path, any subject or body that
+  contains a marker. `NewsletterEmailService` refuses a marked event before the bulk loop.
+- A spec that drives a real send is tagged `@sends-real-email`, never `@smoke` or `@gate`, and is
+  restricted to `TEST_ENV=development`.
 
-      - name: Cache Gradle packages
-        uses: actions/cache@v3
-        with:
-          path: ~/.gradle/caches
-          key: ${{ runner.os }}-gradle-${{ hashFiles('**/*.gradle*', '**/gradle-wrapper.properties') }}
+### Authorization guard test
 
-      - name: Run tests with Testcontainers
-        run: ./gradlew test jacocoTestReport
+Every service with controllers has an `EndpointAuthorizationGuardTest` (api-gateway, CUMS, EMS,
+PCS), built on `EndpointAuthorizationGuard` in the shared-kernel test fixtures. It fails the build
+for any POST/PUT/PATCH/DELETE handler without `@PreAuthorize` on the method or class, and checks
+that `@EnableMethodSecurity` is active. Paths under `/internal/`, `/dev/` and `/error` are
+excluded.
 
-      - name: Upload coverage to Codecov
-        uses: codecov/codecov-action@v3
-        with:
-          files: ./build/reports/jacoco/test/jacocoTestReport.xml
+### Caching: local dev is not a cache test
 
-      - name: Publish test results
-        uses: EnricoMi/publish-unit-test-result-action@v2
-        if: always()
-        with:
-          files: build/test-results/**/*.xml
-```
+event-management-service `CacheConfig` registers a `NoOpCacheManager` under the `local` profile
+and the Caffeine cache manager under every other profile (`@Profile("!local")`), including the
+`test` profile of the integration tests. A cache bug therefore cannot be reproduced on local dev;
+it needs an integration test. An integration test annotated `@Transactional` rolls back, so a
+test for stale-cache behaviour has to commit its writes.
 
 ## Related Documentation
 
 - [Backend Architecture Overview](./06-backend-architecture.md)
-- [Database Schema and Migrations](./04-database-architecture.md)
+- [Data Architecture, Database Schema](./03-data-architecture.md#database-schema)

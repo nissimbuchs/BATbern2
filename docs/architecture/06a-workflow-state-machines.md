@@ -40,7 +40,7 @@ AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED
 |-------|-------------|-----------------|----------------|
 | **CREATED** | Event created, no topic selected | Event created | Topic selected |
 | **TOPIC_SELECTION** | Topic selected, brainstorming speakers | Topic selected | Minimum speakers in pool |
-| **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach in progress | Min speakers in pool | All slots filled (after overflow if needed) |
+| **SPEAKER_IDENTIFICATION** | Building speaker pool, outreach in progress | Min speakers in pool | All slots filled |
 | **SLOT_ASSIGNMENT** | Speakers assigned to time slots | All slots filled | Agenda published |
 | **AGENDA_PUBLISHED** | Agenda public, accepting registrations | Agenda published | Event day (direct scheduler transition) |
 | **EVENT_LIVE** | Event currently happening | Event day | Manual trigger after event |
@@ -393,11 +393,18 @@ public class SpeakerWorkflowService {
 }
 ```
 
-**Callers** of `SpeakerWorkflowService.transition()`:
-- `SpeakerStatusController` (organizer kanban PUT `.../status` and POST `.../promote`).
-- `SpeakerResponseController` (speaker portal ACCEPT / DECLINE).
-- `ContentSubmissionService` (shared by organizer-on-behalf and speaker-self content endpoints — both transition to `CONTENT_SUBMITTED` through this entry point).
-- `QualityReviewService` (organizer moderator approves content → `QUALITY_REVIEWED`).
+**Callers** of `SpeakerWorkflowService.transition()` (all in event-management-service, grep on develop c4593449):
+- `SpeakerStatusController.promoteSpeakerToReady` (POST `.../promote`, CONTACTED → READY with provisioning payload) and
+  `SpeakerStatusService.updateStatus` (organizer kanban PUT `.../status`).
+- `SpeakerOutreachService.recordOutreach` (via `SpeakerOutreachController`): IDENTIFIED → CONTACTED
+  when the first outreach is recorded, with `suppressHistoryRow`.
+- `SpeakerInvitationService.inviteSpeaker` (via `SpeakerInvitationController`): READY → INVITED;
+  the slot-capacity gate is enforced inside `transition()`.
+- `SpeakerResponseService.processResponse` (via `SpeakerPortalResponseController`, speaker portal
+  ACCEPT / DECLINE).
+- `ContentSubmissionService.submit` (via `SpeakerStatusController` for organizer-on-behalf and
+  `SpeakerPortalContentController` for speaker self-submission): → `CONTENT_SUBMITTED`.
+- `QualityReviewService.approveContent` (via `SpeakerStatusController`): → `QUALITY_REVIEWED`.
 
 All direct `speaker.setStatus(...)` calls are deleted. `StatusTransitionValidator` is deleted (the allow-list lives inline in `transition()`).
 

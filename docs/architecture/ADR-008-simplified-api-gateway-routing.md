@@ -255,5 +255,26 @@ responses), Allow-Credentials, preflight Allow-Methods/-Headers, Max-Age — and
 gap by adding `exposeHeaders` (the SPA reads `X-Correlation-ID` off responses in ~8 places;
 APIGW was not exposing it). **To allow a new origin now: update `allowOrigins` only.**
 
+## Update — 2026-10-27 (#1147): authorization only in the services
+
+The "Backend validates everything" premise above is now an enforced rule rather than a habit.
+PR #1147 (merged 2026-10-27) settled where each check lives:
+
+- **AWS HTTP API (`api-gateway-stack.ts`):** passes every request through on `/{proxy+}`. An
+  `HttpJwtAuthorizer` is still constructed in the stack, but no route uses it.
+- **Spring API gateway:** authenticates the JWT and routes (`DomainRouter`). It makes no role
+  decisions. It denies `/internal/**` explicitly (`SecurityConfig`), answers unknown routes with
+  404, and its unused `RoleBasedAuthorizer` was removed.
+- **Services:** every controller method that writes (POST/PUT/PATCH/DELETE) carries
+  `@PreAuthorize`: a role (`hasRole('ORGANIZER')`), an ownership rule, `isAuthenticated()` for
+  self-service, or `permitAll()` for a deliberately public endpoint. Reads that return other
+  people's data need a role rule as well.
+- **Enforcement:** `EndpointAuthorizationGuardTest` in CUMS, EMS, partner-coordination and the
+  gateway (helper `EndpointAuthorizationGuard` in the `shared-kernel` test fixtures) fails the build
+  for any write handler without `@PreAuthorize` and checks that `@EnableMethodSecurity` is on.
+- **Service-to-service reads** go to VPC-only `/internal/**` endpoints without a JWT (for example
+  CUMS `/internal/users`, partner-coordination `/internal/partner-meetings/rsvps`). The gateway
+  does not route them. Callers no longer forward the end user's token.
+
 ## Date
-2025-12-18 (updated 2026-06-02)
+2025-12-18 (updated 2026-06-02, 2026-10-27)

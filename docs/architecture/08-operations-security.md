@@ -320,9 +320,11 @@ resume within minutes.
 Alarms themselves cost $4.10/month and logs $1.50 — both immaterial. When trimming
 monitoring for cost, metrics are the line worth looking at, never logs.
 
-Full analysis and the reduction plan: `docs/plans/aws-cost-reduction.md`. Note there is
-currently **no cost alarm at all** (#978), which is why the bill ran at double its target
-unnoticed.
+Full analysis and the reduction plan: `docs/plans/aws-cost-reduction.md`. There is **no cost
+alarm and no AWS Budget**, by decision: #978 was closed on 2026-08-26 without building one, after
+six months of measured spend showed no surprises. The closing comment on #978 records the
+measurement and a ready-to-use `CfnBudget` sketch (monthly, forecast and actual notifications,
+email subscribers) should the run-rate change.
 
 ### What is actually monitored, and where each alarm is defined
 
@@ -353,7 +355,8 @@ the instance identifier is deterministic (`batbern-{env}-postgres`, set explicit
 
 **There is deliberately no cost alarm.** `AWS/Billing` is only published in us-east-1, and
 consolidated billing lives in the management account (510187933511) where finance already has
-access. Tracked in #978.
+access. #978 (replace it with AWS Budgets) was closed on 2026-08-26 as decided not to build; reopen
+it if the spend baseline changes.
 
 ### Log levels are owned by application.yml, not logback (#990)
 
@@ -675,8 +678,10 @@ It is not a bot account and needs no allowlist entry. That PAT lives in SSM at
 `/batbern/staging/github/token` and nothing tracks its expiry — if it lapses, alarms stop becoming
 issues.
 
-The deploy role's trust policy is a separate, unfinished piece of the same problem: it still trusts
-`repo:nissimbuchs/BATbern2:*` while holding CDK deploy rights (#998).
+The deploy role's trust policy is a separate piece of the same problem: it trusts
+`repo:${githubRepository}:*` (`infrastructure/lib/stacks/cicd-stack.ts`, i.e.
+`repo:nissimbuchs/BATbern2:*`) while holding CDK deploy rights. #998, which proposed narrowing it,
+was closed as not planned on 2026-08-25, so this breadth is the accepted state, not pending work.
 
 ### The deploy warmup is real latency, and the latency alarm must outlast it
 
@@ -1279,6 +1284,12 @@ const useKeyboardNavigation = () => {
 ```
 
 ## Architect Validation Report
+
+> **Historical (2024), not maintained.** This report assessed the original 2024 design
+> (multi-repository layout, four live bounded contexts, Hostpoint DNS, AI/ML recommendations). Most
+> of its premises no longer hold; see [01-system-overview.md](./01-system-overview.md) and
+> [ADR-014](./ADR-014-backend-service-consolidation.md) for the current system. Kept for the record
+> only.
 
 ### Executive Summary
 

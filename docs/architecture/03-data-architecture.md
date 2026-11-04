@@ -1451,587 +1451,129 @@ enum DeliveryStatus {
 
 ## Database Schema
 
-### Event Management Service Database Schema
-
-```sql
--- Events table (aggregate root)
-CREATE TABLE events (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_number INTEGER UNIQUE NOT NULL,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    event_date TIMESTAMP WITH TIME ZONE NOT NULL,
-    registration_deadline TIMESTAMP WITH TIME ZONE NOT NULL,
-    venue_name VARCHAR(255) NOT NULL,
-    venue_address TEXT NOT NULL,
-    venue_capacity INTEGER NOT NULL,
-    status VARCHAR(50) NOT NULL CHECK (status IN (
-        'planning', 'topic_defined', 'speakers_invited', 'agenda_draft',
-        'published', 'registration_open', 'registration_closed',
-        'in_progress', 'completed', 'archived'
-    )),
-    organizer_id UUID NOT NULL,
-    current_attendee_count INTEGER DEFAULT 0,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    published_at TIMESTAMP WITH TIME ZONE,
-    metadata JSONB DEFAULT '{}'
-);
-
--- Sessions table (V2, updated in V21 for placeholder session support)
--- IMPORTANT: Sessions ARE the slot model for slot assignment workflow
--- Placeholder pattern: session created when speaker accepts (with title, but null times)
--- Timing assigned later: organizer sets start_time/end_time/room during slot assignment
--- See also: speaker_pool.session_id FK (V20) links speakers to sessions
-CREATE TABLE sessions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    session_type VARCHAR(50) CHECK (session_type IN (  -- V21: Nullable for placeholder sessions
-        'keynote', 'presentation', 'workshop', 'panel_discussion',
-        'networking', 'break', 'lunch'
-    )),
-    start_time TIMESTAMP WITH TIME ZONE,  -- V21: Nullable - assigned during slot assignment
-    end_time TIMESTAMP WITH TIME ZONE,    -- V21: Nullable - assigned during slot assignment
-    room VARCHAR(100),
-    capacity INTEGER,
-    language VARCHAR(10) DEFAULT 'de',
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Session-User junction table (many-to-many speakers).
--- ADR-009 / Story 11.E.8: PRIMARY_SPEAKER row provisioned at the CONTACTED → READY
--- transition by SpeakerWorkflowService.runReadyHook (idempotent). is_confirmed flipped
--- at INVITED → ACCEPTED by runAcceptedHook. Username is the cross-service reference
--- per ADR-003 (re-keyed from user_id to username in V26). presentation_title was
--- dropped in V102 (Story 11.E.8) — sessions.title is canonical.
-CREATE TABLE session_users (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-    username VARCHAR(100) NOT NULL, -- public identifier per ADR-003
-    speaker_role VARCHAR(50) NOT NULL CHECK (speaker_role IN (
-        'primary_speaker', 'co_speaker', 'moderator', 'panelist'
-    )),
-    is_confirmed BOOLEAN DEFAULT FALSE,
-    invited_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    confirmed_at TIMESTAMP WITH TIME ZONE,
-    declined_at TIMESTAMP WITH TIME ZONE,
-    decline_reason TEXT,
-    -- speaker name cache fields populated on assignment for full-text search (V38)
-    speaker_first_name VARCHAR(100),
-    speaker_last_name VARCHAR(100),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(session_id, username)
-);
-
--- Versioned audit log of SPEAKER submissions for a session (renamed from
--- speaker_content_submissions in V99 — Story 11.E.8 §2.7). Keyed by
--- (session_id, submission_version). Inserted only by ContentSubmissionService.submit()
--- — organizer session-edit modal updates sessions.title directly and does NOT write
--- a history row (Story 11.E.8 §2.9 — history reflects what the speaker submitted,
--- not all edits). The latest row mirrors sessions.title / sessions.description at the
--- moment of submission; reviewer feedback on a rejected version stays on that row for
--- the audit trail. submitted_by_username records the actor (speaker on the portal or
--- organizer-on-behalf). Reviewer feedback is written here on rejection; approval is
--- recorded by the speaker_status_history transition to QUALITY_REVIEWED.
-CREATE TABLE session_content_history (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-    title VARCHAR(200) NOT NULL,
-    abstract TEXT NOT NULL,
-    abstract_char_count INTEGER NOT NULL,
-    submission_version INTEGER NOT NULL DEFAULT 1,
-    submitted_by_username VARCHAR(100) NOT NULL,
-    submitted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    reviewer_feedback TEXT,         -- non-null iff this version was rejected
-    reviewed_at TIMESTAMP WITH TIME ZONE,
-    reviewed_by VARCHAR(255),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(session_id, submission_version)
-);
-
--- Topics table with usage tracking
-CREATE TABLE topics (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    title VARCHAR(500) NOT NULL,
-    description TEXT,
-    category VARCHAR(50) NOT NULL CHECK (category IN (
-        'technical', 'management', 'soft_skills',
-        'industry_trends', 'tools_platforms'
-    )),
-    created_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    last_used_date TIMESTAMP WITH TIME ZONE,
-    usage_count INTEGER DEFAULT 0,
-    staleness_score NUMERIC(5,2) DEFAULT 100.00,
-    calculated_wait_period INTEGER, -- in months
-    partner_influence_score NUMERIC(5,2),
-    is_active BOOLEAN DEFAULT TRUE,
-    title_vector tsvector GENERATED ALWAYS AS (to_tsvector('english', title)) STORED,
-    description_vector tsvector GENERATED ALWAYS AS (to_tsvector('english', coalesce(description, ''))) STORED,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Topic usage history
-CREATE TABLE topic_usage_history (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    topic_id UUID NOT NULL REFERENCES topics(id) ON DELETE CASCADE,
-    event_id UUID NOT NULL REFERENCES events(id) ON DELETE CASCADE,
-    used_date TIMESTAMP WITH TIME ZONE NOT NULL,
-    attendee_count INTEGER,
-    feedback_score NUMERIC(3,2),
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Indexes for performance
-CREATE INDEX idx_events_status ON events(status);
-CREATE INDEX idx_events_event_date ON events(event_date);
-CREATE INDEX idx_sessions_event_id ON sessions(event_id);
-CREATE INDEX idx_session_users_session_id ON session_users(session_id);
-CREATE INDEX idx_session_users_username ON session_users(username);
-CREATE INDEX idx_session_content_history_session ON session_content_history(session_id);
-CREATE INDEX idx_session_content_history_submitted_by ON session_content_history(submitted_by_username);
-CREATE INDEX idx_session_users_confirmed ON session_users(is_confirmed);
-CREATE INDEX idx_topics_title_vector ON topics USING GIN(title_vector);
-CREATE INDEX idx_topics_description_vector ON topics USING GIN(description_vector);
-CREATE INDEX idx_topics_last_used ON topics(last_used_date);
-CREATE INDEX idx_topics_staleness ON topics(staleness_score);
-CREATE INDEX idx_topics_active ON topics(is_active);
-CREATE INDEX idx_topic_usage_history_topic_id ON topic_usage_history(topic_id);
-CREATE INDEX idx_topic_usage_history_used_date ON topic_usage_history(used_date DESC);
-```
-
-### Speaker Coordination Service Database Schema
-
-Per **ADR-009 (Unified Speaker Workflow)** + **Story 11.E.8 consolidation**, the `speakers` table is deleted and `speaker-coordination-service` no longer owns any entity. SPEAKER is a role on `User` (`role_assignments.role = 'SPEAKER'`); see the User section above for the SPEAKER-role pattern. Per-event speaker data — slot preferences, response state, deadlines, workflow state — lives on `speaker_pool` in event-management-service. Per-event content lives on `sessions` (canonical current title/description) + `session_content_history` (versioned audit log, keyed by `(session_id, submission_version)`). `session_users` is the junction; PRIMARY_SPEAKER row is provisioned at `CONTACTED → READY` per Story 11.E.8. There is no `session_speakers` junction table; sessions reference Users directly via `session_users` (cross-service reference by `username` per ADR-003). The legacy denormalised columns (`speaker_pool.content_status`, `speaker_pool.content_submitted_at`, `speaker_pool.initial_presentation_title`, `session_users.presentation_title`) were dropped in V102 — `contentStatus` is derived via `ContentStatusDeriver` from workflow state + latest history row's `reviewer_feedback`.
-
-The service remains in the architecture as a thin shell to host future speaker-related capabilities, but post-ADR-009 it contains no Flyway migrations and no JPA entities.
-
-### Company Management Service Database Schema
-
-```sql
--- Companies table
-CREATE TABLE companies (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    name VARCHAR(255) NOT NULL,
-    display_name VARCHAR(255) NOT NULL,
-    website VARCHAR(500),
-    industry VARCHAR(100),
-    description TEXT,
-    logo_url VARCHAR(1000),      -- CloudFront URL (populated after logo association)
-    logo_s3_key VARCHAR(500),     -- S3 key reference
-    logo_file_id VARCHAR(255),    -- References logos.upload_id (ADR-002)
-    is_verified BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    created_by UUID NOT NULL
-);
-
--- Note: User-company relationships are managed in User Management Service
--- Query employee count: SELECT COUNT(*) FROM users WHERE company_id = '{companyId}'
--- Note: Partnership status managed in Partner Coordination Service via Partnership.companyId
--- Note: Logo storage uses Generic File Upload Service (ADR-002)
-
--- Generic Logos Table (ADR-002: Generic File Upload Service)
--- Supports all entity types: COMPANY, USER, EVENT, PARTNER, etc.
-CREATE TABLE logos (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    upload_id VARCHAR(100) UNIQUE NOT NULL,  -- Public identifier for tracking
-    s3_key VARCHAR(500) NOT NULL,             -- Current S3 key (temp or final)
-    cloudfront_url VARCHAR(1000),             -- CDN URL for access
-    file_extension VARCHAR(10) NOT NULL,      -- png, jpg, jpeg, svg
-    file_size BIGINT NOT NULL,                -- Size in bytes
-    mime_type VARCHAR(100) NOT NULL,          -- image/png, etc.
-    checksum VARCHAR(100),                    -- SHA-256 for integrity
-
-    -- State machine (ADR-002 three-phase upload pattern)
-    status VARCHAR(20) NOT NULL CHECK (status IN (
-        'PENDING',      -- Upload initiated, file may not exist in S3 yet
-        'CONFIRMED',    -- File successfully uploaded to S3 and verified
-        'ASSOCIATED'    -- Linked to entity, file in final location
-    )),
-
-    -- Entity association (populated when ASSOCIATED)
-    associated_entity_type VARCHAR(50) CHECK (associated_entity_type IN (
-        'COMPANY', 'USER', 'EVENT', 'PARTNER', 'SPEAKER', 'ATTENDEE'
-    )),
-    associated_entity_id VARCHAR(255),        -- Entity's identifier (name or username)
-
-    -- Lifecycle timestamps
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    expires_at TIMESTAMP WITH TIME ZONE,      -- For automatic cleanup
-
-    -- Constraints
-    CONSTRAINT valid_association CHECK (
-        (status = 'ASSOCIATED' AND associated_entity_type IS NOT NULL AND associated_entity_id IS NOT NULL) OR
-        (status != 'ASSOCIATED')
-    )
-);
-
--- Indexes
-CREATE INDEX idx_companies_name ON companies(name);
-CREATE INDEX idx_companies_is_verified ON companies(is_verified);
-CREATE INDEX idx_companies_logo_file_id ON companies(logo_file_id);
-
--- Logos table indexes (ADR-002)
-CREATE UNIQUE INDEX idx_logos_upload_id ON logos(upload_id);
-CREATE INDEX idx_logos_status ON logos(status);
-CREATE INDEX idx_logos_status_expires ON logos(status, expires_at) WHERE status != 'ASSOCIATED';
-CREATE INDEX idx_logos_entity_association ON logos(associated_entity_type, associated_entity_id) WHERE status = 'ASSOCIATED';
-
--- ADR-002: Three-Phase Upload Pattern
--- Phase 1: POST /logos/presigned-url → Creates logo with status=PENDING, temp S3 key
--- Phase 2: Confirm upload → Updates status=CONFIRMED
--- Phase 3: Entity creation → Copies to final S3 location, status=ASSOCIATED, associates with entity
---
--- Example S3 key progression:
---   PENDING/CONFIRMED: logos/temp/{uploadId}/logo-{fileId}.png
---   ASSOCIATED:        logos/2025/companies/GoogleZH/logo-{fileId}.png
---
--- Cleanup: Scheduled job deletes PENDING > 24h, CONFIRMED > 7 days
-```
-
-### Partner Coordination Service Database Schema
-
-```sql
--- Partners table (ADR-003: stores companyName, NOT company_id UUID)
-CREATE TABLE partners (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    company_name VARCHAR(12) NOT NULL UNIQUE, -- ADR-003: Meaningful ID, NO UUID FK
-    partnership_level VARCHAR(50) NOT NULL CHECK (partnership_level IN (
-        'bronze', 'silver', 'gold', 'platinum', 'strategic'
-    )),
-    partnership_start_date DATE NOT NULL,
-    partnership_end_date DATE,
-    is_active BOOLEAN DEFAULT TRUE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Partner contacts (ADR-003: stores username, NOT user_id UUID)
-CREATE TABLE partner_contacts (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
-    username VARCHAR(100) NOT NULL, -- ADR-003: Meaningful ID, NO UUID FK to users
-    contact_role VARCHAR(50) NOT NULL CHECK (contact_role IN (
-        'primary', 'billing', 'technical', 'marketing'
-    )),
-    is_primary BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(partner_id, username)
-);
-
--- Topic voting
-CREATE TABLE topic_votes (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    topic_id UUID NOT NULL, -- References topic in Event Management Service
-    partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
-    vote_weight INTEGER DEFAULT 1, -- Based on partnership_level
-    vote_value INTEGER NOT NULL CHECK (vote_value BETWEEN 1 AND 5),
-    voted_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    UNIQUE(topic_id, partner_id)
-);
-
--- Partner topic suggestions
-CREATE TABLE topic_suggestions (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
-    suggested_topic VARCHAR(500) NOT NULL,
-    description TEXT,
-    business_justification TEXT,
-    suggested_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    status VARCHAR(50) NOT NULL CHECK (status IN (
-        'submitted', 'under_review', 'accepted', 'rejected', 'implemented'
-    )) DEFAULT 'submitted',
-    reviewed_at TIMESTAMP WITH TIME ZONE,
-    reviewed_by UUID -- References organizer
-);
-
--- Partner meetings
-CREATE TABLE partner_meetings (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    meeting_type VARCHAR(50) NOT NULL CHECK (meeting_type IN ('spring', 'autumn', 'ad_hoc')),
-    scheduled_date DATE NOT NULL,
-    location VARCHAR(255),
-    agenda TEXT,
-    materials_generated BOOLEAN DEFAULT FALSE,
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Partner meeting attendance
-CREATE TABLE partner_meeting_attendance (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-    meeting_id UUID NOT NULL REFERENCES partner_meetings(id) ON DELETE CASCADE,
-    partner_id UUID NOT NULL REFERENCES partners(id) ON DELETE CASCADE,
-    rsvp_status VARCHAR(50) NOT NULL CHECK (rsvp_status IN (
-        'invited', 'accepted', 'declined', 'tentative', 'attended'
-    )) DEFAULT 'invited',
-    rsvp_at TIMESTAMP WITH TIME ZONE,
-    attended BOOLEAN DEFAULT FALSE,
-    UNIQUE(meeting_id, partner_id)
-);
-
--- Indexes
-CREATE INDEX idx_partners_company_name ON partners(company_name); -- Changed from company_id
-CREATE INDEX idx_partners_active ON partners(is_active);
-CREATE INDEX idx_partners_partnership_level ON partners(partnership_level);
-CREATE INDEX idx_partner_contacts_partner_id ON partner_contacts(partner_id);
-CREATE INDEX idx_partner_contacts_username ON partner_contacts(username);
-CREATE INDEX idx_topic_votes_partner_id ON topic_votes(partner_id);
-CREATE INDEX idx_topic_votes_topic_id ON topic_votes(topic_id);
-CREATE INDEX idx_topic_suggestions_partner_id ON topic_suggestions(partner_id);
-CREATE INDEX idx_topic_suggestions_status ON topic_suggestions(status);
-CREATE INDEX idx_partner_meetings_date ON partner_meetings(scheduled_date);
-CREATE INDEX idx_partner_meeting_attendance_meeting_id ON partner_meeting_attendance(meeting_id);
-CREATE INDEX idx_partner_meeting_attendance_partner_id ON partner_meeting_attendance(partner_id);
-```
-
-### Attendee Experience Service Database Schema
-
-```sql
--- Attendees table (ADR-004: References User, no duplicated fields)
-CREATE TABLE attendees (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL UNIQUE,  -- FK to users.id (one-to-one)
-
-    -- Domain-specific fields only (NO email, name, company, position)
-    newsletter_subscription BOOLEAN DEFAULT FALSE,
-    content_preferences JSONB DEFAULT '{}', -- Topics of interest (different from User.preferences)
-
-    -- GDPR consent tracking
-    gdpr_consent_given BOOLEAN DEFAULT FALSE,
-    gdpr_consent_date TIMESTAMP WITH TIME ZONE,
-    gdpr_consent_ip VARCHAR(45), -- IPv4 or IPv6
-    gdpr_consent_version VARCHAR(20),
-
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-
-    -- Foreign key constraint with cascade delete
-    CONSTRAINT fk_attendee_user
-        FOREIGN KEY (user_id)
-        REFERENCES users(id)
-        ON DELETE CASCADE
-);
-
--- Indexes
-CREATE UNIQUE INDEX idx_attendees_user_id ON attendees(user_id);
-CREATE INDEX idx_attendees_newsletter ON attendees(newsletter_subscription) WHERE newsletter_subscription = true;
-
--- Event registrations
--- ADR-004: References user by attendee_username (no duplicated user fields)
--- ADR-007: Unified user_profiles handles both anonymous and authenticated users
-CREATE TABLE registrations (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    event_code VARCHAR(20) NOT NULL,  -- References event (ADR-003 meaningful ID)
-
-    -- Cross-service reference to user_profiles.username (ADR-004)
-    -- User details (email, name, company) fetched via UserManagementClient API
-    attendee_username VARCHAR(100) NOT NULL,
-
-    -- Registration metadata
-    registration_code VARCHAR(20) NOT NULL UNIQUE, -- Format: BAT-YYYY-NNNNNN
-    registration_date TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    status VARCHAR(50) NOT NULL CHECK (status IN (
-        'registered', 'waitlisted', 'confirmed', 'cancelled', 'attended'
-    )) DEFAULT 'registered',
-    special_requests TEXT,
-    attendance_confirmed BOOLEAN DEFAULT FALSE,
-    actual_attendance BOOLEAN DEFAULT FALSE,
-
-    -- Communication preferences
-    newsletter_subscribed BOOLEAN DEFAULT FALSE,
-    event_reminders BOOLEAN DEFAULT TRUE,
-
-    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-    updated_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
-
-    -- Prevent duplicate registrations
-    UNIQUE(event_code, attendee_username)
-);
-
--- Content engagement tracking
-CREATE TABLE content_engagement (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    attendee_username VARCHAR(100) NOT NULL, -- Cross-service reference
-    content_type VARCHAR(50) NOT NULL, -- 'session', 'document', 'video', etc.
-    content_id UUID NOT NULL,
-    engagement_type VARCHAR(50) NOT NULL, -- 'view', 'download', 'rating', etc.
-    engagement_value DECIMAL(5,2), -- rating score or duration
-    engaged_at TIMESTAMP WITH TIME ZONE DEFAULT NOW()
-);
-
--- Indexes
-CREATE INDEX idx_registrations_event_code ON registrations(event_code);
-CREATE INDEX idx_registrations_attendee_username ON registrations(attendee_username);
-CREATE INDEX idx_registrations_status ON registrations(status);
-CREATE INDEX idx_registrations_registration_code ON registrations(registration_code); -- For public lookup
-
-CREATE INDEX idx_content_engagement_attendee ON content_engagement(attendee_username);
-CREATE INDEX idx_content_engagement_content ON content_engagement(content_type, content_id);
-
--- Example query: Get registration with user data (cross-service enrichment)
--- 1. Query registrations table for event registrations
--- 2. Call UserManagementClient.getUsersByUsernames(attendeeUsernames)
--- 3. Join/merge results in application layer
--- See docs/guides/microservices-http-clients.md for HTTP client patterns
-```
-
-## User Role Management Tables
-
-```sql
--- User Roles with History
-CREATE TABLE user_roles (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
-    role VARCHAR(50) NOT NULL CHECK (role IN ('ORGANIZER', 'SPEAKER', 'PARTNER', 'ATTENDEE')),
-    event_id UUID REFERENCES events(id), -- Optional: role scoped to specific event
-    granted_by UUID NOT NULL, -- References users
-    granted_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    revoked_at TIMESTAMP,
-    revoked_by UUID, -- References users
-    reason TEXT,
-    is_active BOOLEAN NOT NULL DEFAULT true,
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT unique_active_user_role UNIQUE (user_id, role, event_id) WHERE is_active = true,
-    CONSTRAINT fk_granted_by FOREIGN KEY (granted_by) REFERENCES users(id),
-    CONSTRAINT fk_revoked_by FOREIGN KEY (revoked_by) REFERENCES users(id)
-);
-
-CREATE INDEX idx_user_roles_user_id ON user_roles(user_id);
-CREATE INDEX idx_user_roles_active ON user_roles(is_active, user_id);
-CREATE INDEX idx_user_roles_event ON user_roles(event_id) WHERE event_id IS NOT NULL;
-
--- Role Change Requests (for approval workflows)
-CREATE TABLE role_change_requests (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL,
-    current_role VARCHAR(50) NOT NULL,
-    requested_role VARCHAR(50) NOT NULL,
-    requested_by UUID NOT NULL, -- Organizer initiating change
-    requires_approval_from UUID, -- User who must approve (for organizer demotions)
-    reason TEXT NOT NULL,
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING' CHECK (status IN ('PENDING', 'APPROVED', 'REJECTED', 'EXPIRED')),
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    expires_at TIMESTAMP NOT NULL DEFAULT (CURRENT_TIMESTAMP + INTERVAL '7 days'),
-
-    CONSTRAINT fk_user FOREIGN KEY (user_id) REFERENCES users(id),
-    CONSTRAINT fk_requested_by FOREIGN KEY (requested_by) REFERENCES users(id),
-    CONSTRAINT fk_approval_from FOREIGN KEY (requires_approval_from) REFERENCES users(id)
-);
-
-CREATE INDEX idx_role_requests_user ON role_change_requests(user_id);
-CREATE INDEX idx_role_requests_status ON role_change_requests(status, expires_at);
-CREATE INDEX idx_role_requests_approver ON role_change_requests(requires_approval_from) WHERE requires_approval_from IS NOT NULL;
-
--- Role Change Approvals
-CREATE TABLE role_change_approvals (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    role_change_request_id UUID NOT NULL,
-    approved_by UUID NOT NULL, -- User providing approval
-    approved BOOLEAN NOT NULL,
-    comments TEXT,
-    approved_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT fk_role_change_request FOREIGN KEY (role_change_request_id) REFERENCES role_change_requests(id),
-    CONSTRAINT fk_approved_by FOREIGN KEY (approved_by) REFERENCES users(id),
-    CONSTRAINT unique_approval_per_request UNIQUE (role_change_request_id, approved_by)
-);
-
-CREATE INDEX idx_approvals_request ON role_change_approvals(role_change_request_id);
-```
-
-### Notification Service Database Schema
-
-**Implementation**: Story 1.15a.10 - Notifications API Consolidation
-
-**Pattern**: Single table in shared `public` schema, owned by Event Management Service (follows Task System pattern from Story 5.5)
-
-**Notification Preferences**: Stored in existing `user_profiles.user_preferences` JSONB column (Company-User Management Service)
-
-```sql
--- Notifications table (Event Management Service - V25 migration)
--- ADR-003 compliant: Uses meaningful IDs (recipient_username, event_code)
--- Hybrid storage: Email audit trail (create rows), in-app queries (dynamic)
-CREATE TABLE IF NOT EXISTS notifications (
-    id UUID PRIMARY KEY DEFAULT uuid_generate_v4(),
-
-    -- ADR-003: Meaningful IDs (NOT foreign keys)
-    recipient_username VARCHAR(100) NOT NULL,
-    event_code VARCHAR(50),  -- Nullable (non-event notifications)
-
-    -- Notification details
-    notification_type VARCHAR(50) NOT NULL,
-    channel VARCHAR(20) NOT NULL,
-    priority VARCHAR(20) DEFAULT 'NORMAL',
-    subject VARCHAR(255) NOT NULL,
-    body TEXT NOT NULL,
-
-    -- Delivery tracking
-    status VARCHAR(20) NOT NULL DEFAULT 'PENDING',
-    sent_at TIMESTAMP,
-    read_at TIMESTAMP,
-    failed_at TIMESTAMP,
-    failure_reason TEXT,
-
-    -- Metadata
-    metadata JSONB,
-
-    -- Timestamps
-    created_at TIMESTAMP NOT NULL DEFAULT NOW(),
-    updated_at TIMESTAMP NOT NULL DEFAULT NOW()
-);
-
--- Indexes for performance
-CREATE INDEX idx_notifications_recipient ON notifications(recipient_username);
-CREATE INDEX idx_notifications_event ON notifications(event_code) WHERE event_code IS NOT NULL;
-CREATE INDEX idx_notifications_status ON notifications(status);
-CREATE INDEX idx_notifications_created ON notifications(created_at DESC);
-CREATE INDEX idx_notifications_recipient_created ON notifications(recipient_username, created_at DESC);
-CREATE INDEX idx_notifications_recipient_status ON notifications(recipient_username, status);
-
--- Comment for documentation
-COMMENT ON TABLE notifications IS 'Notification delivery tracking (email/SMS audit trail). In-app notifications queried dynamically. Follows Task System pattern (Story 5.5). ADR-003 compliant (meaningful IDs).';
-```
-
-**See also**:
-- [Story 1.15a.10: Notifications API Consolidation](../stories/1.15a.10.notifications-api-consolidation.md) - Implementation details
-- [06d-notification-system.md](./06d-notification-system.md) - Architecture and patterns
+**Source of truth: the Flyway migrations**, not this document. This section is an inventory to
+find your way; for columns, constraints and indexes read the migration that introduced the table
+and every later migration that alters it.
+
+| Service | Migrations | Flyway history table |
+|---|---|---|
+| event-management-service | `services/event-management-service/src/main/resources/db/migration/` (V1 to V144) | `flyway_schema_history_event_management` |
+| company-user-management-service | `services/company-user-management-service/src/main/resources/db/migration/` (V1 to V22) | `flyway_schema_history_company_user_management` |
+| partner-coordination-service | `services/partner-coordination-service/src/main/resources/db/migration/` (V1 to V10) | `flyway_schema_history_partner_coordination` |
+| speaker-coordination-service | none of its own; only the `shared-kernel` baseline `V1__Initial_baseline.sql` (extension + `update_updated_at_column()` trigger function) | `flyway_schema_history_speaker_coordination` |
+| attendee-experience-service | none; the service has no datasource and no JPA entities | n/a |
+
+All services connect to the same PostgreSQL database (`batbern`); each keeps its own Flyway
+history table. Two tables are declared by two services with `CREATE TABLE IF NOT EXISTS`:
+`logos` (CUMS V10, EMS V5) and `shedlock` (CUMS V12, EMS V31).
+
+The inventory below was derived by scanning every migration for `CREATE TABLE`, `DROP TABLE`
+and `ALTER TABLE ... RENAME TO` (as of develop c4593449). Tables created and later dropped are
+listed separately so that nobody goes looking for them. To regenerate it, scan the same
+statements again; do not edit it by hand from memory.
+
+### Event Management Service (EMS)
+
+| Table | Purpose | Introduced |
+|---|---|---|
+| `events` | Event aggregate root (event code, dates, venue, `workflow_state`, capacity) | V2 |
+| `sessions` | Agenda slots and talks of an event; canonical current title and abstract | V2 |
+| `registrations` | Attendee registrations, referenced by `attendee_username` (ADR-003) | V2 |
+| `logos` | Generic file upload state machine PENDING, CONFIRMED, ASSOCIATED (ADR-002); shared with CUMS | V5 |
+| `session_users` | Junction session to speaker username, with `speaker_role` (primary speaker, co-speaker, moderator, panelist) | V7 |
+| `event_types` | Event type templates (slot configuration, timings) | V10 |
+| `topics` | Topic backlog with usage and staleness tracking | V14 |
+| `topic_usage_history` | Which topic was used for which event, feeds staleness | V14 |
+| `speaker_pool` | Per-event speaker workflow state machine (ADR-009); no talk content | V14 |
+| `speaker_outreach_history` | Organizer contact attempts and automated reminders per speaker | V16 |
+| `task_templates` | Reusable event planning task templates | V22 |
+| `event_tasks` | Tasks per event assigned to organizers | V22 |
+| `speaker_status_history` | Audit trail of speaker workflow transitions | V23 |
+| `session_timing_history` | Audit trail of session time changes during slot assignment | V28 |
+| `speaker_slot_preferences` | Speaker preferences for agenda slots | V28 |
+| `publishing_config` | Per-event auto-publishing settings (speakers, agenda) | V28 |
+| `workflow_state_migration_log` | Audit log of the V30 consolidation from 16 to 9 event states | V30 |
+| `shedlock` | ShedLock distributed scheduler locks; shared with CUMS | V31 |
+| `notifications` | Notification delivery audit trail and in-app notifications | V33 |
+| `session_materials` | Uploaded slides, documents and videos per session | V41 |
+| `session_content_history` | Versioned title and abstract submissions per session, keyed by `(session_id, submission_version)` | V53 (as `speaker_content_submissions`, renamed in V99) |
+| `speaker_reminder_log` | Sent deadline reminders, for deduplication and audit | V54 |
+| `speaker_arrivals` | Speaker arrival confirmations on the event day | V55 |
+| `email_templates` | DB-backed email templates, seeded from the classpath, editable by organizers | V62 |
+| `newsletter_subscribers` | Newsletter subscriptions | V67 |
+| `newsletter_sends` | One row per newsletter send | V67 |
+| `newsletter_recipients` | Per-recipient delivery status of a newsletter send | V67 |
+| `ai_generation_log` | Cost and usage log of AI generation calls | V77 |
+| `event_photos` | Event photo gallery (S3 keys, CDN URLs) | V79 |
+| `event_teaser_images` | Teaser images for the moderator presentation page | V80 |
+| `ai_prompts` | Organizer-editable AI prompts with their defaults | V82 |
+| `app_settings` | Key-value application settings (for example forwarding recipients, Mail Center switch) | V88 |
+| `session_proposals` | Talk proposals from attendee self-nominations (Story 7.2, ADR-012) | V109 |
+| `organizer_thanks` | Post-event "thank the organizers" messages (Story 7.4) | V111 |
+| `session_qna_window` | One time-boxed post-event Q&A window per session (Story 7.5) | V112 |
+| `session_qna_post` | Questions and answers in a Q&A window | V112 |
+| `session_qna_notification` | Per-recipient digest state of Q&A notifications (Story 15.7) | V117 |
+| `live_timing_presence` | Organizer presence for the live-timing poll (Story 15.1) | V119 |
+| `event_agenda_config` | Per-event copy-on-edit override of the event type template (Story 15.2) | V121 |
+| `email_forwarding_log` | One row per inbound mail S3 object, idempotent alias forwarding; no addresses or bodies | V128 |
+| `mail_message` | Every outbound and inbound mail (Mail Center, Epic 16) | V135 |
+| `mail_recipient` | One row per recipient address of a `mail_message` | V135 |
+| `mail_conversation` | Inbound replies grouped into conversations with status and assignee | V139 |
+| `mail_automatic_event` | Counts of automatic mail (out-of-office, bounces, loops), without content | V139 |
+| `user_merge_log` | One row per merge of two profiles of the same person (#1183) | V144 |
+
+Dropped and no longer present: `publishing_versions` (created V28, dropped V89), `speakers`
+(created V37, dropped V94, see ADR-009), `speaker_invitation_tokens` (magic-link tokens, created
+V43, dropped V104).
+
+### Company User Management Service (CUMS)
+
+| Table | Purpose | Introduced |
+|---|---|---|
+| `companies` | Companies with Swiss business data and logo reference | V3 |
+| `user_profiles` | Users: UUID primary key internally, `username` as public identifier | V4 |
+| `role_assignments` | Roles per user (ORGANIZER, SPEAKER, PARTNER, ATTENDEE) | V5 |
+| `activity_history` | User activity tracking | V6 |
+| `logos` | Generic file upload state machine; shared with EMS | V10 |
+| `shedlock` | ShedLock distributed scheduler locks; shared with EMS | V12 |
+| `watch_pairings` | Pairing codes for the Apple Watch organizer app | V13 |
+| `presentation_settings` | Single-row settings for the moderator presentation page | V14 |
+| `user_additional_emails` | Additional email addresses per user profile (Story 10.32) | V16 |
+
+### Partner Coordination Service (PCS)
+
+| Table | Purpose | Introduced |
+|---|---|---|
+| `partners` | Partner companies, referenced by `company_name` (ADR-003) | V2 |
+| `partner_meetings` | Partner meetings | V2 |
+| `partner_meeting_attendance` | Attendance per partner meeting | V2 |
+| `topic_suggestions` | Topic suggestions by partners | V4 (V2 version dropped and recreated in V4) |
+| `topic_votes` | Partner votes on topic suggestions | V4 (V2 version dropped and recreated in V4) |
+| `partner_notes` | Organizer notes per partner | V7 |
+| `partner_meeting_rsvps` | Calendar RSVP replies to partner meeting invitations | V9 |
+
+Dropped and no longer present: `partner_contacts` (created V2, dropped V6).
+
+### Speaker Coordination Service
+
+Per **ADR-009 (Unified Speaker Workflow)** and the **Story 11.E.8 consolidation**, the
+`speakers` table is gone (EMS V94) and `speaker-coordination-service` owns no entity. SPEAKER is
+a role on `User` (`role_assignments.role = 'SPEAKER'`). Per-event speaker workflow state lives
+on `speaker_pool` in EMS. Per-event content lives on `sessions` (canonical current title and
+description) plus `session_content_history`. `session_users` is the junction; sessions reference
+users by `username` (ADR-003). The denormalised columns `speaker_pool.content_status`,
+`speaker_pool.content_submitted_at`, `speaker_pool.initial_presentation_title` and
+`session_users.presentation_title` were dropped in V102; the content status is derived by
+`ContentStatusDeriver`.
 
 ### Business Rule Enforcement
 
-```sql
--- Function to enforce minimum 2 organizers rule
-CREATE OR REPLACE FUNCTION enforce_minimum_organizers()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.role = 'ORGANIZER' AND NEW.is_active = false THEN
-        IF (SELECT COUNT(*) FROM user_roles
-            WHERE role = 'ORGANIZER'
-            AND is_active = true
-            AND (event_id = NEW.event_id OR (event_id IS NULL AND NEW.event_id IS NULL))
-            AND id != NEW.id) < 2 THEN
-            RAISE EXCEPTION 'Cannot demote organizer: minimum 2 organizers required';
-        END IF;
-    END IF;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
+The "at least two organizers" rule is enforced in application code, not by a database trigger:
+`RoleService` in CUMS (`MINIMUM_ORGANIZERS = 2`) throws `MinimumOrganizersException` when a role
+change would leave fewer than two organizers.
 
-CREATE TRIGGER check_minimum_organizers
-    BEFORE UPDATE ON user_roles
-    FOR EACH ROW
-    WHEN (OLD.is_active = true AND NEW.is_active = false)
-    EXECUTE FUNCTION enforce_minimum_organizers();
-```
+**See also:** [06d-notification-system.md](./06d-notification-system.md) for the notification
+architecture, and [Story 1.15a.10: Notifications API Consolidation](../stories/archived/epic-1/1.15a.10.notifications-api-consolidation.md).
 
 ## Data Consistency and Cross-Service Communication
 

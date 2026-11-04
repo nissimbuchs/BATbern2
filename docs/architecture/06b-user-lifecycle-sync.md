@@ -1226,8 +1226,8 @@ await eventBridgeClient.send(new PutEventsCommand({
 ## Related Documentation
 
 - **[ADR-001: Invitation-Based User Registration Architecture](./ADR-001-invitation-based-user-registration.md)** - Architectural decision for database-centric approach
-- **[Story 1.14-2: User Management Service Foundation](../stories/1.14-2.user-management-service-foundation.md)** - Database schema implementation
-- **[Story 1.2.5: User Sync Implementation](../stories/1.2.5-user-sync-reconciliation-implementation.md)** - Lambda trigger implementation
-- **[Story 1.2.3: Account Creation Flow](../stories/1.2.3-implement-account-creation-flow.md)** - Self-registration UI
+- **[Story 1.14-2: User Management Service Foundation](../stories/archived/epic-1/1.14-2.user-management-service-foundation.md)** - Database schema implementation
+- **[Story 1.2.5: User Sync Implementation](../stories/archived/epic-1/1.2.5-user-sync-reconciliation-implementation.md)** - Lambda trigger implementation
+- **[Story 1.2.3: Account Creation Flow](../stories/archived/epic-1/1.2.3-implement-account-creation-flow.md)** - Self-registration UI
 - **[Backend Architecture](./06-backend-architecture.md)** - Overall backend patterns
 - **[API Design](./04-api-design.md)** - REST API conventions and authorization patterns
