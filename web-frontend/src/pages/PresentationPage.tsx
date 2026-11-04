@@ -60,7 +60,11 @@ import animStyles from './presentation/presentation-animations.module.css';
 const AGENDA_FLIP_SPRING = { type: 'spring' as const, stiffness: 100, damping: 22, mass: 1 };
 
 /** Width of the center-stage AgendaView — vw so it scales natively at any resolution */
-const AGENDA_CENTER_WIDTH = '57.292vw'; /* 1100px @ 1920px */
+const AGENDA_CENTER_WIDTH = '80vw';
+
+/** Sidebar agenda next to the session slides, and the room it takes from the slide. */
+const AGENDA_SIDEBAR_WIDTH = '21vw';
+const SIDEBAR_SLIDE_OFFSET = '24vw';
 
 /** Slide enter/exit variants for directional spring (ACs #5-7) */
 const slideVariants = {
@@ -137,7 +141,7 @@ export function PresentationPage(): JSX.Element {
             color: '#4f9cf9',
           }}
         >
-          BAT<span style={{ color: 'rgba(255,255,255,0.7)' }}>bern</span>
+          BAT<span style={{ color: '#ffffff' }}>bern</span>
         </div>
       </div>
     );
@@ -163,7 +167,7 @@ export function PresentationPage(): JSX.Element {
             <div
               style={{
                 fontSize: '1.25vw',
-                color: 'rgba(255,255,255,0.5)',
+                color: '#ffffff',
                 marginBottom: '1.25vw',
               }}
             >
@@ -176,7 +180,7 @@ export function PresentationPage(): JSX.Element {
           <p
             style={{
               fontSize: '1.042vw',
-              color: 'rgba(255,255,255,0.6)',
+              color: '#ffffff',
               marginBottom: '1.667vw',
             }}
           >
@@ -302,7 +306,7 @@ export function PresentationPage(): JSX.Element {
             data-layout="sidebar"
             transition={AGENDA_FLIP_SPRING}
             style={{ width: AGENDA_CENTER_WIDTH }}
-            animate={{ width: '14.583vw' }}
+            animate={{ width: AGENDA_SIDEBAR_WIDTH }}
           >
             <AgendaView
               sessions={data.sessions}
@@ -314,12 +318,15 @@ export function PresentationPage(): JSX.Element {
       )}
 
       {/* Current section slide — shifted right when sidebar is visible (AC #17) */}
+      {/* left, not paddingLeft: the slide below is absolutely positioned and ignored the padding,
+          so session slides were centred under the sidebar (visible once the text got bigger) */}
       <div
         style={{
           position: 'absolute',
-          inset: 0,
-          paddingLeft: isSession ? '16.667vw' : 0,
-          boxSizing: 'border-box',
+          top: 0,
+          right: 0,
+          bottom: 0,
+          left: isSession ? SIDEBAR_SLIDE_OFFSET : 0,
         }}
       >
         {/* Section spring transitions — directional (ACs #5-7) */}

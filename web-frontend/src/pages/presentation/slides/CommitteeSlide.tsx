@@ -35,9 +35,9 @@ export function CommitteeSlide({ organizers }: CommitteeSlideProps): JSX.Element
     >
       <h2
         style={{
-          fontSize: '2.5vw',
+          fontSize: '4.5vw',
           fontWeight: 700,
-          marginBottom: '2.5vw',
+          marginBottom: '3vw',
           color: '#4f9cf9',
         }}
       >
@@ -48,9 +48,10 @@ export function CommitteeSlide({ organizers }: CommitteeSlideProps): JSX.Element
       <div
         style={{
           display: 'grid',
-          gridTemplateColumns: 'repeat(2, minmax(20.833vw, 29.167vw))',
-          gap: '1.25vw',
-          maxWidth: '62.5vw',
+          gridTemplateColumns: 'repeat(2, minmax(30vw, 43vw))',
+          gap: '1.8vw',
+          maxWidth: '90vw',
+          justifyContent: 'center',
           width: '100%',
         }}
       >
@@ -63,8 +64,8 @@ export function CommitteeSlide({ organizers }: CommitteeSlideProps): JSX.Element
             style={{
               background: 'rgba(255,255,255,0.06)',
               border: '1px solid rgba(255,255,255,0.12)',
-              borderRadius: '0.625vw',
-              padding: '1.042vw 1.25vw',
+              borderRadius: '0.9vw',
+              padding: '1.5vw 1.8vw',
             }}
           >
             <OrganizerCard organizer={org} />
@@ -83,12 +84,12 @@ function OrganizerCard({ organizer }: { organizer: User }): JSX.Element {
   const initials = `${organizer.firstName?.[0] ?? ''}${organizer.lastName?.[0] ?? ''}`;
 
   return (
-    <div style={{ display: 'flex', alignItems: 'center', gap: '1.25vw' }}>
+    <div style={{ display: 'flex', alignItems: 'center', gap: '1.8vw' }}>
       {/* Profile photo */}
       <div
         style={{
-          width: '4.167vw',
-          height: '4.167vw',
+          width: '7vw',
+          height: '7vw',
           borderRadius: '50%',
           overflow: 'hidden',
           flexShrink: 0,
@@ -105,22 +106,18 @@ function OrganizerCard({ organizer }: { organizer: User }): JSX.Element {
             style={{ width: '100%', height: '100%', objectFit: 'cover' }}
           />
         ) : (
-          <span style={{ fontSize: '1.667vw', color: 'rgba(255,255,255,0.7)', fontWeight: 300 }}>
-            {initials}
-          </span>
+          <span style={{ fontSize: '2.8vw', color: '#ffffff', fontWeight: 300 }}>{initials}</span>
         )}
       </div>
 
       {/* Name + company */}
       <div style={{ flex: 1, minWidth: 0 }}>
         <div
-          style={{ fontSize: '1.25vw', fontWeight: 500, color: '#ffffff', marginBottom: '0.313vw' }}
+          style={{ fontSize: '2.3vw', fontWeight: 600, color: '#ffffff', marginBottom: '0.4vw' }}
         >
           {organizer.firstName} {organizer.lastName}
         </div>
-        {companyName && (
-          <div style={{ fontSize: '0.938vw', color: 'rgba(255,255,255,0.55)' }}>{companyName}</div>
-        )}
+        {companyName && <div style={{ fontSize: '1.7vw', color: '#ffffff' }}>{companyName}</div>}
       </div>
 
       {/* Company logo */}
@@ -128,7 +125,7 @@ function OrganizerCard({ organizer }: { organizer: User }): JSX.Element {
         <img
           src={logoUrl}
           alt={companyName ?? ''}
-          style={{ maxHeight: '2.5vw', maxWidth: '5.208vw', objectFit: 'contain', flexShrink: 0 }}
+          style={{ maxHeight: '4vw', maxWidth: '8.5vw', objectFit: 'contain', flexShrink: 0 }}
         />
       )}
     </div>

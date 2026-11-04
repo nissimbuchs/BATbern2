@@ -42,3 +42,13 @@ describe('AgendaView', () => {
     expect(screen.getByTestId('agenda-break-row')).toHaveTextContent('Pause');
   });
 });
+
+describe('centerFontSize', () => {
+  it('uses the full size for a short agenda and shrinks for a long one, bounded by the height', async () => {
+    const { centerFontSize } = await import('./agendaFontSize');
+    expect(centerFontSize(6)).toBe('min(2.6vw, 4.62vh)');
+    expect(centerFontSize(12)).toBe('min(1.83vw, 3.25vh)');
+    expect(centerFontSize(40)).toBe('min(1.5vw, 2.67vh)');
+    expect(centerFontSize(0)).toBe('min(2.6vw, 4.62vh)');
+  });
+});

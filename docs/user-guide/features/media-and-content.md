@@ -48,7 +48,8 @@ A single fullscreen webpage (e.g., `/present/BATbern57`) that a moderator opens 
 
 - **No authentication** — loads all event data publicly; navigate with `→` / `←` / `PageDown` / `PageUp` / `Space`; `F` (or `F11`) toggles fullscreen.
 - **Sections** — Welcome, About (Verein purpose + partner count), Committee (active organizers), Topic Reveal, teaser-image slides, Agenda Preview, per-speaker sections, Break, Agenda Recap, Upcoming Events, and Apéro. Structural sessions (`moderation`, `networking`) are excluded.
-- **Sidebar** — an agenda sidebar appears for the speaker sections and tracks the moderator's navigation position.
+- **Sidebar** — an agenda sidebar appears for the speaker sections and tracks the moderator's navigation position; the session slide takes the rest of the width.
+- **Made for the big screen** — white text on a background image darkened to 82 %, large type throughout. The agenda sizes itself to the number of rows, speaker cards to the number of speakers (one to three), and very long talk titles get a smaller size so the speaker stays on screen.
 - **Animations (Story 10.8b)** — a full Framer Motion layer adds the agenda↔sidebar FLIP transition, section slide transitions, a Ken Burns background zoom on the topic image, committee-card stagger, and break/apéro visual effects.
 
 ---

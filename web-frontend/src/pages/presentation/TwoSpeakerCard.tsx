@@ -24,11 +24,15 @@ export function TwoSpeakerCard({ speakers }: TwoSpeakerCardProps): JSX.Element {
         display: 'flex',
         justifyContent: 'center',
         alignItems: 'flex-start',
-        gap: '5vw',
+        gap: speakers.length > 2 ? '2.5vw' : '5vw',
       }}
     >
       {speakers.map((speaker) => (
-        <SpeakerCard key={speaker.username ?? speaker.firstName} speaker={speaker} />
+        <SpeakerCard
+          key={speaker.username ?? speaker.firstName}
+          speaker={speaker}
+          count={speakers.length}
+        />
       ))}
     </div>
   );

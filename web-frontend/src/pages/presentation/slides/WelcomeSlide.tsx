@@ -40,14 +40,14 @@ export function WelcomeSlide({ event }: WelcomeSlideProps): JSX.Element {
       }}
     >
       {/* BATbern animated logo */}
-      <div className={animStyles.loaderWrap} style={{ width: '9.375vw', height: '9.375vw' }}>
+      <div className={animStyles.loaderWrap} style={{ width: '12vw', height: '12vw' }}>
         <BATbernLoader size={180} speed="slow" />
       </div>
 
       {/* BATbern wordmark */}
       <div
         style={{
-          fontSize: '4.167vw',
+          fontSize: '7vw',
           fontWeight: 800,
           letterSpacing: '-0.02em',
           color: '#4f9cf9',
@@ -55,15 +55,15 @@ export function WelcomeSlide({ event }: WelcomeSlideProps): JSX.Element {
           marginBottom: '0.417vw',
         }}
       >
-        BAT<span style={{ color: 'rgba(255,255,255,0.9)' }}>bern</span>
+        BAT<span style={{ color: '#ffffff' }}>bern</span>
       </div>
 
       {/* Hashtag */}
       <div
         style={{
-          fontSize: '1.667vw',
-          color: 'rgba(255,255,255,0.7)',
-          marginBottom: '1.667vw',
+          fontSize: '2.8vw',
+          color: '#ffffff',
+          marginBottom: '2vw',
         }}
       >
         {hashtag}
@@ -73,10 +73,10 @@ export function WelcomeSlide({ event }: WelcomeSlideProps): JSX.Element {
       {eventTitle && (
         <h1
           style={{
-            fontSize: '3.75vw',
+            fontSize: '5.8vw',
             fontWeight: 700,
             margin: `0 0 1.667vw`,
-            maxWidth: '46.875vw',
+            maxWidth: '85vw',
             lineHeight: 1.15,
           }}
         >
@@ -87,8 +87,8 @@ export function WelcomeSlide({ event }: WelcomeSlideProps): JSX.Element {
       {/* Date and venue */}
       <div
         style={{
-          fontSize: '1.458vw',
-          color: 'rgba(255,255,255,0.75)',
+          fontSize: '2.6vw',
+          color: '#ffffff',
         }}
       >
         {dateStr}

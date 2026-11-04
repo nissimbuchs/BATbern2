@@ -18,6 +18,12 @@ interface SessionSlideProps {
   session: PresentationSession;
 }
 
+/** Long titles and three speakers need room: the talk title must not push the speakers off. */
+function titleFontSize(title: string, speakerCount: number): string {
+  const base = title.length > 80 ? 3.3 : title.length > 50 ? 3.9 : 4.6;
+  return `${speakerCount > 2 ? base - 0.4 : base}vw`;
+}
+
 export function SessionSlide({ session }: SessionSlideProps): JSX.Element {
   const speakers: SessionSpeaker[] = (session.speakers as SessionSpeaker[] | undefined) ?? [];
 
@@ -31,7 +37,7 @@ export function SessionSlide({ session }: SessionSlideProps): JSX.Element {
         alignItems: 'center',
         justifyContent: 'center',
         height: '100%',
-        padding: '2.5vw',
+        padding: '2.5vw 3vw',
         color: '#ffffff',
         textAlign: 'center',
       }}
@@ -39,11 +45,11 @@ export function SessionSlide({ session }: SessionSlideProps): JSX.Element {
       {/* Session title */}
       <h1
         style={{
-          fontSize: '2.917vw',
+          fontSize: titleFontSize(session.title ?? '', speakers.length),
           fontWeight: 700,
-          maxWidth: '46.875vw',
-          lineHeight: 1.2,
-          marginBottom: '2.5vw',
+          maxWidth: '70vw',
+          lineHeight: 1.15,
+          margin: '0 0 3.5vw',
         }}
       >
         {session.title}
@@ -51,7 +57,7 @@ export function SessionSlide({ session }: SessionSlideProps): JSX.Element {
 
       {/* Speaker(s) */}
       {speakers.length === 0 ? null : speakers.length === 1 ? (
-        <SpeakerCard speaker={speakers[0]} />
+        <SpeakerCard speaker={speakers[0]} count={1} />
       ) : (
         <TwoSpeakerCard speakers={speakers} />
       )}

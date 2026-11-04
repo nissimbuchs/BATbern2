@@ -11,19 +11,18 @@
 .center {
   /* Width is controlled by the parent motion.div in PresentationPage */
   width: 100%;
-  font-size: 1.167vw; /* 1.4rem @ 1920px */
+  font-size: 2.2vw; /* overridden inline by row count, see centerFontSize() */
 }
 
 .sidebar {
   /* Width is animated by the parent motion.div in PresentationPage (wide → sidebar FLIP) */
   width: 100%;
-  font-size: 0.682vw; /* 0.82rem @ 1920px */
-  opacity: 0.85;
+  font-size: 1.15vw; /* readable from the back of the room next to the session slide */
 }
 
 .agendaTitle {
-  margin: 0 0 2.5vw; /* gap above the first session, scales with viewport */
-  font-size: 2.5vw;
+  margin: 0 0 1.4em; /* gap above the first session, scales with the rows */
+  font-size: 2em;
   font-weight: 700;
   color: #4f9cf9; /* BATbern blue accent */
   text-align: center;
@@ -32,9 +31,9 @@
 .sessionRow {
   display: flex;
   align-items: baseline;
-  gap: 0.417vw; /* 0.5rem */
-  padding: 0.292vw 0; /* 0.35rem */
-  color: rgba(255, 255, 255, 0.6);
+  gap: 0.6em;
+  padding: 0.3em 0;
+  color: #ffffff;
   transition: color 0.15s;
 }
 
@@ -44,17 +43,18 @@
 }
 
 .sessionRow.completed {
-  color: rgba(255, 255, 255, 0.35);
+  color: #ffffff;
   text-decoration: line-through;
+  text-decoration-color: #4f9cf9;
 }
 
 .sessionRow.upcoming {
-  color: rgba(255, 255, 255, 0.6);
+  color: #ffffff;
 }
 
 .sessionTime {
   white-space: nowrap;
-  min-width: 2.917vw; /* 3.5rem @ 1920px */
+  min-width: 3.2em;
   font-variant-numeric: tabular-nums;
   /* Keep time pinned to top when title wraps */
   align-self: flex-start;
@@ -69,15 +69,15 @@
 }
 
 .breakRow {
-  color: rgba(255, 255, 255, 0.4);
+  color: #ffffff;
   font-style: italic;
-  padding: 0.208vw 0; /* 0.25rem */
-  font-size: 0.583vw; /* 0.7rem @ 1920px */
+  padding: 0.3em 0;
+  font-size: 0.8em;
   letter-spacing: 0.05em;
 }
 
 .checkmark {
   margin-left: 0.208vw; /* 0.25rem */
-  color: rgba(255, 255, 255, 0.3);
+  color: #ffffff;
   align-self: flex-start;
 }

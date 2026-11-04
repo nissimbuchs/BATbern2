@@ -16,9 +16,19 @@ type SessionSpeaker = components['schemas']['SessionSpeaker'];
 
 interface SpeakerCardProps {
   speaker: SessionSpeaker;
+  /** Speakers on the slide: one card gets the most room, three still fit side by side. */
+  count?: number;
 }
 
-export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
+/** vw sizes per speaker count, for the big screen (owner 2026-11-04: "use the estate"). */
+const SIZES = {
+  1: { photo: 15, name: 3.2, logo: 4.5, logoWidth: 16, width: 60 },
+  2: { photo: 13, name: 2.8, logo: 4, logoWidth: 14, width: 34 },
+  3: { photo: 10.5, name: 2.3, logo: 3.4, logoWidth: 12, width: 23 },
+} as const;
+
+export function SpeakerCard({ speaker, count = 1 }: SpeakerCardProps): JSX.Element {
+  const size = SIZES[Math.min(Math.max(count, 1), 3) as 1 | 2 | 3];
   const fullName =
     [speaker.firstName, speaker.lastName].filter(Boolean).join(' ') || speaker.username || '';
 
@@ -34,18 +44,19 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
         display: 'flex',
         flexDirection: 'column',
         alignItems: 'center',
-        gap: '0.833vw',
+        gap: '1.2vw',
         textAlign: 'center',
+        maxWidth: `${size.width}vw`,
       }}
     >
       {/* Speaker photo */}
       <div
         style={{
-          width: '8.333vw',
-          height: '8.333vw',
+          width: `${size.photo}vw`,
+          height: `${size.photo}vw`,
           borderRadius: '50%',
           overflow: 'hidden',
-          border: '0.156vw solid rgba(255,255,255,0.3)',
+          border: '0.2vw solid rgba(255,255,255,0.6)',
           flexShrink: 0,
         }}
       >
@@ -64,8 +75,8 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
               display: 'flex',
               alignItems: 'center',
               justifyContent: 'center',
-              fontSize: '2.5vw',
-              color: 'rgba(255,255,255,0.5)',
+              fontSize: `${size.photo / 3}vw`,
+              color: '#ffffff',
             }}
           >
             {fullName.charAt(0).toUpperCase()}
@@ -73,14 +84,13 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
         )}
       </div>
 
-      <div
-        style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.625vw' }}
-      >
+      <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: '0.9vw' }}>
         <p
           style={{
             margin: 0,
-            fontSize: '1.667vw',
+            fontSize: `${size.name}vw`,
             fontWeight: 600,
+            lineHeight: 1.15,
             color: '#ffffff',
           }}
         >
@@ -92,8 +102,8 @@ export function SpeakerCard({ speaker }: SpeakerCardProps): JSX.Element {
           <LogoBadge
             src={logoUrl}
             alt={speaker.companyDisplayName ?? speaker.company ?? ''}
-            imgStyle={{ height: '2.5vw', maxWidth: '9.375vw' }}
-            style={{ padding: '0.4vw 0.6vw', borderRadius: '0.5vw' }}
+            imgStyle={{ height: `${size.logo}vw`, maxWidth: `${size.logoWidth}vw` }}
+            style={{ padding: '0.6vw 0.9vw', borderRadius: '0.6vw' }}
           />
         )}
       </div>
