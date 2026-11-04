@@ -8,6 +8,8 @@
 
 ## Overview
 
+![Company list](../assets/screenshots/entity-management/companies-list.png)
+
 Companies represent architectural firms in Switzerland and internationally that participate in BATbern conferences. Each company has employees (users) who can register as speakers or attendees.
 
 ## Key Features

@@ -4,40 +4,54 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MVP Status
 
-**Last Updated:** 2026-06-09
+**Last Updated:** 2026-11-04
 
-**Status:** ✅ **MVP 100% COMPLETE & PRODUCTION READY** | **Epics 1-6, 8, 11, and 12 COMPLETE**
+**Status:** ✅ **MVP 100% COMPLETE & IN PRODUCTION** | **Epics 1-8, 10, 11, 12 and 14 COMPLETE; 13, 15, 16 open; 9 superseded**
 
-**🎉 MILESTONE:** All MVP epics (1-5) are 100% complete! Epics 6 (Speaker Portal), 8 (Partner Coordination), 11 (Unified Speaker Workflow Refactor), and 12 (Federated Identity / Google SSO) fully implemented. Epic 7 rewritten 2026-06-09 as a right-sized attendee contribution epic (ready for story detailing).
-
-**Epic Status:**
+**Epic Status** (source of truth: `_bmad-output/implementation-artifacts/sprint-status.yaml`):
 - ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
 - ✅ **Epic 2**: Entity CRUD & Domain Services - 100% COMPLETE
 - ✅ **Epic 3**: Historical Data Migration - 100% COMPLETE (tooling ready, production import pending)
 - ✅ **Epic 4**: Public Website & Content Discovery - 100% COMPLETE
 - ✅ **Epic 5**: Enhanced Organizer Workflows - 100% COMPLETE (Auto-publishing & lifecycle automation delivered via BAT-16)
 - ✅ **Epic 6**: Speaker Self-Service Portal - 100% COMPLETE (all stories 6.0-6.5 deployed)
-- 📋 **Epic 7**: Attendee Experience — Right-Sized Contribution & Touchpoints - READY FOR STORY DETAILING (rewritten 2026-06-09; 5 organizer-voted features, replaces deferred dashboards/PWA scope)
-- ✅ **Epic 8**: Partner Coordination - 100% COMPLETE (attendance analytics, topic voting, meeting coordination)
-- ✅ **Epic 11**: Unified Speaker Workflow Refactor - 100% COMPLETE (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25). Supersedes prior Epic 9 plan.
+- ✅ **Epic 7**: Attendee Experience — Right-Sized Contribution & Touchpoints - COMPLETE (Stories 7.1–7.7; #776, #777, #785)
+- ✅ **Epic 8**: Partner Coordination - 100% COMPLETE (attendance analytics, topic voting, meeting coordination, partner notes)
+- 📦 **Epic 9**: Speaker Authentication - SUPERSEDED by Epic 11 (ADR-009)
+- ✅ **Epic 10**: Additional Stories - COMPLETE (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
+- ✅ **Epic 11**: Unified Speaker Workflow Refactor - COMPLETE (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25). Leftovers: 11.E.5, 11.G.1 ready-for-dev, 11.F.2 backlog
 - ✅ **Epic 12**: Federated Identity / Google SSO (ADR-010) - COMPLETE (Google OIDC login live 2026-06-04; Apple/generic OIDC + Cognito trigger retirement deferred via backlog Story 12.10)
+- 🔄 **Epic 13**: Spring Boot 4 Migration - SB 4.0.7 LIVE (#797, 2026-06-19); open: 13.4 Jackson 3 flag flip (`preferred-json-mapper: jackson2` still set in all services), 13.5 unpin BOM-managed versions
+- ✅ **Epic 14**: Event Detail Page — Lifecycle-Aware Redesign - COMPLETE (#788, 2026-06-15)
+- 🔄 **Epic 15**: Post-Event #2 Hardening - 15.2, 15.3, 15.5, 15.6, 15.7, 15.9 done; 15.1 P1 live (#800), P2 watch + P3 WebSocket teardown open; 15.4 not implemented; 15.8 backlog
+- 🔄 **Epic 16**: Mail Center - 16.0–16.11 LIVE (last: #1194, 2026-11-03) except 16.8c clean-up (gated: one release + owner go); 16.12, 16.13 backlog
 
 **Delivered Capabilities:**
 - ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
-- ✅ Authentication & authorization (AWS Cognito, role-based access)
+- ✅ Authentication & authorization (AWS Cognito, role-based access, roles checked in the services per ADR-008)
 - ✅ "Continue with Google" OIDC login (Cognito federation @ auth.batbern.ch, transparent account linking, JIT provisioning, ToS consent gate, avatar import; runtime kill-switch `FEATURES_SSO_ENABLED`)
-- ✅ Complete event workflow (9-state machine + speaker coordination + task system)
+- ✅ Additional user emails (Story 10.32) and SSO login via a verified additional email (#745)
+- ✅ Profile merge of two profiles of one person, by organizers and by self-claim (#1204)
+- ✅ Complete event workflow (8-state machine + speaker coordination + task system)
+- ✅ Organizer cockpit: lifecycle-aware event detail page (Epic 14, #788) with tasks at the right time (#1105)
 - ✅ Auto-publishing & CDN integration (speakers @ 30 days, agenda @ 14 days)
 - ✅ Event lifecycle automation (EVENT_LIVE, EVENT_COMPLETED transitions)
 - ✅ Public website with event registration (3-step wizard + QR codes)
+- ✅ Registration capacity + waitlist (Story 10.11; saving the capacity fills free places from the waitlist, #1208), organizer "Add participant" (#792)
+- ✅ Unconfirmed-attendee recovery: 4-day registration links + daily resend (#683)
+- ✅ Auto-participant enrolment, per-event email aliases (#686), name-badge XLSX + printable DOCX (#686, #688)
+- ✅ Venue coordination composer (#690)
+- ✅ Moderator presenter and Live Control page (REST polling since #800; big-screen fixes #1207)
+- ✅ Attendee touchpoints (Epic 7): topics from the floor, self-nomination, slides-online mail, thank-the-organizers, per-session Q&A, event history, curated thank-you marquee
+- ✅ Mail Center (Epic 16): outbound log + delivery status, conversations, answers, shared composer, global Mail page; alias forwarding runs in EMS (#1137, forwarder Lambda removed)
 - ✅ Historical archive browsing with content search
 - ✅ Historical data migration tooling (production import pending user trigger)
 - ✅ Speaker self-service portal (invitations, response, materials, dashboard, reminders)
-- ✅ Partner coordination (attendance analytics + XLSX export, topic voting, ICS meeting invites)
+- ✅ Partner coordination (attendance analytics + XLSX export, topic voting, ICS meeting invites per recipient)
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Current Phase:** Phase 3 — Epics 1-6, 8, 11, and 12 complete; Epic 7 rewritten 2026-06-09 (right-sized, ready for story detailing)
+**Current Phase:** Phase 3 — Epics 1-8, 10, 11, 12 and 14 complete; Epics 13, 15 and 16 have open stories (see below)
 
 ## Project Overview
 
@@ -46,13 +60,13 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 **Architecture Pattern**: Domain-Driven Design with microservices architecture
 - **Shared Kernel**: Common types, domain events, utilities shared across all services
 - **API Gateway**: Unified entry point handling authentication, rate limiting, and routing
-- **Domain Services**: Event management, speaker coordination, partner coordination, attendee experience, company management
+- **Domain Services**: event management (EMS, also hosts speaker and attendee logic), company/user management (CUMS), partner coordination. Per ADR-014 `speaker-coordination-service` and `attendee-experience-service` are dormant stubs
 - **Infrastructure**: AWS CDK for Infrastructure as Code
 - **Frontend**: React 19 + TypeScript SPA with role-based adaptive UI
 
 ## Current Development Phase
 
-**Phase:** ✅ **MVP COMPLETE** + **Epics 6, 8, 11, and 12 COMPLETE**
+**Phase:** ✅ **MVP COMPLETE** + **Epics 6, 7, 8, 10, 11, 12 and 14 COMPLETE**; Epics 13, 15, 16 open (status per `sprint-status.yaml`, 2026-11-04)
 
 **Epic Completion Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
@@ -61,23 +75,31 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 4**: Public Website & Content Discovery - **100% COMPLETE**
 - ✅ **Epic 5**: Enhanced Organizer Workflows - **100% COMPLETE** (BAT-16 delivered auto-publishing & lifecycle automation)
 - ✅ **Epic 6**: Speaker Self-Service Portal - **100% COMPLETE** (all stories 6.0-6.5 deployed, 6.4 WCAG 2.1 AA)
-- 📋 **Epic 7**: Attendee Experience — Right-Sized Contribution & Touchpoints - **READY FOR STORY DETAILING** (rewritten 2026-06-09; 5 organizer-voted features composing onto existing machinery — replaces deferred dashboards/PWA/recommendation-engine scope)
-- ✅ **Epic 8**: Partner Coordination - **100% COMPLETE** (analytics, topic voting, meeting coordination)
+- ✅ **Epic 7**: Attendee Experience — Right-Sized Contribution & Touchpoints - **COMPLETE** (Stories 7.1–7.7)
+- ✅ **Epic 8**: Partner Coordination - **100% COMPLETE** (analytics, topic voting, meeting coordination, partner notes)
+- 📦 **Epic 9**: Speaker Authentication - **SUPERSEDED** by Epic 11
+- ✅ **Epic 10**: Additional Stories - **COMPLETE** (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
 - ✅ **Epic 11**: Unified Speaker Workflow Refactor - **100% COMPLETE** (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25; supersedes prior Epic 9 plan)
 - ✅ **Epic 12**: Federated Identity / Google SSO - **COMPLETE** (Google OIDC login live 2026-06-04 per ADR-010; deferred tail — Apple/generic OIDC + trigger retirement — parked as backlog Story 12.10)
+- 🔄 **Epic 13**: Spring Boot 4 Migration - **SB 4.0.7 LIVE** (#797); 13.4 and 13.5 open
+- ✅ **Epic 14**: Event Detail Page Redesign - **COMPLETE** (#788)
+- 🔄 **Epic 15**: Post-Event #2 Hardening - **IN PROGRESS** (15.1 P2/P3, 15.4, 15.8 open)
+- 🔄 **Epic 16**: Mail Center - **16.0–16.11 LIVE**; 16.8c gated, 16.12/16.13 backlog
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
 - ✅ All core functionality delivered and tested
-- ✅ Platform ready for production launch
+- ✅ Platform in production (www.batbern.ch)
 - ✅ Epic 6 Speaker Portal complete (2026-02-16 QA passed)
 - ✅ Epic 8 Partner Coordination complete (2026-02-22)
 
-**When Adding New Features:**
-- ✅ Platform through Epic 12 is feature-complete; Epic 7 rewritten 2026-06-09 as a right-sized attendee contribution epic (ready for story detailing)
-- Epic 7 (right-sized): topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, post-event Q&A — see `docs/prd/epic-7-attendee-experience-enhancements.md`
-- Epic 12 deferred tail (backlog Story 12.10): Apple/generic OIDC + Cognito trigger-retirement cleanup — precondition: gateway `is_active` gate + canonical JIT verified in production
-- Prioritize production readiness and Epic 3 data import
+**When Adding New Features** (open work as of 2026-11-04):
+- Epic 13: Story 13.4 (flip off `preferred-json-mapper: jackson2`, move to Jackson 3) and 13.5 (unpin BOM-managed dependency versions)
+- Epic 15: 15.1 P2 (watch app off WebSockets) then P3 (delete WebSocket code and deps); 15.4 (company/email-domain mismatch warning); 15.8 (LinkedIn post drafts, backlog)
+- Epic 16: 16.8c composer clean-up (only after one release and owner go); 16.12, 16.13 backlog — see `docs/prd/epic-16-mail-center.md`
+- Epic 11 leftovers: 11.E.5, 11.G.1 (ready-for-dev), 11.F.2 (backlog)
+- Epic 12 deferred tail (backlog Story 12.10): Apple/generic OIDC + Cognito trigger-retirement cleanup — precondition: deferred-work cluster A
+- Epic 3 production data import still pending
 
 ## Build System
 
@@ -731,22 +753,23 @@ AWS_PROFILE=batbern-staging aws ecs list-clusters
 # Check service status
 AWS_PROFILE=batbern-staging aws ecs describe-services \
   --cluster batbern-staging \
-  --services BATbern-staging-EventManagement-ServiceD69D759B-nKXW8QZhG6Gy \
+  --services BATbern-staging-EventManagement-ServiceD69D759B-sc5swSoc6iyQ \
   --query 'services[0].{Status:status,Running:runningCount,Desired:desiredCount,Events:events[:5]}'
 
 # View running tasks
 AWS_PROFILE=batbern-staging aws ecs list-tasks \
   --cluster batbern-staging \
-  --service-name BATbern-staging-EventManagement-ServiceD69D759B-nKXW8QZhG6Gy
+  --service-name BATbern-staging-EventManagement-ServiceD69D759B-sc5swSoc6iyQ
 ```
 
 ### Common Issues
 
-**Fargate Spot Interruptions:**
-- Services use FARGATE_SPOT (70%) + FARGATE (30%) capacity providers
-- Spot interruptions cause 4-5 minute service restarts (no logs, silent task termination)
-- ECS automatically replaces with FARGATE task
-- Check deployment history for task replacement events
+**No Fargate Spot in production:**
+- Production services run on plain `FARGATE` (no capacity-provider strategy; checked live
+  2026-11-04). The 70% Spot / 30% On-Demand split in `domain-service-construct.ts` applies only
+  when `isProduction` is false, i.e. never in the production account.
+- Service physical names change when a stack replaces the service. Look them up instead of
+  copying: `aws ecs list-services --cluster batbern-staging`
 
 **Log Stream Naming:**
 - Pattern: `{service-name}/Container/{task-id}`

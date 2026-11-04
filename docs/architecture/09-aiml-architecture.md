@@ -1,21 +1,78 @@
-# AI/ML Architecture for Future Enhancement Phases
+# AI/ML Architecture
 
-> **⚠️ STATUS: DEFERRED - OUT OF SCOPE FOR MVP**
->
-> This document describes AI/ML capabilities originally planned for FR13 (Intelligent Content Discovery) and FR16 (Community Features), which have been removed from the MVP scope per strategic refocus decision.
->
-> This architecture may be reconsidered for future enhancement phases post-MVP launch.
->
-> **Effective Date:** 2025-10-01
-> **Related Change:** Sprint Change Proposal - Remove FR13 and FR16
+This document has two parts. **AI assist as built** describes what runs in production today.
+**Historical vision (2025, not implemented)** keeps the original 2025 plan for reference; none of
+it was built.
 
----
+## AI assist as built
+
+Organizer-facing AI assistance was introduced by Story 10.16 (AI-assisted event content creation)
+and was hardened by Story 15.9 (OWASP LLM checklist). It is small, synchronous and advisory: an
+organizer triggers a generation, reviews the result, and decides whether to use it. There is no
+recommendation engine, no model training and no ML infrastructure.
+
+### Where it lives
+
+All AI code is in **event-management-service (EMS)**:
+
+| Component | Role |
+|---|---|
+| `config/AiConfig` | Feature switch `batbern.ai.enabled` (env `AI_ENABLED`, default `false`), OpenAI key `openai.api-key` (env `OPENAI_API_KEY`, excluded from `toString`), base URL |
+| `controller/AiAssistController` | Implements the generated `AiAssistApi`: event description, theme image (generate and apply), speaker abstract analysis. Every method `@PreAuthorize("hasRole('ORGANIZER')")` |
+| `controller/AiPromptController` | Implements the generated `AiPromptsApi`: list, read, update and reset the editable prompts. Organizer only (class-level `@PreAuthorize`) |
+| `service/BatbernAiService` | Calls the OpenAI REST API through a Spring `RestClient`: chat completions (`gpt-4o`) for description and abstract analysis, image generation (`gpt-image-1`) for theme images, which are stored in S3 and served via the CDN. Results are cached in a Caffeine cache |
+| `service/AiPromptService` | Reads the organizer-editable prompt text from `ai_prompts` |
+| `service/TrendingTopicsService` | Ten trending IT topics for topic planning (`gpt-4o-mini`), cached for one hour, with a hard-coded fallback list when no key is configured or the call fails |
+| `controller/PublicSettingsController` | `GET /api/v1/public/settings/features` returns `aiContentEnabled`, which the frontend uses to show or hide AI controls |
+
+Data (EMS Flyway):
+
+- `ai_prompts` (V82, placeholders updated in V83): one row per prompt key (`event_description`,
+  `theme_image`, `abstract_quality`) with the current text and the default for "reset".
+- `ai_generation_log` (V77): event code, type, a hash of the input, timestamp. No prompt or
+  output text is stored.
+
+API contract: `docs/api/event-ai-api.openapi.yml` (`/ai-prompts`, `/events/{eventCode}/ai/*`,
+`/speakers/{speakerId}/ai/analyze-abstract`). The Spring gateway routes `/api/v1/ai*`,
+`/api/v1/events/**` and `/api/v1/speakers/{id}/ai/**` to EMS (`DomainRouter`).
+
+Runtime: the EMS CDK stack sets `AI_ENABLED=true` and injects the key from Secrets Manager
+(`batbern/{env}/openai/api-key`) only when `aiEnabled` is passed, which
+`bin/batbern-infrastructure.ts` does for the staging account (production). Locally AI is off
+unless you set both variables.
+
+Frontend: `useAiAssist`, `useFeatureFlags` and `aiPromptService` in `web-frontend/src`, used by
+the event form, the event info tab and the speaker quality review.
+
+### Security guards (Story 15.9)
+
+- A constant `SYSTEM_GUARD` system message precedes every chat-completions call; organizer prompts
+  and interpolated event or speaker content go only into the user message, as untrusted data.
+- `{{` / `}}` delimiters are stripped from interpolated values before they reach the model.
+- Output is treated as text: returned, cached or shown for review, never executed or used for
+  authorization. Applying a theme image accepts only a URL under the CDN domain.
+- The key is sent only in the `Authorization` header; the generation log stores input hashes only.
+- The image API has no system message, so the guard cannot apply there. That residual LLM01 risk
+  is accepted and documented.
+
+Flow-by-flow mapping, tests that enforce each guard, and the checklist for adding a new AI flow:
+[docs/security/owasp-llm-agentic-checklist.md](../security/owasp-llm-agentic-checklist.md). The
+CI job `.github/workflows/ai-security.yml` runs on EMS changes and is advisory
+(`continue-on-error: true`). Platform security in general: [08-operations-security.md](./08-operations-security.md).
+
+## Historical vision (2025, not implemented)
+
+> **Not implemented, not planned.** The text below is the 2025 vision for FR13 (Intelligent
+> Content Discovery) and FR16 (Community Features). Both were removed from the MVP on 2025-10-01
+> (Sprint Change Proposal "Remove FR13 and FR16"). The recommendation engine, MLOps pipeline,
+> Kubernetes model serving and the other components described here do not exist. Kept for
+> reference only.
 
 This section outlines the comprehensive AI/ML architecture designed to enhance the BATbern platform with intelligent features across all user domains.
 
-## AI/ML Strategic Overview
+### AI/ML Strategic Overview
 
-### Phase Implementation Strategy
+#### Phase Implementation Strategy
 
 **Phase 1: Foundation (Months 1-3)**
 - Data collection infrastructure
@@ -32,9 +89,9 @@ This section outlines the comprehensive AI/ML architecture designed to enhance t
 - Intelligent speaker matching
 - Automated content generation
 
-## AI/ML Technology Stack
+### AI/ML Technology Stack
 
-### Core ML Platform
+#### Core ML Platform
 
 ```yaml
 # AI/ML Infrastructure Components
@@ -65,7 +122,7 @@ ML Platform:
     - FAISS: Vector similarity search
 ```
 
-### AI/ML Service Architecture
+#### AI/ML Service Architecture
 
 ```mermaid
 graph TB
@@ -132,9 +189,9 @@ graph TB
     Q --> S
 ```
 
-## Domain-Specific AI/ML Features
+### Domain-Specific AI/ML Features
 
-### Attendee Experience Intelligence
+#### Attendee Experience Intelligence
 
 **Content Recommendation Engine:**
 
@@ -355,7 +412,7 @@ class PersonalizationService:
         return " • ".join(reasons) if reasons else "Recommended based on your overall preferences"
 ```
 
-### Event Management Intelligence
+#### Event Management Intelligence
 
 **Intelligent Speaker Matching:**
 
@@ -488,7 +545,7 @@ class EventOptimizationEngine:
         return recommendations
 ```
 
-### Partner Analytics Intelligence
+#### Partner Analytics Intelligence
 
 **Advanced ROI Analytics:**
 
@@ -623,9 +680,9 @@ class PredictiveTopicAnalyzer:
         return analysis
 ```
 
-## ML Model Deployment and Management
+### ML Model Deployment and Management
 
-### Model Lifecycle Management
+#### Model Lifecycle Management
 
 ```yaml
 # MLOps Pipeline Configuration
@@ -662,7 +719,7 @@ model_deployment:
       - prediction_accuracy: > 0.85 ongoing
 ```
 
-### Real-time Model Serving
+#### Real-time Model Serving
 
 ```python
 class MLModelService:
@@ -738,9 +795,9 @@ class MLModelService:
         return results
 ```
 
-## Data Privacy and AI Ethics
+### Data Privacy and AI Ethics
 
-### Privacy-Preserving ML
+#### Privacy-Preserving ML
 
 ```python
 class PrivacyPreservingMLService:
@@ -792,9 +849,9 @@ class PrivacyPreservingMLService:
         raise ValueError(f"Unknown anonymization level: {anonymization_level}")
 ```
 
-## Performance and Scalability
+### Performance and Scalability
 
-### ML Infrastructure Scaling
+#### ML Infrastructure Scaling
 
 ```yaml
 # Kubernetes ML Service Configuration

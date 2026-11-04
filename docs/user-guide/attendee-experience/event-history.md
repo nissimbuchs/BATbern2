@@ -8,6 +8,8 @@
 
 ## Overview
 
+![Attendee dashboard of a signed-in user](../assets/screenshots/attendee-experience/event-history-dashboard.png)
+
 Once an attendee has logged in (via "Continue with Google"), they get a simple dashboard listing the events they have a relationship with: the events they **registered for** and **attended**. It is the attendee-facing counterpart to the return channel the rest of this section opens up — a small, useful reason to be signed in.
 
 ## How it works

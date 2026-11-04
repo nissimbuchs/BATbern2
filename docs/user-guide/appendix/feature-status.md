@@ -4,9 +4,9 @@
 
 This page tracks implementation status of all BATbern features. Use this to understand what's available now, what's in progress, and what's coming soon.
 
-**Last Updated**: 2026-06-13
+**Last Updated**: 2026-11-04
 
-**Platform Status**: ✅ **PRODUCTION & FEATURE-RICH** — All MVP epics (1-5) complete; Speaker Portal (6), Partner Coordination (8), the Epic 10 organizer/admin/public cluster, the unified Cognito speaker workflow (11), and Google Single Sign-On (12) all live. Attendee contribution features (Epic 7) are largely implemented (mostly in review). Spring Boot 4 migration (Epic 13) is planned.
+**Platform Status**: ✅ **PRODUCTION & FEATURE-RICH** — All MVP epics (1-5) complete; Speaker Portal (6), Partner Coordination (8), the Epic 10 organizer/admin/public cluster, the unified Cognito speaker workflow (11), and Google Single Sign-On (12) all live. Attendee contribution features (Epic 7) and the lifecycle-aware event page (Epic 14) are complete. Spring Boot 4 (Epic 13) is live with close-out work open. Post-event hardening (Epic 15) and the Mail Center (Epic 16) are largely live.
 
 **Platform Readiness:**
 - **Epics 1-2**: ✅ 100% Complete (Foundation, Entity CRUD)
@@ -14,12 +14,15 @@ This page tracks implementation status of all BATbern features. Use this to unde
 - **Epic 4**: ✅ 100% Complete (Public website, 3-step registration wizard, archive browsing, content search, SEO)
 - **Epic 5**: ✅ 100% Complete (event workflow, speaker coordination, auto-publishing, lifecycle automation)
 - **Epic 6**: ✅ 100% Complete (Speaker self-service portal — invitations, response, materials, dashboard, reminders). Note: speaker login was later migrated to AWS Cognito by Epic 11 (magic-link removed).
-- **Epic 7**: 🔨 Largely implemented (in review) — Attendee Experience: right-sized contribution & touchpoints (no new backend service)
+- **Epic 7**: ✅ 100% Complete — Attendee Experience: right-sized contribution & touchpoints (no new backend service)
 - **Epic 8**: ✅ 100% Complete (Partner coordination — attendance analytics, topic voting, meeting coordination, partner notes, iCal RSVP)
 - **Epic 10**: ✅ Largely complete — admin tools, newsletter, registration lifecycle/waitlist/deregistration, photo gallery, teaser images, moderator presentation, Turnstile, additional user emails, legacy BAT export/import
 - **Epic 11**: ✅ 100% Complete — Unified Speaker Workflow Refactor (8-state model, Cognito speaker auth, magic-link teardown)
 - **Epic 12**: ✅ Complete & live — Federated Identity / Google SSO ("Continue with Google")
-- **Epic 13**: 💡 Planned — Spring Boot 4 migration (backlog)
+- **Epic 13**: ✅ Live, close-out open — Spring Boot 4 migration merged and deployed (#797, 2026-06-19); Jackson 3 switch-over and dependency-pin cleanup still open
+- **Epic 14**: ✅ Complete — Lifecycle-aware event page (Cockpit, Speakers & Agenda, Registrations, Communications, Publishing, Wrap-up, Details; #788)
+- **Epic 15**: 🔨 In progress — Post-event #2 hardening (6 of 9 stories done, 15.1 partly live; 15.4 company e-mail domain warning and 15.8 LinkedIn post drafts open)
+- **Epic 16**: 🔨 Largely live — Mail Center (mail page, delivery status, conversations, shared composer, Mail tab on user and partner); last composer step and two clean-up stories open
 
 > **Note**: Epic 9 (the original JWT magic-link speaker authentication plan) was **superseded** by Epics 11 + 12 and is no longer active. Speaker authentication is now Cognito-based. A separate **BATbern Watch App** (iOS/watchOS companion) exists on its own product track; this guide documents the web platform.
 
@@ -33,13 +36,16 @@ This page tracks implementation status of all BATbern features. Use this to unde
 | 4 | Public Website & Content Discovery | ✅ `[IMPLEMENTED]` |
 | 5 | Enhanced Organizer Workflows | ✅ `[IMPLEMENTED]` |
 | 6 | Speaker Self-Service Portal | ✅ `[IMPLEMENTED]` |
-| 7 | Attendee Experience — Right-Sized Contribution | 🔨 `[IN PROGRESS]` (largely done, in review) |
+| 7 | Attendee Experience — Right-Sized Contribution | ✅ `[IMPLEMENTED]` |
 | 8 | Partner Coordination | ✅ `[IMPLEMENTED]` |
 | 9 | Speaker Authentication (original plan) | ⛔ Superseded by Epics 11 + 12 |
 | 10 | Admin Tools, Newsletter & Public Enhancements | ✅ `[IMPLEMENTED]` (largely) |
 | 11 | Unified Speaker Workflow Refactor | ✅ `[IMPLEMENTED]` |
 | 12 | Federated Identity / Google SSO | ✅ `[IMPLEMENTED]` & live |
-| 13 | Spring Boot 4 Migration | 💡 `[BACKLOG]` (planned) |
+| 13 | Spring Boot 4 Migration | ✅ `[IMPLEMENTED]` & live (close-out open) |
+| 14 | Event Detail Page — Lifecycle-Aware Redesign | ✅ `[IMPLEMENTED]` |
+| 15 | Post-Event #2 Hardening | 🔨 `[IN PROGRESS]` (6 of 9 done, 15.1 partly live) |
+| 16 | Mail Center | 🔨 `[IN PROGRESS]` (largely live) |
 | — | BATbern Watch App (separate track) | ✅ `[IMPLEMENTED]` |
 
 **Status Definitions**:
@@ -198,7 +204,7 @@ This page tracks implementation status of all BATbern features. Use this to unde
 | Step 12: Speaker Publishing | ✅ `[IMPLEMENTED]` | Speaker profiles → Agenda finalization | [Phase E](../workflow/phase-e-publishing.md#step-12) |
 | Dropout Handling | ✅ `[IMPLEMENTED]` | Manage last-minute withdrawals | [Phase E](../workflow/phase-e-publishing.md#dropout-handling) |
 | Auto-Publishing Engine | ✅ `[IMPLEMENTED]` | CDN integration, scheduled publishing | Part of Event Lifecycle |
-| Event Finalization | ✅ `[IMPLEMENTED]` | AGENDA_FINALIZED state transition | Part of Event Lifecycle |
+| Event Go-Live | ✅ `[IMPLEMENTED]` | AGENDA_PUBLISHED → EVENT_LIVE automatically on event day (AGENDA_FINALIZED removed, V84) | Part of Event Lifecycle |
 | Event Completion | ✅ `[IMPLEMENTED]` | EVENT_COMPLETED→ARCHIVED automation | Part of Event Lifecycle |
 
 ### Phase F: Event Completion & Communication
@@ -207,8 +213,8 @@ This page tracks implementation status of all BATbern features. Use this to unde
 |---------|--------|-------|---------------|
 | Newsletter Integration | ✅ `[IMPLEMENTED]` | 3 newsletter task templates | Part of Event Lifecycle |
 | Overflow Management | ✅ `[IMPLEMENTED]` | Speaker voting and backup slots | Part of Event Lifecycle |
-| Task System | ✅ `[IMPLEMENTED]` | Configurable tasks with triggers | [Task System](../workflow/task-system.md) |
-| Partner Meetings | ✅ `[IMPLEMENTED]` | Coordinate sponsor logistics | [Task System](../workflow/task-system.md) |
+| Task System | ✅ `[IMPLEMENTED]` | Configurable tasks with triggers | [Phase F](../workflow/phase-f-communication.md) |
+| Partner Meetings | ✅ `[IMPLEMENTED]` | Coordinate sponsor logistics | [Phase F](../workflow/phase-f-communication.md) |
 
 ---
 
@@ -218,8 +224,8 @@ This page tracks implementation status of all BATbern features. Use this to unde
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Automated Speaker Invitations | ✅ `[IMPLEMENTED]` | Magic link emails via AWS SES with unique response links |
-| Speaker Self-Service Response Portal | ✅ `[IMPLEMENTED]` | Accept/Decline via unique link, no authentication required |
+| Automated Speaker Invitations | ✅ `[IMPLEMENTED]` | Invitation email via AWS SES with login link and temporary password (Cognito account, Epic 11) |
+| Speaker Self-Service Response Portal | ✅ `[IMPLEMENTED]` | Accept/Decline in the speaker portal after login |
 | Speaker Material Self-Submission | ✅ `[IMPLEMENTED]` | Title, abstract, CV, photo, presentation upload via S3 presigned URLs |
 | Speaker Dashboard (View-Only) | ✅ `[IMPLEMENTED]` | Upcoming/past events; WCAG 2.1 AA; i18n EN/DE |
 | Automated Deadline Reminders | ✅ `[IMPLEMENTED]` | 3-tier escalation: friendly → urgent → organizer escalation |
@@ -234,19 +240,19 @@ This page tracks implementation status of all BATbern features. Use this to unde
 
 ---
 
-## Attendee Experience (Epic 7) 🔨
+## Attendee Experience (Epic 7) ✅
 
-**Status**: 🔨 Largely implemented (in review). No new backend service — composes on existing topic-suggestion, speaker-workflow, registration, task, and SSO machinery. Identity rides "Continue with Google" (Epic 12); the default `ATTENDEE` role suffices for all contribution endpoints.
+**Status**: ✅ Complete. No new backend service — composes on existing topic-suggestion, speaker-workflow, registration, task, and SSO machinery. Identity rides "Continue with Google" (Epic 12); the default `ATTENDEE` role suffices for all contribution endpoints.
 
 | Feature | Status | Notes |
 |---------|--------|-------|
 | Topics From the Floor (7.1) | ✅ `[IMPLEMENTED]` | Logged-in attendees suggest future topics (title + rationale) into the existing topic-suggestion pool, tagged `source = community`; organizers triage in the topic-suggestion admin UI (community badge) |
 | "I Could Speak on That" — Speaker Self-Nomination (7.2) | ✅ `[IMPLEMENTED]` | Once an event's topic is set and published, logged-in attendees self-nominate (session title + abstract). Creates a `speaker_pool` entry at `IDENTIFIED`; organizers triage via the 8-state speaker workflow. No auto-provisioning at nomination |
-| "The Slides Are Online" Mail (7.3) | 🔨 `[IN PROGRESS]` | Auto-created organizer task (~1 day post-event) sends a "slides are online" email to active registrants (DE + EN), honouring email opt-out, with a double-send guard |
-| Thank-the-Organizers (7.4) | 🔨 `[IN PROGRESS]` | One-click post-event thank-you, optional note. Anonymous allowed (Turnstile + rate-limit); logged-in deduped to one per event. Aggregate public appreciation counter; notes are organizer-visible |
-| The Apéro Continues — Post-Event Q&A (7.5) | 🔨 `[IN PROGRESS]` | Time-boxed (~14-day, organizer-overridable) per-session Q&A. Logged-in attendees post/answer; organizers can take down posts and extend/close early. On close it freezes read-only and attaches to the session archive page. Reading frozen Q&A is public; posting is login-gated |
-| Attendee Event History (7.6) | 🔨 `[IN PROGRESS]` | Logged-in attendee dashboard listing the events they registered for / attended |
-| Curated Thank-You Marquee (7.7) | 📋 `[PLANNED]` | Organizers feature selected thank-you notes intermingled into the public homepage partner marquee (ready-for-dev) |
+| "The Slides Are Online" Mail (7.3) | ✅ `[IMPLEMENTED]` | Auto-created organizer task (~1 day post-event) sends a "slides are online" email to active registrants (DE + EN), honouring email opt-out, with a double-send guard |
+| Thank-the-Organizers (7.4) | ✅ `[IMPLEMENTED]` | One-click post-event thank-you, optional note. Anonymous allowed (Turnstile + rate-limit); logged-in deduped to one per event. Aggregate public appreciation counter; notes are organizer-visible |
+| The Apéro Continues — Session Q&A (7.5) | ✅ `[IMPLEMENTED]` | Time-boxed per-session Q&A, configured per event under Details → Settings → Session Q&A: on/off, opens after the event or when speakers are published, number of days open, Open / Close now. Logged-in attendees post/answer; organizers can take down posts and extend/close early. On close it freezes read-only and attaches to the session archive page. Reading frozen Q&A is public; posting is login-gated |
+| Attendee Event History (7.6) | ✅ `[IMPLEMENTED]` | Logged-in attendee dashboard listing the events they registered for / attended |
+| Curated Thank-You Marquee (7.7) | ✅ `[IMPLEMENTED]` | Organizers feature selected thank-you notes intermingled into the public homepage partner marquee (#785) |
 
 ---
 
@@ -324,13 +330,13 @@ This page tracks implementation status of all BATbern features. Use this to unde
 
 ---
 
-## Spring Boot 4 Migration (Epic 13) 💡
+## Spring Boot 4 Migration (Epic 13) ✅
 
-**Status**: 💡 Planned (backlog). Spring Boot 3.5 OSS support ends 2026-06-30.
+**Status**: ✅ Live since #797 (merged 2026-06-19). Close-out open: Jackson 3 switch-over and handing dependency versions back to the Spring Boot BOM.
 
 | Feature | Status | Notes |
 |---------|--------|-------|
-| Spring Boot 4 Upgrade | 💡 `[BACKLOG]` | Backend framework migration across all services |
+| Spring Boot 4 Upgrade | ✅ `[IMPLEMENTED]` | Backend framework migration across all services |
 
 ---
 
@@ -403,18 +409,17 @@ This page tracks implementation status of all BATbern features. Use this to unde
 
 > **Superseded**: Epic 9 (original JWT magic-link speaker auth plan) is no longer active — replaced by Epics 11 + 12.
 
-### In Review (Q2 2026)
+### Delivered since June 2026
 
-**Focus**: Attendee contribution & touchpoints (Epic 7)
-
-- 🔨 Topics from the floor, speaker self-nomination (done)
-- 🔨 "Slides are online" mail, thank-the-organizers, post-event Q&A, attendee event history (in review)
-- 📋 Curated thank-you marquee (ready-for-dev)
+- ✅ Epic 7: Attendee contribution & touchpoints, including the curated thank-you marquee
+- ✅ Epic 13: Spring Boot 4 (close-out open)
+- ✅ Epic 14: Lifecycle-aware event page
+- 🔨 Epic 15: Post-event hardening (LinkedIn post drafts in backlog)
+- 🔨 Epic 16: Mail Center (last composer step open)
 - 📋 Epic 3: Production historical data import (pending a user trigger)
 
 ### Planned / Backlog
 
-- 💡 Epic 13: Spring Boot 4 migration (SB 3.5 OSS support ends 2026-06-30)
 - 💡 Apple / generic OIDC SSO (Story 12-10)
 - 💡 Multi-Factor Authentication (MFA)
 - 💡 Company Hierarchy (parent/subsidiary)
@@ -459,7 +464,7 @@ Features are prioritized based on:
 ### How to Join Beta Program
 
 **Beta Features** (available for testing):
-- Attendee contribution features (Epic 7) — "slides are online" mail, thank-the-organizers, post-event Q&A, and attendee event history are in review and may be previewed by beta organizers
+- None at the moment. Epic 7 attendee features are live for everyone.
 
 **Sign Up**:
 1. Email beta@batbern.ch with subject "Beta Interest"

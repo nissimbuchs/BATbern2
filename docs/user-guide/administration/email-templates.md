@@ -6,6 +6,8 @@
 
 ## Overview
 
+![Administration, Email Templates tab](../assets/screenshots/administration/admin-email-templates.png)
+
 The **Email Templates** tab lets organizers view and edit the subject lines and body content of every email the platform sends — without requiring a code deployment. It is **Tab 3** of the Administration page.
 
 **Navigation**: Administration → Tab 3 (Email Templates)

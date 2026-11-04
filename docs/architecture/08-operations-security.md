@@ -4,6 +4,35 @@ This document consolidates security implementation, performance standards, acces
 
 ## Security Requirements
 
+### Security layers of a request (checked 2026-11-04)
+
+```mermaid
+flowchart TD
+    C["Browser / any internet caller"] --> HA["AWS HTTP API, api.batbern.ch<br/>custom domain, HttpUrlIntegration to the ALB<br/>no WAF, no API Gateway throttling configured"]
+    HA --> ALB["Internet-facing ALB<br/>appends X-Forwarded-For"]
+    ALB --> GW
+    subgraph GW["Spring API gateway, ECS"]
+        G1["CorrelationId, SecurityHeaders filters"] --> G2["Spring Security filter chain<br/>JWT signature check, permitAll list,<br/>/internal/** denyAll"]
+        G2 --> G3["TurnstileVerificationFilter<br/>newsletter subscribe, registration, thanks<br/>fail-open if token missing or Cloudflare down"]
+        G3 --> G4["RateLimitingFilter<br/>per role and endpoint, anonymous by ClientIp, 429"]
+        G4 --> G5["AccountActiveFilter<br/>is_active from CUMS /internal, 60 s cache, 403"]
+        G5 --> G6["DomainRouter forwards with the JWT"]
+    end
+    G6 --> S
+    subgraph S["Domain service EMS, CUMS, PCS"]
+        S1["own SecurityConfig: permitAll list must match the gateway"] --> S2["JwtRolesConverter: custom:role to ROLE_x"]
+        S2 --> S3["@PreAuthorize on every write and every<br/>read of other people's data, ADR-008"]
+        S3 --> S4["controller, public responses are projections"]
+    end
+    I["Service to service: /internal/** over Service Connect,<br/>no JWT, never routed by the gateway"] -.-> S1
+```
+
+Roles are decided only in the services (ADR-008, #1147). The gateway authenticates and routes; its
+`AccountActiveFilter`, Turnstile and rate limiting are the only request-time checks it adds.
+`EndpointAuthorizationGuardTest` per service fails the build for a write endpoint without
+`@PreAuthorize`, and the post-deploy access-control check (below) probes every documented operation
+anonymously. The frontend guards (`ProtectedRoute`) are UX only.
+
 ### Frontend Security
 - **CSP Headers**: Strict content security policy with CloudFront CDN support
   - `connect-src`: Allows connections to self, AWS Cognito (`*.amazoncognito.com`), the
@@ -28,7 +57,7 @@ This document consolidates security implementation, performance standards, acces
   CSP `sandbox` (blocks script execution when the resource IS the document; `<img>`
   embedding of PNG/JPEG/WebP/SVG is unaffected) plus `X-Content-Type-Options: nosniff`.
 - **XSS Prevention**: Input sanitization and output encoding
-- **Secure Storage**: Encrypted localStorage for sensitive data
+- **Secure Storage**: there is no encrypted localStorage; no `encrypt` call exists in `web-frontend/src` (checked 2026-11-04). Amplify keeps the Cognito tokens in `localStorage`, or in `sessionStorage` when "remember me" is unchecked (`web-frontend/src/config/amplify.ts`).
 
 ### Backend Security
 - **Input Validation**: Comprehensive request validation
@@ -171,6 +200,33 @@ A new operation is protected by default: it fails until someone adds it to the a
 reason. The build runs its regression test and an offline `--check-allowlist`, so a renamed path
 cannot leave a stale public entry behind.
 
+Where it runs:
+
+```mermaid
+flowchart LR
+    subgraph Build["build.yml, every PR"]
+        B1["test-access-control-check.py<br/>regression test"] --> B2["access-control-check.py<br/>--check-allowlist, offline"]
+        B2 --> B3["check-zap-spec-coverage.py"]
+    end
+    subgraph Deploy["deploy-staging.yml, after the PR deploy"]
+        D1["ECS services stable"] --> D2["smoke + CORS tests"]
+        D2 --> D3["access-control-check.py<br/>--base-url https://api.batbern.ch/api/v1"]
+        D3 -- "every non-public op 401/403" --> D4["promote images to staging-current"]
+        D4 --> D5["Bruno, then Playwright @smoke"]
+        D5 -- "green" --> D6["promote to staging-stable"]
+        D5 -- "red" --> D7["auto-rollback job"]
+        D3 -- "any other status" --> DF["deploy job fails,<br/>staging-current not advanced"]
+    end
+    subgraph Weekly["security-scan.yml, Mondays"]
+        W1["ZAP API scan per spec"]
+    end
+    Build --> Deploy
+```
+
+A failed access-control check stops the job before `staging-current` is promoted, so Bruno, Playwright
+and the auto-rollback job (which depend on the deploy job) do not run; the new tasks stay in service
+until someone acts. (Read from `deploy-staging.yml` job dependencies, not observed in a real failure.)
+
 It is safe against production by construction: path ids that do not exist, `text/plain` bodies
 that every JSON endpoint refuses with `415` before the controller runs, required query and header
 parameters filled so the request reaches the authorization check instead of failing binding, and
@@ -275,13 +331,35 @@ CloudWatch alarms publish to the `batbern-{env}-alarms` SNS topic, which invokes
 `batbern-{env}-github-issues` Lambda (`infrastructure/lambda/github-issues-integration/`). It keeps
 **one issue per alarm name**, keyed by the alarm name in the issue body:
 
-| Alarm transition | Lambda behaviour |
-|---|---|
-| → `ALARM`, no issue exists | Creates an issue |
-| → `ALARM`, issue open | Comments on the existing issue |
-| → `ALARM`, issue closed | Reopens it and comments |
-| → `OK` | Comments "alarm resolved" and **closes** it |
-| → `INSUFFICIENT_DATA` | Ignored |
+```mermaid
+sequenceDiagram
+    participant CW as CloudWatch alarm
+    participant SNS as SNS batbern-env-alarms
+    participant L as Lambda batbern-env-github-issues
+    participant SSM as SSM /batbern/staging/github/token
+    participant GH as GitHub issue, label incident
+    participant WF as claude.yml workflow
+
+    CW->>SNS: state change, AlarmActions and OKActions
+    SNS->>L: SNS record
+    L->>SSM: read PAT
+    alt NewStateValue ALARM
+        L->>GH: find issue by alarm name
+        alt none
+            L->>CW: recent datapoints and log lines, fail-open
+            L->>GH: create issue with labels, datapoints,<br/>and @claude triage block unless CLAUDE_TRIAGE_ENABLED=false
+            GH->>WF: issues opened with @claude
+            WF->>GH: triage comment, contents read only, no PR
+        else open or closed
+            L->>GH: comment re-triggered, no @claude
+            L->>GH: reopen if it was closed
+        end
+    else NewStateValue OK
+        L->>GH: comment alarm resolved, close
+    else INSUFFICIENT_DATA
+        L->>L: ignored
+    end
+```
 
 **The invariant: an `incident`-labelled issue that is open means the alarm is currently firing.**
 That is what makes the tracker answerable to "is anything wrong right now?".
@@ -320,9 +398,11 @@ resume within minutes.
 Alarms themselves cost $4.10/month and logs $1.50 — both immaterial. When trimming
 monitoring for cost, metrics are the line worth looking at, never logs.
 
-Full analysis and the reduction plan: `docs/plans/aws-cost-reduction.md`. Note there is
-currently **no cost alarm at all** (#978), which is why the bill ran at double its target
-unnoticed.
+Full analysis and the reduction plan: `docs/plans/aws-cost-reduction.md`. There is **no cost
+alarm and no AWS Budget**, by decision: #978 was closed on 2026-08-26 without building one, after
+six months of measured spend showed no surprises. The closing comment on #978 records the
+measurement and a ready-to-use `CfnBudget` sketch (monthly, forecast and actual notifications,
+email subscribers) should the run-rate change.
 
 ### What is actually monitored, and where each alarm is defined
 
@@ -353,7 +433,8 @@ the instance identifier is deterministic (`batbern-{env}-postgres`, set explicit
 
 **There is deliberately no cost alarm.** `AWS/Billing` is only published in us-east-1, and
 consolidated billing lives in the management account (510187933511) where finance already has
-access. Tracked in #978.
+access. #978 (replace it with AWS Budgets) was closed on 2026-08-26 as decided not to build; reopen
+it if the spend baseline changes.
 
 ### Log levels are owned by application.yml, not logback (#990)
 
@@ -675,8 +756,10 @@ It is not a bot account and needs no allowlist entry. That PAT lives in SSM at
 `/batbern/staging/github/token` and nothing tracks its expiry — if it lapses, alarms stop becoming
 issues.
 
-The deploy role's trust policy is a separate, unfinished piece of the same problem: it still trusts
-`repo:nissimbuchs/BATbern2:*` while holding CDK deploy rights (#998).
+The deploy role's trust policy is a separate piece of the same problem: it trusts
+`repo:${githubRepository}:*` (`infrastructure/lib/stacks/cicd-stack.ts`, i.e.
+`repo:nissimbuchs/BATbern2:*`) while holding CDK deploy rights. #998, which proposed narrowing it,
+was closed as not planned on 2026-08-25, so this breadth is the accepted state, not pending work.
 
 ### The deploy warmup is real latency, and the latency alarm must outlast it
 
@@ -1279,6 +1362,12 @@ const useKeyboardNavigation = () => {
 ```
 
 ## Architect Validation Report
+
+> **Historical (2024), not maintained.** This report assessed the original 2024 design
+> (multi-repository layout, four live bounded contexts, Hostpoint DNS, AI/ML recommendations). Most
+> of its premises no longer hold; see [01-system-overview.md](./01-system-overview.md) and
+> [ADR-014](./ADR-014-backend-service-consolidation.md) for the current system. Kept for the record
+> only.
 
 ### Executive Summary
 

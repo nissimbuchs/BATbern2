@@ -1,7 +1,7 @@
 # Epic 8: Partner Coordination
 
 **Status:** ✅ **COMPLETE** — Stories 8.0–8.4 done (deployed to staging 2026-02-22; Story 8.4 Partner Notes added 2026-02-23)
-**Last Updated:** 2026-03-23
+**Last Updated:** 2026-11-04 (story statuses, per-recipient invites #1180)
 
 **Simplified (2026-02-21):** Epic 8 was originally scoped with QuickSight, Microsoft Graph, materialized views, and tier-based voting. These were cut as massively over-engineered for a community of ~5–10 partners and ~3 events/year. The three stories below reflect what was actually decided and built.
 
@@ -32,7 +32,7 @@
 ### Story 8.1: Partner Attendance Dashboard
 
 **Story file**: `_bmad-output/implementation-artifacts/8-1-partner-analytics-dashboard.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status; deployed 2026-02-22)
 
 **User Story:**
 As a **partner**, I want to see how many of my company's employees attended each BATbern event, so that I can justify our sponsorship internally.
@@ -85,7 +85,7 @@ partner-coordination-service
 ### Story 8.2: Topic Suggestions & Voting
 
 **Story file**: `_bmad-output/implementation-artifacts/8-2-topic-voting-system.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status; deployed 2026-02-22)
 
 **User Story:**
 As a **partner**, I want to suggest topics for future BATbern events and vote on other partners' suggestions, so that events cover subjects my company cares about.
@@ -131,7 +131,7 @@ All data lives in `partner-coordination-service` DB. No cross-service calls need
 ### Story 8.3: Partner Meeting Coordination
 
 **Story file**: `_bmad-output/implementation-artifacts/8-3-automated-meeting-coordination.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status; deployed 2026-02-22)
 
 **User Story:**
 As an **organizer**, I want to manage the Spring and Autumn partner meetings, so that I can send calendar invites with the agenda and keep notes from each meeting.
@@ -141,7 +141,7 @@ As an **organizer**, I want to manage the Spring and Autumn partner meetings, so
 **Scope (what it is):**
 - Meeting record linked to a BATbern event by event code; fields: date (auto-filled), start/end time, location, type (Spring/Autumn)
 - Agenda as free text — included in the calendar invite description
-- Calendar invite: standard `.ics` file (RFC 5545) with two VEVENTs (partner lunch + BATbern event itself), sent via AWS SES to all partner contacts (Story 10.32 Phase 6: each contact's `additionalEmails[]` is included alongside their primary address — dedup is case-insensitive)
+- Calendar invite: standard `.ics` file (RFC 5545) with two VEVENTs (partner lunch + BATbern event itself), sent via AWS SES to all partner contacts (Story 10.32 Phase 6: each contact's `additionalEmails[]` is included alongside their primary address — dedup is case-insensitive). Since #1180 (Story 16.9, 2026-11-02) the invite goes out as one mail per recipient and each mail is recorded in the Mail Center
 - Post-meeting notes: free-text, visible to all organizers
 - Meeting list: all past and upcoming meetings with status (invite sent / not sent)
 - Organizer-only access (partners do not interact with this screen)
@@ -199,7 +199,7 @@ PartnerMeetingController (202 Accepted immediately)
 ### Story 8.4: Partner Notes
 
 **Story file**: `_bmad-output/implementation-artifacts/8-4-partner-notes.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status; deployed 2026-02-22)
 
 **User Story:**
 As an **organizer**, I want to record and manage private notes about a partner company, so that I can track relationship history and internal context that should not be visible to the partner.

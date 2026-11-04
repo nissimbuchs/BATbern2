@@ -25,6 +25,8 @@ The Event Analytics dashboard provides organizers with actionable insights into 
 
 ## Implemented Analytics
 
+![Organizer analytics page](../assets/screenshots/features/analytics.png)
+
 ### Analytics Dashboard (Story 10.5)
 
 A dedicated, fully built **Analytics page** (available at **Organizer Portal → Analytics**, and to partners) presents BATbern statistics as live, data-driven charts — designed so organizers can showcase community growth during partner meetings without preparing slides by hand. Built with Recharts (no manual data export needed):
@@ -50,7 +52,7 @@ Partners see only their own company's data. Organizers can access any company's 
 
 Built into the organizer dashboard:
 
-- **Event workflow progress** — Visual progress bar showing current state in the 9-state machine with completion percentage
+- **Event workflow progress** — Visual progress bar showing current state in the 8-state machine with completion percentage
 - **Speaker pipeline** — Status breakdown across all speaker states (Invited / Accepted / Content Submitted / Approved / Published)
 - **Team Activity Feed** — Chronological log of organizer actions (edits, state transitions, assignments) with mark-as-read and delete
 

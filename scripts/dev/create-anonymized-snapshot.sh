@@ -60,7 +60,8 @@ die() { printf '\033[1;31mERROR:\033[0m %s\n' "$*" >&2; exit 1; }
 PGDUMP_MAJOR="$("$PG_DUMP" --version | awk '{print $3}' | cut -d. -f1)"
 [ "$PGDUMP_MAJOR" -ge 15 ] || die "pg_dump is $PGDUMP_MAJOR, need >= 15"
 
-nc -z -G 3 127.0.0.1 "$PROD_PORT" 2>/dev/null \
+# Portable TCP probe (BSD nc has -G, GNU/OpenBSD nc on Linux does not).
+timeout 3 bash -c "</dev/tcp/127.0.0.1/$PROD_PORT" 2>/dev/null \
   || die "no tunnel on 127.0.0.1:$PROD_PORT — run scripts/dev/start-db-tunnel.sh first"
 
 log "Fetching production DB credentials from Secrets Manager"
@@ -120,7 +121,7 @@ log "Verifying no real email addresses survive"
 # Independent of the in-SQL check (belt and braces). The preserve-list is
 # exempt in EVERY table -- those addresses legitimately appear in registrations
 # and newsletter_recipients as well as user_profiles.
-KEEP="'nissim@buchs.be','nissim.buchs@me.com','nissim.buchs@gmail.com','nissim.buchs@elca.ch'"
+KEEP="'nissim@buchs.be','nissim.buchs@me.com','nissim.buchs@gmail.com','nissim.buchs@elca.ch','batbern.organizer@berner-architekten-treffen.ch','success+batbern.speaker@simulator.amazonses.com','batbern.partner@berner-architekten-treffen.ch'"  # keep in sync with anonymize-snapshot.sql section 1
 # Same definition of "an email address" as the in-SQL check. Without the regex
 # this flagged bare usernames -- some email columns in production genuinely
 # store usernames rather than addresses -- and the two checks disagreed.

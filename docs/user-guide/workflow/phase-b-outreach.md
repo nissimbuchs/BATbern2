@@ -59,7 +59,7 @@ Navigate to Step 4 in the workflow.
 
 Outreach dashboard displays all candidates in a Kanban board by status.
 
-![Outreach View](../assets/screenshots/workflow/phase-b-outreach/b-01-outreach-view-ready.png)
+![Speaker kanban with the status lanes Sourcing, Inviting, Content, Confirmed](../assets/screenshots/workflow/phase-b-outreach/b-01-outreach-view-ready.png)
 
 The Kanban board supports drag-and-drop to update speaker status as you contact them and receive responses.
 
@@ -89,23 +89,13 @@ Customize as needed, then click **Send**.
 
 **Log Contact**
 
-Before contacting a speaker:
-
-![Before Contact](../assets/screenshots/workflow/phase-b-outreach/b-02-before-contact-speaker-1.png)
-
 After sending, speaker status updates:
 - Speaker Status: `IDENTIFIED` → **`CONTACTED`**
 - Event Status: Still SPEAKER_IDENTIFICATION (unchanged)
 - Contact log entry created with timestamp
 - Follow-up reminder scheduled (3-5 days)
 
-![After Contact](../assets/screenshots/workflow/phase-b-outreach/b-03-after-contact-speaker-1.png)
-
 *The contact history log displays a chronological timeline of all interactions with a speaker: timestamp, contact method (Email Sent, Phone Call, etc.), subject line or summary, current status (CONTACTED, INTERESTED, etc.), and next scheduled action with date.*
-
-After contacting all speakers, the Kanban board shows them in the "Contacted" column:
-
-![Kanban Contacted State](../assets/screenshots/workflow/phase-b-outreach/b-12-kanban-contacted-state.png)
 
 </div>
 
@@ -115,17 +105,11 @@ After contacting all speakers, the Kanban board shows them in the "Contacted" co
 
 Once you've decided who will actually speak, **promote** the chosen candidate from `CONTACTED` to `READY` (the *Promote to READY* primary-action button). This provisions the speaker's account (User + SPEAKER role + Cognito). Promotion is organizer-only.
 
-![All Speakers Ready](../assets/screenshots/workflow/phase-b-outreach/b-13-all-speakers-ready.png)
-
 Then send the formal invitation to move the speaker from `READY` to `INVITED`. The invitation email carries a login link + temporary password. The `READY → INVITED` step is subject to the **slot-capacity gate** — it is blocked when accepted speakers (`ACCEPTED`, `CONTENT_SUBMITTED`, `QUALITY_REVIEWED`) plus `INVITED` reach `max_slots`, so you cannot over-invite beyond the available slots (this replaces the old `overflow` parking state). `max_slots` comes from the event's own agenda settings when they have been edited, otherwise from the event type.
 
 When speakers respond via the portal, their card moves from `INVITED` to `ACCEPTED` (or to `DECLINED`).
 
-![Before Moving to Accepted](../assets/screenshots/workflow/phase-b-outreach/b-14-before-drag-to-accepted.png)
-
 After all confirmations, your outreach board shows speakers in the Accepted column.
-
-![All Speakers Accepted](../assets/screenshots/workflow/phase-b-outreach/b-15-all-speakers-accepted.png)
 
 </div>
 
@@ -446,15 +430,13 @@ Collect detailed presentation content from speakers to enable quality review and
 
 Before collecting content, publish the topic from the Publishing tab.
 
-![Publishing Tab Before Topic](../assets/screenshots/workflow/phase-b5-content/b5-01-publish-tab-before-topic.png)
+![Publishing tab: validation, publishing phase, publish buttons](../assets/screenshots/event-page/publishing.png)
 
 After publishing the topic, organizers can submit content on behalf of speakers using the content submission drawer.
 
-![Content Submission Drawer](../assets/screenshots/workflow/phase-b5-content/b5-04-content-submission-drawer-1-opened.png)
+![Edit Session dialog, Materials tab (opened from Agenda → Materials)](../assets/screenshots/workflow/phase-b5-content/b5-04-content-submission-drawer-1-opened.png)
 
 Fill in the presentation details and submit.
-
-![Content Form Filled](../assets/screenshots/workflow/phase-b5-content/b5-05-content-submission-1-filled.png)
 
 Speakers submit through the **Cognito-authenticated speaker portal** (no magic links):
 

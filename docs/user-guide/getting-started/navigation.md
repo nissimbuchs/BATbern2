@@ -389,6 +389,8 @@ BATbern meets **WCAG 2.1 AA** standards:
 
 ## Mobile & Responsive
 
+![Event page on a phone, with the bottom tab bar](../assets/screenshots/event-page/cockpit-phone.png ':size=300')
+
 The interface adapts to different devices:
 
 ### Touch Gestures
@@ -415,4 +417,3 @@ On mobile/tablet:
 
 - [Dashboard Navigation](dashboard.md) - Dashboard layout and features
 - [Feature Status](../appendix/feature-status.md) - What's implemented vs planned
-- [Accessibility Guide](../appendix/accessibility.md) <span class="feature-status planned">Planned</span>

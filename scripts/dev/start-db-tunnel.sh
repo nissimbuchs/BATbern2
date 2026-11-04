@@ -8,7 +8,9 @@
 
 set -e
 
-export AWS_PROFILE=batbern-dev
+# Single AWS account since 2026 (188701360969); the batbern-dev account has no stacks.
+export AWS_PROFILE="${AWS_PROFILE:-batbern-staging}"
+ENV_NAME="${ENV_NAME:-staging}"
 export AWS_REGION=eu-central-1
 
 # Instance-specific port (default 5432 for instance 1, 6432 for instance 2)
@@ -18,7 +20,7 @@ echo "🔍 Fetching bastion and database information..."
 
 # Get bastion instance ID from CloudFormation
 BASTION_ID=$(aws cloudformation describe-stacks \
-  --stack-name BATbern-development-Bastion \
+  --stack-name BATbern-${ENV_NAME}-Bastion \
   --query 'Stacks[0].Outputs[?OutputKey==`BastionInstanceId`].OutputValue' \
   --output text \
   --region $AWS_REGION 2>/dev/null)
@@ -28,13 +30,13 @@ if [ -z "$BASTION_ID" ] || [ "$BASTION_ID" == "None" ]; then
   echo ""
   echo "Deploy it first:"
   echo "  cd infrastructure"
-  echo "  AWS_PROFILE=batbern-dev npx cdk deploy BATbern-development-Bastion"
+  echo "  AWS_PROFILE=$AWS_PROFILE npx cdk deploy BATbern-${ENV_NAME}-Bastion"
   exit 1
 fi
 
 # Get RDS endpoint
 RDS_ENDPOINT=$(aws rds describe-db-instances \
-  --query 'DBInstances[?DBInstanceIdentifier==`batbern-development-postgres`].Endpoint.Address' \
+  --query "DBInstances[?DBInstanceIdentifier=='batbern-${ENV_NAME}-postgres'].Endpoint.Address" \
   --output text \
   --region $AWS_REGION 2>/dev/null)
 
@@ -43,7 +45,7 @@ if [ -z "$RDS_ENDPOINT" ]; then
   echo ""
   echo "Deploy database stack first:"
   echo "  cd infrastructure"
-  echo "  AWS_PROFILE=batbern-dev npx cdk deploy BATbern-development-Database"
+  echo "  AWS_PROFILE=$AWS_PROFILE npx cdk deploy BATbern-${ENV_NAME}-Database"
   exit 1
 fi
 

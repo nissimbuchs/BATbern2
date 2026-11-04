@@ -2,7 +2,9 @@
 
 > Execute event and archive for historical reference
 
-> **Last Updated:** 2026-06-13 — Verified against the 9-state EVENT workflow (Epic 5, unchanged) and the task system. The task system is independent of the speaker workflow; no speaker-state changes apply here.
+> **Last Updated:** 2026-11-04 — 8-state EVENT workflow (`AGENDA_FINALIZED` removed, V84); default task list moved to [Task Templates](../administration/task-templates.md).
+>
+> **2026-06-13** — Verified against the task system. The task system is independent of the speaker workflow; no speaker-state changes apply here.
 
 <div class="workflow-phase phase-f">
 <strong>Phase F: Task Management & Communications</strong><br>
@@ -23,29 +25,16 @@ Phase F represents the **Task System** - a separate workflow from event states a
 
 <span class="feature-status implemented">Implemented</span>
 
-### Default System Tasks (7 Auto-Creating Tasks)
+### Default System Tasks (10)
 
-BATbern includes 7 pre-configured tasks that automatically create when events reach specific workflow states:
-
-**Triggered at TOPIC_SELECTION**:
-1. **Venue Booking** - Due: 90 days before event
-2. **Partner Meeting** - Due: event day
-3. **Moderator Assignment** - Due: 14 days before event
-4. **Newsletter: Topic** - Due: immediately
-
-**Triggered at AGENDA_PUBLISHED**:
-5. **Newsletter: Speakers** - Due: 30 days before event
-
-**Triggered at AGENDA_FINALIZED**:
-6. **Newsletter: Final** - Due: 14 days before event
-7. **Catering** - Due: 30 days before event
+BATbern includes 10 pre-configured tasks: venue booking, partner meeting, moderator assignment, four newsletters (topic, speaker lineup, final agenda, slides online), catering, name badges (Namensschilder) and wine (Wein). Trigger state and due date of each are listed in [Task Templates](../administration/task-templates.md).
 
 ### Task Lifecycle
 
 Tasks use a **two-phase creation model**:
 
 1. **PENDING** (internal, pre-activation) — All default task templates are silently pre-created with `status = "pending"` when the event is first created. These tasks are not shown on the task dashboard.
-2. **Activated** — When the event transitions to a task's configured trigger state, the pending tasks activate and become visible in the organizer task dashboard.
+2. **Activated** — A pending task activates at whichever comes first: the event reaches the task's trigger state, or the task is within its activation lead time of the due date (14 days for the default templates; post-event tasks only on their trigger). Active tasks are visible in the organizer task dashboard.
 
 This means tasks "appear" at the right workflow moment without requiring manual action — they were already prepared in the background.
 
@@ -59,6 +48,8 @@ All tasks progress through 4 states:
 - **CANCELLED** - Not needed (event cancelled or task no longer relevant)
 
 ### Task Dashboard
+
+![Task Board with the All Tasks filter](../assets/screenshots/features/task-board.png)
 
 <span class="feature-status implemented">Implemented</span>
 
@@ -98,13 +89,13 @@ The following newsletter tasks auto-create as the event progresses:
 - Purpose: Announce event topics to build interest
 - Recipients: Mailing list subscribers, past attendees
 
-**Newsletter: Speakers** - Auto-created when event reaches AGENDA_PUBLISHED
+**Newsletter: Speakers** - Activated when the speakers are published
 - Due: 30 days before event
 - Purpose: Announce confirmed speakers
 - Recipients: Registered attendees, mailing list
 - **Note**: Works with auto-publishing feature (speakers auto-publish @ 30 days)
 
-**Newsletter: Final** - Auto-created when event reaches AGENDA_FINALIZED
+**Newsletter: Final** - Activated when the event reaches AGENDA_PUBLISHED
 - Due: 14 days before event
 - Purpose: Send final details, logistics, full schedule
 - Recipients: Registered attendees, speakers, partners
@@ -445,9 +436,9 @@ BATbern Team
 
 ### Auto-Created Task
 
-**Catering** task auto-creates when event reaches AGENDA_FINALIZED state:
-- Due: 30 days before event
-- Trigger state: AGENDA_FINALIZED
+**Catering** task activates when the event reaches AGENDA_PUBLISHED state (or 14 days before it is due):
+- Due: 5 days before event
+- Trigger state: AGENDA_PUBLISHED
 - Purpose: Coordinate catering with vendor
 
 ### Purpose
@@ -679,8 +670,8 @@ Task appears in Task Board when event reaches trigger state:
 **Continue Event Execution**:
 - Monitor task board for upcoming deadlines
 - Complete tasks as event approaches
-- Event automatically transitions through lifecycle (AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED)
-- Archive event after completion (see Phase E)
+- Event automatically transitions through lifecycle (AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED)
+- Event is archived automatically 14 days after the event (see Phase E)
 
 **For Task Management**: This is an ongoing process throughout the event lifecycle, not a single phase.
 

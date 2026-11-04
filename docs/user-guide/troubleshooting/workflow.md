@@ -6,7 +6,7 @@
 
 This guide helps resolve issues with the BATbern workflow system, including state transitions, validation errors, and blocked progression. BATbern uses **three independent workflow systems**:
 
-1. **Event Workflow** - 9-state lifecycle (CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → AGENDA_FINALIZED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED)
+1. **Event Workflow** - 8-state lifecycle (CREATED → TOPIC_SELECTION → SPEAKER_IDENTIFICATION → SLOT_ASSIGNMENT → AGENDA_PUBLISHED → EVENT_LIVE → EVENT_COMPLETED → ARCHIVED). The former AGENDA_FINALIZED state was removed (migration V84); AGENDA_PUBLISHED moves to EVENT_LIVE automatically on event day.
 2. **Speaker Workflow** - Per-speaker **8-state model** (ADR-009, Epic 11): `IDENTIFIED → CONTACTED → READY → INVITED → ACCEPTED → CONTENT_SUBMITTED → QUALITY_REVIEWED`, plus the terminal `DECLINED` state (reachable from any non-terminal state). `SpeakerWorkflowService` is the sole status writer. (Cognito user provisioning happens at the **`CONTACTED → READY`** "promote" transition; slot assignment and publish-readiness are derived flags — `is_slot_assigned`, `is_publishable` — not states.)
 3. **Task System** - Configurable tasks triggered by event state transitions
 
@@ -448,11 +448,11 @@ Solution: Click through different phase views (A-D) to find speakers in their cu
 
 **Manual State Override** (Organizer with override permission):
 ```
-1. Event → Edit Event modal
-2. Check "Override workflow validation" checkbox (if available)
-3. Select desired state from "Event State" dropdown
-4. Provide reason (required for audit trail)
-5. Click "Save Changes"
+1. Event → Details → Settings → "Event state"
+2. Select desired state from the "Status" dropdown
+3. Tick "Override workflow validation (allows any state transition)"
+4. Provide a reason (required for audit trail; the button stays disabled without it)
+5. Click "Change state"
 6. Event reverts to selected state, but data from later states is preserved
 
 Note: This is typically only needed for cancelled/rescheduled events
@@ -506,20 +506,19 @@ This is done via:
 
 **Verify Not Archived**:
 ```
-1. Event → Settings → Status
-2. Check "Archived" checkbox status
-3. If archived, unarchive to make editable again
+1. Event → Details → Settings → "Event state"
+2. Check whether the status shows "Archived"
+3. If archived, change the state back (with override and reason) to make it editable again
 ```
 
 **Force Refresh Event State**:
 ```
-Use Edit modal override:
-1. Event → Edit Event
-2. Check "Override workflow validation" checkbox
-3. System allows manual state selection
-4. Select correct state if corrupted
-5. Provide reason in notes
-6. Save changes
+Use the state override:
+1. Event → Details → Settings → "Event state"
+2. Select the correct state from the "Status" dropdown
+3. Tick "Override workflow validation (allows any state transition)"
+4. Provide a reason
+5. Click "Change state"
 
 Warning: Only use if state is genuinely incorrect. Most "stuck" issues are validation failures.
 ```
@@ -594,7 +593,7 @@ Contact support with:
 ### Workflow Best Practices
 
 1. **Understand the 3 Workflow Systems**
-   - Event Workflow: High-level event lifecycle (9 states, sequential)
+   - Event Workflow: High-level event lifecycle (8 states, sequential)
    - Speaker Workflow: Per-speaker progression (parallel, independent)
    - Task System: Configurable tasks triggered by event state changes
    - Each system operates independently but they coordinate

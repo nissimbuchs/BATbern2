@@ -21,95 +21,77 @@ Complete technology stack specifications with versions and rationale:
 - Technology decision rationale and alternatives
 
 ### [📁 Source Tree Structure](./source-tree.md)
-Project organization and directory structure guidelines:
-- Multi-repository DDD-based structure
-- Service and frontend directory layouts
-- Shared kernel and infrastructure organization
-- File naming conventions and integration points
+Project organization and directory structure:
+- Single monorepo: Gradle multi-project (shared kernel, gateway, services) plus npm projects
+  (web frontend, infrastructure)
+- Service, frontend, infrastructure and test layouts
+- Where scripts, hooks and documentation live
 
 ## Development Workflow
+
+The authoritative, maintained setup guide is
+[docs/guides/local-development-setup.md](../guides/local-development-setup.md). The summary below
+uses only targets and scripts that exist in the repository.
 
 ### Local Development Setup
 
 #### Prerequisites
 ```bash
 java --version          # Java 21 LTS
-node --version         # Node.js 20+
-docker --version       # Docker Desktop
-aws --version          # AWS CLI v2
-cdk --version          # AWS CDK v2.110+
-gradle --version       # Gradle 8.5+
+node --version          # Node.js 22 (the version CI uses)
+docker --version        # Docker (local PostgreSQL, Testcontainers)
+aws --version           # AWS CLI v2 (local dev authenticates against the shared Cognito)
+./gradlew --version     # Gradle 9.x via the wrapper; no global Gradle needed
 ```
 
 #### Initial Setup
 ```bash
-# Clone and setup shared kernel
-cd shared-kernel
-./gradlew publishToMavenLocal
-
-# Setup infrastructure
-cd infrastructure
-npm install && npm run build
-
-# Setup frontend
-cd web-frontend
-npm install && npm run build
-
-# Setup each domain service
-for service in event-management speaker-coordination partner-analytics attendee-experience company-management; do
-  cd services/$service && ./gradlew build && cd ../..
-done
-
-# Start local environment
-docker compose up -d
+make install                                   # Java + Node dependencies and the git hooks in .githooks/
+cp .env.example .env                           # backend/local configuration, see the comments in the file
+docker compose -f docker-compose-dev.yml up -d # local PostgreSQL
+make dev-native-up                             # all services natively, plus the Vite dev server
 ```
+
+With the default `BASE_PORT=8000` the API gateway listens on 8000, the services on 8001-8005
+(company-user-management, event-management, speaker-coordination, partner-coordination,
+attendee-experience) and the frontend on 8100. `make dev-native-up-instance BASE_PORT=9000`
+starts a second, parallel environment. Logs go to `/tmp/batbern-1-*.log`.
 
 #### Development Commands
 ```bash
-# Start all services
-npm run dev:all
+make dev-native-status                                   # what is running
+make dev-native-restart-service SERVICE=event-management # restart one service
+make dev-native-down                                     # stop everything
 
-# Start individual services
-npm run dev:frontend
-npm run dev:event-management
-# etc.
+make test            # Java (Testcontainers, needs Docker) + Node tests with coverage
+make test-java       # Java only
+make test-node       # Node projects only
+./gradlew :services:event-management-service:test --tests SomeIntegrationTest
+cd web-frontend && npm run test:e2e   # Playwright
+./scripts/ci/run-bruno-tests.sh       # Bruno API contract tests
 
-# Run tests
-npm run test:all
-npm run test:frontend
-npm run test:backend
-npm run test:integration
-npm run test:e2e
+make verify          # lint + generated-types check + tests
 ```
+
+All Gradle commands run from the repository root. Run one heavy build or test suite at a time on a
+shared machine.
 
 ### Environment Configuration
 
-#### Frontend Environment Variables
-```bash
-VITE_API_BASE_URL=http://localhost:8080
-VITE_COGNITO_USER_POOL_ID=eu-central-1_dev_pool
-VITE_COGNITO_CLIENT_ID=dev_client_id
-VITE_PWA_ENABLED=true
-VITE_FEATURE_AI_RECOMMENDATIONS=true
-```
-
-#### Backend Environment Variables
-```bash
-DB_HOST=localhost
-DB_PORT=5432
-DB_NAME=batbern_dev
-AWS_REGION=eu-central-1
-JWT_SECRET=dev-secret-key
-COGNITO_USER_POOL_ID=eu-central-1_dev_pool
-# Note: Caching is handled by Caffeine in-memory (no external cache service needed)
-```
+- **Backend and local services:** copy `.env.example` (repository root) to `.env`. The file lists
+  every variable with its purpose.
+- **Frontend:** runtime configuration comes from the `config` module
+  (`import { config } from '@/config'`), never from `process.env` directly. The Vite dev server
+  is wired by `make dev-native-up`; there are no feature-flag `VITE_*` variables to set.
+- **Test credentials:** `.env.test.local.example` → `.env.test.local`, then
+  `make setup-test-users`.
 
 ## Quick Reference Links
 
 ### For New Developers
 1. **Start Here**: [Technology Stack](./tech-stack.md) - Understand the technology choices
-2. **Setup**: Follow the Local Development Setup above
-3. **TDD Practice**: Read [TDD Workflow Guide](./tdd-workflow.md) - MANDATORY for all development
+2. **Setup**: [Local development setup guide](../guides/local-development-setup.md)
+3. **TDD Practice**: [Coding Standards - Test-Driven Development](./coding-standards.md#test-driven-development-standards) - mandatory for all development
 4. **Coding**: Review [Coding Standards](./coding-standards.md) for conventions
 5. **Structure**: See [Source Tree Structure](./source-tree.md) for project organization
 
@@ -126,7 +108,8 @@ COGNITO_USER_POOL_ID=eu-central-1_dev_pool
 ## Test-Driven Development Process
 
 ### TDD is Mandatory
-All new features and bug fixes MUST follow Test-Driven Development practices. See [TDD Workflow Guide](./tdd-workflow.md) for detailed instructions.
+All new features and bug fixes MUST follow Test-Driven Development practices. See
+[Coding Standards - Test-Driven Development Standards](./coding-standards.md#test-driven-development-standards).
 
 ### TDD Quick Reference
 1. **RED**: Write failing tests first
@@ -136,34 +119,27 @@ All new features and bug fixes MUST follow Test-Driven Development practices. Se
 ### Coverage Requirements
 - Unit Tests: 90% for business logic
 - Integration Tests: 80% for APIs
-- Overall: 85% line coverage (enforced by CI/CD)
+- Overall: 85% line coverage
+
+Details: [Coding Standards - Coverage Requirements](./coding-standards.md#coverage-requirements).
 
 ## Development Process Overview
 
 ```mermaid
 graph TD
-    A[Setup Environment] --> B[Read Standards & TDD Guide]
-    B --> C{New Feature?}
-    C -->|Yes| D[Create Feature Branch]
-    C -->|No| E[Create Hotfix Branch]
-    D --> TDD[Write Tests First - RED]
-    E --> TDD
-    TDD --> F[Implement Code - GREEN]
-    F --> REF[Refactor - REFACTOR]
-    REF --> G[Run All Tests]
-    G --> H{Tests Pass & Coverage Met?}
+    A[Feature or fix branch from develop] --> TDD[Write tests first - RED]
+    TDD --> F[Implement - GREEN]
+    F --> REF[Refactor]
+    REF --> G[make verify locally]
+    G --> H{Green?}
     H -->|No| TDD
-    H -->|Yes| J[Create Pull Request]
-    J --> K[Code Review - Verify TDD]
-    K --> L{Approved?}
-    L -->|No| TDD
-    L -->|Yes| M[Merge to Develop]
-    M --> N[Deploy to Staging]
-    N --> O[E2E Tests]
-    O --> P{Tests Pass?}
-    P -->|No| Q[Fix Issues with TDD]
-    Q --> TDD
-    P -->|Yes| R[Deploy to Production]
+    H -->|Yes| J[Open PR against develop]
+    J --> K[build.yml: build, tests, deploy to production, Bruno + Playwright]
+    K --> L{Post-deploy tests green?}
+    L -->|No| RB[Automatic rollback to staging-stable; fix with TDD]
+    RB --> TDD
+    L -->|Yes| M[Auto-merge to develop]
 ```
 
-This comprehensive development standards framework ensures consistency, quality, and maintainability across the entire BATbern platform development lifecycle. Each team member should familiarize themselves with all three core documents to maintain the high standards expected for this enterprise-grade event management platform.
+**Opening a PR against `develop` deploys that branch to production** (www.batbern.ch), before
+review and before merge. See [02-infrastructure-deployment.md](./02-infrastructure-deployment.md#cicd-pipeline).

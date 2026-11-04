@@ -5,29 +5,60 @@ This document outlines the core backend architecture for the BATbern Event Manag
 ## Related Documentation
 
 For detailed information on specific subsystems, see:
-- **[Workflow State Machines](./06a-workflow-state-machines.md)** - Event workflow, speaker coordination, slot assignment, quality review, and overflow voting
+- **[Workflow State Machines](./06a-workflow-state-machines.md)** - Event workflow, speaker coordination, slot assignment and quality review
 - **[User Lifecycle Sync Patterns](./06b-user-lifecycle-sync.md)** - Unidirectional Cognito → PostgreSQL sync with Lambda triggers
 - **[Testing Strategy](./06c-testing-strategy.md)** - Testcontainers PostgreSQL setup, integration and unit testing patterns
-- **[Notification System](./06d-notification-system.md)** - Real-time notifications, escalation rules, and multi-channel delivery
+- **[Notification System](./06d-notification-system.md)** - Email (SES) and in-app organizer notifications, the `notifications` audit table, speaker escalation after unanswered reminders
 
 ---
 
 ## Service Architecture Pattern
 
+### How a request reaches a service
+
+```mermaid
+flowchart LR
+    SPA["Browser SPA / Apple Watch"] -->|"HTTPS, Bearer JWT"| HTTPAPI["AWS HTTP API<br/>api.batbern.ch<br/>catch-all /{proxy+}, no authorizer"]
+    HTTPAPI --> GW["Spring API gateway<br/>CorrelationIdFilter<br/>JWT validation<br/>Turnstile + rate limit<br/>AccountActiveFilter<br/>DomainRouter"]
+    GW -->|"path prefix, headers copied"| EMS["event-management-service"]
+    GW --> CUMS["company-user-management-service"]
+    GW --> PCS["partner-coordination-service"]
+    GW -.->|"/api/v1/content only"| AES["attendee-experience-service"]
+    GW -->|"/internal/** denyAll"| X["403"]
+    EMS <-->|"/internal/** no JWT,<br/>Service Connect inside the VPC"| CUMS
+    PCS -->|"/internal/users"| CUMS
+    PCS <-->|"/internal/mails, /internal/partner-meetings/rsvps"| EMS
+    EMS --> DB[("PostgreSQL<br/>one database, per-service tables")]
+    CUMS --> DB
+    PCS --> DB
+```
+
+Every service validates the JWT again and decides access itself with `@PreAuthorize` (ADR-008,
+#1147). The AWS HTTP API (`infrastructure/lib/stacks/api-gateway-stack.ts`) has a single catch-all
+route without an authorizer; the Spring gateway (`api-gateway/`) authenticates and routes by path
+prefix in `DomainRouter.determineTargetService`, and copies the incoming headers, including
+`Authorization`, to the service (`DomainRouter.routeRequest`). Service URLs are Service Connect
+names (`http://event-management:8080`, see `api-gateway-service-stack.ts`).
+speaker-coordination-service has no gateway route; attendee-experience-service receives only
+`/api/v1/content/**`.
+
+### Package layout
+
+Layer packages are shared by all services; larger services add feature packages next to them.
+
 ```
 services/{domain-service}/
 ├── src/main/java/ch/batbern/{domain}/
-│   ├── controller/                     # REST API controllers
-│   ├── service/                        # Business logic layer
-│   ├── repository/                     # Data access layer
-│   ├── domain/                         # Domain models and entities
-│   ├── dto/                           # Data transfer objects
-│   ├── exception/                     # Custom exceptions
-│   └── security/                      # Security components
+│   ├── controller/   service/   repository/   domain/   dto/   exception/   security/   config/
+│   ├── client/                         # HTTP clients to other services (e.g. UserApiClient)
+│   └── ...                             # feature packages, e.g. in EMS: listener/, scheduler/,
+│                                       # scheduled/, notification/, forwarding/, mailcenter/,
+│                                       # usermerge/, watch/
 ├── src/main/resources/
-│   ├── application.yml                # Configuration
-│   └── db/migration/                  # Flyway migrations
-└── build.gradle                      # Build configuration
+│   ├── application.yml
+│   ├── db/migration/                   # Flyway migrations (never edit an applied one)
+│   └── email-templates/                # EMS: DE + EN mail templates
+└── build.gradle
 ```
 
 ## Authentication and Authorization
@@ -36,25 +67,49 @@ services/{domain-service}/
 
 ### JWT Authentication Flow
 
+Login does not go through the backend. The SPA signs in against Cognito with Amplify (password or
+"Continue with Google" via `auth.batbern.ch`) and sends the ID token as Bearer token on every API
+call. The PreTokenGeneration Lambda puts the roles from `role_assignments` into `custom:role`.
+
 ```mermaid
 sequenceDiagram
-    participant C as Client
-    participant GW as API Gateway
+    autonumber
+    participant SPA as SPA - Amplify
     participant Cognito as AWS Cognito
-    participant Service as Domain Service
+    participant Lambda as PreTokenGeneration Lambda
+    participant HTTPAPI as AWS HTTP API
+    participant GW as Spring API gateway
+    participant CUMS as company-user-management
+    participant Svc as Domain service
 
-    C->>GW: POST /auth/login
-    GW->>Cognito: Authenticate User
-    Cognito-->>GW: Access Token + Roles
-    GW-->>C: JWT Token with Claims
-
-    C->>GW: API Request with Bearer Token
-    GW->>GW: Validate JWT + Extract Roles
-    GW->>Service: Forward Request + User Context
-    Service->>Service: Apply Role-Based Logic
-    Service-->>GW: Response Data
-    GW-->>C: API Response
+    SPA->>Cognito: sign in - password or Google federation
+    Cognito->>Lambda: token generation trigger
+    Lambda-->>Cognito: custom:role from role_assignments
+    Cognito-->>SPA: ID + access + refresh token
+    SPA->>HTTPAPI: API request, Authorization Bearer
+    HTTPAPI->>GW: proxy, no authorizer
+    GW->>GW: validate JWT against Cognito JWKS
+    GW->>GW: Turnstile on 3 public POSTs, rate limit
+    GW->>CUMS: AccountActiveFilter - is the account active? cached about 60 s
+    CUMS-->>GW: active / inactive
+    alt account deactivated
+        GW-->>SPA: 403 ACCOUNT_DEACTIVATED
+    else active or anonymous public route
+        GW->>Svc: forward, all headers incl. Authorization
+        Svc->>Svc: validate JWT again, JwtRolesConverter maps custom:role to ROLE_X
+        Svc->>Svc: @PreAuthorize on the controller method
+        Svc-->>GW: 2xx or error body
+        GW-->>SPA: response passed through
+    end
 ```
+
+Facts behind the diagram: `api-gateway/.../config/SecurityConfig.java` (`oauth2ResourceServer`,
+composite decoder for Cognito and Watch tokens), `TurnstileVerificationFilter` (protected endpoints
+in `api-gateway/src/main/resources/application.yml`: newsletter subscribe, registration create,
+thanks POST; `turnstile.enabled` defaults to false and is switched on by environment),
+`RateLimitingFilter`, `AccountActiveFilter` (fail-open, kill switch
+`security.active-gate.enabled`), and `shared-kernel/.../security/JwtRolesConverter` (with the
+Pattern 3b database fallback, see 06b).
 
 ### Role-Based Security Configuration
 
@@ -68,7 +123,9 @@ sequenceDiagram
 
 #### Public Endpoints (no authentication required)
 
-The following endpoints are accessible without any token at the domain-service level:
+Main `permitAll` entries of the event-management chain
+(`services/event-management-service/.../config/SecurityConfig.java`); the gateway chain mirrors them
+(dual SecurityConfig rule: a public path needs `permitAll` in both).
 
 | Pattern | Notes |
 |---|---|
@@ -76,11 +133,18 @@ The following endpoints are accessible without any token at the domain-service l
 | `/swagger-ui/**`, `/v3/api-docs/**` | API documentation |
 | `GET /api/v1/public/events`, `/public/events/current`, `/public/events/{code}` | Public Events read model, the website's only event source (see below) |
 | `GET /api/v1/events/current` | Apple Watch app only. Retirement tracked in #1070 |
-| `GET /api/v1/events/**` | Event details. Sessions and speakers are returned to organizers only |
-| `GET /api/v1/events/{code}/sessions/**` | Session listings, filtered by `PublicSessionVisibilityPolicy` for non-organizers |
-| `GET /api/v1/events/{code}/speakers/**` | Speaker listings (read-only) |
-| `POST /api/v1/events/{code}/registrations` | Attendee registration creation |
-| `POST /api/v1/events/{code}/registrations/confirm` | Registration confirmation |
+| `GET /api/v1/events`, `/api/v1/events/{code}` | Event list and detail. Sessions and speakers are returned to organizers only |
+| `GET /api/v1/events/{code}/sessions`, `/sessions/{slug}`, `/sessions/{slug}/speakers` | Filtered by `PublicSessionVisibilityPolicy` for non-organizers |
+| `GET .../sessions/{slug}/qna`, `.../materials/{id}/download`, `/events/{code}/photos`, `/events/{code}/live-timing` | Public reads for Q&A archive, materials, photos, presenter screen |
+| `POST /api/v1/events/{code}/registrations`, `.../registrations/confirm`, `GET .../registrations/{code}` | Anonymous registration; the code or the token is the credential |
+| `POST /api/v1/newsletter/subscribe`, `/newsletter/unsubscribe`, `GET /newsletter/unsubscribe/verify` | Newsletter |
+| `GET/POST /api/v1/registrations/deregister*` | Token-based self-service deregistration |
+| `GET/POST /api/v1/events/{code}/thanks`, `GET /api/v1/thanks/featured` | Thank the organizers |
+| `/internal/**` | Service-to-service only; the gateway denies it (below) |
+
+Literal organizer paths that the wildcards would match (`/events/attendance-summary`,
+`/events/registrations`, `/sessions/unassigned`, `/sessions/conflicts`) are declared
+`authenticated()` before the public wildcards (GHSA-qhqv).
 
 #### Public Events read model (2026-10-07)
 
@@ -128,6 +192,9 @@ the VPC through Service Connect. Callers send **no** JWT.
 | `GET /internal/users?role=&company=&page=&limit=` | Company-User Management | EMS organizer/partner lists, PCS partner contacts by company and users by role |
 | `POST /internal/partner-meetings/rsvps` | Partner Coordination | EMS inbound iCal REPLY handling |
 | `POST /internal/mails` | Event Management | PCS records its partner meeting invites and cancellations in "What went out" (Story 16.9) |
+| `POST /internal/users/get-or-create` | Company-User Management | EMS anonymous registration and speaker provisioning (ADR-005) |
+| `GET /internal/email-owners?email=` | Company-User Management | EMS by-email deregistration across a person's profiles (#1183) |
+| `GET /internal/users/merge-preview`, `POST /internal/users/merge` | Event Management | CUMS profile merge (#1183 C/D, below) |
 
 Why a separate API rather than forwarding the user's JWT: the public user directory
 (`GET /api/v1/users`, `/users/search`, `/users/{username}`) is ORGANIZER/ADMIN only, while EMS and
@@ -142,83 +209,49 @@ CUMS still serves a few `/api/v1/users/*` calls from EMS without a JWT through
 a public hop and needs a token (#1132, see `08-operations-security.md`).
 
 Role checks are enforced **in each service** (`@PreAuthorize` / service `SecurityConfig`). The
-API gateway only authenticates the caller (JWT) and routes; it does not check roles.
+API gateway only authenticates the caller (JWT) and routes; it does not check roles. Shape of a
+service chain (event-management, abridged):
 
 ```java
-@Configuration
-@EnableWebSecurity
-public class SecurityConfiguration {
+@Bean
+@Profile("!test")
+public SecurityFilterChain filterChain(HttpSecurity http, JwtAuthenticationConverter jwtAuthenticationConverter) {
+    http
+        .csrf(csrf -> csrf.disable())
+        .sessionManagement(s -> s.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
+        .authorizeHttpRequests(auth -> auth
+            .requestMatchers("/actuator/health", "/actuator/info").permitAll()
+            // organizer literals before the public wildcards (GHSA-qhqv)
+            .requestMatchers(HttpMethod.GET, "/api/v1/events/attendance-summary", ...).authenticated()
+            .requestMatchers(HttpMethod.GET, "/api/v1/events/*").permitAll()
+            // ... further public reads and token-credentialed writes ...
+            .requestMatchers("/internal/**").permitAll()   // the gateway denies it
+            .anyRequest().authenticated())
+        // every service validates the JWT itself (multi-issuer: Cognito RS256, Watch HS256)
+        .oauth2ResourceServer(o -> o.jwt(j -> j.jwtAuthenticationConverter(jwtAuthenticationConverter)));
+    return http.build();
+}
 
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        return http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(auth -> auth
-                // Health & docs — always public
-                .requestMatchers("/actuator/health", "/actuator/info").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                // Public read endpoints — no auth required
-                .requestMatchers(HttpMethod.GET, "/api/v1/events/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/sessions/**").permitAll()
-                .requestMatchers(HttpMethod.GET, "/api/v1/events/*/speakers/**").permitAll()
-                // Public write endpoints — registration flow
-                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/events/*/registrations/confirm").permitAll()
-                // Everything else: trust the gateway-injected user context
-                .anyRequest().permitAll()
-            )
-            .build();
-        // No oauth2ResourceServer / jwtDecoder — JWT validation is the gateway's responsibility
-    }
-
-    @Bean
-    public JwtAuthenticationConverter jwtAuthenticationConverter() {
-        JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
-        converter.setJwtGrantedAuthoritiesConverter(this::extractAuthorities);
-        return converter;
-    }
-
-    private Collection<GrantedAuthority> extractAuthorities(Jwt jwt) {
-        // Extract custom:role claim from JWT (populated by PreTokenGeneration Lambda)
-        String rolesString = jwt.getClaimAsString("custom:role");
-
-        if (rolesString == null || rolesString.isEmpty()) {
-            return Collections.emptyList();
-        }
-
-        // Split comma-separated roles and map to Spring Security authorities
-        // "ATTENDEE,SPEAKER" → [ROLE_ATTENDEE, ROLE_SPEAKER]
-        return Arrays.stream(rolesString.split(","))
-            .map(role -> new SimpleGrantedAuthority("ROLE_" + role.trim()))
-            .collect(Collectors.toList());
-    }
+@Bean
+public JwtAuthenticationConverter jwtAuthenticationConverter(ObjectProvider<DataSource> ds) {
+    JwtAuthenticationConverter converter = new JwtAuthenticationConverter();
+    // custom:role "ATTENDEE,SPEAKER" -> ROLE_ATTENDEE, ROLE_SPEAKER; DB fallback when the claim is empty
+    converter.setJwtGrantedAuthoritiesConverter(new JwtRolesConverter(ds.getIfAvailable()));
+    return converter;
 }
 ```
+
+`@EnableMethodSecurity(prePostEnabled = true)` is on in every profile, so `@PreAuthorize` decides.
+`EndpointAuthorizationGuardTest` exists in the gateway, EMS, CUMS and PCS and fails the build for a
+write endpoint without a rule.
 
 ### User Context Management
 
-```java
-@Component
-public class SecurityContextHelper {
-
-    public UserContext getCurrentUser() {
-        // Implementation details - see source code
-    }
-
-    public boolean hasRole(String role) {
-        // Implementation details - see source code
-    }
-
-    public boolean isOrganizer() {
-        // Implementation details - see source code
-    }
-
-    public boolean canAccessCompany(String companyId) {
-        // Implementation details - see source code
-    }
-}
-```
+Each service has its own `SecurityContextHelper` (`security/SecurityContextHelper.java` in EMS, CUMS
+and PCS) that reads the authenticated JWT: `getCurrentUsername()`, `getCurrentUsernameOrNull()`
+(EMS, for scheduler and anonymous paths), `getCurrentUserEmail()`, `getCurrentUserRoles()`,
+`hasRole(role)`. There is no `UserContext` object and no `canAccessCompany` helper; ownership rules
+live in the `@PreAuthorize` expressions and the services.
 
 ### Speaker authentication (ADR-009)
 
@@ -243,13 +276,13 @@ Speakers are full Cognito users with the SPEAKER role. Provisioning is wired int
 
 3. **First login**: speaker enters email + temporary password on the standard Cognito hosted/SDK login page. Cognito challenges them with `NEW_PASSWORD_REQUIRED`; the speaker sets a new password. From then on they are a regular Cognito user — `custom:role` JWT claim includes `SPEAKER` (populated by the PreTokenGeneration Lambda from `role_assignments`).
 
-4. **Portal access**: every `/api/v1/speaker-portal/**` endpoint is `@PreAuthorize("hasRole('SPEAKER')")`. The speaker-portal frontend (`web-frontend/src/pages/speaker/**`) reads the Cognito session via `useAuth()` — same pattern as organizer/partner pages — and calls backend endpoints with a Bearer token.
+4. **Portal access**: every `/api/v1/speaker-portal/**` endpoint is `@PreAuthorize("hasRole('SPEAKER')")`. The speaker-portal frontend (`web-frontend/src/pages/speaker-portal/**`) reads the Cognito session via `useAuth()` — same pattern as organizer/partner pages — and calls backend endpoints with a Bearer token.
 
 **Components NOT present** (deleted by ADR-009 Decision 3 / Epic 11 Phase F):
 - `MagicLinkService`, `SpeakerPortalTokenController`, `SpeakerMagicLoginController`, `JwtConfig` (speaker-side).
 - The `magic_link_tokens` table.
 - The `speaker_jwt` HTTP-only cookie.
-- `?token=` and `?jwt=` URL parsing in `pages/speaker/**`.
+- `?token=` and `?jwt=` URL parsing in the speaker pages.
 
 **No Lambda triggers are required.** Standard Cognito invitation flow covers the entire path — no `DefineAuthChallenge` / `CreateAuthChallenge` / `VerifyAuthChallengeResponse` Lambdas; no Custom Auth flow.
 
@@ -262,103 +295,65 @@ See `06b-user-lifecycle-sync.md` ("Pattern N: Speaker Provisioning at CONTACTED 
 ```mermaid
 sequenceDiagram
     participant FE as Frontend
-    participant GW as API Gateway
-    participant Service as Domain Service
-    participant DB as Database
+    participant GW as Spring API gateway
+    participant Svc as Domain service
+    participant H as GlobalExceptionHandler of the service
 
-    FE->>GW: API Request
-    GW->>Service: Forward Request
-    Service->>DB: Database Query
-    DB-->>Service: Database Error
-    Service->>Service: Transform to Domain Error
-    Service-->>GW: Structured Error Response
-    GW->>GW: Add Request ID & Timestamp
-    GW-->>FE: Standard Error Format
-    FE->>FE: Display User-Friendly Message
+    FE->>GW: API request
+    GW->>Svc: forward
+    Svc->>Svc: throws, e.g. EventNotFoundException, WorkflowValidationException
+    Svc->>H: Spring dispatches to the matching @ExceptionHandler
+    H->>H: ErrorResponse with status, message, severity, correlationId = CorrelationIdGenerator.current
+    H-->>GW: 4xx or 5xx with ErrorResponse JSON
+    GW-->>FE: status and body passed through unchanged
+    FE->>FE: show a message for the status or errorCode
 ```
+
+The gateway does not rewrite service errors: `DomainRouter` catches `HttpStatusCodeException` and
+returns the downstream status and body as they are, minus duplicated security headers. Errors the
+gateway raises itself (route not found, rate limit, Turnstile, deactivated account) come from the
+gateway's own `GlobalExceptionHandler` and filters.
 
 ### Error Response Format
 
+`shared-kernel/.../dto/ErrorResponse.java`, flat (no `error` wrapper object):
+
 ```typescript
-interface ApiError {
-  error: {
-    code: string;
-    message: string;
-    details?: Record<string, any>;
-    timestamp: string;
-    requestId: string;
-    path: string;
-    severity: string;
-  };
+interface ErrorResponse {
+  timestamp: string;
+  path: string;
+  status: number;
+  error: string;            // reason phrase, e.g. "Not Found"
+  errorCode?: string;       // ErrorCode name where the exception carries one
+  message: string;
+  correlationId: string;
+  severity: string;         // EMS uses LOW, MEDIUM, HIGH, CRITICAL (one handler writes WARNING)
+  details?: Record<string, unknown>;
+  stackTrace?: string;      // dev and staging profiles only
 }
 ```
 
-### Comprehensive Exception Hierarchy
+### Exception Hierarchy
 
-```java
-// Base domain exception
-public abstract class BATbernException extends RuntimeException {
-    // Implementation details - see source code
-}
-
-// Domain-specific exceptions
-@ResponseStatus(HttpStatus.NOT_FOUND)
-public class EventNotFoundException extends BATbernException {
-    // Implementation details - see source code
-}
-
-@ResponseStatus(HttpStatus.BAD_REQUEST)
-public class InvalidEventStateException extends BATbernException {
-    // Implementation details - see source code
-}
-
-@ResponseStatus(HttpStatus.CONFLICT)
-public class SpeakerAlreadyInvitedException extends BATbernException {
-    // Implementation details - see source code
-}
-
-@ResponseStatus(HttpStatus.UNPROCESSABLE_ENTITY)
-public class BusinessValidationException extends BATbernException {
-    // Implementation details - see source code
-}
-
-@ResponseStatus(HttpStatus.TOO_MANY_REQUESTS)
-public class RateLimitExceededException extends BATbernException {
-    // Implementation details - see source code
-}
-```
+Shared kernel (`shared-kernel/.../exception/`): abstract `BATbernException` (carries an `ErrorCode`)
+with `NotFoundException`, `ValidationException`, `InvalidStateTransitionException`,
+`ServiceException` and `UnauthorizedException`. Services add their own exceptions in
+`{service}/exception/` (EMS for example `EventNotFoundException`, `BusinessValidationException`,
+`WorkflowValidationException`, `RegistrationCapacityExceededException`,
+`RegistrationClosedException`); the gateway has `RateLimitExceededException`.
 
 ### Global Exception Handler
 
-```java
-@ControllerAdvice
-@Slf4j
-public class GlobalExceptionHandler {
+Each service has its own `GlobalExceptionHandler` (`@RestControllerAdvice` in EMS, CUMS, PCS and SCS;
+`@ControllerAdvice` in the gateway). The EMS handler has 60 `@ExceptionHandler` methods, among them
+`MethodArgumentNotValidException`, `ConstraintViolationException`, `PropertyReferenceException`,
+`HttpMessageNotReadableException` and `MethodArgumentTypeMismatchException` (all 400),
+`AccessDeniedException` / `AuthorizationDeniedException` (403),
+`ObjectOptimisticLockingFailureException` (409), and a final `@ExceptionHandler(Exception.class)`
+(500, severity CRITICAL).
 
-    private final ErrorMessageResolver messageResolver;
-    private final MetricRegistry metricRegistry;
-
-    @ExceptionHandler(BATbernException.class)
-    public ResponseEntity<ErrorResponse> handleBATbernException(BATbernException ex, HttpServletRequest request) {
-        // Implementation details - see source code
-    }
-
-    @ExceptionHandler(MethodArgumentNotValidException.class)
-    public ResponseEntity<ErrorResponse> handleValidationException(MethodArgumentNotValidException ex, HttpServletRequest request) {
-        // Implementation details - see source code
-    }
-
-    @ExceptionHandler(DataIntegrityViolationException.class)
-    public ResponseEntity<ErrorResponse> handleDataIntegrityViolation(DataIntegrityViolationException ex, HttpServletRequest request) {
-        // Implementation details - see source code
-    }
-
-    @ExceptionHandler(Exception.class)
-    public ResponseEntity<ErrorResponse> handleGenericException(Exception ex, HttpServletRequest request) {
-        // Implementation details - see source code
-    }
-}
-```
+Not implemented (named in earlier versions): `InvalidEventStateException`,
+`SpeakerAlreadyInvitedException`, an `ErrorMessageResolver` and a `MetricRegistry` in the handler.
 
 #### Two invariants the handlers must preserve
 
@@ -394,178 +389,111 @@ been 400s:
   punctuation — the injection vector Spring Data's guard exists to stop — out of sort expressions
   entirely. (Issue #903.)
 
-### Circuit Breaker Pattern Implementation
+### Circuit Breaker, Bulkhead and Retry (EventBridge publishing)
 
-The platform uses **Resilience4j** circuit breakers (not a bespoke `CircuitBreakerService`). Configuration is rate-based, not count-based:
+The platform uses **Resilience4j** (`resilience4j-*` 2.4.0 in `shared-kernel/build.gradle`). The
+only place it is applied is `shared-kernel/.../events/EventBridgeEventPublisher`, which decorates
+the EventBridge `putEvents` call programmatically, not with annotations:
+
+```java
+// EventBridgeEventPublisher.publish(...)
+Bulkhead.decorateSupplier(bulkhead,
+    CircuitBreaker.decorateSupplier(circuitBreaker,
+        Retry.decorateSupplier(retry, publishSupplier)));
+```
+
+The instances are configured in `shared-kernel/src/main/resources/application-shared.yml`:
 
 ```yaml
-# application-shared.yml (shared across services)
 resilience4j:
   circuitbreaker:
     instances:
       eventBridgePublisher:
-        failureRateThreshold: 60          # open after 60% failure rate (not a fixed count)
-        waitDurationInOpenState: 10s       # 10 seconds in open state (not 60 000 ms)
+        slidingWindowSize: 50
+        failureRateThreshold: 60          # open after 60% failures
+        waitDurationInOpenState: 10s
         permittedNumberOfCallsInHalfOpenState: 5
-        slidingWindowSize: 10
-        minimumNumberOfCalls: 5
+  bulkhead:
+    instances:
+      eventBridgePublisher:
+        maxConcurrentCalls: 50
+        maxWaitDuration: 100ms
+  retry:
+    instances:
+      eventBridgePublisher:
+        maxAttempts: 3
+        waitDuration: 1000ms
+        enableExponentialBackoff: true
+        exponentialBackoffMultiplier: 2
 ```
 
-```java
-// Usage via Resilience4j annotation
-@CircuitBreaker(name = "eventBridgePublisher", fallbackMethod = "storeForRetry")
-public void publishEvent(DomainEvent event) {
-    // Implementation details - see source code
-}
+Failed entries in a `putEvents` response are handled in `handleFailedEntries`; there is no
+fallback store for events that could not be published.
 
-private void storeForRetry(DomainEvent event, Exception ex) {
-    // Store event for later retry
-    failedEventStore.store(event);
-}
-```
-
-### Retry Mechanism with Exponential Backoff
-
-```java
-@Component
-public class RetryService {
-
-    @Retryable(
-        value = {TransientException.class, TemporaryUnavailableException.class},
-        maxAttempts = 3,
-        backoff = @Backoff(delay = 1000, multiplier = 2, maxDelay = 10000)
-    )
-    public void executeWithRetry(Runnable operation) {
-        // Implementation details - see source code
-    }
-
-    @Recover
-    public void recover(Exception ex) {
-        // Implementation details - see source code
-    }
-}
-```
+There is no generic retry service: no `RetryService` class, no Spring Retry dependency and no
+`@Retryable` in the codebase. Other outbound calls (SES, S3, cross-service HTTP) do not go
+through Resilience4j. partner-coordination-service declares circuit breaker instances
+`companyService` and `userService` in its `application.yml`, but no code in `services/*/src/main`
+references Resilience4j, so those instances are configuration only.
 
 ### Request Correlation and Context
 
-```java
-@Component
-@Slf4j
-public class RequestCorrelationFilter implements Filter {
-    private static final String CORRELATION_ID_HEADER = "X-Correlation-ID";
+- The gateway's `CorrelationIdFilter` (highest precedence) takes `X-Correlation-ID` from the request
+  or generates one, puts it into the MDC and onto the response.
+- `DomainRouter` copies the **incoming** headers to the service. A correlation id the client sent
+  therefore reaches the service; one the gateway generated does not (it adds no header to the
+  forwarded request).
+- In the services, CUMS has a `RequestCorrelationFilter`; EMS and PCS rely on
+  `CorrelationIdGenerator.current()`, which reads the id from the MDC or registers a new one for
+  the request thread. The exception handlers use it (invariant 1 above).
 
-    @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-            throws IOException, ServletException {
-        // Implementation details - see source code
-    }
-}
-
-public class RequestContext {
-    private static final ThreadLocal<String> correlationId = new ThreadLocal<>();
-    private static final ThreadLocal<UserContext> userContext = new ThreadLocal<>();
-
-    public static String getCurrentRequestId() {
-        // Implementation details - see source code
-    }
-
-    public static void setCorrelationId(String id) {
-        // Implementation details - see source code
-    }
-
-    public static UserContext getCurrentUser() {
-        // Implementation details - see source code
-    }
-
-    public static void setCurrentUser(UserContext user) {
-        // Implementation details - see source code
-    }
-
-    public static void clear() {
-        // Implementation details - see source code
-    }
-}
-```
+Not implemented: a `RequestContext` class with `ThreadLocal` user and correlation id.
 
 ## Service Communication Patterns
 
 ### Domain Events
 
-```java
-@Component
-@Slf4j
-public class DomainEventPublisher {
+Domain events are consumed **inside the service that raised them**. Cross-service work is
+synchronous HTTP (`/internal/**`, see above) or SQS for mail, not events.
 
-    private final ApplicationEventPublisher eventPublisher;
-    private final EventBridge eventBridge;
-
-    public void publishEvent(DomainEvent event) {
-        // Publish locally for same-service subscribers
-        eventPublisher.publishEvent(event);
-
-        // Publish to EventBridge for cross-service communication
-        try {
-            eventBridge.publishEvent(event);
-            log.debug("Published domain event: {} with ID: {}", event.getEventType(), event.getId());
-        } catch (Exception ex) {
-            log.error("Failed to publish domain event to EventBridge: {}", event.getId(), ex);
-            // Store for retry
-            failedEventStore.store(event);
-        }
-    }
-}
-
-// Event listeners
-@EventListener
-@Async
-public void handleSpeakerInvited(SpeakerInvitedEvent event) {
-    log.info("Processing speaker invitation for speaker {} to event {}",
-             event.getSpeakerId(), event.getEventId());
-
-    // Implementation details - see source code
-}
+```mermaid
+flowchart LR
+    SVC["Service code, e.g. SpeakerWorkflowService,<br/>EventWorkflowStateMachine, UserService"] -->|"publish(event)"| PUB["EventBridgeEventPublisher<br/>shared kernel"]
+    PUB -->|"1 - synchronous"| SPRING["Spring ApplicationEventPublisher"]
+    SPRING --> L1["@EventListener in the same service<br/>e.g. EventWorkflowTransitionListener,<br/>SpeakerAcceptedEventListener,<br/>OrganizerNotificationListener - async"]
+    PUB -->|"2 - fire and forget<br/>Bulkhead, CircuitBreaker, Retry"| EB["EventBridge putEvents"]
+    EB --> BUS[("event bus<br/>no rules, no consumer")]
 ```
+
+- `DomainEventPublisher` (shared kernel) is an interface; `EventBridgeEventPublisher` implements it
+  and first calls Spring's `ApplicationEventPublisher`, then sends to EventBridge asynchronously
+  with Resilience4j (next section). A failed EventBridge put is logged; the caller never waits.
+- The CDK creates one bus `batbern-{env}` (`event-bus-stack.ts`) and **no rule** on it, so nothing
+  consumes what reaches EventBridge. CUMS and PCS set `aws.eventbridge.bus-name` from
+  `EVENT_BUS_NAME`; EMS sets no bus name and falls back to the code default `batbern-events`, which
+  the CDK does not create. Whether EMS's puts fail in production was not checked
+  (not verified 2026-11-04).
+- Listeners differ in transaction handling: the workflow auto-transition listeners run in
+  `REQUIRES_NEW` and never fail the triggering request; `OrganizerNotificationListener` is `@Async`.
+- Some events are plain Spring events that never go to EventBridge, e.g. EMS's
+  `SpeakersPhasePublishedEvent` (task activation), a record published through
+  `ApplicationEventPublisher` directly.
 
 ### Data Validation and Business Rules
 
-```java
-@Component
-public class EventBusinessRules {
+Business rules sit in the services and state machines, not in a rules class:
 
-    public void validateEventCreation(CreateEventRequest request) {
-        // Business rule: Event date must be at least 30 days in the future
-        if (request.getEventDate().isBefore(LocalDateTime.now().plusDays(30))) {
-            throw new BusinessValidationException(
-                "eventDate",
-                "Event date must be at least 30 days in the future",
-                request.getEventDate()
-            );
-        }
+- `EventWorkflowStateMachine.validateBusinessRules`: `SLOT_ASSIGNMENT` needs at least one speaker in
+  `ACCEPTED` or later; `AGENDA_PUBLISHED` needs every speaker in `ACCEPTED` or later to be publishable
+  (`QUALITY_REVIEWED` and slotted). Violations throw `WorkflowValidationException`.
+- `SpeakerWorkflowService.transition` enforces the speaker allow-list and the slot-capacity gate
+  (see 06a).
+- Registrations: deadline (`RegistrationClosedException`), capacity and waitlist (see
+  "Registration, waitlist and capacity" below).
+- Slot assignment: `ConflictDetectionService` (table below).
 
-        // Business rule: Only one event per quarter
-        if (eventRepository.existsByQuarter(getQuarter(request.getEventDate()))) {
-            throw new BusinessValidationException(
-                "eventDate",
-                "Only one event is allowed per quarter",
-                getQuarter(request.getEventDate())
-            );
-        }
-    }
-
-    public void validateSpeakerInvitation(String speakerId, String eventId) {
-        // Business rule: Speaker cannot be invited to multiple sessions in same time slot
-        List<Session> conflictingSessions = sessionRepository.findConflictingSessions(speakerId, eventId);
-        if (!conflictingSessions.isEmpty()) {
-            throw new BusinessValidationException(
-                "speakerId",
-                "Speaker has conflicting sessions",
-                Map.of("conflictingSessions", conflictingSessions.stream()
-                      .map(Session::getId).collect(Collectors.toList()))
-            );
-        }
-    }
-}
-```
+Not implemented (named in earlier versions): an `EventBusinessRules` class with "event date at least
+30 days ahead" and "one event per quarter" rules.
 
 #### Names, emails and usernames
 
@@ -591,21 +519,57 @@ The `ConflictDetectionService` distinguishes between hard errors and soft warnin
 
 | Conflict Type | Severity | Blocking |
 |---|---|---|
-| `ROOM_OVERLAP` — two sessions in the same room at overlapping times | `ERROR` | Yes — slot assignment is rejected |
-| `SPEAKER_DOUBLE_BOOKED` — same speaker assigned to overlapping sessions | `ERROR` | Yes — slot assignment is rejected |
+| `ROOM_OVERLAP` — two sessions in the same room at overlapping times | `ERROR` | Yes — `SlotAssignmentController` answers 409 (`TimingConflictException`) |
+| `SPEAKER_DOUBLE_BOOKED` — same speaker assigned to overlapping sessions | `ERROR` | Yes — 409 as above; bulk assignment applies nothing |
 | `PREFERENCE_MISMATCH` — session scheduled outside speaker's preferred time window | `WARNING` | No — informational only, assignment proceeds |
 
 ## Workflow State Management
 
-The BATbern platform implements sophisticated state machines to manage the complex 9-state event workflow. These include:
+Two state machines drive an event: the **event workflow** (8 states, one per event) and the
+**speaker workflow** (8 states, one per `speaker_pool` row). Their state diagrams, definitions and
+side-effect hooks are in [Workflow State Machines](./06a-workflow-state-machines.md); this section
+shows only how they push each other forward.
 
-- **Event Workflow State Machine** - Manages event lifecycle from draft to published
-- **Speaker Workflow Management** - Tracks speaker states from invitation to final agenda
-- **Slot Assignment Algorithm** - Optimally assigns speakers to presentation slots
-- **Quality Review Workflow** - Manages content review and approval process
-- **Overflow Management & Voting** - Handles speaker overflow situations with voting
+```mermaid
+sequenceDiagram
+    participant Org as Organizer
+    participant SPS as SpeakerPoolService / TopicService
+    participant SWS as SpeakerWorkflowService
+    participant ST as SessionTimingService
+    participant PUB as PublishingService
+    participant EWS as EventWorkflowStateMachine
+    participant SCH as EventWorkflowScheduledService
 
-**See [Workflow State Machines](./06a-workflow-state-machines.md) for complete implementation details.**
+    Org->>SPS: select topic, or add speaker to pool
+    SPS->>EWS: SpeakerAddedToPoolEvent / topic selected
+    Note over EWS: CREATED or TOPIC_SELECTION to SPEAKER_IDENTIFICATION
+    Org->>SWS: speaker transitions IDENTIFIED to CONTACTED to READY to INVITED
+    SWS->>SWS: READY provisions the Cognito user, INVITED sends the invitation
+    SWS->>EWS: INVITED or READY to ACCEPTED publishes SpeakerAcceptedEvent
+    Note over EWS: SPEAKER_IDENTIFICATION to SLOT_ASSIGNMENT, needs 1 speaker ACCEPTED or later
+    Org->>ST: assign session timing
+    ST->>EWS: SessionTimingAssignedEvent
+    Note over EWS: SLOT_ASSIGNMENT to AGENDA_PUBLISHED when every session has timing and the published phase is speakers or agenda
+    Org->>PUB: publish agenda, or auto-publish job at 01:00
+    PUB->>EWS: transition to AGENDA_PUBLISHED, gate: every accepted speaker publishable
+    SCH->>EWS: 00:01 on event day to EVENT_LIVE
+    SCH->>EWS: 23:59 to EVENT_COMPLETED, also catches events stuck in AGENDA_PUBLISHED
+    SCH->>EWS: 02:00 to ARCHIVED after more than 14 days
+```
+
+- The listeners (`SpeakerAddedToPoolEventListener`, `SpeakerAcceptedEventListener`,
+  `SessionTimingAssignedEventListener`) only act in the expected current state, run in
+  `REQUIRES_NEW` and log instead of failing the speaker or timing change.
+- Every transition goes through `EventWorkflowStateMachine.transitionToState` and publishes
+  `EventWorkflowTransitionEvent`, which activates tasks (below) and opens or freezes Q&A windows
+  (`SessionQnaWindowListener`). The Watch completes an event directly when all sessions are done
+  (`WatchSessionService`, override).
+- Crons are the defaults in `EventWorkflowScheduledService` and `PublishingScheduledService`
+  (speakers phase 30 days before, agenda 14 days before the event, when auto-publish is enabled).
+  No `zone` is set on these crons, so they run in the JVM time zone (not verified 2026-11-04 which
+  zone the containers use).
+- Not implemented: overflow management and voting (removed by ADR-009, replaced by the slot-capacity
+  gate at `READY → INVITED`).
 
 ## User Lifecycle and Synchronization
 
@@ -616,7 +580,12 @@ The platform maintains user data across AWS Cognito (authentication) and Postgre
 3. **Spring Security** - Extracts roles from JWT for authorization
 4. **Unidirectional Sync** - Cognito → Database only (NO Cognito Groups, NO reverse sync)
 
-**Key Point**: Roles are stored as a `Set<Role>` directly on the `User` entity (not in a separate `role_assignments` table). Roles are synced to the JWT at login time, cached for request duration. Role updates take effect on the next login.
+**Key Point**: Roles are a `Set<Role>` on the `User` entity, mapped as an `@ElementCollection` onto the
+`role_assignments` table (`user_id`, `role`; CUMS migration V5). The PreTokenGeneration Lambda reads
+that table into `custom:role` whenever Cognito issues a token, so a role change reaches the JWT with
+the next login or token refresh. In local dev, where that Lambda cannot see the local rows,
+`JwtRolesConverter` reads the roles from the database (Pattern 3b). Federated (Google) users are
+created just in time; see 06b.
 
 **See [User Lifecycle Sync Patterns](./06b-user-lifecycle-sync.md) for complete implementation details.**
 
@@ -639,157 +608,84 @@ Unique indexes on `lower(email)` back this for `user_profiles` and `newsletter_s
 double newsletter subscription in production, merged 2026-10-18) and made by-email actions
 silently miss their target (issue #1099).
 
+## Profile Merge (#1183 C/D)
+
+Two profiles of one person (an imported or guest profile without login, and the person's login
+profile) are merged: the source is folded into the target and deleted. CUMS decides and
+orchestrates; EMS moves its own rows through an internal endpoint and keeps the undo log.
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant Org as Organizer or the person
+    participant UMC as CUMS UserMergeController
+    participant PCL as CUMS ProfileClaimService
+    participant UMS as CUMS UserMergeService
+    participant EMS as EMS InternalUserMergeController
+    participant EUS as EMS UserMergeService
+    participant LOG as user_merge_log V144
+
+    alt organizer
+        Org->>UMC: GET /users/{target}/merge-preview?source=
+        UMC->>UMS: preview: profile checks + EMS GET /internal/users/merge-preview
+        Org->>UMC: POST /users/{target}/merge - ORGANIZER
+        UMC->>UMS: merge, trigger ORGANIZER
+    else self-claim
+        Org->>UMC: GET /users/me/profile-claims - same first and last name, no login, masked address
+        Org->>UMC: POST /users/me/profile-claims - link mailed to the earlier profile's address
+        Org->>UMC: POST /users/me/profile-claims/confirm - token, only under the claimer's login
+        UMC->>PCL: confirm
+        PCL->>UMS: merge, trigger SELF_CLAIM
+    end
+    UMS->>UMS: lock both profiles, refuse SAME_PROFILE, SOURCE_HAS_LOGIN, BOTH_HAVE_LOGIN
+    UMS->>EMS: POST /internal/users/merge with a snapshot of the source profile, no JWT
+    EMS->>EUS: move rows from source to target username
+    EUS->>EUS: same key at the target: keep the better registration, remove the other row
+    EUS->>LOG: moved keys, removed rows in full, source snapshot
+    EUS-->>UMS: moved and removed counts, own commit
+    UMS->>UMS: roles, activity, watch pairings to the target, delete the source
+    UMS->>UMS: source addresses become verified additional emails of the target
+```
+
+- **Refused with 409** in EMS when both lead a different talk at the same event; an organizer has to
+  resolve that first.
+- **Order makes retries safe.** EMS commits first and is idempotent. If the CUMS step fails, the
+  source still exists and owns nothing in EMS; running the merge again finishes it.
+- **What EMS moves** (`UserMergeService.MOVES`): registrations, session_users, speaker_arrivals,
+  session_qna_notification, live_timing_presence, session_proposals, organizer_thanks,
+  notifications, session_qna_post, session_content_history, newsletter_subscribers. Audit columns
+  that record who acted (`created_by`, `changed_by_username`, ...) do not move.
+- **Registration rank** when both have one for the same event: attended, confirmed, registered,
+  waitlist, cancelled; the target's wins a tie.
+- `user_merge_log` (EMS V144) holds what is needed to undo a merge by hand: `moved`,
+  `removed_rows`, `source_profile`, `trigger` (`ORGANIZER` or `SELF_CLAIM`).
+
 ## Role Management Service
 
-Handles user role promotion, demotion, and approval workflows while enforcing business rules.
+`RoleService` (CUMS) adds, removes and sets roles on the `User` entity through `UserRepository` only.
 
-**Deployed implementation:** The production `RoleService` stores roles as a `Set<Role>` on the `User` entity and injects `UserRepository` only — there is no separate `UserRoleRepository` or `role_assignments` table. Role lookups use `userRepository.findByRolesContaining(Role.ORGANIZER)`.
+- `addRole` and `removeRole` are idempotent; a no-op change does nothing.
+- **Minimum two organizers**: removing `ORGANIZER` (via `removeRole` or `setRoles`) throws
+  `MinimumOrganizersException` when fewer than two organizers would remain
+  (`enforceMinimumOrganizers`).
+- A change is logged (`logRoleChange`); no domain event is published ("nothing consumes one").
+- No Cognito group sync (ADR-001): the database is the source, the JWT picks it up at the next token.
 
-**Idempotency:** `addRole` and `removeRole` are idempotent. A `UserRoleChangedEvent` is only published when the role set actually changes (i.e. if the role was already present on add, or already absent on remove, no event is published).
-
-> **Note:** The snippet below is a design reference that documents the intended approval-workflow shape. The deployed `RoleService` is simpler; refer to source for the exact implementation.
-
-### Role Management Service Implementation (design reference)
-
-```java
-@Service
-@RequiredArgsConstructor
-public class RoleManagementService {
-
-    private final UserRoleRepository userRoleRepository;
-    private final RoleChangeRequestRepository roleChangeRequestRepository;
-    private final RoleChangeApprovalRepository roleChangeApprovalRepository;
-    private final CognitoIdentityProviderClient cognitoClient;
-    private final ApplicationEventPublisher eventPublisher;
-
-    @Value("${aws.cognito.user-pool-id}")
-    private String cognitoUserPoolId;
-
-    /**
-     * Promote user to a higher role
-     * Story 1.16.2: Uses String username instead of UUID
-     */
-    @Transactional
-    public RoleChange promoteUser(String username, UserRole targetRole, String promotedByUsername, String reason) {
-        // Validate promotion eligibility
-        validatePromotion(username, targetRole);
-
-        // Create role record
-        UserRoleEntity roleEntity = UserRoleEntity.builder()
-            .username(username)  // Story 1.16.2: Store username, not UUID
-            .role(targetRole)
-            .grantedBy(promotedByUsername)  // Story 1.16.2: Store username, not UUID
-            .reason(reason)
-            .isActive(true)
-            .build();
-
-        userRoleRepository.save(roleEntity);
-
-        // NO Cognito sync - roles fetched from database on next login via PreTokenGeneration Lambda
-        // Per ADR-001: Database is single source of truth for roles
-
-        // Publish domain event
-        // Story 1.16.2: Event uses String username as aggregateId
-        RoleChange roleChange = mapToRoleChange(roleEntity);
-        eventPublisher.publishEvent(new UserRolePromotedEvent(roleChange));
-
-        return roleChange;
-    }
-
-    /**
-     * Demote user from role - immediate for Speaker, requires approval for Organizer
-     * Story 1.16.2: Uses String username instead of UUID
-     */
-    @Transactional
-    public RoleChangeResult demoteUser(String username, UserRole currentRole, String demotedByUsername, String reason) {
-        if (currentRole == UserRole.ORGANIZER) {
-            // Check minimum organizers rule
-            if (!canDemoteOrganizer(username, null)) {
-                throw new BusinessRuleException("Cannot demote: minimum 2 organizers required");
-            }
-
-            // Create approval request
-            RoleChangeRequest request = RoleChangeRequest.builder()
-                .username(username)  // Story 1.16.2: Store username, not UUID
-                .currentRole(currentRole)
-                .requestedRole(UserRole.ATTENDEE)
-                .requestedBy(demotedByUsername)  // Story 1.16.2: Store username, not UUID
-                .requiresApprovalFrom(username)
-                .reason(reason)
-                .status(RequestStatus.PENDING)
-                .build();
-
-            roleChangeRequestRepository.save(request);
-
-            return RoleChangeResult.pendingApproval(request);
-        } else {
-            // Immediate demotion for non-organizers
-            UserRoleEntity roleEntity = userRoleRepository
-                .findActiveRole(username, currentRole)
-                .orElseThrow(() -> new NotFoundException("Active role not found"));
-
-            roleEntity.setIsActive(false);
-            roleEntity.setRevokedBy(demotedBy);
-            roleEntity.setRevokedAt(Instant.now());
-
-            userRoleRepository.save(roleEntity);
-
-            // NO Cognito sync - roles fetched from database on next login
-            // Per ADR-001: Database is single source of truth for roles
-
-            RoleChange roleChange = mapToRoleChange(roleEntity);
-            eventPublisher.publishEvent(new UserRoleDemotedEvent(roleChange));
-
-            return RoleChangeResult.completed(roleChange);
-        }
-    }
-
-    /**
-     * Approve organizer demotion request
-     * Story 1.16.2: Uses String username instead of UUID
-     */
-    @Transactional
-    public RoleChange approveRoleChange(UUID requestId, String approverUsername, boolean approved, String comments) {
-        // Implementation details - see source code
-    }
-
-    /**
-     * Check if organizer can be demoted (minimum 2 organizers rule)
-     * Story 1.16.2: Uses String username instead of UUID
-     */
-    public boolean canDemoteOrganizer(String username, String eventCode) {
-        long activeOrganizerCount = userRoleRepository.countActiveOrganizers(eventCode);
-        return activeOrganizerCount >= 2;
-    }
-
-    // syncRoleToCognito removed - per ADR-001, roles NOT synced to Cognito
-    // Roles stored in database only, added to JWT via PreTokenGeneration Lambda
-
-    private UserRole determineNewRole(String username) {
-        // Implementation details - see source code
-    }
-
-    private void validatePromotion(String username, UserRole targetRole) {
-        // Implementation details - see source code
-    }
-
-    private RoleChange mapToRoleChange(UserRoleEntity entity) {
-        // Implementation details - see source code
-    }
-}
-```
+Not implemented (an earlier "design reference" here): a `RoleManagementService` with promotion and
+demotion requests, an approval workflow (`RoleChangeRequest`, `RoleChangeApproval` tables) and
+`UserRoleChangedEvent`.
 
 ## Newsletter Async Processing
 
 The newsletter send system uses an asynchronous fire-and-forget pattern to handle large recipient lists without blocking the API or exhausting thread pools:
 
 - **Trigger**: `POST /api/v1/events/{code}/newsletter/send` returns `202 Accepted` immediately
-- **Processing**: `@Async` method sends emails sequentially with SES rate limiting (~70ms/email to stay within SES quotas)
+- **Processing**: `@Async` method sends emails sequentially with a pause between mails (`newsletter.send.rate-delay-ms`, default 70 ms, about 14 per second)
 - **Recipient iteration**: active subscribers are read in batches of 50 by keyset (`id > :lastId ORDER BY id`), not by OFFSET page, so recipients who unsubscribe or bounce during the send cannot make the loop skip anyone; each recipient is re-checked as active right before their mail (#1129)
-- **Progress tracking**: `newsletter_send_status` table tracks state (`PENDING` → `IN_PROGRESS` → `COMPLETED` / `PARTIAL` / `FAILED`), with `sent_count` and `total_count` for progress polling
+- **Progress tracking**: the `newsletter_sends` row tracks state (`PENDING` → `IN_PROGRESS` → `COMPLETED` / `PARTIAL` / `FAILED`), with sent, failed and total counts for progress polling
 - **Duplicate prevention**: A second send attempt while `IN_PROGRESS` returns `409 Conflict`
 - **Retry**: Dedicated retry endpoint to re-send failed recipients of a previous partial/failed send and to reach active subscribers that have no recipient row yet. A failed recipient whose subscriber was since deleted, unsubscribed or suppressed is marked `skipped` and never mailed again (#1129)
-- **Orphan recovery**: On service startup, any stuck `IN_PROGRESS` records (from a crash mid-send) are reset to `FAILED` for manual retry
+- **Orphan recovery**: on `ApplicationReadyEvent`, sends left `IN_PROGRESS` or `PENDING` by a killed task become `PARTIAL` (some mails went out) or `FAILED` (none did), so the organizer can retry (`NewsletterEmailService.recoverOrphanedSends`)
 
 ## Email Forwarding (in EMS)
 
@@ -797,17 +693,36 @@ Mail to the platform aliases (`ok@`, `info@`, `events@`, `partner@`, `support@`,
 `batbern{N}-speaker@`, `batbern{N}-moderator@`, `batbern{N}-participants@`, deprecated
 `batbern{N}@`) is forwarded by the event-management-service:
 
+```mermaid
+flowchart TD
+    SES["SES receipt rules, spam and virus scan"] -->|"replies@"| S3E[("S3 emails/<br/>7 days")]
+    SES -->|"aliases, catch-all"| S3F[("S3 forwarding/<br/>7 days")]
+    S3E -->|"S3 notification"| QI["SQS batbern-inbound-email-env"]
+    S3F -->|"S3 notification"| QF["SQS batbern-forwarding-email-env"]
+    QI --> IL["InboundEmailListenerService"] --> IRP["InboundReplyProcessor<br/>iCal reply, known token,<br/>keyword router"]
+    IRP -->|"router acted"| ING2["InboundMailCenter.ingestReply"]
+    IRP -->|"unrecognized, replies group switched"| STRICT
+    IRP -->|"unrecognized, not switched"| FUR["EmailForwardingService.forwardUnrecognizedReply<br/>to all organizers, like info@"]
+    FUR -.-> ING2
+    QF --> FL["EmailForwardingListener"] --> AMP["AliasMailProcessor"]
+    AMP --> SW{"every addressed alias in a group<br/>listed in mailcenter.notify-instead-of-forward?"}
+    SW -->|"no"| FWD["EmailForwardingService.forward"]
+    SW -->|"yes"| STRICT["InboundMailCenter.ingest*Strict<br/>store first, throw on failure"]
+    STRICT -->|"stored"| NOTICE["forward or forwardUnrecognizedReply with a notice:<br/>same checks and recipients, each gets<br/>ConversationNotices template mailcenter-new-mail"]
+    STRICT -->|"not stored"| FWD
+    FWD --> CL["MailClassifier: drop iMIP replies,<br/>auto-replies, loops, spam, virus"]
+    CL --> CLAIM["EmailForwardingLogService<br/>claim the S3 key, at most once"]
+    CLAIM --> AUTH["ForwardingSenderAuthorizer<br/>contact aliases open, others need<br/>an authenticated ORGANIZER sender"]
+    AUTH --> RES["ForwardingRecipientResolver<br/>CUMS roles, admin setting,<br/>DistributionListService"]
+    RES --> RW["ForwardedMessageRewriter<br/>From name via BATbern, Reply-To sender"]
+    RW --> OUT["EmailService.sendRawMessage<br/>config set batbern-env-forwarder"]
+    FWD -.->|"after the send"| ING["InboundMailCenter.ingestAlias<br/>store and thread, never throws"]
 ```
-SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → EMS EmailForwardingListener
-                                                                          ├─ MailClassifier: drop iMIP replies, auto-replies, loops, noreply@/calendar@
-                                                                          ├─ EmailForwardingLogService: claim the S3 key (at-most-once per mail)
-                                                                          ├─ ForwardingSenderAuthorizer: contact aliases open; others need an
-                                                                          │    ORGANIZER From that SES authenticated (DMARC / aligned DKIM)
-                                                                          ├─ ForwardingRecipientResolver: CUMS roles, admin setting,
-                                                                          │    DistributionListService (in-process)
-                                                                          ├─ ForwardedMessageRewriter: From "{name} via BATbern" <noreply@>, Reply-To sender
-                                                                          └─ EmailService.sendRawMessage → SES (config set batbern-{env}-forwarder)
-```
+
+`env` stands for the environment name (`{env}` in the queue names). The two queues have DLQs
+(`batbern-inbound-email-dlq-{env}`, `batbern-forwarding-email-dlq-{env}`;
+`infrastructure/lib/stacks/inbound-email-stack.ts`). The switch is described in "Attachments and the
+notify switch" below; the Mail Center storage path in "Inbound mail and conversations".
 
 - **No public endpoint.** Until 2026-10 a Lambda did this and resolved recipients by calling the
   public API anonymously, which required `permitAll` on the registrations, distribution-list,
@@ -864,6 +779,32 @@ SES receipt rule → S3 forwarding/ → SQS batbern-forwarding-email-{env} → E
 Every mail EMS sends for an event or on an organizer's behalf is recorded, so the team can see what
 went out (Mail Center, Epic 16). Record only; the Communications page (16.3) reads it.
 
+### Outbound pipeline at a glance
+
+```mermaid
+flowchart TD
+    UI["Organizer: composer, Mail Center,<br/>conversation answer"] --> MCS["MailComposerService<br/>validate, resolveRecipients, render"]
+    AUTO["Automatic sends: schedulers,<br/>workflow hooks, registration"] --> SVC
+    MCS --> AD["AudienceAdapter per audience<br/>newsletter, registrants, speakers, venue"]
+    AD --> SVC["Existing send services<br/>NewsletterEmailService, SlidesOnlineEmailService,<br/>SpeakerReminderEmailService, ..."]
+    SVC --> PIPE["MailPipeline: template from store,<br/>DE fallback, classpath fallback"]
+    PIPE --> VAR["MailVariableFactory + MailVariables<br/>catalog MailVariable"]
+    VAR --> REN["MailRenderer: content variables,<br/>layout, variables again, subject"]
+    REN --> ES["shared-kernel EmailService<br/>with MailContext"]
+    ES --> WALLS{"reserved domain or<br/>ADR-015 test marker?"}
+    WALLS -->|"yes"| BLOCK["blocked, not sent, not recorded"]
+    WALLS -->|"no"| SES["SES SendEmail / SendRawEmail<br/>tag mail_group"]
+    SES --> REC["OutboundMailRecorder SPI<br/>EMS: JpaOutboundMailRecorder<br/>PCS: HttpOutboundMailRecorder to POST /internal/mails"]
+    REC --> MM[("mail_message<br/>one row per send group")]
+    REC --> MR[("mail_recipient<br/>one row per address, SENT or FAILED")]
+    SES -.->|"delivery, bounce, complaint, reject"| DS["SNS, SQS, MailDeliveryStatusListener"]
+    DS -.->|"DELIVERED or FAILED, never backwards"| MR
+```
+
+The composer reuses each send service's own render method, so the preview equals the sent mail
+(AC3 of Story 16.8a). Mail without a `MailContext` (forwarded private copies, the unsubscribe
+acknowledgement) is sent but not recorded.
+
 - **Hook**: callers pass a `MailContext` (shared kernel `ch.batbern.shared.mail`) to the
   context-taking `EmailService` overloads. After SES answers, `EmailService` hands the redacted mail
   and the SES Message-ID to the optional `OutboundMailRecorder` SPI; EMS implements it with
@@ -895,6 +836,40 @@ went out (Mail Center, Epic 16). Record only; the Communications page (16.3) rea
 Partner-coordination sends the partner meeting invite and, when a meeting whose invite went out is
 deleted, the cancellation. Both are recorded in the event's mail like EMS's own.
 
+```mermaid
+sequenceDiagram
+    participant Org as Organizer
+    participant PMC as PCS PartnerMeetingController
+    participant PMS as PartnerMeetingService
+    participant PIE as PartnerInviteEmailService
+    participant ES as EmailService
+    participant SES as AWS SES
+    participant REC as HttpOutboundMailRecorder
+    participant EMS as EMS POST /internal/mails
+
+    Org->>PMC: POST /partner-meetings/{id}/send-invite
+    PMC->>PMS: send invite, organizer username as sender
+    PMS->>PIE: recipients = all PARTNER and ORGANIZER users, invite SEQUENCE + 1
+    loop one mail per recipient, one shared MailContext
+        PIE->>ES: sendHtmlEmailWithAttachments, ICS with only this ATTENDEE
+        ES->>SES: SendRawEmail
+        ES->>REC: record this recipient, SENT or FAILED
+        REC->>EMS: best effort, 2 s connect, 5 s read
+        EMS->>EMS: JpaOutboundMailRecorder joins it into one mail_message
+    end
+    alt nobody reached
+        PIE-->>PMS: IllegalStateException
+        PMS-->>Org: 502, rolled back, invite_sent_at unchanged
+    else at least one reached
+        PMS->>PMS: set invite_sent_at
+        PMS-->>Org: 202 Accepted
+    end
+```
+
+The invite call itself is synchronous (`sendCalendarInvites` returns the count); 202 is the status
+the controller answers with after it returned. The cancellation (`sendCancellationNotice`) is
+`@Async` and follows the same per-recipient loop.
+
 - **Context**: `PartnerInviteEmailService` sends through the context-taking `EmailService` overload
   with `MailContext.of(MailTrigger.organizer(clicker), eventCode, PARTNERS,
   "partner-meeting-invite" | "partner-meeting-cancellation").withReference("partner-meeting:{id}")`.
@@ -922,6 +897,26 @@ deleted, the cancellation. Both are recorded in the event's mail like EMS's own.
 
 SES events of the transactional configuration set move each `mail_recipient` from `SENT` to
 `DELIVERED` or `FAILED`, so an organizer sees which address bounced and why.
+
+```mermaid
+sequenceDiagram
+    participant ES as EmailService
+    participant SES as AWS SES
+    participant SNS as SNS ses-transactional-events
+    participant Q as SQS mail-delivery-status
+    participant L as MailDeliveryStatusListener
+    participant DB as mail_recipient
+
+    ES->>SES: send, transactional configuration set
+    SES-->>ES: SES Message-ID
+    ES->>DB: recorder writes status SENT with ses_message_id
+    SES->>SNS: Delivery / Bounce / Complaint / Reject
+    SNS->>Q: envelope kept
+    Q->>L: message
+    L->>DB: UPDATE by Message-ID and address, WHERE status allows the move
+    Note over DB: SENT to DELIVERED to FAILED, FAILED is final
+    L-->>Q: unreadable message throws, 3 attempts, then DLQ
+```
 
 - **Path**: SES → SNS `batbern-{env}-ses-transactional-events` → SQS
   `batbern-{env}-mail-delivery-status` (SNS envelope kept) → `MailDeliveryStatusListener` →
@@ -985,15 +980,22 @@ Speaker replies land in the event's "Needs an answer" list with a status and an 
 one organizer's private inbox. Forwarding is unchanged and stays the safety net until the 16.6
 switch is turned on per alias group.
 
-```
-replies@  → SQS → InboundEmailListenerService → InboundReplyProcessor ─┐  router, forwardUnrecognizedReply
-aliases   → SQS → EmailForwardingListener     → AliasMailProcessor    ─┤  EmailForwardingService.forward
-local dev → POST /dev/emails/inbound (same processors)                  ─┘
-                                   then InboundMailCenter.ingestReply / ingestAlias (never throws)
-                                   ├─ InboundMailParser: headers, text, sanitized HTML (jsoup), attachment names
-                                   ├─ keyword that acted / InboundClassifier (OOO, bounce, iMIP, loop)
-                                   │     → AutomaticMailCounter: mail_automatic_event (no address, no text)
-                                   └─ HUMAN → ConversationThreader → InboundMailStore (own transaction)
+```mermaid
+flowchart TD
+    R["replies@ via SQS: InboundEmailListenerService"] --> IRP["InboundReplyProcessor<br/>router, forwardUnrecognizedReply"]
+    A["aliases via SQS: EmailForwardingListener"] --> AMP["AliasMailProcessor<br/>EmailForwardingService.forward"]
+    D["local dev: POST /dev/emails/inbound"] --> IRP
+    D --> AMP
+    IRP --> IMC["InboundMailCenter.ingestReply / ingestAlias<br/>never throws"]
+    AMP --> IMC
+    IMC --> P["InboundMailParser: headers, text,<br/>sanitized HTML via jsoup, attachment names"]
+    P --> C{"keyword acted, or InboundClassifier:<br/>out of office, bounce, iMIP, loop?"}
+    C -->|"automatic"| CNT[("mail_automatic_event<br/>no address, no text")]
+    C -->|"SES spam or virus verdict FAIL"| SPAM["spam: stored with is_spam, no conversation<br/>virus: nothing stored<br/>both counted"]
+    C -->|"HUMAN"| T["ConversationThreader<br/>token, In-Reply-To, References,<br/>moderator alias, subject code"]
+    T --> ST["InboundMailStore, own transaction"]
+    ST --> MM[("mail_message direction IN")]
+    ST --> CV[("mail_conversation<br/>OPEN, WAITING, DONE")]
 ```
 
 - **Classification** (`InboundClassifier`, reuses `forwarding/MailClassifier`): iMIP REPLY, loop
@@ -1208,22 +1210,101 @@ Every template-based mail in event-management renders the same way:
 
 ## Auto-Enrollment on Event Creation
 
-When a new event is created, an `EventCreatedEvent` listener automatically enrolls all active organizers and partner contacts as stakeholders. A manual quick-action button is also available for idempotent re-enrollment (`POST` endpoint returns success even if already enrolled).
+When a new event is created, `AutoEnrollmentListener` (on `EventCreatedEvent`, `REQUIRES_NEW`, never
+fails the creation) calls `RegistrationService.enrollStakeholders`: every user with the ORGANIZER or
+PARTNER role gets a `confirmed` registration without confirmation mail, capacity check or waitlist,
+marked in `metadata` with `AUTO_REGISTERED_FROM_KEY` so it does not count as a real attendee for the
+event delete guard. The capacity count (`registered` + `confirmed`) does include these rows.
+`POST /events/{eventCode}/enroll-stakeholders` (ORGANIZER) repeats it idempotently for older events.
+
+## Task Activation
+
+Organizer tasks (`event_tasks`, model in 06a "Task Management System") are created from templates
+for an event, mostly as `pending`, and become `todo` in two ways: edge-triggered by a workflow
+transition, and level-triggered by a daily reconcile that catches anything the edge missed.
+
+```mermaid
+sequenceDiagram
+    participant Org as Organizer
+    participant ETS as EventTaskService
+    participant EWS as EventWorkflowStateMachine
+    participant L as EventWorkflowTransitionListener
+    participant PUB as PublishingService
+    participant RC as TaskActivationScheduler
+    participant REM as TaskDeadlineReminderScheduler
+
+    Org->>ETS: assign templates to the event, createTasksForEvent
+    ETS->>ETS: one task per template, idempotent, status pending, or todo when the trigger is already past
+    EWS->>L: EventWorkflowTransitionEvent
+    L->>ETS: autoCreateTasksForState - activate pending tasks whose trigger state is reached
+    PUB->>L: SpeakersPhasePublishedEvent
+    L->>ETS: onSpeakersPhasePublished - speakers_published tasks
+    ETS->>ETS: supersede newsletter tasks: topic announcement once speakers are public, lineup once the agenda is public
+    RC->>ETS: daily 05.30 reconcileOpenTasks - trigger reached or due date within activation lead days
+    REM->>REM: daily 08.00 tasks due tomorrow in Europe/Zurich, reminder mail in German
+```
+
+- `TaskActivationScheduler` runs at 05:30 Europe/Zurich with ShedLock, after the 01:00 auto-publish
+  jobs and before the 08:00 reminders, so a reminder never goes out for a task that should already
+  be visible. It skips archived events.
+- A trigger state at or before the current state counts as reached, so a skipped state (for example
+  `CREATED` straight to `SPEAKER_IDENTIFICATION`) still activates its tasks.
+- Task reminders do not use the `notifications` table (see 06d).
 
 ## Real-time Notifications and Escalation
 
-The platform provides multi-channel notifications (email, WebSocket) with intelligent escalation based on workflow state, user preferences, and deadline proximity.
+Two channels exist: **email** (SES through the shared `EmailService`) and **in-app** rows for
+organizers (`OrganizerNotificationListener` writes one `IN_APP` row per organizer per domain event and
+pushes it over STOMP to `/topic/notifications/{username}`). Escalation is limited to
+`SpeakerReminderService`: after the third unanswered reminder the organizer gets a
+`SPEAKER_ESCALATION` mail. Users set email on or off, quiet hours and the Q&A digest cadence in their
+preferences. No SMS channel and no escalation rule engine exist.
 
-**Key Features:**
-- Real-time WebSocket notifications
-- Email notifications with templating
-- Automatic escalation for approaching deadlines
-- User-configurable notification preferences
-- Notification history and audit trail
+**See [Notification System](./06d-notification-system.md) for details.**
 
-**See [Notification System](./06d-notification-system.md) for complete implementation details.**
+## Registration, Waitlist and Capacity
 
-## Registration & Sign-up Confirmation Lifecycle
+```mermaid
+flowchart TD
+    REQ["POST /events/{code}/registrations<br/>anonymous, Turnstile"] --> DL{"deadline passed?<br/>deadline, else event date"}
+    DL -->|"yes"| CLOSED["RegistrationClosedException"]
+    DL -->|"no"| USR["CUMS get-or-create user by email"]
+    USR --> DUP{"existing registration<br/>for this user?"}
+    DUP -->|"registered"| RESEND["resend the confirmation mail"]
+    DUP -->|"waitlist"| RESENDW["resend the waitlist mail"]
+    DUP -->|"confirmed"| REJ["409 already registered"]
+    DUP -->|"cancelled"| DEL["delete the cancelled row,<br/>register again"]
+    DUP -->|"none"| CAP{"capacity set and registered<br/>+ confirmed reaches capacity?"}
+    DEL --> CAP
+    CAP -->|"yes"| WL["status waitlist, next position<br/>waitlist mail"]
+    CAP -->|"no"| REG["status registered<br/>confirmation mail with signed token, 4 days"]
+    REG --> CONF["POST .../registrations/confirm<br/>status confirmed, mail with ICS"]
+    REG -->|"not confirmed"| CLEAN["RegistrationCleanupService deletes it<br/>after 120 h from the last link"]
+```
+
+**Filling the waitlist (#1208).** `WaitlistPromotionService.promoteFromWaitlist(eventId)` promotes, in
+waitlist order, as many people as there are free places: capacity minus `registered` + `confirmed`
+(the same count that puts new sign-ups on the waitlist); no capacity means everyone waiting. Each
+promoted person becomes `registered` (waitlist position cleared) and gets the waitlist-promotion mail.
+Remaining positions are not renumbered.
+
+```mermaid
+flowchart LR
+    C1["attendee or organizer cancels<br/>RegistrationService.cancelRegistration,<br/>DeregistrationService, organizer status PATCH"] --> P["promoteFromWaitlist"]
+    C2["organizer PATCH /events/{code}<br/>with registrationCapacity in the body,<br/>also when unchanged"] --> P
+    C3["organizer PUT /events/{code}<br/>when the capacity changed"] --> P
+    P --> F{"free = capacity - registered - confirmed"}
+    F -->|"none free"| N["nobody moves"]
+    F -->|"places free"| M["first free entries of the waitlist:<br/>status registered, promotion mail"]
+    MAN["organizer: Promote to Registered<br/>manuallyPromote, ignores capacity"] --> M
+```
+
+Saving the capacity again unchanged is how an organizer fills places that are already free. A
+participant an organizer adds over the capacity (`force`) leaves `free` at or below zero, so a later
+cancellation does not pull someone in until a place is really free.
+
+## Confirmation Links and Resend Jobs
+
 
 Two distinct confirmation flows exist, with **different** token mechanics — a frequent source of confusion:
 
@@ -1270,13 +1351,17 @@ The BATbern backend uses Testcontainers PostgreSQL for all integration tests to 
 
 ## Summary
 
-This backend architecture provides:
-
-✅ **Role-based security** with JWT authentication via AWS Cognito
-✅ **Comprehensive error handling** with circuit breakers and retry logic
-✅ **Sophisticated workflow state machines** for the 9-state event process
-✅ **Robust user synchronization** across Cognito and PostgreSQL
-✅ **Real-time notifications** with intelligent escalation
-✅ **Production-parity testing** with Testcontainers PostgreSQL
-
-The implementation follows domain-driven design principles with clear separation of concerns and robust error handling throughout the system.
+- **Authorization in the services**: the AWS HTTP API and the Spring gateway pass requests through;
+  the gateway authenticates (JWT, Turnstile, rate limit, active account) and routes, every service
+  validates the JWT again and decides with `@PreAuthorize`. Service-to-service calls use
+  `/internal/**` without JWT, denied at the gateway.
+- **Errors**: one `ErrorResponse` shape, built per service by its `GlobalExceptionHandler`, passed
+  through by the gateway with a correlation id that is also logged.
+- **Resilience4j** only around EventBridge publishing; there is no generic retry layer.
+- **Two state machines** (8 event states, 8 speaker states) that push each other forward through
+  in-process domain events, plus schedulers for live, completed and archived.
+- **One mail record** for everything that goes out and comes in (Mail Center), with delivery status
+  from SES events and a per-group switch from forwarding to notification.
+- **Registrations** with capacity, waitlist and automatic fill (#1208); **profile merge** across CUMS
+  and EMS with an undo log.
+- **Production-parity tests** with Testcontainers PostgreSQL and the authorization guard tests.

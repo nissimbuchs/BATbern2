@@ -42,6 +42,8 @@ After login, partners are routed to their company dashboard showing all three po
 
 ## Portal Sections
 
+![Partner portal, My Company](../assets/screenshots/partner-portal/company.png)
+
 | Section | What Partners Can Do |
 |---------|---------------------|
 | [Attendance Analytics](analytics.md) | View attendance table, export to XLSX, see cost-per-attendee |

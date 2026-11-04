@@ -11,6 +11,8 @@ inputDocuments:
 
 # Epic 14: Event Detail Page — Lifecycle-Aware Redesign
 
+**Status:** ✅ **COMPLETE** — shipped in #788 (merged 2026-06-15); all phase specs `_bmad-output/implementation-artifacts/spec-14-*.md` are `done`.
+
 ## Overview
 
 This document provides the complete epic and story breakdown for the **Organizer Event Detail

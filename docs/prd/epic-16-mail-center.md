@@ -1,6 +1,6 @@
 # Epic 16 — Mail Center
 
-**Author:** John (PM), with Sally (UX) and Winston (Architect) · **Date:** 2026-10-30 · **Status:** APPROVED by the owner 2026-10-30, including the five decisions below
+**Author:** John (PM), with Sally (UX) and Winston (Architect) · **Date:** 2026-10-30 · **Status:** 🔄 16.0–16.11 **LIVE** (2026-10-30 to 2026-11-03: #1164, #1165, #1166, #1174, #1177, #1180, #1189, #1194) except 16.8c clean-up (gated: one release after 16.8 + owner go); 16.12, 16.13 backlog. Approved by the owner 2026-10-30, including the five decisions below
 **Source:** party-mode design session 2026-10-29/30, measured SES traffic of the last 6 months, Winston's compose review 2026-10-30.
 **UX:** [`docs/ux/mail-center-prototype.html`](../ux/mail-center-prototype.html) (anonymized, open in a browser) and [`docs/ux/mail-center-spec.md`](../ux/mail-center-spec.md). Readiness: [`docs/implementation-readiness-report-epic-16-2026-10-30.md`](../implementation-readiness-report-epic-16-2026-10-30.md).
 
@@ -44,9 +44,9 @@ So this is **not a helpdesk**. It is a per-event log with a short "needs an answ
 **Story order:**
 1. 16.0 Part A, B, C: live (#1164, #1165)
 2. 16.1a, 16.1b, 16.3, 16.4: live 2026-10-31 (#1166)
-3. 16.8 (as 16.8a backend, 16.8b frontend; 16.8c clean-up one release later, owner go), then 16.9
+3. 16.8a + 16.8b: live 2026-11-01 (#1174); 16.9 live 2026-11-02 (#1180); 16.11 merged 2026-11-02 (#1177)
 4. 16.2a + 16.6 + 16.2b: live 2026-11-02 (#1189); 16.5 live 2026-11-02 (#1180)
-5. 16.7 + 16.10: one PR from `feature/16-7-global-mail` (2026-11-02)
+5. 16.7 + 16.10: live 2026-11-03 (#1194)
 6. 16.8c clean-up: one release after 16.8, owner go. 16.12, 16.13: backlog
 
 All story files exist in `_bmad-output/implementation-artifacts/16-*.md` (written 2026-11-01).

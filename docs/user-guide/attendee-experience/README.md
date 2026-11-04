@@ -2,11 +2,13 @@
 
 > Give attendees a voice and a return channel — right-sized contribution features that compose onto machinery you already run
 
-> **Last Updated**: 2026-06-13
+> **Last Updated**: 2026-11-04
 
-<span class="feature-status implemented">Implemented</span> — Epic 7 (Stories 7.1–7.6) — Story 7.7 (curated thank-you marquee) in development.
+<span class="feature-status implemented">Implemented</span> — Epic 7 (Stories 7.1–7.7, including the curated thank-you marquee).
 
 ## Overview
+
+![Public homepage with the next event](../assets/screenshots/public/homepage.png)
 
 For a community of ~200 practitioners that meets ~3 times a year, the old idea of personal dashboards, bookmarks, a recommendation engine, and a mobile PWA was always too much machinery for too little recurring engagement. **Epic 7 is the right-sized replacement.** It adds a small set of organizer-voted features whose single thesis is this:
 
@@ -50,7 +52,7 @@ These features were chosen against three guardrails the organizer committee set,
 | [Speaker Self-Nomination](speaker-self-nomination.md) | 7.2 | Raise a hand with a session title + abstract | Existing 8-state speaker workflow (kanban) |
 | [Slides-Online Email](slides-online-email.md) | 7.3 | (Receive) the one post-event email they'll open | Auto-created event task → one-click send |
 | [Thank-the-Organizers](thank-the-organizers.md) | 7.4 | One-click thank-you, optional note | Appreciation surface (count + notes) |
-| [Post-Event Q&A](post-event-qna.md) | 7.5 | Ask & answer per-session questions for ~14 days | Takedown / extend / close-early; freezes into archive |
+| [Post-Event Q&A](post-event-qna.md) | 7.5 | Ask & answer per-session questions (default 14 days after the event) | Per-event settings, takedown, Open / Close now; freezes into archive |
 | [Event History](event-history.md) | 7.6 | See the events they registered for / attended | (Attendee self-service — no triage) |
 
 ## Related

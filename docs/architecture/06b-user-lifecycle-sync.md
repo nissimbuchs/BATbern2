@@ -26,42 +26,88 @@ The BATbern platform maintains user data in two distinct systems:
 
 ## Sync Architecture Overview
 
-BATbern implements a **simplified unidirectional sync** from Cognito to Database:
+BATbern implements a **simplified unidirectional sync** from Cognito to Database. Cognito has six
+Lambda triggers wired (`infrastructure/lib/constructs/cognito-user-sync-triggers.ts` adds PreSignUp,
+PostConfirmation, PreAuthentication, PostAuthentication, PreTokenGeneration; `cognito-stack.ts` adds
+CustomEmailSender). Which of them fire depends on how the person signs in:
+
+```mermaid
+flowchart LR
+    subgraph Native["Native sign-up and login - email and password"]
+        N1["PreSignUp<br/>company-UUID check only, no DB"] --> N2["CustomEmailSender<br/>branded DE/EN confirmation mail via SES"]
+        N2 --> N3["PostConfirmation<br/>INSERT or link user_profiles<br/>+ initial role, stamps ToS consent"]
+        N3 --> N4["PreAuthentication<br/>blocks login when is_active = false"]
+        N4 --> N5["PreTokenGeneration<br/>adds custom:role + custom:username"]
+        N5 --> N6["PostAuthentication<br/>links anonymous profile by email,<br/>restores canonical email"]
+    end
+    subgraph Federated["Google sign-in, Epic 12"]
+        F1["PreSignUp_ExternalProvider<br/>auto-confirm, link to native user by email"] --> F2["PreTokenGeneration"]
+        F2 --> F3["PostAuthentication"]
+        F3 --> F4["first API call:<br/>JIT interceptor in CUMS creates or links the row"]
+    end
+```
+
+Federated sign-ins never fire PostConfirmation or PreAuthentication; row creation and the `is_active`
+check are covered by the JIT interceptor and the gateway `AccountActiveFilter` instead (see
+Pattern 1b and Pattern F below).
+
+The native path end to end:
 
 ```mermaid
 sequenceDiagram
-    participant U as User
+    participant U as User / SPA
     participant C as AWS Cognito
-    participant PC as PostConfirmation Lambda
-    participant PT as PreTokenGeneration Lambda
-    participant DB as PostgreSQL
-    participant API as API Gateway
-    participant SS as Spring Security
+    participant PS as PreSignUp
+    participant CES as CustomEmailSender
+    participant PC as PostConfirmation
+    participant PA as PreAuthentication
+    participant PT as PreTokenGeneration
+    participant PO as PostAuthentication
+    participant DB as PostgreSQL CUMS tables
+    participant GW as Spring API gateway
+    participant SVC as Domain service
 
-    Note over U,SS: Self-Registration Flow (Story 1.2.3)
-    U->>C: signUp(email, password, name)
-    C-->>U: Verification Email
-    U->>C: Confirm Email (click link)
-    C->>PC: PostConfirmation Trigger
-    PC->>DB: INSERT INTO user_profiles
-    PC->>DB: INSERT INTO role_assignments (ATTENDEE)
-    PC-->>C: Success
-    C-->>U: Account Confirmed
+    Note over U,SVC: Self-registration
+    U->>C: signUp email, password, custom:preferences
+    C->>PS: PreSignUp_SignUp
+    PS-->>C: ok, no DB call
+    C->>CES: CustomEmailSender_SignUp
+    CES-->>U: confirmation mail with code link via SES
+    U->>C: confirmSignUp code
+    C->>PC: PostConfirmation
+    PC->>DB: SELECT user_profiles by LOWER email
+    alt historical participant without cognito_user_id
+        PC->>DB: UPDATE user_profiles SET cognito_user_id, terms_accepted_at = COALESCE
+    else no row
+        PC->>DB: INSERT user_profiles, terms_accepted_at = now for native
+    end
+    PC->>DB: INSERT role_assignments ATTENDEE or custom:role of admin-created user
+    PC->>C: AdminUpdateUserAttributes custom:role = UNUSED, best effort
+    PC-->>C: event, errors are logged, never thrown
 
-    Note over U,SS: Authentication & Authorization
-    U->>C: Login
-    C->>PT: PreTokenGeneration Trigger
-    PT->>DB: SELECT roles FROM role_assignments
-    PT-->>C: Add custom:role claim
-    C-->>U: JWT with custom:role
+    Note over U,SVC: Login
+    U->>C: signIn
+    C->>PA: PreAuthentication
+    PA->>DB: SELECT is_active
+    PA-->>C: throw if inactive, else allow
+    C->>PT: PreTokenGeneration
+    PT->>DB: SELECT username, roles by cognito_user_id, fallback by email
+    PT-->>C: claimsToAddOrOverride custom:role, custom:username
+    C->>PO: PostAuthentication
+    PO->>DB: link anonymous profile by email, restore canonical email if drifted
+    C-->>U: ID and access token
 
-    U->>API: API Request + JWT
-    API->>SS: Validate JWT
-    SS->>SS: Extract custom:role claim
-    SS->>SS: Map to ROLE_ATTENDEE authority
-    API->>API: @PreAuthorize("hasRole('ATTENDEE')")
-    API-->>U: Response
+    Note over U,SVC: API call
+    U->>GW: request + Bearer JWT
+    GW->>GW: validate JWT signature, AccountActiveFilter is_active gate
+    GW->>SVC: route with JWT
+    SVC->>SVC: JwtRolesConverter custom:role to ROLE_x, DB fallback if empty
+    SVC->>SVC: @PreAuthorize on the controller method
+    SVC-->>U: response
 ```
+
+Roles are checked in the services, not in the gateway (ADR-008). The earlier version of this diagram
+showed `@PreAuthorize` on the API gateway; that has not been true since #1147.
 
 **Design Principles:**
 - **Cognito as Auth Source of Truth** - Credentials, verification status, MFA settings
@@ -157,6 +203,15 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
 // "Names, emails and usernames" below. Duplicates get a numeric suffix (john.doe.2).
 ```
 
+> **The code above is a simplified sketch.** The deployed `post-confirmation.ts` (checked
+> 2026-11-04) first looks the user up by `lower(email)` inside a transaction: a row without
+> `cognito_user_id` (historical participant, guest registrant) is **linked** by `UPDATE`, a row
+> with the same `sub` is a retry no-op, a row with a different `sub` is an email conflict. Only when
+> no row exists does it `INSERT`, after resolving username collisions. It also stamps
+> `terms_accepted_at` for native sign-ups (Pattern C), honours a `custom:role` attribute of
+> admin-created users for the initial role, and writes the `custom:role = UNUSED` sentinel back to
+> Cognito. See the native sequence diagram above.
+
 **Key Characteristics**:
 - **Idempotent**: `ON CONFLICT DO NOTHING` prevents duplicate creation
 - **Non-Blocking**: Errors logged but don't fail Cognito confirmation
@@ -177,63 +232,87 @@ export const handler: PostConfirmationTriggerHandler = async (event) => {
 - The transition payload MUST contain a non-blank `email`. `transition()` rejects the call with `MissingProvisioningDataException` otherwise.
 - The current `speaker_pool.status` MUST be `CONTACTED`. The allow-list rejects any other origin.
 
-**Sequence**:
+**Sequence** (redrawn 2026-11-04 against `SpeakerStatusController.promoteSpeakerToReady`,
+`UserService.provisionUserWithRole` and `UserService.issueInvitationCredentials`; the earlier diagram
+had CUMS return a temporary password at READY, which Story 11.E.2 removed):
 
 ```mermaid
 sequenceDiagram
-    participant Org as Organizer (browser)
+    participant Org as Organizer browser
     participant EMS as event-management-service
     participant CUMS as company-user-management-service
     participant Cognito as AWS Cognito
     participant DB as PostgreSQL
 
-    Org->>EMS: POST /api/v1/events/{code}/speakers/{id}/promote<br/>{email, firstName?, lastName?}
-    EMS->>EMS: SpeakerWorkflowService.transition(CONTACTED → READY)
-    EMS->>CUMS: UserApiClient.provisionUserWithRole(<br/>username, email, firstName, lastName, SPEAKER)
-    CUMS->>CUMS: passwordGenerator.generate()<br/>(strong random, policy-compliant)
-    CUMS->>Cognito: AdminCreateUser(email, tempPassword,<br/>MessageAction=SUPPRESS, FORCE_CHANGE_PASSWORD)
-    Cognito-->>CUMS: cognitoSub
-    CUMS->>DB: INSERT INTO user_profiles<br/>(cognito_sub, username, email, ...)
-    CUMS->>DB: INSERT INTO role_assignments<br/>(username, role='SPEAKER')
-    CUMS-->>EMS: { username, temporaryPassword }
-    EMS->>DB: UPDATE speaker_pool<br/>SET username = ?, status = 'READY'<br/>WHERE id = ?
-    EMS-->>Org: 200 OK (SpeakerPool DTO)
+    Org->>EMS: POST /api/v1/events/{code}/speakers/{id}/promote<br/>email, firstName?, lastName?
+    EMS->>EMS: PreAuthorize hasRole ORGANIZER, status must be CONTACTED
+    EMS->>EMS: SpeakerWorkflowService.transition to READY
+    EMS->>CUMS: POST /api/v1/users/provision<br/>email, names, role SPEAKER
+    CUMS->>DB: findByEmailIgnoreCase
+    alt user exists
+        CUMS->>DB: addRole SPEAKER, idempotent
+        CUMS->>Cognito: AdminCreateUser MessageAction SUPPRESS, throwaway password<br/>no-op on UsernameExistsException
+        CUMS->>DB: re-link cognito_user_id if a new sub was created
+    else new user
+        CUMS->>DB: INSERT user_profiles + ATTENDEE, then addRole SPEAKER
+        CUMS->>Cognito: AdminCreateUser SUPPRESS, throwaway password<br/>status FORCE_CHANGE_PASSWORD
+    end
+    CUMS-->>EMS: username, created flag
+    EMS->>DB: UPDATE speaker_pool SET username, status READY
+    EMS-->>Org: 200 SpeakerPool
 
-    Note over EMS,Org: On the next transition (READY → INVITED)<br/>the invitation email service uses the<br/>temporaryPassword from this step. The password<br/>is discarded from memory after dispatch.
+    Note over Org,DB: Later, READY to INVITED
+    Org->>EMS: invite speaker
+    EMS->>CUMS: POST /api/v1/users/{username}/issue-invitation-credentials
+    CUMS->>Cognito: AdminGetUser status
+    alt FORCE_CHANGE_PASSWORD or RESET_REQUIRED
+        CUMS->>Cognito: AdminSetUserPassword Permanent false, fresh temp password
+        CUMS-->>EMS: FRESH_TEMP_PASSWORD + password
+    else CONFIRMED
+        CUMS-->>EMS: USE_EXISTING_PASSWORD, no password
+    end
+    EMS->>EMS: send invitation mail, password only in that mail
 ```
 
-**Steps performed by `UserApiClient.provisionUserWithRole(...)` in `company-user-management-service`** (in order):
+**Steps performed by `UserService.provisionUserWithRole(...)` in `company-user-management-service`**
+(called by EMS `UserApiClient.provisionUserWithRole` → `POST /api/v1/users/provision`):
 
-1. **Generate a strong random temporary password** that satisfies the configured Cognito password policy (min length, character classes). The password lives only in memory for the duration of this call + the subsequent invitation-email dispatch.
-2. **`cognito-idp:AdminCreateUser`** with:
-   - `MessageAction=SUPPRESS` (we send our own invitation email — Cognito's default invitation email is disabled).
-   - `TemporaryPassword=<generated>`.
-   - User created in status `FORCE_CHANGE_PASSWORD` — first login forces the speaker to set a new password.
-3. **Grant SPEAKER role** by inserting a row into `role_assignments` (database — NOT Cognito groups; see "No Cognito Groups" note at the top of this document and Pattern 2 below). The PreTokenGeneration Lambda will pick this up on the speaker's first login and add `SPEAKER` to the `custom:role` JWT claim.
-4. **`INSERT INTO user_profiles`** with the Cognito sub and other profile fields. Idempotent on existing user (the previous PostConfirmation Lambda or a prior speaker promotion may have already created the row — in that case we update `firstName`/`lastName` only if they are NULL and skip if already populated).
-5. **Return `{ username, temporaryPassword }`** to the caller. The caller (the `CONTACTED → READY` hook) passes the temp password to the invitation-email service on the subsequent `READY → INVITED` transition.
+1. **Whitelist**: a non-ADMIN caller may only grant `SPEAKER`.
+2. **Look up by lower-cased email.** If the user exists, grant the role (idempotent) and call
+   `adminCreateUserSilently`, which is a no-op when the Cognito user exists and otherwise creates the
+   missing shell and re-links the new `sub` into `user_profiles`. Returns `created=false`.
+3. **Otherwise create** the `user_profiles` row (default role ATTENDEE), grant `SPEAKER`, then
+   **`cognito-idp:AdminCreateUser`** with `MessageAction=SUPPRESS` and a **throwaway** password that
+   is discarded immediately; the user lands in `FORCE_CHANGE_PASSWORD`. Returns `created=true`.
+4. The response carries `{ username, created }` only. **No temporary password is returned at
+   READY.** The real temporary password is issued at `READY → INVITED` by
+   `issueInvitationCredentials` (`AdminSetUserPassword Permanent=false`) and goes straight into the
+   invitation mail. That call also self-heals a missing Cognito user.
 
-**Idempotency contract**: re-calling `provisionUserWithRole` for an already-provisioned user is a **no-op** and returns `{ username, temporaryPassword: null }`. Callers detect "do not re-send a credential email" by checking for the `null` temporary password. This is the safety net for repeated `POST /promote` clicks and for retries after partial failures.
+**Idempotency contract**: re-calling `provisionUserWithRole` for an already-provisioned user is a
+no-op and returns the same username with `created=false`. A lost create race
+(`DataIntegrityViolationException` on the email constraint) is treated the same way.
 
 **Failure modes**:
-- **Cognito throttling / 5xx**: the transition is aborted (`@Transactional` rollback). `speaker_pool.status` remains `CONTACTED`. The organizer sees an error and can retry — the next attempt is idempotent.
-- **`role_assignments` insert conflict**: detected by the unique constraint on `(username, role)`. Treated as a no-op (idempotency).
-- **`user_profiles` insert conflict**: detected by the unique constraint on `email` or `cognito_sub`. Treated as a no-op (idempotency) — the existing row's `cognito_sub` must match the Cognito user just created/looked-up.
+- **Cognito failure on the new-user branch** (anything but `UsernameExistsException`): the
+  `@Transactional` rolls back the user and role rows; EMS gets HTTP 502 and the transition stays at
+  `CONTACTED`. The organizer can retry.
+- **`role_assignments` duplicate**: `RoleService.addRole` detects it and does nothing.
 
 **The temporary password is never persisted**:
 - Not in `user_profiles`.
 - Not in `role_assignments`.
 - Not in any log line.
 - Not in any audit trail row (only "promoted by X at T" is recorded — not the credential).
-- The `provisionUserWithRole` HTTP response is the only place it appears, and only for the lifetime of the `READY → INVITED` invitation-email dispatch (same request lifecycle).
+- The `issue-invitation-credentials` response is the only place it appears, and only for the lifetime of the `READY → INVITED` invitation-email dispatch. The throwaway password of `provisionUserWithRole` never leaves CUMS.
 
 **Database tables modified**:
 - `user_profiles`: Inserts a new user row (idempotent).
-- `role_assignments`: Inserts `(username, 'SPEAKER')` (idempotent).
+- `role_assignments`: inserts the `SPEAKER` role for the user's `user_id` (idempotent).
 - `speaker_pool` (in event-management-service): Sets `username` and `status = 'READY'`.
 
 **Pattern relationship**:
-- **Pattern 1 (PostConfirmation Lambda)** remains the standard path for self-registered attendees (FR22, Story 1.2.3). When such an attendee is later promoted to SPEAKER via Pattern N, the User row already exists — `provisionUserWithRole` updates `role_assignments` only and returns `{ username, temporaryPassword: null }` (the existing Cognito password remains valid; no re-credentialing).
+- **Pattern 1 (PostConfirmation Lambda)** remains the standard path for self-registered attendees (FR22, Story 1.2.3). When such an attendee is later promoted to SPEAKER via Pattern N, the User row already exists — `provisionUserWithRole` adds the role and returns `created=false`; at `READY → INVITED` `issueInvitationCredentials` sees a `CONFIRMED` Cognito user and returns `USE_EXISTING_PASSWORD` (no re-credentialing).
 - **Pattern 2 (PreTokenGeneration Lambda)** is unchanged: it reads `role_assignments` at login time and adds the roles list to the `custom:role` JWT claim.
 - **Pattern 3 (Spring Security role extraction)** is unchanged: it reads `custom:role` from the JWT and maps to Spring `GrantedAuthority`.
 
@@ -674,13 +753,31 @@ attribute in the token. Everything else is resolved from the DB via the user-api
 ### ❌ No Reverse Sync (Database → Cognito)
 **Reason**: Cognito is for authentication only. User data changes (roles, profiles) stay in database.
 
-**Clarification**: The reconciliation job reads Cognito state to deactivate orphaned DB users — this is still Cognito→DB direction. There is no path that writes business data from the DB back to Cognito.
+**Clarification**: The reconciliation job reads Cognito state to deactivate orphaned DB users — this is still Cognito→DB direction. No roles or profile data are written from the DB to Cognito. Three narrow Cognito writes do exist (checked 2026-11-04): PostConfirmation sets the `custom:role = UNUSED` sentinel, PostAuthentication writes `user_profiles.email` back as the Cognito `email` when a Google attribute sync overwrote it, and CUMS creates or re-credentials Cognito users for speakers (Pattern N).
 
 **Alternative**: Roles updated in database only. Next login fetches updated roles via PreTokenGeneration.
 
 ### ✅ JIT (Just-In-Time) Provisioning Interceptor — Canonical, provider-agnostic reconcile path
 
 **Pattern 1b** _(Story 12.3, SSO PR 1 — Part B)_: `JITUserProvisioningInterceptor` runs on every authenticated `/api/**` request and is the **single, provider-agnostic create path** for any first-request identity — **native OR federated**. If a valid JWT is present but no DB user record is found (`findByCognitoUserId()` returns empty), the interceptor reconciles the DB from the JWT, reading exactly what `post-confirmation.ts` reads so federated and native users converge on identical rows.
+
+Decision path of `JITUserProvisioningInterceptor.preHandle` (CUMS, checked 2026-11-04):
+
+```mermaid
+flowchart TD
+    A["Authenticated /api/** request in CUMS"] --> B{"JwtAuthenticationToken<br/>with a sub?"}
+    B -- no --> Z["continue, nothing to do"]
+    B -- yes --> C{"user_profiles row with<br/>this cognito_user_id?"}
+    C -- yes --> Z2["continue, the row is shared with<br/>FederatedAvatarImportInterceptor"]
+    C -- no --> D{"row with the same email<br/>case-insensitive?"}
+    D -- yes --> E["link: SET cognito_user_id = sub<br/>no new row, no event"]
+    D -- no --> F{"email is a VERIFIED additional<br/>email of another user?"}
+    F -- yes --> G["skip creation, WARN:<br/>PreSignUp should have linked"]
+    F -- no --> H["create user_profiles from JWT claims<br/>names, language, roles or ATTENDEE"]
+    H --> I["publish UserCreatedEvent<br/>source JIT_PROVISIONING"]
+```
+
+Every branch continues the request; a failure is logged and the request proceeds (fail-open).
 
 **What it captures on create** (mirrors `post-confirmation.ts`):
 - **firstName / lastName** — from standard `given_name`/`family_name`, falling back to the `custom:preferences` JSON (the signup form packs names there per ADR-001). Username is derived by the shared generator (see **Names, emails and usernames**).
@@ -770,8 +867,9 @@ internal user API without JWT, via `GatewayUserStatusClient`; until 2026-10 it r
 for a deactivated account. It is **fail-open** (CUMS error or 404 → allow + WARN +
 `gateway.active_gate.cums_error` metric) and **provider-agnostic**, so it covers federated (Google)
 logins and the post-issuance window — closing both gaps (deactivation effective within ~60s instead
-of ≤24h). Kill-switch `security.active-gate.enabled` (ships `false`/dark; flip to `true` after a
-prod test-deactivation). The **`PreAuthentication` trigger is now redundant** and is slated for
+of ≤24h). Kill-switch `security.active-gate.enabled` (default `false` in `application.yml`; production
+sets `SECURITY_ACTIVE_GATE_ENABLED=true` in `infrastructure/lib/stacks/api-gateway-service-stack.ts`,
+checked 2026-11-04). The **`PreAuthentication` trigger is now redundant** and is slated for
 retirement in the cleanup track, **after** the gateway gate is confirmed live in prod (it is left
 in place for now as defence-in-depth). Active eviction (EventBridge `UserDeactivated` → evict cache
 key) is a documented FUTURE option, not built. See `ADR-010-federated-identity-via-cognito.md` (D5)
@@ -794,6 +892,43 @@ inline `lambda.Code.fromInline` PreSignUp in `cognito-stack.ts`, which had no DB
 by the **canonical JIT interceptor (Pattern 1b, Story 12.3)** on first API call (this trigger
 creates **no** DB row); and the `is_active` gate (PreAuthentication) is bypassed → handled by
 the **API-Gateway `is_active` gate (Story 12.2)**, not here.
+
+```mermaid
+sequenceDiagram
+    participant U as User / SPA
+    participant C as Cognito Hosted UI auth.batbern.ch
+    participant G as Google
+    participant PS as PreSignUp Lambda
+    participant DB as PostgreSQL user_profiles
+    participant PT as PreTokenGeneration
+    participant PO as PostAuthentication
+    participant CUMS as CUMS JIT interceptor
+
+    U->>C: Continue with Google
+    C->>G: OIDC authorize
+    G-->>C: id_token email, email_verified, sub
+    C->>PS: PreSignUp_ExternalProvider, first Google sign-in only
+    PS->>PS: no email: return unchanged
+    PS->>PS: autoConfirmUser + autoVerifyEmail
+    PS->>DB: SELECT by LOWER email
+    alt native user with cognito_user_id
+        PS->>C: AdminLinkProviderForUser, destination = native sub
+    else no primary match and IdP email_verified
+        PS->>DB: SELECT owner via VERIFIED user_additional_emails
+        PS->>C: AdminLinkProviderForUser to that owner, if it has a sub
+    else row without sub, or no row
+        PS->>PS: no link, JIT adopts or creates later
+    end
+    PS-->>C: event, never throws
+    C->>PT: PreTokenGeneration
+    PT->>DB: roles + username by sub, fallback by email
+    C->>PO: PostAuthentication
+    PO->>DB: canonical email from user_profiles
+    PO->>C: AdminUpdateUserAttributes email if Google sync overwrote it
+    C-->>U: redirect to /auth/callback with code
+    U->>CUMS: first API call with JWT
+    CUMS->>DB: link by email or create row, Pattern 1b
+```
 
 **`triggerSource` branch** (the trigger does two unrelated jobs):
 - **Native** (`PreSignUp_SignUp`, `PreSignUp_AdminCreateUser`, and any unrecognised source as
@@ -821,7 +956,11 @@ the **API-Gateway `is_active` gate (Story 12.2)**, not here.
        so the trigger cannot stamp it either). Logged + metered `FederatedAnonymousPendingJit`;
        canonical JIT (Pattern 1b: `findByEmail` → `setCognitoUserId`) **adopts** the row on the
        federated user's first authenticated API call, preserving the anonymous registration's history.
-     - **No row** → no link; the brand-new Google user is provisioned later by JIT (Pattern 1b).
+     - **No row, but the IdP asserts `email_verified=true`** → fallback lookup in
+       `user_additional_emails` for a **verified** (`verified_at IS NOT NULL`) row. A match whose
+       owner has a `cognito_user_id` is linked to that owner (metric
+       `FederatedUserLinkedViaAdditionalEmail`); an owner without a sub is deferred to JIT.
+     - **No row at all** → no link; the brand-new Google user is provisioned later by JIT (Pattern 1b).
   4. **Never throws** on the federated path — a thrown error 503s the sign-in; lookup/link
      failures are logged + metered (`PreSignUpFailure`) and the event is returned. Because the
      auto-confirm flags are set (step 2) *before* the link attempt, a failed link is fail-open
@@ -882,6 +1021,50 @@ failed) → **fail-open**, never lock users out on a transient `/users/me` failu
 `/users/me`) reads `null` and gates everyone; consent saves are absorbed by the old DTO and
 lost. The window is minutes (same pipeline) and self-heals on backend rollout — users
 re-accept once. Do not deploy the frontend bundle alone ahead of CUMS.
+
+## Additional verified emails (Story 10.32, verification v2)
+
+A user can register up to five extra addresses (`batbern.user.additional-emails.max`, default 5) in
+`user_additional_emails` (CUMS). Uniqueness is global and case-insensitive across primary **and**
+additional addresses. An address only counts as proof of identity once `verified_at` is set; the
+verification token is a stateless HMAC JWT (`AdditionalEmailVerificationTokenService`, claims
+`additionalEmailId`, `email`, `type`; validity 48 h,
+`batbern.user.additional-emails.verification.token-validity-hours`).
+
+```mermaid
+sequenceDiagram
+    participant U as User / SPA
+    participant CUMS as company-user-management-service
+    participant DB as user_additional_emails
+    participant SES as AWS SES
+    participant P as /verify-email page, public
+
+    U->>CUMS: POST /api/v1/users/me/additional-emails email
+    CUMS->>DB: cap check, global uniqueness check
+    CUMS->>DB: INSERT row, verified_at NULL
+    CUMS->>SES: verification mail with signed link, 48 h
+    Note over U,CUMS: resend: POST /users/me/additional-emails/{email}/resend-verification
+    SES-->>P: user opens link ?token=
+    P->>CUMS: GET /api/v1/users/additional-emails/verify?token=, no JWT
+    CUMS-->>P: masked email + verified flag, no state change
+    P->>CUMS: POST /api/v1/users/additional-emails/verify token, on button click
+    CUMS->>DB: SET verified_at, idempotent, 404 if the row was deleted since
+    CUMS-->>P: confirmed or alreadyVerified
+```
+
+The GET/POST split exists because mail scanners prefetch links with GET; only the explicit POST
+verifies.
+
+Where the addresses are used (checked 2026-11-04):
+
+```mermaid
+flowchart LR
+    AE["user_additional_emails"] --> V{"verified_at set?"}
+    V -- "yes" --> L1["PreSignUp: link a Google sign-in<br/>to the owner's Cognito user"]
+    V -- "yes" --> L2["JIT: refuse to create a duplicate user"]
+    V -- "yes" --> L3["EMS PersonAddresses: match registrations,<br/>attendee dashboard, deregistration"]
+    AE --> A1["EMS CC fan-out on transactional mails<br/>and ForwardingDirectory sender lookup<br/>use every additional address, verified or not"]
+```
 
 ## Names, emails and usernames (#1102)
 
@@ -1226,8 +1409,8 @@ await eventBridgeClient.send(new PutEventsCommand({
 ## Related Documentation
 
 - **[ADR-001: Invitation-Based User Registration Architecture](./ADR-001-invitation-based-user-registration.md)** - Architectural decision for database-centric approach
-- **[Story 1.14-2: User Management Service Foundation](../stories/1.14-2.user-management-service-foundation.md)** - Database schema implementation
-- **[Story 1.2.5: User Sync Implementation](../stories/1.2.5-user-sync-reconciliation-implementation.md)** - Lambda trigger implementation
-- **[Story 1.2.3: Account Creation Flow](../stories/1.2.3-implement-account-creation-flow.md)** - Self-registration UI
+- **[Story 1.14-2: User Management Service Foundation](../stories/archived/epic-1/1.14-2.user-management-service-foundation.md)** - Database schema implementation
+- **[Story 1.2.5: User Sync Implementation](../stories/archived/epic-1/1.2.5-user-sync-reconciliation-implementation.md)** - Lambda trigger implementation
+- **[Story 1.2.3: Account Creation Flow](../stories/archived/epic-1/1.2.3-implement-account-creation-flow.md)** - Self-registration UI
 - **[Backend Architecture](./06-backend-architecture.md)** - Overall backend patterns
 - **[API Design](./04-api-design.md)** - REST API conventions and authorization patterns

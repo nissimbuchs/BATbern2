@@ -93,6 +93,13 @@ build/generated/src/main/java/
 
 **Gradle Configuration** (from `company-user-management-service/build.gradle`):
 
+> **Version note (2026-11):** the generator is now **7.14.0**, pinned once in `settings.gradle`
+> (`pluginManagement`) and in the root `build.gradle` buildscript classpath; modules apply the
+> plugin without a version. The snippet below shows the original 7.2.0 setup and is otherwise
+> still representative. The services run Spring Boot 4, but the generator option is still named
+> `useSpringBoot3: 'true'` (generator 7.14.0 has no `useSpringBoot4` flag); it selects the
+> Jakarta / Spring 6+ annotation style, which Spring Boot 4 also uses.
+
 ```gradle
 plugins {
     id 'org.openapi.generator' version '7.2.0'

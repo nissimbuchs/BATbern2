@@ -2,7 +2,7 @@
 
 > How BATbern organises the annual partner meetings and sends calendar invites
 
-> **Last Updated**: 2026-06-13
+> **Last Updated**: 2026-11-04 — one invite mail per recipient with its own calendar entry; "Invite Sent" only after a successful send; meeting mails recorded (#1176, #1180)
 
 <span class="feature-status implemented">Implemented</span> — Epic 8.3 (calendar invites) · Story 10-27 (iCal RSVP tracking)
 
@@ -10,11 +10,11 @@
 
 BATbern holds **two partner meetings per year** — typically a Spring meeting tied to the Spring BATbern event and an Autumn meeting tied to the Autumn event. These are working lunches where organizers and partner representatives discuss upcoming events, topics, and the partnership.
 
-The platform automates the calendar invite process: organisers create the meeting record, click **Send Invite**, and all partner contacts receive a single `.ics` calendar file containing both the partner lunch and the BATbern event itself.
+The platform automates the calendar invite process: organisers create the meeting record, click **Send Calendar Invite**, and every partner contact and organiser receives their own mail with an `.ics` calendar file containing both the partner lunch and the BATbern event itself.
 
 ## What Partners Receive
 
-When an organiser sends a meeting invite, all contacts listed on the partner record receive an email with an attached `.ics` calendar file. The file contains **two calendar entries**:
+When an organiser sends a meeting invite, each recipient gets **their own email** with an attached `.ics` calendar file. Nobody sees the other recipients' addresses, neither in the To: line nor in the calendar entry. The file contains **two calendar entries**:
 
 | Calendar Entry | What It Contains |
 |---------------|-----------------|
@@ -116,26 +116,18 @@ Confirm that the location, agenda, and linked event are correct before sending. 
 
 **Click "Send Calendar Invite"**
 
-The system sends the `.ics` file asynchronously to all contacts on all partner records. Each contact receives the invite at both their **primary** email AND every **additional email** they have registered in their profile (Story 10.32) — addresses are deduplicated case-insensitively so a contact who appears in two roles or shares an address across roles gets a single copy per inbox. The API responds with **202 Accepted** immediately — the actual email delivery happens in the background (typically within a few seconds).
+Confirm "Send calendar invite to all partner contacts?". The system sends one mail per recipient, each with its own `.ics` file that lists only that recipient. Each contact receives the invite at both their **primary** email AND every **additional email** they have registered in their profile (Story 10.32) — addresses are deduplicated case-insensitively so a contact who appears in two roles or shares an address across roles gets a single copy per inbox.
 
-```
-┌─────────────────────────────────────────────┐
-│  ✅ Invite sending in progress               │
-│                                              │
-│  Calendar invites are being sent to all     │
-│  partner contacts via email.                │
-│                                              │
-│  The "Invite Sent" timestamp will appear    │
-│  once delivery is confirmed.                │
-└─────────────────────────────────────────────┘
-```
+The send happens while you wait. One failed recipient does not stop the others. If nobody could be reached, the page shows "The invite could not be sent. Nothing was delivered. Please try again." and the meeting stays **Invite Not Sent**.
 </div>
 
 <div class="step" data-step="4">
 
 **Confirm sent status**
 
-The meeting list shows an **Invite Sent** timestamp once the emails have been dispatched.
+The meeting list shows **Invite sent on {date}** only after the mail was actually accepted for delivery. Until #1176 (2026-11-01) the timestamp was written before the send, so a failed invite could still show as sent.
+
+The invite, a cancellation and any other partner mail are recorded: they appear in the meeting under **Mails of this meeting** (with the RSVP status per recipient) and in the event's **Communications** tab under **What went out**.
 </div>
 
 ## For Organisers — Tracking RSVPs
@@ -144,7 +136,7 @@ Once an invite has been sent, the platform tracks who has **accepted**, **declin
 
 ### How it works
 
-The calendar invite is sent as a proper RFC 5545 `METHOD:REQUEST` with one `ATTENDEE` line per recipient and an `ORGANIZER` address (`replies@batbern.ch`) that BATbern monitors. When a recipient responds, their calendar client sends a `METHOD:REPLY` email to that address; BATbern's inbound-email pipeline parses it and records the response against the meeting.
+The calendar invite is sent as a proper RFC 5545 `METHOD:REQUEST` with an `ATTENDEE` line for its recipient and an `ORGANIZER` address (`replies@batbern.ch`) that BATbern monitors. When a recipient responds, their calendar client sends a `METHOD:REPLY` email to that address; BATbern's inbound-email pipeline parses it and records the response against the meeting.
 
 - Each attendee email gets a single tracked response; re-responding (e.g. changing **Tentative** to **Accepted**) updates the existing record in place.
 - Responses are matched to the meeting via the invite's calendar `UID`, so they attach to the correct meeting automatically.
@@ -212,6 +204,8 @@ Notes are saved and visible to all organisers. They are **not visible to partner
 
 ## Meeting List View
 
+![Partner Meetings list](../assets/screenshots/partner-portal/organizer-partner-meetings.png)
+
 The meeting list shows past and upcoming meetings:
 
 ```
@@ -242,7 +236,7 @@ The `.ics` file follows **RFC 5545** (iCalendar specification) and uses `METHOD:
 
 Email delivery uses **AWS SES** with the `.ics` file attached as `text/calendar; method=REQUEST`.
 
-For RSVP tracking (Story 10-27), the partner-lunch `VEVENT` includes an `ORGANIZER:mailto:replies@batbern.ch` line plus one `ATTENDEE;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:{email}` line per recipient — these are what tell calendar clients to send a reply. Replies arrive as `METHOD:REPLY` emails at the monitored `replies@batbern.ch` address, are parsed by the inbound-email pipeline, and are matched back to the meeting by the calendar `UID`.
+For RSVP tracking (Story 10-27), the partner-lunch `VEVENT` includes an `ORGANIZER:mailto:replies@batbern.ch` line plus one `ATTENDEE;PARTSTAT=NEEDS-ACTION;RSVP=TRUE:mailto:{email}` line for the one recipient of that mail (each recipient gets their own file) — this is what tells calendar clients to send a reply. Replies arrive as `METHOD:REPLY` emails at the monitored `replies@batbern.ch` address, are parsed by the inbound-email pipeline, and are matched back to the meeting by the calendar `UID`.
 
 ## Troubleshooting
 

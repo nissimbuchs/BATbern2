@@ -18,14 +18,15 @@
 | Cache | Caffeine | 3.x | Application-level in-memory caching | High performance, cost-effective, zero external dependencies |
 | File Storage | AWS S3 | Latest | Document and media storage | Enterprise-grade, CDN integration, Swiss compliance capable |
 | Authentication | AWS Cognito | Latest | Multi-role user management | Enterprise SSO, fine-grained permissions, AWS ecosystem |
-| Frontend Testing | Vitest + React Testing Library | 4.x / 16.x | Component and integration testing | Fast, TypeScript native, React best practices |
+| Frontend Testing | Vitest + React Testing Library | 5.x / 16.x | Component and integration testing | Fast, TypeScript native, React best practices |
 | Backend Testing | JUnit + Testcontainers | 6.x / 2.x | Service and integration testing | Java standard, real database testing |
 | E2E Testing | Playwright | 1.x | Full application workflows | Cross-browser, reliable, excellent CI integration |
-| Build Tool | Gradle | 8.x | Java service builds | Superior dependency management, enterprise standard |
+| Build Tool | Gradle (wrapper) | 9.x | Java service builds | Superior dependency management, enterprise standard |
 | Bundler | Vite | 8.x | Frontend build and dev server | Fast HMR, TypeScript support, modern tooling |
+| JS Runtime | Node.js | 22 | Frontend tooling, CDK, scripts | Version pinned by `actions/setup-node` in all CI workflows |
 | IaC Tool | AWS CDK | 2.x | Infrastructure as code | Type-safe infrastructure, AWS native, versioned stacks |
 | CI/CD | GitHub Actions | Latest | Automated testing and deployment | Integrated with repository, excellent AWS integration |
-| Monitoring | AWS CloudWatch + Grafana | Latest / 10.x | Application and infrastructure monitoring | Enterprise observability, custom dashboards |
+| Monitoring | AWS CloudWatch | Latest | Alarms, dashboards and logs | AWS native; alarms are defined next to the resources they watch (see 08-operations-security.md) |
 | Logging | SLF4J + Logback | 2.x / 1.x | Structured application logging | Java standard, structured JSON logging |
 | CSS Framework | Tailwind CSS | 4.x | Utility-first styling | Rapid development, consistent design system |
 
@@ -46,7 +47,7 @@
 - **Tailwind CSS 4.x**: Utility-first CSS framework for rapid UI development
 
 ### Testing Framework
-- **Vitest 4.x**: Fast unit testing with TypeScript support
+- **Vitest 5.x**: Fast unit testing with TypeScript support
 - **React Testing Library 16.x**: Component testing best practices
 - **Playwright 1.x**: End-to-end testing across browsers
 
@@ -64,7 +65,7 @@
 - **Flyway**: Database migration and versioning
 
 ### Build & Testing
-- **Gradle 8.x**: Dependency management, multi-project builds, performance optimization
+- **Gradle 9.x** (wrapper, `gradle/wrapper/gradle-wrapper.properties`): multi-project build from the repository root. Note: the service `Dockerfile`s compile inside the `gradle:8.14.5-jdk21` image with that image's Gradle, not with the wrapper
 - **JUnit 6.x**: Modern testing framework with parameterized tests
 - **Testcontainers 2.x**: Integration testing with real databases
 - **MockMvc**: Spring MVC testing framework
@@ -77,7 +78,7 @@
 - **AWS S3**: Object storage with CDN integration
 - **AWS CloudFront**: Global content delivery network (cdn.batbern.ch)
 - **AWS RDS (Single-AZ, db.t4g.micro)**: Managed PostgreSQL database service (cost-optimized)
-- **AWS VPC (Single AZ, 1 NAT Gateway)**: Cost-optimized networking infrastructure
+- **AWS VPC (2 AZs, 1 NAT Gateway)**: Cost-optimized networking infrastructure (2 AZs are the minimum for an RDS subnet group; RDS itself is Single-AZ)
 - **Note**: ElastiCache Redis removed; using application-level Caffeine caching for 83% cost reduction
 
 ### Infrastructure as Code
@@ -93,9 +94,11 @@
 ## Monitoring & Observability
 
 ### Application Monitoring
-- **AWS CloudWatch**: Native AWS service monitoring and logging
-- **Grafana 10.x**: Advanced visualization and alerting
-- **AWS X-Ray**: Distributed tracing and performance insights
+- **AWS CloudWatch**: Native AWS service monitoring, alarms and logging (no Grafana)
+- **AWS X-Ray (partial)**: only company-user-management carries the X-Ray recorder SDK, and the
+  monitoring dashboard has X-Ray widgets. No X-Ray daemon or sidecar is defined in CDK, so there is
+  no platform-wide distributed tracing. Request correlation relies on the `X-Correlation-ID` header
+  and MDC
 - **Micrometer**: Application metrics collection
 
 ### Logging Framework
@@ -108,11 +111,11 @@
 ### Prerequisites
 ```bash
 java --version          # Java 21 LTS
-node --version         # Node.js 20+
-docker --version       # Docker Desktop
-aws --version          # AWS CLI v2
-cdk --version          # AWS CDK v2.110+
-gradle --version       # Gradle 8.5+
+node --version          # Node.js 22 (the version CI uses)
+docker --version        # Docker (local PostgreSQL, Testcontainers)
+aws --version           # AWS CLI v2
+./gradlew --version     # Gradle 9.x via the wrapper; no global Gradle needed
+# AWS CDK: use the CLI pinned in infrastructure/package.json (cd infrastructure && npx cdk ...)
 ```
 
 ### IDE Recommendations

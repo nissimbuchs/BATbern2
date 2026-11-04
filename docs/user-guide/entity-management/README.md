@@ -54,7 +54,7 @@ BATbern conferences and their lifecycle management.
 - Timeline management (dates, registration windows)
 - Session tracking
 - Speaker assignments
-- 9-state event workflow, per-speaker workflow, task system
+- 8-state event workflow, per-speaker workflow, task system
 
 **Status**: <span class="feature-status implemented">Implemented</span>
 

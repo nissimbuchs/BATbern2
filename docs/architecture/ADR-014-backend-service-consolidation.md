@@ -66,3 +66,22 @@ dormant ones.**
 - ADR-013 (REST API CRUD conventions — exempts dormant/un-wired specs)
 - `docs/plans/ems-modularization-extension-points.md` (internal modularization; anti-goal: no new microservices)
 - `docs/plans/api-consolidation-plan.md` (Phase 2 closed as "won't do" per this ADR)
+
+## Operational state (2026-11-04)
+
+Facts as read from CDK and gateway code on `develop` (c4593449). **Live ECS task counts were not
+checked.** No decision is recorded here; the options are in #1216.
+
+| | speaker-coordination (SCS) | attendee-experience (AES) |
+|---|---|---|
+| Java sources (`src/main/java`) | 4 files: application, `CacheConfig`, `SecurityConfig`, `GlobalExceptionHandler`. No controllers | 1 file: `AttendeeExperienceApplication` |
+| CDK stack | `BATbern-staging-SpeakerCoordination` | `BATbern-staging-AttendeeExperience` |
+| Task size | 256 CPU / 1024 MiB | 256 CPU / 1024 MiB |
+| Task count in CDK | `desiredCount: 1`, `minCapacity: 1`, `maxCapacity: 2` (`speaker-coordination-stack.ts`) | `desiredCount: 0`, `disableAutoScaling: true` (`attendee-experience-stack.ts`, parked per `docs/plans/aws-cost-reduction.md` tier 1) |
+| Gateway routes (`DomainRouter`) | none | `/api/v1/content/**`, which can only fail while AES runs no task |
+| Still built and deployed | yes: `build.yml` matrix, `deploy-staging.yml` layer 4.3, native dev scripts | yes: `build.yml` matrix, `deploy-staging.yml` layer 4.5, native dev scripts |
+
+So the decision above is implemented in code ownership (all speaker and attendee logic lives in
+EMS and partner-coordination) but only partly in the runtime: SCS still runs a Fargate task that
+serves nothing, and the gateway still routes one prefix to the parked AES. See #1216.
+

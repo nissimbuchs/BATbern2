@@ -1,47 +1,108 @@
 # Source Tree Structure
 
+Generated from `git ls-tree` on `develop` (c4593449, 2026-11-04). Only directories that exist are
+listed; descriptions are short on purpose. Regenerate rather than hand-edit when the layout
+changes.
+
 ## Unified Project Structure
 
-```
-BATbern-Platform/
-├── shared-kernel/                     # Shared types, events, utilities
-├── services/                          # Domain services
-│   ├── event-management/              # Event Management Service
-│   ├── speaker-coordination/          # Speaker Coordination Service
-│   ├── partner-coordination/          # Partner Coordination Service
-│   ├── attendee-experience/           # Attendee Experience Service
-│   └── company-management/            # Company Management Service
-├── api-gateway/                       # Unified API Gateway
-├── web-frontend/                      # React Frontend Application
-├── infrastructure/                    # Infrastructure as Code
-│   ├── global-stacks/                 # Region-independent resources
-│   ├── core-infrastructure/           # Regional shared resources
-│   ├── domain-stacks/                 # Per-domain infrastructure
-│   └── environments/                  # Environment-specific configs
-├── e2e-tests/                         # End-to-end tests
-├── scripts/                           # Build and deployment scripts
-├── docs/                              # Documentation
-└── README.md                          # Project overview
-```
-
-## Service Structure Template
+One monorepo. The root `settings.gradle` includes `shared-kernel`, `api-gateway` and the five
+`services:*` modules; `web-frontend` and `infrastructure` are separate npm projects. Run Gradle
+from the repository root.
 
 ```
-services/{domain-service}/
-├── src/main/java/ch/batbern/{domain}/
-│   ├── controller/                     # REST API controllers
-│   ├── service/                        # Business logic layer
-│   ├── repository/                     # Data access layer
-│   ├── domain/                         # Domain models and entities
-│   ├── dto/                           # Data transfer objects
-│   ├── exception/                     # Custom exceptions
-│   └── security/                      # Security components
+BATbern2/
+├── shared-kernel/            # Shared Java library: types, domain events, security, mail, utils
+├── api-gateway/              # Spring Boot (Spring MVC) gateway: JWT auth, rate limiting, DomainRouter
+├── services/
+│   ├── event-management-service/          # EMS, primary (ADR-014)
+│   ├── company-user-management-service/   # CUMS, primary
+│   ├── partner-coordination-service/      # PCS, separate service
+│   ├── speaker-coordination-service/      # dormant stub, 4 Java files (ADR-014)
+│   └── attendee-experience-service/       # dormant stub, 1 Java file (ADR-014)
+├── web-frontend/             # React 19 + TypeScript SPA (public site and role areas)
+├── infrastructure/           # AWS CDK app (TypeScript)
+├── apps/
+│   ├── BATbern-watch/        # watchOS companion app (Swift/SwiftUI, Xcode project)
+│   ├── projectdoc/           # documentation-site generator (Node), not deployed with the platform
+│   └── workhours/            # local working-hours analysis script (Python)
+├── bruno-tests/              # Bruno API contract tests, one folder per collection
+├── scripts/                  # Dev, CI, auth, deploy and data scripts (see below)
+├── docs/                     # Architecture, API specs, PRDs, plans, guides (see below)
+├── config/                   # checkstyle rules, backend env template
+├── gradle/                   # Gradle wrapper, trivy-security.gradle
+├── .githooks/                # Active git hooks: pre-commit, commit-msg, pre-push (make install-hooks)
+├── .github/                  # Workflows, dependabot.yml, doc-drift-mappings.yml, helper scripts
+├── _bmad/                    # BMAD method configuration and agents
+├── _bmad-output/             # BMAD artifacts: story files (implementation-artifacts/), project-context.md
+├── .zap/                     # OWASP ZAP rules
+├── .claude/                  # Claude Code settings, hooks, skills
+├── Makefile                  # Entry point for install, build, test, dev-native-* targets
+├── docker-compose-dev.yml    # Local PostgreSQL for native development
+├── docker-compose.yml        # All services in containers (alternative)
+└── Dockerfile.flyway
+```
+
+## Service Structure
+
+All three active services follow the same layering; packages differ by service.
+
+```
+services/{name}-service/
+├── src/main/java/ch/batbern/{events|companyuser|partners}/
+│   ├── controller/      # REST controllers, implementing generated OpenAPI interfaces (ADR-006)
+│   ├── service/         # Business logic
+│   ├── repository/      # Spring Data JPA repositories
+│   ├── domain/          # JPA entities
+│   ├── dto/             # Hand-written DTOs (generated ones live under build/generated)
+│   ├── client/          # HTTP clients to other services (/internal/** endpoints)
+│   ├── config/          # Spring configuration, SecurityConfig
+│   ├── security/        # Service-side security helpers
+│   └── exception/       # Exceptions and GlobalExceptionHandler
 ├── src/main/resources/
-│   ├── application.yml                # Configuration
-│   └── db/migration/                  # Flyway migrations
-├── src/test/java/                     # Unit and integration tests
-├── build.gradle                      # Build configuration
-└── README.md                         # Service documentation
+│   ├── application.yml
+│   ├── db/migration/    # Flyway migrations, owned per service. Never edit an applied one
+│   └── email-templates/ # (EMS, CUMS) DE + EN mail templates
+├── src/test/java/       # Unit and integration tests (Testcontainers PostgreSQL)
+├── build.gradle         # openApiGenerate tasks, dependencies
+└── Dockerfile
+```
+
+Service-specific packages worth knowing:
+
+- **EMS** (`ch.batbern.events`): `mailcenter/` (Epic 16), `forwarding/` (alias forwarding),
+  `listener/` (SQS listeners), `scheduler/` and `scheduled/`, `notification/`, `usermerge/`,
+  `watch/`, `specification/`.
+- **CUMS** (`ch.batbern.companyuser`): `watch/` (pairing), `interceptor/`, `events/` (domain
+  events).
+- **PCS** (`ch.batbern.partners`): `mail/`, `events/`.
+
+## Shared Kernel Structure
+
+```
+shared-kernel/src/
+├── main/java/ch/batbern/shared/
+│   ├── api/  config/  dto/  types/          # shared API, DTO and value types
+│   ├── events/                              # domain event base classes, DomainEventPublisher
+│   ├── exception/  exceptions/              # shared exception types
+│   ├── mail/                                # mail helpers
+│   ├── security/                            # JwtRolesConverter, audit logging
+│   ├── service/                             # e.g. SlugGenerationService
+│   └── util/  utils/
+├── test/
+└── testFixtures/                            # e.g. EndpointAuthorizationGuard used by every service
+```
+
+## API Gateway Structure
+
+```
+api-gateway/src/main/java/ch/batbern/gateway/
+├── routing/        # DomainRouter: path prefix → service
+├── security/       # RateLimitingFilter, AccountActiveFilter, TurnstileVerificationFilter, security headers
+├── filter/         # CorrelationIdFilter, ApiVersionHeaderFilter
+├── config/         # SecurityConfig (JWT resource server, /internal/** denyAll)
+├── auth/  client/  exception/  gdpr/  health/  middleware/  observability/  util/  validation/
+└── ApiGatewayApplication.java
 ```
 
 ## Frontend Structure
@@ -49,205 +110,105 @@ services/{domain-service}/
 ```
 web-frontend/
 ├── src/
-│   ├── components/                    # Reusable UI components
-│   │   ├── common/                    # Shared components
-│   │   ├── organizer/                 # Organizer-specific components
-│   │   ├── speaker/                   # Speaker-specific components
-│   │   ├── partner/                   # Partner-specific components
-│   │   └── attendee/                  # Attendee-specific components
-│   ├── hooks/                         # Custom React hooks
-│   ├── services/                      # API client services
-│   ├── stores/                        # Zustand state stores
-│   ├── types/                         # TypeScript type definitions
-│   ├── utils/                         # Utility functions
-│   └── pages/                         # Page components
-├── public/                            # Static assets
-├── tests/                             # Component and integration tests
-├── e2e/                              # End-to-end tests
-├── package.json                       # Dependencies and scripts
-├── vite.config.ts                     # Vite configuration
-└── tailwind.config.js                # Tailwind CSS configuration
-```
-
-## Shared Kernel Structure
-
-```
-shared-kernel/
-├── src/main/java/ch/batbern/shared/
-│   ├── events/                        # Domain events
-│   │   ├── EventCreatedEvent.java
-│   │   ├── SpeakerInvitedEvent.java
-│   │   └── PartnerAnalyticsEvent.java
-│   ├── types/                         # Shared value objects
-│   │   ├── CompanyId.java
-│   │   ├── EventId.java
-│   │   └── UserId.java
-│   ├── exceptions/                    # Common exceptions
-│   │   ├── DomainException.java
-│   │   └── ValidationException.java
-│   └── utils/                         # Utility classes
-│       ├── DateTimeUtils.java
-│       └── ValidationUtils.java
-├── src/main/resources/
-│   └── application-shared.yml         # Shared configuration
-└── build.gradle                      # Shared dependencies
+│   ├── pages/          # Route-level pages: public/, organizer/, speaker-portal/, attendee/, profile/, presentation/, LiveControlPage/, UserAccountPage/ ...
+│   ├── components/     # By area: public/, organizer/, speaker-portal/, partner/, attendee/, user/, auth/, shared/ ...
+│   ├── features/       # Feature modules (profile/)
+│   ├── services/       # API service layer (no direct fetch from components)
+│   ├── hooks/  stores/ contexts/   # React Query hooks, Zustand stores, contexts
+│   ├── types/generated/            # TypeScript types generated from docs/api/*.openapi.yml
+│   ├── config/         # Runtime configuration (no direct process.env access)
+│   ├── i18n/           # i18next setup
+│   ├── pwa/  mocks/  schemas/  theme/  styles/  utils/  lib/  data/  test/
+│   └── App.tsx, main.tsx
+├── public/
+│   ├── locales/        # 10 locales: de, en, fr, it, rm, es, fi, nl, ja, gsw-BE
+│   └── icons/  assets/  manifest.webmanifest  offline.html  robots.txt
+├── e2e/                # Playwright: organizer/, speaker/, partner/, auth/, workflows/, regression/, helpers/, fixtures/, *.spec.ts
+├── scripts/            # prerender.mjs, preview-prerender.mjs, check-api-types.sh, i18n/
+├── vite.config.ts  playwright.config.ts  tailwind.config.js
+└── package.json
 ```
 
 ## Infrastructure Structure
 
 ```
 infrastructure/
-├── lib/                               # CDK construct library
-│   ├── core-infrastructure-stack.ts  # Core AWS resources
-│   ├── domain-service-stack.ts       # Service-specific resources
-│   ├── frontend-stack.ts             # Frontend deployment
-│   └── monitoring-stack.ts           # Observability resources
-├── bin/                               # CDK applications
-│   ├── core-app.ts                   # Core infrastructure app
-│   ├── domain-app.ts                 # Domain services app
-│   └── frontend-app.ts               # Frontend app
-├── environments/                      # Environment configs
-│   ├── dev.ts                        # Development environment
-│   ├── staging.ts                    # Staging environment
-│   └── prod.ts                       # Production environment
-├── cdk.json                          # CDK configuration
-├── package.json                      # CDK dependencies
-└── tsconfig.json                     # TypeScript configuration
+├── bin/batbern-infrastructure.ts   # CDK app: instantiates all stacks
+├── lib/
+│   ├── stacks/        # One file per stack: dns, network, secrets, database, bastion, storage,
+│   │                  # event-bus, monitoring, cicd, cognito, ses, inbound-email, cluster,
+│   │                  # event-management, speaker-coordination, partner-coordination,
+│   │                  # attendee-experience, company-management, api-gateway-service,
+│   │                  # api-gateway, frontend (also used for FrontendBeta), auto-shutdown
+│   ├── constructs/    # domain-service-construct (Fargate + Service Connect), alarms, rds-cluster, vpc ...
+│   ├── lambda/        # image-resize (CDN), triggers/ (Cognito Lambda triggers)
+│   ├── config/        # dev-, staging- (= production), prod-config.ts, environment-config.ts
+│   └── utils/
+├── lambda/            # github-issues-integration (alarm → issue), ses-event-logger
+├── test/              # unit/, integration/, e2e/ (Jest)
+└── package.json       # deploy:staging:* layer scripts
 ```
 
-## API Gateway Structure
+## End-to-End and Contract Tests
 
 ```
-api-gateway/
-├── src/main/java/ch/batbern/gateway/
-│   ├── config/                        # Gateway configuration
-│   │   ├── SecurityConfig.java
-│   │   ├── CorsConfig.java
-│   │   └── RateLimitConfig.java
-│   ├── filter/                        # Request/response filters
-│   │   ├── AuthenticationFilter.java
-│   │   ├── LoggingFilter.java
-│   │   └── RateLimitFilter.java
-│   ├── route/                         # Route configurations
-│   │   ├── EventRoutes.java
-│   │   ├── SpeakerRoutes.java
-│   │   └── PartnerRoutes.java
-│   └── exception/                     # Gateway exceptions
-│       └── GatewayException.java
-├── src/main/resources/
-│   ├── application.yml                # Gateway configuration
-│   └── routes/                        # Route definitions
-└── build.gradle                      # Gateway dependencies
-```
-
-## End-to-End Tests Structure
-
-```
-e2e-tests/
-├── tests/                             # Test specifications
-│   ├── organizer/                     # Organizer workflows
-│   │   ├── event-creation.spec.ts
-│   │   └── speaker-management.spec.ts
-│   ├── speaker/                       # Speaker workflows
-│   │   ├── invitation-response.spec.ts
-│   │   └── material-upload.spec.ts
-│   ├── partner/                       # Partner workflows
-│   │   ├── analytics-dashboard.spec.ts
-│   │   └── roi-reports.spec.ts
-│   └── attendee/                      # Attendee workflows
-│       ├── event-registration.spec.ts
-│       └── content-search.spec.ts
-├── fixtures/                          # Test data
-│   ├── events.json
-│   ├── speakers.json
-│   └── companies.json
-├── page-objects/                      # Page object models
-│   ├── EventPage.ts
-│   ├── SpeakerPage.ts
-│   └── DashboardPage.ts
-├── utils/                            # Test utilities
-│   ├── auth-helper.ts
-│   └── data-factory.ts
-├── playwright.config.ts              # Playwright configuration
-└── package.json                      # Test dependencies
+bruno-tests/                # Layer 2: API contract tests (bruno.json, environments/, one folder per API)
+web-frontend/e2e/           # Layer 3: Playwright, role projects chromium (organizer), speaker, partner
+infrastructure/test/e2e/    # Layer 4: CDK / AWS resource checks
+scripts/ci/                 # Layer 1: smoke, CORS, header propagation, access-control checks
 ```
 
 ## Scripts Structure
 
 ```
 scripts/
-├── development/                       # Development scripts
-│   ├── setup-local-env.sh           # Local environment setup
-│   ├── start-services.sh            # Start all services
-│   └── generate-test-data.sh        # Generate test data
-├── deployment/                       # Deployment scripts
-│   ├── deploy-to-staging.sh         # Staging deployment
-│   ├── deploy-to-production.sh      # Production deployment
-│   └── rollback.sh                  # Rollback script
-├── maintenance/                      # Maintenance scripts
-│   ├── backup-database.sh           # Database backup
-│   ├── clear-cache.sh               # Cache clearing
-│   └── health-check.sh              # System health check
-└── ci/                               # CI/CD scripts
-    ├── build-and-test.sh            # Build and test pipeline
-    ├── security-scan.sh             # Security scanning
-    └── performance-test.sh          # Performance testing
+├── dev/       # start-all-native.sh, stop/restart/status, sync-users-from-cognito.sh, anonymized snapshot, seeds
+├── ci/        # run-bruno-tests.sh, smoke/CORS/header tests, access-control-check.py, promote-ecr-tag.sh, update-ecs-task.sh ...
+├── auth/      # get-token.sh, refresh-token.sh, setup-test-users.sh
+├── deploy/    # publish-beta-frontend.sh
+├── staging/   # data uploads and bootstrap-user sync against the production account
+├── config/    # sync-backend-config.sh, validate-backend-config.sh
+├── db/  e2e/  data/  test/
+└── update-versions.js   # generates docs/versions.json
 ```
 
 ## Documentation Structure
 
 ```
 docs/
-├── architecture/                      # Architecture documentation
-│   ├── 01-system-overview.md
-│   ├── 02-infrastructure-deployment.md
-│   ├── 03-data-architecture.md
-│   ├── 04-api-design.md
-│   ├── 05-frontend-architecture.md
-│   ├── 06-backend-architecture.md
-│   ├── 07-development-standards.md
-│   ├── 08-operations-security.md
-│   ├── 09-aiml-architecture.md
-│   ├── coding-standards.md           # Coding standards and conventions
-│   ├── tech-stack.md                 # Technology stack details
-│   ├── source-tree.md                # This file - source tree structure
-│   └── index.md                      # Architecture overview
-├── api/                              # API documentation
-│   ├── openapi.yml                   # OpenAPI specification
-│   ├── endpoints/                    # Endpoint documentation
-│   └── examples/                     # Request/response examples
-├── deployment/                       # Deployment guides
-│   ├── local-setup.md                # Local development setup
-│   ├── staging-deployment.md         # Staging deployment guide
-│   └── production-deployment.md      # Production deployment guide
-├── guides/                           # Developer guides
-│   ├── getting-started.md            # Getting started guide
-│   ├── testing-guide.md              # Testing best practices
-│   └── troubleshooting.md            # Common issues and solutions
-└── prd/                              # Product requirements
-    ├── epic-*.md                     # Epic specifications
-    └── user-stories/                 # User story details
+├── architecture/   # This folder: numbered architecture docs, ADR-*.md, tech-stack, coding standards
+├── api/            # OpenAPI specs (*.openapi.yml): the API contract
+├── prd/            # Epic PRDs (epic-*.md)
+├── plans/          # Implementation and operations plans
+├── guides/         # Developer guides (local setup, OpenAPI generation, Flyway, HTTP clients ...)
+├── deployment/     # CI/CD pipeline guide and setup
+├── operations/     # runbooks.md, post-mortem template
+├── security/       # e.g. owasp-llm-agentic-checklist.md
+├── watch-app/      # Watch app PRD, architecture, UX
+├── stories/archived/  # Older story files, by epic (newer stories are in _bmad-output/implementation-artifacts/)
+├── testing/  qa/  specs/  ux/  wireframes/  user-guide/  migration/  presentation/  trainings/  templates/  assessment/
+└── versions.json   # Generated technology versions
 ```
 
 ## Key Directory Conventions
 
 ### Naming Conventions
-- **Directories**: `kebab-case` for multi-word directories
-- **Java packages**: `lowercase` following Java conventions
-- **TypeScript files**: `camelCase.ts` or `PascalCase.tsx` for components
-- **Configuration files**: `kebab-case.yml` or `camelCase.json`
+- **Directories**: `kebab-case` for multi-word directories (`event-management-service`)
+- **Java packages**: lowercase, rooted at `ch.batbern.{service}`
+- **TypeScript files**: `camelCase.ts`, `PascalCase.tsx` for components
+- **Flyway migrations**: `V{n}__description.sql`, numbered per service
 
 ### File Organization Principles
-1. **Domain Separation**: Each bounded context has its own service directory
-2. **Layered Architecture**: Clear separation of concerns within services
-3. **Shared Resources**: Common code in shared-kernel, reusable infrastructure
-4. **Test Proximity**: Tests close to the code they test
-5. **Configuration Management**: Environment-specific configs in dedicated directories
+1. **Service ownership**: each service owns its tables and migrations
+2. **Contract first**: API shapes live in `docs/api/*.openapi.yml`; Java interfaces and TypeScript
+   types are generated from them
+3. **Shared code** goes in `shared-kernel`, never duplicated per service
+4. **Tests next to code**: `src/test` per module, Playwright in `web-frontend/e2e`
 
 ### Integration Points
-- **API Gateway**: Central entry point routing to domain services
-- **Shared Kernel**: Common types and events shared across services
-- **Infrastructure**: Shared AWS resources and deployment configurations
-- **Frontend**: Single React application consuming all domain APIs
-
-This structure supports the Domain-Driven Design approach with clear boundaries between bounded contexts while maintaining shared infrastructure and common patterns across the platform.
+- **API gateway**: single entry for the frontend and the watch app; routes by path prefix
+  (`DomainRouter`)
+- **Service to service**: HTTP to VPC-only `/internal/**` endpoints via ECS Service Connect
+  (`http://{service}:8080`), no end-user JWT forwarded
+- **Shared kernel**: common types, events and security components
+- **Frontend**: one React application consuming all APIs through its service layer

@@ -8,8 +8,8 @@ Version history and release notes for the BATbern platform. Releases follow [Sem
 - **MINOR**: New features (backward compatible)
 - **PATCH**: Bug fixes and minor improvements
 
-**Current Version**: v1.3.1
-**Last Updated**: 2026-06-25
+**Current Version**: v1.4.0
+**Last Updated**: 2026-11-04
 
 ---
 
@@ -26,24 +26,34 @@ Each release includes:
 
 ---
 
-## Upcoming Releases
+## Upcoming
 
-### v1.4.0 - Attendee Contribution + Spring Boot 4 `[PLANNED]`
+Only items that are not live yet. Everything else is listed under its release below.
 
-**Type**: Minor Release (Epic 7 finalization + Epic 13 groundwork)
-
-**Planned Features — Epic 7 (Attendee Experience, in review)**:
-- 📋 "The Slides Are Online" mail — auto-created organizer task (~1 day post-event) emailing active registrants
-- 📋 Thank-the-Organizers — one-click post-event thank-you with optional note + public appreciation counter
-- 📋 The Apéro Continues — time-boxed per-session post-event Q&A that freezes onto the session archive
-- 📋 Attendee Event History — logged-in dashboard of events the attendee registered for / attended
-- 📋 Curated Thank-You Marquee — feature selected thank-you notes in the public homepage marquee
-
-> **ℹ️ Note**: Several Epic 7 attendee touchpoints already shipped incrementally in **v1.3.1** (dashboard greeting, pre-event Q&A visibility, Thank-the-Organizers navigation button). The items above track what remains for the v1.4.0 cut.
-
-**Planned Features — Platform**:
-- 📋 Epic 13: Spring Boot 4 migration across all backend services (SB 3.5 OSS support ends 2026-06-30)
+- 📋 Epic 16 Mail Center: removal of the old compose screens (Story 16.8c, after one release and owner go); HTML in Java mails moved to templates (16.12); one mail value for the email service (16.13)
+- 📋 Epic 13 close-out: Jackson 3 switch-over, dependency versions handed back to the Spring Boot BOM
+- 📋 Epic 15: LinkedIn post drafts (Story 15.8)
 - 📋 Apple / generic OIDC SSO (Story 12-10) — extends "Continue with Google" with additional providers
+- 📋 Epic 3: production import of the historical data (pending a user trigger)
+
+---
+
+## v1.4.x - Current Release
+
+### v1.4.0 - Event Page, Spring Boot 4, Mail Center & BATbern60 Fixes `[2026-11-04]`
+
+**Type**: Minor Release (Epics 13, 14, 15, 16)
+
+Covers everything that went live between v1.3.1 (2026-06-15) and 2026-11-04. The platform deploys continuously; each entry carries the date it went live, newest first.
+
+**Bug Fix — Raising the Capacity Moves the Waitlist Up (2026-11-04)**:
+- ✅ (#1208) Saving the registration capacity now gives every free place to the waitlist, in waitlist order, and each promoted person gets the usual "you are registered" mail. On 4 November BATbern60 went from 220 to 250 places and nobody of the 42 people waiting moved up: until now the waitlist only moved by one place when someone cancelled. Saving the same capacity again also fills places that are already free. A cancellation promotes only while there is a free place, so a participant added over the capacity by an organizer no longer pulls someone in. Removing the capacity promotes everyone waiting.
+
+**Improvements and Bug Fixes — Presenter, Templates, Q&A (2026-11-04)**:
+- ✅ The moderator presentation is made for the big screen: darker background, all text white, type and pictures about 1.5 to 2 times larger, the agenda and the speaker cards sized to their content. Session slides now sit beside the agenda sidebar instead of under it.
+- ✅ Saving a mail as a template works with a normal name. "Save as template" in the mail composer and "New Template" in Administration accepted only a key in lowercase with hyphens: the composer kept Save disabled for "Partner Info", Administration sent it and showed only "could not be saved". The name is now turned into the key, which is shown before saving.
+- ✅ Visitors who are not logged in see on an open session Q&A without questions "Anmelden, um eine Frage zu stellen oder mitzudiskutieren", with a link to the login.
+- ✅ After login, the platform returns to the page that asked for it instead of always opening the dashboard. This also keeps the confirmation link for an earlier profile (#1183) working for someone who was not logged in yet.
 
 **Bug Fix — Top menu fits on laptop screens (2026-11-03)**:
 - ✅ On screens between 1200 and 1440 pixels wide, the organizer menu was wider than the window and the page scrolled sideways (bell and profile cut off). There the menu now shows icons only; hovering an icon shows its name. From 1440 pixels the names show as before.
@@ -80,15 +90,6 @@ Each release includes:
 - ✅ Attachments of incoming mail up to 25 MB are kept with the conversation and open with a click; they are deleted together with the conversation.
 - ✅ Organizers answer a conversation directly from the mail page. The answer goes out as "{name} via BATbern", the speaker's reply comes back into the same conversation, and every organizer sees who answered what. Handing a conversation to another organizer sends them one short mail with a link.
 
-**Bug Fix — Raising the Capacity Moves the Waitlist Up (2026-11-04)**:
-- ✅ Saving the registration capacity now gives every free place to the waitlist, in waitlist order, and each promoted person gets the usual "you are registered" mail. On 4 November BATbern60 went from 220 to 250 places and nobody of the 42 people waiting moved up: until now the waitlist only moved by one place when someone cancelled. Saving the same capacity again also fills places that are already free. A cancellation promotes only while there is a free place, so a participant added over the capacity by an organizer no longer pulls someone in. Removing the capacity promotes everyone waiting.
-
-**Improvements and Bug Fixes — Presenter, Templates, Q&A (2026-11-04)**:
-- ✅ The moderator presentation is made for the big screen: darker background, all text white, type and pictures about 1.5 to 2 times larger, the agenda and the speaker cards sized to their content. Session slides now sit beside the agenda sidebar instead of under it.
-- ✅ Saving a mail as a template works with a normal name. "Save as template" in the mail composer and "New Template" in Administration accepted only a key in lowercase with hyphens: the composer kept Save disabled for "Partner Info", Administration sent it and showed only "could not be saved". The name is now turned into the key, which is shown before saving.
-- ✅ Visitors who are not logged in see on an open session Q&A without questions "Anmelden, um eine Frage zu stellen oder mitzudiskutieren", with a link to the login.
-- ✅ After login, the platform returns to the page that asked for it instead of always opening the dashboard. This also keeps the confirmation link for an earlier profile (#1183) working for someone who was not logged in yet.
-
 **Bug Fixes — Clearer Registration Status on the Event Page (2026-11-02)**:
 - ✅ A logged-in visitor who is not registered no longer sees "Anmeldung stornieren". The page says instead under which address they are not registered, with a link for a registration made with another address. On 2 November a participant asked four times for a cancellation link and waited for it, although there was no registration to cancel. Registered visitors cancel directly in the event header, as before. Visitors who are not logged in still get the cancellation link by e-mail; the dialog now asks for the address they registered with and says that no mail means no registration under that address (#1183).
 
@@ -111,9 +112,65 @@ Each release includes:
 - ✅ Partner meeting invites and cancellations are sent again. Since 24 October every one of them failed silently: the mail goes to all partners and organizers in one To: line, and the address check introduced with #1104 read that whole line as one invalid address. The organizer saw no error. An address that cannot be delivered is now left out with a warning, and the others still get the mail.
 - ✅ The meeting shows "invite sent" only when the invite really went out. Before, it was marked as sent as soon as the button was pressed, even when sending then failed (BATbern60, 30 October). A failed send now shows an error to the organizer and leaves the meeting unmarked, so it can simply be sent again.
 
+**New Feature — One Composer for Every Audience (2026-11-01)**:
+- ✅ "+ New mail" on the event's Communications tab opens one composer for newsletter, registrants, speakers and venue: template, language, the recipients with who is left out and why, a preview per recipient, a test send to the organizers and the real send with a confirmation (#1174, Stories 16.8a + 16.8b).
+- ✅ "What went out" marks a mail that is still sending, offers "Retry failed" for a newsletter that did not reach everyone, and hides test sends unless "Show test sends" is on.
+
+**New Feature — Mail Page on the Event (2026-10-31)**:
+- ✅ The event's Communications tab becomes the mail page (#1166, Epic 16). "What went out" lists every mail the platform sent for the event, with filters per audience and delivered / failed counts; automatic mails are grouped per template and day. "Handled automatically" counts what the platform dealt with on its own.
+- ✅ Every outgoing mail is recorded, with one-click links, codes and passwords removed, and kept 12 months after the event.
+- ✅ Delivery status per recipient: bounces, complaints and rejections mark a recipient as failed, deliveries as delivered. A bounce of a single mail never unsubscribes anyone from the newsletter.
+- ✅ Deleting an event with newsletter sends no longer fails with a server error (#1158).
+
+**Bug Fixes — Replies and Calendar Declines (2026-10-30)**:
+- ✅ Replies to platform mails that are not a keyword are forwarded to the organizers instead of being discarded (#1164, Story 16.0).
+- ✅ A keyword reply ("cancel") or a declined calendar invite no longer cancels a registration at once: the attendee gets the deregistration link and the place is released only when they click it (#1165).
+
+**Security — Public Pages Show Only Public Data (2026-10-28)**:
+- ✅ Visitors who are not logged in no longer see organizer planning data: the topic list on the archive page shows only title, category and how often a topic ran; event pages no longer show which organizer runs or last edited an event.
+- ✅ The About page no longer exposes the organizers' email addresses; contact stays info@batbern.ch. The partner list no longer shows when a partnership ends; "partner since" stays.
+- ✅ The registration confirmation page shows the email address masked (n***@example.com). "Create account" no longer fills in the address; you type it once.
+- ✅ After every deploy, an automated check calls every non-public API operation without login and fails the deploy if one answers. The weekly security scan now covers all 19 API areas instead of 13.
+
+**Bug Fixes — Newsletter Sending, Paged Lists and Request Origin (2026-10-28)**:
+- ✅ A newsletter send no longer skips subscribers when others unsubscribe while it runs. For BATbern60, 13 of 1060 were missed this way. "Retry" no longer mails addresses that were deleted or unsubscribed in the meantime.
+- ✅ Paged lists show every entry exactly once. The newsletter subscriber list showed some subscribers twice and hid about 337 of them; the same fix applies to every paged list.
+- ✅ The platform no longer trusts an IP address that a caller can set in a request header. This affected an internal access rule and the protection against too many requests.
+- ✅ Automated tests now check the access rules exactly as they run in production, and the API tests for distribution lists and participant exports run on every deploy.
+
+**Bug Fixes — Missing Translations (2026-10-28)**:
+- ✅ French, Italian, Romansh, Spanish, Finnish, Dutch, Japanese and Bernese German no longer show "[MISSING]" texts. This covers the registration status on the event page, cancelling a registration, the waitlist step of the registration form, the status chips on event cards, and the organizer's waitlist table.
+- ✅ A test now fails the build if a "[MISSING]" placeholder is added to any language file again.
+
+**Bug Fixes — Waitlist Mail and Capacity Badge (2026-10-28)**:
+- ✅ Logged-in users who register for a full event now get the waitlist mail, like everyone who registers through the form. Before, they only saw the message on the page.
+- ✅ On the homepage, a visitor who is already registered for a full event sees "You're registered!" in the event details, as in the hero card, instead of "Full — join waitlist". Someone on the waitlist sees "You're on the waitlist".
+- ✅ The capacity badge ("spots remaining", "fully booked", "on waitlist") is translated into all ten languages. Eight of them showed an English placeholder.
+
+**Security — User Directory for Organizers Only (2026-10-28)**:
+- ✅ The user list, the user search and other people's user records can only be read by organizers. Everyone reads their own profile under "My Profile" as before.
+- ✅ On their company page, speakers see the company's details and sessions. The lists of colleagues and speakers of the company are shown to organizers only.
+- ✅ Creating, changing, publishing and deleting events, sessions and speaker-pool entries, topic selection and the notification centre are reserved for organizers.
+- ✅ Unknown API addresses now answer "not found" instead of a server error.
+
+**Bug Fixes — Account Confirmation and Registration Changes (2026-10-27)**:
+- ✅ "Resend confirmation code" now actually sends the mail. Before, it showed success but nothing was sent, so people who had not confirmed their new account right away could neither confirm it nor reset the password (#1141).
+- ✅ Login, "Forgot password" and "Create account" recognise an account that is not confirmed yet and offer to send a new confirmation link, instead of "unknown error", "no account for this e-mail" or "account already exists".
+- ✅ Changing the status of a registration or deleting it is reserved for organizers. Attendees keep cancelling their own registration through the link in their confirmation mail.
+
+**Bug Fixes — Email Aliases Work Again (2026-10-27)**:
+- ✅ Mail to `ok@`, `info@`, `events@`, `partner@`, `support@` and the per-event aliases `batbern{N}-speaker@`, `batbern{N}-moderator@`, `batbern{N}-participants@` is forwarded again. The organizer-only aliases had refused every sender, organizers included (#1130).
+- ✅ The organizer-only aliases now also check that the sender's mail provider vouches for the address (DMARC, or a DKIM signature of the sender's domain). A forged organizer address can no longer mail all speakers or participants. Organizers sending from a mailbox that does neither get a rejection and should send from an address whose provider does.
+- ✅ Each mail is forwarded at most once, even if delivery is retried.
+- ✅ Out-of-office replies and replies to `noreply@` are dropped quietly instead of raising the abuse alarm.
+
 **Bug Fixes — Apéro Session Type and Material Status (2026-10-26)**:
 - ✅ The apéro is stored as one session type again (`networking`, still shown as "Apéro"). A second value, `aperitif`, had been added in June for the same slot; the Apple Watch app 2.3 does not know it and could not load the event at all (#1123).
 - ✅ Speakers & Sessions table: a session shows its material as complete as soon as one file is uploaded, whatever its type. The "Pending" state for a session with only a PDF and no slide deck is gone (#1123).
+
+**Security — Organizer-only Participant Data (2026-10-26)**:
+- ✅ Registration lists, the per-event mailing-list addresses and admin settings can only be read by organizers.
+- ⚠️ Until the email forwarding moves into the backend (follow-up release), mail to `support@` and `batbern{N}-moderator@` is not forwarded. Incoming mail is kept for 7 days and re-delivered once the follow-up ships.
 
 **New Feature — Next BAT Dates on the Homepage (2026-10-25)**:
 - ✅ Below the venue map, the homepage shows the next three BAT dates after the featured event: one card each with date and title (#1110). The list includes events that are planned but not yet published.
@@ -155,47 +212,12 @@ Each release includes:
 - ✅ Newsletter tasks that a later announcement has replaced are closed automatically: Topic Announcement once the speakers or the agenda are public, Speaker Lineup once the agenda is public.
 - ✅ Catering is now due **5 days** before the event (final headcount), and two new standard tasks exist: **Namensschilder** (2 days before) and **Wein** (event day). For an existing event, add them from the event's task templates.
 
-**Security — Public Pages Show Only Public Data (2026-10-28)**:
-- ✅ Visitors who are not logged in no longer see organizer planning data: the topic list on the archive page shows only title, category and how often a topic ran; event pages no longer show which organizer runs or last edited an event.
-- ✅ The About page no longer exposes the organizers' email addresses; contact stays info@batbern.ch. The partner list no longer shows when a partnership ends; "partner since" stays.
-- ✅ The registration confirmation page shows the email address masked (n***@example.com). "Create account" no longer fills in the address; you type it once.
-- ✅ After every deploy, an automated check calls every non-public API operation without login and fails the deploy if one answers. The weekly security scan now covers all 19 API areas instead of 13.
-
-**Bug Fixes — Newsletter Sending, Paged Lists and Request Origin (2026-10-28)**:
-- ✅ A newsletter send no longer skips subscribers when others unsubscribe while it runs. For BATbern60, 13 of 1060 were missed this way. "Retry" no longer mails addresses that were deleted or unsubscribed in the meantime.
-- ✅ Paged lists show every entry exactly once. The newsletter subscriber list showed some subscribers twice and hid about 337 of them; the same fix applies to every paged list.
-- ✅ The platform no longer trusts an IP address that a caller can set in a request header. This affected an internal access rule and the protection against too many requests.
-- ✅ Automated tests now check the access rules exactly as they run in production, and the API tests for distribution lists and participant exports run on every deploy.
-
-**Bug Fixes — Missing Translations (2026-10-28)**:
-- ✅ French, Italian, Romansh, Spanish, Finnish, Dutch, Japanese and Bernese German no longer show "[MISSING]" texts. This covers the registration status on the event page, cancelling a registration, the waitlist step of the registration form, the status chips on event cards, and the organizer's waitlist table.
-- ✅ A test now fails the build if a "[MISSING]" placeholder is added to any language file again.
-
-**Bug Fixes — Waitlist Mail and Capacity Badge (2026-10-28)**:
-- ✅ Logged-in users who register for a full event now get the waitlist mail, like everyone who registers through the form. Before, they only saw the message on the page.
-- ✅ On the homepage, a visitor who is already registered for a full event sees "You're registered!" in the event details, as in the hero card, instead of "Full — join waitlist". Someone on the waitlist sees "You're on the waitlist".
-- ✅ The capacity badge ("spots remaining", "fully booked", "on waitlist") is translated into all ten languages. Eight of them showed an English placeholder.
-
-**Security — User Directory for Organizers Only (2026-10-28)**:
-- ✅ The user list, the user search and other people's user records can only be read by organizers. Everyone reads their own profile under "My Profile" as before.
-- ✅ On their company page, speakers see the company's details and sessions. The lists of colleagues and speakers of the company are shown to organizers only.
-- ✅ Creating, changing, publishing and deleting events, sessions and speaker-pool entries, topic selection and the notification centre are reserved for organizers.
-- ✅ Unknown API addresses now answer "not found" instead of a server error.
-
-**Bug Fixes — Account Confirmation and Registration Changes (2026-10-27)**:
-- ✅ "Resend confirmation code" now actually sends the mail. Before, it showed success but nothing was sent, so people who had not confirmed their new account right away could neither confirm it nor reset the password (#1141).
-- ✅ Login, "Forgot password" and "Create account" recognise an account that is not confirmed yet and offer to send a new confirmation link, instead of "unknown error", "no account for this e-mail" or "account already exists".
-- ✅ Changing the status of a registration or deleting it is reserved for organizers. Attendees keep cancelling their own registration through the link in their confirmation mail.
-
-**Bug Fixes — Email Aliases Work Again (2026-10-27)**:
-- ✅ Mail to `ok@`, `info@`, `events@`, `partner@`, `support@` and the per-event aliases `batbern{N}-speaker@`, `batbern{N}-moderator@`, `batbern{N}-participants@` is forwarded again. The organizer-only aliases had refused every sender, organizers included (#1130).
-- ✅ The organizer-only aliases now also check that the sender's mail provider vouches for the address (DMARC, or a DKIM signature of the sender's domain). A forged organizer address can no longer mail all speakers or participants. Organizers sending from a mailbox that does neither get a rejection and should send from an address whose provider does.
-- ✅ Each mail is forwarded at most once, even if delivery is retried.
-- ✅ Out-of-office replies and replies to `noreply@` are dropped quietly instead of raising the abuse alarm.
-
-**Security — Organizer-only Participant Data (2026-10-26)**:
-- ✅ Registration lists, the per-event mailing-list addresses and admin settings can only be read by organizers.
-- ⚠️ Until the email forwarding moves into the backend (follow-up release), mail to `support@` and `batbern{N}-moderator@` is not forwarded. Incoming mail is kept for 7 days and re-delivered once the follow-up ships.
+**New Feature — Cockpit Shows the Right Work at the Right Time (2026-10-24)**:
+- ✅ The attention cards on the event Cockpit hide completed, cancelled and not-yet-due tasks. A pending task that is already overdue shows "Trigger not reached yet" (#1105).
+- ✅ The event-day cards ("Start the presentation", "Open Live Control") show only on the event day, with rehearsal links before that.
+- ✅ The registrations card shows only from 90 % capacity or when someone is on the waitlist. The presentations card reads "n of m" and is due on the event day.
+- ✅ A new card lists speakers whose content is not yet quality-reviewed, once the speakers are public. The name-badge task links to the badge export.
+- ✅ The "my open tasks" widget lists all of my open tasks by the same rules. The task-side changes are listed under "Organizer Tasks Appear on Time".
 
 **Bug Fixes — Any Name and Every Deliverable Email Address Can Register (2026-10-23)**:
 - ✅ Names with a space in the first or last name (`Hông Ân`, `van der Berg`, `Maria José`) or in a non-Latin script no longer fail registration with "Server Error". One attendee had to misspell their own name to get through on 2026-10-22 (#1102).
@@ -215,6 +237,24 @@ Each release includes:
 - ✅ The **Active partnership** toggle (Partners → open a partner → Settings) now works. It previously appeared to switch but saved nothing — the control was rendered without a handler, so every flip was silently discarded. Deactivating ends the partnership as of today; re-activating restores it to open-ended.
 - ⚠️ The **Auto-renewal** switch and the "renewal date" line have been **removed** from that tab. Neither field has ever existed in the partner API, so the switch could never save and the date was always blank — it only looked like a setting. Nothing was lost, because nothing was ever stored. If automatic renewal is wanted as a real feature, it needs an API and a database column first.
 
+**New Feature — Stable Slot Assignment: Insert, Swap, Mobile Tap (2026-06-21)**:
+- ✅ Dropping a pool speaker onto an occupied slot inserts the talk and moves the later ones down, with their times recalculated; dropping a scheduled talk onto another swaps the two. A live preview shows the result while dragging (#806, Story 15.3).
+- ✅ ✕ "Remove from slot" sends a session back to the speaker pool.
+- ✅ On phones and tablets: tap a session, then tap a highlighted slot.
+- ✅ An insert that would overflow a full agenda is refused instead of losing a talk.
+
+**New Feature — Per-Event Agenda Shape (2026-06-21)**:
+- ✅ "Edit event type" on the slot assignment page changes slot count and duration, breaks, lunch and apéro for one event only, with a live schedule preview (#805, Story 15.2). The first save creates a per-event copy; events without a copy keep following the event-type template in Administration.
+- ✅ The apéro can be switched on as a structural slot at the end of the agenda.
+
+**Platform — Spring Boot 4 (2026-06-19)**:
+- ✅ All Java services run on Spring Boot 4 (#797, Epic 13). No visible change for organizers. Close-out (Jackson 3 switch-over, dependency-pin cleanup) is listed under Upcoming.
+
+**New Feature — Organizer "Add participant" (2026-06-16)**:
+- ✅ Organizers can manually add an existing user to an event **directly as a confirmed participant** from the Registrations tab (4th action button) — for VIPs, late phone/email requests, or colleagues — skipping the self-registration + email-confirmation step.
+- ✅ Existing-users-only picker (the shared `UserAutocomplete`); capacity respected with an explicit "add anyway" override; counts as a real attendee.
+- ✅ The added participant receives a dedicated **"you're registered — your place is confirmed"** email (event details + calendar invite + self-service cancel link) — not a "please confirm" or waitlist message.
+
 **Improvements — Organizer Communications (Epic 14, 2026-06-15)**:
 - ✅ Two "deregistration call" registrant-notice templates (DE + EN) — ask registrants of a fully-booked event to free their seat; selectable in Communications → Event registrants:
   - `registrant-notice-deregistration-call` — one-click cancel via a per-recipient `{{deregistrationUrl}}` (requires the send-side injection below; available once the backend deploys)
@@ -223,17 +263,13 @@ Each release includes:
 - ✅ New `batbern{N}-participants@batbern.ch` mailing alias fans out to every active registrant — "Way 2" (same audience as Way 1)
 - ✅ Consolidated the older bare `batbern{N}@batbern.ch` alias: now **deprecated** and forwards to the same participants resolution as `batbern{N}-participants@` (clearer name, matches `-speaker@`/`-moderator@`); logs a deprecation warning, sender auth unchanged (organizers only)
 
-**New Feature — Organizer "Add participant" (2026-06-16)**:
-- ✅ Organizers can manually add an existing user to an event **directly as a confirmed participant** from the Registrations tab (4th action button) — for VIPs, late phone/email requests, or colleagues — skipping the self-registration + email-confirmation step.
-- ✅ Existing-users-only picker (the shared `UserAutocomplete`); capacity respected with an explicit "add anyway" override; counts as a real attendee.
-- ✅ The added participant receives a dedicated **"you're registered — your place is confirmed"** email (event details + calendar invite + self-service cancel link) — not a "please confirm" or waitlist message.
+**New Feature — Lifecycle-Aware Event Page (Epic 14, 2026-06-15)**:
+- ✅ The event page has new tabs that follow the event's lifecycle: **Cockpit** (lifecycle spine, attention cards, metric tiles, event-day controls), **Speakers & Agenda** (pool, agenda, slots, 4-phase kanban, slot assignment in the tab), **Registrations** (status filter including the waitlist, counter), **Communications**, **Publishing**, **Wrap-up** (photos and thank-you notes) and **Details** (Info / Tasks / Settings) (#788).
+- ✅ Full mobile navigation: four main tabs in a bottom bar, the others under "More".
 
-> **Note**: The former "v1.3.0 — Speaker Authentication Unification (Epic 9)" plan has shipped in a
-> different form. Epic 9's JWT magic-link approach was **superseded** by Epic 11 (unified Cognito
-> speaker workflow) and Epic 12 (Google SSO), both released in v1.3.0 below.
 ---
 
-## v1.3.x - Current Release
+## v1.3.x - Previous Releases
 
 ### v1.3.1 - Q&A, Email Forwarding & Registrant-Notice Fixes `[2026-06-15]`
 
@@ -242,6 +278,7 @@ Each release includes:
 **Improvements**:
 - ✅ Speaker email alias (`batbernNN-speaker@`) now resolves to the primary speaker **and** co-speakers, and is delivered as a single visible message — all speakers in `To:`, the event organizer in `Cc:` — so the recipient list is verifiable at a glance. Forwarded mail now has dedicated SES delivery/bounce tracking, separate from newsletter list hygiene.
 - ✅ Early Epic 7 attendee touchpoints shipped incrementally: the attendee dashboard greets by profile first name; per-session Q&A is visible pre-event (from when speakers are published); and Thank-the-Organizers moved to a prominent navigation button.
+- ✅ Curated thank-you marquee (Story 7.7, #785, 2026-06-13): organizers feature selected thank-you notes, which then appear in the public homepage marquee. Anonymous notes cannot be featured. This completes Epic 7.
 
 **Bug Fixes**:
 - ✅ Removed Q&A posts are now dropped entirely from the thread instead of shown as tombstones; removing a question also drops its answers (posts stay soft-deleted in the database for audit).
@@ -250,7 +287,11 @@ Each release includes:
 
 ### v1.3.0 - Google SSO, Unified Speaker Workflow & Organizer/Admin Cluster `[2026-06-13]`
 
-**Type**: Minor Release (Epics 10, 11, 12 + partial Epic 7)
+**Type**: Minor Release (Epics 10, 11, 12 + Epic 7)
+
+> **Note**: The former "v1.3.0 — Speaker Authentication Unification (Epic 9)" plan has shipped in a
+> different form. Epic 9's JWT magic-link approach was **superseded** by Epic 11 (unified Cognito
+> speaker workflow) and Epic 12 (Google SSO), both released in v1.3.0 below.
 
 **New Features — Authentication (Epic 12)**:
 - ✅ "Continue with Google" single sign-on — Google OIDC federation at `auth.batbern.ch`
@@ -275,6 +316,21 @@ Each release includes:
 **New Features — Attendee Contribution (Epic 7, initial)**:
 - ✅ Topics From the Floor — logged-in attendees suggest future topics (tagged `source = community`); organizers triage in the topic-suggestion admin UI
 - ✅ "I Could Speak on That" — logged-in attendees self-nominate as speakers (session title + abstract); creates a `speaker_pool` entry at `IDENTIFIED` for organizer triage (no auto-provisioning)
+
+**New Features — Attendee Contribution (Epic 7, rest of the epic, #776, 2026-06-12)**:
+- ✅ "The Slides Are Online" mail — auto-created organizer task after the event; one click mails the active registrants (DE + EN)
+- ✅ Thank-the-Organizers — one-click post-event thank-you with optional note and a public appreciation counter
+- ✅ The Apéro Continues — time-boxed per-session Q&A that freezes onto the session archive page; settings per event
+- ✅ Attendee Event History — logged-in dashboard of the events the attendee registered for or attended
+
+**Also in this release (April – June 2026)**:
+- ✅ One-click registration for logged-in attendees (2026-05-06): register and unregister in a panel in the homepage event hero, without the registration wizard. (The confirmation mail with calendar invite for this path followed on 2026-10-25, see v1.4.0.)
+- ✅ Unconfirmed attendees can recover (#683, 2026-05-28): registration confirmation links are valid for 4 days instead of 48 hours, and a daily job resends the confirmation (fresh link, at most twice) to registrations and new accounts that are still unconfirmed
+- ✅ Speakers are registered as participants automatically when they commit to an event (#686, 2026-05-29)
+- ✅ Per-event mail aliases `batbern{N}-speaker@` and `batbern{N}-moderator@` (#686, 2026-05-29)
+- ✅ Name badges: XLSX export (first name, name, company, role) (#686) and printable Word badges for Avery L4784 sheets with the BAT logo (#688), both 2026-05-29
+- ✅ Venue coordination (#690, 2026-05-29): Administration → Venue & Catering holds the venue, catering and coordinator contacts; the event sends timetable and catering-offer mails from templates with a preview. The speaker drawer's history also shows rejected abstracts
+- ✅ Additional email addresses are verified by mail (Verified / Unverified, Resend), and "Continue with Google" with a verified additional address signs in to the existing account instead of creating a second one (#745, 2026-06-07)
 
 **Improvements**:
 - ✅ Company picker rework — the company field on the profile and registration forms is now a
@@ -303,7 +359,7 @@ Each release includes:
 
 ---
 
-## v1.2.x - Current Release
+## v1.2.x - Previous Releases
 
 ### v1.2.2 - Email & Public Event Page Fixes `[2026-04-07]`
 
@@ -714,8 +770,9 @@ Each release includes:
 
 | Version | Status | Support End Date |
 |---------|--------|------------------|
-| v1.3.0 | **Current** | Until v1.4.0 release |
-| v1.2.x | Security fixes only | Until v1.4.0 release |
+| v1.4.0 | **Current** | Until the next release |
+| v1.3.x | Superseded | Ended with v1.4.0 (2026-11-04) |
+| v1.2.x | Superseded | Ended with v1.4.0 (2026-11-04) |
 | v1.1.x | Unsupported | Ended 2026-05-01 |
 | v0.9.x | Unsupported | Ended 2026-01-01 |
 | v0.8.x and earlier | Unsupported | Ended 2025-06-01 |

@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-21
-last_updated: 2026-11-03
+last_updated: 2026-11-04
 project: BATbern
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -113,7 +113,7 @@ development_status:
   5-15-partner-meeting-coordination: done
   epic-5-retrospective: optional
 
-  # Epic 6: Speaker Self-Service Portal - IN PROGRESS (all stories deployed to staging, friend working)
+  # Epic 6: Speaker Self-Service Portal - COMPLETE
   epic-6: done
   6-0-speaker-coordination-service-foundation: done
   6-1-automated-speaker-invitation-system: done
@@ -123,7 +123,7 @@ development_status:
   6-5-automated-deadline-reminders: done
   epic-6-retrospective: optional
 
-  # Epic 7: Attendee Experience — Right-Sized Contribution & Touchpoints - IN PROGRESS (rewritten 2026-06-09)
+  # Epic 7: Attendee Experience — Right-Sized Contribution & Touchpoints - COMPLETE (#776, #777, #785; rewritten 2026-06-09)
   epic-7: done
   7-1-topics-from-the-floor: done
   7-2-i-could-speak-on-that: done
@@ -134,7 +134,7 @@ development_status:
   7-7-curated-thank-you-marquee: done
   epic-7-retrospective: optional
 
-  # Epic 8: Advanced Partner Analytics & Voting - IN PROGRESS (8.4 added 2026-02-23)
+  # Epic 8: Partner Coordination - COMPLETE 2026-02-22 (8.4 added 2026-02-23)
   epic-8: done
   8-0-partner-portal-shell: done
   8-1-partner-analytics-dashboard: done
@@ -143,11 +143,12 @@ development_status:
   8-4-partner-notes: done
   epic-8-retrospective: optional
 
-  # Epic 9: Speaker Authentication - BACKLOG
+  # Epic 9: Speaker Authentication - SUPERSEDED by Epic 11 (ADR-009); "done" means closed, nothing built under this key
   epic-9: done
   epic-9-retrospective: optional
 
-  # Epic 10: Additional Stories - IN PROGRESS (split into 10.1 + 10.2, 2026-02-24)
+  # Epic 10: Additional Stories - COMPLETE (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
+  # 10.26 forwarder Lambda replaced by forwarding in EMS (#1137, 2026-10-27)
   epic-10: done
   10-1-event-management-administration-page: done
   10-2-email-template-management: done
@@ -229,6 +230,8 @@ development_status:
   epic-12-retrospective: optional
 
   # Epic 13: Spring Boot 4 Migration — IN PROGRESS (docs/plans/spring-boot-4-migration.md)
+  # 2026-11-04: SB 4.0.7 LIVE via #797 (merged 2026-06-19). Still open: 13.4 (preferred-json-mapper: jackson2
+  #   is still set in every service's application.yml) and 13.5. The history below is from June 2026.
   # Driver: SB 3.5 OSS support ends 2026-06-30; migrating 3.5.7 → 4.0.7.
   # STRATEGY REVISION (2026-06-13, PO): single SB version source in settings.gradle pluginManagement,
   #   version-less plugins{} in every module, NO per-module pins → whole estate moves to SB4 together.
@@ -250,15 +253,35 @@ development_status:
   13-5-unpin-bom-managed-dependency-versions: ready-for-dev  # follow-up (2026-06-19): delegate SB-BOM-managed pins (postgresql override 42.7.7 → BOM 42.7.11) + codify pin policy; NO floating versions
   epic-13-retrospective: optional
 
+  # Epic 14: Event Detail Page — Lifecycle-Aware Redesign - COMPLETE (docs/prd/epic-14-event-detail-redesign.md)
+  # Shipped as one PR, #788 (merged 2026-06-15). Delivered per phase via tech specs
+  # (_bmad-output/implementation-artifacts/spec-14-*.md, all status 'done'), not per-story files.
+  epic-14: done
+  14-a-event-detail-shell: done
+  14-b-cockpit: done
+  14-c-speakers-agenda: done
+  14-d-registrations: done
+  14-e-communications-tab: done
+  14-f-1-wrapup-tab: done
+  14-f-2-details-tab: done
+  14-f-3-topic-overlay: done
+  14-f-4-publishing-settings: done
+  14-f-5-cockpit-overview-removal: done
+  14-g-mobile-navigation: done
+  epic-14-retrospective: optional
+
   # Epic 15: Post-Event #2 Hardening — IN PROGRESS (docs/prd/epic-15-post-event-2-hardening.md)
   # Architectural/multi-layer follow-ups from the 2nd live event. Quick-wins (#1,#8b,#12-17) shipped
   # on feature/event-2-feedback-quick-wins (merged #799). 15.6/#790 already fixed (commit 80195136).
   # Each story independently prod-deployable (staging IS prod). Sequencing: 15.5→15.7→15.1→15.2→15.3→15.4→15.8+15.9.
+  # 2026-11-04 audit (#1210): 15-1 back to in-progress (only P1 live via #800; P2 watch + P3 WS teardown open,
+  #   WebSocketConfig and @stomp/stompjs still present). 15-3 done (#806 merged 2026-06-21).
+  #   15-4 back to backlog: it was set to done in #805 (a 15.2 PR) but no email_domains / mismatch flag exists in code.
   epic-15: in-progress
-  15-1-websockets-to-rest-polling-live-agenda: done
+  15-1-websockets-to-rest-polling-live-agenda: in-progress  # P1 live (#800); P2 + P3 open, one long story by decision 2026-06-20
   15-2-per-event-editable-event-type-config: done
-  15-3-stable-slot-assignment-insert-swap-mobile-tap: review
-  15-4-company-email-domain-mismatch-warning: done
+  15-3-stable-slot-assignment-insert-swap-mobile-tap: done  # #806
+  15-4-company-email-domain-mismatch-warning: backlog  # see audit note above
   15-5-speaker-company-logo-presenter-live-control: done
   15-6-present-mode-agenda-title-overlap: done
   15-7-notify-speaker-moderator-on-new-qa-question: done
@@ -266,7 +289,7 @@ development_status:
   15-9-owasp-llm-agentic-security-checklist: done
   epic-15-retrospective: optional
 
-  # Epic 16: Mail Center — APPROVED 2026-10-30 (docs/prd/epic-16-mail-center.md)
+  # Epic 16: Mail Center — 16.0–16.11 LIVE by 2026-11-03; 16.8c gated, 16.12/16.13 backlog (docs/prd/epic-16-mail-center.md)
   # 16.0 = #1160 + #1161 (two PRs). Start with an explicit story path: older ready-for-dev stories sort first.
   # Sequence (owner decision 3): 16.0 (A, C, B) -> 16.1a -> 16.1b -> 16.3 -> 16.4, then 16.8 -> 16.9, then 16.2 + 16.6 for speakers, then all aliases, 16.5, 16.7.
   # 16.0-16.4 live 2026-10-31 (#1164, #1165, #1166). 16.2 split 2026-11-01: 16.2a speakers, 16.2b all aliases. 16.10 = Mail tab on user + partner detail (owner request 2026-10-31).

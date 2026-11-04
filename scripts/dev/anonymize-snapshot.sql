@@ -83,7 +83,12 @@ INSERT INTO _anon_keep_email(email) VALUES
   ('nissim@buchs.be'),
   ('nissim.buchs@me.com'),
   ('nissim.buchs@gmail.com'),
-  ('nissim.buchs@elca.ch');
+  ('nissim.buchs@elca.ch'),
+  -- Role test accounts (.env.test.local), so screenshot / E2E runs against an
+  -- anonymized local DB can log in. Test identities, not personal data.
+  ('batbern.organizer@berner-architekten-treffen.ch'),
+  ('success+batbern.speaker@simulator.amazonses.com'),
+  ('batbern.partner@berner-architekten-treffen.ch');
 
 CREATE TEMP TABLE _anon_keep_username(username text PRIMARY KEY);
 INSERT INTO _anon_keep_username(username)
@@ -303,6 +308,56 @@ CREATE UNIQUE INDEX _anon_email_map_new_uniq ON _anon_email_map(new_email);
 --    inline); it is also ~34 MB of the ~53 MB database and dev never reads it.
 -- ---------------------------------------------------------------------------
 TRUNCATE TABLE notifications;
+
+-- ---------------------------------------------------------------------------
+-- 3b. Free text in tables added after the first snapshot (Epic 7, Epic 16,
+--     #1137, #1183). Mail bodies, subjects and sender names carry names inline
+--     ("Liebe Frau ..."), which the email/username sweeps cannot see. They are
+--     replaced by neutral placeholders (not NULL) so the UI still renders.
+--     Each statement is skipped if its table/column does not exist (older dumps).
+-- ---------------------------------------------------------------------------
+DO $freetext$
+DECLARE
+  entry text[];
+  stmts text[][] := ARRAY[
+    ARRAY['mail_message',      'subject',          '''Sample subject'''],
+    ARRAY['mail_message',      'body_html',        '''<p>Sample message text.</p>'''],
+    ARRAY['mail_message',      'body_text',        '''Sample message text.'''],
+    ARRAY['mail_message',      'from_name',        'NULL'],
+    ARRAY['mail_message',      'attachments',      'NULL'],
+    ARRAY['mail_recipient',    'body_html',        '''<p>Sample message text.</p>'''],
+    ARRAY['mail_conversation', 'subject',          '''Sample conversation'''],
+    ARRAY['mail_conversation', 'counterpart_name', 'NULL'],
+    ARRAY['newsletter_sends',  'own_subject',      '''Sample newsletter'''],
+    ARRAY['newsletter_sends',  'own_body_html',    '''<p>Sample newsletter text.</p>'''],
+    ARRAY['user_merge_log',    'source_profile',   'NULL'],
+    ARRAY['user_merge_log',    'moved',            '''{}''::jsonb'],
+    ARRAY['user_merge_log',    'removed_rows',     '''{}''::jsonb'],
+    ARRAY['organizer_thanks',  'note',             '''Sample thank-you note.'''],
+    ARRAY['session_qna_post',  'body',             '''Sample question.'''],
+    ARRAY['session_proposals', 'proposed_abstract','''Sample abstract.''']
+  ];
+BEGIN
+  FOREACH entry SLICE 1 IN ARRAY stmts LOOP
+    PERFORM 1 FROM information_schema.columns
+     WHERE table_schema = 'public' AND table_name = entry[1] AND column_name = entry[2];
+    IF FOUND THEN
+      EXECUTE format('UPDATE %I SET %I = %s WHERE %I IS NOT NULL',
+                     entry[1], entry[2], entry[3], entry[2]);
+    END IF;
+  END LOOP;
+END
+$freetext$;
+
+-- Venue / catering contact persons (Story 10.26 venue coordination): stored as
+-- JSON in app_settings; the email sweep redacts the addresses but not the
+-- person's name or the salutation ("Liebe Gabriela").
+UPDATE app_settings
+   SET setting_value = regexp_replace(
+         regexp_replace(setting_value, '"name"\s*:\s*"[^"]*"', '"name":"Sample Contact"', 'g'),
+         '"salutation"\s*:\s*"[^"]*"', '"salutation":"Hello"', 'g')
+ WHERE setting_key = 'venue.coordination.config'
+   AND setting_value IS NOT NULL;
 
 -- ---------------------------------------------------------------------------
 -- 4. Structured PII columns.

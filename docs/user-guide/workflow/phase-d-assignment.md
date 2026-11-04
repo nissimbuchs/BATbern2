@@ -2,7 +2,9 @@
 
 > Assign speakers to time slots and publish the agenda
 
-> **Last Updated:** 2026-06-13 — Speaker states aligned to the 8-state model (ADR-009 / Epic 11); the removed `slot_assigned` / `confirmed` states replaced by derived `is_slot_assigned` / `is_publishable` flags.
+> **Last Updated:** 2026-11-04 — insert / swap with live preview, remove from slot, tap-to-assign on mobile (Story 15.3, #806); per-event **Edit event type** (Story 15.2, #805).
+>
+> **2026-06-13** — Speaker states aligned to the 8-state model (ADR-009 / Epic 11); the removed `slot_assigned` / `confirmed` states replaced by derived `is_slot_assigned` / `is_publishable` flags.
 
 <div class="workflow-phase phase-d">
 <strong>Phase D: Assignment</strong><br>
@@ -22,43 +24,27 @@ Phase D assigns approved speakers to specific time slots and publishes the final
 
 ### Slot Assignment
 
-Navigate to the Speakers tab and switch to Sessions view to manage slot assignments.
+Open **Speakers & Agenda** on the event page and switch to **Agenda**.
 
-![Sessions View](../assets/screenshots/workflow/phase-d-publishing/d-02-sessions-view-loaded.png)
+![Speakers & Agenda → Agenda](../assets/screenshots/workflow/phase-d-publishing/d-02-sessions-view-loaded.png)
 
-Click **Manage Slot Assignments** to open the assignment interface.
+Click **Arrange slots** (or switch to **Slots**) to open the assignment view.
 
-![Slot Assignment Page](../assets/screenshots/workflow/phase-d-publishing/d-03-slot-assignment-page-loaded.png)
+![Speakers & Agenda → Slots: speaker pool and session timeline](../assets/screenshots/workflow/phase-d-publishing/d-03-slot-assignment-page-loaded.png)
 
-Before auto-assignment:
+On a phone the Slots view stacks the speaker pool above the session timeline:
 
-![Before Auto Assign](../assets/screenshots/workflow/phase-d-publishing/d-04-before-auto-assign.png)
+![Slots view on a phone](../assets/screenshots/event-page/speakers-slots-phone.png ':size=300')
 
 Use the **Auto-Assign** feature to automatically assign presentations to available slots.
-
-![Auto-Assign Modal](../assets/screenshots/workflow/phase-d-publishing/d-05-auto-assign-modal-opened.png)
-
-After auto-assignment completes:
-
-![After Auto Assign](../assets/screenshots/workflow/phase-d-publishing/d-06-after-auto-assign.png)
-
-Return to event page:
-
-![Back to Event Page](../assets/screenshots/workflow/phase-d-publishing/d-07-back-to-event-page.png)
 
 ### Publishing the Agenda
 
 After assigning all sessions to slots, navigate to the Publishing tab.
 
-![Publishing Tab](../assets/screenshots/workflow/phase-d-publishing/d-08-publishing-tab-loaded.png)
+Click **Publish Agenda** to make the schedule public. Afterwards all three phases show as published:
 
-Before publishing the agenda:
-
-![Before Publish Agenda](../assets/screenshots/workflow/phase-d-publishing/d-09-before-publish-agenda.png)
-
-Click **Publish Agenda** to make the schedule public:
-
-![Agenda Published](../assets/screenshots/workflow/phase-d-publishing/d-10-agenda-published.png)
+![Publishing tab after all three phases are published](../assets/screenshots/workflow/phase-d-publishing/d-10-agenda-published.png)
 
 ## Step 9: Assign Speakers to Time Slots
 
@@ -108,12 +94,24 @@ Review the proposed assignments and confirm.
 
 **Manual Adjustments** (Optional)
 
-After auto-assignment, you can manually adjust the schedule:
-- Drag presentations to different slots
-- Swap presentations between tracks
-- Adjust timing to accommodate speaker constraints
+After auto-assignment, you can manually adjust the schedule. What a drop does depends on the target slot:
 
-All changes are validated to prevent conflicts.
+| You drop… | onto… | Result |
+|-----------|-------|--------|
+| a session from the speaker pool | an empty slot | **Assign** — the session takes the slot |
+| a session from the speaker pool | an occupied slot | **Insert** — "↓ Insert — later talks shift down": the occupant and all later talks move one slot later and their times are recalculated |
+| a session already in a slot | another occupied slot | **Swap** — "⇅ Swap with this session": the two sessions exchange slots |
+
+- **Live preview** — while you drag over a slot, the agenda shows the result before you drop: the dropped session in its target and the talks that would move, marked as moved.
+- **Full agenda** — an insert that would push a talk past the last slot is refused; free a slot first.
+- **Remove from slot** — the ✕ on an assigned slot sends the session back to the speaker pool.
+- **Mobile** — dragging does not work on touch screens. Tap a session in the pool (or in a slot), then tap a highlighted slot to place it ("↓ Now tap a highlighted slot to place it"). The same assign / insert / swap rules apply.
+
+Each change is saved in one step; if it fails, the agenda returns to its previous state.
+
+**Changing the agenda shape for this event only — Edit event type**
+
+Click **Edit event type** above the slot grid to change this event's slot count and duration, breaks, lunch and apéro without touching the shared event-type template in Administration. The dialog shows a live schedule preview. The first save creates a per-event copy; from then on the event uses its own copy, and later changes to the template no longer reach it. If speakers are already assigned, the dialog warns: "Changing the structure may move them — review the agenda after saving." 
 
 </div>
 

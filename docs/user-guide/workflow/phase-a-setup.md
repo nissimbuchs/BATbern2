@@ -30,11 +30,11 @@ Define the event format which determines timeline, session count, and speaker re
 
 Navigate to the Events dashboard and click **Create Event**.
 
-![Event Dashboard](../assets/screenshots/workflow/phase-a-setup/a-01-event-dashboard.png)
+![Events page with the New Event button](../assets/screenshots/workflow/phase-a-setup/a-01-event-dashboard.png)
 
 The event creation modal will open with the event configuration form.
 
-![Event Creation Modal](../assets/screenshots/workflow/phase-a-setup/a-02-event-creation-modal.png)
+![Create New Event dialog](../assets/screenshots/workflow/phase-a-setup/a-02-event-creation-modal.png)
 
 ### Acceptance Criteria
 
@@ -100,7 +100,7 @@ Choose the appropriate format for your conference:
 
 In the event creation/edit form, select the appropriate type:
 
-![Event Type Dropdown](../assets/screenshots/workflow/phase-a-setup/a-03-event-type-dropdown-open.png)
+![Event type selection in the Create New Event dialog](../assets/screenshots/workflow/phase-a-setup/a-03-event-type-dropdown-open.png)
 
 *The event type dropdown offers three conference formats: Full-Day Conference (8+ hours with multiple sessions), Afternoon Workshop (3-4 hours focused session), and Evening Lecture (2-3 hours single topic).*
 
@@ -131,10 +131,6 @@ Enter venue details:
 
 **Save Configuration**
 
-After filling all required fields, the form should look like this:
-
-![Event Form Filled](../assets/screenshots/workflow/phase-a-setup/a-04-event-form-filled.png)
-
 Click **Save & Continue to Step 2**.
 
 Event state: **CREATED** (ready for topic selection)
@@ -146,11 +142,11 @@ Event state: **CREATED** (ready for topic selection)
 
 After creating the event, you can assign tasks to team members to distribute the workload.
 
-![Task Assignment](../assets/screenshots/workflow/phase-a-setup/a-08-edit-modal-tasks-tab-initial.png)
+![Event page, Details → Tasks: task templates and assignees](../assets/screenshots/event-page/details-tasks.png)
 
 Access the task list to view and manage assigned tasks.
 
-![Task List View](../assets/screenshots/workflow/phase-a-setup/a-14-task-list-my-tasks-filter.png)
+![Task Board with the All Tasks filter](../assets/screenshots/features/task-board.png)
 
 ## Step 2: Topic Selection with Heat Map
 
@@ -177,7 +173,7 @@ The **Topic Heat Map** visualizes 20+ years of BATbern conference history, showi
 
 #### How the Heat Map Works
 
-![Topic Heat Map Overview](../assets/screenshots/workflow/phase-a-setup/a-17-topic-heatmap.png)
+![Topic Backlog Manager, heat map view](../assets/screenshots/workflow/phase-a-setup/a-17-topic-heatmap.png)
 
 *The Topic Heat Map visualizes historical topic coverage across 20+ years of BATbern conferences. Topics are organized by category (rows) and time periods (columns). Color intensity indicates presentation frequency: dark blue for frequently presented topics (4+ times), light blue for occasional topics (1-3 times), and white for topics never or rarely presented.*
 
@@ -254,7 +250,7 @@ In Step 2 of the workflow, click **View Topic Heat Map**.
 
 Interactive heat map opens showing historical data.
 
-![Topic Heat Map](../assets/screenshots/workflow/phase-a-setup/a-17-topic-heatmap.png)
+![Topic Backlog Manager, heat map view](../assets/screenshots/workflow/phase-a-setup/a-17-topic-heatmap.png)
 
 </div>
 
@@ -275,13 +271,11 @@ Click year to see presentation details.
 
 Open the topic selection interface:
 
-![Topic Selection Interface](../assets/screenshots/workflow/phase-a-setup/a-16-topic-selection-opened.png)
+![Topic & speakers dialog, opened with Change topic](../assets/screenshots/workflow/phase-a-setup/a-16-topic-selection-opened.png)
 
 Click topics to add to your event:
 
 *The selected topics checklist shows your current topic selections with a progress indicator (e.g., "4 of 8 required"). Each selected topic displays with a checkmark and a [Remove] button. An [+ Add Another Topic] button allows adding more topics until the minimum requirement is met.*
-
-![Topic Selected from Heatmap](../assets/screenshots/workflow/phase-a-setup/a-18-topic-selected-from-heatmap.png)
 
 Add minimum required for your event type.
 </div>
@@ -303,8 +297,6 @@ Ensure topic diversity:
 **Confirm Selection**
 
 Click **Confirm Topic Selection**.
-
-![Topic Selection Confirmed](../assets/screenshots/workflow/phase-a-setup/a-19-topic-selection-confirmed.png)
 
 Event state: CREATED → **SPEAKER_IDENTIFICATION**
 
@@ -389,7 +381,7 @@ Click topic to add speaker candidates.
 
 Click **+ Add Speaker Candidate** to open the brainstorming form.
 
-![Speaker Brainstorming Form](../assets/screenshots/workflow/phase-a-setup/a-20-speaker-brainstorming-form.png)
+![Add Speakers to Pool drawer](../assets/screenshots/workflow/phase-a-setup/a-20-speaker-brainstorming-form.png)
 
 *The speaker brainstorming form collects candidate information: First Name, Last Name, Email (required fields), Company (with autocomplete search), Expertise Match (High/Medium/Low dropdown), Notes (optional, for recording speaker background or presentation history), and Source (Past Speaker, Company Referral, Industry Expert, or Internal). Candidates are created with status IDENTIFIED.*
 
@@ -404,7 +396,7 @@ Candidate is created with status: **IDENTIFIED**
 
 Add 2-3 candidates per topic. After adding candidates, the topic displays the candidate list showing names, expertise match level, and contact information, with an option to add more candidates.
 
-![All Speakers Added](../assets/screenshots/workflow/phase-a-setup/a-21-all-speakers-added.png)
+![Speakers & Agenda → Pool: the speaker kanban](../assets/screenshots/event-page/speakers-pool.png)
 
 </div>
 
@@ -421,8 +413,6 @@ View all candidates across topics. The Speaker Candidate Summary displays: Total
 **Confirm Brainstorming Complete**
 
 Once minimum candidates identified, click **Complete Brainstorming**.
-
-![Proceed to Outreach](../assets/screenshots/workflow/phase-a-setup/a-22-proceed-to-outreach.png)
 
 Event state: TOPIC_SELECTION → **SPEAKER_IDENTIFICATION**
 
