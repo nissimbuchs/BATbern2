@@ -109,7 +109,11 @@
         <header class="page-header">
             <h1>🔍 OWASP ZAP — DAST Security Scan</h1>
             <p>Dynamic application security testing against the staging environment
-            {{#if dast.scannedAt}}<span style="color:var(--muted-foreground);font-size:0.85rem"> · Scanned: {{dast.scannedAt}}</span>{{/if}}
+            {{#if sources.dast.measuredAt}}<span style="color:var(--muted-foreground);font-size:0.85rem"> · Scan of {{formatDate sources.dast.measuredAt}}</span>{{/if}}
+            </p>
+            <p class="source-line">
+                Source {{sourceStatus sources.dast}} · {{sources.dast.origin}}
+                {{#if sources.dast.note}}<br><small>{{sources.dast.note}}</small>{{/if}}
             </p>
         </header>
 
@@ -295,9 +299,10 @@
         {{else}}
         <!-- No ZAP data available -->
         <div class="dast-banner dast-banner-pending" style="margin-top:2rem">
-            ℹ️ No ZAP DAST data available. Trigger the
-            <strong>Security Scan (OWASP ZAP)</strong> GitHub Actions workflow
-            and rebuild the reports.
+            ⚠️ No ZAP DAST data{{#if sources.dast.note}} ({{sources.dast.note}}){{/if}}.
+            The reports build downloads the latest successful
+            <strong>Security Scan (OWASP ZAP)</strong> run (<code>security-scan.yml</code>, weekly);
+            check that it ran and that <code>gh</code> is logged in, then run <code>make reports</code>.
         </div>
         {{/if}}
 

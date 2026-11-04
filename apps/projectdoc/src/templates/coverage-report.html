@@ -49,6 +49,11 @@
         <header class="page-header">
             <h1>Code Coverage Report</h1>
             <p>Comprehensive coverage analysis across all modules</p>
+            <p class="source-line">
+                Java {{sourceStatus sources.javaCoverage}}
+                · Frontend {{sourceStatus sources.frontendCoverage}}
+                · Infrastructure {{sourceStatus sources.infraCoverage}}
+            </p>
         </header>
 
         <!-- Overall Coverage Summary -->
@@ -58,13 +63,14 @@
                 <div class="coverage-circle">
                     <svg viewBox="0 0 36 36" class="circular-chart">
                         <path class="circle-bg" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                        <path class="circle" stroke-dasharray="{{summary.overall}}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
-                        <text x="18" y="20.35" class="percentage">{{summary.overall}}%</text>
+                        <path class="circle" stroke-dasharray="{{#if (isNum summary.overall)}}{{summary.overall}}{{else}}0{{/if}}, 100" d="M18 2.0845 a 15.9155 15.9155 0 0 1 0 31.831 a 15.9155 15.9155 0 0 1 0 -31.831"/>
+                        <text x="18" y="20.35" class="percentage">{{#if (isNum summary.overall)}}{{summary.overall}}%{{else}}no data{{/if}}</text>
                     </svg>
                 </div>
                 <div class="coverage-details">
-                    <div>Java: {{summary.java}}%</div>
-                    <div>Frontend: {{summary.frontend}}%</div>
+                    <div>Java: {{pct summary.java}}</div>
+                    <div>Frontend: {{pct summary.frontend}}</div>
+                    <div>Infrastructure: {{pct summary.infrastructure}} <small>(not in overall)</small></div>
                     <div>Target: {{summary.target}}%</div>
                 </div>
             </div>
@@ -155,6 +161,31 @@
                             <div class="coverage-bar">
                                 <div class="coverage-fill {{coverageClass frontendCoverage.coverage.summary.functions.percentage}}" style="width: {{frontendCoverage.coverage.summary.functions.percentage}}%"></div>
                                 <span>{{frontendCoverage.coverage.summary.functions.percentage}}%</span>
+                            </div>
+                        </td>
+                    </tr>
+                    {{/if}}
+                    {{#if (gt infrastructureCoverage.coverage.summary.totalFiles 0)}}
+                    <tr>
+                        <td class="module-name"><strong>infrastructure</strong></td>
+                        <td>{{infrastructureCoverage.coverage.summary.totalFiles}}</td>
+                        <td>{{infrastructureCoverage.coverage.summary.functions.found}}</td>
+                        <td>
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {{coverageClass infrastructureCoverage.coverage.summary.lines.percentage}}" style="width: {{infrastructureCoverage.coverage.summary.lines.percentage}}%"></div>
+                                <span>{{infrastructureCoverage.coverage.summary.lines.percentage}}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {{coverageClass infrastructureCoverage.coverage.summary.branches.percentage}}" style="width: {{infrastructureCoverage.coverage.summary.branches.percentage}}%"></div>
+                                <span>{{infrastructureCoverage.coverage.summary.branches.percentage}}%</span>
+                            </div>
+                        </td>
+                        <td>
+                            <div class="coverage-bar">
+                                <div class="coverage-fill {{coverageClass infrastructureCoverage.coverage.summary.functions.percentage}}" style="width: {{infrastructureCoverage.coverage.summary.functions.percentage}}%"></div>
+                                <span>{{infrastructureCoverage.coverage.summary.functions.percentage}}%</span>
                             </div>
                         </td>
                     </tr>

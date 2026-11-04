@@ -1263,3 +1263,42 @@
     align-items: flex-start;
   }
 }
+
+/* ── Data-source freshness (#1226) ─────────────────────────────── */
+.source-badge {
+  text-transform: none;
+  margin-right: 0.25rem;
+}
+
+.source-date {
+  color: var(--muted-foreground);
+  font-size: 0.75rem;
+}
+
+.source-line {
+  color: var(--muted-foreground);
+  font-size: 0.85rem;
+  margin-top: 0.5rem;
+}
+
+.data-banner {
+  border-radius: 8px;
+  padding: 0.85rem 1.25rem;
+  margin-top: 1rem;
+  font-size: 0.9rem;
+}
+
+.data-banner ul {
+  margin: 0.5rem 0 0.5rem 1.25rem;
+}
+
+.data-banner-incomplete {
+  background: rgba(255, 152, 0, 0.12);
+  border: 1px solid rgba(255, 152, 0, 0.45);
+}
+
+.data-banner-info {
+  background: rgba(33, 150, 243, 0.10);
+  border: 1px solid rgba(33, 150, 243, 0.30);
+  color: var(--muted-foreground);
+}

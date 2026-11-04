@@ -115,6 +115,8 @@ make test                       # Run all tests with coverage (requires Docker f
 
 # Development workflow
 make verify                     # Pre-commit checks (lint + test)
+make reports                    # Regenerate projectdoc reports from scratch (all tests, CDK coverage, Trivy SAST, latest ZAP DAST)
+make reports-deploy             # make reports, then deploy the projectdoc site
 make docker-up                  # Start all services with Docker Compose
 make dev-native-up              # Start services natively (60-70% less resources)
 

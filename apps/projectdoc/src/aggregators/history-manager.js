@@ -43,8 +43,16 @@ export class HistoryManager {
     // Create history entry (extract only summary data, not full reports)
     const entry = this.createHistoryEntry(report);
 
-    // Add new entry
-    history.unshift(entry);
+    // Rebuilding the reports for the same commit on the same branch replaces that build's entry
+    // instead of adding a second one (#1226). An unknown commit is never deduplicated.
+    const sameBuild = (h) => entry.commit && entry.commit !== 'unknown'
+      && h.commit === entry.commit && h.branch === entry.branch;
+    const kept = history.filter(h => !sameBuild(h));
+    if (kept.length !== history.length) {
+      console.log(`  ℹ Replacing ${history.length - kept.length} history entry for ${entry.branch}@${String(entry.commit).slice(0, 8)}`);
+    }
+    history.length = 0;
+    history.push(entry, ...kept);
 
     // Trim to max entries
     if (history.length > this.maxHistoryEntries) {
@@ -69,11 +77,18 @@ export class HistoryManager {
       commit: report.metadata.commit,
       summary: {
         healthStatus: report.summary.healthStatus,
+        dataComplete: report.summary.dataComplete ?? null,
+        incompleteSources: report.summary.incompleteSources ? [...report.summary.incompleteSources] : [],
         tests: { ...report.summary.tests },
         coverage: { ...report.summary.coverage },
         security: { ...report.summary.security },
+        dast: report.summary.dast ? { ...report.summary.dast } : null,
         quality: { ...report.summary.quality }
       },
+      sources: report.metadata.sources
+        ? Object.fromEntries(Object.entries(report.metadata.sources)
+          .map(([k, v]) => [k, { status: v.status, measuredAt: v.measuredAt || null }]))
+        : undefined,
       modules: report.modules.map(m => ({
         name: m.name,
         status: m.status,
@@ -131,9 +146,10 @@ export class HistoryManager {
     return {
       labels: entries.map(e => this.formatBuildLabel(e)),
       coverage: {
-        overall: entries.map(e => e.summary.coverage.overall),
-        java: entries.map(e => e.summary.coverage.java),
-        frontend: entries.map(e => e.summary.coverage.frontend)
+        overall: entries.map(e => e.summary.coverage.overall ?? null),
+        java: entries.map(e => e.summary.coverage.java ?? null),
+        frontend: entries.map(e => e.summary.coverage.frontend ?? null),
+        infrastructure: entries.map(e => e.summary.coverage.infrastructure ?? null)
       },
       tests: {
         total: entries.map(e => e.summary.tests.total),
@@ -193,6 +209,10 @@ export class HistoryManager {
       return null;
     }
 
+    const c = current.summary;
+    const p = previous.summary;
+    const d = (a, b) => this.delta(a, b);
+
     return {
       previous: {
         buildNumber: previous.buildNumber,
@@ -200,25 +220,35 @@ export class HistoryManager {
       },
       changes: {
         tests: {
-          total: current.summary.tests.total - previous.summary.tests.total,
-          failed: current.summary.tests.failed - previous.summary.tests.failed
+          total: d(c.tests.total, p.tests.total),
+          failed: d(c.tests.failed, p.tests.failed)
         },
         coverage: {
-          overall: this.roundDelta(current.summary.coverage.overall - previous.summary.coverage.overall),
-          java: this.roundDelta(current.summary.coverage.java - previous.summary.coverage.java),
-          frontend: this.roundDelta(current.summary.coverage.frontend - previous.summary.coverage.frontend)
+          overall: d(c.coverage.overall, p.coverage.overall),
+          java: d(c.coverage.java, p.coverage.java),
+          frontend: d(c.coverage.frontend, p.coverage.frontend),
+          infrastructure: d(c.coverage.infrastructure, p.coverage.infrastructure)
         },
         security: {
-          total: current.summary.security.totalIssues - previous.summary.security.totalIssues,
-          critical: current.summary.security.critical - previous.summary.security.critical,
-          high: current.summary.security.high - previous.summary.security.high
+          total: d(c.security.totalIssues, p.security.totalIssues),
+          critical: d(c.security.critical, p.security.critical),
+          high: d(c.security.high, p.security.high)
         },
         quality: {
-          violations: current.summary.quality.totalViolations - previous.summary.quality.totalViolations,
-          errors: current.summary.quality.errors - previous.summary.quality.errors
+          violations: d(c.quality.totalViolations, p.quality.totalViolations),
+          errors: d(c.quality.errors, p.quality.errors)
         }
       }
     };
+  }
+
+  /**
+   * Difference of two measurements, or null when either side was not measured
+   * (a missing value is not 0, so it cannot produce a change).
+   */
+  delta(current, previous) {
+    if (typeof current !== 'number' || typeof previous !== 'number') return null;
+    return this.roundDelta(current - previous);
   }
 
   /**
@@ -273,8 +303,10 @@ export class HistoryManager {
       return null;
     }
 
-    const coverages = history.map(h => h.summary.coverage.overall);
-    const testRates = history.map(h => h.summary.tests.successRate);
+    // Builds without a measurement are left out, not counted as 0
+    const isNum = (v) => typeof v === 'number';
+    const coverages = history.map(h => h.summary.coverage.overall).filter(isNum);
+    const testRates = history.map(h => h.summary.tests.successRate).filter(isNum);
 
     return {
       totalBuilds: history.length,
@@ -283,17 +315,17 @@ export class HistoryManager {
         to: history[0].timestamp
       },
       coverage: {
-        current: coverages[0],
+        current: coverages[0] ?? null,
         average: this.average(coverages),
-        min: Math.min(...coverages),
-        max: Math.max(...coverages),
-        trend: this.calculateTrend(coverages)
+        min: coverages.length ? Math.min(...coverages) : null,
+        max: coverages.length ? Math.max(...coverages) : null,
+        trend: this.calculateTrend([...coverages].reverse())
       },
       testSuccessRate: {
-        current: testRates[0],
+        current: testRates[0] ?? null,
         average: this.average(testRates),
-        min: Math.min(...testRates),
-        max: Math.max(...testRates)
+        min: testRates.length ? Math.min(...testRates) : null,
+        max: testRates.length ? Math.max(...testRates) : null
       },
       builds: {
         passing: history.filter(h => h.summary.healthStatus === 'passing').length,

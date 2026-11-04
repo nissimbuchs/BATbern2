@@ -11,6 +11,12 @@ import ZapParser from '../utils/parsers/zap-parser.js';
 import fs from 'fs-extra';
 import path from 'path';
 import { execSync } from 'child_process';
+import { classifySource, summarizeSources, newestMtime, SOURCE_KEYS } from '../sources/source-status.js';
+
+const DEFAULT_MAX_AGE_HOURS = {
+  javaTests: 24, frontendTests: 24, javaCoverage: 24, frontendCoverage: 24, infraCoverage: 24,
+  sast: 24, dast: 8 * 24, quality: 24, loc: 24, sonar: 24
+};
 
 /**
  * Aggregates all test and quality reports into a unified data structure
@@ -19,6 +25,11 @@ export class ReportAggregator {
   constructor(config) {
     this.config = config;
     this.baseDir = config.baseDir || process.cwd();
+    // Injectable for tests: report clock, environment, and hints from the fetchers that ran
+    // before aggregation (ZAP download, Trivy scan) about where their data came from.
+    this.now = config.now || (() => new Date());
+    this.env = config.env || process.env;
+    this.sourceHints = config.sourceHints || {};
   }
 
   /**
@@ -29,6 +40,7 @@ export class ReportAggregator {
     console.log('Starting report aggregation...');
 
     const startTime = Date.now();
+    const reportTime = this.now();
 
     // Collect all reports in parallel
     const [
@@ -36,6 +48,7 @@ export class ReportAggregator {
       frontendTestResults,
       javaCoverage,
       frontendCoverage,
+      infrastructureCoverage,
       securityFindings,
       zapDastFindings,
       qualityViolations,
@@ -48,6 +61,7 @@ export class ReportAggregator {
       this.collectFrontendTests(),
       this.collectJavaCoverage(),
       this.collectFrontendCoverage(),
+      this.collectInfrastructureCoverage(),
       this.collectSecurityFindings(),
       this.collectZapDastFindings(),
       this.collectQualityViolations(),
@@ -57,22 +71,40 @@ export class ReportAggregator {
       this.collectProjectCounts()
     ]);
 
+    const sources = await this.buildSources({
+      reportTime,
+      javaTestResults,
+      frontendTestResults,
+      javaCoverage,
+      frontendCoverage,
+      infrastructureCoverage,
+      securityFindings,
+      zapDastFindings,
+      qualityViolations,
+      locMetrics,
+      sonarMetrics
+    });
+
     // Build aggregated structure
     const aggregated = {
       metadata: {
-        timestamp: new Date().toISOString(),
+        timestamp: reportTime.toISOString(),
         buildNumber: process.env.GITHUB_RUN_NUMBER || process.env.BUILD_NUMBER || 'local',
         buildId: process.env.GITHUB_RUN_ID || 'local',
         branch: process.env.GITHUB_REF_NAME || this.getCurrentBranch(),
         commit: process.env.GITHUB_SHA || this.getCurrentCommit(),
         environment: process.env.CI ? 'ci' : 'local',
-        generationTime: 0
+        generationTime: 0,
+        sources
       },
       summary: this.calculateOverallSummary({
+        sources,
+        zapDastFindings,
         javaTestResults,
         frontendTestResults,
         javaCoverage,
         frontendCoverage,
+        infrastructureCoverage,
         securityFindings,
         qualityViolations,
         locMetrics,
@@ -85,11 +117,13 @@ export class ReportAggregator {
         frontendTestResults,
         javaCoverage,
         qualityViolations,
-        frontendCoverage
+        frontendCoverage,
+        infrastructureCoverage
       }),
       coverage: {
         java: javaCoverage,
-        frontend: frontendCoverage
+        frontend: frontendCoverage,
+        infrastructure: infrastructureCoverage
       },
       tests: {
         java: javaTestResults,
@@ -202,6 +236,34 @@ export class ReportAggregator {
 
     return {
       module: mainReport.module,
+      reportPath: mainReport.reportPath,
+      coverage: mainReport.coverage,
+      topUncovered: LcovParser.getTopUncoveredFiles(mainReport.coverage, 10),
+      byDirectory: LcovParser.getCoverageByDirectory(mainReport.coverage)
+    };
+  }
+
+  /**
+   * Collect infrastructure (CDK) coverage from the Jest LCOV report.
+   * The infrastructure has no JUnit reporter, so it contributes coverage only, no test counts.
+   * @returns {Promise<Object>} Infrastructure coverage data, same shape as the frontend's
+   */
+  async collectInfrastructureCoverage() {
+    console.log('Collecting infrastructure coverage data...');
+
+    const pattern = this.config.sources?.infrastructure?.coveragePattern || 'infrastructure/coverage/lcov.info';
+    const reports = await LcovParser.findAndParseReports(this.baseDir, pattern);
+
+    if (reports.length === 0) {
+      console.warn('No infrastructure coverage reports found');
+      return this.createEmptyFrontendCoverage('infrastructure');
+    }
+
+    const mainReport = reports[0];
+
+    return {
+      module: 'infrastructure',
+      reportPath: mainReport.reportPath,
       coverage: mainReport.coverage,
       topUncovered: LcovParser.getTopUncoveredFiles(mainReport.coverage, 10),
       byDirectory: LcovParser.getCoverageByDirectory(mainReport.coverage)
@@ -314,82 +376,114 @@ export class ReportAggregator {
    * @returns {Object} Overall summary
    */
   calculateOverallSummary(data) {
-    const { javaTestResults, frontendTestResults, javaCoverage, frontendCoverage, securityFindings, qualityViolations, locMetrics, sonarMetrics, gitStats, projectCounts } = data;
+    const { sources = {}, zapDastFindings, javaTestResults, frontendTestResults, javaCoverage, frontendCoverage, infrastructureCoverage, securityFindings, qualityViolations, locMetrics, sonarMetrics, gitStats, projectCounts } = data;
 
-    // Calculate test health (combine Java + frontend)
-    const javaTests = javaTestResults.summary.overallStats.totalTests;
-    const javaPassed = javaTestResults.summary.overallStats.passed;
-    const javaFailedTests = javaTestResults.summary.overallStats.failures + javaTestResults.summary.overallStats.errors;
-    const javaSkipped = javaTestResults.summary.overallStats.skipped;
+    // A source without data contributes null, never 0 (#1226). Stale data still counts: it is
+    // shown with a "stale since" badge.
+    const has = (key) => sources[key] ? !['missing', 'not-configured'].includes(sources[key].status) : true;
 
-    const frontendTests = frontendTestResults.summary.overallStats.totalTests;
-    const frontendPassed = frontendTestResults.summary.overallStats.passed;
-    const frontendFailedTests = frontendTestResults.summary.overallStats.failures + frontendTestResults.summary.overallStats.errors;
-    const frontendSkipped = frontendTestResults.summary.overallStats.skipped;
+    // Tests: combine the test sources that exist
+    const testSets = [
+      has('javaTests') ? javaTestResults.summary.overallStats : null,
+      has('frontendTests') ? frontendTestResults.summary.overallStats : null
+    ].filter(Boolean);
+    let tests;
+    if (testSets.length === 0) {
+      tests = { total: null, passed: null, failed: null, skipped: null, unhandledErrors: null, successRate: null };
+    } else {
+      const sum = (f) => testSets.reduce((acc, t) => acc + (t[f] || 0), 0);
+      const total = sum('totalTests');
+      const passed = sum('passed');
+      const skipped = sum('skipped');
+      // Success rate = passed / (total - skipped) to exclude skipped tests
+      const executed = total - skipped;
+      tests = {
+        total,
+        passed,
+        failed: sum('failures') + sum('errors'),
+        skipped,
+        unhandledErrors: sum('unhandledErrors'),
+        successRate: executed > 0 ? Math.round((passed / executed) * 10000) / 100 : null
+      };
+    }
 
-    const totalTests = javaTests + frontendTests;
-    const totalPassed = javaPassed + frontendPassed;
-    const failedTests = javaFailedTests + frontendFailedTests;
-    const totalSkipped = javaSkipped + frontendSkipped;
-
-    // Success rate = passed / (total - skipped) to exclude skipped tests
-    const executedTests = totalTests - totalSkipped;
-    const testSuccessRate = executedTests > 0
-      ? Math.round((totalPassed / executedTests) * 10000) / 100
-      : 100;
-
-    // Calculate coverage health
-    const javaCoveragePercent = javaCoverage.summary.overallCoverage.line;
-    const frontendCoveragePercent = frontendCoverage.coverage?.summary.lines.percentage || 0;
+    // Coverage
+    const javaCoveragePercent = has('javaCoverage') ? javaCoverage.summary.overallCoverage.line : null;
+    const frontendCoveragePercent = has('frontendCoverage') ? (frontendCoverage.coverage?.summary.lines.percentage ?? null) : null;
+    // Shown on its own; the overall figure stays Java + frontend so the history trend remains comparable
+    const infrastructureCoveragePercent = has('infraCoverage') ? (infrastructureCoverage?.coverage?.summary.lines.percentage ?? null) : null;
     const overallCoverage = this.calculateWeightedCoverage(javaCoverage, frontendCoverage);
 
-    // Calculate security health
-    const criticalSecurity = securityFindings.summary.bySeverity.critical;
-    const highSecurity = securityFindings.summary.bySeverity.high;
-    const totalSecurityIssues = securityFindings.summary.totalFindings;
+    // Security (SAST)
+    const sast = has('sast');
+    const sev = securityFindings.summary.bySeverity;
+    const security = {
+      totalIssues: sast ? securityFindings.summary.totalFindings : null,
+      critical: sast ? sev.critical : null,
+      high: sast ? sev.high : null,
+      medium: sast ? sev.medium : null,
+      low: sast ? sev.low : null
+    };
 
-    // Calculate quality health
-    const qualityErrors = qualityViolations.summary.overallStats.bySeverity.error;
-    const qualityWarnings = qualityViolations.summary.overallStats.bySeverity.warning;
+    // DAST
+    const dast = has('dast') && zapDastFindings ? {
+      scansRun: zapDastFindings.summary.scansRun,
+      high: zapDastFindings.summary.high,
+      medium: zapDastFindings.summary.medium,
+      low: zapDastFindings.summary.low,
+      info: zapDastFindings.summary.info
+    } : null;
+
+    // Quality
+    const qualityPresent = has('quality');
+    const qs = qualityViolations.summary.overallStats;
+    const quality = {
+      totalViolations: qualityPresent ? qs.totalViolations : null,
+      errors: qualityPresent ? qs.bySeverity.error : null,
+      warnings: qualityPresent ? qs.bySeverity.warning : null
+    };
+
+    const completeness = summarizeSources(sources);
 
     // Determine overall health status
-    const healthStatus = this.determineHealthStatus({
-      testSuccessRate,
+    let healthStatus = this.determineHealthStatus({
+      testSuccessRate: tests.successRate,
       overallCoverage,
-      criticalSecurity,
-      highSecurity,
-      qualityErrors
+      criticalSecurity: security.critical,
+      highSecurity: security.high,
+      qualityErrors: quality.errors,
+      unhandledErrors: tests.unhandledErrors
     });
+    const healthReasons = [];
+    if (!completeness.dataComplete) {
+      // Missing or stale data is not evidence of health
+      if (healthStatus === 'passing') healthStatus = 'warning';
+      healthReasons.push(`incomplete data: ${completeness.incomplete.map(i => `${i.label} ${i.status}`).join(', ')}`);
+    }
+    if (tests.unhandledErrors > 0) {
+      healthReasons.push(`${tests.unhandledErrors} unhandled test error(s)`);
+    }
 
     return {
       healthStatus: healthStatus,
-      tests: {
-        total: totalTests,
-        passed: totalPassed,
-        failed: failedTests,
-        skipped: totalSkipped,
-        successRate: testSuccessRate
-      },
+      healthReasons,
+      dataComplete: completeness.dataComplete,
+      incompleteSources: completeness.incomplete.map(i => i.key),
+      incompleteDetails: completeness.incomplete,
+      notConfiguredSources: completeness.notConfigured,
+      tests,
       coverage: {
         overall: overallCoverage,
         java: javaCoveragePercent,
         frontend: frontendCoveragePercent,
+        infrastructure: infrastructureCoveragePercent,
         target: this.config.thresholds?.coverage?.target || 85
       },
-      security: {
-        totalIssues: totalSecurityIssues,
-        critical: criticalSecurity,
-        high: highSecurity,
-        medium: securityFindings.summary.bySeverity.medium,
-        low: securityFindings.summary.bySeverity.low
-      },
-      quality: {
-        totalViolations: qualityViolations.summary.overallStats.totalViolations,
-        errors: qualityErrors,
-        warnings: qualityWarnings
-      },
+      security,
+      dast,
+      quality,
       codebase: {
-        totalLoc: locMetrics?.summary?.totalLoc || 0,
+        totalLoc: has('loc') ? (locMetrics?.summary?.totalLoc || 0) : null,
         prodLoc: locMetrics?.summary?.prodLoc || 0,
         testLoc: locMetrics?.summary?.testLoc || 0,
         testToCodeRatio: locMetrics?.summary?.testToCodeRatio || 0,
@@ -410,7 +504,7 @@ export class ReportAggregator {
    * @returns {Array} Module data
    */
   buildModuleData(data) {
-    const { javaTestResults, frontendTestResults, javaCoverage, qualityViolations, frontendCoverage } = data;
+    const { javaTestResults, frontendTestResults, javaCoverage, qualityViolations, frontendCoverage, infrastructureCoverage } = data;
 
     // Get list of all unique modules
     const moduleNames = new Set();
@@ -509,6 +603,26 @@ export class ReportAggregator {
       });
     }
 
+    // Add infrastructure (CDK) module: coverage only, its Jest run has no JUnit reporter
+    if (infrastructureCoverage?.coverage && infrastructureCoverage.coverage.summary.totalFiles > 0) {
+      const infraSummary = infrastructureCoverage.coverage.summary;
+      modules.push({
+        name: 'infrastructure',
+        tests: null,
+        coverage: {
+          line: infraSummary.lines.percentage,
+          branch: infraSummary.branches.percentage,
+          instruction: infraSummary.functions.percentage
+        },
+        quality: null,
+        status: this.determineModuleStatus({
+          tests: null,
+          coverage: { line: { percentage: infraSummary.lines.percentage } },
+          quality: null
+        })
+      });
+    }
+
     return modules;
   }
 
@@ -571,6 +685,10 @@ export class ReportAggregator {
    */
   async collectSonarCloudMetrics() {
     console.log('Collecting SonarCloud metrics...');
+    if (!this.isSonarConfigured()) {
+      console.warn('SonarCloud not configured (disabled or SONAR_TOKEN not set)');
+      return null;
+    }
     try {
       return await SonarcloudParser.fetchMetrics(this.config.sonarcloud);
     } catch (error) {
@@ -656,7 +774,8 @@ export class ReportAggregator {
       return frontendLines;
     }
 
-    return 0;
+    // No coverage measured at all: no figure, not 0%
+    return null;
   }
 
   /**
@@ -665,7 +784,15 @@ export class ReportAggregator {
    * @returns {string} Health status: passing | warning | failing
    */
   determineHealthStatus(metrics) {
-    const { testSuccessRate, overallCoverage, criticalSecurity, highSecurity, qualityErrors } = metrics;
+    // A metric that was not measured (null) is skipped here; data completeness is judged
+    // separately in calculateOverallSummary and caps the status at "warning".
+    const num = (v) => typeof v === 'number';
+    const testSuccessRate = num(metrics.testSuccessRate) ? metrics.testSuccessRate : 100;
+    const overallCoverage = num(metrics.overallCoverage) ? metrics.overallCoverage : Infinity;
+    const criticalSecurity = num(metrics.criticalSecurity) ? metrics.criticalSecurity : 0;
+    const highSecurity = num(metrics.highSecurity) ? metrics.highSecurity : 0;
+    const qualityErrors = num(metrics.qualityErrors) ? metrics.qualityErrors : 0;
+    const unhandledErrors = num(metrics.unhandledErrors) ? metrics.unhandledErrors : 0;
 
     // Get thresholds from config
     const coverageMinimum = this.config.thresholds?.coverage?.minimum || 60;
@@ -684,6 +811,7 @@ export class ReportAggregator {
     if (overallCoverage < coverageTarget) return 'warning';
     if (highSecurity > 5) return 'warning';
     if (qualityErrors > 0) return 'warning';
+    if (unhandledErrors > 0) return 'warning';
 
     return 'passing';
   }
@@ -709,6 +837,105 @@ export class ReportAggregator {
     }
 
     return 'unknown';
+  }
+
+  isSonarConfigured() {
+    return Boolean(this.config.sonarcloud?.enabled && this.env.SONAR_TOKEN);
+  }
+
+  /**
+   * Freshness of every data source (#1226): status, measurement time, origin.
+   * Report files are dated by their mtime; fetched sources (DAST, SAST) by the hint their
+   * fetcher returned, or by the marker file it wrote.
+   * @returns {Promise<Object>} key -> { status, measuredAt, origin, note? }
+   */
+  async buildSources(data) {
+    const { reportTime } = data;
+    const maxAge = { ...DEFAULT_MAX_AGE_HOURS, ...(this.config.freshness?.maxAgeHours || {}) };
+    const abs = (rel) => path.join(this.baseDir, rel);
+    const fromFiles = async (key, reportPaths, originLabel) => {
+      const paths = reportPaths.filter(Boolean);
+      return classifySource({
+        present: paths.length > 0,
+        measuredAt: await newestMtime(paths.map(abs)),
+        now: reportTime,
+        maxAgeHours: maxAge[key],
+        origin: paths.length ? `${originLabel} (${paths.length} file${paths.length > 1 ? 's' : ''}, file time)` : originLabel
+      });
+    };
+    const readMarker = async (name) => {
+      try {
+        return await fs.readJson(path.join(this.baseDir, 'security-reports', name));
+      } catch {
+        return null;
+      }
+    };
+
+    const sources = {};
+    sources.javaTests = await fromFiles('javaTests', data.javaTestResults.reports.map(r => r.reportPath), 'JUnit XML');
+    sources.frontendTests = await fromFiles('frontendTests', data.frontendTestResults.reports.map(r => r.reportPath), 'Vitest JUnit XML');
+    sources.javaCoverage = await fromFiles('javaCoverage', data.javaCoverage.reports.map(r => r.reportPath), 'JaCoCo XML');
+    sources.frontendCoverage = await fromFiles('frontendCoverage',
+      data.frontendCoverage.coverage?.summary.totalFiles > 0 ? [data.frontendCoverage.reportPath] : [], 'web-frontend LCOV');
+    sources.infraCoverage = await fromFiles('infraCoverage',
+      data.infrastructureCoverage?.coverage?.summary.totalFiles > 0 ? [data.infrastructureCoverage.reportPath] : [], 'infrastructure LCOV');
+    sources.quality = await fromFiles('quality', data.qualityViolations.reports.map(r => r.reportPath), 'Checkstyle XML');
+
+    // SAST: Trivy runner hint, else its marker, else SARIF file times
+    const sarifPaths = data.securityFindings.reports.map(r => r.reportPath);
+    const sastHint = this.sourceHints.sast || (await readMarker('sast-source.json'));
+    sources.sast = classifySource({
+      present: sarifPaths.length > 0,
+      measuredAt: sastHint?.measuredAt ?? (await newestMtime(sarifPaths.map(abs))),
+      now: reportTime,
+      maxAgeHours: maxAge.sast,
+      forceStatus: sastHint?.status,
+      origin: sastHint?.origin || (sarifPaths.length ? 'SARIF files (file time)' : 'SARIF'),
+      note: sastHint?.note
+    });
+
+    // DAST: ZAP fetcher hint, else its marker, else the reports' own @generated date
+    const zap = data.zapDastFindings;
+    const dastHint = this.sourceHints.dast || (await readMarker('dast-source.json'));
+    let zapGenerated = null;
+    for (const r of zap?.reports || []) {
+      const d = r.findings?.generatedDate ? new Date(r.findings.generatedDate) : null;
+      if (d && !Number.isNaN(d.getTime()) && (!zapGenerated || d > zapGenerated)) zapGenerated = d;
+    }
+    sources.dast = classifySource({
+      present: Boolean(zap && zap.reports?.length),
+      measuredAt: dastHint?.measuredAt ?? zapGenerated,
+      now: reportTime,
+      maxAgeHours: maxAge.dast,
+      forceStatus: dastHint?.forceStatus,
+      origin: dastHint?.origin || 'ZAP JSON (report date)',
+      note: dastHint?.note
+    });
+
+    // LOC: measured live by cloc in this run
+    sources.loc = classifySource({
+      present: (data.locMetrics?.summary?.totalLoc || 0) > 0,
+      measuredAt: reportTime,
+      now: reportTime,
+      maxAgeHours: maxAge.loc,
+      configured: Boolean(this.config.loc?.enabled),
+      origin: 'cloc (this run)'
+    });
+
+    // SonarCloud: API call in this run, needs SONAR_TOKEN
+    const sonarConfigured = this.isSonarConfigured();
+    sources.sonar = classifySource({
+      present: Boolean(data.sonarMetrics),
+      measuredAt: reportTime,
+      now: reportTime,
+      maxAgeHours: maxAge.sonar,
+      configured: sonarConfigured,
+      origin: 'SonarCloud API',
+      note: sonarConfigured ? (data.sonarMetrics ? null : 'API call failed') : 'SONAR_TOKEN not set'
+    });
+
+    // Stable key order
+    return Object.fromEntries(SOURCE_KEYS.map(k => [k, sources[k]]));
   }
 
   /**
@@ -797,9 +1024,9 @@ export class ReportAggregator {
     };
   }
 
-  createEmptyFrontendCoverage() {
+  createEmptyFrontendCoverage(module = 'web-frontend') {
     return {
-      module: 'web-frontend',
+      module,
       coverage: {
         type: 'lcov',
         files: [],

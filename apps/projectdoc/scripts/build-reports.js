@@ -13,10 +13,10 @@ import reportsConfig from '../src/config/reports-config.js';
 import fs from 'fs-extra';
 import path from 'path';
 import { fileURLToPath } from 'url';
-import { execSync } from 'child_process';
 import Handlebars from 'handlebars';
-import { S3Client, ListObjectsV2Command, GetObjectCommand } from '@aws-sdk/client-s3';
-import { fromIni } from '@aws-sdk/credential-providers';
+import { fetchZapReports } from '../src/sources/zap-fetcher.js';
+import { runTrivyScan } from '../src/sources/trivy-runner.js';
+import { SOURCE_LABELS } from '../src/sources/source-status.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -29,7 +29,7 @@ class ReportsBuilder {
 
     // Output directory should be in apps/projectdoc/dist/reports/
     const projectDocDir = path.resolve(__dirname, '..');
-    this.outputDir = path.join(projectDocDir, 'dist', 'reports');
+    this.outputDir = options.outputDir || path.join(projectDocDir, 'dist', 'reports');
 
     console.log('Reports Builder initialized');
     console.log('Base directory:', this.baseDir);
@@ -50,14 +50,17 @@ class ReportsBuilder {
     console.log('\n=== BATbern Reports Builder ===\n');
 
     try {
-      // Step 0: Fetch ZAP reports from staging S3 if not already present locally
-      await this.fetchZapReports();
+      // Step 0: Refresh the fetched sources. Each returns a hint saying where its data came
+      // from and when it was measured; a failure here is reported on the dashboard, not fatal.
+      const dastHint = await fetchZapReports({ baseDir: this.baseDir, s3Fetch: () => this.listZapFromS3() });
+      const sastHint = await runTrivyScan({ baseDir: this.baseDir });
 
       // Step 1: Aggregate all reports
       console.log('Step 1: Aggregating reports...');
       const aggregator = new ReportAggregator({
         ...this.config,
-        baseDir: this.baseDir
+        baseDir: this.baseDir,
+        sourceHints: { dast: dastHint, sast: sastHint }
       });
       const reportData = await aggregator.aggregateAll();
 
@@ -102,7 +105,8 @@ class ReportsBuilder {
         success: true,
         healthStatus: reportData.summary.healthStatus,
         outputDir: this.outputDir,
-        summary: reportData.summary
+        summary: reportData.summary,
+        sources: reportData.metadata.sources
       };
 
     } catch (error) {
@@ -158,6 +162,8 @@ class ReportsBuilder {
       trends: reportData.trends,
       comparison: reportData.comparison,
       dast: reportData.dast,
+      sources: reportData.metadata.sources,
+      sourceList: this.sourceList(reportData.metadata.sources),
       externalLinks: this.config.externalLinks,
       category: 'reports'
     });
@@ -202,6 +208,8 @@ class ReportsBuilder {
       summary: reportData.summary.coverage,
       javaCoverage: reportData.coverage.java,
       frontendCoverage: reportData.coverage.frontend,
+      infrastructureCoverage: reportData.coverage.infrastructure,
+      sources: reportData.metadata.sources,
       thresholds: this.config.thresholds.coverage
     });
     await fs.writeFile(path.join(this.outputDir, 'coverage.html'), coverageHtml);
@@ -210,14 +218,17 @@ class ReportsBuilder {
     console.log('  - Generating security report...');
     const securityHtml = compileSecurity({
       security: reportData.security,
+      securitySummary: reportData.summary.security,
+      sastMeasured: typeof reportData.summary.security.totalIssues === 'number',
       dast: reportData.dast,
+      sources: reportData.metadata.sources,
       externalLinks: this.config.externalLinks
     });
     await fs.writeFile(path.join(this.outputDir, 'security.html'), securityHtml);
 
     // Generate ZAP DAST detail page
     console.log('  - Generating ZAP DAST report...');
-    const zapHtml = compileZap({ dast: reportData.dast });
+    const zapHtml = compileZap({ dast: reportData.dast, sources: reportData.metadata.sources });
     await fs.writeFile(path.join(this.outputDir, 'zap-report.html'), zapHtml);
 
     // Generate quality page
@@ -273,7 +284,11 @@ class ReportsBuilder {
     // Flatten module names: services/company-user-management-service -> company-user-management-service
     const flatModuleName = moduleName.split('/').pop();
 
-    if (moduleName === 'web-frontend') {
+    if (moduleName === 'infrastructure') {
+      details.htmlReports = {
+        coverage: `../${flatModuleName}/coverage/index.html`
+      };
+    } else if (moduleName === 'web-frontend') {
       details.htmlReports = {
         tests: `../${flatModuleName}/test-results/index.html`,
         coverage: `../${flatModuleName}/coverage/index.html`
@@ -356,6 +371,19 @@ class ReportsBuilder {
     } else {
       console.warn(`  ⚠️  Web-frontend coverage report not found at: ${frontendCoverageSource}`);
     }
+
+    // Copy infrastructure (CDK) coverage HTML; Jest writes it under coverage/lcov-report/
+    const infraCoverageSource = path.join(this.baseDir,
+      this.config.sources?.infrastructure?.htmlCoverageDir || 'infrastructure/coverage/lcov-report');
+    const infraCoverageTarget = path.join(this.outputDir, 'infrastructure', 'coverage');
+
+    if (await fs.pathExists(infraCoverageSource)) {
+      await fs.ensureDir(path.dirname(infraCoverageTarget));
+      await fs.copy(infraCoverageSource, infraCoverageTarget);
+      console.log('  - Copied infrastructure coverage report');
+    } else {
+      console.warn(`  ⚠️  Infrastructure coverage report not found at: ${infraCoverageSource}`);
+    }
   }
 
   /**
@@ -406,33 +434,53 @@ class ReportsBuilder {
   }
 
   /**
-   * Generate badges data for shields.io or similar
+   * Sources as a list for the "Data sources" table
+   */
+  sourceList(sources = {}) {
+    return Object.entries(sources).map(([key, s]) => ({ key, label: SOURCE_LABELS[key] || key, ...s }));
+  }
+
+  /**
+   * Generate badges data for shields.io or similar. A source without data says "no data".
    */
   generateBadgesData(summary) {
+    const num = (v) => typeof v === 'number';
+    const noData = { message: 'no data', color: 'lightgrey' };
+    const securityKnown = num(summary.security.critical) && num(summary.security.high);
     return {
       tests: {
         label: 'tests',
-        message: `${summary.tests.passed}/${summary.tests.total}`,
-        color: summary.tests.successRate === 100 ? 'brightgreen' : 'red'
+        ...(num(summary.tests.total)
+          ? { message: `${summary.tests.passed}/${summary.tests.total}`, color: summary.tests.successRate === 100 ? 'brightgreen' : 'red' }
+          : noData)
       },
       coverage: {
         label: 'coverage',
-        message: `${summary.coverage.overall}%`,
-        color: this.getCoverageColor(summary.coverage.overall)
+        ...(num(summary.coverage.overall)
+          ? { message: `${summary.coverage.overall}%`, color: this.getCoverageColor(summary.coverage.overall) }
+          : noData)
       },
       security: {
         label: 'security',
-        message: summary.security.critical === 0 && summary.security.high === 0
-          ? 'passing'
-          : `${summary.security.critical + summary.security.high} issues`,
-        color: summary.security.critical === 0 && summary.security.high === 0
-          ? 'brightgreen'
-          : 'red'
+        ...(securityKnown
+          ? {
+            message: summary.security.critical === 0 && summary.security.high === 0
+              ? 'passing'
+              : `${summary.security.critical + summary.security.high} issues`,
+            color: summary.security.critical === 0 && summary.security.high === 0 ? 'brightgreen' : 'red'
+          }
+          : noData)
       },
       quality: {
         label: 'quality',
-        message: summary.quality.errors === 0 ? 'passing' : `${summary.quality.errors} errors`,
-        color: summary.quality.errors === 0 ? 'brightgreen' : 'red'
+        ...(num(summary.quality.errors)
+          ? { message: summary.quality.errors === 0 ? 'passing' : `${summary.quality.errors} errors`, color: summary.quality.errors === 0 ? 'brightgreen' : 'red' }
+          : noData)
+      },
+      data: {
+        label: 'data',
+        message: summary.dataComplete ? 'complete' : `incomplete (${(summary.incompleteSources || []).length})`,
+        color: summary.dataComplete ? 'brightgreen' : 'orange'
       },
       codebase: {
         label: 'codebase',
@@ -539,7 +587,8 @@ class ReportsBuilder {
 
     // Format LOC as K (e.g. 87432 → '87.4K', 1200 → '1.2K', 800 → '800')
     Handlebars.registerHelper('formatKLoc', (value) => {
-      if (!value || value === 0) return '0';
+      if (value === null || value === undefined) return 'no data';
+      if (value === 0) return '0';
       if (value >= 1000) return `${(value / 1000).toFixed(1)}K`;
       return String(value);
     });
@@ -568,59 +617,73 @@ class ReportsBuilder {
       if (value === null || value === undefined) return '0';
       return parseInt(value).toLocaleString('en-US');
     });
+
+    // ── Data-source freshness (#1226) ──────────────────────────────────────
+    const esc = Handlebars.Utils.escapeExpression;
+    const day = (d) => (d ? new Date(d).toISOString().slice(0, 10) : 'unknown date');
+    const NO_DATA = '<span class="no-data">no data</span>';
+
+    Handlebars.registerHelper('isNum', (v) => typeof v === 'number');
+
+    // A number, or "no data" when the source was not measured (never 0)
+    Handlebars.registerHelper('numOr', (value) =>
+      new Handlebars.SafeString(typeof value === 'number' ? esc(value) : NO_DATA));
+
+    // A percentage, or "no data"
+    Handlebars.registerHelper('pct', (value) =>
+      new Handlebars.SafeString(typeof value === 'number' ? `${esc(value)}%` : NO_DATA));
+
+    Handlebars.registerHelper('formatDay', (d) => day(d));
+
+    const badge = (source, { showFresh }) => {
+      if (!source) return '';
+      const title = esc([source.origin, source.note].filter(Boolean).join(' — '));
+      switch (source.status) {
+        case 'fresh':
+          return showFresh ? `<span class="badge badge-success source-badge" title="${title}">fresh</span>` : '';
+        case 'stale':
+          return `<span class="badge badge-warning source-badge" title="${title}">stale since ${esc(day(source.measuredAt))}</span>`;
+        case 'partial':
+          return `<span class="badge badge-warning source-badge" title="${title}">partial</span>`;
+        case 'missing':
+          return `<span class="badge badge-error source-badge" title="${title}">no data</span>`;
+        case 'not-configured':
+          return `<span class="badge badge-info source-badge" title="${title}">not configured</span>`;
+        default:
+          return '';
+      }
+    };
+    // Badge for a tile: nothing when fresh, otherwise stale / partial / no data / not configured
+    Handlebars.registerHelper('sourceBadge', (source) => new Handlebars.SafeString(badge(source, { showFresh: false })));
+    // Badge for the sources table: always shown
+    Handlebars.registerHelper('sourceStatus', (source) => new Handlebars.SafeString(badge(source, { showFresh: true })));
   }
 
   /**
-   * Fetch ZAP reports from staging S3 into security-reports/ if not already present.
-   * Uses the batbern-staging AWS profile (same as deploy.js).
-   * Skips silently when credentials are unavailable (CI sets its own reports via workflow).
+   * Fallback DAST source: the S3 prefix CI wrote to until March 2026. Returns the objects for
+   * fetchZapReports, which cleans security-reports/ and marks the result as stale.
+   * Uses the batbern-staging AWS profile (STAGING_PROFILE overrides).
    */
-  async fetchZapReports() {
+  async listZapFromS3() {
     const ZAP_BUCKET = 'batbern-content-staging';
     const ZAP_PREFIX = 'ci-reports/zap/';
     const profile = process.env.STAGING_PROFILE || 'batbern-staging';
-    // Must match baseDir used by ReportAggregator (repo root) + pattern 'security-reports/zap-*.json'
-    const outDir = path.join(this.baseDir, 'security-reports');
+    const { S3Client, ListObjectsV2Command, GetObjectCommand } = await import('@aws-sdk/client-s3');
+    const { fromIni } = await import('@aws-sdk/credential-providers');
+    const s3 = new S3Client({ region: 'eu-central-1', credentials: fromIni({ profile }) });
 
-    // Skip S3 download if files were already pre-populated (e.g. by CI's gh run download step)
-    const existingFiles = (await fs.pathExists(outDir))
-      ? (await fs.readdir(outDir)).filter(f => f.endsWith('.json'))
-      : [];
-    if (existingFiles.length > 0) {
-      console.log(`  ℹ️  ZAP reports already present locally (${existingFiles.length} file(s)) — skipping S3 fetch.\n`);
-      return;
-    }
-
-    console.log(`Step 0: Fetching ZAP reports from s3://${ZAP_BUCKET}/${ZAP_PREFIX} ...`);
-    let s3;
-    try {
-      s3 = new S3Client({ region: 'eu-central-1', credentials: fromIni({ profile }) });
-    } catch {
-      console.warn('  ⚠️  Could not initialise S3 client — ZAP section will be hidden.\n');
-      return;
-    }
-
-    let listed;
-    try {
-      listed = await s3.send(new ListObjectsV2Command({ Bucket: ZAP_BUCKET, Prefix: ZAP_PREFIX }));
-    } catch (err) {
-      console.warn(`  ⚠️  Could not list ZAP reports (${err.message}) — ZAP section will be hidden.\n`);
-      return;
-    }
-
+    const listed = await s3.send(new ListObjectsV2Command({ Bucket: ZAP_BUCKET, Prefix: ZAP_PREFIX }));
     const objects = (listed.Contents || []).filter(o => o.Key !== ZAP_PREFIX);
-    if (objects.length === 0) {
-      console.warn('  ℹ️  No ZAP reports found in S3 — ZAP section will be hidden.\n');
-      return;
-    }
-
-    await fs.ensureDir(outDir);
+    const result = [];
     for (const obj of objects) {
-      const filename = obj.Key.replace(ZAP_PREFIX, '');
       const res = await s3.send(new GetObjectCommand({ Bucket: ZAP_BUCKET, Key: obj.Key }));
-      await fs.writeFile(path.join(outDir, filename), Buffer.from(await res.Body.transformToByteArray()));
+      result.push({
+        key: obj.Key.replace(ZAP_PREFIX, ''),
+        body: Buffer.from(await res.Body.transformToByteArray()),
+        lastModified: obj.LastModified
+      });
     }
-    console.log(`  ✅ Downloaded ${objects.length} ZAP report(s) to security-reports/\n`);
+    return result;
   }
 }
 
@@ -630,21 +693,33 @@ if (import.meta.url === `file://${process.argv[1]}`) {
 
   builder.build()
     .then(result => {
+      const show = (v, suffix = '') => (typeof v === 'number' ? `${v}${suffix}` : 'no data');
+      const t = result.summary.tests;
       console.log('\n📊 Build Summary:');
       console.log(`  Health Status: ${result.healthStatus}`);
-      console.log(`  Tests: ${result.summary.tests.passed}/${result.summary.tests.total}`);
-      console.log(`  Coverage: ${result.summary.coverage.overall}%`);
-      console.log(`  Security Issues: ${result.summary.security.totalIssues}`);
-      console.log(`  Quality Violations: ${result.summary.quality.totalViolations}`);
+      console.log(`  Tests: ${show(t.passed)}/${show(t.total)}${t.unhandledErrors ? ` (+${t.unhandledErrors} errors (unhandled))` : ''}`);
+      console.log(`  Coverage: ${show(result.summary.coverage.overall, '%')} (infrastructure: ${show(result.summary.coverage.infrastructure, '%')})`);
+      console.log(`  Security Issues (SAST): ${show(result.summary.security.totalIssues)}`);
+      console.log(`  DAST: ${result.summary.dast ? `${result.summary.dast.scansRun} scans, ${result.summary.dast.high} high / ${result.summary.dast.medium} medium` : 'no data'}`);
+      console.log(`  Quality Violations: ${show(result.summary.quality.totalViolations)}`);
       if (result.summary.codebase?.totalLoc > 0) {
         const loc = result.summary.codebase;
         console.log(`  Codebase: ${(loc.totalLoc / 1000).toFixed(1)}K LOC (prod: ${(loc.prodLoc / 1000).toFixed(1)}K, test: ${(loc.testLoc / 1000).toFixed(1)}K, ratio: ${loc.testToCodeRatio}x)${loc.techDebt ? `, debt: ${loc.techDebt}` : ''}`);
       }
 
-      // Exit with error code if build is failing
+      console.log('\n🗂  Data sources:');
+      for (const [key, src] of Object.entries(result.sources || {})) {
+        const when = src.measuredAt ? src.measuredAt.slice(0, 16).replace('T', ' ') : '-';
+        console.log(`  ${(SOURCE_LABELS[key] || key).padEnd(32)} ${src.status.padEnd(15)} ${when}${src.note ? `  (${src.note})` : ''}`);
+      }
+      if (!result.summary.dataComplete) {
+        console.warn(`\n⚠️  Data incomplete: ${result.summary.incompleteSources.join(', ')} — shown as such on the dashboard`);
+      }
+
+      // The report itself was produced. Failing health and missing sources are findings shown on
+      // the dashboard, not build errors; only an exception (below) fails the command.
       if (result.healthStatus === 'failing') {
-        console.error('\n⚠️  Build health status is FAILING');
-        process.exit(1);
+        console.warn('\n⚠️  Build health status is FAILING (see dashboard)');
       }
 
       process.exit(0);
