@@ -29,6 +29,8 @@ If your account holds more than one role (for example you are both an **Organize
 
 ## Logging In
 
+![Login page](../assets/screenshots/getting-started/login-page.png)
+
 ### Standard Login Flow
 
 <div class="step" data-step="1">
@@ -138,6 +140,8 @@ A speaker's Cognito account is provisioned by the organizer workflow when the sp
 ---
 
 ## Forgot Password
+
+![Forgot password page](../assets/screenshots/getting-started/forgot-password.png)
 
 <span class="feature-status implemented">Implemented</span>
 

@@ -389,6 +389,8 @@ BATbern meets **WCAG 2.1 AA** standards:
 
 ## Mobile & Responsive
 
+![Event page on a phone, with the bottom tab bar](../assets/screenshots/event-page/cockpit-phone.png ':size=300')
+
 The interface adapts to different devices:
 
 ### Touch Gestures

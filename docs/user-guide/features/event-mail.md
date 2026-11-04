@@ -7,6 +7,8 @@ slides mail?" without asking the team.
 
 ## Needs an answer
 
+![Communications tab of an event](../assets/screenshots/event-page/communications.png)
+
 What speakers wrote to the team for this event, so everyone sees the question and who answers it,
 instead of it sitting in one private inbox (Story 16.2a).
 
@@ -102,6 +104,8 @@ belongs to one of its registrations.
 
 ## + New mail
 
+![The + New mail menu](../assets/screenshots/features/event-mail-new-mail.png)
+
 The button sits at the top right of the communication tab, above all sections.
 
 The menu offers **Newsletter, Registrants, Speakers, Venue & Catering, Partners**. All five open the
@@ -178,6 +182,8 @@ In **Partner meetings**, the open meeting lists its own mails under "Mails of th
 Esc closes the composer; the focus goes back to "+ New mail".
 
 ## The Mail page (all events)
+
+![Mail page](../assets/screenshots/features/mail-center.png)
 
 **Mail** in the top navigation, right after Events, shows everything across events (Story 16.7). The
 number on the entry counts the open conversations of all events and of mail without an event; it

@@ -142,6 +142,8 @@ Success message: "Partner 'Sustainable Materials AG' created successfully"
 
 ## Partner Directory
 
+![Partner Directory](../assets/screenshots/entity-management/partners-list.png)
+
 <span class="feature-status implemented">Implemented</span>
 
 The partner directory showcases all active partners, sorted by tier.

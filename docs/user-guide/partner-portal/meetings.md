@@ -204,6 +204,8 @@ Notes are saved and visible to all organisers. They are **not visible to partner
 
 ## Meeting List View
 
+![Partner Meetings list](../assets/screenshots/partner-portal/organizer-partner-meetings.png)
+
 The meeting list shows past and upcoming meetings:
 
 ```

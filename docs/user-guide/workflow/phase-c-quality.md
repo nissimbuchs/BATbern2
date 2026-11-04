@@ -24,15 +24,11 @@ Phase C ensures submitted content meets quality standards before public release.
 
 Before reviewing content, publish the speakers from the Publishing tab.
 
-![Publishing Tab Before Speakers](../assets/screenshots/workflow/phase-c-quality/c-01-publish-tab-before-speakers.png)
-
-After publishing speakers:
-
-![Speakers Published](../assets/screenshots/workflow/phase-c-quality/c-02-speakers-published.png)
+![Publishing tab](../assets/screenshots/event-page/publishing.png)
 
 Return to the Speakers tab to begin content review:
 
-![Speakers Tab After Publish](../assets/screenshots/workflow/phase-c-quality/c-03-speakers-tab-after-publish.png)
+![Speakers & Agenda → Agenda: sessions with materials status](../assets/screenshots/event-page/speakers-agenda.png)
 
 ## Step 7: Content Quality Review
 
@@ -79,7 +75,7 @@ Systematically review speaker content to ensure presentations meet BATbern quali
 
 Navigate to the Speakers tab after publishing speakers. Open the quality review drawer for each presentation.
 
-![Quality Review Drawer](../assets/screenshots/workflow/phase-c-quality/c-04-quality-review-1-opened.png)
+![Speaker drawer, opened from a kanban card (tabs Details, Content, History)](../assets/screenshots/workflow/phase-c-quality/c-04-quality-review-1-opened.png)
 
 </div>
 
@@ -105,8 +101,6 @@ The content review interface displays:
 **Make Decision**
 
 After reviewing the content, approve it to move the speaker to `QUALITY_REVIEWED`.
-
-![Content Approved](../assets/screenshots/workflow/phase-c-quality/c-05-content-approved-1.png)
 
 **Approve** (score ≥ 3.5):
 - Speaker status: `CONTENT_SUBMITTED` → **`QUALITY_REVIEWED`**

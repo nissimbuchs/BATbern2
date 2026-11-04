@@ -44,6 +44,8 @@ When the flag is off (the default), all AI endpoints return `503` and the AI but
 
 ## Moderator Presentation Page (Story 10.8a/b)
 
+![Moderator presentation, title slide](../assets/screenshots/features/presentation-page.png)
+
 A single fullscreen webpage (e.g., `/present/BATbern57`) that a moderator opens on the projector laptop and drives with a presentation remote — guiding the audience through the evening without ever touching PowerPoint, with content served live from the platform.
 
 - **No authentication** — loads all event data publicly; navigate with `→` / `←` / `PageDown` / `PageUp` / `Space`; `F` (or `F11`) toggles fullscreen.

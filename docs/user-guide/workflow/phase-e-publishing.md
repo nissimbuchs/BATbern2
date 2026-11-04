@@ -34,6 +34,8 @@ You normally do not need to archive by hand: a nightly job archives every event 
 
 ### How to Archive an Event Manually
 
+![Event page, Details → Settings: event state and override](../assets/screenshots/event-page/details-settings.png)
+
 <div class="step" data-step="1">
 
 **Open the Event State Settings**
@@ -141,6 +143,8 @@ See [Live Event Management (Watch Mode)](#live-event-management-watch-mode) belo
 - The EVENT_LIVE and EVENT_COMPLETED jobs compare the event date with the current day in Swiss time (Europe/Zurich)
 
 ### Live Event Management (Watch Mode)
+
+![Live Control on a phone during a session](../assets/screenshots/features/live-control-phone.png ':size=300')
 
 <span class="feature-status implemented">Implemented</span>
 

@@ -8,6 +8,8 @@
 
 ## Overview
 
+![User Management list](../assets/screenshots/entity-management/users-list.png)
+
 Users are individuals with BATbern accounts. Each user has one or more **roles** that determine their permissions and platform capabilities. Multi-role users get a single session with grouped navigation (section dividers per role) — no separate logins per role.
 
 The user directory (user list, search, and other people's user records) is available to

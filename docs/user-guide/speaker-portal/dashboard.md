@@ -138,6 +138,8 @@ Events are sorted by date descending (most recent first).
 
 ## Profile Section
 
+![Speaker profile page](../assets/screenshots/speaker-portal/profile.png)
+
 The dashboard header shows:
 - Speaker photo (if uploaded)
 - Name and company

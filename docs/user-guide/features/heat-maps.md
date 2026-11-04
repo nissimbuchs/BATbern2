@@ -46,7 +46,7 @@ The heat map uses a color-coded matrix where warmer colors (red, orange) indicat
 2. Click **"View Topic Heat Map"** button in the Topic Backlog section
 3. The heat map overlay will display over your current view
 
-![Topic Heat Map](../assets/screenshots/workflow/phase-a-setup/a-16-topic-heatmap.png)
+![Topic Backlog Manager, heat map view](../assets/screenshots/workflow/phase-a-setup/a-17-topic-heatmap.png)
 
 ### Understanding the Visualization
 

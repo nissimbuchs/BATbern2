@@ -49,6 +49,8 @@ All tasks progress through 4 states:
 
 ### Task Dashboard
 
+![Task Board with the All Tasks filter](../assets/screenshots/features/task-board.png)
+
 <span class="feature-status implemented">Implemented</span>
 
 Access tasks via the Task Board (Kanban-style interface):

@@ -73,6 +73,8 @@ BATbern supports 3 distinct event formats:
 
 ## Creating an Event
 
+![Create New Event dialog](../assets/screenshots/workflow/phase-a-setup/a-02-event-creation-modal.png)
+
 <div class="step" data-step="1">
 
 **Open the Events page**

@@ -47,6 +47,8 @@ The work tabs change emphasis with the [event state](events.md#event-workflow-st
 
 ### On a phone
 
+![The More sheet on a phone](../assets/screenshots/event-page/more-sheet-phone.png ':size=300')
+
 Below 900 px width the tabs move to a bar at the bottom of the screen: **Cockpit**, **Speakers &
 Agenda**, **Registrations**, **Communications** and **⋯ More**. **More** opens a sheet with
 **Publishing**, **Wrap-up** and **Details**.
@@ -54,6 +56,8 @@ Agenda**, **Registrations**, **Communications** and **⋯ More**. **More** opens
 ---
 
 ## Cockpit
+
+![Cockpit tab of BATbern60](../assets/screenshots/event-page/cockpit.png)
 
 The landing tab: where the event stands, what needs your attention, and the key figures. It also
 carries the event-day controls (**Start the presentation**, **Open Live Control**).
@@ -64,6 +68,8 @@ rehearsal links and the event-day walkthrough.
 ---
 
 ## Speakers & Agenda
+
+![Speakers & Agenda → Pool](../assets/screenshots/event-page/speakers-pool.png)
 
 Three views, switched with the buttons at the top of the tab:
 
@@ -81,6 +87,8 @@ How the speaker workflow works is described in the
 ---
 
 ## Registrations
+
+![Registrations tab with capacity bar and filters](../assets/screenshots/event-page/registrations.png)
 
 The participant list of the event, with the waitlist and the name-badge exports.
 
@@ -199,6 +207,8 @@ save of the capacity field promotes them and mails them immediately. The field's
 
 ## Communications
 
+![Communications tab](../assets/screenshots/event-page/communications.png)
+
 The event's mail page: **Needs an answer**, **What went out**, **Handled automatically**, and the
 **+ New mail** button, which writes to **Newsletter**, **Registrants**, **Speakers**, **Venue &
 Catering** or **Partners**. Newsletters are sent from here too.
@@ -208,6 +218,8 @@ See **[Event mail page](../features/event-mail.md)**.
 ---
 
 ## Publishing
+
+![Publishing tab](../assets/screenshots/event-page/publishing.png)
 
 Publishes the event to the public website in phases: **Topic**, then **Speakers**, then **Agenda**.
 Each phase needs the previous one. The tab has three sections, **Validation** (what still blocks the
@@ -224,6 +236,8 @@ See [Phase D: Slot Assignment & Publishing](../workflow/phase-d-assignment.md).
 
 ## Wrap-up
 
+![Wrap-up tab, thank-you notes](../assets/screenshots/event-page/wrapup-thank-you-notes.png)
+
 Available from `EVENT_LIVE` on. It holds **Event Photos** (upload and manage the photo gallery) and
 **Thank-you notes** (the notes attendees left for the organizers).
 
@@ -236,6 +250,8 @@ See [Media & Content](../features/media-and-content.md) and
 
 ### Info
 
+![Details → Info](../assets/screenshots/event-page/details-info.png)
+
 The event's identity, edited in place and stored with **Save changes**: title, description, the
 topic (**Change topic**), **When & where** (event date, registration deadline, venue, venue address,
 venue capacity) and the theme image, which can be uploaded or generated with **✨ Generate (AI)**.
@@ -244,6 +260,8 @@ The **Capacity** field here is the venue's capacity. The number of places people
 **Registration Capacity** under Settings.
 
 ### Tasks
+
+![Details → Tasks](../assets/screenshots/event-page/details-tasks.png)
 
 The event's tasks, live:
 
@@ -256,6 +274,8 @@ Use this sub-tab to add a default task that an older event lacks, for example **
 **Wein** (see [Task Templates](../administration/task-templates.md#events-created-before-24-october-2026)).
 
 ### Settings
+
+![Details → Settings](../assets/screenshots/event-page/details-settings.png)
 
 | Section | What it does |
 |---------|--------------|

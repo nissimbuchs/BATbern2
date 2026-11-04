@@ -19,6 +19,8 @@ shows the template's name, its due date and its trigger state.
 
 ## Default Templates
 
+![Administration, Task Templates tab](../assets/screenshots/administration/admin-task-templates.png)
+
 There are ten default templates. They cannot be deleted, and their settings can only be changed by a
 database migration.
 

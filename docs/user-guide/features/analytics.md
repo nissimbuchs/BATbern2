@@ -25,6 +25,8 @@ The Event Analytics dashboard provides organizers with actionable insights into 
 
 ## Implemented Analytics
 
+![Organizer analytics page](../assets/screenshots/features/analytics.png)
+
 ### Analytics Dashboard (Story 10.5)
 
 A dedicated, fully built **Analytics page** (available at **Organizer Portal → Analytics**, and to partners) presents BATbern statistics as live, data-driven charts — designed so organizers can showcase community growth during partner meetings without preparing slides by hand. Built with Recharts (no manual data export needed):

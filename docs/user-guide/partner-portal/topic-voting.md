@@ -22,6 +22,8 @@ Organisers review all suggestions, select topics for upcoming events, and update
 
 ## The Topic List
 
+![Topic Suggestions as a partner sees them](../assets/screenshots/partner-portal/topics.png)
+
 Topics are displayed sorted by vote count (most voted first):
 
 ```
@@ -145,6 +147,8 @@ Your suggestion appears at the bottom of the list with status **PROPOSED** and 0
 5. If selected, they may add a "Planned for" note — you'll see it in the list
 
 ## For Organisers
+
+![Partner topics, organizer view](../assets/screenshots/partner-portal/organizer-partner-topics.png)
 
 Organisers can see all topics and voting data. To update a topic's status:
 

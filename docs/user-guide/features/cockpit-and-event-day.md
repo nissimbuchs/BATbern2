@@ -4,6 +4,8 @@
 
 ## Overview
 
+![Cockpit: lifecycle spine, Needs your attention, At a glance with the rehearsal links](../assets/screenshots/event-page/cockpit-at-a-glance.png)
+
 The **Cockpit** is the first tab of every [event page](../entity-management/event-page.md). It answers
 "what do I have to do for this event now?" and, on the event day, it is where the presentation and
 Live Control are started.
@@ -119,6 +121,8 @@ organizer login.
 
 ### What it shows
 
+![Live Control on a phone, a session running](../assets/screenshots/features/live-control-phone.png ':size=300')
+
 - **Header:** *Live Steuerung*, the event code, and the connection state: *Verbunden* (connected),
   *Verbinde...* (connecting) or *Offline*. When offline, the page says *"Live-Updates nicht
   verfügbar. Bitte Seite neu laden."*: reload the page.
@@ -138,6 +142,8 @@ The page refreshes every few seconds while a session is running, and less often 
 running or the browser tab is in the background.
 
 ### Changing the schedule
+
+![Session Zeit anpassen sheet](../assets/screenshots/features/live-control-adjust-time.png ':size=300')
 
 Two buttons on the active session:
 

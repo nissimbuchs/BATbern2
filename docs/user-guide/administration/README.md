@@ -74,15 +74,21 @@ See [Email Templates](email-templates.md) for full details.
 
 ### Tab 4 — Presentation
 
+![Administration, Presentation tab](../assets/screenshots/administration/admin-presentation.png)
+
 The **About Text** and the **Partner Count** shown on the moderator presentation page. See
 [Media & Content](../features/media-and-content.md).
 
 ### Tab 5 — AI Prompts
 
+![Administration, AI Prompts tab](../assets/screenshots/administration/admin-ai-prompts.png)
+
 The three prompts the AI features use: event description, theme image, and abstract quality review.
 Each can be edited and saved, or reset to its default.
 
 ### Tab 6 — Settings
+
+![Administration, Settings tab](../assets/screenshots/administration/admin-settings.png)
 
 - **Email Forwarding**: the recipients of mail to `support@batbern.ch`. Empty means all organizers.
 - **Mail Center: notice instead of forwarding**: one checkbox per address group. Checked groups are
@@ -90,6 +96,8 @@ Each can be edited and saved, or reset to its default.
   [Event mail page](../features/event-mail.md).
 
 ### Tab 7 — Global Images
+
+![Administration, Global Images tab](../assets/screenshots/administration/admin-global-images.png)
 
 Teaser images shown as full-screen slides on **all** event presentations. Images for one event only
 are added in that event's **Details → Settings → Teaser Images**.

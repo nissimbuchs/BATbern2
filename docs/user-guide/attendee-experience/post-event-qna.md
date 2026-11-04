@@ -51,6 +51,8 @@ Frozen Q&A attached to the session's public archive page — permanent
 
 ## Who can do what
 
+![Sessions of an archived event on the public site, with the Q&A links](../assets/screenshots/public/archive-event-sessions.png)
+
 | Action | Who | When |
 |--------|-----|------|
 | Post a question / answer | Logged-in attendees and speakers | While the window is **open** |

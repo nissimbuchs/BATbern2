@@ -8,6 +8,8 @@
 
 ## Overview
 
+![Public homepage with the next event](../assets/screenshots/public/homepage.png)
+
 For a community of ~200 practitioners that meets ~3 times a year, the old idea of personal dashboards, bookmarks, a recommendation engine, and a mobile PWA was always too much machinery for too little recurring engagement. **Epic 7 is the right-sized replacement.** It adds a small set of organizer-voted features whose single thesis is this:
 
 > The login was never about gating *consumption* — content is, and stays, free to everyone. The login exists to gate *participation*, and to make a contributor **reachable** so a suggestion can become a dialogue.

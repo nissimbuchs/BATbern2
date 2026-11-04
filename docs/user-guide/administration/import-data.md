@@ -16,6 +16,8 @@ A second, related surface — the **Export / Import** tab (Tab 4) — handles fu
 
 ## Import Types
 
+![Administration, Import Data tab](../assets/screenshots/administration/admin-import-data.png)
+
 Each import type is presented as a card with a description and a trigger button.
 
 ### Events

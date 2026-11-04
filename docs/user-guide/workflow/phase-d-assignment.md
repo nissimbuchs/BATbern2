@@ -24,43 +24,27 @@ Phase D assigns approved speakers to specific time slots and publishes the final
 
 ### Slot Assignment
 
-Navigate to the Speakers tab and switch to Sessions view to manage slot assignments.
+Open **Speakers & Agenda** on the event page and switch to **Agenda**.
 
-![Sessions View](../assets/screenshots/workflow/phase-d-publishing/d-02-sessions-view-loaded.png)
+![Speakers & Agenda → Agenda](../assets/screenshots/workflow/phase-d-publishing/d-02-sessions-view-loaded.png)
 
-Click **Manage Slot Assignments** to open the assignment interface.
+Click **Arrange slots** (or switch to **Slots**) to open the assignment view.
 
-![Slot Assignment Page](../assets/screenshots/workflow/phase-d-publishing/d-03-slot-assignment-page-loaded.png)
+![Speakers & Agenda → Slots: speaker pool and session timeline](../assets/screenshots/workflow/phase-d-publishing/d-03-slot-assignment-page-loaded.png)
 
-Before auto-assignment:
+On a phone the Slots view stacks the speaker pool above the session timeline:
 
-![Before Auto Assign](../assets/screenshots/workflow/phase-d-publishing/d-04-before-auto-assign.png)
+![Slots view on a phone](../assets/screenshots/event-page/speakers-slots-phone.png ':size=300')
 
 Use the **Auto-Assign** feature to automatically assign presentations to available slots.
-
-![Auto-Assign Modal](../assets/screenshots/workflow/phase-d-publishing/d-05-auto-assign-modal-opened.png)
-
-After auto-assignment completes:
-
-![After Auto Assign](../assets/screenshots/workflow/phase-d-publishing/d-06-after-auto-assign.png)
-
-Return to event page:
-
-![Back to Event Page](../assets/screenshots/workflow/phase-d-publishing/d-07-back-to-event-page.png)
 
 ### Publishing the Agenda
 
 After assigning all sessions to slots, navigate to the Publishing tab.
 
-![Publishing Tab](../assets/screenshots/workflow/phase-d-publishing/d-08-publishing-tab-loaded.png)
+Click **Publish Agenda** to make the schedule public. Afterwards all three phases show as published:
 
-Before publishing the agenda:
-
-![Before Publish Agenda](../assets/screenshots/workflow/phase-d-publishing/d-09-before-publish-agenda.png)
-
-Click **Publish Agenda** to make the schedule public:
-
-![Agenda Published](../assets/screenshots/workflow/phase-d-publishing/d-10-agenda-published.png)
+![Publishing tab after all three phases are published](../assets/screenshots/workflow/phase-d-publishing/d-10-agenda-published.png)
 
 ## Step 9: Assign Speakers to Time Slots
 

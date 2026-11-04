@@ -18,6 +18,8 @@ content below it. There is no left sidebar.
 
 ## The Top Bar
 
+![Top bar for an organizer](../assets/screenshots/getting-started/top-bar.png)
+
 ```
 ┌──────────────────────────────────────────────────────────────────────────────────────────┐
 │ BATbern  Events  Mail(3)  Partners ▾  Companies  Users  Newsletter Subscribers           │
@@ -62,6 +64,8 @@ content below it. There is no left sidebar.
 The BATbern logo is not a link; use **Events** to get back to the start.
 
 ## The Events Page
+
+![Events page](../assets/screenshots/getting-started/events-list.png)
 
 **Events** (`/organizer/events`) is the organizer start page, titled **Event Management**:
 

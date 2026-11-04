@@ -16,6 +16,8 @@ The **Event Types** tab lets you define the slot templates used when creating ev
 
 ## Event Types
 
+![Administration, Event Types tab](../assets/screenshots/administration/admin-event-types.png)
+
 BATbern supports three event formats, each with a different default slot structure:
 
 | Type | Format | Typical Duration | Typical Slot Count |

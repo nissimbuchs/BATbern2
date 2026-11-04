@@ -14,6 +14,8 @@ Data is loaded on demand with a 15-minute cache, so the first load per session m
 
 ## The Analytics Table
 
+![Partner attendance analytics](../assets/screenshots/partner-portal/analytics.png)
+
 The main view is a table sorted by event date (most recent first):
 
 ```

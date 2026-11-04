@@ -39,6 +39,8 @@ The thank-you lives on the **public event / archive page**. A missing or invalid
 
 ## For organizers
 
+![Wrap-up tab, thank-you notes with the Featured switch](../assets/screenshots/event-page/wrapup-thank-you-notes.png)
+
 Open the event's **Wrap-up** tab. Under **Thank-you notes** you see the **aggregate count** for the event and **every note** attendees submitted (a thank-you without text shows as "(clap with no note)"). There is nothing to moderate or approve for the count itself — it just accumulates.
 
 ## Story 7.7 — Curated Thank-You Marquee
