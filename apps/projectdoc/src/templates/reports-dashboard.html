@@ -42,15 +42,38 @@
             {{#if comparison}}
             <div class="comparison-strip">
                 <span>Compared to previous day ({{formatDate comparison.previous.timestamp}}):</span>
+                {{#if (isNum comparison.changes.coverage.overall)}}
                 <span class="change-item {{#if (gt comparison.changes.coverage.overall 0)}}positive{{else}}negative{{/if}}">
                     Coverage: {{#if (gt comparison.changes.coverage.overall 0)}}+{{/if}}{{comparison.changes.coverage.overall}}%
                 </span>
+                {{/if}}
+                {{#if (isNum comparison.changes.tests.failed)}}
                 <span class="change-item {{#if (eq comparison.changes.tests.failed 0)}}positive{{else}}negative{{/if}}">
                     Failed Tests: {{#if (gt comparison.changes.tests.failed 0)}}+{{/if}}{{comparison.changes.tests.failed}}
                 </span>
+                {{/if}}
+                {{#if (isNum comparison.changes.security.total)}}
                 <span class="change-item {{#if (lte comparison.changes.security.total 0)}}positive{{else}}negative{{/if}}">
                     Security Issues: {{#if (gt comparison.changes.security.total 0)}}+{{/if}}{{comparison.changes.security.total}}
                 </span>
+                {{/if}}
+            </div>
+            {{/if}}
+
+            {{#unless summary.dataComplete}}
+            <div class="data-banner data-banner-incomplete" role="alert">
+                <strong>⚠️ Incomplete data.</strong> These sources are missing or out of date, so the figures below do not show the whole picture:
+                <ul>
+                    {{#each summary.incompleteDetails}}
+                    <li><strong>{{this.label}}</strong>: {{#if_eq this.status "stale"}}stale since {{formatDay this.measuredAt}}{{else}}{{#if_eq this.status "missing"}}no data{{else}}{{this.status}}{{/if_eq}}{{/if_eq}}{{#if this.note}} ({{this.note}}){{/if}}</li>
+                    {{/each}}
+                </ul>
+                Regenerate with <code>make reports</code>.
+            </div>
+            {{/unless}}
+            {{#if summary.notConfiguredSources.length}}
+            <div class="data-banner data-banner-info">
+                Not configured: {{#each summary.notConfiguredSources}}{{this.label}}{{#if this.note}} ({{this.note}}){{/if}}{{#unless @last}}, {{/unless}}{{/each}}
             </div>
             {{/if}}
         </section>
@@ -61,9 +84,19 @@
                 <div class="metric-icon">🧪</div>
                 <div class="metric-content">
                     <h3>Tests</h3>
+                    {{#if (isNum summary.tests.total)}}
                     <div class="metric-value">{{summary.tests.passed}}/{{summary.tests.failed}}/{{summary.tests.skipped}}/{{summary.tests.total}}</div>
                     <div class="metric-label">
-                        Pass/Fail/Skip/Total • {{summary.tests.successRate}}% Success
+                        Pass/Fail/Skip/Total • {{pct summary.tests.successRate}} Success
+                        {{#if (gt summary.tests.unhandledErrors 0)}}
+                        <br><span class="badge badge-error source-badge" title="Errors thrown outside any test (Vitest), not counted as failed tests">{{summary.tests.unhandledErrors}} errors (unhandled)</span>
+                        {{/if}}
+                    </div>
+                    {{else}}
+                    <div class="metric-value"><span class="no-data">no data</span></div>
+                    {{/if}}
+                    <div class="metric-breakdown">
+                        Java {{sourceBadge sources.javaTests}} | Frontend {{sourceBadge sources.frontendTests}}
                     </div>
                 </div>
             </div>
@@ -72,17 +105,21 @@
                 <div class="metric-icon">📊</div>
                 <div class="metric-content">
                     <h3>Coverage</h3>
-                    <div class="metric-value">{{summary.coverage.overall}}%</div>
+                    <div class="metric-value">{{pct summary.coverage.overall}}</div>
                     <div class="metric-label">
                         Target: {{summary.coverage.target}}%
+                        {{#if (isNum summary.coverage.overall)}}
                         {{#if (lt summary.coverage.overall summary.coverage.target)}}
                         <span class="badge badge-warning">Below Target</span>
                         {{else}}
                         <span class="badge badge-success">On Target</span>
                         {{/if}}
+                        {{/if}}
                     </div>
                     <div class="metric-breakdown">
-                        Java: {{summary.coverage.java}}% | Frontend: {{summary.coverage.frontend}}%
+                        Java: {{pct summary.coverage.java}} {{sourceBadge sources.javaCoverage}}
+                        | Frontend: {{pct summary.coverage.frontend}} {{sourceBadge sources.frontendCoverage}}
+                        | Infra: {{pct summary.coverage.infrastructure}} {{sourceBadge sources.infraCoverage}}
                     </div>
                 </div>
             </div>
@@ -90,9 +127,14 @@
             <div class="metric-card">
                 <div class="metric-icon">🔒</div>
                 <div class="metric-content">
-                    <h3>Security</h3>
+                    <h3>Security · SAST (Trivy)</h3>
+                    {{#if (isNum summary.security.totalIssues)}}
                     <div class="metric-value">{{summary.security.totalIssues}}</div>
+                    {{else}}
+                    <div class="metric-value"><span class="no-data">not measured</span></div>
+                    {{/if}}
                     <div class="metric-label">
+                        {{sourceBadge sources.sast}}
                         {{#if (gt summary.security.critical 0)}}
                         <span class="badge badge-critical">{{summary.security.critical}} Critical</span>
                         {{/if}}
@@ -103,16 +145,25 @@
                         <span class="badge badge-success">No Issues</span>
                         {{/if}}
                     </div>
+                    <div class="metric-breakdown">
+                        <a href="security.html" style="color:var(--primary);font-size:0.8rem">Dependency scan details →</a>
+                    </div>
                 </div>
             </div>
 
-            {{#if dast}}
             <div class="metric-card">
                 <div class="metric-icon">🔍</div>
                 <div class="metric-content">
-                    <h3>OWASP ZAP</h3>
+                    <h3>DAST · OWASP ZAP</h3>
+                    {{#if dast}}
                     <div class="metric-value">{{dast.summary.scansRun}} scans</div>
+                    {{else}}
+                    <div class="metric-value"><span class="no-data">no data</span></div>
+                    {{/if}}
                     <div class="metric-label">
+                        {{sourceBadge sources.dast}}
+                        {{#if sources.dast.measuredAt}}<span class="source-date">scan of {{formatDay sources.dast.measuredAt}}</span>{{/if}}
+                        {{#if dast}}
                         {{#if dast.summary.clean}}
                         <span class="badge badge-success">✅ Clean</span>
                         {{else}}
@@ -126,26 +177,29 @@
                         <span class="badge badge-warning">{{dast.summary.low}} Low</span>
                         {{/if}}
                         {{/if}}
+                        {{/if}}
                     </div>
                     <div class="metric-breakdown">
                         <a href="zap-report.html" style="color:var(--primary);font-size:0.8rem">Full DAST report →</a>
                     </div>
                 </div>
             </div>
-            {{/if}}
 
             <div class="metric-card">
                 <div class="metric-icon">✨</div>
                 <div class="metric-content">
                     <h3>Code Quality</h3>
-                    <div class="metric-value">{{summary.quality.totalViolations}}</div>
+                    <div class="metric-value">{{numOr summary.quality.totalViolations}}</div>
                     <div class="metric-label">
+                        {{sourceBadge sources.quality}}
+                        {{#if (isNum summary.quality.totalViolations)}}
                         {{#if (gt summary.quality.errors 0)}}
                         <span class="badge badge-error">{{summary.quality.errors}} Errors</span>
                         {{/if}}
                         <span class="badge badge-warning">{{summary.quality.warnings}} Warnings</span>
                         {{#if (eq summary.quality.errors 0)}}
                         <span class="badge badge-success">No Errors</span>
+                        {{/if}}
                         {{/if}}
                     </div>
                 </div>
@@ -195,6 +249,28 @@
             </div>
         </section>
         {{/if}}
+
+        <!-- Data sources: where every number comes from and how old it is (#1226) -->
+        <section class="modules-section sources-section">
+            <h2>Data Sources</h2>
+            <div class="table-container">
+                <table class="modules-table">
+                    <thead>
+                        <tr><th>Source</th><th>Status</th><th>Measured</th><th>Origin</th></tr>
+                    </thead>
+                    <tbody>
+                        {{#each sourceList}}
+                        <tr>
+                            <td><strong>{{this.label}}</strong></td>
+                            <td>{{sourceStatus this}}</td>
+                            <td>{{#if this.measuredAt}}<time datetime="{{this.measuredAt}}">{{formatDate this.measuredAt}}</time>{{else}}<span class="no-data">-</span>{{/if}}</td>
+                            <td>{{this.origin}}{{#if this.note}}<br><small class="no-data">{{this.note}}</small>{{/if}}</td>
+                        </tr>
+                        {{/each}}
+                    </tbody>
+                </table>
+            </div>
+        </section>
 
         <!-- Module Status Table -->
         <section class="modules-section">
@@ -288,13 +364,11 @@
                     <h3>Security Dashboard</h3>
                     <p>Vulnerability findings and security scan results</p>
                 </a>
-                {{#if dast}}
                 <a href="zap-report.html" class="link-card">
                     <div class="link-icon">🔍</div>
                     <h3>OWASP ZAP DAST</h3>
                     <p>Dynamic security testing — per-rule PASS/WARN/FAIL for every check across all scans</p>
                 </a>
-                {{/if}}
                 <a href="quality.html" class="link-card">
                     <div class="link-icon">✨</div>
                     <h3>Quality Dashboard</h3>
@@ -354,6 +428,14 @@
                         borderColor: '#00897B',
                         backgroundColor: 'rgba(0, 137, 123, 0.1)',
                         tension: 0.4
+                    },
+                    {
+                        label: 'Infrastructure',
+                        data: trendsData.coverage.infrastructure || [],
+                        borderColor: '#8E24AA',
+                        backgroundColor: 'rgba(142, 36, 170, 0.1)',
+                        tension: 0.4,
+                        spanGaps: true
                     }
                 ]
             },

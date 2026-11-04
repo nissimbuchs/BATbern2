@@ -49,8 +49,22 @@
         <header class="page-header">
             <h1>Security Dashboard</h1>
             <p>Vulnerability findings and security scan results</p>
+            <p class="source-line">
+                SAST (Trivy dependency scan) {{sourceStatus sources.sast}}
+                {{#if sources.sast.measuredAt}}· measured {{formatDate sources.sast.measuredAt}}{{/if}}
+                {{#if sources.sast.origin}}· {{sources.sast.origin}}{{/if}}
+                {{#if sources.sast.note}}<br><small>{{sources.sast.note}}</small>{{/if}}
+            </p>
         </header>
 
+        {{#unless sastMeasured}}
+        <div class="dast-banner dast-banner-pending" role="alert">
+            ⚠️ SAST not measured{{#if sources.sast.note}}: {{sources.sast.note}}{{/if}}.
+            The dependency scan runs with every <code>make reports</code> (needs Docker). No numbers are shown rather than a misleading 0.
+        </div>
+        {{/unless}}
+
+        {{#if sastMeasured}}
         <!-- Security Summary -->
         <section class="security-summary">
             <div class="summary-card severity-critical">
@@ -207,6 +221,8 @@
         </section>
         {{/if}}
 
+        {{/if}}
+
         <!-- ═══════════════════════════════════════════════════════════ -->
         <!-- DAST Security Scan (OWASP ZAP)                            -->
         <!-- ═══════════════════════════════════════════════════════════ -->
@@ -215,9 +231,10 @@
             <h2 class="dast-heading">
                 <span class="dast-icon">🔍</span>
                 DAST Security Scan — OWASP ZAP
-                {{#if dast.scannedAt}}
-                <span class="dast-scanned-at">Scanned: {{dast.scannedAt}}</span>
+                {{#if sources.dast.measuredAt}}
+                <span class="dast-scanned-at">Scan of {{formatDate sources.dast.measuredAt}}</span>
                 {{/if}}
+                {{sourceBadge sources.dast}}
             </h2>
 
             <!-- DAST top-level status banner -->
@@ -316,8 +333,9 @@
                 DAST Security Scan — OWASP ZAP
             </h2>
             <div class="dast-banner dast-banner-pending">
-                ℹ️ ZAP DAST scan has not been run yet. Trigger the
-                <strong>Security Scan (OWASP ZAP)</strong> workflow and re-generate reports.
+                {{sourceBadge sources.dast}} No ZAP DAST data{{#if sources.dast.note}} ({{sources.dast.note}}){{/if}}.
+                The reports build downloads the latest successful <strong>Security Scan (OWASP ZAP)</strong>
+                run (weekly, <code>security-scan.yml</code>); check that it ran and that <code>gh</code> is logged in.
             </div>
         </section>
         {{/if}}
@@ -328,7 +346,7 @@
             <div class="practices-grid">
                 <div class="practice-card">
                     <h4>✅ Regular Scans</h4>
-                    <p>Security scans run automatically on every build in CI/CD pipeline.</p>
+                    <p>A Trivy dependency scan (lockfiles + built service jars) runs with every reports build (<code>make reports</code>).</p>
                 </div>
                 <div class="practice-card">
                     <h4>✅ Dependency Updates</h4>

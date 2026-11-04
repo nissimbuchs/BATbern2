@@ -142,11 +142,19 @@ export class JUnitParser {
       failures: 0,
       errors: 0,
       skipped: 0,
+      unhandledErrors: 0,
       totalTime: 0,
       successRate: 0
     };
 
     suites.forEach(suite => {
+      // Vitest reports errors thrown outside any test (e.g. an infinite render loop, #1225) as a
+      // pseudo-suite "vitest unhandled errors". They are not tests: count them separately so the
+      // dashboard shows "errors (unhandled)" instead of folding them into failed tests.
+      if (this.isUnhandledErrorsSuite(suite)) {
+        totals.unhandledErrors += Math.max(suite.errors, suite.testcases.length);
+        return;
+      }
       totals.totalTests += suite.tests;
       totals.failures += suite.failures;
       totals.errors += suite.errors;
@@ -162,6 +170,15 @@ export class JUnitParser {
       : 0;
 
     return totals;
+  }
+
+  /**
+   * Vitest's pseudo-suite for errors thrown outside any test
+   * @param {Object} suite - Parsed suite
+   * @returns {boolean}
+   */
+  static isUnhandledErrorsSuite(suite) {
+    return /^vitest unhandled errors$/i.test(suite.name || '');
   }
 
   /**
@@ -228,15 +245,18 @@ export class JUnitParser {
         failures: 0,
         errors: 0,
         skipped: 0,
+        unhandledErrors: 0,
         totalTime: 0,
         successRate: 0
       },
       modules: [],
-      failedTests: []
+      failedTests: [],
+      unhandledErrors: []
     };
 
     reports.forEach(report => {
       const stats = report.results.summary;
+      summary.overallStats.unhandledErrors += stats.unhandledErrors || 0;
 
       summary.overallStats.totalTests += stats.totalTests;
       summary.overallStats.passed += stats.passed;
@@ -255,8 +275,18 @@ export class JUnitParser {
         time: stats.totalTime
       });
 
-      // Collect failed tests
+      // Collect failed tests (unhandled errors go to their own list)
       report.results.suites.forEach(suite => {
+        if (this.isUnhandledErrorsSuite(suite)) {
+          suite.testcases.forEach(tc => {
+            summary.unhandledErrors.push({
+              module: report.module,
+              name: tc.name,
+              message: tc.error?.message || tc.failure?.message || tc.name
+            });
+          });
+          return;
+        }
         suite.testcases.forEach(tc => {
           if (tc.status === 'failed' || tc.status === 'error') {
             summary.failedTests.push({

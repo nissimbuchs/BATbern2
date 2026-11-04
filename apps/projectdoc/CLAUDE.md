@@ -60,18 +60,19 @@ npm run clean
 ### Working with Reports
 
 ```bash
-# First, generate test artifacts from project root
-cd ../../
-./gradlew test                 # Java tests + coverage
-cd web-frontend && npm test    # Frontend tests + coverage
-cd ../apps/projectdoc
+# Everything, from the repo root: clean build, all tests, CDK coverage, Trivy SAST,
+# latest ZAP DAST, then the site (see README-REPORTS.md for the sequence)
+make reports
 
-# Then build reports dashboard
+# Only re-aggregate what is on disk (each source's age is shown on the dashboard)
 npm run build:reports
 
-# Preview at http://localhost:3001
-npm run dev:reports
+# Unit tests of the aggregator, fetchers and history (node:test, offline)
+npm test
 ```
+
+A source that is missing or older than its threshold (`freshness` in `src/config/reports-config.js`)
+is shown as "no data" / "stale since <date>", never as 0, and caps the health status at warning.
 
 ## Key Architectural Patterns
 
@@ -162,6 +163,9 @@ Controls report sources, modules, and quality thresholds:
     },
     frontend: {
       coveragePattern: '**/coverage/lcov.info'
+    },
+    infrastructure: {
+      coveragePattern: 'infrastructure/coverage/lcov.info'   // shown separately, not in the overall %
     }
   },
   thresholds: {

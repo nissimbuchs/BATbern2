@@ -96,7 +96,7 @@ export class SarifParser {
         endLine: loc.physicalLocation?.region?.endLine,
         snippet: loc.physicalLocation?.region?.snippet?.text
       })),
-      severity: this.mapLevelToSeverity(result.level),
+      severity: this.resolveSeverity(result, rule),
       rule: rule ? {
         name: rule.name || ruleId,
         shortDescription: rule.shortDescription?.text,
@@ -121,6 +121,23 @@ export class SarifParser {
   static findRule(ruleId, run) {
     const rules = run.tool?.driver?.rules || [];
     return rules.find(rule => rule.id === ruleId) || null;
+  }
+
+  /**
+   * Severity of a result. SARIF `level` has no "critical" (Trivy maps CRITICAL and HIGH both to
+   * "error"), so prefer the scanner's own severity: the rule tags (Trivy: [..., "CRITICAL"]), then
+   * a "Severity: X" line in the message, and only then the SARIF level.
+   * @param {Object} result - SARIF result
+   * @param {Object|null} rule - Rule definition
+   * @returns {string} critical | high | medium | low | info
+   */
+  static resolveSeverity(result, rule) {
+    const known = { CRITICAL: 'critical', HIGH: 'high', MEDIUM: 'medium', LOW: 'low', UNKNOWN: 'info' };
+    const tag = (rule?.properties?.tags || []).find(t => known[t]);
+    if (tag) return known[tag];
+    const m = /Severity:\s*(CRITICAL|HIGH|MEDIUM|LOW|UNKNOWN)/.exec(result.message?.text || '');
+    if (m) return known[m[1]];
+    return this.mapLevelToSeverity(result.level);
   }
 
   /**

@@ -11,7 +11,7 @@
 # Run 'make help' to see all available targets
 
 .DEFAULT_GOAL := help
-.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all build-watch test-watch clean-watch watch-generate-types setup-test-users
+.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all build-watch test-watch clean-watch watch-generate-types setup-test-users reports reports-deploy
 
 # ═══════════════════════════════════════════════════════════
 # HELP & DOCUMENTATION
@@ -88,6 +88,8 @@ help: ## Show this help message
 	@echo "🔍 Utilities:"
 	@echo "  make verify              - Pre-commit verification (lint + test)"
 	@echo "  make all                 - Clean + Install + Build + Test"
+	@echo "  make reports             - Regenerate the projectdoc test & quality reports from scratch (all tests, CDK coverage, Trivy SAST, latest ZAP DAST)"
+	@echo "  make reports-deploy      - make reports, then deploy the projectdoc site"
 	@echo "  make watch-generate-types - Generate Swift types from OpenAPI spec"
 	@echo ""
 
@@ -170,10 +172,15 @@ test-java: ## Run Java tests with coverage verification (requires Docker)
 	@echo ""
 	@echo "📊 Java Coverage: build/reports/jacoco/test/html/index.html"
 
+# Memory guard for the CDK jest run: idle Gradle daemons plus jest workers plus cdk.out
+# directories left in /tmp (a RAM-backed tmpfs on rack) have OOM-crashed `make test` before.
 test-node: ## Run Node.js tests with coverage
 	@echo "🧪 Running Node.js tests with coverage..."
+	@./gradlew --stop
+	@rm -rf /tmp/cdk.out*
 	@echo "→ Testing infrastructure..."
-	@cd infrastructure && npm test -- --coverage || true
+	@cd infrastructure && npm test -- --coverage --maxWorkers=2 || true
+	@rm -rf /tmp/cdk.out*
 	@echo "→ Testing web-frontend..."
 	@cd web-frontend && npm run test:coverage
 	@echo "✓ Node.js tests complete"
@@ -250,7 +257,8 @@ clean-java: ## Clean Java build artifacts
 clean-node: ## Clean Node.js build artifacts
 	@echo "🧹 Cleaning Node.js build artifacts..."
 	@rm -rf infrastructure/node_modules infrastructure/cdk.out
-	@rm -rf web-frontend/node_modules web-frontend/dist web-frontend/coverage
+	@rm -rf web-frontend/node_modules web-frontend/dist web-frontend/coverage web-frontend/test-results
+	@rm -rf infrastructure/coverage
 	@echo "✓ Node.js clean complete"
 
 clean-watch: ## Clean watchOS build artifacts
@@ -500,6 +508,31 @@ verify: lint check-generated-types test ## Pre-commit verification (lint + check
 
 all: clean install build test ## Complete workflow: clean, install, build, test
 	@echo "✓ All tasks complete!"
+
+# ═══════════════════════════════════════════════════════════
+# PROJECTDOC REPORTS
+# ═══════════════════════════════════════════════════════════
+
+# Every source is regenerated, in sequence (one heavy job at a time), failing fast. The reports
+# build itself runs Trivy in Docker (SAST) and downloads the latest successful security-scan.yml
+# run (DAST, needs `gh` logged in); a source it cannot refresh is shown as stale/no data on the
+# dashboard instead of as 0. See apps/projectdoc/README-REPORTS.md.
+reports: ## Regenerate the projectdoc reports with current data from every source
+	@echo "📊 Regenerating projectdoc reports from scratch..."
+	@$(MAKE) clean install build test-java
+	@./gradlew --stop
+	@rm -rf /tmp/cdk.out*
+	@echo "→ Testing infrastructure (CDK coverage)..."
+	@cd infrastructure && npm test -- --coverage --maxWorkers=2
+	@rm -rf /tmp/cdk.out*
+	@echo "→ Testing web-frontend (coverage + JUnit)..."
+	@cd web-frontend && npm run test:coverage
+	@echo "→ Building projectdoc (Trivy SAST, ZAP DAST download, aggregation, site)..."
+	@cd apps/projectdoc && npm ci && npm run build
+	@echo "✓ Reports: apps/projectdoc/dist/reports/index.html"
+
+reports-deploy: reports ## Regenerate the projectdoc reports, then deploy the projectdoc site
+	@cd apps/projectdoc && npm run deploy
 
 watch-generate-types: ## Generate Swift types from OpenAPI spec for watchOS app
 	@echo "🔄 Generating Swift types from OpenAPI spec..."

@@ -57,8 +57,18 @@ export default {
       module: 'web-frontend'
     },
 
+    infrastructure: {
+      // Jest LCOV coverage from `cd infrastructure && npm test -- --coverage` (no JUnit reporter there)
+      coveragePattern: 'infrastructure/coverage/lcov.info',
+
+      // Jest's lcov reporter writes its HTML under lcov-report/
+      htmlCoverageDir: 'infrastructure/coverage/lcov-report',
+
+      module: 'infrastructure'
+    },
+
     security: {
-      // SARIF security scan results (Trivy generates these)
+      // SARIF security scan results, written by src/sources/trivy-runner.js on every reports build
       sarifPattern: 'security-reports/**/*.sarif',
 
       // Trivy results (fallback pattern)
@@ -186,6 +196,24 @@ export default {
           'test-results', 'playwright-report', '.git', 'out'
         ]
       }
+    }
+  },
+
+  // Freshness thresholds (#1226): a source measured longer ago than this, relative to the report
+  // time, is shown as "stale since <date>". Test and coverage files are dated by their mtime, SAST
+  // by the Trivy run, DAST by the security-scan.yml run (weekly, hence 8 days).
+  freshness: {
+    maxAgeHours: {
+      javaTests: 24,
+      frontendTests: 24,
+      javaCoverage: 24,
+      frontendCoverage: 24,
+      infraCoverage: 24,
+      sast: 24,
+      dast: 8 * 24,
+      quality: 24,
+      loc: 24,
+      sonar: 24
     }
   },
 
