@@ -97,6 +97,7 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.NoSuchElementException;
+import java.util.Objects;
 import java.util.UUID;
 import java.util.stream.Collectors;
 
@@ -1140,6 +1141,8 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
             event.setEventType(ch.batbern.events.core.dto.generated.EventType.fromValue(request.getEventType()));
         }
         // workflowState is applied after save via applyWorkflowStateChange (organizer cockpit plan T1)
+        boolean capacityChanged = !Objects.equals(
+                event.getRegistrationCapacity(), request.getRegistrationCapacity());
         event.setRegistrationCapacity(request.getRegistrationCapacity()); // null = unlimited
 
         // Set theme image upload ID before save (Story 2.5.3a)
@@ -1150,6 +1153,10 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         // Save updated event
         Event updatedEvent = eventRepository.save(event);
         updatedEvent = applyWorkflowStateChange(updatedEvent, request.getWorkflowState());
+        if (capacityChanged) {
+            // A raised capacity frees places: give them to the waitlist, in order
+            waitlistPromotionService.promoteFromWaitlist(updatedEvent.getId());
+        }
 
         // Associate theme image if new uploadId provided (Story 2.5.3a)
         // Must be done after save to ensure event has persisted eventCode
@@ -1246,6 +1253,11 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         // Save patched event
         Event patchedEvent = eventRepository.save(event);
         patchedEvent = applyWorkflowStateChange(patchedEvent, request.getWorkflowState());
+        if (request.getRegistrationCapacity() != null) {
+            // Saving the capacity (raised, or saved again unchanged) fills free places from the
+            // waitlist, in order. Saving it again is how an organizer fills places already free.
+            waitlistPromotionService.promoteFromWaitlist(patchedEvent.getId());
+        }
 
         // Handle theme image changes (Story 2.5.3a)
         // Check if themeImageUploadId was provided in the request (including null to clear it)

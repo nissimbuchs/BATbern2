@@ -32,6 +32,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -65,6 +66,7 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
 
     private static final String EVENT_CODE = "BATbern10k";
     private static final String EVENT_CODE_UNLIMITED = "BATbern10kU";
+    private static final String PATCHABLE_CODE = "BATbern9101";
 
     private int userCounter = 0;
 
@@ -320,7 +322,154 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
                 .andExpect(status().isForbidden());
     }
 
+    // ── Raising the capacity fills the free places from the waitlist ──────────
+
+    @Test
+    @DisplayName("PATCH capacity 2 → 4 with 3 waiting → positions 1 and 2 promoted, position 3 keeps waiting")
+    @WithMockUser(roles = "ORGANIZER")
+    void patchCapacity_raised_promotesWaitlistIntoFreePlaces() throws Exception {
+        Event event = cappedEvent();
+        createActive(event, "active.one", "registered");
+        createActive(event, "active.two", "confirmed");
+        Registration first = createWaitlistRegistration(event, "waiting.one", 1);
+        Registration second = createWaitlistRegistration(event, "waiting.two", 2);
+        Registration third = createWaitlistRegistration(event, "waiting.three", 3);
+
+        patchCapacity(4);
+
+        assertThat(statusOf(first)).isEqualTo("registered");
+        assertThat(statusOf(second)).isEqualTo("registered");
+        Registration stillWaiting = registrationRepository.findByRegistrationCode(
+                third.getRegistrationCode()).orElseThrow();
+        assertThat(stillWaiting.getStatus()).isEqualTo("waitlist");
+        assertThat(stillWaiting.getWaitlistPosition()).isEqualTo(3);
+    }
+
+    @Test
+    @DisplayName("PATCH with the unchanged capacity still fills places that are already free")
+    @WithMockUser(roles = "ORGANIZER")
+    void patchCapacity_sameValueWithFreePlace_promotes() throws Exception {
+        Event event = cappedEvent();
+        createActive(event, "active.one", "confirmed");
+        Registration first = createWaitlistRegistration(event, "waiting.one", 1);
+        Registration second = createWaitlistRegistration(event, "waiting.two", 2);
+
+        patchCapacity(2);
+
+        assertThat(statusOf(first)).isEqualTo("registered");
+        assertThat(statusOf(second)).isEqualTo("waitlist");
+    }
+
+    @Test
+    @DisplayName("PATCH of another field never touches the waitlist")
+    @WithMockUser(roles = "ORGANIZER")
+    void patchOtherField_doesNotPromote() throws Exception {
+        Event event = cappedEvent();
+        Registration first = createWaitlistRegistration(event, "waiting.one", 1);
+
+        mockMvc.perform(patch("/api/v1/events/{eventCode}", PATCHABLE_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"description\":\"new text\"}"))
+                .andExpect(status().isOk());
+
+        assertThat(statusOf(first)).isEqualTo("waitlist");
+    }
+
+    @Test
+    @DisplayName("PATCH capacity lowered below the active count promotes nobody")
+    @WithMockUser(roles = "ORGANIZER")
+    void patchCapacity_lowered_promotesNobody() throws Exception {
+        Event event = cappedEvent();
+        createActive(event, "active.one", "confirmed");
+        createActive(event, "active.two", "confirmed");
+        Registration first = createWaitlistRegistration(event, "waiting.one", 1);
+
+        patchCapacity(1);
+
+        assertThat(statusOf(first)).isEqualTo("waitlist");
+    }
+
+    @Test
+    @DisplayName("cancellation while still over capacity promotes nobody")
+    @WithMockUser(roles = "ORGANIZER")
+    void cancellation_overCapacity_promotesNobody() throws Exception {
+        Event event = cappedEvent();
+        Registration leaving = createActive(event, "active.one", "confirmed");
+        createActive(event, "active.two", "confirmed");
+        createActive(event, "active.three", "confirmed"); // organizer override put one over
+        Registration first = createWaitlistRegistration(event, "waiting.one", 1);
+
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        PATCHABLE_CODE, leaving.getRegistrationCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"cancelled\"}"))
+                .andExpect(status().isOk());
+
+        assertThat(statusOf(first)).isEqualTo("waitlist");
+    }
+
+    @Test
+    @DisplayName("cancellation that frees a place promotes position 1")
+    @WithMockUser(roles = "ORGANIZER")
+    void cancellation_freesPlace_promotesFirst() throws Exception {
+        Event event = cappedEvent();
+        Registration leaving = createActive(event, "active.one", "confirmed");
+        createActive(event, "active.two", "confirmed");
+        Registration first = createWaitlistRegistration(event, "waiting.one", 1);
+        Registration second = createWaitlistRegistration(event, "waiting.two", 2);
+
+        mockMvc.perform(patch("/api/v1/events/{eventCode}/registrations/{registrationCode}",
+                        PATCHABLE_CODE, leaving.getRegistrationCode())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"status\":\"cancelled\"}"))
+                .andExpect(status().isOk());
+
+        assertThat(statusOf(first)).isEqualTo("registered");
+        assertThat(statusOf(second)).isEqualTo("waitlist");
+    }
+
     // ── helpers ───────────────────────────────────────────────────────────────
+
+    private void patchCapacity(int capacity) throws Exception {
+        mockMvc.perform(patch("/api/v1/events/{eventCode}", PATCHABLE_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"registrationCapacity\":" + capacity + "}"))
+                .andExpect(status().isOk());
+    }
+
+    /** Capacity 2; a code the PATCH path pattern accepts (the BATbern10k fixture does not). */
+    private Event cappedEvent() {
+        return eventRepository.save(Event.builder()
+                .eventCode(PATCHABLE_CODE)
+                .title("Capacity Raise Event")
+                .eventNumber(9101)
+                .date(Instant.now().plus(60, ChronoUnit.DAYS))
+                .registrationDeadline(Instant.now().plus(55, ChronoUnit.DAYS))
+                .venueName("Test Venue")
+                .venueAddress("Teststrasse 1, Bern")
+                .venueCapacity(200)
+                .registrationCapacity(2)
+                .organizerUsername("test.organizer")
+                .currentAttendeeCount(0)
+                .eventType(EventType.EVENING)
+                .workflowState(ch.batbern.shared.types.EventWorkflowState.CREATED)
+                .build());
+    }
+
+    private String statusOf(Registration registration) {
+        return registrationRepository.findByRegistrationCode(registration.getRegistrationCode())
+                .orElseThrow().getStatus();
+    }
+
+    private Registration createActive(Event event, String username, String status) {
+        return registrationRepository.save(Registration.builder()
+                .registrationCode(event.getEventCode() + "-reg-" + username)
+                .eventId(event.getId())
+                .attendeeUsername(username)
+                .status(status)
+                .registrationDate(Instant.now())
+                .build());
+    }
 
     private void postRegistration(String eventCode, String email) throws Exception {
         String body = objectMapper.writeValueAsString(Map.of(

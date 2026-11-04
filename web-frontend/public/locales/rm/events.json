@@ -187,7 +187,7 @@
       "moderatorUpdated": "Moderatur actualisà cun success",
       "moderatorUpdateError": "Actualisar moderatur fallì.",
       "capacityLabel": "Capacità d'inscripziun",
-      "capacityHelperText": "Laschar vid per inscripziuns senza limit. Na po betg surpassar la capacità dal lieu.",
+      "capacityHelperText": "Laschar vid per inscripziuns senza limit. Na po betg surpassar la capacità dal lieu. Cun memorisar avanzan persunas da la glista da spetga en plazzas libras e survegnan in e-mail da confermaziun.",
       "capacityUpdated": "Capacità actualisada cun success",
       "capacityUpdateError": "Actualisar capacità falliu.",
       "notifications": "Notificaziuns",

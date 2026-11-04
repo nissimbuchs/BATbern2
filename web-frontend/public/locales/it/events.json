@@ -187,7 +187,7 @@
       "moderatorUpdated": "Moderatore aggiornato con successo",
       "moderatorUpdateError": "Aggiornamento moderatore fallito.",
       "capacityLabel": "Capacità di iscrizione",
-      "capacityHelperText": "Lascia vuoto per iscrizioni illimitate. Non può superare la capacità della sede.",
+      "capacityHelperText": "Lascia vuoto per iscrizioni illimitate. Non può superare la capacità della sede. Al salvataggio, le persone in lista d’attesa occupano i posti liberi e ricevono una conferma via e-mail.",
       "capacityUpdated": "Capacità aggiornata con successo",
       "capacityUpdateError": "Aggiornamento della capacità non riuscito.",
       "notifications": "Notifiche",

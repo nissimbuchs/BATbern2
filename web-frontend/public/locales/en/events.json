@@ -144,7 +144,7 @@
       "moderatorUpdated": "Moderator updated successfully",
       "moderatorUpdateError": "Failed to update moderator.",
       "capacityLabel": "Registration Capacity",
-      "capacityHelperText": "Leave blank for unlimited registrations. Cannot exceed venue capacity.",
+      "capacityHelperText": "Leave blank for unlimited registrations. Cannot exceed venue capacity. Saving moves people from the waitlist into free places, and they get a confirmation mail.",
       "capacityUpdated": "Capacity updated successfully",
       "capacityUpdateError": "Failed to update capacity.",
       "notifications": "Notifications",

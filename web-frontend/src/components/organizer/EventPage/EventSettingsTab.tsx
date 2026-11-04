@@ -334,7 +334,7 @@ export const EventSettingsTab: React.FC<EventSettingsTabProps> = ({ event, event
             label={t('eventPage.settings.capacityLabel', 'Registration Capacity')}
             helperText={t(
               'eventPage.settings.capacityHelperText',
-              'Leave blank for unlimited registrations. Cannot exceed venue capacity.'
+              'Leave blank for unlimited registrations. Cannot exceed venue capacity. Saving moves people from the waitlist into free places, and they get a confirmation mail.'
             )}
             type="number"
             value={capacityValue}

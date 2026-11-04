@@ -160,7 +160,11 @@ export const useUpdateEvent = (): UseMutationResult<
       }
     },
     // Invalidate and refetch on success
-    onSuccess: async (updatedEvent, { eventCode }) => {
+    onSuccess: async (updatedEvent, { eventCode, data }) => {
+      // Saving the capacity fills free places from the waitlist on the server
+      if ('registrationCapacity' in data) {
+        queryClient.invalidateQueries({ queryKey: ['event-registrations', eventCode] });
+      }
       // Invalidate ALL event-related caches for proper MVC pattern
       // 1. List caches (all pagination/filter combinations)
       queryClient.invalidateQueries({ queryKey: ['events'] });
