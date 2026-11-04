@@ -152,6 +152,15 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "orga.nizer", roles = "ORGANIZER")
+    @DisplayName("C: an unknown profile is 404 with a plain message (not wrapped twice)")
+    void preview_unknownSource_is404() throws Exception {
+        mockMvc.perform(get("/api/v1/users/anna.muster.2/merge-preview").param("source", "nobody.here"))
+                .andExpect(status().isNotFound())
+                .andExpect(jsonPath("$.message").value("User not found: nobody.here"));
+    }
+
+    @Test
+    @WithMockUser(username = "orga.nizer", roles = "ORGANIZER")
     @DisplayName("C: the source has a login: not mergeable in this direction; merge refused, nothing touched")
     void merge_sourceWithLogin_isRefused() throws Exception {
         mockMvc.perform(get("/api/v1/users/anna.muster/merge-preview").param("source", "anna.muster.2"))

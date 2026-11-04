@@ -599,7 +599,8 @@ public class UserService {
                     .cognitoUserId(newUser.getCognitoUserId())
                     .user(responseMapper.mapToResponse(newUser));
         }
-        throw new UserNotFoundException("User not found: " + request.getEmail());
+        // #1183: never the address in a 404 (it reaches the log and the caller)
+        throw new UserNotFoundException("No user with this address", true);
     }
 
     /**
@@ -1439,7 +1440,7 @@ public class UserService {
         // /me path means the principal is the request author; a missing row
         // is an internal data state issue.
         User user = userRepository.findByUsernameForUpdate(username)
-                .orElseThrow(() -> new UserNotFoundException("Current user profile not found"));
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
 
         String emailNormalized = request.getEmail().trim().toLowerCase(Locale.ROOT);
 
@@ -1526,7 +1527,7 @@ public class UserService {
     public void resendVerification(String email) {
         String username = securityContext.getCurrentUsername();
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("Current user profile not found"));
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
 
         String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
         UserAdditionalEmail row = additionalEmailRepository
@@ -1631,7 +1632,7 @@ public class UserService {
         String username = securityContext.getCurrentUsername();
         // P2-7: see note above.
         User user = userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("Current user profile not found"));
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
 
         String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
         UserAdditionalEmail row = additionalEmailRepository

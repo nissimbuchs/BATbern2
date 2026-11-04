@@ -54,7 +54,7 @@ public class ProfileClaimService {
     public void requestClaim(UUID candidateId) {
         User caller = currentUser();
         User candidate = candidatesOf(caller).stream().filter(u -> u.getId().equals(candidateId)).findFirst()
-                .orElseThrow(() -> new UserNotFoundException("No earlier profile to claim"));
+                .orElseThrow(() -> new UserNotFoundException("No earlier profile to claim", true));
         String token = tokenService.generateToken(caller.getId(), candidate.getId(), candidate.getEmail());
         emailService.sendClaimEmail(candidate.getEmail(), token, locale(caller),
                 caller.getFirstName() + " " + caller.getLastName());
@@ -111,7 +111,7 @@ public class ProfileClaimService {
     private User currentUser() {
         String username = securityContext.getCurrentUsername();
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("Current user profile not found"));
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
     }
 
     private static String locale(User user) {
