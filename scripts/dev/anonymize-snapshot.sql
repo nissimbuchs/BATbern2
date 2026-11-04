@@ -349,6 +349,16 @@ BEGIN
 END
 $freetext$;
 
+-- Venue / catering contact persons (Story 10.26 venue coordination): stored as
+-- JSON in app_settings; the email sweep redacts the addresses but not the
+-- person's name or the salutation ("Liebe Gabriela").
+UPDATE app_settings
+   SET setting_value = regexp_replace(
+         regexp_replace(setting_value, '"name"\s*:\s*"[^"]*"', '"name":"Sample Contact"', 'g'),
+         '"salutation"\s*:\s*"[^"]*"', '"salutation":"Hello"', 'g')
+ WHERE setting_key = 'venue.coordination.config'
+   AND setting_value IS NOT NULL;
+
 -- ---------------------------------------------------------------------------
 -- 4. Structured PII columns.
 --    Emails are always derived from the ORIGINAL email, so the same person
