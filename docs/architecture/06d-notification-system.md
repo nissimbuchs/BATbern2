@@ -14,11 +14,56 @@ not submitted content after the third reminder, it emails the assigned organizer
 organizer) a `SPEAKER_ESCALATION` notification. There is no rule engine (see
 [Not implemented](#not-implemented)).
 
+### Channels as built
+
+Not every mail is a "notification" in the sense of the `notifications` table. The diagram shows
+every path that tells a person something, and which of them write a `notifications` row.
+Checked against the EMS, CUMS and shared-kernel sources on develop c4593449.
+
+```mermaid
+flowchart LR
+    subgraph Triggers
+        DE["Domain events in EMS, DomainEvent subclasses"]
+        SR["SpeakerReminderScheduler 08:00"]
+        TR["TaskDeadlineReminderScheduler 08:00"]
+        QN["QnaNotificationService every 5 min"]
+        RR["RegistrationResendService 08:30"]
+        REG["User actions: registration, invitation, waitlist, ..."]
+        INB["Inbound mail to an alias"]
+        COGT["Cognito sign-up, reset"]
+    end
+    DE --> ONL["OrganizerNotificationListener, async"]
+    ONL --> NT[("notifications, channel IN_APP, status UNREAD")]
+    NT --> REST["GET /api/v1/notifications, organizer only"]
+    REST --> FEED["TeamActivityFeed, NotificationsPage"]
+    ONL -. "STOMP push, reaches only localhost dev" .-> FEED
+    SR --> SRE["SpeakerReminderEmailService"]
+    SR -->|"TIER_3 reminder sent"| NS["NotificationService.createAndSendEmailNotification"]
+    NS --> NTE[("notifications, channel EMAIL, SPEAKER_ESCALATION")]
+    TR --> TRE["TaskReminderEmailService"]
+    QN --> MP
+    RR --> MP
+    REG --> MP
+    SRE --> MP["MailPipeline: template store, variables, layout"]
+    TRE --> MP
+    INB --> CN["ConversationNotices: notify switch on, see 06"]
+    CN --> MP
+    MP --> ES["shared-kernel EmailService"]
+    NS --> ES
+    ES -->|"SES SendEmail or SendRawEmail"| SES["AWS SES"]
+    ES -->|"send carries a MailContext"| REC["OutboundMailRecorder: Mail Center records, see 06"]
+    COGT --> CES["CustomEmailSender Lambda"] --> SES
+```
+
+Only two arrows write to `notifications`: the IN_APP feed and the speaker escalation. Every
+other mail is recorded, if at all, in the Mail Center tables (Story 16.1a), described in
+[Backend Architecture](./06-backend-architecture.md).
+
 **Implementation Pattern**: Single table in shared `public` schema, following Task System pattern (Story 5.5).
 
 **Key Characteristics**:
 - ✅ Single `notifications` table owned by Event Management Service
-- ✅ Rows for both channels: email audit trail, and one IN_APP row per organizer per domain event (see the correction below)
+- ✅ Rows for both channels: email audit trail for `SPEAKER_ESCALATION`, and one IN_APP row per organizer per domain event (see the correction below)
 - ✅ ADR-003 compliant (meaningful IDs: `recipient_username`, `event_code`)
 - ✅ No cross-service aggregation (simple REST API queries)
 
@@ -56,27 +101,35 @@ CREATE TABLE IF NOT EXISTS notifications (
     updated_at TIMESTAMP NOT NULL DEFAULT NOW()
 );
 
--- Indexes
+-- Indexes (V33)
 CREATE INDEX idx_notifications_recipient ON notifications(recipient_username);
 CREATE INDEX idx_notifications_event ON notifications(event_code) WHERE event_code IS NOT NULL;
+CREATE INDEX idx_notifications_status ON notifications(status);
+CREATE INDEX idx_notifications_created ON notifications(created_at DESC);
+CREATE INDEX idx_notifications_recipient_created ON notifications(recipient_username, created_at DESC);
 CREATE INDEX idx_notifications_recipient_status ON notifications(recipient_username, status);
 ```
+
+`V34__Add_in_app_notification_support.sql` adds a composite index for the organizer dashboard
+query (`channel = 'IN_APP' AND status = 'UNREAD'`); the `channel` column needed no change.
+Status values in use: `PENDING`, `SENT`, `FAILED` (email), `UNREAD`, `READ` (in-app).
 
 **Ownership**: Event Management Service (by convention, follows Task System pattern)
 
 ## Notification Service
 
-### Hybrid Storage Strategy
+### Storage Strategy (as built)
 
-**Email Notifications** (Eager - Create Records):
-- Create notification record when an email is sent
-- Track delivery status (audit trail, compliance)
-- Storage: ~150,000 rows/year (3000 users × 50 emails/year)
+**Email Notifications** (create records):
+- One row per `SPEAKER_ESCALATION` email, written before the send and updated to `SENT` or `FAILED`
+- Track delivery status (audit trail)
+- The 2025 estimate of ~150,000 rows/year assumed every mail would go through this table; most
+  mails do not (see the channel diagram). Real volume: not measured for this document.
 
-**In-App Notifications** (Lazy - Query Dynamically):
-- Don't create rows in advance
-- Query when user opens app: "Show events published since last login"
-- Storage: Zero rows for in-app (computed dynamically)
+**In-App Notifications** (create records too):
+- The 2025 design planned a lazy model: no rows, computed on page load as "events published since
+  last login". **That was never built** (see Not implemented). The organizer feed writes rows,
+  as the correction below describes.
 
 > **Correction (2026-10-25, #1068):** the organizer activity feed does NOT follow the lazy model
 > above. `OrganizerNotificationListener` (event-management) writes one `IN_APP` row **per
@@ -116,6 +169,81 @@ CREATE INDEX idx_notifications_recipient_status ON notifications(recipient_usern
 There is no `EventPublishedEvent` listener any more (#1179): publishing the agenda used to mail
 every registration, cancelled ones included, without anyone deciding to.
 
+### In-app feed: from domain event to the organizer's screen
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant SVC as EMS service, e.g. workflow transition
+    participant BUS as Spring ApplicationEventPublisher
+    participant L as OrganizerNotificationListener, @Async
+    participant ER as EventRepository
+    participant CUMS as CUMS /internal/users
+    participant DB as notifications
+    participant UI as Organizer dashboard
+    SVC->>BUS: publish DomainEvent
+    BUS->>L: onAnyDomainEvent
+    L->>ER: existsByEventCode, skip if the event was deleted meanwhile
+    L->>CUMS: GET /internal/users?role=ORGANIZER, paged by 100, no JWT
+    CUMS-->>L: organizer usernames
+    loop each organizer
+        L->>DB: INSERT channel IN_APP, status UNREAD, type = event type, priority from type name
+        L->>L: pushNotificationViaWebSocket, failure only logged
+    end
+    UI->>DB: GET /api/v1/notifications via NotificationController, React Query staleTime 1 min
+    UI->>DB: PUT /notifications/id/read or batch-read, DELETE or batch-delete
+```
+
+Events are deleted with their notifications (`EventController`, `deleteByEventCode`); archiving
+an event marks its unread rows `READ` (`dismissNotificationsForEvent`, Story 10.18).
+
+### Escalation email: the one NotificationService send
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant SCH as SpeakerReminderScheduler, 08:00
+    participant SRS as SpeakerReminderService
+    participant NS as NotificationService
+    participant CUMS as CUMS /internal/users
+    participant DB as notifications
+    participant ES as EmailService
+    SCH->>SRS: processReminders
+    SRS->>SRS: send TIER_3 reminder to the speaker, 3 days before the deadline
+    SRS->>NS: createAndSendEmailNotification SPEAKER_ESCALATION, HIGH
+    NS->>CUMS: GET /internal/users/organizer?include=preferences
+    alt email notifications off, or now inside quiet hours
+        NS-->>SRS: skipped, no row
+    else send
+        NS->>DB: INSERT status PENDING
+        NS->>CUMS: getUserByUsername, cached, for the email address
+        NS->>ES: sendHtmlEmail with MailContext audience ORGANIZERS, async
+        NS->>DB: UPDATE status SENT, sent_at
+        Note over NS,DB: SENT means handed to the async sender. An SES error later is logged by EmailService and recorded in the Mail Center, not in this row. FAILED is set only when the lookup or the hand-over throws.
+    end
+```
+
+## Escalation (as built)
+
+There is one escalation, configured in `application.yml` under `batbern.reminders` (Story 6.5):
+
+| Tier | Days before the speaker's deadline | Effect |
+|---|---|---|
+| `TIER_1` | 14 | reminder mail to the speaker |
+| `TIER_2` | 7 | reminder mail to the speaker |
+| `TIER_3` | 3 | reminder mail to the speaker, then `SPEAKER_ESCALATION` mail to the organizer when `escalate-after-tier3: true` |
+
+Two deadlines are watched: the **response** deadline for speakers in `INVITED`, and the
+**content** deadline for speakers in `ACCEPTED` without any `session_content_history` row. A
+tier fires only on the exact day (`daysUntilDeadline == daysBeforeDeadline`); a missed day is
+not caught up. Each reminder is logged in `speaker_reminder_log` (deduplication) and in the
+outreach history before the mail goes out. The escalation goes to the speaker's assigned
+organizer, else to the event's organizer. Organizers can also send a reminder manually
+(`SpeakerReminderController`); the tier is then detected from the days left.
+
+The escalation fires together with the third reminder, not after an unanswered third reminder:
+the code does not wait to see whether the speaker reacts.
+
 ## Notification Types
 
 `notification_type` is a free `VARCHAR(50)`; there is no backend enum. Values written by
@@ -135,7 +263,8 @@ The frontend union in `web-frontend/src/types/notification.ts` lists more values
 ## Not implemented
 
 Earlier versions of this document described the following. None of it exists in the code
-(checked by grep on develop c4593449); it is kept here only so that nobody looks for it:
+(checked by grep on develop c4593449, re-checked 2026-11-04); it is kept here, one line each,
+so that nobody looks for it:
 
 - an **SMS** channel;
 - an **`EscalationRuleEngine`** with deadline-proximity, review-age and voting-stagnation rules,
@@ -144,13 +273,23 @@ Earlier versions of this document described the following. None of it exists in 
   enums (`VOTING_REQUIRED`, `OVERFLOW_DETECTED`, `SLOT_ASSIGNED`, ...). Overflow voting was
   removed from scope (ADR-009 replaced it with the slot-capacity gate);
 - **dynamically computed** in-app notifications (`getInAppNotifications`, "events published since
-  last login").
+  last login"), and the `getLastLogin` client call they needed;
+- **Thymeleaf** notification templates under `resources/templates/notifications/`, including
+  `event_published.html` (templates are HTML files in `email-templates/`, stored in the database);
+- **real-time push in staging and production** (the WebSocket client connects on localhost only,
+  see below);
+- reading the `inAppNotifications`, `pushNotifications` and `notificationFrequency` preferences
+  (stored, never evaluated).
 
 ## User Notification Preferences
 
-**Storage**: Preferences stored in existing `user_profiles.user_preferences` JSONB column (Company-User Management Service)
+**Storage**: one column per preference on `user_profiles` in CUMS (`pref_email_notifications`,
+`pref_in_app_notifications`, `pref_push_notifications`, `pref_notification_frequency`,
+`pref_quiet_hours_start`, `pref_quiet_hours_end`, `pref_qna_notification_frequency`, plus
+`pref_language` and `pref_theme`). There is no `user_preferences` JSONB column. Users edit them
+through `PUT /api/v1/users/me/preferences`.
 
-**Fields** (already exist):
+**Fields** (API names):
 - `emailNotifications` (boolean)
 - `inAppNotifications` (boolean)
 - `pushNotifications` (boolean)
@@ -163,104 +302,151 @@ Earlier versions of this document described the following. None of it exists in 
 
 ### Preferences Access
 
+Which preferences are actually read (checked 2026-11-04):
+
+| Preference | Read by |
+|---|---|
+| `emailNotifications`, `quietHoursStart/End` | `NotificationService.shouldSend`, so only the `SPEAKER_ESCALATION` mail |
+| `qnaNotificationFrequency` | `QnaNotificationService` (Q&A digest) |
+| `language` | most mail senders for the DE/EN choice, `LanguageSync` in the SPA |
+| `inAppNotifications`, `pushNotifications`, `notificationFrequency` | nothing: stored and editable, no code path reads them |
+
+Registration, reminder, waitlist and Mail Center mails do not consult `emailNotifications` or
+quiet hours. The IN_APP feed ignores `inAppNotifications`.
+
 ```java
-@Service
-@RequiredArgsConstructor
-public class NotificationService {
-
-    private final UserApiClient userApiClient;
-
-    /**
-     * Check if notification should be sent based on user preferences
-     */
-    private boolean shouldSend(String username, NotificationRequest request) {
-        // Fetch user preferences via HTTP (Company-User Management Service)
-        UserPreferences prefs = userApiClient.getPreferences(username);
-
-        // Check if channel is enabled
-        if (request.getChannel().equals("EMAIL") && !prefs.isEmailNotificationsEnabled()) {
-            return false;
-        }
-
-        // Check quiet hours
-        if (isInQuietHours(prefs)) {
-            return false;
-        }
-
-        return true;
+// NotificationService (EMS), as in the source
+private boolean shouldSend(UserPreferences prefs, NotificationRequest request) {
+    if ("EMAIL".equals(request.getChannel()) && !prefs.isEmailNotificationsEnabled()) {
+        return false;
     }
+    if (isInQuietHours(prefs)) {
+        return false;
+    }
+    return true;
+}
 
-    private boolean isInQuietHours(UserPreferences prefs) {
-        LocalTime now = LocalTime.now();
-        LocalTime start = LocalTime.parse(prefs.getQuietHoursStart());
-        LocalTime end = LocalTime.parse(prefs.getQuietHoursEnd());
-
-        if (start.isBefore(end)) {
-            // Normal range (e.g., 22:00-07:00 next day)
-            return now.isAfter(start) || now.isBefore(end);
-        } else {
-            // Range crossing midnight
-            return now.isAfter(start) && now.isBefore(end);
-        }
+private boolean isInQuietHours(UserPreferences prefs) {
+    if (prefs.getQuietHoursStart() == null || prefs.getQuietHoursEnd() == null) {
+        return false;
+    }
+    LocalTime now = LocalTime.now();            // JVM clock, see the note on time zones below
+    LocalTime start = LocalTime.parse(prefs.getQuietHoursStart());
+    LocalTime end = LocalTime.parse(prefs.getQuietHoursEnd());
+    if (start.isBefore(end)) {
+        return now.isAfter(start) || now.isBefore(end);
+    } else {
+        return now.isAfter(start) && now.isBefore(end);
     }
 }
 ```
+
+> **Bug, kept as found (2026-11-04):** the two branches are swapped. For the usual overnight
+> window 22:00-07:00 (`start` after `end`) the else branch requires `now > 22:00 AND now < 07:00`,
+> which is never true, so overnight quiet hours never suppress anything. For a same-day window
+> such as 12:00-14:00 the first branch is `now > 12:00 OR now < 14:00`, true at every time of
+> day, so that user never gets the mail. The code comments carry the same mix-up. Impact today
+> is limited to the escalation mail; the doc does not fix code.
 
 ### UserApiClient (HTTP Integration)
 
+EMS reads users from CUMS over `RestTemplate` on the **internal** routes (`/internal/users/**`,
+VPC-only, no JWT, never routed by the gateway; see ADR-008 and #1146). The relevant methods of
+`ch.batbern.events.client.impl.UserApiClientImpl`, shortened:
+
 ```java
-@Component
-@RequiredArgsConstructor
-public class UserApiClient {
+private static final String INTERNAL_USERS_PATH = "/internal/users";
 
-    private final RestTemplate restTemplate;
+@Cacheable(value = "userApiCache", key = "#username")
+public UserResponse getUserByUsername(String username) {
+    // GET {cums}/internal/users/{username}; empty username fails fast (2026-05-18 outage)
+}
 
-    /**
-     * Fetch user preferences from Company-User Management Service
-     */
-    public UserPreferences getPreferences(String username) {
-        String url = "http://company-user-management-service:8081/api/v1/users/{username}/preferences";
+public UserPreferences getPreferences(String username) {
+    // GET {cums}/internal/users/{username}?include=preferences  (not cached)
+    // #1146: CUMS has no /api/v1/users/{username}/preferences
+}
 
-        return restTemplate.getForObject(url, UserPreferences.class, username);
-    }
-
-    public Instant getLastLogin(String username) {
-        String url = "http://company-user-management-service:8081/api/v1/users/{username}/last-login";
-
-        return restTemplate.getForObject(url, Instant.class, username);
-    }
-
-    public List<String> getOrganizerUsernames() {
-        String url = "http://company-user-management-service:8081/api/v1/users?role=ORGANIZER";
-
-        UserListResponse response = restTemplate.getForObject(url, UserListResponse.class);
-        return response.getUsers().stream()
-            .map(User::getUsername)
-            .collect(Collectors.toList());
-    }
+public List<String> getOrganizerUsernames() {
+    // GET {cums}/internal/users?role=ORGANIZER&page=N&limit=100, page by page
+    // (CUMS caps limit at 100 since #825; at most 100 pages)
 }
 ```
 
-## Real-Time Notifications (WebSocket push, organizer dashboard)
+> **Not implemented:** `getLastLogin` and the `/users/{username}/last-login` endpoint shown in
+> earlier versions. They served the lazy in-app model, which was never built.
+
+## Real-Time Notifications (WebSocket push: local development only)
 
 What the code does: `OrganizerNotificationListener` calls
 `NotificationService.pushNotificationViaWebSocket`, which publishes to
-`/topic/notifications/{username}` via `SimpMessagingTemplate`. On the frontend,
-`EventManagementDashboard` subscribes through `useNotificationWebSocket`
-(`web-frontend/src/hooks/useNotificationWebSocket.ts`, `services/notificationWebSocketClient.ts`).
+`/topic/notifications/{username}` via `SimpMessagingTemplate`. EMS registers the STOMP endpoint
+`/ws` with Spring's **in-memory simple broker** (`WebSocketConfig`, `enableSimpleBroker`). On
+the frontend, `EventManagementDashboard` subscribes through `useNotificationWebSocket`
+(`web-frontend/src/hooks/useNotificationWebSocket.ts`, `services/notificationWebSocketClient.ts`)
+and invalidates the notifications query when a message arrives.
 
-Not verified for this document: whether the push reaches clients in production when EMS runs
-more than one task. Story 15.1 replaced WebSockets with REST polling for the live agenda for
-exactly that multi-task reason (see the V119 migration comment); the notification push was not
-part of that change. The rows themselves are always persisted, so the feed is correct on reload.
+```mermaid
+flowchart LR
+    L["OrganizerNotificationListener"] --> DB[("notifications row")]
+    L --> PUSH["SimpMessagingTemplate, in-memory broker of this EMS task"]
+    PUSH -->|"localhost only: SockJS to EMS port, gateway port + 2"| WS["useNotificationWebSocket"]
+    WS -->|"invalidate query"| RQ["useNotifications, React Query"]
+    DB -->|"GET /api/v1/notifications, staleTime 1 min, refetch on reload"| RQ
+    PUSH -.->|"cloud: isWebSocketAvailable is false, client never connects"| X["no push"]
+```
+
+In staging and production the push never reaches a browser: `isWebSocketAvailable()` returns
+true only for `localhost`/`127.0.0.1`, and `getWebSocketUrl()` throws "WebSocket not available in
+cloud environments" (checked in the source 2026-11-04). The organizer sees new rows when the
+query refetches (stale after one minute, on focus or reload). Even if a cloud client connected,
+the simple broker lives in one EMS task, so a push would reach only clients of that task; Story
+15.1 replaced WebSockets with REST polling for the live agenda for that reason (V119 comment).
 
 ## Email Notification Templates
 
 ### Email Service (AWS SES Integration)
 
-**Infrastructure**: AWS SES for email delivery
+**Infrastructure**: AWS SES for email delivery, through the shared-kernel
+`ch.batbern.shared.service.EmailService` (AWS SDK v2 `SesClient`), used by EMS, CUMS and PCS.
 
-**Templates**: Thymeleaf templates in `resources/templates/notifications/`
+**Templates**: HTML files `email-templates/{key}-{de|en}.html` (layouts:
+`layout-{key}-{de|en}.html`) on the EMS classpath, 54 files on develop c4593449.
+`EmailTemplateSeedService` copies them into the `email_templates` table on every start (insert
+only, an edited row is never overwritten), and organizers edit them under Administration, Email
+templates. There are no Thymeleaf templates; `resources/templates/` holds only a `.docx` used for
+name badges.
+
+```mermaid
+flowchart TD
+    CALLER["Mail sender in EMS, e.g. RegistrationEmailService, QnaNotificationService"] --> T["MailPipeline.template key, locale"]
+    T --> L1{"row in email_templates for key and locale?"}
+    L1 -->|yes| C["subject and HTML body, layout key"]
+    L1 -->|no| L2{"German row?"}
+    L2 -->|yes| C
+    L2 -->|no| L3["classpath file, raw, no layout"]
+    C --> R["MailPipeline.render: variables from MailVariableFactory, layout merged"]
+    L3 --> R
+    R --> SEND["EmailService.send..., with MailContext"]
+    SEND --> Q{"SES client present?"}
+    Q -->|"staging = production"| SES["SES SendEmail or SendRawEmail with configuration set and mail_group tag"]
+    Q -->|"local profile"| CAP["LocalEmailCapture, shown at /dev/emails"]
+    Q -->|"test profile"| LOG["log only"]
+    SES --> REC["OutboundMailRecorder.record with SES message id or error code"]
+    CAP --> REC
+    LOG --> REC
+```
+
+Locale rule in `MailPipeline`: `en` asks for English, **every other locale asks for German**;
+a missing English row falls back to German. Some senders choose the locale themselves before
+calling the pipeline (the Q&A digest maps `de*` to German and everything else to English).
+CLAUDE.md states "fall back to English"; the pipeline code falls back to German (checked
+2026-11-04).
+
+Sends without a `MailContext` (CUMS mails such as additional-email verification and profile
+claim, and the legacy overloads) are not recorded. Before every SES send `EmailService` checks
+that the mail is not test-marked (`assertNotTestMarked`, the second wall after the 2026-07-01
+newsletter incident).
 
 #### Additional-email CC fan-out (Story 10.32)
 
@@ -272,8 +458,18 @@ As of Story 10.32 (Phase 4 + 6 + 7, 2026-05-22), the shared-kernel `EmailService
 | `sendHtmlEmail` (async) | `(to, cc, subject, html)` — 4-arg | speaker invitation, speaker acceptance, speaker reminder, quality-review revision, waitlist promotion, waitlist confirmation |
 | `sendHtmlEmailSync` | `(to, cc, subject, html, configSet)` — 5-arg | sync newsletter-bulk and inline-loop callers (newsletter itself does NOT use CC; remains primary-only by design) |
 | `sendHtmlEmailWithAttachments` | `(to, cc, subject, html, attachments)` — 5-arg | event registration confirmation (ICS attachment); partner meeting calendar invite (ICS attachment) |
+| `sendHtmlEmail`, `sendHtmlEmailSync`, `sendHtmlEmailWithAttachments` | same, with a leading `MailContext` (Story 16.1a) | every recorded send; the waitlist mails use this form today |
+| `sendGroupHtmlEmailSync`, `sendGroupHtmlEmailWithAttachments` | `(context, toList, cc, ...)` | one mail to several To addresses |
+
+The "Used by" column is from Story 10.32 and was not re-checked per caller (not verified 2026-11-04).
 
 Each EMS service that delivers a user-addressed transactional message resolves the recipient via `UserApiClient.getUserByUsername(...)` (directly or through `PrimarySpeakerResolver`), flattens `UserResponse.additionalEmails[]` into a `List<String>`, and passes it as the `cc` argument. SES `Destination.ccAddresses` carries the list; CC entries matching `to` case-insensitively are dropped to avoid duplicate delivery. A null/missing `additionalEmails` field (e.g. rolling-deploy backwards-compat) is treated as an empty list — behaviour is identical to the 3-arg signature in that case.
+
+**Verified or not:** CUMS returns every additional address with its `verifiedAt`, and the CC
+helpers (for example `DeregistrationEmailService.additionalEmailsFor`,
+`WaitlistPromotionEmailService.additionalEmailsFor`) do not filter on it, so an address that was
+added but never verified also receives the CC (checked 2026-11-04). Only identity matching (SSO
+linking, JIT) requires `verifiedAt`; see [User Lifecycle Sync](./06b-user-lifecycle-sync.md).
 
 **Explicitly excluded** from additional-email fan-out:
 - `NewsletterEmailService` — newsletter is email-keyed (Open Q#4); subscribers register addresses independently of user profiles.
@@ -281,82 +477,42 @@ Each EMS service that delivers a user-addressed transactional message resolves t
 - Alias forwarding of `batbern{N}-participants@` (`ForwardingRecipientResolver` → `DistributionListService.resolveParticipants`, AC15) — registrant distribution stays attendee-email-driven; a user's additional emails are used only when a registration has no captured `attendeeEmail`.
 
 ```java
+// shared-kernel EmailService, shortened to the parts that matter for notifications
 @Service
-@RequiredArgsConstructor
 public class EmailService {
 
-    private final AmazonSimpleEmailService sesClient;
-    private final TemplateEngine templateEngine;
+    @Autowired(required = false) private SesClient sesClient;            // only staging/production
+    @Autowired(required = false) private LocalEmailCapture localEmailCapture;  // only 'local' profile
+    @Autowired(required = false) private OutboundMailRecorder outboundMailRecorder; // EMS (JPA), PCS (HTTP to EMS)
 
-    /**
-     * Send HTML email via AWS SES.
-     * Called by NotificationService after creating the audit trail record.
-     *
-     * @param recipientEmail resolved email address of the recipient
-     * @param subject        email subject line
-     * @param htmlContent    rendered HTML body
-     */
-    public void sendHtmlEmail(String recipientEmail, String subject, String htmlContent) {
-        // Send via AWS SES
-        SendEmailRequest request = new SendEmailRequest()
-            .withDestination(new Destination().withToAddresses(recipientEmail))
-            .withMessage(new Message()
-                .withSubject(new Content().withData(subject))
-                .withBody(new Body().withHtml(new Content().withData(htmlContent))))
-            .withSource("notifications@batbern.ch");
+    @Value("${app.email.from:noreply@batbern.ch}")      private String fromEmail;
+    @Value("${app.email.from-name:BATbern Platform}")    private String fromName;
+    @Value("${app.email.reply-to:replies@batbern.ch}")   private String replyToEmail;
+    @Value("${batbern.ses.configuration-set-name:#{null}}") private String configurationSetName; // transactional set
 
-        sesClient.sendEmail(request);
-
-        log.info("Email sent to {}: {}", recipientEmail, subject);
+    @Async
+    public void sendHtmlEmail(MailContext context, String to, List<String> cc, String subject,
+                              String htmlBody, String replyTo) {
+        sendHtmlEmailSync(context, to, cc, subject, htmlBody, configurationSetName, replyTo);
     }
-
-    private String buildEmailContent(Notification notification) {
-        Context context = new Context();
-        context.setVariable("recipientUsername", notification.getRecipientUsername());
-        context.setVariable("subject", notification.getSubject());
-        context.setVariable("body", notification.getBody());
-        context.setVariable("eventCode", notification.getEventCode());
-        context.setVariable("metadata", notification.getMetadata());
-
-        // Template selection based on notification type
-        String templateName = "notifications/" + notification.getNotificationType().toLowerCase();
-
-        return templateEngine.process(templateName, context);
-    }
+    // sendSyncTo: no SES client -> capture or log, then record; else assertNotTestMarked,
+    // SES SendEmail with configuration set and mail_group tag, record message id or error code
 }
 ```
 
-### Example Template: Event Published
+The newsletter overrides the configuration set with its own (bounces to SQS,
+`BounceProcessingService`); the transactional set feeds CloudWatch metrics and a per-recipient
+SNS logger without auto-suppression (from the `configurationSetName` Javadoc; the CDK side is in
+[Operations & Security](./08-operations-security.md), not re-verified here).
 
-**File**: `resources/templates/notifications/event_published.html`
+### Example Template: Q&A digest
 
-```html
-<!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
-<head>
-    <meta charset="UTF-8">
-    <title th:text="${subject}"></title>
-</head>
-<body>
-    <h1>Event Published</h1>
-    <p>Hello <span th:text="${recipientUsername}"></span>,</p>
-
-    <p th:text="${body}"></p>
-
-    <p>
-        <a th:href="@{https://batbern.ch/events/{eventCode}(eventCode=${eventCode})}">
-            View Event Details
-        </a>
-    </p>
-
-    <hr>
-    <p style="color: #666; font-size: 12px;">
-        This notification was sent to you based on your preferences.
-        <a href="https://batbern.ch/settings/notifications">Manage preferences</a>
-    </p>
-</body>
-</html>
-```
+The 2025 example `notifications/event_published.html` (Thymeleaf) never existed, and nothing
+mails "event published" any more (#1179). A real template instead: `qna-new-questions-de.html`
+and `qna-new-questions-en.html`, category `SPEAKER`, editable by organizers. The `<!-- subject:
+... -->` comment on the first line becomes the stored subject (`EmailTemplateSeedService`).
+Placeholders are filled by `MailRenderer` from the variable catalog (`MailVariable`), not by a
+template engine.
 
 ## Notification Entity
 
@@ -466,12 +622,80 @@ public interface NotificationRepository extends JpaRepository<Notification, UUID
 
     // Find failed deliveries
     List<Notification> findByStatusAndCreatedAtBefore(String status, Instant before);
+
+    // Story 10.18: archiving an event marks its unread rows READ
+    @Modifying(clearAutomatically = true)
+    @Query("UPDATE Notification n SET n.status = 'READ' WHERE n.eventCode = :eventCode AND n.status != 'READ'")
+    int dismissNotificationsForEvent(@Param("eventCode") String eventCode);
+
+    // #1068: DELETE /events/{code} removes the event's notifications in the same transaction
+    int deleteByEventCode(@Param("eventCode") String eventCode);
 }
 ```
 
 ## Scheduled Notification Jobs
 
+Every `@Scheduled` job in EMS and CUMS that sends mail or touches notification state, with the
+default cron from the code or `application.yml` (checked 2026-11-04). All except
+`PublishingScheduledService` run under ShedLock (`@SchedulerLock`), so one ECS task runs each job.
+"No mail" means the job sends none itself; its state transitions still publish domain events,
+which become IN_APP rows.
+
+```mermaid
+flowchart LR
+    subgraph Night["Night"]
+        J1["00:01 EventWorkflowScheduledService: AGENDA_PUBLISHED to EVENT_LIVE, no mail"]
+        J2["01:00 PublishingScheduledService: auto-publish speakers and agenda, no mail, no lock"]
+        J2b["02:00 EventWorkflowScheduledService: EVENT_COMPLETED to ARCHIVED, unread notifications marked READ"]
+        J3["03:00 RegistrationCleanupService: delete never-confirmed registrations"]
+        J4["03:15 and 03:30 Zurich: forwarding log and mail message retention"]
+        J5["05:30 Zurich TaskActivationScheduler: activate due tasks, no mail"]
+    end
+    subgraph Morning["Morning mail window"]
+        M1["08:00 SpeakerReminderScheduler: speaker reminders TIER_1-3 + organizer escalation"]
+        M2["08:00 TaskDeadlineReminderScheduler: tasks due tomorrow, mail to assignee, German"]
+        M3["08:15 CUMS CognitoConfirmationResendJob: new Cognito code to UNCONFIRMED sign-ups 48-96 h old"]
+        M4["08:30 RegistrationResendService: new confirmation link, at most 2 times, 48 h apart"]
+    end
+    subgraph Continuous["All day"]
+        C1["every 5 min QnaNotificationService.flushPending: Q&A digest"]
+        C2["hourly at :05 SessionQnaScheduledService: freeze expired Q&A windows"]
+    end
+    subgraph Evening["Evening"]
+        E1["23:59 EventWorkflowScheduledService: EVENT_LIVE to EVENT_COMPLETED"]
+    end
+    Night --> Morning --> Continuous --> Evening
+```
+
+**Time zone.** Only the jobs marked "Zurich" declare `zone = "Europe/Zurich"`. The others run on
+the JVM clock. No `TZ` or `user.timezone` is set in the Dockerfiles (base image
+`eclipse-temurin:21-jre-alpine`) or the CDK task definitions (checked by grep), so on ECS they
+presumably run on UTC, one or two hours before the Swiss time the comments state (not verified
+2026-11-04 on a running task). The `application.yml` comments saying "Europe/Zurich" for the
+00:01 and 23:59 jobs describe the intent, not the configuration.
+
+Attendee recovery runs in two steps: `CognitoConfirmationResendJob` (CUMS) re-triggers Cognito's
+sign-up code, because Cognito's code expires after 24 h and cannot be extended, and
+`RegistrationResendService` (EMS) mints a fresh registration confirmation link before
+`RegistrationCleanupService` deletes the row (cleanup window 120 h, never shorter than token
+validity 96 h + 24 h grace, measured from the last resend).
+
+
 ### Q&A New-Questions Digest Job (Story 15.7)
+
+```mermaid
+flowchart TD
+    T["every 5 min, ShedLock qnaDigestFlush"] --> W["each OPEN Q&A window, FROZEN windows skipped"]
+    W --> RC["recipients: session PRIMARY_SPEAKER and CO_SPEAKER, plus every MODERATOR of the event"]
+    RC --> P{"recipient's qnaNotificationFrequency"}
+    P -->|off| SKIP["no mail"]
+    P -->|"live: 15 min, daily: 24 h"| TH{"last_notified_at older than the throttle?"}
+    TH -->|no| SKIP
+    TH -->|yes| N{"new top-level questions after notified_through, not by this recipient?"}
+    N -->|none| SKIP
+    N -->|"N questions"| M["MailPipeline qna-new-questions, de or en"]
+    M --> U["update session_qna_notification: last_notified_at, notified_through"]
+```
 
 `QnaNotificationService.flushPending()` (Event Management Service) runs every 5 minutes
 (`@Scheduled` + `@SchedulerLock(name = "qnaDigestFlush")`) and emails, when new **top-level**
@@ -491,8 +715,9 @@ questions arrive in a session's Q&A: that **session's own presenters** (`PRIMARY
   anchor + `notified_through` high-water mark, so each email counts only genuinely new questions).
 - Recipient email + locale + cadence are resolved at send time via the cached `UserApiClient`
   (ADR-004). **Email is read off the user entity** — `getUserByUsername(username).getEmail()`
-  (single-segment `/api/v1/users/{username}`, covered by the CUMS VPC service-to-service rule for
-  the no-JWT scheduled context); there is **no** dedicated `/users/{username}/email` endpoint.
+  (`GET /internal/users/{username}` on CUMS, VPC-only and without JWT, which suits the no-JWT
+  scheduled context; earlier text named `/api/v1/users/{username}`, which the client no longer
+  calls); there is **no** dedicated `/users/{username}/email` endpoint.
   Email body is **DE + EN only** (`qna-new-questions-{de,en}.html`); non-DE/EN → EN. The template
   is categorised `SPEAKER` (admin-editable under the Speakers tab).
 
@@ -515,48 +740,47 @@ the 2026-11-02 rows carry them.
 
 ### Task Deadline Reminder (Integration with Task System)
 
-**Note**: This scheduler bypasses `NotificationService` entirely — it delegates directly to `TaskReminderEmailService`, so **no record is written to the notifications table** for task reminders.
+**Note**: This scheduler bypasses `NotificationService` entirely; it delegates directly to `TaskReminderEmailService`, so **no record is written to the notifications table** for task reminders. The mail itself carries a `MailTrigger` and is recorded in the Mail Center.
+
+**Schedule**: daily at **08:00** by default (`batbern.task-reminders.cron`, JVM clock; earlier
+versions of this document said 09:00).
 
 **Locale**: All task reminder emails are rendered in `Locale.GERMAN`; user language preference is not consulted.
 
 **Timezone**: The tomorrow-only window is computed in `Europe/Zurich` timezone.
 
-**Error handling**: The scheduler catches and logs all `RuntimeException` from the repository; the job does not fail the Spring scheduler thread.
+**Error handling**: The scheduler catches and logs any `Exception`; the job does not fail the Spring scheduler thread.
 
 ```java
-@Service
-@Slf4j
+@Component
 @RequiredArgsConstructor
+@Slf4j
 public class TaskDeadlineReminderScheduler {
+
+    private static final ZoneId SWISS_ZONE = ZoneId.of("Europe/Zurich");
 
     private final EventTaskRepository eventTaskRepository;
     private final TaskReminderEmailService taskReminderEmailService;
 
-    @Scheduled(cron = "0 0 9 * * *") // 9 AM daily
-    public void sendTaskDeadlineReminders() {
-        log.info("Starting task deadline reminder scheduler");
-
-        ZoneId swissZone = ZoneId.of("Europe/Zurich");
-        ZonedDateTime startOfTomorrow = LocalDate.now(swissZone).plusDays(1).atStartOfDay(swissZone);
-        ZonedDateTime startOfDayAfterTomorrow = startOfTomorrow.plusDays(1);
-
+    @Scheduled(cron = "${batbern.task-reminders.cron:0 0 8 * * *}")
+    @SchedulerLock(name = "TaskDeadlineReminderScheduler_processReminders",
+            lockAtLeastFor = "PT5M", lockAtMostFor = "PT30M")
+    public void processReminders() {
         try {
-            // Find tasks due tomorrow only (tomorrow-only window, Swiss timezone)
-            List<EventTask> upcomingTasks = eventTaskRepository
-                .findTasksDueForReminder(
-                    startOfTomorrow.toInstant(),
-                    startOfDayAfterTomorrow.toInstant()
-                );
+            Instant startOfTomorrow = LocalDate.now(SWISS_ZONE).plusDays(1).atStartOfDay(SWISS_ZONE).toInstant();
+            Instant endOfTomorrow = LocalDate.now(SWISS_ZONE).plusDays(2).atStartOfDay(SWISS_ZONE).toInstant();
 
-            for (EventTask task : upcomingTasks) {
-                // Delegate to email service (bypasses NotificationService/notifications table)
-                taskReminderEmailService.sendTaskDeadlineReminder(task, Locale.GERMAN);
+            List<EventTask> tasksDueTomorrow =
+                    eventTaskRepository.findTasksDueForReminder(startOfTomorrow, endOfTomorrow);
+            if (tasksDueTomorrow.isEmpty()) {
+                return;
             }
-
-            log.info("Task deadline reminder scheduler completed: {} reminders sent", upcomingTasks.size());
-        } catch (RuntimeException e) {
-            // Catches and logs all repository exceptions; does not fail the Spring scheduler thread
-            log.error("Task deadline reminder scheduler failed", e);
+            MailTrigger run = MailTrigger.system();
+            for (EventTask task : tasksDueTomorrow) {
+                taskReminderEmailService.sendTaskDeadlineReminder(task, Locale.GERMAN, run);
+            }
+        } catch (Exception e) {
+            log.error("Task deadline reminder processing failed", e);
         }
     }
 }
@@ -585,4 +809,4 @@ public class TaskDeadlineReminderScheduler {
 - ✅ ADR-003 compliant (meaningful IDs: `recipient_username`, `event_code`)
 - ✅ Cross-service access via HTTP APIs
 - ✅ No foreign key constraints across service boundaries
-- ✅ Hybrid storage strategy for performance
+- ✅ Rows for email escalations and for the in-app feed (the lazy in-app half of the original hybrid plan was not built)

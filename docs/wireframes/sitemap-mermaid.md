@@ -759,9 +759,9 @@ quadrantChart
     x-axis Low Complexity --> High Complexity
     y-axis Deferred --> Implemented
     quadrant-1 MVP Core Features
-    quadrant-2 Quick Wins (Implemented)
-    quadrant-3 Low Priority (Deferred)
-    quadrant-4 Complex (Deferred to Phase 2)
+    quadrant-2 Quick Wins - Implemented
+    quadrant-3 Low Priority - Deferred
+    quadrant-4 Complex - Deferred to Phase 2
 
     Event Page Tabs: [0.6, 0.9]
     Slot Assignment: [0.7, 0.9]

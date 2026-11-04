@@ -1,1620 +1,1367 @@
 # Data Architecture
 
-This document outlines the comprehensive data model and database design for the BATbern Event Management Platform.
+This document describes the data model and database design of the BATbern platform: the
+concepts first, then the schema of each service as the Flyway migrations build it.
 
-**Database Architecture** (CRITICAL):
-- **Single PostgreSQL database**: `batbern` (dev: `batbern_development`)
-- **Single shared schema**: `public` (no schema-per-service isolation)
-- **Table ownership by convention**: Services own specific tables (not enforced by database)
-- **ADR-003 compliance**: Cross-service references use meaningful IDs (username, event_code), NOT foreign keys
-- **Flyway separation**: Each service has own `flyway_schema_history_<service>` table for independent migrations
+**Database architecture:**
+- **One PostgreSQL 15 database**: `batbern` on RDS (local development: `batbern_development`).
+- **One shared schema**: `public`, no schema per service.
+- **Table ownership by convention**: each service owns its tables and is the only one to read or
+  write them. The database does not enforce this.
+- **ADR-003**: references across service boundaries use meaningful identifiers (`username`,
+  `event_code`, company `name`) and **never foreign keys**
+  ([ADR-003](./ADR-003-meaningful-identifiers-public-apis.md)). Other services read through the
+  owning service's API, not its tables.
+- **Flyway per service**: each service has its own `flyway_schema_history_<service>` table and its
+  own migrations under `services/<service>/src/main/resources/db/migration/`.
 
-**Design Pattern**: Domain-Driven Design with microservices sharing a single database schema.
+**How the schema in this document was derived (2026-11-04):** all migrations of CUMS (V1 to
+V22), PCS (V1 to V10) and EMS (V1 to V144) were applied in version order to an empty
+PostgreSQL 15 database, and the resulting tables, columns, keys and check constraints were read
+from the catalog. Every migration applied without error. The Flyway migrations remain the source
+of truth; regenerate the diagrams the same way rather than editing them from memory. Text that
+could not be checked is marked "(not verified 2026-11-04)".
+
+## Conceptual Model
+
+```mermaid
+flowchart TB
+    subgraph CUMS["CUMS: who"]
+        CO["Company<br/>name e.g. GoogleZH"]
+        US["User profile<br/>username e.g. john.doe<br/>roles: ORGANIZER, SPEAKER,<br/>PARTNER, ATTENDEE"]
+    end
+    subgraph PCS["PCS: partners"]
+        PA["Partner<br/>by company name"]
+        PM["Partner meeting<br/>spring, autumn"]
+        TS["Topic suggestion<br/>and votes"]
+    end
+    subgraph EMS["EMS: what happens"]
+        EV["Event<br/>event_code e.g. BATbern56<br/>8 workflow states"]
+        TO["Topic<br/>topic_code"]
+        SE["Session<br/>agenda slot or talk"]
+        SP["Speaker pool entry<br/>8 speaker states"]
+        RE["Registration<br/>status, waitlist"]
+        TA["Task"]
+        MA["Mail<br/>messages, conversations"]
+        NL["Newsletter<br/>subscribers, sends"]
+        QA["Q&A window<br/>and posts"]
+    end
+    US -->|"works for, company_id = name"| CO
+    PA -.->|"company_name"| CO
+    TS -.->|"company_name"| CO
+    PM -.->|"event_code"| EV
+    EV --> SE
+    EV -.->|"topic_code"| TO
+    EV --> SP
+    SP --> SE
+    SE -.->|"session_users.username"| US
+    EV --> RE
+    RE -.->|"attendee_username"| US
+    EV --> TA
+    TA -.->|"assigned_organizer_username"| US
+    EV --> MA
+    EV --> NL
+    SE --> QA
+```
+
+Solid arrows are relationships inside one service (usually foreign keys); dashed arrows cross a
+service boundary or use a meaningful identifier without a foreign key (ADR-003). Inside CUMS,
+`user_profiles.company_id` holds the company `name` and has no foreign key either.
 
 ## Data Models
 
+The concepts below describe what each entity means and which identifiers it exposes. Columns and
+relationships are shown in the [Database Schema](#database-schema) diagrams; the API shapes are
+defined in `docs/api/*.openapi.yml` ([ADR-006](./ADR-006-openapi-contract-first-code-generation.md)).
+The TypeScript interfaces that stood here until 2026-11 described a design that was only partly
+built; what was never built is listed under [Not implemented](#not-implemented).
+
 ### Company
 
-**Purpose:** Centralized company entity for speakers, partners, and attendees with logo management.
+**Purpose:** one record per company, used for speakers, partners and attendees, with an optional
+logo.
 
-**Key Attributes:**
-- id: UUID - Internal database primary key (NOT exposed in API)
-- name: string - Meaningful public identifier (e.g., "GoogleZH") - Story 1.16.2: Used in URLs and API responses, max 12 chars, alphanumeric
-- displayName: string - Full official company name for UI display (e.g., "Google Zürich AG")
-- logo: CompanyLogo - Uploaded logo with metadata
-- website: string - Company website URL
-- industry: string - Industry sector classification
-- headquarters: Address - Primary company location
+**Key attributes** (`companies`, CUMS): `id` (UUID, internal), `name` (public identifier,
+pattern `^[a-zA-Z0-9]{1,12}$`, unique), `display_name` (full official name for the UI), `website`,
+`industry`, `description`, `logo_url`, `logo_s3_key`, `logo_file_id` (the `upload_id` of the
+`logos` row), `is_verified`, `created_by`. The Swiss UID column was dropped in CUMS V22.
 
-**Story 1.16.2 - Meaningful IDs:**
-- Database uses UUID as primary key (performance, immutability)
-- API exposes `name` as the public identifier (pattern: `^[a-zA-Z0-9]{1,12}$`)
-- Name is case-insensitive for lookups (LOWER(name) index)
-- URLs use company name: `/companies/GoogleZH` instead of `/companies/{uuid}`
-- displayName provides full company name for UI rendering
+**Meaningful IDs (Story 1.16.2):** the database key is a UUID; the API and URLs use `name`
+(`/companies/GoogleZH`). The unique constraint on `name` is case-sensitive; the search endpoint
+matches case-insensitively (`findByNameContainingIgnoreCase`).
 
-**Note:** User-company relationships are managed by the User Management Service via `User.companyId` field (stores company name). To query employees of a company, use the User Service endpoint: `GET /api/v1/users?company={companyName}`
+**Relationships:**
+- Company to users: `user_profiles.company_id` stores the company `name` (no foreign key). Users
+  of a company are found through the user API.
+- Company to partner: `partners.company_name` (PCS) stores the company `name`, one partner per
+  company (unique).
 
-#### TypeScript Interface
-```typescript
-// Story 1.16.2: Company with meaningful ID (name)
-// ADR-002: Logo storage via Generic File Upload Service
-interface Company {
-  name: string;  // Same as id - kept for backwards compatibility
-  displayName: string;
-  website?: string;
-  industry?: string;
-  description?: string;
-  logoUrl?: string;      // CloudFront CDN URL (from logos.cloudfront_url)
-  logoS3Key?: string;    // S3 key reference
-  logoFileId?: string;   // References logos.upload_id (ADR-002)
-  isVerified: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  createdBy: string; // User ID who created this company
-  // Note: employee relationships managed by User Service via User.companyId
-  // Note: Partnership status managed by Partner Coordination Service via Partnership.companyId
-  // Note: Logo storage uses Generic File Upload Service (ADR-002)
-}
+### Logo upload (ADR-002)
 
-// ADR-002: Generic Logo entity (supports all entity types)
-interface Logo {
-  uploadId: string;              // Public identifier for tracking
-  s3Key: string;                 // Current S3 key (temp or final)
-  cloudFrontUrl?: string;        // CDN URL for access
-  fileExtension: string;         // png, jpg, jpeg, svg
-  fileSize: number;              // Size in bytes
-  mimeType: string;              // image/png, etc.
-  checksum?: string;             // SHA-256 for integrity
-  status: LogoStatus;            // State machine
-  associatedEntityType?: AssociatedEntityType;
-  associatedEntityId?: string;   // Entity's identifier
-  createdAt: Date;
-  updatedAt: Date;
-  expiresAt?: Date;              // For automatic cleanup
-}
+**Purpose:** the generic three-phase upload for company logos and other branding images
+([ADR-002](./ADR-002-generic-file-upload-service.md)), table `logos`.
 
-enum LogoStatus {
-  PENDING = 'PENDING',           // Upload initiated, file may not exist in S3 yet
-  CONFIRMED = 'CONFIRMED',       // File successfully uploaded to S3 and verified
-  ASSOCIATED = 'ASSOCIATED'      // Linked to entity, file in final location
-}
-
-enum AssociatedEntityType {
-  COMPANY = 'COMPANY',
-  USER = 'USER',
-  EVENT = 'EVENT',
-  PARTNER = 'PARTNER',
-  SPEAKER = 'SPEAKER',
-  ATTENDEE = 'ATTENDEE'
-}
+```mermaid
+stateDiagram-v2
+    [*] --> PENDING: presigned URL requested
+    PENDING --> CONFIRMED: file in S3, confirm call
+    CONFIRMED --> ASSOCIATED: entity created or updated with the uploadId
+    PENDING --> [*]: cleanup after 24 h
+    CONFIRMED --> [*]: cleanup after 7 days
 ```
 
-#### Relationships
-- **One-to-Many:** Company → Users (users belong to companies via `User.companyId` in User Service)
-- **One-to-One:** Company ↔ Partner (partner companies have additional partner data via `Partner.companyId`)
-
-### Partner
-
-**Purpose:** Partnership-specific data for companies that sponsor BATbern events, with consistent participation across all events. Partners are company-centric (not person-centric).
-
-**ADR-004 Reference Pattern:**
-- Partner is company-centric: primary relationship is Partner → Company
-- PartnerContact references User entity via `userId` (UUID foreign key, internal)
-- PartnerContact does NOT duplicate user fields (email, name, photo, company)
-- User fields accessed via join to User entity
-
-**Key Attributes:**
-- id: UUID - Unique partner identifier
-- companyId: UUID - Reference to company entity (primary relationship)
-- partnershipLevel: PartnershipTier - Sponsorship level and benefits
-- partnershipStartDate: Date - When partnership began
-- partnershipEndDate: Date - When partnership ends (optional)
-- isActive: boolean - Current partnership status
-- contacts: PartnerContact[] - Multiple contact persons (each references User)
-- topicVotes: TopicVote[] - Historical voting records
-- topicSuggestions: TopicSuggestion[] - Partner-submitted topic ideas
-- meetingAttendance: PartnerMeetingAttendance[] - Meeting participation history
-- benefits: PartnershipBenefits - Benefits based on partnership tier
-
-#### TypeScript Interface
-```typescript
-// Partner is company-centric (per ADR-004)
-interface Partner {
-  id: string;
-  companyId: string;                       // Primary relationship (FK to Company)
-  partnershipLevel: PartnershipTier;
-  partnershipStartDate: Date;
-  partnershipEndDate?: Date;
-  isActive: boolean;
-  contacts: PartnerContact[];              // References User entities
-  topicVotes: TopicVote[];
-  topicSuggestions: TopicSuggestion[];
-  meetingAttendance: PartnerMeetingAttendance[];
-  benefits: PartnershipBenefits;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// PartnerContact references User (per ADR-004)
-interface PartnerContact {
-  id: string;
-  partnerId: string;                       // FK to Partner
-  userId: string;                          // FK to User.id (NOT duplicating user fields)
-  contactRole: ContactRole;                // Primary, Billing, Technical
-  isPrimary: boolean;
-
-  // API responses include User fields by joining:
-  // username: string;                     // From User (API identifier)
-  // email: string;                        // From User
-  // firstName: string;                    // From User
-  // lastName: string;                     // From User
-  // profilePictureUrl: string;            // From User
-}
-
-enum ContactRole {
-  PRIMARY = 'primary',
-  BILLING = 'billing',
-  TECHNICAL = 'technical',
-  MARKETING = 'marketing'
-}
-
-interface PartnerAnalytics {
-  totalEmployeeAttendanceAllEvents: number;
-  averageAttendancePerEvent: number;
-  contentEngagementScore: number;
-  brandExposureMetrics: BrandExposure;
-  roiCalculations: ROIMetrics;
-  topicInfluenceScore: number;
-}
-
-enum PartnershipTier {
-  BRONZE = 'bronze',
-  SILVER = 'silver',
-  GOLD = 'gold',
-  PLATINUM = 'platinum',
-  STRATEGIC = 'strategic'
-}
-```
-
-#### Relationships
-- **One-to-One:** Partner → Company (partner data extends company via `Partner.companyId`)
-- **One-to-Many:** Partner → PartnerContacts (multiple contact persons)
-- **Many-to-One:** PartnerContact → User (via `PartnerContact.userId` FK to `User.id`)
-- **Cross-Service:** Partner analytics track employee attendance by querying User Service and Event Registration Service
+- **Endpoints** (CUMS, `companies-api`): `POST /logos/presigned-url`, `POST /logos/{uploadId}/confirm`,
+  plus `fetch-from-url` and `upload-from-url` for server-side imports.
+- **Constraints** (from the migrations): `file_extension` in png, jpg, jpeg, svg; `file_size` up
+  to 5 MB.
+- **S3 keys:** temporary `logos/temp/{uploadId}/logo-{fileId}.{ext}`; final
+  `logos/{year}/{entity-type}/{entity-name}/logo-{fileId}.{ext}` (`GenericLogoService`).
+- **Cleanup:** `LogoCleanupService` in CUMS, daily at 02:00, removes PENDING older than 24 hours
+  and CONFIRMED older than 7 days.
+- **Use:** companies (`associated_entity_type = 'COMPANY'`, checked in `CompanyService`). EMS also
+  maps the table (`events.theme_image_upload_id`); which other entity types are written in
+  practice (not verified 2026-11-04).
+- **Not via `logos`:** user profile pictures use `ProfilePictureService` with keys
+  `profile-pictures/{year}/{username}/...` and the columns `user_profiles.profile_picture_url` and
+  `profile_picture_s3_key`. Session materials, event photos and teaser images have their own
+  tables in EMS.
 
 ### User
 
-**Purpose:** Core user entity with role-based access control, company affiliations, and comprehensive profile management. Serves as the foundation for authentication and authorization across all platform features.
+**Purpose:** one profile per person, whether they log in or only registered for an event
+([ADR-007](./ADR-007-unified-user-profile.md)). The profile is the single source of truth for
+name, email, bio and photo ([ADR-004](./ADR-004-factor-user-fields-from-domain-entities.md)).
 
-**Key Attributes:**
-- id: UUID - Internal database primary key (NOT exposed in API)
-- username: string - Meaningful public identifier (e.g., "john.doe") - Story 1.16.2: Used in URLs and API responses
-- cognitoUserId: string - AWS Cognito user ID for authentication sync
-- email: string - User email address (unique)
-- firstName: string - User's first name
-- lastName: string - User's last name
-- bio: string - User biography and professional summary (ADR-004: single source of truth)
-- companyId: string - Reference to company name (e.g., "GoogleZH") - Story 1.16.2: Not UUID
-- roles: Role[] - User roles (ORGANIZER, SPEAKER, PARTNER, ATTENDEE)
-- preferences: UserPreferences - User preferences (theme, language, notifications)
-- settings: UserSettings - Account settings and privacy controls
-- profilePictureUrl: string - CloudFront CDN URL (from logos.cloudfront_url, ADR-002)
-- profilePictureS3Key: string - S3 key reference
-- profilePictureFileId: string - References logos.upload_id (ADR-002)
-- activityHistory: ActivityHistory[] - User activity tracking
-- isActive: boolean - Account active status
-- lastLoginAt: Date - Last successful login timestamp
+**Key attributes** (`user_profiles`, CUMS): `id` (UUID, internal), `username` (public identifier),
+`cognito_user_id` (nullable: NULL means the person has never logged in), `email` (unique, also
+unique case-insensitively since V21), `first_name`, `last_name`, `bio`, `company_id` (company
+`name`), `profile_picture_url`, `profile_picture_s3_key`, the `pref_*` columns (theme, language,
+email / in-app / push notification switches, frequency, quiet hours, Q&A notification frequency
+`live`, `daily`, `off`), the `settings_*` columns (profile visibility, show email, show company,
+messaging, calendar sync, timezone, two-factor flag), `is_active`, `deactivation_reason`,
+`terms_accepted_at`, `picture_import_attempted_at`, `last_login_at`.
 
-**Story 1.16.2 - Meaningful IDs:**
-- Database uses UUID as primary key (performance, immutability)
-- API exposes `username` as the public identifier (pattern: `^[a-z]+\.[a-z]+(\.[0-9]+)?$`)
-- Username auto-generated from firstName.lastName with German character conversion (ä→ae, ö→oe, ü→ue)
-- Collision handling: appends .2, .3, etc. if username exists
-- URLs use username: `/users/john.doe` instead of `/users/{uuid}`
+Related tables: `role_assignments` (roles per user), `user_additional_emails` (further addresses of
+the same person; a trigger pair prevents an address from being both a primary and an additional
+address), `activity_history`.
 
-**Note:** User entity owns the user-company relationship via `User.companyId` field. This is a one-way dependency from User Service → Company Service. To query users by company, use: `GET /api/v1/users?company={companyId}`
+**Usernames (Story 1.16.2):** pattern `^[a-z]+\.[a-z]+(\.[0-9]+)?$` (check constraint);
+generated from first and last name by `SlugGenerationService` in the shared kernel, with German
+umlauts transliterated (ä to ae, ö to oe, ü to ue) and a numeric suffix `.2`, `.3` on collision.
+URLs use the username (`/users/john.doe`).
 
-#### TypeScript Interface
-```typescript
-// Story 1.16.2: User with meaningful ID (username)
-// ADR-002: Profile picture via Generic File Upload Service
-// ADR-004: User is single source of truth for email, name, bio, photo
-interface User {
-  id: string;  // Story 1.16.2: username (e.g., "john.doe"), not UUID
-  cognitoUserId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  bio?: string;  // ADR-004: Single source of truth (used by Speaker, Attendee, etc.)
-  companyId?: string;  // Story 1.16.2: company name (e.g., "GoogleZH"), not UUID
-  roles: Role[];
-  preferences: UserPreferences;
-  settings: UserSettings;
-  profilePictureUrl?: string;     // CloudFront URL (from logos.cloudfront_url, ADR-002)
-  profilePictureS3Key?: string;   // S3 key reference
-  profilePictureFileId?: string;  // References logos.upload_id (ADR-002)
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-  lastLoginAt?: Date;
-}
+**Roles:** `role_assignments.role` in ORGANIZER, SPEAKER, PARTNER, ATTENDEE, in any combination.
+SPEAKER is a role, not an entity ([ADR-009](./ADR-009-unified-speaker-workflow.md)): there is no
+`speakers` table since EMS V94. The speaker's CV is `user_profiles.bio`, the portrait
+`profile_picture_url`. The legacy speaker-only attributes (availability, expertise areas, social
+links, speaking history and so on) were dropped, not migrated. The role is granted at the
+`CONTACTED → READY` speaker transition (see
+[06a-workflow-state-machines.md](./06a-workflow-state-machines.md)).
 
-interface UserPreferences {
-  theme: 'light' | 'dark' | 'auto';
-  language: 'de' | 'en' | 'fr' | 'it';
-  emailNotifications: boolean;
-  inAppNotifications: boolean;
-  pushNotifications: boolean;
-  notificationFrequency: 'immediate' | 'daily_digest' | 'weekly_digest';
-  quietHoursStart?: string; // HH:mm format
-  quietHoursEnd?: string;   // HH:mm format
-}
+**Business rules (verified):**
+- At least two organizers: `RoleService` in CUMS (`MINIMUM_ORGANIZERS = 2`) throws
+  `MinimumOrganizersException` when a role change would leave fewer.
+- Email uniqueness: unique constraint and a case-insensitive unique index; additional emails are
+  unique case-insensitively as well.
+- Role changes are organizer-only (`@PreAuthorize`, see
+  [ADR-008](./ADR-008-simplified-api-gateway-routing.md)).
+- Cognito sync: the Cognito triggers read and write `user_profiles`; see
+  [06b-user-lifecycle-sync.md](./06b-user-lifecycle-sync.md).
+- Deleting or merging a user: merge is orchestrated by CUMS and logged in EMS `user_merge_log`
+  (#1183). A cascade of user deletion across all services with an audit log (not verified
+  2026-11-04).
 
-interface UserSettings {
-  profileVisibility: 'public' | 'members_only' | 'private';
-  showEmail: boolean;
-  showCompany: boolean;
-  showActivityHistory: boolean;
-  allowMessaging: boolean;
-  allowCalendarSync: boolean;
-  timezone: string;
-  twoFactorEnabled: boolean;
-}
+**Caching:** Caffeine caches `companySearch` and `userSearch` in CUMS, 15-minute TTL
+(`CacheConfig`). Cache invalidation on writes (not verified 2026-11-04).
 
-enum Role {
-  ORGANIZER = 'ORGANIZER',
-  SPEAKER = 'SPEAKER',
-  PARTNER = 'PARTNER',
-  ATTENDEE = 'ATTENDEE'
-}
+### Partner
 
-interface ActivityHistory {
-  id: string;
-  userId: string;
-  activityType: string; // event_registered, session_attended, topic_voted, etc.
-  entityType: string;   // event, session, topic, etc.
-  entityId: string;
-  description: string;
-  metadata: Record<string, any>;
-  timestamp: Date;
-}
-```
+**Purpose:** partnership data for companies that sponsor BATbern. Partners are company-centric.
 
-#### SPEAKER role (per ADR-009)
+**Key attributes** (`partners`, PCS): `id`, `company_name` (unique, the CUMS company `name`),
+`partnership_level` (BRONZE, SILVER, GOLD, PLATINUM, STRATEGIC), `partnership_start_date`,
+`partnership_end_date`, `partnership_cost`.
 
-Per ADR-009 (Unified Speaker Workflow), **SPEAKER is a role on `User`, not a separate domain entity**. There is no `Speaker` entity, no `speakers` table, no `SpeakerRepository`. "Is this user a speaker?" is answered by `role_assignments.role = 'SPEAKER'` on the same User row (the role grant happens at the `CONTACTED → READY` speaker-workflow transition; see `06a-workflow-state-machines.md`).
+**Contacts:** the `partner_contacts` table was dropped in PCS V6. A partner's contacts are now
+derived: every user with the PARTNER role whose `company_id` is the partner's company
+(`PartnerContactService`).
 
-The two user-level attributes BATbern needs for a speaker are already existing columns on `user_profiles` per ADR-004 and ADR-007:
-
-- **Short CV / speaker bio** → `user_profiles.bio` (single source of truth, used by Speaker, Attendee, Partner contexts alike).
-- **Speaker portrait** → `user_profiles.profile_picture_url` (managed by the generic logo upload service per ADR-002).
-
-No `user_profiles` schema extension is required. The legacy speaker-only attributes that previously lived on a separate `speakers` table — `availability`, `expertise_areas`, `speaking_topics`, `languages_spoken`, `certifications`, `linkedin_url`, `twitter_handle`, `speaking_history`, `communication_preferences` — are **dropped per ADR-009 §0.3** (not migrated, not retained). They were not used by any production code path the platform depends on. Per-event speaker data (slot preferences, content deadlines, workflow state) lives on `speaker_pool` in event-management-service. Per-event content (title, abstract, presentation, quality-review feedback) is canonicalised on `sessions` (current) + `session_content_history` (versioned audit trail, renamed from `speaker_content_submissions` in Story 11.E.8 V99). `session_users` is the junction; the legacy `speaker_pool.{content_status, content_submitted_at, initial_presentation_title}` and `session_users.presentation_title` columns were dropped in V102 — `contentStatus` is derived at read time via `ContentStatusDeriver` (PENDING / SUBMITTED / REVISION_NEEDED / APPROVED).
-
-#### Relationships
-- **Many-to-One:** User → Company (via `User.companyId`, managed by User Service)
-- **One-to-Many:** User → ActivityHistory (activity tracking)
-- **One-to-Many:** User → role_assignments (a user may hold the SPEAKER, ORGANIZER, PARTNER, ATTENDEE roles in any combination)
-- **Cross-Service Integration:**
-  - Partner Service: Associates partner contacts with user accounts
-  - Event Service: Associates event registrations with users
-  - Attendee Service: Associates attendee profiles with users
-  - Speaker workflow (`speaker_pool` in event-management-service): references User via `username` (meaningful ID per ADR-003); SPEAKER role grant happens at `CONTACTED → READY` per ADR-009
-
-#### Business Rules
-- **Minimum Organizers:** System must maintain at least 2 active ORGANIZER role users
-- **Role Management:** ORGANIZER role required to modify user roles
-- **Email Uniqueness:** Email addresses must be unique across all users
-- **Cognito Sync:** User updates synchronize with AWS Cognito custom attributes
-- **GDPR Compliance:** User deletion cascades across all domain services with audit logging
-
-#### Caching Strategy
-- **User Search:** Caffeine in-memory cache, 10-minute TTL
-- **Current User Profile:** Session-based caching for fast authentication lookups
-- **Cache Invalidation:** Automatic on user create/update/delete operations
-
-### Session
-
-**Purpose:** Individual agenda items with multiple speaker support and comprehensive material management.
-
-**Key Attributes:**
-- id: UUID - Unique session identifier
-- eventId: UUID - Parent event reference
-- sessionUsers: SessionUser[] - Multiple speakers with roles (ADR-004: references User via userId)
-- schedule: SessionSchedule - Timing and location details
-- materials: SessionMaterials - Presentation files and resources
-
-**Implementation Note (Story 4.1.4):**
-- Sessions reference Users directly via `session_users` junction table (not Speakers)
-- Reduces cross-service dependency (event-management-service → company-user-management-service only)
-- Speaker-specific workflow data can be added later in speaker-coordination-service independently
-
-#### TypeScript Interface
-```typescript
-interface Session {
-  id: string;
-  eventId: string;
-  title: string;
-  description: string;
-  sessionType: SessionType;
-  sessionUsers: SessionUser[]; // Multiple speakers (references User, not Speaker)
-  startTime: Date;
-  endTime: Date;
-  room?: string;
-  capacity?: number;
-  materials: SessionMaterials;
-  tags: string[];
-  prerequisites?: string[];
-  targetAudience: ExperienceLevel[];
-  language: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-// ADR-004 pattern: Junction entity references User via userId
-interface SessionUser {
-  id: string;
-  userId: string;          // FK to User.id (ADR-004 reference pattern)
-  speakerRole: SpeakerRole;
-  presentationTitle?: string; // Speaker-specific title if different
-  isConfirmed: boolean;
-  invitedAt: Date;
-  confirmedAt?: Date;
-  declinedAt?: Date;
-  declineReason?: string;
-
-  // API responses include User fields by joining:
-  // username: string;        // From User
-  // firstName: string;       // From User
-  // lastName: string;        // From User
-  // company: string;         // From User.companyId
-  // profilePictureUrl: string; // From User
-}
-
-enum SessionType {
-  KEYNOTE = 'keynote',
-  PRESENTATION = 'presentation',
-  WORKSHOP = 'workshop',
-  PANEL_DISCUSSION = 'panel_discussion',
-  NETWORKING = 'networking',
-  BREAK = 'break',
-  LUNCH = 'lunch'
-}
-
-enum SpeakerRole {
-  PRIMARY_SPEAKER = 'primary_speaker',
-  CO_SPEAKER = 'co_speaker',
-  MODERATOR = 'moderator',
-  PANELIST = 'panelist'
-}
-```
-
-#### Relationships
-- **Many-to-One:** Session → Event (session belongs to event)
-- **Many-to-Many:** Session ↔ Users via SessionUser junction (multiple speakers per session) - Story 4.1.4
-- **One-to-Many:** Session → SessionUsers (speaker assignments)
-- **Many-to-One:** SessionUser → User (via userId FK, ADR-004 pattern)
-- **One-to-Many:** Session → AttendeeRatings (feedback and ratings)
-- **One-to-Many:** Session → Materials (uploaded files and resources)
+**Related:** `partner_notes` (organizer notes), `partner_meetings` with `partner_meeting_rsvps`,
+`topic_suggestions` with `topic_votes`. Partner analytics (attendance of a partner's employees)
+are computed on request from EMS registrations; nothing is stored in PCS.
 
 ### Event
 
-**Purpose:** Conference events with attendee registrations and session management, no direct speaker relationships.
+**Purpose:** one BATbern conference with its agenda, registrations and workflow.
 
-**Key Attributes:**
-- id: UUID - Internal database primary key (NOT exposed in API)
-- eventCode: string - Meaningful public identifier (e.g., "BATbern56") - Story 1.16.2: Used in URLs and API responses
-- eventNumber: number - Sequential event number
-- organizerId: string - Organizer username (e.g., "john.doe") - Story 1.16.2: Not UUID
+**Key attributes** (`events`, EMS): `id` (UUID, internal), `event_code` (public identifier,
+`BATbern{event_number}`, unique), `event_number` (unique), `title`, `description`, `event_date`,
+`registration_deadline`, `venue_name`, `venue_address`, `venue_capacity`,
+`registration_capacity` (registrations beyond it go to the waitlist), `event_type` (full_day,
+afternoon, evening; foreign key to `event_types.type`), `workflow_state`, `topic_code`,
+`organizer_username`, `theme_image_url`, `current_published_phase` (none, topic, speakers,
+agenda), Q&A settings (`qna_enabled`, `qna_open_trigger`, `qna_window_days`),
+`live_timing_version`, full-text vectors and `version` for optimistic locking.
 
-**Story 1.16.2 - Meaningful IDs:**
-- Database uses UUID as primary key (performance, immutability)
-- API exposes `eventCode` as the public identifier (pattern: `^BATbern[0-9]+$`)
-- EventCode auto-generated from eventNumber: `BATbern{eventNumber}`
-- URLs use eventCode: `/events/BATbern56` instead of `/events/{uuid}`
+**Workflow states** (check constraint and `EventWorkflowState`):
 
-#### TypeScript Interface
-```typescript
-// Story 1.16.2: Event with meaningful ID (eventCode)
-interface Event {
-  id: string;  // Story 1.16.2: eventCode (e.g., "BATbern56"), not UUID
-  eventNumber: number;
-  title: string;
-  description: string;
-  eventDate: Date;
-  registrationDeadline: Date;
-  eventType: EventType;
-  slotConfiguration: EventSlotConfiguration;
-  venue: Venue;
-  workflowState: EventWorkflowState;  // V17 migration: removed legacy 'status' field
-  organizerId: string;  // Story 1.16.2: organizer username (e.g., "john.doe"), not UUID
-  capacity: number;
-  currentAttendeeCount: number;
-  topics: Topic[];
-  sessions: Session[]; // Sessions contain speaker relationships
-  slots: EventSlot[];
-  overflowManagement: OverflowManagement;
-  qualityReview: EventQualityReview;
-  createdAt: Date;
-  updatedAt: Date;
-  publishedAt?: Date;
-  metadata: EventMetadata;
-}
-
-// EventStatus enum removed in V17 migration (2025-12-15)
-// Replaced by EventWorkflowState (9-state workflow, see 06a-workflow-state-machines.md)
-
-enum EventType {
-  FULL_DAY = 'full_day',        // 6-8 slots
-  AFTERNOON = 'afternoon',      // 6-8 slots
-  EVENING = 'evening'           // 3-4 slots
-}
-
-// Epic 5: 9-state Event Workflow (Story 5.1a)
-// Introduced in V12 migration, became the sole state field in V17 migration
-// See 06a-workflow-state-machines.md for complete workflow documentation
-enum EventWorkflowState {
-  CREATED = 'CREATED',
-  TOPIC_SELECTION = 'TOPIC_SELECTION',
-  SPEAKER_BRAINSTORMING = 'SPEAKER_BRAINSTORMING',
-  SPEAKER_OUTREACH = 'SPEAKER_OUTREACH',
-  SPEAKER_CONFIRMATION = 'SPEAKER_CONFIRMATION',
-  CONTENT_COLLECTION = 'CONTENT_COLLECTION',
-  QUALITY_REVIEW = 'QUALITY_REVIEW',
-  THRESHOLD_CHECK = 'THRESHOLD_CHECK',
-  OVERFLOW_MANAGEMENT = 'OVERFLOW_MANAGEMENT',
-  SLOT_ASSIGNMENT = 'SLOT_ASSIGNMENT',
-  AGENDA_PUBLISHED = 'AGENDA_PUBLISHED',
-  AGENDA_FINALIZED = 'AGENDA_FINALIZED',
-  NEWSLETTER_SENT = 'NEWSLETTER_SENT',
-  EVENT_READY = 'EVENT_READY',
-  PARTNER_MEETING_COMPLETE = 'PARTNER_MEETING_COMPLETE',
-  ARCHIVED = 'ARCHIVED'
-}
-
-interface EventSlotConfiguration {
-  eventType: EventType;
-  minSlots: number;
-  maxSlots: number;
-  slotDuration: number; // minutes
-  theoreticalSlotsAM: boolean; // theoretical presentations in morning
-  breakSlots: number;
-  lunchSlots: number;
-  // Story 15.2 — apéro knobs (added to the shared template AND the per-event override).
-  // afternoon/evening templates default aperitifSlots=1 @ 90 min, position=end; full_day=0.
-  aperitifSlots: number; // 0 = off, >=1 = on
-  aperitifDuration: number; // minutes
-  aperitifPosition: 'start' | 'end'; // after moderation-start | after moderation-end (default)
-}
-
-// Story 15.2 — per-event copy-on-edit override of the event-type template.
-// One row per event (table `event_agenda_config`, FK event_id → events.id). Created only
-// when an organizer first edits the event type in slot assignment; the shared `event_types`
-// template is never mutated. Resolution (AgendaConfigResolver): per-event override if a row
-// exists, else the shared template. Mirrors every EventSlotConfiguration knob + the apéro knobs.
-interface EventAgendaConfig extends EventSlotConfiguration {
-  eventId: string;
-}
-
-interface EventSlot {
-  id: string;
-  eventId: string;
-  slotNumber: number;
-  startTime: Date;
-  endTime: Date;
-  slotType: SlotType;
-  assignedSessionId?: string;
-  assignedSpeakerId?: string;
-  isFlexible: boolean;
-  technicalRequirements: TechnicalRequirement[];
-}
-
-enum SlotType {
-  THEORETICAL = 'theoretical',
-  PRACTICAL = 'practical',
-  KEYNOTE = 'keynote',
-  WORKSHOP = 'workshop',
-  BREAK = 'break',
-  LUNCH = 'lunch',
-  NETWORKING = 'networking'
-}
-
-interface OverflowManagement {
-  eventId: string;
-  overflowSpeakers: OverflowSpeaker[];
-  selectionVotes: SpeakerSelectionVote[];
-  isVotingComplete: boolean;
-  votingDeadline?: Date;
-}
-
-interface OverflowSpeaker {
-  speakerId: string;
-  sessionId: string;
-  votes: number;
-  topicFitScore: number;
-  isSelected: boolean;
-  declinedAt?: Date;
-  declineReason?: string;
-}
-
-interface SpeakerSelectionVote {
-  organizerId: string;
-  speakerId: string;
-  vote: VoteType;
-  reason?: string;
-  votedAt: Date;
-}
-
-enum VoteType {
-  APPROVE = 'approve',
-  REJECT = 'reject',
-  ABSTAIN = 'abstain'
-}
-
-interface EventQualityReview {
-  eventId: string;
-  moderatorId: string;
-  overallStatus: QualityReviewStatus;
-  sessionReviews: ContentQualityReview[];
-  reviewDeadline: Date;
-  completedAt?: Date;
-}
+```mermaid
+stateDiagram-v2
+    [*] --> CREATED
+    CREATED --> TOPIC_SELECTION
+    TOPIC_SELECTION --> SPEAKER_IDENTIFICATION
+    SPEAKER_IDENTIFICATION --> SLOT_ASSIGNMENT
+    SLOT_ASSIGNMENT --> AGENDA_PUBLISHED
+    AGENDA_PUBLISHED --> EVENT_LIVE: event date reached, scheduler
+    EVENT_LIVE --> EVENT_COMPLETED: scheduler
+    EVENT_COMPLETED --> ARCHIVED
 ```
+
+The diagram shows the forward path only; the allowed transitions and their guards are in
+[06a-workflow-state-machines.md](./06a-workflow-state-machines.md). The 16-state draft was
+consolidated to nine in V30 (logged in `workflow_state_migration_log`) and AGENDA_FINALIZED
+removed in V84, which leaves eight. The old `status` column was removed in V17.
+
+**Agenda configuration:** `event_types` holds the template per type (slot count and duration,
+break, lunch, moderation and apéro slots and durations, default capacity, typical times).
+`event_agenda_config` is a per-event copy created the first time an organizer edits the event
+type in slot assignment (Story 15.2); `AgendaConfigResolver` uses the per-event row if present,
+otherwise the template. The template is never changed from an event.
+
+**Relationships:** sessions, speaker pool, registrations, tasks, publishing configuration,
+newsletter sends, photos and teaser images, thanks, agenda configuration (all foreign keys in
+EMS); one topic by `topic_code` (no foreign key); partner meetings in PCS by `event_code`.
 
 ### Topic
 
-**Purpose:** Manages event topics with usage tracking, similarity scoring, and staleness detection for intelligent topic selection during event planning.
+**Purpose:** the backlog of event topics, with usage history for reuse decisions.
 
-#### TypeScript Interface
+**Key attributes** (`topics`, EMS): `id`, `topic_code` (unique), `title`, `description`,
+`category` (technical, management, soft_skills, industry_trends, tools_platforms),
+`partner_influence_score`, `similarity_scores` (JSONB), `is_active`, full-text vectors.
 
-```typescript
-interface Topic {
-  id: string;
-  title: string;
-  description: string;
-  category: TopicCategory;
-  createdDate: Date;
-  lastUsedDate?: Date;
-  usageCount: number;
-  usageHistory: TopicUsageRecord[];
-  stalenessScore: number; // 0-100, higher = safer to reuse
-  calculatedWaitPeriod?: number; // in months
-  partnerInfluenceScore?: number;
-  isActive: boolean;
-}
+**Usage:** an event has at most one topic (`events.topic_code`). `topic_usage_history` records
+which topic was used for which event. Staleness is computed at read time by
+`StalenessScoreService`; the stored staleness and usage-count columns were removed in V70 and V71.
+Topic similarity and clustering use the OpenAI API (`TopicSimilarityService`,
+`BatbernTopicClusterService`).
 
-interface TopicUsageRecord {
-  eventId: string;
-  usedDate: Date;
-  attendeeCount: number;
-  feedbackScore?: number;
-}
+**Not the same as** PCS `topic_suggestions`: those are proposals from partners (source PARTNER)
+and attendees (source COMMUNITY) with partner votes, status PROPOSED, SELECTED or DECLINED and an
+optional `planned_event`.
 
-enum TopicCategory {
-  TECHNICAL = 'technical',
-  MANAGEMENT = 'management',
-  SOFT_SKILLS = 'soft_skills',
-  INDUSTRY_TRENDS = 'industry_trends',
-  TOOLS_PLATFORMS = 'tools_platforms'
-}
+### Session
+
+**Purpose:** one item on an event's agenda: a talk, a keynote, a break, lunch, moderation or the
+apéro.
+
+**Key attributes** (`sessions`, EMS): `id`, `event_id`, `event_code`, `session_slug` (public
+identifier, unique), `title`, `description` (the current abstract), `session_type` (keynote,
+presentation, workshop, panel_discussion, networking, break, lunch, moderation; the apéro is
+stored as networking since V127), `start_time`, `end_time`, `room`, `capacity`, `language`,
+`speaker_pool_id`, materials summary (`materials_count`, `has_presentation`, `materials_status`
+NONE or COMPLETE, maintained by a trigger on `session_materials`), live timing
+(`actual_start_time`, `actual_end_time`, `overrun_minutes`, `completed_by_username`).
+
+**Speakers of a session:** `session_users` is the junction to users by `username` (ADR-003), with
+`speaker_role` (primary_speaker, co_speaker, moderator, panelist), confirmation fields and cached
+name columns for search. A username appears at most once per session.
+
+**Content:** the canonical current title and abstract are on `sessions`; every submission is kept
+in `session_content_history` (`submission_version`, abstract up to 1000 characters, title up to
+200, reviewer feedback). Uploaded files are in `session_materials` (PRESENTATION, DOCUMENT, VIDEO,
+OTHER).
+
+### Speaker workflow (ADR-009)
+
+**Purpose:** track each candidate speaker for an event from first idea to reviewed content.
+
+`speaker_pool` holds one row per candidate per event: `speaker_name`, `company`, `expertise`,
+`assigned_organizer_id`, `status`, deadlines (`response_deadline`, `content_deadline`),
+response fields, preferences (`preferred_time_slot`, travel and technical requirements),
+`reminders_disabled`, `source` (organizer_added or self_nomination) and `session_id`.
+
+```mermaid
+stateDiagram-v2
+    [*] --> IDENTIFIED
+    IDENTIFIED --> CONTACTED
+    CONTACTED --> READY: SPEAKER role granted, session created
+    READY --> INVITED: slot capacity checked
+    INVITED --> ACCEPTED
+    INVITED --> DECLINED
+    ACCEPTED --> CONTENT_SUBMITTED
+    CONTENT_SUBMITTED --> QUALITY_REVIEWED
 ```
 
-#### Relationships
+Simplified; the full transition table is in
+[06a-workflow-state-machines.md](./06a-workflow-state-machines.md). The pool row carries no
+identity of its own: `speaker_pool.username` and `email` were dropped in V103. Identity comes from
+the session's `session_users` row (`PrimarySpeakerResolver`), and the content status is derived at
+read time by `ContentStatusDeriver` (PENDING, SUBMITTED, REVISION_NEEDED, APPROVED) since the
+stored content columns were dropped in V102.
 
-- **One-to-Many**: Topic → TopicUsageRecord (one topic has many usage records)
-- **Many-to-Many**: Topic ↔ Event (topics can be used in multiple events, events can have multiple topics)
-- **Reference**: Topic ← PartnerCoordination (partners vote on topics)
+Audit and support tables: `speaker_status_history`, `speaker_outreach_history` (email, phone, in
+person, automated and manual email), `speaker_reminder_log` (RESPONSE or CONTENT, tiers 1 to 3),
+`speaker_slot_preferences`, `session_proposals` (talk proposals from self-nomination,
+[ADR-012](./ADR-012-self-nomination-proposals.md)), `speaker_arrivals` (event-day check-in).
 
-### Enhanced Speaker & Session Entities
+### Registration
 
-```typescript
-interface SpeakerSlotPreferences {
-  speakerId: string;
-  eventId: string;
-  preferredTimeSlots: PreferredTimeSlot[];
-  technicalRequirements: TechnicalRequirement[];
-  cannotPresentAfter?: string; // time constraint (e.g., "16:00")
-  ownLaptopRequired: boolean;
-  specialEquipmentNeeds?: string;
-  accessibilityRequirements?: string;
-  submittedAt: Date;
-  lastUpdatedAt: Date;
-}
+**Purpose:** one person's registration for one event.
 
-interface PreferredTimeSlot {
-  startTime: string; // time format "09:00"
-  endTime: string;   // time format "10:30"
-  preference: PreferenceLevel;
-}
+**Key attributes** (`registrations`, EMS): `id`, `event_id`, `registration_code` (public,
+`{eventCode}-reg-{6 random characters}`, unique), `attendee_username` (ADR-003, no foreign key),
+cached `attendee_first_name`, `attendee_last_name`, `attendee_email`, `attendee_company_id`,
+`status`, `waitlist_position`, `deregistration_token` (unique), `calendar_uid` (unique, for the
+calendar invitation), `confirmation_resent_at` and count, `decline_link_sent_at`, `metadata`
+(JSONB).
 
-enum PreferenceLevel {
-  STRONGLY_PREFERRED = 'strongly_preferred',
-  PREFERRED = 'preferred',
-  ACCEPTABLE = 'acceptable',
-  NOT_PREFERRED = 'not_preferred',
-  UNAVAILABLE = 'unavailable'
-}
-
-interface TechnicalRequirement {
-  id: string;
-  requirement: string;
-  isRequired: boolean;
-  description?: string;
-}
-
-interface SlotAssignment {
-  slotId: string;
-  assignedAt: Date;
-  assignedBy: string; // organizer ID
-  automaticallyAssigned: boolean;
-  manualOverride: boolean;
-  conflictResolution?: string;
-}
-
-interface ContentQualityReview {
-  id: string;
-  sessionId: string;
-  speakerId: string;
-  reviewerId: string; // moderator ID
-  abstractReview: AbstractReview;
-  materialReview: MaterialReview;
-  status: QualityReviewStatus;
-  submittedAt: Date;
-  reviewedAt?: Date;
-  feedback?: string;
-  revisionRequested: boolean;
-  revisionDeadline?: Date;
-}
-
-interface AbstractReview {
-  content: string;
-  characterCount: number;
-  hasLessonsLearned: boolean;
-  hasProductPromotion: boolean;
-  meetsStandards: boolean;
-  issues: string[];
-}
-
-interface MaterialReview {
-  bioReview: BiographyReview;
-  photoReview: PhotoReview;
-  additionalMaterials: MaterialItem[];
-}
-
-interface BiographyReview {
-  content: string;
-  characterCount: number;
-  isAppropriate: boolean;
-  issues: string[];
-}
-
-interface PhotoReview {
-  photoUrl: string;
-  isAppropriate: boolean;
-  meetsTechnicalStandards: boolean;
-  issues: string[];
-}
-
-interface MaterialItem {
-  fileName: string;
-  fileType: string;
-  fileSize: number;
-  uploadedAt: Date;
-  isApproved: boolean;
-  issues: string[];
-}
-
-enum QualityReviewStatus {
-  PENDING = 'pending',
-  IN_REVIEW = 'in_review',
-  APPROVED = 'approved',
-  REQUIRES_CHANGES = 'requires_changes',
-  REJECTED = 'rejected',
-  REVISION_SUBMITTED = 'revision_submitted'
-}
+```mermaid
+stateDiagram-v2
+    [*] --> registered
+    [*] --> waitlist: capacity reached
+    waitlist --> registered: place freed, WaitlistPromotionService
+    registered --> confirmed
+    registered --> cancelled
+    confirmed --> cancelled
+    confirmed --> attended
+    waitlist --> cancelled
 ```
 
-### Content Storage & File Management
+The status values are those of the check constraint; the transitions shown are the intended
+lifecycle (not verified 2026-11-04 against every code path). Duplicate registrations for the same
+event and user are prevented in code (`existsByEventIdAndAttendeeUsername`), not by a unique
+index.
 
-**Important (ADR-002)**: File uploads use a **dual-table pattern**:
-- **`logos` table**: Generic file upload service for profile images (company logos, user photos, event banners)
-  - Uses 3-phase upload pattern (PENDING → CONFIRMED → ASSOCIATED)
-  - Entity-agnostic with generic association
-  - Automatic cleanup of orphaned uploads
-  - See ADR-002 for complete architecture
+### Registration without an account (ADR-007)
 
-- **`content_metadata` table**: Session content and materials (presentations, documents, videos)
-  - Used for event-related content only
-  - Tied to sessions and events
-  - No state machine (simpler workflow)
+ADR-005 (now a stub) and [ADR-007](./ADR-007-unified-user-profile.md) decided that people can
+register without a Cognito account. As built:
 
-#### Logo Files (ADR-002 - Generic File Upload Service)
-
-**Purpose:** Profile images and branding for all entity types. See `logos` table schema in Company Management Service section and ADR-002 for complete documentation.
-
-**Supported Entity Types**: Company logos, User profile pictures, Event banners, Partner logos, Speaker photos
-
-**Three-Phase Upload Pattern**:
-1. **PENDING**: Upload initiated via `POST /logos/presigned-url` (no entity required)
-2. **CONFIRMED**: File uploaded to S3 and verified via `POST /logos/{uploadId}/confirm`
-3. **ASSOCIATED**: Linked to entity during creation (e.g., `POST /companies` with `logoUploadId`)
-
-**S3 Key Strategy**:
-- Temporary: `logos/temp/{uploadId}/logo-{fileId}.{ext}` (PENDING/CONFIRMED)
-- Final: `logos/{year}/{entity-type}/{entity-name}/logo-{fileId}.{ext}` (ASSOCIATED)
-
-**Cleanup**: Automated job removes PENDING > 24h, CONFIRMED > 7 days
-
-#### Content Metadata (Session Materials Only)
-
-**Purpose:** Track session-related content: presentations, handouts, videos, and archive materials. NOT used for profile images (see logos table above).
-
-```typescript
-interface ContentMetadata {
-  fileId: string; // UUID
-  s3Bucket: string; // Bucket name
-  s3Key: string; // Full S3 object key
-  originalFilename: string;
-  fileSizeBytes: number;
-  mimeType: string;
-  checksum: string; // SHA-256 hash
-  contentType: ContentType;
-  uploadStatus: UploadStatus;
-  uploadedBy: string; // User ID
-  uploadedAt?: Date;
-  cloudFrontUrl?: string; // CDN URL if published (cdn.batbern.ch or cdn.staging.batbern.ch)
-  metadata: Record<string, string>; // Custom metadata
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-enum ContentType {
-  PRESENTATION = 'presentation',        // Session presentations
-  SPEAKER_CV = 'speaker_cv',           // Speaker CVs
-  EVENT_PHOTO = 'event_photo',         // Event photography
-  ARCHIVE_MATERIAL = 'archive_material' // Historical content
-  // NOTE: LOGO and SPEAKER_PHOTO removed - use logos table (ADR-002)
-}
-
-enum UploadStatus {
-  PENDING = 'pending',
-  UPLOADING = 'uploading',
-  COMPLETED = 'completed',
-  FAILED = 'failed',
-  VIRUS_DETECTED = 'virus_detected',
-  DELETED = 'deleted'
-}
+```mermaid
+sequenceDiagram
+    autonumber
+    participant V as Visitor
+    participant E as EMS RegistrationService
+    participant C as CUMS
+    participant G as Cognito
+    V->>E: registration wizard, name, email, company
+    E->>C: getOrCreateUser via /internal/users
+    C->>C: find profile by email or create one, cognito_user_id NULL
+    C-->>E: username
+    E->>E: insert registrations row with attendee_username
+    E-->>V: confirmation mail with registration code
+    Note over V,G: later, the same person signs up or signs in with Google
+    V->>G: sign up with the same email and confirm
+    G->>G: post-confirmation trigger finds the profile by email and sets cognito_user_id
+    V->>C: first authenticated request
+    C->>C: JITUserProvisioningInterceptor links by email if the trigger did not
+    Note over C: all earlier registrations are already linked by username
 ```
 
-#### Session Materials (Enhanced)
-
-**Purpose:** Extended session materials model with comprehensive file tracking and presentation management.
-
-```typescript
-interface SessionMaterials {
-  sessionId: string;
-  presentationFiles: PresentationFile[];
-  supplementaryMaterials: SupplementaryMaterial[];
-  recordingUrl?: string;
-  photosGallery?: string[]; // Array of ContentMetadata fileIds
-  materialsPublishedAt?: Date;
-}
-
-interface PresentationFile {
-  fileId: string; // References ContentMetadata
-  title: string;
-  description?: string;
-  isPrimary: boolean;
-  uploadedBy: string; // Speaker ID
-  uploadedAt: Date;
-  downloadCount: number;
-  fileUrl: string; // CloudFront CDN URL (cdn.batbern.ch or cdn.staging.batbern.ch)
-  lastAccessedAt?: Date;
-}
-
-interface SupplementaryMaterial {
-  fileId: string; // References ContentMetadata
-  title: string;
-  description?: string;
-  materialType: 'code_sample' | 'slides' | 'handout' | 'resource_link' | 'demo_video';
-  uploadedBy: string;
-  uploadedAt: Date;
-  downloadCount: number;
-}
-```
-
-#### Storage Quota Management
-
-**Purpose:** Track and enforce storage quotas per user role with usage monitoring and alerts.
-
-```typescript
-interface StorageQuota {
-  userId: string;
-  userRole: UserRole;
-  quotaLimitBytes: number; // -1 for unlimited (organizers)
-  currentUsageBytes: number;
-  fileCount: number;
-  lastUpdated: Date;
-  quotaWarningIssued: boolean;
-  quotaExceededAt?: Date;
-}
-
-interface StorageUsageLog {
-  id: string;
-  userId: string;
-  fileId: string;
-  action: 'upload' | 'delete';
-  fileSizeBytes: number;
-  timestamp: Date;
-  newTotalUsageBytes: number;
-}
-
-interface StorageQuotaInfo {
-  quotaLimitBytes: number;
-  currentUsageBytes: number;
-  fileCount: number;
-  percentageUsed: number;
-  warningThresholdPercentage: number; // 80%
-  availableBytes: number;
-}
-```
-
-#### File Upload/Download DTOs
-
-**Purpose:** Data transfer objects for file upload/download workflows with presigned URLs.
-
-```typescript
-interface PresignedUploadUrl {
-  uploadUrl: string;
-  fileId: string;
-  expiresIn: number; // seconds
-  requiredHeaders: Record<string, string>;
-}
-
-interface PresignedDownloadUrl {
-  downloadUrl: string;
-  filename: string;
-  fileSizeBytes: number;
-  mimeType: string;
-  expiresIn: number; // seconds
-}
-
-interface FileUploadRequest {
-  filename: string;
-  contentType: ContentType;
-  fileSizeBytes: number;
-  mimeType: string;
-}
-
-interface FileUploadConfirmation {
-  fileId: string;
-  checksum: string; // SHA-256 hash
-}
-```
-
-#### Content Metadata Database Schema
-
-**Note (ADR-002)**: Profile images (logos, user photos) use the `logos` table. This table is for session content only.
-
-```sql
--- Content metadata table (session content only - NOT profile images)
-CREATE TABLE content_metadata (
-    file_id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    s3_bucket VARCHAR(255) NOT NULL,
-    s3_key VARCHAR(1000) NOT NULL,
-    original_filename VARCHAR(255) NOT NULL,
-    file_size_bytes BIGINT NOT NULL,
-    mime_type VARCHAR(100) NOT NULL,
-    checksum VARCHAR(64), -- SHA-256 hash
-    content_type VARCHAR(50) NOT NULL CHECK (content_type IN (
-        'presentation',      -- Session presentations
-        'speaker_cv',        -- Speaker CVs
-        'event_photo',       -- Event photography
-        'archive_material'   -- Historical content
-        -- NOTE: 'logo' and 'speaker_photo' removed - use logos table (ADR-002)
-    )),
-    upload_status VARCHAR(20) NOT NULL CHECK (upload_status IN (
-        'pending', 'uploading', 'completed', 'failed', 'virus_detected', 'deleted'
-    )),
-    uploaded_by UUID NOT NULL REFERENCES users(id),
-    uploaded_at TIMESTAMP,
-    cloudfront_url VARCHAR(500),
-    metadata JSONB DEFAULT '{}',
-    created_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    updated_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-
-    CONSTRAINT unique_s3_key UNIQUE (s3_bucket, s3_key)
-);
-
-CREATE INDEX idx_content_metadata_uploaded_by ON content_metadata(uploaded_by);
-CREATE INDEX idx_content_metadata_content_type ON content_metadata(content_type);
-CREATE INDEX idx_content_metadata_upload_status ON content_metadata(upload_status);
-CREATE INDEX idx_content_metadata_created_at ON content_metadata(created_at DESC);
-
--- Storage quota table
-CREATE TABLE storage_quota (
-    user_id UUID PRIMARY KEY REFERENCES users(id),
-    user_role VARCHAR(50) NOT NULL,
-    quota_limit_bytes BIGINT NOT NULL, -- -1 for unlimited
-    current_usage_bytes BIGINT NOT NULL DEFAULT 0,
-    file_count INTEGER NOT NULL DEFAULT 0,
-    last_updated TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    quota_warning_issued BOOLEAN NOT NULL DEFAULT false,
-    quota_exceeded_at TIMESTAMP
-);
-
-CREATE INDEX idx_storage_quota_usage ON storage_quota(current_usage_bytes DESC);
-CREATE INDEX idx_storage_quota_warning ON storage_quota(quota_warning_issued) WHERE quota_warning_issued = true;
-
--- Storage usage log table for audit trail
-CREATE TABLE storage_usage_log (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    user_id UUID NOT NULL REFERENCES users(id),
-    file_id UUID REFERENCES content_metadata(file_id),
-    action VARCHAR(10) NOT NULL CHECK (action IN ('upload', 'delete')),
-    file_size_bytes BIGINT NOT NULL,
-    timestamp TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    new_total_usage_bytes BIGINT NOT NULL
-);
-
-CREATE INDEX idx_storage_usage_log_user_id ON storage_usage_log(user_id, timestamp DESC);
-CREATE INDEX idx_storage_usage_log_timestamp ON storage_usage_log(timestamp DESC);
-
--- Presentation files table (links content to sessions)
-CREATE TABLE presentation_files (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-    file_id UUID NOT NULL REFERENCES content_metadata(file_id),
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    is_primary BOOLEAN NOT NULL DEFAULT false,
-    uploaded_by UUID NOT NULL REFERENCES users(id),
-    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    download_count INTEGER NOT NULL DEFAULT 0,
-    last_accessed_at TIMESTAMP,
-
-    CONSTRAINT unique_session_primary_file UNIQUE (session_id, is_primary) WHERE is_primary = true
-);
-
-CREATE INDEX idx_presentation_files_session_id ON presentation_files(session_id);
-CREATE INDEX idx_presentation_files_file_id ON presentation_files(file_id);
-CREATE INDEX idx_presentation_files_download_count ON presentation_files(download_count DESC);
-
--- Supplementary materials table
-CREATE TABLE supplementary_materials (
-    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
-    session_id UUID NOT NULL REFERENCES sessions(id) ON DELETE CASCADE,
-    file_id UUID NOT NULL REFERENCES content_metadata(file_id),
-    title VARCHAR(255) NOT NULL,
-    description TEXT,
-    material_type VARCHAR(50) NOT NULL CHECK (material_type IN (
-        'code_sample', 'slides', 'handout', 'resource_link', 'demo_video'
-    )),
-    uploaded_by UUID NOT NULL REFERENCES users(id),
-    uploaded_at TIMESTAMP NOT NULL DEFAULT CURRENT_TIMESTAMP,
-    download_count INTEGER NOT NULL DEFAULT 0
-);
-
-CREATE INDEX idx_supplementary_materials_session_id ON supplementary_materials(session_id);
-CREATE INDEX idx_supplementary_materials_file_id ON supplementary_materials(file_id);
-```
-
-#### Content Management Triggers
-
-```sql
--- Trigger to update storage quota on file upload
-CREATE OR REPLACE FUNCTION update_quota_on_upload()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.upload_status = 'completed' AND
-       (OLD.upload_status IS NULL OR OLD.upload_status != 'completed') THEN
-
-        UPDATE storage_quota
-        SET current_usage_bytes = current_usage_bytes + NEW.file_size_bytes,
-            file_count = file_count + 1,
-            last_updated = CURRENT_TIMESTAMP
-        WHERE user_id = NEW.uploaded_by;
-
-        -- Check if quota exceeded
-        UPDATE storage_quota
-        SET quota_exceeded_at = CURRENT_TIMESTAMP
-        WHERE user_id = NEW.uploaded_by
-            AND quota_limit_bytes > 0
-            AND current_usage_bytes > quota_limit_bytes
-            AND quota_exceeded_at IS NULL;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_update_quota_on_upload
-    AFTER INSERT OR UPDATE ON content_metadata
-    FOR EACH ROW
-    EXECUTE FUNCTION update_quota_on_upload();
-
--- Trigger to update storage quota on file deletion
-CREATE OR REPLACE FUNCTION update_quota_on_delete()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF NEW.upload_status = 'deleted' AND OLD.upload_status = 'completed' THEN
-        UPDATE storage_quota
-        SET current_usage_bytes = GREATEST(0, current_usage_bytes - NEW.file_size_bytes),
-            file_count = GREATEST(0, file_count - 1),
-            last_updated = CURRENT_TIMESTAMP,
-            quota_warning_issued = false
-        WHERE user_id = NEW.uploaded_by;
-    END IF;
-
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-
-CREATE TRIGGER trigger_update_quota_on_delete
-    AFTER UPDATE ON content_metadata
-    FOR EACH ROW
-    WHEN (NEW.upload_status = 'deleted')
-    EXECUTE FUNCTION update_quota_on_delete();
-
--- Trigger to increment download count
-CREATE OR REPLACE FUNCTION increment_download_count()
-RETURNS TRIGGER AS $$
-BEGIN
-    NEW.download_count = OLD.download_count + 1;
-    NEW.last_accessed_at = CURRENT_TIMESTAMP;
-    RETURN NEW;
-END;
-$$ LANGUAGE plpgsql;
-```
-
-#### Content Storage Relationships
-- **One-to-Many:** User → ContentMetadata (user uploads many files)
-- **One-to-Many:** Session → PresentationFiles (session has multiple presentations)
-- **One-to-Many:** Session → SupplementaryMaterials (session has multiple supplementary materials)
-- **One-to-One:** User → StorageQuota (each user has one quota record)
-- **One-to-Many:** User → StorageUsageLog (audit trail of all storage operations)
-- **Many-to-One:** PresentationFile → ContentMetadata (file reference)
-- **Many-to-One:** SupplementaryMaterial → ContentMetadata (file reference)
-
-#### Relationships
-- **One-to-Many:** Event → Sessions (event contains multiple sessions)
-- **One-to-Many:** Event → EventSlots (event contains multiple time slots)
-- **One-to-One:** Event → OverflowManagement (overflow handling per event)
-- **One-to-One:** Event → EventQualityReview (quality review per event)
-- **Many-to-Many:** Event ↔ Attendees (through EventRegistration)
-- **No direct relationship to Speakers** (speakers connected via sessions)
-- **No direct relationship to Partners** (partners participate in all events)
-
-### Attendee
-
-**Purpose:** Conference participants with event registration and engagement tracking. Attendee profile extends User entity per ADR-004.
-
-**ADR-004 Reference Pattern:**
-- Attendee references User entity via `userId` (UUID foreign key, internal)
-- API uses `username` as public identifier (e.g., `GET /attendees/john.doe`)
-- User fields (email, name, bio, photo, company) stored in User entity (NEVER duplicated)
-- Attendee entity contains ONLY domain-specific fields (registrations, engagement, preferences)
-
-**Key Attributes:**
-- id: UUID - Unique attendee identifier
-- userId: UUID - Foreign key to User entity (internal, NOT exposed in API)
-- eventRegistrations: EventRegistration[] - Many-to-many with events
-- engagementHistory: AttendeeEngagement - Content engagement tracking
-- contentPreferences: ContentPreferences - Topics of interest (different from User.preferences)
-- newsletterSubscription: boolean - Newsletter opt-in status
-- gdprConsent: GDPRConsent - GDPR consent tracking with timestamp and IP
-
-**Fields Stored in User Entity (NOT in Attendee):**
-- ❌ email, firstName, lastName (from User.email, User.firstName, User.lastName)
-- ❌ companyId (from User.companyId)
-- ❌ position (removed entirely per ADR-004)
-
-#### TypeScript Interface
-```typescript
-// Attendee entity references User (per ADR-004)
-interface Attendee {
-  id: string;                              // UUID (internal)
-  userId: string;                          // UUID FK to User.id (internal)
-
-  // API responses include User fields by joining:
-  // username: string;                     // From User (API identifier)
-  // email: string;                        // From User
-  // firstName: string;                    // From User
-  // lastName: string;                     // From User
-  // companyId?: string;                   // From User (optional)
-
-  // Attendee-specific fields:
-  eventRegistrations: EventRegistration[]; // Many-to-many with events
-  engagementHistory: AttendeeEngagement;   // Content engagement tracking
-  contentPreferences: ContentPreferences;  // Different from User.preferences
-  newsletterSubscription: boolean;
-  gdprConsent: GDPRConsent;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-interface EventRegistration {
-  id: string;                          // UUID
-  eventId: string;                     // FK to Event
-
-  // Authenticated registration (existing pattern)
-  attendeeId?: string;                 // UUID FK to Attendee (nullable for anonymous registrations)
-
-  // Anonymous registration (new pattern - ADR-010)
-  anonymousEmail?: string;             // Email for anonymous registration
-  anonymousFirstName?: string;         // First name
-  anonymousLastName?: string;          // Last name
-  anonymousCompany?: string;           // Company
-  anonymousRole?: string;              // Job title/role
-
-  // Account linking (when anonymous user creates account)
-  claimedByUserId?: string;            // User who claimed this registration
-  claimedAt?: Date;                    // When registration was claimed
-
-  // Registration metadata
-  confirmationCode: string;            // Format: BAT-YYYY-NNNNNN (e.g., BAT-2025-000123)
-  registrationDate: Date;
-  status: RegistrationStatus;          // 'registered' | 'waitlisted' | 'confirmed' | 'cancelled' | 'attended'
-  specialRequests?: string;
-  attendanceConfirmed?: boolean;
-  actualAttendance: boolean;
-  sessionPreferences?: string[];       // Event-level registration, sessions are preferences only
-
-  // Communication preferences
-  newsletterSubscribed?: boolean;
-  eventReminders?: boolean;
-}
-
-interface GDPRConsent {
-  consentGiven: boolean;
-  consentDate: Date;
-  ipAddress: string;
-  consentVersion: string;
-}
-```
-
-#### Relationships
-- **One-to-One:** Attendee → User (via `Attendee.userId` FK to `User.id`)
-- **Many-to-One:** Attendee → Company (via `User.companyId`, transitive through User)
-- **Many-to-Many:** Attendee ↔ Events (through EventRegistration)
-- **One-to-Many:** Attendee → EngagementHistory (content interaction tracking)
-
-### Anonymous Registration Account Linking
-
-**Pattern**: Unified user_profiles with nullable cognito_user_id (ADR-007)
-
-**Use Case**: A user registers anonymously for an event, then later creates a Cognito account with the same email address.
-
-#### Workflow
-
-**1. Anonymous Registration (Story 4.1.5)**
-
-User visits `/register/BAT-025` and completes registration wizard without login.
-
-Backend creates user_profile (in Company User Management Service):
-```sql
--- user_profiles table (cognito_user_id is NULL for anonymous users)
-INSERT INTO user_profiles (
-    id, username, email, first_name, last_name, company_id, cognito_user_id
-) VALUES (
-    gen_random_uuid(),
-    'john.doe',              -- Generated username
-    'john@example.com',
-    'John',
-    'Doe',
-    'AcmeCorp',              -- FK to companies
-    NULL                     -- NULL = anonymous user (ADR-007)
-);
-```
-
-Backend creates registration (in Event Management Service):
-```sql
--- registrations reference user by username (ADR-004: no duplicated user fields)
-INSERT INTO registrations (
-    id, event_code, attendee_username, registration_code, status
-) VALUES (
-    gen_random_uuid(),
-    'BATbern25',             -- eventCode per ADR-003
-    'john.doe',              -- References user_profiles.username (cross-service)
-    'BAT-2025-000123',
-    'confirmed'
-);
-```
-
-User receives confirmation email with QR code and can access registration via confirmation code.
-
-**2. Account Creation (Later)**
-
-User decides to create a Cognito account with email `john@example.com`.
-
-Backend (on account creation via `UserCreatedEvent` handler):
-```sql
--- Simply update the existing user_profile with the Cognito ID
-UPDATE user_profiles SET
-    cognito_user_id = 'cognito-sub-12345',
-    claimed_at = NOW()
-WHERE email = 'john@example.com'
-  AND cognito_user_id IS NULL;
-
--- All registrations are ALREADY linked via attendee_username!
--- No migration, no copying, no clearing required.
-```
-
-**3. Result**
-
-User can now:
-- View all past registrations in authenticated dashboard (linked via username)
-- Register for future events as authenticated user
-- Access all registrations via account (not just confirmation codes)
-
-#### Duplicate Prevention
-
-```sql
--- Unique email prevents duplicate anonymous users
-CREATE UNIQUE INDEX idx_user_profiles_email ON user_profiles(email);
-
--- Unique (event, attendee) prevents duplicate registrations
-CREATE UNIQUE INDEX idx_registrations_event_attendee
-    ON registrations(event_code, attendee_username);
-```
-
-#### Edge Cases
-
-**User already has account, registers anonymously by mistake:**
-- Lookup finds existing user_profile by email
-- Use existing username for registration (no new profile created)
-
-**Email typo in anonymous registration:**
-- User contacts support with confirmation code
-- Support can update email in user_profiles
-
-#### Implementation Notes
-
-**Auto-linking trigger point:**
-- Execute in `UserService.createUser()` after Cognito account created
-- Find existing anonymous user_profile with matching email
-- Set `cognito_user_id` and `claimed_at` (3 lines of code)
-- All registrations automatically linked via `attendee_username`
-
-**Security considerations:**
-- Email verification via confirmation email
-- Confirmation code acts as secret token for viewing registration
-- Rate limiting on registration endpoint
-
-**Privacy considerations:**
-- User data in single location (user_profiles) - simple GDPR deletion
-- No duplicate data to synchronize or clear
-
-### Notification Domain Models
-
-#### Email Templates
-
-**Purpose:** Manage email templates for all notification types with versioning and multilingual support.
-
-**Key Attributes:**
-- id: UUID - Unique template identifier
-- templateType: TemplateType - Type of notification (speaker_invitation, deadline_reminder, etc.)
-- language: string - Template language (de, en)
-- subject: string - Email subject line with variable placeholders
-- htmlBody: string - HTML version of email body
-- textBody: string - Plain text version of email body
-- variables: string[] - List of available template variables
-- version: number - Template version number
-- isActive: boolean - Whether template is currently active
-
-#### TypeScript Interface
-```typescript
-interface EmailTemplate {
-  id: string;
-  templateType: TemplateType;
-  language: 'de' | 'en';
-  subject: string;
-  htmlBody: string;
-  textBody: string;
-  variables: string[]; // e.g., ['speakerName', 'eventTitle', 'deadline']
-  version: number;
-  isActive: boolean;
-  createdBy: string;
-  createdAt: Date;
-  updatedAt: Date;
-}
-
-enum TemplateType {
-  SPEAKER_INVITATION = 'speaker_invitation',
-  DEADLINE_REMINDER_48H = 'deadline_reminder_48h',
-  DEADLINE_REMINDER_24H = 'deadline_reminder_24h',
-  DEADLINE_CRITICAL = 'deadline_critical',
-  MATERIAL_RECEIVED = 'material_received_confirmation',
-  EVENT_PUBLISHED = 'event_published',
-  NEWSLETTER_PROGRESSIVE = 'newsletter_progressive',
-  NEWSLETTER_FINAL = 'newsletter_final',
-  AGENDA_UPDATE = 'agenda_update'
-}
-```
-
-#### Notification Preferences
-
-**Purpose:** Store user-specific notification preferences across channels and types.
-
-**Key Attributes:**
-- id: UUID - Unique preference identifier
-- userId: UUID - Reference to user
-- channel: NotificationChannel - Delivery channel
-- notificationType: string - Specific notification type
-- isEnabled: boolean - Whether notifications are enabled
-- frequency: FrequencyType - Notification frequency
-- quietHoursStart: Time - Start of quiet hours
-- quietHoursEnd: Time - End of quiet hours
-
-#### TypeScript Interface
-```typescript
-interface NotificationPreferences {
-  id: string;
-  userId: string;
-  channel: NotificationChannel;
-  notificationType: string;
-  isEnabled: boolean;
-  frequency: FrequencyType;
-  quietHoursStart?: string; // HH:MM format
-  quietHoursEnd?: string; // HH:MM format
-  updatedAt: Date;
-}
-
-enum NotificationChannel {
-  EMAIL = 'email',
-  IN_APP = 'in_app',
-  PUSH = 'push',
-  SMS = 'sms'
-}
-
-enum FrequencyType {
-  IMMEDIATE = 'immediate',
-  DAILY_DIGEST = 'daily_digest',
-  WEEKLY_DIGEST = 'weekly_digest'
-}
-```
-
-#### Escalation Rules
-
-**Purpose:** Define multi-tier escalation workflows for deadline management.
-
-**Key Attributes:**
-- id: UUID - Unique rule identifier
-- eventId: UUID - Event this rule applies to
-- ruleType: string - Type of escalation (speaker_deadline, content_review, etc.)
-- tier1HoursBefore: number - Hours before deadline for reminder
-- tier2HoursBefore: number - Hours before deadline for warning
-- tier3HoursBefore: number - Hours before deadline for critical
-- escalationThreshold: number - Minutes after critical to escalate
-- backupOrganizerIds: UUID[] - Backup organizers for escalation
-- isActive: boolean - Whether rule is active
-
-#### TypeScript Interface
-```typescript
-interface EscalationRule {
-  id: string;
-  eventId: string;
-  ruleType: string; // e.g., 'speaker_deadline', 'content_review'
-  tier1HoursBefore: number; // e.g., 48 hours
-  tier2HoursBefore: number; // e.g., 24 hours
-  tier3HoursBefore: number; // e.g., 0 hours (deadline)
-  escalationThreshold?: number; // Minutes after deadline to escalate
-  backupOrganizerIds: string[];
-  isActive: boolean;
-  createdAt: Date;
-  updatedAt: Date;
-}
-```
-
-#### Notification Log
-
-**Purpose:** Comprehensive audit trail of all sent notifications with delivery tracking.
-
-**Key Attributes:**
-- id: UUID - Unique log entry identifier
-- userId: UUID - Recipient user
-- notificationType: string - Type of notification sent
-- channel: NotificationChannel - Delivery channel used
-- templateId: UUID - Template used (if applicable)
-- subject: string - Actual subject sent
-- sentAt: Date - When notification was sent
-- deliveryStatus: DeliveryStatus - Current delivery status
-- sesMessageId: string - AWS SES message ID
-- errorMessage: string - Error details if failed
-- metadata: JSON - Additional context data
-
-#### TypeScript Interface
-```typescript
-interface NotificationLog {
-  id: string;
-  userId: string;
-  notificationType: string;
-  channel: NotificationChannel;
-  templateId?: string;
-  subject: string;
-  sentAt: Date;
-  deliveryStatus: DeliveryStatus;
-  sesMessageId?: string;
-  errorMessage?: string;
-  metadata: Record<string, any>;
-}
-
-enum DeliveryStatus {
-  SENT = 'sent',
-  DELIVERED = 'delivered',
-  BOUNCED = 'bounced',
-  FAILED = 'failed',
-  COMPLAINED = 'complained'
-}
-```
+- No data is copied or migrated when the account is created; there is no `claimed_at` column.
+- A federated Google sign-in is linked to an existing profile by the pre-signup trigger
+  ([ADR-010](./ADR-010-federated-identity-via-cognito.md)).
+- Two profiles of the same person can be merged by an organizer or by self-claim (#1183); see
+  `user_merge_log`.
+
+### Mail
+
+**Purpose:** a record of every mail the platform sends or receives, the basis of the Mail Center
+(Epic 16).
+
+- `mail_message`: one row per mail, `direction` OUT or IN, `audience` (NEWSLETTER, REGISTRANTS,
+  SPEAKERS, VENUE, PARTNERS, ORGANIZERS, SYSTEM, PUBLIC), `content_source` (TEMPLATE or
+  OWN_TEXT), subject and bodies, threading headers, `inbound_path` (REPLIES or ALIAS),
+  attachments as JSONB, `is_spam`, optional `conversation_id` and `newsletter_send_id`.
+- `mail_recipient`: one row per address (`kind` TO or CC) with SES message id and delivery status
+  (SENT, DELIVERED, FAILED).
+- `mail_conversation`: inbound mail grouped by `conversation_key`, with `status` (OPEN, WAITING,
+  DONE), `assignee_username` and a unique `reply_token`.
+- `mail_automatic_event`: counts automatic mail (out of office, bounce, calendar replies,
+  keywords, unsubscribe, loops, spam) without storing content.
+- `email_forwarding_log`: one row per inbound S3 object for idempotent alias forwarding, with the
+  outcome; no addresses or bodies.
+- `email_templates`: templates per `template_key` and `locale` (unique pair), with layouts
+  (`is_layout`, `layout_key`) and system flags. They are seeded from the classpath at startup
+  (`EmailTemplateSeedService`) and editable by organizers. Email templates exist in `de` and `en`
+  only.
+
+PCS records the mail it sends through EMS `/internal/mails`, so partner mail appears in the
+Mail Center too.
+
+### Notifications
+
+`notifications` (EMS) holds the delivery audit trail and the in-app notifications for organizers:
+`recipient_username`, `event_code`, `notification_type`, `channel` (EMAIL, IN_APP; SMS is named as
+future in the column comment), `priority`, `status` (PENDING, SENT, FAILED for mail; UNREAD, READ
+for in-app), timestamps and metadata. User notification preferences are columns on
+`user_profiles` (`pref_*`), not a table of their own. Details:
+[06d-notification-system.md](./06d-notification-system.md).
 
 ## Database Schema
 
-**Source of truth: the Flyway migrations**, not this document. This section is an inventory to
-find your way; for columns, constraints and indexes read the migration that introduced the table
-and every later migration that alters it.
+The diagrams show the tables that exist after the last migration, with their main columns (not
+every column), primary keys (PK), foreign keys (FK) and unique keys (UK). Relationship lines are
+foreign keys unless the label says "no FK".
 
-| Service | Migrations | Flyway history table |
-|---|---|---|
-| event-management-service | `services/event-management-service/src/main/resources/db/migration/` (V1 to V144) | `flyway_schema_history_event_management` |
-| company-user-management-service | `services/company-user-management-service/src/main/resources/db/migration/` (V1 to V22) | `flyway_schema_history_company_user_management` |
-| partner-coordination-service | `services/partner-coordination-service/src/main/resources/db/migration/` (V1 to V10) | `flyway_schema_history_partner_coordination` |
-| speaker-coordination-service | none of its own; only the `shared-kernel` baseline `V1__Initial_baseline.sql` (extension + `update_updated_at_column()` trigger function) | `flyway_schema_history_speaker_coordination` |
-| attendee-experience-service | none; the service has no datasource and no JPA entities | n/a |
+### Cross-service references (ADR-003)
 
-All services connect to the same PostgreSQL database (`batbern`); each keeps its own Flyway
-history table. Two tables are declared by two services with `CREATE TABLE IF NOT EXISTS`:
-`logos` (CUMS V10, EMS V5) and `shedlock` (CUMS V12, EMS V31).
+```mermaid
+erDiagram
+    user_profiles {
+        uuid id PK
+        varchar username UK
+        varchar company_id "company name"
+    }
+    companies {
+        uuid id PK
+        varchar name UK
+    }
+    events {
+        uuid id PK
+        varchar event_code UK
+        varchar organizer_username
+    }
+    registrations {
+        uuid id PK
+        varchar attendee_username
+        varchar attendee_company_id
+    }
+    session_users {
+        uuid id PK
+        varchar username
+    }
+    event_tasks {
+        uuid id PK
+        varchar assigned_organizer_username
+    }
+    partners {
+        uuid id PK
+        varchar company_name UK
+    }
+    topic_votes {
+        uuid topic_id PK
+        varchar company_name PK
+    }
+    partner_meetings {
+        uuid id PK
+        varchar event_code
+    }
+    watch_pairings {
+        uuid id PK
+        varchar username FK
+    }
+    user_profiles }o..o| companies : "company_id = name, no FK"
+    registrations }o..|| user_profiles : "attendee_username, no FK"
+    session_users }o..|| user_profiles : "username, no FK"
+    event_tasks }o..o| user_profiles : "organizer username, no FK"
+    events }o..|| user_profiles : "organizer_username, no FK"
+    partners |o..|| companies : "company_name, no FK"
+    topic_votes }o..|| companies : "company_name, no FK"
+    partner_meetings }o..|| events : "event_code, no FK"
+    watch_pairings }o--|| user_profiles : "username, FK inside CUMS"
+```
 
-The inventory below was derived by scanning every migration for `CREATE TABLE`, `DROP TABLE`
-and `ALTER TABLE ... RENAME TO` (as of develop c4593449). Tables created and later dropped are
-listed separately so that nobody goes looking for them. To regenerate it, scan the same
-statements again; do not edit it by hand from memory.
-
-### Event Management Service (EMS)
-
-| Table | Purpose | Introduced |
-|---|---|---|
-| `events` | Event aggregate root (event code, dates, venue, `workflow_state`, capacity) | V2 |
-| `sessions` | Agenda slots and talks of an event; canonical current title and abstract | V2 |
-| `registrations` | Attendee registrations, referenced by `attendee_username` (ADR-003) | V2 |
-| `logos` | Generic file upload state machine PENDING, CONFIRMED, ASSOCIATED (ADR-002); shared with CUMS | V5 |
-| `session_users` | Junction session to speaker username, with `speaker_role` (primary speaker, co-speaker, moderator, panelist) | V7 |
-| `event_types` | Event type templates (slot configuration, timings) | V10 |
-| `topics` | Topic backlog with usage and staleness tracking | V14 |
-| `topic_usage_history` | Which topic was used for which event, feeds staleness | V14 |
-| `speaker_pool` | Per-event speaker workflow state machine (ADR-009); no talk content | V14 |
-| `speaker_outreach_history` | Organizer contact attempts and automated reminders per speaker | V16 |
-| `task_templates` | Reusable event planning task templates | V22 |
-| `event_tasks` | Tasks per event assigned to organizers | V22 |
-| `speaker_status_history` | Audit trail of speaker workflow transitions | V23 |
-| `session_timing_history` | Audit trail of session time changes during slot assignment | V28 |
-| `speaker_slot_preferences` | Speaker preferences for agenda slots | V28 |
-| `publishing_config` | Per-event auto-publishing settings (speakers, agenda) | V28 |
-| `workflow_state_migration_log` | Audit log of the V30 consolidation from 16 to 9 event states | V30 |
-| `shedlock` | ShedLock distributed scheduler locks; shared with CUMS | V31 |
-| `notifications` | Notification delivery audit trail and in-app notifications | V33 |
-| `session_materials` | Uploaded slides, documents and videos per session | V41 |
-| `session_content_history` | Versioned title and abstract submissions per session, keyed by `(session_id, submission_version)` | V53 (as `speaker_content_submissions`, renamed in V99) |
-| `speaker_reminder_log` | Sent deadline reminders, for deduplication and audit | V54 |
-| `speaker_arrivals` | Speaker arrival confirmations on the event day | V55 |
-| `email_templates` | DB-backed email templates, seeded from the classpath, editable by organizers | V62 |
-| `newsletter_subscribers` | Newsletter subscriptions | V67 |
-| `newsletter_sends` | One row per newsletter send | V67 |
-| `newsletter_recipients` | Per-recipient delivery status of a newsletter send | V67 |
-| `ai_generation_log` | Cost and usage log of AI generation calls | V77 |
-| `event_photos` | Event photo gallery (S3 keys, CDN URLs) | V79 |
-| `event_teaser_images` | Teaser images for the moderator presentation page | V80 |
-| `ai_prompts` | Organizer-editable AI prompts with their defaults | V82 |
-| `app_settings` | Key-value application settings (for example forwarding recipients, Mail Center switch) | V88 |
-| `session_proposals` | Talk proposals from attendee self-nominations (Story 7.2, ADR-012) | V109 |
-| `organizer_thanks` | Post-event "thank the organizers" messages (Story 7.4) | V111 |
-| `session_qna_window` | One time-boxed post-event Q&A window per session (Story 7.5) | V112 |
-| `session_qna_post` | Questions and answers in a Q&A window | V112 |
-| `session_qna_notification` | Per-recipient digest state of Q&A notifications (Story 15.7) | V117 |
-| `live_timing_presence` | Organizer presence for the live-timing poll (Story 15.1) | V119 |
-| `event_agenda_config` | Per-event copy-on-edit override of the event type template (Story 15.2) | V121 |
-| `email_forwarding_log` | One row per inbound mail S3 object, idempotent alias forwarding; no addresses or bodies | V128 |
-| `mail_message` | Every outbound and inbound mail (Mail Center, Epic 16) | V135 |
-| `mail_recipient` | One row per recipient address of a `mail_message` | V135 |
-| `mail_conversation` | Inbound replies grouped into conversations with status and assignee | V139 |
-| `mail_automatic_event` | Counts of automatic mail (out-of-office, bounces, loops), without content | V139 |
-| `user_merge_log` | One row per merge of two profiles of the same person (#1183) | V144 |
-
-Dropped and no longer present: `publishing_versions` (created V28, dropped V89), `speakers`
-(created V37, dropped V94, see ADR-009), `speaker_invitation_tokens` (magic-link tokens, created
-V43, dropped V104).
+Other username columns that follow the same pattern: `mail_conversation.assignee_username`,
+`newsletter_subscribers.username`, `organizer_thanks.thanked_by_username`,
+`session_qna_post.posted_by_username`, `speaker_arrivals.speaker_username`,
+`partner_notes.author_username`, `live_timing_presence.username`. When a profile merge moves a
+person to another username, EMS rewrites these columns and records what moved in
+`user_merge_log`.
 
 ### Company User Management Service (CUMS)
 
-| Table | Purpose | Introduced |
-|---|---|---|
-| `companies` | Companies with Swiss business data and logo reference | V3 |
-| `user_profiles` | Users: UUID primary key internally, `username` as public identifier | V4 |
-| `role_assignments` | Roles per user (ORGANIZER, SPEAKER, PARTNER, ATTENDEE) | V5 |
-| `activity_history` | User activity tracking | V6 |
-| `logos` | Generic file upload state machine; shared with EMS | V10 |
-| `shedlock` | ShedLock distributed scheduler locks; shared with EMS | V12 |
-| `watch_pairings` | Pairing codes for the Apple Watch organizer app | V13 |
-| `presentation_settings` | Single-row settings for the moderator presentation page | V14 |
-| `user_additional_emails` | Additional email addresses per user profile (Story 10.32) | V16 |
+```mermaid
+erDiagram
+    companies {
+        uuid id PK
+        varchar name UK "1 to 12 alphanumerics"
+        varchar display_name
+        varchar website
+        varchar industry
+        varchar logo_url
+        varchar logo_file_id "logos.upload_id"
+        bool is_verified
+        varchar created_by
+    }
+    user_profiles {
+        uuid id PK
+        varchar username UK
+        varchar cognito_user_id UK "NULL until first login"
+        varchar email UK
+        varchar first_name
+        varchar last_name
+        text bio
+        varchar company_id "company name, no FK"
+        varchar profile_picture_url
+        bool is_active
+        timestamptz terms_accepted_at
+        timestamptz last_login_at
+    }
+    role_assignments {
+        uuid user_id PK, FK
+        varchar role PK "ORGANIZER SPEAKER PARTNER ATTENDEE"
+        uuid granted_by FK
+        timestamptz granted_at
+    }
+    user_additional_emails {
+        uuid id PK
+        uuid user_id FK
+        varchar email UK
+        varchar label
+        timestamptz verified_at
+    }
+    activity_history {
+        uuid id PK
+        uuid user_id FK
+        varchar activity_type
+        varchar entity_type
+        varchar entity_id
+        jsonb metadata
+    }
+    watch_pairings {
+        uuid id PK
+        varchar username FK
+        varchar pairing_code
+        varchar pairing_token UK
+        varchar device_name
+        timestamp paired_at
+    }
+    logos {
+        uuid id PK
+        varchar upload_id UK
+        varchar s3_key
+        varchar cloudfront_url
+        varchar status "PENDING CONFIRMED ASSOCIATED"
+        varchar associated_entity_type
+        varchar associated_entity_id
+        timestamp expires_at
+    }
+    presentation_settings {
+        int id PK "single row"
+        text about_text
+        int partner_count
+    }
+    user_profiles ||--o{ role_assignments : "user_id"
+    user_profiles ||--o{ user_additional_emails : "user_id"
+    user_profiles ||--o{ activity_history : "user_id"
+    user_profiles ||--o{ watch_pairings : "username"
+    user_profiles }o..o| companies : "company_id = name, no FK"
+    companies |o..o| logos : "logo_file_id = upload_id, no FK"
+```
+
+- `role_assignments` has a composite key (user, role); `granted_by` points to the organizer who
+  granted it.
+- `presentation_settings` is a single row for the presenter screen (about text, number of partner
+  logos).
+- `shedlock` (scheduler locks) is declared by both CUMS (V12) and EMS (V31) with
+  `CREATE TABLE IF NOT EXISTS`; `logos` likewise by CUMS (V10) and EMS (V5).
 
 ### Partner Coordination Service (PCS)
 
-| Table | Purpose | Introduced |
-|---|---|---|
-| `partners` | Partner companies, referenced by `company_name` (ADR-003) | V2 |
-| `partner_meetings` | Partner meetings | V2 |
-| `partner_meeting_attendance` | Attendance per partner meeting | V2 |
-| `topic_suggestions` | Topic suggestions by partners | V4 (V2 version dropped and recreated in V4) |
-| `topic_votes` | Partner votes on topic suggestions | V4 (V2 version dropped and recreated in V4) |
-| `partner_notes` | Organizer notes per partner | V7 |
-| `partner_meeting_rsvps` | Calendar RSVP replies to partner meeting invitations | V9 |
+```mermaid
+erDiagram
+    partners {
+        uuid id PK
+        varchar company_name UK "CUMS company name"
+        varchar partnership_level "BRONZE to STRATEGIC"
+        date partnership_start_date
+        date partnership_end_date
+        numeric partnership_cost
+    }
+    partner_notes {
+        uuid id PK
+        uuid partner_id FK
+        varchar title
+        text content
+        varchar author_username
+    }
+    partner_meetings {
+        uuid id PK
+        varchar meeting_type "SPRING AUTUMN"
+        date meeting_date
+        time start_time
+        time end_time
+        varchar location
+        varchar event_code "no FK"
+        text agenda
+        timestamptz invite_sent_at
+        int invite_sequence "ICS SEQUENCE"
+        varchar created_by
+    }
+    partner_meeting_rsvps {
+        uuid id PK
+        uuid meeting_id FK
+        varchar attendee_email
+        varchar status "ACCEPTED DECLINED TENTATIVE"
+        timestamptz responded_at
+    }
+    partner_meeting_attendance {
+        uuid id PK
+        uuid meeting_id FK
+        uuid partner_id FK
+        varchar rsvp_status
+        bool attended
+    }
+    topic_suggestions {
+        uuid id PK
+        varchar company_name "NULL for community"
+        varchar suggested_by
+        varchar title
+        text description
+        varchar status "PROPOSED SELECTED DECLINED"
+        varchar planned_event
+        varchar source "PARTNER COMMUNITY"
+    }
+    topic_votes {
+        uuid topic_id PK, FK
+        varchar company_name PK
+        timestamptz voted_at
+    }
+    partners ||--o{ partner_notes : "partner_id"
+    partner_meetings ||--o{ partner_meeting_rsvps : "meeting_id"
+    partner_meetings ||--o{ partner_meeting_attendance : "meeting_id"
+    partners ||--o{ partner_meeting_attendance : "partner_id"
+    topic_suggestions ||--o{ topic_votes : "topic_id"
+```
 
-Dropped and no longer present: `partner_contacts` (created V2, dropped V6).
+- **Meetings and RSVPs:** invitations are ICS mails; `invite_sequence` increments with every
+  re-send so calendar clients update the existing entry. Calendar replies arrive by mail at EMS,
+  which reports them to PCS through `/internal/partner-meetings/rsvps`.
+- **`partner_meeting_attendance`** (V2) has no JPA entity in PCS and is touched only by the
+  test-fixture cleanup. Treat it as unused.
+- **Topics:** `topic_suggestions` and `topic_votes` were recreated in V4 with company names instead
+  of partner IDs; `source` (V10) separates partner suggestions from attendee suggestions.
+
+### Event Management Service (EMS)
+
+EMS owns 43 tables, plus `logos` and `shedlock`, which it shares with CUMS. They are grouped by domain below; a table that belongs to two groups is drawn
+in full in one and as a key-only stub in the other.
+
+#### Events, agenda and topics
+
+```mermaid
+erDiagram
+    event_types {
+        uuid id PK
+        varchar type UK "full_day afternoon evening"
+        int min_slots
+        int max_slots
+        int slot_duration
+        int default_capacity
+        int aperitif_slots
+        varchar aperitif_position
+    }
+    events {
+        uuid id PK
+        varchar event_code UK
+        int event_number UK
+        varchar title
+        timestamptz event_date
+        varchar event_type FK
+        varchar workflow_state "8 states"
+        varchar topic_code "no FK"
+        int registration_capacity
+        varchar current_published_phase
+        bool qna_enabled
+        bigint live_timing_version
+        bigint version
+    }
+    event_agenda_config {
+        uuid id PK
+        uuid event_id FK, UK
+        int min_slots
+        int max_slots
+        int slot_duration
+        int aperitif_slots
+    }
+    sessions {
+        uuid id PK
+        uuid event_id FK
+        varchar event_code
+        varchar session_slug UK
+        varchar title
+        text description
+        varchar session_type
+        timestamptz start_time
+        timestamptz end_time
+        varchar room
+        uuid speaker_pool_id FK
+        varchar materials_status
+        timestamptz actual_start_time
+        timestamptz actual_end_time
+    }
+    session_timing_history {
+        uuid id PK
+        uuid session_id FK
+        timestamptz previous_start_time
+        timestamptz new_start_time
+        varchar change_reason
+        varchar changed_by
+    }
+    publishing_config {
+        uuid id PK
+        uuid event_id FK, UK
+        bool auto_publish_speakers
+        int auto_publish_speakers_days_before
+        bool auto_publish_agenda
+        int auto_publish_agenda_days_before
+    }
+    topics {
+        uuid id PK
+        varchar topic_code UK
+        varchar title
+        varchar category
+        jsonb similarity_scores
+        bool is_active
+    }
+    topic_usage_history {
+        uuid id PK
+        uuid topic_id FK
+        uuid event_id FK
+        timestamptz used_date
+        int attendee_count
+    }
+    event_photos {
+        uuid id PK
+        varchar event_code FK
+        text s3_key
+        text display_url
+        int sort_order
+    }
+    event_teaser_images {
+        uuid id PK
+        varchar event_code FK "NULL for global images"
+        text image_url
+        varchar presentation_position
+        int display_order
+    }
+    workflow_state_migration_log {
+        uuid id PK
+        uuid event_id FK
+        varchar old_state
+        varchar new_state
+    }
+    event_types ||--o{ events : "type"
+    events ||--o| event_agenda_config : "event_id"
+    events ||--o{ sessions : "event_id"
+    sessions ||--o{ session_timing_history : "session_id"
+    events ||--o| publishing_config : "event_id"
+    topics ||--o{ topic_usage_history : "topic_id"
+    events ||--o{ topic_usage_history : "event_id"
+    events }o..o| topics : "topic_code, no FK"
+    events ||--o{ event_photos : "event_code"
+    events ||--o{ event_teaser_images : "event_code"
+    events ||--o{ workflow_state_migration_log : "event_id"
+```
+
+- Nearly every event child table cascades on event delete (`ON DELETE CASCADE`).
+- `event_photos` and `event_teaser_images` reference `events.event_code`, not the UUID; teaser
+  images with no event code are global and shown at every event (V90). Teaser images are shown
+  on the presenter screen at one of four positions (after welcome, committee, topic reveal,
+  upcoming events).
+- `publishing_config` drives the auto-publishing of speakers and agenda; the column defaults are
+  30 days (speakers) and 14 days (agenda) before the event.
+- `workflow_state_migration_log` is a one-off audit of the V30 state consolidation; no code reads
+  it.
+
+#### Speaker workflow and content
+
+```mermaid
+erDiagram
+    events {
+        uuid id PK
+        varchar event_code UK
+    }
+    speaker_pool {
+        uuid id PK
+        uuid event_id FK
+        uuid session_id FK
+        varchar speaker_name
+        varchar company
+        varchar status "8 speaker states"
+        varchar assigned_organizer_id
+        date response_deadline
+        date content_deadline
+        bool reminders_disabled
+        varchar source "organizer_added self_nomination"
+    }
+    sessions {
+        uuid id PK
+        uuid event_id FK
+        uuid speaker_pool_id FK
+        varchar title
+        text description
+    }
+    session_users {
+        uuid id PK
+        uuid session_id FK
+        varchar username "no FK"
+        varchar speaker_role "primary co moderator panelist"
+        bool is_confirmed
+    }
+    session_content_history {
+        uuid id PK
+        uuid session_id FK
+        int submission_version
+        varchar title
+        text abstract
+        text reviewer_feedback
+        varchar submitted_by_username
+    }
+    session_materials {
+        uuid id PK
+        uuid session_id FK
+        varchar upload_id UK
+        varchar s3_key
+        varchar cloudfront_url
+        varchar material_type "PRESENTATION DOCUMENT VIDEO OTHER"
+        varchar uploaded_by
+    }
+    speaker_status_history {
+        uuid id PK
+        uuid speaker_pool_id FK
+        uuid event_id FK
+        varchar previous_status
+        varchar new_status
+        varchar changed_by_username
+    }
+    speaker_outreach_history {
+        uuid id PK
+        uuid speaker_pool_id FK
+        timestamptz contact_date
+        varchar contact_method
+        varchar organizer_username
+    }
+    speaker_reminder_log {
+        uuid id PK
+        uuid speaker_pool_id FK
+        uuid event_id FK
+        varchar reminder_type "RESPONSE CONTENT"
+        varchar tier "TIER_1 to TIER_3"
+        date deadline_date
+    }
+    speaker_slot_preferences {
+        uuid id PK
+        uuid speaker_id FK "speaker_pool.id"
+        uuid event_id FK
+        varchar preferred_time_of_day
+        jsonb avoid_times
+        jsonb av_requirements
+    }
+    session_proposals {
+        uuid id PK
+        uuid speaker_pool_id FK
+        uuid event_id FK
+        varchar proposed_by_username
+        varchar proposed_title
+        text proposed_abstract
+    }
+    events ||--o{ speaker_pool : "event_id"
+    speaker_pool |o--o| sessions : "session_id and speaker_pool_id"
+    sessions ||--o{ session_users : "session_id"
+    sessions ||--o{ session_content_history : "session_id"
+    sessions ||--o{ session_materials : "session_id"
+    speaker_pool ||--o{ speaker_status_history : "speaker_pool_id"
+    speaker_pool ||--o{ speaker_outreach_history : "speaker_pool_id"
+    speaker_pool ||--o{ speaker_reminder_log : "speaker_pool_id"
+    speaker_pool ||--o{ speaker_slot_preferences : "speaker_id"
+    speaker_pool ||--o{ session_proposals : "speaker_pool_id"
+```
+
+- **Two links between pool and session:** `speaker_pool.session_id` and
+  `sessions.speaker_pool_id`, both `ON DELETE SET NULL`. V103 re-synchronised them before dropping
+  the pool's identity columns.
+- **Who the speaker is** is answered only by `session_users.username` of the primary speaker; the
+  pool keeps a display name and company for brainstorming before a session exists.
+- `session_content_history` numbers submissions per session with `submission_version`; the
+  database has no unique constraint on `(session_id, submission_version)`, so uniqueness is up to
+  the code. It was created in V53 as `speaker_content_submissions` and renamed in V99.
+- `session_materials` changes keep `sessions.materials_count`, `has_presentation` and
+  `materials_status` up to date through the trigger `update_session_materials_summary`.
+- Dropped along the way: `speakers` (V37 to V94), `speaker_invitation_tokens` (magic-link tokens,
+  V43 to V104).
+
+#### Registrations and attendee contributions
+
+```mermaid
+erDiagram
+    events {
+        uuid id PK
+        varchar event_code UK
+        int registration_capacity
+    }
+    registrations {
+        uuid id PK
+        uuid event_id FK
+        varchar registration_code UK
+        varchar attendee_username "no FK"
+        varchar attendee_email
+        varchar status "registered waitlist confirmed cancelled attended"
+        int waitlist_position
+        uuid deregistration_token UK
+        uuid calendar_uid UK
+        jsonb metadata
+    }
+    organizer_thanks {
+        uuid id PK
+        uuid event_id FK
+        varchar thanked_by_username
+        text note
+        timestamptz featured_at
+    }
+    session_qna_window {
+        uuid id PK
+        uuid session_id FK, UK
+        varchar event_code
+        varchar status "open frozen"
+        timestamptz opens_at
+        timestamptz closes_at
+    }
+    session_qna_post {
+        uuid id PK
+        uuid window_id FK
+        uuid parent_post_id FK
+        varchar posted_by_username
+        text body
+        timestamptz removed_at
+    }
+    session_qna_notification {
+        uuid window_id PK, FK
+        varchar recipient_username PK
+        timestamptz last_notified_at
+        timestamptz notified_through
+    }
+    sessions {
+        uuid id PK
+        uuid event_id FK
+    }
+    events ||--o{ registrations : "event_id"
+    events ||--o{ organizer_thanks : "event_id"
+    events ||--o{ sessions : "event_id"
+    sessions ||--o| session_qna_window : "session_id"
+    session_qna_window ||--o{ session_qna_post : "window_id"
+    session_qna_post ||--o{ session_qna_post : "parent_post_id, answers"
+    session_qna_window ||--o{ session_qna_notification : "window_id"
+```
+
+- **Waitlist:** when `registration_capacity` is reached, new registrations get status `waitlist`
+  and a `waitlist_position`; `WaitlistPromotionService` promotes them when places free up or the
+  capacity is raised.
+- **Deregistration** works by the `deregistration_token` link or by email verification, without
+  login.
+- **Q&A (Story 7.5, 15.7):** one window per session, opened by `events.qna_open_trigger`
+  (EVENT_COMPLETED or SPEAKERS_PUBLISHED) for `qna_window_days`; answers are posts with a
+  parent. `session_qna_notification` keeps per-recipient digest state for the `live` and `daily`
+  notification preferences.
+- **Thanks (Story 7.4):** one note per user per event (partial unique index); organizers can
+  feature notes on the public site (`featured_at`).
+- **Self-nomination (Story 7.2)** writes `session_proposals` and a `speaker_pool` row with
+  `source = 'self_nomination'` (see the speaker workflow diagram).
+- **Topics from the floor** are stored in PCS `topic_suggestions` with `source = 'COMMUNITY'`.
+
+#### Tasks and notifications
+
+```mermaid
+erDiagram
+    task_templates {
+        uuid id PK
+        varchar name
+        varchar trigger_state "event workflow state"
+        varchar due_date_type "immediate relative_to_event absolute"
+        int due_date_offset_days
+        int activation_lead_days
+        varchar system_key
+        bool is_default
+    }
+    event_tasks {
+        uuid id PK
+        uuid event_id FK
+        uuid template_id FK
+        varchar task_name
+        varchar trigger_state
+        timestamptz due_date
+        varchar assigned_organizer_username
+        varchar status "pending todo in_progress completed cancelled"
+        varchar completed_by_username
+        bigint version
+    }
+    notifications {
+        uuid id PK
+        varchar recipient_username
+        varchar event_code
+        varchar notification_type
+        varchar channel "EMAIL IN_APP"
+        varchar status
+        timestamp read_at
+    }
+    events {
+        uuid id PK
+        varchar event_code UK
+    }
+    task_templates ||--o{ event_tasks : "template_id"
+    events ||--o{ event_tasks : "event_id"
+    events ||..o{ notifications : "event_code, no FK"
+```
+
+- Tasks are activated (`pending` to `todo`) when the event reaches the template's
+  `trigger_state` (edge-triggered by `EventWorkflowTransitionEvent`) or when the due date is
+  within `activation_lead_days`; `TaskActivationScheduler` re-checks daily at 05:30 as a safety
+  net. `TaskDeadlineReminderScheduler` sends deadline reminders. `system_key` marks templates that code
+  relies on (for example the slides-online task, V110 and V125).
+
+#### Mail Center, forwarding and templates
+
+```mermaid
+erDiagram
+    mail_conversation {
+        uuid id PK
+        varchar conversation_key UK
+        varchar event_code
+        varchar audience
+        text subject
+        varchar counterpart_address
+        varchar status "OPEN WAITING DONE"
+        varchar assignee_username
+        varchar reply_token UK
+        timestamptz last_inbound_at
+    }
+    mail_message {
+        uuid id PK
+        varchar mail_key UK
+        varchar send_group_id UK
+        varchar event_code
+        varchar direction "OUT IN"
+        varchar audience
+        varchar template_key
+        varchar content_source "TEMPLATE OWN_TEXT"
+        text subject
+        varchar inbound_path "REPLIES ALIAS"
+        uuid conversation_id FK
+        uuid newsletter_send_id FK
+        jsonb attachments
+        bool is_spam
+    }
+    mail_recipient {
+        uuid id PK
+        uuid mail_message_id FK
+        varchar address
+        varchar kind "TO CC"
+        varchar ses_message_id
+        varchar status "SENT DELIVERED FAILED"
+    }
+    mail_automatic_event {
+        uuid id PK
+        varchar dedupe_key UK
+        varchar event_code
+        varchar kind
+        timestamptz received_at
+    }
+    email_forwarding_log {
+        uuid id PK
+        varchar s3_key UK
+        varchar aliases
+        varchar outcome
+        int recipient_count
+        int failed_count
+    }
+    email_templates {
+        uuid id PK
+        varchar template_key UK
+        varchar locale UK "de en"
+        varchar category
+        bool is_layout
+        varchar layout_key
+        bool is_system_template
+    }
+    newsletter_sends {
+        uuid id PK
+        uuid event_id FK
+    }
+    mail_conversation ||--o{ mail_message : "conversation_id"
+    mail_message ||--o{ mail_recipient : "mail_message_id"
+    newsletter_sends |o--o{ mail_message : "newsletter_send_id"
+    email_templates ||..o{ mail_message : "template_key, no FK"
+```
+
+- **Outbound:** sends are recorded as `mail_message` rows with their recipients
+  (`JpaOutboundMailRecorder`; whether every send path records (not verified 2026-11-04));
+  SES delivery events from the `mail-delivery-status` queue update `mail_recipient.status`.
+- **Inbound:** replies to `replies@` and mail to the event aliases are stored as `direction = 'IN'`
+  messages and threaded into `mail_conversation` (`ConversationThreader`). Out-of-office, bounces,
+  loops and calendar replies are counted in `mail_automatic_event` instead of being stored.
+- **Forwarding:** `email_forwarding_log` makes alias forwarding idempotent per S3 object; its
+  `outcome` is one of processing, forwarded, partial, rejected, unresolved, failed, stalled,
+  notified (the Mail Center switch replaced forwarding) and dropped_auto_reply, dropped_bounce,
+  dropped_loop, dropped_malformed, dropped_spam, dropped_virus.
+- **Retention:** `MailMessageRetentionScheduler` and `EmailForwardingLogRetentionScheduler` delete
+  old rows; the retention periods are in [06d-notification-system.md](./06d-notification-system.md)
+  (not verified 2026-11-04).
+
+#### Newsletter
+
+```mermaid
+erDiagram
+    newsletter_subscribers {
+        uuid id PK
+        varchar email UK "case-insensitive unique"
+        varchar first_name
+        varchar language
+        varchar source
+        varchar username "no FK"
+        varchar unsubscribe_token UK
+        timestamptz unsubscribed_at
+        varchar bounce_type
+        int bounce_count
+        timestamptz suppressed_at
+    }
+    newsletter_sends {
+        uuid id PK
+        uuid event_id FK
+        varchar template_key
+        bool is_reminder
+        varchar locale
+        varchar status
+        int sent_count
+        int failed_count
+        bool test_mode
+        varchar content_source "TEMPLATE OWN_TEXT"
+    }
+    newsletter_recipients {
+        uuid send_id PK, FK
+        varchar email PK
+        varchar delivery_status
+        varchar bounce_type
+    }
+    events {
+        uuid id PK
+        varchar event_code UK
+    }
+    events ||--o{ newsletter_sends : "event_id"
+    newsletter_sends ||--o{ newsletter_recipients : "send_id"
+```
+
+- Subscribers are not linked by foreign key to anything; `username` is set when the subscriber is
+  also a user. Bounces from the `bounce-processing` queue raise `bounce_count` and can suppress an
+  address (`BounceProcessingService`).
+- Newsletter sends can use a template or the organizer's own text (V138) and are also recorded in
+  `mail_message` (`newsletter_send_id`).
+
+#### AI assist
+
+```mermaid
+erDiagram
+    ai_prompts {
+        varchar prompt_key PK
+        varchar display_name
+        text prompt_text
+        text default_text
+    }
+    ai_generation_log {
+        uuid id PK
+        varchar event_code
+        varchar type
+        varchar input_hash
+        int tokens_used
+        bool was_accepted
+    }
+    events {
+        uuid id PK
+        varchar event_code UK
+    }
+    events ||..o{ ai_generation_log : "event_code, no FK"
+```
+
+Prompts are organizer-editable with a stored default to reset to; every call to OpenAI is logged
+with its token count. See [09-aiml-architecture.md](./09-aiml-architecture.md).
+
+#### Live timing and Watch
+
+```mermaid
+erDiagram
+    events {
+        uuid id PK
+        varchar event_code UK
+        bigint live_timing_version "ETag of the snapshot"
+    }
+    sessions {
+        uuid id PK
+        uuid event_id FK
+        timestamptz actual_start_time
+        timestamptz actual_end_time
+        int overrun_minutes
+        varchar completed_by_username
+    }
+    live_timing_presence {
+        varchar event_code PK
+        varchar username PK
+        timestamptz last_seen_at
+    }
+    speaker_arrivals {
+        uuid id PK
+        varchar event_code
+        varchar speaker_username
+        varchar confirmed_by_username
+        timestamp arrived_at
+    }
+    events ||--o{ sessions : "event_id"
+    events ||..o{ live_timing_presence : "event_code, no FK"
+    events ||..o{ speaker_arrivals : "event_code, no FK"
+```
+
+- Live timing (Story 15.1) is a polled snapshot: every organizer action on the session clock bumps
+  `events.live_timing_version`, which the endpoint returns as ETag so clients get `304` while
+  nothing changed. `live_timing_presence` shows which organizers are currently controlling the
+  event.
+- Watch pairing is in CUMS (`watch_pairings`); everything the paired Watch reads or writes is here.
+
+#### Administration and operations
+
+| Table | Purpose |
+|---|---|
+| `app_settings` | Key-value settings edited in Administration, for example the forwarding recipients and `mailcenter.notify-instead-of-forward` |
+| `user_merge_log` | One row per profile merge: source and target username, who and how (ORGANIZER or SELF_CLAIM), what moved and what was removed (JSONB), a snapshot of the source profile |
+| `shedlock` | Scheduler locks so that only one task runs each scheduled job |
+| `logos` | Shared with CUMS, see above |
 
 ### Speaker Coordination Service
 
-Per **ADR-009 (Unified Speaker Workflow)** and the **Story 11.E.8 consolidation**, the
-`speakers` table is gone (EMS V94) and `speaker-coordination-service` owns no entity. SPEAKER is
-a role on `User` (`role_assignments.role = 'SPEAKER'`). Per-event speaker workflow state lives
-on `speaker_pool` in EMS. Per-event content lives on `sessions` (canonical current title and
-description) plus `session_content_history`. `session_users` is the junction; sessions reference
-users by `username` (ADR-003). The denormalised columns `speaker_pool.content_status`,
-`speaker_pool.content_submitted_at`, `speaker_pool.initial_presentation_title` and
-`session_users.presentation_title` were dropped in V102; the content status is derived by
-`ContentStatusDeriver`.
+No tables. Per [ADR-009](./ADR-009-unified-speaker-workflow.md) and
+[ADR-014](./ADR-014-backend-service-consolidation.md), everything speaker-related is in EMS
+(see the speaker workflow diagram). The service applies only the shared-kernel baseline
+`V1__Initial_baseline.sql` (`uuid-ossp` extension and the `update_updated_at_column()` trigger
+function) under `flyway_schema_history_speaker_coordination`.
+
+### Attendee Experience Service
+
+No tables and no datasource. Registrations, the attendee dashboard and the archive are in EMS;
+attendee topic suggestions are in PCS.
 
 ### Business Rule Enforcement
 
-The "at least two organizers" rule is enforced in application code, not by a database trigger:
-`RoleService` in CUMS (`MINIMUM_ORGANIZERS = 2`) throws `MinimumOrganizersException` when a role
-change would leave fewer than two organizers.
+Most rules are enforced in application code. The database enforces:
 
-**See also:** [06d-notification-system.md](./06d-notification-system.md) for the notification
-architecture, and [Story 1.15a.10: Notifications API Consolidation](../stories/archived/epic-1/1.15a.10.notifications-api-consolidation.md).
+- **Check constraints** on every status and type column shown in the diagrams (workflow states,
+  speaker states, registration status, session types, mail enums and so on), plus value ranges
+  (slot counts, durations, abstract length up to 1000 characters, title up to 200, logo size up to
+  5 MB, `qna_window_days` 1 to 365) and the username and company name patterns.
+- **Unique keys** on all public identifiers (`event_code`, `session_slug`, `registration_code`,
+  `topic_code`, `username`, company `name`, partner `company_name`) and case-insensitive unique
+  emails for users, additional emails and newsletter subscribers.
+- **Triggers:** `updated_at` maintenance (18 tables), the session materials summary, the
+  `session_content_history` timestamp, and the two triggers that keep a user's primary and
+  additional email addresses disjoint.
+
+In code: the minimum of two organizers (`RoleService`), one registration per user and event
+(`RegistrationService`), slot capacity at speaker invitation (`SpeakerWorkflowService`), and
+authorization (`@PreAuthorize`).
+
+**See also:** [06d-notification-system.md](./06d-notification-system.md) and
+[Story 1.15a.10: Notifications API Consolidation](../stories/archived/epic-1/1.15a.10.notifications-api-consolidation.md).
 
 ## Data Consistency and Cross-Service Communication
 
 ### Domain Events
 
-```typescript
-// Shared domain events for data consistency
-interface DomainEvent {
-  id: string;
-  aggregateId: string;
-  aggregateType: string;
-  eventType: string;
-  eventVersion: number;
-  occurredAt: Date;
-  data: Record<string, any>;
-}
-
-// Example events
-interface CompanyCreatedEvent extends DomainEvent {
-  eventType: 'CompanyCreated';
-  data: {
-    companyId: string;
-    name: string;
-    isVerified: boolean;
-  };
-}
-
-interface SpeakerInvitedEvent extends DomainEvent {
-  eventType: 'SpeakerInvited';
-  data: {
-    speakerId: string;
-    sessionId: string;
-    eventId: string;
-    invitedAt: Date;
-  };
-}
+```mermaid
+flowchart LR
+    SVC["Service code,<br/>e.g. EventWorkflowStateMachine"] -->|"publish"| PUB["EventBridgeEventPublisher<br/>shared kernel"]
+    PUB -->|"first: Spring ApplicationEvent"| LST["In-process listeners<br/>@EventListener,<br/>@TransactionalEventListener"]
+    PUB -->|"then: PutEvents, async,<br/>retry and circuit breaker"| EB["EventBridge bus"]
+    EB -.->|"no rules, no consumers"| NONE["nobody"]
 ```
+
+The shared kernel defines `DomainEvent<T>` with `eventId`, `aggregateId`, `eventType`, `userId`,
+`occurredAt`, `version`, `metadata`, `correlationId` and `causationId`. There are 29 event classes,
+for example `EventWorkflowTransitionEvent`, `SpeakerAcceptedEvent`, `SessionTimingAssignedEvent`,
+`RegistrationCreatedEvent`, `CompanyCreatedEvent`, `UserUpdatedEvent`, `PartnerCreatedEvent`.
+
+Only the in-process path has consumers, and all of them are in EMS (for example
+`EventWorkflowTransitionListener`, `SpeakerAcceptedEventListener`, `SessionQnaWindowListener`,
+`OrganizerNotificationListener`). No service consumes another service's events.
 
 ### Data Synchronization Strategy
 
-1. **Eventual Consistency:** Services maintain local copies of essential data from other domains
-2. **Event-Driven Updates:** Domain events propagate changes across service boundaries
-3. **Saga Pattern:** Complex cross-service transactions use choreographed sagas
-4. **Read Replicas:** Frequently accessed cross-domain data is cached locally
+As built, cross-service data is read, not replicated:
+
+1. **Synchronous reads through the owning service.** EMS asks CUMS for users and companies
+   (`UserApiClient`, mostly through VPC-only `/internal/users`), PCS asks CUMS and EMS, CUMS asks
+   EMS during a profile merge. No service reads another service's tables.
+2. **Meaningful identifiers as references** (ADR-003): a username, event code or company name is
+   stored, never a foreign key into another service's table.
+3. **Small denormalised caches where reads would otherwise fan out:** attendee name, email and
+   company on `registrations`; speaker names on `session_users` (for full-text search). They are
+   refreshed on write and by backfills (for example the admin `backfill-speaker-names` endpoint);
+   how stale they can become (not verified 2026-11-04).
+4. **Profile merges** rewrite usernames across EMS in one transaction on the EMS side and log the
+   result in `user_merge_log`.
+
+## Table Inventory
+
+A compact list of every table and the migration that created it, for finding your way. It was
+derived by scanning every migration for `CREATE TABLE`, `DROP TABLE` and `ALTER TABLE ... RENAME
+TO` and cross-checked against the applied schema on 2026-11-04.
+
+| Service | Migrations | Flyway history table |
+|---|---|---|
+| event-management-service | V1 to V144 | `flyway_schema_history_event_management` |
+| company-user-management-service | V1 to V22 | `flyway_schema_history_company_user_management` |
+| partner-coordination-service | V1 to V10 | `flyway_schema_history_partner_coordination` |
+| speaker-coordination-service | shared-kernel baseline only | `flyway_schema_history_speaker_coordination` |
+| attendee-experience-service | none, no datasource | n/a |
+
+**EMS** (43 tables plus the shared `logos` and `shedlock`): `events` V2, `sessions` V2, `registrations` V2, `logos` V5 (shared with
+CUMS), `session_users` V7, `event_types` V10, `topics` V14, `topic_usage_history` V14,
+`speaker_pool` V14, `speaker_outreach_history` V16, `task_templates` V22, `event_tasks` V22,
+`speaker_status_history` V23, `session_timing_history` V28, `speaker_slot_preferences` V28,
+`publishing_config` V28, `workflow_state_migration_log` V30, `shedlock` V31 (shared with CUMS),
+`notifications` V33, `session_materials` V41, `session_content_history` V53 (as
+`speaker_content_submissions`, renamed V99), `speaker_reminder_log` V54, `speaker_arrivals` V55,
+`email_templates` V62, `newsletter_subscribers` V67, `newsletter_sends` V67,
+`newsletter_recipients` V67, `ai_generation_log` V77, `event_photos` V79, `event_teaser_images`
+V80, `ai_prompts` V82, `app_settings` V88, `session_proposals` V109, `organizer_thanks` V111,
+`session_qna_window` V112, `session_qna_post` V112, `session_qna_notification` V117,
+`live_timing_presence` V119, `event_agenda_config` V121, `email_forwarding_log` V128,
+`mail_message` V135, `mail_recipient` V135, `mail_conversation` V139, `mail_automatic_event`
+V139, `user_merge_log` V144.
+
+Dropped: `publishing_versions` (V28 to V89), `speakers` (V37 to V94), `speaker_invitation_tokens`
+(V43 to V104).
+
+**CUMS** (9 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
+`activity_history` V6, `logos` V10, `shedlock` V12, `watch_pairings` V13,
+`presentation_settings` V14, `user_additional_emails` V16.
+
+**PCS** (7 tables): `partners` V2, `partner_meetings` V2, `partner_meeting_attendance` V2 (no
+entity, unused), `topic_suggestions` V4 (V2 version dropped and recreated), `topic_votes` V4 (same),
+`partner_notes` V7, `partner_meeting_rsvps` V9. Dropped: `partner_contacts` (V2 to V6).
+
+## Not implemented
+
+Described in earlier versions of this document; none of it exists in the migrations or the code.
+
+- `content_metadata`, `presentation_files`, `supplementary_materials` tables (files are in
+  `session_materials`, `event_photos`, `event_teaser_images` and `logos`).
+- Storage quotas per user (`storage_quota`, `storage_usage_log`) and the quota triggers.
+- Download counters on session files.
+- Virus scanning status on uploads.
+- Event slots as entities (`EventSlot`); slots are computed from the agenda configuration and
+  sessions.
+- Overflow management with organizer voting (`OverflowManagement`, `SpeakerSelectionVote`).
+- A separate quality-review model (`ContentQualityReview`, `AbstractReview`, `MaterialReview`,
+  bio and photo review); review is `session_content_history.reviewer_feedback` plus the
+  QUALITY_REVIEWED speaker state.
+- An `Attendee` entity, attendee engagement tracking, content preferences and GDPR consent
+  records with IP address; an attendee is a user with registrations.
+- Anonymous registration columns on `registrations` (`anonymous_email` and so on), `claimed_by`
+  and `claimed_at`; linking works through `user_profiles.cognito_user_id`.
+- Confirmation codes in the format `BAT-YYYY-NNNNNN`.
+- Session tags, prerequisites, target audience and attendee ratings.
+- Partner analytics stored as entities (`PartnerAnalytics`, ROI and brand exposure metrics).
+- Partner contact roles (primary, billing, technical, marketing).
+- A notification preferences table, escalation rules with backup organizers, and a notification
+  log with SES message IDs separate from `notifications` and `mail_recipient`.
+- Versioned email templates with an `is_active` flag and a plain-text body.
+- Cross-service sagas and services keeping local copies of other domains' data.
+- An event-to-topic many-to-many relationship.

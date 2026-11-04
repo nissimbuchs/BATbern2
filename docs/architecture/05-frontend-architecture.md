@@ -43,18 +43,56 @@ web-frontend/src/
 ├── utils/  lib/  theme/  styles/  config/  data/  pwa/  mocks/  test/
 ```
 
+## How the SPA Fits Together
+
+One build serves every audience: the public website, the organizer app, the speaker portal and
+the partner portal. A request from a page always takes the same way down: page, TanStack Query
+hook, domain service, the shared axios `apiClient`, then the backend. Checked against
+`src/main.tsx`, `src/App.tsx`, `src/MuiLayout.tsx`, `ProtectedRoute.tsx` and
+`services/api/apiClient.ts` (develop c4593449).
+
+```mermaid
+flowchart TB
+    subgraph Boot["main.tsx"]
+        EB["ErrorBoundary"] --> CP["ConfigProvider: GET /api/v1/config"]
+    end
+    CP --> APP["App.tsx: QueryClientProvider, HelmetProvider, AuthProvider, BrowserRouter, LanguageSync"]
+    APP --> PUB["Public routes, Tailwind only: / , /events/:eventCode, /archive, /about, /privacy, /support"]
+    APP --> MUI["Lazy MuiLayout: MUI ThemeProvider"]
+    MUI --> OPENMUI["Public MUI routes: /register, confirmations, /unsubscribe, /verify-email, /present"]
+    MUI --> GUARD["ProtectedRoute / SpeakerRoute / PartnerRoute"]
+    GUARD --> AL["AuthLayout = BaseLayout: header, navigation"]
+    GUARD --> PPL["PartnerPortalLayout"]
+    AL --> PAGES["Organizer, speaker, attendee, account pages"]
+    PPL --> PPAGES["Partner portal pages"]
+    PUB --> HOOKS
+    OPENMUI --> HOOKS
+    PAGES --> HOOKS["TanStack Query hooks, src/hooks"]
+    PPAGES --> HOOKS
+    PAGES -.-> ZS["Zustand stores: filters, modals, UI"]
+    HOOKS --> SVC["Domain services, src/services"]
+    SVC --> AC["apiClient: axios, baseURL .../api/v1"]
+    AC -->|"Authorization: Bearer ID token, Accept-Language, X-Correlation-ID"| GW["api.batbern.ch: AWS HTTP API, pass-through"]
+    GW --> SGW["Spring API gateway: JWT check, routing"]
+    SGW --> SVCS["EMS, CUMS, PCS ... with @PreAuthorize"]
+```
+
+The guards are UX only; the services decide (ADR-008, see
+[Backend Architecture](./06-backend-architecture.md)). The public routes sit outside the MUI
+boundary so the homepage never downloads `@mui/material`.
+
 ## Type Safety & API Contract
 
 ### OpenAPI Type Generation
 
-**Library**: `openapi-typescript` v7.10.1
+**Library**: `openapi-typescript` ^7.13.0 (`web-frontend/package.json`, develop c4593449)
 
 **Rationale**: Ensures frontend types stay synchronized with backend OpenAPI specifications, preventing type drift and runtime errors. Generated types serve as the single source of truth derived from API contracts.
 
 **Workflow**:
 
 1. **OpenAPI Spec** (single source of truth):
-   - Located at: `/docs/api/companies-api.openapi.yml`
+   - Located at: `/docs/api/*.openapi.yml` (companies is the reference example below)
    - Maintained by backend team
    - Versioned in Git
 
@@ -62,7 +100,9 @@ web-frontend/src/
    ```bash
    npm run generate:api-types
    ```
-   - Generates: `src/types/generated/company-api.types.ts`
+   - Runs one sub-script per API (companies, users, events, speakers, topics, partners,
+     partner-meetings) and writes `src/types/generated/*.types.ts`, for example
+     `company-api.types.ts`
    - Types are **committed to repository**
 
 3. **Git Hook Integration** (`.githooks/pre-commit`, not Husky):
@@ -71,8 +111,8 @@ web-frontend/src/
    - Runs `npm run check:api-types`: regenerates the types and fails the commit if they differ
      from what is committed, leaving the corrected files in the working tree (not auto-staged)
 
-4. **CI/CD Validation** (GitHub Actions):
-   - Verifies committed types match OpenAPI spec
+4. **CI/CD Validation** (GitHub Actions, `build.yml`):
+   - Runs `npm run generate:api-types` and verifies the committed types match the OpenAPI spec
    - Fails build if types are out of date
    - Provides clear instructions for fixing drift
 
@@ -107,7 +147,7 @@ export interface CompanyFilters {
 
 ### API Base URL Pattern
 
-**CRITICAL**: The runtime config sets `apiBaseURL` to include the `/api/v1` prefix (e.g., `http://localhost:8080/api/v1`).
+**CRITICAL**: The runtime config sets `apiBaseURL` to include the `/api/v1` prefix (e.g., `http://localhost:8000/api/v1` in native dev, where `VITE_API_PORT` defaults to 8000; docker-compose maps the gateway to 8080; `https://api.batbern.ch/api/v1` in production).
 All API service paths must **exclude** the `/api/v1` prefix to avoid double concatenation errors.
 
 > Note: the base URL is now also seeded **synchronously at bootstrap** from
@@ -116,8 +156,8 @@ All API service paths must **exclude** the `/api/v1` prefix to avoid double conc
 > applies the authoritative value on config load. See "Bootstrap & Prerendering (SSG)" below.
 
 **Why This Matters**:
-- Runtime config (from backend `/api/v1/config`): `apiBaseUrl: "http://localhost:8080/api/v1"`
-- If frontend code uses `/api/v1/users`, result is: `http://localhost:8080/api/v1/api/v1/users` ❌
+- Runtime config (from backend `/api/v1/config`): `apiBaseUrl: "http://localhost:8000/api/v1"`
+- If frontend code uses `/api/v1/users`, result is: `http://localhost:8000/api/v1/api/v1/users` ❌
 - This causes 404/500 errors that are difficult to debug
 
 **Correct Pattern** (Reference Implementation: `src/services/api/companyApi.ts`):
@@ -126,25 +166,25 @@ All API service paths must **exclude** the `/api/v1` prefix to avoid double conc
 // src/services/api/userManagementApi.ts
 
 // Define API path constants WITHOUT /api/v1 prefix
-// Note: apiClient baseURL is set from runtime config to 'http://localhost:8080/api/v1'
+// Note: apiClient baseURL is set from runtime config to 'http://localhost:8000/api/v1'
 // so we only need '/users' (the /api/v1 prefix is already in the baseURL)
 const USER_API_PATH = '/users';
 
 export const listUsers = async (filters: UserFilters, pagination: UserPagination) => {
   const response = await apiClient.get(USER_API_PATH, { params });
-  // ✅ Resolves to: http://localhost:8080/api/v1/users
+  // ✅ Resolves to: http://localhost:8000/api/v1/users
   return response.data;
 };
 
 export const searchUsers = async (query: string) => {
   const response = await apiClient.get(`${USER_API_PATH}/search`, { params });
-  // ✅ Resolves to: http://localhost:8080/api/v1/users/search
+  // ✅ Resolves to: http://localhost:8000/api/v1/users/search
   return response.data;
 };
 
 export const getUserById = async (id: string) => {
   const response = await apiClient.get(`${USER_API_PATH}/${id}`, { params });
-  // ✅ Resolves to: http://localhost:8080/api/v1/users/{id}
+  // ✅ Resolves to: http://localhost:8000/api/v1/users/{id}
   return response.data;
 };
 ```
@@ -154,11 +194,11 @@ export const getUserById = async (id: string) => {
 ```typescript
 // ❌ WRONG - Includes /api/v1 prefix, causing double concatenation
 const response = await apiClient.get('/api/v1/users');
-// Result: http://localhost:8080/api/v1/api/v1/users ❌ 500 ERROR
+// Result: http://localhost:8000/api/v1/api/v1/users ❌ 500 ERROR
 
 // ❌ WRONG - Direct path string without constant
 const response = await apiClient.post('/api/v1/users', data);
-// Result: http://localhost:8080/api/v1/api/v1/users ❌ 500 ERROR
+// Result: http://localhost:8000/api/v1/api/v1/users ❌ 500 ERROR
 ```
 
 **Standard Path Constants**:
@@ -190,55 +230,54 @@ mock.onPost('/users').reply(201, mockResponse);  // ✅ Matches USER_API_PATH
 ## State Management Architecture
 
 ### State Structure
-```typescript
-interface AppState {
-  // Authentication state
-  auth: {
-    user: User | null;
-    currentRole: UserRole;
-    availableRoles: UserRole[];
-    isAuthenticated: boolean;
-  };
 
-  // UI state
-  ui: {
-    sidebarOpen: boolean;
-    notifications: Notification[];
-    loading: Record<string, boolean>;
-  };
+State lives in three places, each with one job. Server data is never copied into a Zustand
+store; a store holds only what the user chose (filters, paging, which modal is open).
 
-  // Domain-specific state
-  events: {
-    currentEvent: Event | null;
-    eventList: Event[];
-    filters: EventFilters;
-  };
-
-  speakers: {
-    speakerList: Speaker[];
-    invitations: SpeakerInvitation[];
-  };
-
-  partners: {
-    topicVotes: TopicVote[];
-    meetings: PartnerMeeting[];
-  };
-
-  attendees: {
-    registrations: EventRegistration[];
-    bookmarks: ContentBookmark[];
-  };
-
-  companies: {
-    companyList: Company[];
-    selectedCompany: Company | null;
-    filters: CompanyFilters;
-    searchQuery: string;
-  };
-}
+```mermaid
+flowchart LR
+    subgraph Server["Server state: TanStack Query"]
+        QC["QueryClient in App.tsx: retry 3, staleTime 5 min"]
+        H["Hooks per domain: useEvents, useNotifications, useMailConversations, ..."]
+        H --> QC
+    end
+    subgraph Client["Client state: Zustand, src/stores"]
+        UI["uiStore: sidebar, drawers, active nav role"]
+        F["eventStore, companyStore, partnerStore, userManagementStore, eventParticipantStore, newsletterSubscriberStore: filters, paging, selection, modals"]
+        M["partnerModalStore, partnerDetailStore: not persisted"]
+    end
+    subgraph Ctx["React context"]
+        AUTH["AuthContext: user, roles, termsAcceptedAt, canAccess"]
+        CFG["ConfigContext: runtime config, feature flags"]
+    end
+    PAGE["Page or component"] --> H
+    PAGE --> UI
+    PAGE --> F
+    PAGE --> AUTH
+    F -->|"filters become query keys"| H
+    F -. "persist middleware" .-> LS[("localStorage")]
+    H -->|"mutations invalidate queries"| QC
 ```
 
+The persisted stores use Zustand's `persist` middleware with the localStorage keys
+`event-store`, `company-store`, `partner-store`, `user-management-store`,
+`event-participant-store` and `newsletter-subscriber-store`. `uiStore` writes its few values to
+localStorage by hand (`batbern-ui-locale`, `batbern-ui-sidebar`, ...).
+
+> **Not built:** the 2025 design sketched a single `AppState` tree holding auth, UI and domain
+> lists (`events.eventList`, `speakers.invitations`, `attendees.bookmarks`, ...) in one store.
+> The code never had that tree: domain data comes from TanStack Query, auth from `AuthContext`,
+> and there is no `authStore` and no bookmark feature.
+
 ## Detailed Component Specifications
+
+> **Status of this section (2026-11-04):** the component code below is the 2025 design sketch.
+> It shows intended responsibilities and props, not the implementation, and was not re-verified
+> line by line (not verified 2026-11-04). Known differences: `BaseLayout` takes `children` and
+> optional `maxWidth`, `user`, `notifications` (no `currentRole`), and `App.tsx` passes only
+> `children`; there is no `authStore`; the real component
+> folders are listed under [Component Organization](#component-organization). Treat names and
+> props here as orientation and check the source before relying on them.
 
 ### Shared Component Architecture
 
@@ -1327,6 +1366,97 @@ class ComponentErrorBoundary extends React.Component<
 }
 ```
 
+## Authentication in the SPA
+
+Authentication is AWS Cognito through Amplify v6 (`aws-amplify/auth`), wrapped by
+`src/services/auth/authService.ts` and exposed to components by `AuthContext`
+(`src/contexts/AuthContext.tsx`). Amplify is imported lazily: an anonymous visitor has no
+Cognito token in storage (`hasCognitoSession()`, `src/utils/auth/cognitoSession.ts`), so neither
+`AuthContext` nor `apiClient` loads Amplify for them. The JWT carries identity and roles; the
+rest of the user (company, preferences, `termsAcceptedAt`) comes from `GET /users/me`.
+
+### Session restore on page load
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant AP as AuthProvider
+    participant CP as ConfigProvider
+    participant AMP as Amplify
+    participant API as apiClient
+    B->>AP: mount
+    alt no Cognito token in local or session storage
+        AP-->>B: isLoading false, anonymous, Amplify never loaded
+    else token present
+        AP->>CP: wait for runtime config with Cognito pool and client
+        CP-->>AP: config
+        AP->>AMP: getCurrentUser, fetchAuthSession
+        AMP-->>AP: ID token claims: sub, email, custom:role, custom:username
+        AP->>AMP: refreshToken = fetchAuthSession forceRefresh
+        AP->>API: GET /users/me?include=roles,company,preferences
+        API-->>AP: company, preferences, termsAcceptedAt, DB roles
+        Note over AP: DB roles are used only when the JWT carried none, Pattern 3b in 06b
+        opt partner without company name
+            AP->>API: GET /partners/me for the company name
+        end
+        AP-->>B: isAuthenticated true, user set
+    end
+```
+
+`hydrateUserFromDb` fails open: if `/users/me` fails, the user keeps the token-derived values
+and `termsAcceptedAt` stays `undefined`, so the consent gate in `ProtectedRoute` does not lock
+anyone out.
+
+### Password login and Google SSO
+
+```mermaid
+sequenceDiagram
+    autonumber
+    actor U as User
+    participant LF as LoginForm
+    participant AS as authService
+    participant COG as Cognito, hosted UI at auth.batbern.ch
+    participant CB as AuthCallbackPage, /auth/callback
+    participant AC as AuthContext
+    alt email and password
+        U->>LF: email, password
+        LF->>AC: signIn
+        AC->>AS: Amplify signIn
+        AS->>COG: SRP sign-in, Amplify default flow
+        COG-->>AS: tokens, or challenge NEW_PASSWORD_REQUIRED
+        AC->>AC: hydrateUserFromDb, same path as restore
+    else Continue with Google, shown only when runtime flag features.sso is on
+        U->>LF: click
+        LF->>AS: signInWithFederated Google
+        AS->>COG: signInWithRedirect, browser leaves the SPA
+        COG-->>CB: redirect with ?code=
+        CB->>AC: completeFederatedSignIn
+        AC->>AS: waitForFederatedSession: Hub event or 500 ms token poll
+        AC->>AC: getCurrentUser, refreshToken, hydrateUserFromDb
+        CB-->>U: navigate to /dashboard, or /login on failure
+    end
+```
+
+A first Google sign-in for an email that already has a password account is linked by the
+PreSignUp trigger, and Cognito aborts that one sign-in by design (`error_description=Already
+found an entry for username`). `AuthCallbackPage` retries once, guarded by a sessionStorage
+key, so the user's first click still ends signed in. Backend side of linking and JIT
+provisioning: [User Lifecycle Sync](./06b-user-lifecycle-sync.md).
+
+### Tokens on API calls
+
+The request interceptor in `apiClient` calls `fetchAuthSession()` for every request that is not
+marked `Skip-Auth` and sends the **ID token** as `Authorization: Bearer`. Amplify renews expired
+tokens with the refresh token inside `fetchAuthSession()` (Amplify library behaviour, not code of
+ours). The SPA keeps no tokens of its own; `types/auth.ts` notes that the refresh token is
+managed by Amplify.
+
+The response interceptor handles two cases: **401** navigates to `/login` (unless the request
+set `skipAuthRedirect`, used by optional public reads such as the archive Q&A); **403** with
+`error: ACCOUNT_DEACTIVATED` signs the user out and navigates to
+`/login?reason=account_deactivated`. Other 403s are only logged.
+
 ## Routing Architecture
 
 The route table lives in `web-frontend/src/App.tsx` (React Router 7). Routes that use MUI sit
@@ -1429,6 +1559,29 @@ All authenticated routes render through `ProtectedRoute`
    map of path prefixes per role (for example organizer: `/organizer`, `/events`,
    `/speakers`, ...). A path no role's prefix list covers redirects to `/dashboard`.
 
+The full decision, including the two steps before the list above (auth still loading, not
+signed in) and the optional email-verification check (`requiresVerification`, off by default):
+
+```mermaid
+flowchart TD
+    S["Route rendered inside ProtectedRoute"] --> L{"AuthContext isLoading?"}
+    L -->|yes| SP["BATbern logo spinner"]
+    L -->|no| A{"signed in?"}
+    A -->|no| LOGIN["Navigate to /login, state.from = current path"]
+    A -->|yes| T{"termsAcceptedAt === null and path not /profile or /logout?"}
+    T -->|yes| ONB["Navigate to /profile?onboarding=1"]
+    T -->|"no, or undefined: fail open"| R{"any user role in allowedRoles?"}
+    R -->|no| D1["Navigate to /dashboard"]
+    R -->|yes| V{"requiresVerification and email not verified?"}
+    V -->|yes| MSG["Email Verification Required message"]
+    V -->|no| C{"canAccess pathname?"}
+    C -->|no| D2["Navigate to /dashboard"]
+    C -->|yes| OK["Render children"]
+```
+
+`SpeakerRoute`, `PartnerRoute`, `OrganizerRoute` and `AttendeeRoute` are `ProtectedRoute` with a
+fixed `allowedRoles` (`speaker`; `organizer, partner`; `organizer`; `attendee, organizer`).
+
 These guards are UX only. Authorization is enforced in the backend services
 (`@PreAuthorize`, ADR-008).
 
@@ -1467,28 +1620,63 @@ Versions as declared in `web-frontend/package.json` (develop c4593449):
 web-frontend/
 ├── public/
 │   └── locales/
-│       ├── de/
-│       │   ├── common.json          # Shared UI (navigation, buttons, labels)
+│       ├── de/                      # one folder per locale: de en fr it rm es fi nl ja gsw-BE
+│       │   ├── common.json          # Shared UI (navigation, buttons, labels), default namespace
 │       │   ├── auth.json            # Authentication & account flows
 │       │   ├── validation.json      # Form validation messages
-│       │   ├── organizer.json       # Organizer-specific UI
-│       │   ├── speaker.json         # Speaker-specific UI
-│       │   ├── partner.json         # Partner-specific UI
-│       │   └── attendee.json        # Attendee-specific UI
-│       └── en/
-│           └── [same structure]
+│       │   ├── userManagement.json
+│       │   ├── events.json
+│       │   ├── partners.json
+│       │   ├── organizer.json
+│       │   ├── about.json
+│       │   ├── registration.json
+│       │   ├── admin.json
+│       │   └── newsletterSubscribers.json
+│       └── en/ ...                  # same files in every locale
 ├── src/
 │   └── i18n/
-│       ├── config.ts                # i18next initialization & configuration
-│       ├── types.ts                 # Auto-generated TypeScript types
-│       └── utils.ts                 # Formatting helpers (dates, currency)
+│       ├── config.ts                # i18next initialization, imports every JSON file statically
+│       ├── react-i18next.d.ts       # Hand-written key typing (common, auth, validation)
+│       ├── config.test.ts
+│       └── localesComplete.test.ts  # fails on "[MISSING]" placeholders
 ```
 
-**Namespace Strategy**:
-- **common**: Loaded immediately on app start (navigation, shared UI chrome)
-- **auth**: Loaded on authentication routes
-- **validation**: Loaded with forms (shared error messages)
-- **Role-specific namespaces**: Lazy-loaded when user switches to that role context
+Formatting helpers live in `src/utils/date/` (`formatDate`, `formatDateTime`), not in
+`src/i18n/`.
+
+**Namespace Strategy** (as built): every namespace of every locale is part of the bundle and
+available from the first render; nothing is lazy-loaded per route or role. The 2025 design
+planned `common` eagerly and role namespaces (`speaker`, `partner`, `attendee`) on demand; those
+role files were never created.
+
+### How a language is chosen and loaded
+
+```mermaid
+sequenceDiagram
+    autonumber
+    participant B as Browser
+    participant I as i18n/config.ts
+    participant LD as LanguageDetector
+    participant LS as LanguageSync
+    participant SW as LanguageSwitcher
+    participant API as CUMS via apiClient
+    B->>I: import at startup, all 10 locales x 11 namespaces bundled
+    I->>LD: detect
+    LD->>LD: localStorage batbern-language, else html lang attribute
+    LD-->>I: language, fallback de for missing keys
+    Note over B: prerendered public pages paint in German first, then switch on mount
+    opt user is signed in, once per login
+        LS->>API: GET /users/me?include=preferences
+        API-->>LS: preferences.language
+        LS->>I: changeLanguage
+    end
+    opt user picks a language
+        SW->>I: changeLanguage, set html lang
+        I->>B: languageChanged handler writes localStorage
+        SW->>API: PUT /users/me/preferences language, signed-in users only
+    end
+    Note over API: every API request carries Accept-Language = i18n.language
+```
 
 ### Translation Key Patterns
 
@@ -1539,258 +1727,169 @@ const LoginForm: React.FC = () => {
 
 ### TypeScript Type Safety
 
-**Compile-time Type Checking for Translation Keys**:
+**Compile-time Type Checking for Translation Keys** (`src/i18n/react-i18next.d.ts`, hand-written,
+not generated):
 
 ```typescript
-// src/i18n/types.ts (auto-generated from de/common.json)
 import 'react-i18next';
-import type common from '../../public/locales/de/common.json';
-import type auth from '../../public/locales/de/auth.json';
-import type validation from '../../public/locales/de/validation.json';
-import type organizer from '../../public/locales/de/organizer.json';
-import type speaker from '../../public/locales/de/speaker.json';
-import type partner from '../../public/locales/de/partner.json';
-import type attendee from '../../public/locales/de/attendee.json';
+import commonDe from '../../public/locales/de/common.json';
+import authDe from '../../public/locales/de/auth.json';
+import validationDe from '../../public/locales/de/validation.json';
 
 declare module 'react-i18next' {
   interface CustomTypeOptions {
     defaultNS: 'common';
     resources: {
-      common: typeof common;
-      auth: typeof auth;
-      validation: typeof validation;
-      organizer: typeof organizer;
-      speaker: typeof speaker;
-      partner: typeof partner;
-      attendee: typeof attendee;
+      common: typeof commonDe;
+      auth: typeof authDe;
+      validation: typeof validationDe;
     };
   }
 }
 ```
 
 **Result**:
-- IDE autocomplete for all translation keys
-- **Compile-time errors** for missing or mistyped keys
-- Type inference for interpolation variables
+- IDE autocomplete and compile-time errors for keys in `common`, `auth` and `validation`
+- Keys of the other eight namespaces (`organizer`, `events`, `admin`, ...) are **not** type-checked;
+  a typo there renders the key string at runtime
 
 ### i18next Configuration
 
+`src/i18n/config.ts`, shortened (the real file imports 110 JSON files: 11 namespaces x 10 locales):
+
 ```typescript
-// src/i18n/config.ts
 import i18n from 'i18next';
 import { initReactI18next } from 'react-i18next';
 import LanguageDetector from 'i18next-browser-languagedetector';
 
-// Import all translation files (bundled at build time)
 import commonDe from '../../public/locales/de/common.json';
-import authDe from '../../public/locales/de/auth.json';
-import validationDe from '../../public/locales/de/validation.json';
-import organizerDe from '../../public/locales/de/organizer.json';
-import speakerDe from '../../public/locales/de/speaker.json';
-import partnerDe from '../../public/locales/de/partner.json';
-import attendeeDe from '../../public/locales/de/attendee.json';
+// ... one import per namespace and locale, including gsw-BE
 
-import commonEn from '../../public/locales/en/common.json';
-import authEn from '../../public/locales/en/auth.json';
-import validationEn from '../../public/locales/en/validation.json';
-import organizerEn from '../../public/locales/en/organizer.json';
-import speakerEn from '../../public/locales/en/speaker.json';
-import partnerEn from '../../public/locales/en/partner.json';
-import attendeeEn from '../../public/locales/en/attendee.json';
+const resources = {
+  de: { common: commonDe, auth: authDe, validation: validationDe, userManagement: userManagementDe,
+        events: eventsDe, partners: partnersDe, organizer: organizerDe, about: aboutDe,
+        registration: registrationDe, admin: adminDe, newsletterSubscribers: newsletterSubscribersDe },
+  // en, fr, it, rm, es, fi, nl, ja, 'gsw-BE': same shape
+} as const;
 
 i18n
   .use(LanguageDetector)
   .use(initReactI18next)
   .init({
-    resources: {
-      de: {
-        common: commonDe,
-        auth: authDe,
-        validation: validationDe,
-        organizer: organizerDe,
-        speaker: speakerDe,
-        partner: partnerDe,
-        attendee: attendeeDe,
-      },
-      en: {
-        common: commonEn,
-        auth: authEn,
-        validation: validationEn,
-        organizer: organizerEn,
-        speaker: speakerEn,
-        partner: partnerEn,
-        attendee: attendeeEn,
-      },
-    },
-
+    resources,
     fallbackLng: 'de',
     defaultNS: 'common',
-    ns: ['common', 'auth', 'validation', 'organizer', 'speaker', 'partner', 'attendee'],
-
+    ns: ['common', 'auth', 'validation', 'userManagement', 'events', 'partners',
+         'organizer', 'about', 'registration', 'admin', 'newsletterSubscribers'],
     detection: {
-      order: ['localStorage', 'navigator', 'htmlTag'],
+      order: ['localStorage', 'htmlTag'],
       caches: ['localStorage'],
       lookupLocalStorage: 'batbern-language',
     },
-
-    interpolation: {
-      escapeValue: false, // React already escapes by default
-    },
-
-    react: {
-      useSuspense: true, // Use React Suspense for async loading
-    },
+    interpolation: { escapeValue: false },
+    react: { useSuspense: typeof window !== 'undefined' && !import.meta.env.VITEST },
   });
 
-export default i18n;
+// The detector caches only its own detection; programmatic changes are cached here
+i18n.on('languageChanged', (lng) => localStorage.setItem('batbern-language', lng));
 ```
 
 ### Language Detection & Selection
 
-**Detection Priority Order**:
-1. **User Profile** (authenticated users with saved language preference in database)
-2. **LocalStorage** (`batbern-language` key for returning users)
-3. **Browser Language** (`navigator.language`)
-4. **Default Fallback**: German (`de`)
+**Detection Priority Order** (as built):
+1. **LocalStorage** (`batbern-language`)
+2. **`<html lang>` attribute**
+3. **Fallback**: German (`de`)
 
-**Language Switcher Component**:
+The browser language (`navigator.language`) is **not** consulted: `navigator` is not in the
+detector's `order`. For a signed-in user, `LanguageSync` then overrides the detected language
+once per login with `preferences.language` from `GET /users/me` (see the diagram above).
+
+**Language Switcher Component** (`src/components/shared/LanguageSwitcher/LanguageSwitcher.tsx`),
+shortened:
+
 ```typescript
-// src/components/shared/LanguageSwitcher.tsx
-import { useTranslation } from 'react-i18next';
-import { MenuItem, Select } from '@mui/material';
-import { useAuthStore } from '@/stores/authStore';
-
 const LanguageSwitcher: React.FC = () => {
   const { i18n } = useTranslation();
-  const { user, updateUserLanguage } = useAuthStore();
+  const { isAuthenticated } = useAuth();
+  const languages = [
+    { code: 'de', label: 'DE — Deutsch' }, { code: 'en', label: 'EN — English' },
+    { code: 'fr', ... }, { code: 'it', ... }, { code: 'rm', ... }, { code: 'es', ... },
+    { code: 'fi', ... }, { code: 'nl', ... }, { code: 'ja', ... },
+  ];
 
-  const handleLanguageChange = async (newLang: 'de' | 'en') => {
+  const handleLanguageChange = async (event) => {
+    const newLang = event.target.value;
     await i18n.changeLanguage(newLang);
     document.documentElement.lang = newLang;
-
-    // Update user profile if authenticated
-    if (user) {
-      await updateUserLanguage(newLang);
+    localStorage.setItem('batbern-language', newLang);
+    if (isAuthenticated) {
+      await updateUserPreferences({ language: newLang }); // PUT /users/me/preferences, errors only logged
     }
   };
-
-  return (
-    <Select
-      value={i18n.language}
-      onChange={(e) => handleLanguageChange(e.target.value as 'de' | 'en')}
-      size="small"
-    >
-      <MenuItem value="de">🇨🇭 Deutsch</MenuItem>
-      <MenuItem value="en">🇬🇧 English</MenuItem>
-    </Select>
-  );
+  // renders a native <select>
 };
 ```
 
-**Placement**: Header navigation (top-right, next to user profile menu)
+The switcher offers nine languages. `gsw-BE` is bundled and complete but not offered in the
+switcher (checked 2026-11-04), and it cannot be stored as a profile preference either: the
+users API enum lists the nine codes above and `user_profiles.pref_language` is `VARCHAR(2)`. It is
+reachable only through `batbern-language` in localStorage.
+
+**Placement**: `PublicNavigation`, `LoginForm` and the auth pages in `App.tsx` (checked by grep). The
+authenticated `AppHeader` does not render it; signed-in users change the language in their
+account settings (not verified 2026-11-04).
 
 ### State Management Integration
 
-```typescript
-// src/stores/uiStore.ts (Zustand)
-interface UIState {
-  locale: 'de' | 'en';
-  setLocale: (locale: 'de' | 'en') => void;
-  // ... other UI state
-}
-
-export const useUIStore = create<UIState>((set) => ({
-  locale: 'de',
-  setLocale: (locale) => {
-    set({ locale });
-    i18n.changeLanguage(locale); // Sync with i18next
-    document.documentElement.lang = locale; // Update HTML lang attribute
-  },
-}));
-```
+`uiStore` has a `locale` field with `setLocale`, which only writes `batbern-ui-locale` to
+localStorage. It does **not** call `i18n.changeLanguage`, and no component reads it to drive the
+UI language (checked by grep, 2026-11-04). The language source of truth is i18next plus
+`batbern-language` in localStorage, and `preferences.language` in CUMS for signed-in users.
 
 **Persistence**:
-- LocalStorage: `batbern-language` key (automatic via i18next-browser-languagedetector)
-- Database: User profile `preferredLanguage` field (synchronized on language change for authenticated users)
+- LocalStorage: `batbern-language` (written by the `languageChanged` handler and the switcher)
+- Database: `user_profiles.pref_language` in CUMS, written through `PUT /users/me/preferences`
 
 ### Date & Time Formatting
 
-**Using date-fns with Locale Support**:
+**Using date-fns with Locale Support**: `src/utils/date/dateFormat.ts` exports plain functions
+(not a hook) that take the locale as an argument: `formatDate`, `formatTime`, `formatDateTime`,
+`formatRelativeTime`, `parseDate`. Only `de` and `en` date-fns locales are mapped; every other
+UI language (fr, it, ...) formats dates in **German**, because `getLocale` falls back to `de`.
 
 ```typescript
-// src/i18n/utils.ts
-import { format, parseISO } from 'date-fns';
-import { de, enUS } from 'date-fns/locale';
-import { useTranslation } from 'react-i18next';
+// src/utils/date/dateFormat.ts (shortened)
+import { format } from 'date-fns';
+import { de, enUS, type Locale } from 'date-fns/locale';
 
-const localeMap = {
-  de: de,
-  en: enUS,
-};
+const locales = { de, en: enUS } as const;
 
-export const useFormatDate = () => {
-  const { i18n } = useTranslation();
+function getLocale(locale?: string | null): Locale {
+  if (!locale) return locales.de;
+  return locales[locale.toLowerCase() as keyof typeof locales] || locales.de;
+}
 
-  return {
-    formatDate: (date: Date | string, formatStr: string = 'PPP') => {
-      const dateObj = typeof date === 'string' ? parseISO(date) : date;
-      return format(dateObj, formatStr, { locale: localeMap[i18n.language] });
-    },
+export function formatDateTime(date: Date, locale: string): string { /* ... */ }
 
-    formatDateTime: (date: Date | string) => {
-      const dateObj = typeof date === 'string' ? parseISO(date) : date;
-      return format(dateObj, 'PPP p', { locale: localeMap[i18n.language] });
-    },
-  };
-};
-
-// Usage in components:
-const EventCard: React.FC<{ event: Event }> = ({ event }) => {
-  const { formatDateTime } = useFormatDate();
-
-  return <div>{formatDateTime(event.startTime)}</div>;
-  // German: "15. März 2024, 14:30"
-  // English: "March 15, 2024, 2:30 PM"
-};
+// Usage in a component:
+const { i18n } = useTranslation();
+formatDateTime(new Date(event.date), i18n.language);
+// de: "15. März 2024, 14:30"   en: "March 15, 2024, 2:30 PM"
 ```
+
+Many newer components (Mail Center, communications tab) skip these helpers and call
+`new Date(...).toLocaleString(i18n.language, ...)` directly, which does follow every UI language.
+
+> **Not built:** the `useFormatDate` hook in `src/i18n/utils.ts` that the 2025 design showed;
+> there is no `src/i18n/utils.ts`.
 
 ### Number & Currency Formatting
 
-**Using Native Intl API** (no additional library needed):
-
-```typescript
-// src/i18n/utils.ts
-export const useFormatNumber = () => {
-  const { i18n } = useTranslation();
-
-  const localeMap = {
-    de: 'de-CH',
-    en: 'en-US',
-  };
-
-  return {
-    formatCurrency: (amount: number) => {
-      return new Intl.NumberFormat(localeMap[i18n.language], {
-        style: 'currency',
-        currency: 'CHF',
-      }).format(amount);
-    },
-
-    formatNumber: (value: number, decimals: number = 2) => {
-      return new Intl.NumberFormat(localeMap[i18n.language], {
-        minimumFractionDigits: decimals,
-        maximumFractionDigits: decimals,
-      }).format(value);
-    },
-  };
-};
-
-// Usage:
-const { formatCurrency } = useFormatNumber();
-formatCurrency(1500.5);
-// German (de-CH): "CHF 1'500.50"
-// English (en-US): "CHF 1,500.50"
-```
+**Not built as a shared helper.** The design's `useFormatNumber` (`Intl.NumberFormat` with `de-CH`
+and CHF) does not exist, and no component in `src/` calls `Intl.NumberFormat` (checked by grep,
+2026-11-04). Where a number is formatted, components call `toLocaleString()` directly (for
+example `KpiCard`). The platform shows no prices.
 
 ### Pluralization
 
@@ -1824,12 +1923,12 @@ t('speakers.count', { count: 5 });  // "5 Referenten"
 
 | Content Type | Translation Approach |
 |--------------|---------------------|
-| **UI Chrome** (navigation, buttons, labels, help text) | ✅ Fully translated (de/en) |
-| **Form Validation Messages** | ✅ Fully translated (de/en) |
-| **System Notifications** | ✅ Fully translated based on user's UI language |
-| **Email Templates** | ✅ Fully translated (separate AWS SES templates for de/en) |
+| **UI Chrome** (navigation, buttons, labels, help text) | ✅ All 10 locales (`public/locales`) |
+| **Form Validation Messages** | ✅ All 10 locales (`validation` namespace) |
+| **Organizer in-app notifications** | ❌ Built in English by `OrganizerNotificationListener` (see 06d) |
+| **Email Templates** | DE and EN only: HTML templates seeded from `email-templates/*.html` into the `email_templates` table, editable by organizers (see 06d); other languages fall back |
 | **Event Titles & Descriptions** | ❌ Single language (organizer's choice, typically German) |
-| **Speaker Abstracts** | ❌ Original language preserved with language metadata field |
+| **Session abstracts** | ❌ Original language; `sessions.language` (`VARCHAR(10)`, default `de`) records it |
 | **Company Names** | ❌ Never translated |
 | **User-Generated Content** | ❌ Preserved in original language |
 
@@ -1837,33 +1936,23 @@ t('speakers.count', { count: 5 });  // "5 Referenten"
 - Swiss audience is primarily German-speaking
 - Event content is typically German with occasional English speakers
 - Preserving original language maintains authenticity and avoids poor machine translation
-- Language metadata allows future filtering/search by content language
 
 **User-Generated Content Handling**:
-- Database schema includes optional `language` field (ISO 639-1: 'de', 'en')
-- UI displays language badge for multilingual events
-- No automatic translation - content shown in original language
+- No automatic translation: content is shown in its original language
+- Whether the UI shows a language badge from `sessions.language`: not verified 2026-11-04
 
 ### URL Structure & SEO
 
-**Query Parameter Approach**:
-```
-https://batbern.ch/current-event?lang=de
-https://batbern.ch/current-event?lang=en
-```
+**No language in the URL.** The design's `?lang=de` / `?lang=en` query parameter was not built:
+the language detector reads only localStorage and `<html lang>`, and no code reads a `lang`
+search parameter (checked by grep, 2026-11-04). There are no `hreflang` alternate links.
 
-**HTML Lang Attribute**: Dynamically updated
-```html
-<html lang="de"> <!-- or lang="en" -->
-```
+**HTML Lang Attribute**: set by `LanguageSwitcher` on every change
+(`document.documentElement.lang = newLang`). The prerendered public pages ship with the German
+default.
 
-**Meta Tags** (for public pages):
-```typescript
-// Update on language change
-<meta name="description" content={t('meta.description')} />
-<link rel="alternate" hreflang="de" href="?lang=de" />
-<link rel="alternate" hreflang="en" href="?lang=en" />
-```
+**Meta Tags** (public pages): `src/components/SEO/` (`EventSchema`, `OpenGraphTags`) through
+`react-helmet-async`.
 
 ### CI/CD Translation Validation
 
@@ -1884,126 +1973,65 @@ There is no pre-commit translation check and no dedicated translation workflow. 
 
 ### Testing Strategy
 
-**Translation Key Tests**:
-```typescript
-// __tests__/i18n/translations.test.ts
-import { describe, it, expect } from 'vitest';
-import commonDe from '@/locales/de/common.json';
-import commonEn from '@/locales/en/common.json';
+What exists (checked 2026-11-04):
 
-describe('Translation Completeness', () => {
-  it('should have matching keys in de and en', () => {
-    const deKeys = flattenKeys(commonDe);
-    const enKeys = flattenKeys(commonEn);
+- `src/i18n/localesComplete.test.ts` and `src/i18n/config.test.ts`, described above. Neither
+  compares key sets between locales.
+- Component tests assert against EN values or the namespace-stripped key, never a specific
+  non-EN translation (project rule, see CLAUDE.md "Localization").
+- `LanguageSwitcher.test.tsx` covers the switcher.
 
-    expect(deKeys).toEqual(enKeys);
-  });
-});
-```
-
-**Component Translation Tests**:
-```typescript
-// __tests__/components/LoginForm.test.tsx
-import { render, screen } from '@testing-library/react';
-import { I18nextProvider } from 'react-i18next';
-import i18n from '@/i18n/config';
-import LoginForm from '@/components/auth/LoginForm';
-
-describe('LoginForm i18n', () => {
-  it('renders in German by default', async () => {
-    await i18n.changeLanguage('de');
-    render(
-      <I18nextProvider i18n={i18n}>
-        <LoginForm />
-      </I18nextProvider>
-    );
-
-    expect(screen.getByText('Anmelden')).toBeInTheDocument();
-  });
-
-  it('renders in English when language is changed', async () => {
-    await i18n.changeLanguage('en');
-    render(
-      <I18nextProvider i18n={i18n}>
-        <LoginForm />
-      </I18nextProvider>
-    );
-
-    expect(screen.getByText('Sign In')).toBeInTheDocument();
-  });
-});
-```
-
-**E2E Language Switching Tests** (Playwright):
-```typescript
-// e2e/i18n.spec.ts
-import { test, expect } from '@playwright/test';
-
-test('should switch language from German to English', async ({ page }) => {
-  await page.goto('/');
-
-  // Verify default German
-  await expect(page.locator('h1')).toHaveText('Willkommen bei BATbern');
-
-  // Switch to English
-  await page.selectOption('[data-testid="language-switcher"]', 'en');
-
-  // Verify English
-  await expect(page.locator('h1')).toHaveText('Welcome to BATbern');
-
-  // Verify persistence (reload page)
-  await page.reload();
-  await expect(page.locator('h1')).toHaveText('Welcome to BATbern');
-});
-```
+> **Not built** (shown in the 2025 design): a `translations.test.ts` comparing `de` and `en`
+> key sets, and a Playwright `e2e/i18n.spec.ts` that switches the language and reloads. Neither
+> file exists.
 
 ### Accessibility Considerations
 
-**Screen Reader Support**:
-```typescript
-// Update HTML lang attribute and announce change
-const handleLanguageChange = async (newLang: 'de' | 'en') => {
-  await i18n.changeLanguage(newLang);
-  document.documentElement.lang = newLang;
+**Screen Reader Support**: the switcher sets `<html lang>` on every change, so screen readers
+pick the right pronunciation. The design's `aria-live` announcement of the language change was
+not built (no `aria-live` in `LanguageSwitcher.tsx`).
 
-  // Announce language change to screen readers
-  const announcement = document.createElement('div');
-  announcement.setAttribute('role', 'status');
-  announcement.setAttribute('aria-live', 'polite');
-  announcement.textContent = newLang === 'de'
-    ? 'Sprache wurde auf Deutsch geändert'
-    : 'Language changed to English';
-  document.body.appendChild(announcement);
-  setTimeout(() => announcement.remove(), 1000);
-};
-```
-
-**Keyboard Navigation**:
-- Language switcher fully keyboard accessible
-- Focus management maintained during language switch
+**Keyboard Navigation**: the switcher is a native `<select>`, so it is keyboard accessible by
+default.
 
 ### Performance Optimization
 
-**Bundle Size Management**:
-- All translations bundled at build time (~50KB total for de + en)
-- Vite tree-shaking removes unused namespaces
-- Common namespace loaded immediately (~5KB)
-- Role-specific namespaces lazy-loaded on route navigation
+**Bundle Size Management** (as built):
+- All locales and namespaces are bundled at build time, nothing is lazy-loaded. On disk the
+  110 locale JSON files total about 1.9 MB, about 200 KB per locale (measured 2026-11-04 with
+  `du`, before minification and compression; the share in the shipped chunks was not measured).
+- The design's lazy loading of role namespaces and of the `en` files on switch was not built.
 
 **Caching**:
-- Language preference cached in localStorage
-- Translations cached by browser (static assets with cache headers)
-
-**Initial Load Performance**:
-```
-Initial bundle: common.json (de) + auth.json (de) = ~8KB
-On role switch: Load role namespace = ~5KB additional
-On language switch: Load en namespaces = ~25KB additional (lazy)
-```
+- Language preference cached in localStorage (`batbern-language`)
+- Translations ship inside the hashed JS chunks, so they are cached with the bundle
 
 ## Bootstrap & Prerendering (SSG)
 
 > Plan & decision record: `docs/plans/public-homepage-prerender.md`.
+
+### Public site versus app: what a first request gets
+
+```mermaid
+flowchart TD
+    REQ["Browser requests www.batbern.ch/path"] --> CF["CloudFront viewer-request RouterFunction, frontend-stack.ts"]
+    CF -->|"/ or /index.html"| HOME["/home/index.html: prerendered loading shell, German"]
+    CF -->|"/privacy, /about, /support"| STAT["/route/index.html: prerendered static page"]
+    CF -->|"path without a dot"| SHELL["/index.html: neutral empty SPA shell"]
+    CF -->|"path with a dot"| ASSET["hashed JS, CSS, images as stored"]
+    HOME --> PAINT["HTML paints before any JS runs"]
+    STAT --> PAINT
+    SHELL --> JS
+    PAINT --> JS["main.tsx: createRoot.render, replaces the static HTML, no hydration"]
+    JS --> PUBR{"public Tailwind route?"}
+    PUBR -->|yes| PUBDATA["GET /api/v1/public/events/current etc. in parallel with GET /api/v1/config, no MUI, no Amplify"]
+    PUBR -->|no| MUIL["load MuiLayout chunk, then ProtectedRoute and Amplify if signed in"]
+```
+
+A missing prerendered object is harmless: the distribution answers 404 with `/index.html`, the
+CSR shell. If the crawl fails in `deploy-staging.yml`, the deploy logs
+`Prerender failed — deploying CSR-only dist` and ships the plain build (#1205 fixed the crawl after
+it had failed on every deploy since at least 2026-10-26).
 
 ### Decoupled bootstrap (`src/main.tsx`)
 
