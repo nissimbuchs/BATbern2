@@ -654,11 +654,15 @@
     "validation": {
       "htmlBodyRequired": "HTML-tekst is verplicht.",
       "subjectRequired": "Onderwerp is verplicht voor inhoudssjablonen.",
-      "templateKeyRequired": "Sjabloonsleutel is verplicht."
+      "templateNameRequired": "De naam van het sjabloon is verplicht.",
+      "templateNameInvalid": "Voer ten minste één letter of cijfer in."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
-    "previewTitle": "Email Preview"
+    "previewTitle": "Email Preview",
+    "templateName": "Naam van het sjabloon",
+    "templateNameHelp": "Bijvoorbeeld: Zaalwissel",
+    "keyPreview": "Opgeslagen als"
   },
   "presentation": {
     "errorTitle": "Evenement kon niet worden geladen",

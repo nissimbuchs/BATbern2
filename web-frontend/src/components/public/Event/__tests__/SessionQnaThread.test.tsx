@@ -3,6 +3,7 @@
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { MemoryRouter, Route, Routes, useLocation } from 'react-router-dom';
 import { SessionQnaThread } from '../SessionQnaThread';
 
 vi.mock('@/hooks/useQna/useQna', () => ({
@@ -47,6 +48,7 @@ vi.mock('react-i18next', () => ({
         'qna.askQuestion': 'Ask a question',
         'qna.viewThread': 'View Q&A',
         'qna.loginToPost': 'Log in to ask or answer questions.',
+        'qna.loginToStart': 'Log in to ask a question or join the discussion',
       };
       return map[key] ?? key;
     },
@@ -98,8 +100,24 @@ beforeEach(() => {
   } as unknown as ReturnType<typeof useRemoveQnaPost>);
 });
 
+function LoginProbe() {
+  const location = useLocation();
+  const from = (location.state as { from?: { pathname: string; hash: string } } | null)?.from;
+  return <div data-testid="login-page">{`${from?.pathname ?? ''}${from?.hash ?? ''}`}</div>;
+}
+
 function renderThread() {
-  return render(<SessionQnaThread eventCode="BATbern57" sessionSlug="cloud-native" />);
+  return render(
+    <MemoryRouter initialEntries={['/']}>
+      <Routes>
+        <Route
+          path="/"
+          element={<SessionQnaThread eventCode="BATbern57" sessionSlug="cloud-native" />}
+        />
+        <Route path="/login" element={<LoginProbe />} />
+      </Routes>
+    </MemoryRouter>
+  );
 }
 
 /** The thread is collapsed by default — open it before asserting on inner content. */
@@ -178,13 +196,45 @@ describe('SessionQnaThread', () => {
     expect(screen.getByTestId('qna-empty')).toBeInTheDocument();
   });
 
-  it('shows a login hint instead of the form when anonymous on an open window', () => {
+  // Owner 2026-11-04: an anonymous visitor saw only "Ask a question" on an empty thread and no
+  // hint that a login is needed. With nothing to read, the header itself invites to log in.
+  it('anonymous on an open, empty window: the header asks to log in and links back here', () => {
     mockThread('OPEN', []);
     mockAuth(false);
     renderThread();
+    const cta = screen.getByTestId('qna-login-cta');
+    expect(cta).toHaveTextContent('Log in to ask a question or join the discussion');
+    expect(screen.queryByTestId('qna-toggle')).not.toBeInTheDocument();
+    fireEvent.click(cta);
+    expect(screen.getByTestId('login-page')).toHaveTextContent(/^\/$/);
+  });
+
+  it('anonymous on an open window with questions: thread readable, login hint instead of the form', () => {
+    mockThread('OPEN', [
+      {
+        id: 'q1',
+        parentPostId: null,
+        postedByUsername: 'alice',
+        body: 'How does it scale?',
+        removed: false,
+        createdAt: '2026-11-04T10:00:00Z',
+      },
+    ]);
+    mockAuth(false);
+    renderThread();
+    expect(screen.queryByTestId('qna-login-cta')).not.toBeInTheDocument();
     expandThread();
+    expect(screen.getByText('How does it scale?')).toBeInTheDocument();
     expect(screen.getByTestId('qna-login-hint')).toBeInTheDocument();
     expect(screen.queryByTestId('qna-question-form')).not.toBeInTheDocument();
+  });
+
+  it('anonymous on a frozen, empty window: no login invitation', () => {
+    mockThread('FROZEN', []);
+    mockAuth(false);
+    renderThread();
+    expect(screen.queryByTestId('qna-login-cta')).not.toBeInTheDocument();
+    expect(screen.getByTestId('qna-toggle')).toBeInTheDocument();
   });
 
   it('submits a question via the add mutation', async () => {

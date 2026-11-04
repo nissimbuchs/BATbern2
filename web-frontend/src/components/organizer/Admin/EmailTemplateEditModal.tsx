@@ -39,6 +39,7 @@ import {
   useUpdateEmailTemplate,
 } from '@/hooks/useEmailTemplates';
 import type { EmailTemplateResponse } from '@/hooks/useEmailTemplates';
+import { toTemplateKey } from '@/utils/templateKey';
 
 interface Props {
   /** When provided: edit mode. When undefined: create mode. */
@@ -73,8 +74,10 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
   const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
   const isEdit = Boolean(template);
 
-  // Create-mode fields
-  const [newTemplateKey, setNewTemplateKey] = useState('');
+  // Create-mode fields: the organizer types a name, the kebab-case key is derived from it (the
+  // server rejects anything else with a 400, which used to surface only as "Failed to save").
+  const [newTemplateName, setNewTemplateName] = useState('');
+  const newTemplateKey = toTemplateKey(newTemplateName);
   const [newLocale, setNewLocale] = useState<'de' | 'en'>(
     (cloneFrom?.locale as 'de' | 'en') ?? 'de'
   );
@@ -170,21 +173,23 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
           },
         });
       } else {
-        if (!newTemplateKey.trim()) {
-          setError(t('emailTemplates.validation.templateKeyRequired', 'Template key is required.'));
+        if (!newTemplateName.trim()) {
+          setError(
+            t('emailTemplates.validation.templateNameRequired', 'Template name is required.')
+          );
           return;
         }
-        if (/\s/.test(newTemplateKey)) {
+        if (!newTemplateKey) {
           setError(
             t(
-              'emailTemplates.validation.templateKeyNoSpaces',
-              'Template key must not contain spaces.'
+              'emailTemplates.validation.templateNameInvalid',
+              'Enter at least one letter or digit.'
             )
           );
           return;
         }
         await createMutation.mutateAsync({
-          templateKey: newTemplateKey.trim(),
+          templateKey: newTemplateKey,
           locale: newLocale,
           category: (initialCategory ?? 'SPEAKER') as
             | 'SPEAKER'
@@ -270,12 +275,20 @@ export const EmailTemplateEditModal: React.FC<Props> = ({
         {!isEdit && (
           <Box sx={{ display: 'flex', gap: 2, mb: 2 }}>
             <TextField
-              label={t('emailTemplates.templateKey', 'Template Key')}
-              value={newTemplateKey}
-              onChange={(e) => setNewTemplateKey(e.target.value)}
+              label={t('emailTemplates.templateName', 'Template name')}
+              value={newTemplateName}
+              onChange={(e) => setNewTemplateName(e.target.value)}
               fullWidth
               required
-              helperText="e.g. my-custom-invitation"
+              helperText={
+                newTemplateKey ? (
+                  <span data-testid="email-template-key-preview">
+                    {t('emailTemplates.keyPreview', 'Saved as')} <code>{newTemplateKey}</code>
+                  </span>
+                ) : (
+                  t('emailTemplates.templateNameHelp', 'For example: Room change')
+                )
+              }
               inputProps={{ 'data-testid': 'email-template-key-input' }}
             />
             <FormControl sx={{ minWidth: 100 }}>

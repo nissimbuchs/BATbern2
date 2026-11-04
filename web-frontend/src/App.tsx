@@ -4,7 +4,15 @@
  */
 
 import React, { useEffect, Suspense, useCallback } from 'react';
-import { BrowserRouter as Router, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import {
+  BrowserRouter as Router,
+  Routes,
+  Route,
+  Navigate,
+  useLocation,
+  useNavigate,
+} from 'react-router-dom';
+import { loginTarget } from '@/utils/auth/loginTarget';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { HelmetProvider } from 'react-helmet-async';
@@ -195,19 +203,20 @@ const AuthLayout: React.FC<{ children: React.ReactNode }> = ({ children }) => {
 // Login page component with navigation logic
 const LoginPage: React.FC = () => {
   const navigate = useNavigate();
+  const location = useLocation();
   const { isAuthenticated } = useAuth();
+  // back to the page that sent the user here (ProtectedRoute, Q&A login link), else dashboard
+  const target = loginTarget(location.state);
 
-  // Redirect to dashboard if already authenticated
   useEffect(() => {
     if (isAuthenticated) {
-      navigate('/dashboard', { replace: true });
+      navigate(target, { replace: true });
     }
-  }, [isAuthenticated, navigate]);
+  }, [isAuthenticated, navigate, target]);
 
   const handleLoginSuccess = useCallback(() => {
-    console.log('[LoginPage] handleLoginSuccess called, navigating to /dashboard');
-    navigate('/dashboard', { replace: true });
-  }, [navigate]);
+    navigate(target, { replace: true });
+  }, [navigate, target]);
 
   const handleForgotPassword = useCallback(() => {
     navigate('/auth/forgot-password');

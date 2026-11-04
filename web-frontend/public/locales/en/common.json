@@ -693,11 +693,15 @@
     "validation": {
       "htmlBodyRequired": "HTML body is required.",
       "subjectRequired": "Subject is required for content templates.",
-      "templateKeyRequired": "Template key is required."
+      "templateNameRequired": "Template name is required.",
+      "templateNameInvalid": "Enter at least one letter or digit."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
-    "previewTitle": "Email Preview"
+    "previewTitle": "Email Preview",
+    "templateName": "Template name",
+    "templateNameHelp": "For example: Room change",
+    "keyPreview": "Saved as"
   },
   "presentation": {
     "errorTitle": "Event could not be loaded",

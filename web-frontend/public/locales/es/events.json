@@ -545,13 +545,14 @@
         "saveTemplate": {
           "button": "Guardar como plantilla",
           "title": "Guardar como plantilla",
-          "key": "Clave de la plantilla",
-          "keyHelp": "Minúsculas, cifras y guiones, p. ej. cambio-de-sala",
-          "keyInvalid": "Solo minúsculas, cifras y guiones simples, p. ej. cambio-de-sala",
+          "key": "Nombre de la plantilla",
+          "keyHelp": "Por ejemplo: Cambio de sala",
+          "keyInvalid": "Introduce al menos una letra o una cifra.",
           "save": "Guardar",
-          "duplicate": "Ya existe una plantilla con esta clave en este idioma. Elige otra clave.",
+          "duplicate": "Ya existe una plantilla con este nombre en este idioma. Elige otro nombre.",
           "failed": "No se pudo guardar la plantilla. Inténtalo de nuevo.",
-          "saved": "Guardado como plantilla {{key}}."
+          "saved": "Guardado como plantilla {{key}}.",
+          "keyPreview": "Se guarda como {{key}}"
         },
         "variables": {
           "eventTitle": "Título del evento",
@@ -1370,7 +1371,8 @@
     "questionPlaceholder": "Haz una pregunta sobre esta sesión…",
     "askQuestion": "Haz una pregunta",
     "viewThread": "Ver preguntas",
-    "loginToPost": "Inicia sesión para preguntar o responder."
+    "loginToPost": "Inicia sesión para preguntar o responder.",
+    "loginToStart": "Inicia sesión para hacer una pregunta o participar en el debate"
   },
   "attendee": {
     "dashboard": {

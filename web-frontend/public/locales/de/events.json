@@ -559,13 +559,14 @@
         "saveTemplate": {
           "button": "Als Vorlage speichern",
           "title": "Als Vorlage speichern",
-          "key": "Vorlagen-Schlüssel",
-          "keyHelp": "Kleinbuchstaben, Ziffern und Bindestriche, z. B. raumwechsel",
-          "keyInvalid": "Nur Kleinbuchstaben, Ziffern und einzelne Bindestriche, z. B. raumwechsel",
+          "key": "Name der Vorlage",
+          "keyHelp": "Zum Beispiel: Raumwechsel",
+          "keyInvalid": "Bitte mindestens einen Buchstaben oder eine Ziffer eingeben.",
           "save": "Speichern",
-          "duplicate": "Eine Vorlage mit diesem Schlüssel gibt es in dieser Sprache schon. Bitte einen anderen Schlüssel wählen.",
+          "duplicate": "Eine Vorlage mit diesem Namen gibt es in dieser Sprache schon. Bitte einen anderen Namen wählen.",
           "failed": "Die Vorlage konnte nicht gespeichert werden. Bitte nochmals versuchen.",
-          "saved": "Als Vorlage {{key}} gespeichert."
+          "saved": "Als Vorlage {{key}} gespeichert.",
+          "keyPreview": "Wird gespeichert als {{key}}"
         },
         "variables": {
           "eventTitle": "Veranstaltungstitel",
@@ -1394,7 +1395,8 @@
     "questionPlaceholder": "Stell eine Frage zu dieser Session…",
     "askQuestion": "Frage stellen",
     "viewThread": "Q&A ansehen",
-    "loginToPost": "Melde dich an, um Fragen zu stellen oder zu beantworten."
+    "loginToPost": "Melde dich an, um Fragen zu stellen oder zu beantworten.",
+    "loginToStart": "Anmelden, um eine Frage zu stellen oder mitzudiskutieren"
   },
   "attendee": {
     "dashboard": {

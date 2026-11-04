@@ -654,11 +654,15 @@
     "validation": {
       "htmlBodyRequired": "HTML-runko on pakollinen.",
       "subjectRequired": "Aihe on pakollinen sisältöpohjille.",
-      "templateKeyRequired": "Pohjan avain on pakollinen."
+      "templateNameRequired": "Pohjan nimi on pakollinen.",
+      "templateNameInvalid": "Kirjoita vähintään yksi kirjain tai numero."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
-    "previewTitle": "Email Preview"
+    "previewTitle": "Email Preview",
+    "templateName": "Pohjan nimi",
+    "templateNameHelp": "Esimerkiksi: Salin vaihto",
+    "keyPreview": "Tallennetaan nimellä"
   },
   "presentation": {
     "errorTitle": "Tapahtumaa ei voitu ladata",

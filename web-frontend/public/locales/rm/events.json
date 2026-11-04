@@ -545,13 +545,14 @@
         "saveTemplate": {
           "button": "Memorisar sco model",
           "title": "Memorisar sco model",
-          "key": "Clav dal model",
-          "keyHelp": "Bustabs pitschens, cifras e lingiettas, p. ex. midada-da-local",
-          "keyInvalid": "Mo bustabs pitschens, cifras e lingiettas singulas, p. ex. midada-da-local",
+          "key": "Num dal model",
+          "keyHelp": "Per exempel: Midada da local",
+          "keyInvalid": "Endatescha almain in bustab u ina cifra.",
           "save": "Memorisar",
-          "duplicate": "In model cun questa clav exista gia en questa lingua. Tscherna in’autra clav.",
+          "duplicate": "In model cun quest num exista gia en questa lingua. Tscherna in auter num.",
           "failed": "Il model n’ha betg pudì vegnir memorisà. Emprova anc ina giada.",
-          "saved": "Memorisà sco model {{key}}."
+          "saved": "Memorisà sco model {{key}}.",
+          "keyPreview": "Vegn memorisà sco {{key}}"
         },
         "variables": {
           "eventTitle": "Titel da l’occurrenza",
@@ -1370,7 +1371,8 @@
     "questionPlaceholder": "Fai ina dumonda davart questa sessiun…",
     "askQuestion": "Far ina dumonda",
     "viewThread": "Vesair las dumondas",
-    "loginToPost": "Annunzia tai per far u respunder dumondas."
+    "loginToPost": "Annunzia tai per far u respunder dumondas.",
+    "loginToStart": "S’annunziar per far ina dumonda u participar a la discussiun"
   },
   "attendee": {
     "dashboard": {

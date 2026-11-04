@@ -90,6 +90,7 @@ const createQueryClient = () => new QueryClient({ defaultOptions: { queries: { r
 const renderModal = (props: {
   template?: typeof existingContentTemplate | typeof existingLayoutTemplate;
   isLayoutMode?: boolean;
+  initialCategory?: string;
   onClose?: () => void;
 }) =>
   render(
@@ -97,6 +98,7 @@ const renderModal = (props: {
       <EmailTemplateEditModal
         template={props.template}
         isLayoutMode={props.isLayoutMode ?? false}
+        initialCategory={props.initialCategory}
         onClose={props.onClose ?? vi.fn()}
       />
     </QueryClientProvider>
@@ -252,10 +254,10 @@ describe('EmailTemplateEditModal — create mode (no template)', () => {
     mockCreateMutateAsync.mockResolvedValue({ templateKey: 'new', isSystemTemplate: false });
   });
 
-  it('shows templateKey and locale inputs in create mode', () => {
+  it('shows template name and locale inputs in create mode', () => {
     renderModal({ isLayoutMode: false });
-    // Template key is a standard TextField — accessible via label
-    expect(screen.getByLabelText(/template key/i)).toBeInTheDocument();
+    // Template name is a standard TextField — accessible via label
+    expect(screen.getByLabelText(/template name/i)).toBeInTheDocument();
     // Locale is a MUI Select — its InputLabel renders "Locale" as visible text in the DOM
     expect(screen.getAllByText('Locale').length).toBeGreaterThanOrEqual(1);
   });
@@ -267,6 +269,39 @@ describe('EmailTemplateEditModal — create mode (no template)', () => {
     // Leave templateKey empty, put some body text via textarea
     await user.type(screen.getByTestId('tinymce-editor'), '<p>body</p>');
     await user.click(screen.getByRole('button', { name: /save/i }));
-    await waitFor(() => expect(screen.getByText(/template key is required/i)).toBeInTheDocument());
+    await waitFor(() => expect(screen.getByText(/template name is required/i)).toBeInTheDocument());
+    expect(mockCreateMutateAsync).not.toHaveBeenCalled();
+  });
+
+  // Owner 2026-11-04: "Partner Info" was sent as the key and rejected by the server (400), the
+  // dialog only said "Failed to save". The key is now derived from the name.
+  it('derives the kebab-case key from the typed name and saves with it', async () => {
+    const user = userEvent.setup();
+    renderModal({ isLayoutMode: false, initialCategory: 'PARTNER' });
+    await user.type(screen.getByLabelText(/template name/i), 'Partner Info für 2027');
+    expect(screen.getByTestId('email-template-key-preview')).toHaveTextContent(
+      'partner-info-fuer-2027'
+    );
+    await user.type(screen.getByLabelText(/subject/i), 'Betreff');
+    await user.type(screen.getByTestId('tinymce-editor'), '<p>body</p>');
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() =>
+      expect(mockCreateMutateAsync).toHaveBeenCalledWith(
+        expect.objectContaining({ templateKey: 'partner-info-fuer-2027', category: 'PARTNER' })
+      )
+    );
+  });
+
+  it('refuses a name without any letter or digit, without calling the server', async () => {
+    const user = userEvent.setup();
+    renderModal({ isLayoutMode: false });
+    await user.type(screen.getByLabelText(/template name/i), '!!!');
+    await user.type(screen.getByLabelText(/subject/i), 'Betreff');
+    await user.type(screen.getByTestId('tinymce-editor'), '<p>body</p>');
+    await user.click(screen.getByRole('button', { name: /save/i }));
+    await waitFor(() =>
+      expect(screen.getByText(/at least one letter or digit/i)).toBeInTheDocument()
+    );
+    expect(mockCreateMutateAsync).not.toHaveBeenCalled();
   });
 });

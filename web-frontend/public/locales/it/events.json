@@ -545,13 +545,14 @@
         "saveTemplate": {
           "button": "Salva come modello",
           "title": "Salva come modello",
-          "key": "Chiave del modello",
-          "keyHelp": "Lettere minuscole, cifre e trattini, ad es. cambio-sala",
-          "keyInvalid": "Solo lettere minuscole, cifre e trattini singoli, ad es. cambio-sala",
+          "key": "Nome del modello",
+          "keyHelp": "Ad esempio: Cambio sala",
+          "keyInvalid": "Inserisci almeno una lettera o una cifra.",
           "save": "Salva",
-          "duplicate": "Esiste già un modello con questa chiave in questa lingua. Scegli un’altra chiave.",
+          "duplicate": "Esiste già un modello con questo nome in questa lingua. Scegli un altro nome.",
           "failed": "Non è stato possibile salvare il modello. Riprova.",
-          "saved": "Salvato come modello {{key}}."
+          "saved": "Salvato come modello {{key}}.",
+          "keyPreview": "Salvato come {{key}}"
         },
         "variables": {
           "eventTitle": "Titolo dell’evento",
@@ -1370,7 +1371,8 @@
     "questionPlaceholder": "Fai una domanda su questa sessione…",
     "askQuestion": "Fai una domanda",
     "viewThread": "Vedi le domande",
-    "loginToPost": "Accedi per fare domande o rispondere."
+    "loginToPost": "Accedi per fare domande o rispondere.",
+    "loginToStart": "Accedi per fare una domanda o partecipare alla discussione"
   },
   "attendee": {
     "dashboard": {
