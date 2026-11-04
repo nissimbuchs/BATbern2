@@ -187,7 +187,7 @@
       "moderatorUpdated": "Moderator succesvol bijgewerkt",
       "moderatorUpdateError": "Bijwerken van moderator mislukt.",
       "capacityLabel": "Registratiecapaciteit",
-      "capacityHelperText": "Leeg laten voor onbeperkte registraties. Mag de locatiecapaciteit niet overschrijden.",
+      "capacityHelperText": "Leeg laten voor onbeperkte registraties. Mag de locatiecapaciteit niet overschrijden. Bij opslaan schuiven mensen van de wachtlijst door naar vrije plaatsen en krijgen ze een bevestigingsmail.",
       "capacityUpdated": "Capaciteit succesvol bijgewerkt",
       "capacityUpdateError": "Bijwerken van capaciteit mislukt.",
       "notifications": "Meldingen",

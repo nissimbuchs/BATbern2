@@ -144,7 +144,7 @@
       "moderatorUpdated": "Moderator erfolgreich aktualisiert",
       "moderatorUpdateError": "Moderator konnte nicht aktualisiert werden.",
       "capacityLabel": "Anmeldekapazität",
-      "capacityHelperText": "Leer lassen für unbegrenzte Anmeldungen. Darf die Veranstaltungskapazität nicht überschreiten.",
+      "capacityHelperText": "Leer lassen für unbegrenzte Anmeldungen. Darf die Veranstaltungskapazität nicht überschreiten. Beim Speichern rücken Personen von der Warteliste in freie Plätze nach und erhalten eine Bestätigung.",
       "capacityUpdated": "Kapazität erfolgreich aktualisiert",
       "capacityUpdateError": "Kapazität konnte nicht aktualisiert werden.",
       "notifications": "Benachrichtigungen",

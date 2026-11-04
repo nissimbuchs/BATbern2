@@ -187,7 +187,7 @@
       "moderatorUpdated": "Modérateur mis à jour avec succès",
       "moderatorUpdateError": "Échec de la mise à jour du modérateur.",
       "capacityLabel": "Capacité d'inscription",
-      "capacityHelperText": "Laisser vide pour des inscriptions illimitées. Ne peut pas dépasser la capacité du lieu.",
+      "capacityHelperText": "Laisser vide pour des inscriptions illimitées. Ne peut pas dépasser la capacité du lieu. À l’enregistrement, les personnes en liste d’attente occupent les places libres et reçoivent un e-mail de confirmation.",
       "capacityUpdated": "Capacité mise à jour avec succès",
       "capacityUpdateError": "Échec de la mise à jour de la capacité.",
       "notifications": "Notifications",

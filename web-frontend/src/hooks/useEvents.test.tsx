@@ -486,6 +486,30 @@ describe('Event Management React Query Hooks', () => {
         expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['events'] });
         expect(invalidateQueriesSpy).toHaveBeenCalledWith({ queryKey: ['event', 'BATbern56'] });
       });
+      expect(invalidateQueriesSpy).not.toHaveBeenCalledWith({
+        queryKey: ['event-registrations', 'BATbern56'],
+      });
+    });
+
+    it('should_refreshParticipants_when_capacitySaved', async () => {
+      // saving the capacity promotes people from the waitlist on the server
+      vi.mocked(eventApiClient.patchEvent).mockResolvedValue(mockUpdatedEvent);
+      const wrapper = createWrapper();
+      const invalidateQueriesSpy = vi.spyOn(queryClient, 'invalidateQueries');
+      const { result } = renderHook(() => useUpdateEvent(), { wrapper });
+
+      await act(async () => {
+        await result.current.mutateAsync({
+          eventCode: 'BATbern56',
+          data: { registrationCapacity: 250 },
+        });
+      });
+
+      await waitFor(() => {
+        expect(invalidateQueriesSpy).toHaveBeenCalledWith({
+          queryKey: ['event-registrations', 'BATbern56'],
+        });
+      });
     });
 
     it('should_performOptimisticUpdate_when_mutationCalled', async () => {

@@ -187,7 +187,7 @@
       "moderatorUpdated": "モデレーターが正常に更新されました",
       "moderatorUpdateError": "モデレーターの更新に失敗しました。",
       "capacityLabel": "登録定員",
-      "capacityHelperText": "無制限の登録の場合は空白のままにしてください。会場の定員を超えることはできません。",
+      "capacityHelperText": "無制限の登録の場合は空白のままにしてください。会場の定員を超えることはできません。保存すると、キャンセル待ちの方が空き枠に繰り上がり、確認メールが送信されます。",
       "capacityUpdated": "定員を正常に更新しました",
       "capacityUpdateError": "定員の更新に失敗しました。",
       "notifications": "通知",

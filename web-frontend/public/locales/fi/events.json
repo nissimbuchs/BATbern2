@@ -187,7 +187,7 @@
       "moderatorUpdated": "Moderaattori päivitetty onnistuneesti",
       "moderatorUpdateError": "Moderaattorin päivittäminen epäonnistui.",
       "capacityLabel": "Rekisteröintien enimmäismäärä",
-      "capacityHelperText": "Jätä tyhjäksi rajattomille rekisteröinneille. Ei voi ylittää paikan kapasiteettia.",
+      "capacityHelperText": "Jätä tyhjäksi rajattomille rekisteröinneille. Ei voi ylittää paikan kapasiteettia. Tallennettaessa jonossa olevat siirtyvät vapaille paikoille ja saavat vahvistusviestin.",
       "capacityUpdated": "Kapasiteetti päivitetty onnistuneesti",
       "capacityUpdateError": "Kapasiteetin päivitys epäonnistui.",
       "notifications": "Ilmoitukset",

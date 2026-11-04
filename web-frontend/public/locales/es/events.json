@@ -187,7 +187,7 @@
       "moderatorUpdated": "Moderador actualizado correctamente",
       "moderatorUpdateError": "Error al actualizar el moderador.",
       "capacityLabel": "Capacidad de registro",
-      "capacityHelperText": "Dejar en blanco para registros ilimitados. No puede superar la capacidad del lugar.",
+      "capacityHelperText": "Dejar en blanco para registros ilimitados. No puede superar la capacidad del lugar. Al guardar, las personas de la lista de espera ocupan las plazas libres y reciben un correo de confirmación.",
       "capacityUpdated": "Capacidad actualizada con éxito",
       "capacityUpdateError": "Error al actualizar la capacidad.",
       "notifications": "Notificaciones",

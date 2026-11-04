@@ -56,7 +56,7 @@ Physical location where event takes place. Includes:
 - **Facilities** (WiFi, projectors, accessibility)
 
 ### Waitlist
-A queue for an event whose registrations have reached venue [capacity](#venue). Once capacity is enforced, further sign-ups join the waitlist instead of registering directly; if a spot frees up (e.g. through self-service deregistration), waitlisted attendees can be moved into the event. Introduced by the Epic 10 registration-lifecycle work.
+A queue for an event whose registrations have reached venue [capacity](#venue). Once capacity is enforced, further sign-ups join the waitlist instead of registering directly; every free place goes to the waitlist in order, with a mail to the promoted person: after a cancellation, and whenever an organizer saves the capacity (raising it from 220 to 250 promotes the next 30). An organizer can also promote one person by hand from the participant list. Introduced by the Epic 10 registration-lifecycle work.
 
 ---
 

@@ -80,6 +80,9 @@ Each release includes:
 - ✅ Attachments of incoming mail up to 25 MB are kept with the conversation and open with a click; they are deleted together with the conversation.
 - ✅ Organizers answer a conversation directly from the mail page. The answer goes out as "{name} via BATbern", the speaker's reply comes back into the same conversation, and every organizer sees who answered what. Handing a conversation to another organizer sends them one short mail with a link.
 
+**Bug Fix — Raising the Capacity Moves the Waitlist Up (2026-11-04)**:
+- ✅ Saving the registration capacity now gives every free place to the waitlist, in waitlist order, and each promoted person gets the usual "you are registered" mail. On 4 November BATbern60 went from 220 to 250 places and nobody of the 42 people waiting moved up: until now the waitlist only moved by one place when someone cancelled. Saving the same capacity again also fills places that are already free. A cancellation promotes only while there is a free place, so a participant added over the capacity by an organizer no longer pulls someone in. Removing the capacity promotes everyone waiting.
+
 **Improvements and Bug Fixes — Presenter, Templates, Q&A (2026-11-04)**:
 - ✅ The moderator presentation is made for the big screen: darker background, all text white, type and pictures about 1.5 to 2 times larger, the agenda and the speaker cards sized to their content. Session slides now sit beside the agenda sidebar instead of under it.
 - ✅ Saving a mail as a template works with a normal name. "Save as template" in the mail composer and "New Template" in Administration accepted only a key in lowercase with hyphens: the composer kept Save disabled for "Partner Info", Administration sent it and showed only "could not be saved". The name is now turned into the key, which is shown before saving.
