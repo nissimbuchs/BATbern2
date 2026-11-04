@@ -2,6 +2,8 @@
 
 **Author:** Winston (System Architect) · **Date:** 2026-06-20 · **Source:** `docs/specs/event-2-feedback-quick-spec.md` (Nissim's feedback from the 2nd live event)
 
+**Status (2026-11-04):** 🔄 **IN PROGRESS** — done: 15.2, 15.3, 15.5, 15.6, 15.7, 15.9. Open: 15.1 (P1 live via #800; P2 watch app and P3 WebSocket teardown open), 15.4 (not implemented), 15.8 (backlog).
+
 ## Epic goal
 
 Close the remaining bugs and enhancements from the second live event that are too large for the quick-wins batch. The small/low-risk items (#1, #8b, #12, #13, #14, #15, #16, #17) shipped on branch `feature/event-2-feedback-quick-wins`; this epic covers the **architectural / multi-layer** items.
@@ -18,7 +20,7 @@ Close the remaining bugs and enhancements from the second live event that are to
 
 ---
 
-## Story 15.1 — Replace WebSockets with REST polling for live agenda control
+## Story 15.1 — Replace WebSockets with REST polling for live agenda control 🔄 P1 LIVE (#800); P2, P3 OPEN
 
 **Item #2.** Decision: **drop WebSockets entirely** (web + watch); deliver live updates via REST polling.
 
@@ -69,7 +71,7 @@ Close the remaining bugs and enhancements from the second live event that are to
 
 ---
 
-## Story 15.3 — Stable slot assignment: dynamic build, insert/swap, mobile tap-to-place
+## Story 15.3 — Stable slot assignment: dynamic build, insert/swap, mobile tap-to-place ✅ DONE (#806, 2026-06-21)
 
 **Items #7 + #6.**
 
@@ -95,7 +97,7 @@ Close the remaining bugs and enhancements from the second live event that are to
 
 ---
 
-## Story 15.4 — Warn on company ↔ email-domain mismatch for registrants
+## Story 15.4 — Warn on company ↔ email-domain mismatch for registrants ⏳ NOT IMPLEMENTED (no `email_domains` in code, checked 2026-11-04)
 
 **Item #4.**
 
@@ -111,7 +113,7 @@ Close the remaining bugs and enhancements from the second live event that are to
 
 ---
 
-## Story 15.5 — Speaker company logo on presenter + live control
+## Story 15.5 — Speaker company logo on presenter + live control ✅ DONE (#800)
 
 **Item #5.**
 
@@ -132,7 +134,7 @@ Close the remaining bugs and enhancements from the second live event that are to
 
 ---
 
-## Story 15.7 — Notify speaker + moderator on new Q&A question
+## Story 15.7 — Notify speaker + moderator on new Q&A question ✅ DONE (#800)
 
 **Item #11.**
 
@@ -149,7 +151,7 @@ Close the remaining bugs and enhancements from the second live event that are to
 
 ---
 
-## Story 15.8 — LinkedIn post drafts (before / during / after)
+## Story 15.8 — LinkedIn post drafts (before / during / after) 📋 BACKLOG
 
 **Item #10.** Decision: **draft-only** (direct publish is a later phase).
 
@@ -164,7 +166,7 @@ Close the remaining bugs and enhancements from the second live event that are to
 
 ---
 
-## Story 15.9 — OWASP LLM + Agentic security checklist in CI
+## Story 15.9 — OWASP LLM + Agentic security checklist in CI ✅ DONE (#807, 2026-06-21)
 
 **Item #9.**
 

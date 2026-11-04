@@ -1,6 +1,6 @@
 # BATbern Event Management Platform - Enhanced PRD
 
-**Last Updated:** 2026-10-24 (FR2: 8 states, task activation and supersession rules, current default tasks)
+**Last Updated:** 2026-11-04 (doc audit #1210: epic statuses through Epic 16, FR24–FR41 for shipped capabilities, owner-decision notes on FR7/FR14/FR15/FR18/FR20 and §4.2; earlier 2026-10-24: FR2 8 states, task rules)
 
 ## 1. Project Analysis and Context
 
@@ -99,6 +99,8 @@ See [Workflow State Machines](./architecture/06a-workflow-state-machines.md) for
 
 **FR7**: The system shall integrate email notification workflows for event updates, speaker deadlines, and newsletter distribution, supported by a comprehensive email template management system that allows organizers to create, customize, and version email templates with variable substitution, multilingual support, and A/B testing capabilities for different stakeholder groups (speakers, attendees, partners, organizers)
 
+> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** What exists: database-backed email template management with variable substitution and DE/EN templates (Story 10.2), layouts, newsletter template selection (Story 10.14), own text with placeholders and preview (Story 16.5). Not found in code: A/B testing, template version history.
+
 **FR8**: Partner users shall vote on topic priorities and submit strategic topic suggestions outside formal partner meetings
 
 **FR10**: Speaker users shall access self-service portal for submission management, agenda viewing, and presentation upload
@@ -111,7 +113,11 @@ See [Workflow State Machines](./architecture/06a-workflow-state-machines.md) for
 
 **FR14**: Attendees shall manage personal engagement through newsletter subscriptions, content bookmarking, and presentation downloads with personalized preferences, including granular notification preference controls allowing users to opt in/out of specific notification types (event updates, speaker announcements, partner communications, system alerts) across multiple channels (email, in-app, push notifications) with frequency management and quiet hours settings
 
+> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** What exists: newsletter subscription (Story 10.7), per-user preference columns including quiet hours and a push flag (CUMS `UserPreferences`), a quiet-hours check in EMS `NotificationService`. Not found: a push channel (no FCM/SNS), content bookmarking, per-channel opt-in UI.
+
 **FR15**: The platform shall provide mobile-optimized attendee experience with offline content access, event check-in capabilities, and progressive web app functionality
+
+> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** What exists: responsive UI, a PWA manifest and Workbox service worker (`vite-plugin-pwa`, navigations NetworkFirst). Not found: offline content access beyond the service-worker cache, attendee check-in.
 
 **FR16**: [REMOVED - Strategic refocus per Sprint Change Proposal 2025-10-01]
 
@@ -119,15 +125,59 @@ See [Workflow State Machines](./architecture/06a-workflow-state-machines.md) for
 
 **FR18**: Event organizers shall access smart topic backlog management with visual heat map representation showing topic usage frequency over time, ML-powered similarity scoring to identify duplicate or similar topics with automated avoidance warnings, staleness detection algorithms that calculate recommended wait periods before topic reuse based on historical patterns and partner influence metrics, and intelligent duplicate avoidance that prevents organizers from selecting recently used or semantically similar topics
 
+> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** What exists: topic backlog with heat map, staleness scores and TF-IDF cosine similarity warnings at >70 % (Story 5.2, `SimilarityCalculationService`). Not found: ML-based similarity, partner-influence weighting, hard blocking of recent topics (warnings only).
+
 **FR19**: The platform shall implement progressive publishing engine that automatically validates content readiness (moderator quality review, abstract length limits) and publishes event information in phases (topic immediate → speakers 1 month prior → progressive agenda updates → final agenda → post-event materials) with quality control checkpoints and automated content standards enforcement
 
 **FR20**: Event organizers shall receive intelligent notification system with role-based alerts, cross-stakeholder visibility, and automated escalation workflows for deadline management and task coordination, implementing multi-tier escalation rules (reminder → warning → critical → escalation to backup organizer) with configurable timing thresholds, automatic fallback notification paths, priority-based delivery guarantees, and real-time escalation status dashboards with audit trails
+
+> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** What exists: tiered speaker deadline reminders with an organizer escalation after tier 3 (Story 6.5, `SpeakerReminderService`), task due dates in the organizer cockpit (#1105). Not found: escalation to a backup organizer, configurable multi-tier escalation for tasks, escalation status dashboard.
 
 **FR21**: The system shall support long-term planning capabilities including multi-year venue booking workflows, seasonal partner meeting coordination, and strategic budget planning with automated scheduling and reminder systems
 
 **FR22**: Event organizers shall manage user roles with capabilities to promote users to speaker or organizer roles, demote users with approval workflows for organizer demotions, and enforce business rules requiring minimum 2 organizers per event, maintaining complete audit trails of all role changes
 
 **FR23**: Event organizers shall access a User Management interface displaying all platform users with comprehensive CRUD operations (create, read, update, delete), advanced filtering by role/company/status, search functionality with autocomplete, and the ability to view detailed user information and manage role assignments through an intuitive administrative interface, with all operations respecting business rules (minimum 2 organizers) and maintaining complete audit trails
+
+### Functional Requirements added 2026-11-04 (shipped capabilities)
+
+These record what is live in production; each line points to its epic, story or PR.
+
+**FR24**: Users can sign in with Google (OIDC federation via Cognito, JIT provisioning, account linking) — Epic 12, ADR-010
+
+**FR25**: Users can hold additional email addresses and sign in with SSO through a verified additional email — Story 10.32, #745
+
+**FR26**: Organizers and users (self-claim) can merge two profiles of one person — #1183, #1204
+
+**FR27**: Registration enforces venue capacity with a waitlist; saving a higher capacity fills free places from the waitlist — Story 10.11, #1208
+
+**FR28**: Unconfirmed attendees are recovered via 4-day registration links and a daily resend — #683
+
+**FR29**: Organizers can add an existing user as a confirmed participant ("Add participant") — #792
+
+**FR30**: Participants are auto-enrolled and each event has its own email aliases — #686
+
+**FR31**: Organizers export name badges as XLSX and printable DOCX — #686, #688
+
+**FR32**: Organizers coordinate venue and caterer with a mail composer — #690
+
+**FR33**: A moderator presenter page and a Live Control page run the event day (REST polling) — Stories 10.8a/b, 15.5, 15.1 P1 (#800), #1207
+
+**FR34**: Attendees contribute topics, self-nominate as speakers, thank the organizers, and use per-session Q&A — Epic 7, #776, #777, #785
+
+**FR35**: Organizers send newsletters to managed subscribers with bounce handling — Stories 10.7, 10.14, 10.28, 10.29
+
+**FR36**: Public forms are protected by Cloudflare Turnstile — Story 10.31
+
+**FR37**: Organizers see per event what went out, what came back and what needs an answer, and answer from one shared composer (Mail Center) — Epic 16, #1166, #1174, #1189, #1194
+
+**FR38**: Mail to event and team aliases is forwarded by EMS (forwarder Lambda removed) — #1137
+
+**FR39**: Organizers work from a lifecycle-aware event cockpit that shows tasks when they become relevant — Epic 14 (#788), #1105
+
+**FR40**: A watchOS companion app shows the event and lets organizers control session timing — `docs/watch-app/epics.md`
+
+**FR41**: Partner meeting invitations are sent and recorded per recipient — Story 16.9, #1180
 
 ### Non-Functional Requirements
 
@@ -169,18 +219,21 @@ See [Workflow State Machines](./architecture/06a-workflow-state-machines.md) for
 The BATbern Event Management Platform follows a comprehensive **Domain-Driven Design microservices architecture** as detailed in our [Architecture Documentation](./architecture/index.md).
 
 ### Technology Stack
-- **Frontend**: React 18.2+ with TypeScript, Material-UI, Zustand + React Query
-- **Backend**: Java 21 LTS with Spring Boot 3.2+, PostgreSQL, Caffeine
+- **Frontend**: React 19 with TypeScript, MUI 7, Zustand + React Query (TanStack)
+- **Backend**: Java 21 LTS with Spring Boot 4.0 (Epic 13), PostgreSQL, Caffeine
 - **Infrastructure**: AWS (ECS Fargate, Cognito, S3, CloudFront)
 - **Development**: Gradle, Vite, GitHub Actions, AWS CDK
 
 ### Architectural Components
-The platform is organized into four distinct bounded contexts with dedicated services:
+The platform was scaffolded as four bounded contexts with dedicated services. Per
+[ADR-014](./architecture/ADR-014-backend-service-consolidation.md) (2026-06-26) the backend consolidated around
+event-management-service (EMS), company-user-management-service (CUMS) and partner-coordination-service;
+`speaker-coordination-service` and `attendee-experience-service` are dormant.
 
-1. **Event Management Domain** - Organizer workflows and automation
-2. **Speaker Coordination Domain** - Speaker portal and workflows
-3. **Partner Analytics Domain** - ROI tracking and strategic input
-4. **Attendee Experience Domain** - Content discovery and registration
+1. **Event Management Domain** - Organizer workflows and automation (EMS)
+2. **Speaker Coordination Domain** - Speaker portal and workflows (served by EMS since Epic 11)
+3. **Partner Analytics Domain** - ROI tracking and strategic input (partner-coordination-service)
+4. **Attendee Experience Domain** - Content discovery and registration (served by EMS)
 
 ### Detailed Architecture References
 For comprehensive technical implementation details, refer to the following architecture documents:
@@ -205,7 +258,7 @@ For comprehensive technical implementation details, refer to the following archi
 ## 4. Epic Structure and Sprint Planning
 
 ### Epic Approach
-**Vertical Slice Strategy**: Seven epics delivering end-to-end functionality, each providing demonstrable value to users while building progressively on the platform foundation.
+**Vertical Slice Strategy**: Sixteen epics (Epic 9 superseded by Epic 11) delivering end-to-end functionality, each providing demonstrable value to users while building progressively on the platform foundation.
 
 ### Sprint Planning Overview
 
@@ -221,13 +274,22 @@ For comprehensive technical implementation details, refer to the following archi
 - **Epic 4**: Weeks 22-26 (Public Website & Content Discovery) - ✅ **100% COMPLETE**
 - **Epic 5**: Weeks 27-35 (Enhanced Organizer Workflows) - ✅ **100% COMPLETE** (including BAT-16)
 - **Epic 6**: Weeks 36-44 (Speaker Portal & Support) - ✅ **100% COMPLETE** (All stories deployed to staging, Story 6.4 QA passed)
-- **Epic 7**: Attendee Experience — Right-Sized Contribution & Touchpoints - 📋 **READY FOR STORY DETAILING** (rewritten 2026-06-09; right-sized replacement for the deferred dashboards/PWA/recommendation-engine scope — five organizer-voted features composing onto existing machinery)
+- **Epic 7**: Attendee Experience — Right-Sized Contribution & Touchpoints - ✅ **COMPLETE** (Stories 7.1–7.7; #776, #777, #785, June 2026)
 - **Epic 8**: Weeks 45+ (Partner Coordination - ✅ **100% COMPLETE** 2026-02-22)
-- **Epic 11**: Weeks 46+ (Unified Speaker Workflow Refactor - 🔨 IN PROGRESS — Phase A doc alignment landing; Phases B–F per ADR-009 and `docs/plans/speaker-workflow-refactor.md`. Supersedes prior Epic 9 plan.)
+- **Epic 9**: Speaker Authentication - 📦 **SUPERSEDED** by Epic 11 (ADR-009)
+- **Epic 10**: Additional Stories - ✅ **COMPLETE** (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
+- **Epic 11**: Unified Speaker Workflow Refactor - ✅ **COMPLETE** (Phases A–F per ADR-009; 11.F.1 magic-link teardown 2026-05-25; leftovers 11.E.5, 11.G.1, 11.F.2 open)
+- **Epic 12**: Federated Identity / Google SSO - ✅ **LIVE** 2026-06-04 (ADR-010; Story 12.10 Apple/generic OIDC in backlog)
+- **Epic 13**: Spring Boot 4 Migration - 🔄 SB 4.0.7 **LIVE** (#797, 2026-06-19); 13.4 Jackson 3 flip and 13.5 open
+- **Epic 14**: Event Detail Page — Lifecycle-Aware Redesign - ✅ **COMPLETE** (#788, 2026-06-15)
+- **Epic 15**: Post-Event #2 Hardening - 🔄 **IN PROGRESS** (15.1 P2/P3, 15.4, 15.8 open)
+- **Epic 16**: Mail Center - 🔄 16.0–16.11 **LIVE** (2026-10-30 to 2026-11-03); 16.8c gated, 16.12/16.13 backlog
 
-**Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. Epic 5 completed with 9-state workflow, per-speaker coordination, task management, auto-publishing, and lifecycle automation. Epic 6 fully deployed with automated speaker invitation, self-service response portal, content submission, dashboard (WCAG 2.1 AA), and deadline reminders. Epic 8 complete with partner attendance analytics, topic voting, and meeting coordination with RFC 5545 calendar invites. Epic 7 was rewritten 2026-06-09 from its deferred over-scoped form (dashboards/PWA/recommendation engine) into a right-sized set of five organizer-voted attendee contribution & touchpoint features (see `prd/epic-7-attendee-experience-enhancements.md`); the prior Epic 9 (JWT magic-link speaker authentication) is superseded by **Epic 11** per ADR-009, which adopts standard AWS Cognito with `FORCE_CHANGE_PASSWORD` first-login as the sole speaker auth path (no parallel JWT / magic-link stack).
+**Reorganization Rationale**: Epic structure revised to prioritize functional delivery (CRUD with consolidated APIs, data migration, public website) before workflow automation. Epic 5 completed with the event workflow (9 states then, consolidated to 8 in V82), per-speaker coordination, task management, auto-publishing, and lifecycle automation. Epic 6 fully deployed with automated speaker invitation, self-service response portal, content submission, dashboard (WCAG 2.1 AA), and deadline reminders. Epic 8 complete with partner attendance analytics, topic voting, and meeting coordination with RFC 5545 calendar invites. Epic 7 was rewritten 2026-06-09 from its deferred over-scoped form (dashboards/PWA/recommendation engine) into a right-sized set of five organizer-voted attendee contribution & touchpoint features (see `prd/epic-7-attendee-experience-enhancements.md`); the prior Epic 9 (JWT magic-link speaker authentication) is superseded by **Epic 11** per ADR-009, which adopts standard AWS Cognito with `FORCE_CHANGE_PASSWORD` first-login as the sole speaker auth path (no parallel JWT / magic-link stack).
 
 ### 4.2 Content Management & Storage Architecture
+
+> **Not implemented as of 2026-11-04 (owner decision on strike/defer/rewrite pending: #1210).** This section is a target design. Verified reality: one content bucket `batbern-content-${env}` (`infrastructure/lib/stacks/storage-stack.ts`, S3-managed encryption, versioned in production), region eu-central-1, presigned uploads, an image-resize Lambda behind `cdn.batbern.ch`. Not found in code: per-type buckets, ClamAV scanning, role quotas, cross-region replication (eu-west-1 is not used), `cdn-staging`/`cdn-dev` domains.
 
 The BATbern platform manages diverse content types including company logos, speaker photos and CVs, event presentations, and historical archives. This section defines the storage architecture, CDN strategy, and content policies.
 
@@ -346,14 +408,22 @@ The comprehensive epic breakdown follows a CRUD-first approach, prioritizing fun
 - **[Epic 2: Entity CRUD & Domain Services](./prd/epic-2-entity-crud-domain-services.md)** - ✅ **COMPLETE** - End-to-end CRUD with consolidated RESTful APIs for Event, Speaker, Company, User entities (9 weeks, includes API consolidation 1.15a.1-1.15a.8)
 - **[Epic 3: Historical Data Migration](./prd/epic-3-historical-data-migration.md)** - ✅ **COMPLETE** - Migrate 20+ years of BATbern event data (3 weeks, tooling ready)
 - **[Epic 4: Public Website & Content Discovery](./prd/epic-4-public-website-content-discovery.md)** - ✅ **COMPLETE** - Public event pages, registration, historical archive browsing (5 weeks)
-- **[Epic 5: Enhanced Organizer Workflows](./prd/epic-5-enhanced-organizer-workflows.md)** - ✅ **COMPLETE** - 9-state event workflow with parallel speaker coordination, task management, auto-publishing, lifecycle automation (9 weeks)
+- **[Epic 5: Enhanced Organizer Workflows](./prd/epic-5-enhanced-organizer-workflows.md)** - ✅ **COMPLETE** - Event workflow (now 8 states) with parallel speaker coordination, task management, auto-publishing, lifecycle automation (9 weeks)
 
 **Phase 2: Speaker Self-Service Portal (Weeks 36-44) - ✅ 100% COMPLETE**
 - **[Epic 6: Speaker Portal & Support](./prd/epic-6-speaker-portal-support.md)** - ✅ **100% COMPLETE** - Self-service speaker portal with automated invitations, response handling, content submission, deadline reminders, and speaker dashboard with full accessibility compliance (8 weeks, all 6 stories complete and deployed to staging)
 
 **Phase 3: Enhanced Experiences**
-- **[Epic 7: Attendee Experience — Right-Sized Contribution & Touchpoints](./prd/epic-7-attendee-experience-enhancements.md)** - 📋 **READY FOR STORY DETAILING** - Five organizer-voted features (topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, time-boxed post-event Q&A) composing onto existing machinery with near-zero recurring organizer effort
-- **[Epic 8: Partner Coordination](./prd/epic-8-partner-coordination.md)** - Attendance dashboard (table + Excel export), topic suggestions & voting (simple toggle), partner meeting coordination with ICS calendar invites (🚧 IN PROGRESS)
+- **[Epic 7: Attendee Experience — Right-Sized Contribution & Touchpoints](./prd/epic-7-attendee-experience-enhancements.md)** - ✅ **COMPLETE** - Five organizer-voted features (topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, per-session Q&A) plus attendee event history (7.6) and the curated thank-you marquee (7.7)
+- **[Epic 8: Partner Coordination](./prd/epic-8-partner-coordination.md)** - ✅ **COMPLETE** (2026-02-22) - Attendance dashboard (table + Excel export), topic suggestions & voting (simple toggle), partner meeting coordination with ICS calendar invites, partner notes
+- **[Epic 9: Speaker Authentication](./prd/epic-9-speaker-authentication.md)** - 📦 **SUPERSEDED** by Epic 11
+- **[Epic 10: Additional Stories](./prd/epic-10-additional-stories.md)** - ✅ **COMPLETE** - Administration, email templates, newsletter, presenter, capacity + waitlist, photos, Turnstile, additional emails, alias forwarding (10.6/10.13/10.15 cancelled, 10.24/10.25 deferred)
+- **[Epic 11: Unified Speaker Workflow Refactor](./prd/epic-11-speaker-workflow-refactor.md)** - ✅ **COMPLETE** - 8-state speaker workflow per ADR-009, Cognito speaker auth, magic links removed
+- **[Epic 12: Federated Identity / Google SSO](./plans/sso-oidc-federation.md)** - ✅ **LIVE** 2026-06-04 - ADR-010; no PRD file, the plan is the source
+- **[Epic 13: Spring Boot 4 Migration](./plans/spring-boot-4-migration.md)** - 🔄 SB 4.0.7 live (#797); 13.4, 13.5 open; no PRD file, the plan is the source
+- **[Epic 14: Event Detail Page — Lifecycle-Aware Redesign](./prd/epic-14-event-detail-redesign.md)** - ✅ **COMPLETE** (#788)
+- **[Epic 15: Post-Event #2 Hardening](./prd/epic-15-post-event-2-hardening.md)** - 🔄 **IN PROGRESS**
+- **[Epic 16: Mail Center](./prd/epic-16-mail-center.md)** - 🔄 16.0–16.11 live; 16.8c gated; 16.12, 16.13 backlog
 
 Each epic document contains:
 - Detailed user stories with architecture alignment
@@ -406,7 +476,7 @@ Each epic document contains:
 
 **Epic 5 Success (Enhanced Organizer Workflows - Week 35)** - ✅ **ACHIEVED**
 - ✅ Event creation to publication in <30 minutes
-- ✅ 9-state event workflow operational with parallel speaker coordination and configurable task management
+- ✅ Event workflow operational (9 states at the time, 8 since V82) with parallel speaker coordination and configurable task management
 - ✅ Progressive publishing engine with automated content updates (30/14 day auto-publish)
 - ✅ Topic selection with duplicate detection
 - ✅ Automated deadline tracking and escalation via task management system
@@ -434,7 +504,7 @@ Each epic document contains:
 
 ### Phase 3: Enhanced Experiences
 
-**Epic 7 Success Criteria (Attendee Experience — Right-Sized Contribution & Touchpoints)** - 📋 **READY FOR STORY DETAILING**
+**Epic 7 Success Criteria (Attendee Experience — Right-Sized Contribution & Touchpoints)** - ✅ **DELIVERED** (Stories 7.1–7.7; the criteria below are the original targets, not measured results)
 - Attendees can suggest topics into the existing topic pool and self-nominate as speakers (Contribution Loop adoption per event cycle > 0)
 - At least one self-nominated speaker promoted to READY and presenting within the first 3 event cycles
 - Event-triggered "slides are online" email measurably lifts post-event archive/session visits
@@ -442,10 +512,10 @@ Each epic document contains:
 - ≥ 1 frozen post-event Q&A thread attached per session, enriching the archive
 - Guardrail compliance: no feature alters the physical event character; organizer recurring effort unchanged
 
-**Epic 8 Success Criteria (Partner Coordination)** - 🚧 **IN PROGRESS**
+**Epic 8 Success Criteria (Partner Coordination)** - ✅ **COMPLETE** (2026-02-22)
 - Partners can view attendance table (company vs total per event) with Excel export
 - All partners can suggest topics and cast simple toggle votes; organizer can set status
-- Organizer can send ICS calendar invite (RFC 5545) to all partner contacts via SES
+- Organizer can send ICS calendar invite (RFC 5545) to partner contacts via SES, one mail per recipient since #1180
 - Partner meeting records linked to BATbern events with agenda and post-meeting notes
 - Dashboard load P95 < 5s; all role-based access rules enforced and integration-tested
 
@@ -454,7 +524,7 @@ Each epic document contains:
 **Phase 1 Achievements (Epics 1-5):**
 - ✅ Successful foundation of 20+ years of event content migration tooling
 - ✅ Platform adopted by all 4 stakeholder groups (organizers, speakers, partners, attendees)
-- ✅ Measurable improvement in event planning efficiency via 9-state workflow
+- ✅ Measurable improvement in event planning efficiency via the event workflow (now 8 states)
 - ✅ Enhanced organizer productivity with task management and auto-publishing
 - ✅ Increased community participation through public website and registration
 - ✅ Production-ready platform ready for launch
@@ -467,15 +537,18 @@ Each epic document contains:
 - ✅ Hybrid workflow supporting both self-service and manual organizer approaches
 - ✅ Speaker dashboard with upcoming/past events, material progress tracking, and deadline management (WCAG 2.1 AA compliant, 98/100 quality score)
 
-**Phase 3 Enhancements (Deferred):**
-- Enhanced attendee experience with PWA and offline access
-- Partner analytics dashboards and coordination tools
-- Advanced speaker dashboard with performance metrics
+**Phase 3 Enhancements:**
+- ✅ Partner analytics dashboards and coordination tools (Epic 8, 2026-02-22)
+- ✅ Attendee contribution and touchpoints (Epic 7)
+- Not built: PWA offline access for attendees (see FR15 note), advanced speaker dashboard with performance metrics
 
 ## Next Steps
 
-1. **Architecture Review**: Finalize technical approach with architect
-2. **Sprint 0 Planning**: Setup development environment and project structure
-3. **Team Formation**: Assemble development team with Java/Spring Boot and React expertise
-4. **Stakeholder Alignment**: Validate approach with organizers, key speakers, and partners
-5. **MVP Planning**: Detailed story breakdown and sprint planning for Epic 1
+Open work as of 2026-11-04 (source: `_bmad-output/implementation-artifacts/sprint-status.yaml`):
+
+1. **Owner decisions (#1210)**: strike, defer or rewrite FR7, FR14, FR15, FR18, FR20 and §4.2
+2. **Epic 13**: 13.4 Jackson 3 flag flip, 13.5 unpin BOM-managed versions
+3. **Epic 15**: 15.1 P2 (watch off WebSockets) and P3 (WebSocket teardown), 15.4, 15.8
+4. **Epic 16**: 16.8c (after one release, owner go), 16.12, 16.13
+5. **Epic 12**: Story 12.10 (Apple/generic OIDC) after deferred-work cluster A
+6. **Epic 3**: production data import

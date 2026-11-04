@@ -1,6 +1,6 @@
 # Epic 10: Additional Stories
 
-**Status:** 🔨 **IN PROGRESS** — Stories 10.1–10.4 in sprint (2026-02-24). Stories 10.19–10.25 added (2026-03-02). Story 10.26 added (2026-03-11).
+**Status:** ✅ **COMPLETE** (sprint-status: epic-10 done) — all stories done except 10.6, 10.13, 10.15 (cancelled) and 10.24, 10.25 (deferred). History: Stories 10.1–10.4 in sprint 2026-02-24; 10.19–10.25 added 2026-03-02; 10.26 added 2026-03-11; 10.27–10.32 added later (10.27 and 10.28 live only in their story files). Story 10.6 (migrate system templates to layout) was cancelled and has no section here.
 
 **Epic Goal**: Consolidate scattered admin configuration and tooling into coherent, discoverable interfaces. These are standalone improvements that don't belong to any prior epic's domain.
 
@@ -38,7 +38,7 @@
 ### Story 10.1: Event Management Administration Page (3 tabs — frontend only)
 
 **Story file**: `docs/stories/archived/epic-10/10-1-event-management-administration-page.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 
 **User Story:**
 As an **organizer**, I want a single Event Management Administration page accessible from the user menu, so that I can manage event types, import data, and task templates in one organized place instead of hunting across different pages.
@@ -87,7 +87,7 @@ public/locales/de/common.json + en/common.json      — menu.administration key
 ### Story 10.2: Email Template Management
 
 **Story file**: `docs/stories/archived/epic-10/10-2-email-template-management.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.1 must be complete
 
 **User Story:**
@@ -223,7 +223,7 @@ services/event-management-service/.../repository/EventTaskRepository.java — fi
 **Story file**: `_bmad-output/implementation-artifacts/10-4-blob-topic-selector.md`
 **Spec**: `_bmad-output/implementation-artifacts/blob-topic-selector-spec.md`
 **Brainstorm**: `_bmad-output/brainstorming/brainstorming-session-2026-02-24.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (independent of 10.1–10.3)
 
 **User Story:**
@@ -319,7 +319,7 @@ docs/api/events.openapi.yml                         — topic-session-data + top
 
 **Story file**: `_bmad-output/implementation-artifacts/10-5-analytics-dashboard.md`
 **Brainstorm**: `_bmad-output/brainstorming/brainstorming-session-2026-02-25.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (independent — no backend changes conflict with other stories)
 
 **User Story:**
@@ -408,7 +408,7 @@ public/locales/en/organizer.json + de/organizer.json     — analytics.* keys
 ### Story 10.7: Newsletter Subscription & Sending
 
 **Story file**: `_bmad-output/implementation-artifacts/10-7-newsletter-subscription-and-sending.md`
-**Status**: done
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisites**: Story 10.2 (Email Template Management — provides `EmailTemplateService`, `EmailTemplateSeedService`, `NEWSLETTER` category, `batbern-default` layout)
 
 **User Story:**
@@ -513,7 +513,7 @@ See `docs/plans/newsletter-robustness-v87-plan.md` for full details.
 ### Story 10.8a: Moderator Presentation Page — Functional
 
 **Story file**: `_bmad-output/implementation-artifacts/10-8a-moderator-presentation-page.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (independent — uses existing public event APIs)
 
 **User Story:**
@@ -562,7 +562,7 @@ Single-row `presentation_settings` table — Flyway **V10** in company-user-mana
 ### Story 10.8b: Moderator Presentation Page — Animations
 
 **Story file**: `_bmad-output/implementation-artifacts/10-8b-moderator-presentation-page-animations.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.8a complete and deployed
 
 **User Story:**
@@ -591,7 +591,7 @@ As an **event moderator**, I want the presentation page to have polished, fluid 
 
 **Story file**: `_bmad-output/implementation-artifacts/10-9-i18n-cleanup.md`
 **Plan**: `docs/plans/i18n-cleanup-plan.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (independent — frontend-only, no backend or DB changes)
 
 **User Story:**
@@ -667,7 +667,7 @@ web-frontend/e2e/**/*.spec.ts               — E2E refactors (Phase 3C)
 
 ### Story 10.10: Registration Status Indicator for Logged-in Users
 
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (independent — uses existing registration + auth APIs)
 
 **User Story:**
@@ -740,7 +740,7 @@ public/locales/de/registration.json + en/registration.json — registrationStatu
 
 ### Story 10.11: Venue Capacity Enforcement & Waitlist Management
 
-**Status**: done
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.10 (registration status indicator) recommended first for UX coherence; technically independent
 
 **User Story:**
@@ -836,7 +836,7 @@ public/locales/de/registration.json + en/registration.json       — waitlist.* 
 
 ### Story 10.12: Self-Service Deregistration
 
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.11 (waitlist promotion must fire on cancellation)
 
 **User Story:**
@@ -944,7 +944,7 @@ public/locales/de/registration.json + en/registration.json   — deregistration.
 
 ### Story 10.13: Registration & Portal Email Templates — Editable in Admin
 
-**Status**: ready-for-dev
+**Status**: ❌ cancelled (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.2 (Email Template Management — provides DB storage, seed service, admin UI)
 
 **User Story:**
@@ -1007,7 +1007,7 @@ public/locales/de/organizer.json + en/organizer.json                          �
 
 ### Story 10.14: Newsletter Sending with Template Selection
 
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.2 (email template management), Story 10.7 (newsletter sending infrastructure)
 
 **User Story:**
@@ -1060,7 +1060,7 @@ public/locales/de/organizer.json + en/organizer.json                       — n
 
 ### Story 10.15: Newsletter Subscription Integrity & Language Fix
 
-**Status**: ready-for-dev
+**Status**: ❌ cancelled (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.7 (newsletter subscriber tables + service)
 
 **User Story:**
@@ -1134,7 +1134,7 @@ web-frontend/src/components/public/RegistrationWizard.tsx                  — e
 
 ### Story 10.16: AI-Assisted Event Content Creation
 
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.2 (email template management introduces OpenAI dependency pattern)
 
 **User Story:**
@@ -1237,7 +1237,7 @@ public/locales/de/organizer.json + en/organizer.json + 8 others          — aiA
 
 ### Story 10.17: Email Reply-based Unsubscribe & Deregistration (Inbound Email Handler)
 
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.12 (deregistration service), Story 10.7 (newsletter unsubscribe)
 
 **User Story:**
@@ -1305,7 +1305,7 @@ services/event-management-service/.../service/DeregistrationService.java       �
 
 ### Story 10.18: Event Archival Task & Notification Cleanup
 
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (bug fix / data cleanup — independent)
 
 **User Story:**
@@ -1371,7 +1371,7 @@ services/event-management-service/.../repository/NotificationRepository.java (if
 
 ### Story 10.19: Remove Organizer Email from Public Presenter & About Pages
 
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (pure UI cleanup — independent)
 
 **User Story:**
@@ -1412,7 +1412,7 @@ web-frontend/src/pages/PresentationPage.tsx                     — remove any e
 
 ### Story 10.20: Legacy BAT Format Data Export & Import (Admin Tool)
 
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.1 (Admin page must exist to add new tab)
 
 **User Story:**
@@ -1489,7 +1489,7 @@ public/locales/de/common.json + en/common.json          — admin.exportImport.*
 
 ### Story 10.21: Event Photos Gallery
 
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None — `EventPhotosTab` is added to `EventPage.tsx` (organizer event detail), not to the Admin page. Independent of Story 10.1. *(IR fix 2026-03-02)*
 
 **User Story:**
@@ -1567,7 +1567,7 @@ public/locales/de/events.json + en/events.json                      — photos.*
 
 ### Story 10.22: Event Teaser Images on Moderator Presentation Page
 
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: Story 10.8a (PresentationPage must exist)
 **Updated**: 2026-03-03 — expanded from single-image to multi-image design (IR review)
 
@@ -1638,7 +1638,7 @@ web-frontend/src/types/generated/events-api.types.ts                   — regen
 
 ### Story 10.23: Event Description Section on Public Homepage
 
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisite**: None (field already exists in DB and API)
 
 **User Story:**
@@ -1687,7 +1687,7 @@ public/locales/de/events.json + en/events.json                  — description.
 
 ### Story 10.24: AWS Cognito User Provisioning from User Management
 
-**Status**: ready-for-dev
+**Status**: ⏸ deferred (sprint-status 2026-11-04)
 **Prerequisite**: Epic 9 Story 9.1 (Cognito integration patterns established)
 
 **User Story:**
@@ -1823,7 +1823,7 @@ public/locales/de/userManagement.json + en/userManagement.json
 
 ### Story 10.25: Partner Meeting iCal Auto-creation & Year-End Reminders
 
-**Status**: ready-for-dev
+**Status**: ⏸ deferred (sprint-status 2026-11-04)
 **Prerequisite**: Story 8.3 (all prerequisites below verified ✅); Story 10.2 (DB-backed email templates with admin edit UI)
 **Note (IR 2026-03-02)**: ShedLock is already configured in `event-management-service` (`V31__Add_shedlock_table.sql` + `shedlock-spring:5.10.0` dependency) — no setup needed. Transitive block: Story 10.2 depends on Story 10.1; if 10.1 is delayed, 10.25 is also delayed.
 
@@ -1942,8 +1942,10 @@ services/partner-coordination-service/.../repository/PartnerMeetingRepository.ja
 ### Story 10.26: SES Email Forwarding & Role-Based Distribution Lists
 
 **Story file**: `_bmad-output/implementation-artifacts/10-26-ses-email-forwarding-distribution-lists.md`
-**Status**: draft
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisites**: Story 10.17 (InboundEmailStack, SES receipt rules)
+
+> **Superseded in part (2026-10-27, #1137):** alias forwarding moved into event-management-service and the forwarder Lambda (`sender-auth.ts`, `address-resolver.ts`) was removed. The Lambda design below is historical; the current design is in `docs/architecture/06-backend-architecture.md` → "Email Forwarding (in EMS)" and Epic 16.
 
 **User Story:**
 As an **organizer**, I want `ok@batbern.ch`, `info@batbern.ch`, `events@batbern.ch`, `partner@batbern.ch`, `support@batbern.ch`, and `batbern{N}@batbern.ch` to automatically forward emails to the right recipients based on user roles and event registrations, so that we have zero-cost distribution lists without needing any mailbox provider.
@@ -1995,10 +1997,28 @@ web-frontend/src/services/adminSettingsService.ts                               
 
 ---
 
+### Story 10.27: iCal RSVP Tracking for Partner Meeting Invites
+
+**Story file**: `_bmad-output/implementation-artifacts/10-27-ical-rsvp-tracking-partner-meetings.md`
+**Status**: ✅ done (sprint-status 2026-11-04)
+
+Short pointer: the full story (scope, ACs, dev notes) lives in the story file only.
+
+---
+
+### Story 10.28: Newsletter Subscriber Management Page
+
+**Story file**: `_bmad-output/implementation-artifacts/10-28-newsletter-subscriber-management.md`
+**Status**: ✅ done (sprint-status 2026-11-04)
+
+Short pointer: an organizer admin page listing newsletter subscribers (paginated, searchable, sortable) with unsubscribe, re-subscribe and delete. Full story in the story file.
+
+---
+
 ### Story 10.29: SES Bounce Processing & Newsletter List Hygiene
 
 **Story file**: `_bmad-output/implementation-artifacts/10-29-ses-bounce-processing-newsletter-list-hygiene.md`
-**Status**: draft
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisites**: Story 10.7 (newsletter sending), Story 10.28 (subscriber management page)
 
 **User Story:**
@@ -2055,7 +2075,7 @@ web-frontend/src/components/organizer/NewsletterSubscribers/                   �
 ### Story 10.30: Speaker Drawer Redesign — Tabbed Layout, Organizer Assignment, Mobile UX
 
 **Story file**: `_bmad-output/implementation-artifacts/10-30-speaker-drawer-redesign.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 
 **User Story:**
 As an **organizer**, I want the speaker detail drawer to be organized into tabs (Overview, Details, Activity) with the ability to edit the assigned organizer inline, so that I can efficiently manage speaker outreach without excessive scrolling, and the drawer works properly on mobile devices.
@@ -2124,7 +2144,7 @@ web-frontend/src/components/organizer/SpeakerStatus/QualityReviewDrawer.tsx — 
 ### Story 10.31: Bot Protection — Cloudflare Turnstile for Newsletter & Event Registration
 
 **Story file**: `_bmad-output/implementation-artifacts/10-31-bot-protection-turnstile.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Source**: [GH#582](../../issues/582)
 
 **User Story:**
@@ -2249,8 +2269,10 @@ web-frontend/.../Registration/__tests__/RegistrationWizard.test.tsx — verify h
 ### Story 10.32: Additional Email Addresses per User Profile
 
 **Story file**: `_bmad-output/implementation-artifacts/10-32-additional-user-emails.md`
-**Status**: ready-for-dev
+**Status**: ✅ done (sprint-status 2026-11-04)
 **Prerequisites**: Story 10.26 (SES email forwarding + sender-auth Lambda)
+
+> **Superseded in part (2026-10-27, #1137):** alias forwarding moved into event-management-service and the forwarder Lambda (`sender-auth.ts`, `address-resolver.ts`) was removed. The "Email Forwarder Lambda (Story 10.26)" scope item below is historical; additional emails are now resolved in EMS; the current design is in `docs/architecture/06-backend-architecture.md` → "Email Forwarding (in EMS)" and Epic 16.
 **Trigger**: 2026-05-20 incident — Nissim's iPhone-Mail forward from legacy `info@berner-architekten-treffen.ch` to `ok@batbern.ch` was silently dropped because the shared mailbox is not in `role_assignments` for `ORGANIZER`.
 
 **User Story:**

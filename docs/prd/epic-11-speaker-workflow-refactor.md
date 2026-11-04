@@ -12,6 +12,8 @@ relatedADRs: [ADR-003, ADR-004, ADR-007, ADR-009]
 
 # Epic 11: Unified Speaker Workflow Refactor
 
+**Status:** ✅ **COMPLETE** (sprint-status: epic-11 done; Phase F magic-link teardown 11.F.1 completed 2026-05-25). Leftovers tracked separately: 11.E.5 and 11.G.1 ready-for-dev, 11.F.2 backlog.
+
 ## Overview
 
 This document decomposes the speaker-workflow refactor (per `docs/plans/speaker-workflow-refactor.md` and `ADR-009`) into implementable stories. The refactor unifies two parallel speaker-coordination flows (organizer-led, speaker-led) onto a single state machine, replaces three magic-link auth mechanisms with standard Cognito + forced password change, and deletes the redundant `Speaker` entity in favour of `User + SPEAKER role` per ADR-004.

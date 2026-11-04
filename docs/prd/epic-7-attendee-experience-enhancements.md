@@ -8,7 +8,7 @@ inputDocuments:
 
 # Epic 7: Attendee Experience — Right-Sized Contribution & Touchpoints
 
-**Status:** 📋 **READY FOR STORY DETAILING** — rewritten 2026-06-09 (was: 📦 DEFERRED)
+**Status:** ✅ **COMPLETE** — Stories 7.1–7.7 done (sprint-status 2026-06-21); 7.1–7.6 shipped in #776 (2026-06-12) with UX fixes in #777, #781–#783; 7.7 in #785 (2026-06-13). Rewritten 2026-06-09 (was: 📦 DEFERRED)
 **Last Updated:** 2026-06-09
 
 **Right-sized (2026-06-09):** Epic 7 was originally scoped as "Attendee Experience Enhancements" — personal engagement dashboards, content bookmarking, granular notification preferences, and a mobile PWA with offline capabilities. A 2026-02 brainstorming round had already flagged that vision as far too ambitious for this community (a recommendation engine for 9–18 sessions/year). The 2026-06-06 brainstorming session ("Attendee experience improvements for a small, low-frequency community") generated 25 ideas; 20 living ideas were published as GitHub issues (`#746–#765`, label `idea-vote`) and the organizer committee voted with 👍 reactions. **This epic is the right-sized replacement: the five ideas that won 3 or 4 votes, each composing onto existing machinery with near-zero recurring organizer effort.** Same precedent as the Epic 8 simplification (QuickSight/MS Graph → a table + an `.ics` file).
@@ -68,6 +68,7 @@ The old over-scoped scope (dashboards / bookmarks / PWA / recommendation engine)
 - **FR10**: After an event, any attendee (anonymous allowed) can send a one-click thank-you, optionally with a short note, to the volunteer organizers — protected by an abuse guard (rate-limit + Turnstile on anonymous submissions).
 - **FR11**: Thank-yous are surfaced as an aggregate counter / appreciation wall. Logged-in attendees are deduped to one thank-you per event; anonymous thank-yous are rate-limited (clap-style increment) to prevent inflation.
 - **FR12**: For a time-boxed window (~2 weeks) after an event, logged-in attendees can post open questions per session and answer others' questions asynchronously.
+  - *As shipped (#777):* the opening trigger is configured **per event** (`QnaOpenTrigger`, organizer Settings): `EVENT_COMPLETED` (default, the afterglow) or `SPEAKERS_PUBLISHED` (opt-in pre-event discussion).
 - **FR13**: When the window closes, the Q&A freezes (read-only) and attaches permanently to that session in the archive.
 - **FR14**: The post-event Q&A is login-gated and is explicitly the *digital afterglow* — it never digitizes or intrudes on the physical apéro.
 
@@ -105,6 +106,8 @@ Give attendees a voice and a return channel via five organizer-voted features th
 | FR8–FR9 | 7.3 | Event-triggered slides-online email (DE+EN), once per event, on materials auto-publish |
 | FR10–FR11 | 7.4 | One-click thank-you to organizers + aggregate appreciation counter |
 | FR12–FR14 | 7.5 | ~2-week per-session post-event Q&A that freezes into the archive |
+| — | 7.6 | Attendee event history dashboard (added 2026-06-11) |
+| FR11 | 7.7 | Curated thank-you notes in the public partner marquee (added 2026-06-13) |
 
 ---
 
@@ -112,8 +115,8 @@ Give attendees a voice and a return channel via five organizer-voted features th
 
 ### Story 7.1: Topics From the Floor
 
-**Story file**: `_bmad-output/implementation-artifacts/7-1-topics-from-the-floor.md` (to be created via `bmad-create-story`)
-**Status**: to-be-created
+**Story file**: `_bmad-output/implementation-artifacts/7-1-topics-from-the-floor.md`
+**Status**: ✅ done (#776)
 **Source idea**: #05 "Topics From the Floor" — 4 votes (GitHub #750)
 **Service**: `partner-coordination-service`
 
@@ -169,8 +172,8 @@ partner-coordination-service
 
 ### Story 7.2: "I Could Speak on That"
 
-**Story file**: `_bmad-output/implementation-artifacts/7-2-i-could-speak-on-that.md` (to be created via `bmad-create-story`)
-**Status**: to-be-created
+**Story file**: `_bmad-output/implementation-artifacts/7-2-i-could-speak-on-that.md`
+**Status**: ✅ done (#776)
 **Source idea**: #06 "I Could Speak on That" — 4 votes (GitHub #751)
 **Service**: `event-management-service` (unified speaker workflow per Epic 11 / ADR-009 — NOT speaker-coordination-service)
 **Depends on**: 7.1 (extends the same login-gated contribution surface) — buildable independently if 7.1's surface is stubbed.
@@ -235,8 +238,8 @@ event-management-service
 
 ### Story 7.3: "The Slides Are Online" Mail
 
-**Story file**: `_bmad-output/implementation-artifacts/7-3-slides-online-mail.md` (to be created via `bmad-create-story`)
-**Status**: to-be-created
+**Story file**: `_bmad-output/implementation-artifacts/7-3-slides-online-mail.md`
+**Status**: ✅ done (#776)
 **Source idea**: #07 "The Slides Are Online" Mail — 3 votes (GitHub #752)
 **Service**: `event-management-service` + AWS SES
 
@@ -290,8 +293,8 @@ Organizer opens task → POST /api/v1/events/{eventCode}/newsletter/send
 
 ### Story 7.4: Thank-the-Organizers
 
-**Story file**: `_bmad-output/implementation-artifacts/7-4-thank-the-organizers.md` (to be created via `bmad-create-story`)
-**Status**: to-be-created
+**Story file**: `_bmad-output/implementation-artifacts/7-4-thank-the-organizers.md`
+**Status**: ✅ done (#776)
 **Source idea**: #02 Thank-the-Organizers Button — 3 votes (GitHub #747)
 **Service**: `event-management-service`
 
@@ -348,8 +351,8 @@ event-management-service
 
 ### Story 7.5: The Apéro Continues
 
-**Story file**: `_bmad-output/implementation-artifacts/7-5-the-apero-continues.md` (to be created via `bmad-create-story`)
-**Status**: to-be-created
+**Story file**: `_bmad-output/implementation-artifacts/7-5-the-apero-continues.md`
+**Status**: ✅ done (#776)
 **Source idea**: #01 The Apéro Continues — 3 votes (GitHub #746)
 **Service**: `event-management-service` → archive
 
@@ -414,6 +417,24 @@ event-management-service
 **Given** the scheduled close job and a test context
 **When** the job runs under test
 **Then** the `LockProvider` is mocked at class scope so committed lock rows do not leak across tests.
+
+---
+
+### Story 7.6: Attendee Event History Dashboard
+
+**Story file**: `_bmad-output/implementation-artifacts/7-6-attendee-event-history.md`
+**Status**: ✅ done (#776)
+**Source**: Nissim, 2026-06-11 (added after the vote)
+
+A logged-in attendee gets `/attendee/dashboard` listing every event they registered for (non-cancelled), split into upcoming and past; each card links to the public event page. Reached via a "My Events" top-nav link; the speaker dashboard keeps precedence for users who are both. Backend: `GET /api/v1/attendee-portal/dashboard` in event-management-service. Replaces the "your dashboard will soon arrive" placeholder.
+
+### Story 7.7: Curated Thank-You Notes in the Partner Marquee
+
+**Story file**: `_bmad-output/implementation-artifacts/7-7-curated-thank-you-marquee.md`
+**Status**: ✅ done (#785)
+**Source**: FR11 "appreciation wall"; decided with PM 2026-06-13
+
+Organizers feature selected logged-in thank-you notes (anonymous notes are not eligible); the public homepage marquee interleaves them with partner cards, showing the note, the author's first name and company logo (respecting the show-company setting). Public endpoint `GET /api/v1/thanks/featured` (max 9, random); organizer appreciation panel with a feature toggle.
 
 ---
 
@@ -482,7 +503,7 @@ Also deliberately rejected in the 2026-06-06 session (not cut from old scope, bu
 | #02 Thank-the-Organizers | #747 | 3 | 7.4 |
 | #01 The Apéro Continues | #746 | 3 | 7.5 |
 
-Below-bar ideas (≤ 2 votes) are not in this epic and remain available for a future round: #04 Open Question at Registration (2), #16 One-Tap Forwarding Kit (2), #19 LinkedIn-Native (2), #20 Bring-Your-Junior (2), #23 Curation Agent (2), #15 Register-on-Topic (1), and the 0-vote ideas (#03, #08, #11, #12, #13, #14, #17, #21).
+Below-bar ideas (≤ 2 votes) are not in this epic: #04 Open Question at Registration (2), #16 One-Tap Forwarding Kit (2), #19 LinkedIn-Native (2), #20 Bring-Your-Junior (2), #23 Curation Agent (2), #15 Register-on-Topic (1), and the 0-vote ideas (#03, #08, #11, #12, #13, #14, #17, #21). As of 2026-11-04 their GitHub issues are closed without being selected, except #761 (idea 19, LinkedIn-Native; see Story 15.8) and #765 (idea 23, Curation Agent), which are still open.
 
 ---
 
