@@ -93,9 +93,9 @@ public class UserMergeService {
     @Transactional
     public Result merge(String targetUsername, String sourceUsername, String performedBy, String trigger) {
         User target = userRepository.findByUsernameForUpdate(targetUsername)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + targetUsername));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + targetUsername, true));
         User source = userRepository.findByUsernameForUpdate(sourceUsername)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + sourceUsername));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + sourceUsername, true));
         List<String> reasons = profileReasons(target, source);
         if (!reasons.isEmpty()) {
             throw new MergeNotAllowedException(reasons);
@@ -191,7 +191,7 @@ public class UserMergeService {
 
     private User load(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username, true));
     }
 
     /** 409 MERGE_NOT_ALLOWED. */
