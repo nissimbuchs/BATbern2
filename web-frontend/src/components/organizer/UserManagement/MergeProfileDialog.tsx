@@ -94,17 +94,25 @@ export const MergeProfileDialog: React.FC<MergeProfileDialogProps> = ({
   const target = swapped && other ? other.id : username;
   const source = swapped ? username : other?.id;
 
+  const [merged, setMerged] = useState(false);
+
   const preview = useQuery({
     queryKey: ['users', 'merge-preview', target, source],
     queryFn: () => getUserMergePreview(target, source as string),
-    enabled: open && !!source && source !== target,
+    // not after the merge: the source profile is gone, a refetch would only produce a 404
+    enabled: open && !!source && source !== target && !merged,
     retry: false,
   });
 
   const merge = useMutation({
     mutationFn: () => mergeUserProfile(target, source as string),
     onSuccess: async () => {
-      await queryClient.invalidateQueries({ queryKey: ['users'] });
+      setMerged(true);
+      // everything about users, except the preview of the profile that no longer exists
+      await queryClient.invalidateQueries({
+        queryKey: ['users'],
+        predicate: (q) => q.queryKey[1] !== 'merge-preview',
+      });
       if (target !== username) {
         navigate(`/organizer/users/${encodeURIComponent(target)}`);
       }
@@ -114,6 +122,7 @@ export const MergeProfileDialog: React.FC<MergeProfileDialogProps> = ({
   const handleClose = () => {
     setOther(null);
     setSwapped(false);
+    setMerged(false);
     merge.reset();
     onClose();
   };

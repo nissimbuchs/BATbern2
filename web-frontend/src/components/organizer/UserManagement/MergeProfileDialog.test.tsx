@@ -106,6 +106,9 @@ describe('MergeProfileDialog (#1183 C)', () => {
     expect(await screen.findByTestId('merge-success')).toBeInTheDocument();
     expect(api.mergeUserProfile).toHaveBeenCalledWith('anna.muster.2', 'anna.muster');
     expect(navigate).not.toHaveBeenCalled();
+    // the merged-away profile no longer exists: its preview must not be fetched again (404 in prod)
+    await new Promise((r) => setTimeout(r, 50));
+    expect(api.getUserMergePreview).toHaveBeenCalledTimes(1);
   });
 
   it('should_disableConfirm_and_offerSwap_when_pickedProfileIsTheOneWithoutLogin', async () => {
