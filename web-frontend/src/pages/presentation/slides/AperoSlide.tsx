@@ -29,14 +29,14 @@ export function AperoSlide(): JSX.Element {
       {/* BATbern spinner (AC #14) */}
       <div
         className={animStyles.loaderWrap}
-        style={{ width: '9.375vw', height: '9.375vw', marginBottom: '2.083vw' }}
+        style={{ width: '12vw', height: '12vw', marginBottom: '2.5vw' }}
       >
         <BATbernLoader size={180} speed="slow" />
       </div>
 
       <div
         style={{
-          fontSize: '5vw',
+          fontSize: '9vw',
           fontWeight: 800,
           color: '#4f9cf9',
           marginBottom: '1.25vw',
@@ -48,8 +48,8 @@ export function AperoSlide(): JSX.Element {
 
       <div
         style={{
-          fontSize: '1.667vw',
-          color: 'rgba(255,255,255,0.7)',
+          fontSize: '3.2vw',
+          color: '#ffffff',
         }}
       >
         Vielen Dank für euren Besuch!

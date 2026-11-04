@@ -43,6 +43,7 @@ Frozen Q&A attached to the session's public archive page — permanent
 
 - **Posting is login-gated.** An anonymous attempt to post a question or answer is rejected with **401**.
 - **Reading is public.** Browsing the frozen Q&A in the archive needs no login.
+- **Visitors who are not logged in are invited to join.** On an open session without questions yet, the Q&A line under the session reads "Anmelden, um eine Frage zu stellen oder mitzudiskutieren" and links to the login, which brings them back to the same page. Once there are questions, they read the thread and see the login hint below it.
 
 ## Moderation
 

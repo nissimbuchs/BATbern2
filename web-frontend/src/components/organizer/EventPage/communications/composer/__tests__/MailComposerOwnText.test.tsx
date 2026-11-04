@@ -495,11 +495,15 @@ describe('MailComposer own text: starting point (AC7) and save as template (AC8)
     ['REGISTRANTS', 'REGISTRANT_NOTICE'],
     ['NEWSLETTER', 'NEWSLETTER'],
     ['VENUE', 'VENUE_COORDINATION'],
+    ['PARTNERS', 'PARTNER'],
   ])(
     '%s: saves own text as a new %s template with the BATbern layout',
     async (audience, category) => {
       renderComposer(audience);
-      await waitForPreview();
+      // partners open on the meeting invite, which has no preview frame
+      await (audience === 'PARTNERS'
+        ? screen.findByTestId('partner-meetings-compose-stub')
+        : waitForPreview());
       fireEvent.click(screen.getByTestId('composer-source-own'));
       expect(screen.getByTestId('composer-save-template-button')).toBeDisabled();
       await writeOwnText('Room change', '<p>Room 2</p>');
@@ -507,9 +511,14 @@ describe('MailComposer own text: starting point (AC7) and save as template (AC8)
       fireEvent.click(screen.getByTestId('composer-save-template-button'));
       const dialog = await screen.findByTestId('composer-save-dialog');
       const key = within(dialog).getByTestId('composer-save-key');
-      fireEvent.change(key, { target: { value: 'Room Change' } });
+      fireEvent.change(key, { target: { value: '!!!' } });
       expect(within(dialog).getByTestId('composer-save-confirm')).toBeDisabled();
-      fireEvent.change(key, { target: { value: 'room-change' } });
+      // a name as people type it; the key is derived and shown (owner 2026-11-04: "Room Change"
+      // used to leave Save disabled, and the template was silently never stored)
+      fireEvent.change(key, { target: { value: 'Room Change' } });
+      expect(within(dialog).getByTestId('composer-save-key-preview')).toHaveTextContent(
+        'room-change'
+      );
       fireEvent.click(within(dialog).getByTestId('composer-save-locale-en'));
       fireEvent.click(within(dialog).getByTestId('composer-save-confirm'));
 

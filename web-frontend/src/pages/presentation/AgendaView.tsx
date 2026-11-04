@@ -12,6 +12,7 @@ import { type JSX } from 'react';
 import { format } from 'date-fns';
 import type { PresentationSession } from '@/services/presentationService';
 import styles from './AgendaView.module.css';
+import { centerFontSize } from './agendaFontSize';
 
 const SPEAKER_SESSION_TYPES = new Set(['keynote', 'presentation', 'workshop', 'panel_discussion']);
 const BREAK_SESSION_TYPES = new Set(['break', 'lunch', 'networking']);
@@ -54,7 +55,10 @@ export function AgendaView({
     .sort((a, b) => new Date(a.startTime!).getTime() - new Date(b.startTime!).getTime());
 
   return (
-    <div className={layout === 'center' ? styles.center : styles.sidebar}>
+    <div
+      className={layout === 'center' ? styles.center : styles.sidebar}
+      style={layout === 'center' ? { fontSize: centerFontSize(visible.length) } : undefined}
+    >
       {/* Heading lives inside the center-layout view so it is laid out with the
           list and centered as one group — always correctly spaced above the
           sessions at any session count. Omitted in sidebar layout so it does

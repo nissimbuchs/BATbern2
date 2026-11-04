@@ -84,14 +84,14 @@ export function BreakSlide({ firstPostBreakSession }: BreakSlideProps): JSX.Elem
       {/* BATbern spinner (AC #11) */}
       <div
         className={animStyles.loaderWrap}
-        style={{ width: '4.167vw', height: '4.167vw', marginBottom: '1.25vw' }}
+        style={{ width: '7vw', height: '7vw', marginBottom: '1.5vw' }}
       >
         <BATbernLoader size={80} speed="slow" />
       </div>
 
       <h1
         style={{
-          fontSize: '5vw',
+          fontSize: '10vw',
           fontWeight: 800,
           color: '#4f9cf9',
           margin: 0,
@@ -104,8 +104,8 @@ export function BreakSlide({ firstPostBreakSession }: BreakSlideProps): JSX.Elem
       {resumeTime && (
         <p
           style={{
-            fontSize: '2.083vw',
-            color: 'rgba(255,255,255,0.8)',
+            fontSize: '4vw',
+            color: '#ffffff',
             marginTop: '1.667vw',
             fontWeight: 400,
           }}
@@ -126,27 +126,18 @@ export function BreakSlide({ firstPostBreakSession }: BreakSlideProps): JSX.Elem
       >
         {/* Steam lines */}
         <div style={{ display: 'flex', gap: '0.417vw', height: '1.25vw', alignItems: 'flex-end' }}>
-          <span
-            className={animStyles.steamLine}
-            style={{ fontSize: '0.833vw', color: 'rgba(255,255,255,0.4)' }}
-          >
+          <span className={animStyles.steamLine} style={{ fontSize: '0.833vw', color: '#ffffff' }}>
             〜
           </span>
-          <span
-            className={animStyles.steamLine}
-            style={{ fontSize: '0.833vw', color: 'rgba(255,255,255,0.4)' }}
-          >
+          <span className={animStyles.steamLine} style={{ fontSize: '0.833vw', color: '#ffffff' }}>
             〜
           </span>
-          <span
-            className={animStyles.steamLine}
-            style={{ fontSize: '0.833vw', color: 'rgba(255,255,255,0.4)' }}
-          >
+          <span className={animStyles.steamLine} style={{ fontSize: '0.833vw', color: '#ffffff' }}>
             〜
           </span>
         </div>
         {/* Coffee cup */}
-        <div style={{ fontSize: '6.667vw' }}>☕</div>
+        <div style={{ fontSize: '9vw' }}>☕</div>
       </div>
     </div>
   );

@@ -545,13 +545,14 @@
         "saveTemplate": {
           "button": "Opslaan als sjabloon",
           "title": "Opslaan als sjabloon",
-          "key": "Sjabloonsleutel",
-          "keyHelp": "Kleine letters, cijfers en koppeltekens, bijv. zaalwissel",
-          "keyInvalid": "Alleen kleine letters, cijfers en enkele koppeltekens, bijv. zaalwissel",
+          "key": "Naam van het sjabloon",
+          "keyHelp": "Bijvoorbeeld: Zaalwissel",
+          "keyInvalid": "Voer ten minste één letter of cijfer in.",
           "save": "Opslaan",
-          "duplicate": "Er bestaat al een sjabloon met deze sleutel in deze taal. Kies een andere sleutel.",
+          "duplicate": "Er bestaat al een sjabloon met deze naam in deze taal. Kies een andere naam.",
           "failed": "Het sjabloon kon niet worden opgeslagen. Probeer het opnieuw.",
-          "saved": "Opgeslagen als sjabloon {{key}}."
+          "saved": "Opgeslagen als sjabloon {{key}}.",
+          "keyPreview": "Opgeslagen als {{key}}"
         },
         "variables": {
           "eventTitle": "Titel van het evenement",
@@ -1370,7 +1371,8 @@
     "questionPlaceholder": "Stel een vraag over deze sessie…",
     "askQuestion": "Stel een vraag",
     "viewThread": "Vragen bekijken",
-    "loginToPost": "Log in om vragen te stellen of te beantwoorden."
+    "loginToPost": "Log in om vragen te stellen of te beantwoorden.",
+    "loginToStart": "Log in om een vraag te stellen of mee te discussiëren"
   },
   "attendee": {
     "dashboard": {

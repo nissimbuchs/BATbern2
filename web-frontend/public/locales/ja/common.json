@@ -654,11 +654,15 @@
     "validation": {
       "htmlBodyRequired": "HTML本文は必須です。",
       "subjectRequired": "コンテンツテンプレートには件名が必須です。",
-      "templateKeyRequired": "テンプレートキーは必須です。"
+      "templateNameRequired": "テンプレート名は必須です。",
+      "templateNameInvalid": "文字または数字を1つ以上入力してください。"
     },
     "templateKey": "Template Key",
     "locale": "Locale",
-    "previewTitle": "Email Preview"
+    "previewTitle": "Email Preview",
+    "templateName": "テンプレート名",
+    "templateNameHelp": "例: 会場変更",
+    "keyPreview": "保存名"
   },
   "presentation": {
     "errorTitle": "イベントを読み込めませんでした",

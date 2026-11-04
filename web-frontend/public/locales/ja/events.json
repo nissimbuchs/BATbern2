@@ -545,13 +545,14 @@
         "saveTemplate": {
           "button": "テンプレートとして保存",
           "title": "テンプレートとして保存",
-          "key": "テンプレートキー",
-          "keyHelp": "小文字、数字、ハイフン（例: room-change）",
-          "keyInvalid": "小文字、数字、単独のハイフンのみ使用できます（例: room-change）",
+          "key": "テンプレート名",
+          "keyHelp": "例: 会場変更",
+          "keyInvalid": "文字または数字を1つ以上入力してください。",
           "save": "保存",
-          "duplicate": "この言語には同じキーのテンプレートが既にあります。別のキーを選んでください。",
+          "duplicate": "この言語には同じ名前のテンプレートが既にあります。別の名前を選んでください。",
           "failed": "テンプレートを保存できませんでした。もう一度お試しください。",
-          "saved": "テンプレート {{key}} として保存しました。"
+          "saved": "テンプレート {{key}} として保存しました。",
+          "keyPreview": "{{key}} として保存されます"
         },
         "variables": {
           "eventTitle": "イベント名",
@@ -1370,7 +1371,8 @@
     "questionPlaceholder": "このセッションについて質問する…",
     "askQuestion": "質問する",
     "viewThread": "Q&Aを見る",
-    "loginToPost": "ログインすると質問・回答できます。"
+    "loginToPost": "ログインすると質問・回答できます。",
+    "loginToStart": "ログインして質問やディスカッションに参加する"
   },
   "attendee": {
     "dashboard": {

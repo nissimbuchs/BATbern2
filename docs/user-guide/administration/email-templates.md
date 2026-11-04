@@ -102,7 +102,7 @@ Click **Preview** on any content template to see the fully merged result — you
 1. Click **New Template** (top-right of the content templates section)
 2. Choose a category
 3. Select a language (DE or EN)
-4. Enter a template key (used in code to reference the template)
+4. Enter a template name, for example "Partner Info". The page shows the key it is saved under (`partner-info`): lowercase, digits and hyphens, umlauts written as ae/oe/ue
 5. Fill in subject and body
 6. Save
 

@@ -545,13 +545,14 @@
         "saveTemplate": {
           "button": "Tallenna pohjaksi",
           "title": "Tallenna pohjaksi",
-          "key": "Pohjan avain",
-          "keyHelp": "Pienet kirjaimet, numerot ja yhdysmerkit, esim. salin-vaihto",
-          "keyInvalid": "Vain pieniä kirjaimia, numeroita ja yksittäisiä yhdysmerkkejä, esim. salin-vaihto",
+          "key": "Pohjan nimi",
+          "keyHelp": "Esimerkiksi: Salin vaihto",
+          "keyInvalid": "Kirjoita vähintään yksi kirjain tai numero.",
           "save": "Tallenna",
-          "duplicate": "Tällä avaimella on jo pohja tällä kielellä. Valitse toinen avain.",
+          "duplicate": "Tällä nimellä on jo pohja tällä kielellä. Valitse toinen nimi.",
           "failed": "Pohjaa ei voitu tallentaa. Yritä uudelleen.",
-          "saved": "Tallennettu pohjaksi {{key}}."
+          "saved": "Tallennettu pohjaksi {{key}}.",
+          "keyPreview": "Tallennetaan nimellä {{key}}"
         },
         "variables": {
           "eventTitle": "Tapahtuman nimi",
@@ -1370,7 +1371,8 @@
     "questionPlaceholder": "Kysy tästä sessiosta…",
     "askQuestion": "Esitä kysymys",
     "viewThread": "Näytä kysymykset",
-    "loginToPost": "Kirjaudu sisään kysyäksesi tai vastataksesi."
+    "loginToPost": "Kirjaudu sisään kysyäksesi tai vastataksesi.",
+    "loginToStart": "Kirjaudu sisään kysyäksesi tai osallistuaksesi keskusteluun"
   },
   "attendee": {
     "dashboard": {

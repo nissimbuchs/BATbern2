@@ -9,10 +9,13 @@
  *
  * The thread is COLLAPSED by default behind a compact "Ask a question" toggle — discoverable but
  * unobtrusive when shown under many session cards (e.g. pre-event with empty threads).
+ * An anonymous visitor on an open, empty thread gets no toggle (there is nothing to read) but a
+ * login link that brings them back to this page (owner 2026-11-04).
  */
 
 import { useState } from 'react';
-import { ChevronDown } from 'lucide-react';
+import { ChevronDown, LogIn } from 'lucide-react';
+import { Link, useLocation } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { useAuth } from '@/hooks/useAuth/useAuth';
 import { useSessionQna, useAddQnaPost, useRemoveQnaPost } from '@/hooks/useQna/useQna';
@@ -53,6 +56,7 @@ interface SessionQnaThreadProps {
 export function SessionQnaThread({ eventCode, sessionSlug }: SessionQnaThreadProps) {
   const { t } = useTranslation('events');
   const { isAuthenticated, hasRole } = useAuth();
+  const location = useLocation();
   const isOrganizer = hasRole('organizer');
 
   const { data: thread, isError } = useSessionQna(eventCode, sessionSlug, true);
@@ -126,6 +130,31 @@ export function SessionQnaThread({ eventCode, sessionSlug }: SessionQnaThreadPro
 
   const questionCount = questions.length;
   const panelId = `qna-panel-${sessionSlug}`;
+
+  if (isOpen && !isAuthenticated && questionCount === 0) {
+    return (
+      <div className="pt-2 border-t border-zinc-800" data-testid="qna-thread">
+        <div className="flex w-full flex-wrap items-center gap-2 py-1">
+          <span className="text-sm text-zinc-300">💬 {t('qna.title')}</span>
+          <span
+            className="rounded bg-green-900/50 px-1.5 py-0.5 text-[10px] uppercase text-green-300"
+            data-testid="qna-status"
+          >
+            {t('qna.statusOpen')}
+          </span>
+          <Link
+            to="/login"
+            state={{ from: { pathname: location.pathname, search: location.search } }}
+            className="ml-auto flex items-center gap-1 text-xs text-blue-400 hover:text-blue-300"
+            data-testid="qna-login-cta"
+          >
+            <LogIn className="h-4 w-4" aria-hidden="true" />
+            {t('qna.loginToStart')}
+          </Link>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="pt-2 border-t border-zinc-800" data-testid="qna-thread">

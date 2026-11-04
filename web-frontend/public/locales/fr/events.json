@@ -545,13 +545,14 @@
         "saveTemplate": {
           "button": "Enregistrer comme modèle",
           "title": "Enregistrer comme modèle",
-          "key": "Clé du modèle",
-          "keyHelp": "Minuscules, chiffres et traits d’union, p. ex. changement-de-salle",
-          "keyInvalid": "Uniquement minuscules, chiffres et traits d’union simples, p. ex. changement-de-salle",
+          "key": "Nom du modèle",
+          "keyHelp": "Par exemple : Changement de salle",
+          "keyInvalid": "Saisissez au moins une lettre ou un chiffre.",
           "save": "Enregistrer",
-          "duplicate": "Un modèle avec cette clé existe déjà dans cette langue. Choisissez une autre clé.",
+          "duplicate": "Un modèle avec ce nom existe déjà dans cette langue. Choisissez un autre nom.",
           "failed": "Le modèle n’a pas pu être enregistré. Veuillez réessayer.",
-          "saved": "Enregistré comme modèle {{key}}."
+          "saved": "Enregistré comme modèle {{key}}.",
+          "keyPreview": "Enregistré sous {{key}}"
         },
         "variables": {
           "eventTitle": "Titre de l’événement",
@@ -1370,7 +1371,8 @@
     "questionPlaceholder": "Posez une question sur cette session…",
     "askQuestion": "Poser une question",
     "viewThread": "Voir les questions",
-    "loginToPost": "Connectez-vous pour poser ou répondre à des questions."
+    "loginToPost": "Connectez-vous pour poser ou répondre à des questions.",
+    "loginToStart": "Connectez-vous pour poser une question ou participer à la discussion"
   },
   "attendee": {
     "dashboard": {

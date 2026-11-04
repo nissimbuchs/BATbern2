@@ -551,13 +551,14 @@
         "saveTemplate": {
           "button": "Als Vorlag spychere",
           "title": "Als Vorlag spychere",
-          "key": "Vorlag-Schlüssu",
-          "keyHelp": "Chlybuechstabe, Ziffere und Bindestriche, z. B. ruumwächsu",
-          "keyInvalid": "Nume Chlybuechstabe, Ziffere und einzelni Bindestriche, z. B. ruumwächsu",
+          "key": "Name vor Vorlag",
+          "keyHelp": "Zum Bispiu: Ruumwächsu",
+          "keyInvalid": "Bitte mindestens e Buechstabe oder e Ziffere iigä.",
           "save": "Spychere",
-          "duplicate": "E Vorlag mit däm Schlüssu gits i dere Sprach scho. Bitte en angere Schlüssu wähle.",
+          "duplicate": "E Vorlag mit däm Name gits i dere Sprach scho. Bitte en angere Name wähle.",
           "failed": "D Vorlag het nid chönne gspycheret wärde. Bitte nomau probiere.",
-          "saved": "Als Vorlag {{key}} gspycheret."
+          "saved": "Als Vorlag {{key}} gspycheret.",
+          "keyPreview": "Wird gspicheret als {{key}}"
         },
         "variables": {
           "eventTitle": "Titel vom Aalass",
@@ -1373,7 +1374,8 @@
     "questionPlaceholder": "Stell e Frag zu dere Session…",
     "askQuestion": "Frag stelle",
     "viewThread": "Q&A aaluege",
-    "loginToPost": "Mäld di a, zum Frage stelle oder beantworte."
+    "loginToPost": "Mäld di a, zum Frage stelle oder beantworte.",
+    "loginToStart": "Aamäude, für e Frag z stelle oder mitzdiskutiere"
   },
   "attendee": {
     "dashboard": {

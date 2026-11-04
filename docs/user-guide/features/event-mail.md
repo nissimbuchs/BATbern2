@@ -158,7 +158,8 @@ Switch from *Template* to *Own text* to write the subject and the text yourself,
 - **Starting point.** *Use template as starting point* copies a template's subject and text into
   own text; the template stays as it is.
 - **Save as template** stores your text as a new template of the audience (not for speakers, whose
-  templates are the six reminders). It then appears in the template list.
+  templates are the six reminders). It then appears in the template list. You type a name such as
+  "Partner Info"; the dialog shows the key it is saved under (`partner-info`).
 
 "What went out" shows such a mail as own text, without a template name.
 

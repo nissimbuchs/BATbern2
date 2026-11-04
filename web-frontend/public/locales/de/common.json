@@ -658,11 +658,15 @@
     "validation": {
       "htmlBodyRequired": "HTML-Inhalt ist erforderlich.",
       "subjectRequired": "Betreff ist für Inhaltsvorlagen erforderlich.",
-      "templateKeyRequired": "Vorlageschlüssel ist erforderlich."
+      "templateNameRequired": "Der Name der Vorlage ist erforderlich.",
+      "templateNameInvalid": "Bitte mindestens einen Buchstaben oder eine Ziffer eingeben."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
-    "previewTitle": "Email Preview"
+    "previewTitle": "Email Preview",
+    "templateName": "Name der Vorlage",
+    "templateNameHelp": "Zum Beispiel: Raumwechsel",
+    "keyPreview": "Wird gespeichert als"
   },
   "presentation": {
     "errorTitle": "Event konnte nicht geladen werden",

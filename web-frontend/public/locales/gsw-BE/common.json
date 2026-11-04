@@ -559,11 +559,15 @@
     "validation": {
       "htmlBodyRequired": "HTML-Inhaut isch Pflicht.",
       "subjectRequired": "Betreff isch Pflicht für Inhautvorlagen.",
-      "templateKeyRequired": "Vorlagenschlüssel isch Pflicht."
+      "templateNameRequired": "Dr Name vor Vorlag isch Pflicht.",
+      "templateNameInvalid": "Bitte mindestens e Buechstabe oder e Ziffere iigä."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
-    "previewTitle": "Email Preview"
+    "previewTitle": "Email Preview",
+    "templateName": "Name vor Vorlag",
+    "templateNameHelp": "Zum Bispiu: Ruumwächsu",
+    "keyPreview": "Wird gspicheret als"
   },
   "presentation": {
     "errorTitle": "Veranstatig chöne nid gglade werde",

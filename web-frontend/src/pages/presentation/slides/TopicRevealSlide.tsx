@@ -33,11 +33,11 @@ export function TopicRevealSlide({ event }: TopicRevealSlideProps): JSX.Element 
     >
       <div
         style={{
-          fontSize: '1.25vw',
-          color: 'rgba(255,255,255,0.5)',
+          fontSize: '2.2vw',
+          color: '#ffffff',
           letterSpacing: '0.25em',
           textTransform: 'uppercase',
-          marginBottom: '1.667vw',
+          marginBottom: '2.5vw',
         }}
       >
         Das heutige Thema
@@ -45,11 +45,11 @@ export function TopicRevealSlide({ event }: TopicRevealSlideProps): JSX.Element 
 
       <h1
         style={{
-          fontSize: '4.167vw',
+          fontSize: '7.5vw',
           fontWeight: 800,
           lineHeight: 1.1,
-          maxWidth: '52.083vw',
-          textShadow: '0 2px 20px rgba(0,0,0,0.4)',
+          maxWidth: '88vw',
+          textShadow: '0 2px 20px rgba(0,0,0,0.6)',
         }}
       >
         {topicName}

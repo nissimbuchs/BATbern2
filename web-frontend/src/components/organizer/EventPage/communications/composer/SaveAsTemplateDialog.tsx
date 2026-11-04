@@ -2,6 +2,7 @@
  * "Save as template" (Story 16.5 AC8, own text only): stores the own subject and body as a new
  * non-system template through the existing `POST /email-templates`, with the audience's category,
  * the chosen language and the BATbern layout. A key clash (409) is shown in the dialog.
+ * The organizer types a name; the kebab-case key is derived from it and shown below the field.
  */
 import React, { useState } from 'react';
 import {
@@ -24,8 +25,7 @@ import { useCreateEmailTemplate } from '@/hooks/useEmailTemplates';
 import type { CreateEmailTemplateRequest } from '@/services/emailTemplateService';
 import type { ComposerLocale } from './types';
 
-/** The template key pattern of the contract (`event-newsletter-api.openapi.yml`). */
-export const TEMPLATE_KEY_PATTERN = /^[a-z0-9]+(-[a-z0-9]+)*$/;
+import { toTemplateKey } from '@/utils/templateKey';
 
 type TemplateCategory = CreateEmailTemplateRequest['category'];
 
@@ -54,8 +54,8 @@ export const SaveAsTemplateDialog: React.FC<SaveAsTemplateDialogProps> = ({
   const [locale, setLocale] = useState<ComposerLocale>(initialLocale);
   const [error, setError] = useState<string | null>(null);
 
-  const key = templateKey.trim();
-  const keyInvalid = key.length > 0 && !TEMPLATE_KEY_PATTERN.test(key);
+  const key = toTemplateKey(templateKey);
+  const keyInvalid = templateKey.trim().length > 0 && !key;
 
   const save = () => {
     setError(null);
@@ -109,11 +109,19 @@ export const SaveAsTemplateDialog: React.FC<SaveAsTemplateDialogProps> = ({
               setError(null);
             }}
             error={keyInvalid}
-            helperText={t(
-              keyInvalid
-                ? 'eventPage.mail.composer.saveTemplate.keyInvalid'
-                : 'eventPage.mail.composer.saveTemplate.keyHelp'
-            )}
+            helperText={
+              key ? (
+                <span data-testid="composer-save-key-preview">
+                  {t('eventPage.mail.composer.saveTemplate.keyPreview', { key })}
+                </span>
+              ) : (
+                t(
+                  keyInvalid
+                    ? 'eventPage.mail.composer.saveTemplate.keyInvalid'
+                    : 'eventPage.mail.composer.saveTemplate.keyHelp'
+                )
+              )
+            }
             size="small"
             fullWidth
             required

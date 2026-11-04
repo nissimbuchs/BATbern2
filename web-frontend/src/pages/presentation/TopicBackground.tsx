@@ -42,12 +42,13 @@ export function TopicBackground({ imageUrl }: TopicBackgroundProps): JSX.Element
           objectFit: 'cover',
         }}
       />
-      {/* Dark overlay for legibility (AC #34) */}
+      {/* Dark overlay for legibility (AC #34). 0.82, not 0.65: on the projector the image
+          competed with the text (owner 2026-11-04). */}
       <div
         style={{
           position: 'absolute',
           inset: 0,
-          backgroundColor: 'rgba(0,0,0,0.65)',
+          backgroundColor: 'rgba(0,0,0,0.82)',
         }}
       />
     </div>

@@ -80,6 +80,12 @@ Each release includes:
 - ✅ Attachments of incoming mail up to 25 MB are kept with the conversation and open with a click; they are deleted together with the conversation.
 - ✅ Organizers answer a conversation directly from the mail page. The answer goes out as "{name} via BATbern", the speaker's reply comes back into the same conversation, and every organizer sees who answered what. Handing a conversation to another organizer sends them one short mail with a link.
 
+**Improvements and Bug Fixes — Presenter, Templates, Q&A (2026-11-04)**:
+- ✅ The moderator presentation is made for the big screen: darker background, all text white, type and pictures about 1.5 to 2 times larger, the agenda and the speaker cards sized to their content. Session slides now sit beside the agenda sidebar instead of under it.
+- ✅ Saving a mail as a template works with a normal name. "Save as template" in the mail composer and "New Template" in Administration accepted only a key in lowercase with hyphens: the composer kept Save disabled for "Partner Info", Administration sent it and showed only "could not be saved". The name is now turned into the key, which is shown before saving.
+- ✅ Visitors who are not logged in see on an open session Q&A without questions "Anmelden, um eine Frage zu stellen oder mitzudiskutieren", with a link to the login.
+- ✅ After login, the platform returns to the page that asked for it instead of always opening the dashboard. This also keeps the confirmation link for an earlier profile (#1183) working for someone who was not logged in yet.
+
 **Bug Fixes — Clearer Registration Status on the Event Page (2026-11-02)**:
 - ✅ A logged-in visitor who is not registered no longer sees "Anmeldung stornieren". The page says instead under which address they are not registered, with a link for a registration made with another address. On 2 November a participant asked four times for a cancellation link and waited for it, although there was no registration to cancel. Registered visitors cancel directly in the event header, as before. Visitors who are not logged in still get the cancellation link by e-mail; the dialog now asks for the address they registered with and says that no mail means no registration under that address (#1183).
 

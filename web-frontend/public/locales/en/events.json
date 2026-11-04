@@ -559,13 +559,14 @@
         "saveTemplate": {
           "button": "Save as template",
           "title": "Save as template",
-          "key": "Template key",
-          "keyHelp": "Lowercase letters, digits and hyphens, e.g. room-change",
-          "keyInvalid": "Only lowercase letters, digits and single hyphens, e.g. room-change",
+          "key": "Template name",
+          "keyHelp": "For example: Room change",
+          "keyInvalid": "Enter at least one letter or digit.",
           "save": "Save",
-          "duplicate": "A template with this key already exists in this language. Choose another key.",
+          "duplicate": "A template with this name already exists in this language. Choose another name.",
           "failed": "The template could not be saved. Please try again.",
-          "saved": "Saved as template {{key}}."
+          "saved": "Saved as template {{key}}.",
+          "keyPreview": "Saved as {{key}}"
         },
         "variables": {
           "eventTitle": "Event title",
@@ -1394,7 +1395,8 @@
     "questionPlaceholder": "Ask a question about this session…",
     "askQuestion": "Ask a question",
     "viewThread": "View Q&A",
-    "loginToPost": "Log in to ask or answer questions."
+    "loginToPost": "Log in to ask or answer questions.",
+    "loginToStart": "Log in to ask a question or join the discussion"
   },
   "attendee": {
     "dashboard": {

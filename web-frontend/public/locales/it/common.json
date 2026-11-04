@@ -654,11 +654,15 @@
     "validation": {
       "htmlBodyRequired": "Il corpo HTML è obbligatorio.",
       "subjectRequired": "L'oggetto è obbligatorio per i modelli di contenuto.",
-      "templateKeyRequired": "La chiave del modello è obbligatoria."
+      "templateNameRequired": "Il nome del modello è obbligatorio.",
+      "templateNameInvalid": "Inserisci almeno una lettera o una cifra."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
-    "previewTitle": "Email Preview"
+    "previewTitle": "Email Preview",
+    "templateName": "Nome del modello",
+    "templateNameHelp": "Ad esempio: Cambio sala",
+    "keyPreview": "Salvato come"
   },
   "presentation": {
     "errorTitle": "Impossibile caricare l'evento",
