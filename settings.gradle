@@ -5,6 +5,8 @@ pluginManagement {
     }
 
     plugins {
+        // Changing this file (or root build.gradle / the wrapper) redeploys ALL services:
+        // deploy-staging.yml treats root Gradle files as all-services (fix after #1230).
         id 'org.springframework.boot' version '4.0.9'
         id 'io.spring.dependency-management' version '1.1.7'
         id 'org.flywaydb.flyway' version '11.18.0'

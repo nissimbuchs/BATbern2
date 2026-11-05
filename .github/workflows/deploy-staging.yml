@@ -203,6 +203,15 @@ jobs:
             CHANGED_SERVICES="all-services"
           fi
 
+          # Root Gradle build files (Spring Boot / plugin versions in settings.gradle, shared
+          # dependency pins in build.gradle, the wrapper) change every service's jar. #1230 bumped
+          # Spring Boot in settings.gradle and only event-management was rolled out, leaving the
+          # gateway and the other services on the vulnerable version.
+          if echo "$CHANGED_FILES" | grep -qE "^(settings\.gradle|build\.gradle|gradle\.properties|gradlew|gradle/)"; then
+            echo "✓ Root Gradle build files changed - will deploy all services"
+            CHANGED_SERVICES="all-services"
+          fi
+
           # Store changed services
           echo "changed_services=$CHANGED_SERVICES" >> $GITHUB_OUTPUT
 
