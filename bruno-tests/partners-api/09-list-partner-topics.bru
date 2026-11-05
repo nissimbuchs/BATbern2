@@ -42,15 +42,17 @@ tests {
 
   test("topics should have required TopicDTO fields", function() {
     const body = res.getBody();
-    if (body && body.length > 0) {
-      const topic = body[0];
+    (body || []).forEach(function(topic) {
       expect(topic.id).to.exist;
       expect(topic.title).to.exist;
-      expect(topic.suggestedByCompany).to.exist;
       expect(topic.voteCount).to.be.a('number');
       expect(topic.status).to.exist;
       expect(topic.createdAt).to.exist;
-    }
+      // suggestedByCompany is nullable for COMMUNITY (attendee) topics (Story 7.1, partners-api spec)
+      if (topic.source !== 'COMMUNITY') {
+        expect(topic.suggestedByCompany).to.exist;
+      }
+    });
   });
 
   test("should have CORS headers", function() {
