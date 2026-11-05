@@ -122,7 +122,7 @@ Notes on Spring Boot 4 (Epic 13):
   otherwise `@WithMockUser` is lost and every `@PreAuthorize` request returns 403.
 - The container is a manual singleton started in a static block; no `@Testcontainers` /
   `@Container`, no `withReuse(true)`. Ryuk removes it when the JVM exits.
-- JUnit: Jupiter **6** (6.0.3 from the Spring Boot 4.0.7 BOM; `api-gateway` pins 6.1.3).
+- JUnit: Jupiter **6** (6.0.3 from the Spring Boot 4.0.9 BOM; `api-gateway` pins 6.1.3).
 
 ## Test Configuration (application-test.properties)
 
