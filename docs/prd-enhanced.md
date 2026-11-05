@@ -280,7 +280,7 @@ For comprehensive technical implementation details, refer to the following archi
 - **Epic 10**: Additional Stories - ✅ **COMPLETE** (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
 - **Epic 11**: Unified Speaker Workflow Refactor - ✅ **COMPLETE** (Phases A–F per ADR-009; 11.F.1 magic-link teardown 2026-05-25; leftovers 11.E.5, 11.G.1, 11.F.2 open)
 - **Epic 12**: Federated Identity / Google SSO - ✅ **LIVE** 2026-06-04 (ADR-010; Story 12.10 Apple/generic OIDC in backlog)
-- **Epic 13**: Spring Boot 4 Migration - 🔄 SB 4.0.7 **LIVE** (#797, 2026-06-19); 13.4 Jackson 3 flip and 13.5 open
+- **Epic 13**: Spring Boot 4 Migration - 🔄 SB 4.0.9 **LIVE** (4.0.7 via #797 2026-06-19, 4.0.9 2026-11-05); 13.4 Jackson 3 flip and 13.5 open
 - **Epic 14**: Event Detail Page — Lifecycle-Aware Redesign - ✅ **COMPLETE** (#788, 2026-06-15)
 - **Epic 15**: Post-Event #2 Hardening - 🔄 **IN PROGRESS** (15.1 P2/P3, 15.4, 15.8 open)
 - **Epic 16**: Mail Center - 🔄 16.0–16.11 **LIVE** (2026-10-30 to 2026-11-03); 16.8c gated, 16.12/16.13 backlog
@@ -420,7 +420,7 @@ The comprehensive epic breakdown follows a CRUD-first approach, prioritizing fun
 - **[Epic 10: Additional Stories](./prd/epic-10-additional-stories.md)** - ✅ **COMPLETE** - Administration, email templates, newsletter, presenter, capacity + waitlist, photos, Turnstile, additional emails, alias forwarding (10.6/10.13/10.15 cancelled, 10.24/10.25 deferred)
 - **[Epic 11: Unified Speaker Workflow Refactor](./prd/epic-11-speaker-workflow-refactor.md)** - ✅ **COMPLETE** - 8-state speaker workflow per ADR-009, Cognito speaker auth, magic links removed
 - **[Epic 12: Federated Identity / Google SSO](./plans/sso-oidc-federation.md)** - ✅ **LIVE** 2026-06-04 - ADR-010; no PRD file, the plan is the source
-- **[Epic 13: Spring Boot 4 Migration](./plans/spring-boot-4-migration.md)** - 🔄 SB 4.0.7 live (#797); 13.4, 13.5 open; no PRD file, the plan is the source
+- **[Epic 13: Spring Boot 4 Migration](./plans/spring-boot-4-migration.md)** - 🔄 SB 4.0.9 live (#797, patch 2026-11-05); 13.4, 13.5 open; no PRD file, the plan is the source
 - **[Epic 14: Event Detail Page — Lifecycle-Aware Redesign](./prd/epic-14-event-detail-redesign.md)** - ✅ **COMPLETE** (#788)
 - **[Epic 15: Post-Event #2 Hardening](./prd/epic-15-post-event-2-hardening.md)** - 🔄 **IN PROGRESS**
 - **[Epic 16: Mail Center](./prd/epic-16-mail-center.md)** - 🔄 16.0–16.11 live; 16.8c gated; 16.12, 16.13 backlog

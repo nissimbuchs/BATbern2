@@ -21,7 +21,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Epic 10**: Additional Stories - COMPLETE (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
 - ✅ **Epic 11**: Unified Speaker Workflow Refactor - COMPLETE (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25). Leftovers: 11.E.5, 11.G.1 ready-for-dev, 11.F.2 backlog
 - ✅ **Epic 12**: Federated Identity / Google SSO (ADR-010) - COMPLETE (Google OIDC login live 2026-06-04; Apple/generic OIDC + Cognito trigger retirement deferred via backlog Story 12.10)
-- 🔄 **Epic 13**: Spring Boot 4 Migration - SB 4.0.7 LIVE (#797, 2026-06-19); open: 13.4 Jackson 3 flag flip (`preferred-json-mapper: jackson2` still set in all services), 13.5 unpin BOM-managed versions
+- 🔄 **Epic 13**: Spring Boot 4 Migration - SB 4.0.7 live 2026-06-19 (#797), 4.0.9 2026-11-05 (CVE fixes); open: 13.4 Jackson 3 flag flip (`preferred-json-mapper: jackson2` still set in all services), 13.5 unpin BOM-managed versions
 - ✅ **Epic 14**: Event Detail Page — Lifecycle-Aware Redesign - COMPLETE (#788, 2026-06-15)
 - 🔄 **Epic 15**: Post-Event #2 Hardening - 15.2, 15.3, 15.5, 15.6, 15.7, 15.9 done; 15.1 P1 live (#800), P2 watch + P3 WebSocket teardown open; 15.4 not implemented; 15.8 backlog
 - 🔄 **Epic 16**: Mail Center - 16.0–16.11 LIVE (last: #1194, 2026-11-03) except 16.8c clean-up (gated: one release + owner go); 16.12, 16.13 backlog
@@ -81,7 +81,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 10**: Additional Stories - **COMPLETE** (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
 - ✅ **Epic 11**: Unified Speaker Workflow Refactor - **100% COMPLETE** (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25; supersedes prior Epic 9 plan)
 - ✅ **Epic 12**: Federated Identity / Google SSO - **COMPLETE** (Google OIDC login live 2026-06-04 per ADR-010; deferred tail — Apple/generic OIDC + trigger retirement — parked as backlog Story 12.10)
-- 🔄 **Epic 13**: Spring Boot 4 Migration - **SB 4.0.7 LIVE** (#797); 13.4 and 13.5 open
+- 🔄 **Epic 13**: Spring Boot 4 Migration - **SB 4.0.9 LIVE** (#797, patch 2026-11-05); 13.4 and 13.5 open
 - ✅ **Epic 14**: Event Detail Page Redesign - **COMPLETE** (#788)
 - 🔄 **Epic 15**: Post-Event #2 Hardening - **IN PROGRESS** (15.1 P2/P3, 15.4, 15.8 open)
 - 🔄 **Epic 16**: Mail Center - **16.0–16.11 LIVE**; 16.8c gated, 16.12/16.13 backlog
