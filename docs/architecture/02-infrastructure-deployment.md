@@ -689,6 +689,7 @@ graph TD
     DETECT -->|"web-frontend/**"| FEB["Build frontend<br/>build:prerender"]
     DETECT -->|"services/X/** or api-gateway/**"| SVC["changed_services list"]
     DETECT -->|"shared-kernel/**"| SK["changed_services = all-services"]
+    DETECT -->|"settings.gradle, build.gradle, gradle/** (root)"| SK
 
     ALLX --> INFRA
     SVC --> FAST{"Fast path eligible?<br/>no infra, no frontend,<br/>no Dockerfile, no migration,<br/>not all-services"}

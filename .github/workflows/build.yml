@@ -248,6 +248,12 @@ jobs:
           elif echo "$CHANGED_FILES" | grep -q "^shared-kernel/"; then
             echo "✓ Shared kernel changes detected - building all services"
             SHOULD_BUILD="true"
+          # Build if root Gradle build files changed (Spring Boot / plugin versions, shared pins,
+          # wrapper): every service's jar changes, and deploy-staging.yml deploys all services
+          # for these paths, so every image must exist (#1234).
+          elif echo "$CHANGED_FILES" | grep -qE "^(settings\.gradle|build\.gradle|gradle\.properties|gradlew|gradle/)"; then
+            echo "✓ Root Gradle build files changed - building all services"
+            SHOULD_BUILD="true"
           # Build if this specific service changed
           elif echo "$CHANGED_FILES" | grep -q "^${SERVICE_DIR}/"; then
             echo "✓ Service ${{ matrix.service }} changes detected"
