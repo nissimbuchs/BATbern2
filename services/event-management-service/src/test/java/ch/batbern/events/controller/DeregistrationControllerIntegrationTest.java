@@ -33,6 +33,10 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.Mockito.after;
+import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -88,8 +92,11 @@ class DeregistrationControllerIntegrationTest extends AbstractIntegrationTest {
     private static final UUID VALID_TOKEN = UUID.fromString("550e8400-e29b-41d4-a716-446655440001");
     private static final UUID CANCELLED_TOKEN = UUID.fromString("550e8400-e29b-41d4-a716-446655440002");
     private static final UUID UNKNOWN_TOKEN = UUID.fromString("aaaaaaaa-bbbb-cccc-dddd-eeeeeeeeeeee");
-    private static final Instant EVENT_DATE = LocalDate.of(2026, 9, 15)
-            .atStartOfDay(ZoneId.of("UTC")).toInstant();
+    // Relative, not a fixed day: from the event day on a deregistration is refused (#1238 E2), so a
+    // fixed 2026-09-15 turned these tests into a time bomb once that day had passed.
+    private static final ZoneId BERN = ZoneId.of("Europe/Zurich");
+    private static final Instant EVENT_DATE = LocalDate.now(BERN).plusDays(30)
+            .atTime(18, 0).atZone(BERN).toInstant();
 
     private Event testEvent;
 
@@ -327,5 +334,93 @@ class DeregistrationControllerIntegrationTest extends AbstractIntegrationTest {
         Registration promoted = registrationRepository.findByDeregistrationToken(waitlistToken).orElseThrow();
         assertThat(promoted.getStatus()).isEqualTo("registered");
         assertThat(promoted.getWaitlistPosition()).isNull();
+    }
+
+    // ── #1238 E2: no deregistration from the event day on; no backfill after the deadline ──
+
+    private void eventOnDay(Instant date, Instant deadline) {
+        testEvent.setDate(date);
+        testEvent.setRegistrationDeadline(deadline);
+        eventRepository.save(testEvent);
+    }
+
+    private UUID waitlisted(String username) {
+        UUID token = UUID.randomUUID();
+        registrationRepository.save(Registration.builder()
+                .registrationCode(EVENT_CODE + "-reg-" + username.toUpperCase().replace(".", ""))
+                .eventId(testEvent.getId())
+                .deregistrationToken(token)
+                .attendeeUsername(username)
+                .attendeeFirstName("Wait")
+                .attendeeLastName("Ing")
+                .attendeeEmail(username + "@example.com")
+                .status("waitlist")
+                .waitlistPosition(1)
+                .registrationDate(Instant.now())
+                .build());
+        return token;
+    }
+
+    @Test
+    @DisplayName("#1238 E2: deregistering on the event day → 409 DEREGISTRATION_CLOSED, registration kept")
+    void deregisterByToken_onEventDay_returns409() throws Exception {
+        Instant tonight = LocalDate.now(BERN).atTime(23, 0).atZone(BERN).toInstant();
+        eventOnDay(tonight, tonight.minusSeconds(3 * 86400));
+
+        mockMvc.perform(post("/api/v1/registrations/deregister")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("token", VALID_TOKEN.toString()))))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code", is("DEREGISTRATION_CLOSED")));
+
+        assertThat(registrationRepository.findByDeregistrationToken(VALID_TOKEN).orElseThrow().getStatus())
+                .isEqualTo("registered");
+    }
+
+    @Test
+    @DisplayName("#1238 E2: deregistering the day before the event still works")
+    void deregisterByToken_dayBefore_returns200() throws Exception {
+        Instant tomorrow = LocalDate.now(BERN).plusDays(1).atTime(18, 0).atZone(BERN).toInstant();
+        eventOnDay(tomorrow, tomorrow.minusSeconds(3 * 86400));
+
+        mockMvc.perform(post("/api/v1/registrations/deregister")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("token", VALID_TOKEN.toString()))))
+                .andExpect(status().isOk());
+    }
+
+    @Test
+    @DisplayName("#1238 E2: a cancellation after the registration deadline does not promote from the waitlist")
+    void deregisterByToken_afterDeadline_promotesNobody() throws Exception {
+        eventOnDay(EVENT_DATE, Instant.now().minusSeconds(3600));
+        testEvent.setRegistrationCapacity(1);
+        eventRepository.save(testEvent);
+        UUID waiting = waitlisted("carol.late");
+
+        mockMvc.perform(post("/api/v1/registrations/deregister")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("token", VALID_TOKEN.toString()))))
+                .andExpect(status().isOk());
+
+        assertThat(registrationRepository.findByDeregistrationToken(VALID_TOKEN).orElseThrow().getStatus())
+                .isEqualTo("cancelled");
+        assertThat(registrationRepository.findByDeregistrationToken(waiting).orElseThrow().getStatus())
+                .isEqualTo("waitlist");
+    }
+
+    @Test
+    @DisplayName("#1238 E2: on the event day the cancel-by-e-mail request sends no link")
+    void deregisterByEmail_onEventDay_sendsNoLink() throws Exception {
+        Instant tonight = LocalDate.now(BERN).atTime(23, 0).atZone(BERN).toInstant();
+        eventOnDay(tonight, tonight.minusSeconds(3 * 86400));
+
+        mockMvc.perform(post("/api/v1/registrations/deregister/by-email")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(
+                                Map.of("email", "alice@example.com", "eventCode", EVENT_CODE))))
+                .andExpect(status().isOk());
+
+        verify(deregistrationEmailService, after(1000).never())
+                .sendDeregistrationLinkEmail(any(), any(), anyString(), anyString());
     }
 }

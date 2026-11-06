@@ -1311,6 +1311,19 @@ Saving the capacity again unchanged is how an organizer fills places that are al
 participant an organizer adds over the capacity (`force`) leaves `free` at or below zero, so a later
 cancellation does not pull someone in until a place is really free.
 
+**Late cancellations (#1238 E2).** `RegistrationWindow` holds the dates, in Bern time:
+
+- From 00:00 Bern on the event day an attendee can no longer unregister. `cancelRegistration`
+  (token link, hero "Abmelden" via `DELETE /events/{code}/my-registration`) throws
+  `DeregistrationClosedException`, mapped to 409 `details.code = DEREGISTRATION_CLOSED`. The
+  by-e-mail request and the reply/calendar-decline paths send no link on and after that day
+  (`DeregistrationLinkResult.CLOSED`).
+- After the registration deadline (`registrationDeadline`, or the event start without one) an
+  attendee's cancellation does not call `promoteFromWaitlist`: the name badges are printed by then.
+  Before the deadline the waitlist moves up as before. The organizer status PATCH and the capacity
+  save are unchanged.
+- The public page mirrors both rules in `getRegistrationView` (`web-frontend/.../homePagePhase.ts`).
+
 ## Confirmation Links and Resend Jobs
 
 

@@ -1100,6 +1100,28 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * #1238 E2: unregistering on or after the event day. 409 with
+     * {@code details.code = "DEREGISTRATION_CLOSED"}.
+     */
+    @ExceptionHandler(DeregistrationClosedException.class)
+    public ResponseEntity<ErrorResponse> handleDeregistrationClosedException(
+            DeregistrationClosedException ex,
+            HttpServletRequest request) {
+        log.info("Deregistration closed: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.current())
+                .severity("LOW")
+                .details(Map.of("code", "DEREGISTRATION_CLOSED"))
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Handle RegistrationClosedException (feedback #1): a public self-registration or waitlist
      * join was attempted after the registration deadline. Returns HTTP 409 Conflict with
      * {@code details.code = "REGISTRATION_CLOSED"} and {@code details.deadline} so the public page

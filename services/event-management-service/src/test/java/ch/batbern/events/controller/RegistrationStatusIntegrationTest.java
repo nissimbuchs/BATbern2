@@ -35,6 +35,7 @@ import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.lenient;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -301,6 +302,43 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.registered", is(false)));
+    }
+
+    // ── #1238 E2: the hero's "Abmelden" (DELETE my-registration) closes on the event day ──
+
+    private void eventStartingOn(LocalDate day) {
+        ZoneId bern = ZoneId.of("Europe/Zurich");
+        Instant start = day.atTime(18, 0).atZone(bern).toInstant();
+        testEvent.setDate(start);
+        testEvent.setRegistrationDeadline(start.minusSeconds(3 * 86400));
+        eventRepository.save(testEvent);
+    }
+
+    @Test
+    @DisplayName("#1238 E2: unregistering on the event day → 409 DEREGISTRATION_CLOSED, registration kept")
+    @WithMockUser(username = USERNAME)
+    void should_refuseUnregister_when_eventDay() throws Exception {
+        eventStartingOn(LocalDate.now(ZoneId.of("Europe/Zurich")));
+        Registration mine = saveRegistration(testEvent, USERNAME, "confirmed");
+
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.details.code", is("DEREGISTRATION_CLOSED")));
+
+        assertThat(registrationRepository.findById(mine.getId()).orElseThrow().getStatus()).isEqualTo("confirmed");
+    }
+
+    @Test
+    @DisplayName("#1238 E2: unregistering the day before the event works")
+    @WithMockUser(username = USERNAME)
+    void should_unregister_when_dayBeforeEvent() throws Exception {
+        eventStartingOn(LocalDate.now(ZoneId.of("Europe/Zurich")).plusDays(1));
+        Registration mine = saveRegistration(testEvent, USERNAME, "confirmed");
+
+        mockMvc.perform(delete("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
+                .andExpect(status().isNoContent());
+
+        assertThat(registrationRepository.findById(mine.getId()).orElseThrow().getStatus()).isEqualTo("cancelled");
     }
 
     private Registration saveRegistration(Event event, String username, String status) {
