@@ -72,7 +72,7 @@ public class WaitlistPromotionEmailService {
             String localeStr = locale.getLanguage();
 
             Map<String, String> variables = buildCommonVariables(registration, attendee, event, localeStr).asMap();
-            RenderedMail mail = mailPipeline.render(mailPipeline.template("waitlist-promotion", localeStr),
+            RenderedMail mail = mailPipeline.renderNotice(mailPipeline.template("waitlist-promotion", localeStr),
                     variables);
             String html = mail.html();
             String subject = mail.subject() != null ? mail.subject()
@@ -122,7 +122,7 @@ public class WaitlistPromotionEmailService {
             if (registration.getWaitlistPosition() != null) {
                 vars.put(MailVariable.WAITLIST_POSITION, registration.getWaitlistPosition());
             }
-            RenderedMail mail = mailPipeline.render(
+            RenderedMail mail = mailPipeline.renderNotice(
                     mailPipeline.template("registration-waitlist-confirmation", localeStr), vars.asMap());
             String html = mail.html();
             String subject = mail.subject() != null ? mail.subject()

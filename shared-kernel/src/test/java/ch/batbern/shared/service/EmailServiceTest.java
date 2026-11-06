@@ -158,6 +158,42 @@ class EmailServiceTest {
     }
 
     @Nested
+    @DisplayName("Unresolved placeholders in a finished mail (#1235)")
+    class UnresolvedPlaceholders {
+
+        @Test
+        void should_removeSection_when_variableAbsent() {
+            String rendered = emailService.replaceVariables("a{{#x}}b{{/x}}c", Map.of());
+
+            assertThat(EmailService.removeUnresolved(rendered)).isEqualTo("ac");
+        }
+
+        @Test
+        void should_removeMultilineSectionAndItsPlaceholder_when_eventCodeAbsent() {
+            String rendered = emailService.replaceVariables(
+                    "New mail{{#eventCode}} for {{eventCode}}{{/eventCode}}\n{{name}} wrote",
+                    Map.of("name", "Sara"));
+
+            assertThat(EmailService.removeUnresolved(rendered)).isEqualTo("New mail\nSara wrote");
+        }
+
+        @Test
+        void should_blankPlainPlaceholderAndStrayTags_when_leftOver() {
+            assertThat(EmailService.removeUnresolved("Hi {{first}}{{/orphan}}!")).isEqualTo("Hi !");
+        }
+
+        @Test
+        void should_keepTextUnchanged_when_nothingLeftOver() {
+            assertThat(EmailService.removeUnresolved("Hi {Sara} {{ not a tag }}")).isEqualTo("Hi {Sara} {{ not a tag }}");
+        }
+
+        @Test
+        void should_returnNull_when_inputNull() {
+            assertThat(EmailService.removeUnresolved(null)).isNull();
+        }
+    }
+
+    @Nested
     @DisplayName("Conditional Block Replacement")
     class ConditionalBlockReplacement {
 

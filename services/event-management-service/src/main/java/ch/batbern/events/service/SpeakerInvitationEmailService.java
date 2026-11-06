@@ -257,7 +257,7 @@ public class SpeakerInvitationEmailService {
                 .put(MailVariable.LOGO_URL, hostBase + "/BATbern_white_logo.png")
                 .asMap();
 
-        RenderedMail mail = mailPipeline.render(content, variables);
+        RenderedMail mail = mailPipeline.renderNotice(content, variables);
         String html = mail.html();
         String subject = mail.subject() != null ? mail.subject()
                 : localeStr.equals("de")

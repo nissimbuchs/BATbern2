@@ -2,6 +2,7 @@ package ch.batbern.events.mailcenter.render;
 
 import ch.batbern.events.domain.EmailTemplate;
 import ch.batbern.events.mailcenter.compose.MailRenderer;
+import ch.batbern.events.mailcenter.compose.PlaceholderScanner;
 import ch.batbern.events.mailcenter.variables.MailVariableFactory;
 import ch.batbern.events.service.EmailTemplateService;
 import ch.batbern.shared.mail.MailContext;
@@ -92,6 +93,25 @@ public class MailPipeline {
     /** The content with {@code vars} filled in. */
     public RenderedMail render(MailContent content, Map<String, String> vars) {
         return MailRenderer.render(emailService, templates, content, vars);
+    }
+
+    /**
+     * A finished mail to one recipient that gets no second pass and no composer preview: rendered as
+     * {@link #render} does, then every section or tag whose variable was missing is removed (#1235)
+     * and named in a warning, so the next missing variable shows in the log, not in an inbox.
+     * Staged renders (newsletter, slides) and the composer keep {@link #render}: they need the
+     * leftovers for the per-recipient pass and for the organizer's warning.
+     */
+    public RenderedMail renderNotice(MailContent content, Map<String, String> vars) {
+        RenderedMail mail = render(content, vars);
+        List<String> leftovers = PlaceholderScanner.scan(mail.subject(), mail.html());
+        if (leftovers.isEmpty()) {
+            return mail;
+        }
+        log.warn("Mail '{}' ({}) rendered without values for {}; removed", content.templateKey(),
+                content.locale(), leftovers);
+        return new RenderedMail(EmailService.removeUnresolved(mail.subject()),
+                EmailService.removeUnresolved(mail.html()));
     }
 
     /** A blank subject counts as none, as {@code EmailTemplateService.resolveSubject} decided. */

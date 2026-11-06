@@ -1188,6 +1188,14 @@ Every template-based mail in event-management renders the same way:
   one place; `storedTemplate` for store-only mails with the default layout) and renders it with
   `MailRenderer.render` (content variables → layout → variables again → subject). The eight copied
   `loadHtmlContent` methods are gone.
+- **Finished notices** (#1235): `render` keeps a `{{name}}` or `{{#name}}…{{/name}}` whose variable
+  is not in the map, because the newsletter and slides fill per-recipient values in a second pass
+  and the composer shows leftovers to the organizer. Mails to one recipient that get no second
+  pass (registration, waitlist, deregistration, speaker invitation/acceptance/reminder, task
+  reminder, Q&A, inbound confirmation, Mail Center notices) use `MailPipeline.renderNotice`: it
+  removes such sections and tags (`EmailService.removeUnresolved`, absent counts as false) and
+  logs a WARN naming them. A notice for a mail without an event sets `eventCode` to empty, so its
+  `{{#eventCode}}` section drops without a warning.
 - **Newsletter**: `prepare` resolves the content once per send (`NewsletterDraft.content`), so an
   admin edit during a send or before a retry changes nothing for that send.
 - **Adapters** declare `scopes()`; `allowedVariables()` and `credentialVariables()` derive from the

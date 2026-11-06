@@ -49,11 +49,11 @@ public class ConversationNotices {
             String locale) {
         String from = stored.fromName() != null && !stored.fromName().isBlank() ? stored.fromName() : "?";
         MailVariables variables = event.map(e -> mailPipeline.variables().event(e, locale))
-                .orElseGet(() -> mailPipeline.variables().system())
+                .orElseGet(() -> mailPipeline.variables().system().put(MailVariable.EVENT_CODE, ""))
                 .put(MailVariable.COUNTERPART_NAME, from)
                 .put(MailVariable.CONVERSATION_SUBJECT, stored.subject())
                 .put(MailVariable.CONVERSATION_LINK, links.link(stored.eventCode(), stored.conversationKey()));
-        RenderedMail mail = mailPipeline.render(mailPipeline.template(TEMPLATE_KEY, locale), variables.asMap());
+        RenderedMail mail = mailPipeline.renderNotice(mailPipeline.template(TEMPLATE_KEY, locale), variables.asMap());
         String subject = mail.subject() != null ? mail.subject()
                 : ("en".equals(locale) ? "New mail from " : "Neue Mail von ") + from;
         return new EmailForwardingService.Notice(subject, mail.html());

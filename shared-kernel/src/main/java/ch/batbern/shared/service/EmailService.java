@@ -900,6 +900,29 @@ public class EmailService {
         return result;
     }
 
+    private static final java.util.regex.Pattern UNRESOLVED_SECTION = java.util.regex.Pattern.compile(
+            "\\{\\{#([A-Za-z0-9_.-]+)}}.*?\\{\\{/\\1}}", java.util.regex.Pattern.DOTALL);
+    private static final java.util.regex.Pattern UNRESOLVED_TAG = java.util.regex.Pattern.compile(
+            "\\{\\{[#/]?[A-Za-z0-9_.-]+}}");
+
+    /**
+     * Finishes a rendered mail (#1235): a {@code {{#name}}…{{/name}}} section whose variable was not
+     * in the map is removed (absent counts as false, as in Mustache), and any {@code {{name}}} tag
+     * left over is blanked. {@link #replaceVariables} keeps leftovers on purpose, because staged
+     * renders fill them in a second pass and the composer reports them to the organizer; call this
+     * only on a mail that gets no further pass.
+     *
+     * @param rendered output of {@link #replaceVariables}, or null
+     * @return the text without unresolved sections and tags, or null for null
+     */
+    public static String removeUnresolved(String rendered) {
+        if (rendered == null) {
+            return null;
+        }
+        String withoutSections = UNRESOLVED_SECTION.matcher(rendered).replaceAll("");
+        return UNRESOLVED_TAG.matcher(withoutSections).replaceAll("");
+    }
+
     /**
      * Email attachment record.
      *

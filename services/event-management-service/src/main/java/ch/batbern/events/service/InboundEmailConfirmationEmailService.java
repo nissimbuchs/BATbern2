@@ -45,7 +45,7 @@ public class InboundEmailConfirmationEmailService {
                 return;
             }
             // Story 16.11: through the one pipeline, so the BATbern layout and {{baseUrl}} are filled in
-            RenderedMail mail = mailPipeline.render(content, mailPipeline.variables().system().asMap());
+            RenderedMail mail = mailPipeline.renderNotice(content, mailPipeline.variables().system().asMap());
             String subject = mail.subject() != null ? mail.subject()
                     : resolvedLocale.equals("de")
                             ? "Newsletter Abmeldung bestätigt"

@@ -230,7 +230,7 @@ public class RegistrationEmailService {
                 .put(MailVariable.DEREGISTRATION_URL, deregistrationUrl)
                 .asMap();
 
-        RenderedMail mail = mailPipeline.render(mailPipeline.template(templateKey, localeStr), variables);
+        RenderedMail mail = mailPipeline.renderNotice(mailPipeline.template(templateKey, localeStr), variables);
         String html = mail.html();
         String subject = mail.subject() != null ? mail.subject()
                 : localeStr.equals("de")
@@ -294,7 +294,7 @@ public class RegistrationEmailService {
                 .put(MailVariable.CREATE_ACCOUNT_URL, baseUrl + "/auth/signup?email=" + userProfile.getEmail())
                 .asMap();
 
-        RenderedMail mail = mailPipeline.render(mailPipeline.template("registration-confirmation", localeStr),
+        RenderedMail mail = mailPipeline.renderNotice(mailPipeline.template("registration-confirmation", localeStr),
                 variables);
         String subject = mail.subject() != null ? mail.subject()
                 : localeStr.equals("de")
