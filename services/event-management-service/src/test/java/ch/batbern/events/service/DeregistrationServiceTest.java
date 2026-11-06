@@ -18,6 +18,7 @@ import org.springframework.boot.test.system.OutputCaptureExtension;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
+import java.time.temporal.ChronoUnit;
 import java.util.NoSuchElementException;
 import java.util.List;
 import java.util.Optional;
@@ -310,7 +311,8 @@ class DeregistrationServiceTest {
         event.setId(id);
         event.setEventCode(code);
         event.setTitle(title);
-        event.setDate(Instant.now().plusSeconds(3600));
+        // A week ahead: the event day itself refuses unregistering (#1238 E2).
+        event.setDate(Instant.now().plus(7, ChronoUnit.DAYS));
         return event;
     }
 }
