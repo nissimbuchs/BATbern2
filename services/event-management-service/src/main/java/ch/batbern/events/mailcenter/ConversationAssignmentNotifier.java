@@ -48,14 +48,15 @@ public class ConversationAssignmentNotifier {
             Optional<Event> event = Optional.ofNullable(conversation.getEventCode())
                     .flatMap(eventRepository::findByEventCode);
             MailVariables variables = event.map(e -> mailPipeline.variables().event(e, locale))
-                    .orElseGet(() -> mailPipeline.variables().system())
+                    .orElseGet(() -> mailPipeline.variables().system().put(MailVariable.EVENT_CODE, ""))
                     .put(MailVariable.RECIPIENT_NAME, user.getFirstName() != null && !user.getFirstName().isBlank()
                             ? user.getFirstName() : assignee)
                     .put(MailVariable.COUNTERPART_NAME, counterpart(conversation))
                     .put(MailVariable.CONVERSATION_SUBJECT, conversation.getSubject())
                     .put(MailVariable.CONVERSATION_LINK,
                             links.link(conversation.getEventCode(), conversation.getConversationKey()));
-            RenderedMail mail = mailPipeline.render(mailPipeline.template(TEMPLATE_KEY, locale), variables.asMap());
+            RenderedMail mail = mailPipeline.renderNotice(mailPipeline.template(TEMPLATE_KEY, locale),
+                    variables.asMap());
             String subject = mail.subject() != null ? mail.subject()
                     : ("en".equals(locale) ? "Assigned to you: " : "Dir zugewiesen: ") + conversation.getSubject();
             MailContext context = MailContext.of(MailTrigger.system(), conversation.getEventCode(),

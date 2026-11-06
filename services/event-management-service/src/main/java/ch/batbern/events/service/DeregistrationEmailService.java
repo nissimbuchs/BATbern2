@@ -73,7 +73,7 @@ public class DeregistrationEmailService {
                     .put(MailVariable.DEREGISTRATION_URL, deregistrationLink)
                     .asMap();
 
-            RenderedMail mail = mailPipeline.render(content, variables);
+            RenderedMail mail = mailPipeline.renderNotice(content, variables);
             String html = mail.html();
             String subject = mail.subject() != null ? mail.subject() : "Ihre Abmeldung / Your Cancellation Request";
 

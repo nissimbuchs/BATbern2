@@ -1,7 +1,7 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.config.TestAwsConfig;
-import ch.batbern.companyuser.domain.Role;
+import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.repository.UserRepository;

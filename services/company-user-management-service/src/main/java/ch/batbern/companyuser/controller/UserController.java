@@ -9,7 +9,7 @@ import ch.batbern.companyuser.api.generated.UserAccountApi;
 import ch.batbern.companyuser.api.generated.UserManagementApi;
 import ch.batbern.companyuser.api.generated.UserSearchApi;
 import ch.batbern.companyuser.api.generated.UserAdministrationApi;
-import ch.batbern.companyuser.domain.Role;
+import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.generated.AddAdditionalEmailRequest;
 import ch.batbern.companyuser.dto.generated.AdminUploadProfilePictureFromUrlRequest;

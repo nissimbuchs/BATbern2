@@ -243,6 +243,13 @@ class MailGoldenTest extends AbstractIntegrationTest {
                     new InboundMailCenter.Stored("conv-932", EVENT_CODE, "Sara Speaker", "Frage zu den Folien"))
                     .apply("success+olga931" + SIM);
             compare("mailcenter-new-mail-" + locale, notice.subject(), notice.html());
+            // #1235: a mail that matches no event must not show the raw {{#eventCode}} section
+            EmailForwardingService.Notice noEvent = conversationNotices.forStored(
+                    new InboundMailCenter.Stored("conv-933", null, "Sara Speaker", "Abmeldung"))
+                    .apply("success+olga931" + SIM);
+            assertThat(noEvent.subject()).doesNotContain("{{");
+            assertThat(noEvent.html()).doesNotContain("{{");
+            compare("mailcenter-new-mail-no-event-" + locale, noEvent.subject(), noEvent.html());
         }
 
         assertThat(mismatches).as("mails that differ from their golden file (actual output in %s)",

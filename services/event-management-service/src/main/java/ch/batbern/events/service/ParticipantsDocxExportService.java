@@ -153,7 +153,7 @@ public class ParticipantsDocxExportService {
     }
 
     private static final ParticipantRow EMPTY_PARTICIPANT =
-            new ParticipantRow("", "", "", "");
+            new ParticipantRow("", "", "", null);
 
     /**
      * Replace the three placeholders in {@code cell} with the participant's
@@ -163,7 +163,7 @@ public class ParticipantsDocxExportService {
     private void fillBadgeCell(XWPFTableCell cell, ParticipantRow p) {
         String fullName = joinName(p.firstName(), p.lastName());
         String firma = nullToEmpty(p.companyDisplayName());
-        String rolle = nullToEmpty(p.role());
+        String rolle = p.badgeLabel();
         for (XWPFParagraph para : cell.getParagraphs()) {
             for (XWPFRun run : para.getRuns()) {
                 String text = run.getText(0);

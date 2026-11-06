@@ -187,7 +187,7 @@ public class SpeakerReminderEmailService {
         Map<String, String> variables = variables(speakerName, sessionTitle, event, deadline, lang);
 
         // Story 16.11: same pipeline as every other mail (was a private merge-then-replace copy).
-        RenderedMail mail = mailPipeline.render(mailPipeline.template(templateKey, lang), variables);
+        RenderedMail mail = mailPipeline.renderNotice(mailPipeline.template(templateKey, lang), variables);
         String html = mail.html();
         String subject = mail.subject() != null ? mail.subject()
                 : buildSubject(locale, reminderType, tier, event.getTitle());

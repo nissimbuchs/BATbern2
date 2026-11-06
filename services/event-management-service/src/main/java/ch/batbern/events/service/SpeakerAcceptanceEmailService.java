@@ -179,7 +179,8 @@ public class SpeakerAcceptanceEmailService {
                         ? speaker.getContentDeadline().format(DATE_FORMATTER) : "")
                 .asMap();
 
-        RenderedMail mail = mailPipeline.render(mailPipeline.template("speaker-acceptance", localeStr), variables);
+        RenderedMail mail = mailPipeline.renderNotice(mailPipeline.template("speaker-acceptance", localeStr),
+                variables);
         String html = mail.html();
         String subject = mail.subject() != null ? mail.subject()
                 : localeStr.equals("de")

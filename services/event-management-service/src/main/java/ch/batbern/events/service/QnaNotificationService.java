@@ -246,7 +246,7 @@ public class QnaNotificationService {
                                     String recipientUsername, int count, String locale) {
         Map<String, String> vars = buildVariables(window, session, event, recipientUsername, count, locale);
         ch.batbern.events.mailcenter.render.RenderedMail mail =
-                mailPipeline.render(mailPipeline.template(TEMPLATE_KEY, locale), vars);
+                mailPipeline.renderNotice(mailPipeline.template(TEMPLATE_KEY, locale), vars);
         String subject = mail.subject() != null ? mail.subject()
                 : ("de".equals(locale) ? "Neue Fragen in der Q&A — " : "New questions in your Q&A — ")
                         + nullToEmpty(session.getTitle());

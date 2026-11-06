@@ -131,7 +131,7 @@ public class TaskReminderEmailService {
                 .put(MailVariable.DASHBOARD_LINK, baseUrl + "/dashboard")
                 .asMap();
 
-        RenderedMail mail = mailPipeline.render(mailPipeline.template("task-reminder", localeStr), variables);
+        RenderedMail mail = mailPipeline.renderNotice(mailPipeline.template("task-reminder", localeStr), variables);
         String html = mail.html();
         String subject = mail.subject() != null ? mail.subject()
                 : localeStr.equals("de")

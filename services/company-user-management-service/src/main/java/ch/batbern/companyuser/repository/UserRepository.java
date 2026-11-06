@@ -1,6 +1,6 @@
 package ch.batbern.companyuser.repository;
 
-import ch.batbern.companyuser.domain.Role;
+import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import jakarta.persistence.LockModeType;
 import org.springframework.data.domain.Pageable;
