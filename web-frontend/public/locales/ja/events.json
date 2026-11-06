@@ -1079,6 +1079,16 @@
     },
     "upcomingDates": {
       "title": "今後のBAT開催日"
+    },
+    "backToEvent": "イベントに戻る",
+    "places": {
+      "title": "席数",
+      "total": "席（合計）",
+      "taken": "予約済み",
+      "free": "空き",
+      "waitlist": "キャンセル待ち",
+      "full": "満席：新しいお申し込みはキャンセル待ちになります",
+      "closed": "受付終了"
     }
   },
   "sessionEdit": {

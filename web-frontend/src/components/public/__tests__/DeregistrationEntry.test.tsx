@@ -100,4 +100,32 @@ describe('DeregistrationEntry', () => {
 
     expect(container).toBeEmptyDOMElement();
   });
+
+  // #1238 (E2): no cancellation from the event day on
+  test('anonymous visitor gets no cancel link on the event day', () => {
+    render(
+      <DeregistrationEntry {...base} isAuthenticated={false} status={undefined} canCancel={false} />
+    );
+
+    expect(
+      screen.queryByRole('button', { name: 'deregistration.homepage.cancelLink' })
+    ).not.toBeInTheDocument();
+  });
+
+  test('logged-in visitor without a registration keeps the notice but not the cancel link on the event day', () => {
+    render(
+      <DeregistrationEntry
+        {...base}
+        isAuthenticated
+        status={null}
+        userEmail="a@example.com"
+        canCancel={false}
+      />
+    );
+
+    expect(screen.getByTestId('not-registered-notice')).toBeInTheDocument();
+    expect(
+      screen.queryByRole('button', { name: 'deregistration.homepage.otherAddressLink' })
+    ).not.toBeInTheDocument();
+  });
 });

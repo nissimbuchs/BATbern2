@@ -51,7 +51,8 @@
         "emailLinkedToAccount": "Questa adressa d'e-mail è gia attribuida ad in conto existent. Per plaschair s'annunziai per s'inscriver per quest event."
       }
     },
-    "registrationClosed": "L’annunzia per quest eveniment è serrada."
+    "registrationClosed": "L’annunzia per quest eveniment è serrada.",
+    "joinWaitlist": "Sin la glista d'spetga"
   },
   "attendee": {
     "welcome": {

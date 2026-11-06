@@ -5,16 +5,18 @@
  * Displays event header and RegistrationWizard in dedicated page mode.
  */
 
-import { useParams, Navigate } from 'react-router-dom';
+import { useParams, Navigate, Link } from 'react-router-dom';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { RegistrationWizard } from '@/components/public/Registration/RegistrationWizard';
 import { eventApiClient } from '@/services/eventApiClient';
 import { useQuery } from '@tanstack/react-query';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
+import { getRegistrationView } from './homePagePhase';
 
 const RegistrationPage = () => {
   const { t } = useTranslation('events');
+  const { t: tCommon } = useTranslation('common');
   const { eventCode } = useParams<{ eventCode: string }>();
 
   // Fetch event details for header
@@ -79,12 +81,30 @@ const RegistrationPage = () => {
               )}
             </div>
 
-            {/* Registration Wizard */}
-            <RegistrationWizard
-              eventCode={eventCode}
-              inline={false}
-              spotsRemaining={event?.spotsRemaining}
-            />
+            {/* #1238 G7: after the deadline, on the event day and afterwards the direct link
+                says so instead of opening a wizard that the backend answers with 409. */}
+            {getRegistrationView(event, undefined, { isAuthenticated: false }).registerPage ===
+            'CLOSED' ? (
+              <div
+                className="max-w-md mx-auto rounded-md border border-border bg-muted px-4 py-6 text-center text-muted-foreground"
+                data-testid="register-page-closed"
+                role="status"
+              >
+                <p className="mb-4">{tCommon('public.registrationClosed')}</p>
+                <Link
+                  to={`/events/${eventCode}`}
+                  className="text-blue-400 hover:text-blue-300 underline"
+                >
+                  {t('public.backToEvent')}
+                </Link>
+              </div>
+            ) : (
+              <RegistrationWizard
+                eventCode={eventCode}
+                inline={false}
+                spotsRemaining={event?.spotsRemaining}
+              />
+            )}
           </div>
         )}
       </div>

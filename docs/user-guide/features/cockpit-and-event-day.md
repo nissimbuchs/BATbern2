@@ -177,7 +177,9 @@ A checklist for the organizer team, from the week before to the day after.
    **Catering Coordination** (due 5 days before), **Namensschilder** (2 days before),
    **Collect presentations (n of m)**, **Wein** (event day), and **Registrations** if the event is
    nearly full or people are waiting.
-2. **Registrations and waitlist.** If places become free or the capacity can be raised, change the
+2. **Registrations and waitlist.** From the registration deadline on, a participant's
+   cancellation no longer moves anyone up from the waitlist, and from the event day on participants
+   can no longer unregister themselves. If places become free or the capacity can be raised, change the
    **Registration Capacity** in Details → Settings. Saving fills the free places from the waitlist
    and mails everyone who moves up. See
    [Waitlist and capacity](../entity-management/event-page.md#waitlist-and-capacity).

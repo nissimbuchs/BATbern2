@@ -51,7 +51,8 @@
         "emailLinkedToAccount": "Die E-Mail-Adrässe ghört scho zu emne bestehende Konto. Bitte mäld di a, für di für d Veranstautig z registriere."
       }
     },
-    "registrationClosed": "D Aamäldig für dä Event isch zue."
+    "registrationClosed": "D Aamäldig für dä Event isch zue.",
+    "joinWaitlist": "Uf d Wartelischte"
   },
   "attendee": {
     "welcome": {

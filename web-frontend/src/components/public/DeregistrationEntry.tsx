@@ -14,7 +14,7 @@ import { useState } from 'react';
 import { useTranslation } from 'react-i18next';
 import { Info } from 'lucide-react';
 import { DeregistrationByEmailModal } from './DeregistrationByEmailModal';
-import type { RegistrationStatus } from './RegistrationStatusBanner';
+import type { RegistrationStatus } from '@/types/eventParticipant.types';
 
 interface DeregistrationEntryProps {
   eventCode: string;
@@ -24,6 +24,11 @@ interface DeregistrationEntryProps {
   isLoading: boolean;
   /** The logged-in user's address, shown in the "not registered" notice */
   userEmail?: string;
+  /**
+   * #1238 (E2): whether a cancellation is still possible (until the end of the day before the
+   * event). On the event day the notice stays, without the "other address" cancel link.
+   */
+  canCancel?: boolean;
 }
 
 const linkClass = 'text-sm text-zinc-400 hover:text-zinc-200 underline transition-colors';
@@ -34,6 +39,7 @@ export function DeregistrationEntry({
   status,
   isLoading,
   userEmail,
+  canCancel = true,
 }: DeregistrationEntryProps) {
   const { t } = useTranslation('registration');
   const [modalOpen, setModalOpen] = useState(false);
@@ -47,6 +53,9 @@ export function DeregistrationEntry({
   );
 
   if (!isAuthenticated) {
+    if (!canCancel) {
+      return null;
+    }
     return (
       <>
         <div className="mt-2 text-center">
@@ -74,13 +83,15 @@ export function DeregistrationEntry({
         <span className="flex-1">
           {t('deregistration.homepage.notRegistered', { email: userEmail ?? '' })}
         </span>
-        <button
-          type="button"
-          onClick={() => setModalOpen(true)}
-          className={`${linkClass} text-left`}
-        >
-          {t('deregistration.homepage.otherAddressLink')}
-        </button>
+        {canCancel && (
+          <button
+            type="button"
+            onClick={() => setModalOpen(true)}
+            className={`${linkClass} text-left`}
+          >
+            {t('deregistration.homepage.otherAddressLink')}
+          </button>
+        )}
       </div>
       {modal}
     </>

@@ -3,7 +3,7 @@
  * Displays event logistics information with icons
  */
 
-import { Calendar, Clock, MapPin, Users, Tag } from 'lucide-react';
+import { Calendar, Clock, MapPin, Tag } from 'lucide-react';
 import { format } from 'date-fns';
 import type { EventDetail } from '@/types/event.types';
 import { useTranslation } from 'react-i18next';
@@ -57,20 +57,6 @@ export const EventLogistics = ({ event }: EventLogisticsProps) => {
             {event.venueAddress && (
               <p className="text-sm text-zinc-500 mt-1">{event.venueAddress.split(',')[0]}</p>
             )}
-          </div>
-        </div>
-      )}
-
-      {/* Capacity — show registrationCapacity only (venueCapacity is organizer-internal) */}
-      {event.registrationCapacity != null && (
-        <div className="flex items-start gap-3">
-          <Users className="h-5 w-5 text-primary mt-1 flex-shrink-0" />
-          <div>
-            <p className="text-sm text-zinc-400">{t('public.logistics.capacity')}</p>
-            <p className="text-lg font-light text-zinc-100">
-              {(event.confirmedCount || 0) + (event.waitlistCount || 0)} /{' '}
-              {event.registrationCapacity}
-            </p>
           </div>
         </div>
       )}

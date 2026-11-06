@@ -6,7 +6,7 @@
  * and inline registration functionality (Story 4.1.5)
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { HeroSection } from '../HeroSection';
@@ -26,6 +26,7 @@ vi.mock('react-i18next', () => ({
     t: (key: string) => {
       const translations: Record<string, string> = {
         'public.register': 'Register Now',
+        'public.joinWaitlist': 'Join the waitlist',
       };
       return translations[key] || key;
     },
@@ -33,8 +34,9 @@ vi.mock('react-i18next', () => ({
 }));
 
 // Mock useMyRegistration — default: not registered (no API call side effects)
+const myRegistration = vi.hoisted(() => ({ current: null as null | Record<string, unknown> }));
 vi.mock('@/hooks/useMyRegistration', () => ({
-  useMyRegistration: () => ({ data: null, isLoading: false }),
+  useMyRegistration: () => ({ data: myRegistration.current, isLoading: false }),
 }));
 
 // Mock RegistrationWizard component
@@ -459,6 +461,96 @@ describe('HeroSection Component', () => {
         const wizardSection = container.querySelector('section.relative.z-20');
         expect(wizardSection).toBeInTheDocument();
       });
+    });
+  });
+
+  // #1238: the hero follows the registration view
+  describe('Registration view (#1238)', () => {
+    afterEach(() => {
+      myRegistration.current = null;
+    });
+
+    test('should_labelTheButtonWaitlist_when_eventFull (G8)', () => {
+      renderWithRouter(
+        <HeroSection {...defaultProps} eventCode="BATbern60" registerCta="WAITLIST" />
+      );
+      expect(screen.getByTestId('hero-register-cta')).toHaveTextContent('Join the waitlist');
+    });
+
+    test('should_showNoButton_when_registrationClosed', () => {
+      renderWithRouter(<HeroSection {...defaultProps} eventCode="BATbern60" registerCta={null} />);
+      expect(screen.queryByTestId('hero-register-cta')).not.toBeInTheDocument();
+      expect(screen.queryByText('Register Now')).not.toBeInTheDocument();
+    });
+
+    test('should_showOwnStatusWithUnregister_when_closedButBeforeEventDay (G5)', () => {
+      myRegistration.current = { status: 'CONFIRMED', registrationCode: 'r1' };
+      renderWithRouter(
+        <HeroSection
+          {...defaultProps}
+          eventCode="BATbern60"
+          registerCta={null}
+          ownStatus="CONFIRMED"
+          canUnregister
+        />
+      );
+      expect(screen.getByTestId('hero-registration-status')).toHaveAttribute(
+        'data-status',
+        'CONFIRMED'
+      );
+      expect(screen.getByTestId('hero-unregister-btn')).toBeInTheDocument();
+    });
+
+    test('should_hideUnregister_when_eventDay (E2)', () => {
+      myRegistration.current = { status: 'WAITLIST', registrationCode: 'r1' };
+      renderWithRouter(
+        <HeroSection
+          {...defaultProps}
+          eventCode="BATbern60"
+          registerCta={null}
+          ownStatus="WAITLIST"
+          canUnregister={false}
+        />
+      );
+      expect(screen.getByTestId('hero-registration-status')).toHaveAttribute(
+        'data-status',
+        'WAITLIST'
+      );
+      expect(screen.queryByTestId('hero-unregister-btn')).not.toBeInTheDocument();
+    });
+
+    test('should_showCancelledWithoutButton_when_closed (G6)', () => {
+      myRegistration.current = { status: 'CANCELLED', registrationCode: 'r1' };
+      renderWithRouter(
+        <HeroSection
+          {...defaultProps}
+          eventCode="BATbern60"
+          registerCta={null}
+          ownStatus="CANCELLED"
+        />
+      );
+      expect(screen.getByTestId('hero-registration-status')).toHaveAttribute(
+        'data-status',
+        'CANCELLED'
+      );
+      expect(screen.queryByTestId('hero-register-cta')).not.toBeInTheDocument();
+    });
+
+    test('should_offerRegisterAgain_when_cancelledAndOpen', () => {
+      myRegistration.current = { status: 'CANCELLED', registrationCode: 'r1' };
+      renderWithRouter(
+        <HeroSection
+          {...defaultProps}
+          eventCode="BATbern60"
+          registerCta="REGISTER"
+          ownStatus="CANCELLED"
+        />
+      );
+      expect(screen.getByTestId('hero-registration-status')).toHaveAttribute(
+        'data-status',
+        'CANCELLED'
+      );
+      expect(screen.getByTestId('hero-register-cta')).toBeInTheDocument();
     });
   });
 });

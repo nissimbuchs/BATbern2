@@ -1079,6 +1079,16 @@
     },
     "upcomingDates": {
       "title": "Tulevat BAT-päivämäärät"
+    },
+    "backToEvent": "Takaisin tapahtumaan",
+    "places": {
+      "title": "Paikat",
+      "total": "paikkaa yhteensä",
+      "taken": "varattu",
+      "free": "vapaana",
+      "waitlist": "jonotuslistalla",
+      "full": "Täynnä: uudet ilmoittautumiset menevät jonotuslistalle",
+      "closed": "Ilmoittautuminen suljettu"
     }
   },
   "sessionEdit": {

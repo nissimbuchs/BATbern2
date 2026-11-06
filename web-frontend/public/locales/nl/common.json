@@ -51,7 +51,8 @@
         "emailLinkedToAccount": "Dit e-mailadres is al gekoppeld aan een bestaand account. Log in om u voor dit evenement te registreren."
       }
     },
-    "registrationClosed": "De registratie voor dit evenement is gesloten."
+    "registrationClosed": "De registratie voor dit evenement is gesloten.",
+    "joinWaitlist": "Op de wachtlijst"
   },
   "attendee": {
     "welcome": {

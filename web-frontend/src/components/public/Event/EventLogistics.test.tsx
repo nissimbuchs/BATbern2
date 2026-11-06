@@ -69,20 +69,10 @@ describe('EventLogistics', () => {
     expect(screen.getByText('Waisenhausplatz 30')).toBeInTheDocument();
   });
 
-  it('should render capacity with current count', () => {
+  it('should not show registration numbers: they live in PlaceNumbersBlock (#1238 G2, G3)', () => {
     render(<EventLogistics event={mockEvent} />);
-    expect(screen.getByText('Registrations')).toBeInTheDocument();
-    expect(screen.getByText('87 / 120')).toBeInTheDocument();
-  });
-
-  it('should render capacity with 0 when no currentAttendeeCount', () => {
-    const eventWithoutAttendees = {
-      ...mockEvent,
-      confirmedCount: undefined,
-      waitlistCount: undefined,
-    };
-    render(<EventLogistics event={eventWithoutAttendees} />);
-    expect(screen.getByText('0 / 120')).toBeInTheDocument();
+    expect(screen.queryByText('Registrations')).not.toBeInTheDocument();
+    expect(screen.queryByText('87 / 120')).not.toBeInTheDocument();
   });
 
   it('should not render time section when typicalStartTime is missing', () => {
@@ -95,12 +85,6 @@ describe('EventLogistics', () => {
     const eventWithoutVenue = { ...mockEvent, venueName: undefined };
     render(<EventLogistics event={eventWithoutVenue} />);
     expect(screen.queryByText('Location')).not.toBeInTheDocument();
-  });
-
-  it('should not render capacity section when venueCapacity is missing', () => {
-    const eventWithoutCapacity = { ...mockEvent, registrationCapacity: undefined };
-    render(<EventLogistics event={eventWithoutCapacity} />);
-    expect(screen.queryByText('Capacity')).not.toBeInTheDocument();
   });
 
   it('should render with responsive grid layout', () => {

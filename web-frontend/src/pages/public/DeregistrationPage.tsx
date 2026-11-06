@@ -4,7 +4,8 @@
  * Public page at /deregister?token={uuid}.
  * Verifies token, shows event/attendee info, and cancels on button click.
  *
- * States: verifying → ready → confirmed | invalid | alreadyCancelled
+ * States: verifying → ready → confirmed | invalid | alreadyCancelled | closed
+ * (#1238 E2: closed from the event day on, Bern time)
  * Mirrors UnsubscribePage.tsx structure exactly.
  */
 
@@ -15,8 +16,9 @@ import { PublicLayout } from '@/components/public/PublicLayout';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/public/ui/card';
 import { Button } from '@/components/public/ui/button';
 import { useVerifyDeregistrationToken, useDeregisterByToken } from '@/hooks/useDeregistration';
+import { isEventDayReached } from './homePagePhase';
 
-type PageState = 'verifying' | 'ready' | 'confirmed' | 'invalid' | 'alreadyCancelled';
+type PageState = 'verifying' | 'ready' | 'confirmed' | 'invalid' | 'alreadyCancelled' | 'closed';
 
 export default function DeregistrationPage() {
   const { t } = useTranslation('registration');
@@ -27,23 +29,29 @@ export default function DeregistrationPage() {
   const verifyQuery = useVerifyDeregistrationToken(token);
   const deregisterMutation = useDeregisterByToken(verifyQuery.data?.eventCode);
 
+  const verifiedEventDate = verifyQuery.data?.eventDate;
+
   // Transition from verifying to ready/invalid once query settles (useEffect avoids setTimeout-in-render anti-pattern)
   useEffect(() => {
     if (pageState !== 'verifying') return;
     if (verifyQuery.isSuccess) {
-      setPageState('ready');
+      const eventDate = verifiedEventDate;
+      setPageState(eventDate && isEventDayReached({ date: eventDate }) ? 'closed' : 'ready');
     } else if (verifyQuery.isError || !token) {
       setPageState('invalid');
     }
-  }, [verifyQuery.isSuccess, verifyQuery.isError, token, pageState]);
+  }, [verifyQuery.isSuccess, verifyQuery.isError, verifiedEventDate, token, pageState]);
 
   function handleConfirm() {
     if (!token) return;
     deregisterMutation.mutate(token, {
       onSuccess: () => setPageState('confirmed'),
       onError: (err) => {
-        // 409 = already cancelled
-        if (err instanceof Error && err.message.includes('409')) {
+        // 409 = already cancelled, or closed since the page was opened (event day reached)
+        const eventDate = verifyQuery.data?.eventDate;
+        if (eventDate && isEventDayReached({ date: eventDate })) {
+          setPageState('closed');
+        } else if (err instanceof Error && err.message.includes('409')) {
           setPageState('alreadyCancelled');
         } else {
           setPageState('invalid');
@@ -118,6 +126,12 @@ export default function DeregistrationPage() {
 
             {pageState === 'invalid' && (
               <p className="text-sm text-destructive">{t('deregistration.page.invalidToken')}</p>
+            )}
+
+            {pageState === 'closed' && (
+              <p className="text-sm text-muted-foreground" data-testid="deregistration-closed">
+                {t('deregistration.page.closed')}
+              </p>
             )}
 
             {pageState === 'alreadyCancelled' && (

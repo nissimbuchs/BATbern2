@@ -1079,6 +1079,16 @@
     },
     "upcomingDates": {
       "title": "Prochaines dates BAT"
+    },
+    "backToEvent": "Retour à l'événement",
+    "places": {
+      "title": "Places",
+      "total": "places au total",
+      "taken": "attribuées",
+      "free": "libres",
+      "waitlist": "sur la liste d'attente",
+      "full": "Complet : les nouvelles inscriptions vont sur la liste d'attente",
+      "closed": "Inscriptions closes"
     }
   },
   "sessionEdit": {

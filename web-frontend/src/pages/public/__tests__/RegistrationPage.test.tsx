@@ -94,7 +94,7 @@ describe('RegistrationPage Component', () => {
       vi.mocked(eventApiClient.getEvent).mockResolvedValue({
         eventCode: 'BAT2025',
         title: 'BATbern 2025',
-        date: '2025-06-15T00:00:00Z',
+        date: '2099-06-15T00:00:00Z',
         venueName: 'Bern',
       });
 
@@ -132,7 +132,7 @@ describe('RegistrationPage Component', () => {
       vi.mocked(eventApiClient.getEvent).mockResolvedValue({
         eventCode: 'BAT2025',
         title: 'BATbern 2025',
-        date: '2025-06-15T00:00:00Z',
+        date: '2099-06-15T00:00:00Z',
         venueName: 'Bern Congress Center',
       });
 
@@ -147,7 +147,7 @@ describe('RegistrationPage Component', () => {
       vi.mocked(eventApiClient.getEvent).mockResolvedValue({
         eventCode: 'BAT2025',
         title: 'BATbern 2025',
-        date: '2025-06-15T00:00:00Z',
+        date: '2099-06-15T00:00:00Z',
         venueName: 'Bern',
       });
 
@@ -164,7 +164,7 @@ describe('RegistrationPage Component', () => {
       vi.mocked(eventApiClient.getEvent).mockResolvedValue({
         eventCode: 'BAT2025',
         title: 'BATbern 2025',
-        date: '2025-06-15T00:00:00Z',
+        date: '2099-06-15T00:00:00Z',
         venueName: 'Bern Congress Center',
       });
 
@@ -179,7 +179,7 @@ describe('RegistrationPage Component', () => {
       vi.mocked(eventApiClient.getEvent).mockResolvedValue({
         eventCode: 'BAT2025',
         title: 'BATbern 2025',
-        date: '2025-06-15T00:00:00Z',
+        date: '2099-06-15T00:00:00Z',
         venueName: 'Bern',
       });
 
@@ -190,11 +190,46 @@ describe('RegistrationPage Component', () => {
       });
     });
 
+    // #1238 G7: a direct link after the deadline says the registration is closed
+    test('should_showClosed_insteadOfWizard_when_deadlinePassed', async () => {
+      vi.mocked(eventApiClient.getEvent).mockResolvedValue({
+        eventCode: 'BAT2025',
+        title: 'BATbern 2025',
+        date: '2099-06-15T00:00:00Z',
+        registrationDeadline: '2020-01-01T00:00:00Z',
+        currentPublishedPhase: 'AGENDA',
+        venueName: 'Bern',
+      });
+
+      renderWithProviders();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('register-page-closed')).toBeInTheDocument();
+      });
+      expect(screen.queryByTestId('registration-wizard')).not.toBeInTheDocument();
+    });
+
+    test('should_showClosed_when_eventIsOver', async () => {
+      vi.mocked(eventApiClient.getEvent).mockResolvedValue({
+        eventCode: 'BAT2025',
+        title: 'BATbern 2025',
+        date: '2020-06-15T00:00:00Z',
+        workflowState: 'EVENT_COMPLETED',
+        venueName: 'Bern',
+      });
+
+      renderWithProviders();
+
+      await waitFor(() => {
+        expect(screen.getByTestId('register-page-closed')).toBeInTheDocument();
+      });
+    });
+
     test('should_passEventCodeToWizard_when_rendered', async () => {
       vi.mocked(eventApiClient.getEvent).mockResolvedValue({
         eventCode: 'BAT2025',
         title: 'BATbern 2025',
-        date: '2025-06-15T00:00:00Z',
+        date: '2099-06-15T00:00:00Z',
         venueName: 'Bern',
       });
 
@@ -209,7 +244,7 @@ describe('RegistrationPage Component', () => {
       vi.mocked(eventApiClient.getEvent).mockResolvedValue({
         eventCode: 'BAT2025',
         title: 'BATbern 2025',
-        date: '2025-06-15T00:00:00Z',
+        date: '2099-06-15T00:00:00Z',
         venueName: 'Bern',
       });
 
@@ -233,7 +268,7 @@ describe('RegistrationPage Component', () => {
       vi.mocked(eventApiClient.getEvent).mockResolvedValue({
         eventCode: 'CUSTOM2025',
         title: 'Custom Event 2025',
-        date: '2025-06-15T00:00:00Z',
+        date: '2099-06-15T00:00:00Z',
         venueName: 'Venue',
       });
 
@@ -267,7 +302,7 @@ describe('RegistrationPage Component', () => {
       vi.mocked(eventApiClient.getEvent).mockResolvedValue({
         eventCode: 'BAT2025',
         title: 'BATbern 2025',
-        date: '2025-06-15T00:00:00Z',
+        date: '2099-06-15T00:00:00Z',
       });
 
       renderWithProviders();
@@ -284,7 +319,7 @@ describe('RegistrationPage Component', () => {
       vi.mocked(eventApiClient.getEvent).mockResolvedValue({
         eventCode: 'BAT2025',
         title: 'BATbern 2025',
-        date: '2025-06-15T00:00:00Z',
+        date: '2099-06-15T00:00:00Z',
         venueName: 'Bern',
       });
 

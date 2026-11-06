@@ -1079,6 +1079,16 @@
     },
     "upcomingDates": {
       "title": "Proximas datas BAT"
+    },
+    "backToEvent": "Enavos a l'eveniment",
+    "places": {
+      "title": "Plazzas",
+      "total": "plazzas en total",
+      "taken": "occupadas",
+      "free": "libras",
+      "waitlist": "sin la glista d'spetga",
+      "full": "Occupà: novas annunzias van sin la glista d'spetga",
+      "closed": "Annunzia serrada"
     }
   },
   "sessionEdit": {

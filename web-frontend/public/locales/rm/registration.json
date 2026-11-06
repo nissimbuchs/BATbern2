@@ -218,9 +218,10 @@
       "confirmButton": "Gea, annullar mia annunzia",
       "goBack": "Enavos",
       "successTitle": "Annunzia annullada",
-      "successBody": "Vossa annunzia è vegnida annullada. Voss plaz è vegnì liberà per la proxima persuna sin la glista da spetga.",
+      "successBody": "Vossa annunzia è vegnida annullada.",
       "invalidToken": "Quest link per annullar n'è betg valid u è gia vegnì duvrà. Contactai nus, sche Vus duvrais agid.",
-      "alreadyCancelled": "Vossa annunzia è gia vegnida annullada."
+      "alreadyCancelled": "Vossa annunzia è gia vegnida annullada.",
+      "closed": "Dal di da l'eveniment davent n'è l'annullaziun betg pli pussaivla. Scrivai a nus sche Vus na pudais betg vegnir."
     },
     "modal": {
       "title": "Annullar l'annunzia",

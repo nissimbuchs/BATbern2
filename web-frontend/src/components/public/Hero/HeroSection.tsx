@@ -37,8 +37,19 @@ interface HeroSectionProps {
   countdownTimer?: ReactNode;
   /** AC8 (Story 10.11): Remaining spots — passed through to RegistrationWizard */
   spotsRemaining?: number | null;
-  /** Hide the register CTA entirely (POST_EVENT, ARCHIVE, COMING_SOON) */
-  hideRegisterCta?: boolean;
+  /**
+   * #1238: the call to action for a visitor without an active registration, from
+   * `getRegistrationView`: register, join the waitlist (event full), or none (not open, closed,
+   * event day, after the event). Defaults to REGISTER.
+   */
+  registerCta?: 'REGISTER' | 'WAITLIST' | null;
+  /**
+   * #1238: the visitor's own status, shown once, here. Omitted = derived from the visitor's
+   * registration as before; null = show none.
+   */
+  ownStatus?: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | null;
+  /** #1238 (E2): offer "Abmelden" (until the end of the day before the event). Default true. */
+  canUnregister?: boolean;
 }
 
 export const HeroSection = ({
@@ -52,7 +63,9 @@ export const HeroSection = ({
   unicornProjectId = 'jfzsiwProJi81qvb7uKX',
   countdownTimer,
   spotsRemaining,
-  hideRegisterCta = false,
+  registerCta = 'REGISTER',
+  ownStatus,
+  canUnregister = true,
 }: HeroSectionProps) => {
   const { t } = useTranslation(['common', 'registration']);
   const [isRegistrationExpanded, setIsRegistrationExpanded] = useState(false);
@@ -65,7 +78,22 @@ export const HeroSection = ({
 
   // API-based registration check for authenticated users (no sessionStorage required)
   const { data: myRegistration } = useMyRegistration(eventCode);
-  const isAlreadyRegistered = myRegistration != null && myRegistration.status !== 'CANCELLED';
+  const derivedStatus =
+    myRegistration != null && myRegistration.status !== 'ATTENDED' ? myRegistration.status : null;
+  const status = ownStatus !== undefined ? ownStatus : derivedStatus;
+  const isAlreadyRegistered = status != null && status !== 'CANCELLED';
+  const statusText =
+    status === 'WAITLIST' && myRegistration?.waitlistPosition != null
+      ? t('registration:registrationStatusBanner.waitlistWithPosition', {
+          position: myRegistration.waitlistPosition,
+        })
+      : status
+        ? t(
+            `registration:registrationStatusBanner.${status.toLowerCase() as 'confirmed' | 'registered' | 'waitlist' | 'cancelled'}`
+          )
+        : '';
+  const ctaLabel =
+    ctaText || (registerCta === 'WAITLIST' ? t('public.joinWaitlist') : t('public.register'));
 
   // Check for pending registration in sessionStorage
   useEffect(() => {
@@ -285,8 +313,17 @@ export const HeroSection = ({
               )}
 
               <div className="flex flex-col sm:flex-row items-start sm:items-center gap-4">
-                {!hideRegisterCta &&
-                  (pendingRegistration ? (
+                {status === 'CANCELLED' && (
+                  <p
+                    className="text-sm text-zinc-300 bg-zinc-800/60 border border-zinc-700 rounded-md px-3 py-2"
+                    data-testid="hero-registration-status"
+                    data-status="CANCELLED"
+                  >
+                    {statusText}
+                  </p>
+                )}
+                {(registerCta != null || isAlreadyRegistered) &&
+                  (pendingRegistration && registerCta != null ? (
                     // Show "already registered" message (sessionStorage — just registered this session)
                     <div className="bg-green-900/20 border border-green-800 rounded-lg p-4 max-w-md">
                       <div className="flex items-start gap-3">
@@ -317,21 +354,25 @@ export const HeroSection = ({
                           <p className="text-green-400 font-medium mb-1">
                             {t('registration.alreadyRegistered.title')}
                           </p>
-                          <p className="text-sm text-zinc-300 mb-2">
-                            {t(
-                              `registration:registrationStatusBanner.${(myRegistration!.status ?? 'REGISTERED').toLowerCase() as 'confirmed' | 'registered' | 'waitlist'}`
-                            )}
-                          </p>
-                          <Button
-                            variant="ghost"
-                            size="sm"
-                            onClick={() => setIsUnregisterExpanded(true)}
-                            disabled={isUnregisterExpanded}
-                            className="text-xs text-red-400 hover:text-red-300 px-0 h-auto"
-                            data-testid="hero-unregister-btn"
+                          <p
+                            className="text-sm text-zinc-300 mb-2"
+                            data-testid="hero-registration-status"
+                            data-status={status ?? undefined}
                           >
-                            {t('registration:unregister.button')}
-                          </Button>
+                            {statusText}
+                          </p>
+                          {canUnregister && myRegistration && (
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => setIsUnregisterExpanded(true)}
+                              disabled={isUnregisterExpanded}
+                              className="text-xs text-red-400 hover:text-red-300 px-0 h-auto"
+                              data-testid="hero-unregister-btn"
+                            >
+                              {t('registration:unregister.button')}
+                            </Button>
+                          )}
                         </div>
                       </div>
                     </div>
@@ -342,13 +383,15 @@ export const HeroSection = ({
                       className="text-base md:text-lg"
                       onClick={() => setIsRegistrationExpanded(true)}
                       disabled={isRegistrationExpanded}
+                      data-testid="hero-register-cta"
+                      data-cta={registerCta ?? undefined}
                     >
-                      {ctaText || t('public.register')}
+                      {ctaLabel}
                     </Button>
                   ) : (
                     // Fallback to link mode (when eventCode not provided)
                     <Button size="lg" className="text-base md:text-lg" asChild>
-                      <Link to={ctaLink}>{ctaText || t('public.register')}</Link>
+                      <Link to={ctaLink}>{ctaLabel}</Link>
                     </Button>
                   ))}
                 {countdownTimer && <div className="ml-0 sm:ml-4">{countdownTimer}</div>}
