@@ -42,7 +42,10 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
+import static org.mockito.ArgumentMatchers.argThat;
+import static org.mockito.ArgumentMatchers.contains;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
@@ -210,7 +213,10 @@ class RegistrationEmailServiceTest {
         // Inbound reply routing (Story 10.17) extracts BATbern\\d+ from the subject
         assertThat(subjectCaptor.getValue()).contains("BATbern142");
         assertThat(subjectCaptor.getValue()).contains("BATbern Architekten Treffen #142");
-        assertThat(htmlBodyCaptor.getValue()).contains("{{confirmationUrl}}");
+        // The template carries the confirmation link and the service supplies its value (the stub
+        // above resolves only ${…}, so the finished mail no longer shows the raw tag, #1235)
+        verify(emailService, atLeastOnce()).replaceVariables(contains("{{confirmationUrl}}"),
+                argThat(vars -> vars.containsKey("confirmationUrl")));
         assertThat(htmlBodyCaptor.getValue()).doesNotContain(".ics");
         assertThat(htmlBodyCaptor.getValue()).contains("erst gültig, wenn Sie sie bestätigen");
     }
@@ -697,7 +703,7 @@ class RegistrationEmailServiceTest {
         assertThat(emailCaptor.getValue()).isEqualTo("john.doe@example.com");
         assertThat(subjectCaptor.getValue()).startsWith("Anmeldung bestätigt");
         assertThat(subjectCaptor.getValue()).contains("BATbern142");
-        assertThat(htmlBodyCaptor.getValue()).contains("{{deregistrationUrl}}");
+        verify(emailService, atLeastOnce()).replaceVariables(contains("{{deregistrationUrl}}"), anyMap());
         assertThat(htmlBodyCaptor.getValue()).doesNotContain("{{confirmationUrl}}");
         assertThat(varsCaptor.getValue()).containsEntry("deregistrationUrl",
                 "https://batbern.ch/deregister?token=11111111-2222-3333-4444-555555555555");

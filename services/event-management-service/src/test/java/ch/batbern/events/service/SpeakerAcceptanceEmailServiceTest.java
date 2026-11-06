@@ -116,16 +116,11 @@ class SpeakerAcceptanceEmailServiceTest {
         // Default: no DB template — use classpath fallback
         when(emailTemplateService.findByKeyAndLocale(anyString(), anyString())).thenReturn(Optional.empty());
 
-        // Mock email service to return template as-is for variable replacement
-        when(emailService.replaceVariables(anyString(), any())).thenAnswer(invocation -> {
-            String template = invocation.getArgument(0);
-            java.util.Map<String, String> vars = invocation.getArgument(1);
-            String result = template;
-            for (var entry : vars.entrySet()) {
-                result = result.replace("{{" + entry.getKey() + "}}", entry.getValue());
-            }
-            return result;
-        });
+        // The real renderer (sections included): the service finishes the mail with
+        // MailPipeline.renderNotice, which drops sections a stand-in would leave unresolved (#1235)
+        EmailService renderer = new EmailService();
+        when(emailService.replaceVariables(anyString(), any())).thenAnswer(invocation ->
+                renderer.replaceVariables(invocation.getArgument(0), invocation.getArgument(1)));
     }
 
     @Nested
