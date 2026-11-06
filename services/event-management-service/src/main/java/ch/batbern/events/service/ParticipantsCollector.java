@@ -10,6 +10,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.shared.exception.NotFoundException;
+import ch.batbern.shared.types.Role;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -18,10 +19,12 @@ import org.springframework.transaction.annotation.Transactional;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+import java.util.Set;
 
 /**
  * Builds the canonical participant list for an event — the single source of truth
@@ -29,18 +32,20 @@ import java.util.Map;
  * name-badge export ({@link ParticipantsDocxExportService}).
  *
  * <p>Source-set union, deduplicated by {@code username} with role precedence
- * {@code Organisator > Referent > Teilnehmer}:
+ * {@code ORGANIZER > SPEAKER > PARTNER > ATTENDEE} (the declaration order of {@link Role}):
  * <ol>
  *   <li>All ORGANIZER-role users from CUMS
  *       ({@link UserApiClient#getOrganizerUsernames()})</li>
  *   <li>All {@code PRIMARY_SPEAKER} + {@code CO_SPEAKER} session_users of the
  *       event</li>
- *   <li>All registrations with status in {@code [registered, confirmed, attended]}</li>
+ *   <li>All registrations with status in {@code [registered, confirmed, attended]}; a registrant
+ *       holding the PARTNER role in CUMS ({@link UserApiClient#getPartnerUsernames()}) is a
+ *       PARTNER (#1236). Being a partner alone does not put someone on the list.</li>
  * </ol>
  *
  * <p><strong>Deterministic sort</strong> applied at the end so XLSX and DOCX
- * both honour it: by role precedence ascending ({@code Organisator} first,
- * then {@code Referent}, then {@code Teilnehmer}), then alphabetically by
+ * both honour it: by role precedence ascending (organizers, speakers, partners,
+ * attendees), then alphabetically by
  * {@code lastName} via a {@link Locale#GERMAN} {@link Collator} (so Swiss-
  * German umlaut handling is correct — {@code Müller} sorts before
  * {@code Niederer}), then by {@code firstName} as a tie-breaker.
@@ -55,13 +60,6 @@ import java.util.Map;
 @Slf4j
 public class ParticipantsCollector {
 
-    /** Role label printed on the badge / shown in the XLSX. */
-    public static final String ROLE_ORGANIZER = "Organisator";
-    /** Role label printed on the badge / shown in the XLSX. */
-    public static final String ROLE_SPEAKER = "Referent";
-    /** Role label printed on the badge / shown in the XLSX. */
-    public static final String ROLE_ATTENDEE = "Teilnehmer";
-
     /**
      * Statuses that count as participants for badge printing. Mirrors
      * {@code Registration.CONFIRMED_STATUSES} but is reproduced literally
@@ -70,12 +68,6 @@ public class ParticipantsCollector {
      */
     private static final List<String> BADGE_STATUSES =
             List.of("registered", "confirmed", "attended");
-
-    /** Role precedence used both for dedupe and for the canonical sort. */
-    private static final Map<String, Integer> ROLE_PRECEDENCE = Map.of(
-            ROLE_ORGANIZER, 0,
-            ROLE_SPEAKER, 1,
-            ROLE_ATTENDEE, 2);
 
     private final EventRepository eventRepository;
     private final RegistrationRepository registrationRepository;
@@ -125,7 +117,7 @@ public class ParticipantsCollector {
                         user.getFirstName(),
                         user.getLastName(),
                         resolveCompany(user.getCompanyId()),
-                        ROLE_ORGANIZER));
+                        Role.ORGANIZER));
             } catch (UserNotFoundException ignore) {
                 log.warn("Organizer username {} not resolvable — skipping", username);
             }
@@ -141,7 +133,7 @@ public class ParticipantsCollector {
                 continue;
             }
             ParticipantRow existing = rows.get(username);
-            if (existing != null && ROLE_ORGANIZER.equals(existing.role())) {
+            if (existing != null && existing.role() == Role.ORGANIZER) {
                 continue; // higher-precedence row already present
             }
             try {
@@ -150,14 +142,14 @@ public class ParticipantsCollector {
                         user.getFirstName(),
                         user.getLastName(),
                         resolveCompany(user.getCompanyId()),
-                        ROLE_SPEAKER));
+                        Role.SPEAKER));
             } catch (UserNotFoundException ignore) {
                 // Fall back to cached fields on session_users (no CUMS profile).
                 rows.put(username, new ParticipantRow(
                         su.getSpeakerFirstName(),
                         su.getSpeakerLastName(),
                         "",
-                        ROLE_SPEAKER));
+                        Role.SPEAKER));
             }
         }
     }
@@ -168,18 +160,19 @@ public class ParticipantsCollector {
                         .filter(r -> r.getStatus() != null
                                 && BADGE_STATUSES.contains(r.getStatus().toLowerCase()))
                         .toList();
+        Set<String> partners = partnerUsernames();
         for (Registration r : registrations) {
             String username = r.getAttendeeUsername();
             if (username == null || username.isBlank()) {
                 continue;
             }
             ParticipantRow existing = rows.get(username);
-            // ORGANIZER and SPEAKER both outrank ATTENDEE.
+            // ORGANIZER and SPEAKER both outrank PARTNER and ATTENDEE.
             if (existing != null
-                    && (ROLE_ORGANIZER.equals(existing.role())
-                        || ROLE_SPEAKER.equals(existing.role()))) {
+                    && (existing.role() == Role.ORGANIZER || existing.role() == Role.SPEAKER)) {
                 continue;
             }
+            Role role = partners.contains(username) ? Role.PARTNER : Role.ATTENDEE;
             // Prefer the live CUMS profile — historical registrations imported
             // before the denormalised attendee_first_name / attendee_last_name
             // columns existed have NULL there, so badges came out empty. Same
@@ -196,7 +189,7 @@ public class ParticipantsCollector {
                         nullToEmpty(user.getFirstName()),
                         nullToEmpty(user.getLastName()),
                         resolveCompany(user.getCompanyId()),
-                        ROLE_ATTENDEE));
+                        role));
             } else {
                 // CUMS doesn't know this user — fall back to whatever the
                 // registration row's denormalised cache fields hold (legacy
@@ -206,8 +199,19 @@ public class ParticipantsCollector {
                         nullToEmpty(r.getAttendeeFirstName()),
                         nullToEmpty(r.getAttendeeLastName()),
                         resolveCompany(r.getAttendeeCompanyId()),
-                        ROLE_ATTENDEE));
+                        role));
             }
+        }
+    }
+
+    /** Usernames holding the PARTNER role; empty (logged) when CUMS cannot answer, as for organizers. */
+    private Set<String> partnerUsernames() {
+        try {
+            return new HashSet<>(userApiClient.getPartnerUsernames());
+        } catch (Exception e) {
+            log.warn("Could not fetch partner list for participants export, partners listed as attendees: {}",
+                    e.getMessage());
+            return Set.of();
         }
     }
 
@@ -216,7 +220,7 @@ public class ParticipantsCollector {
         Collator german = Collator.getInstance(Locale.GERMAN);
         german.setStrength(Collator.SECONDARY); // case-insensitive but umlaut-aware
         Comparator<ParticipantRow> byRole = Comparator.comparingInt(
-                r -> ROLE_PRECEDENCE.getOrDefault(r.role(), Integer.MAX_VALUE));
+                r -> r.role() == null ? Integer.MAX_VALUE : r.role().ordinal());
         Comparator<ParticipantRow> byLastName = (a, b) ->
                 german.compare(nullToEmpty(a.lastName()), nullToEmpty(b.lastName()));
         Comparator<ParticipantRow> byFirstName = (a, b) ->

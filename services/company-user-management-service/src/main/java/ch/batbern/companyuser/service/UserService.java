@@ -2,7 +2,7 @@ package ch.batbern.companyuser.service;
 
 import java.util.LinkedHashSet;
 import java.util.List;
-import ch.batbern.companyuser.domain.Role;
+import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.dto.generated.AddAdditionalEmailRequest;

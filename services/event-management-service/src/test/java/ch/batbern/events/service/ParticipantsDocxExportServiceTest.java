@@ -1,5 +1,6 @@
 package ch.batbern.events.service;
 
+import ch.batbern.shared.types.Role;
 import org.apache.poi.xwpf.usermodel.XWPFDocument;
 import org.apache.poi.xwpf.usermodel.XWPFTable;
 import org.apache.poi.xwpf.usermodel.XWPFTableCell;
@@ -49,9 +50,9 @@ class ParticipantsDocxExportServiceTest {
     @DisplayName("3 participants → 1 page; their cells filled, the remaining 24 slots blank")
     void should_fillThreeBadges_and_blankTheRest() throws IOException {
         when(participantsCollector.collect(EVENT_CODE)).thenReturn(List.of(
-                new ParticipantRow("Alice", "Organizer", "elca", ParticipantsCollector.ROLE_ORGANIZER),
-                new ParticipantRow("Bob", "Speaker", "bkw", ParticipantsCollector.ROLE_SPEAKER),
-                new ParticipantRow("Carol", "Attendee", "mobiliar", ParticipantsCollector.ROLE_ATTENDEE)));
+                new ParticipantRow("Alice", "Organizer", "elca", Role.ORGANIZER),
+                new ParticipantRow("Bob", "Speaker", "bkw", Role.SPEAKER),
+                new ParticipantRow("Carol", "Attendee", "mobiliar", Role.ATTENDEE)));
 
         byte[] docx = service.generateNameBadgeDocx(EVENT_CODE);
         assertThat(docx).isNotEmpty();
@@ -107,10 +108,10 @@ class ParticipantsDocxExportServiceTest {
         List<ParticipantRow> rows = new ArrayList<>();
         for (int i = 0; i < ParticipantsDocxExportService.BADGES_PER_PAGE; i++) {
             rows.add(new ParticipantRow("First" + i, "Last" + i, "Co" + i,
-                    ParticipantsCollector.ROLE_ATTENDEE));
+                    Role.ATTENDEE));
         }
         rows.add(new ParticipantRow("Overflow", "Person", "OverflowCo",
-                ParticipantsCollector.ROLE_ATTENDEE));
+                Role.ATTENDEE));
         when(participantsCollector.collect(EVENT_CODE)).thenReturn(rows);
 
         byte[] docx = service.generateNameBadgeDocx(EVENT_CODE);
@@ -136,7 +137,7 @@ class ParticipantsDocxExportServiceTest {
         List<ParticipantRow> rows = new ArrayList<>();
         for (int i = 0; i < ParticipantsDocxExportService.BADGES_PER_PAGE + 5; i++) {
             rows.add(new ParticipantRow("F" + i, "L" + i, "C" + i,
-                    ParticipantsCollector.ROLE_ATTENDEE));
+                    Role.ATTENDEE));
         }
         when(participantsCollector.collect(EVENT_CODE)).thenReturn(rows);
 
@@ -155,7 +156,7 @@ class ParticipantsDocxExportServiceTest {
     @DisplayName("Name first/last fallback: empty firstName renders just lastName, no leading space")
     void should_handleMissingFirstName() throws IOException {
         when(participantsCollector.collect(EVENT_CODE)).thenReturn(List.of(
-                new ParticipantRow("", "Lastonly", "co", ParticipantsCollector.ROLE_ATTENDEE)));
+                new ParticipantRow("", "Lastonly", "co", Role.ATTENDEE)));
 
         byte[] docx = service.generateNameBadgeDocx(EVENT_CODE);
         try (XWPFDocument doc = new XWPFDocument(new ByteArrayInputStream(docx))) {
@@ -168,12 +169,12 @@ class ParticipantsDocxExportServiceTest {
     @DisplayName("Participants with empty firstName AND lastName are filtered out (no wasted badge)")
     void should_dropParticipantsWithNoName() throws IOException {
         when(participantsCollector.collect(EVENT_CODE)).thenReturn(List.of(
-                new ParticipantRow("Alice", "Real", "elca", ParticipantsCollector.ROLE_ATTENDEE),
+                new ParticipantRow("Alice", "Real", "elca", Role.ATTENDEE),
                 // These three have no usable name — must be dropped from the badge list.
-                new ParticipantRow("", "", "swisscom", ParticipantsCollector.ROLE_ATTENDEE),
-                new ParticipantRow(null, null, null, ParticipantsCollector.ROLE_ATTENDEE),
-                new ParticipantRow("   ", "  ", "bkw", ParticipantsCollector.ROLE_ATTENDEE),
-                new ParticipantRow("Bob", "AlsoReal", "bls", ParticipantsCollector.ROLE_ATTENDEE)));
+                new ParticipantRow("", "", "swisscom", Role.ATTENDEE),
+                new ParticipantRow(null, null, null, Role.ATTENDEE),
+                new ParticipantRow("   ", "  ", "bkw", Role.ATTENDEE),
+                new ParticipantRow("Bob", "AlsoReal", "bls", Role.ATTENDEE)));
 
         byte[] docx = service.generateNameBadgeDocx(EVENT_CODE);
 

@@ -66,7 +66,7 @@ public class ParticipantsExportService {
                 writeCell(dataRow, 0, nullToEmpty(p.firstName()), null);
                 writeCell(dataRow, 1, nullToEmpty(p.lastName()), null);
                 writeCell(dataRow, 2, nullToEmpty(p.companyDisplayName()), null);
-                writeCell(dataRow, 3, p.role(), null);
+                writeCell(dataRow, 3, p.badgeLabel(), null);
             }
 
             ByteArrayOutputStream out = new ByteArrayOutputStream();

@@ -9,6 +9,7 @@ import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.SessionUserRepository;
+import ch.batbern.shared.types.Role;
 import ch.batbern.shared.exception.NotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -93,9 +94,9 @@ class ParticipantsCollectorTest {
         List<ParticipantRow> rows = collector.collect(EVENT_CODE);
 
         assertThat(rows).extracting(ParticipantRow::role).containsExactly(
-                ParticipantsCollector.ROLE_ORGANIZER,
-                ParticipantsCollector.ROLE_SPEAKER,
-                ParticipantsCollector.ROLE_ATTENDEE);
+                Role.ORGANIZER,
+                Role.SPEAKER,
+                Role.ATTENDEE);
     }
 
     @Test
@@ -157,7 +158,7 @@ class ParticipantsCollectorTest {
         List<ParticipantRow> rows = collector.collect(EVENT_CODE);
 
         assertThat(rows).hasSize(1);
-        assertThat(rows.get(0).role()).isEqualTo(ParticipantsCollector.ROLE_ORGANIZER);
+        assertThat(rows.get(0).role()).isEqualTo(Role.ORGANIZER);
     }
 
     @Test
@@ -186,7 +187,7 @@ class ParticipantsCollectorTest {
         assertThat(p.firstName()).isEqualTo("Legacy");
         assertThat(p.lastName()).isEqualTo("Attendee");
         assertThat(p.companyDisplayName()).isEqualTo("Acme AG");
-        assertThat(p.role()).isEqualTo(ParticipantsCollector.ROLE_ATTENDEE);
+        assertThat(p.role()).isEqualTo(Role.ATTENDEE);
     }
 
     @Test
@@ -237,7 +238,7 @@ class ParticipantsCollectorTest {
         assertThat(rows).hasSize(1);
         assertThat(rows.get(0).firstName()).isEqualTo("Cached");
         assertThat(rows.get(0).lastName()).isEqualTo("Speaker");
-        assertThat(rows.get(0).role()).isEqualTo(ParticipantsCollector.ROLE_SPEAKER);
+        assertThat(rows.get(0).role()).isEqualTo(Role.SPEAKER);
     }
 
     @Test
@@ -247,6 +248,109 @@ class ParticipantsCollectorTest {
 
         assertThatThrownBy(() -> collector.collect("BATbern999"))
                 .isInstanceOf(NotFoundException.class);
+    }
+
+    // ── #1236: partners on badges and in the participants export ─────────────────────────
+
+    private SessionUser speakerRow(String username) {
+        SessionUser su = new SessionUser();
+        su.setUsername(username);
+        su.setSpeakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER);
+        return su;
+    }
+
+    private Registration registered(String username, String first, String last) {
+        return Registration.builder().attendeeUsername(username)
+                .attendeeFirstName(first).attendeeLastName(last).status("registered").build();
+    }
+
+    @Test
+    @DisplayName("#1236: a registered partner gets PARTNER and sorts after speakers, before attendees")
+    void should_labelPartnerAndSortAfterSpeakers_when_partnerRegistered() {
+        stubEventFound();
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
+        when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of(speakerRow("s.one")));
+        when(userApiClient.getUserByUsername("s.one")).thenReturn(user("s.one", "Sam", "Zebra", null));
+        when(userApiClient.getPartnerUsernames()).thenReturn(List.of("p.one"));
+        when(registrationRepository.findByEventId(EVENT_ID)).thenReturn(List.of(
+                registered("a.one", "Anna", "Aebi"), registered("p.one", "Paul", "Partner")));
+        when(userApiClient.getUserByUsername("a.one")).thenThrow(new UserNotFoundException("a.one"));
+        when(userApiClient.getUserByUsername("p.one")).thenReturn(user("p.one", "Paul", "Partner", null));
+
+        List<ParticipantRow> rows = collector.collect(EVENT_CODE);
+
+        assertThat(rows).extracting(ParticipantRow::lastName).containsExactly("Zebra", "Partner", "Aebi");
+        assertThat(rows).extracting(ParticipantRow::role)
+                .containsExactly(Role.SPEAKER, Role.PARTNER, Role.ATTENDEE);
+    }
+
+    @Test
+    @DisplayName("#1236: a partner who also speaks gets one badge, as SPEAKER")
+    void should_keepSpeaker_when_partnerAlsoSpeaks() {
+        stubEventFound();
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
+        when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of(speakerRow("p.one")));
+        when(userApiClient.getUserByUsername("p.one")).thenReturn(user("p.one", "Paul", "Partner", null));
+        when(userApiClient.getPartnerUsernames()).thenReturn(List.of("p.one"));
+        when(registrationRepository.findByEventId(EVENT_ID)).thenReturn(List.of(registered("p.one", "Paul", "Partner")));
+
+        List<ParticipantRow> rows = collector.collect(EVENT_CODE);
+
+        assertThat(rows).extracting(ParticipantRow::role).containsExactly(Role.SPEAKER);
+    }
+
+    @Test
+    @DisplayName("#1236: an organizer who is also a partner gets one badge, as ORGANIZER")
+    void should_keepOrganizer_when_organizerAlsoPartner() {
+        stubEventFound();
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("o.one"));
+        when(userApiClient.getUserByUsername("o.one")).thenReturn(user("o.one", "Olga", "Org", null));
+        when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of());
+        when(userApiClient.getPartnerUsernames()).thenReturn(List.of("o.one"));
+        when(registrationRepository.findByEventId(EVENT_ID)).thenReturn(List.of(registered("o.one", "Olga", "Org")));
+
+        List<ParticipantRow> rows = collector.collect(EVENT_CODE);
+
+        assertThat(rows).extracting(ParticipantRow::role).containsExactly(Role.ORGANIZER);
+    }
+
+    @Test
+    @DisplayName("#1236: being a partner alone does not put someone on the list")
+    void should_skipPartner_when_notRegistered() {
+        stubEventFound();
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
+        when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of());
+        when(userApiClient.getPartnerUsernames()).thenReturn(List.of("p.absent"));
+        when(registrationRepository.findByEventId(EVENT_ID)).thenReturn(List.of(
+                Registration.builder().attendeeUsername("p.absent").attendeeFirstName("Pia")
+                        .attendeeLastName("Away").status("cancelled").build()));
+
+        assertThat(collector.collect(EVENT_CODE)).isEmpty();
+    }
+
+    @Test
+    @DisplayName("#1236: when CUMS cannot list partners, a registered partner falls back to ATTENDEE")
+    void should_fallBackToAttendee_when_partnerListUnavailable() {
+        stubEventFound();
+        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
+        when(sessionUserRepository.findEventSpeakersByEventId(EVENT_ID)).thenReturn(List.of());
+        when(userApiClient.getPartnerUsernames()).thenThrow(new RuntimeException("CUMS down"));
+        when(registrationRepository.findByEventId(EVENT_ID)).thenReturn(List.of(registered("p.one", "Paul", "Partner")));
+        when(userApiClient.getUserByUsername("p.one")).thenReturn(user("p.one", "Paul", "Partner", null));
+
+        List<ParticipantRow> rows = collector.collect(EVENT_CODE);
+
+        assertThat(rows).extracting(ParticipantRow::role).containsExactly(Role.ATTENDEE);
+    }
+
+    @Test
+    @DisplayName("#1236: badge labels are the German role names, Partner included")
+    void should_printGermanBadgeLabel_perRole() {
+        assertThat(new ParticipantRow("a", "b", "c", Role.ORGANIZER).badgeLabel()).isEqualTo("Organisator");
+        assertThat(new ParticipantRow("a", "b", "c", Role.SPEAKER).badgeLabel()).isEqualTo("Referent");
+        assertThat(new ParticipantRow("a", "b", "c", Role.PARTNER).badgeLabel()).isEqualTo("Partner");
+        assertThat(new ParticipantRow("a", "b", "c", Role.ATTENDEE).badgeLabel()).isEqualTo("Teilnehmer");
+        assertThat(new ParticipantRow("", "", "", null).badgeLabel()).isEmpty();
     }
 
     private UserResponse user(String username, String firstName, String lastName, String companyId) {

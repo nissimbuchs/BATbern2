@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.domain;
 
+import ch.batbern.shared.types.Role;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 

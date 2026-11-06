@@ -183,7 +183,10 @@ A checklist for the organizer team, from the week before to the day after.
    [Waitlist and capacity](../entity-management/event-page.md#waitlist-and-capacity).
 3. **Name badges.** The **Namensschilder** card opens **Registrations**. Check the list with
    **Export name badges** (XLSX), then print **Name badges as Word** on Avery Zweckform L4784
-   sheets. Late sign-ups need a second print. Events created before 24 October 2026 have no
+   sheets. Late sign-ups need a second print. Both list organizers first, then speakers, then
+   partners (everyone with the partner role who is registered), then the other participants,
+   each group by last name; the role line reads Organisator, Referent, Partner or Teilnehmer.
+   Someone with two roles gets one badge with the higher one. Events created before 24 October 2026 have no
    Namensschilder or Wein task; see
    [Task Templates](../administration/task-templates.md#events-created-before-24-october-2026).
 4. **Presentations.** **Collect presentations (n of m)** opens the agenda view; it counts sessions

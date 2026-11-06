@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.domain;
 
+import ch.batbern.shared.types.Role;
 import jakarta.persistence.CascadeType;
 import jakarta.persistence.CollectionTable;
 import jakarta.persistence.Column;

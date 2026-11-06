@@ -1,6 +1,6 @@
 package ch.batbern.companyuser.interceptor;
 
-import ch.batbern.companyuser.domain.Role;
+import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;

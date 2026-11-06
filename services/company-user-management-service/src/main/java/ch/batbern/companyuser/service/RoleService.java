@@ -1,6 +1,6 @@
 package ch.batbern.companyuser.service;
 
-import ch.batbern.companyuser.domain.Role;
+import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.exception.MinimumOrganizersException;
 import ch.batbern.companyuser.exception.UserNotFoundException;

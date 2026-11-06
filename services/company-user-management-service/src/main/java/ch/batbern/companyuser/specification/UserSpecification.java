@@ -1,6 +1,6 @@
 package ch.batbern.companyuser.specification;
 
-import ch.batbern.companyuser.domain.Role;
+import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import org.springframework.data.jpa.domain.Specification;
 

@@ -40,6 +40,12 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ## v1.4.x - Current Release
 
+### Unreleased — after BATbern60
+
+**Bug Fixes — Mail notices and name badges (#1235, #1236)**:
+- ✅ (#1235) The Mail Center notice for a mail that belongs to no event showed raw tags in subject and text ("Neue Mail{{#eventCode}} für …"). It now reads "Neue Mail von …". Every automatic mail to one person now drops a section whose value is missing instead of printing its tags, and the log names the missing value.
+- ✅ (#1236) Name badges (Word) and the participants list (XLSX) label partners "Partner" and list them after the organizers and speakers. A partner is everyone with the partner role who is registered for the event; someone with two roles gets one badge with the higher one (organizer, speaker, partner, participant).
+
 ### v1.4.0 - Event Page, Spring Boot 4, Mail Center & BATbern60 Fixes `[2026-11-04]`
 
 **Type**: Minor Release (Epics 13, 14, 15, 16)
