@@ -127,6 +127,14 @@
     "otherAccount": "Dieser Link gehört zu einem anderen Konto. Melden Sie sich mit dem Konto an, das ihn angefordert hat.",
     "invalid": "Dieser Link ist ungültig oder abgelaufen. Fordern Sie in den Kontoeinstellungen einen neuen an.",
     "failed": "Das hat nicht geklappt. Es wurde nichts geändert; bitte später erneut versuchen.",
-    "dashboardLink": "Zu mym Dashboard"
+    "dashboardLink": "Zu mym Dashboard",
+    "noAccess": "I ha ke Zuegang meh zu dere Adrässe",
+    "noAccessHelp": "De prüefe d Organisatore dini Aafrag vo Hand. E churze Hiwys hiuft, zum Bischpiu bis wenn du bi wele Firma gsi bisch.",
+    "noteLabel": "Hiwys a d Organisatore (fryywiuig)",
+    "sendRequest": "Aafrag schicke",
+    "cancel": "Abbräche",
+    "requestPending": "Dini Aafrag isch bi de Organisatore.",
+    "requestDeclinedRecently": "E Aafrag für das Profil isch churz vorhär abgleent worde. E nöii geit nach 30 Täg.",
+    "requestFailed": "D Aafrag het nid chönne gschickt wärde. Probier s speter nomau."
   }
 }

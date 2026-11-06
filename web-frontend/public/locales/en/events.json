@@ -647,6 +647,33 @@
         "keywordCancels_other": "{{count}} cancellation links sent after a reply",
         "unsubscribes_one": "{{count}} newsletter unsubscribe by reply",
         "unsubscribes_other": "{{count}} newsletter unsubscribes by reply"
+      },
+      "mergeRequest": {
+        "title": "Request: combine profiles",
+        "explain": "This person could not confirm by mail that the earlier profile is theirs (no access to the old address). Check whether it is the same person.",
+        "note": "The person's note",
+        "target": "Account with login",
+        "source": "Earlier profile",
+        "name": "Name",
+        "username": "Username",
+        "email": "E-mail",
+        "additionalEmails": "Other addresses",
+        "company": "Company",
+        "roles": "Roles",
+        "moves": "What moves over",
+        "nothingMoves": "No registrations or talks",
+        "cannotMerge": "Combining is not possible: {{reasons}}",
+        "addressesNotCarried": "The earlier profile's addresses are not carried over; they stay in the log only.",
+        "approve": "Combine",
+        "decline": "Decline",
+        "confirmDecline": "Send decline",
+        "cancel": "Cancel",
+        "reason": "Reason",
+        "reasonHelp": "The reason is mailed to the person.",
+        "approved": "Combined by {{by}}. The person has been told.",
+        "declined": "Declined by {{by}}: {{reason}}",
+        "actionFailed": "That did not work. Nothing was changed; try again.",
+        "loadError": "The request could not be loaded."
       }
     }
   },

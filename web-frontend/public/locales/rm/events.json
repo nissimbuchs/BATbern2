@@ -633,6 +633,33 @@
         "keywordCancels_other": "{{count}} links da deannunzia tramess suenter ina resposta",
         "unsubscribes_one": "{{count}} deannunzia dal newsletter per resposta",
         "unsubscribes_other": "{{count}} deannunzias dal newsletter per resposta"
+      },
+      "mergeRequest": {
+        "title": "Dumonda: unir profils",
+        "explain": "Questa persuna n'ha betg pudì confermar per e-mail ch'il profil anteriur è ses (nagin access pli a la veglia adressa). Controllai sch'i sa tracta da la medema persuna.",
+        "note": "Remartga da la persuna",
+        "target": "Conto cun login",
+        "source": "Profil anteriur",
+        "name": "Num",
+        "username": "Num d'utilisader",
+        "email": "E-mail",
+        "additionalEmails": "Ulteriuras adressas",
+        "company": "Firma",
+        "roles": "Rollas",
+        "moves": "Tge che vegn surprendì",
+        "nothingMoves": "Naginas annunzias u referats",
+        "cannotMerge": "Unir n'è betg pussaivel: {{reasons}}",
+        "addressesNotCarried": "Las adressas dal profil anteriur na vegnan betg surpigliadas; ellas restan mo en il protocol.",
+        "approve": "Unir",
+        "decline": "Refusar",
+        "confirmDecline": "Trametter il refus",
+        "cancel": "Interrumper",
+        "reason": "Motivaziun",
+        "reasonHelp": "La motivaziun va per e-mail a la persuna.",
+        "approved": "Unì da {{by}}. La persuna è infurmada.",
+        "declined": "Refusà da {{by}}: {{reason}}",
+        "actionFailed": "Quai n'ha betg funcziunà. Nagut n'è vegnì midà; empruvai anc ina giada.",
+        "loadError": "La dumonda n'ha betg pudì vegnir chargiada."
       }
     }
   },

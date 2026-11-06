@@ -633,6 +633,33 @@
         "keywordCancels_other": "返信後に送信した登録解除リンク {{count}} 件",
         "unsubscribes_one": "返信によるニュースレター配信停止 {{count}} 件",
         "unsubscribes_other": "返信によるニュースレター配信停止 {{count}} 件"
+      },
+      "mergeRequest": {
+        "title": "リクエスト：プロフィールの統合",
+        "explain": "この方は以前のプロフィールが本人のものであることをメールで確認できませんでした（旧アドレスにアクセスできません）。同一人物かどうかを確認してください。",
+        "note": "本人からのメモ",
+        "target": "ログインのあるアカウント",
+        "source": "以前のプロフィール",
+        "name": "氏名",
+        "username": "ユーザー名",
+        "email": "メール",
+        "additionalEmails": "その他のアドレス",
+        "company": "会社",
+        "roles": "ロール",
+        "moves": "移行される内容",
+        "nothingMoves": "登録や講演はありません",
+        "cannotMerge": "統合できません：{{reasons}}",
+        "addressesNotCarried": "以前のプロフィールのアドレスは引き継がれず、ログにのみ残ります。",
+        "approve": "統合する",
+        "decline": "却下する",
+        "confirmDecline": "却下を送信",
+        "cancel": "キャンセル",
+        "reason": "理由",
+        "reasonHelp": "理由は本人にメールで送られます。",
+        "approved": "{{by}} が統合しました。本人に通知済みです。",
+        "declined": "{{by}} が却下しました：{{reason}}",
+        "actionFailed": "うまくいきませんでした。変更はありません。もう一度お試しください。",
+        "loadError": "リクエストを読み込めませんでした。"
       }
     }
   },

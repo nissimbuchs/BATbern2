@@ -370,6 +370,14 @@
     "otherAccount": "This link belongs to another account. Log in with the account that asked for it.",
     "invalid": "This link is invalid or has expired. Request a new one in your account settings.",
     "failed": "This did not work. Nothing was changed; try again later.",
-    "dashboardLink": "To my dashboard"
+    "dashboardLink": "To my dashboard",
+    "noAccess": "Jau n'hai betg pli access a questa adressa",
+    "noAccessHelp": "Lura examineschan ils organisaturs Vossa dumonda a maun. Ina curta remartga gida, per exempel fin cura che Vus eras tar tge firma.",
+    "noteLabel": "Remartga als organisaturs (facultativ)",
+    "sendRequest": "Trametter la dumonda",
+    "cancel": "Interrumper",
+    "requestPending": "Vossa dumonda è tar ils organisaturs.",
+    "requestDeclinedRecently": "Ina dumonda per quest profil è vegnida refusada dacurt. Ina nova è pussaivla suenter 30 dis.",
+    "requestFailed": "La dumonda n'ha betg pudì vegnir tramessa. Empruvai pli tard anc ina giada."
   }
 }

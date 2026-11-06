@@ -370,6 +370,14 @@
     "otherAccount": "This link belongs to another account. Log in with the account that asked for it.",
     "invalid": "This link is invalid or has expired. Request a new one in your account settings.",
     "failed": "This did not work. Nothing was changed; try again later.",
-    "dashboardLink": "ダッシュボードへ"
+    "dashboardLink": "ダッシュボードへ",
+    "noAccess": "このアドレスにはもうアクセスできません",
+    "noAccessHelp": "その場合は主催者が手作業で確認します。いつまでどの会社にいたかなど、短いメモがあると助かります。",
+    "noteLabel": "主催者へのメモ（任意）",
+    "sendRequest": "リクエストを送信",
+    "cancel": "キャンセル",
+    "requestPending": "リクエストは主催者が確認中です。",
+    "requestDeclinedRecently": "このプロフィールのリクエストは最近却下されました。30日後に再度リクエストできます。",
+    "requestFailed": "リクエストを送信できませんでした。後でもう一度お試しください。"
   }
 }

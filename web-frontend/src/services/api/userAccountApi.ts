@@ -472,6 +472,18 @@ export const confirmProfileClaim = async (token: string): Promise<ProfileClaimCo
   return response.data;
 };
 
+/**
+ * #1237: no access to the earlier profile's address any more. Asks the organizers to merge it; they
+ * decide in the Mail Center. 409 MERGE_REQUEST_OPEN / MERGE_REQUEST_DECLINED.
+ */
+export const requestProfileMerge = async (candidateId: string, note?: string): Promise<string> => {
+  const response = await apiClient.post<{ requestId: string }>(
+    `${USER_API_PATH}/me/profile-claims/merge-requests`,
+    { candidateId, note: note?.trim() ? note.trim() : undefined }
+  );
+  return response.data.requestId;
+};
+
 // Admin endpoints for uploading profile pictures for other users
 
 /**

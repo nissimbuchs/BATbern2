@@ -13,6 +13,7 @@ import * as api from '@/services/api/userAccountApi';
 vi.mock('@/services/api/userAccountApi', () => ({
   listProfileClaimCandidates: vi.fn(),
   requestProfileClaim: vi.fn(),
+  requestProfileMerge: vi.fn(),
 }));
 
 const renderSection = () =>
@@ -54,5 +55,51 @@ describe('EarlierProfilesSection (#1183 D)', () => {
 
     expect(api.requestProfileClaim).toHaveBeenCalledWith('c-1');
     expect(await screen.findByTestId('claim-sent-c-1')).toBeInTheDocument();
+  });
+
+  // #1237: no access to the old address — ask the organizers
+  it('should_sendRequestWithNote_when_noAccess', async () => {
+    vi.mocked(api.listProfileClaimCandidates)
+      .mockResolvedValueOnce([{ candidateId: 'c-1', maskedEmail: 'a***@oldco.example.com' }])
+      .mockResolvedValue([
+        { candidateId: 'c-1', maskedEmail: 'a***@oldco.example.com', requestPending: true },
+      ]);
+    vi.mocked(api.requestProfileMerge).mockResolvedValue('r-1');
+    renderSection();
+
+    await userEvent.click(await screen.findByTestId('claim-no-access-c-1'));
+    await userEvent.type(screen.getByTestId('claim-note-c-1'), 'Firma X bis 2024');
+    await userEvent.click(screen.getByTestId('claim-send-request-c-1'));
+
+    expect(api.requestProfileMerge).toHaveBeenCalledWith('c-1', 'Firma X bis 2024');
+    expect(await screen.findByTestId('claim-pending-c-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('claim-button-c-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('claim-no-access-c-1')).not.toBeInTheDocument();
+  });
+
+  it('should_offerNeitherPath_when_requestPending', async () => {
+    vi.mocked(api.listProfileClaimCandidates).mockResolvedValue([
+      { candidateId: 'c-1', maskedEmail: 'a***@oldco.example.com', requestPending: true },
+    ]);
+    renderSection();
+
+    expect(await screen.findByTestId('claim-pending-c-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('claim-button-c-1')).not.toBeInTheDocument();
+    expect(screen.queryByTestId('claim-no-access-c-1')).not.toBeInTheDocument();
+  });
+
+  it('should_explainCooldown_when_recentlyDeclined', async () => {
+    vi.mocked(api.listProfileClaimCandidates).mockResolvedValue([
+      { candidateId: 'c-1', maskedEmail: 'a***@oldco.example.com' },
+    ]);
+    vi.mocked(api.requestProfileMerge).mockRejectedValue({
+      response: { status: 409, data: { errorCode: 'MERGE_REQUEST_DECLINED' } },
+    });
+    renderSection();
+
+    await userEvent.click(await screen.findByTestId('claim-no-access-c-1'));
+    await userEvent.click(screen.getByTestId('claim-send-request-c-1'));
+
+    expect(await screen.findByTestId('claim-request-error')).toHaveTextContent(/30/);
   });
 });

@@ -633,6 +633,33 @@
         "keywordCancels_other": "{{count}} liens de désinscription envoyés après une réponse",
         "unsubscribes_one": "{{count}} désabonnement de la newsletter par réponse",
         "unsubscribes_other": "{{count}} désabonnements de la newsletter par réponse"
+      },
+      "mergeRequest": {
+        "title": "Demande : fusionner des profils",
+        "explain": "Cette personne n'a pas pu confirmer par e-mail que l'ancien profil est le sien (plus d'accès à l'ancienne adresse). Vérifiez qu'il s'agit de la même personne.",
+        "note": "Note de la personne",
+        "target": "Compte avec connexion",
+        "source": "Ancien profil",
+        "name": "Nom",
+        "username": "Nom d'utilisateur",
+        "email": "E-mail",
+        "additionalEmails": "Autres adresses",
+        "company": "Entreprise",
+        "roles": "Rôles",
+        "moves": "Ce qui est repris",
+        "nothingMoves": "Aucune inscription ni présentation",
+        "cannotMerge": "La fusion est impossible : {{reasons}}",
+        "addressesNotCarried": "Les adresses de l'ancien profil ne sont pas reprises ; elles restent seulement dans le journal.",
+        "approve": "Fusionner",
+        "decline": "Refuser",
+        "confirmDecline": "Envoyer le refus",
+        "cancel": "Annuler",
+        "reason": "Motif",
+        "reasonHelp": "Le motif est envoyé par e-mail à la personne.",
+        "approved": "Fusionné par {{by}}. La personne est informée.",
+        "declined": "Refusé par {{by}} : {{reason}}",
+        "actionFailed": "Cela n'a pas fonctionné. Rien n'a été modifié ; réessayez.",
+        "loadError": "La demande n'a pas pu être chargée."
       }
     }
   },

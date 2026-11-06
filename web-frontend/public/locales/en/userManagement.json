@@ -370,6 +370,14 @@
     "otherAccount": "This link belongs to another account. Log in with the account that asked for it.",
     "invalid": "This link is invalid or has expired. Request a new one in your account settings.",
     "failed": "This did not work. Nothing was changed; try again later.",
-    "dashboardLink": "To my dashboard"
+    "dashboardLink": "To my dashboard",
+    "noAccess": "I no longer have access to this address",
+    "noAccessHelp": "Then the organizers check your request by hand. A short note helps, for example until when you worked at which company.",
+    "noteLabel": "Note to the organizers (optional)",
+    "sendRequest": "Send request",
+    "cancel": "Cancel",
+    "requestPending": "Your request is with the organizers.",
+    "requestDeclinedRecently": "A request for this profile was declined recently. You can ask again after 30 days.",
+    "requestFailed": "The request could not be sent. Try again later."
   }
 }

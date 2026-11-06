@@ -370,6 +370,14 @@
     "otherAccount": "Ce lien appartient à un autre compte. Connectez-vous avec le compte qui l'a demandé.",
     "invalid": "Ce lien est invalide ou a expiré. Demandez-en un nouveau dans les paramètres du compte.",
     "failed": "Cela n'a pas fonctionné. Rien n'a été modifié ; réessayez plus tard.",
-    "dashboardLink": "Vers mon tableau de bord"
+    "dashboardLink": "Vers mon tableau de bord",
+    "noAccess": "Je n'ai plus accès à cette adresse",
+    "noAccessHelp": "Les organisateurs examinent alors votre demande à la main. Une courte note aide, par exemple jusqu'à quand vous étiez dans quelle entreprise.",
+    "noteLabel": "Note aux organisateurs (facultatif)",
+    "sendRequest": "Envoyer la demande",
+    "cancel": "Annuler",
+    "requestPending": "Votre demande est chez les organisateurs.",
+    "requestDeclinedRecently": "Une demande pour ce profil a été refusée récemment. Vous pourrez redemander après 30 jours.",
+    "requestFailed": "La demande n'a pas pu être envoyée. Réessayez plus tard."
   }
 }

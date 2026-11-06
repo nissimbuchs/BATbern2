@@ -53,6 +53,9 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ When the event is full the button reads "Auf die Warteliste". A direct link to the registration page says "Anmeldung geschlossen" after the deadline.
 - ✅ Unregistering is possible until the end of the day before the event, for every way of doing it; from the event day on it is refused. A cancellation after the registration deadline no longer moves anyone up from the waitlist (the name badges are printed by then).
 
+**New — Combine an earlier profile without access to its address (#1237)**:
+- ✅ Participants who cannot read the address of an earlier profile any more (for example a former employer's) can ask the organizers to combine it with their account, with a short note. The request appears on the Mail page; any organizer combines or declines it there, with a reason. The person is told by mail either way. The old address is not added to the account.
+
 ### v1.4.0 - Event Page, Spring Boot 4, Mail Center & BATbern60 Fixes `[2026-11-04]`
 
 **Type**: Minor Release (Epics 13, 14, 15, 16)

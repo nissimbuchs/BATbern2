@@ -633,6 +633,33 @@
         "keywordCancels_other": "{{count}} afmeldlinks verstuurd na een antwoord",
         "unsubscribes_one": "{{count}} nieuwsbriefafmelding per antwoord",
         "unsubscribes_other": "{{count}} nieuwsbriefafmeldingen per antwoord"
+      },
+      "mergeRequest": {
+        "title": "Verzoek: profielen samenvoegen",
+        "explain": "Deze persoon kon per mail niet bevestigen dat het eerdere profiel van hem of haar is (geen toegang meer tot het oude adres). Controleer of het om dezelfde persoon gaat.",
+        "note": "Notitie van de persoon",
+        "target": "Account met login",
+        "source": "Eerder profiel",
+        "name": "Naam",
+        "username": "Gebruikersnaam",
+        "email": "E-mail",
+        "additionalEmails": "Andere adressen",
+        "company": "Bedrijf",
+        "roles": "Rollen",
+        "moves": "Wat wordt overgenomen",
+        "nothingMoves": "Geen aanmeldingen of presentaties",
+        "cannotMerge": "Samenvoegen is niet mogelijk: {{reasons}}",
+        "addressesNotCarried": "De adressen van het eerdere profiel worden niet overgenomen; ze blijven alleen in het logboek.",
+        "approve": "Samenvoegen",
+        "decline": "Afwijzen",
+        "confirmDecline": "Afwijzing versturen",
+        "cancel": "Annuleren",
+        "reason": "Reden",
+        "reasonHelp": "De reden wordt per mail naar de persoon gestuurd.",
+        "approved": "Samengevoegd door {{by}}. De persoon is op de hoogte.",
+        "declined": "Afgewezen door {{by}}: {{reason}}",
+        "actionFailed": "Dat is niet gelukt. Er is niets gewijzigd; probeer het opnieuw.",
+        "loadError": "Het verzoek kon niet worden geladen."
       }
     }
   },
