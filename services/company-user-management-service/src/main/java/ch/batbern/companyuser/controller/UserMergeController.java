@@ -1,19 +1,26 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.api.generated.ProfileMergeApi;
+import ch.batbern.companyuser.client.EventManagementMailCenterClient;
 import ch.batbern.companyuser.client.EventManagementUserMergeClient;
+import ch.batbern.companyuser.domain.ProfileMergeRequest;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.dto.generated.ConfirmProfileClaimRequest;
 import ch.batbern.companyuser.dto.generated.ProfileClaimCandidate;
 import ch.batbern.companyuser.dto.generated.ProfileClaimConfirmResponse;
 import ch.batbern.companyuser.dto.generated.ProfileClaimRequest;
+import ch.batbern.companyuser.dto.generated.ProfileMergeRequestCreate;
+import ch.batbern.companyuser.dto.generated.ProfileMergeRequestCreated;
+import ch.batbern.companyuser.dto.generated.ProfileMergeRequestDecline;
+import ch.batbern.companyuser.dto.generated.ProfileMergeRequestView;
 import ch.batbern.companyuser.dto.generated.UserMergePreview;
 import ch.batbern.companyuser.dto.generated.UserMergeProfileSummary;
 import ch.batbern.companyuser.dto.generated.UserMergeRequest;
 import ch.batbern.companyuser.dto.generated.UserMergeResult;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.companyuser.service.ProfileClaimService;
+import ch.batbern.companyuser.service.ProfileMergeRequestService;
 import ch.batbern.companyuser.service.UserMergeService;
 import ch.batbern.shared.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
@@ -27,7 +34,9 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import java.time.Instant;
+import java.time.ZoneOffset;
 import java.util.List;
+import java.util.UUID;
 import java.util.Map;
 
 /**
@@ -42,6 +51,7 @@ public class UserMergeController implements ProfileMergeApi {
 
     private final UserMergeService mergeService;
     private final ProfileClaimService claimService;
+    private final ProfileMergeRequestService mergeRequestService;
     private final SecurityContextHelper securityContext;
 
     @Override
@@ -77,7 +87,8 @@ public class UserMergeController implements ProfileMergeApi {
                 .map(c -> new ProfileClaimCandidate()
                         .candidateId(c.id())
                         .maskedEmail(c.maskedEmail())
-                        .companyName(c.companyName()))
+                        .companyName(c.companyName())
+                        .requestPending(c.requestPending()))
                 .toList());
     }
 
@@ -93,6 +104,79 @@ public class UserMergeController implements ProfileMergeApi {
     public ResponseEntity<ProfileClaimConfirmResponse> confirmProfileClaim(ConfirmProfileClaimRequest request) {
         boolean merged = claimService.confirm(request.getToken());
         return ResponseEntity.ok(new ProfileClaimConfirmResponse().merged(merged).alreadyMerged(!merged));
+    }
+
+    // ---------------------------------------------------------------- #1237 merge requests
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<ProfileMergeRequestCreated> requestProfileMerge(ProfileMergeRequestCreate request) {
+        ProfileMergeRequest created = mergeRequestService.request(request.getCandidateId(), request.getNote());
+        return ResponseEntity.status(HttpStatus.CREATED)
+                .body(new ProfileMergeRequestCreated().requestId(created.getId()));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<ProfileMergeRequestView> getProfileMergeRequest(UUID requestId) {
+        ProfileMergeRequestService.Decided d = mergeRequestService.get(requestId);
+        return ResponseEntity.ok(view(d.request(), d.preview()));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<ProfileMergeRequestView> approveProfileMergeRequest(UUID requestId) {
+        return ResponseEntity.ok(view(mergeRequestService.approve(requestId), null));
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<ProfileMergeRequestView> declineProfileMergeRequest(UUID requestId,
+            ProfileMergeRequestDecline request) {
+        return ResponseEntity.ok(view(mergeRequestService.decline(requestId, request.getReason()), null));
+    }
+
+    private ProfileMergeRequestView view(ProfileMergeRequest r, UserMergeService.Preview preview) {
+        return new ProfileMergeRequestView()
+                .requestId(r.getId())
+                .status(ProfileMergeRequestView.StatusEnum.fromValue(r.getStatus().name()))
+                .requesterUsername(r.getRequesterUsername())
+                .sourceUsername(r.getSourceUsername())
+                .note(r.getNote())
+                .createdAt(r.getCreatedAt().atOffset(ZoneOffset.UTC))
+                .decidedBy(r.getDecidedBy())
+                .decidedAt(r.getDecidedAt() == null ? null : r.getDecidedAt().atOffset(ZoneOffset.UTC))
+                .reason(r.getReason())
+                .preview(preview == null ? null : previewDto(preview));
+    }
+
+    private static UserMergePreview previewDto(UserMergeService.Preview p) {
+        return new UserMergePreview()
+                .target(summary(p.target()))
+                .source(summary(p.source()))
+                .moves(p.events().moves())
+                .conflicts(p.events().conflicts())
+                .blockers(p.events().blockers())
+                .canMerge(p.canMerge())
+                .reasons(p.reasons());
+    }
+
+    @ExceptionHandler(ProfileMergeRequestService.RequestConflictException.class)
+    public ResponseEntity<ErrorResponse> requestConflict(ProfileMergeRequestService.RequestConflictException e,
+            HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, e.code(), e.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(IllegalArgumentException.class)
+    public ResponseEntity<ErrorResponse> badRequest(IllegalArgumentException e, HttpServletRequest request) {
+        return error(HttpStatus.BAD_REQUEST, "VALIDATION_ERROR", e.getMessage(), request, null);
+    }
+
+    @ExceptionHandler(EventManagementMailCenterClient.MailCenterCallFailedException.class)
+    public ResponseEntity<ErrorResponse> mailCenterFailed(
+            EventManagementMailCenterClient.MailCenterCallFailedException e, HttpServletRequest request) {
+        return error(HttpStatus.BAD_GATEWAY, "MERGE_REQUEST_NOT_DELIVERED",
+                "The request could not be passed to the organizers; nothing was stored. Try again.", request, null);
     }
 
     private static UserMergeProfileSummary summary(User u) {

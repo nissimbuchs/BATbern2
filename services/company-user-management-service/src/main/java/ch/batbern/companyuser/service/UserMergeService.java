@@ -92,6 +92,18 @@ public class UserMergeService {
      */
     @Transactional
     public Result merge(String targetUsername, String sourceUsername, String performedBy, String trigger) {
+        return merge(targetUsername, sourceUsername, performedBy, trigger, true);
+    }
+
+    /**
+     * As {@link #merge(String, String, String, String)}; with {@code carryAddresses = false} none of
+     * the source's addresses become addresses of the target (#1237: a merge request is approved
+     * without proof of the old mailbox, so its address must not turn into a verified login address).
+     * They stay in the merge log snapshot.
+     */
+    @Transactional
+    public Result merge(String targetUsername, String sourceUsername, String performedBy, String trigger,
+            boolean carryAddresses) {
         User target = userRepository.findByUsernameForUpdate(targetUsername)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + targetUsername, true));
         User source = userRepository.findByUsernameForUpdate(sourceUsername)
@@ -129,9 +141,11 @@ public class UserMergeService {
                 .map(e -> e.getEmail().toLowerCase(Locale.ROOT)).collect(Collectors.toSet());
         held.add(target.getEmail().toLowerCase(Locale.ROOT));
         Instant now = Instant.now();
-        addAddress(target, held, sourceEmail, "merged profile", now);
-        for (UserAdditionalEmail extra : sourceAddresses) {
-            addAddress(target, held, extra.getEmail(), extra.getLabel(), extra.getVerifiedAt());
+        if (carryAddresses) {
+            addAddress(target, held, sourceEmail, "merged profile", now);
+            for (UserAdditionalEmail extra : sourceAddresses) {
+                addAddress(target, held, extra.getEmail(), extra.getLabel(), extra.getVerifiedAt());
+            }
         }
         userRepository.flush();
 

@@ -1110,6 +1110,7 @@ registration for the same event, 19 of the profiles without login carry speaker 
 |---|---|---|
 | **C: organizer merge** | ORGANIZER | User page → "Merge profile" → pick the other profile → preview → confirm. `GET /users/{target}/merge-preview?source=`, `POST /users/{target}/merge` |
 | **D: claim** | the person, logged in | Account settings and the attendee dashboard list profiles **without login** under the same first and last name (case-insensitive), with a masked address only. "This is me" mails a signed link (48 h, JWT type `profile-claim`) **to the earlier profile's address**; `/claim-profile?token=` confirms it, and only under the login that asked for it (else 403 `CLAIM_OTHER_ACCOUNT`). `GET/POST /users/me/profile-claims`, `POST /users/me/profile-claims/confirm` |
+| **E: request (#1237)** | the person asks, any ORGANIZER decides | For someone who cannot read the earlier profile's mailbox any more (a former employer's address). "I no longer have access to this address" + an optional note → `POST /users/me/profile-claims/merge-requests` stores a `profile_merge_requests` row (CUMS V23) and opens a Mail Center conversation (EMS `POST /internal/mail-center/merge-requests`, `mail_conversation.merge_request_id`, V145). The conversation shows both profiles, what would move and the note; **Approve** (`POST /users/merge-requests/{id}/approve`) runs the merge as `ORGANIZER` with the approving organizer as `performed_by`, **Decline** (`.../decline`) needs a reason. The person is mailed at their current address either way (templates `profile-merge-approved`/`-declined`, DE + EN) and the conversation is set to Done. |
 
 **Rules** (`UserMergeService` in company-user-management):
 - The **source must have no login**. A Cognito user is someone's account; deleting it would lock them out.
@@ -1133,6 +1134,15 @@ registration for the same event, 19 of the profiles without login carry speaker 
   one first.
 - **Undo** is by hand, from `user_merge_log` (event-management, V144): the moved row keys per column, every
   removed row in full, and the deleted source profile with its roles and addresses.
+- **Requests (E, #1237)**: the mail to the old address is the ownership proof in D; without it a human
+  decides. An approved request merges **without carrying any of the source's addresses**
+  (`UserMergeService.merge(..., carryAddresses = false)`): an address nobody proved must not become a
+  verified address, which SSO linking would trust. They stay in the merge log snapshot. At most one open
+  request per pair (409 `MERGE_REQUEST_OPEN`); a declined pair can ask again after 30 days (409
+  `MERGE_REQUEST_DECLINED`); a decided request cannot be decided again (409 `MERGE_REQUEST_DECIDED`).
+  No automatic merge, no knowledge questions (their answers would disclose the other profile). The mail
+  and closing the conversation after an approval are best effort: event-management has already committed
+  its part, so they must not roll the merge back.
 
 ## Database Schema
 

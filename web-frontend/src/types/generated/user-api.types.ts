@@ -335,6 +335,95 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/me/profile-claims/merge-requests': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ask the organizers to merge an earlier profile (no access to its address)
+     * @description #1237. For someone who can no longer read the earlier profile's mailbox (a former
+     *     employer's address). Opens a request that any organizer approves or declines in the Mail
+     *     Center. The candidate must be one of `GET /users/me/profile-claims` (else 404). At most one
+     *     open request per profile pair (409 `MERGE_REQUEST_OPEN`); a declined pair can be asked again
+     *     after 30 days (409 `MERGE_REQUEST_DECLINED`). The old address is not added to the profile.
+     */
+    post: operations['requestProfileMerge'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/merge-requests/{requestId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A profile merge request with both profiles and what would move (organizers)
+     * @description #1237. Shown in the Mail Center conversation of the request: the requester's note, the
+     *     status and the merge preview (both profiles, what moves, what blocks).
+     */
+    get: operations['getProfileMergeRequest'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/merge-requests/{requestId}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Approve a profile merge request (organizers)
+     * @description #1237. Runs the organizer merge (the requester's login profile is the target, the profile
+     *     without login the source), logged in `user_merge_log`. The same rules as an organizer
+     *     merge apply: 409 when two different talks at the same event block it. The requester is
+     *     mailed at their current address and the conversation is closed.
+     */
+    post: operations['approveProfileMergeRequest'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/merge-requests/{requestId}/decline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decline a profile merge request with a reason (organizers)
+     * @description #1237. The reason is mailed to the requester at their current address. The pair is not
+     *     offered for a new request for 30 days.
+     */
+    post: operations['declineProfileMergeRequest'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/admin/reconcile': {
     parameters: {
       query?: never;
@@ -1253,6 +1342,40 @@ export interface components {
       /** @example h***@example.ch */
       maskedEmail: string;
       companyName?: string | null;
+      /** @description #1237: a merge request for this profile is with the organizers */
+      requestPending?: boolean;
+    };
+    ProfileMergeRequestCreate: {
+      /** Format: uuid */
+      candidateId: string;
+      /** @example Ich war bis 2024 bei Firma X. */
+      note?: string | null;
+    };
+    ProfileMergeRequestCreated: {
+      /** Format: uuid */
+      requestId: string;
+    };
+    ProfileMergeRequestDecline: {
+      reason: string;
+    };
+    ProfileMergeRequestView: {
+      /** Format: uuid */
+      requestId: string;
+      /** @enum {string} */
+      status: 'OPEN' | 'APPROVED' | 'DECLINED';
+      /** @description The login profile (merge target) */
+      requesterUsername: string;
+      /** @description The profile without login (merge source) */
+      sourceUsername: string;
+      note?: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      decidedBy?: string | null;
+      /** Format: date-time */
+      decidedAt?: string | null;
+      reason?: string | null;
+      /** @description Both profiles and what would move; absent once the request is decided */
+      preview?: components['schemas']['UserMergePreview'] | null;
     };
     ProfileClaimRequest: {
       /** Format: uuid */
@@ -2412,6 +2535,120 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+      409: components['responses']['Conflict'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  requestProfileMerge: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProfileMergeRequestCreate'];
+      };
+    };
+    responses: {
+      /** @description The request is with the organizers */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProfileMergeRequestCreated'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      404: components['responses']['NotFound'];
+      409: components['responses']['Conflict'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getProfileMergeRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        requestId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The request */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProfileMergeRequestView'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  approveProfileMergeRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        requestId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Merged */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProfileMergeRequestView'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      409: components['responses']['Conflict'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  declineProfileMergeRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        requestId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['ProfileMergeRequestDecline'];
+      };
+    };
+    responses: {
+      /** @description Declined */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ProfileMergeRequestView'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
       409: components['responses']['Conflict'];
       500: components['responses']['InternalServerError'];
     };

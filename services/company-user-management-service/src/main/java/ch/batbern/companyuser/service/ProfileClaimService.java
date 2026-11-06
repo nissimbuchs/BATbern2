@@ -1,9 +1,11 @@
 package ch.batbern.companyuser.service;
 
+import ch.batbern.companyuser.domain.ProfileMergeRequest;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.companyuser.exception.VerificationTokenExpiredException;
 import ch.batbern.companyuser.exception.VerificationTokenInvalidException;
+import ch.batbern.companyuser.repository.ProfileMergeRequestRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.utils.LoggingUtils;
@@ -15,7 +17,9 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
 import java.util.Locale;
+import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 /**
  * #1183 D: a person with a login claims an earlier profile under their name (an imported profile or a
@@ -38,16 +42,36 @@ public class ProfileClaimService {
     private final ProfileClaimTokenService tokenService;
     private final ProfileClaimEmailService emailService;
     private final UserMergeService mergeService;
+    private final ProfileMergeRequestRepository mergeRequests;
 
-    public record Candidate(UUID id, String maskedEmail, String companyName) {
+    /** {@code requestPending}: a merge request for this profile is with the organizers (#1237). */
+    public record Candidate(UUID id, String maskedEmail, String companyName, boolean requestPending) {
     }
 
     @Transactional(readOnly = true)
     public List<Candidate> candidates() {
         User caller = currentUser();
-        return candidatesOf(caller).stream()
-                .map(u -> new Candidate(u.getId(), LoggingUtils.maskEmail(u.getEmail()), u.getCompanyId()))
+        List<User> candidates = candidatesOf(caller);
+        Set<String> pending = candidates.isEmpty() ? Set.of()
+                : mergeRequests.findByRequesterUsernameAndStatusAndSourceUsernameIn(caller.getUsername(),
+                                ProfileMergeRequest.Status.OPEN, candidates.stream().map(User::getUsername).toList())
+                        .stream().map(ProfileMergeRequest::getSourceUsername).collect(Collectors.toSet());
+        return candidates.stream()
+                .map(u -> new Candidate(u.getId(), LoggingUtils.maskEmail(u.getEmail()), u.getCompanyId(),
+                        pending.contains(u.getUsername())))
                 .toList();
+    }
+
+    /** #1237: the caller and one of their candidates, or 404. */
+    @Transactional(readOnly = true)
+    public ClaimPair pair(UUID candidateId) {
+        User caller = currentUser();
+        User candidate = candidatesOf(caller).stream().filter(u -> u.getId().equals(candidateId)).findFirst()
+                .orElseThrow(() -> new UserNotFoundException("No earlier profile to claim", true));
+        return new ClaimPair(caller, candidate);
+    }
+
+    public record ClaimPair(User caller, User candidate) {
     }
 
     @Transactional(readOnly = true)

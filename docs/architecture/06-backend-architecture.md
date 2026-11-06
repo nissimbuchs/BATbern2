@@ -614,6 +614,13 @@ Two profiles of one person (an imported or guest profile without login, and the 
 profile) are merged: the source is folded into the target and deleted. CUMS decides and
 orchestrates; EMS moves its own rows through an internal endpoint and keeps the undo log.
 
+**Merge requests (#1237).** When the person cannot read the earlier profile's mailbox, CUMS stores a
+`profile_merge_requests` row and EMS opens a Mail Center conversation for it
+(`MergeRequestConversations`, `POST /internal/mail-center/merge-requests`, `mail_conversation.merge_request_id`).
+The organizer approves or declines in that conversation (CUMS `/users/merge-requests/{id}/approve|decline`);
+approval runs the same merge with `carryAddresses = false`, then CUMS closes the conversation
+(`.../{id}/done`). Details: `06b-user-lifecycle-sync.md`.
+
 ```mermaid
 sequenceDiagram
     autonumber
