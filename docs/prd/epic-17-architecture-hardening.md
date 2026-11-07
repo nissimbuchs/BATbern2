@@ -54,7 +54,7 @@ contract check or test), not by a document.
 6. ADR-003 UUID rule as amended.
 7. Uploads: one contract `/api/v1/uploads/{purpose}` (ADR-002 decision 2026-11-07).
 8. Test fidelity first where it protects later stories: 17.0a–d at the head of the epic; 17.6 waits for
-   17.0a + 17.0b, 17.9 for 17.0c + 17.0d (owner go 2026-11-07, via Winston). The proposal's P5
+   17.0a + 17.0b, 17.9 and 17.11 for 17.0c + 17.0d (17.11 confirmed by Winston 2026-11-07) (owner go 2026-11-07, via Winston). The proposal's P5
    (real-code gate before production) is **not** a story: owner decision pending, design under revision.
 
 ## Rules for every story in this epic
@@ -83,7 +83,7 @@ Protective and cheap first, then decoupling, then restructuring.
 |---|---|---|---|
 | 17.0a | Test rules and ratchet | – | rules + gate |
 | 17.0b | S2S contract harness and production setup in tests | 17.0a | test infra |
-| 17.0c | Frontend MSW harness | 17.0a | test infra |
+| 17.0c | Frontend MSW harness | 17.0a, 17.3 (shared spec matcher) | test infra |
 | 17.0d | Production-shaped fixtures | 17.0a | test infra |
 | 17.1 | Dead API surface | – | dev |
 | 17.2 | Dormant infrastructure: stubs and event bus | – | dev + prod infra |
@@ -96,7 +96,7 @@ Protective and cheap first, then decoupling, then restructuring.
 | 17.8 | EMS↔PCS direction | 17.6 | dev |
 | 17.9 | API conventions I (breaking) | 17.4, **17.0c, 17.0d** | dev |
 | 17.10 | API conventions II (breaking) | 17.9 | dev |
-| 17.11 | One upload contract, first purpose `company-logo` | 17.4 | dev |
+| 17.11 | One upload contract, first purpose `company-logo` | 17.4, **17.0c, 17.0d** | dev |
 | 17.12 | EMS modularization design | 17.5 | **design (Winston)** |
 | 17.13 | Registrations out of `EventController` | 17.12 | dev |
 | 17.14 | Domain exception base | 17.12 | dev |
@@ -193,7 +193,8 @@ on a wrong path or shape.
 **Scope:**
 - `web-frontend/src/test/msw/`: a default handler per operation in `docs/api/*.openapi.yml`, data built
   through the generated types, a request validator that fails the test on a path or parameter not in
-  the spec. Same matching rules as 17.3 (method-aware, parameters as single-segment wildcards).
+  the spec. The validator **imports 17.3's matcher** (`src/test/contract/specMatcher.ts`): one set of
+  matching rules for CI and tests.
 - Real i18next with the `en` locale files as the test default, replacing per-file `react-i18next`
   stubs for converted files.
 - Convert the 10 worst mock-heavy test files, e.g. `EventPage.test.tsx` (13 mocked modules). The
@@ -321,7 +322,10 @@ frontend followed.
 `docs/api/*.openapi.yml`. Runs in CI on every PR (frontend job) and locally via `make`.
 Explicit allow-list file for paths outside the specs (e.g. Cognito, S3 presigned URLs), each with a
 reason.
-Refined at story creation: scans all of `web-frontend/src` (15 files outside `services/` make HTTP
+Refined at story creation: the spec matcher is a reusable TypeScript module
+(`web-frontend/src/test/contract/specMatcher.ts`, method-aware, path parameters as wildcards, query
+parameters checked) with its own unit tests, imported by the CI script and by 17.0c's MSW validator
+(Winston 2026-11-07). The check scans all of `web-frontend/src` (15 files outside `services/` make HTTP
 calls; frozen as a baseline), method-aware, and `frontend-changes` also triggers on `docs/api/`. Six
 calls with no spec and no backend were found by a prototype and are resolved in the story.
 Story file: `_bmad-output/implementation-artifacts/17-3-frontend-path-contract-check.md`.
