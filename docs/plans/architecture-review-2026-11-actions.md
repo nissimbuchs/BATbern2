@@ -29,14 +29,25 @@ All open questions answered. Recorded here so stories need no further sign-off o
 - S2S token rule: forward when present, never require, `/internal` authorizes by operation.
 - ADR-003 UUID rule as proposed. No PR for this branch; rebase after the open #1244 work lands.
 
-## After the rebase (Winston, before John)
+## After the rebase: done 2026-11-07 (rebased onto develop `89b3618f`, #1248)
 
-1. Re-run `scripts/architecture/*` and the spec op count; update numbers in map and report.
-2. ADRs: new ADR-016 "Service directions and S2S calls" (upstream/downstream, `/internal` only,
-   pull feeds instead of events, token rule, merge contract as the one callback); amend ADR-003
-   (UUID rule); status notes on ADR-002 (only logos follow it, shared pipeline pending) and ADR-014
-   (stub + EventBridge removal decided).
-3. Hand this order to John for Epic 17 and the stories.
+1. Re-measured: 342 operations (+13 since `e7f76baf`, all from #1244/#1248 and the company logo
+   requests), 58 with a UUID in the path, EMS 64,376 LOC and 138 migrations, EMS module check
+   52 allowed / 28 violating pairs / 100 refs. Map and plan updated; the published report keeps the
+   `e7f76baf` figures plus an update note.
+   - New near-duplicate since the review: `GET|PUT /newsletter/my-subscriptions` (per address) next to
+     `GET|PATCH /newsletter/my-subscription`; the frontend calls both. Added to 17.10.
+   - New request/approve/decline flow `/users/company-logo-requests/{id}/approve|decline` beside
+     `/users/merge-requests/{id}/approve|decline`, and the logo requests sit under `/users` although
+     they belong to companies. Input for 17.4's spec-diff report and the 17.10 conventions.
+2. ADRs written: ADR-016 (new), ADR-003 amendment, update notes in ADR-002, ADR-008, ADR-014; ADR-016
+   added to `docs/architecture/index.md`.
+   - Correction: ADR-002's Scope Clarification (2026-03-03) makes per-entity upload services for
+     existing entities the intended pattern. The review's "only logos follow ADR-002" was wrong.
+     17.11 now extracts the shared mechanics and keeps the per-entity endpoints.
+   - EMS `GenericLogoService` is not a copy: it is a 137-line association helper on the `logos` table,
+     which EMS (`V5`) and CUMS (`V10`) both create in the one shared database.
+3. Ready for John (see "Brief for John" below).
 
 ## Epic 17 "Architecture hardening": suggested order
 
@@ -47,7 +58,7 @@ the same story.
 | # | Story | Contents | Depends on |
 |---|---|---|---|
 | 17.1 | Dead API surface | delete `speakers-api`, `attendees-api` specs; 6 orphan endpoints incl. `slides-online/send`; FE `getPublishPreview` + `fetchPreview` | – |
-| 17.2 | Dormant infrastructure | stop + remove SpeakerCoordination and AttendeeExperience services/stacks; remove EventBridge bus, `EventBridgeEventPublisher`, `EventBridgeConfig`, publisher wiring in 5 services, keeping Spring events. Infra change: not on an event day | – |
+| 17.2 | Dormant infrastructure (closes #1216, bus part of #1220) | stop + remove SpeakerCoordination and AttendeeExperience services/stacks, build-matrix and deploy entries, gateway route `/api/v1/content/**`; remove EventBridge bus, `EventBridgeEventPublisher`, `EventBridgeConfig`, publisher wiring in 5 services, keeping Spring events. Infra change: not on an event day | – |
 | 17.3 | Frontend path contract check | CI fails when `web-frontend/src/services/**` calls a path not in `docs/api/` | 17.1 |
 | 17.4 | OpenAPI lint + spec-diff report | Spectral rules (kebab-case, UUID params only nested, no `/internal` in public specs, no verb endpoints); PR comment listing added ops next to most similar existing ops | 17.1 |
 | 17.5 | ArchUnit freeze | `FreezingArchRule` for the 5 vertical EMS packages + "no new client toward an upstream service" in all services | – |
@@ -56,8 +67,8 @@ the same story.
 | 17.7 | User-reference contract | `/internal/user-references/preview|merge` owned by CUMS, EMS implements, PCS added as holder; Mail Center pulls merge requests from CUMS, drop `/internal/mail-center/merge-requests*` | 17.6 |
 | 17.8 | EMS↔PCS direction | topic canvas loads partner topics in the frontend; RSVPs as `/internal` feed pulled by PCS (ShedLock) | 17.6 |
 | 17.9 | API conventions I (breaking) | tasks: one `PATCH`; settings: one app-settings + one user resource; nest `ai/analyze-abstract` under event | 17.4 |
-| 17.10 | API conventions II (breaking) | `me` alias for `{username}` (pictures, profile); one speaker path key; `batch_registrations` + `enroll-stakeholders` folded into `participants` | 17.9 |
-| 17.11 | Upload pipeline (ADR-002) | shared-kernel upload service, `/uploads` + confirm with `purpose`; migrate logos (remove duplicate `GenericLogoService`), then one flow per story | 17.4 |
+| 17.10 | API conventions II (breaking) | `me` alias for `{username}` (pictures, profile); one speaker path key; `batch_registrations` + `enroll-stakeholders` folded into `participants`; `/newsletter/my-subscription` folded into `/newsletter/my-subscriptions` | 17.9 |
+| 17.11 | Shared upload mechanics (ADR-002 update 2026-11-07) | one shared-kernel component for key layout, presign, size/type checks and confirm; per-entity endpoints stay; migrate the 8 upload services one per story; rename EMS `GenericLogoService` | – |
 | 17.12 | EMS modularization design (Winston) | short tech design: package moves, freeze baseline, release slicing | 17.5 |
 | 17.13 | Registrations out of `EventController` | own controller on the generated registrations interface | 17.12 |
 | 17.14 | Domain exception base | status/code on a base class; `GlobalExceptionHandler` imports no domain exception | 17.12 |
@@ -179,7 +190,24 @@ moves (planning, publishing, ai), follow-up reviews (item 9).
      (jdtls + 14 GB user.slice cap, see rack OOM memory). (c) Generate the map's numbers from
      `scripts/architecture/*` instead of hand-writing them.
 9. **Follow-up reviews (TODO, one per area)**: not covered by this review.
+   - Database review gets a head start (measured 2026-11-07): all services use the one database
+     `batbern` (separate Flyway history tables). EMS and CUMS both create `logos` and `shedlock`. EMS reads
+     CUMS tables in SQL: `user_profiles` and `companies` in `AnalyticsRepository` (marked "INTENTIONAL
+     ARCHITECTURE BREAK"), `OrganizerThanksRepository`, `FeaturedThanksProjection`,
+     `SessionUserRepository`, `SecurityContextHelper`; plus Pattern 3b in shared-kernel. Decide which stay.
    - Frontend architecture (role trees, route registry, service layer, bundle boundary, state).
    - DB schema (per-service schemas, cross-service string refs per ADR-003, indexes, 137 EMS migrations).
    - Spring API gateway (routing, auth, rate limiting, what it still does after ADR-008).
    - Watch app API (`event-watch-api`, pairing/auth in CUMS, `/events/current`).
+
+## Brief for John (Epic 17)
+
+Create Epic 17 "Architecture hardening" and its stories from the table above, in that order. 16.8c
+stays in Epic 16 and sits after 17.1. Read first: this file, `docs/architecture/module-map.md`,
+ADR-016, the ADR-003 amendment, the ADR-002 and ADR-014 updates. Scope is decided (see "Owner
+decisions"): breaking API changes are allowed when the frontend changes in the same story; 17.2 is a
+production infrastructure change and must not land on an event day. Each story needs its 5-line
+architecture note, and acceptance criteria that name the guard proving it (ArchUnit rule, lint rule,
+contract check or test). 17.12 is a design task for Winston, not a dev story. Re-run
+`scripts/architecture/*` when a story claims to remove violations.
+

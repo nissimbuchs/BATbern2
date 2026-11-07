@@ -67,6 +67,15 @@ dormant ones.**
 - `docs/plans/ems-modularization-extension-points.md` (internal modularization; anti-goal: no new microservices)
 - `docs/plans/api-consolidation-plan.md` (Phase 2 closed as "won't do" per this ADR)
 
+## Decision 2026-11-07: remove both stubs and the event bus
+
+The owner decided after the 2026-11 review (live ECS counts checked that day: SpeakerCoordination
+desired 1 / running 1, AttendeeExperience 0 / 0): stop and remove both services and their stacks,
+build-matrix entries and the gateway route `/api/v1/content/**`. Remove the EventBridge bus
+`batbern-staging` (0 rules) and its publishers as well, keeping in-process Spring events. Delete
+`speakers-api.openapi.yml` and `attendees-api.openapi.yml`. Planned as Epic 17 story 17.2 (closes
+#1216, the bus part of #1220) and 17.1 (specs). Infrastructure change: not on an event day.
+
 ## Operational state (2026-11-04)
 
 Facts as read from CDK and gateway code on `develop` (c4593449). **Live ECS task counts were not

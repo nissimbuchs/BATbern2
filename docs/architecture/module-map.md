@@ -1,7 +1,7 @@
 # Module map: where code goes, what it may use
 
 Read before adding a class, endpoint or cross-service call. This is the target; today's code
-breaks it in 101 known places (review 2026-11). Do not add new ones.
+breaks it in 100 known places (measured 2026-11-07). Do not add new ones.
 
 ## Services: who may call whom
 
@@ -40,7 +40,7 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 | Mail to an audience | Mail Center: an `AudienceAdapter` for `MailComposerService` | add a `…/send` + `…/preview` endpoint pair |
 | User or company data | `UserApiClient` (cached, `/internal`) | store name/email (ADR-004) |
 | A person's proven addresses | `PersonAddresses` | read additional e-mails directly |
-| File upload | presign + confirm per ADR-002 (shared service pending) | a ninth presign service; check first |
+| File upload | per-entity presign + confirm (ADR-002); shared mechanics pending | new presign code from scratch |
 | Admin or feature setting | `AdminSettingsService` (`/admin/settings/{key}`) | a new settings resource |
 | Scheduled job | `@Scheduled` + ShedLock | unlocked scheduler. Audience mails are organizer-sent only (#1179) |
 | Error → HTTP status | `ClientErrorClassifier` | another catch-all |
@@ -61,11 +61,11 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 
 ## Placement
 
-Code used by two services goes in `shared-kernel`, never copied (`GenericLogoService` exists twice:
-don't add a third). Frontend: route pages in `pages/`, UI in `components/{area}/`, API calls only
-in `services/`. Full layout: `docs/architecture/source-tree.md`, or `ls`.
+Shared code goes in `shared-kernel`, never copied. One shared database: no new reads of another
+service's tables (ADR-016). Frontend: pages in `pages/`, UI in `components/{area}/`, API calls
+only in `services/`. Full layout: `docs/architecture/source-tree.md`, or `ls`.
 
-## Story architecture note (5 lines, before the first test)
+## Story architecture note (5 lines, before first test)
 
 Modules touched · new cross-module or cross-service dependencies · new or changed endpoints, each
 with the nearest existing one considered · components reused · deviations from this map and why.

@@ -619,11 +619,37 @@ Monitor these metrics:
   - `bruno-tests/companies-api/*`
   - `bruno-tests/file-upload-api/*`
 
+## Amendment 2026-11: UUIDs in paths
+
+The rule "never expose UUIDs" was written for entities with a natural key. In practice, 58 of 342
+operations put a UUID in the path (measured 2026-11-07), almost all for things that have no name.
+The rule now reads:
+
+**A meaningful ID is required** for anything referenced from or stored in another service, or
+bookmarked and spoken by people: events, users, companies, sessions, topics.
+
+**A UUID is allowed** when all three hold: the thing has no natural name; it never crosses a service
+boundary; and it sits in the path under its meaningful parent and the service loads it scoped to that
+parent (`findByIdAnd{Parent}`). Without the scoping, a valid UUID from another parent can be changed
+through this parent's path.
+
+| Case | Examples | Verdict |
+|---|---|---|
+| Owned child under its parent | event photos, teaser images, thank-you notes, Q&A posts, session materials, partner notes, newsletter sends, watch pairing, speaker-pool entries (no username before READY) | allowed |
+| Transient technical handle | `uploadId`, `jobId`, merge or logo `requestId` | allowed |
+| Natural key is personal data | newsletter subscribers (the key would be an e-mail address, which must not appear in URLs or logs) | UUID required |
+| Unnamed top-level aggregate | tasks, task templates, partner meetings, topic suggestions, own notifications | allowed |
+| Child outside its parent | `POST /speakers/{speakerId}/ai/analyze-abstract` | not allowed: nest under the event (Epic 17) |
+
+Database rules above are unchanged. Five nested cases were checked on 2026-11-07 and all scope
+correctly; a scoping test per nested resource makes this a rule rather than a habit.
+
 ## Revision History
 
 | Date | Version | Changes | Author |
 |------|---------|---------|--------|
 | 2025-11-02 | 1.0 | Initial ADR creation | Winston (Architect Agent) |
+| 2026-11-07 | 1.2 | Amendment: when a UUID in a path is allowed (owner decision after the 2026-11 review) | Winston (Architect Agent) |
 | 2025-11-08 | 1.1 | **CRITICAL CLARIFICATION**: Added comprehensive "Microservice Isolation Rules" section with 5 rules and decision tree. Made it crystal clear that cross-service references MUST use meaningful IDs (companyName, username, eventCode), NOT UUIDs. Updated database layer description to distinguish within-service vs. cross-service references. | Claude Code |
 
 ---

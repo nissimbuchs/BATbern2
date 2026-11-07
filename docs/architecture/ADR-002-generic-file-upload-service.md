@@ -624,6 +624,22 @@ entity-specific service (e.g. `ProfilePictureService`) and is served from
 **Rule of thumb:** client holds the bytes → presigned URL, never proxy. Server must
 obtain the bytes from a third party → `ImageUrlFetcher`, never a hand-rolled fetch.
 
+## Update 2026-11-07: review finding, reuse not routing
+
+The 2026-11 architecture review first reported the per-entity upload services as drift from ADR-002.
+That was wrong: Scope Clarification 1 above makes them the intended pattern for existing entities.
+What the review did measure stands as a reuse finding: eight classes implement the same presign and
+confirm mechanics independently (`ConversationAttachmentService`, `EventPhotoService`,
+`EventTeaserImageService`, `GenericLogoService`, `MaterialsUploadService`, `ProfilePictureService`,
+`SessionMaterialsService`, `SpeakerPortalMaterialsService`).
+
+Decision: keep the per-entity endpoints; extract the mechanics (key layout, presign, size and type
+checks, confirm) into one shared-kernel component that every upload service uses (Epic 17).
+
+Two facts for the database review: EMS has its own `GenericLogoService` (137 lines, association only),
+not a copy of the CUMS class, and both services create and use the same `logos` table (EMS `V5`, CUMS
+`V10`) in the shared database. The EMS class should get a distinct name.
+
 ## Consequences
 
 ### Positive
