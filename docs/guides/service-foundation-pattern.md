@@ -756,23 +756,16 @@ package ch.batbern.partners;
 
 import ch.batbern.shared.test.AbstractIntegrationTest as SharedAbstractIntegrationTest;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
 import org.springframework.test.context.ActiveProfiles;
-import org.springframework.transaction.annotation.Transactional;
 
 @SpringBootTest
 @ActiveProfiles("test")
-@Transactional
 public abstract class AbstractIntegrationTest extends SharedAbstractIntegrationTest {
 
-    // Mock HTTP clients for integration tests
-    @MockBean
-    protected CompanyServiceClient companyServiceClient;
-
-    @MockBean
-    protected UserServiceClient userServiceClient;
-
-    // Base class provides PostgreSQL Testcontainer singleton
+    // Base class provides PostgreSQL Testcontainer singleton.
+    // No class-level @Transactional (the rollback skips the flush, so DB constraints never run)
+    // and no mocked HTTP clients: the real clients run, the peer service is stubbed at the wire.
+    // Rules: docs/architecture/coding-standards.md, "Test fidelity rules".
 }
 ```
 
@@ -785,11 +778,22 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private TestRestTemplate restTemplate;
 
+    @Autowired
+    private RestTemplate companyServiceRestTemplate;  // the template the real client uses
+
+    private MockRestServiceServer companyService;
+
+    @BeforeEach
+    void bindPeer() {
+        companyService = MockRestServiceServer.bindTo(companyServiceRestTemplate).build();
+    }
+
     @Test
     void should_createPartner_when_validDataProvided() {
-        // Given
-        when(companyServiceClient.getCompany("GoogleZH"))
-            .thenReturn(CompanyResponse.builder().name("GoogleZH").build());
+        // Given: the company service answers at the wire (MockRestServiceServer bound to the
+        // client's RestTemplate, or WireMock); see microservices-http-clients.md, Testing Patterns
+        companyService.expect(requestTo(endsWith("/api/v1/companies/GoogleZH")))
+            .andRespond(withSuccess("{\"name\":\"GoogleZH\"}", MediaType.APPLICATION_JSON));
 
         CreatePartnerRequest request = CreatePartnerRequest.builder()
             .companyName("GoogleZH")

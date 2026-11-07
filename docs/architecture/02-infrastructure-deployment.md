@@ -778,6 +778,7 @@ graph LR
     FC["frontend-changes"]
     TF["test-frontend"]
     FS["frontend-static<br/>incl. generated API types"]
+    TR["test-ratchet<br/>no path filter"]
     BF["build-frontend"]
     BI["build-infrastructure<br/>if infrastructure/ changed"]
     SONAR["sonarcloud<br/>disabled"]
@@ -785,6 +786,7 @@ graph LR
 
     SK --> SVC
     FC --> TF & FS --> BF
+    TR --> BF
     SVC & BF & BI --> DEP
     style SONAR stroke-dasharray: 5 5
 ```

@@ -560,113 +560,60 @@ These exceptions extend shared-kernel exceptions:
 
 ## Testing Patterns
 
-### Unit Tests with @MockBean
+Test the **real client** against the peer service **at the wire**, never a mocked client class.
+A `@MockitoBean CompanyServiceClient` (or a `@Primary` mock in a `@TestConfiguration`) encodes the
+caller's belief about the peer's API, so a wrong path or parameter stays green: #1072 (`limit=1000`
+against a peer that caps at 100) and #1159/#1181 (a path the peer never had). Rules and the CI
+ratchet that counts mocked S2S clients: `docs/architecture/coding-standards.md` → "Test fidelity
+rules". The shared contract harness (17.0b) builds on this pattern.
 
-Use Spring `@MockBean` to mock HTTP clients (NOT WireMock):
+### Client tests with MockRestServiceServer
+
+Reference: `services/partner-coordination-service/src/test/java/ch/batbern/partners/client/CompanyServiceClientTest.java`.
 
 ```java
-package ch.batbern.partners.service;
-
-import ch.batbern.partners.client.CompanyServiceClient;
-import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.dto.CompanyResponse;
-import ch.batbern.partners.dto.UserResponse;
-import org.junit.jupiter.api.Test;
-import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.boot.test.mock.mockito.MockBean;
-
-import static org.mockito.Mockito.*;
-import static org.assertj.core.api.Assertions.*;
-
-@SpringBootTest
-class PartnerServiceTest {
+@RestClientTest(components = {
+    CompanyServiceClientImpl.class,
+    RestClientConfig.class,
+    CacheConfig.class
+})
+@TestPropertySource(properties = {
+    "company-service.base-url=http://company-user-management:8080"
+})
+class CompanyServiceClientTest {
 
     @Autowired
-    private PartnerService partnerService;
-
-    @MockBean
     private CompanyServiceClient companyServiceClient;
 
-    @MockBean
-    private UserServiceClient userServiceClient;
+    @Autowired
+    private MockRestServiceServer mockServer;
 
     @Test
-    void should_enrichPartnerWithCompanyData_when_includesCompany() {
-        // Given
-        String companyName = "GoogleZH";
-        CompanyResponse companyResponse = CompanyResponse.builder()
-            .name("GoogleZH")
-            .displayName("Google Zurich")
-            .build();
-
-        when(companyServiceClient.getCompany(companyName))
-            .thenReturn(companyResponse);
+    void should_callCompanyServiceAPI_when_validatingCompanyName() {
+        // Given: the peer answers at the wire
+        mockServer.expect(requestTo("http://company-user-management:8080/api/v1/companies/GoogleZH"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess()
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .body("""
+                            { "name": "GoogleZH", "displayName": "Google Schweiz GmbH" }
+                            """));
 
         // When
-        PartnerResponse response = partnerService.getPartner(companyName, Set.of("company"));
+        CompanyResponse company = companyServiceClient.getCompanyByName("GoogleZH");
 
-        // Then
-        assertThat(response.getCompany()).isNotNull();
-        assertThat(response.getCompany().getDisplayName()).isEqualTo("Google Zurich");
-        verify(companyServiceClient).getCompany(companyName);
-    }
-
-    @Test
-    void should_enrichContactWithUserData_when_addingContact() {
-        // Given
-        String username = "john.doe";
-        UserResponse userResponse = UserResponse.builder()
-            .username("john.doe")
-            .email("john.doe@example.com")
-            .firstName("John")
-            .lastName("Doe")
-            .build();
-
-        when(userServiceClient.getUser(username))
-            .thenReturn(userResponse);
-
-        // When
-        PartnerContactResponse response = partnerService.addContact(partnerId, username, ContactRole.PRIMARY);
-
-        // Then
-        assertThat(response.getEmail()).isEqualTo("john.doe@example.com");
-        assertThat(response.getFirstName()).isEqualTo("John");
-        verify(userServiceClient).getUser(username);
-    }
-
-    @Test
-    void should_throwException_when_companyNotFound() {
-        // Given
-        when(companyServiceClient.getCompany("NonExistent"))
-            .thenThrow(new CompanyNotFoundException("Company not found"));
-
-        // When/Then
-        assertThatThrownBy(() -> partnerService.validateCompany("NonExistent"))
-            .isInstanceOf(CompanyNotFoundException.class);
+        // Then: the effect, and the request the real client sent
+        assertThat(company.getDisplayName()).isEqualTo("Google Schweiz GmbH");
+        mockServer.verify();
     }
 }
 ```
 
-### Integration Tests with TestConfiguration
+### Service and controller integration tests
 
-```java
-@TestConfiguration
-public class HttpClientTestConfig {
-
-    @Bean
-    @Primary  // Override production bean
-    public CompanyServiceClient companyServiceClient() {
-        return mock(CompanyServiceClient.class);
-    }
-
-    @Bean
-    @Primary
-    public UserServiceClient userServiceClient() {
-        return mock(UserServiceClient.class);
-    }
-}
-```
+Callers of a client run the real client too. Stub the peer service at the wire
+(`MockRestServiceServer.bindTo(<the client's RestTemplate>)` or WireMock), not with a
+`@MockitoBean` of the client and not with a `@Primary` mock in a `@TestConfiguration`.
 
 ---
 

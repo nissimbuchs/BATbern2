@@ -62,7 +62,7 @@ dependencies {
 ┌─────────────────────┐
 │  Integration Test   │
 │  @SpringBootTest    │
-│  @Transactional     │
+│  @AfterEach cleanup │
 └──────────┬──────────┘
            │
            ▼
@@ -175,7 +175,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -184,10 +183,10 @@ import static org.hamcrest.Matchers.*;
 /**
  * Integration tests for {Entity} REST API.
  *
- * @Transactional: Each test runs in a transaction, rolled back after test completes.
- * This ensures test isolation (no data pollution between tests).
+ * No class-level @Transactional: the rollback skips the flush, so DB constraints and triggers
+ * never run (#1104). Isolate tests with an @AfterEach cleanup or unique test data
+ * (docs/architecture/coding-standards.md, "Test fidelity rules").
  */
-@Transactional
 class {Entity}ControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -360,7 +359,6 @@ import ch.batbern.{service}.AbstractIntegrationTest;
 import ch.batbern.{service}.domain.{Entity};
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
 import java.util.UUID;
@@ -370,8 +368,8 @@ import static org.assertj.core.api.Assertions.*;
 /**
  * Integration tests for {Entity}Repository with real PostgreSQL.
  * Tests PostgreSQL-specific features (JSONB, arrays, functions).
+ * No class-level @Transactional (see the controller test above); clean up in @AfterEach.
  */
-@Transactional
 class {Entity}RepositoryIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -500,21 +498,25 @@ class EntityRepositoryTest {
 }
 
 // ✅ CORRECT - using Testcontainers PostgreSQL
-@Transactional
 class EntityRepositoryIntegrationTest extends AbstractIntegrationTest {
     // Tests run against real PostgreSQL
 }
 ```
 
-### Pitfall 2: Not Using @Transactional
-**Problem**: Test data pollutes other tests, tests fail randomly
-**Solution**: Always use `@Transactional` on integration test classes
+### Pitfall 2: Class-level @Transactional on a write IT
+**Problem**: The rollback skips the flush, so DB constraints and triggers never run and the test
+passes on data production would reject (#1104, `chk_username_format`)
+**Solution**: No class-level `@Transactional`. Isolate with an `@AfterEach` cleanup or unique test
+data, or `flush()` before asserting. The CI ratchet counts class-level `@Transactional` ITs
+(docs/architecture/coding-standards.md, "Test fidelity rules")
 
 ```java
-// ✅ CORRECT - each test runs in rolled-back transaction
-@Transactional
+// ✅ CORRECT - writes commit, constraints run, cleanup restores isolation
 class EntityControllerIntegrationTest extends AbstractIntegrationTest {
-    // Test data is rolled back after each test
+    @AfterEach
+    void cleanUp() {
+        repository.deleteAll();
+    }
 }
 ```
 
@@ -556,34 +558,39 @@ spring.flyway.enabled=true
 ## Story-Specific Adaptations
 
 ### Testing HTTP Client Integration (Story 2.7)
+Never mock the client class (`@MockitoBean CompanyServiceClient`): the mock hides a wrong path or
+parameter (#1072). Run the real client and replace the peer service at the wire, with
+`MockRestServiceServer` (or WireMock). Reference: PCS `CompanyServiceClientTest`. Rules:
+docs/architecture/coding-standards.md, "Test fidelity rules".
+
 ```java
-@Transactional
 class PartnerServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private PartnerService partnerService;
 
-    @MockBean  // Mock HTTP client for integration tests
-    private CompanyServiceClient companyServiceClient;
+    @Autowired
+    private RestTemplate companyServiceRestTemplate;  // the template the real client uses
 
     @Test
     void should_enrichPartnerWithCompanyData_when_includesCompany() {
-        // Given
-        when(companyServiceClient.getCompany("GoogleZH"))
-            .thenReturn(CompanyResponse.builder().name("GoogleZH").build());
+        // Given: the peer service answers at the wire
+        MockRestServiceServer server = MockRestServiceServer.bindTo(companyServiceRestTemplate).build();
+        server.expect(requestTo(endsWith("/api/v1/companies/GoogleZH")))
+            .andRespond(withSuccess("{\"name\":\"GoogleZH\"}", MediaType.APPLICATION_JSON));
 
         // When
         PartnerResponse response = partnerService.getPartner("GoogleZH", Set.of("company"));
 
         // Then
         assertThat(response.getCompany()).isNotNull();
+        server.verify();
     }
 }
 ```
 
 ### Testing Security Configuration
 ```java
-@Transactional
 class SecurityIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -606,7 +613,6 @@ class SecurityIntegrationTest extends AbstractIntegrationTest {
 
 ### Testing Event-Driven Task Creation with Idempotency (Story 5.5)
 ```java
-@Transactional
 class EventTaskIdempotencyIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -690,7 +696,6 @@ class EventTaskIdempotencyIntegrationTest extends AbstractIntegrationTest {
 
 ### Testing Transaction Rollback with Multi-Step Operations (Story 5.5)
 ```java
-@Transactional
 class ContentSubmissionTransactionIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired

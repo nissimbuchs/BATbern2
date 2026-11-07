@@ -419,8 +419,9 @@ class SchemaValidationTest extends AbstractIntegrationTest {
 ```java
 @SpringBootTest
 @ActiveProfiles("test")
-@Transactional
 public abstract class AbstractIntegrationTest extends SharedAbstractIntegrationTest {
+    // No class-level @Transactional: a rollback without flush skips the constraints and triggers
+    // the migrations define (coding-standards.md, "Test fidelity rules")
     // Extends shared-kernel AbstractIntegrationTest
     // Provides singleton PostgreSQL Testcontainer
     // Flyway runs migrations automatically against Testcontainer

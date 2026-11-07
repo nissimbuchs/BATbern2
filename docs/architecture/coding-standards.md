@@ -11,6 +11,7 @@
 - **File Uploads:** Use presigned URLs for direct S3 uploads, never proxy through backend
 - **Presigned links:** build them with `ch.batbern.shared.utils.S3Links` (`uploadUrl`, `downloadUrl`), never with an inline `Put/GetObjectPresignRequest` (#1187). A presigned link is a bearer credential until it expires: never log it, log the S3 key.
 - **Role-Based Access:** Always check user roles before displaying/executing functionality
+- **Tests:** Mock only at the process boundary, never our own code (see "Test fidelity rules" under Testing Standards). A CI ratchet keeps the count of old own-code mocks from rising
 
 ## Naming Conventions
 
@@ -206,6 +207,7 @@ that nothing consumed.
 ### Code Review Checklist
 - [ ] **TDD Followed**: Tests were written before implementation
 - [ ] **Test Coverage**: Each acceptance criterion has corresponding tests
+- [ ] **Test Fidelity**: New and touched tests follow the "Test fidelity rules" (mocks at the process boundary only, positive control for absence, effect not call)
 - [ ] Code follows established patterns and conventions
 - [ ] All tests pass and coverage meets requirements (≥85%)
 - [ ] Test names clearly describe expected behavior
@@ -342,8 +344,9 @@ void shouldCreateEventSuccessfully() {
     assertThat(event.getTitle()).isEqualTo("BATbern 2024");
 }
 
-// Integration tests - MUST extend AbstractIntegrationTest
-@Transactional
+// Integration tests - MUST extend AbstractIntegrationTest. No class-level @Transactional on a
+// write IT: the rollback skips the flush, so DB constraints and triggers never run (see
+// "Test fidelity rules"). Clean up in @AfterEach, or flush() before asserting.
 class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
@@ -412,6 +415,84 @@ spring.flyway.enabled=true
 spring.flyway.locations=classpath:db/migration
 spring.flyway.baseline-on-migrate=true
 ```
+
+### Test fidelity rules
+
+Story 17.0a, from the test-fidelity analysis (`docs/plans/test-fidelity-proposal-2026-11.md`): in
+15 of 57 production bugs since 2026-08, a mock sat exactly on the code that was wrong, and the
+test passed because the behaviour under test was mocked. These rules apply to every **new** test
+and to every test a story **touches**. They are binding for agents as well (the `bmad-build`
+override and `_bmad-output/project-context.md` point here).
+
+#### Mock at the process boundary, nowhere else
+
+A test may replace only what leaves the process: SES, S3, Cognito, OpenAI, EventBridge/SQS, the
+clock, and **another service's HTTP API at the wire** (never its Java client). Everything inside
+the process runs for real: our services, repositories, mappers, validators, templates, the
+security filter chain, our hooks and our service modules.
+
+| Layer | Allowed to replace | Not allowed |
+|---|---|---|
+| Backend IT | `SesClient`, `S3Client`, Cognito client, OpenAI HTTP, the peer service via `MockRestServiceServer` / WireMock | `@MockitoBean` of own services, repositories, `UserApiClient`, `EmailService`, `SlugGenerationService` |
+| Backend unit | pure logic only; a unit test that needs more than 2 mocks is at the wrong test level | `verify(mock).call(eq(<expected value>))` as the main assertion |
+| Frontend component | the network via MSW; Amplify; browser APIs that jsdom lacks | `vi.mock('@/services/...')`, `vi.mock('@/hooks/...')`, `vi.mock` of child components of the screen under test |
+| Frontend i18n | real i18next with the real `en` locale files | the per-file `react-i18next` stub |
+
+Unit tests of pure functions stay as they are. The rule targets tests that claim to test
+behaviour while the behaviour is mocked. Until the shared harnesses exist (17.0b: S2S contract
+harness, 17.0c: MSW harness), a new test that cannot avoid an own-code mock says why in a comment,
+and the ratchet below makes that visible in review.
+
+#### Assertion rules
+
+- **Asserting absence needs a positive control** in the same test: first show that the thing
+  would be there (#1012, #960).
+- **Assert the effect, not the call.** Check the parsed MIME `To:` or the stored row, not
+  `verify(times(2))` (#1176, #1181).
+- **A fallback must be distinguishable from success** in the test data (#1243).
+- **No silent catch in `@Async`, schedulers or listeners** without a metric. The test asserts that
+  the failure surfaces (#1176, #1181, #1145).
+- **Wiring test at the parent** for every callback prop that triggers a mutation (#962).
+- **Cache tests read, mutate, then read again** (#1069, #1095).
+- **No test copies of production resources** (templates, configs) on the test classpath. Tests
+  run against the real ones (#1096).
+
+#### Touch rule
+
+A story that changes a screen or a service method moves that screen's or method's tests off
+own-code mocks, onto the harness, once the harness exists (17.0b for backend S2S clients, 17.0c
+for the frontend). There are no separate rewrite stories, except one for the top offenders.
+
+#### The ratchet
+
+`web-frontend/scripts/test-ratchet.ts` counts, per test file, what these rules forbid, and CI
+(`test-ratchet`, required through `build-frontend`) compares the counts with the committed
+baseline `web-frontend/scripts/test-ratchet-baseline.txt`:
+
+| Category | Counts |
+|---|---|
+| `fe-mock-services` / `fe-mock-hooks` / `fe-mock-components` | `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**/*.{test,spec}.ts(x)`, by resolved path: `src/services`; `src/hooks` or a `use[A-Z]...` module; `src/components`, `src/pages` or a PascalCase module |
+| `be-mock-s2s-client` | `@MockitoBean` of a type ending in `Client` that is not a boundary type (`UserApiClient`, `UserServiceClient`, ...) |
+| `be-mock-in-process` | any other `@MockitoBean` that is not a boundary type |
+| `be-transactional-it` | class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is named `*IntegrationTest` / `*IT` |
+
+Boundary types, never counted: `SesClient`, `SesV2Client`, `S3Client`, `S3Presigner`,
+`CognitoIdentityProviderClient`, `SqsClient`, `EventBridgeClient`, `Clock`, `JwtDecoder`, and any
+type imported from `software.amazon.awssdk`. Mentions in comments and Javadoc are not counted;
+in Java, mentions in string and text-block literals are not counted either (the frontend scan
+skips comments only).
+
+- **RAISED** (a count went up, or a new file has a counted mock): the build fails. Follow the rules
+  above instead.
+- **STALE** (a count went down, or the file is gone): the build fails until the gain is locked in.
+  Run `cd web-frontend && npm run check:test-ratchet -- --update` and commit the baseline in the
+  same PR.
+- Never use `--update` to accept a rise. A baseline diff with a higher number needs an explicit
+  reason in the PR and the owner's go. Exception: when the RAISED lines are exactly a renamed or
+  moved file carrying the same counts as its STALE lines (a `git mv`), `--update` is fine and the
+  PR says so.
+
+Locally: `make check-test-ratchet`.
 
 ### Lambda Handler Testing (Infrastructure)
 

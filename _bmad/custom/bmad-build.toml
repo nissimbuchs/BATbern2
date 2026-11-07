@@ -6,7 +6,12 @@
 persistent_facts = [
   "file:{project-root}/_bmad-output/project-context.md",
   "file:{project-root}/docs/architecture/module-map.md",
+  # The v6 devLoadAlwaysFiles, restored for builds (owner 2026-11-07).
+  "file:{project-root}/docs/architecture/coding-standards.md",
+  "file:{project-root}/docs/architecture/tech-stack.md",
+  "file:{project-root}/docs/architecture/source-tree.md",
 ]
 activation_steps_append = [
   "When writing or confirming the plan, put a 5-line Architecture note (see module-map.md) under its Design Notes: modules touched, new dependencies, new endpoints with the nearest existing one, components reused, deviations. Before listing a new endpoint, grep docs/api for the nearest existing one and say why it cannot be extended. A deviation from the map needs a reason there. In oneshot route, state the note before writing code.",
+  "Tests follow the Test fidelity rules in {project-root}/docs/architecture/coding-standards.md (loaded as a persistent fact): mock only at the process boundary (SES, S3, Cognito, OpenAI, SQS, the clock, a peer service at the wire), never our own services, hooks, child components or S2S clients; assertion rules (positive control for absence, effect not call, fallback distinguishable). Touch rule: a change to a screen or a service method moves that screen's or method's tests off own-code mocks once the harness exists (17.0b backend, 17.0c frontend). Run `make check-test-ratchet` before handing over: a RAISED line is a defect to fix, a STALE line means run `cd web-frontend && npm run check:test-ratchet -- --update` and commit the baseline.",
 ]

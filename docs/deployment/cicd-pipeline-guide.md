@@ -73,7 +73,7 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
    - Until 2026-10-07 this job ran on x86 `ubuntu-latest`, and the whole Docker build ran under
      QEMU: 20-29 minutes per changed service for the image step alone (PR #1072)
 
-3. **Build Frontend** (four jobs since #1074)
+3. **Build Frontend** (four jobs since #1074, plus `test-ratchet` since Story 17.0a)
    - `frontend-changes`: skips everything below when nothing under `web-frontend/` or `docs/api/`
      changed (a spec-only PR runs the frontend jobs since Story 17.3, so the path check sees it)
    - `test-frontend (1/3..3/3)`: Vitest in 3 shards in parallel, each writes a blob report with
@@ -86,8 +86,21 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
      new file outside `src/services/` with an HTTP call (OUT OF LAYER, baseline
      `web-frontend/scripts/api-layer-baseline.txt`) and a stale entry in either list. Locally:
      `make check-frontend-api-paths`
-   - `build-frontend` (the required check, name unchanged): waits for both, fails if either failed,
-     merges the blob reports and enforces the coverage threshold on the merged result
+   - `test-ratchet` (Story 17.0a, no path filter: it also runs on PRs that touch only Java):
+     its own Vitest file, then `npm run check:test-ratchet`. It counts, per test file, the mocks
+     the Test fidelity rules forbid in new tests (`docs/architecture/coding-standards.md`, "Test
+     fidelity rules"): `vi.mock` of our own services, hooks and components, `@MockitoBean` of
+     in-process beans and of service-to-service clients, and class-level `@Transactional` on ITs.
+     It compares them with `web-frontend/scripts/test-ratchet-baseline.txt` and fails on any
+     difference: RAISED (a count went up, or a new file has a counted mock) and STALE (a count
+     went down or the file is gone, but the baseline was not updated). After a STALE, lock the
+     gain in: `cd web-frontend && npm run check:test-ratchet -- --update` and commit the baseline
+     in the same PR. Never use `--update` to accept a rise, except when the RAISED lines are
+     exactly a renamed or moved file carrying the same counts as its STALE lines (a `git mv`):
+     then `--update` is fine and the PR says so. Locally: `make check-test-ratchet`
+   - `build-frontend` (the required check, name unchanged): waits for the shards,
+     `frontend-static` and `test-ratchet`, fails if any failed, merges the blob reports and
+     enforces the coverage threshold on the merged result
    - Before #1074 one job ran it all, and the test step alone took 9-12 minutes (5,600+ tests on a
      4-vCPU runner). Coverage is not the cost: 274 s without, 312 s with it, measured locally.
    - Skipped shards would skip `deploy-to-staging` too: a job without a status function gets an

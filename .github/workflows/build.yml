@@ -609,15 +609,46 @@ jobs:
           path: web-frontend/dist/
           retention-days: 7
 
+  # Story 17.0a: the test fidelity ratchet. Counts own-code mocks (vi.mock of our services,
+  # hooks and components; @MockitoBean of in-process beans and S2S clients) and class-level
+  # @Transactional ITs per test file, against web-frontend/scripts/test-ratchet-baseline.txt.
+  # A rise fails, and so does a fall without the baseline update. No path filter: it scans the
+  # Java tests too, so it must run on PRs that touch only Java. build-frontend (required) needs it.
+  test-ratchet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./web-frontend
+        run: npm ci
+
+      # The check's own rules are proven in the job that enforces them (same as 17.3).
+      - name: Test ratchet tests
+        working-directory: ./web-frontend
+        run: npx vitest run scripts/test-ratchet.test.ts
+
+      - name: Test ratchet
+        working-directory: ./web-frontend
+        run: npm run check:test-ratchet
+
   build-frontend:
-    needs: [frontend-changes, test-frontend, frontend-static]
+    needs: [frontend-changes, test-frontend, frontend-static, test-ratchet]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Fail when a shard or the static checks failed
+      - name: Fail when a shard, the static checks or the test ratchet failed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: |
-          echo "frontend-changes=${{ needs.frontend-changes.result }} test-frontend=${{ needs.test-frontend.result }} frontend-static=${{ needs.frontend-static.result }}"
+          echo "frontend-changes=${{ needs.frontend-changes.result }} test-frontend=${{ needs.test-frontend.result }} frontend-static=${{ needs.frontend-static.result }} test-ratchet=${{ needs.test-ratchet.result }}"
           exit 1
 
       - name: Checkout code

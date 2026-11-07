@@ -59,9 +59,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
  * The container is shared across all test classes for performance (manual singleton pattern).
  * We do NOT use @Testcontainers/@Container to avoid premature container shutdown.
  *
- * Usage:
+ * Usage (no class-level @Transactional on a write IT: the rollback skips the flush, so DB
+ * constraints and triggers never run; see docs/architecture/coding-standards.md, "Test fidelity
+ * rules"):
  * ```java
- * @Transactional
  * @Import(TestSecurityConfig.class) // If needed
  * public class MyServiceIntegrationTest extends AbstractIntegrationTest {
  *     // Test implementation
@@ -169,7 +170,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.test.web.servlet.MockMvc;
-import org.springframework.transaction.annotation.Transactional;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.*;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
@@ -179,8 +179,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * Tests run against real PostgreSQL via Testcontainers.
  * Uses Flyway migrations for schema setup.
+ * No class-level @Transactional: the rollback skips the flush, so DB constraints and triggers
+ * never run (#1104). Clean up in @AfterEach instead (coding-standards.md, "Test fidelity rules").
  */
-@Transactional
 class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired

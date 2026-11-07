@@ -476,8 +476,8 @@ const apiUrl = process.env.REACT_APP_API_URL;
 **CRITICAL**: Integration tests MUST use PostgreSQL via Testcontainers, not H2/in-memory databases:
 
 ```java
-// ✅ Correct - extends AbstractIntegrationTest (provides PostgreSQL)
-@Transactional
+// ✅ Correct - extends AbstractIntegrationTest (provides PostgreSQL); no class-level
+// @Transactional on a write IT (rollback without flush skips DB constraints)
 class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     // Tests run against real PostgreSQL
 }
@@ -488,6 +488,10 @@ class CompanyRepositoryTest {
     // This creates false confidence
 }
 ```
+
+**Mock only at the process boundary** (SES, S3, Cognito, OpenAI, SQS, the clock, a peer service at
+the wire), never our own services, hooks or S2S clients. Rules and the CI ratchet that keeps old
+own-code mocks from growing: `docs/architecture/coding-standards.md` → "Test fidelity rules".
 
 ### Lambda Handler Tests
 
