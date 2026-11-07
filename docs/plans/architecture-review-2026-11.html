@@ -142,7 +142,12 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
     </div>
     <figcaption>Red edges close a cycle. Every service pair calls in both directions except PCS→CUMS. Of the distinct URLs the client classes call, 9 go through <code>/internal</code> and 12 through the public API carrying the end user's token. That forces machine-only endpoints into the public spec: <code>/users/provision</code>, <code>/issue-invitation-credentials</code>, <code>PATCH /users/{u}/profile</code>, <code>/events/attendance-summary</code>.</figcaption>
   </figure>
-  <p><strong>Why it matters.</strong> A cycle means neither service can be deployed, tested or reasoned about alone. CUMS→EMS exists only because EMS must re-key its rows when two profiles merge. That is a fact CUMS can publish as an event, without CUMS ever knowing EMS exists. The trade-off is eventual consistency for a few seconds after a merge. For a merge organizers trigger by hand, that is acceptable.</p>
+  <p><strong>Why it matters.</strong> A cycle means neither service can be deployed, tested or reasoned about alone. The fix is to name one direction as upstream, and it needs no message bus. Downstream services pull from upstream through <code>/internal</code> feeds polled by a ShedLock job, which the platform already has. That is boring, replayable and costs nothing extra.</p>
+  <ul class="plain">
+    <li><strong>CUMS → EMS.</strong> The merge call stays synchronous. EMS can block a merge and must return the preview counts, which an event can't do. Make the dependency a contract CUMS owns: <code>/internal/user-references/preview|merge</code>. Every service that stores usernames implements it, so CUMS doesn't know EMS by name. PCS stores usernames too and isn't covered by the merge today. The merge-request conversations flip direction: the Mail Center pulls open requests from CUMS.</li>
+    <li><strong>EMS ↔ PCS.</strong> EMS is upstream, because partners consume events. The topic canvas gets partner topics from PCS in the frontend, not via EMS. Calendar RSVPs land in EMS's inbound mail. PCS pulls them from an <code>/internal</code> feed instead of EMS pushing them. PCS → EMS (event summary, attendance) remains, through <code>/internal</code>.</li>
+  </ul>
+  <p class="foot">Checked: the EventBridge bus <code>batbern-staging</code> is still deployed with 0 rules. Five services (CUMS, PCS, EMS workflow and speaker workflow) still publish into it, and those events reach nobody.</p>
 </section>
 
 <section>
@@ -360,15 +365,37 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
 <section>
   <h2>7 · Recommendations, in order</h2>
   <ol class="recs">
-    <li><strong>Delete dead surface.</strong> Two specs, six orphan endpoints, the dead <code>fetchPreview</code> hook. <span class="meta">Low effort. Removes about 25 ops. Stopping the speaker-coordination ECS task is a production change, so it is your decision.</span></li>
+    <li><strong>Delete dead surface.</strong> Two specs, six orphan endpoints, the dead <code>fetchPreview</code> hook. <span class="meta">Low effort. Removes about 25 ops. Stopping the speaker-coordination ECS task and removing the subscriber-less EventBridge bus and its publishers are production changes, so they are your decision.</span></li>
     <li><strong>Add a contract guard for frontend paths.</strong> Fail the build when a frontend service calls a path the spec doesn't have. This would have caught <code>GET /publish/{phase}/preview</code>, which exists in neither the spec nor the backend. <span class="meta">Low effort. Stops the drift from coming back.</span></li>
     <li><strong>Finish 16.8c.</strong> Fold newsletter, notice, venue and slides sends into the Mail Center endpoint. <span class="meta">Already planned and gated on your go.</span></li>
-    <li><strong>Break the cycles.</strong> Service-to-service calls go through <code>/internal</code> only. Move the four machine-only endpoints out of the public spec. Replace CUMS→EMS with a <code>UserMerged</code> event. <span class="meta">Medium effort. Costs a few seconds of eventual consistency after a merge.</span></li>
+    <li><strong>Break the cycles.</strong> Service-to-service calls go through <code>/internal</code> only. Move the four machine-only endpoints out of the public spec. Downstream pulls feeds, and the merge becomes a CUMS-owned contract (section 1). <span class="meta">Medium effort. No new infrastructure.</span></li>
     <li><strong>One upload pipeline</strong>, as ADR-002 already decided. Put a shared-kernel upload service behind <code>/uploads</code> and migrate one flow per release. <span class="meta">Medium effort. 8 classes become 1.</span></li>
     <li><strong>Wall EMS from the inside</strong> along the module map in section 6. Freeze the 101 current violations in ArchUnit, then work down the hotspots, starting with <code>EventController</code> and <code>GlobalExceptionHandler</code>. <span class="meta">Incremental, never a big bang.</span></li>
     <li><strong>Settle the conventions.</strong> Amend ADR-003 with the rule from section 5, nest the one stray AI endpoint, pick one speaker key, use one <code>PATCH</code> for tasks, one settings resource. <span class="meta">Decide once, apply when touching each area.</span></li>
     <li><strong>Follow-up reviews</strong> of what this one left out: frontend architecture, database schema, gateway, Watch API. <span class="meta">Logged in the action list. One review per area.</span></li>
   </ol>
+</section>
+
+<section>
+  <h2>8 · Keeping agents on the map</h2>
+  <p>ArchUnit catches only one class of drift. Each failure seen in this review needs its own guard. Context points the agent the right way, and the build gate decides.</p>
+  <div class="t"><table>
+    <thead><tr><th>Drift seen in this review</th><th>Context (steers)</th><th>Gate (decides)</th></tr></thead>
+    <tbody>
+      <tr><td>Wrong module dependency in EMS</td><td>module map with allowed directions</td><td>ArchUnit layered rule with frozen violations</td></tr>
+      <tr><td>New service cycle</td><td>upstream/downstream table</td><td>ArchUnit: no new client package toward an upstream service</td></tr>
+      <tr><td>Near-duplicate endpoint</td><td>"nearest existing endpoint" line in the story</td><td>PR report listing added operations next to their most similar existing ones</td></tr>
+      <tr><td>Rebuilt capability (uploads, mail sends)</td><td>reuse catalog: need X, use Y</td><td>review layer that checks the diff against the catalog</td></tr>
+      <tr><td>Convention drift (snake_case, UUID not nested, verbs)</td><td>API conventions, 10 lines</td><td>OpenAPI lint (Spectral) in CI</td></tr>
+      <tr><td>Frontend calls a path that doesn't exist</td><td>none</td><td>frontend path contract check</td></tr>
+    </tbody>
+  </table></div>
+  <p>For the agents themselves, three changes:</p>
+  <ul class="plain">
+    <li><strong>One short map, loaded everywhere.</strong> At most 4 KB: modules, directions, reuse catalog, API rules. It goes in <code>project-context.md</code>, which every BMAD workflow loads, and a pointer goes in <code>CLAUDE.md</code> for sessions without BMAD, like the parallel issue work. Amelia already loads about 80 KB on every activation, so the map should replace something rather than add to it.</li>
+    <li><strong>A design check before coding.</strong> The story carries a five-line architecture note: modules touched, new dependencies, new endpoints with the nearest existing one considered, components reused. Create-story drafts the note and dev-story confirms it before the first test. The thinking happens while it is still cheap to change course.</li>
+    <li><strong>An architecture reviewer in code review.</strong> One more layer in <code>bmad-code-review</code> reads only the diff and the map, with fresh context. A reviewer that didn't write the code finds what the author rationalized.</li>
+  </ul>
 </section>
 
 <section>

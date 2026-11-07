@@ -40,8 +40,25 @@ go before work starts. Items marked **owner** are decisions, not implementation.
    - S2S rule: `/internal` only. Move `POST /users/provision`,
      `POST /users/{u}/issue-invitation-credentials`, `PATCH /users/{u}/profile`
      (EMS→CUMS) and `GET /events/attendance-summary` (PCS→EMS) to `/internal`, out of the public specs.
-   - Replace CUMS→EMS merge call with a `UserMerged` domain event (SQS). **owner**: accept a few
-     seconds of eventual consistency after a merge? Merge-request mail-center call likewise.
+   - No event bus (owner 2026-11-07: event propagation stopped for cost). Pattern instead:
+     downstream PULLS upstream `/internal` feeds (`?since=cursor`) on a ShedLock job. No new infra.
+     Direction: CUMS upstream of all; EMS upstream of PCS.
+   - CUMS→EMS merge stays synchronous (EMS can block a merge + supplies preview counts; an
+     event cannot). Turn it into a CUMS-owned contract `/internal/user-references/preview|merge`
+     implemented by every username holder, config-listed in CUMS. PCS holds usernames
+     (`topic_suggestions.suggested_by`, notes `author_username`, meetings `created_by`,
+     vestigial `partner_contacts.username`) and is NOT covered by the merge today. Believed
+     harmless now because only no-login sources are merged and those columns are written by
+     logged-in users; not verified row by row.
+   - Merge-request conversations: flip to Mail Center pulling open/closed requests from CUMS
+     (removes `/internal/mail-center/merge-requests` + `/done`).
+   - EMS→PCS: (a) `TopicSessionDataService` partner topics → frontend loads `/partners/topics`
+     itself (EMS keeps cluster classification; offer batch classify); (b) calendar RSVPs from
+     `InboundEmailRouter` → EMS keeps them in an `/internal` RSVP feed, PCS pulls.
+     PCS→EMS (event summary, attendance-summary) stays, via `/internal`.
+   - EventBridge: bus `batbern-staging` deployed with 0 rules (checked 2026-11-07); CUMS, PCS
+     (PartnerService) and EMS (EventWorkflowStateMachine, SpeakerWorkflowService) still publish
+     into it. **owner**: remove publishers + bus (prod infra), or keep for later.
 5. **One upload pipeline** (ADR-002): shared-kernel upload service, `POST /uploads` +
    `/uploads/{id}/confirm` with `purpose`. Migrate one flow per release. Current presign
    classes: ConversationAttachmentService, EventPhotoService, EventTeaserImageService,
@@ -76,7 +93,22 @@ go before work starts. Items marked **owner** are decisions, not implementation.
    - `me` as alias of `{username}` to collapse the picture/profile twins.
    - Rename `/events/batch_registrations` (snake_case); fold it and `enroll-stakeholders` into `participants`.
 
-8. **Follow-up reviews (TODO, one per area)**: not covered by this review.
+8. **Agent guardrails** (report section 8). Context steers, gates decide.
+   - `docs/architecture/module-map.md` ≤ 4 KB: EMS modules + allowed directions, service
+     upstream/downstream, reuse catalog (need X → use Y), API rules incl. ADR-003 UUID rule.
+     Load via `project-context.md` (all BMAD workflows load it) + pointer in `CLAUDE.md` (non-BMAD
+     sessions). Amelia already loads ~80 KB per activation (project-context 33 KB, coding-standards
+     25 KB, source-tree 12 KB, tech-stack 10 KB): replace, do not add. Check `source-tree.md` is
+     still accurate; candidate to drop from `_bmad/custom/bmad-agent-dev.toml`.
+   - Story "Architecture note" (5 lines: modules, new deps, new endpoints + nearest existing one,
+     reused components): drafted by create-story, confirmed by dev-story before the first test.
+     Via `_bmad/custom/bmad-create-story.toml` / `bmad-dev-story.toml` overrides (not the skill files).
+   - Code review: add an architecture layer to `bmad-code-review` (diff + map only, fresh context).
+   - Gates: ArchUnit (item 6) + no new client package toward an upstream service; Spectral OpenAPI
+     lint (no snake_case, UUID params only nested, no `/internal` in public specs); PR spec-diff
+     report listing added ops next to most similar existing ops; FE path contract check (item 2);
+     monthly re-run of `scripts/architecture/*` for a trend.
+9. **Follow-up reviews (TODO, one per area)**: not covered by this review.
    - Frontend architecture (role trees, route registry, service layer, bundle boundary, state).
    - DB schema (per-service schemas, cross-service string refs per ADR-003, indexes, 137 EMS migrations).
    - Spring API gateway (routing, auth, rate limiting, what it still does after ADR-008).
