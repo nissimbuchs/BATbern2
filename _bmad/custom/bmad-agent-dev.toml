@@ -15,5 +15,5 @@
 persistent_facts = [
   "file:{project-root}/docs/architecture/tech-stack.md",
   "file:{project-root}/docs/architecture/coding-standards.md",
-  "file:{project-root}/docs/architecture/source-tree.md",
+  "file:{project-root}/docs/architecture/module-map.md",
 ]

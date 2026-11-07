@@ -1,0 +1,10 @@
+# Team override (architecture review 2026-11): module map in context + architecture note.
+# Arrays append to the base customize.toml.
+
+[workflow]
+persistent_facts = [
+  "file:{project-root}/docs/architecture/module-map.md",
+]
+activation_steps_append = [
+  "Before writing code, state the 5-line Architecture note from module-map.md in your plan: modules touched, new dependencies, new endpoints with the nearest existing one, components reused, deviations.",
+]

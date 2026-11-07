@@ -513,8 +513,9 @@ controller method that writes (POST/PUT/PATCH/DELETE) MUST carry `@PreAuthorize`
 for a deliberately public endpoint (plus the matching `permitAll` in the filter chain). Reads that
 return other people's data need a role rule too. `EndpointAuthorizationGuardTest` (one per service,
 helper in `shared-kernel` test fixtures) fails the build for any write endpoint without it, and
-checks that `@EnableMethodSecurity` is on. Service-to-service reads go to `/internal/**` without
-JWT (not routed by the gateway), never through the public API with the end user's token.
+checks that `@EnableMethodSecurity` is on. Service-to-service calls go to `/internal/**` (not routed by
+the gateway), never through the public API. They forward the user's JWT when there is one (attribution, ownership checks) but must work without it (schedulers, SQS listeners, anonymous flows record `system:<job>`); `/internal` authorizes by operation, not by user role. Where code
+goes and what it may use: `docs/architecture/module-map.md`.
 
 ### File Uploads
 

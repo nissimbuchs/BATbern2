@@ -94,7 +94,9 @@ go before work starts. Items marked **owner** are decisions, not implementation.
    - Rename `/events/batch_registrations` (snake_case); fold it and `enroll-stakeholders` into `participants`.
 
 8. **Agent guardrails** (report section 8). Context steers, gates decide.
-   - DRAFTED 2026-11-07: `docs/architecture/module-map.md` (3.6 KB), not yet wired into any context.
+   - DONE on this branch 2026-11-07 (owner go): map (≤4 KB) loaded by Amelia instead of source-tree.md,
+     and by create-story, dev-story, quick-dev, code-review via `_bmad/custom/*.toml` overrides, each with
+     an architecture-note / architecture-check step. Takes effect only once merged to develop.
      Was: `docs/architecture/module-map.md` ≤ 4 KB: EMS modules + allowed directions, service
      upstream/downstream, reuse catalog (need X → use Y), API rules incl. ADR-003 UUID rule.
      Load via `project-context.md` (all BMAD workflows load it) + pointer in `CLAUDE.md` (non-BMAD
@@ -107,7 +109,9 @@ go before work starts. Items marked **owner** are decisions, not implementation.
    - CONTRADICTION to fix in the same change (checked 2026-11-07): source-tree.md + CLAUDE.md say S2S
      goes to `/internal` with no end-user JWT; project-context.md says clients "must propagate the
      JWT"; the code forwards it (EMS `UserApiClientImpl`, PCS `CompanyServiceClientImpl`,
-     `EventManagementClientImpl`). Pick the target (map: `/internal`, no user JWT) and align all three.
+     `EventManagementClientImpl`). DECIDED 2026-11-07 (owner + architect): forward the user JWT when present, never require it,
+     `/internal` authorizes by operation. Aligned in CLAUDE.md, project-context.md, source-tree.md, map.
+     Code still calls 12 public URLs: moving those to `/internal` is item 4.
    - Story "Architecture note" (5 lines: modules, new deps, new endpoints + nearest existing one,
      reused components): drafted by create-story, confirmed by dev-story before the first test.
      Via `_bmad/custom/bmad-create-story.toml` / `bmad-dev-story.toml` overrides (not the skill files).

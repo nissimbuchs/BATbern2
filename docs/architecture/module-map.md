@@ -1,15 +1,17 @@
 # Module map: where code goes, what it may use
 
-Read before adding a class, endpoint or cross-service call. Source: architecture review 2026-11
-(`docs/plans/architecture-review-2026-11-actions.md`). The map is the target; today's code breaks
-it in 101 known places. Do not add new ones.
+Read before adding a class, endpoint or cross-service call. This is the target; today's code
+breaks it in 101 known places (review 2026-11). Do not add new ones.
 
 ## Services: who may call whom
 
 CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 - Calls go downstream→upstream, to `/internal/**` only, never through the public API.
-- Upstream needs downstream data? Downstream pulls an `/internal` feed (`?since=cursor`,
-  ShedLock job). No event bus: EventBridge has no subscribers.
+- Forward the user's JWT when there is one: the receiver records who acted and checks ownership.
+  Never require it: schedulers, SQS listeners and anonymous flows have none (`system:<job>`).
+  `/internal` authorizes by operation, never by the user's role.
+- Downstream must react to an upstream change? It pulls an `/internal` feed (`?since=cursor`,
+  ShedLock job). No event bus.
 - Only allowed upstream→downstream call: the CUMS profile merge (`/internal/users/merge*`).
   Do not add another.
 
