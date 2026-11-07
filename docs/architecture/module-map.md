@@ -57,6 +57,12 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 - `me` and `{username}` are one resource with an ownership rule, not two endpoint sets.
 - Every write needs `@PreAuthorize` (ADR-008). Machine-only endpoints never go in a public spec.
 
+## Placement
+
+Code used by two services goes in `shared-kernel`, never copied (`GenericLogoService` exists twice:
+don't add a third). Frontend: route pages in `pages/`, UI in `components/{area}/`, API calls only
+in `services/`. Full layout: `docs/architecture/source-tree.md`, or `ls`.
+
 ## Story architecture note (5 lines, before the first test)
 
 Modules touched · new cross-module or cross-service dependencies · new or changed endpoints, each

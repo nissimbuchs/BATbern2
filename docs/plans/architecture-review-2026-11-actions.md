@@ -101,6 +101,13 @@ go before work starts. Items marked **owner** are decisions, not implementation.
      sessions). Amelia already loads ~80 KB per activation (project-context 33 KB, coding-standards
      25 KB, source-tree 12 KB, tech-stack 10 KB): replace, do not add. Check `source-tree.md` is
      still accurate; candidate to drop from `_bmad/custom/bmad-agent-dev.toml`.
+     Checked 2026-11-07: source-tree.md is current (#1224) and loaded ONLY by Amelia's override, not by
+     project-context or any workflow. Plan: drop it from her facts, keep the doc; map got a 3-line
+     Placement section instead.
+   - CONTRADICTION to fix in the same change (checked 2026-11-07): source-tree.md + CLAUDE.md say S2S
+     goes to `/internal` with no end-user JWT; project-context.md says clients "must propagate the
+     JWT"; the code forwards it (EMS `UserApiClientImpl`, PCS `CompanyServiceClientImpl`,
+     `EventManagementClientImpl`). Pick the target (map: `/internal`, no user JWT) and align all three.
    - Story "Architecture note" (5 lines: modules, new deps, new endpoints + nearest existing one,
      reused components): drafted by create-story, confirmed by dev-story before the first test.
      Via `_bmad/custom/bmad-create-story.toml` / `bmad-dev-story.toml` overrides (not the skill files).
