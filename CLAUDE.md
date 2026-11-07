@@ -4,9 +4,9 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 ## MVP Status
 
-**Last Updated:** 2026-11-04
+**Last Updated:** 2026-11-07
 
-**Status:** ✅ **MVP 100% COMPLETE & IN PRODUCTION** | **Epics 1-8, 10, 11, 12 and 14 COMPLETE; 13, 15, 16 open; 9 superseded**
+**Status:** ✅ **MVP 100% COMPLETE & IN PRODUCTION** | **Epics 1-16 closed (9 superseded); Epic 17 open**
 
 **Epic Status** (epics 1-16: v6 archive `_bmad-output/implementation-artifacts/sprint-status.yaml`; from Epic 17 on: BMAD v7 initiative under `_bmad-output/initiative-*/`):
 - ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
@@ -19,13 +19,13 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Epic 8**: Partner Coordination - 100% COMPLETE (attendance analytics, topic voting, meeting coordination, partner notes)
 - 📦 **Epic 9**: Speaker Authentication - SUPERSEDED by Epic 11 (ADR-009)
 - ✅ **Epic 10**: Additional Stories - COMPLETE (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
-- ✅ **Epic 11**: Unified Speaker Workflow Refactor - COMPLETE (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25). Leftovers: 11.E.5, 11.G.1 ready-for-dev, 11.F.2 backlog
-- ✅ **Epic 12**: Federated Identity / Google SSO (ADR-010) - COMPLETE (Google OIDC login live 2026-06-04; Apple/generic OIDC + Cognito trigger retirement deferred via backlog Story 12.10)
-- 🔄 **Epic 13**: Spring Boot 4 Migration - SB 4.0.7 live 2026-06-19 (#797), 4.0.9 2026-11-05 (CVE fixes); open: 13.4 Jackson 3 flag flip (`preferred-json-mapper: jackson2` still set in all services), 13.5 unpin BOM-managed versions
+- ✅ **Epic 11**: Unified Speaker Workflow Refactor - COMPLETE (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25). Leftovers 11.E.5, 11.G.1, 11.F.2 archived
+- ✅ **Epic 12**: Federated Identity / Google SSO (ADR-010) - COMPLETE (Google OIDC login live 2026-06-04; Apple/generic OIDC + Cognito trigger retirement, Story 12.10, archived)
+- ✅ **Epic 13**: Spring Boot 4 Migration - CLOSED. SB 4.0.7 live 2026-06-19 (#797), 4.0.9 2026-11-05 (CVE fixes). 13.4 Jackson 3 flag flip (`preferred-json-mapper: jackson2` still set in all services) and 13.5 unpin BOM versions archived, not done
 - ✅ **Epic 14**: Event Detail Page — Lifecycle-Aware Redesign - COMPLETE (#788, 2026-06-15)
-- 🔄 **Epic 15**: Post-Event #2 Hardening - 15.2, 15.3, 15.5, 15.6, 15.7, 15.9 done; 15.1 P1 live (#800), P2 watch + P3 WebSocket teardown open; 15.4 not implemented; 15.8 backlog
-- 🔄 **Epic 16**: Mail Center - 16.0–16.11 LIVE (last: #1194, 2026-11-03) except 16.8c clean-up (gated: one release + owner go); 16.12, 16.13 backlog
-- 📋 **Epic 17**: Architecture hardening - backlog (2026-11-07, from the architecture review; scope decided, each story needs owner go) — `docs/prd/epic-17-architecture-hardening.md`
+- ✅ **Epic 15**: Post-Event #2 Hardening - CLOSED. 15.2, 15.3, 15.5, 15.6, 15.7, 15.9 done; 15.1 P1 live (#800). 15.1 P2/P3 (WebSocket teardown), 15.4, 15.8 archived, not done
+- ✅ **Epic 16**: Mail Center - CLOSED. 16.0–16.11 LIVE (last: #1194, 2026-11-03). 16.8c composer clean-up moved to Epic 17; 16.12, 16.13 archived
+- 📋 **Epic 17**: Architecture hardening - backlog (2026-11-07, from the architecture review and the test-fidelity analysis; includes 16.8c; each story needs owner go) — `docs/prd/epic-17-architecture-hardening.md`, first epic managed with BMAD v7
 
 **Delivered Capabilities:**
 - ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
@@ -52,7 +52,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Scope Note:** Overflow Management (Story 5.6) removed from MVP scope - manual speaker selection sufficient for launch. Democratic voting on overflow speakers moved to Phase 2+ backlog.
 
-**Current Phase:** Phase 3 — Epics 1-8, 10, 11, 12 and 14 complete; Epics 13, 15 and 16 have open stories (see below)
+**Current Phase:** Phase 4 — Epics 1-16 closed; Epic 17 (architecture hardening) is the open work. Unimplemented stories of epics 1-16 were archived by owner decision 2026-11-07 (not needed if not done by now)
 
 ## Project Overview
 
@@ -67,7 +67,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 
 ## Current Development Phase
 
-**Phase:** ✅ **MVP COMPLETE** + **Epics 6, 7, 8, 10, 11, 12 and 14 COMPLETE**; Epics 13, 15, 16 open (status per `sprint-status.yaml`, 2026-11-04)
+**Phase:** ✅ **MVP COMPLETE** + **Epics 1-16 closed** (v6 archive `sprint-status.yaml`); Epic 17 open (2026-11-07)
 
 **Epic Completion Status:**
 - ✅ **Epic 1**: Foundation & Core Infrastructure - **100% COMPLETE**
@@ -82,11 +82,11 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 10**: Additional Stories - **COMPLETE** (10.6, 10.13, 10.15 cancelled; 10.24, 10.25 deferred)
 - ✅ **Epic 11**: Unified Speaker Workflow Refactor - **100% COMPLETE** (Phase F magic-link teardown landed in Story 11.F.1, 2026-05-25; supersedes prior Epic 9 plan)
 - ✅ **Epic 12**: Federated Identity / Google SSO - **COMPLETE** (Google OIDC login live 2026-06-04 per ADR-010; deferred tail — Apple/generic OIDC + trigger retirement — parked as backlog Story 12.10)
-- 🔄 **Epic 13**: Spring Boot 4 Migration - **SB 4.0.9 LIVE** (#797, patch 2026-11-05); 13.4 and 13.5 open
+- ✅ **Epic 13**: Spring Boot 4 Migration - **CLOSED**, SB 4.0.9 live (#797, patch 2026-11-05); 13.4, 13.5 archived
 - ✅ **Epic 14**: Event Detail Page Redesign - **COMPLETE** (#788)
-- 🔄 **Epic 15**: Post-Event #2 Hardening - **IN PROGRESS** (15.1 P2/P3, 15.4, 15.8 open)
-- 🔄 **Epic 16**: Mail Center - **16.0–16.11 LIVE**; 16.8c gated, 16.12/16.13 backlog
-- 📋 **Epic 17**: Architecture hardening - **BACKLOG** (17.0a–d test fidelity, 17.1–17.16; 17.12 is a design task)
+- ✅ **Epic 15**: Post-Event #2 Hardening - **CLOSED** (15.1 P2/P3, 15.4, 15.8 archived)
+- ✅ **Epic 16**: Mail Center - **CLOSED**, 16.0–16.11 live; 16.8c moved to Epic 17, 16.12/16.13 archived
+- 📋 **Epic 17**: Architecture hardening - **BACKLOG** (17.0a–d test fidelity, 17.1–17.16, plus 16.8c; 17.12 is a design task)
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
@@ -95,14 +95,11 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ Epic 6 Speaker Portal complete (2026-02-16 QA passed)
 - ✅ Epic 8 Partner Coordination complete (2026-02-22)
 
-**When Adding New Features** (open work as of 2026-11-04):
-- Epic 13: Story 13.4 (flip off `preferred-json-mapper: jackson2`, move to Jackson 3) and 13.5 (unpin BOM-managed dependency versions)
-- Epic 15: 15.1 P2 (watch app off WebSockets) then P3 (delete WebSocket code and deps); 15.4 (company/email-domain mismatch warning); 15.8 (LinkedIn post drafts, backlog)
-- Epic 16: 16.8c composer clean-up (only after one release and owner go, after 17.1); 16.12, 16.13 backlog — see `docs/prd/epic-16-mail-center.md`
-- Epic 17: architecture hardening, 20 stories in order (test fidelity 17.0a–d, dead surface and gates first) — see `docs/prd/epic-17-architecture-hardening.md`
-- Epic 11 leftovers: 11.E.5, 11.G.1 (ready-for-dev), 11.F.2 (backlog)
-- Epic 12 deferred tail (backlog Story 12.10): Apple/generic OIDC + Cognito trigger-retirement cleanup — precondition: deferred-work cluster A
-- Epic 3 production data import still pending
+**When Adding New Features** (open work as of 2026-11-07):
+- Epic 17: architecture hardening, 20 stories in order (test fidelity 17.0a–d, dead surface and gates first), plus 16.8c composer clean-up (after 17.1, one release and owner go) — see `docs/prd/epic-17-architecture-hardening.md`
+- Parked, not a story: pre-deploy gate (P5), after 17.1–17.5 and 17.0a–d — `docs/plans/pre-deploy-gate-plan.md`
+- Epic 3 production data import still pending (operational task, owner triggers it)
+- Unimplemented stories of epics 1-16 are archived, not open work. Revive one only on owner request, as a new ticket.
 
 ## Build System
 
