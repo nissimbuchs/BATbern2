@@ -39,6 +39,7 @@ import {
   type MailConversationStatus,
 } from '@/services/mailConversationService';
 import { ProfileMergeRequestPanel } from './ProfileMergeRequestPanel';
+import { CompanyLogoRequestPanel } from './CompanyLogoRequestPanel';
 import { ConversationReplyBox } from './ConversationReplyBox';
 import { EventSelect } from './EventSelect';
 import { MailBodyFrame } from './MailBodyFrame';
@@ -109,6 +110,13 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({ conversa
       {conversation.mergeRequestId && (
         <ProfileMergeRequestPanel
           requestId={conversation.mergeRequestId}
+          onDecided={() => void query.refetch()}
+        />
+      )}
+      {/* #1246: a company logo request is decided here */}
+      {conversation.logoRequestId && (
+        <CompanyLogoRequestPanel
+          requestId={conversation.logoRequestId}
           onDecided={() => void query.refetch()}
         />
       )}

@@ -204,6 +204,27 @@ public class GenericLogoService {
     }
 
     /**
+     * #1246: copies an associated logo to a new key and assigns it to another entity (a logo request
+     * accepted for a company). The source object stays, so the Mail Center keeps showing the request.
+     *
+     * @return CloudFront URL of the new key
+     */
+    public String reassignLogo(String uploadId, String entityType, String entityId, String newS3Key) {
+        Logo logo = logoRepository.findByUploadId(uploadId)
+                .orElseThrow(() -> new LogoNotFoundException(uploadId));
+        if (logo.getStatus() != LogoStatus.ASSOCIATED) {
+            throw new IllegalStateException("Logo must be ASSOCIATED to be reassigned. Current status: "
+                    + logo.getStatus());
+        }
+        copyS3Object(logo.getS3Key(), newS3Key);
+        String cloudFrontUrl = CloudFrontUrlBuilder.buildUrl(cloudFrontDomain, bucketName, newS3Key);
+        logo.reassignTo(entityType, entityId, newS3Key, cloudFrontUrl);
+        logoRepository.save(logo);
+        log.info("Logo {} reassigned to {} ({})", uploadId, entityType, entityId);
+        return cloudFrontUrl;
+    }
+
+    /**
      * Delete unused logo (before association)
      * Can only delete logos in PENDING or CONFIRMED status
      *

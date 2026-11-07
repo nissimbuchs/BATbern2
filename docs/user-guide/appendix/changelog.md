@@ -71,6 +71,11 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ Event mails (registration, reminders, invitations) go to your primary address. A further address gets a copy only if you tick "Kopie der Event-Mails" for it. Until now every further address got a copy, confirmed or not.
 - ✅ The newsletter can be switched on and off for each confirmed address separately (**Profil → Einwilligung & Newsletter**).
 - ✅ An earlier profile from the historical import (placeholder address `vorname.nachname@batbern.ch`) now offers only "Ask the organizers": the confirmation link would have reached nobody.
+- ✅ A confirmed further address can become your primary address (**"Als Hauptadresse verwenden"**). You then log in with it and receive the event mails there; the old primary address stays as a confirmed address.
+- ✅ Two accounts of one person, both with a login (for example first with the company address, later with a private one), can be combined by the person: add the other address on your profile, answer "Ist es Ihres?", and open the link we send to that address while you are logged in. The other account's registrations and events move to this one, its address stays as a confirmed address, and its login is deleted.
+
+**New — Request a new company logo (#1246)**:
+- ✅ On your profile you now see your company's logo. **"Logo-Änderung beantragen"** lets you upload a new one (PNG, JPG or SVG, at most 5 MB) with an optional note. The request appears on the Mail page with the current and the new logo side by side; any organizer accepts it (the company gets the new logo everywhere) or declines it, optionally with a reason. You are told by mail either way.
 
 ### v1.4.0 - Event Page, Spring Boot 4, Mail Center & BATbern60 Fixes `[2026-11-04]`
 

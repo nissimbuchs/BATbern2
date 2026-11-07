@@ -608,6 +608,34 @@ Unique indexes on `lower(email)` back this for `user_profiles` and `newsletter_s
 double newsletter subscription in production, merged 2026-10-18) and made by-email actions
 silently miss their target (issue #1099).
 
+## Company Logo Requests (#1246)
+
+A participant with a login asks the organizers for a new logo of the company on their profile.
+The organizers decide in the Mail Center; company edits themselves stay `ORGANIZER`-only.
+
+- **Upload.** The person uploads through the normal logo flow (`/logos/presigned-url`, S3 PUT,
+  `/logos/{uploadId}/confirm`), then `POST /users/me/company-logo-requests {logoUploadId, note?}`
+  (`isAuthenticated`). CUMS associates the confirmed upload with the request right away
+  (`logos.associated_entity_type = 'LOGO_REQUEST'`, key `logos/requests/{uploadId}/logo.{ext}`), so
+  it has a CDN URL for the preview and `LogoCleanupService` (which removes expired PENDING and
+  CONFIRMED uploads) leaves it alone.
+- **Record.** `company_logo_requests` (CUMS V25): requester, company slug, snapshot of the old logo
+  URL, the new upload id and URL, optional note, status OPEN / APPROVED / DECLINED, decided by/at,
+  optional reason. One OPEN request per person and company (partial unique index, 409
+  `LOGO_REQUEST_OPEN`); the company is the one on the caller's profile (409 `NO_COMPANY`).
+- **Mail Center.** In the same transaction CUMS calls EMS `POST /internal/mail-center/logo-requests`
+  (`RequestConversations` kind LOGO, `mail_conversation.logo_request_id`, EMS V146): an OPEN
+  conversation without event, audience SYSTEM. If EMS does not answer, nothing is stored (502
+  `LOGO_REQUEST_NOT_DELIVERED`); the client uploads again on retry, because the association has
+  already moved the temporary S3 object.
+- **Decision** (`ORGANIZER`). `POST /users/company-logo-requests/{id}/approve` copies the logo to the
+  company's final key (`logos/{year}/companies/{name}/logo-{uploadId}.{ext}`) and sets it through
+  `CompanyService.applyRequestedLogo` (cache invalidation, `CompanyUpdatedEvent`, like an organizer
+  edit). `.../decline {reason?}` changes nothing on the company. Either way the requester is mailed
+  at the primary address (`company-logo-approved|declined-{de,en}`, the reason block only when given)
+  and the conversation is closed (`.../done`). Mail and close are best effort after the decision.
+  The request's own copy of the logo stays, so the decided conversation still shows both logos.
+
 ## Profile Merge (#1183 C/D)
 
 Two profiles of one person (an imported or guest profile without login, and the person's login
@@ -616,7 +644,7 @@ orchestrates; EMS moves its own rows through an internal endpoint and keeps the 
 
 **Merge requests (#1237).** When the person cannot read the earlier profile's mailbox, CUMS stores a
 `profile_merge_requests` row and EMS opens a Mail Center conversation for it
-(`MergeRequestConversations`, `POST /internal/mail-center/merge-requests`, `mail_conversation.merge_request_id`).
+(`RequestConversations` kind MERGE, `POST /internal/mail-center/merge-requests`, `mail_conversation.merge_request_id`).
 The organizer approves or declines in that conversation (CUMS `/users/merge-requests/{id}/approve|decline`);
 approval runs the same merge with `carryAddresses = false`, then CUMS closes the conversation
 (`.../{id}/done`). Details: `06b-user-lifecycle-sync.md`.

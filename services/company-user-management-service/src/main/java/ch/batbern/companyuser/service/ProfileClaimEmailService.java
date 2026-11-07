@@ -29,26 +29,36 @@ public class ProfileClaimEmailService {
     private String baseUrl;
 
     public void sendClaimEmail(String email, String token, String locale, String claimerName) {
+        send(email, "profile-claim", token, locale, claimerName,
+                "Frühere BATbern-Anmeldungen mit Ihrem Konto zusammenführen",
+                "Combine your earlier BATbern registrations with your account");
+    }
+
+    /** #1244 step 3: the link to the address of a second account with its own login. */
+    public void sendAccountMergeEmail(String email, String token, String locale, String claimerName) {
+        send(email, "account-merge", token, locale, claimerName,
+                "Zwei BATbern-Konten zusammenführen", "Combine two BATbern accounts");
+    }
+
+    private void send(String email, String key, String token, String locale, String claimerName, String subjectDe,
+            String subjectEn) {
         String resolved = "de".equals(locale) ? "de" : "en";
-        String html = load(resolved);
+        String html = load(key, resolved);
         if (html.isBlank()) {
-            throw new IllegalStateException("profile-claim template missing for " + resolved);
+            throw new IllegalStateException(key + " template missing for " + resolved);
         }
         Map<String, String> vars = new HashMap<>();
         vars.put("baseUrl", baseUrl != null ? baseUrl : "https://www.batbern.ch");
         vars.put("token", token);
         vars.put("claimerName", HtmlUtils.htmlEscape(claimerName == null ? "" : claimerName));
         html = emailService.replaceVariables(html, vars);
-        String subject = "de".equals(resolved)
-                ? "Frühere BATbern-Anmeldungen mit Ihrem Konto zusammenführen"
-                : "Combine your earlier BATbern registrations with your account";
-        emailService.sendHtmlEmail(email, subject, html);
-        log.info("PROFILE_CLAIM_SENT email={} locale={}", LoggingUtils.maskEmail(email), resolved);
+        emailService.sendHtmlEmail(email, "de".equals(resolved) ? subjectDe : subjectEn, html);
+        log.info("PROFILE_CLAIM_SENT template={} email={} locale={}", key, LoggingUtils.maskEmail(email), resolved);
     }
 
-    private static String load(String locale) {
+    private static String load(String key, String locale) {
         try {
-            return new ClassPathResource("email-templates/profile-claim-" + locale + ".html")
+            return new ClassPathResource("email-templates/" + key + "-" + locale + ".html")
                     .getContentAsString(StandardCharsets.UTF_8);
         } catch (IOException e) {
             return "";

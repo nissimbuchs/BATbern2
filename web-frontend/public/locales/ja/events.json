@@ -660,6 +660,25 @@
         "declined": "{{by}} が却下しました：{{reason}}",
         "actionFailed": "うまくいきませんでした。変更はありません。もう一度お試しください。",
         "loadError": "リクエストを読み込めませんでした。"
+      },
+      "logoRequest": {
+        "title": "{{company}} の新しいロゴ",
+        "explain": "{{name}} さんが会社の新しいロゴを送りました。承認すると、BATbern 全体でこの会社に新しいロゴが表示されます。どちらの場合も {{name}} さんにメールで通知されます。",
+        "note": "メモ",
+        "current": "現在のロゴ",
+        "new": "新しいロゴ",
+        "noLogo": "これまでロゴなし",
+        "approve": "ロゴを承認",
+        "decline": "却下",
+        "confirmDecline": "依頼を却下",
+        "cancel": "キャンセル",
+        "reason": "理由(任意)",
+        "reasonHelp": "入力した場合は参加者にメールで送られます。",
+        "approved": "{{by}} が承認しました。会社に新しいロゴが設定されました。",
+        "declined": "{{by}} が却下しました。",
+        "declinedWithReason": "{{by}} が却下しました:{{reason}}",
+        "actionFailed": "決定を保存できませんでした。もう一度お試しください。",
+        "loadError": "ロゴの依頼を読み込めませんでした。"
       }
     }
   },

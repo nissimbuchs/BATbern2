@@ -660,6 +660,25 @@
         "declined": "Refusà da {{by}}: {{reason}}",
         "actionFailed": "Quai n'ha betg funcziunà. Nagut n'è vegnì midà; empruvai anc ina giada.",
         "loadError": "La dumonda n'ha betg pudì vegnir chargiada."
+      },
+      "logoRequest": {
+        "title": "Nov logo per {{company}}",
+        "explain": "{{name}} ha tramess in nov logo per l'atgna firma. Sche ti al acceptas, mussa BATbern la firma dapertut cun il nov logo. En omadus cas retschaiva {{name}} in e-mail.",
+        "note": "Remartga",
+        "current": "Logo actual",
+        "new": "Nov logo",
+        "noLogo": "Fin ussa nagin logo",
+        "approve": "Acceptar il logo",
+        "decline": "Refusar",
+        "confirmDecline": "Refusar la dumonda",
+        "cancel": "Interrumper",
+        "reason": "Motivaziun (facultativ)",
+        "reasonHelp": "Vegn communitgada per e-mail a la persuna, sch'ella è indicada.",
+        "approved": "Acceptà da {{by}}. La firma ha il nov logo.",
+        "declined": "Refusà da {{by}}.",
+        "declinedWithReason": "Refusà da {{by}}: {{reason}}",
+        "actionFailed": "La decisiun n'ha betg pudì vegnir memorisada. Emprova anc ina giada.",
+        "loadError": "La dumonda da logo n'ha betg pudì vegnir chargiada."
       }
     }
   },

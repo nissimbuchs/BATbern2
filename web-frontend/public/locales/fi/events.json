@@ -660,6 +660,25 @@
         "declined": "Hylännyt {{by}}: {{reason}}",
         "actionFailed": "Se ei onnistunut. Mitään ei muutettu; yritä uudelleen.",
         "loadError": "Pyyntöä ei voitu ladata."
+      },
+      "logoRequest": {
+        "title": "Uusi logo yritykselle {{company}}",
+        "explain": "{{name}} lähetti uuden logon yritykselleen. Jos hyväksyt sen, BATbern näyttää yrityksen kaikkialla uudella logolla. Kummassakin tapauksessa {{name}} saa sähköpostin.",
+        "note": "Viesti",
+        "current": "Nykyinen logo",
+        "new": "Uusi logo",
+        "noLogo": "Ei logoa toistaiseksi",
+        "approve": "Hyväksy logo",
+        "decline": "Hylkää",
+        "confirmDecline": "Hylkää pyyntö",
+        "cancel": "Peruuta",
+        "reason": "Perustelu (valinnainen)",
+        "reasonHelp": "Lähetetään osallistujalle sähköpostilla, jos annettu.",
+        "approved": "Hyväksynyt {{by}}. Yrityksellä on uusi logo.",
+        "declined": "Hylännyt {{by}}.",
+        "declinedWithReason": "Hylännyt {{by}}: {{reason}}",
+        "actionFailed": "Päätöstä ei voitu tallentaa. Yritä uudelleen.",
+        "loadError": "Logopyyntöä ei voitu ladata."
       }
     }
   },

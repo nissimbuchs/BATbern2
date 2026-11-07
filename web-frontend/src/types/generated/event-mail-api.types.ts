@@ -484,6 +484,11 @@ export interface components {
        * @description #1237: set when the conversation is a profile merge request; the Mail Center then shows the request with approve and decline (users API, /users/merge-requests/{id})
        */
       mergeRequestId?: string | null;
+      /**
+       * Format: uuid
+       * @description #1246: set when the conversation is a company logo request; the Mail Center then shows the old and the new logo with accept and decline (users API, /users/company-logo-requests/{id})
+       */
+      logoRequestId?: string | null;
     };
     MailConversationPage: {
       data: components['schemas']['MailConversationSummary'][];

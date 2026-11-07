@@ -4,6 +4,7 @@ import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.exception.CognitoOperationException;
+import ch.batbern.companyuser.exception.EmailHasOtherLoginException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,6 +15,10 @@ import org.mockito.Captor;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AliasExistsException;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminEnableUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDisableUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
@@ -31,6 +36,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -145,10 +151,10 @@ class CognitoIntegrationServiceImplTest {
                 .containsExactlyInAnyOrder("email", "email_verified", "preferred_username", "custom:role");
         assertThat(attrs).extracting(AttributeType::name, AttributeType::value)
                 .contains(
-                        org.assertj.core.groups.Tuple.tuple("email", "speaker@example.com"),
-                        org.assertj.core.groups.Tuple.tuple("email_verified", "true"),
-                        org.assertj.core.groups.Tuple.tuple("preferred_username", "speaker.bob"),
-                        org.assertj.core.groups.Tuple.tuple("custom:role", "UNUSED"));
+                        tuple("email", "speaker@example.com"),
+                        tuple("email_verified", "true"),
+                        tuple("preferred_username", "speaker.bob"),
+                        tuple("custom:role", "UNUSED"));
     }
 
     @Test
@@ -243,5 +249,47 @@ class CognitoIntegrationServiceImplTest {
                 .isInstanceOf(CognitoOperationException.class)
                 .extracting("action")
                 .isEqualTo("adminSetUserPassword");
+    }
+
+    // --- #1244: change the login address; disable, enable, delete a login --------------------
+
+    @Test
+    @DisplayName("#1244: changing the login address sets email and email_verified on the current login")
+    void should_setNewVerifiedEmail_when_changeLoginEmail() {
+        cognitoService.changeLoginEmail("work@example.com", "private@example.com");
+
+        verify(cognitoClient).adminUpdateUserAttributes(updateAttributesCaptor.capture());
+        AdminUpdateUserAttributesRequest req = updateAttributesCaptor.getValue();
+        assertThat(req.userPoolId()).isEqualTo(userPoolId);
+        assertThat(req.username()).isEqualTo("work@example.com");
+        assertThat(req.userAttributes()).extracting(AttributeType::name, AttributeType::value)
+                .containsExactlyInAnyOrder(
+                        tuple("email", "private@example.com"),
+                        tuple("email_verified", "true"));
+    }
+
+    @Test
+    @DisplayName("#1244: the new address is another login's address → EmailHasOtherLoginException")
+    void should_throwEmailHasOtherLogin_when_aliasExists() {
+        when(cognitoClient.adminUpdateUserAttributes(any(AdminUpdateUserAttributesRequest.class)))
+                .thenThrow(AliasExistsException.builder().message("exists").build());
+
+        assertThatThrownBy(() -> cognitoService.changeLoginEmail("work@example.com", "taken@example.com"))
+                .isInstanceOf(EmailHasOtherLoginException.class);
+    }
+
+    @Test
+    @DisplayName("#1244: disable, enable and delete address the login by its email")
+    void should_disableEnableDelete_when_called() {
+        cognitoService.disableLogin("b@example.com");
+        cognitoService.enableLogin("b@example.com");
+        cognitoService.deleteLogin("b@example.com");
+
+        verify(cognitoClient).adminDisableUser(AdminDisableUserRequest.builder()
+                .userPoolId(userPoolId).username("b@example.com").build());
+        verify(cognitoClient).adminEnableUser(AdminEnableUserRequest.builder()
+                .userPoolId(userPoolId).username("b@example.com").build());
+        verify(cognitoClient).adminDeleteUser(AdminDeleteUserRequest.builder()
+                .userPoolId(userPoolId).username("b@example.com").build());
     }
 }

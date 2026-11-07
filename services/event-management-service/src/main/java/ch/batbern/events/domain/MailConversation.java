@@ -80,4 +80,8 @@ public class MailConversation {
     /** #1237: set when the conversation is a profile merge request (company-user-management). */
     @Column(name = "merge_request_id")
     private UUID mergeRequestId;
+
+    /** #1246: set when the conversation is a company logo request (company-user-management). */
+    @Column(name = "logo_request_id")
+    private UUID logoRequestId;
 }

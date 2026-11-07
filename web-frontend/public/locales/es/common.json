@@ -857,7 +857,39 @@
       "errorDuplicate": "Esta dirección ya está registrada.",
       "errorLimit": "Ha alcanzado el máximo de 5 direcciones adicionales.",
       "errorInvalid": "Introduzca una dirección de correo válida.",
-      "loginHint": "Con la contraseña accede con la dirección principal. Con una dirección de Gmail o Google confirmada también puede acceder mediante «Continuar con Google»."
+      "loginHint": "Con la contraseña accede con la dirección principal. Con una dirección de Gmail o Google confirmada también puede acceder mediante «Continuar con Google».",
+      "makePrimary": "Usar como dirección principal",
+      "makePrimaryExplain": "A partir de ahora inicias sesión con {{email}} y recibes allí los correos de los eventos. Tu dirección principal actual se mantiene como dirección confirmada.",
+      "makePrimaryConfirm": "Convertir en dirección principal",
+      "makePrimaryDone": "Tu dirección principal ha cambiado.",
+      "makePrimaryError": "No se pudo convertir la dirección en principal. Inténtalo de nuevo.",
+      "makePrimaryOtherLogin": "Otra cuenta inicia sesión con esta dirección.",
+      "mergeQuestion": "Esta dirección pertenece a otra cuenta. ¿Es tuya?",
+      "mergeExplain": "Enviamos un enlace a esta dirección. Ábrelo mientras tienes la sesión iniciada aquí: la otra cuenta se une a esta y se elimina su acceso.",
+      "mergeSend": "Enviar enlace para unir las cuentas",
+      "mergeSent": "Hemos enviado un enlace a {{email}}. Ábrelo mientras tienes la sesión iniciada con esta cuenta.",
+      "mergeNotFound": "No podemos asociar esta dirección a otra cuenta con acceso. Ponte en contacto con los organizadores.",
+      "mergeError": "No se pudo enviar el enlace. Inténtalo de nuevo."
+    },
+    "logo": {
+      "label": "Logotipo de la empresa",
+      "alt": "Logotipo de {{company}}",
+      "previewAlt": "Vista previa del nuevo logotipo",
+      "none": "Todavía sin logotipo",
+      "request": "Solicitar cambio de logotipo",
+      "explain": "Envíanos el logotipo actual de tu empresa. Los organizadores lo revisan y te responden por correo.",
+      "choose": "Archivo del logotipo",
+      "hint": "PNG, JPG o SVG, como máximo 5 MB.",
+      "note": "Nota para los organizadores (opcional)",
+      "notePlaceholder": "p. ej. nuevo logotipo desde el cambio de imagen en junio",
+      "send": "Enviar solicitud",
+      "cancel": "Cancelar",
+      "pending": "Tu solicitud está con los organizadores.",
+      "sent": "Gracias. Los organizadores revisan el logotipo y te responden por correo.",
+      "errorUpload": "No se pudo subir el archivo. Comprueba el formato y el tamaño e inténtalo de nuevo.",
+      "errorOpen": "Ya hay una solicitud para esta empresa con los organizadores.",
+      "errorNoCompany": "Guarda primero una empresa en tu perfil.",
+      "errorGeneric": "No se pudo enviar la solicitud. Inténtalo de nuevo."
     }
   }
 }

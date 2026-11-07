@@ -35,6 +35,13 @@ vi.mock('@/components/speaker-portal/ProfilePhotoUpload', () => ({
 
 // Company picker hits the company API (chip logo lookup via getCompany, search,
 // and get-or-create on save) — stub it so no real network calls fire.
+// #1246: the logo section has its own tests (CompanyLogoSection.test.tsx)
+vi.mock('@/components/user/CompanyLogoRequest/CompanyLogoSection', () => ({
+  CompanyLogoSection: ({ companyName }: { companyName: string }) => (
+    <div data-testid="company-logo-section-stub">{companyName}</div>
+  ),
+}));
+
 vi.mock('@/services/api/companyApi', () => ({
   getCompany: vi.fn().mockResolvedValue({ name: 'elca', displayName: 'ELCA', logo: null }),
   searchCompanies: vi.fn().mockResolvedValue([]),

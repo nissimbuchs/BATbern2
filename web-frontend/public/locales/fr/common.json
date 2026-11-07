@@ -857,7 +857,39 @@
       "errorDuplicate": "Cette adresse est déjà enregistrée.",
       "errorLimit": "Vous avez atteint le maximum de 5 adresses supplémentaires.",
       "errorInvalid": "Veuillez saisir une adresse e-mail valide.",
-      "loginHint": "Le mot de passe vous connecte avec l’adresse principale. Avec une adresse Gmail ou Google confirmée, vous pouvez aussi vous connecter via « Continuer avec Google »."
+      "loginHint": "Le mot de passe vous connecte avec l’adresse principale. Avec une adresse Gmail ou Google confirmée, vous pouvez aussi vous connecter via « Continuer avec Google ».",
+      "makePrimary": "Utiliser comme adresse principale",
+      "makePrimaryExplain": "Désormais, vous vous connectez avec {{email}} et y recevez les e-mails des événements. Votre adresse principale actuelle reste une adresse confirmée.",
+      "makePrimaryConfirm": "En faire l'adresse principale",
+      "makePrimaryDone": "Votre adresse principale a été modifiée.",
+      "makePrimaryError": "L'adresse n'a pas pu devenir l'adresse principale. Veuillez réessayer.",
+      "makePrimaryOtherLogin": "Un autre compte se connecte avec cette adresse.",
+      "mergeQuestion": "Cette adresse appartient à un autre compte. Est-ce le vôtre ?",
+      "mergeExplain": "Nous envoyons un lien à cette adresse. Ouvrez-le pendant que vous êtes connecté ici : l'autre compte est fusionné avec celui-ci et son identifiant est supprimé.",
+      "mergeSend": "Envoyer le lien pour fusionner les comptes",
+      "mergeSent": "Nous avons envoyé un lien à {{email}}. Ouvrez-le pendant que vous êtes connecté avec ce compte.",
+      "mergeNotFound": "Nous ne pouvons associer cette adresse à aucun autre compte avec identifiant. Veuillez contacter les organisateurs.",
+      "mergeError": "Le lien n'a pas pu être envoyé. Veuillez réessayer."
+    },
+    "logo": {
+      "label": "Logo de l'entreprise",
+      "alt": "Logo de {{company}}",
+      "previewAlt": "Aperçu du nouveau logo",
+      "none": "Pas encore de logo",
+      "request": "Demander un changement de logo",
+      "explain": "Envoyez-nous le logo actuel de votre entreprise. Les organisateurs le vérifient et vous répondent par e-mail.",
+      "choose": "Fichier du logo",
+      "hint": "PNG, JPG ou SVG, 5 Mo au maximum.",
+      "note": "Remarque pour les organisateurs (facultatif)",
+      "notePlaceholder": "p. ex. nouveau logo depuis le changement d'identité en juin",
+      "send": "Envoyer la demande",
+      "cancel": "Annuler",
+      "pending": "Votre demande est chez les organisateurs.",
+      "sent": "Merci. Les organisateurs vérifient le logo et vous répondent par e-mail.",
+      "errorUpload": "Le fichier n'a pas pu être téléversé. Vérifiez le format et la taille, puis réessayez.",
+      "errorOpen": "Une demande pour cette entreprise est déjà chez les organisateurs.",
+      "errorNoCompany": "Veuillez d'abord enregistrer une entreprise dans votre profil.",
+      "errorGeneric": "La demande n'a pas pu être envoyée. Veuillez réessayer."
     }
   }
 }

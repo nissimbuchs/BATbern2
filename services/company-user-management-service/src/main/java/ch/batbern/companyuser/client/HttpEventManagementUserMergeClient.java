@@ -67,6 +67,15 @@ public class HttpEventManagementUserMergeClient implements EventManagementUserMe
         return new Result(counts(body.path("moved")), counts(body.path("removed")));
     }
 
+    @Override
+    public void primaryEmailChanged(String username, String oldEmail, String newEmail) {
+        Map<String, Object> request = new LinkedHashMap<>();
+        request.put("username", username);
+        request.put("oldEmail", oldEmail);
+        request.put("newEmail", newEmail);
+        call(() -> restTemplate.postForObject(baseUrl + "/internal/users/primary-email", request, String.class));
+    }
+
     private JsonNode call(java.util.function.Supplier<String> request) {
         try {
             String body = request.get();

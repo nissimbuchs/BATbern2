@@ -6,23 +6,32 @@
  * per confirmed address "copy of event mails" (owner decision 2026-11-07: event mails go to the
  * primary address, copies are opt-in). The newsletter per address lives in the consent tab
  * ({@link ProfileNewsletterAddresses}). Same API as the organizer-side UserSettingsTab.
+ *
+ * Step 2: "use as primary" per confirmed address (the login moves there, the old primary stays as a
+ * confirmed address; the session is refreshed so the token carries the new address). Step 3: when
+ * an address belongs to another account with its own login (adding it gives
+ * ADDITIONAL_EMAIL_DUPLICATE, making it primary gives EMAIL_HAS_OTHER_LOGIN), the person can send a
+ * link to that address; confirming it under this login merges the two accounts.
  */
 
 import { useState } from 'react';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
 import { isAxiosError } from 'axios';
-import { CheckCircle2, Clock, Mail, Trash2 } from 'lucide-react';
+import { CheckCircle2, Clock, Mail, Star, Trash2 } from 'lucide-react';
 import { Card } from '@/components/public/ui/card';
 import { Button } from '@/components/public/ui/button';
 import { Input } from '@/components/public/ui/input';
 import {
   addAdditionalEmail,
   deleteAdditionalEmail,
+  makeAdditionalEmailPrimary,
+  requestAccountMerge,
   resendAdditionalEmailVerification,
   updateAdditionalEmail,
   type AdditionalEmail,
 } from '@/services/api/userAccountApi';
+import { authService } from '@/services/auth/authService';
 
 const MAX_ADDITIONAL = 5;
 
@@ -35,6 +44,45 @@ function errorCode(err: unknown): string | undefined {
   return isAxiosError(err) ? (err.response?.data?.errorCode as string | undefined) : undefined;
 }
 
+/**
+ * Step 3: the address belongs to another account with its own login. Sends the merge link to it.
+ */
+function AccountMergeOffer({ email }: { email: string }) {
+  const { t } = useTranslation('common');
+  const merge = useMutation({ mutationFn: () => requestAccountMerge(email) });
+
+  if (merge.isSuccess) {
+    return (
+      <p className="text-sm text-green-400 mt-2" data-testid="account-merge-sent">
+        {t('profile.emails.mergeSent', { email })}
+      </p>
+    );
+  }
+  return (
+    <div className="mt-2 rounded border border-zinc-800 p-3" data-testid="account-merge-offer">
+      <p className="text-sm text-zinc-300">{t('profile.emails.mergeQuestion')}</p>
+      <p className="text-xs text-zinc-500 mt-1">{t('profile.emails.mergeExplain')}</p>
+      <Button
+        size="sm"
+        variant="outline"
+        className="mt-2"
+        disabled={merge.isPending}
+        onClick={() => merge.mutate()}
+        data-testid="account-merge-send"
+      >
+        {t('profile.emails.mergeSend')}
+      </Button>
+      {merge.isError && (
+        <p className="text-sm text-red-400 mt-2" data-testid="account-merge-error">
+          {isAxiosError(merge.error) && merge.error.response?.status === 404
+            ? t('profile.emails.mergeNotFound')
+            : t('profile.emails.mergeError')}
+        </p>
+      )}
+    </div>
+  );
+}
+
 export function ProfileEmailAddresses({
   primaryEmail,
   additionalEmails,
@@ -45,6 +93,10 @@ export function ProfileEmailAddresses({
   const [addError, setAddError] = useState<string | null>(null);
   const [confirmRemove, setConfirmRemove] = useState<string | null>(null);
   const [resent, setResent] = useState<Record<string, boolean>>({});
+  const [confirmPrimary, setConfirmPrimary] = useState<string | null>(null);
+  const [primaryDone, setPrimaryDone] = useState(false);
+  // Step 3: the address whose account can be merged (from adding it or from making it primary)
+  const [mergeCandidate, setMergeCandidate] = useState<string | null>(null);
 
   const refresh = () => {
     void queryClient.invalidateQueries({ queryKey: ['user-profile-me'] });
@@ -59,8 +111,9 @@ export function ProfileEmailAddresses({
       setAddError(null);
       refresh();
     },
-    onError: (err) => {
+    onError: (err, email) => {
       const code = errorCode(err);
+      setMergeCandidate(code === 'ADDITIONAL_EMAIL_DUPLICATE' ? email : null);
       setAddError(
         code === 'ADDITIONAL_EMAIL_DUPLICATE'
           ? t('profile.emails.errorDuplicate')
@@ -90,6 +143,26 @@ export function ProfileEmailAddresses({
     onSuccess: (_data, email) => setResent((r) => ({ ...r, [email]: true })),
   });
 
+  const makePrimary = useMutation({
+    mutationFn: (email: string) => makeAdditionalEmailPrimary(email),
+    onSuccess: async () => {
+      setConfirmPrimary(null);
+      setPrimaryDone(true);
+      setMergeCandidate(null);
+      // The ID token still carries the old address until it is refreshed.
+      try {
+        await authService.refreshToken();
+      } catch {
+        // the next regular refresh picks it up
+      }
+      refresh();
+    },
+    onError: (err, email) => {
+      setConfirmPrimary(null);
+      setMergeCandidate(errorCode(err) === 'EMAIL_HAS_OTHER_LOGIN' ? email : null);
+    },
+  });
+
   const atLimit = additionalEmails.length >= MAX_ADDITIONAL;
 
   return (
@@ -107,6 +180,11 @@ export function ProfileEmailAddresses({
         >
           <span className="text-zinc-100 break-all">{primaryEmail}</span>
           <span className="text-xs text-zinc-400">{t('profile.emails.primary')}</span>
+          {primaryDone && (
+            <span className="text-xs text-green-400" data-testid="email-primary-changed">
+              {t('profile.emails.makePrimaryDone')}
+            </span>
+          )}
         </li>
 
         {additionalEmails.map((a) => {
@@ -149,9 +227,21 @@ export function ProfileEmailAddresses({
               </div>
 
               {confirmed ? (
-                <span className="flex items-center gap-1 text-xs text-green-400">
+                <span className="flex flex-wrap items-center gap-2 text-xs text-green-400">
                   <CheckCircle2 className="h-3 w-3" />
                   {t('profile.emails.confirmed')}
+                  {confirmPrimary !== a.email && (
+                    <button
+                      type="button"
+                      className="flex items-center gap-1 underline text-zinc-300"
+                      disabled={makePrimary.isPending}
+                      onClick={() => setConfirmPrimary(a.email)}
+                      data-testid={`email-make-primary-${a.email}`}
+                    >
+                      <Star className="h-3 w-3" />
+                      {t('profile.emails.makePrimary')}
+                    </button>
+                  )}
                 </span>
               ) : (
                 <span className="flex flex-wrap items-center gap-2 text-xs text-amber-400">
@@ -172,6 +262,41 @@ export function ProfileEmailAddresses({
                   )}
                 </span>
               )}
+
+              {confirmPrimary === a.email && (
+                <div
+                  className="rounded border border-zinc-800 p-3"
+                  data-testid={`email-make-primary-box-${a.email}`}
+                >
+                  <p className="text-sm text-zinc-300">
+                    {t('profile.emails.makePrimaryExplain', { email: a.email })}
+                  </p>
+                  <div className="flex gap-2 mt-2">
+                    <Button
+                      size="sm"
+                      disabled={makePrimary.isPending}
+                      onClick={() => makePrimary.mutate(a.email)}
+                      data-testid={`email-make-primary-confirm-${a.email}`}
+                    >
+                      {t('profile.emails.makePrimaryConfirm')}
+                    </Button>
+                    <Button size="sm" variant="ghost" onClick={() => setConfirmPrimary(null)}>
+                      {t('profile.emails.cancel')}
+                    </Button>
+                  </div>
+                </div>
+              )}
+              {makePrimary.isError && makePrimary.variables === a.email && (
+                <p
+                  className="text-sm text-red-400"
+                  data-testid={`email-make-primary-error-${a.email}`}
+                >
+                  {errorCode(makePrimary.error) === 'EMAIL_HAS_OTHER_LOGIN'
+                    ? t('profile.emails.makePrimaryOtherLogin')
+                    : t('profile.emails.makePrimaryError')}
+                </p>
+              )}
+              {mergeCandidate === a.email && <AccountMergeOffer email={a.email} />}
 
               <label
                 className={`flex items-center gap-3 text-sm ${confirmed ? 'cursor-pointer text-zinc-300' : 'text-zinc-500'}`}
@@ -223,6 +348,9 @@ export function ProfileEmailAddresses({
           </form>
         )}
         {addError && <p className="text-sm text-red-400 mt-2">{addError}</p>}
+        {mergeCandidate && !additionalEmails.some((a) => a.email === mergeCandidate) && (
+          <AccountMergeOffer key={mergeCandidate} email={mergeCandidate} />
+        )}
         {!atLimit && <p className="text-xs text-zinc-500 mt-2">{t('profile.emails.addHelp')}</p>}
       </div>
 

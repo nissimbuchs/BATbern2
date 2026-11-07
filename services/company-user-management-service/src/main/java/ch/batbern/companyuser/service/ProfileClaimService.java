@@ -44,6 +44,7 @@ public class ProfileClaimService {
     private final ProfileClaimEmailService emailService;
     private final UserMergeService mergeService;
     private final ProfileMergeRequestRepository mergeRequests;
+    private final CognitoIntegrationService cognito;
 
     /**
      * {@code requestPending}: a merge request for this profile is with the organizers (#1237).
@@ -111,7 +112,30 @@ public class ProfileClaimService {
         log.info("PROFILE_CLAIM_REQUESTED claimer={} candidate={}", caller.getUsername(), candidate.getUsername());
     }
 
-    /** @return true if merged now, false if the earlier profile was already merged (link used twice) */
+    /**
+     * #1244 step 3: the caller asks to merge the account whose primary address is {@code email} and
+     * which has its own login. The link goes to that address (proof of the second mailbox) and works
+     * only under the caller's login (proof of the first). 404 when the address is no other login.
+     */
+    @Transactional(readOnly = true)
+    public void requestAccountMerge(String email) {
+        User caller = currentUser();
+        String normalized = email == null ? "" : email.trim();
+        User other = userRepository.findByEmailIgnoreCase(normalized)
+                .filter(u -> !u.getId().equals(caller.getId()))
+                .filter(u -> u.getCognitoUserId() != null)
+                .orElseThrow(() -> new UserNotFoundException("No other account with this address", true));
+        String token = tokenService.generateToken(caller.getId(), other.getId(), other.getEmail());
+        emailService.sendAccountMergeEmail(other.getEmail(), token, locale(caller),
+                caller.getFirstName() + " " + caller.getLastName());
+        log.info("ACCOUNT_MERGE_REQUESTED claimer={} other={}", caller.getUsername(), other.getUsername());
+    }
+
+    /**
+     * @return true if merged now, false if the earlier profile was already merged (link used twice).
+     *     When the candidate has its own login (#1244 step 3), that login is disabled before the merge,
+     *     enabled again if the merge fails, and deleted after it.
+     */
     @Transactional
     public boolean confirm(String token) {
         ProfileClaimTokenService.Claim claim = parse(token);
@@ -127,8 +151,36 @@ public class ProfileClaimService {
             // the earlier profile's address changed since the link was sent: the mailbox proof no longer holds
             throw new VerificationTokenInvalidException();
         }
-        mergeService.merge(caller.getUsername(), candidate.getUsername(), caller.getUsername(), TRIGGER);
+        if (candidate.getCognitoUserId() != null) {
+            mergeLoginAccount(caller, candidate);
+        } else {
+            mergeService.merge(caller.getUsername(), candidate.getUsername(), caller.getUsername(), TRIGGER);
+        }
         return true;
+    }
+
+    private void mergeLoginAccount(User caller, User other) {
+        String login = other.getEmail();
+        cognito.disableLogin(login); // nothing is merged when this fails
+        try {
+            mergeService.mergeLoginAccount(caller.getUsername(), other.getUsername());
+        } catch (RuntimeException e) {
+            try {
+                cognito.enableLogin(login);
+            } catch (RuntimeException enableFailed) {
+                log.error("ACCOUNT_MERGE login stays disabled after a failed merge other={} cause={}",
+                        other.getUsername(), enableFailed.getClass().getSimpleName());
+            }
+            throw e;
+        }
+        try {
+            cognito.deleteLogin(login);
+        } catch (RuntimeException e) {
+            // The profile is merged and its login disabled; nobody can sign in with it any more.
+            log.error("ACCOUNT_MERGE login disabled but not deleted email={} cause={}", LoggingUtils.maskEmail(login),
+                    e.getClass().getSimpleName());
+        }
+        log.info("ACCOUNT_MERGE_DONE target={} source={}", caller.getUsername(), other.getUsername());
     }
 
     private List<User> candidatesOf(User caller) {

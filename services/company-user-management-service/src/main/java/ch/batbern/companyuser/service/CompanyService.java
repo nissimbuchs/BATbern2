@@ -451,6 +451,36 @@ public class CompanyService {
      * Fetches Logo entity to get actual file extension (png, jpg, jpeg, svg)
      * instead of hardcoding to .png
      */
+    /**
+     * #1246: gives the company the logo of an accepted logo request. Same effect as an organizer
+     * setting the logo in the company edit: final key, cache invalidation, CompanyUpdatedEvent.
+     *
+     * @return the company's new logo URL
+     */
+    public String applyRequestedLogo(String companyName, String uploadId) {
+        Company company = companyRepository.findByName(companyName)
+                .orElseThrow(() -> new CompanyNotFoundException(companyName));
+        String finalS3Key = generateFinalS3Key(company.getName(), uploadId);
+        String logoUrl = genericLogoService.reassignLogo(uploadId, "COMPANY", company.getName(), finalS3Key);
+        company.setLogoUrl(logoUrl);
+        company.setLogoS3Key(finalS3Key);
+        company.setLogoFileId(uploadId);
+        company.setUpdatedAt(Instant.now());
+        Company saved = companyRepository.save(company);
+        searchService.invalidateCache();
+        eventPublisher.publish(new CompanyUpdatedEvent(
+                saved.getName(),
+                saved.getName(),
+                saved.getDisplayName(),
+                saved.getWebsite(),
+                saved.getIndustry(),
+                saved.getDescription(),
+                saved.getUpdatedAt(),
+                securityContextHelper.getCurrentUserId()));
+        log.info("Requested logo applied to company: {}, logoUrl: {}", saved.getName(), logoUrl);
+        return logoUrl;
+    }
+
     private String generateFinalS3Key(String companyName, String uploadId) {
         // Fetch Logo to get file extension (preserve original file type)
         Logo logo = logoRepository.findByUploadId(uploadId)

@@ -10,7 +10,15 @@ import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 
 vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
+  useTranslation: () => ({
+    t: (key: string, opts?: Record<string, unknown>) =>
+      opts ? `${key}:${JSON.stringify(opts)}` : key,
+  }),
+}));
+
+const refreshToken = vi.fn();
+vi.mock('@/services/auth/authService', () => ({
+  authService: { refreshToken: () => refreshToken() },
 }));
 
 vi.mock('@/services/api/userAccountApi', () => ({
@@ -18,6 +26,8 @@ vi.mock('@/services/api/userAccountApi', () => ({
   deleteAdditionalEmail: vi.fn(),
   updateAdditionalEmail: vi.fn(),
   resendAdditionalEmailVerification: vi.fn(),
+  makeAdditionalEmailPrimary: vi.fn(),
+  requestAccountMerge: vi.fn(),
 }));
 
 import {
@@ -25,7 +35,10 @@ import {
   deleteAdditionalEmail,
   updateAdditionalEmail,
   resendAdditionalEmailVerification,
+  makeAdditionalEmailPrimary,
+  requestAccountMerge,
 } from '@/services/api/userAccountApi';
+import { AxiosError, AxiosHeaders } from 'axios';
 import { ProfileEmailAddresses } from '../ProfileEmailAddresses';
 
 const confirmed = {
@@ -128,4 +141,84 @@ describe('ProfileEmailAddresses', () => {
     renderSection();
     expect(screen.getByText('profile.emails.loginHint')).toBeInTheDocument();
   });
+
+  // ---------------------------------------------------------------- #1244 step 2
+
+  it('offers "use as primary" only for a confirmed address, after a confirmation step', async () => {
+    vi.mocked(makeAdditionalEmailPrimary).mockResolvedValue();
+    refreshToken.mockResolvedValue({ success: true });
+    const user = userEvent.setup();
+    renderSection();
+
+    expect(screen.queryByTestId('email-make-primary-pending@example.com')).not.toBeInTheDocument();
+    await user.click(screen.getByTestId('email-make-primary-private@example.com'));
+    expect(makeAdditionalEmailPrimary).not.toHaveBeenCalled();
+    await user.click(screen.getByTestId('email-make-primary-confirm-private@example.com'));
+
+    await waitFor(() =>
+      expect(makeAdditionalEmailPrimary).toHaveBeenCalledWith('private@example.com')
+    );
+    await waitFor(() => expect(refreshToken).toHaveBeenCalled());
+  });
+
+  it('when another account logs in with the address, offers to merge it (step 3)', async () => {
+    vi.mocked(makeAdditionalEmailPrimary).mockRejectedValue(conflict('EMAIL_HAS_OTHER_LOGIN'));
+    vi.mocked(requestAccountMerge).mockResolvedValue();
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.click(screen.getByTestId('email-make-primary-private@example.com'));
+    await user.click(screen.getByTestId('email-make-primary-confirm-private@example.com'));
+    await user.click(await screen.findByTestId('account-merge-send'));
+
+    await waitFor(() => expect(requestAccountMerge).toHaveBeenCalledWith('private@example.com'));
+    expect(await screen.findByTestId('account-merge-sent')).toBeInTheDocument();
+  });
+
+  // ---------------------------------------------------------------- #1244 step 3
+
+  it('an address that is already registered offers to merge that account', async () => {
+    vi.mocked(addAdditionalEmail).mockRejectedValue(conflict('ADDITIONAL_EMAIL_DUPLICATE'));
+    vi.mocked(requestAccountMerge).mockResolvedValue();
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.type(screen.getByTestId('email-add-input'), 'Work.Old@example.com');
+    await user.click(screen.getByTestId('email-add-button'));
+    await user.click(await screen.findByTestId('account-merge-send'));
+
+    await waitFor(() => expect(requestAccountMerge).toHaveBeenCalledWith('Work.Old@example.com'));
+    expect(await screen.findByTestId('account-merge-sent')).toHaveTextContent(
+      'Work.Old@example.com'
+    );
+  });
+
+  it('says so when the address is no other account with a login', async () => {
+    vi.mocked(addAdditionalEmail).mockRejectedValue(conflict('ADDITIONAL_EMAIL_DUPLICATE'));
+    vi.mocked(requestAccountMerge).mockRejectedValue(failure(404));
+    const user = userEvent.setup();
+    renderSection();
+
+    await user.type(screen.getByTestId('email-add-input'), 'someone@example.com');
+    await user.click(screen.getByTestId('email-add-button'));
+    await user.click(await screen.findByTestId('account-merge-send'));
+
+    expect(await screen.findByTestId('account-merge-error')).toHaveTextContent(
+      'profile.emails.mergeNotFound'
+    );
+  });
 });
+
+function failure(status: number, data: Record<string, unknown> = {}) {
+  return new AxiosError('failed', String(status), undefined, undefined, {
+    status,
+    statusText: '',
+    data,
+    headers: {},
+    config: { headers: new AxiosHeaders() },
+  });
+}
+
+function conflict(code: string) {
+  return failure(409, { errorCode: code });
+}

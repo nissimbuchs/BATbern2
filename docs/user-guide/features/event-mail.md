@@ -195,6 +195,11 @@ disappears at zero and refreshes every minute.
   profile with their account because they cannot read its old address any more. The conversation shows
   both profiles side by side, with **Combine** and **Decline** (decline needs a reason). See
   [Users](../entity-management/users.md).
+- **Company logo requests** (#1246) arrive under **No event** too ("Neues Logo für …"): a participant
+  sent a new logo for their company from their profile. The conversation shows the current and the new
+  logo side by side and the person's note, with **Logo übernehmen** (the company gets the new logo) and
+  **Ablehnen** (the reason is optional). The person gets a mail either way and the conversation is set
+  to Done. See [Companies](../entity-management/companies.md).
 - **No event:** mail to `info@`, `events@` or `support@` that belongs to no event. **Assign to event**
   beside a row puts the conversation and all its mails on that event: it then shows in that event's
   "Needs an answer". Choosing "(no event)" takes it off again. Inside any conversation the **Event**

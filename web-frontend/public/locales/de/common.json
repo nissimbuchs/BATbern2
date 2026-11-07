@@ -861,7 +861,39 @@
       "errorDuplicate": "Diese Adresse ist bereits registriert.",
       "errorLimit": "Sie haben die maximale Anzahl von 5 weiteren Adressen erreicht.",
       "errorInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
-      "loginHint": "Mit dem Passwort melden Sie sich mit der Hauptadresse an. Mit einer bestätigten Gmail- oder Google-Adresse können Sie sich zusätzlich über «Mit Google anmelden» einloggen."
+      "loginHint": "Mit dem Passwort melden Sie sich mit der Hauptadresse an. Mit einer bestätigten Gmail- oder Google-Adresse können Sie sich zusätzlich über «Mit Google anmelden» einloggen.",
+      "makePrimary": "Als Hauptadresse verwenden",
+      "makePrimaryExplain": "Ab jetzt melden Sie sich mit {{email}} an und erhalten die Event-Mails dorthin. Ihre bisherige Hauptadresse bleibt als bestätigte Adresse erhalten.",
+      "makePrimaryConfirm": "Zur Hauptadresse machen",
+      "makePrimaryDone": "Ihre Hauptadresse ist geändert.",
+      "makePrimaryError": "Die Adresse konnte nicht zur Hauptadresse gemacht werden. Bitte versuchen Sie es noch einmal.",
+      "makePrimaryOtherLogin": "Mit dieser Adresse meldet sich ein anderes Konto an.",
+      "mergeQuestion": "Diese Adresse gehört zu einem anderen Konto. Ist es Ihres?",
+      "mergeExplain": "Wir senden einen Link an diese Adresse. Öffnen Sie ihn, während Sie hier angemeldet sind: Das andere Konto wird mit diesem zusammengeführt und sein Login gelöscht.",
+      "mergeSend": "Link zum Zusammenführen senden",
+      "mergeSent": "Wir haben einen Link an {{email}} gesendet. Öffnen Sie ihn, während Sie mit diesem Konto angemeldet sind.",
+      "mergeNotFound": "Wir können diese Adresse keinem anderen Konto mit Login zuordnen. Bitte wenden Sie sich an die Organisatoren.",
+      "mergeError": "Der Link konnte nicht gesendet werden. Bitte versuchen Sie es noch einmal."
+    },
+    "logo": {
+      "label": "Firmenlogo",
+      "alt": "Logo von {{company}}",
+      "previewAlt": "Vorschau des neuen Logos",
+      "none": "Noch kein Logo",
+      "request": "Logo-Änderung beantragen",
+      "explain": "Senden Sie uns das aktuelle Logo Ihrer Firma. Die Organisatoren prüfen es und melden sich per E-Mail.",
+      "choose": "Logo-Datei",
+      "hint": "PNG, JPG oder SVG, höchstens 5 MB.",
+      "note": "Hinweis an die Organisatoren (optional)",
+      "notePlaceholder": "z. B. neues Logo seit dem Rebranding im Juni",
+      "send": "Antrag senden",
+      "cancel": "Abbrechen",
+      "pending": "Ihr Antrag liegt bei den Organisatoren.",
+      "sent": "Vielen Dank. Die Organisatoren prüfen das Logo und melden sich per E-Mail.",
+      "errorUpload": "Die Datei konnte nicht hochgeladen werden. Bitte prüfen Sie Format und Grösse und versuchen Sie es noch einmal.",
+      "errorOpen": "Für diese Firma liegt bereits ein Antrag bei den Organisatoren.",
+      "errorNoCompany": "Bitte speichern Sie zuerst eine Firma in Ihrem Profil.",
+      "errorGeneric": "Der Antrag konnte nicht gesendet werden. Bitte versuchen Sie es noch einmal."
     }
   }
 }

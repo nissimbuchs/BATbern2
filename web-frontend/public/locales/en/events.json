@@ -674,6 +674,25 @@
         "declined": "Declined by {{by}}: {{reason}}",
         "actionFailed": "That did not work. Nothing was changed; try again.",
         "loadError": "The request could not be loaded."
+      },
+      "logoRequest": {
+        "title": "New logo for {{company}}",
+        "explain": "{{name}} sent a new logo for their company. If you accept, the company shows the new logo everywhere on BATbern. Either way {{name}} is told by e-mail.",
+        "note": "Note",
+        "current": "Current logo",
+        "new": "New logo",
+        "noLogo": "No logo so far",
+        "approve": "Accept logo",
+        "decline": "Decline",
+        "confirmDecline": "Decline request",
+        "cancel": "Cancel",
+        "reason": "Reason (optional)",
+        "reasonHelp": "Mailed to the participant when given.",
+        "approved": "Accepted by {{by}}. The company has the new logo.",
+        "declined": "Declined by {{by}}.",
+        "declinedWithReason": "Declined by {{by}}: {{reason}}",
+        "actionFailed": "The decision could not be saved. Please try again.",
+        "loadError": "The logo request could not be loaded."
       }
     }
   },

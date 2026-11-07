@@ -40,6 +40,7 @@ import ch.batbern.companyuser.exception.UserValidationException;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.companyuser.service.ImageUrlFetcher;
+import ch.batbern.companyuser.service.PrimaryEmailService;
 import ch.batbern.companyuser.service.ProfilePictureService;
 import ch.batbern.companyuser.service.UserSearchService;
 import ch.batbern.companyuser.service.UserService;
@@ -97,6 +98,7 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
     private final UserRepository userRepository;
     private final ch.batbern.companyuser.service.UserReconciliationService reconciliationService;
     private final ch.batbern.companyuser.service.RoleService roleService;
+    private final PrimaryEmailService primaryEmailService;
 
     /** Lenient parser for the JSON {@code filter} query param (ADR-013 §3). */
     private static final ObjectMapper LIST_FILTER_MAPPER = new ObjectMapper();
@@ -422,6 +424,16 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
         log.info("Adding additional email for current user");
         AdditionalEmail created = userService.addAdditionalEmail(addAdditionalEmailRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    /**
+     * #1244 step 2 — a confirmed additional address becomes the primary (login) address.
+     */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> makeAdditionalEmailPrimary(String email) {
+        primaryEmailService.makePrimary(email);
+        return ResponseEntity.noContent().build();
     }
 
     /**

@@ -39,6 +39,23 @@ public class InternalUserMergeController {
                 request.trigger(), request.sourceProfile());
     }
 
+    /**
+     * #1244: the person made another address their primary one. Upcoming registrations made under
+     * the old primary address follow, so deregistration links, slides and the -participants@ list
+     * reach the new one. Past registrations and registrations under other addresses stay.
+     */
+    @PostMapping("/internal/users/primary-email")
+    public Map<String, Integer> primaryEmailChanged(@Valid @RequestBody PrimaryEmailChange request) {
+        return Map.of("updated", mergeService.primaryEmailChanged(request.username(), request.oldEmail(),
+                request.newEmail()));
+    }
+
+    public record PrimaryEmailChange(
+            @NotBlank @Size(max = 100) String username,
+            @NotBlank @Size(max = 255) String oldEmail,
+            @NotBlank @Size(max = 255) String newEmail) {
+    }
+
     @ExceptionHandler(UserMergeService.MergeBlockedException.class)
     public ResponseEntity<Map<String, String>> blocked(UserMergeService.MergeBlockedException e) {
         return ResponseEntity.status(HttpStatus.CONFLICT)

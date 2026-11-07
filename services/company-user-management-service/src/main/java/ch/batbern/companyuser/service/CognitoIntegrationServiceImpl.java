@@ -3,6 +3,7 @@ package ch.batbern.companyuser.service;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.exception.CognitoOperationException;
+import ch.batbern.companyuser.exception.EmailHasOtherLoginException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import ch.batbern.shared.utils.LoggingUtils;
 import lombok.extern.slf4j.Slf4j;
@@ -10,9 +11,14 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Service;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminCreateUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDeleteUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminDisableUserRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminEnableUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserRequest;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminGetUserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminSetUserPasswordRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AdminUpdateUserAttributesRequest;
+import software.amazon.awssdk.services.cognitoidentityprovider.model.AliasExistsException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.AttributeType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.CognitoIdentityProviderException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.InvalidParameterException;
@@ -156,4 +162,56 @@ public class CognitoIntegrationServiceImpl implements CognitoIntegrationService 
         }
     }
 
+    @Override
+    public void changeLoginEmail(String currentEmail, String newEmail) {
+        AdminUpdateUserAttributesRequest req = AdminUpdateUserAttributesRequest.builder()
+                .userPoolId(userPoolId)
+                .username(currentEmail)
+                .userAttributes(
+                        AttributeType.builder().name("email").value(newEmail).build(),
+                        AttributeType.builder().name("email_verified").value("true").build())
+                .build();
+        try {
+            cognitoClient.adminUpdateUserAttributes(req);
+            log.info("Cognito login moved from {} to {}", LoggingUtils.maskEmail(currentEmail),
+                    LoggingUtils.maskEmail(newEmail));
+        } catch (AliasExistsException e) {
+            throw new EmailHasOtherLoginException(LoggingUtils.maskEmail(newEmail));
+        } catch (CognitoIdentityProviderException e) {
+            log.error("AdminUpdateUserAttributes (email) failed for {}: {}",
+                    LoggingUtils.maskEmail(currentEmail), e.getMessage());
+            throw new CognitoOperationException("adminUpdateUserAttributes", LoggingUtils.maskEmail(currentEmail), e);
+        }
+    }
+
+    @Override
+    public void disableLogin(String email) {
+        try {
+            cognitoClient.adminDisableUser(AdminDisableUserRequest.builder()
+                    .userPoolId(userPoolId).username(email).build());
+        } catch (CognitoIdentityProviderException e) {
+            throw new CognitoOperationException("adminDisableUser", LoggingUtils.maskEmail(email), e);
+        }
+    }
+
+    @Override
+    public void enableLogin(String email) {
+        try {
+            cognitoClient.adminEnableUser(AdminEnableUserRequest.builder()
+                    .userPoolId(userPoolId).username(email).build());
+        } catch (CognitoIdentityProviderException e) {
+            throw new CognitoOperationException("adminEnableUser", LoggingUtils.maskEmail(email), e);
+        }
+    }
+
+    @Override
+    public void deleteLogin(String email) {
+        try {
+            cognitoClient.adminDeleteUser(AdminDeleteUserRequest.builder()
+                    .userPoolId(userPoolId).username(email).build());
+            log.info("Cognito login deleted for {}", LoggingUtils.maskEmail(email));
+        } catch (CognitoIdentityProviderException e) {
+            throw new CognitoOperationException("adminDeleteUser", LoggingUtils.maskEmail(email), e);
+        }
+    }
 }

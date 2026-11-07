@@ -4,8 +4,9 @@ import java.util.UUID;
 
 /**
  * #1237: event-management's Mail Center holds the conversation in which organizers decide a profile
- * merge request ({@code POST /internal/mail-center/merge-requests}, {@code .../{id}/done}). Both
- * calls are idempotent.
+ * merge request ({@code POST /internal/mail-center/merge-requests}, {@code .../{id}/done}), and since
+ * #1246 the one of a company logo request ({@code /internal/mail-center/logo-requests}). All calls are
+ * idempotent.
  */
 public interface EventManagementMailCenterClient {
 
@@ -14,6 +15,12 @@ public interface EventManagementMailCenterClient {
 
     /** Marks the conversation DONE once the request is decided. */
     void closeMergeRequest(UUID requestId, String decidedBy);
+
+    /** #1246: opens the conversation of a company logo request ({@code /internal/mail-center/logo-requests}). */
+    void openLogoRequest(OpenRequest request);
+
+    /** #1246: marks the logo request's conversation DONE once it is decided. */
+    void closeLogoRequest(UUID requestId, String decidedBy);
 
     record OpenRequest(UUID requestId, String requesterName, String requesterEmail, String subject, String note) {
     }
