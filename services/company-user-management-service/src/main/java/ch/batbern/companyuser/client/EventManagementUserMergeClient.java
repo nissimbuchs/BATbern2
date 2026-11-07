@@ -14,6 +14,12 @@ public interface EventManagementUserMergeClient {
 
     Result merge(MergeCall call);
 
+    /**
+     * #1244: the person's primary address changed; event-management moves upcoming registrations
+     * made under the old address ({@code POST /internal/users/primary-email}).
+     */
+    void primaryEmailChanged(String username, String oldEmail, String newEmail);
+
     record Preview(Map<String, Integer> moves, Map<String, Integer> conflicts, List<String> blockers) {
     }
 

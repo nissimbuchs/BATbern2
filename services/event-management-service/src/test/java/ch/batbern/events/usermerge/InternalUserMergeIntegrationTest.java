@@ -23,6 +23,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -61,7 +62,7 @@ class InternalUserMergeIntegrationTest extends AbstractIntegrationTest {
         jdbc.update("DELETE FROM notifications WHERE recipient_username IN (?, ?)", SOURCE, TARGET);
         jdbc.update("DELETE FROM newsletter_subscribers WHERE username IN (?, ?)", SOURCE, TARGET);
         jdbc.update("DELETE FROM speaker_arrivals WHERE speaker_username IN (?, ?)", SOURCE, TARGET);
-        jdbc.update("DELETE FROM events WHERE event_code IN ('BATbern9801', 'BATbern9802')");
+        jdbc.update("DELETE FROM events WHERE event_code IN ('BATbern9801', 'BATbern9802', 'BATbern9803')");
     }
 
     @Test
@@ -203,6 +204,36 @@ class InternalUserMergeIntegrationTest extends AbstractIntegrationTest {
         body.put("trigger", "ORGANIZER");
         body.put("sourceProfile", Map.of("username", SOURCE, "email", "merge.source@example.com"));
         return body;
+    }
+
+    @Test
+    @DisplayName("#1244: a new primary address moves the address of upcoming registrations made under the old one")
+    void primaryEmailChanged_updatesUpcomingRegistrationsOnly() throws Exception {
+        UUID upcoming = insertRegistration(eventA, SOURCE, "confirmed");
+        UUID otherAddress = insertRegistration(eventB, SOURCE, "confirmed");
+        jdbc.update("UPDATE registrations SET attendee_email = 'guest@example.com' WHERE id = ?", otherAddress);
+        UUID pastEvent = UUID.randomUUID();
+        jdbc.update("INSERT INTO events (id, event_code, event_number, title, description, event_date, "
+                + "registration_deadline, venue_name, venue_address, venue_capacity, organizer_username, "
+                + "event_type, workflow_state, created_at, updated_at) VALUES (?, 'BATbern9803', 9803, 'Past', "
+                + "'x', NOW() - interval '30 days', NOW() - interval '40 days', 'Venue', 'Address', 100, "
+                + "'organizer1', 'evening', 'created', NOW(), NOW())", pastEvent);
+        UUID past = insertRegistration(pastEvent, SOURCE, "attended");
+
+        mockMvc.perform(post("/internal/users/primary-email").contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("username", SOURCE,
+                                "oldEmail", "Merge.Source@example.com", "newEmail", "private@example.com"))))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.updated").value(1));
+
+        assertThat(emailOf(upcoming)).isEqualTo("private@example.com");
+        assertThat(emailOf(otherAddress)).isEqualTo("guest@example.com");
+        assertThat(emailOf(past)).isEqualTo(SOURCE + "@example.com");
+    }
+
+    private String emailOf(UUID registration) {
+        return jdbc.queryForObject("SELECT attendee_email FROM registrations WHERE id = ?", String.class,
+                registration);
     }
 
     private UUID insertEvent(String code, int number) {

@@ -91,4 +91,21 @@ public interface CognitoIntegrationService {
      * @throws CognitoOperationException on any Cognito error
      */
     void adminSetTemporaryPassword(String email, String freshTempPassword);
+
+    /**
+     * #1244 — move the login of {@code currentEmail} to {@code newEmail} and mark it verified (the
+     * owner confirmed it with our link). The Cognito {@code sub} and linked Google identities stay.
+     *
+     * @throws ch.batbern.companyuser.exception.EmailHasOtherLoginException when another login has it
+     */
+    void changeLoginEmail(String currentEmail, String newEmail);
+
+    /** #1244 — block a login (reversible); used before an account merge. */
+    void disableLogin(String email);
+
+    /** #1244 — undo {@link #disableLogin} when an account merge fails. */
+    void enableLogin(String email);
+
+    /** #1244 — delete a login after an account merge; the person keeps their other login. */
+    void deleteLogin(String email);
 }

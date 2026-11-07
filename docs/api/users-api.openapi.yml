@@ -1513,6 +1513,46 @@ paths:
       security:
         - BearerAuth: []
 
+  /users/me/additional-emails/{email}/make-primary:
+    post:
+      tags:
+        - User Account
+      summary: Make a confirmed additional address the primary (login) address
+      description: |
+        #1244 — the login moves to this address (Cognito, marked verified) and the old primary
+        address stays as a confirmed additional address. Upcoming registrations made under the old
+        address follow. Linked Google sign-ins stay.
+      operationId: makeAdditionalEmailPrimary
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: URL-encoded email address, case-insensitive.
+          schema:
+            type: string
+            format: email
+      responses:
+        '204':
+          description: The address is now the primary address
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No matching additional email on the caller's profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: |
+            `NOT_VERIFIED` (the address is not confirmed) or `EMAIL_HAS_OTHER_LOGIN` (another
+            account logs in with it; merge that account first).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
   /users/me/additional-emails/{email}/resend-verification:
     post:
       tags:

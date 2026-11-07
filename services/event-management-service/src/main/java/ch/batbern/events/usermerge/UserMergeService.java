@@ -10,9 +10,13 @@ import org.springframework.jdbc.core.namedparam.NamedParameterJdbcTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.sql.Timestamp;
+import java.time.LocalDate;
+import java.time.ZoneId;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 
 /**
@@ -213,5 +217,26 @@ public class UserMergeService {
         public MergeBlockedException(String message) {
             super(message);
         }
+    }
+
+    /**
+     * #1244: upcoming registrations (event today or later, Bern) of {@code username} made under
+     * {@code oldEmail} move to {@code newEmail}.
+     *
+     * @return how many registrations changed
+     */
+    @Transactional
+    public int primaryEmailChanged(String username, String oldEmail, String newEmail) {
+        ZoneId bern = ZoneId.of("Europe/Zurich");
+        MapSqlParameterSource p = new MapSqlParameterSource()
+                .addValue("username", username)
+                .addValue("old", oldEmail.trim().toLowerCase(Locale.ROOT))
+                .addValue("new", newEmail.trim().toLowerCase(Locale.ROOT))
+                .addValue("today", Timestamp.from(LocalDate.now(bern).atStartOfDay(bern).toInstant()));
+        int updated = jdbc.update("UPDATE registrations r SET attendee_email = :new, updated_at = NOW() "
+                + "FROM events e WHERE r.event_id = e.id AND r.attendee_username = :username "
+                + "AND LOWER(r.attendee_email) = :old AND e.event_date >= :today", p);
+        log.info("PRIMARY_EMAIL_CHANGED username={} upcomingRegistrations={}", username, updated);
+        return updated;
     }
 }

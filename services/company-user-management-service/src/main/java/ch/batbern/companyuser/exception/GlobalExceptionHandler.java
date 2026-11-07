@@ -183,6 +183,28 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * #1244 — the address is another account's login; it cannot become this account's login
+     * address. Maps to 409 with errorCode {@code EMAIL_HAS_OTHER_LOGIN}.
+     */
+    @ExceptionHandler(EmailHasOtherLoginException.class)
+    public ResponseEntity<ErrorResponse> handleEmailHasOtherLoginException(
+            EmailHasOtherLoginException ex,
+            HttpServletRequest request) {
+        log.warn("Address is another login: {}", ex.getMessage());
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .errorCode("EMAIL_HAS_OTHER_LOGIN")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.current())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * #1244 — a copy of event mails was requested for an unconfirmed additional address.
      * Maps to 409 with errorCode {@code NOT_VERIFIED}.
      */

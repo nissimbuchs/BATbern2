@@ -692,6 +692,28 @@ export interface paths {
     patch: operations['updateAdditionalEmail'];
     trace?: never;
   };
+  '/users/me/additional-emails/{email}/make-primary': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Make a confirmed additional address the primary (login) address
+     * @description #1244 — the login moves to this address (Cognito, marked verified) and the old primary
+     *     address stays as a confirmed additional address. Upcoming registrations made under the old
+     *     address follow. Linked Google sign-ins stay.
+     */
+    post: operations['makeAdditionalEmailPrimary'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/me/additional-emails/{email}/resend-verification': {
     parameters: {
       query?: never;
@@ -3071,6 +3093,49 @@ export interface operations {
         };
       };
       /** @description The address is not confirmed yet (`NOT_VERIFIED`). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  makeAdditionalEmailPrimary: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description URL-encoded email address, case-insensitive. */
+        email: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The address is now the primary address */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description No matching additional email on the caller's profile. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /**
+       * @description `NOT_VERIFIED` (the address is not confirmed) or `EMAIL_HAS_OTHER_LOGIN` (another
+       *     account logs in with it; merge that account first).
+       */
       409: {
         headers: {
           [name: string]: unknown;
