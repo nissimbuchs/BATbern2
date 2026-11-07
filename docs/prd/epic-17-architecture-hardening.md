@@ -117,9 +117,15 @@ that** I extend the real one instead of a dead twin.
 - `slides-online/send`: two Bruno files mention `slides-online`
   (`tasks-api/01-list-task-templates.bru`, `events/mails-preview-invalid.bru`). Check whether they
   call the endpoint or only name a template or mail type before deleting.
-- Frontend: delete `publishingService.getPublishPreview` and `usePublishing.fetchPreview` (it calls
-  `GET /events/{c}/publish/{phase}/preview`, which does not exist; no component uses it).
+- Frontend: delete `publishingService.getPublishPreview` and the `usePublishing` preview chain (it calls
+  `GET /events/{c}/publish/{phase}/preview`, which does not exist). Correction at story creation:
+  `LivePreview` references `fetchPreview`, but only from a retry button that can never render.
+- Correction at story creation: `speakers-api` still generates `speakers-api.types.ts`, imported by 4
+  frontend files. They move to `event-speakers-api.types` (identical shapes). The two specs also leave
+  the ZAP matrix in `security-scan.yml`, or `check-zap-spec-coverage.py` fails.
 - Regenerate frontend types.
+
+Story file: `_bmad-output/implementation-artifacts/17-1-dead-api-surface.md`.
 
 **Architecture note (draft):** modules: EMS publishing, speakers, sessions/media, mail center; CUMS
 logos · new dependencies: none · endpoints: 6 removed, none added · reused: n/a · deviations: none.
@@ -189,6 +195,10 @@ frontend followed.
 `docs/api/*.openapi.yml`. Runs in CI on every PR (frontend job) and locally via `make`.
 Explicit allow-list file for paths outside the specs (e.g. Cognito, S3 presigned URLs), each with a
 reason.
+Refined at story creation: scans all of `web-frontend/src` (15 files outside `services/` make HTTP
+calls; frozen as a baseline), method-aware, and `frontend-changes` also triggers on `docs/api/`. Six
+calls with no spec and no backend were found by a prototype and are resolved in the story.
+Story file: `_bmad-output/implementation-artifacts/17-3-frontend-path-contract-check.md`.
 
 **Architecture note (draft):** modules: CI, `scripts/` · new dependencies: none · endpoints: none ·
 reused: review scan regex, `docs/api/` · deviations: none.

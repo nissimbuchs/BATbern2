@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-21
-last_updated: 2026-11-04
+last_updated: 2026-11-07
 project: BATbern
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -314,10 +314,10 @@ development_status:
 
   # Epic 17: Architecture hardening — backlog, scope decided by owner 2026-11-07, each story needs owner go (docs/prd/epic-17-architecture-hardening.md)
   # Order: 17.1-17.5, then 16.8c (Epic 16, after 17.1), then 17.6-17.11, 17.12 (design, Winston), 17.13-17.16
-  epic-17: backlog
-  17-1-dead-api-surface: backlog
+  epic-17: in-progress
+  17-1-dead-api-surface: ready-for-dev  # story file 2026-11-07
   17-2-dormant-infrastructure-stubs-and-event-bus: backlog  # prod infra, not on an event day; closes #1216, bus part of #1220
-  17-3-frontend-path-contract-check: backlog
+  17-3-frontend-path-contract-check: ready-for-dev  # story file 2026-11-07; same PR as 17.1 if owner agrees
   17-4-openapi-lint-and-spec-diff-report: backlog
   17-5-archunit-freeze: backlog
   17-6-service-to-service-via-internal: backlog
