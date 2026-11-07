@@ -144,6 +144,9 @@ while the behaviour is mocked.
 
 ### P5. A real-code gate before production (owner decision, bigger)
 
+> **Parked 2026-11-07 (owner):** continues after 17.1–17.5 and 17.0a–d, local spike on rack first.
+> Detailed plan: [`pre-deploy-gate-plan.md`](pre-deploy-gate-plan.md).
+
 Today the first end-to-end run of real code is on production, so it cannot exercise mail or
 destructive flows (#1208), and it has damaged data (#1069, 6,365 orphan notifications). There are
 two options:
