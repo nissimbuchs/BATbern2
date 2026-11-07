@@ -303,7 +303,9 @@ export interface paths {
      * Send a confirmation link to the address of an earlier profile
      * @description #1183 D. Sends a signed link (48 h) to the address of the candidate profile. Opening it
      *     while logged in as the caller merges the candidate into the caller's profile. The candidate
-     *     must be one of `GET /users/me/profile-claims`; anything else is 404.
+     *     must be one of `GET /users/me/profile-claims`; anything else is 404. A candidate with a
+     *     placeholder address (#1244) is refused with 409 `PLACEHOLDER_ADDRESS`: the link would reach
+     *     nobody.
      */
     post: operations['requestProfileClaim'];
     delete?: never;
@@ -1349,6 +1351,12 @@ export interface components {
       companyName?: string | null;
       /** @description #1237: a merge request for this profile is with the organizers */
       requestPending?: boolean;
+      /**
+       * @description #1244: the earlier profile carries a placeholder address from the historical import
+       *     (`vorname.nachname@batbern.ch`) that reaches nobody. Only the request to the organizers
+       *     (#1237) is offered; a claim link is refused (409 `PLACEHOLDER_ADDRESS`).
+       */
+      placeholderAddress?: boolean;
     };
     ProfileMergeRequestCreate: {
       /** Format: uuid */
@@ -2516,6 +2524,15 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       404: components['responses']['NotFound'];
+      /** @description The earlier profile has a placeholder address (`PLACEHOLDER_ADDRESS`). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };

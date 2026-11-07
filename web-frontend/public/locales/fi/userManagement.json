@@ -379,6 +379,8 @@
     "cancel": "Peruuta",
     "requestPending": "Pyyntösi on järjestäjillä.",
     "requestDeclinedRecently": "Tätä profiilia koskeva pyyntö hylättiin hiljattain. Voit pyytää uudelleen 30 päivän kuluttua.",
-    "requestFailed": "Pyyntöä ei voitu lähettää. Yritä myöhemmin uudelleen."
+    "requestFailed": "Pyyntöä ei voitu lähettää. Yritä myöhemmin uudelleen.",
+    "placeholderAddress": "Tämä aiempi profiili tuotiin ilman osoitettasi.",
+    "askOrganizers": "Pyydä järjestäjiltä"
   }
 }

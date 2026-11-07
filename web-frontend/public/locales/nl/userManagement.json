@@ -379,6 +379,8 @@
     "cancel": "Annuleren",
     "requestPending": "Uw verzoek ligt bij de organisatoren.",
     "requestDeclinedRecently": "Een verzoek voor dit profiel is onlangs afgewezen. U kunt het na 30 dagen opnieuw vragen.",
-    "requestFailed": "Het verzoek kon niet worden verstuurd. Probeer het later opnieuw."
+    "requestFailed": "Het verzoek kon niet worden verstuurd. Probeer het later opnieuw.",
+    "placeholderAddress": "Dit eerdere profiel is zonder uw adres geïmporteerd.",
+    "askOrganizers": "Vraag het de organisatoren"
   }
 }

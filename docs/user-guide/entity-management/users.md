@@ -359,6 +359,10 @@ profiles, what would move and the note. **Combine** merges as above, but the old
 either way, and the conversation is set to Done. While the request is open the profile shows "Your
 request is with the organizers"; after a decline the same profile can be asked again after 30 days.
 
+**Imported profiles** (#1244): the historical import gave people without a known address a placeholder
+`vorname.nachname@batbern.ch`. Such a profile says "imported without your address" and offers only
+**Ask the organizers**; a confirmation link would reach nobody and is refused.
+
 ## GDPR Compliance
 
 <span class="feature-status implemented">Implemented</span>

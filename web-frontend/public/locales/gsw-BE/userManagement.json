@@ -136,6 +136,8 @@
     "cancel": "Abbräche",
     "requestPending": "Dini Aafrag isch bi de Organisatore.",
     "requestDeclinedRecently": "E Aafrag für das Profil isch churz vorhär abgleent worde. E nöii geit nach 30 Täg.",
-    "requestFailed": "D Aafrag het nid chönne gschickt wärde. Probier s speter nomau."
+    "requestFailed": "D Aafrag het nid chönne gschickt wärde. Probier s speter nomau.",
+    "placeholderAddress": "Das früechere Profiu isch ohni öii Adrässe importiert worde.",
+    "askOrganizers": "D Organisatore bitte"
   }
 }

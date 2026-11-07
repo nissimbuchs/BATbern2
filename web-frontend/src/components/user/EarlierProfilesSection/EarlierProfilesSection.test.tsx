@@ -88,6 +88,24 @@ describe('EarlierProfilesSection (#1183 D)', () => {
     expect(screen.queryByTestId('claim-no-access-c-1')).not.toBeInTheDocument();
   });
 
+  it('should_offerOnlyTheRequest_when_placeholderAddress', async () => {
+    // #1244: an imported profile with vorname.nachname@batbern.ch: a link would reach nobody
+    vi.mocked(api.listProfileClaimCandidates).mockResolvedValue([
+      { candidateId: 'c-1', maskedEmail: 'a***@batbern.ch', placeholderAddress: true },
+    ]);
+    vi.mocked(api.requestProfileMerge).mockResolvedValue('r-1');
+    const user = userEvent.setup();
+    renderSection();
+
+    expect(await screen.findByTestId('claim-placeholder-c-1')).toBeInTheDocument();
+    expect(screen.queryByTestId('claim-button-c-1')).not.toBeInTheDocument();
+
+    await user.click(screen.getByTestId('claim-no-access-c-1'));
+    await user.click(screen.getByTestId('claim-send-request-c-1'));
+    expect(api.requestProfileMerge).toHaveBeenCalledWith('c-1', '');
+    expect(api.requestProfileClaim).not.toHaveBeenCalled();
+  });
+
   it('should_explainCooldown_when_recentlyDeclined', async () => {
     vi.mocked(api.listProfileClaimCandidates).mockResolvedValue([
       { candidateId: 'c-1', maskedEmail: 'a***@oldco.example.com' },

@@ -66,6 +66,7 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ Participants manage further e-mail addresses on their profile (**Profil → E-Mail-Adressen**): add, confirm by link, remove. A confirmed address helps us recognise you, for example after a job change, and lets you log in with Google if it is a Google address.
 - ✅ Event mails (registration, reminders, invitations) go to your primary address. A further address gets a copy only if you tick "Kopie der Event-Mails" for it. Until now every further address got a copy, confirmed or not.
 - ✅ The newsletter can be switched on and off for each confirmed address separately (**Profil → Einwilligung & Newsletter**).
+- ✅ An earlier profile from the historical import (placeholder address `vorname.nachname@batbern.ch`) now offers only "Ask the organizers": the confirmation link would have reached nobody.
 
 ### v1.4.0 - Event Page, Spring Boot 4, Mail Center & BATbern60 Fixes `[2026-11-04]`
 

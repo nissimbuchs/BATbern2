@@ -7,6 +7,9 @@
  * #1237: someone who can no longer read that address (a former employer's) asks the organizers
  * instead, with an optional note. While the request is open the profile shows "with the organizers"
  * and offers neither path.
+ *
+ * #1244: a profile imported with a placeholder address (vorname.nachname@batbern.ch) offers only the
+ * request; a confirmation link would reach nobody.
  */
 
 import React, { useState } from 'react';
@@ -92,6 +95,15 @@ export const EarlierProfilesSection: React.FC<{ variant?: 'section' | 'banner' }
                   <Typography variant="body2" data-testid={`claim-pending-${c.candidateId}`}>
                     {t('claim.requestPending')}
                   </Typography>
+                ) : c.placeholderAddress ? (
+                  // #1244: imported without a known address; a link would reach nobody
+                  <Typography
+                    variant="body2"
+                    color="text.secondary"
+                    data-testid={`claim-placeholder-${c.candidateId}`}
+                  >
+                    {t('claim.placeholderAddress')}
+                  </Typography>
                 ) : sentTo[c.candidateId] ? (
                   <Typography variant="body2" data-testid={`claim-sent-${c.candidateId}`}>
                     {t('claim.sent', { email: c.maskedEmail })}
@@ -120,7 +132,7 @@ export const EarlierProfilesSection: React.FC<{ variant?: 'section' | 'banner' }
                   }}
                   data-testid={`claim-no-access-${c.candidateId}`}
                 >
-                  {t('claim.noAccess')}
+                  {c.placeholderAddress ? t('claim.askOrganizers') : t('claim.noAccess')}
                 </Button>
               )}
 

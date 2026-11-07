@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.UUID;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 
 /**
@@ -44,8 +45,30 @@ public class ProfileClaimService {
     private final UserMergeService mergeService;
     private final ProfileMergeRequestRepository mergeRequests;
 
-    /** {@code requestPending}: a merge request for this profile is with the organizers (#1237). */
-    public record Candidate(UUID id, String maskedEmail, String companyName, boolean requestPending) {
+    /**
+     * {@code requestPending}: a merge request for this profile is with the organizers (#1237).
+     * {@code placeholderAddress}: the address is a placeholder from the historical import (#1244).
+     */
+    public record Candidate(UUID id, String maskedEmail, String companyName, boolean requestPending,
+            boolean placeholderAddress) {
+    }
+
+    /**
+     * #1244 (owner, 2026-11-07): the historical import gave people without a known address a
+     * placeholder {@code vorname.nachname@batbern.ch}. A claim link there reaches nobody.
+     */
+    private static final Pattern PLACEHOLDER = Pattern.compile("^[^@\\s]+\\.[^@\\s]+@batbern\\.ch$",
+            Pattern.CASE_INSENSITIVE);
+
+    static boolean isPlaceholder(String email) {
+        return email != null && PLACEHOLDER.matcher(email.trim()).matches();
+    }
+
+    /** A claim for a candidate whose address is a placeholder (#1244); 409 PLACEHOLDER_ADDRESS. */
+    public static class PlaceholderAddressException extends RuntimeException {
+        public PlaceholderAddressException() {
+            super("The earlier profile has no real address; ask the organizers instead");
+        }
     }
 
     @Transactional(readOnly = true)
@@ -58,7 +81,7 @@ public class ProfileClaimService {
                         .stream().map(ProfileMergeRequest::getSourceUsername).collect(Collectors.toSet());
         return candidates.stream()
                 .map(u -> new Candidate(u.getId(), LoggingUtils.maskEmail(u.getEmail()), u.getCompanyId(),
-                        pending.contains(u.getUsername())))
+                        pending.contains(u.getUsername()), isPlaceholder(u.getEmail())))
                 .toList();
     }
 
@@ -79,6 +102,9 @@ public class ProfileClaimService {
         User caller = currentUser();
         User candidate = candidatesOf(caller).stream().filter(u -> u.getId().equals(candidateId)).findFirst()
                 .orElseThrow(() -> new UserNotFoundException("No earlier profile to claim", true));
+        if (isPlaceholder(candidate.getEmail())) {
+            throw new PlaceholderAddressException();
+        }
         String token = tokenService.generateToken(caller.getId(), candidate.getId(), candidate.getEmail());
         emailService.sendClaimEmail(candidate.getEmail(), token, locale(caller),
                 caller.getFirstName() + " " + caller.getLastName());

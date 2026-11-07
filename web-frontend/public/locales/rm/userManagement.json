@@ -379,6 +379,8 @@
     "cancel": "Interrumper",
     "requestPending": "Vossa dumonda è tar ils organisaturs.",
     "requestDeclinedRecently": "Ina dumonda per quest profil è vegnida refusada dacurt. Ina nova è pussaivla suenter 30 dis.",
-    "requestFailed": "La dumonda n'ha betg pudì vegnir tramessa. Empruvai pli tard anc ina giada."
+    "requestFailed": "La dumonda n'ha betg pudì vegnir tramessa. Empruvai pli tard anc ina giada.",
+    "placeholderAddress": "Quest profil pli vegl è vegnì importà senza Vossa adressa.",
+    "askOrganizers": "Dumandar ils organisaturs"
   }
 }

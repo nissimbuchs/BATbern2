@@ -379,6 +379,8 @@
     "cancel": "Cancel",
     "requestPending": "Your request is with the organizers.",
     "requestDeclinedRecently": "A request for this profile was declined recently. You can ask again after 30 days.",
-    "requestFailed": "The request could not be sent. Try again later."
+    "requestFailed": "The request could not be sent. Try again later.",
+    "placeholderAddress": "This earlier profile was imported without your address.",
+    "askOrganizers": "Ask the organizers"
   }
 }

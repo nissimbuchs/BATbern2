@@ -379,6 +379,8 @@
     "cancel": "Annulla",
     "requestPending": "La tua richiesta è presso gli organizzatori.",
     "requestDeclinedRecently": "Una richiesta per questo profilo è stata respinta di recente. Potrai chiedere di nuovo dopo 30 giorni.",
-    "requestFailed": "Non è stato possibile inviare la richiesta. Riprova più tardi."
+    "requestFailed": "Non è stato possibile inviare la richiesta. Riprova più tardi.",
+    "placeholderAddress": "Questo profilo precedente è stato importato senza il suo indirizzo.",
+    "askOrganizers": "Chiedere agli organizzatori"
   }
 }
