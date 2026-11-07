@@ -1358,6 +1358,8 @@ export interface components {
       qnaOpenTrigger?: 'EVENT_COMPLETED' | 'SPEAKERS_PUBLISHED';
       /** @description Story 7.5 rework: window length in days (close = event date + this). */
       qnaWindowDays?: number;
+      /** @description Change the event type (full day, afternoon, evening). Lost in the ADR-013 consolidation (#815): the event page sent it and got 400 (BATbern61, 2026-11-07). */
+      eventType?: components['schemas']['EventType'];
       /** @description Topic code to associate with the event (Story 5.2). Null leaves it unchanged unless explicitly cleared by the controller. */
       topicCode?: string | null;
       /** @description Organizer's free-text note on topic selection (Story 5.2). */
