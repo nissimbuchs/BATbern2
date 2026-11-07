@@ -168,22 +168,4 @@ describe('publishingService', () => {
       expect(result).toEqual(mockData);
     });
   });
-
-  describe('cancelAutoPublish', () => {
-    it('should cancel auto-publish schedule', async () => {
-      const mockData = {
-        eventCode: 'BATbern142',
-        phase: 'SPEAKERS',
-        cancelledAt: '2025-01-15T15:00:00Z',
-        cancelledBy: 'john.doe',
-      };
-
-      const deleteSpy = vi.spyOn(apiClient, 'delete').mockResolvedValue({ data: mockData });
-
-      const result = await publishingService.cancelAutoPublish('BATbern142', 'speakers');
-
-      expect(deleteSpy).toHaveBeenCalledWith('/events/BATbern142/publish/schedule');
-      expect(result).toEqual(mockData);
-    });
-  });
 });

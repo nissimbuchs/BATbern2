@@ -33,7 +33,6 @@ vi.mock('@/hooks/usePublishing/usePublishing');
 const mockUsePublishing = {
   publishPhase: vi.fn(),
   unpublishPhase: vi.fn(),
-  cancelAutoPublish: vi.fn(),
   isPublishing: false,
   isUnpublishing: false,
   publishError: null,

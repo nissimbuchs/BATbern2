@@ -32,15 +32,6 @@ export type TopicSelectionResponse = components['schemas']['TopicSelectionRespon
  */
 export const FULLY_AVAILABLE_STALENESS = 100;
 
-// Defined locally — no longer generated from OpenAPI (staleness endpoints removed from backend)
-export interface OverrideStalenessRequest {
-  stalenessScore: number;
-  justification: string;
-}
-
-// Backward compatibility alias (fix typo in old code)
-export type OverrideStalenesRequest = OverrideStalenessRequest;
-
 // Re-export components for direct access
 export type { components } from './generated/topics-api.types';
 

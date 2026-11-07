@@ -2,7 +2,7 @@
  * useTopics Hook Tests (Story 5.2 - Frontend Tests)
  *
  * Comprehensive tests for Topic React Query hooks
- * Tests all hooks: useTopics, useTopic, useSimilarTopics, useCreateTopic, useOverrideStaleness, useSelectTopicForEvent
+ * Tests all hooks: useTopics, useTopic, useSimilarTopics, useCreateTopic, useSelectTopicForEvent
  *
  * Coverage:
  * - Query hooks (data fetching, caching, error handling)
@@ -19,7 +19,6 @@ import {
   useTopic,
   useSimilarTopics,
   useCreateTopic,
-  useOverrideStaleness,
   useSelectTopicForEvent,
   topicKeys,
 } from './useTopics';
@@ -28,7 +27,6 @@ import type {
   Topic,
   TopicListResponse,
   CreateTopicRequest,
-  OverrideStalenesRequest,
   SelectTopicForEventRequest,
 } from '@/types/topic.types';
 
@@ -39,7 +37,6 @@ vi.mock('@/services/topicService', () => ({
     getTopicById: vi.fn(),
     getSimilarTopics: vi.fn(),
     createTopic: vi.fn(),
-    overrideStaleness: vi.fn(),
     selectTopicForEvent: vi.fn(),
   },
 }));
@@ -406,81 +403,6 @@ describe('useTopics hooks', () => {
       };
 
       result.current.mutate(request);
-
-      await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
-    });
-  });
-
-  describe('useOverrideStaleness', () => {
-    const mockUpdatedTopic: Topic = {
-      id: 'topic-123',
-      title: 'Cloud Native Architecture',
-      description: 'Modern cloud patterns',
-      category: 'technical',
-      stalenessScore: 50, // Overridden
-      usageCount: 3,
-      lastUsedDate: '2024-01-15',
-      isActive: true,
-      createdDate: '2023-01-01',
-    };
-
-    it('should override staleness score with justification', async () => {
-      vi.mocked(topicService.overrideStaleness).mockResolvedValue(mockUpdatedTopic);
-
-      const { result } = renderHook(() => useOverrideStaleness(), {
-        wrapper: createWrapper(),
-      });
-
-      const request: OverrideStalenesRequest = {
-        stalenessScore: 50,
-        justification: 'Partner explicitly requested',
-      };
-
-      result.current.mutate({ id: 'topic-123', request });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(topicService.overrideStaleness).toHaveBeenCalledWith('topic-123', request);
-      expect(result.current.data?.stalenessScore).toBe(50);
-    });
-
-    it('should invalidate topic detail and lists cache after override', async () => {
-      vi.mocked(topicService.overrideStaleness).mockResolvedValue(mockUpdatedTopic);
-
-      const wrapper = createWrapper();
-      const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
-
-      const { result } = renderHook(() => useOverrideStaleness(), { wrapper });
-
-      const request: OverrideStalenesRequest = {
-        stalenessScore: 50,
-        justification: 'Override reason',
-      };
-
-      result.current.mutate({ id: 'topic-123', request });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: topicKeys.detail('topic-123') });
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: topicKeys.lists() });
-    });
-
-    it('should handle authorization errors', async () => {
-      const error = new Error('Forbidden: ORGANIZER role required');
-      vi.mocked(topicService.overrideStaleness).mockRejectedValue(error);
-
-      const { result } = renderHook(() => useOverrideStaleness(), {
-        wrapper: createWrapper(),
-      });
-
-      const request: OverrideStalenesRequest = {
-        stalenessScore: 50,
-        justification: 'Override',
-      };
-
-      result.current.mutate({ id: 'topic-123', request });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
 

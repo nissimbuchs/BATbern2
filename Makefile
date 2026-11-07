@@ -11,7 +11,7 @@
 # Run 'make help' to see all available targets
 
 .DEFAULT_GOAL := help
-.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all build-watch test-watch clean-watch watch-generate-types setup-test-users reports reports-deploy
+.PHONY: help install build test lint clean docker-up docker-down docker-build verify ci-build ci-test check-outdated update-deps audit-security all build-watch test-watch clean-watch watch-generate-types setup-test-users reports reports-deploy check-frontend-api-paths
 
 # ═══════════════════════════════════════════════════════════
 # HELP & DOCUMENTATION
@@ -502,6 +502,9 @@ check-generated-types: ## Verify generated API types are up to date
 	@echo "🔍 Checking generated API types are up to date..."
 	@cd web-frontend && npm run check:api-types
 	@echo "✓ Generated types are up to date"
+
+check-frontend-api-paths: ## Check every frontend HTTP call against docs/api/ (Story 17.3, same as CI)
+	@cd web-frontend && npm run --silent check:api-paths
 
 verify: lint check-generated-types test ## Pre-commit verification (lint + check + test)
 	@echo "✓ Verification complete - ready to commit!"

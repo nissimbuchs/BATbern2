@@ -9,6 +9,8 @@ build
 # nobody can act on is a gate people stop believing. (#1008)
 playwright-report
 test-results
+# The local Vitest HTML report (vitest 5 writes it to .vitest/; gitignored since 2fdc2470).
+.vitest
 blob-report
 .playwright-auth-*.json
 *.min.js

@@ -7,7 +7,6 @@
  * - useSimilarTopics: fetch similar, enabled guard
  * - useTopicUsageHistory: fetch usage history, enabled guard
  * - useCreateTopic: mutation + cache invalidation
- * - useOverrideStaleness: mutation + cache invalidation
  * - useSelectTopicForEvent: mutation + cache invalidation
  */
 
@@ -23,7 +22,6 @@ vi.mock('@/services/topicService', () => ({
     getSimilarTopics: vi.fn(),
     getTopicUsageHistory: vi.fn(),
     createTopic: vi.fn(),
-    overrideStaleness: vi.fn(),
     selectTopicForEvent: vi.fn(),
   },
 }));
@@ -35,7 +33,6 @@ import {
   useSimilarTopics,
   useTopicUsageHistory,
   useCreateTopic,
-  useOverrideStaleness,
   useSelectTopicForEvent,
 } from './useTopics';
 
@@ -44,7 +41,6 @@ const mockGetTopicById = vi.mocked(topicService.getTopicById);
 const mockGetSimilarTopics = vi.mocked(topicService.getSimilarTopics);
 const mockGetTopicUsageHistory = vi.mocked(topicService.getTopicUsageHistory);
 const mockCreateTopic = vi.mocked(topicService.createTopic);
-const mockOverrideStaleness = vi.mocked(topicService.overrideStaleness);
 const mockSelectTopicForEvent = vi.mocked(topicService.selectTopicForEvent);
 
 const createQC = () =>
@@ -255,61 +251,6 @@ describe('useCreateTopic', () => {
 
     await act(async () => {
       await result.current.mutateAsync({} as never).catch(() => {});
-    });
-
-    await waitFor(() => expect(result.current.isError).toBe(true));
-  });
-});
-
-// ── useOverrideStaleness ──────────────────────────────────────────────────────
-
-describe('useOverrideStaleness', () => {
-  let qc: QueryClient;
-
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should call overrideStaleness with id and request', async () => {
-    mockOverrideStaleness.mockResolvedValue(MOCK_TOPIC as never);
-
-    const { result } = renderHook(() => useOverrideStaleness(), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({
-        id: 'topic-1',
-        request: { stalenessScore: 80, justification: 'Confirmed fresh' } as never,
-      });
-    });
-
-    expect(mockOverrideStaleness).toHaveBeenCalledWith('topic-1', {
-      stalenessScore: 80,
-      justification: 'Confirmed fresh',
-    });
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
-  });
-
-  it('should invalidate topic detail and lists on success', async () => {
-    mockOverrideStaleness.mockResolvedValue(MOCK_TOPIC as never);
-    const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
-
-    const { result } = renderHook(() => useOverrideStaleness(), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({ id: 'topic-1', request: {} as never });
-    });
-
-    expect(invalidateSpy).toHaveBeenCalledTimes(2);
-  });
-
-  it('should set isError on failure', async () => {
-    mockOverrideStaleness.mockRejectedValue(new Error('Forbidden'));
-
-    const { result } = renderHook(() => useOverrideStaleness(), { wrapper: wrapper(qc) });
-
-    await act(async () => {
-      await result.current.mutateAsync({ id: 'topic-1', request: {} as never }).catch(() => {});
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));

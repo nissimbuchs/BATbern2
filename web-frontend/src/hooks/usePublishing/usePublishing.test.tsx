@@ -150,31 +150,6 @@ describe('usePublishing', () => {
         scheduledDate: '2025-04-15T08:00:00Z',
       });
     });
-
-    it('should cancel auto-publish schedule successfully', async () => {
-      const mockCancelResponse = {
-        eventCode: 'BATbern142',
-        phase: 'SPEAKERS',
-        cancelledAt: '2025-01-15T15:00:00Z',
-        cancelledBy: 'john.doe',
-      };
-
-      vi.mocked(publishingService.cancelAutoPublish).mockResolvedValue(mockCancelResponse);
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        result.current.cancelAutoPublish('speakers');
-      });
-
-      await waitFor(() => {
-        expect(result.current.isCancelling).toBe(false);
-      });
-
-      expect(publishingService.cancelAutoPublish).toHaveBeenCalledWith('BATbern142', 'speakers');
-    });
   });
 
   describe('real-time updates', () => {

@@ -5,7 +5,5 @@
 
 export { default as apiClient } from './apiClient';
 export * from './userApi';
-export * from './notificationsApi';
-export * from './authApi';
 export * from './companyApi';
 export * from './userManagementApi';

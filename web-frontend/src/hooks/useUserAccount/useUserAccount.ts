@@ -12,7 +12,6 @@ export const userAccountKeys = {
   profile: (userId: string) => ['user-profile', userId] as const,
   preferences: (userId: string) => ['user-preferences', userId] as const,
   settings: (userId: string) => ['user-settings', userId] as const,
-  activity: (userId: string, limit?: number) => ['user-activity', userId, { limit }] as const,
 };
 
 /**
@@ -54,18 +53,6 @@ export const useUserSettings = (userId: string) => {
     },
     staleTime: 1000 * 60 * 10, // 10 minutes
     gcTime: 1000 * 60 * 60, // 1 hour
-  });
-};
-
-/**
- * Hook to fetch user activity
- */
-export const useUserActivity = (userId: string, limit?: number) => {
-  return useQuery({
-    queryKey: userAccountKeys.activity(userId, limit),
-    queryFn: () => userAccountApi.getUserActivity(limit),
-    staleTime: 1000 * 60, // 1 minute
-    gcTime: 1000 * 60 * 10, // 10 minutes
   });
 };
 

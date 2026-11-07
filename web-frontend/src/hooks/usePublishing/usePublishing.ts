@@ -32,9 +32,7 @@ export interface UsePublishingReturn {
 
   // Auto-publish scheduling
   scheduleAutoPublish: (phase: PublishingPhase, options: AutoPublishScheduleRequest) => void;
-  cancelAutoPublish: (phase: PublishingPhase) => void;
   isScheduling: boolean;
-  isCancelling: boolean;
 }
 
 /**
@@ -84,11 +82,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     }) => publishingService.scheduleAutoPublish(eventCode, phase, options),
   });
 
-  // Cancel auto-publish mutation
-  const cancelAutoPublishMutation = useMutation({
-    mutationFn: (phase: PublishingPhase) => publishingService.cancelAutoPublish(eventCode, phase),
-  });
-
   // Extract validation errors from publish error (422 response)
   const validationErrors: Array<{ field: string; message: string; requirement: string }> =
     publishPhaseMutation.error &&
@@ -117,8 +110,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
 
     // Auto-publish scheduling
     scheduleAutoPublish: (phase, options) => scheduleAutoPublishMutation.mutate({ phase, options }),
-    cancelAutoPublish: (phase) => cancelAutoPublishMutation.mutate(phase),
     isScheduling: scheduleAutoPublishMutation.isPending,
-    isCancelling: cancelAutoPublishMutation.isPending,
   };
 };

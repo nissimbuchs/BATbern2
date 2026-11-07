@@ -6,7 +6,6 @@
  * - updateUserProfile: PUT /users/me with field filtering
  * - updateUserPreferences: PUT /users/me/preferences (uppercase→lowercase enum conversion)
  * - updateUserSettings: PUT /users/me/settings (uppercase→lowercase, showActivity→showActivityHistory)
- * - getUserActivity: GET /users/me/activity with/without limit
  * - removeProfilePicture: DELETE /users/me/picture
  * - requestPresignedUrl: POST presigned URL (fileId→uploadId, uploadUrl→presignedUrl mapping)
  * - confirmUpload: POST confirm (uploadId→fileId, profilePictureUrl→cloudFrontUrl)
@@ -32,7 +31,6 @@ import {
   updateUserProfile,
   updateUserPreferences,
   updateUserSettings,
-  getUserActivity,
   removeProfilePicture,
   requestPresignedUrl,
   confirmUpload,
@@ -390,35 +388,6 @@ describe('updateUserSettings', () => {
     expect(result.showEmail).toBe(true);
     expect(result.showCompany).toBe(false);
     expect(result.allowMessaging).toBe(false);
-  });
-});
-
-// ── getUserActivity ───────────────────────────────────────────────────────────
-
-describe('getUserActivity', () => {
-  it('should GET /users/me/activity without limit param when not provided', async () => {
-    mockGet.mockResolvedValue({ data: [] });
-
-    await getUserActivity();
-
-    expect(mockGet).toHaveBeenCalledWith('/users/me/activity');
-  });
-
-  it('should append ?limit= when provided', async () => {
-    mockGet.mockResolvedValue({ data: [] });
-
-    await getUserActivity(10);
-
-    expect(mockGet).toHaveBeenCalledWith('/users/me/activity?limit=10');
-  });
-
-  it('should return the data array from response', async () => {
-    const items = [{ type: 'REGISTRATION', timestamp: '2025-01-01' }];
-    mockGet.mockResolvedValue({ data: items });
-
-    const result = await getUserActivity(5);
-
-    expect(result).toEqual(items);
   });
 });
 

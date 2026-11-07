@@ -530,16 +530,6 @@ export interface AutoPublishScheduleResponse {
 }
 
 /**
- * Cancel auto-publish response
- */
-export interface CancelAutoPublishResponse {
-  eventCode: string;
-  phase: string; // UPPERCASE in API
-  cancelledAt: string;
-  cancelledBy: string;
-}
-
-/**
  * Publishing validation error (422 response)
  */
 export interface PublishValidationError {

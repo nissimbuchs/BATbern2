@@ -215,15 +215,6 @@ export const updateUserSettings = async (
 };
 
 /**
- * Get user activity history
- */
-export const getUserActivity = async (limit?: number): Promise<UserActivity[]> => {
-  const params = limit ? `?limit=${limit}` : '';
-  const response = await apiClient.get(`${USER_API_PATH}/me/activity${params}`);
-  return response.data;
-};
-
-/**
  * Remove profile picture
  */
 export const removeProfilePicture = async (): Promise<void> => {

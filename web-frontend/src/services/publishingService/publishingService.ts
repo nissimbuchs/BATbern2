@@ -18,7 +18,6 @@ import type {
   PublishingStatusResponse,
   AutoPublishScheduleRequest,
   AutoPublishScheduleResponse,
-  CancelAutoPublishResponse,
 } from '@/types/event.types';
 
 /**
@@ -84,23 +83,6 @@ async function scheduleAutoPublish(
 }
 
 /**
- * Cancel auto-publish schedule for a phase
- *
- * @param eventCode - Event code
- * @param phase - Phase to cancel auto-publish
- * @returns Cancellation confirmation
- */
-async function cancelAutoPublish(
-  eventCode: string,
-  phase: PublishingPhase
-): Promise<CancelAutoPublishResponse> {
-  // TODO: Backend will use phase parameter when implementing phase-specific schedules
-  console.debug('cancelAutoPublish called for phase:', phase);
-  const response = await apiClient.delete(`/events/${eventCode}/publish/schedule`);
-  return response.data;
-}
-
-/**
  * Publishing Service
  * Exported as singleton for consistent usage across components
  */
@@ -109,14 +91,7 @@ export const publishingService = {
   unpublishPhase,
   getPublishingStatus,
   scheduleAutoPublish,
-  cancelAutoPublish,
 };
 
 // Also export individual functions for easier testing/mocking
-export {
-  publishPhase,
-  unpublishPhase,
-  getPublishingStatus,
-  scheduleAutoPublish,
-  cancelAutoPublish,
-};
+export { publishPhase, unpublishPhase, getPublishingStatus, scheduleAutoPublish };
