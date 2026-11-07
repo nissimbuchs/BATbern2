@@ -104,11 +104,30 @@ public class UserMergeService {
     @Transactional
     public Result merge(String targetUsername, String sourceUsername, String performedBy, String trigger,
             boolean carryAddresses) {
+        return merge(targetUsername, sourceUsername, performedBy, trigger, carryAddresses, false);
+    }
+
+    /**
+     * #1244 step 3 (owner decision 2026-11-07): two accounts of one person that both have a login. Only
+     * after the person proved both mailboxes ({@link ProfileClaimService#confirm}); the caller removes
+     * the source's login. Recorded as SELF_CLAIM; the source's addresses become confirmed addresses of
+     * the target. Organizers never reach this.
+     */
+    @Transactional
+    public Result mergeLoginAccount(String targetUsername, String sourceUsername) {
+        return merge(targetUsername, sourceUsername, targetUsername, ProfileClaimService.TRIGGER, true, true);
+    }
+
+    private Result merge(String targetUsername, String sourceUsername, String performedBy, String trigger,
+            boolean carryAddresses, boolean allowSourceLogin) {
         User target = userRepository.findByUsernameForUpdate(targetUsername)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + targetUsername, true));
         User source = userRepository.findByUsernameForUpdate(sourceUsername)
                 .orElseThrow(() -> new UserNotFoundException("User not found: " + sourceUsername, true));
         List<String> reasons = profileReasons(target, source);
+        if (allowSourceLogin) {
+            reasons = reasons.stream().filter(SAME_PROFILE::equals).toList();
+        }
         if (!reasons.isEmpty()) {
             throw new MergeNotAllowedException(reasons);
         }
@@ -186,6 +205,7 @@ public class UserMergeService {
         s.put("id", source.getId().toString());
         s.put("username", source.getUsername());
         s.put("email", source.getEmail());
+        s.put("hadLogin", source.getCognitoUserId() != null);
         s.put("firstName", source.getFirstName());
         s.put("lastName", source.getLastName());
         s.put("companyId", source.getCompanyId());

@@ -772,6 +772,39 @@ paths:
       security:
         - BearerAuth: []
 
+  /users/me/account-merges:
+    post:
+      tags:
+        - Profile Merge
+      summary: Ask to merge a second account of the caller that has its own login
+      description: |
+        #1244 step 3 (owner decision 2026-11-07). For a person with two accounts that both have a
+        login (first the company address, later a private one). `email` must be the primary
+        address of another account with a login, else 404 (the caller's own address, an unknown
+        address, an account without login). A link goes to that address; confirming it under the
+        caller's login (`POST /users/me/profile-claims/confirm`) proves both mailboxes and merges
+        the other account into the caller's. Organizers cannot do this for others.
+      operationId: requestAccountMerge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/AccountMergeRequest'
+      responses:
+        '202':
+          description: The link was sent to the other address
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /users/me/profile-claims/confirm:
     post:
       tags:
@@ -782,6 +815,12 @@ paths:
         is bound to the caller: a link opened under another login is refused with 403
         `CLAIM_OTHER_ACCOUNT`. A link for a profile that is already merged returns
         `alreadyMerged: true`.
+
+        #1244 step 3: when the link came from `POST /users/me/account-merges` (the other profile has
+        its own login), that login is disabled first, the profile is merged with its addresses as
+        confirmed addresses of the caller, and the login is deleted. If the merge fails the login is
+        enabled again (502 when event-management did not answer); if it cannot be disabled nothing
+        is merged.
       operationId: confirmProfileClaim
       requestBody:
         required: true
@@ -3014,6 +3053,16 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/UserMergePreview'
+    AccountMergeRequest:
+      type: object
+      required: [email]
+      additionalProperties: false
+      properties:
+        email:
+          type: string
+          format: email
+          maxLength: 255
+          description: Primary address of the other account
     ProfileClaimRequest:
       type: object
       required: [candidateId]

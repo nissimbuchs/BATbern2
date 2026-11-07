@@ -314,6 +314,31 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/me/account-merges': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ask to merge a second account of the caller that has its own login
+     * @description #1244 step 3 (owner decision 2026-11-07). For a person with two accounts that both have a
+     *     login (first the company address, later a private one). `email` must be the primary
+     *     address of another account with a login, else 404 (the caller's own address, an unknown
+     *     address, an account without login). A link goes to that address; confirming it under the
+     *     caller's login (`POST /users/me/profile-claims/confirm`) proves both mailboxes and merges
+     *     the other account into the caller's. Organizers cannot do this for others.
+     */
+    post: operations['requestAccountMerge'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/me/profile-claims/confirm': {
     parameters: {
       query?: never;
@@ -329,6 +354,12 @@ export interface paths {
      *     is bound to the caller: a link opened under another login is refused with 403
      *     `CLAIM_OTHER_ACCOUNT`. A link for a profile that is already merged returns
      *     `alreadyMerged: true`.
+     *
+     *     #1244 step 3: when the link came from `POST /users/me/account-merges` (the other profile has
+     *     its own login), that login is disabled first, the profile is merged with its addresses as
+     *     confirmed addresses of the caller, and the login is deleted. If the merge fails the login is
+     *     enabled again (502 when event-management did not answer); if it cannot be disabled nothing
+     *     is merged.
      */
     post: operations['confirmProfileClaim'];
     delete?: never;
@@ -1551,6 +1582,13 @@ export interface components {
       /** @description Both profiles and what would move; absent once the request is decided */
       preview?: components['schemas']['UserMergePreview'] | null;
     };
+    AccountMergeRequest: {
+      /**
+       * Format: email
+       * @description Primary address of the other account
+       */
+      email: string;
+    };
     ProfileClaimRequest: {
       /** Format: uuid */
       candidateId: string;
@@ -2694,6 +2732,32 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  requestAccountMerge: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['AccountMergeRequest'];
+      };
+    };
+    responses: {
+      /** @description The link was sent to the other address */
+      202: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
   };

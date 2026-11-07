@@ -6,6 +6,7 @@ import ch.batbern.companyuser.client.EventManagementUserMergeClient;
 import ch.batbern.companyuser.domain.ProfileMergeRequest;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
+import ch.batbern.companyuser.dto.generated.AccountMergeRequest;
 import ch.batbern.companyuser.dto.generated.ConfirmProfileClaimRequest;
 import ch.batbern.companyuser.dto.generated.ProfileClaimCandidate;
 import ch.batbern.companyuser.dto.generated.ProfileClaimConfirmResponse;
@@ -105,6 +106,13 @@ public class UserMergeController implements ProfileMergeApi {
     public ResponseEntity<ProfileClaimConfirmResponse> confirmProfileClaim(ConfirmProfileClaimRequest request) {
         boolean merged = claimService.confirm(request.getToken());
         return ResponseEntity.ok(new ProfileClaimConfirmResponse().merged(merged).alreadyMerged(!merged));
+    }
+
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<Void> requestAccountMerge(AccountMergeRequest request) {
+        claimService.requestAccountMerge(request.getEmail());
+        return ResponseEntity.accepted().build();
     }
 
     // ---------------------------------------------------------------- #1237 merge requests
