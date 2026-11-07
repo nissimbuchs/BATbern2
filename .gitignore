@@ -122,6 +122,7 @@ web-frontend/build/
 web-frontend/.next/
 web-frontend/.nuxt/
 web-frontend/coverage/
+web-frontend/.vitest/
 web-frontend/.vite/
 web-frontend/.storybook-out/
 *.tsbuildinfo
