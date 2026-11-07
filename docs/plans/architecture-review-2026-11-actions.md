@@ -19,8 +19,8 @@ go before work starts. Items marked **owner** are decisions, not implementation.
 ## Owner decisions 2026-11-07
 
 All open questions answered. Recorded here so stories need no further sign-off on scope:
-- Stop and remove the SpeakerCoordination ECS service and stack in production. (AttendeeExperience,
-  0 tasks, was not asked: include it in the same story only after a one-line owner confirm.)
+- Stop and remove the SpeakerCoordination AND AttendeeExperience ECS services and stacks in production
+  (AttendeeExperience confirmed by owner 2026-11-07).
 - Remove the EventBridge bus and its publishers. Keep the in-process Spring events:
   `EventBridgeEventPublisher` also publishes via `ApplicationEventPublisher`, and 2 `@EventListener`s
   consume those event types (checked 2026-11-07).
@@ -47,7 +47,7 @@ the same story.
 | # | Story | Contents | Depends on |
 |---|---|---|---|
 | 17.1 | Dead API surface | delete `speakers-api`, `attendees-api` specs; 6 orphan endpoints incl. `slides-online/send`; FE `getPublishPreview` + `fetchPreview` | – |
-| 17.2 | Dormant infrastructure | stop + remove SpeakerCoordination service/stack; remove EventBridge bus, `EventBridgeEventPublisher`, `EventBridgeConfig`, publisher wiring in 5 services, keeping Spring events. Infra change: not on an event day | – |
+| 17.2 | Dormant infrastructure | stop + remove SpeakerCoordination and AttendeeExperience services/stacks; remove EventBridge bus, `EventBridgeEventPublisher`, `EventBridgeConfig`, publisher wiring in 5 services, keeping Spring events. Infra change: not on an event day | – |
 | 17.3 | Frontend path contract check | CI fails when `web-frontend/src/services/**` calls a path not in `docs/api/` | 17.1 |
 | 17.4 | OpenAPI lint + spec-diff report | Spectral rules (kebab-case, UUID params only nested, no `/internal` in public specs, no verb endpoints); PR comment listing added ops next to most similar existing ops | 17.1 |
 | 17.5 | ArchUnit freeze | `FreezingArchRule` for the 5 vertical EMS packages + "no new client toward an upstream service" in all services | – |
