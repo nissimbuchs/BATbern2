@@ -123,6 +123,11 @@ public class BatbernAiService {
         return aiConfig.getApiKey();
     }
 
+    /** AI switched on and an API key configured; otherwise every call returns empty. */
+    public boolean isAvailable() {
+        return aiConfig.isAiEnabled() && openAiClient != null;
+    }
+
     /**
      * Generates an event description with the configured chat model.
      *

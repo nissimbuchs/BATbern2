@@ -41,20 +41,48 @@ export function useAiGenerateDescription(eventCode: string) {
   });
 }
 
-export function useAiGenerateThemeImage(eventCode: string) {
+interface ThemeImageJob {
+  jobId: string;
+  status: 'PENDING' | 'DONE' | 'FAILED';
+  imageUrl?: string | null;
+  s3Key?: string | null;
+}
+
+/**
+ * 2026-11-07: an image takes about 40 s; the AWS HTTP API ends every request at 30 s. The POST
+ * starts a job (202) and this hook polls it until DONE or FAILED, giving up after `maxWaitMs`.
+ */
+export function useAiGenerateThemeImage(
+  eventCode: string,
+  { pollMs = 3000, maxWaitMs = 150_000 }: { pollMs?: number; maxWaitMs?: number } = {}
+) {
   const { t } = useTranslation('organizer');
 
   return useMutation<ThemeImageResponse, Error, ThemeImageRequest>({
     mutationFn: async (req) => {
       try {
         const qs = req.seed ? `?seed=${encodeURIComponent(req.seed)}` : '';
-        const response = await apiClient.post<ThemeImageResponse>(
+        const started = await apiClient.post<ThemeImageJob>(
           `/events/${eventCode}/ai/theme-image${qs}`
         );
-        return response.data;
+        const jobId = started.data.jobId;
+        const deadline = Date.now() + maxWaitMs;
+        while (Date.now() < deadline) {
+          await new Promise((resolve) => setTimeout(resolve, pollMs));
+          const { data: job } = await apiClient.get<ThemeImageJob>(
+            `/events/${eventCode}/ai/theme-image/jobs/${jobId}`
+          );
+          if (job.status === 'DONE' && job.imageUrl) {
+            return { imageUrl: job.imageUrl, s3Key: job.s3Key ?? '' };
+          }
+          if (job.status === 'FAILED') {
+            break;
+          }
+        }
       } catch {
-        throw new Error(t('aiAssist.error'));
+        // fall through to the one error message
       }
+      throw new Error(t('aiAssist.error'));
     },
   });
 }

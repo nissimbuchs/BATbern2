@@ -59,6 +59,10 @@ Only items that are not live yet. Everything else is listed under its release be
 **Improvement — One "next dates" section on the homepage**:
 - ✅ The homepage showed upcoming events twice: "Nächste BAT-Termine" (the next three, date and title) and "Weitere kommende Veranstaltungen" (full cards, published events only). There is now one section, "Nächste BAT-Termine", with the next three events: full cards for published events, date and title for planned ones. It also appears on archive pages.
 
+**Bug Fixes — Theme image and event type (2026-11-07)**:
+- ✅ "Generate with AI" for the theme image still failed after the model change: an image now takes about 40 seconds, and every request to the platform ends after 30 seconds, so the finished image never reached the page. The image is now generated in the background and the page waits for it (up to two and a half minutes).
+- ✅ The event type (full day, afternoon, evening) can be changed again on the event page; saving it failed with an error since the API consolidation in October.
+
 **Bug Fix — "Generate with AI" theme image works again**:
 - ✅ The theme image could not be generated: OpenAI had retired the image model the platform used. All AI functions (theme image, event description, abstract review, trending topics) now use OpenAI's current model automatically, so a retired model no longer breaks them. The trending topics suggestions had also fallen back to a fixed list several times a week; they now read the answer correctly.
 

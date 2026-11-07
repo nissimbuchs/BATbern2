@@ -102,8 +102,30 @@ export interface paths {
     };
     get?: never;
     put?: never;
-    /** Generate AI theme image (DALL-E 3), upload to S3. Looks up event/topic data from eventCode. */
+    /**
+     * Start generating an AI theme image; poll the returned job.
+     * @description Generation takes about 40 s, longer than the 30 s the AWS HTTP API allows per request
+     *     (2026-11-07). The image is generated in the background and stored in S3; poll
+     *     `GET /events/{eventCode}/ai/theme-image/jobs/{jobId}` until the status is DONE or FAILED.
+     */
     post: operations['generateThemeImage'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/events/{eventCode}/ai/theme-image/jobs/{jobId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /** State of a theme image generation; DONE carries the image URL and S3 key */
+    get: operations['getThemeImageJob'];
+    put?: never;
+    post?: never;
     delete?: never;
     options?: never;
     head?: never;
@@ -150,6 +172,14 @@ export interface components {
   schemas: {
     AiDescriptionResponse: {
       description?: string;
+    };
+    AiThemeImageJob: {
+      /** Format: uuid */
+      jobId: string;
+      /** @enum {string} */
+      status: 'PENDING' | 'DONE' | 'FAILED';
+      imageUrl?: string | null;
+      s3Key?: string | null;
     };
     AiThemeImageResponse: {
       imageUrl?: string;
@@ -454,13 +484,13 @@ export interface operations {
     };
     requestBody?: never;
     responses: {
-      /** @description Generated theme image URL and S3 key */
-      200: {
+      /** @description Generation started */
+      202: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': components['schemas']['AiThemeImageResponse'];
+          'application/json': components['schemas']['AiThemeImageJob'];
         };
       };
       401: components['responses']['Unauthorized'];
@@ -473,6 +503,38 @@ export interface operations {
         content: {
           'application/json': components['schemas']['ErrorResponse'];
         };
+      };
+    };
+  };
+  getThemeImageJob: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        eventCode: string;
+        jobId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Job state */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AiThemeImageJob'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      /** @description Unknown job (expired after one hour, or the service restarted) */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
       };
     };
   };

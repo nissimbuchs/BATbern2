@@ -12,6 +12,8 @@ import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.service.BatbernAiService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
@@ -23,10 +25,12 @@ import java.time.Instant;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -96,13 +100,14 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
             .andExpect(jsonPath("$.description").isNotEmpty());
     }
 
+    // 2026-11-07: an image takes ~40 s, the AWS HTTP API cuts every request at 30 s, so the
+    // generation runs in the background: POST answers 202 with a job, the page polls the job.
+
     @Test
     @WithMockUser(roles = "ORGANIZER")
-    void generateThemeImage_whenAiReturnsEmpty_returns503() throws Exception {
+    void generateThemeImage_whenAiUnavailable_returns503() throws Exception {
         when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(buildEvent()));
-        when(topicRepository.findByTopicCode("cloud-native")).thenReturn(Optional.of(buildTopic()));
-        when(aiService.generateThemeImage(anyString(), any(), any()))
-            .thenReturn(Optional.empty());
+        when(aiService.isAvailable()).thenReturn(false);
 
         mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image"))
             .andExpect(status().isServiceUnavailable());
@@ -110,18 +115,70 @@ class AiAssistControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
-    void generateThemeImage_whenAiReturnsResult_returns200() throws Exception {
+    void generateThemeImage_returns202_andTheJobEndsDoneWithTheImage() throws Exception {
         when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(buildEvent()));
         when(topicRepository.findByTopicCode("cloud-native")).thenReturn(Optional.of(buildTopic()));
+        when(aiService.isAvailable()).thenReturn(true);
         var result = new BatbernAiService.ThemeImageResult(
             "https://cdn.batbern.ch/ai-themes/abc.png", "ai-themes/abc.png");
         when(aiService.generateThemeImage(anyString(), any(), any()))
             .thenReturn(Optional.of(result));
 
-        mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image"))
-            .andExpect(status().isOk())
-            .andExpect(jsonPath("$.imageUrl").isNotEmpty())
-            .andExpect(jsonPath("$.s3Key").isNotEmpty());
+        String jobId = startJob();
+        JsonNode job = awaitJob(jobId);
+
+        assertThat(job.path("status").asText()).isEqualTo("DONE");
+        assertThat(job.path("imageUrl").asText()).isEqualTo("https://cdn.batbern.ch/ai-themes/abc.png");
+        assertThat(job.path("s3Key").asText()).isEqualTo("ai-themes/abc.png");
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void generateThemeImage_whenGenerationFails_jobEndsFailed() throws Exception {
+        when(eventRepository.findByEventCode("BATbern99")).thenReturn(Optional.of(buildEvent()));
+        when(topicRepository.findByTopicCode("cloud-native")).thenReturn(Optional.of(buildTopic()));
+        when(aiService.isAvailable()).thenReturn(true);
+        when(aiService.generateThemeImage(anyString(), any(), any())).thenReturn(Optional.empty());
+
+        JsonNode job = awaitJob(startJob());
+
+        assertThat(job.path("status").asText()).isEqualTo("FAILED");
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    void themeImageJob_unknown_returns404() throws Exception {
+        mockMvc.perform(get("/api/v1/events/BATbern99/ai/theme-image/jobs/00000000-0000-0000-0000-000000000000"))
+            .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @WithMockUser(roles = "SPEAKER")
+    void themeImageJob_nonOrganizer_returns403() throws Exception {
+        mockMvc.perform(get("/api/v1/events/BATbern99/ai/theme-image/jobs/00000000-0000-0000-0000-000000000000"))
+            .andExpect(status().isForbidden());
+    }
+
+    private String startJob() throws Exception {
+        String body = mockMvc.perform(post("/api/v1/events/BATbern99/ai/theme-image"))
+            .andExpect(status().isAccepted())
+            .andExpect(jsonPath("$.status").value("PENDING"))
+            .andReturn().getResponse().getContentAsString();
+        return new ObjectMapper().readTree(body).path("jobId").asText();
+    }
+
+    private JsonNode awaitJob(String jobId) throws Exception {
+        for (int i = 0; i < 100; i++) {
+            String body = mockMvc.perform(get("/api/v1/events/BATbern99/ai/theme-image/jobs/" + jobId))
+                .andExpect(status().isOk())
+                .andReturn().getResponse().getContentAsString();
+            JsonNode job = new ObjectMapper().readTree(body);
+            if (!"PENDING".equals(job.path("status").asText())) {
+                return job;
+            }
+            Thread.sleep(50);
+        }
+        throw new AssertionError("theme image job still pending: " + jobId);
     }
 
     @Test
