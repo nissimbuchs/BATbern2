@@ -23,7 +23,6 @@ flowchart LR
     GW -->|"path prefix, headers copied"| EMS["event-management-service"]
     GW --> CUMS["company-user-management-service"]
     GW --> PCS["partner-coordination-service"]
-    GW -.->|"/api/v1/content only"| AES["attendee-experience-service"]
     GW -->|"/internal/** denyAll"| X["403"]
     EMS <-->|"/internal/** no JWT,<br/>Service Connect inside the VPC"| CUMS
     PCS -->|"/internal/users"| CUMS
@@ -39,8 +38,6 @@ route without an authorizer; the Spring gateway (`api-gateway/`) authenticates a
 prefix in `DomainRouter.determineTargetService`, and copies the incoming headers, including
 `Authorization`, to the service (`DomainRouter.routeRequest`). Service URLs are Service Connect
 names (`http://event-management:8080`, see `api-gateway-service-stack.ts`).
-speaker-coordination-service has no gateway route; attendee-experience-service receives only
-`/api/v1/content/**`.
 
 ### Package layout
 
@@ -344,7 +341,7 @@ with `NotFoundException`, `ValidationException`, `InvalidStateTransitionExceptio
 
 ### Global Exception Handler
 
-Each service has its own `GlobalExceptionHandler` (`@RestControllerAdvice` in EMS, CUMS, PCS and SCS;
+Each service has its own `GlobalExceptionHandler` (`@RestControllerAdvice` in EMS, CUMS and PCS;
 `@ControllerAdvice` in the gateway). The EMS handler has 60 `@ExceptionHandler` methods, among them
 `MethodArgumentNotValidException`, `ConstraintViolationException`, `PropertyReferenceException`,
 `HttpMessageNotReadableException` and `MethodArgumentTypeMismatchException` (all 400),

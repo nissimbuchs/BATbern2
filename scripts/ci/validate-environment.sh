@@ -25,9 +25,7 @@ fi
 # Services to check
 SERVICES=(
     "event-management-service"
-    "speaker-coordination-service"
     "partner-coordination-service"
-    "attendee-experience-service"
     "company-user-management-service"
 )
 

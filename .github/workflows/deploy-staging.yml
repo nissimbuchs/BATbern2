@@ -173,19 +173,9 @@ jobs:
             CHANGED_SERVICES="$CHANGED_SERVICES event-management"
           fi
 
-          if echo "$CHANGED_FILES" | grep -q "^services/speaker-coordination-service/"; then
-            echo "✓ Speaker Coordination service changed"
-            CHANGED_SERVICES="$CHANGED_SERVICES speaker-coordination"
-          fi
-
           if echo "$CHANGED_FILES" | grep -q "^services/partner-coordination-service/"; then
             echo "✓ Partner Coordination service changed"
             CHANGED_SERVICES="$CHANGED_SERVICES partner-coordination"
-          fi
-
-          if echo "$CHANGED_FILES" | grep -q "^services/attendee-experience-service/"; then
-            echo "✓ Attendee Experience service changed"
-            CHANGED_SERVICES="$CHANGED_SERVICES attendee-experience"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "^services/company-user-management-service/"; then
@@ -423,14 +413,8 @@ jobs:
               company-management)
                 ECS_SERVICE_PATTERN="BATbern-staging-CompanyManagement-Service"
                 ;;
-              speaker-coordination)
-                ECS_SERVICE_PATTERN="BATbern-staging-SpeakerCoordination-Service"
-                ;;
               partner-coordination)
                 ECS_SERVICE_PATTERN="BATbern-staging-PartnerCoordination-Service"
-                ;;
-              attendee-experience)
-                ECS_SERVICE_PATTERN="BATbern-staging-AttendeeExperience-Service"
                 ;;
               api-gateway-service|api-gateway)
                 ECS_SERVICE_PATTERN="BATbern-staging-ApiGatewayService-Service"
@@ -491,7 +475,7 @@ jobs:
           CHANGED_SERVICES="${{ steps.changes.outputs.changed_services }}"
           VALIDATION_FAILED=false
 
-          for SERVICE in event-management-service speaker-coordination-service partner-coordination-service attendee-experience-service company-user-management-service api-gateway; do
+          for SERVICE in event-management-service partner-coordination-service company-user-management-service api-gateway; do
             # Only check services that are being deployed
             if [ "${{ steps.changes.outputs.deploy_all }}" = "true" ] || echo "$CHANGED_SERVICES" | grep -q "$SERVICE" || [ "$CHANGED_SERVICES" = "all-services" ]; then
               REPO_NAME="batbern/staging/${SERVICE}"
@@ -546,7 +530,7 @@ jobs:
           elif [ "$CHANGED_SERVICES" = "all-services" ]; then
             # Shared kernel changed - deploy all service stacks
             echo "🔄 Shared kernel changed: deploying all service stacks"
-            STACKS_TO_DEPLOY="BATbern-staging-EventManagement BATbern-staging-SpeakerCoordination BATbern-staging-PartnerCoordination BATbern-staging-AttendeeExperience BATbern-staging-CompanyManagement BATbern-staging-ApiGatewayService BATbern-staging-ApiGateway"
+            STACKS_TO_DEPLOY="BATbern-staging-EventManagement BATbern-staging-PartnerCoordination BATbern-staging-CompanyManagement BATbern-staging-ApiGatewayService BATbern-staging-ApiGateway"
           else
             # Selective deployment: only deploy changed service stacks
             echo "🎯 Selective deployment: deploying only changed service stacks"
@@ -557,19 +541,9 @@ jobs:
               STACKS_TO_DEPLOY="$STACKS_TO_DEPLOY BATbern-staging-EventManagement"
             fi
 
-            if echo "$CHANGED_SERVICES" | grep -q "speaker-coordination"; then
-              echo "  ✓ Speaker Coordination service"
-              STACKS_TO_DEPLOY="$STACKS_TO_DEPLOY BATbern-staging-SpeakerCoordination"
-            fi
-
             if echo "$CHANGED_SERVICES" | grep -q "partner-coordination"; then
               echo "  ✓ Partner Coordination service"
               STACKS_TO_DEPLOY="$STACKS_TO_DEPLOY BATbern-staging-PartnerCoordination"
-            fi
-
-            if echo "$CHANGED_SERVICES" | grep -q "attendee-experience"; then
-              echo "  ✓ Attendee Experience service"
-              STACKS_TO_DEPLOY="$STACKS_TO_DEPLOY BATbern-staging-AttendeeExperience"
             fi
 
             if echo "$CHANGED_SERVICES" | grep -q "company-management"; then
@@ -772,44 +746,6 @@ jobs:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Deploy Layer 4.3 - Speaker Coordination Service
-        id: deploy-speaker
-        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        continue-on-error: true
-        timeout-minutes: 25
-        working-directory: ./infrastructure
-        run: |
-          echo "🏗️  Layer 4.3: Speaker Coordination Service"
-          npm run deploy:staging:layer4-speaker-coordination --context version=${{ github.sha }}
-        env:
-          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
-
-      - name: Cleanup stuck Speaker Coordination deployment
-        if: steps.deploy-speaker.outcome == 'failure'
-        run: |
-          STACK="BATbern-staging-SpeakerCoordination"
-          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
-          echo "⚠️  Speaker Coordination deploy failed. Stack status: $STATUS"
-          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
-            echo "Stack is stuck — cancelling update..."
-            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
-            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
-            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
-            echo "✅ Stack recovered"
-          elif [[ "$STATUS" == *"FAILED"* ]]; then
-            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
-            echo "✅ Stack recovered"
-          else
-            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
-          fi
-
-      - name: Re-authenticate after Speaker Coordination
-        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-
       - name: Deploy Layer 4.4 - Partner Coordination Service
         id: deploy-partner
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
@@ -842,44 +778,6 @@ jobs:
           fi
 
       - name: Re-authenticate after Partner Coordination
-        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Deploy Layer 4.5 - Attendee Experience Service
-        id: deploy-attendee
-        if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
-        continue-on-error: true
-        timeout-minutes: 25
-        working-directory: ./infrastructure
-        run: |
-          echo "🏗️  Layer 4.5: Attendee Experience Service"
-          npm run deploy:staging:layer4-attendee-experience --context version=${{ github.sha }}
-        env:
-          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
-
-      - name: Cleanup stuck Attendee Experience deployment
-        if: steps.deploy-attendee.outcome == 'failure'
-        run: |
-          STACK="BATbern-staging-AttendeeExperience"
-          STATUS=$(aws cloudformation describe-stacks --stack-name "$STACK" --region ${{ env.AWS_REGION }} --query 'Stacks[0].StackStatus' --output text 2>/dev/null || echo "UNKNOWN")
-          echo "⚠️  Attendee Experience deploy failed. Stack status: $STATUS"
-          if [[ "$STATUS" == *"IN_PROGRESS"* ]]; then
-            echo "Stack is stuck — cancelling update..."
-            aws cloudformation cancel-update-stack --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || true
-            timeout 120 aws cloudformation wait stack-rollback-complete --stack-name "$STACK" --region ${{ env.AWS_REGION }} 2>/dev/null || \
-            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
-            echo "✅ Stack recovered"
-          elif [[ "$STATUS" == *"FAILED"* ]]; then
-            aws cloudformation continue-update-rollback --stack-name "$STACK" --resources-to-skip ServiceD69D759B --region ${{ env.AWS_REGION }} 2>/dev/null || true
-            echo "✅ Stack recovered"
-          else
-            echo "ℹ️  Stack not stuck ($STATUS) — CDK error, no cleanup needed"
-          fi
-
-      - name: Re-authenticate after Attendee Experience
         if: steps.prepare-deployment.outputs.use_layer_deployment == 'true'
         uses: aws-actions/configure-aws-credentials@v4
         with:
@@ -926,9 +824,7 @@ jobs:
           FAILED=""
           [ "${{ steps.deploy-company.outcome }}" = "failure" ] && FAILED="$FAILED CompanyManagement"
           [ "${{ steps.deploy-event.outcome }}" = "failure" ] && FAILED="$FAILED EventManagement"
-          [ "${{ steps.deploy-speaker.outcome }}" = "failure" ] && FAILED="$FAILED SpeakerCoordination"
           [ "${{ steps.deploy-partner.outcome }}" = "failure" ] && FAILED="$FAILED PartnerCoordination"
-          [ "${{ steps.deploy-attendee.outcome }}" = "failure" ] && FAILED="$FAILED AttendeeExperience"
           [ "${{ steps.deploy-gateway.outcome }}" = "failure" ] && FAILED="$FAILED ApiGateway"
           if [ -n "$FAILED" ]; then
             echo "::warning::The following services failed to deploy (stacks auto-recovered):$FAILED"
@@ -999,23 +895,6 @@ jobs:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
           aws-region: ${{ env.AWS_REGION }}
 
-      - name: Selective Deploy - Speaker Coordination
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'speaker-coordination') || steps.changes.outputs.changed_services == 'all-services')
-        timeout-minutes: 25
-        working-directory: ./infrastructure
-        run: |
-          echo "🎯 Selective deployment: Speaker Coordination Service"
-          npm run deploy:staging:layer4-speaker-coordination --context version=${{ github.sha }}
-        env:
-          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
-
-      - name: Re-authenticate after Speaker Coordination (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'speaker-coordination') || steps.changes.outputs.changed_services == 'all-services')
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-
       - name: Selective Deploy - Partner Coordination
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'partner-coordination') || steps.changes.outputs.changed_services == 'all-services')
         timeout-minutes: 25
@@ -1028,23 +907,6 @@ jobs:
 
       - name: Re-authenticate after Partner Coordination (selective)
         if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'partner-coordination') || steps.changes.outputs.changed_services == 'all-services')
-        uses: aws-actions/configure-aws-credentials@v4
-        with:
-          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
-          aws-region: ${{ env.AWS_REGION }}
-
-      - name: Selective Deploy - Attendee Experience
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'attendee-experience') || steps.changes.outputs.changed_services == 'all-services')
-        timeout-minutes: 25
-        working-directory: ./infrastructure
-        run: |
-          echo "🎯 Selective deployment: Attendee Experience Service"
-          npm run deploy:staging:layer4-attendee-experience --context version=${{ github.sha }}
-        env:
-          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
-
-      - name: Re-authenticate after Attendee Experience (selective)
-        if: steps.deployment-strategy.outputs.code_only != 'true' && steps.prepare-deployment.outputs.use_layer_deployment != 'true' && (contains(steps.changes.outputs.changed_services, 'attendee-experience') || steps.changes.outputs.changed_services == 'all-services')
         uses: aws-actions/configure-aws-credentials@v4
         with:
           role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
@@ -1107,9 +969,7 @@ jobs:
           if aws ecs describe-clusters --clusters batbern-staging --region ${{ env.AWS_REGION }} 2>/dev/null; then
             services=(
               "event-management-service"
-              "speaker-coordination-service"
               "partner-coordination-service"
-              "attendee-experience-service"
               "company-user-management-service"
             )
 

@@ -27,14 +27,26 @@ refine = true
 [[entry]]
 id = 2
 type = "story"
-title = "Stub services and event bus gone from production"
-description = "17.2: removes the SpeakerCoordination and AttendeeExperience services, stacks and modules and the EventBridge bus; DomainEventPublisher keeps working on in-process Spring events. A person picks a deploy date that is not an event day."
-verify = "aws ecs list-services and aws events list-event-buses in production list neither stub service nor the batbern-staging bus, and an integration test per in-process listener still sees its event."
+title = "Stub services gone from production"
+description = "17.2 part A: removes the SpeakerCoordination and AttendeeExperience services, stacks, ECR repos and modules, their CI, deploy, dev-native and compose entries and the gateway route /api/v1/content/**; orphaned stacks are deleted after the deploy."
+verify = "aws ecs list-services in production lists neither stub service, CloudFormation has no BATbern-staging-SpeakerCoordination or -AttendeeExperience stack, and make dev-native-up starts the remaining services."
 covers = ["R2"]
 after = [1]
 hitl = true
 risk = "high"
-notes = ["Closes #1216 and the bus part of #1220."]
+notes = ["Closes #1216."]
+
+[[entry]]
+id = "2b"
+type = "story"
+title = "Event bus gone, domain events in process"
+description = "17.2 part B: DomainEventPublisher keeps its callers but only calls ApplicationEventPublisher; EventBridgeConfig, EventBridgeEventPublisher, the EventBus stack, the CUMS and PCS bus imports and grants and the never-firing PublishingFailures alarm are removed."
+verify = "aws events list-event-buses in production no longer lists batbern-staging, no code depends on software.amazon.awssdk.services.eventbridge, and an integration test per in-process listener (4) sees its event through the real publisher."
+covers = ["R2"]
+after = [2]
+hitl = true
+risk = "high"
+notes = ["Closes the bus part of #1220."]
 
 [[entry]]
 id = 4
@@ -80,6 +92,6 @@ title = "Refactor sweep"
 description = "Clean-up only, scoped at its start from the plans and review findings this epic deferred."
 verify = "The deferred items listed at its start are closed or moved to a new story, and CI on develop is green."
 covers = []
-after = [1, 3, 2, 4, 5, "168c"]
+after = [1, 3, 2, "2b", 4, 5, "168c"]
 hitl = false
 risk = "low"

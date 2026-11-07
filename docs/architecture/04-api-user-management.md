@@ -1315,7 +1315,6 @@ PaginationMetadata:
 ```
 
 **Event Consumers**:
-- Speaker Coordination Service: Associates speaker records with user accounts
 - Partner Coordination Service: Associates partner contacts with user accounts
 - Event Management Service: Updates event registrations and attendance
 - Notification Service: Triggers welcome emails and notification setup

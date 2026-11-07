@@ -100,3 +100,20 @@ So the decision above is implemented in code ownership (all speaker and attendee
 EMS and partner-coordination) but only partly in the runtime: SCS still runs a Fargate task that
 serves nothing, and the gateway still routes one prefix to the parked AES. See #1216.
 
+
+## Operational state (2026-11, Story 17.2 part A)
+
+Both stub services are removed from the code: the two Gradle modules, their CDK stacks
+(`BATbern-staging-SpeakerCoordination`, `-AttendeeExperience`), their entries in the CICD
+stack's ECR list, the build matrix and deploy steps, dev scripts and compose, and the gateway
+route `/api/v1/content/**` with its two service-URL settings. The table above (2026-11-04) is the
+state before that change.
+
+What stays, on purpose: the database table `flyway_schema_history_speaker_coordination` (no
+migration touches it), and the event bus, which is part B of Story 17.2.
+
+Production cleanup is outside the PR and needs the owner's go at each step: drop the two
+`build-services (…)` required checks before merge, then `delete-stack` the two orphaned stacks
+after the deploy. The CICD stack's ECR repositories carry `DeletionPolicy: Retain` in production
+(`isProduction: true`), so removing them from the template leaves both repositories in the
+account; they have to be deleted by hand (`aws ecr delete-repository --force`) as well.

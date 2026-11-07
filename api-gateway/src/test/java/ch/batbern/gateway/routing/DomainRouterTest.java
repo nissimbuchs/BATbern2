@@ -1,5 +1,6 @@
 package ch.batbern.gateway.routing;
 
+import ch.batbern.gateway.routing.exception.RouteNotFoundException;
 import ch.batbern.gateway.routing.exception.RoutingException;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -38,9 +39,7 @@ class DomainRouterTest {
 
         // Set service URL properties using ReflectionTestUtils
         ReflectionTestUtils.setField(domainRouter, "eventManagementUrl", "http://localhost:8081");
-        ReflectionTestUtils.setField(domainRouter, "speakerCoordinationUrl", "http://localhost:8082");
         ReflectionTestUtils.setField(domainRouter, "partnerCoordinationUrl", "http://localhost:8083");
-        ReflectionTestUtils.setField(domainRouter, "attendeeExperienceUrl", "http://localhost:8084");
         ReflectionTestUtils.setField(domainRouter, "companyUserManagementUrl", "http://localhost:8085");
     }
 
@@ -88,7 +87,7 @@ class DomainRouterTest {
     }
 
     // Test 5.2: standalone /api/v1/speakers/* routes no longer exist.
-    // Speaker-coordination became a thin shell in Story 11.C.1 (ADR-009 §6.2); all
+    // Speaker logic moved into EMS in Story 11.C.1 (ADR-009 §6.2); all
     // speaker actions are now scoped under the owning event:
     // /api/v1/events/{code}/speakers/{id}/{action}. The event-scoped form is
     // covered by `should_routeToEventService_when_speakerStatusUpdateEndpointCalled`
@@ -97,7 +96,7 @@ class DomainRouterTest {
     @DisplayName("should_throwRoutingException_when_bareSpeakersPathCalled")
     void should_throwRoutingException_when_bareSpeakersPathCalled() {
         assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/speakers/invite"))
-                .isInstanceOf(ch.batbern.gateway.routing.exception.RoutingException.class)
+                .isInstanceOf(RoutingException.class)
                 .hasMessageContaining("/api/v1/speakers/invite");
     }
 
@@ -151,18 +150,14 @@ class DomainRouterTest {
                 .isEqualTo("partner-coordination-service");
     }
 
-    // Test 5.4: should_routeToAttendeeService_when_contentEndpointCalled
+    // Test 5.4: /api/v1/content/** went to the attendee-experience stub, removed by Story 17.2
+    // (ADR-014). Nothing called it; the prefix now falls through to RouteNotFoundException.
     @Test
-    @DisplayName("should_routeToAttendeeService_when_contentEndpointCalled")
-    void should_routeToAttendeeService_when_contentEndpointCalled() {
-        // Given
-        String requestPath = "/api/v1/content/search";
-
-        // When
-        String targetService = domainRouter.determineTargetService(requestPath);
-
-        // Then
-        assertThat(targetService).isEqualTo("attendee-experience-service");
+    @DisplayName("should_notRoute_when_contentEndpointCalled")
+    void should_notRoute_when_contentEndpointCalled() {
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/content/search"))
+            .isInstanceOf(RouteNotFoundException.class)
+            .hasMessageContaining("/api/v1/content/search");
     }
 
     // Test 5.5: should_routeToCompanyService_when_companiesEndpointCalled
@@ -319,7 +314,7 @@ class DomainRouterTest {
 
         // When / Then
         assertThatThrownBy(() -> domainRouter.determineTargetService(unknownPath))
-            .isInstanceOf(ch.batbern.gateway.routing.exception.RouteNotFoundException.class)
+            .isInstanceOf(RouteNotFoundException.class)
             .hasMessageContaining("No route found for path");
     }
 
@@ -328,7 +323,7 @@ class DomainRouterTest {
     void should_notRoute_when_internalPathRequested() {
         // /internal/** is the VPC-only service API (CUMS users, PCS RSVPs): never proxied.
         assertThatThrownBy(() -> domainRouter.determineTargetService("/internal/users/john.doe"))
-            .isInstanceOf(ch.batbern.gateway.routing.exception.RouteNotFoundException.class);
+            .isInstanceOf(RouteNotFoundException.class);
     }
 
     @Test

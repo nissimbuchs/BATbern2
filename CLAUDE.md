@@ -61,7 +61,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 **Architecture Pattern**: Domain-Driven Design with microservices architecture
 - **Shared Kernel**: Common types, domain events, utilities shared across all services
 - **API Gateway**: Unified entry point handling authentication, rate limiting, and routing
-- **Domain Services**: event management (EMS, also hosts speaker and attendee logic), company/user management (CUMS), partner coordination. Per ADR-014 `speaker-coordination-service` and `attendee-experience-service` are dormant stubs
+- **Domain Services**: event management (EMS, also hosts speaker and attendee logic), company/user management (CUMS), partner coordination. The former speaker and attendee stub services were removed by Story 17.2 (ADR-014)
 - **Infrastructure**: AWS CDK for Infrastructure as Code
 - **Frontend**: React 19 + TypeScript SPA with role-based adaptive UI
 
@@ -152,9 +152,7 @@ make update-deps                # Update safe dependencies (patch/minor)
 ./gradlew :api-gateway:bootRun
 ./gradlew :services:event-management-service:bootRun
 ./gradlew :services:company-user-management-service:bootRun
-./gradlew :services:speaker-coordination-service:bootRun
 ./gradlew :services:partner-coordination-service:bootRun
-./gradlew :services:attendee-experience-service:bootRun
 
 # Run tests for specific service
 ./gradlew :services:event-management-service:test
@@ -200,9 +198,7 @@ BATbern-main/
 ├── services/                         # Domain microservices
 │   ├── company-user-management-service/
 │   ├── event-management-service/
-│   ├── speaker-coordination-service/
-│   ├── partner-coordination-service/
-│   └── attendee-experience-service/
+│   └── partner-coordination-service/
 ├── web-frontend/                     # React 19 + TypeScript SPA
 ├── infrastructure/                   # AWS CDK infrastructure as code
 ├── bruno-tests/                      # API contract tests (Layer 2 E2E)
@@ -242,9 +238,7 @@ make dev-native-up                                   # Start services natively (
 # - API Gateway: http://localhost:8000
 # - Company/User Management: http://localhost:8001
 # - Event Management: http://localhost:8002
-# - Speaker Coordination: http://localhost:8003
 # - Partner Coordination: http://localhost:8004
-# - Attendee Experience: http://localhost:8005
 # - Frontend: http://localhost:8100
 ```
 
@@ -282,9 +276,7 @@ All service logs are written to `/tmp/batbern-1-*.log`:
 tail -f /tmp/batbern-1-api-gateway.log
 tail -f /tmp/batbern-1-company-user-management.log
 tail -f /tmp/batbern-1-event-management.log
-tail -f /tmp/batbern-1-speaker-coordination.log
 tail -f /tmp/batbern-1-partner-coordination.log
-tail -f /tmp/batbern-1-attendee-experience.log
 tail -f /tmp/batbern-1-web-frontend.log
 
 # Search for errors across all services
@@ -729,9 +721,7 @@ All services log to CloudWatch with the naming pattern: `/aws/ecs/BATbern-{env}/
 ```bash
 /aws/ecs/BATbern-staging/api-gateway
 /aws/ecs/BATbern-staging/event-management
-/aws/ecs/BATbern-staging/speaker-coordination
 /aws/ecs/BATbern-staging/partner-coordination
-/aws/ecs/BATbern-staging/attendee-experience
 /aws/ecs/BATbern-staging/company-user-management
 ```
 

@@ -52,33 +52,8 @@ describe('Cost footprint (docs/plans/aws-cost-reduction.md)', () => {
     });
   });
 
-  describe('Tier 1 — the empty service', () => {
-    test('should_documentAttendeeExperienceAsScaledToZero_when_configured', () => {
-      // attendee-experience-service/src/main/java contains exactly one file,
-      // AttendeeExperienceApplication.java. No controllers, no endpoints. It ran 2 Fargate
-      // tasks 24/7 for ~$17/month.
-      //
-      // Scaled to zero rather than deleted: Epic 7 will need this service, and a
-      // desiredCount change is reversible in one deploy where a stack deletion is not.
-      //
-      // Asserted through the config module rather than by synthesising the stack, because
-      // AttendeeExperienceStack requires a Cognito user pool and a database secret that
-      // are not worth constructing to check two numbers.
-      const source = require('fs').readFileSync(
-        `${__dirname}/../../lib/stacks/attendee-experience-stack.ts`,
-        'utf8'
-      );
-      expect(source).toMatch(/desiredCount:\s*0/);
-      expect(source).toMatch(/disableAutoScaling:\s*true/);
-    });
-  });
-
   describe('Tier 2 — task counts', () => {
-    const singleTaskServices = [
-      'partner-coordination-stack.ts',
-      'speaker-coordination-stack.ts',
-      'company-management-stack.ts',
-    ];
+    const singleTaskServices = ['partner-coordination-stack.ts', 'company-management-stack.ts'];
 
     test.each(singleTaskServices)(
       'should_runOneSteadyStateTask_when_%s_configured',

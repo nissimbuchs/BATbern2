@@ -66,8 +66,7 @@ export interface DomainServiceConstructProps {
  * - CloudWatch logging with environment-based retention
  * - IAM permissions for logs and secrets
  *
- * Used by: Event Management, Speaker Coordination, Partner Coordination,
- *          Company Management, and Attendee Experience services
+ * Used by: Event Management, Partner Coordination and Company Management services
  *
  * @returns Object with service property
  */

@@ -5,7 +5,7 @@ name: Build Pipeline
 # Services are implemented in stages:
 #   1. shared-kernel (foundation) - IMPLEMENTED
 #   2. api-gateway (routing layer) - IMPLEMENTED
-#   3. Domain microservices (event-management, speaker-coordination, etc.) - IN PROGRESS
+#   3. Domain microservices (event-management, partner-coordination, company-user-management) - IMPLEMENTED
 #   4. web-frontend (user interface) - PLANNED
 #
 # The pipeline gracefully handles missing services/features:
@@ -146,9 +146,7 @@ jobs:
       matrix:
         service:
           - event-management-service
-          - speaker-coordination-service
           - partner-coordination-service
-          - attendee-experience-service
           - company-user-management-service
           - api-gateway
       fail-fast: false
@@ -884,7 +882,7 @@ jobs:
           if [ -z "$CHANGED_FILES" ]; then
             echo "⚠️  Cannot determine changed files, will analyze all modules"
             echo "analyze_all=true" >> $GITHUB_OUTPUT
-            echo "modules=shared-kernel,api-gateway,event-management-service,attendee-experience-service,company-user-management-service,partner-coordination-service,speaker-coordination-service,web-frontend" >> $GITHUB_OUTPUT
+            echo "modules=shared-kernel,api-gateway,event-management-service,company-user-management-service,partner-coordination-service,web-frontend" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -923,19 +921,9 @@ jobs:
             CHANGED_SERVICES="$CHANGED_SERVICES event-management-service"
           fi
 
-          if echo "$CHANGED_FILES" | grep -q "^services/speaker-coordination-service/"; then
-            MODULES="$MODULES,speaker-coordination-service"
-            CHANGED_SERVICES="$CHANGED_SERVICES speaker-coordination-service"
-          fi
-
           if echo "$CHANGED_FILES" | grep -q "^services/partner-coordination-service/"; then
             MODULES="$MODULES,partner-coordination-service"
             CHANGED_SERVICES="$CHANGED_SERVICES partner-coordination-service"
-          fi
-
-          if echo "$CHANGED_FILES" | grep -q "^services/attendee-experience-service/"; then
-            MODULES="$MODULES,attendee-experience-service"
-            CHANGED_SERVICES="$CHANGED_SERVICES attendee-experience-service"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "^services/company-user-management-service/"; then
@@ -950,7 +938,7 @@ jobs:
 
           # If analyze all, include all modules
           if [ "$ANALYZE_ALL" = "true" ]; then
-            MODULES="shared-kernel,api-gateway,event-management-service,attendee-experience-service,company-user-management-service,partner-coordination-service,speaker-coordination-service,web-frontend"
+            MODULES="shared-kernel,api-gateway,event-management-service,company-user-management-service,partner-coordination-service,web-frontend"
           fi
 
           echo "analyze_all=$ANALYZE_ALL" >> $GITHUB_OUTPUT
@@ -996,7 +984,7 @@ jobs:
           # Only build services that changed (or all if analyze_all=true)
           MODULES="${{ steps.detect-changes.outputs.modules }}"
 
-          for service in event-management-service attendee-experience-service company-user-management-service partner-coordination-service speaker-coordination-service; do
+          for service in event-management-service company-user-management-service partner-coordination-service; do
             # Check if this service is in the modules list
             if echo "$MODULES" | grep -q "$service"; then
               if [ -d "services/$service" ]; then

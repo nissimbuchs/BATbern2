@@ -65,7 +65,7 @@ TARGETS = [
         "id": "epic-6-speaker-portal",
         "label": "Speaker self-service portal (Epic 6)",
         "doc":   "docs/prd/epic-6-speaker-portal-support.md",
-        "tests": ["services/speaker-coordination-service/src/test/java"],
+        "tests": ["services/event-management-service/src/test/java"],
     },
     {
         "id": "epic-8-partner",
@@ -77,7 +77,7 @@ TARGETS = [
         "id": "epic-9-speaker-auth",
         "label": "Speaker authentication (Epic 9)",
         "doc":   "docs/prd/epic-9-speaker-authentication.md",
-        "tests": ["services/speaker-coordination-service/src/test/java"],
+        "tests": ["services/event-management-service/src/test/java"],
     },
     {
         "id": "user-lifecycle-sync",
@@ -90,7 +90,6 @@ TARGETS = [
         "label": "Notification system",
         "doc":   "docs/architecture/06d-notification-system.md",
         "tests": [
-            "services/speaker-coordination-service/src/test/java",
             "services/event-management-service/src/test/java",
         ],
     },
@@ -104,7 +103,7 @@ TARGETS = [
         "id": "user-guide-speaker-portal",
         "label": "User guide — speaker portal",
         "doc":   "docs/user-guide/speaker-portal",
-        "tests": ["services/speaker-coordination-service/src/test/java"],
+        "tests": ["services/event-management-service/src/test/java"],
     },
     {
         "id": "user-guide-partner-portal",

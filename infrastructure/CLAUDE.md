@@ -187,7 +187,7 @@ git push origin develop
 8. **Cognito Stack** - User pools with Lambda triggers (depends on Network + Database)
 9. **SES Stack** - Email templates for authentication workflows
 
-**Application Layer (staging/prod only):** 10. **Cluster Stack** - Shared ECS Fargate cluster 11. **Microservices Stacks** - Event Management, Speaker Coordination, Partner Coordination, Attendee Experience, Company Management 12. **API Gateway Service Stack** - Spring Boot API Gateway on ECS with Service Connect 13. **API Gateway Stack** - AWS API Gateway proxy to Spring Boot (depends on Cognito) 14. **Frontend Stack** - React app on S3 + CloudFront (depends on DNS) 15. **AutoShutdown Stack** - Development cost optimization (scales ECS to 0 outside business hours)
+**Application Layer (staging/prod only):** 10. **Cluster Stack** - Shared ECS Fargate cluster 11. **Microservices Stacks** - Event Management, Partner Coordination, Company Management 12. **API Gateway Service Stack** - Spring Boot API Gateway on ECS with Service Connect 13. **API Gateway Stack** - AWS API Gateway proxy to Spring Boot (depends on Cognito) 14. **Frontend Stack** - React app on S3 + CloudFront (depends on DNS) 15. **AutoShutdown Stack** - Development cost optimization (scales ECS to 0 outside business hours)
 
 **Note**: CDK automatically handles dependencies when using `--all` flag.
 
@@ -263,7 +263,7 @@ Cognito Lambda triggers (post-confirmation, pre-authentication, pre-token-genera
 ### 5. GitHub Actions Integration
 
 - **CICD Stack** creates IAM role with OIDC provider for GitHub Actions
-- **ECR Repositories**: One per microservice (event-management, speaker-coordination, etc.)
+- **ECR Repositories**: One per microservice (event-management-service, partner-coordination-service, etc.)
 - **Role ARN**: `arn:aws:iam::188701360969:role/batbern-staging-github-actions-role`
 
 ## Critical Development Standards

@@ -77,19 +77,16 @@ make dev-native-up
 docker compose up -d
 ```
 
-All six services start **by default**, on their default ports:
-- API Gateway: http://localhost:8080 (heap 320m)
-- Company/User Management: http://localhost:8081 (heap 512m)
-- Event Management: http://localhost:8082 (heap 768m)
-- Speaker Coordination: http://localhost:8083 (heap 320m)
-- Partner Coordination: http://localhost:8084 (heap 320m)
-- Attendee Experience: http://localhost:8085 (heap 320m)
-- Frontend: http://localhost:3000
+All four backend processes start **by default**, on the ports of the default `BASE_PORT=8000`:
+- API Gateway: http://localhost:8000 (heap 320m)
+- Company/User Management: http://localhost:8001 (heap 512m)
+- Event Management: http://localhost:8002 (heap 768m)
+- Partner Coordination: http://localhost:8004 (heap 320m)
+- Frontend: http://localhost:8100
 
-Total heap cap across the six is ~2.5 GB. Between 2026-08-08 and 2026-08-14 the default was
-a 4-service subset (Speaker Coordination and Attendee Experience omitted) for a 6 GB NAS dev
-host; that host is being decommissioned and the subset is gone. To run fewer services on a
-small machine, name the ones you want:
+Total heap cap across the four is 1920m (`service_heap` in `scripts/dev/lib/native-services.sh`).
+8003 and 8005 stay unused since the speaker and attendee stub services were removed (Story 17.2).
+To run fewer services on a small machine, name the ones you want:
 
 ```bash
 DEV_SERVICES="api-gateway company-user-management event-management" make dev-native-up

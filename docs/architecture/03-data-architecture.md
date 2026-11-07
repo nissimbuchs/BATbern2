@@ -1226,18 +1226,14 @@ erDiagram
 | `shedlock` | Scheduler locks so that only one task runs each scheduled job |
 | `logos` | Shared with CUMS, see above |
 
-### Speaker Coordination Service
+### Speaker and attendee data
 
-No tables. Per [ADR-009](./ADR-009-unified-speaker-workflow.md) and
+Per [ADR-009](./ADR-009-unified-speaker-workflow.md) and
 [ADR-014](./ADR-014-backend-service-consolidation.md), everything speaker-related is in EMS
-(see the speaker workflow diagram). The service applies only the shared-kernel baseline
-`V1__Initial_baseline.sql` (`uuid-ossp` extension and the `update_updated_at_column()` trigger
-function) under `flyway_schema_history_speaker_coordination`.
-
-### Attendee Experience Service
-
-No tables and no datasource. Registrations, the attendee dashboard and the archive are in EMS;
-attendee topic suggestions are in PCS.
+(see the speaker workflow diagram). Registrations, the attendee dashboard and the archive are in
+EMS; attendee topic suggestions are in PCS. The former speaker stub service (removed by Story
+17.2, 2026-11) applied only the shared-kernel baseline; its history table
+`flyway_schema_history_speaker_coordination` stays in the database, deliberately untouched.
 
 ### Business Rule Enforcement
 
@@ -1310,8 +1306,7 @@ TO` and cross-checked against the applied schema on 2026-11-04.
 | event-management-service | V1 to V144 | `flyway_schema_history_event_management` |
 | company-user-management-service | V1 to V22 | `flyway_schema_history_company_user_management` |
 | partner-coordination-service | V1 to V10 | `flyway_schema_history_partner_coordination` |
-| speaker-coordination-service | shared-kernel baseline only | `flyway_schema_history_speaker_coordination` |
-| attendee-experience-service | none, no datasource | n/a |
+| (former speaker stub, removed by Story 17.2) | shared-kernel baseline only | `flyway_schema_history_speaker_coordination`, kept |
 
 **EMS** (43 tables plus the shared `logos` and `shedlock`): `events` V2, `sessions` V2, `registrations` V2, `logos` V5 (shared with
 CUMS), `session_users` V7, `event_types` V10, `topics` V14, `topic_usage_history` V14,

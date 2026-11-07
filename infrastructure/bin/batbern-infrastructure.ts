@@ -16,9 +16,7 @@ import { FrontendStack } from '../lib/stacks/frontend-stack';
 import { ClusterStack } from '../lib/stacks/cluster-stack';
 import { ApiGatewayServiceStack } from '../lib/stacks/api-gateway-service-stack';
 import { EventManagementStack } from '../lib/stacks/event-management-stack';
-import { SpeakerCoordinationStack } from '../lib/stacks/speaker-coordination-stack';
 import { PartnerCoordinationStack } from '../lib/stacks/partner-coordination-stack';
-import { AttendeeExperienceStack } from '../lib/stacks/attendee-experience-stack';
 import { CompanyManagementStack } from '../lib/stacks/company-management-stack';
 import { BastionStack } from '../lib/stacks/bastion-stack';
 import { AutoShutdownStack } from '../lib/stacks/auto-shutdown-stack';
@@ -235,9 +233,7 @@ const sesStack = new SesStack(app, `${stackPrefix}-SES`, {
 // Development runs microservices locally in Docker
 let clusterStack: ClusterStack | undefined;
 let eventManagementStack: EventManagementStack | undefined;
-let speakerCoordinationStack: SpeakerCoordinationStack | undefined;
 let partnerCoordinationStack: PartnerCoordinationStack | undefined;
-let attendeeExperienceStack: AttendeeExperienceStack | undefined;
 let companyManagementStack: CompanyManagementStack | undefined;
 let apiGatewayServiceStack: ApiGatewayServiceStack | undefined;
 
@@ -330,31 +326,6 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
     eventManagementStack.service.taskDefinition.taskRole
   );
 
-  // 10b. Speaker Coordination Service
-  speakerCoordinationStack = new SpeakerCoordinationStack(
-    app,
-    `${stackPrefix}-SpeakerCoordination`,
-    {
-      config,
-      cluster: clusterStack.cluster,
-      vpc: networkStack.vpc,
-      databaseSecurityGroup: networkStack.databaseSecurityGroup,
-      databaseEndpoint: databaseStack.databaseEndpoint,
-      databaseSecret: databaseStack.databaseSecret,
-      userPool: cognitoStack.userPool,
-      userPoolClient: cognitoStack.userPoolClient,
-      alarmTopic: monitoringStack.alarmTopic,
-      env,
-      description: `BATbern Speaker Coordination Service - ${config.envName}`,
-      tags: config.tags,
-    }
-  );
-  speakerCoordinationStack.addDependency(clusterStack);
-  speakerCoordinationStack.addDependency(databaseStack);
-  speakerCoordinationStack.addDependency(cicdStack);
-  speakerCoordinationStack.addDependency(cognitoStack);
-  speakerCoordinationStack.addDependency(monitoringStack);
-
   // 10c. Partner Coordination Service
   partnerCoordinationStack = new PartnerCoordinationStack(
     app,
@@ -383,27 +354,6 @@ if (EnvironmentHelper.shouldDeployWebInfrastructure(config.envName)) {
   partnerCoordinationStack.addDependency(eventBusStack);
   partnerCoordinationStack.addDependency(monitoringStack);
   partnerCoordinationStack.addDependency(sesStack);
-
-  // 10d. Attendee Experience Service
-  attendeeExperienceStack = new AttendeeExperienceStack(app, `${stackPrefix}-AttendeeExperience`, {
-    config,
-    cluster: clusterStack.cluster,
-    vpc: networkStack.vpc,
-    databaseSecurityGroup: networkStack.databaseSecurityGroup,
-    databaseEndpoint: databaseStack.databaseEndpoint,
-    databaseSecret: databaseStack.databaseSecret,
-    userPool: cognitoStack.userPool,
-    userPoolClient: cognitoStack.userPoolClient,
-    alarmTopic: monitoringStack.alarmTopic,
-    env,
-    description: `BATbern Attendee Experience Service - ${config.envName}`,
-    tags: config.tags,
-  });
-  attendeeExperienceStack.addDependency(clusterStack);
-  attendeeExperienceStack.addDependency(databaseStack);
-  attendeeExperienceStack.addDependency(cicdStack);
-  attendeeExperienceStack.addDependency(cognitoStack);
-  attendeeExperienceStack.addDependency(monitoringStack);
 
   // 10e. Company & User Management Service (Consolidated)
   // Handles both /api/v1/companies and /api/v1/users endpoints

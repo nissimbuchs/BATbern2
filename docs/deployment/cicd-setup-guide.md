@@ -115,10 +115,8 @@ The pipeline expects these ECR repositories to exist:
 1. `shared-kernel` (foundation)
 2. `api-gateway` (routing layer)
 3. `event-management-service`
-4. `speaker-coordination-service`
-5. `partner-coordination-service`
-6. `attendee-experience-service`
-7. `company-user-management-service`
+4. `partner-coordination-service`
+5. `company-user-management-service`
 
 ### Automated Setup Script
 
@@ -131,9 +129,7 @@ SERVICES=(
   "shared-kernel"
   "api-gateway"
   "event-management-service"
-  "speaker-coordination-service"
   "partner-coordination-service"
-  "attendee-experience-service"
   "company-user-management-service"
 )
 

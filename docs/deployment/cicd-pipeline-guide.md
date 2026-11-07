@@ -69,7 +69,7 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
      matching ECS Fargate ARM64. The Gradle build stage uses `--platform=$BUILDPLATFORM`, so a
      build on an x86 machine compiles natively too and only the runtime stage targets arm64
    - Pushes images to AWS ECR (on push and pull-request events; not on `workflow_dispatch`)
-   - Services: event-management, speaker-coordination, partner-coordination, attendee-experience, company-management, api-gateway
+   - Services: event-management, partner-coordination, company-management, api-gateway
    - Until 2026-10-07 this job ran on x86 `ubuntu-latest`, and the whole Docker build ran under
      QEMU: 20-29 minutes per changed service for the image step alone (PR #1072)
 

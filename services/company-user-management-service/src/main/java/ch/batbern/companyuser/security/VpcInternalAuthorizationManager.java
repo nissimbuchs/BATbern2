@@ -24,7 +24,6 @@ import java.util.function.Supplier;
  *
  * Use Cases:
  * - Event Management Service → Company User Service (user profile lookups)
- * - Speaker Coordination Service → Company User Service (speaker data)
  * - Partner Coordination Service → Company User Service (partner data)
  *
  * Note: This does NOT bypass authentication - requests must still have valid JWT

@@ -52,9 +52,9 @@ docker compose -f docker-compose-dev.yml up -d # local PostgreSQL
 make dev-native-up                             # all services natively, plus the Vite dev server
 ```
 
-With the default `BASE_PORT=8000` the API gateway listens on 8000, the services on 8001-8005
-(company-user-management, event-management, speaker-coordination, partner-coordination,
-attendee-experience) and the frontend on 8100. `make dev-native-up-instance BASE_PORT=9000`
+With the default `BASE_PORT=8000` the API gateway listens on 8000, the services on 8001
+(company-user-management), 8002 (event-management) and 8004 (partner-coordination), and the
+frontend on 8100. 8003 and 8005 stay unused since the stub services were removed (Story 17.2). `make dev-native-up-instance BASE_PORT=9000`
 starts a second, parallel environment. Logs go to `/tmp/batbern-1-*.log`.
 
 #### Development Commands

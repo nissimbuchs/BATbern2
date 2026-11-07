@@ -93,7 +93,9 @@ Partner relationship management, strategic topic voting, and partnership analyti
 Attendee registration, content discovery, and historical archive search across 20+ years of content.
 
 **Key Endpoints:**
-- `/api/v1/content/search` - Full-text content discovery
+- `/api/v1/attendee-portal/**` and `/api/v1/registrations/**` - served by EMS
+- `/api/v1/content/search` was never implemented; the gateway route `/api/v1/content/**` pointed
+  at the attendee stub service and was removed with it by Story 17.2 (ADR-014)
 
 **Core Workflows:**
 - Content discovery and search with caching

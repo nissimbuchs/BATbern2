@@ -57,9 +57,7 @@ export class CICDStack extends cdk.Stack {
       'shared-kernel',
       'api-gateway',
       'event-management-service',
-      'speaker-coordination-service',
       'partner-coordination-service',
-      'attendee-experience-service',
       'company-user-management-service',
     ];
 

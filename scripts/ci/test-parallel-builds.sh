@@ -37,9 +37,7 @@ test_parallel_builds() {
         # Check for specific services in matrix
         local services=(
             "event-management-service"
-            "speaker-coordination-service"
             "partner-coordination-service"
-            "attendee-experience-service"
             "company-user-management-service"
             "api-gateway"
         )

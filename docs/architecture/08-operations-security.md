@@ -1011,18 +1011,6 @@ Event Management Service:
       throughput: "> 100 req/min"
       validation_time: "< 50ms"
 
-Speaker Coordination Service:
-  endpoints:
-    "GET /speakers":
-      p95_response_time: "< 100ms"
-      throughput: "> 300 req/min"
-      database_query_time: "< 30ms"
-
-    "POST /speakers/invitations":
-      p95_response_time: "< 250ms"
-      throughput: "> 50 req/min"
-      email_delivery_sla: "< 5 minutes"
-
 Partner Coordination Service:
   endpoints:
     "GET /partners/{id}/topic-votes":
@@ -1031,13 +1019,6 @@ Partner Coordination Service:
     "POST /topics/voting":
       p95_response_time: "< 300ms"
       throughput: "> 30 req/min"
-
-Attendee Experience Service:
-  endpoints:
-    "GET /search":
-      p95_response_time: "< 300ms"
-      throughput: "> 500 req/min"
-      search_relevance_score: "> 85%"
 ```
 
 **Database Performance Standards:**

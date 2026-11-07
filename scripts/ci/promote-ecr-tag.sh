@@ -48,9 +48,7 @@ fi
 # validation list in deploy-staging.yml. Keep in sync if the matrix changes.
 REPOS=(
   "event-management-service"
-  "speaker-coordination-service"
   "partner-coordination-service"
-  "attendee-experience-service"
   "company-user-management-service"
   "api-gateway"
 )

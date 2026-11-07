@@ -228,7 +228,7 @@ The BATbern Event Management Platform follows a comprehensive **Domain-Driven De
 The platform was scaffolded as four bounded contexts with dedicated services. Per
 [ADR-014](./architecture/ADR-014-backend-service-consolidation.md) (2026-06-26) the backend consolidated around
 event-management-service (EMS), company-user-management-service (CUMS) and partner-coordination-service;
-`speaker-coordination-service` and `attendee-experience-service` are dormant.
+the dormant speaker and attendee stub services were removed by Story 17.2 (2026-11).
 
 1. **Event Management Domain** - Organizer workflows and automation (EMS)
 2. **Speaker Coordination Domain** - Speaker portal and workflows (served by EMS since Epic 11)

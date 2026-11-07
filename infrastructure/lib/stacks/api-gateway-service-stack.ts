@@ -118,9 +118,7 @@ export class ApiGatewayServiceStack extends cdk.Stack {
         // Service Connect DNS names for direct service-to-service communication
         // Format: http://<service-name>:8080 (resolves via CloudMap namespace: batbern.local)
         EVENT_MANAGEMENT_SERVICE_URL: 'http://event-management:8080',
-        SPEAKER_COORDINATION_SERVICE_URL: 'http://speaker-coordination:8080',
         PARTNER_COORDINATION_SERVICE_URL: 'http://partner-coordination:8080',
-        ATTENDEE_EXPERIENCE_SERVICE_URL: 'http://attendee-experience:8080',
         COMPANY_USER_MANAGEMENT_SERVICE_URL: 'http://company-user-management:8080',
         // Cognito configuration
         COGNITO_USER_POOL_ID: props.userPool.userPoolId,

@@ -61,9 +61,7 @@ CLUSTER="batbern-${ENVIRONMENT}"
 # and skipped every service. Fragments verified against `aws ecs list-services` 2026-05-27.
 SERVICES=(
     "event-management-service:EventManagement"
-    "speaker-coordination-service:SpeakerCoordination"
     "partner-coordination-service:PartnerCoordination"
-    "attendee-experience-service:AttendeeExperience"
     "company-user-management-service:CompanyManagement"
 )
 

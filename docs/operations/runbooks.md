@@ -89,7 +89,8 @@ aws cloudwatch describe-alarms --alarm-names <name> \
 
 **Alarms:** `{Service}-High-CPU`, `{Service}-High-Memory`, `{Service}-Task-Failures`,
 `{Service}-EventBridge-Failures` for ApiGatewayService, CompanyManagement, EventManagement,
-SpeakerCoordination, PartnerCoordination, AttendeeExperience.
+PartnerCoordination. (The speaker and attendee stubs and their alarms went with their stacks,
+Story 17.2.)
 
 > `{Service}-OOM-Kills` is declared in `ecs-service-alarms.ts` but **dormant by design**: it is
 > gated on `containerInsightsEnabled`, and Container Insights is off on the cluster as a cost

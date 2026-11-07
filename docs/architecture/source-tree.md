@@ -17,9 +17,7 @@ BATbern2/
 ├── services/
 │   ├── event-management-service/          # EMS, primary (ADR-014)
 │   ├── company-user-management-service/   # CUMS, primary
-│   ├── partner-coordination-service/      # PCS, separate service
-│   ├── speaker-coordination-service/      # dormant stub, 4 Java files (ADR-014)
-│   └── attendee-experience-service/       # dormant stub, 1 Java file (ADR-014)
+│   └── partner-coordination-service/      # PCS, separate service
 ├── web-frontend/             # React 19 + TypeScript SPA (public site and role areas)
 ├── infrastructure/           # AWS CDK app (TypeScript)
 ├── apps/
@@ -137,8 +135,8 @@ infrastructure/
 ├── lib/
 │   ├── stacks/        # One file per stack: dns, network, secrets, database, bastion, storage,
 │   │                  # event-bus, monitoring, cicd, cognito, ses, inbound-email, cluster,
-│   │                  # event-management, speaker-coordination, partner-coordination,
-│   │                  # attendee-experience, company-management, api-gateway-service,
+│   │                  # event-management, partner-coordination,
+│   │                  # company-management, api-gateway-service,
 │   │                  # api-gateway, frontend (also used for FrontendBeta), auto-shutdown
 │   ├── constructs/    # domain-service-construct (Fargate + Service Connect), alarms, rds-cluster, vpc ...
 │   ├── lambda/        # image-resize (CDN), triggers/ (Cognito Lambda triggers)

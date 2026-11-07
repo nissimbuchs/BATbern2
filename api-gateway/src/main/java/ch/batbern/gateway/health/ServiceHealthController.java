@@ -21,7 +21,7 @@ import java.util.Map;
  *
  * Services are discovered at runtime via ECS Service Connect DNS:
  * - http://event-management.batbern.local:8080
- * - http://speaker-coordination.batbern.local:8080
+ * - http://company-user-management.batbern.local:8080
  * - etc.
  */
 @Slf4j

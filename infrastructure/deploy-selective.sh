@@ -77,9 +77,7 @@ while [[ $# -gt 0 ]]; do
             ;;
         -m|--microservices)
             STACKS+=("BATbern-${ENVIRONMENT}-EventManagement")
-            STACKS+=("BATbern-${ENVIRONMENT}-SpeakerCoordination")
             STACKS+=("BATbern-${ENVIRONMENT}-PartnerCoordination")
-            STACKS+=("BATbern-${ENVIRONMENT}-AttendeeExperience")
             STACKS+=("BATbern-${ENVIRONMENT}-CompanyManagement")
             STACKS+=("BATbern-${ENVIRONMENT}-ApiGatewayService")
             shift

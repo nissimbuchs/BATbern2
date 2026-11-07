@@ -671,7 +671,6 @@ export COMPANY_USER_MANAGEMENT_SERVICE_URL=http://company-user-management:8080
 
 - **Event Management Service** → User Service (enrichment pattern)
 - **Partner Coordination Service** → Company Service + User Service (Story 2.7)
-- **Speaker Coordination Service** → User Service (future)
 
 ---
 

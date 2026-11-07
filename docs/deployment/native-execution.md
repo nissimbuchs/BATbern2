@@ -103,9 +103,7 @@ This will:
 - API Gateway: http://localhost:8080
 - Company User Management: http://localhost:8081
 - Event Management: http://localhost:8082
-- Speaker Coordination: http://localhost:8083
 - Partner Coordination: http://localhost:8084
-- Attendee Experience: http://localhost:8085
 - Web Frontend: http://localhost:3000
 
 ### Check Status
@@ -386,9 +384,10 @@ make dev-native-up
    make dev-native-status  # Shows memory per service
    ```
 
-2. Stop unused services:
+2. Start only the services you need (`DEV_SERVICES`, see `scripts/dev/lib/native-services.sh`):
    ```bash
-   ./scripts/dev/stop-all-native.sh speaker-coordination
+   make dev-native-down
+   DEV_SERVICES="api-gateway company-user-management event-management" make dev-native-up
    ```
 
 3. Increase Java heap size (if needed):
@@ -418,12 +417,8 @@ make dev-native-up
 
 **Option 1: Run only needed services**
 ```bash
-# Start all services
-make dev-native-up
-
-# Stop services you don't need
-./scripts/dev/stop-all-native.sh partner-coordination
-./scripts/dev/stop-all-native.sh attendee-experience
+# Start only the services you need (default: all)
+DEV_SERVICES="api-gateway company-user-management event-management" make dev-native-up
 ```
 
 **Option 2: Adjust JVM heap sizes**

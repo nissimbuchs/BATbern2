@@ -35,14 +35,8 @@ public class DomainRouter {
     @Value("${services.event-management.url:http://localhost:8081}")
     private String eventManagementUrl;
 
-    @Value("${services.speaker-coordination.url:http://localhost:8082}")
-    private String speakerCoordinationUrl;
-
     @Value("${services.partner-coordination.url:http://localhost:8083}")
     private String partnerCoordinationUrl;
-
-    @Value("${services.attendee-experience.url:http://localhost:8084}")
-    private String attendeeExperienceUrl;
 
     @Value("${services.company-user-management.url:http://localhost:8085}")
     private String companyUserManagementUrl;
@@ -73,7 +67,6 @@ public class DomainRouter {
             return "event-management-service";
 
         // Story 5.4: Speaker status management endpoints go to event-management-service
-        // (moved from speaker-coordination-service for Epic 5 architecture alignment)
         } else if (cleanPath.matches("/api/v1/events/[^/]+/speakers/[^/]+/status(/.*)?")
                 || cleanPath.matches("/api/v1/events/[^/]+/speakers/status-summary")) {
             return "event-management-service";
@@ -113,8 +106,6 @@ public class DomainRouter {
                 // which physically lives in partner-coordination-service (Story 8.2).
                 || cleanPath.startsWith("/api/v1/attendees/topics")) {
             return "partner-coordination-service";
-        } else if (cleanPath.startsWith("/api/v1/content")) {
-            return "attendee-experience-service";
         } else if (cleanPath.startsWith("/api/v1/companies")
                 || cleanPath.startsWith("/api/v1/users")
                 || cleanPath.startsWith("/api/v1/logos")
@@ -143,9 +134,7 @@ public class DomainRouter {
     private String getServiceUrl(String targetService) {
         return switch (targetService) {
             case "event-management-service" -> eventManagementUrl;
-            case "speaker-coordination-service" -> speakerCoordinationUrl;
             case "partner-coordination-service" -> partnerCoordinationUrl;
-            case "attendee-experience-service" -> attendeeExperienceUrl;
             case "company-user-management-service" -> companyUserManagementUrl;
             default -> throw new RoutingException("Unknown target service: " + targetService);
         };

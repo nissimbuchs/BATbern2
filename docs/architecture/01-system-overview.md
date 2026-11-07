@@ -43,16 +43,12 @@ flowchart LR
         EMS["event-management-service<br/>events, speakers, registrations,<br/>mail, Q&A, live timing"]
         CUMS["company-user-management-service<br/>companies, users, roles, logos"]
         PCS["partner-coordination-service<br/>partners, meetings, topic votes"]
-        SCS["speaker-coordination-service<br/>dormant"]
-        AES["attendee-experience-service<br/>parked"]
     end
     P1 --> EMS
     P2 -->|"speaker workflow moved, ADR-009/014"| EMS
     P4 -->|"registration, dashboard, archive moved"| EMS
     P5 --> CUMS
     P3 --> PCS
-    P2 -.-> SCS
-    P4 -.-> AES
 ```
 
 The reasons given in 2024 for separate services (team ownership, independent deployment, a
@@ -159,8 +155,6 @@ flowchart LR
         EMS["EMS<br/>event-management-service"]
         CUMS["CUMS<br/>company-user-management-service"]
         PCS["PCS<br/>partner-coordination-service"]
-        SCS["SCS<br/>running, no routes"]
-        AES["AES<br/>0 tasks, still routed"]
     end
 
     subgraph data["Data and messaging"]
@@ -188,7 +182,6 @@ flowchart LR
     GW --> EMS
     GW --> CUMS
     GW --> PCS
-    GW -.->|"/api/v1/content"| AES
     EMS & CUMS & PCS --> RDS
     EMS & CUMS --> S3C
     EMS --> SES
@@ -214,8 +207,8 @@ flowchart LR
    ([ADR-008](./ADR-008-simplified-api-gateway-routing.md)).
 2. **Service Connect, no internal ALBs.** Services find each other through ECS Service Connect
    (`batbern.local`, `domain-service-construct.ts`). Only the gateway has a load balancer.
-3. **Sizes (CDK):** gateway 512 CPU / 1024 MB, EMS 256 / 2048, CUMS 256 / 1024, PCS 256 / 1024,
-   SCS 256 / 1024. Production runs on on-demand Fargate only; the 70/30 Spot split applies to
+3. **Sizes (CDK):** gateway 512 CPU / 1024 MB, EMS 256 / 2048, CUMS 256 / 1024, PCS 256 / 1024.
+   Production runs on on-demand Fargate only; the 70/30 Spot split applies to
    non-production environments.
 4. **One database.** PostgreSQL 15 on `db.t4g.micro`, Single-AZ. Each service has its own Flyway
    history table. ElastiCache Redis is defined in CDK but disabled (`numNodes: 0`); caching is
@@ -235,9 +228,11 @@ flowchart LR
    in-process Spring event (this is what drives the EMS listeners) and then sends it to
    EventBridge, fire-and-forget. The EMS task role has no `events:PutEvents` grant in CDK, so EMS
    puts presumably fail and are logged (not verified 2026-11-04).
-7. **Runtime differs from ADR-014:** the speaker-coordination stack still runs one task, and the
-   gateway still routes `/api/v1/content` to the attendee-experience service, which is parked at
-   0 tasks. See the "Operational state" section of ADR-014.
+7. **The two stub services are gone from the code** (Story 17.2, 2026-11): the speaker and
+   attendee stub modules, their CDK stack definitions, their entries in the CICD ECR list and the
+   gateway route `/api/v1/content/**` were removed. In production the owner deletes the two
+   orphaned stacks after the deploy; the two ECR repositories are retained by CloudFormation
+   (`RemovalPolicy.RETAIN`, `isProduction`) until the owner deletes them by hand. See ADR-014.
 
 ### Request path and authorization
 
@@ -275,7 +270,7 @@ sequenceDiagram
   `tasks`, `notifications`, `materials`, `speaker-portal`, `attendee-portal`, `sessions`,
   `email-templates`, `analytics`, `newsletter`, `thanks`, `conversations`, `mails`, `ai`,
   `public/settings/features` and `public/events` go to EMS; `partners`, `partner-meetings` and
-  `attendees/topics` go to PCS; `content` goes to AES; `companies`, `users`, `logos`, the other
+  `attendees/topics` go to PCS; `companies`, `users`, `logos`, the other
   `public` paths and `settings` go to CUMS; `admin` goes to EMS except the per-service
   test-fixture paths.
 
@@ -533,12 +528,13 @@ EventBridge (publish only).
 
 **Technology:** Java 21, Spring Boot 4.0.x, Flyway (V1 to V10).
 
-### Speaker Coordination Service (dormant)
+### Speaker logic (former speaker service, removed)
 
-> **Dormant per [ADR-014](./ADR-014-backend-service-consolidation.md).** The module has four Java
-> files (application class, security, cache and exception configuration), no controllers, no
-> entities, no migrations of its own (only the shared-kernel baseline) and no gateway route. Its
-> CDK stack still runs one task.
+> **Removed by Story 17.2 (2026-11) per [ADR-014](./ADR-014-backend-service-consolidation.md).**
+> The stub module had no controllers and no entities; the module and its CDK stack definition
+> are gone. Its ECR repository is retained (`RemovalPolicy.RETAIN`) until the owner deletes it by
+> hand, see ADR-014. Its Flyway history table `flyway_schema_history_speaker_coordination` stays in the
+> database.
 
 **What moved to EMS:** the speaker pool and speaker workflow (ADR-009), invitations and
 responses, reminders, content submission and quality review, materials upload and the speaker
@@ -548,11 +544,12 @@ The pre-ADR-009 design described here earlier (an 11-state workflow with paralle
 management with organizer voting, magic-link login, a `Speaker` entity) is listed under
 [Not implemented](#not-implemented).
 
-### Attendee Experience Service (parked)
+### Attendee logic (former attendee service, removed)
 
-> **Parked per [ADR-014](./ADR-014-backend-service-consolidation.md).** One Java file (the
-> application class), no datasource, no entities. The CDK stack sets `desiredCount: 0`, but the
-> gateway still routes `/api/v1/content` to it.
+> **Removed by Story 17.2 (2026-11) per [ADR-014](./ADR-014-backend-service-consolidation.md).**
+> The stub module had one Java file and no datasource; the module, its CDK stack definition and
+> the gateway route `/api/v1/content/**` are gone. Its ECR repository is retained
+> (`RemovalPolicy.RETAIN`) until the owner deletes it by hand, see ADR-014.
 
 **What moved to EMS:** registration (3-step wizard, capacity, waitlist, deregistration), the
 attendee dashboard (`/api/v1/attendee-portal`), the historical archive and content search

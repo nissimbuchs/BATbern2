@@ -33,7 +33,7 @@ The BATbern backend uses PostgreSQL-specific features (JSONB columns, PostgreSQL
 **All integration tests must extend this base class.** It lives in the shared-kernel
 **test fixtures** (`shared-kernel/src/testFixtures/java/ch/batbern/shared/test/AbstractIntegrationTest.java`);
 services consume it via `testImplementation testFixtures(project(':shared-kernel'))`.
-(speaker-coordination-service still has its own copy under `src/test`.) Current content:
+Current content:
 
 ```java
 package ch.batbern.shared.test;

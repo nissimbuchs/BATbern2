@@ -74,11 +74,6 @@ while IFS= read -r file; do
         api-gateway/*)
             TEST_API_GATEWAY=true
             ;;
-        services/attendee-experience-service/*)
-            if ! echo "$TEST_SERVICES" | grep -q "attendee-experience-service"; then
-                TEST_SERVICES="$TEST_SERVICES attendee-experience-service"
-            fi
-            ;;
         services/company-user-management-service/*)
             if ! echo "$TEST_SERVICES" | grep -q "company-user-management-service"; then
                 TEST_SERVICES="$TEST_SERVICES company-user-management-service"
@@ -92,11 +87,6 @@ while IFS= read -r file; do
         services/partner-coordination-service/*)
             if ! echo "$TEST_SERVICES" | grep -q "partner-coordination-service"; then
                 TEST_SERVICES="$TEST_SERVICES partner-coordination-service"
-            fi
-            ;;
-        services/speaker-coordination-service/*)
-            if ! echo "$TEST_SERVICES" | grep -q "speaker-coordination-service"; then
-                TEST_SERVICES="$TEST_SERVICES speaker-coordination-service"
             fi
             ;;
         .github/workflows/*.yml|infrastructure/lib/stacks/cicd-stack.ts)
@@ -129,7 +119,7 @@ done <<< "$CHANGED_FILES"
 if [ "$TEST_SHARED_KERNEL" = true ]; then
     echo -e "${YELLOW}⚡ shared-kernel changed - testing all backend components${NC}"
     TEST_API_GATEWAY=true
-    TEST_SERVICES="attendee-experience-service company-user-management-service event-management-service partner-coordination-service speaker-coordination-service"
+    TEST_SERVICES="company-user-management-service event-management-service partner-coordination-service"
 fi
 
 # Show what will be tested

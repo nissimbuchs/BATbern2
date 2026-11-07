@@ -36,11 +36,8 @@ updates:
   # dependencies { ... } }` block that supplies every service's starters),
   # api-gateway, shared-kernel, and all domain services.
   #
-  # `/services/*` intentionally globs all five services including
-  # attendee-experience-service. Its build.gradle currently declares no
-  # dependencies of its own, so it contributes nothing today — but the glob means
-  # it is covered automatically the moment that changes, which removes the
-  # "remember to add an entry" maintenance note this file used to carry.
+  # `/services/*` globs every service directory, so a new service is covered
+  # automatically without a separate entry.
   - package-ecosystem: "gradle"
     directories:
       - "/"
