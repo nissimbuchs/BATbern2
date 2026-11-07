@@ -145,32 +145,6 @@ describe('publishingService', () => {
     });
   });
 
-  describe('getPublishPreview', () => {
-    it('should get publish preview', async () => {
-      const mockData = {
-        eventCode: 'BATbern142',
-        phase: 'SPEAKERS',
-        mode: 'PROGRESSIVE',
-        previewUrl: 'https://preview.batbern.ch/events/BATbern142?mode=preview',
-        content: {
-          topic: { title: 'BATbern 2025', date: '2025-05-15', venue: 'Kornhausforum' },
-          speakers: [{ displayName: 'John Doe', companyName: 'Acme Corp' }],
-        },
-        validation: {
-          isValid: true,
-          errors: [],
-        },
-      };
-
-      const getSpy = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: mockData });
-
-      const result = await publishingService.getPublishPreview('BATbern142', 'speakers');
-
-      expect(getSpy).toHaveBeenCalledWith('/events/BATbern142/publish/speakers/preview');
-      expect(result).toEqual(mockData);
-    });
-  });
-
   describe('scheduleAutoPublish', () => {
     it('should schedule auto-publish for phase', async () => {
       const mockData = {
@@ -191,24 +165,6 @@ describe('publishingService', () => {
       expect(postSpy).toHaveBeenCalledWith('/events/BATbern142/publish/schedule', {
         scheduledDate: '2025-04-15T08:00:00Z',
       });
-      expect(result).toEqual(mockData);
-    });
-  });
-
-  describe('cancelAutoPublish', () => {
-    it('should cancel auto-publish schedule', async () => {
-      const mockData = {
-        eventCode: 'BATbern142',
-        phase: 'SPEAKERS',
-        cancelledAt: '2025-01-15T15:00:00Z',
-        cancelledBy: 'john.doe',
-      };
-
-      const deleteSpy = vi.spyOn(apiClient, 'delete').mockResolvedValue({ data: mockData });
-
-      const result = await publishingService.cancelAutoPublish('BATbern142', 'speakers');
-
-      expect(deleteSpy).toHaveBeenCalledWith('/events/BATbern142/publish/schedule');
       expect(result).toEqual(mockData);
     });
   });

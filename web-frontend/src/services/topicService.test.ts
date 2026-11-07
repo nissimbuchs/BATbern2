@@ -17,7 +17,6 @@ import type {
   Topic,
   TopicListResponse,
   CreateTopicRequest,
-  OverrideStalenesRequest,
   TopicFilters,
   SelectTopicForEventRequest,
 } from '@/types/topic.types';
@@ -226,48 +225,6 @@ describe('topicService', () => {
     });
   });
 
-  describe('overrideStaleness', () => {
-    it('should override staleness score with justification', async () => {
-      const request: OverrideStalenesRequest = {
-        stalenessScore: 50,
-        justification: 'Partner explicitly requested this topic',
-      };
-
-      const mockUpdatedTopic: Topic = {
-        id: 'topic-123',
-        title: 'Cloud Native Architecture',
-        description: 'Modern cloud patterns',
-        category: 'technical',
-        stalenessScore: 50, // Overridden value
-        usageCount: 3,
-        lastUsedDate: '2024-01-15',
-        isActive: true,
-        createdDate: '2023-01-01',
-      };
-
-      vi.mocked(apiClient.put).mockResolvedValue({ data: mockUpdatedTopic });
-
-      const result = await topicService.overrideStaleness('topic-123', request);
-
-      expect(apiClient.put).toHaveBeenCalledWith('/topics/topic-123/override-staleness', request);
-      expect(result.stalenessScore).toBe(50);
-    });
-
-    it('should propagate authorization errors', async () => {
-      const request: OverrideStalenesRequest = {
-        stalenessScore: 50,
-        justification: 'Override',
-      };
-
-      const error = new Error('Unauthorized: ORGANIZER role required');
-      vi.mocked(apiClient.put).mockRejectedValue(error);
-
-      await expect(topicService.overrideStaleness('topic-123', request)).rejects.toThrow(
-        'Unauthorized'
-      );
-    });
-  });
-
   describe('getSimilarTopics', () => {
     it('should fetch similar topics (>70% similarity)', async () => {
       const mockSimilarTopics: Topic[] = [
@@ -456,25 +413,6 @@ describe('topicService', () => {
       await expect(topicService.selectTopicForEvent('BATbern56', request)).rejects.toThrow(
         'Invalid workflow state'
       );
-    });
-  });
-
-  describe('recalculateStaleness', () => {
-    it('should trigger staleness recalculation', async () => {
-      const mockResponse = 'Staleness scores recalculated for 42 topics';
-      vi.mocked(apiClient.post).mockResolvedValue({ data: mockResponse });
-
-      const result = await topicService.recalculateStaleness();
-
-      expect(apiClient.post).toHaveBeenCalledWith('/topics/recalculate-staleness');
-      expect(result).toBe(mockResponse);
-    });
-
-    it('should require ORGANIZER role', async () => {
-      const error = new Error('Forbidden: ORGANIZER role required');
-      vi.mocked(apiClient.post).mockRejectedValue(error);
-
-      await expect(topicService.recalculateStaleness()).rejects.toThrow('Forbidden');
     });
   });
 

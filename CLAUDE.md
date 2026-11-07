@@ -453,6 +453,10 @@ const company = await companyService.getCompany(id);
 const response = await fetch('/api/companies/123');
 ```
 
+CI checks every frontend HTTP call against `docs/api/` (`web-frontend/scripts/check-api-paths.ts`,
+`make check-frontend-api-paths`): a method and path no spec defines fails the required
+`build-frontend` check, and so does a new file outside `src/services/` that makes an HTTP call.
+
 ### Environment Variables
 
 **NEVER** access `process.env` directly. Use config objects:

@@ -488,7 +488,6 @@
     "refreshPreview": "Aggiorna anteprima",
     "switchedTo": "Passato ad anteprima {{device}}",
     "refreshingPreview": "Aggiornamento anteprima...",
-    "failedToLoad": "Caricamento anteprima fallito. Riprova.",
     "iframeTitle": "Anteprima evento",
     "iframeAriaLabel": "Anteprima contenuto evento",
     "previewPhaseCaption": "Fase: {{phase}}",

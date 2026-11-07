@@ -464,42 +464,6 @@ export interface UnpublishPhaseResponse {
 }
 
 /**
- * Publish preview response
- */
-export interface PublishPreviewResponse {
-  eventCode: string;
-  phase: string; // UPPERCASE in API
-  mode: string; // UPPERCASE in API
-  previewUrl: string;
-  content: {
-    topic?: {
-      title: string;
-      date: string;
-      venue: string;
-    };
-    speakers?: Array<{
-      displayName: string;
-      companyName: string;
-    }>;
-    agenda?: Array<{
-      sessionSlug: string;
-      title: string;
-      startTime: string;
-      endTime: string;
-      room: string;
-    }>;
-  };
-  validation: {
-    isValid: boolean;
-    errors: Array<{
-      field: string;
-      message: string;
-      requirement: string;
-    }>;
-  };
-}
-
-/**
  * Validation status for a publishing phase
  */
 export interface ValidationStatus {
@@ -563,16 +527,6 @@ export interface AutoPublishScheduleResponse {
   scheduledDate: string;
   isEnabled: boolean;
   ruleArn?: string; // AWS EventBridge rule ARN
-}
-
-/**
- * Cancel auto-publish response
- */
-export interface CancelAutoPublishResponse {
-  eventCode: string;
-  phase: string; // UPPERCASE in API
-  cancelledAt: string;
-  cancelledBy: string;
 }
 
 /**

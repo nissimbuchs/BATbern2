@@ -28,10 +28,8 @@ This will generate TypeScript types from:
 | `docs/api/event-app-settings-api.openapi.yml`  | `event-app-settings-api.types.ts`  |
 | `docs/api/event-analytics-api.openapi.yml`     | `event-analytics-api.types.ts`     |
 | `docs/api/event-watch-api.openapi.yml`         | `event-watch-api.types.ts`         |
-| `docs/api/speakers-api.openapi.yml`            | `speakers-api.types.ts`            |
 | `docs/api/topics-api.openapi.yml`              | `topics-api.types.ts`              |
 | `docs/api/partners-api.openapi.yml`            | `partner-api.types.ts`             |
-| `docs/api/attendees-api.openapi.yml`           | `attendees-api.types.ts`           |
 
 ### Usage
 
@@ -57,8 +55,8 @@ Domain type files in `src/types/` re-export generated types and add UI-specific 
 - `event.types.ts` - imports from the per-domain `generated/event*-api.types.ts` files (events-api was split in API consolidation Phase 6)
 - `user.types.ts` - imports from `generated/user-api.types.ts`
 - `topic.types.ts` - imports from `generated/topics-api.types.ts`
-- `speakerPool.types.ts` - imports from `generated/speakers-api.types.ts`
-- `speakerOutreach.types.ts` - imports from `generated/speakers-api.types.ts`
+- `speakerPool.types.ts` - imports from `generated/event-speakers-api.types.ts`
+- `speakerOutreach.types.ts` - imports from `generated/event-speakers-api.types.ts`
 
 ### When to Regenerate
 

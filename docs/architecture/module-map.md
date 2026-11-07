@@ -58,6 +58,9 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
   (e-mail) never goes in a path.
 - `me` and `{username}` are one resource with an ownership rule, not two endpoint sets.
 - Every write needs `@PreAuthorize` (ADR-008). Machine-only endpoints never go in a public spec.
+- CI checks every frontend call through the API client, axios or a `*Client` against `docs/api/`
+  (`web-frontend/scripts/check-api-paths.ts`, `make check-frontend-api-paths`), and fails a new
+  file outside `services/` that makes one. `fetch` is not scanned.
 
 ## Placement
 

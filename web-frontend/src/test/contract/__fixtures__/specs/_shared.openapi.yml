@@ -1,0 +1,11 @@
+openapi: 3.1.0
+info:
+  title: Fixture shared (must be skipped)
+  version: 1.0.0
+paths:
+  /shared/never:
+    get:
+      operationId: neverLoaded
+      responses:
+        '200':
+          description: ok

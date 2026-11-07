@@ -88,10 +88,11 @@ class LogoControllerTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(roles = "SPEAKER")
-    @DisplayName("should_return403_when_nonOrganizerFetchesImageFromUrl")
-    void should_return403_when_nonOrganizerFetchesImageFromUrl() throws Exception {
+    @DisplayName("should_return403_when_nonOrganizerUploadsImageFromUrl")
+    void should_return403_when_nonOrganizerUploadsImageFromUrl() throws Exception {
         // Server-side fetch of an arbitrary URL is for the organizer batch imports only.
-        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
+        // (Story 17.1 removed /logos/fetch-from-url; the rule lives on in upload-from-url.)
+        mockMvc.perform(post("/api/v1/logos/upload-from-url")
                         .with(csrf())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"url\": \"https://example.com/logo.png\"}"))
@@ -435,72 +436,6 @@ class LogoControllerTest extends AbstractIntegrationTest {
                 .andExpect(status().isUnauthorized());
 
         verifyNoInteractions(cleanupService);
-    }
-
-    // ============ POST /fetch-from-url Tests ============
-
-    @Test
-    @WithMockUser(roles = "ORGANIZER")
-    @DisplayName("Should handle fetch from URL request")
-    void shouldHandleFetchFromUrl_whenValidUrl() throws Exception {
-        // Arrange
-        Map<String, String> requestBody = Map.of("url", "https://example.com/logo.png");
-
-        // Act & Assert - external URL fetch may fail with network error or return 404
-        // Returns 500 for connection failures (IOException), or 404 if server responds with not found
-        ResultActions result = mockMvc.perform(post("/api/v1/logos/fetch-from-url")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)));
-
-        // Accept either 404 (server responded, file not found) or 500 (network error)
-        int statusCode = result.andReturn().getResponse().getStatus();
-        assertTrue(statusCode == 404 || statusCode == 500,
-                "Expected status 404 or 500, but got: " + statusCode);
-    }
-
-    @Test
-    @WithMockUser(roles = "ORGANIZER")
-    @DisplayName("Should return 400 when URL is missing")
-    void shouldReturn400_whenUrlMissing() throws Exception {
-        // Arrange
-        Map<String, String> requestBody = Map.of();
-
-        // Act & Assert
-        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @WithMockUser(roles = "ORGANIZER")
-    @DisplayName("Should return 400 when URL is blank")
-    void shouldReturn400_whenUrlBlank() throws Exception {
-        // Arrange
-        Map<String, String> requestBody = Map.of("url", "");
-
-        // Act & Assert
-        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @DisplayName("Should return 401 when fetching without authentication")
-    void shouldReturn401_whenFetchingWithoutAuth() throws Exception {
-        // Arrange
-        Map<String, String> requestBody = Map.of("url", "https://example.com/logo.png");
-
-        // Act & Assert
-        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(requestBody)))
-                .andExpect(status().isUnauthorized());
     }
 
     // ============ POST /upload-from-url Tests ============

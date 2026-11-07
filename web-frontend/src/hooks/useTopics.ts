@@ -12,7 +12,6 @@ import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query';
 import { topicService } from '@/services/topicService';
 import type {
   CreateTopicRequest,
-  OverrideStalenesRequest,
   TopicFilters,
   SelectTopicForEventRequest,
 } from '@/types/topic.types';
@@ -114,28 +113,6 @@ export function useCreateTopic() {
     mutationFn: (request: CreateTopicRequest) => topicService.createTopic(request),
     onSuccess: () => {
       // Invalidate all topic list queries to refetch fresh data
-      queryClient.invalidateQueries({ queryKey: topicKeys.lists() });
-    },
-  });
-}
-
-/**
- * Hook to override staleness score with justification (AC7, ORGANIZER only)
- *
- * @returns Mutation object with mutate function
- * @example
- * const overrideMutation = useOverrideStaleness();
- * overrideMutation.mutate({ id: 'uuid', request: { stalenessScore: 80, justification: '...' } });
- */
-export function useOverrideStaleness() {
-  const queryClient = useQueryClient();
-
-  return useMutation({
-    mutationFn: ({ id, request }: { id: string; request: OverrideStalenesRequest }) =>
-      topicService.overrideStaleness(id, request),
-    onSuccess: (_data, variables) => {
-      // Invalidate specific topic and all lists
-      queryClient.invalidateQueries({ queryKey: topicKeys.detail(variables.id) });
       queryClient.invalidateQueries({ queryKey: topicKeys.lists() });
     },
   });

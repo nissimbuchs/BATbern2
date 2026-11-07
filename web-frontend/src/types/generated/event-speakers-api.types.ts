@@ -335,37 +335,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/speakers/invite-batch': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Batch invite speakers to an event
-     * @description Invite multiple speakers in a single request with partial failure support.
-     *
-     *     **Story**: 6.1b - Speaker Invitation System
-     *     **Acceptance Criteria**: AC5 (batch)
-     *     **Authorization**: Requires ORGANIZER role
-     *
-     *     **Business Rules**:
-     *     - Maximum 50 speakers per batch
-     *     - Processing continues even if individual invitations fail
-     *     - Returns 207 Multi-Status when some succeed and some fail
-     *
-     *     **Performance**: <2000ms (P95) for 50 speakers
-     */
-    post: operations['inviteSpeakerBatch'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/events/{eventCode}/speakers/{username}/send-invitation': {
     parameters: {
       query?: never;
@@ -1335,57 +1304,6 @@ export interface components {
        * @example 2026-01-15 10:00:00+00:00
        */
       createdAt: string;
-    };
-    /**
-     * @description Request to invite multiple speakers in a batch.
-     *     Story 6.1b - AC5: Batch Invitation
-     */
-    BatchInviteRequest: {
-      /** @description List of speakers to invite (1-50 per batch) */
-      speakers: components['schemas']['InviteSpeakerRequest'][];
-    };
-    /**
-     * @description Response for a batch speaker invitation with partial failure support.
-     *     Story 6.1b - AC5: Batch Invitation
-     */
-    BatchInviteResponse: {
-      /**
-       * @description Total number of speakers requested
-       * @example 5
-       */
-      totalRequested: number;
-      /**
-       * @description Number of speakers successfully invited
-       * @example 4
-       */
-      successCount: number;
-      /**
-       * @description Number of failed invitations
-       * @example 1
-       */
-      failedCount: number;
-      /** @description Individual results for successful invitations */
-      results: components['schemas']['InviteSpeakerResponse'][];
-      /** @description Details of failed invitations */
-      errors: {
-        /**
-         * Format: email
-         * @description Email of the speaker that failed
-         * @example invalid@broken.test
-         */
-        email: string;
-        /**
-         * @description Error classification code
-         * @example USER_SERVICE_ERROR
-         * @enum {string}
-         */
-        errorCode: 'INVALID_REQUEST' | 'EVENT_NOT_FOUND' | 'USER_SERVICE_ERROR' | 'INTERNAL_ERROR';
-        /**
-         * @description Human-readable error message
-         * @example Failed to create user account
-         */
-        errorMessage: string;
-      }[];
     };
     /**
      * @description Request to send/resend an invitation email to a speaker.
@@ -2489,61 +2407,6 @@ export interface operations {
         };
       };
       /** @description Validation error */
-      400: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-      403: components['responses']['Forbidden'];
-      /** @description Event not found */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['ErrorResponse'];
-        };
-      };
-    };
-  };
-  inviteSpeakerBatch: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code */
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['BatchInviteRequest'];
-      };
-    };
-    responses: {
-      /** @description All invitations processed successfully */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BatchInviteResponse'];
-        };
-      };
-      /** @description Partial success - some invitations failed */
-      207: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BatchInviteResponse'];
-        };
-      };
-      /** @description Validation error (e.g., empty speakers list) */
       400: {
         headers: {
           [name: string]: unknown;

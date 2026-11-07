@@ -106,28 +106,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/logos/fetch-from-url': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Fetch an image from an external URL (CORS proxy)
-     * @description Fetches an image from an external URL and returns the raw bytes with the appropriate
-     *     content type. Proxies around CORS for logo import. Up to 10MB; validates the content is
-     *     an image. No authentication required.
-     */
-    post: operations['fetchImageFromUrl'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/logos/upload-from-url': {
     parameters: {
       query?: never;
@@ -465,10 +443,6 @@ export interface components {
       expiredPendingCount?: number;
       /** Format: int64 */
       expiredConfirmedCount?: number;
-    };
-    FetchImageFromUrlRequest: {
-      /** @description External image URL to fetch */
-      url: string;
     };
     UploadImageFromUrlRequest: {
       /** @description External image URL to fetch and upload */
@@ -896,32 +870,6 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
-    };
-  };
-  fetchImageFromUrl: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['FetchImageFromUrlRequest'];
-      };
-    };
-    responses: {
-      /** @description Image bytes */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/octet-stream': string;
-        };
-      };
-      400: components['responses']['BadRequest'];
-      500: components['responses']['InternalServerError'];
     };
   };
   uploadImageFromUrl: {

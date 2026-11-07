@@ -4,9 +4,6 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.OutreachHistory;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.speakers.dto.generated.BatchInviteRequest;
-import ch.batbern.events.speakers.dto.generated.BatchInviteResponse;
-import ch.batbern.events.speakers.dto.generated.BatchInviteResponseErrorsInner;
 import ch.batbern.events.speakers.dto.generated.InviteSpeakerRequest;
 import ch.batbern.events.speakers.dto.generated.InviteSpeakerResponse;
 import ch.batbern.events.speakers.dto.generated.SendInvitationRequest;
@@ -33,8 +30,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
 /**
@@ -44,7 +39,6 @@ import java.util.Map;
  * Provides:
  * - Speaker invitation with auto-user creation (AC1, AC2)
  * - Invitation email sending with magic links (AC3)
- * - Batch invitation processing (AC5)
  * - Idempotency for duplicate invitations (AC7)
  */
 @Service
@@ -279,86 +273,5 @@ public class SpeakerInvitationService {
             return true;
         }
         return r.getContentDeadline().isAfter(r.getResponseDeadline());
-    }
-
-    /**
-     * Batch invite speakers to an event.
-     * AC5: Handles multiple invitations with partial failure support
-     *
-     * @param eventCode the event code
-     * @param request the batch invite request
-     * @return response with results and any errors
-     */
-    @Transactional
-    public BatchInviteResponse inviteBatch(String eventCode, BatchInviteRequest request) {
-        log.info("Batch inviting {} speakers to event {}", request.getSpeakers().size(), eventCode);
-
-        // Verify event exists first
-        if (!eventRepository.existsByEventCode(eventCode)) {
-            throw new EventNotFoundException(eventCode);
-        }
-
-        List<InviteSpeakerResponse> results = new ArrayList<>();
-        List<BatchInviteResponseErrorsInner> errors = new ArrayList<>();
-
-        for (InviteSpeakerRequest speakerRequest : request.getSpeakers()) {
-            try {
-                InviteSpeakerResponse response = inviteSpeaker(eventCode, speakerRequest);
-                results.add(response);
-            } catch (Exception e) {
-                log.warn("Failed to invite speaker {}: {}",
-                        LoggingUtils.maskEmail(speakerRequest.getEmail()), e.getMessage());
-                errors.add(new BatchInviteResponseErrorsInner()
-                        .email(speakerRequest.getEmail())
-                        .errorCode(getErrorCode(e))
-                        .errorMessage(e.getMessage()));
-            }
-        }
-
-        log.info("Batch invitation complete for event {}: {} success, {} failed",
-                eventCode, results.size(), errors.size());
-
-        return new BatchInviteResponse()
-                .totalRequested(request.getSpeakers().size())
-                .successCount(results.size())
-                .failedCount(errors.size())
-                .results(results)
-                .errors(errors);
-    }
-
-    /**
-     * Map exception to error code for batch processing.
-     */
-    private BatchInviteResponseErrorsInner.ErrorCodeEnum getErrorCode(Exception e) {
-        if (e instanceof IllegalArgumentException) {
-            return BatchInviteResponseErrorsInner.ErrorCodeEnum.INVALID_REQUEST;
-        } else if (e instanceof EventNotFoundException) {
-            return BatchInviteResponseErrorsInner.ErrorCodeEnum.EVENT_NOT_FOUND;
-        } else if (isUserServiceException(e)) {
-            return BatchInviteResponseErrorsInner.ErrorCodeEnum.USER_SERVICE_ERROR;
-        } else {
-            return BatchInviteResponseErrorsInner.ErrorCodeEnum.INTERNAL_ERROR;
-        }
-    }
-
-    /**
-     * Check if exception originated from UserApiClient communication.
-     */
-    private boolean isUserServiceException(Exception e) {
-        // Check exception class name for Feign/HTTP client errors
-        String className = e.getClass().getName();
-        if (className.contains("Feign") || className.contains("HttpClient")) {
-            return true;
-        }
-        // Check cause chain for user service related errors
-        Throwable cause = e.getCause();
-        while (cause != null) {
-            String causeName = cause.getClass().getName();
-            if (causeName.contains("Feign") || causeName.contains("HttpClient")) {
-                return true;
-            }
-            cause = cause.getCause();
-        }
-        return false;
     }
 }

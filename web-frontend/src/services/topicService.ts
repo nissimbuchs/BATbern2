@@ -6,7 +6,6 @@
  * - Get topics with filtering and pagination (GET /api/v1/topics)
  * - Get topic by ID (GET /api/v1/topics/{id})
  * - Create new topic (POST /api/v1/topics)
- * - Override staleness score (PUT /api/v1/topics/{id}/override-staleness)
  * - Get similar topics (GET /api/v1/topics/{id}/similar)
  * - Select topic for event (POST /api/v1/events/{eventCode}/topics)
  * - JWT authentication via interceptors
@@ -18,7 +17,6 @@ import type {
   Topic,
   TopicListResponse,
   CreateTopicRequest,
-  OverrideStalenesRequest,
   TopicFilters,
   SelectTopicForEventRequest,
   TopicSelectionResponse,
@@ -136,23 +134,6 @@ class TopicService {
   }
 
   /**
-   * Override staleness score with justification (AC7)
-   *
-   * @param id Topic UUID
-   * @param request Override request with staleness score and justification
-   * @returns Updated topic
-   * @throws Error if topic not found or validation fails
-   */
-  async overrideStaleness(id: string, request: OverrideStalenesRequest): Promise<Topic> {
-    const response = await apiClient.put<Topic>(
-      `${TOPICS_API_PATH}/${id}/override-staleness`,
-      request
-    );
-
-    return response.data;
-  }
-
-  /**
    * Get similar topics (>70% similarity) for duplicate detection (AC5)
    *
    * @param id Topic UUID
@@ -196,18 +177,6 @@ class TopicService {
       `${EVENTS_API_PATH}/${eventCode}/topics`,
       request
     );
-    return response.data;
-  }
-
-  /**
-   * Recalculate staleness scores for all topics (maintenance endpoint)
-   *
-   * @returns Success message
-   * @throws Error if unauthorized (ORGANIZER only)
-   */
-  async recalculateStaleness(): Promise<string> {
-    const response = await apiClient.post<string>(`${TOPICS_API_PATH}/recalculate-staleness`);
-
     return response.data;
   }
 

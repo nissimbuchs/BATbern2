@@ -488,7 +488,6 @@
     "refreshPreview": "Actualisar l'avisament",
     "switchedTo": "Midat ad avisament {{device}}",
     "refreshingPreview": "Actualisaziun da l'avisament...",
-    "failedToLoad": "Il cargament da l'avisament ha fallì. Pruvai anc ina giada.",
     "iframeTitle": "Avisament da l'eveniment",
     "iframeAriaLabel": "Avisament dal cuntegn da l'eveniment",
     "previewPhaseCaption": "Fasa: {{phase}}",

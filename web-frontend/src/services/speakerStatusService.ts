@@ -11,7 +11,7 @@
  */
 
 import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/speakers-api.types';
+import type { components } from '@/types/generated/event-speakers-api.types';
 import type { SpeakerWorkflowState } from '@/types/speakerPool.types';
 
 // Type aliases for generated types

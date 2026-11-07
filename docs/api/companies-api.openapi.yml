@@ -172,35 +172,6 @@ paths:
       security:
         - BearerAuth: []
 
-  /logos/fetch-from-url:
-    post:
-      tags:
-        - Logos
-      summary: Fetch an image from an external URL (CORS proxy)
-      description: |
-        Fetches an image from an external URL and returns the raw bytes with the appropriate
-        content type. Proxies around CORS for logo import. Up to 10MB; validates the content is
-        an image. No authentication required.
-      operationId: fetchImageFromUrl
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/FetchImageFromUrlRequest'
-      responses:
-        '200':
-          description: Image bytes
-          content:
-            application/octet-stream:
-              schema:
-                type: string
-                format: binary
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
   /logos/upload-from-url:
     post:
       tags:
@@ -929,14 +900,6 @@ components:
         expiredConfirmedCount:
           type: integer
           format: int64
-    FetchImageFromUrlRequest:
-      type: object
-      required:
-        - url
-      properties:
-        url:
-          type: string
-          description: External image URL to fetch
     UploadImageFromUrlRequest:
       type: object
       required:

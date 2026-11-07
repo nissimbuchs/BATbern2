@@ -610,7 +610,7 @@ not drift:
 
 | Call site | Flow | Size cap |
 |-----------|------|----------|
-| `LogoController.fetchImageFromUrl` (`POST /fetch-from-url`) | Import a company logo from a remote URL | 10 MB |
+| ~~`LogoController.fetchImageFromUrl` (`POST /fetch-from-url`)~~ removed by Story 17.1 (2026-11, no caller); logo import uses `LogoController.uploadImageFromUrl` (`POST /logos/upload-from-url`) | Import a company logo from a remote URL | 10 MB |
 | `UserController` profile-picture-from-URL path | Import a profile picture from a remote URL | 5 MB |
 | `FederatedAvatarImportService` (Pattern 1c, Story 12.12) | One-time Google avatar import on federated sign-in | 5 MB |
 
@@ -664,6 +664,8 @@ table that EMS and CUMS share today goes away with the migration.
 **Effect.** Measured 2026-11-07: 7 presign/confirm pairs, 3 upload-from-url endpoints and
 `/logos/fetch-from-url` (no caller) become 3 operations. Eight upload service classes become one
 component plus six handlers. 13 frontend files handle uploads today; they move to one hook.
+Story 17.1 has since removed `/logos/fetch-from-url` and
+`POST …/sessions/{s}/materials/upload-from-url`, leaving 2 upload-from-url endpoints.
 
 **Migration.** One purpose per story (Epic 17, 17.11 onward). Each story deletes the old endpoints
 and changes the frontend in the same change (breaking changes allowed, owner 2026-11-07).

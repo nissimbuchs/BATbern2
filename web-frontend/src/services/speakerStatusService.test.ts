@@ -14,7 +14,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { speakerStatusService } from './speakerStatusService';
 import apiClient from './api/apiClient';
-import type { components } from '@/types/generated/speakers-api.types';
+import type { components } from '@/types/generated/event-speakers-api.types';
 
 type UpdateStatusRequest = components['schemas']['UpdateStatusRequest'];
 type SpeakerStatusResponse = components['schemas']['SpeakerStatusResponse'];

@@ -4,7 +4,6 @@ import ch.batbern.events.core.api.generated.PublishingEngineApi;
 import ch.batbern.events.core.dto.generated.AutoPublishScheduleRequest;
 import ch.batbern.events.core.dto.generated.AutoPublishScheduleResponse;
 import ch.batbern.events.core.dto.generated.PublishPhaseResponse;
-import ch.batbern.events.core.dto.generated.PublishPreviewResponse;
 import ch.batbern.events.core.dto.generated.PublishingStatusResponse;
 import ch.batbern.events.core.dto.generated.UnpublishPhaseResponse;
 import ch.batbern.events.dto.PublishValidationError;
@@ -51,13 +50,6 @@ public class PublishingEngineController implements PublishingEngineApi {
     public ResponseEntity<PublishingStatusResponse> getPublishingStatus(String eventCode) {
         log.info("Getting publishing status for event {}", eventCode);
         return ResponseEntity.ok(publishingService.getPublishingStatus(eventCode));
-    }
-
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<PublishPreviewResponse> getPublishPreview(String eventCode) {
-        log.info("Getting preview for event {}", eventCode);
-        return ResponseEntity.ok(publishingService.getPreview(eventCode));
     }
 
     @Override

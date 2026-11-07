@@ -1585,49 +1585,6 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-  /events/{eventCode}/sessions/{sessionSlug}/materials/upload-from-url:
-    post:
-      tags:
-      - Session Materials
-      summary: Import a material from a URL
-      description: 'Batch-import helper — fetch a material from a source URL and associate it with
-        a session (Story 5.9). Used by historical-data import.
-
-
-        **Authorization**: ORGANIZER only.'
-      operationId: uploadMaterialFromUrl
-      security:
-      - bearerAuth: []
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-        example: BATbern142
-      - name: sessionSlug
-        in: path
-        required: true
-        schema:
-          type: string
-        example: blockchain-security
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/UploadMaterialFromUrlRequest'
-      responses:
-        '201':
-          description: Material imported successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SessionMaterialResponse'
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
 components:
   schemas:
     SessionType:
@@ -2287,28 +2244,6 @@ components:
           type: array
           items:
             $ref: '#/components/schemas/SessionMaterialResponse'
-    UploadMaterialFromUrlRequest:
-      type: object
-      description: 'Batch-import helper: fetch a material from a source URL and associate it with
-        a session (organizer-only). Used by historical-data import.'
-      required:
-      - url
-      - filename
-      properties:
-        url:
-          type: string
-          minLength: 1
-          description: Source URL to fetch the material from
-          example: https://cdn.batbern.ch/legacy/BAT142_UI_Design.pdf
-        filename:
-          type: string
-          minLength: 1
-          description: Target file name
-          example: BAT142_UI_Design.pdf
-        materialType:
-          type: string
-          description: Material classification; defaults to DOCUMENT when omitted
-          example: DOCUMENT
     BatchImportSessionRequest:
       type: object
       description: 'Request payload for batch import from legacy sessions.json.

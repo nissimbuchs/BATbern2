@@ -12,7 +12,6 @@ import {
   useUserProfile,
   useUserPreferences,
   useUserSettings,
-  useUserActivity,
   useUpdateUserProfile,
   useUpdateUserPreferences,
   useUpdateUserSettings,
@@ -57,15 +56,6 @@ describe('User Account Hooks', () => {
     },
   };
 
-  const mockActivity = [
-    {
-      id: 'activity-1',
-      type: 'login' as const,
-      timestamp: '2024-01-15T10:00:00Z',
-      details: { ip: '192.168.1.1' },
-    },
-  ];
-
   beforeEach(() => {
     queryClient = new QueryClient({
       defaultOptions: {
@@ -92,11 +82,6 @@ describe('User Account Hooks', () => {
     it('should_generateCorrectSettingsKey_when_called', () => {
       const key = userAccountKeys.settings('user-123');
       expect(key).toEqual(['user-settings', 'user-123']);
-    });
-
-    it('should_generateCorrectActivityKey_when_called', () => {
-      const key = userAccountKeys.activity('user-123', 10);
-      expect(key).toEqual(['user-activity', 'user-123', { limit: 10 }]);
     });
   });
 
@@ -162,23 +147,6 @@ describe('User Account Hooks', () => {
 
       expect(result.current.data).toEqual(mockUserProfile.settings);
       expect(userAccountApi.getUserProfile).toHaveBeenCalledWith(['settings']);
-    });
-  });
-
-  describe('useUserActivity', () => {
-    it('should_fetchActivity_when_hookMounts', async () => {
-      vi.mocked(userAccountApi.getUserActivity).mockResolvedValueOnce(mockActivity);
-
-      const { result } = renderHook(() => useUserActivity('user-123', 10), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(result.current.data).toEqual(mockActivity);
-      expect(userAccountApi.getUserActivity).toHaveBeenCalledWith(10);
     });
   });
 

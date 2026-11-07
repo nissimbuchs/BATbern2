@@ -5,7 +5,6 @@
  * - useUserProfile: query
  * - useUserPreferences: query
  * - useUserSettings: query
- * - useUserActivity: query with limit
  * - useUpdateUserProfile: mutation + cache invalidation
  * - useUpdateUserPreferences: mutation + cache invalidation
  * - useUpdateUserSettings: mutation + cache invalidation
@@ -20,7 +19,6 @@ import React from 'react';
 
 vi.mock('@/services/api/userAccountApi', () => ({
   getUserProfile: vi.fn(),
-  getUserActivity: vi.fn(),
   updateUserProfile: vi.fn(),
   updateUserPreferences: vi.fn(),
   updateUserSettings: vi.fn(),
@@ -33,7 +31,6 @@ import {
   useUserProfile,
   useUserPreferences,
   useUserSettings,
-  useUserActivity,
   useUpdateUserProfile,
   useUpdateUserPreferences,
   useUpdateUserSettings,
@@ -42,7 +39,6 @@ import {
 } from './useUserAccount';
 
 const mockGetUserProfile = vi.mocked(userAccountApi.getUserProfile);
-const mockGetUserActivity = vi.mocked(userAccountApi.getUserActivity);
 const mockUpdateUserProfile = vi.mocked(userAccountApi.updateUserProfile);
 const mockUpdateUserPreferences = vi.mocked(userAccountApi.updateUserPreferences);
 const mockUpdateUserSettings = vi.mocked(userAccountApi.updateUserSettings);
@@ -146,39 +142,6 @@ describe('useUserSettings', () => {
 
     expect(mockGetUserProfile).toHaveBeenCalledWith(['settings']);
     expect(result.current.data).toEqual(MOCK_USER.settings);
-  });
-});
-
-// ── useUserActivity ───────────────────────────────────────────────────────────
-
-describe('useUserActivity', () => {
-  let qc: QueryClient;
-
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should fetch user activity', async () => {
-    const activity = [{ action: 'LOGIN', timestamp: '2025-01-01T10:00:00Z' }];
-    mockGetUserActivity.mockResolvedValue(activity as never);
-
-    const { result } = renderHook(() => useUserActivity('user-1'), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(mockGetUserActivity).toHaveBeenCalledWith(undefined);
-    expect(result.current.data).toEqual(activity);
-  });
-
-  it('should pass limit parameter', async () => {
-    mockGetUserActivity.mockResolvedValue([] as never);
-
-    const { result } = renderHook(() => useUserActivity('user-1', 5), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(mockGetUserActivity).toHaveBeenCalledWith(5);
   });
 });
 

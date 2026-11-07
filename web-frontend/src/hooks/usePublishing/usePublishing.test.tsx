@@ -120,41 +120,6 @@ describe('usePublishing', () => {
     });
   });
 
-  describe('preview', () => {
-    it('should fetch publish preview', async () => {
-      const mockPreview = {
-        eventCode: 'BATbern142',
-        phase: 'SPEAKERS',
-        mode: 'PROGRESSIVE',
-        previewUrl: 'https://preview.batbern.ch/events/BATbern142?mode=preview',
-        content: {
-          topic: { title: 'BATbern 2025' },
-          speakers: [{ displayName: 'John Doe' }],
-        },
-        validation: {
-          isValid: true,
-          errors: [],
-        },
-      };
-
-      vi.mocked(publishingService.getPublishPreview).mockResolvedValue(mockPreview);
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        result.current.fetchPreview('speakers');
-      });
-
-      await waitFor(() => {
-        expect(result.current.preview).toEqual(mockPreview);
-      });
-
-      expect(publishingService.getPublishPreview).toHaveBeenCalledWith('BATbern142', 'speakers');
-    });
-  });
-
   describe('auto-publish scheduling', () => {
     it('should schedule auto-publish successfully', async () => {
       const mockScheduleResponse = {
@@ -184,31 +149,6 @@ describe('usePublishing', () => {
       expect(publishingService.scheduleAutoPublish).toHaveBeenCalledWith('BATbern142', 'speakers', {
         scheduledDate: '2025-04-15T08:00:00Z',
       });
-    });
-
-    it('should cancel auto-publish schedule successfully', async () => {
-      const mockCancelResponse = {
-        eventCode: 'BATbern142',
-        phase: 'SPEAKERS',
-        cancelledAt: '2025-01-15T15:00:00Z',
-        cancelledBy: 'john.doe',
-      };
-
-      vi.mocked(publishingService.cancelAutoPublish).mockResolvedValue(mockCancelResponse);
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        result.current.cancelAutoPublish('speakers');
-      });
-
-      await waitFor(() => {
-        expect(result.current.isCancelling).toBe(false);
-      });
-
-      expect(publishingService.cancelAutoPublish).toHaveBeenCalledWith('BATbern142', 'speakers');
     });
   });
 

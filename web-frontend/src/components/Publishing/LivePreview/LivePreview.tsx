@@ -1,14 +1,5 @@
-import React, { useState, useEffect, useRef } from 'react';
-import {
-  Box,
-  ToggleButton,
-  ToggleButtonGroup,
-  IconButton,
-  Alert,
-  Button,
-  Paper,
-  Typography,
-} from '@mui/material';
+import React, { useState, useRef } from 'react';
+import { Box, ToggleButton, ToggleButtonGroup, IconButton, Paper, Typography } from '@mui/material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import {
   Computer as DesktopIcon,
@@ -17,7 +8,6 @@ import {
   Refresh as RefreshIcon,
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { usePublishing } from '@/hooks/usePublishing/usePublishing';
 import { PublishingPhase } from '@/types/event.types';
 
 type DeviceType = 'desktop' | 'mobile' | 'print';
@@ -34,36 +24,16 @@ export interface LivePreviewProps {
 
 export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase }) => {
   const { t } = useTranslation('organizer');
-  const { preview, fetchPreview, isLoadingPreview, previewError } = usePublishing(eventCode);
   const [device, setDevice] = useState<DeviceType>('desktop');
   const [isRefreshing, setIsRefreshing] = useState(false);
   const [deviceAnnouncement, setDeviceAnnouncement] = useState('');
   const iframeRef = useRef<HTMLIFrameElement>(null);
-  const prevPreviewRef = useRef(preview);
 
   const deviceDimensions: Record<DeviceType, DeviceDimensions> = {
     desktop: { width: '100%', height: '800px' },
     mobile: { width: '375px', height: '667px' },
     print: { width: '210mm', height: '297mm' },
   };
-
-  // Auto-refresh when preview content changes
-  useEffect(() => {
-    if (prevPreviewRef.current && preview && prevPreviewRef.current !== preview) {
-      // Content changed, reload iframe
-      if (iframeRef.current) {
-        iframeRef.current.src = preview.previewUrl;
-      }
-    }
-    prevPreviewRef.current = preview;
-  }, [preview]);
-
-  // Fetch preview on mount or when phase/mode changes
-  // DISABLED: Causes infinite loop because fetchPreview is not memoized
-  // Users can manually refresh using the refresh button
-  // useEffect(() => {
-  //   fetchPreview?.(phase, mode);
-  // }, [phase, mode, fetchPreview]);
 
   const handleDeviceChange = (_: React.MouseEvent<HTMLElement>, newDevice: DeviceType | null) => {
     if (newDevice !== null) {
@@ -90,16 +60,8 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase }) =>
     setIsRefreshing(false);
   };
 
-  const handleRetry = () => {
-    fetchPreview?.(phase);
-  };
-
   const getPreviewUrl = () => {
-    if (preview?.previewUrl) {
-      return preview.previewUrl;
-    }
-    // Generate preview URL - use actual public event page with preview mode
-    // This allows previewing how the event will look on the public site
+    // The public event page in preview mode: shows how the event will look on the public site.
     const baseUrl = `/events/${eventCode}`;
     const params = new URLSearchParams({ preview: 'true' });
     if (phase) {
@@ -163,7 +125,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase }) =>
         {/* Refresh Button */}
         <IconButton
           onClick={handleRefresh}
-          disabled={isRefreshing || isLoadingPreview}
+          disabled={isRefreshing}
           aria-label={t('livePreview.refreshPreview')}
           title={t('livePreview.refreshPreview')}
         >
@@ -184,7 +146,7 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase }) =>
         }}
       >
         {/* Loading State */}
-        {(isLoadingPreview || isRefreshing) && (
+        {isRefreshing && (
           <Box
             sx={{
               position: 'absolute',
@@ -208,50 +170,23 @@ export const LivePreview: React.FC<LivePreviewProps> = ({ eventCode, phase }) =>
           </Box>
         )}
 
-        {/* Error State */}
-        {previewError && !isLoadingPreview && (
-          <Box
-            sx={{
-              position: 'absolute',
-              top: '50%',
-              left: '50%',
-              transform: 'translate(-50%, -50%)',
-              width: '80%',
-              maxWidth: '500px',
-            }}
-          >
-            <Alert
-              severity="error"
-              action={
-                <Button color="inherit" size="small" onClick={handleRetry}>
-                  {t('common:actions.retry')}
-                </Button>
-              }
-            >
-              {t('livePreview.failedToLoad')}
-            </Alert>
-          </Box>
-        )}
-
         {/* Preview Iframe */}
-        {!previewError && !isLoadingPreview && (
-          <iframe
-            ref={iframeRef}
-            data-testid="preview-iframe"
-            src={getPreviewUrl()}
-            title={t('livePreview.iframeTitle')}
-            aria-label={t('livePreview.iframeAriaLabel')}
-            className={device}
-            style={{
-              width: dimensions.width,
-              height: dimensions.height,
-              border: '1px solid #ccc',
-              borderRadius: '4px',
-              display: isRefreshing ? 'none' : 'block',
-            }}
-            onLoad={() => setIsRefreshing(false)}
-          />
-        )}
+        <iframe
+          ref={iframeRef}
+          data-testid="preview-iframe"
+          src={getPreviewUrl()}
+          title={t('livePreview.iframeTitle')}
+          aria-label={t('livePreview.iframeAriaLabel')}
+          className={device}
+          style={{
+            width: dimensions.width,
+            height: dimensions.height,
+            border: '1px solid #ccc',
+            borderRadius: '4px',
+            display: isRefreshing ? 'none' : 'block',
+          }}
+          onLoad={() => setIsRefreshing(false)}
+        />
       </Box>
 
       {/* Preview Info */}

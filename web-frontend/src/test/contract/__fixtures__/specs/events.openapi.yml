@@ -1,0 +1,65 @@
+openapi: 3.1.0
+info:
+  title: Fixture events
+  version: 1.0.0
+servers:
+  - url: https://api.batbern.ch/api/v1
+paths:
+  /events/{eventCode}/registrations:
+    parameters:
+      - $ref: '#/components/parameters/EventCode'
+    get:
+      operationId: listRegistrations
+      parameters:
+        - name: status
+          in: query
+          schema:
+            type: array
+            items:
+              $ref: '#/components/schemas/RegistrationStatus'
+        - name: limit
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+            maximum: 100
+      responses:
+        '200':
+          description: ok
+  /events/{eventCode}/publish/{phase}:
+    post:
+      operationId: publishPhase
+      responses:
+        '200':
+          description: ok
+  /events/{eventCode}/publish/schedule:
+    get:
+      operationId: getPublishSchedule
+      responses:
+        '200':
+          description: ok
+  /events/current:
+    get:
+      operationId: getCurrentEvent
+      responses:
+        '200':
+          description: ok
+  /events/{eventCode}:
+    get:
+      operationId: getEvent
+      responses:
+        '200':
+          description: ok
+components:
+  parameters:
+    EventCode:
+      name: eventCode
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: ^BATbern[0-9]+$
+  schemas:
+    RegistrationStatus:
+      type: string
+      enum: [REGISTERED, CONFIRMED, CANCELLED]

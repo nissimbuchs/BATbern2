@@ -47,7 +47,7 @@ class OrganizerOnlyEndpointsIntegrationTest extends AbstractIntegrationTest {
         "ATTENDEE, POST,   /api/v1/events/BATbern999/publish",
         "PARTNER,  GET,    /api/v1/notifications?username=anna.organizer",
         "ATTENDEE, DELETE, /api/v1/notifications/00000000-0000-0000-0000-000000000001",
-        "SPEAKER,  POST,   /api/v1/admin/backfill-speaker-names",
+        "SPEAKER,  GET,    /api/v1/admin/settings/some-key",
     })
     @DisplayName("should_return403_when_nonOrganizerCallsOrganizerTool")
     void should_return403_when_nonOrganizerCallsOrganizerTool(String role, String method, String path)

@@ -74,10 +74,18 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
      QEMU: 20-29 minutes per changed service for the image step alone (PR #1072)
 
 3. **Build Frontend** (four jobs since #1074)
-   - `frontend-changes`: skips everything below when nothing under `web-frontend/` changed
+   - `frontend-changes`: skips everything below when nothing under `web-frontend/` or `docs/api/`
+     changed (a spec-only PR runs the frontend jobs since Story 17.3, so the path check sees it)
    - `test-frontend (1/3..3/3)`: Vitest in 3 shards in parallel, each writes a blob report with
      coverage; the coverage threshold is off per shard (a shard alone covers ~30%)
-   - `frontend-static`: API types up to date, ESLint, Prettier, Vite production build, `frontend-dist`
+   - `frontend-static`: frontend API path check (Story 17.3: its Vitest files, then
+     `npm run check:api-paths`), API types up to date, ESLint, Prettier, Vite production build,
+     `frontend-dist`. The path check covers every frontend call through the API client, axios or
+     a `*Client` (not `fetch`). It fails on a call no spec in `docs/api/` defines (NOT IN SPEC),
+     an unresolvable call not in `web-frontend/scripts/api-paths-allowlist.txt` (UNRESOLVED), a
+     new file outside `src/services/` with an HTTP call (OUT OF LAYER, baseline
+     `web-frontend/scripts/api-layer-baseline.txt`) and a stale entry in either list. Locally:
+     `make check-frontend-api-paths`
    - `build-frontend` (the required check, name unchanged): waits for both, fails if either failed,
      merges the blob reports and enforces the coverage threshold on the merged result
    - Before #1074 one job ran it all, and the test step alone took 9-12 minutes (5,600+ tests on a

@@ -4,8 +4,7 @@
  * Coverage for:
  * - Initial state (isLoadingStatus, publishingStatus)
  * - publishPhase / unpublishPhase mutations trigger the publishing service
- * - fetchPreview mutation
- * - scheduleAutoPublish / cancelAutoPublish mutations
+ * - scheduleAutoPublish mutation
  * - validationErrors extraction from 422 error
  */
 
@@ -19,9 +18,7 @@ vi.mock('@/services/publishingService/publishingService', () => ({
     getPublishingStatus: vi.fn(),
     publishPhase: vi.fn(),
     unpublishPhase: vi.fn(),
-    getPublishPreview: vi.fn(),
     scheduleAutoPublish: vi.fn(),
-    cancelAutoPublish: vi.fn(),
   },
 }));
 
@@ -31,9 +28,7 @@ import { usePublishing } from './usePublishing';
 const mockGetStatus = vi.mocked(publishingService.getPublishingStatus);
 const mockPublishPhase = vi.mocked(publishingService.publishPhase);
 const mockUnpublishPhase = vi.mocked(publishingService.unpublishPhase);
-const mockGetPublishPreview = vi.mocked(publishingService.getPublishPreview);
 const mockScheduleAutoPublish = vi.mocked(publishingService.scheduleAutoPublish);
-const mockCancelAutoPublish = vi.mocked(publishingService.cancelAutoPublish);
 
 const createQC = () =>
   new QueryClient({
@@ -112,22 +107,6 @@ describe('usePublishing', () => {
     expect(mockUnpublishPhase).toHaveBeenCalledWith('BAT142', 'speakers');
   });
 
-  it('should call fetchPreview mutation', async () => {
-    const preview = { subject: 'Preview', htmlPreview: '<p/>', recipientCount: 100 };
-    mockGetPublishPreview.mockResolvedValue(preview as never);
-
-    const { result } = renderHook(() => usePublishing('BAT142'), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoadingStatus).toBe(false));
-
-    act(() => {
-      result.current.fetchPreview('topic' as never);
-    });
-
-    await waitFor(() => expect(mockGetPublishPreview).toHaveBeenCalled());
-    expect(mockGetPublishPreview).toHaveBeenCalledWith('BAT142', 'topic');
-  });
-
   it('should call scheduleAutoPublish', async () => {
     mockScheduleAutoPublish.mockResolvedValue({} as never);
 
@@ -145,21 +124,6 @@ describe('usePublishing', () => {
     });
   });
 
-  it('should call cancelAutoPublish', async () => {
-    mockCancelAutoPublish.mockResolvedValue({} as never);
-
-    const { result } = renderHook(() => usePublishing('BAT142'), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoadingStatus).toBe(false));
-
-    act(() => {
-      result.current.cancelAutoPublish('agenda' as never);
-    });
-
-    await waitFor(() => expect(mockCancelAutoPublish).toHaveBeenCalled());
-    expect(mockCancelAutoPublish).toHaveBeenCalledWith('BAT142', 'agenda');
-  });
-
   it('should expose isPublishing/isUnpublishing as false initially', async () => {
     const { result } = renderHook(() => usePublishing('BAT142'), { wrapper: wrapper(qc) });
 
@@ -168,14 +132,5 @@ describe('usePublishing', () => {
     expect(result.current.isPublishing).toBe(false);
     expect(result.current.isUnpublishing).toBe(false);
     expect(result.current.isScheduling).toBe(false);
-    expect(result.current.isCancelling).toBe(false);
-  });
-
-  it('should expose null preview initially', async () => {
-    const { result } = renderHook(() => usePublishing('BAT142'), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoadingStatus).toBe(false));
-
-    expect(result.current.preview).toBeNull();
   });
 });

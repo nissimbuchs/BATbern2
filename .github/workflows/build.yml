@@ -482,9 +482,10 @@ jobs:
             exit 0
           fi
 
-          # Check if frontend files changed
-          if echo "$CHANGED_FILES" | grep -q "^web-frontend/"; then
-            echo "✓ Frontend changes detected"
+          # Check if frontend files changed. A spec change in docs/api/ counts too: the frontend
+          # API path check (Story 17.3) and the generated-types check must run against it.
+          if echo "$CHANGED_FILES" | grep -qE "^(web-frontend/|docs/api/)"; then
+            echo "✓ Frontend or API spec changes detected"
             echo "changed=true" >> $GITHUB_OUTPUT
           else
             echo "ℹ️  No frontend changes detected, skipping build"
@@ -549,6 +550,17 @@ jobs:
       - name: Install dependencies
         working-directory: ./web-frontend
         run: npm ci
+
+      # Story 17.3: every frontend HTTP call must be a method + path some spec in docs/api/
+      # defines. The matcher and scan tests run here as well as in the shards, so the check's own
+      # rules are proven in the same job that enforces them. Needs Node 22 (type stripping).
+      - name: Frontend API path check tests
+        working-directory: ./web-frontend
+        run: npx vitest run src/test/contract scripts/check-api-paths.test.ts
+
+      - name: Frontend API path check
+        working-directory: ./web-frontend
+        run: npm run check:api-paths
 
       - name: Verify API types are up-to-date
         if: needs.frontend-changes.outputs.run == 'true'

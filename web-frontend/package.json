@@ -28,14 +28,15 @@
     "test:e2e:screencast:headed": "INCLUDE_DOCS_TESTS=true playwright test --project=screencast-training --headed",
     "screencast:narration": "node e2e/workflows/documentation/screencast/scripts/generate-narration-audio.mjs",
     "screencast:assemble": "node e2e/workflows/documentation/screencast/scripts/assemble-narration.mjs",
-    "lint": "eslint src --report-unused-disable-directives --max-warnings 0",
-    "lint:ci": "eslint src --report-unused-disable-directives --max-warnings 0",
+    "lint": "eslint src scripts/check-api-paths.ts scripts/check-api-paths.test.ts --report-unused-disable-directives --max-warnings 0",
+    "lint:ci": "eslint src scripts/check-api-paths.ts scripts/check-api-paths.test.ts --report-unused-disable-directives --max-warnings 0",
     "lint:fix": "eslint src --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "type-check": "tsc --noEmit",
+    "type-check": "tsc --noEmit && tsc --noEmit -p tsconfig.scripts.json",
+    "check:api-paths": "node -e \"process.features.typescript || (console.error('check:api-paths needs Node >= 22.18 (type stripping)'), process.exit(1))\" && node scripts/check-api-paths.ts",
     "security:scan": "trivy fs --scanners vuln,secret,misconfig --format sarif --output ../security-reports/web-frontend-trivy.sarif --severity UNKNOWN,LOW,MEDIUM,HIGH,CRITICAL .",
-    "generate:api-types": "npm run generate:api-types:companies && npm run generate:api-types:users && npm run generate:api-types:events && npm run generate:api-types:speakers && npm run generate:api-types:topics && npm run generate:api-types:partners && npm run generate:api-types:partner-meetings",
+    "generate:api-types": "npm run generate:api-types:companies && npm run generate:api-types:users && npm run generate:api-types:events && npm run generate:api-types:topics && npm run generate:api-types:partners && npm run generate:api-types:partner-meetings",
     "check:api-types": "npm run generate:api-types && git diff --exit-code src/types/generated/ || (echo '\n\u274c ERROR: Generated API types are out of date!\n\nRun the following command to update them:\n  cd web-frontend && npm run generate:api-types\n\nThen commit the updated files.\n' && exit 1)",
     "generate:api-types:companies": "openapi-typescript ../docs/api/companies-api.openapi.yml -o src/types/generated/company-api.types.ts && prettier --write src/types/generated/company-api.types.ts",
     "generate:api-types:users": "openapi-typescript ../docs/api/users-api.openapi.yml -o src/types/generated/user-api.types.ts && prettier --write src/types/generated/user-api.types.ts",
@@ -52,7 +53,6 @@
     "generate:api-types:event-analytics": "openapi-typescript ../docs/api/event-analytics-api.openapi.yml -o src/types/generated/event-analytics-api.types.ts && prettier --write src/types/generated/event-analytics-api.types.ts",
     "generate:api-types:event-watch": "openapi-typescript ../docs/api/event-watch-api.openapi.yml -o src/types/generated/event-watch-api.types.ts && prettier --write src/types/generated/event-watch-api.types.ts",
     "generate:api-types:event-tasks": "openapi-typescript ../docs/api/event-tasks-api.openapi.yml -o src/types/generated/event-tasks-api.types.ts && prettier --write src/types/generated/event-tasks-api.types.ts",
-    "generate:api-types:speakers": "openapi-typescript ../docs/api/speakers-api.openapi.yml -o src/types/generated/speakers-api.types.ts && prettier --write src/types/generated/speakers-api.types.ts",
     "generate:api-types:topics": "openapi-typescript ../docs/api/topics-api.openapi.yml -o src/types/generated/topics-api.types.ts && prettier --write src/types/generated/topics-api.types.ts",
     "generate:api-types:partners": "openapi-typescript ../docs/api/partners-api.openapi.yml -o src/types/generated/partner-api.types.ts && prettier --write src/types/generated/partner-api.types.ts",
     "generate:api-types:partner-meetings": "openapi-typescript ../docs/api/partner-meetings-api.openapi.yml -o src/types/generated/partner-meetings-api.types.ts && prettier --write src/types/generated/partner-meetings-api.types.ts"
@@ -166,7 +166,8 @@
     "vite-plugin-sitemap": "^0.8.2",
     "vite-plugin-static-copy": "^4.1.1",
     "vitest": "^5.0.3",
-    "vitest-axe": "^0.1.0"
+    "vitest-axe": "^0.1.0",
+    "yaml": "^2.9.0"
   },
   "lint-staged": {
     "*.{ts,tsx,js,jsx}": [
