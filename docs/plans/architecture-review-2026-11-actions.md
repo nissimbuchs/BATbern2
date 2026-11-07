@@ -63,7 +63,7 @@ go before work starts. Items marked **owner** are decisions, not implementation.
    `/uploads/{id}/confirm` with `purpose`. Migrate one flow per release. Current presign
    classes: ConversationAttachmentService, EventPhotoService, EventTeaserImageService,
    GenericLogoService, MaterialsUploadService, ProfilePictureService, SessionMaterialsService,
-   SpeakerPortalMaterialsService.
+   SpeakerPortalMaterialsService. Also: `GenericLogoService` exists twice, in CUMS and in EMS (found 2026-11-07).
 6. **EMS internal walls** along the module map (report section 6). Layers: L0 platform, L1 mail core +
    notify core, L2 event core, L3 sessions/registrations/topics/tasks/media, L4 speakers,
    L5 agenda planning + publishing, L6 mail center/watch/ai/analytics/usermerge/org notify.
@@ -94,7 +94,8 @@ go before work starts. Items marked **owner** are decisions, not implementation.
    - Rename `/events/batch_registrations` (snake_case); fold it and `enroll-stakeholders` into `participants`.
 
 8. **Agent guardrails** (report section 8). Context steers, gates decide.
-   - `docs/architecture/module-map.md` ≤ 4 KB: EMS modules + allowed directions, service
+   - DRAFTED 2026-11-07: `docs/architecture/module-map.md` (3.6 KB), not yet wired into any context.
+     Was: `docs/architecture/module-map.md` ≤ 4 KB: EMS modules + allowed directions, service
      upstream/downstream, reuse catalog (need X → use Y), API rules incl. ADR-003 UUID rule.
      Load via `project-context.md` (all BMAD workflows load it) + pointer in `CLAUDE.md` (non-BMAD
      sessions). Amelia already loads ~80 KB per activation (project-context 33 KB, coding-standards
