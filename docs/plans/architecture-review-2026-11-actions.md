@@ -16,6 +16,57 @@ go before work starts. Items marked **owner** are decisions, not implementation.
   Cycles: EMS↔CUMS (CUMS→EMS = user merge + merge requests), EMS↔PCS (PCS→EMS = events,
   attendance-summary).
 
+## Owner decisions 2026-11-07
+
+All open questions answered. Recorded here so stories need no further sign-off on scope:
+- Stop and remove the SpeakerCoordination ECS service and stack in production. (AttendeeExperience,
+  0 tasks, was not asked: include it in the same story only after a one-line owner confirm.)
+- Remove the EventBridge bus and its publishers. Keep the in-process Spring events:
+  `EventBridgeEventPublisher` also publishes via `ApplicationEventPublisher`, and 2 `@EventListener`s
+  consume those event types (checked 2026-11-07).
+- `POST /events/{c}/slides-online/send` goes now, clearing the way for 16.8c.
+- API conventions are enforced with breaking changes (frontend changes in the same story).
+- S2S token rule: forward when present, never require, `/internal` authorizes by operation.
+- ADR-003 UUID rule as proposed. No PR for this branch; rebase after the open #1244 work lands.
+
+## After the rebase (Winston, before John)
+
+1. Re-run `scripts/architecture/*` and the spec op count; update numbers in map and report.
+2. ADRs: new ADR-016 "Service directions and S2S calls" (upstream/downstream, `/internal` only,
+   pull feeds instead of events, token rule, merge contract as the one callback); amend ADR-003
+   (UUID rule); status notes on ADR-002 (only logos follow it, shared pipeline pending) and ADR-014
+   (stub + EventBridge removal decided).
+3. Hand this order to John for Epic 17 and the stories.
+
+## Epic 17 "Architecture hardening": suggested order
+
+Protective and cheap first, then decoupling, then restructuring. Each story ships alone
+(each PR = one prod deploy, so batch small ones). Breaking API changes update the frontend in
+the same story.
+
+| # | Story | Contents | Depends on |
+|---|---|---|---|
+| 17.1 | Dead API surface | delete `speakers-api`, `attendees-api` specs; 6 orphan endpoints incl. `slides-online/send`; FE `getPublishPreview` + `fetchPreview` | – |
+| 17.2 | Dormant infrastructure | stop + remove SpeakerCoordination service/stack; remove EventBridge bus, `EventBridgeEventPublisher`, `EventBridgeConfig`, publisher wiring in 5 services, keeping Spring events. Infra change: not on an event day | – |
+| 17.3 | Frontend path contract check | CI fails when `web-frontend/src/services/**` calls a path not in `docs/api/` | 17.1 |
+| 17.4 | OpenAPI lint + spec-diff report | Spectral rules (kebab-case, UUID params only nested, no `/internal` in public specs, no verb endpoints); PR comment listing added ops next to most similar existing ops | 17.1 |
+| 17.5 | ArchUnit freeze | `FreezingArchRule` for the 5 vertical EMS packages + "no new client toward an upstream service" in all services | – |
+| 16.8c | Mail Center consolidation (stays in Epic 16) | fold newsletter, registrant-notice, venue send/preview/retry/history into `/events/{c}/mails` | 17.1 (slides-online gone) |
+| 17.6 | S2S via `/internal` | move `/users/provision`, `issue-invitation-credentials`, `PATCH /users/{u}/profile`, `/events/attendance-summary` and the other public S2S calls (12 URLs) to `/internal`; token rule in shared client helper | 17.4 |
+| 17.7 | User-reference contract | `/internal/user-references/preview|merge` owned by CUMS, EMS implements, PCS added as holder; Mail Center pulls merge requests from CUMS, drop `/internal/mail-center/merge-requests*` | 17.6 |
+| 17.8 | EMS↔PCS direction | topic canvas loads partner topics in the frontend; RSVPs as `/internal` feed pulled by PCS (ShedLock) | 17.6 |
+| 17.9 | API conventions I (breaking) | tasks: one `PATCH`; settings: one app-settings + one user resource; nest `ai/analyze-abstract` under event | 17.4 |
+| 17.10 | API conventions II (breaking) | `me` alias for `{username}` (pictures, profile); one speaker path key; `batch_registrations` + `enroll-stakeholders` folded into `participants` | 17.9 |
+| 17.11 | Upload pipeline (ADR-002) | shared-kernel upload service, `/uploads` + confirm with `purpose`; migrate logos (remove duplicate `GenericLogoService`), then one flow per story | 17.4 |
+| 17.12 | EMS modularization design (Winston) | short tech design: package moves, freeze baseline, release slicing | 17.5 |
+| 17.13 | Registrations out of `EventController` | own controller on the generated registrations interface | 17.12 |
+| 17.14 | Domain exception base | status/code on a base class; `GlobalExceptionHandler` imports no domain exception | 17.12 |
+| 17.15 | Mail core / mail center split | delivery-status projection to center; core publishes, center listens | 17.12, 16.8c |
+| 17.16 | Event-core extension points | workflow guards as interface implemented by sessions/speakers; `Event→Registration` one-directional | 17.12 |
+
+Later, not stories yet: further upload-flow migrations (17.11 follow-ons), the remaining EMS module
+moves (planning, publishing, ai), follow-up reviews (item 9).
+
 ## Actions, in order
 
 1. **Dead surface** (low effort)
