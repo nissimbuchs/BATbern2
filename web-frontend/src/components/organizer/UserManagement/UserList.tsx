@@ -30,7 +30,12 @@ import {
 } from '@mui/material';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import Grid from '@mui/material/Grid';
-import { Add as AddIcon, ViewModule as GridIcon, ViewList as ListIcon } from '@mui/icons-material';
+import {
+  Add as AddIcon,
+  ContentCopy as DuplicatesIcon,
+  ViewModule as GridIcon,
+  ViewList as ListIcon,
+} from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useUserManagementStore } from '@/stores/userManagementStore';
@@ -164,6 +169,16 @@ const UserList: React.FC = () => {
               </ToggleButtonGroup>
             )}
 
+            <Button
+              variant="outlined"
+              startIcon={<DuplicatesIcon />}
+              onClick={() => navigate('/organizer/users/duplicates')}
+              data-testid="user-duplicates-button"
+            >
+              <Box component="span" sx={{ display: { xs: 'none', sm: 'inline' } }}>
+                {t('duplicates.title')}
+              </Box>
+            </Button>
             <Button
               variant="contained"
               color="primary"

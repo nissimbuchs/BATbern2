@@ -382,5 +382,31 @@
     "requestFailed": "Non è stato possibile inviare la richiesta. Riprova più tardi.",
     "placeholderAddress": "Questo profilo precedente è stato importato senza il suo indirizzo.",
     "askOrganizers": "Chiedere agli organizzatori"
+  },
+  "duplicates": {
+    "title": "Possibili duplicati",
+    "back": "Torna agli utenti",
+    "intro": "Coppie di profili che probabilmente appartengono alla stessa persona: stesso nome, nome e cognome invertiti o stesso nome prima della @ con un altro indirizzo. Confronta ogni coppia e uniscila, oppure segnala che non è un duplicato. Esistono omonimi: nel confronto verifica azienda, indirizzi e iscrizioni.",
+    "loadError": "Non è stato possibile caricare l'elenco.",
+    "all": "Tutti",
+    "count": "{{count}} coppie",
+    "empty": "Nessun possibile duplicato trovato.",
+    "keep": "Mantieni",
+    "mergeIn": "Unisci ed elimina",
+    "compare": "Confronta e unisci",
+    "dismiss": "Non è un duplicato",
+    "dismissError": "Non è stato possibile segnare la coppia. Riprova.",
+    "bothLogin": "Entrambi hanno un accesso: solo la persona può unirli (profilo, indirizzi e-mail).",
+    "placeholder": "Indirizzo segnaposto importato",
+    "confidence": {
+      "HIGH": "Molto probabile",
+      "MEDIUM": "Probabile",
+      "LOW": "Solo indizio"
+    },
+    "rule": {
+      "SAME_NAME": "Stesso nome",
+      "SWAPPED_NAME": "Nome e cognome invertiti",
+      "SAME_ADDRESS_NAME": "Stesso nome d'indirizzo, altro dominio"
+    }
   }
 }

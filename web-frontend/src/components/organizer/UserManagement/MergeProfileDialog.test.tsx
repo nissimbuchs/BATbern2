@@ -136,4 +136,47 @@ describe('MergeProfileDialog (#1183 C)', () => {
     await userEvent.click(screen.getByTestId('merge-confirm'));
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/organizer/users/anna.muster'));
   });
+
+  it('should_previewThePresetPair_without_picking_and_stayOnPage_when_openedFromDuplicates', async () => {
+    vi.mocked(api.getUserMergePreview).mockResolvedValue(preview(true));
+    vi.mocked(api.mergeUserProfile).mockResolvedValue({
+      targetUsername: 'anna.muster.2',
+      sourceUsername: 'anna.muster',
+      moved: {},
+      removed: {},
+    });
+    const onMerged = vi.fn();
+    render(
+      <QueryClientProvider
+        client={
+          new QueryClient({
+            defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+          })
+        }
+      >
+        <I18nextProvider i18n={i18n}>
+          <MemoryRouter>
+            <MergeProfileDialog
+              open
+              onClose={vi.fn()}
+              username="anna.muster.2"
+              otherUsername="anna.muster"
+              stayOnPage
+              onMerged={onMerged}
+            />
+          </MemoryRouter>
+        </I18nextProvider>
+      </QueryClientProvider>
+    );
+
+    expect(screen.queryByTestId('pick')).not.toBeInTheDocument();
+    expect(await screen.findByTestId('merge-source')).toHaveTextContent('anna.muster');
+    expect(api.getUserMergePreview).toHaveBeenCalledWith('anna.muster.2', 'anna.muster');
+
+    // swapping still works, and no navigation happens afterwards
+    vi.mocked(api.getUserMergePreview).mockResolvedValue(preview(true));
+    await userEvent.click(screen.getByTestId('merge-confirm'));
+    await waitFor(() => expect(onMerged).toHaveBeenCalled());
+    expect(navigate).not.toHaveBeenCalled();
+  });
 });

@@ -3,7 +3,8 @@
  *
  * Pick the other profile, read the preview (both sides, what moves, what collides), confirm.
  * The profile without a login is always the one that is merged in and deleted; if the organizer
- * picked it the other way round, the dialog offers to swap.
+ * picked it the other way round, the dialog offers to swap. Opened from the duplicates list, the
+ * pair is preset (`otherUsername`) and the page stays where it is (`stayOnPage`).
  */
 
 import React, { useState } from 'react';
@@ -39,6 +40,12 @@ interface MergeProfileDialogProps {
   onClose: () => void;
   /** The profile whose page is open (username). */
   username: string;
+  /** Preset other profile (from the duplicates list); hides the picker. */
+  otherUsername?: string;
+  /** Stay on the current page after the merge instead of opening the kept profile. */
+  stayOnPage?: boolean;
+  /** Called after a successful merge. */
+  onMerged?: () => void;
 }
 
 type Summary = UserMergePreview['source'];
@@ -84,6 +91,9 @@ export const MergeProfileDialog: React.FC<MergeProfileDialogProps> = ({
   open,
   onClose,
   username,
+  otherUsername,
+  stayOnPage = false,
+  onMerged,
 }) => {
   const { t } = useTranslation('userManagement');
   const navigate = useNavigate();
@@ -91,8 +101,9 @@ export const MergeProfileDialog: React.FC<MergeProfileDialogProps> = ({
   const [other, setOther] = useState<UserSearchResponse | null>(null);
   const [swapped, setSwapped] = useState(false);
 
-  const target = swapped && other ? other.id : username;
-  const source = swapped ? username : other?.id;
+  const otherId = otherUsername ?? other?.id;
+  const target = swapped && otherId ? otherId : username;
+  const source = swapped ? username : otherId;
 
   const [merged, setMerged] = useState(false);
 
@@ -113,7 +124,8 @@ export const MergeProfileDialog: React.FC<MergeProfileDialogProps> = ({
         queryKey: ['users'],
         predicate: (q) => q.queryKey[1] !== 'merge-preview',
       });
-      if (target !== username) {
+      onMerged?.();
+      if (!stayOnPage && target !== username) {
         navigate(`/organizer/users/${encodeURIComponent(target)}`);
       }
     },
@@ -149,15 +161,17 @@ export const MergeProfileDialog: React.FC<MergeProfileDialogProps> = ({
             <Typography variant="body2" sx={{ mb: 2 }}>
               {t('merge.intro')}
             </Typography>
-            <UserAutocomplete
-              value={other}
-              onChange={(u) => {
-                setOther(u);
-                setSwapped(false);
-              }}
-              label={t('merge.pickOther')}
-              data-testid="merge-pick-other"
-            />
+            {!otherUsername && (
+              <UserAutocomplete
+                value={other}
+                onChange={(u) => {
+                  setOther(u);
+                  setSwapped(false);
+                }}
+                label={t('merge.pickOther')}
+                data-testid="merge-pick-other"
+              />
+            )}
 
             {preview.isLoading && (
               <Box sx={{ mt: 2 }}>

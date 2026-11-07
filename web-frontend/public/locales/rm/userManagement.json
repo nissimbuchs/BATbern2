@@ -382,5 +382,31 @@
     "requestFailed": "La dumonda n'ha betg pudì vegnir tramessa. Empruvai pli tard anc ina giada.",
     "placeholderAddress": "Quest profil pli vegl è vegnì importà senza Vossa adressa.",
     "askOrganizers": "Dumandar ils organisaturs"
+  },
+  "duplicates": {
+    "title": "Duplicats pussaivels",
+    "back": "Enavos tar ils utilisaders",
+    "intro": "Pèrs da profils che tutgan probablamain tar la medema persuna: medem num, prenum e num scumbiads u medem num avant il @ tar in'autra adressa. Cumpara mintga pèr e unescha el, u marcescha el sco betg duplicat. I dat persunas cun il medem num, perquai controllescha en la cumparegliaziun firma, adressas ed annunzias.",
+    "loadError": "La glista n'ha betg pudì vegnir chargiada.",
+    "all": "Tuts",
+    "count": "{{count}} pèrs",
+    "empty": "Nagins duplicats pussaivels chattads.",
+    "keep": "Mantegnair",
+    "mergeIn": "Surpigliar e stizzar",
+    "compare": "Cumparegliar ed unir",
+    "dismiss": "Betg in duplicat",
+    "dismissError": "Il pèr n'ha betg pudì vegnir marcà. Emprova anc ina giada.",
+    "bothLogin": "Omadus han in login: mo la persuna sezza als po unir (profil, adressas dad e-mail).",
+    "placeholder": "Adressa da plazza importada",
+    "confidence": {
+      "HIGH": "Fitg probabel",
+      "MEDIUM": "Probabel",
+      "LOW": "Mo indizi"
+    },
+    "rule": {
+      "SAME_NAME": "Medem num",
+      "SWAPPED_NAME": "Prenum e num scumbiads",
+      "SAME_ADDRESS_NAME": "Medem num d'adressa, auter domain"
+    }
   }
 }

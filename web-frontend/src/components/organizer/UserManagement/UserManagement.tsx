@@ -12,6 +12,7 @@
  * - Role management
  * - User creation and editing
  * - Batch import for speakers and participants
+ * - Probable duplicate profiles (/organizer/users/duplicates)
  */
 
 import React, { useState } from 'react';
@@ -19,6 +20,7 @@ import { Routes, Route, useNavigate, useParams } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import UserList from './UserList';
 import { UserDetailView } from './UserDetailView';
+import { DuplicateCandidatesPage } from './DuplicateCandidatesPage';
 import UserCreateEditModal from './UserCreateEditModal';
 import { useUserById } from '@/hooks/useUserManagement';
 import type { User } from '@/types/user.types';
@@ -79,6 +81,7 @@ const UserManagement: React.FC = () => {
   return (
     <Routes>
       <Route index element={<UserList />} />
+      <Route path="duplicates" element={<DuplicateCandidatesPage />} />
       <Route path=":userId" element={<UserDetailPage />} />
     </Routes>
   );

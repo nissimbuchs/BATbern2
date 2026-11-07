@@ -382,5 +382,31 @@
     "requestFailed": "No se pudo enviar la solicitud. Inténtalo más tarde.",
     "placeholderAddress": "Este perfil anterior se importó sin su dirección.",
     "askOrganizers": "Pedir a los organizadores"
+  },
+  "duplicates": {
+    "title": "Posibles duplicados",
+    "back": "Volver a usuarios",
+    "intro": "Pares de perfiles que probablemente pertenecen a la misma persona: mismo nombre, nombre y apellido invertidos o mismo nombre antes de la @ en otra dirección. Compara cada par y únelo, o márcalo como no duplicado. Existen homónimos: comprueba empresa, direcciones e inscripciones en la comparación.",
+    "loadError": "No se pudo cargar la lista.",
+    "all": "Todos",
+    "count": "{{count}} pares",
+    "empty": "No se encontraron posibles duplicados.",
+    "keep": "Conservar",
+    "mergeIn": "Unir y eliminar",
+    "compare": "Comparar y unir",
+    "dismiss": "No es un duplicado",
+    "dismissError": "No se pudo marcar el par. Inténtalo de nuevo.",
+    "bothLogin": "Ambos tienen acceso: solo la persona puede unirlos (perfil, direcciones de correo).",
+    "placeholder": "Dirección provisional importada",
+    "confidence": {
+      "HIGH": "Muy probable",
+      "MEDIUM": "Probable",
+      "LOW": "Solo indicio"
+    },
+    "rule": {
+      "SAME_NAME": "Mismo nombre",
+      "SWAPPED_NAME": "Nombre y apellido invertidos",
+      "SAME_ADDRESS_NAME": "Mismo nombre de dirección, otro dominio"
+    }
   }
 }

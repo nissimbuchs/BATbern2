@@ -382,5 +382,31 @@
     "requestFailed": "Pyyntöä ei voitu lähettää. Yritä myöhemmin uudelleen.",
     "placeholderAddress": "Tämä aiempi profiili tuotiin ilman osoitettasi.",
     "askOrganizers": "Pyydä järjestäjiltä"
+  },
+  "duplicates": {
+    "title": "Mahdolliset kaksoiskappaleet",
+    "back": "Takaisin käyttäjiin",
+    "intro": "Profiilipareja, jotka todennäköisesti kuuluvat samalle henkilölle: sama nimi, etu- ja sukunimi vaihtaneet paikkaa tai sama nimi ennen @-merkkiä toisessa osoitteessa. Vertaa jokaista paria ja yhdistä se tai merkitse, ettei se ole kaksoiskappale. Kaimoja on, joten tarkista vertailussa yritys, osoitteet ja ilmoittautumiset.",
+    "loadError": "Luetteloa ei voitu ladata.",
+    "all": "Kaikki",
+    "count": "{{count}} paria",
+    "empty": "Mahdollisia kaksoiskappaleita ei löytynyt.",
+    "keep": "Säilytä",
+    "mergeIn": "Yhdistä ja poista",
+    "compare": "Vertaa ja yhdistä",
+    "dismiss": "Ei kaksoiskappale",
+    "dismissError": "Paria ei voitu merkitä. Yritä uudelleen.",
+    "bothLogin": "Molemmilla on kirjautuminen: vain henkilö itse voi yhdistää ne (profiili, sähköpostiosoitteet).",
+    "placeholder": "Tuotu paikkamerkkiosoite",
+    "confidence": {
+      "HIGH": "Erittäin todennäköinen",
+      "MEDIUM": "Todennäköinen",
+      "LOW": "Vain vihje"
+    },
+    "rule": {
+      "SAME_NAME": "Sama nimi",
+      "SWAPPED_NAME": "Etu- ja sukunimi vaihtaneet paikkaa",
+      "SAME_ADDRESS_NAME": "Sama osoitenimi, eri verkkotunnus"
+    }
   }
 }

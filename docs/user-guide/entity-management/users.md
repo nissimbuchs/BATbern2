@@ -347,6 +347,15 @@ subscriptions, roles and addresses. Confirm with **Merge and delete**.
 - The address of the deleted profile becomes a confirmed additional address of the one that stays.
 - Every merge is logged with everything it moved and removed, so it can be undone by hand if needed.
 
+**Finding duplicates**: **Users → Mögliche Duplikate** lists pairs of profiles that probably belong to
+one person, computed on the current data: same name (ignoring case, umlauts, accents and hyphens),
+first and last name swapped, or the same `vorname.nachname` before the @ at another domain. Each pair
+shows how likely it is ("Sehr wahrscheinlich", "Wahrscheinlich", "Nur Hinweis") and which profile would
+stay. **Vergleichen und zusammenführen** opens the merge preview above with the pair already chosen; you
+stay on the list. **Kein Duplikat** removes a pair of namesakes from the list for good. Pairs where both
+profiles have a login cannot be merged here; only the person can (see below). On 2026-11-07 the list
+held about 300 pairs.
+
 **Participants** see earlier profiles under their own name on the dashboard and in the account settings
 (masked address only). **This is me** sends a confirmation link to that profile's address. Opening it while
 logged in with the account that asked merges the profile the same way.
