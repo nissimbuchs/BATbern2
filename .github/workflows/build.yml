@@ -560,6 +560,17 @@ jobs:
         working-directory: ./web-frontend
         run: npm run check:api-paths
 
+      # Story 17.4: Spectral with the convention ruleset docs/api/.spectral.yaml over the public
+      # specs, against web-frontend/scripts/api-lint-baseline.txt. A NEW violation fails, and so
+      # does a fixed one still in the baseline (STALE). The rules are proven here first.
+      - name: OpenAPI convention lint tests
+        working-directory: ./web-frontend
+        run: npx vitest run scripts/api-lint.test.ts scripts/api-similarity.test.ts
+
+      - name: OpenAPI convention lint
+        working-directory: ./web-frontend
+        run: npm run lint:api
+
       - name: Verify API types are up-to-date
         if: needs.frontend-changes.outputs.run == 'true'
         working-directory: ./web-frontend
@@ -637,6 +648,71 @@ jobs:
       - name: Test ratchet
         working-directory: ./web-frontend
         run: npm run check:test-ratchet
+
+  # Story 17.4: for every operation a PR adds to docs/api/*.openapi.yml, the 3 most similar
+  # existing operations, as one PR comment (marked, updated in place on every push). Informative:
+  # continue-on-error, and nothing needs this job.
+  api-similarity:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect spec changes
+        id: specs
+        run: |
+          if git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" | grep -q '^docs/api/'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Node.js 22
+        if: steps.specs.outputs.changed == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web-frontend/package-lock.json
+
+      - name: Install dependencies
+        if: steps.specs.outputs.changed == 'true'
+        working-directory: ./web-frontend
+        run: npm ci
+
+      - name: Build the report
+        if: steps.specs.outputs.changed == 'true'
+        working-directory: ./web-frontend
+        run: npm run --silent report:api-similarity -- --base "${{ github.event.pull_request.base.sha }}" > "$RUNNER_TEMP/api-similarity.md"
+
+      - name: Post or update the PR comment
+        if: steps.specs.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/api-similarity.md"
+          id=$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
+            --jq '.[] | select(.body | startswith("<!-- api-similarity-report -->")) | .id' | head -n 1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -F "body=@$report" > /dev/null
+            echo "Updated comment $id"
+          elif grep -q 'no added operations' "$report"; then
+            echo "No added operations and no earlier comment: nothing to post"
+          else
+            gh api -X POST "repos/$REPO/issues/$PR/comments" -F "body=@$report" > /dev/null
+            echo "Posted the report"
+          fi
+          cat "$report" >> "$GITHUB_STEP_SUMMARY"
 
   build-frontend:
     needs: [frontend-changes, test-frontend, frontend-static, test-ratchet]

@@ -85,7 +85,20 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
      an unresolvable call not in `web-frontend/scripts/api-paths-allowlist.txt` (UNRESOLVED), a
      new file outside `src/services/` with an HTTP call (OUT OF LAYER, baseline
      `web-frontend/scripts/api-layer-baseline.txt`) and a stale entry in either list. Locally:
-     `make check-frontend-api-paths`
+     `make check-frontend-api-paths`. Then the OpenAPI convention lint (Story 17.4: its Vitest
+     files, then `npm run lint:api`): Spectral with `docs/api/.spectral.yaml` (five rules:
+     kebab-case segments, no verb as last segment, no `/internal` path, no literal directly under
+     `/events/`, UUID path parameters) over the public specs, compared with
+     `web-frontend/scripts/api-lint-baseline.txt` by rule + spec file + method + path. It fails on
+     a NEW finding and on a STALE one (fixed but still baselined: `npm run lint:api -- --update`).
+     Policy: `docs/architecture/coding-standards.md`, "API conventions lint". Locally:
+     `make lint-api`
+   - `api-similarity` (Story 17.4, pull requests that change `docs/api/` only, not needed by any
+     job, `continue-on-error`): for every operation the PR adds (method + path, parameter names
+     blanked), the 3 most similar existing operations by path and summary, posted as one PR
+     comment marked `<!-- api-similarity-report -->` and updated in place on later pushes.
+     Needs `pull-requests: write`; a fork or Dependabot PR gets a read-only token and the job
+     fails harmlessly. Locally: `cd web-frontend && npm run report:api-similarity -- --base origin/develop`
    - `test-ratchet` (Story 17.0a, no path filter: it also runs on PRs that touch only Java):
      its own Vitest file, then `npm run check:test-ratchet`. It counts, per test file, the mocks
      the Test fidelity rules forbid in new tests (`docs/architecture/coding-standards.md`, "Test
