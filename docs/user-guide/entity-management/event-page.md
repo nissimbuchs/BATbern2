@@ -213,6 +213,12 @@ The public page shows registration in one place each:
 on top. Without a capacity only *vergeben* is shown. A direct link to `/register/{event}` shows
 "Anmeldung geschlossen" after the deadline.
 
+Below the venue map, **Nächste BAT-Termine** shows the next three events after the one on the page,
+nearest first, also on archive pages. An event whose topic, speakers or agenda you have published
+gets the full card with a link; an event that is only planned shows its code, title and date, so
+give planned events a title you are happy to show publicly. The section is hidden when no event
+follows.
+
 Everyone who moves up gets the waitlist-promotion mail. The remaining waitlist positions are not
 renumbered.
 

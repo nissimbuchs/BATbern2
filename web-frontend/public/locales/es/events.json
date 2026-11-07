@@ -1101,9 +1101,6 @@
       "shareEmail": "Compartir por correo electrónico",
       "shareText": "¡Únase a mí en {{title}}!"
     },
-    "upcomingEvents": {
-      "title": "Más eventos próximos"
-    },
     "upcomingDates": {
       "title": "Próximas fechas BAT"
     },

@@ -1101,9 +1101,6 @@
       "shareEmail": "Delen via e-mail",
       "shareText": "Doe mee met mij bij {{title}}!"
     },
-    "upcomingEvents": {
-      "title": "Meer aankomende evenementen"
-    },
     "upcomingDates": {
       "title": "Volgende BAT-data"
     },

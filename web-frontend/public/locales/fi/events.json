@@ -1101,9 +1101,6 @@
       "shareEmail": "Jaa sähköpostilla",
       "shareText": "Liity mukaan kanssani tapahtumaan {{title}}!"
     },
-    "upcomingEvents": {
-      "title": "Lisää tulevia tapahtumia"
-    },
     "upcomingDates": {
       "title": "Tulevat BAT-päivämäärät"
     },
