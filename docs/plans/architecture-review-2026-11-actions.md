@@ -160,6 +160,9 @@ moves (planning, publishing, ai), follow-up reviews (item 9).
    - DONE on this branch 2026-11-07 (owner go): map (≤4 KB) loaded by Amelia instead of source-tree.md,
      and by create-story, dev-story, quick-dev, code-review via `_bmad/custom/*.toml` overrides, each with
      an architecture-note / architecture-check step. Takes effect only once merged to develop.
+     BMAD v7 (2026-11-07, branch `chore/bmad-v7`): create-story, dev-story and quick-dev are gone; their
+     overrides moved to `_bmad/custom/bmad-build.toml`. v7 no longer loads project-context.md by itself,
+     so the dev, build, code-review, architect and po overrides name it.
      Was: `docs/architecture/module-map.md` ≤ 4 KB: EMS modules + allowed directions, service
      upstream/downstream, reuse catalog (need X → use Y), API rules incl. ADR-003 UUID rule.
      Load via `project-context.md` (all BMAD workflows load it) + pointer in `CLAUDE.md` (non-BMAD

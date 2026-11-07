@@ -8,7 +8,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 
 **Status:** ✅ **MVP 100% COMPLETE & IN PRODUCTION** | **Epics 1-8, 10, 11, 12 and 14 COMPLETE; 13, 15, 16 open; 9 superseded**
 
-**Epic Status** (source of truth: `_bmad-output/implementation-artifacts/sprint-status.yaml`):
+**Epic Status** (epics 1-16: v6 archive `_bmad-output/implementation-artifacts/sprint-status.yaml`; from Epic 17 on: BMAD v7 initiative under `_bmad-output/initiative-*/`):
 - ✅ **Epic 1**: Foundation & Core Infrastructure - 100% COMPLETE
 - ✅ **Epic 2**: Entity CRUD & Domain Services - 100% COMPLETE
 - ✅ **Epic 3**: Historical Data Migration - 100% COMPLETE (tooling ready, production import pending)
@@ -869,6 +869,18 @@ cd web-frontend && rm -rf node_modules && npm ci
 # Type check
 npm run type-check
 ```
+
+## BMAD Method (v7 preview, since 2026-11-07)
+
+- Installed with `npx skills add bmad-code-org/BMAD-METHOD --skill '*' --agent claude-code -y`, pinned in
+  `skills-lock.json`. Update or check: ask the `bmad` skill for `bmad setup` / `bmad status` (needs `uv`).
+- Team overrides live in `_bmad/custom/*.toml`, never in the skill files (overwritten on update). v7 does
+  not load `_bmad-output/project-context.md` by itself; the overrides name it.
+- Stories are built with `bmad-build` (successor of v6 create-story, dev-story, quick-dev); the backlog is
+  Sofia's (`bmad-agent-po`), in `_bmad-output/initiative-*/`.
+- Epics 1-16 (story files, `sprint-status.yaml`) stay as a read-only v6 archive in
+  `_bmad-output/implementation-artifacts/`. Do not run the v6 to v7 artifact migration: the v6 planning
+  folder was `docs/`, and the migration would move all of it, OpenAPI specs included.
 
 ## Important Context Files
 

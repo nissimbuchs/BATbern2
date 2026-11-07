@@ -62,7 +62,8 @@ contract check or test), not by a document.
 - **Architecture note.** Each story file starts with the 5-line note from `module-map.md`: modules
   touched · new cross-module or cross-service dependencies · new or changed endpoints, each with the
   nearest existing one · components reused · deviations from the map and why. The drafts below are
-  the starting point; create-story refines them, dev-story confirms before the first test.
+  the starting point; `bmad-build` refines and confirms them in the plan's Design Notes before the
+  first test (`_bmad/custom/bmad-build.toml`).
 - **Named guard.** Every acceptance criterion that states an architectural property names the gate
   that proves it. A property without a gate is not done.
 - **Re-measure.** A story that claims to remove violations re-runs
@@ -126,7 +127,7 @@ improve without a rewrite.
 
 **Scope:**
 - **Mocking rule** in `docs/architecture/coding-standards.md` and in Amelia's dev workflow
-  (`_bmad/custom/bmad-dev-story.toml` / `bmad-agent-dev.toml` overrides, not the skill files): *mock only
+  (`_bmad/custom/bmad-build.toml` / `bmad-agent-dev.toml` overrides, not the skill files): *mock only
   at the process boundary* (SES, S3, Cognito, OpenAI, SQS, the clock, another service's HTTP API at the
   wire, never its Java client). Layer table from proposal P1.
 - **Assertion rules** (P3): absence needs a positive control; assert the effect, not the call; a fallback
@@ -144,7 +145,7 @@ improve without a rewrite.
   baseline entries; a falling count updates the baseline in the same PR.
 
 **Acceptance criteria:**
-1. The rule and assertion rules are in `coding-standards.md`, the dev-story override and project-context;
+1. The rule and assertion rules are in `coding-standards.md`, the `bmad-build` override and project-context;
    the contradiction is gone. Guard: grep shows no "mock the service layer" guidance.
 2. The ratchet runs in a required CI job. Guard: a test of the check with fixtures (count up fails,
    count down passes with baseline update, stale entry fails).
