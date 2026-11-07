@@ -25,6 +25,7 @@ This file provides guidance to Claude Code (claude.ai/code) when working with co
 - ✅ **Epic 14**: Event Detail Page — Lifecycle-Aware Redesign - COMPLETE (#788, 2026-06-15)
 - 🔄 **Epic 15**: Post-Event #2 Hardening - 15.2, 15.3, 15.5, 15.6, 15.7, 15.9 done; 15.1 P1 live (#800), P2 watch + P3 WebSocket teardown open; 15.4 not implemented; 15.8 backlog
 - 🔄 **Epic 16**: Mail Center - 16.0–16.11 LIVE (last: #1194, 2026-11-03) except 16.8c clean-up (gated: one release + owner go); 16.12, 16.13 backlog
+- 📋 **Epic 17**: Architecture hardening - backlog (2026-11-07, from the architecture review; scope decided, each story needs owner go) — `docs/prd/epic-17-architecture-hardening.md`
 
 **Delivered Capabilities:**
 - ✅ All entity CRUD operational (Company, User, Event, Speaker, Partner)
@@ -85,6 +86,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 14**: Event Detail Page Redesign - **COMPLETE** (#788)
 - 🔄 **Epic 15**: Post-Event #2 Hardening - **IN PROGRESS** (15.1 P2/P3, 15.4, 15.8 open)
 - 🔄 **Epic 16**: Mail Center - **16.0–16.11 LIVE**; 16.8c gated, 16.12/16.13 backlog
+- 📋 **Epic 17**: Architecture hardening - **BACKLOG** (17.1–17.16; 17.12 is a design task)
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
@@ -96,7 +98,8 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 **When Adding New Features** (open work as of 2026-11-04):
 - Epic 13: Story 13.4 (flip off `preferred-json-mapper: jackson2`, move to Jackson 3) and 13.5 (unpin BOM-managed dependency versions)
 - Epic 15: 15.1 P2 (watch app off WebSockets) then P3 (delete WebSocket code and deps); 15.4 (company/email-domain mismatch warning); 15.8 (LinkedIn post drafts, backlog)
-- Epic 16: 16.8c composer clean-up (only after one release and owner go); 16.12, 16.13 backlog — see `docs/prd/epic-16-mail-center.md`
+- Epic 16: 16.8c composer clean-up (only after one release and owner go, after 17.1); 16.12, 16.13 backlog — see `docs/prd/epic-16-mail-center.md`
+- Epic 17: architecture hardening, 16 stories in order (dead surface and gates first) — see `docs/prd/epic-17-architecture-hardening.md`
 - Epic 11 leftovers: 11.E.5, 11.G.1 (ready-for-dev), 11.F.2 (backlog)
 - Epic 12 deferred tail (backlog Story 12.10): Apple/generic OIDC + Cognito trigger-retirement cleanup — precondition: deferred-work cluster A
 - Epic 3 production data import still pending

@@ -47,7 +47,7 @@ So this is **not a helpdesk**. It is a per-event log with a short "needs an answ
 3. 16.8a + 16.8b: live 2026-11-01 (#1174); 16.9 live 2026-11-02 (#1180); 16.11 merged 2026-11-02 (#1177)
 4. 16.2a + 16.6 + 16.2b: live 2026-11-02 (#1189); 16.5 live 2026-11-02 (#1180)
 5. 16.7 + 16.10: live 2026-11-03 (#1194)
-6. 16.8c clean-up: one release after 16.8, owner go. 16.12, 16.13: backlog
+6. 16.8c clean-up: one release after 16.8, owner go, and after Epic 17 story 17.1 (which removes `slides-online/send`, owner 2026-11-07). 16.12, 16.13: backlog
 
 All story files exist in `_bmad-output/implementation-artifacts/16-*.md` (written 2026-11-01).
 

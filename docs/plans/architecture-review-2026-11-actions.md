@@ -59,7 +59,7 @@ the same story.
 | # | Story | Contents | Depends on |
 |---|---|---|---|
 | 17.1 | Dead API surface | delete `speakers-api`, `attendees-api` specs; 6 orphan endpoints incl. `slides-online/send`; FE `getPublishPreview` + `fetchPreview` | – |
-| 17.2 | Dormant infrastructure (closes #1216, bus part of #1220) | stop + remove SpeakerCoordination and AttendeeExperience services/stacks, build-matrix and deploy entries, gateway route `/api/v1/content/**`; remove EventBridge bus, `EventBridgeEventPublisher`, `EventBridgeConfig`, publisher wiring in 5 services, keeping Spring events. Infra change: not on an event day | – |
+| 17.2 | Dormant infrastructure (closes #1216, bus part of #1220) | stop + remove SpeakerCoordination and AttendeeExperience services/stacks, build-matrix and deploy entries, gateway route `/api/v1/content/**`; remove EventBridge bus, `EventBridgeEventPublisher`, `EventBridgeConfig`, publisher wiring (corrected 2026-11-07: one shared-kernel implementation of `DomainEventPublisher`, wired in CUMS/EMS/PCS config; replace it by a Spring-only one), keeping Spring events. Infra change: not on an event day | – |
 | 17.3 | Frontend path contract check | CI fails when `web-frontend/src/services/**` calls a path not in `docs/api/` | 17.1 |
 | 17.4 | OpenAPI lint + spec-diff report | Spectral rules (kebab-case, UUID params only nested, no `/internal` in public specs, no verb endpoints); PR comment listing added ops next to most similar existing ops | 17.1 |
 | 17.5 | ArchUnit freeze | `FreezingArchRule` for the 5 vertical EMS packages + "no new client toward an upstream service" in all services | – |
@@ -202,6 +202,8 @@ moves (planning, publishing, ai), follow-up reviews (item 9).
    - Watch app API (`event-watch-api`, pairing/auth in CUMS, `/events/current`).
 
 ## Brief for John (Epic 17)
+
+**Done 2026-11-07:** [`docs/prd/epic-17-architecture-hardening.md`](../prd/epic-17-architecture-hardening.md), stories in `sprint-status.yaml` as backlog. Found while writing it: 17.7 must also cover `/internal/mail-center/logo-requests*` (#1246 added a second CUMS→EMS push of the same kind).
 
 Create Epic 17 "Architecture hardening" and its stories from the table above, in that order. 16.8c
 stays in Epic 16 and sits after 17.1. Read first: this file, `docs/architecture/module-map.md`,
