@@ -68,3 +68,4 @@ The owner and every later story get a smaller platform and three gates with comm
 - Source conflict: 17.5's client rule. The action list (item 17.5) says "no new client toward an upstream service"; the PRD and ADR-016 say downstream.
 - Decision: 2026-11-07. ADR-016 decides it: services call only upstream, so the frozen rule is "no new client toward a downstream service". The action list's wording is a slip.
 - Decision: 2026-11-07, owner. 17.4's similarity comment needs no separate proof: no test PR, and no end-to-end check of the comment. It is informative, not blocking. The story's ordinary unit tests cover the script, and the first real PR that adds an operation shows it. This drops the PRD's 17.4 AC3 test-PR guard.
+- Decision: 2026-11-07, owner. 17.2 ships in one branch and one PR with 17.0a (epic 2); the PR deploys on a date the owner picks that is not an event day.
