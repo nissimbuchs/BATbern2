@@ -136,7 +136,7 @@ updates:
       - "security"
       - "backend"
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "chore"
       include: "scope"
 
   # npm dependencies for Infrastructure (CDK)
@@ -193,7 +193,7 @@ updates:
       - "security"
       - "infrastructure"
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "chore"
       include: "scope"
     versioning-strategy: increase
 
@@ -247,7 +247,7 @@ updates:
       - "security"
       - "frontend"
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "chore"
       include: "scope"
     versioning-strategy: increase
     # Ignore major version updates for React and Material-UI (manual review needed)
@@ -281,7 +281,7 @@ updates:
       - "dependencies"
       - "github-actions"
     commit-message:
-      prefix: "chore(ci)"
+      prefix: "chore"
       include: "scope"
 
   # ── Lambda manifests (added 2026-08-10) ─────────────────────────────────────
@@ -311,7 +311,7 @@ updates:
       - "infrastructure"
       - "lambda"
     commit-message:
-      prefix: "chore(deps)"
+      prefix: "chore"
       include: "scope"
     versioning-strategy: increase
     # NOTE: the previous `ignore` on sharp majors was removed in #929's follow-up.
