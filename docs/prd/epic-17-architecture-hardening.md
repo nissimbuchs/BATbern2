@@ -1,6 +1,6 @@
 # Epic 17 — Architecture hardening
 
-**Author:** John (PM), from Winston's architecture review · **Date:** 2026-11-07 · **Status:** 📋 backlog. Scope decided by the owner 2026-11-07; each story still needs the owner's go before it starts.
+**Author:** John (PM), from Winston's architecture review · **Date:** 2026-11-07 · **Status:** 📋 backlog, managed as BMAD v7 initiative `_bmad-output/initiative-architecture-hardening/` (five epics, 2026-11-07). Scope decided by the owner 2026-11-07; each story still needs the owner's go before it starts.
 **Source:** [`docs/plans/architecture-review-2026-11-actions.md`](../plans/architecture-review-2026-11-actions.md) (action list, owner decisions, measured baseline). Report: https://claude.ai/artifact/L4gaZoqWMDUnV7vLGcsdbh (private). Stories 17.0a–d: [`docs/plans/test-fidelity-proposal-2026-11.md`](../plans/test-fidelity-proposal-2026-11.md) (Winston, 57 production bugs since 2026-08 classified; added on owner go 2026-11-07).
 **Architecture:** [`module-map.md`](../architecture/module-map.md), [ADR-016](../architecture/ADR-016-service-directions-and-service-to-service-calls.md) (new), ADR-003 amendment 2026-11 (UUIDs in paths), ADR-002 decision 2026-11-07 (one upload contract), ADR-014 decision 2026-11-07 (stubs and bus removed), ADR-008 update.
 
@@ -253,7 +253,7 @@ that** I extend the real one instead of a dead twin.
   the ZAP matrix in `security-scan.yml`, or `check-zap-spec-coverage.py` fails.
 - Regenerate frontend types.
 
-Story file: `_bmad-output/implementation-artifacts/17-1-dead-api-surface.md`.
+Story file (BMAD v7): `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/tickets/story-dead-api-surface-removed.md`.
 
 **Architecture note (draft):** modules: EMS publishing, speakers, sessions/media, mail center; CUMS
 logos · new dependencies: none · endpoints: 6 removed, none added · reused: n/a · deviations: none.
@@ -329,7 +329,7 @@ parameters checked) with its own unit tests, imported by the CI script and by 17
 (Winston 2026-11-07). The check scans all of `web-frontend/src` (15 files outside `services/` make HTTP
 calls; frozen as a baseline), method-aware, and `frontend-changes` also triggers on `docs/api/`. Six
 calls with no spec and no backend were found by a prototype and are resolved in the story.
-Story file: `_bmad-output/implementation-artifacts/17-3-frontend-path-contract-check.md`.
+Story file (BMAD v7): `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/tickets/story-frontend-path-contract-check-in-ci.md`.
 
 **Architecture note (draft):** modules: CI, `scripts/` · new dependencies: none · endpoints: none ·
 reused: review scan regex, `docs/api/` · deviations: none.

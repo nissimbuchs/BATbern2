@@ -319,9 +319,9 @@ development_status:
   17-0b-s2s-contract-harness: backlog  # P2.1 + P2.4a-c; 17.6 waits for 17.0a + 17.0b
   17-0c-frontend-msw-harness: backlog  # P2.2; needs 17.3 (shared matcher); 17.9 and 17.11 wait for 17.0c + 17.0d
   17-0d-production-shaped-fixtures: backlog  # P2.3
-  17-1-dead-api-surface: ready-for-dev  # story file 2026-11-07
+  17-1-dead-api-surface: ready-for-dev  # moved 2026-11-07 to the BMAD v7 tree: _bmad-output/initiative-architecture-hardening/ (Epic 17 is tracked there, not here)
   17-2-dormant-infrastructure-stubs-and-event-bus: backlog  # prod infra, not on an event day; closes #1216, bus part of #1220
-  17-3-frontend-path-contract-check: ready-for-dev  # story file 2026-11-07; same PR as 17.1 if owner agrees
+  17-3-frontend-path-contract-check: ready-for-dev  # moved 2026-11-07 to the BMAD v7 tree (see 17-1)
   17-4-openapi-lint-and-spec-diff-report: backlog
   17-5-archunit-freeze: backlog
   17-6-service-to-service-via-internal: backlog

@@ -1,0 +1,85 @@
+# Epic 1 stories in build order. Ids keep the Epic 17 story number; 16.8c is 168c.
+
+[[entry]]
+id = 1
+type = "story"
+title = "Dead API surface removed"
+description = "17.1: deletes the speakers-api and attendees-api specs, 6 orphan operations and the frontend publish-preview chain; tracer bullet of the epic."
+verify = "The operation count drops by 6, each removed path answers 404 in production, and the Publishing tab's live preview still renders."
+covers = ["R1"]
+after = []
+hitl = false
+risk = "medium"
+refine = true
+
+[[entry]]
+id = 3
+type = "story"
+title = "Frontend path contract check in CI"
+description = "17.3: a shared TypeScript spec matcher and a scan that fail the required frontend CI check on any frontend call outside the specs; hands the matcher to 17.0c."
+verify = "A fixture call to an unknown path fails the build-frontend check, and the check passes on develop with only documented allow-list entries."
+covers = ["R3"]
+after = [1]
+hitl = false
+risk = "medium"
+refine = true
+
+[[entry]]
+id = 2
+type = "story"
+title = "Stub services and event bus gone from production"
+description = "17.2: removes the SpeakerCoordination and AttendeeExperience services, stacks and modules and the EventBridge bus; DomainEventPublisher keeps working on in-process Spring events. A person picks a deploy date that is not an event day."
+verify = "aws ecs list-services and aws events list-event-buses in production list neither stub service nor the batbern-staging bus, and an integration test per in-process listener still sees its event."
+covers = ["R2"]
+after = [1]
+hitl = true
+risk = "high"
+notes = ["Closes #1216 and the bus part of #1220."]
+
+[[entry]]
+id = 4
+type = "story"
+title = "OpenAPI lint and spec-diff report"
+description = "17.4: Spectral with the repo ruleset and a committed baseline in a required CI job; a PR comment shows the 3 nearest operations for every added one."
+verify = "A fixture spec breaking each rule fails the CI job, and develop passes with the baseline."
+covers = ["R4"]
+after = [1, 3]
+hitl = false
+risk = "low"
+
+[[entry]]
+id = 5
+type = "story"
+title = "ArchUnit freeze in all three services"
+description = "17.5: ArchUnit in CUMS, EMS and PCS tests; EMS package rules and the no-downstream-client rule frozen with a committed store."
+verify = "Adding a violating dependency fails the service's test task, and the frozen EMS count matches the module script for the same packages."
+covers = ["R5"]
+after = []
+hitl = false
+risk = "low"
+references = ["docs/plans/architecture-review-2026-11.html"]
+notes = ["The 5 already-vertical EMS packages: mailcenter, forwarding, usermerge, watch, notification (review report, EMS figure). The rule is no new client toward a DOWNSTREAM service (PRD, ADR-016); the action list says upstream, which is a slip."]
+
+[[entry]]
+id = "168c"
+type = "story"
+title = "Mail Center composer clean-up"
+description = "16.8c: deletes the old compose components and the retired preview, send, history, status and retry endpoints with their specs, types and Bruno files; every send stays on /events/{c}/mails. Takes over from 17.1: the slides-online 409 coverage that 17.1 moved onto /registrant-notices/send moves on to /events/{c}/mails."
+verify = "Each retired path answers 404 in production, and newsletter, registrant, speaker and venue sends work from the Mail Center composer on local dev (/dev/mails)."
+covers = ["R6"]
+after = [1, 3, 4]
+hitl = false
+risk = "medium"
+references = ["_bmad-output/implementation-artifacts/16-8-shared-composer.md"]
+notes = ["Owner 2026-11-07: newsletter status and retry endpoints are retired too."]
+
+[[entry]]
+id = "sweep"
+type = "story"
+title = "Refactor sweep"
+description = "Clean-up only, scoped at its start from the plans and review findings this epic deferred."
+verify = "The deferred items listed at its start are closed or moved to a new story, and CI on develop is green."
+covers = []
+after = [1, 3, 2, 4, 5, "168c"]
+hitl = false
+risk = "low"

@@ -12,8 +12,6 @@ companions:
   - docs/architecture/ADR-002-generic-file-upload-service.md
   - docs/architecture/ADR-003-meaningful-identifiers-public-apis.md
   - docs/plans/ems-modularization-extension-points.md
-  - _bmad-output/implementation-artifacts/17-1-dead-api-surface.md
-  - _bmad-output/implementation-artifacts/17-3-frontend-path-contract-check.md
   - _bmad-output/implementation-artifacts/16-8-shared-composer.md
 after: []
 risk: high
@@ -97,8 +95,7 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - plan — `docs/plans/test-fidelity-proposal-2026-11.md` (P1 to P4, the 57-bug classification)
 - architecture — `docs/architecture/module-map.md`, `docs/architecture/ADR-016-service-directions-and-service-to-service-calls.md`, `docs/architecture/ADR-002-generic-file-upload-service.md` (decision 2026-11-07), `docs/architecture/ADR-003-meaningful-identifiers-public-apis.md` (amendment 2026-11)
 - plan — `docs/plans/ems-modularization-extension-points.md` (input to 17.12)
-- story — `_bmad-output/implementation-artifacts/17-1-dead-api-surface.md` (ready-for-dev)
-- story — `_bmad-output/implementation-artifacts/17-3-frontend-path-contract-check.md` (ready-for-dev)
+- story — 17.1 and 17.3 are v7 story files in `_bmad-output/initiative-architecture-hardening/tickets/epic-dead-surface-and-gates/tickets/` (converted from the v6 files 2026-11-07)
 - story — `_bmad-output/implementation-artifacts/16-8-shared-composer.md`, Part 16.8c, AC18, Dev Notes "Endpoints retired in 16.8c"
 
 ## Notes
@@ -108,7 +105,6 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - Decision: 2026-11-07, owner. Five epics, cut by distinct outcome in the source's order (protect, decouple, restructure). 16.8c sits in epic 1. One epic of 21 stories was declined.
 - Decision: 2026-11-07. Entry ids keep the 17.x story number (`0a` to `16`); 16.8c is `168c`, because ids allow no dot.
 - Decision: 2026-11-07. No `bmad-architecture` run: the shared decisions are already recorded in ADR-016, the ADR-003 amendment and the ADR-002 decision of 2026-11-07, and the adopting epics cite them.
-- Open question: the story files 17-1, 17-3 (and the 16.8c part of 16-8) sit in the v6 archive folder. Do they move into the v7 tree as the pulled leaf files, or stay where they are and get referenced? The owner decides before the slice is committed.
 - Decision: 2026-11-07, tree check. Epic 4 waits on epic 3: 17.6 moves `PATCH /users/{u}/profile`, which 17.10 merges, and 17.7 drops the logo-request push that 17.11 rebuilds. Epic 5 waits on epics 2, 3 and 4: 17.13 moves tests that the 17.0a ratchet counts, 17.7 and 17.8 change mail-center code that 17.15 splits, and 17.10 folds registration endpoints that 17.13 moves. Entry-level `after` is pinned when stories are planned.
 - Decision: 2026-11-07. Epic 2's wait on epic 1 binds only 17.0c, which needs 17.3. 17.0a, 17.0b and 17.0d start at once (source decision 8). 17.1 and 17.3 lead epic 1.
 - Decision: 2026-11-07. Epic 1 is the platform-baseline epic: the gates and the dead-surface clean-up that every later epic measures against. The ratchet 17.0a sits in epic 2, which starts in parallel.
