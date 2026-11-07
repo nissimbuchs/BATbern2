@@ -116,6 +116,13 @@ go before work starts. Items marked **owner** are decisions, not implementation.
      lint (no snake_case, UUID params only nested, no `/internal` in public specs); PR spec-diff
      report listing added ops next to most similar existing ops; FE path contract check (item 2);
      monthly re-run of `scripts/architecture/*` for a trend.
+   - Tooling (owner question 2026-11-07): no code-index tool or tree generator in the repo today
+     (checked: `.mcp.json` has only shadcn; no script). Options: (a) generate the tree blocks in
+     source-tree.md + a CI drift check, same pattern as `docs/versions.json`; keep it OUT of agent
+     context, agents use `ls`/Glob live. (b) Timeboxed trial of an LSP-backed symbol index MCP
+     (e.g. Serena, Java + TS) on one real EMS task, measure tokens before/after; watch rack memory
+     (jdtls + 14 GB user.slice cap, see rack OOM memory). (c) Generate the map's numbers from
+     `scripts/architecture/*` instead of hand-writing them.
 9. **Follow-up reviews (TODO, one per area)**: not covered by this review.
    - Frontend architecture (role trees, route registry, service layer, bundle boundary, state).
    - DB schema (per-service schemas, cross-service string refs per ADR-003, indexes, 137 EMS migrations).
