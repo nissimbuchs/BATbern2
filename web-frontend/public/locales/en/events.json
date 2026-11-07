@@ -1123,9 +1123,6 @@
       "shareEmail": "Share via Email",
       "shareText": "Join me at {{title}}!"
     },
-    "upcomingEvents": {
-      "title": "More Upcoming Events"
-    },
     "upcomingDates": {
       "title": "Upcoming BAT dates"
     },

@@ -56,6 +56,12 @@ Only items that are not live yet. Everything else is listed under its release be
 **New — Combine an earlier profile without access to its address (#1237)**:
 - ✅ Participants who cannot read the address of an earlier profile any more (for example a former employer's) can ask the organizers to combine it with their account, with a short note. The request appears on the Mail page; any organizer combines or declines it there, with a reason. The person is told by mail either way. The old address is not added to the account.
 
+**Improvement — One "next dates" section on the homepage**:
+- ✅ The homepage showed upcoming events twice: "Nächste BAT-Termine" (the next three, date and title) and "Weitere kommende Veranstaltungen" (full cards, published events only). There is now one section, "Nächste BAT-Termine", with the next three events: full cards for published events, date and title for planned ones. It also appears on archive pages.
+
+**Bug Fix — "Generate with AI" theme image works again**:
+- ✅ The theme image could not be generated: OpenAI had retired the image model the platform used. All AI functions (theme image, event description, abstract review, trending topics) now use OpenAI's current model automatically, so a retired model no longer breaks them. The trending topics suggestions had also fallen back to a fixed list several times a week; they now read the answer correctly.
+
 ### v1.4.0 - Event Page, Spring Boot 4, Mail Center & BATbern60 Fixes `[2026-11-04]`
 
 **Type**: Minor Release (Epics 13, 14, 15, 16)

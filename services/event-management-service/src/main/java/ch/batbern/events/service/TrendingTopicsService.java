@@ -1,11 +1,11 @@
 package ch.batbern.events.service;
 
+import ch.batbern.events.config.AiConfig;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.core.type.TypeReference;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import jakarta.annotation.PostConstruct;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.MediaType;
 import org.springframework.stereotype.Service;
@@ -47,24 +47,30 @@ public class TrendingTopicsService {
     private final ConcurrentHashMap<String, CacheEntry> cache = new ConcurrentHashMap<>();
     private final ObjectMapper objectMapper;
 
-    @Value("${openai.api-key:}")
-    private String apiKey;
+    private final AiConfig aiConfig;
 
-    @Value("${openai.base-url:https://api.openai.com/v1}")
-    private String baseUrl;
-
-    /** Singleton RestClient, initialized after @Value injection via @PostConstruct. Null when API key absent. */
+    /** Singleton RestClient, initialized via @PostConstruct. Null when API key absent. */
     private RestClient openAiClient;
 
-    public TrendingTopicsService(ObjectMapper objectMapper) {
+    /** Test seam: when set, {@link #initOpenAiClient()} builds from it (MockRestServiceServer). */
+    private RestClient.Builder clientBuilder;
+
+    public TrendingTopicsService(ObjectMapper objectMapper, AiConfig aiConfig) {
         this.objectMapper = objectMapper;
+        this.aiConfig = aiConfig;
+    }
+
+    /** Test-only hook; call before {@link #initOpenAiClient()}. */
+    void useClientBuilder(RestClient.Builder builder) {
+        this.clientBuilder = builder;
     }
 
     @PostConstruct
     void initOpenAiClient() {
+        String apiKey = aiConfig.getApiKey();
         if (apiKey != null && !apiKey.isBlank()) {
-            this.openAiClient = RestClient.builder()
-                    .baseUrl(baseUrl)
+            this.openAiClient = (clientBuilder != null ? clientBuilder : RestClient.builder())
+                    .baseUrl(aiConfig.getBaseUrl())
                     .defaultHeader(HttpHeaders.AUTHORIZATION, "Bearer " + apiKey)
                     .defaultHeader(HttpHeaders.CONTENT_TYPE, MediaType.APPLICATION_JSON_VALUE)
                     .build();
@@ -100,8 +106,8 @@ public class TrendingTopicsService {
             // carries the privileged guard message — even though this prompt is currently static
             // (no untrusted interpolation), this keeps the contract true and future-proofs the path.
             Map<String, Object> requestBody = Map.of(
-                    "model", "gpt-4o-mini",
-                    "temperature", 0.3,
+                    // chat-latest accepts only the default temperature, so none is sent
+                    "model", aiConfig.getChatModel(),
                     "messages", BatbernAiService.buildMessages(PROMPT)
             );
 
@@ -116,7 +122,7 @@ public class TrendingTopicsService {
                 return FALLBACK_TOPICS;
             }
 
-            String content = response.choices().get(0).message().content();
+            String content = stripCodeFence(response.choices().get(0).message().content());
             List<String> topics = objectMapper.readValue(content, new TypeReference<List<String>>() {});
             log.debug("Fetched {} trending topics from OpenAI", topics.size());
             return topics;
@@ -125,6 +131,26 @@ public class TrendingTopicsService {
             log.warn("OpenAI trending topics call failed — using fallback: {}", e.getMessage());
             return FALLBACK_TOPICS;
         }
+    }
+
+    /**
+     * The model may wrap the array in a Markdown code fence ("```json ... ```"); 7 fallbacks in
+     * production in the week to 2026-11-07. Returns the text between the fences, or the input.
+     */
+    static String stripCodeFence(String content) {
+        if (content == null) {
+            return null;
+        }
+        String trimmed = content.strip();
+        if (!trimmed.startsWith("```")) {
+            return trimmed;
+        }
+        int firstLineEnd = trimmed.indexOf('\n');
+        int closing = trimmed.lastIndexOf("```");
+        if (firstLineEnd < 0 || closing <= firstLineEnd) {
+            return trimmed;
+        }
+        return trimmed.substring(firstLineEnd + 1, closing).strip();
     }
 
     // ==================== Internal cache + OpenAI response DTOs ====================

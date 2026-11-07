@@ -133,6 +133,10 @@ newsletter:
 openai:
   api-key: ${OPENAI_API_KEY:}
   base-url: https://api.openai.com/v1
+  # "latest" aliases (2026-11-07): gpt-image-1 was retired and theme images broke. Override per
+  # environment with OPENAI_CHAT_MODEL / OPENAI_IMAGE_MODEL to pin a model.
+  chat-model: ${OPENAI_CHAT_MODEL:chat-latest}
+  image-model: ${OPENAI_IMAGE_MODEL:chatgpt-image-latest}
 
 # Partner Coordination Service URL (Story 10.4: cross-service call for partner topics)
 partner-service:

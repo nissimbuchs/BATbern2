@@ -19,4 +19,16 @@ public class AiConfig {
 
     @Value("${openai.base-url:https://api.openai.com/v1}")
     private String baseUrl;
+
+    /**
+     * Model for every chat call (description, abstract review, trending topics). Default: OpenAI's
+     * alias for its latest chat model, so a retired model never breaks a call (owner, 2026-11-07).
+     * The alias accepts only the default temperature, so requests send none.
+     */
+    @Value("${openai.chat-model:chat-latest}")
+    private String chatModel;
+
+    /** Model for theme images. Default: OpenAI's alias for its latest image model. */
+    @Value("${openai.image-model:chatgpt-image-latest}")
+    private String imageModel;
 }

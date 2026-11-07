@@ -14,9 +14,9 @@ import java.util.List;
  * Service for managing organizer-editable AI prompts (Story 10.x).
  *
  * Three prompts are seeded by migration V82:
- *   - event_description  — GPT-4o event description generation
- *   - theme_image        — DALL-E theme image generation
- *   - abstract_quality   — GPT-4o abstract quality review
+ *   - event_description  — event description (chat model)
+ *   - theme_image        — theme image (image model)
+ *   - abstract_quality   — abstract quality review (chat model)
  *
  * Used by BatbernAiService to retrieve the current prompt text at call time.
  */

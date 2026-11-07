@@ -20,10 +20,18 @@ All AI code is in **event-management-service (EMS)**:
 | `config/AiConfig` | Feature switch `batbern.ai.enabled` (env `AI_ENABLED`, default `false`), OpenAI key `openai.api-key` (env `OPENAI_API_KEY`, excluded from `toString`), base URL |
 | `controller/AiAssistController` | Implements the generated `AiAssistApi`: event description, theme image (generate and apply), speaker abstract analysis. Every method `@PreAuthorize("hasRole('ORGANIZER')")` |
 | `controller/AiPromptController` | Implements the generated `AiPromptsApi`: list, read, update and reset the editable prompts. Organizer only (class-level `@PreAuthorize`) |
-| `service/BatbernAiService` | Calls the OpenAI REST API through a Spring `RestClient`: chat completions (`gpt-4o`) for description and abstract analysis, image generation (`gpt-image-1`) for theme images, which are stored in S3 and served via the CDN. Results are cached in a Caffeine cache |
+| `service/BatbernAiService` | Calls the OpenAI REST API through a Spring `RestClient`: chat completions (`chat-latest`, setting `openai.chat-model`) for description and abstract analysis, image generation (`chatgpt-image-latest`, setting `openai.image-model`) for theme images, which are stored in S3 and served via the CDN. Results are cached in a Caffeine cache |
 | `service/AiPromptService` | Reads the organizer-editable prompt text from `ai_prompts` |
-| `service/TrendingTopicsService` | Ten trending IT topics for topic planning (`gpt-4o-mini`), cached for one hour, with a hard-coded fallback list when no key is configured or the call fails |
+| `service/TrendingTopicsService` | Ten trending IT topics for topic planning (the chat model above; a reply wrapped in a code fence is unwrapped), cached for one hour, with a hard-coded fallback list when no key is configured or the call fails |
 | `controller/PublicSettingsController` | `GET /api/v1/public/settings/features` returns `aiContentEnabled`, which the frontend uses to show or hide AI controls |
+
+**Models (owner decision 2026-11-07).** Every call uses OpenAI's "latest" alias, so a retired model
+cannot break a feature: `dall-e-3` was retired in May 2026 and `gpt-image-1` by November 2026, and each
+time theme images failed with "model does not exist" until the code changed. The aliases come from
+`AiConfig` and can be pinned per environment with `OPENAI_CHAT_MODEL` / `OPENAI_IMAGE_MODEL`.
+Trade-off: an alias can change behaviour or accepted parameters without notice. `chat-latest`
+accepts only the default temperature (0.3 and 0.7 return 400, measured 2026-11-07), so no request
+sends one. A failed call is logged as a WARN by `BatbernAiService` / `TrendingTopicsService`.
 
 Data (EMS Flyway):
 
