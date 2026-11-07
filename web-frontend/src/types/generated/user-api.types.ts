@@ -314,6 +314,57 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/duplicate-candidates': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * Profile pairs that are probably one person (organizers)
+     * @description Active profiles compared on the live data, for the organizer merge (#1183 C). Rules:
+     *     `SAME_NAME` (first and last name equal ignoring case, umlauts as ae/oe/ue, accents, hyphens
+     *     and underscores), `SWAPPED_NAME` (first and last name swapped), `SAME_ADDRESS_NAME` (the
+     *     same `x.y` before the @ at another domain, different name). Confidence: `HIGH` for a
+     *     swapped name, or a same name with an imported placeholder address
+     *     (`vorname.nachname@batbern.ch`), the same company or the same part before the @; `MEDIUM`
+     *     for another same name; `LOW` for `SAME_ADDRESS_NAME`. `target` is the suggested profile to
+     *     keep (the one with a login, else the one without a placeholder, else the older one).
+     *     `organizerCanMerge` is false when both have a login: only the person can merge those
+     *     (`POST /users/me/account-merges`). Pairs marked "not a duplicate" are left out. Sorted by
+     *     confidence, then name.
+     */
+    get: operations['listDuplicateCandidates'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/duplicate-candidates/dismissals': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Mark a pair as not a duplicate (organizers)
+     * @description The pair no longer appears in `GET /users/duplicate-candidates`, in either order.
+     *     Idempotent. 404 when one of the profiles does not exist.
+     */
+    post: operations['dismissDuplicateCandidate'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/me/account-merges': {
     parameters: {
       query?: never;
@@ -1582,6 +1633,32 @@ export interface components {
       /** @description Both profiles and what would move; absent once the request is decided */
       preview?: components['schemas']['UserMergePreview'] | null;
     };
+    DuplicateCandidate: {
+      /** @enum {string} */
+      rule: 'SAME_NAME' | 'SWAPPED_NAME' | 'SAME_ADDRESS_NAME';
+      /** @enum {string} */
+      confidence: 'HIGH' | 'MEDIUM' | 'LOW';
+      /** @description False when both profiles have a login */
+      organizerCanMerge: boolean;
+      target: components['schemas']['DuplicateCandidateProfile'];
+      source: components['schemas']['DuplicateCandidateProfile'];
+    };
+    DuplicateCandidateProfile: {
+      username: string;
+      firstName?: string | null;
+      lastName?: string | null;
+      email: string;
+      companyId?: string | null;
+      hasLogin: boolean;
+      /** @description The address is an import placeholder (`vorname.nachname@batbern.ch`) */
+      placeholderAddress: boolean;
+      /** Format: date-time */
+      createdAt?: string | null;
+    };
+    DuplicateDismissal: {
+      usernameA: string;
+      usernameB: string;
+    };
     AccountMergeRequest: {
       /**
        * Format: email
@@ -2732,6 +2809,56 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  listDuplicateCandidates: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The pairs */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['DuplicateCandidate'][];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  dismissDuplicateCandidate: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['DuplicateDismissal'];
+      };
+    };
+    responses: {
+      /** @description Dismissed */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
       500: components['responses']['InternalServerError'];
     };
   };

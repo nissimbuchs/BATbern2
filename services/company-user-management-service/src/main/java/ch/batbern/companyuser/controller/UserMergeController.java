@@ -8,6 +8,9 @@ import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.dto.generated.AccountMergeRequest;
 import ch.batbern.companyuser.dto.generated.ConfirmProfileClaimRequest;
+import ch.batbern.companyuser.dto.generated.DuplicateCandidate;
+import ch.batbern.companyuser.dto.generated.DuplicateCandidateProfile;
+import ch.batbern.companyuser.dto.generated.DuplicateDismissal;
 import ch.batbern.companyuser.dto.generated.ProfileClaimCandidate;
 import ch.batbern.companyuser.dto.generated.ProfileClaimConfirmResponse;
 import ch.batbern.companyuser.dto.generated.ProfileClaimRequest;
@@ -20,6 +23,7 @@ import ch.batbern.companyuser.dto.generated.UserMergeProfileSummary;
 import ch.batbern.companyuser.dto.generated.UserMergeRequest;
 import ch.batbern.companyuser.dto.generated.UserMergeResult;
 import ch.batbern.companyuser.security.SecurityContextHelper;
+import ch.batbern.companyuser.service.DuplicateCandidateService;
 import ch.batbern.companyuser.service.ProfileClaimService;
 import ch.batbern.companyuser.service.ProfileMergeRequestService;
 import ch.batbern.companyuser.service.UserMergeService;
@@ -53,6 +57,7 @@ public class UserMergeController implements ProfileMergeApi {
     private final UserMergeService mergeService;
     private final ProfileClaimService claimService;
     private final ProfileMergeRequestService mergeRequestService;
+    private final DuplicateCandidateService duplicateService;
     private final SecurityContextHelper securityContext;
 
     @Override
@@ -113,6 +118,41 @@ public class UserMergeController implements ProfileMergeApi {
     public ResponseEntity<Void> requestAccountMerge(AccountMergeRequest request) {
         claimService.requestAccountMerge(request.getEmail());
         return ResponseEntity.accepted().build();
+    }
+
+    // ---------------------------------------------------------------- duplicate candidates
+
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<List<DuplicateCandidate>> listDuplicateCandidates() {
+        return ResponseEntity.ok(duplicateService.candidates().stream()
+                .map(c -> new DuplicateCandidate()
+                        .rule(DuplicateCandidate.RuleEnum.fromValue(c.rule().name()))
+                        .confidence(DuplicateCandidate.ConfidenceEnum.fromValue(c.confidence().name()))
+                        .organizerCanMerge(c.organizerCanMerge())
+                        .target(candidateProfile(c.target()))
+                        .source(candidateProfile(c.source())))
+                .toList());
+    }
+
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<Void> dismissDuplicateCandidate(DuplicateDismissal request) {
+        duplicateService.dismiss(request.getUsernameA(), request.getUsernameB(),
+                securityContext.getCurrentUsername());
+        return ResponseEntity.noContent().build();
+    }
+
+    private static DuplicateCandidateProfile candidateProfile(DuplicateCandidateService.Profile p) {
+        return new DuplicateCandidateProfile()
+                .username(p.username())
+                .firstName(p.firstName())
+                .lastName(p.lastName())
+                .email(p.email())
+                .companyId(p.companyId())
+                .hasLogin(p.hasLogin())
+                .placeholderAddress(p.placeholderAddress())
+                .createdAt(p.createdAt() == null ? null : p.createdAt().atOffset(ZoneOffset.UTC));
     }
 
     // ---------------------------------------------------------------- #1237 merge requests
