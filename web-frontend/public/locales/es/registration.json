@@ -218,9 +218,10 @@
       "confirmButton": "Sí, cancelar mi inscripción",
       "goBack": "Volver",
       "successTitle": "Inscripción cancelada",
-      "successBody": "Tu inscripción ha sido cancelada. Tu plaza ha pasado a la siguiente persona de la lista de espera.",
+      "successBody": "Tu inscripción ha sido cancelada.",
       "invalidToken": "Este enlace de cancelación no es válido o ya se ha utilizado. Contáctanos si necesitas ayuda.",
-      "alreadyCancelled": "Tu inscripción ya había sido cancelada."
+      "alreadyCancelled": "Tu inscripción ya había sido cancelada.",
+      "closed": "Desde el día del evento ya no es posible cancelar. Escríbanos si no puede venir."
     },
     "modal": {
       "title": "Cancelar inscripción",

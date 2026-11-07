@@ -51,7 +51,8 @@
         "emailLinkedToAccount": "Cette adresse e-mail est déjà associée à un compte existant. Veuillez vous connecter pour vous inscrire à cet événement."
       }
     },
-    "registrationClosed": "Les inscriptions pour cet événement sont closes."
+    "registrationClosed": "Les inscriptions pour cet événement sont closes.",
+    "joinWaitlist": "Rejoindre la liste d'attente"
   },
   "attendee": {
     "welcome": {

@@ -32,9 +32,10 @@
       "confirmButton": "Ja, mini Aamäudig storniere",
       "goBack": "Zrügg",
       "successTitle": "Aamäudig storniert",
-      "successBody": "Dini Aamäudig isch storniert. Di Platz isch für di nächschti Person uf dr Warteliste frei worde.",
+      "successBody": "Dini Aamäudig isch storniert.",
       "invalidToken": "Dä Abmäude-Link isch ungültig oder isch scho bruucht worde. Mäud di bi üs, wenn d Hiuf bruuchsch.",
-      "alreadyCancelled": "Dini Aamäudig isch scho storniert worde."
+      "alreadyCancelled": "Dini Aamäudig isch scho storniert worde.",
+      "closed": "Abmäude geit ab em Veraastautigstag nümm. Schrib üs bitte, we du nid chasch cho."
     },
     "modal": {
       "title": "Aamäudig storniere",

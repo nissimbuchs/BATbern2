@@ -52,7 +52,8 @@
         "emailLinkedToAccount": "This email address is already linked to an existing account. Please sign in to register for this event."
       }
     },
-    "registrationClosed": "Registration is closed for this event."
+    "registrationClosed": "Registration is closed for this event.",
+    "joinWaitlist": "Join the waitlist"
   },
   "attendee": {
     "welcome": {

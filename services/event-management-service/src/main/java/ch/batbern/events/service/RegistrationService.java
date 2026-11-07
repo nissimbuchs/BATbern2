@@ -17,6 +17,7 @@ import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.dto.RegistrationResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.exception.RegistrationCapacityExceededException;
+import ch.batbern.events.exception.DeregistrationClosedException;
 import ch.batbern.events.exception.RegistrationClosedException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
@@ -530,10 +531,27 @@ public class RegistrationService {
             );
     }
 
+    /**
+     * Cancels a registration at the attendee's request (link, hero "Abmelden").
+     *
+     * <p>#1238 E2: refused from the event day on ({@link DeregistrationClosedException}); after the
+     * registration deadline the freed place is not given to the waitlist, because the name badges
+     * are printed by then. Before the deadline the waitlist moves up as before.
+     */
     @Transactional
     public void cancelRegistration(Registration registration) {
+        Event event = eventRepository.findById(registration.getEventId()).orElse(null);
+        Instant now = Instant.now();
+        if (event != null && RegistrationWindow.isEventDayReached(event, now)) {
+            throw new DeregistrationClosedException(event.getEventCode());
+        }
         registration.setStatus("cancelled");
         registrationRepository.save(registration);
+        if (event != null && RegistrationWindow.isDeadlinePassed(event, now)) {
+            log.info("Registration {} cancelled after the deadline of {}; no waitlist promotion (#1238)",
+                    registration.getRegistrationCode(), event.getEventCode());
+            return;
+        }
         waitlistPromotionService.promoteFromWaitlist(registration.getEventId());
         log.info("Registration {} cancelled; waitlist promotion triggered for event {}",
                 registration.getRegistrationCode(), registration.getEventId());
@@ -595,11 +613,8 @@ public class RegistrationService {
      * @throws RegistrationClosedException when {@code now} is after the (deadline ?: event date)
      */
     private void assertRegistrationOpen(Event event) {
-        Instant deadline = event.getRegistrationDeadline() != null
-                ? event.getRegistrationDeadline()
-                : event.getDate();
-        if (deadline != null && Instant.now().isAfter(deadline)) {
-            throw new RegistrationClosedException(event.getEventCode(), deadline);
+        if (RegistrationWindow.isDeadlinePassed(event, Instant.now())) {
+            throw new RegistrationClosedException(event.getEventCode(), RegistrationWindow.deadline(event));
         }
     }
 

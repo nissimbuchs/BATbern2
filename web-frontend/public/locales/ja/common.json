@@ -51,7 +51,8 @@
         "emailLinkedToAccount": "このメールアドレスは既存のアカウントに登録されています。このイベントに登録するにはログインしてください。"
       }
     },
-    "registrationClosed": "このイベントの登録は締め切られました。"
+    "registrationClosed": "このイベントの登録は締め切られました。",
+    "joinWaitlist": "キャンセル待ちに登録"
   },
   "attendee": {
     "welcome": {

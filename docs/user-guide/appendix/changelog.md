@@ -46,6 +46,13 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ (#1235) The Mail Center notice for a mail that belongs to no event showed raw tags in subject and text ("Neue Mail{{#eventCode}} für …"). It now reads "Neue Mail von …". Every automatic mail to one person now drops a section whose value is missing instead of printing its tags, and the log names the missing value.
 - ✅ (#1236) Name badges (Word) and the participants list (XLSX) label partners "Partner" and list them after the organizers and speakers. A partner is everyone with the partner role who is registered for the event; someone with two roles gets one badge with the higher one (organizer, speaker, partner, participant).
 
+**Bug Fixes — Registration on the public event page (#1238)**:
+- ✅ After the registration deadline the public page no longer says "Plätze verfügbar" or offers to register or join the waitlist: the numbers stay, with "Anmeldung geschlossen". On BATbern60 the page still read "8 Plätze verfügbar" a day after the deadline.
+- ✅ The registration numbers appear once, under "Logistik": total, vergeben, frei and the waitlist, with total = vergeben + frei. They are hidden before publication and after the event. The separate capacity badge is gone.
+- ✅ Your own registration status appears once, in the header (it appeared up to three times). After the deadline you can still unregister there until the day before the event.
+- ✅ When the event is full the button reads "Auf die Warteliste". A direct link to the registration page says "Anmeldung geschlossen" after the deadline.
+- ✅ Unregistering is possible until the end of the day before the event, for every way of doing it; from the event day on it is refused. A cancellation after the registration deadline no longer moves anyone up from the waitlist (the name badges are printed by then).
+
 ### v1.4.0 - Event Page, Spring Boot 4, Mail Center & BATbern60 Fixes `[2026-11-04]`
 
 **Type**: Minor Release (Epics 13, 14, 15, 16)

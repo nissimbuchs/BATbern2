@@ -218,9 +218,10 @@
       "confirmButton": "Ja, Anmeldung stornieren",
       "goBack": "Zurück",
       "successTitle": "Anmeldung storniert",
-      "successBody": "Ihre Anmeldung wurde storniert. Ihr Platz wurde für die nächste Person auf der Warteliste freigegeben.",
+      "successBody": "Ihre Anmeldung wurde storniert.",
       "invalidToken": "Dieser Abmelde-Link ist ungültig oder wurde bereits verwendet. Bitte kontaktieren Sie uns, wenn Sie Hilfe benötigen.",
-      "alreadyCancelled": "Ihre Anmeldung wurde bereits storniert."
+      "alreadyCancelled": "Ihre Anmeldung wurde bereits storniert.",
+      "closed": "Eine Abmeldung ist ab dem Veranstaltungstag nicht mehr möglich. Bitte schreiben Sie uns, falls Sie nicht kommen können."
     },
     "modal": {
       "title": "Anmeldung stornieren",

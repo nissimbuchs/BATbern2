@@ -223,7 +223,7 @@ export interface paths {
     /**
      * Cancel my registration
      * @description Immediately cancels the authenticated user's registration for the given event.
-     *     No email is sent. Triggers waitlist promotion if applicable.
+     *     No email is sent. Before the registration deadline the freed place goes to the waitlist; after it, nobody is promoted. From 00:00 Bern on the event day it is refused with 409 DEREGISTRATION_CLOSED (#1238 E2).
      *
      *     **Security**: Requires Bearer JWT authentication.
      */
@@ -406,7 +406,7 @@ export interface paths {
     /**
      * Cancel registration via deregistration token (public)
      * @description Cancels a registration using the self-service deregistration token.
-     *     Sets registration status to "cancelled" and triggers waitlist promotion.
+     *     Sets registration status to "cancelled". Before the registration deadline the freed place goes to the waitlist; after it, nobody is promoted (#1238 E2: the name badges are printed). From 00:00 Bern on the event day the cancellation is refused with 409 DEREGISTRATION_CLOSED.
      *
      *     **Story**: 10.12 — Self-Service Deregistration
      *     **Security**: Public endpoint — UUID token provides authentication
@@ -1335,6 +1335,15 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
+      /** @description The event day has been reached (details.code DEREGISTRATION_CLOSED, */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };
@@ -1670,7 +1679,7 @@ export interface operations {
           'application/json': components['schemas']['ErrorResponse'];
         };
       };
-      /** @description Registration already cancelled */
+      /** @description Registration already cancelled, or the event day has been reached (details.code DEREGISTRATION_CLOSED, */
       409: {
         headers: {
           [name: string]: unknown;

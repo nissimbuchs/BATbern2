@@ -218,9 +218,10 @@
       "confirmButton": "Kyllä, peru ilmoittautumiseni",
       "goBack": "Takaisin",
       "successTitle": "Ilmoittautuminen peruttu",
-      "successBody": "Ilmoittautumisesi on peruttu. Paikkasi on vapautettu seuraavalle jonotuslistalla olevalle.",
+      "successBody": "Ilmoittautumisesi on peruttu.",
       "invalidToken": "Tämä peruutuslinkki on virheellinen tai jo käytetty. Ota meihin yhteyttä, jos tarvitset apua.",
-      "alreadyCancelled": "Ilmoittautumisesi on jo peruttu."
+      "alreadyCancelled": "Ilmoittautumisesi on jo peruttu.",
+      "closed": "Tapahtumapäivästä alkaen peruminen ei ole enää mahdollista. Kirjoita meille, jos et pääse paikalle."
     },
     "modal": {
       "title": "Peru ilmoittautuminen",

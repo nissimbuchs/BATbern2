@@ -218,9 +218,10 @@
       "confirmButton": "Oui, annuler mon inscription",
       "goBack": "Retour",
       "successTitle": "Inscription annulée",
-      "successBody": "Votre inscription a été annulée. Votre place a été attribuée à la personne suivante sur la liste d'attente.",
+      "successBody": "Votre inscription a été annulée.",
       "invalidToken": "Ce lien d'annulation est invalide ou a déjà été utilisé. Contactez-nous si vous avez besoin d'aide.",
-      "alreadyCancelled": "Votre inscription a déjà été annulée."
+      "alreadyCancelled": "Votre inscription a déjà été annulée.",
+      "closed": "L'annulation n'est plus possible à partir du jour de l'événement. Écrivez-nous si vous ne pouvez pas venir."
     },
     "modal": {
       "title": "Annuler l'inscription",

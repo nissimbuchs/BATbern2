@@ -1079,6 +1079,16 @@
     },
     "upcomingDates": {
       "title": "Volgende BAT-data"
+    },
+    "backToEvent": "Terug naar het evenement",
+    "places": {
+      "title": "Plaatsen",
+      "total": "plaatsen in totaal",
+      "taken": "bezet",
+      "free": "vrij",
+      "waitlist": "op de wachtlijst",
+      "full": "Volgeboekt: nieuwe aanmeldingen komen op de wachtlijst",
+      "closed": "Aanmelding gesloten"
     }
   },
   "sessionEdit": {

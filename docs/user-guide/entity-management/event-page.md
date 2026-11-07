@@ -189,10 +189,29 @@ Places on the event are filled from the waitlist **in waitlist order**:
   status registered or confirmed. Saving the same value again also fills places that are already
   free.
 - **When a registration is cancelled**, the next person moves up, as long as a place is free. A
-  person added over capacity with **Add anyway** does not pull anyone in.
+  person added over capacity with **Add anyway** does not pull anyone in. After the
+  **registration deadline** a cancellation by the participant frees the place but moves nobody up:
+  the name badges are printed by then. Fill such a place by hand if you want to.
+- **Unregistering** is possible for participants until the end of the day before the event (Bern
+  time): with the link in their mails, with "Abmelden" on the event page, or by e-mail request.
+  From the event day on all three are closed; the page says so.
 - **By hand:** filter on **Waitlisted**. The list then shows the waitlist position (**#**) and a
   **Promote to Registered** button per row. After you confirm *"Promote from waitlist?"* the person
   moves to **Registered**, regardless of capacity.
+
+### What visitors see on the public event page
+
+The public page shows registration in one place each:
+
+| | Before the deadline | Full | After the deadline, before the event day | Event day | After the event |
+|---|---|---|---|---|---|
+| Button in the header | **Anmelden** | **Auf die Warteliste** | none | none | none |
+| Own registration (logged in) | in the header, with **Abmelden** | same | same | in the header, without **Abmelden** | hidden |
+| Numbers under "Logistik" | total · vergeben · frei · waitlist | same, "ausgebucht" | same, "Anmeldung geschlossen" | same | hidden |
+
+*Vergeben* counts registered and confirmed places, so *total = vergeben + frei*; the waitlist comes
+on top. Without a capacity only *vergeben* is shown. A direct link to `/register/{event}` shows
+"Anmeldung geschlossen" after the deadline.
 
 Everyone who moves up gets the waitlist-promotion mail. The remaining waitlist positions are not
 renumbered.

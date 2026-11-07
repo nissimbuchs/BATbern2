@@ -491,7 +491,9 @@ paths:
       summary: Cancel my registration
       description: 'Immediately cancels the authenticated user''s registration for the given event.
 
-        No email is sent. Triggers waitlist promotion if applicable.
+        No email is sent. Before the registration deadline the freed place goes to the waitlist;
+        after it, nobody is promoted. From 00:00 Bern on the event day it is refused with 409
+        DEREGISTRATION_CLOSED (#1238 E2).
 
 
         **Security**: Requires Bearer JWT authentication.
@@ -514,6 +516,12 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           description: No active registration found for this user and event
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '409':
+          description: The event day has been reached (details.code DEREGISTRATION_CLOSED, #1238)
           content:
             application/json:
               schema:
@@ -928,7 +936,9 @@ paths:
       summary: Cancel registration via deregistration token (public)
       description: 'Cancels a registration using the self-service deregistration token.
 
-        Sets registration status to "cancelled" and triggers waitlist promotion.
+        Sets registration status to "cancelled". Before the registration deadline the freed place
+        goes to the waitlist; after it, nobody is promoted (#1238 E2: the name badges are printed).
+        From 00:00 Bern on the event day the cancellation is refused with 409 DEREGISTRATION_CLOSED.
 
 
         **Story**: 10.12 — Self-Service Deregistration
@@ -962,7 +972,8 @@ paths:
               schema:
                 $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
         '409':
-          description: Registration already cancelled
+          description: Registration already cancelled, or the event day has been reached
+            (details.code DEREGISTRATION_CLOSED, #1238)
           content:
             application/json:
               schema:

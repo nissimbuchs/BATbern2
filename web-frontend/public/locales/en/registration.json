@@ -218,9 +218,10 @@
       "confirmButton": "Yes, cancel my registration",
       "goBack": "Go back",
       "successTitle": "Registration Cancelled",
-      "successBody": "Your registration has been cancelled. Your spot has been released to the next person on the waitlist.",
+      "successBody": "Your registration has been cancelled.",
       "invalidToken": "This cancellation link is invalid or has already been used. Please contact us if you need help.",
-      "alreadyCancelled": "Your registration was already cancelled."
+      "alreadyCancelled": "Your registration was already cancelled.",
+      "closed": "Cancelling is no longer possible from the day of the event. Please write to us if you cannot come."
     },
     "modal": {
       "title": "Cancel Registration",

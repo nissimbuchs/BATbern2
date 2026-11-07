@@ -22,7 +22,7 @@ import { useQuery } from '@tanstack/react-query';
 import { PublicLayout } from '@/components/public/PublicLayout';
 import { HeroSection } from '@/components/public/Hero/HeroSection';
 import { EventLogistics } from '@/components/public/Event/EventLogistics';
-import { CapacityIndicator } from '@/components/public/Event/CapacityIndicator';
+import { PlaceNumbersBlock } from '@/components/public/Event/PlaceNumbersBlock';
 import { CountdownTimer } from '@/components/public/Event/CountdownTimer';
 import { SpeakerGrid } from '@/components/public/Event/SpeakerGrid';
 import { SessionCards } from '@/components/public/Event/SessionCards';
@@ -52,18 +52,15 @@ import { useEventPhotos } from '@/hooks/useEventPhotos';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetail } from '@/types/event.types';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
-import { RegistrationStatusBanner } from '@/components/public/RegistrationStatusBanner';
 import { DeregistrationEntry } from '@/components/public/DeregistrationEntry';
 import { useAuth } from '@/hooks/useAuth';
 import { useTranslation } from 'react-i18next';
 import {
   getHomepagePhase,
+  getRegistrationView,
   getSectionVisibility,
-  isRegistrationClosed,
   showSessionQna,
 } from './homePagePhase';
-
-const REGISTRATION_WORKFLOW_STATES = ['AGENDA_PUBLISHED', 'EVENT_LIVE'];
 
 const HomePage = () => {
   const { t } = useTranslation('events');
@@ -106,15 +103,14 @@ const HomePage = () => {
     isArchiveMode || isCompletedOrArchived
   );
 
-  // Registration status (Story 10.10) — only fetch when registration is actionable
-  const registrationActive =
-    !isArchiveMode &&
-    !isCompletedOrArchived &&
-    !!event?.workflowState &&
-    REGISTRATION_WORKFLOW_STATES.includes(event.workflowState);
+  // #1238: the visitor's own registration is fetched wherever the page can show it (S1–S4),
+  // including the TOPIC and SPEAKERS phases (G9), not only AGENDA_PUBLISHED / EVENT_LIVE.
+  const loadMyRegistration =
+    !!event &&
+    getRegistrationView(event, undefined, { isAuthenticated, isArchiveMode }).loadMyRegistration;
 
   const { data: myRegistration, isLoading: isRegistrationLoading } = useMyRegistration(
-    registrationActive ? (event?.eventCode ?? undefined) : undefined
+    loadMyRegistration ? (event?.eventCode ?? undefined) : undefined
   );
 
   // Loading state — reserve a full viewport height so the footer starts below
@@ -191,10 +187,13 @@ const HomePage = () => {
   const vis = getSectionVisibility(phase);
   const qnaVisible = showSessionQna(phase, event);
 
-  // Feedback #1: registration + waitlist close on the deadline. Hide the register CTA once the
-  // deadline passes even if the phase would otherwise allow it (backend enforces with 409).
-  const registrationClosed = isRegistrationClosed(event);
-  const showRegisterCta = vis.registrationEnabled && !registrationClosed;
+  // #1238: one state matrix decides every registration element of the page (see homePagePhase).
+  // myStatus: a status, null = logged in without a registration, undefined = anonymous / loading.
+  const myStatus =
+    !isAuthenticated || isRegistrationLoading || myRegistration === undefined
+      ? undefined
+      : (myRegistration?.status ?? null);
+  const regView = getRegistrationView(event, myStatus, { isAuthenticated, isArchiveMode });
 
   // Story 7.4: surface the "Thank the organizers" nav button only on a live/completed event.
   const thankableEventCode =
@@ -202,9 +201,6 @@ const HomePage = () => {
     (event.workflowState === 'EVENT_LIVE' || event.workflowState === 'EVENT_COMPLETED')
       ? event.eventCode
       : undefined;
-
-  const canDeregister =
-    !!event.workflowState && REGISTRATION_WORKFLOW_STATES.includes(event.workflowState);
 
   // ---------------------------------------------------------------------------
   // Preview mode banner (Story 5.7)
@@ -247,15 +243,16 @@ const HomePage = () => {
         location={eventLocation}
         ctaLink={registerLink}
         eventCode={event.eventCode}
-        hideRegisterCta={!showRegisterCta}
+        registerCta={regView.registerCta}
+        ownStatus={isAuthenticated ? regView.ownStatus : undefined}
+        canUnregister={regView.unregister}
         themeImageUrl={event.themeImageUrl || undefined}
         countdownTimer={eventDateObj ? <CountdownTimer eventDate={eventDateObj} /> : undefined}
         spotsRemaining={event.spotsRemaining}
       />
 
-      {/* Feedback #1: registration deadline passed — the CTA is hidden; tell the visitor why. Only
-          when the phase would otherwise offer registration (not COMING_SOON / POST_EVENT / ARCHIVE). */}
-      {registrationClosed && vis.registrationEnabled && (
+      {/* Deadline passed or event day: no CTA; tell everyone without an active registration why. */}
+      {regView.closedNotice && (
         <div className="container mx-auto px-4 mt-6">
           <div
             className="max-w-md mx-auto rounded-md border border-border bg-muted px-4 py-3 text-center text-sm text-muted-foreground"
@@ -284,24 +281,17 @@ const HomePage = () => {
       )}
 
       <div className="container mx-auto px-4">
-        {/* Registration Status Banner (Story 10.10) */}
-        {registrationActive && (
-          <RegistrationStatusBanner
-            status={myRegistration?.status ?? null}
-            eventCode={event.eventCode ?? ''}
-            isLoading={isRegistrationLoading}
-            waitlistPosition={myRegistration?.waitlistPosition}
-          />
-        )}
-
-        {/* Deregistration (Story 10.12; #1183: only where there is something to cancel) */}
-        {registrationActive && canDeregister && (
+        {/* Own status is shown once, in the hero (#1238 G4). Here only the deregistration
+            hints: the by-e-mail cancel link for anonymous visitors until the day before the
+            event (E2), and "not registered with x@…" for a logged-in visitor without one. */}
+        {(regView.anonymousCancelLink || regView.notRegisteredNotice) && (
           <DeregistrationEntry
             eventCode={event.eventCode ?? ''}
             isAuthenticated={isAuthenticated}
-            status={myRegistration === undefined ? undefined : (myRegistration?.status ?? null)}
+            status={myStatus}
             isLoading={isRegistrationLoading}
             userEmail={user?.email}
+            canCancel={regView.situation !== 'S4'}
           />
         )}
 
@@ -321,15 +311,10 @@ const HomePage = () => {
           <div className="mt-12 bg-zinc-900/50 rounded-lg border border-zinc-800 p-8">
             <h3 className="text-xl font-light text-zinc-100 mb-6">{t('public.logistics.title')}</h3>
             <EventLogistics event={event} />
-            {/* Capacity badge — only when registration is active (Story 10.11) */}
-            {registrationActive && (
-              <div className="mt-4">
-                <CapacityIndicator
-                  registrationCapacity={event.registrationCapacity}
-                  spotsRemaining={event.spotsRemaining}
-                  waitlistCount={event.waitlistCount}
-                  registrationStatus={myRegistration?.status}
-                />
+            {/* #1238: the place numbers, one block, one calculation (hidden in S0 and S5) */}
+            {regView.places && (
+              <div className="mt-6">
+                <PlaceNumbersBlock places={regView.places} />
               </div>
             )}
           </div>

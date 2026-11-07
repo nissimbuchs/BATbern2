@@ -69,8 +69,9 @@ export const RegistrationWizard = ({
   const { isAuthenticated, user } = useAuth();
   const { userProfile } = useUserProfile({ enabled: isAuthenticated });
 
-  // AC8 (Story 10.11): event is full when spotsRemaining is exactly 0 (not null/undefined)
-  const isEventFull = spotsRemaining === 0;
+  // AC8 (Story 10.11): full when no place is left. #1238 G10: after an organizer's "add anyway"
+  // the value is negative, which is full too. null/undefined = no capacity.
+  const isEventFull = spotsRemaining != null && spotsRemaining <= 0;
 
   const {
     getToken: getTurnstileToken,

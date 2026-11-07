@@ -56,6 +56,8 @@ public class DeregistrationService {
     /** Outcome of {@link #requestDeregistrationLinkByReply} and {@link #sendDeregistrationLinkOnce}. */
     public enum DeregistrationLinkResult {
         SENT,
+        /** #1238 E2: event day reached; a link would only lead to a refusal, so none is sent. */
+        CLOSED,
         /** Sent within the last 7 days; nothing sent now. */
         ALREADY_SENT,
         /** No active registration (none, or already cancelled); nothing sent. */
@@ -139,6 +141,11 @@ public class DeregistrationService {
                                     registration.getRegistrationCode());
                             return false;
                         }
+                        if (RegistrationWindow.isEventDayReached(event, Instant.now())) {
+                            log.info("Deregistration by email for {} refused: event day reached (#1238)",
+                                    registration.getRegistrationCode());
+                            return false;
+                        }
                         String deregistrationLink = appBaseUrl + "/deregister?token="
                                 + registration.getDeregistrationToken();
                         deregistrationEmailService.sendDeregistrationLinkEmail(registration, event, deregistrationLink,
@@ -207,6 +214,10 @@ public class DeregistrationService {
             return DeregistrationLinkResult.NOT_FOUND;
         }
         Instant now = Instant.now();
+        if (RegistrationWindow.isEventDayReached(event, now)) {
+            log.info("No deregistration link for {}: event day reached (#1238)", registration.getRegistrationCode());
+            return DeregistrationLinkResult.CLOSED;
+        }
         if (registrationRepository.claimDeregistrationLink(registration.getId(), now,
                 now.minus(LINK_RESEND_WINDOW)) == 0) {
             log.info("Deregistration link for {} already sent within {} days; not sending again",

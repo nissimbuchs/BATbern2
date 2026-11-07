@@ -21,6 +21,7 @@
  */
 
 import type { EventDetail } from '@/types/event.types';
+import type { RegistrationStatus } from '@/types/eventParticipant.types';
 
 type PublishedPhase = 'TOPIC' | 'SPEAKERS' | 'AGENDA';
 
@@ -230,4 +231,176 @@ export function getSectionVisibility(phase: HomePagePhase): SectionVisibility {
         showSessionMaterials: true,
       };
   }
+}
+
+// ---------------------------------------------------------------------------
+// Registration view (#1238) — the one state matrix for the public page
+// ---------------------------------------------------------------------------
+
+/**
+ * Where the event stands for registration (#1238):
+ *
+ * | S0 | not published (no `currentPublishedPhase`)                                       |
+ * | S1 | published, before the deadline, places free or no capacity                       |
+ * | S2 | like S1 but full (`spotsRemaining <= 0`): new registrations join the waitlist     |
+ * | S3 | deadline passed (no deadline → the event date counts), before the event day      |
+ * | S4 | event day: `EVENT_LIVE`, or the event's calendar day in Bern has begun            |
+ * | S5 | after the event: `EVENT_COMPLETED` / `ARCHIVED`, or the archive view             |
+ */
+export type RegistrationSituation = 'S0' | 'S1' | 'S2' | 'S3' | 'S4' | 'S5';
+
+export type MyRegistrationStatus = RegistrationStatus;
+
+type RegistrationViewEvent = Pick<
+  EventDetail,
+  | 'date'
+  | 'registrationDeadline'
+  | 'workflowState'
+  | 'registrationCapacity'
+  | 'spotsRemaining'
+  | 'confirmedCount'
+  | 'waitlistCount'
+> & { currentPublishedPhase?: PublishedPhase | null };
+
+export interface PlaceNumbers {
+  /** registrationCapacity; null without a capacity (then only `taken` is shown) */
+  total: number | null;
+  /** REGISTERED + CONFIRMED (E1 "vergeben") */
+  taken: number;
+  /** total − taken, never negative; null without a capacity */
+  free: number | null;
+  waitlist: number;
+  /** Headline under the numbers: full (S2) or closed (S3/S4); none otherwise */
+  note: 'FULL' | 'CLOSED' | null;
+}
+
+export interface RegistrationView {
+  situation: RegistrationSituation;
+  /** Hero call to action for someone without an active registration */
+  registerCta: 'REGISTER' | 'WAITLIST' | null;
+  /** The visitor's own status, shown once, in the hero */
+  ownStatus: Exclude<MyRegistrationStatus, 'ATTENDED'> | null;
+  /** "Erneut anmelden" next to a cancelled registration (S1/S2 only) */
+  registerAgain: boolean;
+  /** "Abmelden" in the hero for a logged-in visitor with an active registration (until the day before) */
+  unregister: boolean;
+  /** "Anmeldung stornieren" by e-mail for an anonymous visitor (until the day before) */
+  anonymousCancelLink: boolean;
+  /** "Not registered with x@…, other address?" for a logged-in visitor without a registration */
+  notRegisteredNotice: boolean;
+  /** "Anmeldung geschlossen" for everyone without an active registration (S3/S4) */
+  closedNotice: boolean;
+  /** One block of place numbers in "Logistik"; null where hidden (S0, S5) */
+  places: PlaceNumbers | null;
+  /** What `/register/{code}` shows */
+  registerPage: 'WIZARD' | 'WIZARD_WAITLIST' | 'CLOSED';
+  /** Whether the visitor's own registration is worth fetching (S1–S4) */
+  loadMyRegistration: boolean;
+}
+
+const COMPLETED_STATES = ['EVENT_COMPLETED', 'ARCHIVED'];
+const BERN_DAY = new Intl.DateTimeFormat('en-CA', {
+  timeZone: 'Europe/Zurich',
+  year: 'numeric',
+  month: '2-digit',
+  day: '2-digit',
+});
+
+/** Calendar day (YYYY-MM-DD) in Bern for an instant. */
+function bernDay(instant: number): string {
+  return BERN_DAY.format(new Date(instant));
+}
+
+/** True once the event's calendar day has begun in Bern (E2: no unregistering from then on). */
+export function isEventDayReached(
+  event: Pick<EventDetail, 'date'>,
+  now: number = Date.now()
+): boolean {
+  if (!event.date) {
+    return false;
+  }
+  const start = Date.parse(event.date);
+  return Number.isFinite(start) && bernDay(now) >= bernDay(start);
+}
+
+export function getRegistrationSituation(
+  event: RegistrationViewEvent,
+  isArchiveMode: boolean,
+  now: number = Date.now()
+): RegistrationSituation {
+  if (isArchiveMode || COMPLETED_STATES.includes(event.workflowState ?? '')) {
+    return 'S5';
+  }
+  if (event.workflowState === 'EVENT_LIVE' || isEventDayReached(event, now)) {
+    return 'S4';
+  }
+  if (!event.currentPublishedPhase) {
+    return 'S0';
+  }
+  if (isRegistrationClosed(event, now)) {
+    return 'S3';
+  }
+  const full =
+    event.registrationCapacity != null && event.spotsRemaining != null && event.spotsRemaining <= 0;
+  return full ? 'S2' : 'S1';
+}
+
+/**
+ * The single answer to "what does the public page show about registration" (#1238). Hero, status,
+ * logistics numbers, deregistration hints and `/register/{code}` all read from it.
+ *
+ * @param myStatus the visitor's registration: a status, `null` when logged in without one,
+ *                 `undefined` when anonymous or not loaded
+ */
+export function getRegistrationView(
+  event: RegistrationViewEvent,
+  myStatus: MyRegistrationStatus | null | undefined,
+  options: { isAuthenticated: boolean; isArchiveMode?: boolean; now?: number }
+): RegistrationView {
+  const now = options.now ?? Date.now();
+  const situation = getRegistrationSituation(event, options.isArchiveMode ?? false, now);
+  const open = situation === 'S1' || situation === 'S2';
+  const beforeEventDay = open || situation === 'S3';
+  const visible = beforeEventDay || situation === 'S4';
+  const active = myStatus === 'REGISTERED' || myStatus === 'CONFIRMED' || myStatus === 'WAITLIST';
+  const ownStatus =
+    visible && (active || myStatus === 'CANCELLED')
+      ? (myStatus as RegistrationView['ownStatus'])
+      : null;
+  const loggedInWithout = options.isAuthenticated && myStatus === null;
+
+  return {
+    situation,
+    registerCta: open && !active ? (situation === 'S2' ? 'WAITLIST' : 'REGISTER') : null,
+    ownStatus,
+    registerAgain: open && myStatus === 'CANCELLED',
+    unregister: beforeEventDay && options.isAuthenticated && active,
+    anonymousCancelLink: beforeEventDay && !options.isAuthenticated,
+    notRegisteredNotice: visible && loggedInWithout,
+    closedNotice: (situation === 'S3' || situation === 'S4') && !active,
+    places: visible ? placeNumbers(event, situation) : null,
+    registerPage: open
+      ? situation === 'S2'
+        ? 'WIZARD_WAITLIST'
+        : 'WIZARD'
+      : situation === 'S0'
+        ? 'WIZARD'
+        : 'CLOSED',
+    loadMyRegistration: visible,
+  };
+}
+
+function placeNumbers(
+  event: RegistrationViewEvent,
+  situation: RegistrationSituation
+): PlaceNumbers {
+  const taken = event.confirmedCount ?? 0;
+  const total = event.registrationCapacity ?? null;
+  return {
+    total,
+    taken,
+    free: total == null ? null : Math.max(total - taken, 0),
+    waitlist: event.waitlistCount ?? 0,
+    note: situation === 'S3' || situation === 'S4' ? 'CLOSED' : situation === 'S2' ? 'FULL' : null,
+  };
 }

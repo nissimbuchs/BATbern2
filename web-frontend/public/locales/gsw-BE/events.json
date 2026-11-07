@@ -1082,6 +1082,16 @@
     },
     "upcomingDates": {
       "title": "Nächschti BAT-Termin"
+    },
+    "backToEvent": "Zrügg zum Event",
+    "places": {
+      "title": "Plätz",
+      "total": "Plätz total",
+      "taken": "vergä",
+      "free": "frei",
+      "waitlist": "uf dr Wartelischte",
+      "full": "Usbuechet: neui Aamäudige chöme uf d Wartelischte",
+      "closed": "Aamäudig gschlosse"
     }
   },
   "sessionEdit": {

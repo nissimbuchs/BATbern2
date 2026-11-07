@@ -51,7 +51,8 @@
         "emailLinkedToAccount": "Tämä sähköpostiosoite on jo liitetty olemassa olevaan tiliin. Kirjaudu sisään ilmoittautuaksesi tähän tapahtumaan."
       }
     },
-    "registrationClosed": "Ilmoittautuminen tähän tapahtumaan on suljettu."
+    "registrationClosed": "Ilmoittautuminen tähän tapahtumaan on suljettu.",
+    "joinWaitlist": "Liity jonotuslistalle"
   },
   "attendee": {
     "welcome": {

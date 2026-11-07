@@ -218,9 +218,10 @@
       "confirmButton": "Ja, mijn aanmelding annuleren",
       "goBack": "Terug",
       "successTitle": "Aanmelding geannuleerd",
-      "successBody": "Uw aanmelding is geannuleerd. Uw plaats is vrijgegeven voor de volgende persoon op de wachtlijst.",
+      "successBody": "Uw aanmelding is geannuleerd.",
       "invalidToken": "Deze annuleringslink is ongeldig of al gebruikt. Neem contact met ons op als u hulp nodig hebt.",
-      "alreadyCancelled": "Uw aanmelding was al geannuleerd."
+      "alreadyCancelled": "Uw aanmelding was al geannuleerd.",
+      "closed": "Vanaf de dag van het evenement kunt u niet meer afmelden. Schrijf ons als u niet kunt komen."
     },
     "modal": {
       "title": "Aanmelding annuleren",

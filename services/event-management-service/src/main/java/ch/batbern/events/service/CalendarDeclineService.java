@@ -59,7 +59,7 @@ public class CalendarDeclineService {
         return switch (deregistrationService.sendDeregistrationLinkOnce(match.get())) {
             case SENT -> Outcome.LINK_SENT;
             case ALREADY_SENT -> Outcome.ALREADY_SENT;
-            case NOT_FOUND -> Outcome.NOT_ACTIVE;
+            case NOT_FOUND, CLOSED -> Outcome.NOT_ACTIVE;
         };
     }
 
