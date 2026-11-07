@@ -86,7 +86,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - ✅ **Epic 14**: Event Detail Page Redesign - **COMPLETE** (#788)
 - 🔄 **Epic 15**: Post-Event #2 Hardening - **IN PROGRESS** (15.1 P2/P3, 15.4, 15.8 open)
 - 🔄 **Epic 16**: Mail Center - **16.0–16.11 LIVE**; 16.8c gated, 16.12/16.13 backlog
-- 📋 **Epic 17**: Architecture hardening - **BACKLOG** (17.1–17.16; 17.12 is a design task)
+- 📋 **Epic 17**: Architecture hardening - **BACKLOG** (17.0a–d test fidelity, 17.1–17.16; 17.12 is a design task)
 
 **MVP Completion:**
 - ✅ All 5 MVP epics (Epics 1-5) are 100% complete
@@ -99,7 +99,7 @@ BATbern is an enterprise event management platform for Berner Architekten Treffe
 - Epic 13: Story 13.4 (flip off `preferred-json-mapper: jackson2`, move to Jackson 3) and 13.5 (unpin BOM-managed dependency versions)
 - Epic 15: 15.1 P2 (watch app off WebSockets) then P3 (delete WebSocket code and deps); 15.4 (company/email-domain mismatch warning); 15.8 (LinkedIn post drafts, backlog)
 - Epic 16: 16.8c composer clean-up (only after one release and owner go, after 17.1); 16.12, 16.13 backlog — see `docs/prd/epic-16-mail-center.md`
-- Epic 17: architecture hardening, 16 stories in order (dead surface and gates first) — see `docs/prd/epic-17-architecture-hardening.md`
+- Epic 17: architecture hardening, 20 stories in order (test fidelity 17.0a–d, dead surface and gates first) — see `docs/prd/epic-17-architecture-hardening.md`
 - Epic 11 leftovers: 11.E.5, 11.G.1 (ready-for-dev), 11.F.2 (backlog)
 - Epic 12 deferred tail (backlog Story 12.10): Apple/generic OIDC + Cognito trigger-retirement cleanup — precondition: deferred-work cluster A
 - Epic 3 production data import still pending

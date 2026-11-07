@@ -1,7 +1,7 @@
 # Epic 17 — Architecture hardening
 
 **Author:** John (PM), from Winston's architecture review · **Date:** 2026-11-07 · **Status:** 📋 backlog. Scope decided by the owner 2026-11-07; each story still needs the owner's go before it starts.
-**Source:** [`docs/plans/architecture-review-2026-11-actions.md`](../plans/architecture-review-2026-11-actions.md) (action list, owner decisions, measured baseline). Report: https://claude.ai/artifact/L4gaZoqWMDUnV7vLGcsdbh (private).
+**Source:** [`docs/plans/architecture-review-2026-11-actions.md`](../plans/architecture-review-2026-11-actions.md) (action list, owner decisions, measured baseline). Report: https://claude.ai/artifact/L4gaZoqWMDUnV7vLGcsdbh (private). Stories 17.0a–d: [`docs/plans/test-fidelity-proposal-2026-11.md`](../plans/test-fidelity-proposal-2026-11.md) (Winston, 57 production bugs since 2026-08 classified; added on owner go 2026-11-07).
 **Architecture:** [`module-map.md`](../architecture/module-map.md), [ADR-016](../architecture/ADR-016-service-directions-and-service-to-service-calls.md) (new), ADR-003 amendment 2026-11 (UUIDs in paths), ADR-002 decision 2026-11-07 (one upload contract), ADR-014 decision 2026-11-07 (stubs and bus removed), ADR-008 update.
 
 ## Epic goal
@@ -31,6 +31,13 @@ contract check or test), not by a document.
 - **EMS has no walls.** 64,376 LOC (74% of the backend), 138 migrations. Module check against the
   target layering: 52 allowed pairs, 28 violating pairs, 100 references. `EventController` is
   2,697 lines and implements 4 generated interfaces plus 14 hand-mapped registration endpoints.
+- **Tests replace the part of reality that holds the defect** (test-fidelity proposal). Of 57 production
+  bugs since 2026-08: a mock hid the defect in 15, the test environment differed from production in 13,
+  production-shaped data was missing in 12, a cross-service contract drifted in 11. 329 of 441 frontend
+  test files use `vi.mock` (177 mock our own `@/services`), 2 use MSW; EMS has 38 `@MockitoBean
+  UserApiClient`; no contract tooling. Bruno and Playwright run real code only after the production
+  deploy. Without a harness, the S2S moves (17.6–17.8) and breaking API changes (17.9–17.11) stay
+  green when the caller is wrong.
 - **No gate exists for any of this.** No ArchUnit and no Spectral in the repo (checked 2026-11-07).
   ShedLock is in CUMS and EMS only, not in PCS.
 
@@ -46,6 +53,9 @@ contract check or test), not by a document.
    authorizes by operation.
 6. ADR-003 UUID rule as amended.
 7. Uploads: one contract `/api/v1/uploads/{purpose}` (ADR-002 decision 2026-11-07).
+8. Test fidelity first where it protects later stories: 17.0a–d at the head of the epic; 17.6 waits for
+   17.0a + 17.0b, 17.9 for 17.0c + 17.0d (owner go 2026-11-07, via Winston). The proposal's P5
+   (real-code gate before production) is **not** a story: owner decision pending, design under revision.
 
 ## Rules for every story in this epic
 
@@ -71,16 +81,20 @@ Protective and cheap first, then decoupling, then restructuring.
 
 | # | Story | Depends on | Kind |
 |---|---|---|---|
+| 17.0a | Test rules and ratchet | – | rules + gate |
+| 17.0b | S2S contract harness and production setup in tests | 17.0a | test infra |
+| 17.0c | Frontend MSW harness | 17.0a | test infra |
+| 17.0d | Production-shaped fixtures | 17.0a | test infra |
 | 17.1 | Dead API surface | – | dev |
 | 17.2 | Dormant infrastructure: stubs and event bus | – | dev + prod infra |
 | 17.3 | Frontend path contract check | 17.1 | gate |
 | 17.4 | OpenAPI lint and spec-diff report | 17.1 | gate |
 | 17.5 | ArchUnit freeze | – | gate |
 | *16.8c* | *Mail Center consolidation (stays in Epic 16)* | *17.1* | *dev* |
-| 17.6 | Service-to-service calls via `/internal` | 17.4 | dev |
+| 17.6 | Service-to-service calls via `/internal` | 17.4, **17.0a, 17.0b** | dev |
 | 17.7 | User-reference contract and request pull | 17.6 | dev |
 | 17.8 | EMS↔PCS direction | 17.6 | dev |
-| 17.9 | API conventions I (breaking) | 17.4 | dev |
+| 17.9 | API conventions I (breaking) | 17.4, **17.0c, 17.0d** | dev |
 | 17.10 | API conventions II (breaking) | 17.9 | dev |
 | 17.11 | One upload contract, first purpose `company-logo` | 17.4 | dev |
 | 17.12 | EMS modularization design | 17.5 | **design (Winston)** |
@@ -89,8 +103,11 @@ Protective and cheap first, then decoupling, then restructuring.
 | 17.15 | Mail core / mail center split | 17.12, 16.8c | dev |
 | 17.16 | Event-core extension points | 17.12 | dev |
 
-17.1, 17.2 and 17.5 have no dependencies and can start in any order. 17.6 to 17.11 can run in
-parallel once 17.4 is in, as long as only one PR is open at a time.
+**20 stories** (17.0a–d, 17.1–17.16); 17.12 is a design task. 17.1–17.5 do not wait for 17.0a–d and
+can run alongside them; 17.1, 17.2, 17.5 and 17.0a have no dependencies. 17.6 to 17.11 can run in
+parallel once their dependencies are in, as long as only one PR is open at a time. Winston's estimate
+(not measured): 17.0a–d are about 5–6 stories of work, so 17.0b and 17.0c may each split into two
+PRs (as 16.8a/b did).
 
 **Not stories yet:** the five remaining upload purposes after 17.11 (profile-picture, event-photo,
 teaser-image, session-material incl. speaker portal, mail-attachment; one story each, created after
@@ -100,6 +117,115 @@ the follow-up reviews (database, frontend, schema, Spring gateway, Watch API; ac
 ---
 
 ## Stories
+
+### Story 17.0a — Test rules and ratchet (proposal P1, P3, P4)
+
+**As** the owner, **I want** one written rule for what a test may replace, and mock counts that can
+only go down, **so that** new tests stop encoding the developer's belief and the 10,000 existing tests
+improve without a rewrite.
+
+**Scope:**
+- **Mocking rule** in `docs/architecture/coding-standards.md` and in Amelia's dev workflow
+  (`_bmad/custom/bmad-dev-story.toml` / `bmad-agent-dev.toml` overrides, not the skill files): *mock only
+  at the process boundary* (SES, S3, Cognito, OpenAI, SQS, the clock, another service's HTTP API at the
+  wire, never its Java client). Layer table from proposal P1.
+- **Assertion rules** (P3): absence needs a positive control; assert the effect, not the call; a fallback
+  must be distinguishable from success; no silent catch in `@Async`/schedulers/listeners without a
+  metric; wiring test at the parent for every callback prop that triggers a mutation. Also the
+  P2.4 rules that need no infrastructure: cache tests read, mutate, read again; no test copies of
+  production resources on the test classpath.
+- **Touch rule** (P4): a story that changes a screen or service method moves that code's tests to the
+  harness once it exists.
+- Remove the contradiction in `_bmad-output/project-context.md`: `:201` says use MSW instead of mocking
+  service modules, `:459` says mock the service layer (checked 2026-11-07). `:459` goes.
+- **Ratchet** (P4): a CI check with a committed baseline counting, per file, (1) `vi.mock` of own
+  `@/services`, `@/hooks` and child components; (2) `@MockitoBean` of in-process beans and of
+  `UserApiClient`; (3) class-level `@Transactional` on write ITs. Fails when a count rises, and on stale
+  baseline entries; a falling count updates the baseline in the same PR.
+
+**Acceptance criteria:**
+1. The rule and assertion rules are in `coding-standards.md`, the dev-story override and project-context;
+   the contradiction is gone. Guard: grep shows no "mock the service layer" guidance.
+2. The ratchet runs in a required CI job. Guard: a test of the check with fixtures (count up fails,
+   count down passes with baseline update, stale entry fails).
+3. Baseline numbers recorded and compared with the proposal's measurement (329/177/112/87 frontend
+   files, 106 `@MockitoBean` incl. 38 `UserApiClient`, 85 class-level `@Transactional` ITs in EMS).
+
+---
+
+### Story 17.0b — S2S contract harness and production setup in tests (P2.1, P2.4a–c)
+
+**As** a developer moving a service-to-service call, **I want** the real client tested against the
+provider's contract, **so that** a wrong path or parameter fails before production (#1072, #1159/#1181).
+
+**Scope:**
+- One contract test per client: `UserApiClientImpl`, `CompanyApiClient`, the PCS clients, the CUMS→EMS
+  pushes (`HttpEventManagementMailCenterClient`, `HttpEventManagementUserMergeClient`). Real client
+  against `MockRestServiceServer`; every request validated against the **provider's** OpenAPI (path
+  exists, parameters within limits); responses taken from the provider spec examples.
+- Provider side: a test per provider asserting its spec examples are valid responses of the real
+  controller.
+- Production security chain guard test in every service (as `ProductionSecurityFilterChainTest` in the
+  gateway).
+- Real `EmailService` against a mocked `SesClient` in tests; address validation no longer sits behind
+  `sesClient == null` (also fixes the local-dev blind spot).
+- Write paths with DB constraints: a non-`@Transactional` IT or `flush()` before the assertion.
+- Start with `UserApiClientImpl` (38 mocks). Converting the existing `@MockitoBean UserApiClient`
+  usages is gradual under the 17.0a touch rule, not this story.
+
+**Acceptance criteria:**
+1. Every S2S client has a contract test; a request to a path or parameter outside the provider spec
+   fails it. Guard: a fixture reproducing #1072 (`limit=1000` against a spec max of 100) fails.
+2. Every service has a production-chain guard test (anonymous write → 401, attendee on organizer
+   endpoint → 403).
+3. A joined `To:` line (#1176) fails a test without SES credentials. Guard: `EmailService` unit test
+   with mocked `SesClient`.
+4. Ratchet baseline (17.0a) does not rise.
+
+---
+
+### Story 17.0c — Frontend MSW harness (P2.2)
+
+**As** a frontend developer, **I want** default MSW handlers for every API operation and a validator
+against the spec, **so that** component tests render real screens with real hooks and services and fail
+on a wrong path or shape.
+
+**Scope:**
+- `web-frontend/src/test/msw/`: a default handler per operation in `docs/api/*.openapi.yml`, data built
+  through the generated types, a request validator that fails the test on a path or parameter not in
+  the spec. Same matching rules as 17.3 (method-aware, parameters as single-segment wildcards).
+- Real i18next with the `en` locale files as the test default, replacing per-file `react-i18next`
+  stubs for converted files.
+- Convert the 10 worst mock-heavy test files, e.g. `EventPage.test.tsx` (13 mocked modules). The
+  list is chosen from the 17.0a baseline.
+
+**Acceptance criteria:**
+1. A test calling a path not in the spec fails with the validator's message. Guard: a test of the
+   harness itself.
+2. The 10 converted files mock no own `@/services`/`@/hooks`/child components; the 17.0a baseline
+   falls accordingly.
+3. Handler data is typed from `src/types/generated/`; `npm run type-check` catches a shape drift.
+
+---
+
+### Story 17.0d — Production-shaped fixtures (P2.3)
+
+**As** a developer writing a test, **I want** realistic data by default, **so that** unicode names,
+case, namesakes and limits are exercised without anyone remembering to.
+
+**Scope:** one shared fixture set per side (frontend builders, backend test fixtures), used by default:
+`Hông Ân`, `O’Neill`, `王`, mixed-case e-mails, IDN domains, two namesakes, more rows than the page
+limit, ties in the sort key, past and future events, every registration status. An ASCII-only builder
+is the exception. Fixtures pass the real DB constraints (e.g. `chk_username_format`) and the generated
+API types.
+
+**Acceptance criteria:**
+1. The fixture sets exist and are the default in the 17.0c harness and the backend test base.
+   Guard: a test asserting each listed shape is present.
+2. Regression tests for #1034 (umlaut search, >20 namesakes) and #1104 (`Hông Ân` username) run on the
+   shared fixtures.
+
+---
 
 ### Story 17.1 — Dead API surface
 

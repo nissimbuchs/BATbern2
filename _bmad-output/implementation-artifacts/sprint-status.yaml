@@ -313,8 +313,12 @@ development_status:
   epic-16-retrospective: optional
 
   # Epic 17: Architecture hardening — backlog, scope decided by owner 2026-11-07, each story needs owner go (docs/prd/epic-17-architecture-hardening.md)
-  # Order: 17.1-17.5, then 16.8c (Epic 16, after 17.1), then 17.6-17.11, 17.12 (design, Winston), 17.13-17.16
+  # Order: 17.0a-d (test fidelity) alongside 17.1-17.5, then 16.8c (Epic 16, after 17.1), then 17.6-17.11, 17.12 (design, Winston), 17.13-17.16
   epic-17: in-progress
+  17-0a-test-rules-and-ratchet: backlog  # test-fidelity proposal P1/P3/P4; owner go 2026-11-07
+  17-0b-s2s-contract-harness: backlog  # P2.1 + P2.4a-c; 17.6 waits for 17.0a + 17.0b
+  17-0c-frontend-msw-harness: backlog  # P2.2; 17.9 waits for 17.0c + 17.0d
+  17-0d-production-shaped-fixtures: backlog  # P2.3
   17-1-dead-api-surface: ready-for-dev  # story file 2026-11-07
   17-2-dormant-infrastructure-stubs-and-event-bus: backlog  # prod infra, not on an event day; closes #1216, bus part of #1220
   17-3-frontend-path-contract-check: ready-for-dev  # story file 2026-11-07; same PR as 17.1 if owner agrees
