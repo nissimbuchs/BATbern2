@@ -1078,6 +1078,19 @@ or not. The newsletter is one `newsletter_subscribers` row per address (#1143); 
 additional addresses only (403 otherwise). Participants manage all of this on `/profile` (tabs
 "Einwilligung & Newsletter" and "E-Mail-Adressen"); organizers keep the Account settings.
 
+**Changing the primary address (#1244 step 2).** A confirmed additional address can become the primary
+(login) address: `POST /users/me/additional-emails/{email}/make-primary` (`isAuthenticated`, 204; 404
+for an address that is not the caller's, 409 `NOT_VERIFIED`, 409 `EMAIL_HAS_OTHER_LOGIN`). Order in
+`PrimaryEmailService`: Cognito first (`changeLoginEmail`: `email` and `email_verified = true`; the pool
+signs in by email, the `sub` and linked Google identities stay), then the swap in
+`user_profiles` / `user_additional_emails` with explicit flushes (global uniqueness; Hibernate flushes
+inserts before deletes); if the DB step fails, the login is moved back. The old primary stays as a
+confirmed additional address. EMS `POST /internal/users/primary-email` moves upcoming registrations
+(event today or later) made under the old address, because deregistration, slides and
+`-participants@` read `registrations.attendee_email`. The UI refreshes the session afterwards, since
+the ID token carries the old address until then. `EMAIL_HAS_OTHER_LOGIN` means another account logs
+in with that address: the page then offers the account merge below.
+
 ## Names, emails and usernames (#1102)
 
 **Names are free text; emails follow one rule; the username is a derived ASCII slug.** These rules are
@@ -1116,18 +1129,20 @@ login, and later an account with another address (`name.2`). Measured on product
 of a profile without login and a login profile with the same first and last name; 7 of them hold a
 registration for the same event, 19 of the profiles without login carry speaker history.
 
-**Two ways in, one merge:**
+**Ways in, one merge:**
 
 | | Who | How |
 |---|---|---|
 | **C: organizer merge** | ORGANIZER | User page → "Merge profile" → pick the other profile → preview → confirm. `GET /users/{target}/merge-preview?source=`, `POST /users/{target}/merge` |
 | **D: claim** | the person, logged in | Account settings and the attendee dashboard list profiles **without login** under the same first and last name (case-insensitive), with a masked address only. "This is me" mails a signed link (48 h, JWT type `profile-claim`) **to the earlier profile's address**; `/claim-profile?token=` confirms it, and only under the login that asked for it (else 403 `CLAIM_OTHER_ACCOUNT`). A candidate with a placeholder address from the historical import (`vorname.nachname@batbern.ch`, #1244) is flagged `placeholderAddress` and gets no link (409 `PLACEHOLDER_ADDRESS`); only the request to the organizers (row E) is offered. `GET/POST /users/me/profile-claims`, `POST /users/me/profile-claims/confirm` |
+| **F: two logins (#1244 step 3)** | the person, logged in as A | Owner decision 2026-11-07: someone with two accounts that both have a login (first the company address, later a private one). On `/profile`, adding B's address answers `ADDITIONAL_EMAIL_DUPLICATE` (making it primary answers `EMAIL_HAS_OTHER_LOGIN`); the page offers "Ist es Ihres?" → `POST /users/me/account-merges {email}`: B is the account whose **primary** address that is and which has a login, else 404. A signed link (same token as D, template `account-merge-{de,en}`) goes to B's address; `/claim-profile?token=` under A's login proves both mailboxes. Confirm: Cognito `disableLogin(B)` → `UserMergeService.mergeLoginAccount(A, B)` (trigger `SELF_CLAIM`, B's addresses carried as confirmed) → `deleteLogin(B)`. A failed merge enables B's login again; a login that cannot be disabled means nothing is merged; a failed delete leaves it disabled (logged `ACCOUNT_MERGE login disabled but not deleted`). Organizers do not get this. |
 | **E: request (#1237)** | the person asks, any ORGANIZER decides | For someone who cannot read the earlier profile's mailbox any more (a former employer's address). "I no longer have access to this address" + an optional note → `POST /users/me/profile-claims/merge-requests` stores a `profile_merge_requests` row (CUMS V23) and opens a Mail Center conversation (EMS `POST /internal/mail-center/merge-requests`, `mail_conversation.merge_request_id`, V145). The conversation shows both profiles, what would move and the note; **Approve** (`POST /users/merge-requests/{id}/approve`) runs the merge as `ORGANIZER` with the approving organizer as `performed_by`, **Decline** (`.../decline`) needs a reason. The person is mailed at their current address either way (templates `profile-merge-approved`/`-declined`, DE + EN) and the conversation is set to Done. |
 
 **Rules** (`UserMergeService` in company-user-management):
 - The **source must have no login**. A Cognito user is someone's account; deleting it would lock them out.
   The login profile is always the target; the organizer dialog offers to swap the direction. Two login
-  profiles are not merged.
+  profiles are merged only by the person themselves after proving both mailboxes (row F,
+  `mergeLoginAccount`, the one path that accepts a source with a login; the snapshot records `hadLogin`).
 - **Order**: lock both profiles → event-management moves its rows (`POST /internal/users/merge`, Service
   Connect, no JWT) and commits → company-user-management moves roles, `activity_history`,
   `watch_pairings`, `role_assignments.granted_by`, fills an empty company and bio, deletes the source and

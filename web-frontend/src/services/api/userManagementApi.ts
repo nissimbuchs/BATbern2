@@ -303,6 +303,38 @@ export const declineProfileMergeRequest = async (
   return response.data;
 };
 
+// #1246: a participant's request for a new company logo, decided by an organizer in the Mail Center
+export type CompanyLogoRequestView = components['schemas']['CompanyLogoRequestView'];
+
+export const getCompanyLogoRequest = async (requestId: string): Promise<CompanyLogoRequestView> => {
+  const response = await apiClient.get<CompanyLogoRequestView>(
+    `${USER_API_PATH}/company-logo-requests/${encodeURIComponent(requestId)}`
+  );
+  return response.data;
+};
+
+/** The company gets the new logo; the requester is mailed. */
+export const approveCompanyLogoRequest = async (
+  requestId: string
+): Promise<CompanyLogoRequestView> => {
+  const response = await apiClient.post<CompanyLogoRequestView>(
+    `${USER_API_PATH}/company-logo-requests/${encodeURIComponent(requestId)}/approve`
+  );
+  return response.data;
+};
+
+/** Declines; an optional reason is mailed to the requester. */
+export const declineCompanyLogoRequest = async (
+  requestId: string,
+  reason?: string
+): Promise<CompanyLogoRequestView> => {
+  const response = await apiClient.post<CompanyLogoRequestView>(
+    `${USER_API_PATH}/company-logo-requests/${encodeURIComponent(requestId)}/decline`,
+    { reason: reason?.trim() ? reason.trim() : undefined }
+  );
+  return response.data;
+};
+
 /** Merges `source` into `target` and deletes `source`. */
 export const mergeUserProfile = async (
   target: string,

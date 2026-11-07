@@ -857,7 +857,39 @@
       "errorDuplicate": "Questa adressa è gia registrada.",
       "errorLimit": "Vus avais cuntanschì il maximum da 5 ulteriuras adressas.",
       "errorInvalid": "Endatai per plaschair ina adressa dad e-mail valida.",
-      "loginHint": "Cun il pled-clav As annunziais Vus cun l’adressa principala. Cun ina adressa Gmail u Google confermada pudais Vus As annunziar era via «Cuntinuar cun Google»."
+      "loginHint": "Cun il pled-clav As annunziais Vus cun l’adressa principala. Cun ina adressa Gmail u Google confermada pudais Vus As annunziar era via «Cuntinuar cun Google».",
+      "makePrimary": "Utilisar sco adressa principala",
+      "makePrimaryExplain": "Da qua davent t'annunzias ti cun {{email}} e retschaivas là ils e-mails dals eveniments. Tia adressa principala actuala resta sco adressa confermada.",
+      "makePrimaryConfirm": "Far l'adressa principala",
+      "makePrimaryDone": "Tia adressa principala è midada.",
+      "makePrimaryError": "L'adressa n'ha betg pudì vegnir fatga l'adressa principala. Emprova anc ina giada.",
+      "makePrimaryOtherLogin": "In auter conto s'annunzia cun questa adressa.",
+      "mergeQuestion": "Questa adressa tutga tar in auter conto. È quai il tes?",
+      "mergeExplain": "Nus tramettain ina colliaziun a questa adressa. Avra ella entant che ti es annunzià qua: l'auter conto vegn unì cun quest ed ses login vegn stizzà.",
+      "mergeSend": "Trametter la colliaziun per unir ils contos",
+      "mergeSent": "Nus avain tramess ina colliaziun a {{email}}. Avra ella entant che ti es annunzià cun quest conto.",
+      "mergeNotFound": "Nus na pudain attribuir questa adressa a nagin auter conto cun login. Contactescha p.pl. ils organisaturs.",
+      "mergeError": "La colliaziun n'ha betg pudì vegnir tramessa. Emprova anc ina giada."
+    },
+    "logo": {
+      "label": "Logo da la firma",
+      "alt": "Logo da {{company}}",
+      "previewAlt": "Prevista dal nov logo",
+      "none": "Anc nagin logo",
+      "request": "Dumandar ina midada dal logo",
+      "explain": "Trametta a nus il logo actual da tia firma. Ils organisaturs al controllan e ta respundan per e-mail.",
+      "choose": "Datoteca dal logo",
+      "hint": "PNG, JPG u SVG, maximalmain 5 MB.",
+      "note": "Remartga per ils organisaturs (facultativ)",
+      "notePlaceholder": "p.ex. nov logo dapi il rebranding en zercladur",
+      "send": "Trametter la dumonda",
+      "cancel": "Interrumper",
+      "pending": "Tia dumonda è tar ils organisaturs.",
+      "sent": "Grazia fitg. Ils organisaturs controllan il logo e ta respundan per e-mail.",
+      "errorUpload": "La datoteca n'ha betg pudì vegnir chargiada si. Controllescha format e grondezza ed emprova anc ina giada.",
+      "errorOpen": "Per questa firma è gia ina dumonda tar ils organisaturs.",
+      "errorNoCompany": "Memorisescha p.pl. l'emprim ina firma en tes profil.",
+      "errorGeneric": "La dumonda n'ha betg pudì vegnir tramessa. Emprova anc ina giada."
     }
   }
 }

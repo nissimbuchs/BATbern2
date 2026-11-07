@@ -674,6 +674,25 @@
         "declined": "Abgelehnt von {{by}}: {{reason}}",
         "actionFailed": "Das hat nicht funktioniert. Nichts wurde geändert; bitte nochmals versuchen.",
         "loadError": "Die Anfrage konnte nicht geladen werden."
+      },
+      "logoRequest": {
+        "title": "Neues Logo für {{company}}",
+        "explain": "{{name}} hat ein neues Logo für die eigene Firma geschickt. Wenn Sie es übernehmen, zeigt BATbern die Firma überall mit dem neuen Logo. In beiden Fällen erhält {{name}} eine E-Mail.",
+        "note": "Hinweis",
+        "current": "Bisheriges Logo",
+        "new": "Neues Logo",
+        "noLogo": "Bisher kein Logo",
+        "approve": "Logo übernehmen",
+        "decline": "Ablehnen",
+        "confirmDecline": "Antrag ablehnen",
+        "cancel": "Abbrechen",
+        "reason": "Begründung (optional)",
+        "reasonHelp": "Wird der Person per E-Mail mitgeteilt, wenn angegeben.",
+        "approved": "Übernommen von {{by}}. Die Firma hat das neue Logo.",
+        "declined": "Abgelehnt von {{by}}.",
+        "declinedWithReason": "Abgelehnt von {{by}}: {{reason}}",
+        "actionFailed": "Der Entscheid konnte nicht gespeichert werden. Bitte versuchen Sie es noch einmal.",
+        "loadError": "Der Logo-Antrag konnte nicht geladen werden."
       }
     }
   },

@@ -660,6 +660,25 @@
         "declined": "Rechazado por {{by}}: {{reason}}",
         "actionFailed": "No ha funcionado. No se ha cambiado nada; inténtalo de nuevo.",
         "loadError": "No se pudo cargar la solicitud."
+      },
+      "logoRequest": {
+        "title": "Nuevo logotipo para {{company}}",
+        "explain": "{{name}} ha enviado un nuevo logotipo para su empresa. Si lo aceptas, BATbern muestra la empresa con el nuevo logotipo en todas partes. En ambos casos {{name}} recibe un correo.",
+        "note": "Nota",
+        "current": "Logotipo actual",
+        "new": "Nuevo logotipo",
+        "noLogo": "Sin logotipo hasta ahora",
+        "approve": "Aceptar logotipo",
+        "decline": "Rechazar",
+        "confirmDecline": "Rechazar solicitud",
+        "cancel": "Cancelar",
+        "reason": "Motivo (opcional)",
+        "reasonHelp": "Se envía por correo al participante si se indica.",
+        "approved": "Aceptado por {{by}}. La empresa tiene el nuevo logotipo.",
+        "declined": "Rechazado por {{by}}.",
+        "declinedWithReason": "Rechazado por {{by}}: {{reason}}",
+        "actionFailed": "No se pudo guardar la decisión. Inténtalo de nuevo.",
+        "loadError": "No se pudo cargar la solicitud de logotipo."
       }
     }
   },

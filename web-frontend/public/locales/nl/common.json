@@ -857,7 +857,39 @@
       "errorDuplicate": "Dit adres is al geregistreerd.",
       "errorLimit": "U hebt het maximum van 5 extra adressen bereikt.",
       "errorInvalid": "Voer een geldig e-mailadres in.",
-      "loginHint": "Met het wachtwoord logt u in met het hoofdadres. Met een bevestigd Gmail- of Google-adres kunt u ook inloggen via ‘Doorgaan met Google’."
+      "loginHint": "Met het wachtwoord logt u in met het hoofdadres. Met een bevestigd Gmail- of Google-adres kunt u ook inloggen via ‘Doorgaan met Google’.",
+      "makePrimary": "Als hoofdadres gebruiken",
+      "makePrimaryExplain": "Vanaf nu log je in met {{email}} en ontvang je daar de evenementmails. Je huidige hoofdadres blijft als bevestigd adres bestaan.",
+      "makePrimaryConfirm": "Tot hoofdadres maken",
+      "makePrimaryDone": "Je hoofdadres is gewijzigd.",
+      "makePrimaryError": "Het adres kon niet tot hoofdadres worden gemaakt. Probeer het opnieuw.",
+      "makePrimaryOtherLogin": "Een ander account logt in met dit adres.",
+      "mergeQuestion": "Dit adres hoort bij een ander account. Is het van jou?",
+      "mergeExplain": "We sturen een link naar dit adres. Open die terwijl je hier bent ingelogd: het andere account wordt met dit account samengevoegd en de login ervan wordt verwijderd.",
+      "mergeSend": "Link sturen om de accounts samen te voegen",
+      "mergeSent": "We hebben een link naar {{email}} gestuurd. Open die terwijl je met dit account bent ingelogd.",
+      "mergeNotFound": "We kunnen dit adres niet koppelen aan een ander account met login. Neem contact op met de organisatoren.",
+      "mergeError": "De link kon niet worden verstuurd. Probeer het opnieuw."
+    },
+    "logo": {
+      "label": "Bedrijfslogo",
+      "alt": "Logo van {{company}}",
+      "previewAlt": "Voorbeeld van het nieuwe logo",
+      "none": "Nog geen logo",
+      "request": "Logowijziging aanvragen",
+      "explain": "Stuur ons het huidige logo van je bedrijf. De organisatoren controleren het en laten het je per e-mail weten.",
+      "choose": "Logobestand",
+      "hint": "PNG, JPG of SVG, maximaal 5 MB.",
+      "note": "Opmerking voor de organisatoren (optioneel)",
+      "notePlaceholder": "bijv. nieuw logo sinds de rebranding in juni",
+      "send": "Aanvraag versturen",
+      "cancel": "Annuleren",
+      "pending": "Je aanvraag ligt bij de organisatoren.",
+      "sent": "Bedankt. De organisatoren controleren het logo en laten het je per e-mail weten.",
+      "errorUpload": "Het bestand kon niet worden geüpload. Controleer formaat en grootte en probeer het opnieuw.",
+      "errorOpen": "Er ligt al een aanvraag voor dit bedrijf bij de organisatoren.",
+      "errorNoCompany": "Sla eerst een bedrijf op in je profiel.",
+      "errorGeneric": "De aanvraag kon niet worden verstuurd. Probeer het opnieuw."
     }
   }
 }

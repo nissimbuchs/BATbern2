@@ -5,7 +5,8 @@
  *
  * Role-neutral profile page mounted at `/profile` behind a plain ProtectedRoute
  * (any authenticated role). Three tabs:
- *  - "Profile": firstName, lastName, bio, profile photo, read-only email, company
+ *  - "Profile": firstName, lastName, bio, profile photo, read-only email, company, and the
+ *    company logo with the request for a new one (#1246)
  *  - "Consent & Newsletter": write-once ToS/Privacy consent (Story 12.11 AC5b) and
  *    the newsletter per address (#1244: primary and confirmed additional addresses,
  *    EMS `newsletter_subscribers`, NOT a user_profiles column).
@@ -51,6 +52,7 @@ import { getOrCreateCompany } from '@/services/api/companyApi';
 import type { User } from '@/types/userAccount.types';
 import { useAuth } from '@/hooks/useAuth';
 import ProfilePhotoUpload from '@/components/speaker-portal/ProfilePhotoUpload';
+import { CompanyLogoSection } from '@/components/user/CompanyLogoRequest/CompanyLogoSection';
 
 type PageState = 'loading' | 'form' | 'error';
 
@@ -444,6 +446,8 @@ const ProfilePage = () => {
                         }}
                         error={errors.companyId}
                       />
+                      {/* #1246: the saved company's logo and the request for a new one */}
+                      {user?.companyId && <CompanyLogoSection companyName={user.companyId} />}
                     </div>
 
                     <div>

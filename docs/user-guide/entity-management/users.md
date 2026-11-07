@@ -299,7 +299,7 @@ Any user can register **additional email addresses**: participants on their prof
 - **Send-as**: mail the user sends to BATbern from any registered additional address is treated as coming from an authorised sender. For organizers this means mail to the organizer-only aliases (`ok@`, `partner@`, `batbern{N}-speaker@`, `batbern{N}-participants@`) is forwarded when it comes from a legacy/shared/personal mailbox (e.g. a Hostpoint shared inbox) instead of the primary address. The sending mail provider must authenticate the address (DMARC pass, or a DKIM signature of the address's own domain); otherwise anyone could forge an organizer's address, and the mail is rejected.
 
 **Key details**:
-- The **primary email stays the login identifier** — adding aliases does NOT change the Cognito-linked primary address.
+- The **primary email is the login identifier**. Adding an address does not change it. Participants can make a confirmed address the primary one with **Als Hauptadresse verwenden** (#1244): they then log in with it and receive the event mails there, the old primary address stays as a confirmed address, and upcoming registrations follow. If another account logs in with that address, the page offers to combine the two accounts (see below).
 - Each address can carry an optional free-text **label** (e.g. "Hostpoint shared") as a reminder.
 - Up to **5** additional addresses per user.
 - Addresses must be **globally unique** across all users' primary and additional emails; a collision is rejected.
@@ -324,7 +324,7 @@ Removing and re-adding an address invalidates earlier links; use the link from t
 Receive-at and send-as work for unverified addresses too.
 
 <div class="alert info">
-ℹ️ <strong>Note:</strong> Newsletter delivery to additional addresses is out of scope (the newsletter keeps its own subscriber list).
+ℹ️ <strong>Note:</strong> The newsletter is switched per address: participants tick it for the primary and each confirmed address under <strong>Profil → Einwilligung &amp; Newsletter</strong> (#1244).
 </div>
 
 ## Merging Two Profiles of One Person
@@ -340,7 +340,7 @@ subscriptions, roles and addresses. Confirm with **Merge and delete**.
 
 - Only a profile **without a login** is merged in and deleted; the profile with the login stays. If you
   picked them the other way round, click **Swap direction**.
-- Two profiles that both have a login cannot be merged here.
+- Two profiles that both have a login cannot be merged here. Only the person can combine them (below).
 - Both registered for the same event: the better registration stays (attended, confirmed, registered,
   waitlist, cancelled), the other is removed.
 - Both lead a different talk at the same event: the merge is refused until you remove one from the talk.
@@ -358,6 +358,13 @@ profiles, what would move and the note. **Combine** merges as above, but the old
 **not** added to the account; **Decline** needs a reason. The person gets a mail at their current address
 either way, and the conversation is set to Done. While the request is open the profile shows "Your
 request is with the organizers"; after a decline the same profile can be asked again after 30 days.
+
+**Two accounts with a login** (#1244): someone who registered first with the company address and later
+with a private one has two logins. On the profile, adding the other address answers "This address is
+already registered" and asks **Ist es Ihres?**; **Link zum Zusammenführen senden** mails a link to that
+address. Opening it while logged in with the first account combines them: the other account's
+registrations, talks and roles move over, its address becomes a confirmed address (so "Continue with
+Google" with it lands here), and its login is deleted. Organizers cannot do this for someone else.
 
 **Imported profiles** (#1244): the historical import gave people without a known address a placeholder
 `vorname.nachname@batbern.ch`. Such a profile says "imported without your address" and offers only

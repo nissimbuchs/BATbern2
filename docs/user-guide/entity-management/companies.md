@@ -114,9 +114,20 @@ Backend confirms successful upload and saves logo URL to company record.
 ### File Requirements
 
 - **Formats**: PNG, JPG, SVG
-- **Max Size**: 2MB
+- **Max Size**: 5MB
 - **Recommended Dimensions**: 400x400px (square)
 - **Aspect Ratio**: 1:1 or 16:9
+
+### Logo Change Requests by Participants
+
+<span class="feature-status implemented">Implemented</span> (#1246)
+
+Participants cannot edit companies, but they can send a new logo for the company on their profile:
+**Profil → Firmenlogo → Logo-Änderung beantragen**, choose a file, add an optional note, send. The
+request appears on the **Mail** page under **No event**, with the current and the new logo side by side.
+**Logo übernehmen** sets the new logo exactly as an edit here would; **Ablehnen** keeps the current one,
+with an optional reason. The participant gets a mail either way. One open request per person and
+company; after a decision they can send a new one.
 
 ### Logo Display
 
@@ -200,7 +211,7 @@ Click the **📝 Edit** icon in the company row.
 **Modify Fields**
 
 Update any editable fields. Note:
-- Logo can be replaced (old logo deleted from S3)
+- Logo can be replaced (the old file stays in S3; only the company record points to the new one)
 
 </div>
 

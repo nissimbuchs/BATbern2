@@ -666,6 +666,25 @@
         "declined": "Abglehnt vo {{by}}: {{reason}}",
         "actionFailed": "Das het nid funktioniert. Nüt isch gänderet worde; bitte nomau probiere.",
         "loadError": "D Aafrag het nid chönne glade wärde."
+      },
+      "logoRequest": {
+        "title": "Nöis Logo für {{company}}",
+        "explain": "{{name}} het es nöis Logo für di eigeti Firma gschickt. We dir's übernämet, zeigt BATbern d Firma überau mit em nöie Logo. I beidne Fäll überchunnt {{name}} es E-Mail.",
+        "note": "Hiiwis",
+        "current": "Bisherigs Logo",
+        "new": "Nöis Logo",
+        "noLogo": "Bis jitz kes Logo",
+        "approve": "Logo übernäh",
+        "decline": "Ablehne",
+        "confirmDecline": "Atrag ablehne",
+        "cancel": "Abbräche",
+        "reason": "Begründig (fakultativ)",
+        "reasonHelp": "Wird dr Person per E-Mail mitteilt, we agäh.",
+        "approved": "Übernoh vo {{by}}. D Firma het ds nöie Logo.",
+        "declined": "Abglehnt vo {{by}}.",
+        "declinedWithReason": "Abglehnt vo {{by}}: {{reason}}",
+        "actionFailed": "Dr Entscheid het nid chönne gspicheret wärde. Bitte probieret's no einisch.",
+        "loadError": "Dr Logo-Atrag het nid chönne glade wärde."
       }
     }
   },

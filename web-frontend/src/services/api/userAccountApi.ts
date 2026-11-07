@@ -501,6 +501,50 @@ export const requestProfileMerge = async (candidateId: string, note?: string): P
   return response.data.requestId;
 };
 
+/**
+ * #1244 step 2: a confirmed additional address becomes the primary (login) address; the old primary
+ * stays as a confirmed additional address. 409 `NOT_VERIFIED` / `EMAIL_HAS_OTHER_LOGIN`.
+ */
+export const makeAdditionalEmailPrimary = async (email: string): Promise<void> => {
+  await apiClient.post(
+    `${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}/make-primary`
+  );
+};
+
+/**
+ * #1244 step 3: the address belongs to another account of the caller with its own login. A link
+ * goes to that address; confirming it (`/claim-profile?token=`) merges the accounts. 404 when the
+ * address is no other login.
+ */
+export const requestAccountMerge = async (email: string): Promise<void> => {
+  await apiClient.post(`${USER_API_PATH}/me/account-merges`, { email });
+};
+
+export type CompanyLogoRequestView = components['schemas']['CompanyLogoRequestView'];
+
+/**
+ * #1246: asks the organizers for a new logo of the caller's company. `logoUploadId` comes from a
+ * confirmed upload (useFileUpload). 409 `NO_COMPANY` / `LOGO_REQUEST_OPEN`, 400 `LOGO_NOT_READY`.
+ */
+export const createCompanyLogoRequest = async (
+  logoUploadId: string,
+  note?: string
+): Promise<CompanyLogoRequestView> => {
+  const response = await apiClient.post<CompanyLogoRequestView>(
+    `${USER_API_PATH}/me/company-logo-requests`,
+    { logoUploadId, note: note?.trim() ? note.trim() : undefined }
+  );
+  return response.data;
+};
+
+/** #1246: the caller's open logo request for their company, or null. */
+export const getMyOpenCompanyLogoRequest = async (): Promise<CompanyLogoRequestView | null> => {
+  const response = await apiClient.get<CompanyLogoRequestView>(
+    `${USER_API_PATH}/me/company-logo-requests/open`
+  );
+  return response.status === 204 || !response.data ? null : response.data;
+};
+
 // Admin endpoints for uploading profile pictures for other users
 
 /**

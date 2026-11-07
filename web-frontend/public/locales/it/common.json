@@ -857,7 +857,39 @@
       "errorDuplicate": "Questo indirizzo è già registrato.",
       "errorLimit": "Ha raggiunto il massimo di 5 indirizzi aggiuntivi.",
       "errorInvalid": "Inserisca un indirizzo e-mail valido.",
-      "loginHint": "Con la password accede con l’indirizzo principale. Con un indirizzo Gmail o Google confermato può accedere anche tramite «Continua con Google»."
+      "loginHint": "Con la password accede con l’indirizzo principale. Con un indirizzo Gmail o Google confermato può accedere anche tramite «Continua con Google».",
+      "makePrimary": "Usa come indirizzo principale",
+      "makePrimaryExplain": "D'ora in poi accedi con {{email}} e ricevi lì le e-mail degli eventi. L'indirizzo principale attuale resta come indirizzo confermato.",
+      "makePrimaryConfirm": "Rendilo l'indirizzo principale",
+      "makePrimaryDone": "Il tuo indirizzo principale è stato cambiato.",
+      "makePrimaryError": "Non è stato possibile rendere l'indirizzo principale. Riprova.",
+      "makePrimaryOtherLogin": "Un altro account accede con questo indirizzo.",
+      "mergeQuestion": "Questo indirizzo appartiene a un altro account. È tuo?",
+      "mergeExplain": "Inviamo un link a questo indirizzo. Aprilo mentre sei connesso qui: l'altro account viene unito a questo e il suo accesso viene eliminato.",
+      "mergeSend": "Invia il link per unire gli account",
+      "mergeSent": "Abbiamo inviato un link a {{email}}. Aprilo mentre sei connesso con questo account.",
+      "mergeNotFound": "Non possiamo associare questo indirizzo a un altro account con accesso. Contatta gli organizzatori.",
+      "mergeError": "Non è stato possibile inviare il link. Riprova."
+    },
+    "logo": {
+      "label": "Logo dell'azienda",
+      "alt": "Logo di {{company}}",
+      "previewAlt": "Anteprima del nuovo logo",
+      "none": "Ancora nessun logo",
+      "request": "Richiedi cambio logo",
+      "explain": "Inviaci il logo attuale della tua azienda. Gli organizzatori lo verificano e ti rispondono via e-mail.",
+      "choose": "File del logo",
+      "hint": "PNG, JPG o SVG, al massimo 5 MB.",
+      "note": "Nota per gli organizzatori (facoltativa)",
+      "notePlaceholder": "ad es. nuovo logo dal rebranding di giugno",
+      "send": "Invia richiesta",
+      "cancel": "Annulla",
+      "pending": "La tua richiesta è presso gli organizzatori.",
+      "sent": "Grazie. Gli organizzatori verificano il logo e ti rispondono via e-mail.",
+      "errorUpload": "Non è stato possibile caricare il file. Verifica formato e dimensione e riprova.",
+      "errorOpen": "Una richiesta per questa azienda è già presso gli organizzatori.",
+      "errorNoCompany": "Salva prima un'azienda nel tuo profilo.",
+      "errorGeneric": "Non è stato possibile inviare la richiesta. Riprova."
     }
   }
 }

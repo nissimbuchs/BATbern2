@@ -660,6 +660,25 @@
         "declined": "Afgewezen door {{by}}: {{reason}}",
         "actionFailed": "Dat is niet gelukt. Er is niets gewijzigd; probeer het opnieuw.",
         "loadError": "Het verzoek kon niet worden geladen."
+      },
+      "logoRequest": {
+        "title": "Nieuw logo voor {{company}}",
+        "explain": "{{name}} heeft een nieuw logo voor het eigen bedrijf gestuurd. Als je het accepteert, toont BATbern het bedrijf overal met het nieuwe logo. In beide gevallen krijgt {{name}} een e-mail.",
+        "note": "Opmerking",
+        "current": "Huidig logo",
+        "new": "Nieuw logo",
+        "noLogo": "Tot nu toe geen logo",
+        "approve": "Logo accepteren",
+        "decline": "Afwijzen",
+        "confirmDecline": "Aanvraag afwijzen",
+        "cancel": "Annuleren",
+        "reason": "Reden (optioneel)",
+        "reasonHelp": "Wordt per e-mail aan de deelnemer gestuurd als je die opgeeft.",
+        "approved": "Geaccepteerd door {{by}}. Het bedrijf heeft het nieuwe logo.",
+        "declined": "Afgewezen door {{by}}.",
+        "declinedWithReason": "Afgewezen door {{by}}: {{reason}}",
+        "actionFailed": "De beslissing kon niet worden opgeslagen. Probeer het opnieuw.",
+        "loadError": "De logo-aanvraag kon niet worden geladen."
       }
     }
   },

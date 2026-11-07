@@ -860,7 +860,39 @@
       "errorDuplicate": "This address is already registered.",
       "errorLimit": "You have reached the maximum of 5 further addresses.",
       "errorInvalid": "Please enter a valid e-mail address.",
-      "loginHint": "Your password logs you in with the primary address. With a confirmed Gmail or Google address you can also log in via “Continue with Google”."
+      "loginHint": "Your password logs you in with the primary address. With a confirmed Gmail or Google address you can also log in via “Continue with Google”.",
+      "makePrimary": "Use as primary address",
+      "makePrimaryExplain": "From now on you log in with {{email}} and receive the event mails there. Your current primary address stays as a confirmed address.",
+      "makePrimaryConfirm": "Make it the primary address",
+      "makePrimaryDone": "Your primary address has changed.",
+      "makePrimaryError": "The address could not be made the primary address. Please try again.",
+      "makePrimaryOtherLogin": "Another account logs in with this address.",
+      "mergeQuestion": "This address belongs to another account. Is it yours?",
+      "mergeExplain": "We send a link to this address. Open it while you are logged in here: the other account is combined with this one and its login is deleted.",
+      "mergeSend": "Send link to combine the accounts",
+      "mergeSent": "We sent a link to {{email}}. Open it while you are logged in with this account.",
+      "mergeNotFound": "We cannot match this address to another account with a login. Please contact the organizers.",
+      "mergeError": "The link could not be sent. Please try again."
+    },
+    "logo": {
+      "label": "Company logo",
+      "alt": "Logo of {{company}}",
+      "previewAlt": "Preview of the new logo",
+      "none": "No logo yet",
+      "request": "Request logo change",
+      "explain": "Send us the current logo of your company. The organizers check it and let you know by e-mail.",
+      "choose": "Logo file",
+      "hint": "PNG, JPG or SVG, at most 5 MB.",
+      "note": "Note for the organizers (optional)",
+      "notePlaceholder": "e.g. new logo since the rebranding in June",
+      "send": "Send request",
+      "cancel": "Cancel",
+      "pending": "Your request is with the organizers.",
+      "sent": "Thank you. The organizers check the logo and let you know by e-mail.",
+      "errorUpload": "The file could not be uploaded. Please check the format and size and try again.",
+      "errorOpen": "A request for this company is already with the organizers.",
+      "errorNoCompany": "Please save a company in your profile first.",
+      "errorGeneric": "The request could not be sent. Please try again."
     }
   }
 }

@@ -857,7 +857,39 @@
       "errorDuplicate": "Tämä osoite on jo rekisteröity.",
       "errorLimit": "Olet saavuttanut enintään 5 lisäosoitteen rajan.",
       "errorInvalid": "Anna kelvollinen sähköpostiosoite.",
-      "loginHint": "Salasanalla kirjaudut pääosoitteella. Vahvistetulla Gmail- tai Google-osoitteella voit kirjautua myös ”Jatka Googlella” -painikkeella."
+      "loginHint": "Salasanalla kirjaudut pääosoitteella. Vahvistetulla Gmail- tai Google-osoitteella voit kirjautua myös ”Jatka Googlella” -painikkeella.",
+      "makePrimary": "Käytä ensisijaisena osoitteena",
+      "makePrimaryExplain": "Tästä lähtien kirjaudut osoitteella {{email}} ja saat tapahtumasähköpostit sinne. Nykyinen ensisijainen osoitteesi jää vahvistetuksi osoitteeksi.",
+      "makePrimaryConfirm": "Tee ensisijaiseksi osoitteeksi",
+      "makePrimaryDone": "Ensisijainen osoitteesi on vaihdettu.",
+      "makePrimaryError": "Osoitetta ei voitu tehdä ensisijaiseksi. Yritä uudelleen.",
+      "makePrimaryOtherLogin": "Toinen tili kirjautuu tällä osoitteella.",
+      "mergeQuestion": "Tämä osoite kuuluu toiselle tilille. Onko se sinun?",
+      "mergeExplain": "Lähetämme linkin tähän osoitteeseen. Avaa se ollessasi kirjautuneena tänne: toinen tili yhdistetään tähän ja sen kirjautuminen poistetaan.",
+      "mergeSend": "Lähetä linkki tilien yhdistämiseksi",
+      "mergeSent": "Lähetimme linkin osoitteeseen {{email}}. Avaa se ollessasi kirjautuneena tällä tilillä.",
+      "mergeNotFound": "Emme voi yhdistää tätä osoitetta toiseen tiliin, jolla on kirjautuminen. Ota yhteyttä järjestäjiin.",
+      "mergeError": "Linkkiä ei voitu lähettää. Yritä uudelleen."
+    },
+    "logo": {
+      "label": "Yrityksen logo",
+      "alt": "Yrityksen {{company}} logo",
+      "previewAlt": "Uuden logon esikatselu",
+      "none": "Ei vielä logoa",
+      "request": "Pyydä logon vaihtoa",
+      "explain": "Lähetä meille yrityksesi nykyinen logo. Järjestäjät tarkistavat sen ja ilmoittavat sinulle sähköpostilla.",
+      "choose": "Logotiedosto",
+      "hint": "PNG, JPG tai SVG, enintään 5 Mt.",
+      "note": "Viesti järjestäjille (valinnainen)",
+      "notePlaceholder": "esim. uusi logo kesäkuun brändiuudistuksesta lähtien",
+      "send": "Lähetä pyyntö",
+      "cancel": "Peruuta",
+      "pending": "Pyyntösi on järjestäjillä.",
+      "sent": "Kiitos. Järjestäjät tarkistavat logon ja ilmoittavat sinulle sähköpostilla.",
+      "errorUpload": "Tiedostoa ei voitu ladata. Tarkista muoto ja koko ja yritä uudelleen.",
+      "errorOpen": "Tätä yritystä koskeva pyyntö on jo järjestäjillä.",
+      "errorNoCompany": "Tallenna ensin yritys profiiliisi.",
+      "errorGeneric": "Pyyntöä ei voitu lähettää. Yritä uudelleen."
     }
   }
 }
