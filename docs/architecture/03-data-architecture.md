@@ -111,7 +111,8 @@ stateDiagram-v2
 ```
 
 - **Endpoints** (CUMS, `companies-api`): `POST /logos/presigned-url`, `POST /logos/{uploadId}/confirm`,
-  plus `fetch-from-url` and `upload-from-url` for server-side imports.
+  plus `upload-from-url` for server-side imports (`fetch-from-url`, which had no caller, was removed
+  by Story 17.1).
 - **Constraints** (from the migrations): `file_extension` in png, jpg, jpeg, svg; `file_size` up
   to 5 MB.
 - **S3 keys:** temporary `logos/temp/{uploadId}/logo-{fileId}.{ext}`; final
@@ -1292,7 +1293,8 @@ As built, cross-service data is read, not replicated:
    stored, never a foreign key into another service's table.
 3. **Small denormalised caches where reads would otherwise fan out:** attendee name, email and
    company on `registrations`; speaker names on `session_users` (for full-text search). They are
-   refreshed on write and by backfills (for example the admin `backfill-speaker-names` endpoint);
+   refreshed on write and by backfills (for example `SpeakerNameBackfillRunner`, run with the
+   `backfill-speakers` profile; the admin endpoint for it was removed by Story 17.1);
    how stale they can become (not verified 2026-11-04).
 4. **Profile merges** rewrite usernames across EMS in one transaction on the EMS side and log the
    result in `user_merge_log`.

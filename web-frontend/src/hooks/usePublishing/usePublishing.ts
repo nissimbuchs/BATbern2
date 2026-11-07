@@ -4,7 +4,6 @@
  * State management hook for progressive publishing functionality
  * Features:
  * - Publish/unpublish phases (topic → speakers → agenda)
- * - Publishing preview
  * - Auto-publish scheduling
  * - Real-time updates via React Query
  */
@@ -13,7 +12,6 @@ import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
 import { publishingService } from '@/services/publishingService/publishingService';
 import type {
   PublishingPhase,
-  PublishPreviewResponse,
   PublishingStatusResponse,
   AutoPublishScheduleRequest,
   PublishValidationError,
@@ -31,12 +29,6 @@ export interface UsePublishingReturn {
   isUnpublishing: boolean;
   publishError: Error | null;
   validationErrors: Array<{ field: string; message: string; requirement: string }>;
-
-  // Preview
-  preview: PublishPreviewResponse | null;
-  fetchPreview: (phase: PublishingPhase) => void;
-  isLoadingPreview: boolean;
-  previewError: Error | null;
 
   // Auto-publish scheduling
   scheduleAutoPublish: (phase: PublishingPhase, options: AutoPublishScheduleRequest) => void;
@@ -56,20 +48,12 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
 
   // Query keys
   const statusKey = ['publishing', 'status', eventCode];
-  const previewKey = ['publishing', 'preview', eventCode];
 
   // Publishing status query (auto-fetched)
   const { data: publishingStatus, isLoading: isLoadingStatus } = useQuery({
     queryKey: statusKey,
     queryFn: () => publishingService.getPublishingStatus(eventCode),
     staleTime: 10000, // 10 seconds - validation can change frequently
-  });
-
-  // Preview query (manually triggered via fetchPreview)
-  const { data: preview } = useQuery({
-    queryKey: previewKey,
-    queryFn: () => null as PublishPreviewResponse | null, // Placeholder, actual call via mutation
-    enabled: false, // Don't auto-fetch, controlled by fetchPreview
   });
 
   // Publish phase mutation
@@ -86,15 +70,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     mutationFn: (phase: PublishingPhase) => publishingService.unpublishPhase(eventCode, phase),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: statusKey });
-    },
-  });
-
-  // Fetch preview mutation (manual trigger)
-  const fetchPreviewMutation = useMutation({
-    mutationFn: (phase: PublishingPhase) => publishingService.getPublishPreview(eventCode, phase),
-    onSuccess: (data) => {
-      // Update preview query data manually
-      queryClient.setQueryData(previewKey, data);
     },
   });
 
@@ -139,12 +114,6 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     isUnpublishing: unpublishPhaseMutation.isPending,
     publishError: publishPhaseMutation.error,
     validationErrors,
-
-    // Preview
-    preview: preview || null,
-    fetchPreview: (phase) => fetchPreviewMutation.mutate(phase),
-    isLoadingPreview: fetchPreviewMutation.isPending,
-    previewError: fetchPreviewMutation.error,
 
     // Auto-publish scheduling
     scheduleAutoPublish: (phase, options) => scheduleAutoPublishMutation.mutate({ phase, options }),

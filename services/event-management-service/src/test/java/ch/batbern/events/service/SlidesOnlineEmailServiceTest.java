@@ -109,35 +109,35 @@ class SlidesOnlineEmailServiceTest {
     // ── Double-send guards (AC5) ────────────────────────────────────────────
 
     @Test
-    @DisplayName("sendSlidesOnline: in-progress send → 409 DuplicateNewsletterSendException")
-    void sendSlidesOnline_inProgress_throwsDuplicate() {
+    @DisplayName("sendRegistrantNotice(slides-online): in-progress send → 409 DuplicateNewsletterSendException")
+    void sendRegistrantNotice_slidesOnline_inProgress_throwsDuplicate() {
         stubIsRegistrantNoticeTemplate();
         when(sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(
                 event.getId(), "slides-online", "IN_PROGRESS"))
                 .thenReturn(Optional.of(NewsletterSend.builder().id(UUID.randomUUID()).build()));
 
-        assertThatThrownBy(() -> service.sendSlidesOnline(event, "org.user"))
+        assertThatThrownBy(() -> service.sendRegistrantNotice(event, "slides-online", "org.user"))
                 .isInstanceOf(DuplicateNewsletterSendException.class);
 
         verify(registrationRepository, never()).findByEventIdAndStatusIn(any(), any());
     }
 
     @Test
-    @DisplayName("sendSlidesOnline: already-sent → 409 SlidesOnlineAlreadySentException")
-    void sendSlidesOnline_alreadySent_throws() {
+    @DisplayName("sendRegistrantNotice(slides-online): already-sent → 409 SlidesOnlineAlreadySentException")
+    void sendRegistrantNotice_slidesOnline_alreadySent_throws() {
         stubIsRegistrantNoticeTemplate();
         when(sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(
                 event.getId(), "slides-online", "IN_PROGRESS")).thenReturn(Optional.empty());
         when(sendRepository.existsByEventIdAndTemplateKeyAndStatusIn(
                 eq(event.getId()), eq("slides-online"), any())).thenReturn(true);
 
-        assertThatThrownBy(() -> service.sendSlidesOnline(event, "org.user"))
+        assertThatThrownBy(() -> service.sendRegistrantNotice(event, "slides-online", "org.user"))
                 .isInstanceOf(SlidesOnlineAlreadySentException.class);
     }
 
     @Test
-    @DisplayName("sendSlidesOnline: no prior send → creates audit row + returns PENDING with registrant count")
-    void sendSlidesOnline_happy_returnsPending() {
+    @DisplayName("sendRegistrantNotice(slides-online): no prior send → creates audit row + returns PENDING with registrant count")
+    void sendRegistrantNotice_slidesOnline_happy_returnsPending() {
         stubIsRegistrantNoticeTemplate();
         when(sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(
                 event.getId(), "slides-online", "IN_PROGRESS")).thenReturn(Optional.empty());
@@ -156,7 +156,7 @@ class SlidesOnlineEmailServiceTest {
         SlidesOnlineEmailService selfMock = org.mockito.Mockito.mock(SlidesOnlineEmailService.class);
         service.setSelf(selfMock);
 
-        SlidesOnlineSendResponse resp = service.sendSlidesOnline(event, "org.user");
+        SlidesOnlineSendResponse resp = service.sendRegistrantNotice(event, "slides-online", "org.user");
 
         assertThat(resp.getSendId()).isEqualTo(sendId);
         assertThat(resp.getStatus()).isEqualTo(SlidesOnlineSendResponse.StatusEnum.PENDING);

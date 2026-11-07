@@ -27,8 +27,6 @@ tags:
   description: Newsletter subscription, unsubscribe, and sending (NewsletterController, Story 10.7)
 - name: Registrant Notice
   description: Ad-hoc registrant notice preview/send (RegistrantNoticeController)
-- name: Slides Online
-  description: '"Slides are online" post-event notice send (SlidesOnlineController)'
 paths:
   /email-templates:
     get:
@@ -617,44 +615,6 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /events/{eventCode}/slides-online/send:
-    post:
-      tags:
-      - Slides Online
-      summary: Send the "slides are online" mail to the event's active registrants (ORGANIZER)
-      description: 'Story 7.3 — sends a one-shot, event-triggered "The Slides Are Online" mail to the event''s
-
-        ACTIVE REGISTRANTS (status registered/confirmed), NOT the global newsletter-subscriber pool.
-
-        Recipients with a global newsletter opt-out (unsubscribed/suppressed) are excluded. The
-
-        template language is per-recipient (de* → German, en → English, else → German fallback).
-
-        Guarded against double-send (409 if already in progress or already sent). Runs asynchronously.
-
-        '
-      operationId: sendSlidesOnline
-      parameters:
-      - name: eventCode
-        in: path
-        required: true
-        schema:
-          type: string
-      responses:
-        '200':
-          description: Slides-online send queued
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/SlidesOnlineSendResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '404':
-          description: Event not found
-        '409':
-          description: A slides-online send is already in progress or has already been sent
   /events/{eventCode}/registrant-notices/preview:
     post:
       tags:

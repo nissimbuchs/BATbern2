@@ -722,26 +722,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/publish/preview': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    /**
-     * Preview the public appearance before publishing
-     * @description Story progressive publishing (AC20, AC29). ORGANIZER role.
-     */
-    get: operations['getPublishPreview'];
-    put?: never;
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/events/{eventCode}/publish/schedule': {
     parameters: {
       query?: never;
@@ -760,27 +740,6 @@ export interface paths {
      * @description Story progressive publishing (AC19). ORGANIZER role.
      */
     post: operations['configureAutoPublish'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/admin/backfill-speaker-names': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Backfill speaker names for full-text search (maintenance)
-     * @description Temporary maintenance endpoint (Story archive search).
-     *     **Security**: ORGANIZER role required; any other role gets 403.
-     */
-    post: operations['backfillSpeakerNames'];
     delete?: never;
     options?: never;
     head?: never;
@@ -835,11 +794,6 @@ export interface paths {
 export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
-    BackfillSpeakerNamesResponse: {
-      success?: boolean;
-      message?: string;
-      updatedCount?: number;
-    };
     AdminSettingResponse: {
       key?: string;
       value?: string | null;
@@ -893,25 +847,6 @@ export interface components {
       topic?: components['schemas']['ValidationStatus'];
       speakers?: components['schemas']['ValidationStatus'];
       sessions?: components['schemas']['SessionValidationStatus'];
-    };
-    SpeakerPreview: {
-      name?: string;
-      company?: string;
-    };
-    SessionPreview: {
-      title?: string;
-      startTime?: string;
-      endTime?: string;
-      room?: string;
-    };
-    PublishPreviewResponse: {
-      eventCode?: string;
-      currentPhase?: string;
-      topicPublished?: boolean;
-      speakersPublished?: boolean;
-      agendaPublished?: boolean;
-      speakers?: components['schemas']['SpeakerPreview'][];
-      sessions?: components['schemas']['SessionPreview'][];
     };
     AutoPublishScheduleRequest: {
       phase2Enabled?: boolean;
@@ -3295,30 +3230,6 @@ export interface operations {
       403: components['responses']['Forbidden'];
     };
   };
-  getPublishPreview: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        eventCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Preview */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['PublishPreviewResponse'];
-        };
-      };
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-    };
-  };
   getAutoPublishSchedule: {
     parameters: {
       query?: never;
@@ -3370,42 +3281,6 @@ export interface operations {
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
-    };
-  };
-  backfillSpeakerNames: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Backfill result */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BackfillSpeakerNamesResponse'];
-        };
-      };
-      /** @description Forbidden (ORGANIZER role required) */
-      403: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
-      };
-      /** @description Backfill failed */
-      500: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['BackfillSpeakerNamesResponse'];
-        };
-      };
     };
   };
   getAdminSetting: {

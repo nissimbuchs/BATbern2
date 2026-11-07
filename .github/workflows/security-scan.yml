@@ -71,12 +71,8 @@ jobs:
             spec: docs/api/event-watch-api.openapi.yml
           - api: companies
             spec: docs/api/companies-api.openapi.yml
-          - api: speakers
-            spec: docs/api/speakers-api.openapi.yml
           - api: partners
             spec: docs/api/partners-api.openapi.yml
-          - api: attendees
-            spec: docs/api/attendees-api.openapi.yml
           # #1155: the six specs below were never scanned (the users API among them).
           - api: users
             spec: docs/api/users-api.openapi.yml

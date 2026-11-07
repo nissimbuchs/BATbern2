@@ -316,31 +316,6 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
     }
 
     /**
-     * Test: Get publishing preview
-     * AC20: Preview mode to see public appearance before publishing
-     * AC29: Preview shows correct content based on publishing mode
-     */
-    @Test
-    @WithMockUser(username = "test.organizer", roles = {"ORGANIZER"})
-    void should_getPreview_when_previewModeRequested() throws Exception {
-        // Publish topic and speakers
-        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/topic", eventCode));
-        mockMvc.perform(post("/api/v1/events/{eventCode}/publish/speakers", eventCode));
-
-        // Get preview
-        mockMvc.perform(get("/api/v1/events/{eventCode}/publish/preview", eventCode))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.eventCode").value(eventCode))
-                .andExpect(jsonPath("$.currentPhase").value("SPEAKERS"))
-                .andExpect(jsonPath("$.topicPublished").value(true))
-                .andExpect(jsonPath("$.speakersPublished").value(true))
-                .andExpect(jsonPath("$.agendaPublished").value(false))
-                .andExpect(jsonPath("$.speakers").isArray())
-                .andExpect(jsonPath("$.speakers", hasSize(2)))
-                .andExpect(jsonPath("$.sessions").isEmpty()); // Sessions not published yet
-    }
-
-    /**
      * Test: Configure auto-publish schedule
      * AC19: Auto-publish scheduling: Phase 2 at 1 month, Phase 3 at 2 weeks before event
      */

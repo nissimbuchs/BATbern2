@@ -25,9 +25,11 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -57,7 +59,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Lives in {@code ch.batbern.events.service} so it can drive the synchronous
  * {@code SlidesOnlineEmailService.processSend} core directly (deterministic — no @Async race),
- * while still exercising the controller via {@link MockMvc} for the auth + guard cases.
+ * while still exercising the registrant-notice controller via {@link MockMvc} for the auth + guard
+ * cases (templateKey {@code slides-online}).
  */
 @Transactional
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
@@ -214,31 +217,33 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
                 .containsExactlyInAnyOrder("sent", "failed");
     }
 
-    // ── AC5: double-send guard via the endpoint ──────────────────────────────
+    // ── AC5: double-send guard via the registrant-notice endpoint ────────────
+    // Story 17.1 removed the dedicated POST /events/{c}/slides-online/send; the same mail goes
+    // through POST /events/{c}/registrant-notices/send with templateKey=slides-online.
 
     @Test
     @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
-    @DisplayName("AC5: in-progress slides-online send → endpoint returns 409")
+    @DisplayName("AC5: in-progress slides-online notice → registrant-notice endpoint returns 409")
     void endpoint_inProgress_returns409() throws Exception {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
         NewsletterSend inProgress = savePendingSend(event.getId());
         inProgress.setStatus("IN_PROGRESS");
         sendRepository.save(inProgress);
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/slides-online/send", EVENT_CODE))
+        mockMvc.perform(slidesOnlineRegistrantNotice(EVENT_CODE))
                 .andExpect(status().isConflict());
     }
 
     @Test
     @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
-    @DisplayName("AC5: already-completed slides-online send → endpoint returns 409")
+    @DisplayName("AC5: already-completed slides-online notice → registrant-notice endpoint returns 409")
     void endpoint_alreadySent_returns409() throws Exception {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
         NewsletterSend done = savePendingSend(event.getId());
         done.setStatus("COMPLETED");
         sendRepository.save(done);
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/slides-online/send", EVENT_CODE))
+        mockMvc.perform(slidesOnlineRegistrantNotice(EVENT_CODE))
                 .andExpect(status().isConflict());
     }
 
@@ -248,7 +253,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
     void endpoint_organizer_returns200Pending() throws Exception {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
 
-        mockMvc.perform(post("/api/v1/events/{eventCode}/slides-online/send", EVENT_CODE))
+        mockMvc.perform(slidesOnlineRegistrantNotice(EVENT_CODE))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("PENDING"))
                 .andExpect(jsonPath("$.recipientCount").value(0));
@@ -258,7 +263,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "joe.user", roles = {"USER"})
     @DisplayName("AC2: non-organizer → 403")
     void endpoint_nonOrganizer_returns403() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/slides-online/send", EVENT_CODE))
+        mockMvc.perform(slidesOnlineRegistrantNotice(EVENT_CODE))
                 .andExpect(status().isForbidden());
     }
 
@@ -266,11 +271,17 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "org.user", roles = {"ORGANIZER"})
     @DisplayName("AC2: organizer, unknown event → 404")
     void endpoint_unknownEvent_returns404() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/slides-online/send", "NOPE-EVENT"))
+        mockMvc.perform(slidesOnlineRegistrantNotice("NOPE-EVENT"))
                 .andExpect(status().isNotFound());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────
+
+    private MockHttpServletRequestBuilder slidesOnlineRegistrantNotice(String eventCode) {
+        return post("/api/v1/events/{eventCode}/registrant-notices/send", eventCode)
+                .contentType(MediaType.APPLICATION_JSON)
+                .content("{\"templateKey\":\"slides-online\"}");
+    }
 
     private Event saveEvent(String code, Instant date) {
         return eventRepository.save(Event.builder()

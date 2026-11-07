@@ -1,7 +1,6 @@
 package ch.batbern.companyuser.controller;
 
 import ch.batbern.companyuser.api.generated.LogosApi;
-import ch.batbern.companyuser.dto.generated.FetchImageFromUrlRequest;
 import ch.batbern.companyuser.dto.generated.LogoCleanupStatistics;
 import ch.batbern.companyuser.dto.generated.LogoPresignedUploadUrl;
 import ch.batbern.companyuser.dto.generated.LogoUploadConfirmRequest;
@@ -13,10 +12,7 @@ import ch.batbern.companyuser.service.ImageUrlFetcher;
 import ch.batbern.companyuser.service.LogoCleanupService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.core.io.ByteArrayResource;
-import org.springframework.core.io.Resource;
 import org.springframework.http.HttpStatus;
-import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -27,7 +23,7 @@ import org.springframework.web.bind.annotation.RestController;
  * (companies-api {@code Logos} tag, Story 1.16.3 / ADR-002).
  *
  * <p>Three-phase upload flow: presigned-url → (client PUTs to S3) → confirm → associate with an
- * entity. Plus a URL proxy/import path (for batch logo import) and admin cleanup ops.
+ * entity. Plus a URL import path (for batch logo import) and admin cleanup ops.
  */
 @RestController
 @RequestMapping("/api/v1")
@@ -101,46 +97,6 @@ public class LogoController implements LogosApi {
         cleanupService.triggerManualCleanup();
 
         return ResponseEntity.status(HttpStatus.ACCEPTED).build();
-    }
-
-    /**
-     * Fetch an image from an external URL and return the raw bytes (CORS proxy for logo import).
-     * Up to 10MB; validates the content is an image. No authentication required.
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<Resource> fetchImageFromUrl(FetchImageFromUrlRequest request) {
-        String url = request.getUrl();
-
-        if (url == null || url.isBlank()) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        log.info("Fetching image from URL: {}", url);
-
-        try {
-            ImageUrlFetcher.FetchedImage image = ImageUrlFetcher.fetch(url, 10 * 1024 * 1024);
-
-            log.info("Successfully fetched image: {} bytes, type: {}",
-                    image.body().length, image.contentType());
-
-            // Use MediaType.valueOf() (not parseMediaType) to avoid charset addition.
-            MediaType mediaType = MediaType.valueOf(image.contentType());
-
-            return ResponseEntity.ok()
-                    .contentLength(image.body().length)
-                    .contentType(mediaType)
-                    .body(new ByteArrayResource(image.body()));
-
-        } catch (ImageUrlFetcher.ImageFetchException e) {
-            log.error("Error fetching image from URL: {}: {}", url, e.getMessage());
-            return switch (e.getReason()) {
-                case HTTP_STATUS -> ResponseEntity.status(e.getStatusCode()).build();
-                case NOT_AN_IMAGE -> ResponseEntity.badRequest().build();
-                case TOO_LARGE -> ResponseEntity.status(HttpStatus.PAYLOAD_TOO_LARGE).build();
-                case IO -> ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-            };
-        }
     }
 
     /**

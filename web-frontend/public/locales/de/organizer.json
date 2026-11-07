@@ -551,7 +551,6 @@
     "refreshPreview": "Vorschau aktualisieren",
     "switchedTo": "Zu {{device}}-Vorschau gewechselt",
     "refreshingPreview": "Vorschau wird aktualisiert...",
-    "failedToLoad": "Vorschau konnte nicht geladen werden. Bitte versuchen Sie es erneut.",
     "iframeTitle": "Veranstaltungsvorschau",
     "iframeAriaLabel": "Inhalt der Veranstaltungsvorschau",
     "previewPhaseCaption": "Phase: {{phase}}",

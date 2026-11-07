@@ -2,8 +2,6 @@ package ch.batbern.events.controller;
 
 import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.speakers.api.generated.SpeakerInvitationApi;
-import ch.batbern.events.speakers.dto.generated.BatchInviteRequest;
-import ch.batbern.events.speakers.dto.generated.BatchInviteResponse;
 import ch.batbern.events.speakers.dto.generated.InviteSpeakerRequest;
 import ch.batbern.events.speakers.dto.generated.InviteSpeakerResponse;
 import ch.batbern.events.speakers.dto.generated.SendInvitationRequest;
@@ -22,7 +20,7 @@ import org.springframework.web.bind.annotation.RestController;
  * Story 6.1b: Speaker Invitation System
  *
  * Provides endpoints for:
- * - Inviting speakers to events (single and batch)
+ * - Inviting speakers to events
  * - Sending/resending invitation emails
  *
  * All endpoints require ORGANIZER role.
@@ -59,29 +57,6 @@ public class SpeakerInvitationController implements SpeakerInvitationApi {
 
         // Return 201 if newly created, 200 if existing (idempotency)
         HttpStatus status = Boolean.TRUE.equals(response.getCreated()) ? HttpStatus.CREATED : HttpStatus.OK;
-        return ResponseEntity.status(status).body(response);
-    }
-
-    /**
-     * Batch invite speakers to an event.
-     * AC5: Handles multiple invitations with partial failure support
-     *
-     * @return 200 OK with results and any errors (207 Multi-Status on partial failure)
-     */
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<BatchInviteResponse> inviteSpeakerBatch(
-            String eventCode, BatchInviteRequest batchInviteRequest) {
-        log.info("POST /api/v1/events/{}/speakers/invite-batch - count: {}",
-                eventCode, batchInviteRequest.getSpeakers().size());
-
-        BatchInviteResponse response = speakerInvitationService.inviteBatch(eventCode, batchInviteRequest);
-
-        // Return 207 Multi-Status if there were partial failures
-        HttpStatus status = response.getFailedCount() > 0 && response.getSuccessCount() > 0
-                ? HttpStatus.MULTI_STATUS
-                : HttpStatus.OK;
-
         return ResponseEntity.status(status).body(response);
     }
 

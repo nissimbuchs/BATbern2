@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 
 /**
  * Integration tests for Logo URL-based endpoints
- * Tests /fetch-from-url and /upload-from-url endpoints
+ * Tests the /upload-from-url endpoint
  */
 @Transactional
 @Import(TestAwsConfig.class)
@@ -25,28 +25,6 @@ class LogoUrlIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private MockMvc mockMvc;
-
-    @Test
-    @WithMockUser(roles = "ORGANIZER")
-    @DisplayName("Should return 400 when fetching from null URL")
-    void shouldReturn400_whenFetchingFromNullUrl() throws Exception {
-        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{}"))
-                .andExpect(status().isBadRequest());
-    }
-
-    @Test
-    @WithMockUser(roles = "ORGANIZER")
-    @DisplayName("Should return 400 when fetching from empty URL")
-    void shouldReturn400_whenFetchingFromEmptyUrl() throws Exception {
-        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"url\":\"\"}"))
-                .andExpect(status().isBadRequest());
-    }
 
     @Test
     @WithMockUser(roles = "ORGANIZER")
@@ -71,16 +49,6 @@ class LogoUrlIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("Should return 401 when fetching without auth")
-    void shouldReturn401_whenFetchingWithoutAuth() throws Exception {
-        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
-                        .with(csrf())
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"url\":\"https://example.com/logo.png\"}"))
-                .andExpect(status().isUnauthorized());
-    }
-
-    @Test
     @DisplayName("Should return 401 when uploading without auth")
     void shouldReturn401_whenUploadingWithoutAuth() throws Exception {
         mockMvc.perform(post("/api/v1/logos/upload-from-url")
@@ -88,5 +56,18 @@ class LogoUrlIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"url\":\"https://example.com/logo.png\"}"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("should_return405_when_removedFetchFromUrlIsCalled")
+    void should_return405_when_removedFetchFromUrlIsCalled() throws Exception {
+        // Story 17.1 removed POST /logos/fetch-from-url. The path still matches the surviving
+        // DELETE /logos/{uploadId}, so Spring answers 405: the path is known, the operation is not.
+        mockMvc.perform(post("/api/v1/logos/fetch-from-url")
+                        .with(csrf())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"url\":\"https://example.com/logo.png\"}"))
+                .andExpect(status().isMethodNotAllowed());
     }
 }

@@ -488,7 +488,6 @@
     "refreshPreview": "Päivitä esikatselu",
     "switchedTo": "Vaihdettu {{device}}-esikatseluun",
     "refreshingPreview": "Päivitetään esikatselua...",
-    "failedToLoad": "Esikatselun lataaminen epäonnistui. Yritä uudelleen.",
     "iframeTitle": "Tapahtuman esikatselu",
     "iframeAriaLabel": "Tapahtuman sisällön esikatselu",
     "previewPhaseCaption": "Vaihe: {{phase}}",

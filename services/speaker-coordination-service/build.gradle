@@ -29,12 +29,6 @@ flyway {
     table = 'flyway_schema_history_speaker_coordination'
 }
 
-// OpenAPI Generator - if this service has an API spec, configure it here
-// openApiGenerate {
-//     generatorName = 'spring'
-//     inputSpec = "$rootDir/docs/api/speakers-api.openapi.yml".toString()
-//     ...
-// }
 
 // Disable coverage verification until service has implementation
 jacocoTestCoverageVerification {

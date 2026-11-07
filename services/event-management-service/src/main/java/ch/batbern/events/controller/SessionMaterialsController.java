@@ -11,7 +11,6 @@ import ch.batbern.events.sessions.dto.generated.DownloadUrlResponse;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialAssociationRequest;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialResponse;
 import ch.batbern.events.sessions.dto.generated.SessionMaterialsResponse;
-import ch.batbern.events.sessions.dto.generated.UploadMaterialFromUrlRequest;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.Cache;
 import org.springframework.cache.CacheManager;
@@ -117,38 +116,6 @@ public class SessionMaterialsController implements SessionMaterialsApi {
 
         sessionMaterialsService.deleteMaterial(sessionSlug, materialId, username);
         return ResponseEntity.noContent().build();
-    }
-
-    @Override
-    @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<SessionMaterialResponse> uploadMaterialFromUrl(
-            String eventCode,
-            String sessionSlug,
-            UploadMaterialFromUrlRequest uploadMaterialFromUrlRequest) {
-
-        String url = uploadMaterialFromUrlRequest.getUrl();
-        String filename = uploadMaterialFromUrlRequest.getFilename();
-        String materialType = uploadMaterialFromUrlRequest.getMaterialType() != null
-                ? uploadMaterialFromUrlRequest.getMaterialType()
-                : "DOCUMENT";
-
-        if (url == null || url.isBlank() || filename == null || filename.isBlank()) {
-            return ResponseEntity.badRequest().build();
-        }
-
-        String username = securityContextHelper.getCurrentUsername();
-
-        try {
-            SessionMaterialResponse material = sessionMaterialsService
-                    .uploadMaterialFromUrl(sessionSlug, url, filename, materialType, username);
-
-            // Clear event cache to include the new material.
-            clearEventCache(eventCode);
-
-            return ResponseEntity.status(HttpStatus.CREATED).body(material);
-        } catch (Exception e) {
-            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR).build();
-        }
     }
 
     /**

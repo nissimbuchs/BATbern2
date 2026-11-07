@@ -488,7 +488,6 @@
     "refreshPreview": "プレビューを更新",
     "switchedTo": "{{device}}プレビューに切り替えました",
     "refreshingPreview": "プレビューを更新中...",
-    "failedToLoad": "プレビューの読み込みに失敗しました。もう一度お試しください。",
     "iframeTitle": "イベントプレビュー",
     "iframeAriaLabel": "イベントコンテンツプレビュー",
     "previewPhaseCaption": "フェーズ：{{phase}}",

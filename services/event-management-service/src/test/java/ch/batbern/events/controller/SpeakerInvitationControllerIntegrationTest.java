@@ -26,7 +26,6 @@ import java.time.Instant;
 import java.time.LocalDate;
 import java.time.temporal.ChronoUnit;
 
-import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyList;
@@ -45,7 +44,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * Tests REST endpoints:
  * - POST /api/v1/events/{eventCode}/speakers/invite
- * - POST /api/v1/events/{eventCode}/speakers/invite-batch
  * - POST /api/v1/events/{eventCode}/speakers/{username}/send-invitation
  *
  * Uses real PostgreSQL (Testcontainers) but mocks UserApiClient and EmailService.
@@ -506,104 +504,6 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(jsonPath("$.details.code", is("SLOT_CAPACITY_REACHED")))
                 .andExpect(jsonPath("$.details.acceptedCount", is(half)))
                 .andExpect(jsonPath("$.details.invitedCount", is(half)));
-    }
-
-    // ==================== AC5: Batch Invitation Tests ====================
-
-    /**
-     * Test 5.1: Should process batch of invitations
-     * AC5: Handles multiple invitations
-     */
-    @Test
-    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
-    void should_processBatch_when_validRequest() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite-batch", testEventCode)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                                "speakers": [
-                                    {
-                                        "email": "speaker1@example.com",
-                                        "firstName": "Speaker",
-                                        "lastName": "One"
-                                    },
-                                    {
-                                        "email": "speaker2@example.com",
-                                        "firstName": "Speaker",
-                                        "lastName": "Two"
-                                    }
-                                ]
-                            }
-                            """))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.totalRequested", is(2)))
-                .andExpect(jsonPath("$.successCount", is(2)))
-                .andExpect(jsonPath("$.failedCount", is(0)))
-                .andExpect(jsonPath("$.results", hasSize(2)));
-    }
-
-    /**
-     * Test 5.2: Should return 400 when empty speakers list
-     */
-    @Test
-    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
-    void should_return400_when_emptySpeakersList() throws Exception {
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite-batch", testEventCode)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                                "speakers": []
-                            }
-                            """))
-                .andExpect(status().isBadRequest());
-    }
-
-    /**
-     * Test 5.3: Should handle partial failures in batch
-     * AC5: Partial failure support
-     */
-    @Test
-    @WithMockUser(username = "organizer.test", roles = {"ORGANIZER"})
-    void should_handlePartialFailure_when_someSpeakersInvalid() throws Exception {
-        // Mock UserApiClient to fail for second speaker
-        GetOrCreateUserResponse validResponse = new GetOrCreateUserResponse();
-        validResponse.setUsername("speaker.one");
-        validResponse.setCreated(true);
-
-        when(userApiClient.getOrCreateUser(any(GetOrCreateUserRequest.class)))
-                .thenAnswer(invocation -> {
-                    GetOrCreateUserRequest req = invocation.getArgument(0);
-                    if (req.getEmail().contains("fail")) {
-                        throw new RuntimeException("User service error");
-                    }
-                    return validResponse;
-                });
-
-        mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/invite-batch", testEventCode)
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content("""
-                            {
-                                "speakers": [
-                                    {
-                                        "email": "valid@example.com",
-                                        "firstName": "Valid",
-                                        "lastName": "Speaker"
-                                    },
-                                    {
-                                        "email": "fail@example.com",
-                                        "firstName": "Will",
-                                        "lastName": "Fail"
-                                    }
-                                ]
-                            }
-                            """))
-                .andExpect(status().is(207)) // Multi-Status
-                .andExpect(jsonPath("$.totalRequested", is(2)))
-                .andExpect(jsonPath("$.successCount", is(1)))
-                .andExpect(jsonPath("$.failedCount", is(1)))
-                .andExpect(jsonPath("$.results", hasSize(1)))
-                .andExpect(jsonPath("$.errors", hasSize(1)))
-                .andExpect(jsonPath("$.errors[0].email", is("fail@example.com")));
     }
 
     // ==================== AC2: User Auto-Creation Tests ====================

@@ -36,11 +36,11 @@ import { formatDateTime } from '@/utils/date';
 import { speakerStatusService } from '@/services/speakerStatusService';
 import { useSpeakerOutreachHistory } from '@/hooks/useSpeakerOutreach';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
-import type { components } from '@/types/generated/speakers-api.types';
+import type { components } from '@/types/generated/event-speakers-api.types';
 
 type StatusHistoryItem = components['schemas']['StatusHistoryItem'];
-type OutreachHistoryItem = components['schemas']['OutreachHistory'];
-type ContactMethod = components['schemas']['ContactMethod'];
+type OutreachHistoryItem = components['schemas']['OutreachHistoryResponse'];
+type ContactMethod = OutreachHistoryItem['contactMethod'];
 
 interface UnifiedHistoryPanelProps {
   speaker: SpeakerPoolEntry;

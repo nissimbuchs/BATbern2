@@ -551,7 +551,6 @@
     "refreshPreview": "Refresh preview",
     "switchedTo": "Switched to {{device}} preview",
     "refreshingPreview": "Refreshing preview...",
-    "failedToLoad": "Failed to load preview. Please try again.",
     "iframeTitle": "Event preview",
     "iframeAriaLabel": "Event content preview",
     "previewPhaseCaption": "Phase: {{phase}}",

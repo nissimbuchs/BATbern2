@@ -488,7 +488,6 @@
     "refreshPreview": "Voorbeeld vernieuwen",
     "switchedTo": "Overgeschakeld naar {{device}} voorbeeld",
     "refreshingPreview": "Voorbeeld vernieuwen...",
-    "failedToLoad": "Voorbeeld laden mislukt. Probeer opnieuw.",
     "iframeTitle": "Evenementvoorbeeld",
     "iframeAriaLabel": "Voorvertoning evenementinhoud",
     "previewPhaseCaption": "Fase: {{phase}}",

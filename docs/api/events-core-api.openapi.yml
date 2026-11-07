@@ -1739,33 +1739,6 @@ paths:
       security:
         - BearerAuth: []
 
-  /events/{eventCode}/publish/preview:
-    get:
-      tags:
-        - Publishing Engine
-      summary: Preview the public appearance before publishing
-      description: 'Story progressive publishing (AC20, AC29). ORGANIZER role.'
-      operationId: getPublishPreview
-      parameters:
-        - name: eventCode
-          in: path
-          required: true
-          schema:
-            type: string
-      responses:
-        '200':
-          description: Preview
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PublishPreviewResponse'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-      security:
-        - BearerAuth: []
-
   /events/{eventCode}/publish/schedule:
     post:
       tags:
@@ -1825,31 +1798,6 @@ paths:
           $ref: '#/components/responses/Forbidden'
       security:
         - BearerAuth: []
-
-  /admin/backfill-speaker-names:
-    post:
-      tags:
-        - Admin
-      summary: Backfill speaker names for full-text search (maintenance)
-      description: 'Temporary maintenance endpoint (Story archive search).
-
-        **Security**: ORGANIZER role required; any other role gets 403.'
-      operationId: backfillSpeakerNames
-      responses:
-        '403':
-          description: Forbidden (ORGANIZER role required)
-        '200':
-          description: Backfill result
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackfillSpeakerNamesResponse'
-        '500':
-          description: Backfill failed
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/BackfillSpeakerNamesResponse'
 
   /admin/settings/{key}:
     get:
@@ -1944,16 +1892,6 @@ paths:
 
 components:
   schemas:
-    BackfillSpeakerNamesResponse:
-      type: object
-      x-class-extra-annotation: '@com.fasterxml.jackson.annotation.JsonInclude(com.fasterxml.jackson.annotation.JsonInclude.Include.NON_NULL)'
-      properties:
-        success:
-          type: boolean
-        message:
-          type: string
-        updatedCount:
-          type: integer
     AdminSettingResponse:
       type: object
       properties:
@@ -2059,45 +1997,6 @@ components:
           $ref: '#/components/schemas/ValidationStatus'
         sessions:
           $ref: '#/components/schemas/SessionValidationStatus'
-    SpeakerPreview:
-      type: object
-      properties:
-        name:
-          type: string
-        company:
-          type: string
-    SessionPreview:
-      type: object
-      properties:
-        title:
-          type: string
-        startTime:
-          type: string
-        endTime:
-          type: string
-        room:
-          type: string
-    PublishPreviewResponse:
-      type: object
-      properties:
-        eventCode:
-          type: string
-        currentPhase:
-          type: string
-        topicPublished:
-          type: boolean
-        speakersPublished:
-          type: boolean
-        agendaPublished:
-          type: boolean
-        speakers:
-          type: array
-          items:
-            $ref: '#/components/schemas/SpeakerPreview'
-        sessions:
-          type: array
-          items:
-            $ref: '#/components/schemas/SessionPreview'
     AutoPublishScheduleRequest:
       type: object
       properties:

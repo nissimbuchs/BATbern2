@@ -77,8 +77,6 @@ import java.util.UUID;
 @RequiredArgsConstructor
 public class SlidesOnlineEmailService {
 
-    static final String TEMPLATE_KEY = "slides-online";
-
     /**
      * Registrant statuses that receive the mail. Uses the canonical "confirmed/attending" set
      * ({@code registered} + {@code confirmed} + {@code attended}) — NOT just registered/confirmed:
@@ -127,19 +125,6 @@ public class SlidesOnlineEmailService {
     // ── Public entry point ─────────────────────────────────────────────────────
 
     /**
-     * Initiate the slides-online send for an event's active registrants.
-     *
-     * <p>Creates the audit row (status {@code PENDING}), launches the {@code @Async} worker, and
-     * returns immediately. Guards against double-send (in-progress + already-sent).
-     *
-     * @throws DuplicateNewsletterSendException (409) if a slides-online send is already IN_PROGRESS
-     * @throws SlidesOnlineAlreadySentException (409) if a slides-online send already completed
-     */
-    public SlidesOnlineSendResponse sendSlidesOnline(Event event, String sentByUsername) {
-        return sendRegistrantNotice(event, TEMPLATE_KEY, sentByUsername);
-    }
-
-    /**
      * Initiate a registrant-notice send for an event's active registrants using any
      * {@code REGISTRANT_NOTICE}-category template (e.g. {@code slides-online}).
      *
@@ -158,7 +143,8 @@ public class SlidesOnlineEmailService {
         // NOTE (PR #788 review item 3): the two guards below are read-then-act without an
         // enclosing transaction, so two near-simultaneous requests could both pass before either
         // writes the audit row (double-send). This is pre-existing behaviour inherited from
-        // sendSlidesOnline; the practical risk is low (a single organizer clicking a UI button).
+        // the former slides-online endpoint (removed by Story 17.1); the practical risk is low
+        // (a single organizer clicking a UI button).
         // The robust fix is a partial unique index on (event_id, template_key) WHERE status IN
         // (PENDING, IN_PROGRESS, COMPLETED, PARTIAL) — tracked as a hardening backlog item, not
         // done here to avoid a Flyway migration in this frontend-focused PR.

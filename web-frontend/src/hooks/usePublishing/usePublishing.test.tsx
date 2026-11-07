@@ -120,41 +120,6 @@ describe('usePublishing', () => {
     });
   });
 
-  describe('preview', () => {
-    it('should fetch publish preview', async () => {
-      const mockPreview = {
-        eventCode: 'BATbern142',
-        phase: 'SPEAKERS',
-        mode: 'PROGRESSIVE',
-        previewUrl: 'https://preview.batbern.ch/events/BATbern142?mode=preview',
-        content: {
-          topic: { title: 'BATbern 2025' },
-          speakers: [{ displayName: 'John Doe' }],
-        },
-        validation: {
-          isValid: true,
-          errors: [],
-        },
-      };
-
-      vi.mocked(publishingService.getPublishPreview).mockResolvedValue(mockPreview);
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        result.current.fetchPreview('speakers');
-      });
-
-      await waitFor(() => {
-        expect(result.current.preview).toEqual(mockPreview);
-      });
-
-      expect(publishingService.getPublishPreview).toHaveBeenCalledWith('BATbern142', 'speakers');
-    });
-  });
-
   describe('auto-publish scheduling', () => {
     it('should schedule auto-publish successfully', async () => {
       const mockScheduleResponse = {

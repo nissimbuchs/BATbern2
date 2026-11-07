@@ -18,7 +18,7 @@ risk: medium
 
 ## Requirements
 
-Verify: the operation count drops by 6, each removed path answers 404 in production, and the Publishing tab's live preview still renders.
+Verify: the operation count drops by 6, each removed path answers 404 in production (405 where a surviving sibling route shares the path), and the Publishing tab's live preview still renders.
 
 1. **Reference specs gone** (R1)
    **Given** the `speakers-api` and `attendees-api` reference specs and everything that names them (code generation, git hooks, the ZAP scan matrix, npm scripts, generated types and their README)
@@ -37,7 +37,8 @@ Verify: the operation count drops by 6, each removed path answers 404 in product
    **When** the build runs and the code base is searched
    **Then** each is gone from its spec, from the generated interfaces and from the controllers, together with the schemas and service methods only it used
    **And** a search for each path and operation id across the services, the frontend, the E2E tests, Bruno and the Watch app finds nothing outside history documents
-   **And** the build and the endpoint authorization guard tests pass. A leftover controller method fails compilation, because its generated interface no longer declares it.
+   **And** the build and the endpoint authorization guard tests pass. A leftover controller method fails compilation, because its generated interface no longer declares it
+   **And** a call to each removed operation answers 404, or 405 where a surviving sibling route shares the path, so no operation runs.
 
 4. **Slides-online mail still works through registrant notices** (R1)
    **Given** an organizer sends the slides-online notice as a registrant notice
@@ -83,6 +84,7 @@ Verify: the operation count drops by 6, each removed path answers 404 in product
 
 ## Notes
 
+- Decision: 2026-11-07, owner. A removed operation may answer 405 instead of 404 where a surviving sibling route shares its path template (Spring knows the path, not the method). No custom handler to force 404.
 - Decision: 2026-11-07, owner. 17.1 and 17.3 ship together in one PR (one production deploy). Build them on one branch, 17.1 first.
 - Decision: 2026-11-07, owner. Converted from the v6 story file `17-1-dead-api-surface.md`, which was deleted. Its code-level findings are in the notes file.
 - Risk: medium. Removing a live endpoint by mistake breaks a production screen, and the generated-type move touches the speaker drawer.

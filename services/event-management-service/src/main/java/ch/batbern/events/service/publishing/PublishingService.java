@@ -6,11 +6,8 @@ import ch.batbern.events.domain.Session;
 import ch.batbern.events.core.dto.generated.AutoPublishScheduleRequest;
 import ch.batbern.events.core.dto.generated.AutoPublishScheduleResponse;
 import ch.batbern.events.core.dto.generated.PublishPhaseResponse;
-import ch.batbern.events.core.dto.generated.PublishPreviewResponse;
 import ch.batbern.events.core.dto.generated.PublishingStatusResponse;
-import ch.batbern.events.core.dto.generated.SessionPreview;
 import ch.batbern.events.core.dto.generated.SessionValidationStatus;
-import ch.batbern.events.core.dto.generated.SpeakerPreview;
 import ch.batbern.events.core.dto.generated.UnassignedSession;
 import ch.batbern.events.core.dto.generated.UnpublishPhaseResponse;
 import ch.batbern.events.core.dto.generated.ValidationStatus;
@@ -19,7 +16,6 @@ import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.PublishingConfigRepository;
 import ch.batbern.events.repository.SessionRepository;
-import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.AgendaConfigResolver;
 import ch.batbern.events.service.CdnInvalidationService;
 import ch.batbern.events.service.EventWorkflowStateMachine;
@@ -57,7 +53,6 @@ public class PublishingService {
 
     private final EventRepository eventRepository;
     private final SessionRepository sessionRepository;
-    private final SpeakerPoolRepository speakerPoolRepository;
     private final PublishingConfigRepository publishingConfigRepository;
     private final AgendaConfigResolver agendaConfigResolver;
     private final CacheManager cacheManager;
@@ -158,56 +153,6 @@ public class PublishingService {
                 .published(false)
                 .unpublishedAt(Instant.now().atOffset(java.time.ZoneOffset.UTC))
                 .cdnInvalidated(cdnInvalidated)
-                .build();
-    }
-
-    /**
-     * Get publishing preview
-     */
-    public PublishPreviewResponse getPreview(String eventCode) {
-        Event event = eventRepository.findByEventCode(eventCode)
-                .orElseThrow(() -> new EventNotFoundException(eventCode));
-
-        String currentPhase = event.getCurrentPublishedPhase();
-        boolean topicPublished = currentPhase != null
-                && (currentPhase.equals("topic") || currentPhase.equals("speakers")
-                || currentPhase.equals("agenda"));
-        boolean speakersPublished = currentPhase != null
-                && (currentPhase.equals("speakers") || currentPhase.equals("agenda"));
-        boolean agendaPublished = currentPhase != null && currentPhase.equals("agenda");
-
-        // Get speakers if speakers phase is published
-        List<SpeakerPreview> speakers = new ArrayList<>();
-        if (speakersPublished) {
-            speakers = speakerPoolRepository.findByEventId(event.getId()).stream()
-                    .map(sp -> SpeakerPreview.builder()
-                            .name(sp.getSpeakerName())
-                            .company(sp.getCompany())
-                            .build())
-                    .collect(Collectors.toList());
-        }
-
-        // Get sessions if agenda phase is published
-        List<SessionPreview> sessions = agendaPublished
-                ? sessionRepository.findByEventId(event.getId()).stream()
-                        .filter(s -> s.getStartTime() != null)
-                        .map(s -> SessionPreview.builder()
-                                .title(s.getTitle())
-                                .startTime(s.getStartTime() != null
-                                        ? s.getStartTime().toString() : null)
-                                .endTime(s.getEndTime() != null ? s.getEndTime().toString() : null)
-                                .room(s.getRoom())
-                                .build())
-                        .collect(Collectors.toList()) : new ArrayList<>();
-
-        return PublishPreviewResponse.builder()
-                .eventCode(eventCode)
-                .currentPhase(currentPhase != null ? currentPhase.toUpperCase() : null)
-                .topicPublished(topicPublished)
-                .speakersPublished(speakersPublished)
-                .agendaPublished(agendaPublished)
-                .speakers(speakers)
-                .sessions(sessions)
                 .build();
     }
 

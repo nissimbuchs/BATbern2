@@ -3,33 +3,17 @@ import { render, screen, fireEvent, waitFor } from '@testing-library/react';
 import { LivePreview } from './LivePreview';
 import * as usePublishingHook from '@/hooks/usePublishing/usePublishing';
 
-// Mock usePublishing hook
+// Story 17.1: the publish-preview chain (usePublishing.fetchPreview → GET /publish/{phase}/preview,
+// a path that exists nowhere) is gone. The live preview frames the public event page directly.
+// The hook stays mocked so a test can prove LivePreview no longer reaches for it.
 vi.mock('@/hooks/usePublishing/usePublishing');
 
-const mockUsePublishing = {
-  preview: {
-    eventCode: 'BATbern142',
-    phase: 'SPEAKERS',
-    mode: 'PROGRESSIVE',
-    previewUrl: 'https://preview.batbern.ch/events/BATbern142?mode=preview',
-    content: {
-      topic: { title: 'BATbern 2025', date: '2025-05-15', venue: 'Kornhausforum' },
-      speakers: [{ displayName: 'John Doe', companyName: 'Acme Corp' }],
-    },
-    validation: {
-      isValid: true,
-      errors: [],
-    },
-  },
-  fetchPreview: vi.fn(),
-  isLoadingPreview: false,
-  previewError: null,
-};
+const expectedPreviewUrl = (eventCode: string, phase: string) =>
+  `/events/${eventCode}?preview=true&phase=${phase}`;
 
 describe('LivePreview', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(usePublishingHook.usePublishing).mockReturnValue(mockUsePublishing);
   });
 
   describe('Device Toggle', () => {
@@ -100,43 +84,33 @@ describe('LivePreview', () => {
   });
 
   describe('Preview Iframe', () => {
-    it('should render iframe with preview URL', () => {
+    it('should render iframe with the public event page preview URL', () => {
       render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
       const iframe = screen.getByTestId('preview-iframe');
-      expect(iframe).toHaveAttribute(
-        'src',
-        'https://preview.batbern.ch/events/BATbern142?mode=preview'
-      );
+      expect(iframe).toHaveAttribute('src', expectedPreviewUrl('BATbern142', 'speakers'));
     });
 
-    it('should update iframe src when phase changes', async () => {
+    it('should not use the removed publish-preview chain', () => {
+      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
+
+      expect(usePublishingHook.usePublishing).not.toHaveBeenCalled();
+    });
+
+    it('should update iframe src when phase changes', () => {
       const { rerender } = render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
-      const iframe = screen.getByTestId('preview-iframe');
-      expect(iframe).toHaveAttribute(
+      expect(screen.getByTestId('preview-iframe')).toHaveAttribute(
         'src',
-        'https://preview.batbern.ch/events/BATbern142?mode=preview'
+        expectedPreviewUrl('BATbern142', 'speakers')
       );
-
-      // Update preview with new phase
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        preview: {
-          ...mockUsePublishing.preview,
-          phase: 'AGENDA',
-          previewUrl: 'https://preview.batbern.ch/events/BATbern142?mode=preview&phase=agenda',
-        },
-      });
 
       rerender(<LivePreview eventCode="BATbern142" phase="agenda" />);
 
-      await waitFor(() => {
-        expect(iframe).toHaveAttribute(
-          'src',
-          'https://preview.batbern.ch/events/BATbern142?mode=preview&phase=agenda'
-        );
-      });
+      expect(screen.getByTestId('preview-iframe')).toHaveAttribute(
+        'src',
+        expectedPreviewUrl('BATbern142', 'agenda')
+      );
     });
 
     it('should apply desktop dimensions to iframe by default', () => {
@@ -204,117 +178,13 @@ describe('LivePreview', () => {
       });
     });
 
-    it('should show loading state when refreshing', () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        isLoadingPreview: true,
-      });
-
+    it('should show loading state when refreshing', async () => {
       render(<LivePreview eventCode="BATbern142" phase="speakers" />);
 
+      fireEvent.click(screen.getByRole('button', { name: /refresh preview/i }));
+
+      expect(await screen.findByTestId('preview-loading-spinner')).toBeInTheDocument();
       expect(screen.getByText(/refreshing preview/i)).toBeInTheDocument();
-    });
-  });
-
-  describe('Auto-refresh on Content Changes', () => {
-    it('should auto-refresh when preview content changes', async () => {
-      const { rerender } = render(<LivePreview eventCode="BATbern142" phase="speakers" />);
-
-      const iframe = screen.getByTestId('preview-iframe') as HTMLIFrameElement;
-      const initialSrc = iframe.src;
-
-      // Update preview with new content and different preview URL
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        preview: {
-          ...mockUsePublishing.preview,
-          previewUrl: 'https://preview.batbern.ch/events/BATbern142?mode=preview&updated=true',
-          content: {
-            ...mockUsePublishing.preview.content,
-            speakers: [
-              { displayName: 'John Doe', companyName: 'Acme Corp' },
-              { displayName: 'Jane Smith', companyName: 'Tech Inc' },
-            ],
-          },
-        },
-      });
-
-      rerender(<LivePreview eventCode="BATbern142" phase="speakers" />);
-
-      await waitFor(() => {
-        const updatedIframe = screen.getByTestId('preview-iframe') as HTMLIFrameElement;
-        expect(updatedIframe.src).not.toBe(initialSrc);
-        expect(updatedIframe.src).toContain('updated=true');
-      });
-    });
-  });
-
-  describe('Loading State', () => {
-    it('should show loading spinner when preview is loading', () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        preview: null,
-        isLoadingPreview: true,
-      });
-
-      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
-
-      expect(screen.getByTestId('preview-loading-spinner')).toBeInTheDocument();
-    });
-
-    it('should hide iframe when loading', () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        preview: null,
-        isLoadingPreview: true,
-      });
-
-      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
-
-      expect(screen.queryByTestId('preview-iframe')).not.toBeInTheDocument();
-    });
-  });
-
-  describe('Error State', () => {
-    it('should show error message when preview fails to load', () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        preview: null,
-        previewError: new Error('Failed to load preview'),
-      });
-
-      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
-
-      expect(screen.getByText(/failed to load preview/i)).toBeInTheDocument();
-    });
-
-    it('should show retry button on error', () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        preview: null,
-        previewError: new Error('Failed to load preview'),
-      });
-
-      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
-
-      expect(screen.getByRole('button', { name: /retry/i })).toBeInTheDocument();
-    });
-
-    it('should retry loading when retry button clicked', async () => {
-      vi.mocked(usePublishingHook.usePublishing).mockReturnValue({
-        ...mockUsePublishing,
-        preview: null,
-        previewError: new Error('Failed to load preview'),
-      });
-
-      render(<LivePreview eventCode="BATbern142" phase="speakers" />);
-
-      const retryButton = screen.getByRole('button', { name: /retry/i });
-      fireEvent.click(retryButton);
-
-      await waitFor(() => {
-        expect(mockUsePublishing.fetchPreview).toHaveBeenCalledWith('speakers');
-      });
     });
   });
 

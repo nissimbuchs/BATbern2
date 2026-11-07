@@ -650,28 +650,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/events/{eventCode}/sessions/{sessionSlug}/materials/upload-from-url': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    put?: never;
-    /**
-     * Import a material from a URL
-     * @description Batch-import helper — fetch a material from a source URL and associate it with a session (Story 5.9). Used by historical-data import.
-     *
-     *     **Authorization**: ORGANIZER only.
-     */
-    post: operations['uploadMaterialFromUrl'];
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
 }
 export type webhooks = Record<string, never>;
 export interface components {
@@ -1130,24 +1108,6 @@ export interface components {
     /** @description Story 5.9: wrapper for the materials associated with a session (returned by associate + list). */
     SessionMaterialsResponse: {
       materials: components['schemas']['SessionMaterialResponse'][];
-    };
-    /** @description Batch-import helper: fetch a material from a source URL and associate it with a session (organizer-only). Used by historical-data import. */
-    UploadMaterialFromUrlRequest: {
-      /**
-       * @description Source URL to fetch the material from
-       * @example https://cdn.batbern.ch/legacy/BAT142_UI_Design.pdf
-       */
-      url: string;
-      /**
-       * @description Target file name
-       * @example BAT142_UI_Design.pdf
-       */
-      filename: string;
-      /**
-       * @description Material classification; defaults to DOCUMENT when omitted
-       * @example DOCUMENT
-       */
-      materialType?: string;
     };
     /**
      * @description Request payload for batch import from legacy sessions.json.
@@ -2787,37 +2747,6 @@ export interface operations {
         };
       };
       404: components['responses']['NotFound'];
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  uploadMaterialFromUrl: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @example BATbern142 */
-        eventCode: string;
-        /** @example blockchain-security */
-        sessionSlug: string;
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UploadMaterialFromUrlRequest'];
-      };
-    };
-    responses: {
-      /** @description Material imported successfully */
-      201: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['SessionMaterialResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
       500: components['responses']['InternalServerError'];
     };
   };

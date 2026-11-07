@@ -21,7 +21,8 @@ Reality has diverged from that scaffold:
   "do not split into more microservices").
 - The corresponding OpenAPI specs `docs/api/speakers-api.openapi.yml` and
   `attendees-api.openapi.yml` have their code-generation tasks **commented out** in the
-  respective `build.gradle` files, so they are neither generated nor enforced.
+  respective `build.gradle` files, so they are neither generated nor enforced. (Both specs
+  and the commented blocks were deleted by Story 17.1, 2026-11; see the decision below.)
 
 During the API-consolidation work (ADR-013) the question arose whether to **re-enable**
 generation for the speaker/attendee specs. Doing so would emit API interfaces that no
@@ -37,7 +38,8 @@ dormant ones.**
 1. **`speaker-coordination-service` and `attendee-experience-service` are DORMANT.** They are
    not developed against, and their logic stays in EMS (speaker) / EMS + partner (attendee).
 2. **Their OpenAPI specs are NOT generator-wired and are NOT maintained as live contracts.**
-   `speakers-api.openapi.yml` / `attendees-api.openapi.yml` are historical/reference only. Do
+   `speakers-api.openapi.yml` / `attendees-api.openapi.yml` are historical/reference only
+   (deleted by Story 17.1, 2026-11; they remain in git history). Do
    **not** re-enable their `openApiGenerate` tasks. They are explicitly **exempt** from the
    ADR-013 conformance rules (shared-schema `$ref`, etc.) until/unless a service is revived.
 3. **New speaker/attendee API surface is added to EMS** (or partner-coordination where it
@@ -57,6 +59,7 @@ dormant ones.**
 **Costs / risks**
 - The stale `speakers-api` / `attendees-api` specs can mislead a reader into thinking those
   services are live. Mitigation: this ADR + a note in those specs; they are reference-only.
+  Resolved by Story 17.1 (2026-11), which deleted both specs.
 - EMS keeps growing; the modularization plan is the counter-measure (vertical domain modules,
   including the events-api decomposition in `api-consolidation-plan.md` Phase 6).
 
@@ -75,6 +78,9 @@ build-matrix entries and the gateway route `/api/v1/content/**`. Remove the Even
 `batbern-staging` (0 rules) and its publishers as well, keeping in-process Spring events. Delete
 `speakers-api.openapi.yml` and `attendees-api.openapi.yml`. Planned as Epic 17 story 17.2 (closes
 #1216, the bus part of #1220) and 17.1 (specs). Infrastructure change: not on an event day.
+Story 17.1 deleted both specs, their generated frontend types (the frontend now uses
+`event-speakers-api` types) and every reference in hooks, CI scans and npm scripts. The stub
+modules, stacks and ECS services are still 17.2.
 
 ## Operational state (2026-11-04)
 

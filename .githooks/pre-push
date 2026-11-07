@@ -112,12 +112,6 @@ while IFS= read -r file; do
         docs/api/partner*.openapi.yml)
             add_service partner-coordination-service
             ;;
-        docs/api/speakers-api.openapi.yml)
-            add_service speaker-coordination-service
-            ;;
-        docs/api/attendees-api.openapi.yml)
-            add_service attendee-experience-service
-            ;;
         docs/api/_shared.openapi.yml)
             # Cross-cutting contract — exercise the primary backend services that codegen from it.
             add_service event-management-service

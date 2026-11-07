@@ -145,32 +145,6 @@ describe('publishingService', () => {
     });
   });
 
-  describe('getPublishPreview', () => {
-    it('should get publish preview', async () => {
-      const mockData = {
-        eventCode: 'BATbern142',
-        phase: 'SPEAKERS',
-        mode: 'PROGRESSIVE',
-        previewUrl: 'https://preview.batbern.ch/events/BATbern142?mode=preview',
-        content: {
-          topic: { title: 'BATbern 2025', date: '2025-05-15', venue: 'Kornhausforum' },
-          speakers: [{ displayName: 'John Doe', companyName: 'Acme Corp' }],
-        },
-        validation: {
-          isValid: true,
-          errors: [],
-        },
-      };
-
-      const getSpy = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: mockData });
-
-      const result = await publishingService.getPublishPreview('BATbern142', 'speakers');
-
-      expect(getSpy).toHaveBeenCalledWith('/events/BATbern142/publish/speakers/preview');
-      expect(result).toEqual(mockData);
-    });
-  });
-
   describe('scheduleAutoPublish', () => {
     it('should schedule auto-publish for phase', async () => {
       const mockData = {

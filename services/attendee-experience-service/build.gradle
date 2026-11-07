@@ -23,9 +23,3 @@ dependencies {
     // (None yet - using common config from root build.gradle)
 }
 
-// OpenAPI Generator - if this service has an API spec, configure it here
-// openApiGenerate {
-//     generatorName = 'spring'
-//     inputSpec = "$rootDir/docs/api/attendees-api.openapi.yml".toString()
-//     ...
-// }

@@ -15,7 +15,6 @@ import type {
   PublishingPhase,
   PublishPhaseResponse,
   UnpublishPhaseResponse,
-  PublishPreviewResponse,
   PublishingStatusResponse,
   AutoPublishScheduleRequest,
   AutoPublishScheduleResponse,
@@ -68,21 +67,6 @@ async function getPublishingStatus(eventCode: string): Promise<PublishingStatusR
 }
 
 /**
- * Get publishing preview for a phase
- *
- * @param eventCode - Event code
- * @param phase - Phase to preview
- * @returns Preview with content and validation status
- */
-async function getPublishPreview(
-  eventCode: string,
-  phase: PublishingPhase
-): Promise<PublishPreviewResponse> {
-  const response = await apiClient.get(`/events/${eventCode}/publish/${phase}/preview`);
-  return response.data;
-}
-
-/**
  * Schedule auto-publish for a phase
  *
  * @param eventCode - Event code
@@ -124,7 +108,6 @@ export const publishingService = {
   publishPhase,
   unpublishPhase,
   getPublishingStatus,
-  getPublishPreview,
   scheduleAutoPublish,
   cancelAutoPublish,
 };
@@ -134,7 +117,6 @@ export {
   publishPhase,
   unpublishPhase,
   getPublishingStatus,
-  getPublishPreview,
   scheduleAutoPublish,
   cancelAutoPublish,
 };

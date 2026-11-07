@@ -488,7 +488,6 @@
     "refreshPreview": "Actualizar vista previa",
     "switchedTo": "Cambiado a vista previa {{device}}",
     "refreshingPreview": "Actualizando vista previa...",
-    "failedToLoad": "Error al cargar la vista previa. Inténtalo de nuevo.",
     "iframeTitle": "Vista previa del evento",
     "iframeAriaLabel": "Vista previa del contenido del evento",
     "previewPhaseCaption": "Fase: {{phase}}",
