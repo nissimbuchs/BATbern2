@@ -3,7 +3,7 @@ title: 'Dead API surface removed (17.1)'
 type: 'refactor'
 ticket: '1'
 created: '2026-11-07'
-status: 'built'
+status: done
 baseline_revision: '1de313f14be0facb0c9b888bf0e3fbbcf368fbd1'
 route: 'full'
 route_source: 'auto'

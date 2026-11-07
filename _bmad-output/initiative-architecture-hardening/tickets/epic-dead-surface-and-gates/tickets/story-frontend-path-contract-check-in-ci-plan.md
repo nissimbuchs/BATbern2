@@ -3,7 +3,7 @@ title: 'Frontend path contract check in CI (17.3)'
 type: 'feature'
 ticket: '3'
 created: '2026-11-07'
-status: 'built'
+status: done
 baseline_revision: 'd4fb35d7c0acdc8af82538c0b2815e88c6083359'
 route: 'full'
 route_source: 'auto'

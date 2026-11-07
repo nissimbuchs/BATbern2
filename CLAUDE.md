@@ -453,9 +453,10 @@ const company = await companyService.getCompany(id);
 const response = await fetch('/api/companies/123');
 ```
 
-CI checks every frontend HTTP call against `docs/api/` (`web-frontend/scripts/check-api-paths.ts`,
-`make check-frontend-api-paths`): a method and path no spec defines fails the required
-`build-frontend` check, and so does a new file outside `src/services/` that makes an HTTP call.
+CI checks every frontend call made through the API client, axios or a `*Client` against `docs/api/`
+(`web-frontend/scripts/check-api-paths.ts`, `make check-frontend-api-paths`): a method and path no
+spec defines fails the required `build-frontend` check, and so does a new file outside `src/services/`
+that makes such a call. Raw `fetch` is not checked, which is one more reason not to use it.
 
 ### Environment Variables
 
