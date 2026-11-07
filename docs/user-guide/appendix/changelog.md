@@ -59,8 +59,18 @@ Only items that are not live yet. Everything else is listed under its release be
 **Improvement — One "next dates" section on the homepage**:
 - ✅ The homepage showed upcoming events twice: "Nächste BAT-Termine" (the next three, date and title) and "Weitere kommende Veranstaltungen" (full cards, published events only). There is now one section, "Nächste BAT-Termine", with the next three events: full cards for published events, date and title for planned ones. It also appears on archive pages.
 
+**Bug Fixes — Theme image and event type (2026-11-07)**:
+- ✅ "Generate with AI" for the theme image still failed after the model change: an image now takes about 40 seconds, and every request to the platform ends after 30 seconds, so the finished image never reached the page. The image is now generated in the background and the page waits for it (up to two and a half minutes).
+- ✅ The event type (full day, afternoon, evening) can be changed again on the event page; saving it failed with an error since the API consolidation in October.
+
 **Bug Fix — "Generate with AI" theme image works again**:
 - ✅ The theme image could not be generated: OpenAI had retired the image model the platform used. All AI functions (theme image, event description, abstract review, trending topics) now use OpenAI's current model automatically, so a retired model no longer breaks them. The trending topics suggestions had also fallen back to a fixed list several times a week; they now read the answer correctly.
+
+**New — Your e-mail addresses on your profile (#1244)**:
+- ✅ Participants manage further e-mail addresses on their profile (**Profil → E-Mail-Adressen**): add, confirm by link, remove. A confirmed address helps us recognise you, for example after a job change, and lets you log in with Google if it is a Google address.
+- ✅ Event mails (registration, reminders, invitations) go to your primary address. A further address gets a copy only if you tick "Kopie der Event-Mails" for it. Until now every further address got a copy, confirmed or not.
+- ✅ The newsletter can be switched on and off for each confirmed address separately (**Profil → Einwilligung & Newsletter**).
+- ✅ An earlier profile from the historical import (placeholder address `vorname.nachname@batbern.ch`) now offers only "Ask the organizers": the confirmation link would have reached nobody.
 
 ### v1.4.0 - Event Page, Spring Boot 4, Mail Center & BATbern60 Fixes `[2026-11-04]`
 

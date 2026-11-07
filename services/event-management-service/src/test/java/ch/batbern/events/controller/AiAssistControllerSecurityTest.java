@@ -7,6 +7,7 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.service.BatbernAiService;
+import ch.batbern.events.service.ThemeImageJobs;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Tag;
@@ -51,7 +52,7 @@ class AiAssistControllerSecurityTest {
 
     @BeforeEach
     void setUp() {
-        controller = new AiAssistController(aiService, eventRepository,
+        controller = new AiAssistController(aiService, new ThemeImageJobs(aiService), eventRepository,
                 topicRepository, sessionRepository, speakerPoolRepository);
         ReflectionTestUtils.setField(controller, "cloudFrontDomain", CLOUDFRONT);
     }

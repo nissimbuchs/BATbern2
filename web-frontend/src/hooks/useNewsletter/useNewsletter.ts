@@ -13,6 +13,7 @@ import {
 } from '@tanstack/react-query';
 import * as newsletterService from '@/services/newsletterService';
 import type {
+  MyNewsletterSubscriptionsResponse,
   NewsletterSubscribeRequest,
   NewsletterSubscriptionStatusResponse,
   NewsletterSendRequest,
@@ -25,6 +26,7 @@ import type {
 
 export const NEWSLETTER_QUERY_KEYS = {
   mySubscription: ['newsletter', 'my-subscription'] as const,
+  mySubscriptions: ['newsletter', 'my-subscriptions'] as const,
   subscriberCount: ['newsletter', 'subscriber-count'] as const,
   history: (eventCode: string) => ['newsletter', 'history', eventCode] as const,
 };
@@ -102,6 +104,32 @@ export function usePatchMySubscription(): UseMutationResult<
       newsletterService.patchMySubscription(subscribed, language),
     onSuccess: (data) => {
       queryClient.setQueryData(NEWSLETTER_QUERY_KEYS.mySubscription, data);
+    },
+  });
+}
+
+/** #1244: the authenticated user's newsletter state per address. */
+export function useMySubscriptions(): UseQueryResult<MyNewsletterSubscriptionsResponse, Error> {
+  return useQuery({
+    queryKey: NEWSLETTER_QUERY_KEYS.mySubscriptions,
+    queryFn: newsletterService.getMySubscriptions,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/** #1244: subscribe or unsubscribe one address of the authenticated user. */
+export function usePutMySubscription(): UseMutationResult<
+  MyNewsletterSubscriptionsResponse,
+  Error,
+  { email: string; subscribed: boolean; language?: string }
+> {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ email, subscribed, language }) =>
+      newsletterService.putMySubscription(email, subscribed, language),
+    onSuccess: (data) => {
+      queryClient.setQueryData(NEWSLETTER_QUERY_KEYS.mySubscriptions, data);
+      queryClient.invalidateQueries({ queryKey: NEWSLETTER_QUERY_KEYS.mySubscription });
     },
   });
 }

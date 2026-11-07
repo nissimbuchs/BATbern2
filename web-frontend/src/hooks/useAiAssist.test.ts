@@ -14,7 +14,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 
 vi.mock('@/services/api/apiClient', () => ({
-  default: { post: vi.fn() },
+  default: { post: vi.fn(), get: vi.fn() },
 }));
 
 vi.mock('react-i18next', () => ({
@@ -30,6 +30,7 @@ import {
 } from './useAiAssist';
 
 const mockPost = vi.mocked(apiClient.post);
+const mockGet = vi.mocked(apiClient.get);
 
 const createQC = () =>
   new QueryClient({
@@ -99,32 +100,46 @@ describe('useAiGenerateDescription', () => {
 // ── useAiGenerateThemeImage ───────────────────────────────────────────────────
 
 describe('useAiGenerateThemeImage', () => {
+  // 2026-11-07: generation takes ~40 s, the HTTP API ends requests at 30 s. POST starts a job
+  // (202), the hook polls it until DONE or FAILED.
   let qc: QueryClient;
+  const FAST = { pollMs: 1, maxWaitMs: 1000 };
+  const started = { data: { jobId: 'job-1', status: 'PENDING' } };
 
   beforeEach(() => {
     qc = createQC();
     vi.clearAllMocks();
   });
 
-  it('should POST to theme-image endpoint without seed', async () => {
-    mockPost.mockResolvedValue({ data: { imageUrl: 'https://cdn.x.com/img.jpg', s3Key: 'k' } });
+  it('should start a job and return the image once the job is DONE', async () => {
+    mockPost.mockResolvedValue(started);
+    mockGet
+      .mockResolvedValueOnce({ data: { jobId: 'job-1', status: 'PENDING' } })
+      .mockResolvedValueOnce({
+        data: { jobId: 'job-1', status: 'DONE', imageUrl: 'https://cdn.x.com/img.png', s3Key: 'k' },
+      });
 
-    const { result } = renderHook(() => useAiGenerateThemeImage('BAT142'), {
+    const { result } = renderHook(() => useAiGenerateThemeImage('BAT142', FAST), {
       wrapper: wrapper(qc),
     });
 
+    let image: unknown;
     await act(async () => {
-      await result.current.mutateAsync({});
+      image = await result.current.mutateAsync({});
     });
 
     expect(mockPost).toHaveBeenCalledWith('/events/BAT142/ai/theme-image');
-    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    expect(mockGet).toHaveBeenCalledWith('/events/BAT142/ai/theme-image/jobs/job-1');
+    expect(image).toEqual({ imageUrl: 'https://cdn.x.com/img.png', s3Key: 'k' });
   });
 
   it('should include seed query param when provided', async () => {
-    mockPost.mockResolvedValue({ data: { imageUrl: 'https://cdn.x.com/img.jpg', s3Key: 'k' } });
+    mockPost.mockResolvedValue(started);
+    mockGet.mockResolvedValue({
+      data: { jobId: 'job-1', status: 'DONE', imageUrl: 'https://cdn.x.com/img.png', s3Key: 'k' },
+    });
 
-    const { result } = renderHook(() => useAiGenerateThemeImage('BAT142'), {
+    const { result } = renderHook(() => useAiGenerateThemeImage('BAT142', FAST), {
       wrapper: wrapper(qc),
     });
 
@@ -135,18 +150,51 @@ describe('useAiGenerateThemeImage', () => {
     expect(mockPost).toHaveBeenCalledWith('/events/BAT142/ai/theme-image?seed=tech-clouds');
   });
 
-  it('should set isError on failure', async () => {
-    mockPost.mockRejectedValue(new Error('AI unavailable'));
+  it('should fail when the job ends FAILED', async () => {
+    mockPost.mockResolvedValue(started);
+    mockGet.mockResolvedValue({ data: { jobId: 'job-1', status: 'FAILED' } });
 
-    const { result } = renderHook(() => useAiGenerateThemeImage('BAT142'), {
+    const { result } = renderHook(() => useAiGenerateThemeImage('BAT142', FAST), {
       wrapper: wrapper(qc),
     });
 
     await act(async () => {
-      await result.current.mutateAsync({}).catch(() => {});
+      await result.current.mutateAsync({}).catch(() => undefined);
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe('aiAssist.error');
+  });
+
+  it('should give up when the job stays PENDING too long', async () => {
+    mockPost.mockResolvedValue(started);
+    mockGet.mockResolvedValue({ data: { jobId: 'job-1', status: 'PENDING' } });
+
+    const { result } = renderHook(
+      () => useAiGenerateThemeImage('BAT142', { pollMs: 1, maxWaitMs: 20 }),
+      { wrapper: wrapper(qc) }
+    );
+
+    await act(async () => {
+      await result.current.mutateAsync({}).catch(() => undefined);
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+  });
+
+  it('should set isError when the start fails', async () => {
+    mockPost.mockRejectedValue(new Error('AI unavailable'));
+
+    const { result } = renderHook(() => useAiGenerateThemeImage('BAT142', FAST), {
+      wrapper: wrapper(qc),
+    });
+
+    await act(async () => {
+      await result.current.mutateAsync({}).catch(() => undefined);
+    });
+
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(mockGet).not.toHaveBeenCalled();
   });
 });
 

@@ -231,7 +231,10 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
                         .lastName("Bob")
                         .email("bob@example.com")
                         .addAdditionalEmailsItem(
-                                new AdditionalEmail("bob.work@example.com", OffsetDateTime.now())));
+                                // #1244: a copy only to a confirmed address with the copy switched on
+                                new AdditionalEmail("bob.work@example.com", OffsetDateTime.now())
+                                        .verifiedAt(OffsetDateTime.now())
+                                        .receiveEventMail(true)));
 
         mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
                         EVENT_CODE, "speakers"))

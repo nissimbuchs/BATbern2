@@ -4,12 +4,13 @@
  * web-frontend/src/pages/speaker-portal/ProfileUpdatePage.tsx).
  *
  * Role-neutral profile page mounted at `/profile` behind a plain ProtectedRoute
- * (any authenticated role). Two tabs:
+ * (any authenticated role). Three tabs:
  *  - "Profile": firstName, lastName, bio, profile photo, read-only email, company
  *  - "Consent & Newsletter": write-once ToS/Privacy consent (Story 12.11 AC5b) and
- *    the newsletter toggle backed by the EXISTING EMS `newsletter_subscribers`
- *    self-service (`useMySubscription`/`usePatchMySubscription` — Scope Revision #1;
- *    NOT a user_profiles column).
+ *    the newsletter per address (#1244: primary and confirmed additional addresses,
+ *    EMS `newsletter_subscribers`, NOT a user_profiles column).
+ *  - "E-mail addresses" (#1244): additional addresses, their confirmation, and the copy
+ *    of event mails per confirmed address.
  *
  * Onboarding gate (AC6): when mounted with `?onboarding=1` (set by ProtectedRoute for
  * consent-less users), the Consent tab is preselected, a non-dismissible notice is
@@ -43,7 +44,8 @@ import {
 } from 'lucide-react';
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { getUserProfile, updateUserProfile } from '@/services/api/userAccountApi';
-import { useMySubscription, usePatchMySubscription } from '@/hooks/useNewsletter/useNewsletter';
+import { ProfileEmailAddresses } from '@/components/user/ProfileEmailAddresses/ProfileEmailAddresses';
+import { ProfileNewsletterAddresses } from '@/components/user/ProfileEmailAddresses/ProfileNewsletterAddresses';
 import { CompanyAutocomplete } from '@/components/public/Registration/CompanyAutocomplete';
 import { getOrCreateCompany } from '@/services/api/companyApi';
 import type { User } from '@/types/userAccount.types';
@@ -64,7 +66,8 @@ const ProfilePage = () => {
 
   const [pageState, setPageState] = useState<PageState>('loading');
   const [hasUnsavedChanges, setHasUnsavedChanges] = useState(false);
-  // 0 = Profile, 1 = Consent & Newsletter. Consent tab preselected during onboarding.
+  // 0 = Profile, 1 = Consent & Newsletter, 2 = E-mail addresses (#1244). Consent tab
+  // preselected during onboarding.
   const [activeTab, setActiveTab] = useState(isOnboarding ? 1 : 0);
 
   // Form state — only the CUMS-supported fields.
@@ -94,11 +97,6 @@ const ProfilePage = () => {
   });
 
   const user: User | undefined = profileData?.user;
-
-  // Story 12.11: newsletter consent lives in EMS newsletter_subscribers (Story 10.7) —
-  // same hooks as the UserSettingsTab NewsletterSection, NOT a user_profiles field.
-  const { data: subscription, isLoading: subscriptionLoading } = useMySubscription();
-  const patchSubscription = usePatchMySubscription();
 
   const updateMutation = useMutation({
     mutationFn: (updates: Partial<User> & { termsAccepted?: boolean }) =>
@@ -188,14 +186,6 @@ const ProfilePage = () => {
   const handlePhotoError = useCallback((error: { type: string; message: string }) => {
     setPhotoUploadError(error.message);
   }, []);
-
-  const handleNewsletterToggle = useCallback(
-    (checked: boolean) => {
-      const language = i18n.language?.startsWith('de') ? 'de' : 'en';
-      patchSubscription.mutate({ subscribed: checked, language });
-    },
-    [i18n.language, patchSubscription]
-  );
 
   const validate = (): boolean => {
     const newErrors: Record<string, string> = {};
@@ -366,6 +356,7 @@ const ProfilePage = () => {
             >
               <Tab label={t('profile.tabs.profile')} data-testid="profile-tab" />
               <Tab label={t('profile.tabs.consent')} data-testid="consent-tab" />
+              <Tab label={t('profile.tabs.emails')} data-testid="emails-tab" />
             </Tabs>
 
             {activeTab === 0 && (
@@ -590,20 +581,17 @@ const ProfilePage = () => {
                     {t('profile.newsletterTitle')}
                   </h2>
                   <p className="text-sm text-zinc-400 mb-4">{t('profile.newsletterDescription')}</p>
-                  <label className="flex items-center gap-3 cursor-pointer">
-                    <input
-                      type="checkbox"
-                      role="switch"
-                      checked={subscription?.subscribed ?? false}
-                      disabled={subscriptionLoading || patchSubscription.isPending}
-                      onChange={(e) => handleNewsletterToggle(e.target.checked)}
-                      className="h-4 w-4"
-                      data-testid="newsletter-toggle"
-                    />
-                    <span className="text-sm text-zinc-300">{t('profile.newsletterLabel')}</span>
-                  </label>
+                  {/* #1244: one checkbox per address (primary and confirmed ones) */}
+                  <ProfileNewsletterAddresses />
                 </Card>
               </>
+            )}
+
+            {activeTab === 2 && (
+              <ProfileEmailAddresses
+                primaryEmail={user.email}
+                additionalEmails={user.additionalEmails ?? []}
+              />
             )}
           </>
         )}

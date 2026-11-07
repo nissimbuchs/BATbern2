@@ -194,7 +194,11 @@ paths:
       tags:
       - AI Assist
       operationId: generateThemeImage
-      summary: Generate AI theme image (DALL-E 3), upload to S3. Looks up event/topic data from eventCode.
+      summary: Start generating an AI theme image; poll the returned job.
+      description: |
+        Generation takes about 40 s, longer than the 30 s the AWS HTTP API allows per request
+        (2026-11-07). The image is generated in the background and stored in S3; poll
+        `GET /events/{eventCode}/ai/theme-image/jobs/{jobId}` until the status is DONE or FAILED.
       security:
       - BearerAuth: []
       parameters:
@@ -211,18 +215,51 @@ paths:
           type: string
         description: Optional seed string for cache-busting a re-generation
       responses:
-        '200':
-          description: Generated theme image URL and S3 key
+        '202':
+          description: Generation started
           content:
             application/json:
               schema:
-                $ref: '#/components/schemas/AiThemeImageResponse'
+                $ref: '#/components/schemas/AiThemeImageJob'
         '503':
           description: AI service disabled or unavailable
           content:
             application/json:
               schema:
                 $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+  /events/{eventCode}/ai/theme-image/jobs/{jobId}:
+    get:
+      tags:
+      - AI Assist
+      operationId: getThemeImageJob
+      summary: State of a theme image generation; DONE carries the image URL and S3 key
+      security:
+      - BearerAuth: []
+      parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+      - name: jobId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+      responses:
+        '200':
+          description: Job state
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AiThemeImageJob'
+        '404':
+          description: Unknown job (expired after one hour, or the service restarted)
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -300,6 +337,27 @@ components:
       properties:
         description:
           type: string
+    AiThemeImageJob:
+      type: object
+      required:
+      - jobId
+      - status
+      properties:
+        jobId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum:
+          - PENDING
+          - DONE
+          - FAILED
+        imageUrl:
+          type: string
+          nullable: true
+        s3Key:
+          type: string
+          nullable: true
     AiThemeImageResponse:
       type: object
       properties:

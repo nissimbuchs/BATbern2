@@ -740,7 +740,9 @@ paths:
       description: |
         #1183 D. Sends a signed link (48 h) to the address of the candidate profile. Opening it
         while logged in as the caller merges the candidate into the caller's profile. The candidate
-        must be one of `GET /users/me/profile-claims`; anything else is 404.
+        must be one of `GET /users/me/profile-claims`; anything else is 404. A candidate with a
+        placeholder address (#1244) is refused with 409 `PLACEHOLDER_ADDRESS`: the link would reach
+        nobody.
       operationId: requestProfileClaim
       requestBody:
         required: true
@@ -755,6 +757,12 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '404':
           $ref: '#/components/responses/NotFound'
+        '409':
+          description: The earlier profile has a placeholder address (`PLACEHOLDER_ADDRESS`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
         '500':
           $ref: '#/components/responses/InternalServerError'
       security:
@@ -1424,6 +1432,51 @@ paths:
         - BearerAuth: []
 
   /users/me/additional-emails/{email}:
+    patch:
+      tags:
+        - User Account
+      summary: Change the settings of one of the caller's additional email addresses
+      description: |
+        #1244 — switch the copy of event mails for one additional address on or off. Only a
+        confirmed address can receive copies (409 `NOT_VERIFIED` otherwise).
+      operationId: updateAdditionalEmail
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: URL-encoded email address, case-insensitive.
+          schema:
+            type: string
+            format: email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdditionalEmailRequest'
+      responses:
+        '200':
+          description: The updated additional email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdditionalEmail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No matching additional email on the caller's profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The address is not confirmed yet (`NOT_VERIFIED`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
     delete:
       tags:
         - User Account
@@ -2597,6 +2650,12 @@ components:
         requestPending:
           type: boolean
           description: '#1237: a merge request for this profile is with the organizers'
+        placeholderAddress:
+          type: boolean
+          description: |
+            #1244: the earlier profile carries a placeholder address from the historical import
+            (`vorname.nachname@batbern.ch`) that reaches nobody. Only the request to the organizers
+            (#1237) is offered; a claim link is refused (409 `PLACEHOLDER_ADDRESS`).
     ProfileMergeRequestCreate:
       type: object
       required: [candidateId]
@@ -2715,6 +2774,23 @@ components:
           description: |
             Reserved for the v2 verification flow (Story 10.32 Resolved Decision #1).
             v1 always returns null.
+        receiveEventMail:
+          type: boolean
+          default: false
+          description: |
+            #1244 — this address gets a copy of event mails (registration, waitlist,
+            invitations, reminders). Event mails go to the primary address; a copy only to
+            confirmed additional addresses that opted in. Off by default.
+
+    UpdateAdditionalEmailRequest:
+      type: object
+      description: "#1244 — settings of one of the caller's additional addresses."
+      required:
+        - receiveEventMail
+      properties:
+        receiveEventMail:
+          type: boolean
+          description: Copy of event mails to this address. Only for a confirmed address.
 
     AddAdditionalEmailRequest:
       type: object

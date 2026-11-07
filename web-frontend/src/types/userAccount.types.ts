@@ -43,6 +43,8 @@ export interface AdditionalEmail {
   label: string | null;
   createdAt: string;
   verifiedAt: string | null;
+  /** #1244: this address gets a copy of event mails (only while confirmed). */
+  receiveEventMail?: boolean;
 }
 
 export type UserRole = 'ORGANIZER' | 'SPEAKER' | 'PARTNER' | 'ATTENDEE';

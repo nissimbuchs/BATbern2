@@ -821,7 +821,8 @@
     "pageSubtitle": "Gérez vos informations personnelles, votre consentement et la newsletter",
     "tabs": {
       "profile": "Profil",
-      "consent": "Consentement & Newsletter"
+      "consent": "Consentement & Newsletter",
+      "emails": "Adresses e-mail"
     },
     "companyLabel": "Entreprise",
     "companyInvalid": "L'identifiant d'entreprise doit comporter 1 à 12 lettres ou chiffres",
@@ -835,8 +836,28 @@
     "consentSave": "Accepter et enregistrer",
     "consentSaveError": "L'enregistrement de votre consentement a échoué. Veuillez réessayer.",
     "newsletterTitle": "Newsletter",
-    "newsletterDescription": "Recevez des invitations et des nouvelles des prochains événements BATbern.",
+    "newsletterDescription": "Invitations et nouvelles sur les prochains événements BATbern. Choisissez les adresses qui la reçoivent.",
     "newsletterLabel": "S’abonner à la newsletter BATbern",
-    "companySaveError": "Impossible d’enregistrer l’entreprise. Veuillez réessayer."
+    "companySaveError": "Impossible d’enregistrer l’entreprise. Veuillez réessayer.",
+    "emails": {
+      "title": "Adresses e-mail",
+      "description": "Votre adresse principale reçoit tous les e-mails concernant vos inscriptions. D’autres adresses nous aident à vous reconnaître, par exemple lors d’un changement d’emploi.",
+      "primary": "Adresse principale · connexion par mot de passe",
+      "confirmed": "Confirmée",
+      "pending": "En attente de confirmation",
+      "resend": "Renvoyer le lien",
+      "resent": "Lien envoyé",
+      "eventCopy": "Copie des e-mails d’événement à cette adresse",
+      "remove": "Supprimer l’adresse",
+      "removeConfirm": "Supprimer",
+      "cancel": "Annuler",
+      "add": "Ajouter",
+      "addPlaceholder": "autre@adresse.ch",
+      "addHelp": "Nous envoyons un lien de confirmation à la nouvelle adresse.",
+      "errorDuplicate": "Cette adresse est déjà enregistrée.",
+      "errorLimit": "Vous avez atteint le maximum de 5 adresses supplémentaires.",
+      "errorInvalid": "Veuillez saisir une adresse e-mail valide.",
+      "loginHint": "Le mot de passe vous connecte avec l’adresse principale. Avec une adresse Gmail ou Google confirmée, vous pouvez aussi vous connecter via « Continuer avec Google »."
+    }
   }
 }

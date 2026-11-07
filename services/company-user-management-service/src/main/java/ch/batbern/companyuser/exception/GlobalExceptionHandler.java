@@ -183,6 +183,28 @@ public class GlobalExceptionHandler {
     }
 
     /**
+     * #1244 — a copy of event mails was requested for an unconfirmed additional address.
+     * Maps to 409 with errorCode {@code NOT_VERIFIED}.
+     */
+    @ExceptionHandler(AdditionalEmailNotVerifiedException.class)
+    public ResponseEntity<ErrorResponse> handleAdditionalEmailNotVerifiedException(
+            AdditionalEmailNotVerifiedException ex,
+            HttpServletRequest request) {
+        log.warn("Additional email not confirmed: {}", LoggingUtils.maskEmailsIn(ex.getMessage()));
+        ErrorResponse error = ErrorResponse.builder()
+                .timestamp(Instant.now())
+                .path(request.getRequestURI())
+                .status(HttpStatus.CONFLICT.value())
+                .error("Conflict")
+                .errorCode("NOT_VERIFIED")
+                .message(ex.getMessage())
+                .correlationId(CorrelationIdGenerator.current())
+                .severity("LOW")
+                .build();
+        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
+    }
+
+    /**
      * Additional-email verification (v2) — resend requested for an
      * already-verified email. Maps to 409 with errorCode {@code ALREADY_VERIFIED}.
      */

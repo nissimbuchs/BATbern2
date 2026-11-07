@@ -824,7 +824,8 @@
     "pageSubtitle": "Manage your personal information, consent and newsletter",
     "tabs": {
       "profile": "Profile",
-      "consent": "Consent & Newsletter"
+      "consent": "Consent & Newsletter",
+      "emails": "E-mail addresses"
     },
     "companyLabel": "Company",
     "companyInvalid": "Company ID must be 1-12 letters or digits",
@@ -838,8 +839,28 @@
     "consentSave": "Accept and save",
     "consentSaveError": "Saving your consent failed. Please try again.",
     "newsletterTitle": "Newsletter",
-    "newsletterDescription": "Receive invitations and updates about upcoming BATbern events.",
+    "newsletterDescription": "Invitations and news about upcoming BATbern events. Choose the addresses that receive it.",
     "newsletterLabel": "Subscribe to the BATbern newsletter",
-    "companySaveError": "Could not save the company. Please try again."
+    "companySaveError": "Could not save the company. Please try again.",
+    "emails": {
+      "title": "E-mail addresses",
+      "description": "Your primary address receives all mails about your registrations. Further addresses help us recognise you, for example when you change jobs.",
+      "primary": "Primary address · password login",
+      "confirmed": "Confirmed",
+      "pending": "Waiting for confirmation",
+      "resend": "Send link again",
+      "resent": "Link sent",
+      "eventCopy": "Copy of event mails to this address",
+      "remove": "Remove address",
+      "removeConfirm": "Remove",
+      "cancel": "Cancel",
+      "add": "Add",
+      "addPlaceholder": "another@address.com",
+      "addHelp": "We send a confirmation link to the new address.",
+      "errorDuplicate": "This address is already registered.",
+      "errorLimit": "You have reached the maximum of 5 further addresses.",
+      "errorInvalid": "Please enter a valid e-mail address.",
+      "loginHint": "Your password logs you in with the primary address. With a confirmed Gmail or Google address you can also log in via “Continue with Google”."
+    }
   }
 }

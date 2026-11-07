@@ -292,9 +292,10 @@ BATbern uses **AWS Cognito** for authentication but stores user profiles in **Po
 
 <span class="feature-status implemented">Implemented</span> — Story 10-32
 
-Any user (primarily organizers) can register **additional email addresses** on their profile, on the Account sub-tab of the user-settings page. These are authorised aliases that work in two directions:
+Any user can register **additional email addresses**: participants on their profile page (**Profil → E-Mail-Adressen**, #1244), organizers on the Account sub-tab of the user-settings page. These are authorised aliases that work in two directions:
 
-- **Receive-at**: mail BATbern would have sent to the user's primary email also reaches every additional address — e.g. the `ok@batbern.ch` organizer fan-out, the `partner@batbern.ch` partner fan-out, `batbern{N}@…` registrant fan-out, and event-registration confirmations.
+- **Receive-at**: **event mails** (registration, waitlist, unregistering, speaker invitations and reminders, composer mails, the `batbern{N}-…@` lists) go to the **primary address**. A confirmed additional address gets a **copy only when "Kopie der Event-Mails" is ticked** for it (off by default, #1244). The organizer and partner lists `ok@batbern.ch` and `partner@batbern.ch` still reach every additional address.
+- **Newsletter**: on **Profil → Einwilligung & Newsletter** each address (primary and confirmed additional ones) has its own checkbox.
 - **Send-as**: mail the user sends to BATbern from any registered additional address is treated as coming from an authorised sender. For organizers this means mail to the organizer-only aliases (`ok@`, `partner@`, `batbern{N}-speaker@`, `batbern{N}-participants@`) is forwarded when it comes from a legacy/shared/personal mailbox (e.g. a Hostpoint shared inbox) instead of the primary address. The sending mail provider must authenticate the address (DMARC pass, or a DKIM signature of the address's own domain); otherwise anyone could forge an organizer's address, and the mail is rejected.
 
 **Key details**:
@@ -357,6 +358,10 @@ profiles, what would move and the note. **Combine** merges as above, but the old
 **not** added to the account; **Decline** needs a reason. The person gets a mail at their current address
 either way, and the conversation is set to Done. While the request is open the profile shows "Your
 request is with the organizers"; after a decline the same profile can be asked again after 30 days.
+
+**Imported profiles** (#1244): the historical import gave people without a known address a placeholder
+`vorname.nachname@batbern.ch`. Such a profile says "imported without your address" and offers only
+**Ask the organizers**; a confirmation link would reach nobody and is refused.
 
 ## GDPR Compliance
 

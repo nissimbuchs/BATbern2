@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "Kan de verificatie-e-mail niet verzenden. Probeer het opnieuw.",
       "additionalEmailResendAlreadyVerified": "Dit e-mailadres is al geverifieerd.",
       "additionalEmailResendAriaLabel": "Verificatie-e-mail opnieuw verzenden naar {{email}}",
-      "additionalEmailVerifiedAriaLabel": "{{email}} is geverifieerd"
+      "additionalEmailVerifiedAriaLabel": "{{email}} is geverifieerd",
+      "additionalEmailEventCopy": "Kopie van evenementmails naar dit adres"
     },
     "notifications": {
       "title": "Meldingsvoorkeuren",
@@ -378,6 +379,8 @@
     "cancel": "Annuleren",
     "requestPending": "Uw verzoek ligt bij de organisatoren.",
     "requestDeclinedRecently": "Een verzoek voor dit profiel is onlangs afgewezen. U kunt het na 30 dagen opnieuw vragen.",
-    "requestFailed": "Het verzoek kon niet worden verstuurd. Probeer het later opnieuw."
+    "requestFailed": "Het verzoek kon niet worden verstuurd. Probeer het later opnieuw.",
+    "placeholderAddress": "Dit eerdere profiel is zonder uw adres geïmporteerd.",
+    "askOrganizers": "Vraag het de organisatoren"
   }
 }

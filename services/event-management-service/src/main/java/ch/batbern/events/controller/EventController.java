@@ -1533,6 +1533,7 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
                 .metadata(g.getMetadata())
                 .description(g.getDescription())
                 .themeImageUploadId(g.getThemeImageUploadId())
+                .eventType(g.getEventType() == null ? null : g.getEventType().getValue())
                 .workflowState(toSharedWorkflowState(g.getWorkflowState()))
                 .topicCode(g.getTopicCode())
                 .topicSelectionNote(g.getTopicSelectionNote())

@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "確認メールを送信できませんでした。もう一度お試しください。",
       "additionalEmailResendAlreadyVerified": "このメールアドレスはすでに確認済みです。",
       "additionalEmailResendAriaLabel": "{{email}} に確認メールを再送信",
-      "additionalEmailVerifiedAriaLabel": "{{email}} は確認済みです"
+      "additionalEmailVerifiedAriaLabel": "{{email}} は確認済みです",
+      "additionalEmailEventCopy": "このアドレスにイベントメールのコピーを送る"
     },
     "notifications": {
       "title": "通知設定",
@@ -378,6 +379,8 @@
     "cancel": "キャンセル",
     "requestPending": "リクエストは主催者が確認中です。",
     "requestDeclinedRecently": "このプロフィールのリクエストは最近却下されました。30日後に再度リクエストできます。",
-    "requestFailed": "リクエストを送信できませんでした。後でもう一度お試しください。"
+    "requestFailed": "リクエストを送信できませんでした。後でもう一度お試しください。",
+    "placeholderAddress": "この以前のプロフィールは、あなたのアドレスなしでインポートされました。",
+    "askOrganizers": "主催者に依頼する"
   }
 }

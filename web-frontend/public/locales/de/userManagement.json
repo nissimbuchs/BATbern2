@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "Die Bestätigungs-E-Mail konnte nicht gesendet werden. Bitte versuchen Sie es erneut.",
       "additionalEmailResendAlreadyVerified": "Diese E-Mail-Adresse ist bereits bestätigt.",
       "additionalEmailResendAriaLabel": "Bestätigungs-E-Mail erneut an {{email}} senden",
-      "additionalEmailVerifiedAriaLabel": "{{email}} ist bestätigt"
+      "additionalEmailVerifiedAriaLabel": "{{email}} ist bestätigt",
+      "additionalEmailEventCopy": "Kopie der Event-Mails an diese Adresse"
     },
     "notifications": {
       "title": "Benachrichtigungseinstellungen",
@@ -378,6 +379,8 @@
     "cancel": "Abbrechen",
     "requestPending": "Ihre Anfrage liegt bei den Organisatoren.",
     "requestDeclinedRecently": "Eine Anfrage für dieses Profil wurde vor kurzem abgelehnt. Eine neue ist nach 30 Tagen möglich.",
-    "requestFailed": "Die Anfrage konnte nicht gesendet werden. Bitte später nochmals versuchen."
+    "requestFailed": "Die Anfrage konnte nicht gesendet werden. Bitte später nochmals versuchen.",
+    "placeholderAddress": "Dieses frühere Profil wurde ohne Ihre Adresse importiert.",
+    "askOrganizers": "Die Organisatoren bitten"
   }
 }

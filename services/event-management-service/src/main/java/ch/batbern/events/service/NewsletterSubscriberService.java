@@ -2,6 +2,7 @@ package ch.batbern.events.service;
 
 import ch.batbern.shared.utils.LoggingUtils;
 import ch.batbern.events.domain.NewsletterSubscriber;
+import ch.batbern.events.newsletter.dto.generated.NewsletterAddressSubscription;
 import ch.batbern.events.newsletter.dto.generated.NewsletterSubscriptionStatusResponse;
 import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
@@ -237,6 +238,47 @@ public class NewsletterSubscriberService {
                     });
         }
         return getMySubscription(username, email);
+    }
+
+    /**
+     * #1244 — the newsletter state of each given address, in the given order (primary first).
+     *
+     * @param addresses lower-cased addresses of one person
+     */
+    @Transactional(readOnly = true)
+    public List<NewsletterAddressSubscription> addressSubscriptions(List<String> addresses, String primary) {
+        return addresses.stream()
+                .map(address -> NewsletterAddressSubscription.builder()
+                        .email(address)
+                        .primary(address.equals(primary))
+                        .subscribed(subscriberRepository.findByEmailIgnoreCase(address)
+                                .map(s -> s.getUnsubscribedAt() == null)
+                                .orElse(false))
+                        .build())
+                .toList();
+    }
+
+    /**
+     * #1244 — subscribe or unsubscribe exactly one address of an authenticated user; the
+     * caller has checked that the address is theirs. Other addresses stay as they are.
+     */
+    @Transactional
+    public void setAddressSubscription(String username, String email, boolean subscribed, String language) {
+        if (subscribed) {
+            try {
+                subscribe(email, null, language, "account", username);
+            } catch (DuplicateSubscriberException e) {
+                log.debug("Address of {} already subscribed, ignoring", username);
+            }
+            return;
+        }
+        subscriberRepository.findByEmailIgnoreCase(email)
+                .filter(s -> s.getUnsubscribedAt() == null)
+                .ifPresent(s -> {
+                    s.setUnsubscribedAt(Instant.now());
+                    subscriberRepository.save(s);
+                    log.info("Authenticated user {} unsubscribed one address from the newsletter", username);
+                });
     }
 
     /** Returns total count of active (non-unsubscribed, non-suppressed) subscribers. */

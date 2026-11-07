@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "Impossible d'envoyer l'e-mail de vérification. Veuillez réessayer.",
       "additionalEmailResendAlreadyVerified": "Cette adresse e-mail est déjà vérifiée.",
       "additionalEmailResendAriaLabel": "Renvoyer l'e-mail de vérification à {{email}}",
-      "additionalEmailVerifiedAriaLabel": "{{email}} est vérifié"
+      "additionalEmailVerifiedAriaLabel": "{{email}} est vérifié",
+      "additionalEmailEventCopy": "Copie des e-mails d’événement à cette adresse"
     },
     "notifications": {
       "title": "Préférences de notification",
@@ -378,6 +379,8 @@
     "cancel": "Annuler",
     "requestPending": "Votre demande est chez les organisateurs.",
     "requestDeclinedRecently": "Une demande pour ce profil a été refusée récemment. Vous pourrez redemander après 30 jours.",
-    "requestFailed": "La demande n'a pas pu être envoyée. Réessayez plus tard."
+    "requestFailed": "La demande n'a pas pu être envoyée. Réessayez plus tard.",
+    "placeholderAddress": "Ce profil antérieur a été importé sans votre adresse.",
+    "askOrganizers": "Demander aux organisateurs"
   }
 }

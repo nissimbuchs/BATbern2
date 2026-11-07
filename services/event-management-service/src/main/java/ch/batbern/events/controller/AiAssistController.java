@@ -8,7 +8,7 @@ import ch.batbern.events.domain.Topic;
 import ch.batbern.events.ai.api.generated.AiAssistApi;
 import ch.batbern.events.ai.dto.generated.AbstractAnalysisResponse;
 import ch.batbern.events.ai.dto.generated.AiDescriptionResponse;
-import ch.batbern.events.ai.dto.generated.AiThemeImageResponse;
+import ch.batbern.events.ai.dto.generated.AiThemeImageJob;
 import ch.batbern.events.ai.dto.generated.ApplyThemeImageRequest;
 import ch.batbern.events.exception.EventNotFoundException;
 import ch.batbern.events.repository.EventRepository;
@@ -16,6 +16,7 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.service.BatbernAiService;
+import ch.batbern.events.service.ThemeImageJobs;
 import lombok.RequiredArgsConstructor;
 import org.springframework.cache.annotation.CacheEvict;
 import org.springframework.http.HttpStatus;
@@ -37,6 +38,7 @@ import java.util.UUID;
 public class AiAssistController implements AiAssistApi {
 
     private final BatbernAiService aiService;
+    private final ThemeImageJobs themeImageJobs;
     private final EventRepository eventRepository;
     private final TopicRepository topicRepository;
     private final SessionRepository sessionRepository;
@@ -72,11 +74,14 @@ public class AiAssistController implements AiAssistApi {
 
     @Override
     @PreAuthorize("hasRole('ORGANIZER')")
-    public ResponseEntity<AiThemeImageResponse> generateThemeImage(
+    public ResponseEntity<AiThemeImageJob> generateThemeImage(
             String eventCode,
             String seed) {
         Event event = eventRepository.findByEventCode(eventCode)
                 .orElseThrow(() -> new EventNotFoundException("Event not found: " + eventCode));
+        if (!aiService.isAvailable()) {
+            return ResponseEntity.status(HttpStatus.SERVICE_UNAVAILABLE).build();
+        }
         Topic topic = resolveTopicForEvent(event);
 
         Map<String, String> vars = new LinkedHashMap<>();
@@ -86,11 +91,25 @@ public class AiAssistController implements AiAssistApi {
         vars.put("EVENT_TITLE", safeStr(event.getTitle()));
         vars.put("EVENT_DESCRIPTION", safeStr(event.getDescription()));
 
-        Optional<BatbernAiService.ThemeImageResult> result = aiService.generateThemeImage(eventCode, vars, seed);
+        // ~40 s per image, the HTTP API allows 30 s: generate in the background, the page polls
+        return ResponseEntity.status(HttpStatus.ACCEPTED)
+                .body(toDto(themeImageJobs.start(eventCode, vars, seed)));
+    }
 
-        return result.map(r -> ResponseEntity.ok(
-                        new AiThemeImageResponse().imageUrl(r.imageUrl()).s3Key(r.s3Key())))
-                     .orElse(ResponseEntity.status(503).build());
+    @Override
+    @PreAuthorize("hasRole('ORGANIZER')")
+    public ResponseEntity<AiThemeImageJob> getThemeImageJob(String eventCode, UUID jobId) {
+        return themeImageJobs.get(jobId)
+                .map(job -> ResponseEntity.ok(toDto(job)))
+                .orElse(ResponseEntity.notFound().build());
+    }
+
+    private static AiThemeImageJob toDto(ThemeImageJobs.Job job) {
+        return new AiThemeImageJob()
+                .jobId(job.id())
+                .status(AiThemeImageJob.StatusEnum.fromValue(job.status().name()))
+                .imageUrl(job.imageUrl())
+                .s3Key(job.s3Key());
     }
 
     @Override

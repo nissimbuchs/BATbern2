@@ -376,6 +376,27 @@ public class RegistrationCapacityIntegrationTest extends AbstractIntegrationTest
     }
 
     @Test
+    @DisplayName("PATCH eventType changes the event type (BATbern61, 2026-11-07: 400 'Unrecognized field')")
+    @WithMockUser(roles = "ORGANIZER")
+    void patchEventType_changesTheType() throws Exception {
+        cappedEvent();
+
+        mockMvc.perform(patch("/api/v1/events/{eventCode}", PATCHABLE_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"eventType\":\"FULL_DAY\"}"))
+                .andExpect(status().isOk());
+        assertThat(eventRepository.findByEventCode(PATCHABLE_CODE).orElseThrow().getEventType())
+                .isEqualTo(EventType.FULL_DAY);
+
+        mockMvc.perform(patch("/api/v1/events/{eventCode}", PATCHABLE_CODE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"eventType\":\"EVENING\"}"))
+                .andExpect(status().isOk());
+        assertThat(eventRepository.findByEventCode(PATCHABLE_CODE).orElseThrow().getEventType())
+                .isEqualTo(EventType.EVENING);
+    }
+
+    @Test
     @DisplayName("PATCH capacity lowered below the active count promotes nobody")
     @WithMockUser(roles = "ORGANIZER")
     void patchCapacity_lowered_promotesNobody() throws Exception {

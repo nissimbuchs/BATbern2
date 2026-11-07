@@ -187,19 +187,8 @@ public class WaitlistPromotionEmailService {
      * predates Story 10.32) or the user has none.
      */
     private static java.util.List<String> additionalEmailsFor(UserResponse attendee) {
-        if (attendee == null) {
-            return java.util.List.of();
-        }
-        java.util.List<ch.batbern.events.dto.generated.users.AdditionalEmail> raw =
-                attendee.getAdditionalEmails();
-        if (raw == null || raw.isEmpty()) {
-            return java.util.List.of();
-        }
-        return raw.stream()
-                .map(ch.batbern.events.dto.generated.users.AdditionalEmail::getEmail)
-                .filter(java.util.Objects::nonNull)
-                .filter(s -> !s.isBlank())
-                .toList();
+        // #1244: only confirmed addresses whose owner wants a copy
+        return EventMailCopies.of(attendee);
     }
 
     private Event resolveEvent(java.util.UUID eventId) {

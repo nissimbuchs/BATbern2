@@ -303,7 +303,9 @@ export interface paths {
      * Send a confirmation link to the address of an earlier profile
      * @description #1183 D. Sends a signed link (48 h) to the address of the candidate profile. Opening it
      *     while logged in as the caller merges the candidate into the caller's profile. The candidate
-     *     must be one of `GET /users/me/profile-claims`; anything else is 404.
+     *     must be one of `GET /users/me/profile-claims`; anything else is 404. A candidate with a
+     *     placeholder address (#1244) is refused with 409 `PLACEHOLDER_ADDRESS`: the link would reach
+     *     nobody.
      */
     post: operations['requestProfileClaim'];
     delete?: never;
@@ -682,7 +684,12 @@ export interface paths {
     delete: operations['deleteAdditionalEmail'];
     options?: never;
     head?: never;
-    patch?: never;
+    /**
+     * Change the settings of one of the caller's additional email addresses
+     * @description #1244 — switch the copy of event mails for one additional address on or off. Only a
+     *     confirmed address can receive copies (409 `NOT_VERIFIED` otherwise).
+     */
+    patch: operations['updateAdditionalEmail'];
     trace?: never;
   };
   '/users/me/additional-emails/{email}/resend-verification': {
@@ -1344,6 +1351,12 @@ export interface components {
       companyName?: string | null;
       /** @description #1237: a merge request for this profile is with the organizers */
       requestPending?: boolean;
+      /**
+       * @description #1244: the earlier profile carries a placeholder address from the historical import
+       *     (`vorname.nachname@batbern.ch`) that reaches nobody. Only the request to the organizers
+       *     (#1237) is offered; a claim link is refused (409 `PLACEHOLDER_ADDRESS`).
+       */
+      placeholderAddress?: boolean;
     };
     ProfileMergeRequestCreate: {
       /** Format: uuid */
@@ -1411,6 +1424,18 @@ export interface components {
        *     v1 always returns null.
        */
       verifiedAt?: string | null;
+      /**
+       * @description #1244 — this address gets a copy of event mails (registration, waitlist,
+       *     invitations, reminders). Event mails go to the primary address; a copy only to
+       *     confirmed additional addresses that opted in. Off by default.
+       * @default false
+       */
+      receiveEventMail: boolean;
+    };
+    /** @description #1244 — settings of one of the caller's additional addresses. */
+    UpdateAdditionalEmailRequest: {
+      /** @description Copy of event mails to this address. Only for a confirmed address. */
+      receiveEventMail: boolean;
     };
     AddAdditionalEmailRequest: {
       /**
@@ -2499,6 +2524,15 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       404: components['responses']['NotFound'];
+      /** @description The earlier profile has a placeholder address (`PLACEHOLDER_ADDRESS`). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
       500: components['responses']['InternalServerError'];
     };
   };
@@ -2999,6 +3033,52 @@ export interface operations {
         };
       };
       500: components['responses']['InternalServerError'];
+    };
+  };
+  updateAdditionalEmail: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        /** @description URL-encoded email address, case-insensitive. */
+        email: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['UpdateAdditionalEmailRequest'];
+      };
+    };
+    responses: {
+      /** @description The updated additional email */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['AdditionalEmail'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      /** @description No matching additional email on the caller's profile. */
+      404: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+      /** @description The address is not confirmed yet (`NOT_VERIFIED`). */
+      409: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
     };
   };
   resendAdditionalEmailVerification: {

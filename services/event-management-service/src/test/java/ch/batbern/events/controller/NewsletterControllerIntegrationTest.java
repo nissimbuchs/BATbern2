@@ -2,6 +2,8 @@ package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.dto.generated.users.AdditionalEmail;
+import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.NewsletterSubscriber;
@@ -26,12 +28,15 @@ import java.util.Map;
 import java.util.Set;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -237,6 +242,81 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
         assertThat(subscriberRepository.findAll())
                 .filteredOn(s -> "dora".equals(s.getUsername()))
                 .allSatisfy(s -> assertThat(s.getUnsubscribedAt()).isNotNull());
+    }
+
+    // ── #1244: newsletter per address ─────────────────────────────────────────
+
+    private void doraHasAddresses() {
+        UserResponse dora = new UserResponse().id("dora").email("Dora@Batbern-Test.ch");
+        dora.addAdditionalEmailsItem(new AdditionalEmail("dora.private@batbern-test.ch", OffsetDateTime.now())
+                .verifiedAt(OffsetDateTime.now()));
+        dora.addAdditionalEmailsItem(new AdditionalEmail("dora.pending@batbern-test.ch", OffsetDateTime.now()));
+        when(userApiClient.getUserByUsername("dora")).thenReturn(dora);
+    }
+
+    @Test
+    @DisplayName("#1244 GET /newsletter/my-subscriptions — primary first, then confirmed addresses, each with its state")
+    @WithMockUser(username = "dora", roles = "USER")
+    void should_listPrimaryAndConfirmedAddresses_when_gettingMySubscriptions() throws Exception {
+        doraHasAddresses();
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email("dora.private@batbern-test.ch").language("de").source("account").username("dora")
+                .unsubscribeToken("tok-dora-5").build());
+
+        mockMvc.perform(get("/api/v1/newsletter/my-subscriptions"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.addresses.length()").value(2))
+                .andExpect(jsonPath("$.addresses[0].email").value("dora@batbern-test.ch"))
+                .andExpect(jsonPath("$.addresses[0].primary").value(true))
+                .andExpect(jsonPath("$.addresses[0].subscribed").value(false))
+                .andExpect(jsonPath("$.addresses[1].email").value("dora.private@batbern-test.ch"))
+                .andExpect(jsonPath("$.addresses[1].primary").value(false))
+                .andExpect(jsonPath("$.addresses[1].subscribed").value(true));
+    }
+
+    @Test
+    @DisplayName("#1244 PUT /newsletter/my-subscriptions — subscribe and unsubscribe one address, the others stay")
+    @WithMockUser(username = "dora", roles = "USER")
+    void should_changeOnlyThatAddress_when_puttingOneSubscription() throws Exception {
+        doraHasAddresses();
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email("dora@batbern-test.ch").language("de").source("account").username("dora")
+                .unsubscribeToken("tok-dora-6").build());
+
+        mockMvc.perform(put("/api/v1/newsletter/my-subscriptions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"Dora.Private@batbern-test.ch\",\"subscribed\":true}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.addresses[0].subscribed").value(true))
+                .andExpect(jsonPath("$.addresses[1].subscribed").value(true));
+
+        assertThat(subscriberRepository.findByEmailIgnoreCase("dora.private@batbern-test.ch"))
+                .get().satisfies(sub -> {
+                    assertThat(sub.getUsername()).isEqualTo("dora");
+                    assertThat(sub.getUnsubscribedAt()).isNull();
+                });
+
+        mockMvc.perform(put("/api/v1/newsletter/my-subscriptions")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"email\":\"dora@batbern-test.ch\",\"subscribed\":false}"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.addresses[0].subscribed").value(false))
+                .andExpect(jsonPath("$.addresses[1].subscribed").value(true));
+    }
+
+    @Test
+    @DisplayName("#1244 PUT /newsletter/my-subscriptions — an unconfirmed or foreign address → 403, nothing stored")
+    @WithMockUser(username = "dora", roles = "USER")
+    void should_return403_when_addressIsNotOneOfMine() throws Exception {
+        doraHasAddresses();
+
+        for (String address : new String[] {"dora.pending@batbern-test.ch", "someone@batbern-test.ch"}) {
+            mockMvc.perform(put("/api/v1/newsletter/my-subscriptions")
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"email\":\"" + address + "\",\"subscribed\":true}"))
+                    .andExpect(status().isForbidden());
+        }
+        assertThat(subscriberRepository.findAll()).isEmpty();
     }
 
     // ── AC10: GET /newsletter/subscribers/count (ORGANIZER only) ─────────────

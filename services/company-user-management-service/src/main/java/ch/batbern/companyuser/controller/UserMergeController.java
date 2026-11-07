@@ -88,7 +88,8 @@ public class UserMergeController implements ProfileMergeApi {
                         .candidateId(c.id())
                         .maskedEmail(c.maskedEmail())
                         .companyName(c.companyName())
-                        .requestPending(c.requestPending()))
+                        .requestPending(c.requestPending())
+                        .placeholderAddress(c.placeholderAddress()))
                 .toList());
     }
 
@@ -210,6 +211,12 @@ public class UserMergeController implements ProfileMergeApi {
             HttpServletRequest request) {
         return error(HttpStatus.BAD_GATEWAY, "MERGE_EVENT_SERVICE_FAILED",
                 "Event data could not be moved; nothing was merged. Try again.", request, null);
+    }
+
+    @ExceptionHandler(ProfileClaimService.PlaceholderAddressException.class)
+    public ResponseEntity<ErrorResponse> placeholder(ProfileClaimService.PlaceholderAddressException e,
+            HttpServletRequest request) {
+        return error(HttpStatus.CONFLICT, "PLACEHOLDER_ADDRESS", e.getMessage(), request, null);
     }
 
     @ExceptionHandler(ProfileClaimService.ClaimOtherAccountException.class)

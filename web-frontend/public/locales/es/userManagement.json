@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "No se pudo enviar el correo de verificación. Inténtelo de nuevo.",
       "additionalEmailResendAlreadyVerified": "Esta dirección de correo ya está verificada.",
       "additionalEmailResendAriaLabel": "Reenviar el correo de verificación a {{email}}",
-      "additionalEmailVerifiedAriaLabel": "{{email}} está verificado"
+      "additionalEmailVerifiedAriaLabel": "{{email}} está verificado",
+      "additionalEmailEventCopy": "Copia de los correos de eventos a esta dirección"
     },
     "notifications": {
       "title": "Preferencias de notificación",
@@ -378,6 +379,8 @@
     "cancel": "Cancelar",
     "requestPending": "Tu solicitud está con los organizadores.",
     "requestDeclinedRecently": "Una solicitud para este perfil fue rechazada hace poco. Podrás volver a pedirlo después de 30 días.",
-    "requestFailed": "No se pudo enviar la solicitud. Inténtalo más tarde."
+    "requestFailed": "No se pudo enviar la solicitud. Inténtalo más tarde.",
+    "placeholderAddress": "Este perfil anterior se importó sin su dirección.",
+    "askOrganizers": "Pedir a los organizadores"
   }
 }

@@ -821,7 +821,8 @@
     "pageSubtitle": "個人情報・同意・ニュースレターを管理します",
     "tabs": {
       "profile": "プロフィール",
-      "consent": "同意とニュースレター"
+      "consent": "同意とニュースレター",
+      "emails": "メールアドレス"
     },
     "companyLabel": "会社",
     "companyInvalid": "会社IDは1〜12文字の英数字で入力してください",
@@ -835,8 +836,28 @@
     "consentSave": "同意して保存",
     "consentSaveError": "同意の保存に失敗しました。もう一度お試しください。",
     "newsletterTitle": "ニュースレター",
-    "newsletterDescription": "今後のBATbernイベントの招待状や最新情報をお届けします。",
+    "newsletterDescription": "今後のBATbernイベントの招待とお知らせ。受け取るアドレスを選んでください。",
     "newsletterLabel": "BATbernニュースレターを購読する",
-    "companySaveError": "会社を保存できませんでした。もう一度お試しください。"
+    "companySaveError": "会社を保存できませんでした。もう一度お試しください。",
+    "emails": {
+      "title": "メールアドレス",
+      "description": "登録に関するすべてのメールはメインアドレスに届きます。転職したときなど、他のアドレスはあなたを識別するのに役立ちます。",
+      "primary": "メインアドレス・パスワードでログイン",
+      "confirmed": "確認済み",
+      "pending": "確認待ち",
+      "resend": "リンクを再送信",
+      "resent": "リンクを送信しました",
+      "eventCopy": "このアドレスにイベントメールのコピーを送る",
+      "remove": "アドレスを削除",
+      "removeConfirm": "削除",
+      "cancel": "キャンセル",
+      "add": "追加",
+      "addPlaceholder": "another@address.com",
+      "addHelp": "新しいアドレスに確認リンクを送信します。",
+      "errorDuplicate": "このアドレスはすでに登録されています。",
+      "errorLimit": "追加アドレスの上限（5件）に達しました。",
+      "errorInvalid": "有効なメールアドレスを入力してください。",
+      "loginHint": "パスワードではメインアドレスでログインします。確認済みのGmailまたはGoogleアドレスがあれば「Googleで続行」でもログインできます。"
+    }
   }
 }

@@ -2838,6 +2838,10 @@ components:
           minimum: 1
           maximum: 365
           description: 'Story 7.5 rework: window length in days (close = event date + this).'
+        eventType:
+          $ref: '#/components/schemas/EventType'
+          description: 'Change the event type (full day, afternoon, evening). Lost in the ADR-013
+            consolidation (#815): the event page sent it and got 400 (BATbern61, 2026-11-07).'
         topicCode:
           type: string
           nullable: true

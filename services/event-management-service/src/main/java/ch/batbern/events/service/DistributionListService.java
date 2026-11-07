@@ -4,7 +4,6 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.SessionUser;
-import ch.batbern.events.dto.generated.users.AdditionalEmail;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.repository.EventRepository;
@@ -28,10 +27,12 @@ import java.util.Set;
  * (F2). Three kinds are supported:
  * <ul>
  *   <li>{@code speakers} → {@code batbern{N}-speaker@}: PRIMARY_SPEAKER + CO_SPEAKER of every
- *       scheduled session of the event, plus each speaker's verified additionalEmails.
+ *       scheduled session of the event, plus each speaker's additional addresses that get a copy
+ *       of event mails (confirmed and switched on, #1244).
  *       MODERATOR / PANELIST roles are excluded.</li>
  *   <li>{@code moderator} → {@code batbern{N}-moderator@}: the event lead organizer
- *       ({@code Event.organizerUsername}), plus their additionalEmails. BATbern's "event
+ *       ({@code Event.organizerUsername}), plus their additional addresses with the copy switched
+ *       on (#1244). BATbern's "event
  *       moderator" interpretation; {@code SessionUser.MODERATOR} is per-session and not
  *       targeted here.</li>
  *   <li>{@code participants} → {@code batbern{N}-participants@}: every active registrant of the
@@ -143,12 +144,8 @@ public class DistributionListService {
         try {
             UserResponse user = userApiClient.getUserByUsername(username);
             addLowercased(user.getEmail(), sink);
-            List<AdditionalEmail> additional = user.getAdditionalEmails();
-            if (additional != null) {
-                for (AdditionalEmail extra : additional) {
-                    addLowercased(extra.getEmail(), sink);
-                }
-            }
+            // #1244: only confirmed addresses whose owner wants a copy of event mails
+            EventMailCopies.of(user).forEach(extra -> addLowercased(extra, sink));
         } catch (UserNotFoundException e) {
             log.warn("Distribution-list resolver: user '{}' not found in CUMS — skipping", username);
         } catch (Exception e) {

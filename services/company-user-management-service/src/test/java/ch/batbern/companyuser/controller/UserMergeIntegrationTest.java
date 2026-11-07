@@ -231,6 +231,35 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "anna.muster.2", roles = "ATTENDEE")
+    @DisplayName("#1244: an imported profile with a placeholder vorname.nachname@batbern.ch is flagged, a real address is not")
+    void claims_flagPlaceholderAddress() throws Exception {
+        User imported = userRepository.save(User.builder().username("anna.muster.4")
+                .email("anna.muster@batbern.ch").firstName("Anna").lastName("Muster").build());
+
+        mockMvc.perform(get("/api/v1/users/me/profile-claims"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[?(@.candidateId == '" + imported.getId() + "')].placeholderAddress")
+                        .value(true))
+                .andExpect(jsonPath("$[?(@.candidateId == '" + guest.getId() + "')].placeholderAddress")
+                        .value(false));
+    }
+
+    @Test
+    @WithMockUser(username = "anna.muster.2", roles = "ATTENDEE")
+    @DisplayName("#1244: no claim link to a placeholder address (409 PLACEHOLDER_ADDRESS, no mail)")
+    void claim_placeholderAddress_is409() throws Exception {
+        User imported = userRepository.save(User.builder().username("anna.muster.4")
+                .email("Anna.Muster@BATbern.ch").firstName("Anna").lastName("Muster").build());
+
+        mockMvc.perform(post("/api/v1/users/me/profile-claims").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"candidateId\": \"" + imported.getId() + "\"}"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("PLACEHOLDER_ADDRESS"));
+        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+    }
+
+    @Test
+    @WithMockUser(username = "anna.muster.2", roles = "ATTENDEE")
     @DisplayName("D: a profile that is not a candidate cannot be claimed (404, no mail)")
     void claim_nonCandidate_is404() throws Exception {
         User stranger = userRepository.save(User.builder().username("bea.other").email("bea@example.com")

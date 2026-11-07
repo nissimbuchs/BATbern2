@@ -33,6 +33,12 @@ Trade-off: an alias can change behaviour or accepted parameters without notice. 
 accepts only the default temperature (0.3 and 0.7 return 400, measured 2026-11-07), so no request
 sends one. A failed call is logged as a WARN by `BatbernAiService` / `TrendingTopicsService`.
 
+**Theme images run in the background (2026-11-07).** An image takes about 40 s; the AWS HTTP API ends
+every request at 30 s (a hard limit). `POST /events/{code}/ai/theme-image` returns 202 with a job,
+`ThemeImageJobs` generates on a virtual thread and keeps the job state in memory for one hour, and the
+page polls `GET …/ai/theme-image/jobs/{jobId}` every 3 s for up to 150 s. With one EMS task this is
+enough; a poll that reaches another task during a rolling deploy gets 404 and the page reports an error.
+
 Data (EMS Flyway):
 
 - `ai_prompts` (V82, placeholders updated in V83): one row per prompt key (`event_description`,

@@ -181,6 +181,20 @@ export const useDeleteAdditionalEmail = () => {
 };
 
 /**
+ * #1244 — switch the copy of event mails for one of the current user's additional addresses.
+ */
+export const useUpdateAdditionalEmail = () => {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({ email, receiveEventMail }: { email: string; receiveEventMail: boolean }) =>
+      userAccountApi.updateAdditionalEmail(email, { receiveEventMail }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['user-profile'] });
+    },
+  });
+};
+
+/**
  * Additional-email verification (v2) — resend the verification email for one of
  * the caller's own unverified additional emails. Invalidates the user-profile
  * cache so any status changes are reflected.

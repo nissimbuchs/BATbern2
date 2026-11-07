@@ -3,7 +3,6 @@ package ch.batbern.events.service;
 import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.render.MailPipeline;
@@ -92,7 +91,7 @@ public class DeregistrationEmailService {
     }
 
     /**
-     * Story 10.32 (P1-9) — flatten the attendee's additional emails into a CC list.
+     * Story 10.32 (P1-9), #1244 — the attendee's additional addresses that get a copy.
      * Returns an empty list for anonymous registrants (no username on file) and
      * for any CUMS lookup failure — the deregistration link still reaches the
      * primary attendee email so this is fail-soft by design.
@@ -102,16 +101,8 @@ public class DeregistrationEmailService {
             return List.of();
         }
         try {
-            UserResponse attendee = userApiClient.getUserByUsername(username);
-            if (attendee == null || attendee.getAdditionalEmails() == null
-                    || attendee.getAdditionalEmails().isEmpty()) {
-                return List.of();
-            }
-            return attendee.getAdditionalEmails().stream()
-                    .map(ch.batbern.events.dto.generated.users.AdditionalEmail::getEmail)
-                    .filter(java.util.Objects::nonNull)
-                    .filter(s -> !s.isBlank())
-                    .toList();
+            // #1244: only confirmed addresses whose owner wants a copy
+            return EventMailCopies.of(userApiClient.getUserByUsername(username));
         } catch (UserNotFoundException e) {
             log.warn("Cannot enrich deregistration CC — user not found: {}", username);
             return List.of();

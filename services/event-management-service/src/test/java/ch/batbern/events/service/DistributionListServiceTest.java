@@ -183,6 +183,22 @@ class DistributionListServiceTest {
     }
 
     @Test
+    @DisplayName("#1244: an address without the copy switched on, or unconfirmed, is left out")
+    void should_leaveOutAddresses_when_copyOffOrUnconfirmed() {
+        when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
+        UserResponse organizer = new UserResponse().id("organizer.alice").email("alice@batbern.ch");
+        organizer.addAdditionalEmailsItem(new AdditionalEmail("off@example.com", OffsetDateTime.now())
+                .verifiedAt(OffsetDateTime.now()).receiveEventMail(false));
+        organizer.addAdditionalEmailsItem(new AdditionalEmail("pending@example.com", OffsetDateTime.now())
+                .receiveEventMail(true));
+        when(userApiClient.getUserByUsername("organizer.alice")).thenReturn(organizer);
+
+        Set<String> emails = service.resolveModerator(EVENT_CODE);
+
+        assertThat(emails).containsExactly("alice@batbern.ch");
+    }
+
+    @Test
     @DisplayName("moderator: organizer missing in CUMS yields empty list (no throw)")
     void should_returnEmpty_when_organizerMissing() {
         when(eventRepository.findByEventCode(EVENT_CODE)).thenReturn(Optional.of(event));
@@ -279,7 +295,10 @@ class DistributionListServiceTest {
                 .id(username)
                 .email(email);
         for (String e : extras) {
-            user.addAdditionalEmailsItem(new AdditionalEmail(e, OffsetDateTime.now()));
+            // #1244: confirmed and with the copy of event mails switched on
+            user.addAdditionalEmailsItem(new AdditionalEmail(e, OffsetDateTime.now())
+                    .verifiedAt(OffsetDateTime.now())
+                    .receiveEventMail(true));
         }
         return user;
     }

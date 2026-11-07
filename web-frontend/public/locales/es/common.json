@@ -821,7 +821,8 @@
     "pageSubtitle": "Gestiona tus datos personales, tu consentimiento y el boletín",
     "tabs": {
       "profile": "Perfil",
-      "consent": "Consentimiento & Boletín"
+      "consent": "Consentimiento & Boletín",
+      "emails": "Direcciones de correo"
     },
     "companyLabel": "Empresa",
     "companyInvalid": "El ID de empresa debe tener entre 1 y 12 letras o dígitos",
@@ -835,8 +836,28 @@
     "consentSave": "Aceptar y guardar",
     "consentSaveError": "No se pudo guardar tu consentimiento. Inténtalo de nuevo.",
     "newsletterTitle": "Boletín",
-    "newsletterDescription": "Recibe invitaciones y novedades sobre los próximos eventos de BATbern.",
+    "newsletterDescription": "Invitaciones y novedades sobre los próximos eventos BATbern. Elija las direcciones que la reciben.",
     "newsletterLabel": "Suscribirse al boletín de BATbern",
-    "companySaveError": "No se pudo guardar la empresa. Inténtalo de nuevo."
+    "companySaveError": "No se pudo guardar la empresa. Inténtalo de nuevo.",
+    "emails": {
+      "title": "Direcciones de correo",
+      "description": "Su dirección principal recibe todos los correos sobre sus inscripciones. Otras direcciones nos ayudan a reconocerle, por ejemplo cuando cambia de trabajo.",
+      "primary": "Dirección principal · acceso con contraseña",
+      "confirmed": "Confirmada",
+      "pending": "Pendiente de confirmación",
+      "resend": "Enviar el enlace de nuevo",
+      "resent": "Enlace enviado",
+      "eventCopy": "Copia de los correos de eventos a esta dirección",
+      "remove": "Eliminar dirección",
+      "removeConfirm": "Eliminar",
+      "cancel": "Cancelar",
+      "add": "Añadir",
+      "addPlaceholder": "otra@direccion.com",
+      "addHelp": "Enviamos un enlace de confirmación a la nueva dirección.",
+      "errorDuplicate": "Esta dirección ya está registrada.",
+      "errorLimit": "Ha alcanzado el máximo de 5 direcciones adicionales.",
+      "errorInvalid": "Introduzca una dirección de correo válida.",
+      "loginHint": "Con la contraseña accede con la dirección principal. Con una dirección de Gmail o Google confirmada también puede acceder mediante «Continuar con Google»."
+    }
   }
 }

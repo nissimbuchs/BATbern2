@@ -1063,8 +1063,20 @@ flowchart LR
     V -- "yes" --> L1["PreSignUp: link a Google sign-in<br/>to the owner's Cognito user"]
     V -- "yes" --> L2["JIT: refuse to create a duplicate user"]
     V -- "yes" --> L3["EMS PersonAddresses: match registrations,<br/>attendee dashboard, deregistration"]
-    AE --> A1["EMS CC fan-out on transactional mails<br/>and ForwardingDirectory sender lookup<br/>use every additional address, verified or not"]
+    V -- "yes" --> C1{"receive_event_mail?"}
+    C1 -- "yes" --> L4["EMS copy (CC) of event mails:<br/>registration, waitlist, deregistration,<br/>speaker mails, composer, -speaker@ / -moderator@ / -participants@"]
+    AE --> A1["ForwardingDirectory: ok@ / partner@ recipients<br/>and the organizer sender check<br/>use every additional address, verified or not"]
 ```
+
+**Event mails and the newsletter per address (#1244, owner decision 2026-11-07).** Event mails go
+to the primary address. A confirmed additional address gets a copy only when its owner switched
+`receive_event_mail` on (CUMS V24, default off, also for existing rows; `PATCH
+/users/me/additional-emails/{email}`, 409 `NOT_VERIFIED` for an unconfirmed address). EMS decides in
+one place, `EventMailCopies.of(UserResponse)`. Until #1244 every additional address got a CC, confirmed
+or not. The newsletter is one `newsletter_subscribers` row per address (#1143); `GET/PUT
+/newsletter/my-subscriptions` lists and changes it per address, for the primary and the confirmed
+additional addresses only (403 otherwise). Participants manage all of this on `/profile` (tabs
+"Einwilligung & Newsletter" and "E-Mail-Adressen"); organizers keep the Account settings.
 
 ## Names, emails and usernames (#1102)
 
@@ -1109,7 +1121,7 @@ registration for the same event, 19 of the profiles without login carry speaker 
 | | Who | How |
 |---|---|---|
 | **C: organizer merge** | ORGANIZER | User page → "Merge profile" → pick the other profile → preview → confirm. `GET /users/{target}/merge-preview?source=`, `POST /users/{target}/merge` |
-| **D: claim** | the person, logged in | Account settings and the attendee dashboard list profiles **without login** under the same first and last name (case-insensitive), with a masked address only. "This is me" mails a signed link (48 h, JWT type `profile-claim`) **to the earlier profile's address**; `/claim-profile?token=` confirms it, and only under the login that asked for it (else 403 `CLAIM_OTHER_ACCOUNT`). `GET/POST /users/me/profile-claims`, `POST /users/me/profile-claims/confirm` |
+| **D: claim** | the person, logged in | Account settings and the attendee dashboard list profiles **without login** under the same first and last name (case-insensitive), with a masked address only. "This is me" mails a signed link (48 h, JWT type `profile-claim`) **to the earlier profile's address**; `/claim-profile?token=` confirms it, and only under the login that asked for it (else 403 `CLAIM_OTHER_ACCOUNT`). A candidate with a placeholder address from the historical import (`vorname.nachname@batbern.ch`, #1244) is flagged `placeholderAddress` and gets no link (409 `PLACEHOLDER_ADDRESS`); only the request to the organizers (row E) is offered. `GET/POST /users/me/profile-claims`, `POST /users/me/profile-claims/confirm` |
 | **E: request (#1237)** | the person asks, any ORGANIZER decides | For someone who cannot read the earlier profile's mailbox any more (a former employer's address). "I no longer have access to this address" + an optional note → `POST /users/me/profile-claims/merge-requests` stores a `profile_merge_requests` row (CUMS V23) and opens a Mail Center conversation (EMS `POST /internal/mail-center/merge-requests`, `mail_conversation.merge_request_id`, V145). The conversation shows both profiles, what would move and the note; **Approve** (`POST /users/merge-requests/{id}/approve`) runs the merge as `ORGANIZER` with the approving organizer as `performed_by`, **Decline** (`.../decline`) needs a reason. The person is mailed at their current address either way (templates `profile-merge-approved`/`-declined`, DE + EN) and the conversation is set to Done. |
 
 **Rules** (`UserMergeService` in company-user-management):

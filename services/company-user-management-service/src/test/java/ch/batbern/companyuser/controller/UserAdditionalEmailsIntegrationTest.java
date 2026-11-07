@@ -20,12 +20,14 @@ import org.springframework.test.context.TestPropertySource;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -327,5 +329,83 @@ class UserAdditionalEmailsIntegrationTest extends AbstractIntegrationTest {
                 additionalEmailRepository.findAll())
                 .extracting(UserAdditionalEmail::getEmail)
                 .doesNotContain("cascade-1@example.com", "cascade-2@example.com");
+    }
+
+    // ------------------- #1244: copy of event mails -------------------
+
+    private void addOwnAddress(String email, boolean verified) {
+        UserAdditionalEmail row = UserAdditionalEmail.builder()
+                .email(email)
+                .verifiedAt(verified ? Instant.now() : null)
+                .build();
+        caller.addAdditionalEmail(row);
+        userRepository.saveAndFlush(caller);
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("#1244: a new address gets no copy of event mails")
+    void should_notReceiveEventMail_when_addressAdded() throws Exception {
+        mockMvc.perform(post("/api/v1/users/me/additional-emails")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"email\": \"private@example.com\" }"))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.receiveEventMail").value(false));
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("#1244: a confirmed own address can switch the copy of event mails on and off")
+    void should_toggleReceiveEventMail_when_ownAddressConfirmed() throws Exception {
+        addOwnAddress("private@example.com", true);
+
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/Private@Example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"receiveEventMail\": true }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.email").value("private@example.com"))
+                .andExpect(jsonPath("$.receiveEventMail").value(true));
+
+        mockMvc.perform(get("/api/v1/users/me"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.additionalEmails[0].receiveEventMail").value(true));
+
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/private@example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"receiveEventMail\": false }"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.receiveEventMail").value(false));
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("#1244: an unconfirmed address cannot receive copies (409 NOT_VERIFIED)")
+    void should_return409_when_switchingOnCopyForUnconfirmedAddress() throws Exception {
+        addOwnAddress("pending@example.com", false);
+
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/pending@example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"receiveEventMail\": true }"))
+                .andExpect(status().isConflict())
+                .andExpect(jsonPath("$.errorCode").value("NOT_VERIFIED"));
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe")
+    @DisplayName("#1244: another user's address is not found (404)")
+    void should_return404_when_switchingCopyForSomeoneElsesAddress() throws Exception {
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/shared@example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"receiveEventMail\": true }"))
+                .andExpect(status().isNotFound());
+    }
+
+    @Test
+    @DisplayName("#1244: switching the copy needs a login (401)")
+    void should_return401_when_switchingCopyAnonymously() throws Exception {
+        mockMvc.perform(patch("/api/v1/users/me/additional-emails/private@example.com")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{ \"receiveEventMail\": true }"))
+                .andExpect(status().isUnauthorized());
     }
 }

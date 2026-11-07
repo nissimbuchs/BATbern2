@@ -825,7 +825,8 @@
     "pageSubtitle": "Verwalten Sie Ihre persönlichen Angaben, Einwilligung und Newsletter",
     "tabs": {
       "profile": "Profil",
-      "consent": "Einwilligung & Newsletter"
+      "consent": "Einwilligung & Newsletter",
+      "emails": "E-Mail-Adressen"
     },
     "companyLabel": "Firma",
     "companyInvalid": "Die Firmen-ID muss aus 1-12 Buchstaben oder Ziffern bestehen",
@@ -839,8 +840,28 @@
     "consentSave": "Akzeptieren und speichern",
     "consentSaveError": "Ihre Einwilligung konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
     "newsletterTitle": "Newsletter",
-    "newsletterDescription": "Erhalten Sie Einladungen und Neuigkeiten zu kommenden BATbern-Anlässen.",
+    "newsletterDescription": "Einladungen und Neuigkeiten zu kommenden BATbern-Anlässen. Wählen Sie, an welche Adressen.",
     "newsletterLabel": "BATbern-Newsletter abonnieren",
-    "companySaveError": "Unternehmen konnte nicht gespeichert werden. Bitte versuchen Sie es erneut."
+    "companySaveError": "Unternehmen konnte nicht gespeichert werden. Bitte versuchen Sie es erneut.",
+    "emails": {
+      "title": "E-Mail-Adressen",
+      "description": "Ihre Hauptadresse erhält alle Mails zu Ihren Anmeldungen. Weitere Adressen helfen uns, Sie zu erkennen, zum Beispiel wenn Sie die Stelle wechseln.",
+      "primary": "Hauptadresse · Anmeldung mit Passwort",
+      "confirmed": "Bestätigt",
+      "pending": "Wartet auf Bestätigung",
+      "resend": "Link erneut senden",
+      "resent": "Link gesendet",
+      "eventCopy": "Kopie der Event-Mails an diese Adresse",
+      "remove": "Adresse entfernen",
+      "removeConfirm": "Entfernen",
+      "cancel": "Abbrechen",
+      "add": "Hinzufügen",
+      "addPlaceholder": "weitere@adresse.ch",
+      "addHelp": "Wir senden einen Bestätigungslink an die neue Adresse.",
+      "errorDuplicate": "Diese Adresse ist bereits registriert.",
+      "errorLimit": "Sie haben die maximale Anzahl von 5 weiteren Adressen erreicht.",
+      "errorInvalid": "Bitte geben Sie eine gültige E-Mail-Adresse ein.",
+      "loginHint": "Mit dem Passwort melden Sie sich mit der Hauptadresse an. Mit einer bestätigten Gmail- oder Google-Adresse können Sie sich zusätzlich über «Mit Google anmelden» einloggen."
+    }
   }
 }
