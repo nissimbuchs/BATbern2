@@ -298,7 +298,7 @@ jobs:
           chmod +x gradlew
           # Build from root to resolve shared-kernel dependency
           # Tests use Testcontainers PostgreSQL for production parity
-          # AWS services (EventBridge, S3) are mocked via TestAwsConfig
+          # AWS services (S3, SES, Cognito) are mocked via TestAwsConfig
           if [ "${{ matrix.service }}" = "api-gateway" ]; then
             ./gradlew :api-gateway:clean :api-gateway:build :api-gateway:test --no-daemon
           else

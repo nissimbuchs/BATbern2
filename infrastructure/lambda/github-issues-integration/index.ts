@@ -567,10 +567,7 @@ function getLabels(alarm: CloudWatchAlarm): string[] {
     alarm.AlarmName.includes('Task-Failures')
   ) {
     labels.push('severity:high');
-  } else if (
-    alarm.AlarmName.includes('budget') ||
-    alarm.AlarmName.includes('EventBridge-Failures')
-  ) {
+  } else if (alarm.AlarmName.includes('budget')) {
     labels.push('severity:medium');
   } else {
     labels.push('severity:low');
@@ -585,8 +582,7 @@ function getLabels(alarm: CloudWatchAlarm): string[] {
   } else if (
     alarm.AlarmName.includes('High-Memory') ||
     alarm.AlarmName.includes('OOM-Kills') ||
-    alarm.AlarmName.includes('Task-Failures') ||
-    alarm.AlarmName.includes('EventBridge-Failures')
+    alarm.AlarmName.includes('Task-Failures')
   ) {
     labels.push('component:ecs');
   } else {

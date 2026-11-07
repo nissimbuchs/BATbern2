@@ -62,9 +62,6 @@ spring:
 # AWS Configuration
 aws:
   region: ${AWS_REGION:eu-central-1}
-  eventbridge:
-    bus-name: ${EVENT_BUS_NAME:batbern-staging}
-    source: ch.batbern.partners
 
 # HTTP Clients for Microservices Communication (ADR-003)
 # Service Connect DNS: http://{service-name}:8080

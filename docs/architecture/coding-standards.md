@@ -426,7 +426,7 @@ override and `_bmad-output/project-context.md` point here).
 
 #### Mock at the process boundary, nowhere else
 
-A test may replace only what leaves the process: SES, S3, Cognito, OpenAI, EventBridge/SQS, the
+A test may replace only what leaves the process: SES, S3, Cognito, OpenAI, SQS, the
 clock, and **another service's HTTP API at the wire** (never its Java client). Everything inside
 the process runs for real: our services, repositories, mappers, validators, templates, the
 security filter chain, our hooks and our service modules.
@@ -477,7 +477,7 @@ baseline `web-frontend/scripts/test-ratchet-baseline.txt`:
 | `be-transactional-it` | class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is named `*IntegrationTest` / `*IT` |
 
 Boundary types, never counted: `SesClient`, `SesV2Client`, `S3Client`, `S3Presigner`,
-`CognitoIdentityProviderClient`, `SqsClient`, `EventBridgeClient`, `Clock`, `JwtDecoder`, and any
+`CognitoIdentityProviderClient`, `SqsClient`, `Clock`, `JwtDecoder`, and any
 type imported from `software.amazon.awssdk`. Mentions in comments and Javadoc are not counted;
 in Java, mentions in string and text-block literals are not counted either (the frontend scan
 skips comments only).

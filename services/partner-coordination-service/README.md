@@ -574,9 +574,8 @@ COMPANY_SERVICE_URL=http://company-user-management-service:8080
 USER_SERVICE_URL=http://company-user-management-service:8080
 EVENT_SERVICE_URL=http://event-management-service:8080
 
-# AWS (EventBridge for domain events)
+# AWS
 AWS_REGION=eu-central-1
-EVENT_BUS_NAME=batbern-platform-events
 ```
 
 ### Production Deployment

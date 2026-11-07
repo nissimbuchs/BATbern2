@@ -40,7 +40,7 @@ npm run deploy:staging:hotswap         # Fast deployment using hotswap for Lambd
 
 # Layer-based deployments (optimized parallelization)
 npm run deploy:staging:layer0-foundation     # CICD, DNS, Monitoring, SES (4 concurrent)
-npm run deploy:staging:layer1-infrastructure # Network, Secrets, EventBus (3 concurrent)
+npm run deploy:staging:layer1-infrastructure # Network, Secrets, InboundEmail (3 concurrent)
 npm run deploy:staging:layer2-data          # Database, Storage, Bastion (2 concurrent)
 npm run deploy:staging:layer3-application   # Cognito, Cluster (2 concurrent)
 npm run deploy:staging:layer4-services      # All microservices (6 concurrent)
@@ -116,7 +116,7 @@ Automatically used by GitHub Actions when:
 Used by GitHub Actions for infrastructure changes:
 
 - Layer 0: Foundation (CICD, DNS, Monitoring, SES) - 4 concurrent
-- Layer 1: Infrastructure (Network, Secrets, EventBus) - 3 concurrent
+- Layer 1: Infrastructure (Network, Secrets, InboundEmail) - 3 concurrent
 - Layer 2: Data (Database, Storage, Bastion) - 2 concurrent
 - Layer 3: Application (Cognito, Cluster) - 2 concurrent
 - Layer 4: Services (All 6 microservices) - 6 concurrent
@@ -182,10 +182,11 @@ git push origin develop
 3. **Secrets Stack** - Secrets Manager, KMS keys for database credentials
 4. **Database Stack** - RDS PostgreSQL (depends on Network + Secrets)
 5. **Storage Stack** - S3 buckets, CloudFront CDN with custom domain
-6. **EventBus Stack** - EventBridge for domain events
-7. **Monitoring Stack** - CloudWatch dashboards, alarms, GitHub Issues integration
-8. **Cognito Stack** - User pools with Lambda triggers (depends on Network + Database)
-9. **SES Stack** - Email templates for authentication workflows
+6. **Monitoring Stack** - CloudWatch dashboards, alarms, GitHub Issues integration
+7. **Cognito Stack** - User pools with Lambda triggers (depends on Network + Database)
+8. **SES Stack** - Email templates for authentication workflows
+
+(No EventBus stack: domain events stay in process since Story 17.2 part B, 2026-11.)
 
 **Application Layer (staging/prod only):** 10. **Cluster Stack** - Shared ECS Fargate cluster 11. **Microservices Stacks** - Event Management, Partner Coordination, Company Management 12. **API Gateway Service Stack** - Spring Boot API Gateway on ECS with Service Connect 13. **API Gateway Stack** - AWS API Gateway proxy to Spring Boot (depends on Cognito) 14. **Frontend Stack** - React app on S3 + CloudFront (depends on DNS) 15. **AutoShutdown Stack** - Development cost optimization (scales ECS to 0 outside business hours)
 
@@ -256,7 +257,6 @@ Cognito Lambda triggers (post-confirmation, pre-authentication, pre-token-genera
 ### 4. Shared Resources
 
 - **ECS Cluster**: Single Fargate cluster shared by all microservices (ClusterStack)
-- **EventBridge**: Shared event bus for domain events (EventBusStack)
 - **S3 Content Bucket**: Shared by Event Management and Company Management for file uploads
 - **CloudFront Distribution**: Single CDN for all S3 content
 
@@ -347,7 +347,6 @@ infrastructure/
 │       ├── secrets-stack.ts        # Secrets Manager, KMS
 │       ├── database-stack.ts       # RDS PostgreSQL
 │       ├── storage-stack.ts        # S3, CloudFront
-│       ├── event-bus-stack.ts      # EventBridge
 │       ├── monitoring-stack.ts     # CloudWatch, GitHub Issues
 │       ├── cognito-stack.ts        # User pools + Lambda triggers
 │       ├── ses-stack.ts            # Email templates

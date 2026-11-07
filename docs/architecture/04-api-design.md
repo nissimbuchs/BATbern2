@@ -147,7 +147,7 @@ Each API domain represents a **bounded context** with:
 ### Cross-Domain Communication
 
 Domains communicate through:
-- **Domain Events**: Published via AWS EventBridge for async communication
+- **Domain Events**: in process only, inside the service that raises them (no message bus, Story 17.2 part B)
 - **API Gateway**: Unified entry point for all domain APIs
 - **Shared Kernel**: Common types, events, and utilities
 - **REST APIs**: Synchronous cross-domain requests when necessary

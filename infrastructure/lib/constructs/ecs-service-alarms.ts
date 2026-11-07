@@ -9,13 +9,12 @@ import { Construct } from 'constructs';
  * CloudWatch Alarms for ECS Service Monitoring
  *
  * Platform Stability Improvements (Phase 3)
- * Monitors memory pressure, OOM kills, task failures, and EventBridge publishing
+ * Monitors memory pressure, OOM kills and task failures
  *
  * Alarms:
  * - High memory utilization (80% threshold)
  * - OOM kill detection (exit code 137)
  * - Task failure rate (abnormal restarts)
- * - EventBridge publishing failures
  */
 export interface EcsServiceAlarmsProps {
   /**
@@ -65,7 +64,6 @@ export interface EcsServiceAlarmsProps {
     readonly cpuUtilization?: number;
     readonly oomKillCount?: number;
     readonly taskFailureCount?: number;
-    readonly eventBridgePublishingFailures?: number;
   };
 }
 
@@ -80,8 +78,6 @@ export class EcsServiceAlarms extends Construct {
       cpuUtilization: props.thresholds?.cpuUtilization ?? 80,
       oomKillCount: props.thresholds?.oomKillCount ?? (isProduction ? 1 : 3),
       taskFailureCount: props.thresholds?.taskFailureCount ?? (isProduction ? 2 : 5),
-      eventBridgePublishingFailures:
-        props.thresholds?.eventBridgePublishingFailures ?? (isProduction ? 5 : 10),
     };
 
     // Create CloudWatch alarm action
@@ -227,33 +223,11 @@ export class EcsServiceAlarms extends Construct {
     taskFailureAlarm.addAlarmAction(alarmAction);
     taskFailureAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
-    // Alarm 4: EventBridge Publishing Failures
-    const eventBridgeFailuresAlarm = new cloudwatch.Alarm(this, 'EventBridgePublishingFailures', {
-      alarmName: `batbern-${props.environment}-${serviceDisplayName}-EventBridge-Failures`,
-      alarmDescription: `${serviceDisplayName} experiencing EventBridge publishing failures (>${thresholds.eventBridgePublishingFailures} per 5 minutes)`,
-      metric: new cloudwatch.Metric({
-        namespace: 'BATbern/EventBridge',
-        metricName: 'PublishingFailures',
-        dimensionsMap: {
-          ServiceName: serviceDisplayName,
-        },
-        statistic: 'Sum',
-        period: cdk.Duration.minutes(5),
-      }),
-      threshold: thresholds.eventBridgePublishingFailures,
-      evaluationPeriods: 1,
-      comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
-      treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
-    });
-    eventBridgeFailuresAlarm.addAlarmAction(alarmAction);
-    eventBridgeFailuresAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
-
     // Output alarm names for reference
     const alarmNames = [
       memoryUtilizationAlarm.alarmName,
       ...(oomKillAlarm ? [oomKillAlarm.alarmName] : []),
       taskFailureAlarm.alarmName,
-      eventBridgeFailuresAlarm.alarmName,
     ];
 
     new cdk.CfnOutput(this, 'AlarmNames', {

@@ -19,7 +19,6 @@ import java.util.UUID;
  *
  * Event consumers:
  * - OrganizerNotificationService: Sends email to event organizers
- * - EventBridge (optional): For cross-service integration
  */
 @Getter
 @NoArgsConstructor(access = AccessLevel.PROTECTED)

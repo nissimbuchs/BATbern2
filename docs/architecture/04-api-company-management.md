@@ -13,7 +13,7 @@ The Company Management API provides endpoints for:
 - Advanced query patterns (filter, sort, pagination, field selection, resource expansion)
 - Company search with autocomplete and Caffeine caching
 - Company verification workflows
-- Event-driven architecture with EventBridge integration
+- Domain events raised in process (no message bus)
 
 **Architecture Context**: Companies are fully decoupled from partners and users (v2.2 refactoring). Partnership is now a first-class aggregate in Partner Coordination Service (Epic 8) with `Partnership.companyId` foreign key reference.
 
@@ -140,7 +140,7 @@ description: |
   - Company name must be unique
   - Website must be valid URL (if provided)
 
-  **Events Published**: CompanyCreatedEvent to EventBridge
+  **Events Published**: CompanyCreatedEvent (in-process domain event)
 
   **Performance**: <200ms (P95)
 
@@ -245,7 +245,7 @@ description: |
 
   **Authorization**: ORGANIZER role required
 
-  **Events Published**: CompanyVerifiedEvent to EventBridge
+  **Events Published**: CompanyVerifiedEvent (in-process domain event)
 
   **Idempotency**: Safe to call multiple times (no error if already verified)
 
@@ -544,33 +544,15 @@ PaginationMetadata:
 - Reduces database load for frequently searched queries
 - X-Cache-Status header indicates HIT or MISS
 
-### Event-Driven Architecture
+### Domain Events
 
-**EventBridge Integration**:
-- Event bus: `batbern-{environment}-event-bus`
-- Event source: `ch.batbern.company`
-- Published events:
-  - `CompanyCreatedEvent`: When new company is created
-  - `CompanyUpdatedEvent`: When company data is modified
-  - `CompanyDeletedEvent`: When company is removed
-  - `CompanyVerifiedEvent`: When company verification status changes
+The service raises these domain events in process (`DomainEventPublisher`, shared kernel). No
+other service consumes them and there is no message bus (Story 17.2 part B, 2026-11):
 
-**Event Schema Example**:
-```json
-{
-  "companyName": "SwissITSolutions",
-  "name": "Swiss IT Solutions AG",
-  "industry": "Technology",
-  "isVerified": true,
-  "eventTimestamp": "2025-01-15T10:00:00Z"
-}
-```
-
-**Event Consumers**:
-- Partner Coordination Service: Updates partnership records
-- Event Management Service: Updates speaker/sponsor affiliations
-- Analytics Service: Tracks company engagement metrics
-- Notification Service: Sends verification status updates
+- `CompanyCreatedEvent`: When new company is created
+- `CompanyUpdatedEvent`: When company data is modified
+- `CompanyDeletedEvent`: When company is removed
+- `CompanyVerifiedEvent`: When company verification status changes
 
 ### Advanced Query Patterns
 

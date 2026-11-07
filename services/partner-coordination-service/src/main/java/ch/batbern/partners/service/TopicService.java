@@ -28,7 +28,7 @@ import java.util.UUID;
  * Business logic for partner topic suggestions and voting — Story 8.2.
  *
  * Design notes:
- * - No EventBridge events (removed from scope: AC table in story).
+ * - Publishes no domain events (removed from scope: AC table in story).
  * - companyName extracted from security context via User Service lookup (user.companyId).
  * - Vote toggle: idempotent castVote / removeVote (no exception on duplicate / missing).
  */

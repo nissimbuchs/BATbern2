@@ -17,8 +17,9 @@ measured how they call each other on develop `e7f76baf`:
   `/events/attendance-summary`).
 - **Contradictory rules.** ADR-008's 2026-10-27 update says callers no longer forward the user's token;
   `project-context.md` said clients must propagate it; the clients do forward it when one exists.
-- **No working event bus.** The EventBridge bus `batbern-staging` is deployed with 0 rules (checked
-  2026-11-07); five publishers send into it and nobody receives. Event propagation was stopped for cost.
+- **No working event bus.** The EventBridge bus `batbern-staging` had 0 rules (checked
+  2026-11-07); five publishers sent into it and nobody received. Event propagation was stopped for
+  cost. Story 17.2 part B (2026-11) removed the bus, its publishers and grants (see ADR-014).
 - **Not every call has a user.** EMS alone has 21 `@Scheduled` methods and 5 SQS listener classes;
   anonymous registration has no token either.
 

@@ -603,7 +603,7 @@ jobs:
         timeout-minutes: 40
         working-directory: ./infrastructure
         run: |
-          echo "🏗️  Layer 1: Infrastructure (Network, Secrets, EventBus, InboundEmail)"
+          echo "🏗️  Layer 1: Infrastructure (Network, Secrets, InboundEmail)"
           npm run deploy:staging:layer1-infrastructure --context version=${{ github.sha }}
         env:
           IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}

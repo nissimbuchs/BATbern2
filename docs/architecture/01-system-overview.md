@@ -163,7 +163,6 @@ flowchart LR
         S3M["S3 inbound mail bucket"]
         SQSIN["SQS inbound-email<br/>SQS forwarding-email"]
         SQSOUT["SQS bounce-processing<br/>SQS mail-delivery-status"]
-        EB["EventBridge bus<br/>batbern-staging<br/>no rules, no consumers"]
     end
 
     subgraph aws["AWS managed"]
@@ -192,7 +191,6 @@ flowchart LR
     SQSIN --> EMS
     SES -->|"SNS"| SQSOUT
     SQSOUT --> EMS
-    CUMS & PCS -.->|"PutEvents"| EB
     EMS --> OAI
     COG -.->|"triggers read and write user_profiles"| RDS
     CUMS -->|"AdminCreateUser"| COG
@@ -223,11 +221,12 @@ flowchart LR
    - `github-issues` (monitoring stack).
    - `EcsScalerFunction` (auto-shutdown stack, development environment only; not in production).
    - CloudFront Functions (not Lambdas): `spa-router` and `html-no-cache`.
-6. **EventBridge** is a bus that CUMS and PCS may publish to. CDK defines no rules or targets on
-   it. `EventBridgeEventPublisher` in the shared kernel first publishes each domain event as an
-   in-process Spring event (this is what drives the EMS listeners) and then sends it to
-   EventBridge, fire-and-forget. The EMS task role has no `events:PutEvents` grant in CDK, so EMS
-   puts presumably fail and are logged (not verified 2026-11-04).
+6. **No event bus.** Domain events stay in the service that raises them:
+   `SpringDomainEventPublisher` in the shared kernel hands each one to Spring's
+   `ApplicationEventPublisher`, which drives the EMS listeners. The EventBridge bus, its publisher
+   and the `events:PutEvents` grants were removed in Story 17.2 part B (2026-11), because nothing
+   consumed them. The only EventBridge use left is the EMS auto-publish rule grant on the default
+   bus (`event-management-stack.ts`).
 7. **The two stub services are gone from the code** (Story 17.2, 2026-11): the speaker and
    attendee stub modules, their CDK stack definitions, their entries in the CICD ECR list and the
    gateway route `/api/v1/content/**` were removed. In production the owner deletes the two
@@ -384,7 +383,7 @@ flowchart TB
   [06a-workflow-state-machines.md](./06a-workflow-state-machines.md).
 - **Domain events** are in-process: `DomainEventPublisher` raises a Spring event that
   `listener/` (for example `SpeakerAcceptedEventListener`, `EventWorkflowTransitionListener`)
-  consumes in the same JVM; the EventBridge copy has no consumers.
+  consumes in the same JVM. There is no cross-service event bus (Story 17.2 part B).
 - **Live timing** is REST polling with `If-None-Match` (Story 15.1,
   `GET /api/v1/events/{eventCode}/live-timing`, anonymous read, organizer-only actions). It
   replaced the STOMP broadcast. EMS still registers STOMP endpoints at `/ws` and
@@ -503,7 +502,7 @@ screen, Watch pairing, and the VPC-only `/internal/users` reads for other servic
 [04-api-user-management.md](./04-api-user-management.md).
 
 **Dependencies:** Cognito admin API, S3, SES through the shared-kernel `EmailService`
-(additional-email verification, profile claim), EMS (merge), EventBridge (publish only).
+(additional-email verification, profile claim), EMS (merge).
 
 **Technology:** Java 21, Spring Boot 4.0.x, Flyway (V1 to V22), Caffeine (`companySearch`,
 `userSearch`, 15-minute TTL), ShedLock.
@@ -523,8 +522,7 @@ the VPC-only `/internal/partner-meetings/rsvps`. See
 [04-api-partner-coordination.md](./04-api-partner-coordination.md).
 
 **Dependencies:** CUMS (companies, users), EMS (attendance summary, event data, and
-`/internal/mails` to record partner mail in the Mail Center), SES (meeting invitations),
-EventBridge (publish only).
+`/internal/mails` to record partner mail in the Mail Center), SES (meeting invitations).
 
 **Technology:** Java 21, Spring Boot 4.0.x, Flyway (V1 to V10).
 
@@ -559,7 +557,8 @@ attendee contributions (self-nomination, thanks, Q&A). Topic suggestions from at
 ### Shared Kernel
 
 Types (`EventWorkflowState`, `SpeakerWorkflowState`, identifiers), domain-event base classes and
-`EventBridgeEventPublisher`, security components (JWT role conversion with the local DB fallback,
+the in-process `SpringDomainEventPublisher`, the services' Jackson `ObjectMapper`
+(`SharedObjectMapperConfig`), security components (JWT role conversion with the local DB fallback,
 audit logging), slug and username generation (`SlugGenerationService`), mail helpers and the test
 fixtures shared by all services (for example the `EndpointAuthorizationGuard` used by each
 service's guard test). It also carries the Flyway baseline `V1__Initial_baseline.sql`
@@ -611,7 +610,7 @@ Prompts are editable in `ai_prompts`; calls are logged in `ai_generation_log`. S
 | Backend | Java 21, Spring Boot 4.0.x, Spring Security, Spring Data JPA, Flyway, Caffeine (in-process cache, no Redis), ShedLock |
 | API contracts | OpenAPI specs in `docs/api/*.openapi.yml`, code generated for Java and TypeScript ([ADR-006](./ADR-006-openapi-contract-first-code-generation.md)) |
 | Data | PostgreSQL 15 on RDS, one database; each service owns its tables via its own Flyway migrations |
-| Runtime | ECS Fargate on ARM64, Service Connect, S3 + CloudFront, Cognito, SES, SQS, EventBridge (publish only, no consumers) |
+| Runtime | ECS Fargate on ARM64, Service Connect, S3 + CloudFront, Cognito, SES, SQS |
 | Infrastructure | AWS CDK 2 (TypeScript), `infrastructure/` |
 | CI/CD | GitHub Actions; a PR against `develop` builds, deploys to production and runs Bruno and Playwright against it ([02-infrastructure-deployment.md](./02-infrastructure-deployment.md)) |
 

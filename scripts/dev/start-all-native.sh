@@ -277,11 +277,6 @@ EVENT_MANAGEMENT_SERVICE_URL="http://localhost:${EVENT_MGMT_PORT}"
 PARTNER_COORDINATION_SERVICE_URL="http://localhost:${PARTNER_COORD_PORT}"
 
 # ==============================================
-# EventBridge Configuration
-# ==============================================
-EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
-
-# ==============================================
 # MinIO Configuration (Instance ${INSTANCE})
 # ==============================================
 # MinIO provides S3-compatible API for local development

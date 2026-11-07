@@ -313,6 +313,10 @@ Frontend TypeScript types are regenerated with `npm run generate:api-types` afte
 
 ### Event-Driven Cross-Service Communication
 
+> **Superseded (2026-11).** This described an intent, not the system: no service consumed the
+> EventBridge bus, and it was removed in Story 17.2 part B. Cross-service work is synchronous
+> `/internal/**` HTTP (ADR-016); domain events stay in process.
+
 Services communicate via domain events over AWS EventBridge, not direct HTTP calls:
 
 ```java

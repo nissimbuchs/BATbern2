@@ -134,7 +134,7 @@ infrastructure/
 ├── bin/batbern-infrastructure.ts   # CDK app: instantiates all stacks
 ├── lib/
 │   ├── stacks/        # One file per stack: dns, network, secrets, database, bastion, storage,
-│   │                  # event-bus, monitoring, cicd, cognito, ses, inbound-email, cluster,
+│   │                  # monitoring, cicd, cognito, ses, inbound-email, cluster,
 │   │                  # event-management, partner-coordination,
 │   │                  # company-management, api-gateway-service,
 │   │                  # api-gateway, frontend (also used for FrontendBeta), auto-shutdown

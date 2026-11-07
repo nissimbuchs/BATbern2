@@ -1263,10 +1263,8 @@ authorization (`@PreAuthorize`).
 
 ```mermaid
 flowchart LR
-    SVC["Service code,<br/>e.g. EventWorkflowStateMachine"] -->|"publish"| PUB["EventBridgeEventPublisher<br/>shared kernel"]
-    PUB -->|"first: Spring ApplicationEvent"| LST["In-process listeners<br/>@EventListener,<br/>@TransactionalEventListener"]
-    PUB -->|"then: PutEvents, async,<br/>retry and circuit breaker"| EB["EventBridge bus"]
-    EB -.->|"no rules, no consumers"| NONE["nobody"]
+    SVC["Service code,<br/>e.g. EventWorkflowStateMachine"] -->|"publish"| PUB["SpringDomainEventPublisher<br/>shared kernel"]
+    PUB -->|"Spring ApplicationEvent"| LST["In-process listeners<br/>@EventListener,<br/>@TransactionalEventListener"]
 ```
 
 The shared kernel defines `DomainEvent<T>` with `eventId`, `aggregateId`, `eventType`, `userId`,
@@ -1274,7 +1272,8 @@ The shared kernel defines `DomainEvent<T>` with `eventId`, `aggregateId`, `event
 for example `EventWorkflowTransitionEvent`, `SpeakerAcceptedEvent`, `SessionTimingAssignedEvent`,
 `RegistrationCreatedEvent`, `CompanyCreatedEvent`, `UserUpdatedEvent`, `PartnerCreatedEvent`.
 
-Only the in-process path has consumers, and all of them are in EMS (for example
+Events stay in the process that raised them; there is no message bus (the unused EventBridge bus
+was removed in Story 17.2 part B, 2026-11). All listeners are in EMS (for example
 `EventWorkflowTransitionListener`, `SpeakerAcceptedEventListener`, `SessionQnaWindowListener`,
 `OrganizerNotificationListener`). No service consumes another service's events.
 

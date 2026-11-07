@@ -2,10 +2,10 @@
  * TeamActivityFeed Component (Enhanced with Notifications)
  *
  * Story BAT-7 - Notifications API Consolidation
- * AC: Display EventBridge-triggered notifications for organizers
+ * AC: Display notifications created from domain events for organizers
  *
  * Displays notifications from Event Management Service:
- * - EventBridge-triggered notifications (TASK_ASSIGNED, DEADLINE_WARNING, etc.)
+ * - notifications created from domain events (TASK_ASSIGNED, DEADLINE_WARNING, etc.)
  * - Mark as read functionality
  * - Real-time updates via React Query
  */

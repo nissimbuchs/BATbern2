@@ -51,25 +51,13 @@ dependencies {
     // usage so its compiled bytecode stays binary-compatible during the migration. BOM-managed.
     implementation 'org.springframework.boot:spring-boot-jackson2'
 
-    // AWS SDK for EventBridge, CloudWatch, Cognito, and SES
+    // AWS SDK for CloudWatch, Cognito, SES, STS and S3
     implementation platform('software.amazon.awssdk:bom:2.57.6')
-    implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:cloudwatch'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
     implementation 'software.amazon.awssdk:ses' // Email service (Story 2.2a Task B12)
     implementation 'software.amazon.awssdk:sts' // STS for role assumption in local dev
     implementation 'software.amazon.awssdk:s3' // S3Links: presigned links (#1187)
-
-    // Resilience4j for circuit breaker, bulkhead, and retry patterns
-    // Epic 13 (SB4): the Spring Boot integration module is renamed -spring-boot3 -> -spring-boot4.
-    implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
-    implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
-    implementation 'io.github.resilience4j:resilience4j-bulkhead:2.4.0'
-    implementation 'io.github.resilience4j:resilience4j-retry:2.4.0'
-    implementation 'io.github.resilience4j:resilience4j-reactor:2.4.0'
-
-    // ThreadFactoryBuilder for bounded thread pools
-    implementation 'com.google.guava:guava:33.6.0-jre'
 
     // Jakarta Mail for email MIME message creation (Story 2.2a Task B12)
     implementation 'org.eclipse.angus:angus-mail:2.0.3'
@@ -105,7 +93,6 @@ dependencies {
     // Epic 13 (SB4): testcontainers versions from the testcontainers-bom imported in the root
     // subprojects dependencyManagement block.
     testImplementation 'org.testcontainers:testcontainers'
-    testImplementation 'org.testcontainers:testcontainers-localstack'
     testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
 
     // Test Fixtures dependencies (exposed to consuming projects)

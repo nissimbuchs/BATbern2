@@ -117,3 +117,23 @@ Production cleanup is outside the PR and needs the owner's go at each step: drop
 after the deploy. The CICD stack's ECR repositories carry `DeletionPolicy: Retain` in production
 (`isProduction: true`), so removing them from the template leaves both repositories in the
 account; they have to be deleted by hand (`aws ecr delete-repository --force`) as well.
+
+## Operational state (2026-11, Story 17.2 part B)
+
+The event bus is removed from the code. Domain events stay in process: `DomainEventPublisher`
+keeps its `publish` method and its only implementation, `SpringDomainEventPublisher`, hands each
+event to Spring's `ApplicationEventPublisher` (what the EMS listeners always consumed). Removed:
+the EventBridge publisher and its configuration in the shared kernel, the
+`software.amazon.awssdk:eventbridge`, Resilience4j and Guava dependencies of the shared kernel,
+the local and test EventBridge mocks, the CDK stack `BATbern-staging-EventBus`, the bus import,
+`EVENT_BUS_NAME` and `events:PutEvents` grant of CUMS and PCS, the EMS grant on the
+never-created bus `batbern-events`, and the per-service `-EventBridge-Failures` alarms. The EMS
+auto-publish rule grants on the default bus stay.
+
+Found on the way: the bean `eventBridgeObjectMapper` was the only Jackson `ObjectMapper` bean in
+every service, so it has always been the mapper of the HTTP converters (API JSON is indented,
+`spring.jackson2.*` has no effect). It moved unchanged to the shared kernel as
+`SharedObjectMapperConfig`; API payloads stay byte-identical.
+
+Production cleanup after the deploy, with the owner's go: `delete-stack` the orphaned
+`BATbern-staging-EventBus` stack (CUMS and PCS no longer import its exports once deployed).

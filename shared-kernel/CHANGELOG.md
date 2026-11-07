@@ -5,6 +5,15 @@ All notable changes to the BATbern Shared Kernel will be documented in this file
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [Unreleased] — Story 17.2 part B (event bus removed)
+
+### Removed
+- `EventBridgeEventPublisher`, `EventBridgeConfig`, the `software.amazon.awssdk:eventbridge`, Resilience4j and Guava dependencies, the `aws.eventbridge.*` and `resilience4j.*` keys, `DateTimeUtils.formatForEventBridge`.
+- `DomainEventPublisher` methods without a caller: `publishAsync`, `publishBatch`, `publishWithRetry`, `createEventBridgeEntry`, `ensureEventBusExists`, `isDeadLetterQueueConfigured`.
+
+### Added
+- `SpringDomainEventPublisher`: hands domain events to Spring's `ApplicationEventPublisher`; a listener failure is logged at ERROR and does not fail the caller.
+
 ## [Unreleased] — speaker-workflow-refactor
 
 ### Removed

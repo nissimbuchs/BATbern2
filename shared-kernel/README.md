@@ -11,7 +11,7 @@ Shared domain types, events, and utilities for the BATbern platform microservice
 The Shared Kernel provides common Domain-Driven Design (DDD) building blocks that are shared across all BATbern platform microservices:
 
 - **Domain Value Objects**: Strongly-typed identifiers (EventId, SpeakerId, CompanyId, UserId)
-- **Domain Events**: Event sourcing support with EventBridge integration
+- **Domain Events**: in-process domain events (`DomainEventPublisher` → Spring `ApplicationEventPublisher`)
 - **Common Utilities**: Validation, error handling, logging, and date/time utilities
 - **Swiss Compliance**: Built-in Swiss timezone handling
 
@@ -19,7 +19,6 @@ The Shared Kernel provides common Domain-Driven Design (DDD) building blocks tha
 
 - Java 21 or higher
 - Gradle 8.5 or higher
-- AWS Account (for EventBridge integration)
 
 ## Installation
 
@@ -71,19 +70,15 @@ EventCreatedEvent event = EventCreatedEvent.builder()
     .organizerId("john.doe")
     .build();
 
-// Publish to EventBridge
+// Publish to the listeners in the same service (@EventListener, @TransactionalEventListener)
 @Autowired
 private DomainEventPublisher eventPublisher;
 
 eventPublisher.publish(event);
-
-// Async publishing
-CompletableFuture<Void> future = eventPublisher.publishAsync(event);
-
-// Batch publishing
-List<DomainEvent<?>> events = Arrays.asList(event1, event2, event3);
-eventPublisher.publishBatch(events);
 ```
+
+Events stay in the process: there is no message bus (Story 17.2 part B, ADR-014). A listener
+that throws is logged at ERROR and does not fail the caller.
 
 ### Validation Utilities
 
@@ -184,17 +179,6 @@ TemporalAccessor parsed = DateTimeUtils.parseFlexible("15.01.2024");
 # AWS Configuration
 aws:
   region: eu-central-1
-  eventbridge:
-    bus-name: batbern-events
-    source: batbern.event-management
-    retry:
-      max-attempts: 3
-      delay-ms: 1000
-
-# For LocalStack testing
-aws:
-  eventbridge:
-    endpoint: http://localhost:4566
 ```
 
 ### Environment Variables
@@ -206,9 +190,6 @@ export AWS_SECRET_ACCESS_KEY=your-secret-key
 
 # AWS Region
 export AWS_REGION=eu-central-1
-
-# EventBridge Configuration
-export AWS_EVENTBRIDGE_BUS_NAME=batbern-events
 ```
 
 ## Testing
@@ -229,22 +210,6 @@ export AWS_EVENTBRIDGE_BUS_NAME=batbern-events
 ./gradlew jacocoTestCoverageVerification
 ```
 
-### Integration Testing with LocalStack
-
-The project includes integration tests using LocalStack for AWS services:
-
-```java
-@Testcontainers
-@SpringBootTest
-class EventBridgeIntegrationTest {
-    @Container
-    static LocalStackContainer localStack = new LocalStackContainer()
-        .withServices(EVENTS);
-
-    // Tests run against LocalStack
-}
-```
-
 ## Architecture
 
 ### Domain-Driven Design
@@ -262,12 +227,10 @@ All domain events extend `DomainEvent` and include:
 - Occurrence timestamp
 - Correlation/causation IDs
 
-### AWS EventBridge Integration
+### In-process delivery
 
-Events are published to AWS EventBridge for cross-service communication:
-- Automatic retry with exponential backoff
-- Batch publishing support
-- Dead letter queue for failed events
+`SpringDomainEventPublisher` hands each event to Spring's `ApplicationEventPublisher`. Nothing
+leaves the service; cross-service calls go through `/internal/**` (ADR-016).
 
 ## Development
 

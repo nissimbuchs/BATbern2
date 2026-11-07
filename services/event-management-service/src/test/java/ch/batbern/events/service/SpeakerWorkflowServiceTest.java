@@ -763,7 +763,7 @@ class SpeakerWorkflowServiceTest {
                 .thenAnswer(inv -> inv.getArgument(0));
         when(eventRepository.findById(EVENT_ID)).thenReturn(Optional.of(seedEvent()));
 
-        org.mockito.Mockito.doThrow(new RuntimeException("EventBridge unavailable"))
+        org.mockito.Mockito.doThrow(new RuntimeException("listener failed"))
                 .when(domainEventPublisher).publish(any(SpeakerWorkflowStateChangeEvent.class));
 
         TransitionPayload payload = TransitionPayload.builder().build();

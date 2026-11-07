@@ -55,7 +55,6 @@ export const BOUNDARY_TYPES = new Set([
   'S3Presigner',
   'CognitoIdentityProviderClient',
   'SqsClient',
-  'EventBridgeClient',
   'Clock',
   'JwtDecoder',
 ]);

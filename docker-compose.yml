@@ -107,9 +107,6 @@ services:
       - DB_PASSWORD=${DB_PASSWORD}
       - DATABASE_URL=${DATABASE_URL}
 
-      # EventBridge Configuration
-      - EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
-
       # Cognito Configuration (AWS)
       - COGNITO_USER_POOL_ID=${COGNITO_USER_POOL_ID}
       - COGNITO_CLIENT_ID=${COGNITO_CLIENT_ID}
@@ -160,9 +157,6 @@ services:
 
       # Application Base URL (for email confirmation links)
       - APP_BASE_URL=${APP_BASE_URL:-http://localhost:3000}
-
-      # EventBridge Configuration
-      - EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
     volumes:
       - .:/workspace
       - event-management-gradle-cache:/gradle-cache
@@ -204,9 +198,6 @@ services:
       - DB_USER=${DB_USER}
       - DB_PASSWORD=${DB_PASSWORD}
       - DATABASE_URL=${DATABASE_URL}
-
-      # EventBridge Configuration
-      - EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
     volumes:
       - .:/workspace
       - partner-coordination-gradle-cache:/gradle-cache

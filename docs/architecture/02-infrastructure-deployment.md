@@ -89,7 +89,7 @@ graph TB
         CICD[CICD] ~~~ DNS["DNS, us-east-1"] ~~~ MON[Monitoring] ~~~ SES[SES]
     end
     subgraph L1["Layer 1: Infrastructure"]
-        NET[Network] ~~~ SEC[Secrets] ~~~ BUS[EventBus] ~~~ IN[InboundEmail]
+        NET[Network] ~~~ SEC[Secrets] ~~~ IN[InboundEmail]
     end
     subgraph L2["Layer 2: Data"]
         DB[Database] ~~~ STO[Storage] ~~~ BAS["Bastion, separate script"]
@@ -119,7 +119,6 @@ Reference: what each stack contains.
 | `Database` | RDS PostgreSQL 15, `db.t4g.micro`, Single-AZ, 20 GB, encrypted, deletion protection, 7-day backups. ElastiCache configured with 0 nodes, so not created |
 | `Bastion` | EC2 in a public subnet, reachable only via SSM Session Manager, for port-forwarding to RDS |
 | `Storage` | Buckets `batbern-content-*`, `batbern-logs-*`, `batbern-backups-*`; CloudFront for cdn.batbern.ch with the `image-resize` Lambda@Edge |
-| `EventBus` | EventBridge bus. CUMS and PCS may publish; no rules or consumers are defined |
 | `Monitoring` | SNS alarm topic, dashboards, RDS and SES alarms, alarm-to-GitHub-issue Lambda |
 | `CICD` | ECR repositories, GitHub OIDC deploy role |
 | `Cognito` | User pool, Lambda triggers, Google OIDC federation, hosted UI on auth.batbern.ch ([ADR-010](./ADR-010-federated-identity-via-cognito.md)) |

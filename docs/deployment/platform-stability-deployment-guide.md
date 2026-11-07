@@ -1,5 +1,9 @@
 # Platform Stability Improvements - Deployment Guide
 
+> **Historical (2026-01).** The EventBridge publisher, its Resilience4j wrapping and the
+> `-EventBridge-Failures` alarms described here were removed in Story 17.2 part B (2026-11);
+> domain events are in process only. See ADR-014.
+
 **Date**: 2026-01-10
 **Branch**: `fix/platform-stability-improvements` (to be created)
 **Status**: ✅ **Phases 1 & 2 COMPLETE** | 🔜 Phase 3 PENDING

@@ -195,7 +195,7 @@ export const EventManagementDashboard: React.FC = () => {
                 <TaskWidget organizerUsername={user?.username || ''} />
               </Paper>
 
-              {/* Notifications Feed - EventBridge Integration */}
+              {/* Notifications Feed - in-process domain events */}
               <Paper sx={{ p: 3 }} data-testid="team-activity-section">
                 <TeamActivityFeed
                   notifications={notificationsData?.data || []}

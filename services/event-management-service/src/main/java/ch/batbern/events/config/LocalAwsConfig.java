@@ -1,10 +1,6 @@
 package ch.batbern.events.config;
 
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.beans.factory.annotation.Qualifier;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.context.annotation.Primary;
@@ -16,14 +12,10 @@ import software.amazon.awssdk.services.cloudfront.CloudFrontClient;
 import software.amazon.awssdk.services.cloudfront.model.CreateInvalidationRequest;
 import software.amazon.awssdk.services.cloudfront.model.CreateInvalidationResponse;
 import software.amazon.awssdk.services.cloudfront.model.Invalidation;
-import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 
 import java.net.URI;
-import java.util.concurrent.CompletableFuture;
 
 /**
  * Local development configuration for AWS beans
@@ -32,7 +24,6 @@ import java.util.concurrent.CompletableFuture;
  *
  * Provides mock AWS clients for local development without requiring AWS credentials
  * This configuration is active when SPRING_PROFILES_ACTIVE=local
- * - EventBridge: Events are logged but not actually published
  * - S3: Connects to local MinIO instead of AWS S3
  */
 @Configuration
@@ -127,43 +118,6 @@ public class LocalAwsConfig {
     }
 
     /**
-     * Mock EventBridge client for local development
-     * Logs events instead of publishing to AWS
-     */
-    @Bean
-    @Primary
-    public EventBridgeAsyncClient eventBridgeAsyncClient() {
-        log.info("📨 [LOCAL] Using mock EventBridgeAsyncClient - events will be logged but not published");
-
-        return new EventBridgeAsyncClient() {
-            @Override
-            public String serviceName() {
-                return "eventbridge";
-            }
-
-            @Override
-            public void close() {
-                // No-op for mock
-            }
-
-            @Override
-            public CompletableFuture<PutEventsResponse> putEvents(PutEventsRequest request) {
-                log.info("📨 [LOCAL] Mock EventBridge - Would publish {} events", request.entries().size());
-                request.entries().forEach(entry ->
-                    log.debug("📨 [LOCAL] Event: source={}, detailType={}, detail={}",
-                        entry.source(), entry.detailType(), entry.detail())
-                );
-
-                PutEventsResponse successResponse = PutEventsResponse.builder()
-                    .failedEntryCount(0)
-                    .build();
-
-                return CompletableFuture.completedFuture(successResponse);
-            }
-        };
-    }
-
-    /**
      * Mock CloudFront client for local development
      * Story BAT-16 (AC6): CDN Cache Invalidation
      * Logs invalidation requests instead of actually invalidating CloudFront
@@ -203,19 +157,5 @@ public class LocalAwsConfig {
                         .build();
             }
         };
-    }
-
-    /**
-     * ObjectMapper for EventBridge event serialization
-     * Required by EventBridgeEventPublisher from shared-kernel
-     */
-    @Bean
-    @Qualifier("eventBridgeObjectMapper")
-    public ObjectMapper eventBridgeObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        return mapper;
     }
 }
