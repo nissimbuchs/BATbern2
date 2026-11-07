@@ -34,7 +34,7 @@
 # - Dev moves story to 'review', then runs code-review (fresh context, different LLM recommended)
 
 generated: 2026-02-21
-last_updated: 2026-11-04
+last_updated: 2026-11-07
 project: BATbern
 tracking_system: file-system
 story_location: _bmad-output/implementation-artifacts
@@ -311,6 +311,31 @@ development_status:
   16-12-html-in-java-mails-to-templates: backlog
   16-13-one-mail-value-for-email-service: backlog
   epic-16-retrospective: optional
+
+  # Epic 17: Architecture hardening — backlog, scope decided by owner 2026-11-07, each story needs owner go (docs/prd/epic-17-architecture-hardening.md)
+  # Order: 17.0a-d (test fidelity) alongside 17.1-17.5, then 16.8c (Epic 16, after 17.1), then 17.6-17.11, 17.12 (design, Winston), 17.13-17.16
+  epic-17: in-progress
+  17-0a-test-rules-and-ratchet: backlog  # test-fidelity proposal P1/P3/P4; owner go 2026-11-07
+  17-0b-s2s-contract-harness: backlog  # P2.1 + P2.4a-c; 17.6 waits for 17.0a + 17.0b
+  17-0c-frontend-msw-harness: backlog  # P2.2; needs 17.3 (shared matcher); 17.9 and 17.11 wait for 17.0c + 17.0d
+  17-0d-production-shaped-fixtures: backlog  # P2.3
+  17-1-dead-api-surface: ready-for-dev  # moved 2026-11-07 to the BMAD v7 tree: _bmad-output/initiative-architecture-hardening/ (Epic 17 is tracked there, not here)
+  17-2-dormant-infrastructure-stubs-and-event-bus: backlog  # prod infra, not on an event day; closes #1216, bus part of #1220
+  17-3-frontend-path-contract-check: ready-for-dev  # moved 2026-11-07 to the BMAD v7 tree (see 17-1)
+  17-4-openapi-lint-and-spec-diff-report: backlog
+  17-5-archunit-freeze: backlog
+  17-6-service-to-service-via-internal: backlog
+  17-7-user-reference-contract-and-request-pull: backlog
+  17-8-ems-pcs-direction: backlog
+  17-9-api-conventions-1: backlog
+  17-10-api-conventions-2: backlog
+  17-11-one-upload-contract-company-logo: backlog
+  17-12-ems-modularization-design: backlog  # design task for Winston, not a dev story
+  17-13-registrations-out-of-event-controller: backlog
+  17-14-domain-exception-base: backlog
+  17-15-mail-core-mail-center-split: backlog
+  17-16-event-core-extension-points: backlog
+  epic-17-retrospective: optional
 
   # Deferred-work backlog clusters (groomed 2026-06-07 — see deferred-work.md) — candidate stories,
   # not yet scheduled. Cluster A is a REQUIRED precondition for 12-10 (Apple/generic OIDC).

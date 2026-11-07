@@ -132,6 +132,7 @@ The architecture is governed by the ADRs in `docs/architecture/ADR-*.md`. ADR-01
 - **[ADR-013](./ADR-013-rest-api-crud-conventions.md)**: REST API CRUD Conventions
 - **[ADR-014](./ADR-014-backend-service-consolidation.md)**: Backend Service Consolidation. EMS + CUMS primary, partner-coordination separate, speaker-coordination and attendee-experience dormant (operational state 2026-11-04 appended)
 - **[ADR-015](./ADR-015-test-data-markers-and-email-send-guards.md)**: Test-Data Markers and Email Send-Guards
+- **[ADR-016](./ADR-016-service-directions-and-service-to-service-calls.md)**: Service Directions and Service-to-Service Calls. CUMS upstream of all, EMS upstream of PCS, `/internal` only, user JWT forwarded when present and never required, pull feeds instead of an event bus, profile merge as the one callback
 
 ### System Shape
 

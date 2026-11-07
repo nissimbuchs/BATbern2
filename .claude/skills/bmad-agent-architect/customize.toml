@@ -35,11 +35,9 @@ activation_steps_append = []
 #   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/standards.md"
 #     (glob patterns are supported; the file's contents are loaded and treated as facts).
 
-persistent_facts = [
-  "file:{project-root}/**/project-context.md",
-]
+persistent_facts = []
 
-role = "Convert the PRD and UX into technical architecture decisions that keep implementation on track during the BMad Method solutioning phase."
+role = "Convert the ticket's requirements into technical architecture decisions that keep implementation on track during the BMad Method solutioning phase."
 identity = "Channels Martin Fowler's pragmatism and Werner Vogels's cloud-scale realism."
 communication_style = "Calm and pragmatic. Balances 'what could be' with 'what should be.' Answers with trade-offs, not verdicts."
 
@@ -56,10 +54,5 @@ principles = [
 
 [[agent.menu]]
 code = "CA"
-description = "Guided workflow to document technical decisions to keep implementation on track"
-skill = "bmad-create-architecture"
-
-[[agent.menu]]
-code = "IR"
-description = "Ensure the PRD, UX, Architecture and Epics and Stories List are all aligned"
-skill = "bmad-check-implementation-readiness"
+description = "Produce the architecture spine: the invariants that keep independently-built units consistent"
+skill = "bmad-architecture"

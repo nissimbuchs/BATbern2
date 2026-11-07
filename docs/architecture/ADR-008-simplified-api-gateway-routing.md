@@ -275,6 +275,8 @@ PR #1147 (merged 2026-10-27) settled where each check lives:
 - **Service-to-service reads** go to VPC-only `/internal/**` endpoints without a JWT (for example
   CUMS `/internal/users`, partner-coordination `/internal/partner-meetings/rsvps`). The gateway
   does not route them. Callers no longer forward the end user's token.
+  **Superseded 2026-11-07 by ADR-016:** callers forward the user's JWT when there is one and never
+  require it; `/internal` authorizes by operation. (The clients had kept forwarding it all along.)
 
 ## Date
 2025-12-18 (updated 2026-06-02, 2026-10-27)

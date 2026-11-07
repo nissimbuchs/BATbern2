@@ -1,0 +1,423 @@
+<title>BATbern Architecture Review</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans+Condensed:wght@500;600&family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500&display=swap">
+<style>
+/* Layout: one reading column, figures break wider; verdict first, evidence after. */
+:root{
+  --bg:#f6f7f9; --panel:#ffffff; --fg:#1b2330; --muted:#5b6676; --line:#d5dae2;
+  --accent:#1f5fa8; --bad:#b4232c; --warn:#a86a00; --good:#2f7d4f;
+  --bad-bg:#fbe9ea; --warn-bg:#fbf1dc; --good-bg:#e5f3ea;
+  --display:"IBM Plex Sans Condensed","Arial Narrow",system-ui,sans-serif;
+  --body:"IBM Plex Sans",system-ui,-apple-system,"Segoe UI",sans-serif;
+  --mono:"IBM Plex Mono",ui-monospace,SFMono-Regular,Menlo,monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#12161d; --panel:#1a2029; --fg:#e3e8ef; --muted:#9aa5b4; --line:#2e3744;
+  --accent:#6fa8e8; --bad:#f07a80; --warn:#e2ad4a; --good:#6cc493;
+  --bad-bg:#3a1d21; --warn-bg:#3a2e17; --good-bg:#183224; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#12161d; --panel:#1a2029; --fg:#e3e8ef; --muted:#9aa5b4; --line:#2e3744;
+  --accent:#6fa8e8; --bad:#f07a80; --warn:#e2ad4a; --good:#6cc493;
+  --bad-bg:#3a1d21; --warn-bg:#3a2e17; --good-bg:#183224; color-scheme:dark}
+*{box-sizing:border-box}
+body{background:var(--bg);color:var(--fg);font:15px/1.6 var(--body);
+  padding-left:max(16px,env(safe-area-inset-left,0px));padding-right:max(16px,env(safe-area-inset-right,0px));padding-block:32px 64px}
+main{max-width:880px;margin:0 auto;display:flex;flex-direction:column;gap:40px}
+h1,h2,h3{font-family:var(--display);text-wrap:balance;line-height:1.2;margin:0}
+h1{font-size:2rem;font-weight:600}
+h2{font-size:1.35rem;font-weight:600;padding-bottom:6px;border-bottom:1px solid var(--line)}
+h3{font-size:1.05rem;font-weight:600}
+p{margin:0;max-width:68ch}
+section{display:flex;flex-direction:column;gap:14px}
+.eyebrow{font:500 12px/1 var(--mono);letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+code{font:13px var(--mono);background:var(--panel);border:1px solid var(--line);border-radius:3px;padding:0 4px;overflow-wrap:anywhere}
+.verdict{background:var(--panel);border:1px solid var(--line);border-left:4px solid var(--accent);padding:16px 18px;display:flex;flex-direction:column;gap:8px}
+.score{display:grid;grid-template-columns:1fr;gap:0;border:1px solid var(--line);background:var(--panel)}
+.score div.row{display:grid;grid-template-columns:minmax(0,13rem) 5.5rem minmax(0,1fr);gap:12px;padding:9px 14px;border-top:1px solid var(--line);align-items:baseline}
+.score div.row:first-child{border-top:0}
+.score .k{font-weight:600}
+.pill{font:600 11px/1 var(--mono);letter-spacing:.06em;text-transform:uppercase;padding:4px 7px;border-radius:2px;justify-self:start}
+.ok{color:var(--good);background:var(--good-bg)} .mid{color:var(--warn);background:var(--warn-bg)} .no{color:var(--bad);background:var(--bad-bg)}
+figure{margin:0;background:var(--panel);border:1px solid var(--line);padding:14px;display:flex;flex-direction:column;gap:10px}
+figure .wrap{overflow-x:auto}
+figure svg{display:block;width:100%;min-width:620px;height:auto;color:var(--fg)}
+figcaption{font-size:13.5px;color:var(--muted);max-width:none}
+.t{overflow-x:auto;border:1px solid var(--line);background:var(--panel)}
+table{border-collapse:collapse;width:100%;font-size:14px;min-width:620px}
+th,td{text-align:left;padding:8px 12px;border-top:1px solid var(--line);vertical-align:top}
+th{font:600 12px var(--mono);letter-spacing:.05em;text-transform:uppercase;color:var(--muted);border-top:0}
+td.n{font-variant-numeric:tabular-nums;font-family:var(--mono);white-space:nowrap}
+ol.recs{margin:0;padding-left:1.4em;display:flex;flex-direction:column;gap:12px;max-width:72ch}
+ol.recs li::marker{font-family:var(--mono);color:var(--muted)}
+ol.recs .meta{font:12px var(--mono);color:var(--muted)}
+ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;max-width:72ch}
+.foot{font-size:13px;color:var(--muted)}
+@media (max-width:560px){.score div.row{grid-template-columns:1fr;gap:4px}}
+</style>
+
+<main>
+<header style="display:flex;flex-direction:column;gap:10px">
+  <span class="eyebrow">BATbern · architecture review · 7 Nov 2026 · develop @ e7f76baf</span>
+  <h1>Sound context boundaries, one oversized context, and an API that has accreted</h1>
+</header>
+
+<section class="verdict">
+  <p><strong>Verdict.</strong> The three contexts are cut correctly. CUMS owns identity, PCS owns partners, EMS owns the event. Behind the APIs, functionality is reused well in places, mail sending above all. Three things have drifted:</p>
+  <ul class="plain">
+    <li>EMS has become the system: 74% of backend code, with no internal module boundaries.</li>
+    <li>The services call each other in both directions.</li>
+    <li>The OpenAPI surface has grown parallel endpoints for the same act: sending mail, uploading files, changing a task.</li>
+  </ul>
+  <p>None of this is urgent. Most of it is cheap to fix now and expensive in a year.</p>
+</section>
+
+<section class="verdict" style="border-left-color:var(--warn)">
+  <p><strong>Update, 7 Nov afternoon (develop @ 89b3618f).</strong> The figures below are from the morning snapshot. Re-measured after the rebase:</p>
+  <ul class="plain">
+    <li>342 operations (+13), and 100 EMS boundary violations.</li>
+    <li>One new near-duplicate: <code>/newsletter/my-subscriptions</code> next to <code>/newsletter/my-subscription</code>.</li>
+  </ul>
+  <p>Two corrections:</p>
+  <ul class="plain">
+    <li>The per-entity upload endpoints were allowed by an ADR-002 clarification. You decided to consolidate them anyway, and a new ADR-002 decision replaces that clarification.</li>
+    <li>All services share one database. EMS reads CUMS tables (<code>user_profiles</code>, <code>companies</code>) directly in SQL, and both services create <code>logos</code>. This is input for the database review.</li>
+  </ul>
+  <p>Decisions are recorded in ADR-016 and the ADR-003 amendment.</p>
+</section>
+
+<section>
+  <h2>Scorecard</h2>
+  <div class="score">
+    <div class="row"><span class="k">Context boundaries</span><span class="pill ok">holds</span><span>Identity, partners and event are separate and the split is right. ADR-014's consolidation held.</span></div>
+    <div class="row"><span class="k">Service coupling</span><span class="pill no">cycles</span><span>EMS↔CUMS and EMS↔PCS call each other. Service-to-service calls are split between <code>/internal</code> and the public API.</span></div>
+    <div class="row"><span class="k">EMS internal structure</span><span class="pill no">drifting</span><span>Still organized by layer. The modularization plan from May 2026 was never started.</span></div>
+    <div class="row"><span class="k">Reuse behind the API</span><span class="pill mid">mixed</span><span>Mail goes out through one service and topic suggestions share one pool. Uploads are built 8 separate times.</span></div>
+    <div class="row"><span class="k">API surface</span><span class="pill mid">bloated</span><span>329 operations. I estimate 60–70 could be cut by merging or deleting, about 20%.</span></div>
+    <div class="row"><span class="k">Contract-first</span><span class="pill mid">eroding</span><span>Hand-written mappings sit beside generated interfaces. One frontend call goes to a path that doesn't exist.</span></div>
+  </div>
+</section>
+
+<section>
+  <h2>1 · Who calls whom</h2>
+  <figure>
+    <div class="wrap">
+    <svg viewBox="0 0 760 370" role="img" aria-label="Context map: EMS calls CUMS and PCS, and both call back into EMS, forming two cycles. A dormant speaker-coordination stub still runs one task.">
+      <defs>
+        <marker id="a" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="currentColor"/></marker>
+        <marker id="ar" viewBox="0 0 10 10" refX="9" refY="5" markerWidth="7" markerHeight="7" orient="auto-start-reverse"><path d="M0,0 L10,5 L0,10 z" fill="var(--bad)"/></marker>
+      </defs>
+      <!-- EMS -->
+      <rect x="200" y="20" width="360" height="90" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/>
+      <text x="380" y="48" text-anchor="middle" font-family="var(--display)" font-size="17" font-weight="600" fill="currentColor">EMS · event-management</text>
+      <text x="380" y="70" text-anchor="middle" font-size="12" fill="var(--muted)">64,113 LOC · 74% of backend · 57 controllers</text>
+      <text x="380" y="88" text-anchor="middle" font-size="12" fill="var(--muted)">137 migrations · 14 of 20 specs</text>
+      <!-- dormant -->
+      <rect x="590" y="20" width="150" height="40" fill="none" stroke="var(--bad)" stroke-dasharray="4 3"/>
+      <text x="665" y="37" text-anchor="middle" font-size="11.5" fill="currentColor">speaker-coord (stub)</text>
+      <text x="665" y="52" text-anchor="middle" font-size="11" fill="var(--bad)">1 task running in prod</text>
+      <rect x="590" y="70" width="150" height="40" fill="none" stroke="var(--muted)" stroke-dasharray="4 3"/>
+      <text x="665" y="87" text-anchor="middle" font-size="11.5" fill="currentColor">attendee-exp (stub)</text>
+      <text x="665" y="102" text-anchor="middle" font-size="11" fill="var(--muted)">0 tasks, stack deployed</text>
+      <!-- CUMS -->
+      <rect x="20" y="260" width="280" height="90" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/>
+      <text x="160" y="290" text-anchor="middle" font-family="var(--display)" font-size="16" font-weight="600" fill="currentColor">CUMS · users, companies</text>
+      <text x="160" y="312" text-anchor="middle" font-size="12" fill="var(--muted)">15,404 LOC · 2 specs</text>
+      <text x="160" y="330" text-anchor="middle" font-size="12" fill="var(--muted)">identity, merge, Cognito</text>
+      <!-- PCS -->
+      <rect x="460" y="260" width="280" height="90" fill="var(--bg)" stroke="currentColor" stroke-width="1.5"/>
+      <text x="600" y="290" text-anchor="middle" font-family="var(--display)" font-size="16" font-weight="600" fill="currentColor">PCS · partners</text>
+      <text x="600" y="312" text-anchor="middle" font-size="12" fill="var(--muted)">6,825 LOC · 2 specs (+2 shared)</text>
+      <text x="600" y="330" text-anchor="middle" font-size="12" fill="var(--muted)">partners, meetings, topic pool</text>
+      <!-- EMS -> CUMS -->
+      <line x1="230" y1="110" x2="230" y2="258" stroke="currentColor" stroke-width="1.4" marker-end="url(#a)"/>
+      <text x="222" y="160" text-anchor="end" font-size="11.5" fill="currentColor">users, companies,</text>
+      <text x="222" y="175" text-anchor="end" font-size="11.5" fill="currentColor">provision, credentials</text>
+      <text x="222" y="190" text-anchor="end" font-size="11" fill="var(--muted)">public API + /internal</text>
+      <!-- CUMS -> EMS (cycle) -->
+      <line x1="280" y1="260" x2="280" y2="112" stroke="var(--bad)" stroke-width="1.6" marker-end="url(#ar)"/>
+      <text x="290" y="150" font-size="11.5" fill="var(--bad)">profile merge,</text>
+      <text x="290" y="165" font-size="11.5" fill="var(--bad)">merge requests</text>
+      <text x="290" y="180" font-size="11" fill="var(--muted)">/internal</text>
+      <!-- PCS -> EMS (cycle) -->
+      <line x1="480" y1="260" x2="480" y2="112" stroke="var(--bad)" stroke-width="1.6" marker-end="url(#ar)"/>
+      <text x="472" y="212" text-anchor="end" font-size="11.5" fill="var(--bad)">events,</text>
+      <text x="472" y="227" text-anchor="end" font-size="11.5" fill="var(--bad)">attendance summary</text>
+      <text x="472" y="242" text-anchor="end" font-size="11" fill="var(--muted)">public API, user JWT</text>
+      <!-- EMS -> PCS -->
+      <line x1="530" y1="110" x2="530" y2="258" stroke="currentColor" stroke-width="1.4" marker-end="url(#a)"/>
+      <text x="540" y="160" font-size="11.5" fill="currentColor">partners, topic</text>
+      <text x="540" y="175" font-size="11.5" fill="currentColor">suggestions, RSVPs</text>
+      <text x="540" y="190" font-size="11" fill="var(--muted)">public API + /internal</text>
+      <!-- PCS -> CUMS -->
+      <line x1="460" y1="318" x2="302" y2="318" stroke="currentColor" stroke-width="1.4" marker-end="url(#a)"/>
+      <text x="381" y="310" text-anchor="middle" font-size="11.5" fill="currentColor">users, companies</text>
+    </svg>
+    </div>
+    <figcaption>Red edges close a cycle. Every service pair calls in both directions except PCS→CUMS. Of the distinct URLs the client classes call, 9 go through <code>/internal</code> and 12 through the public API carrying the end user's token. That forces machine-only endpoints into the public spec: <code>/users/provision</code>, <code>/issue-invitation-credentials</code>, <code>PATCH /users/{u}/profile</code>, <code>/events/attendance-summary</code>.</figcaption>
+  </figure>
+  <p><strong>Why it matters.</strong> A cycle means neither service can be deployed, tested or reasoned about alone. The fix is to name one direction as upstream, and it needs no message bus. Downstream services pull from upstream through <code>/internal</code> feeds polled by a ShedLock job, which the platform already has. That is boring, replayable and costs nothing extra.</p>
+  <ul class="plain">
+    <li><strong>CUMS → EMS.</strong> The merge call stays synchronous. EMS can block a merge and must return the preview counts, which an event can't do. Make the dependency a contract CUMS owns: <code>/internal/user-references/preview|merge</code>. Every service that stores usernames implements it, so CUMS doesn't know EMS by name. PCS stores usernames too and isn't covered by the merge today. The merge-request conversations flip direction: the Mail Center pulls open requests from CUMS.</li>
+    <li><strong>EMS ↔ PCS.</strong> EMS is upstream, because partners consume events. The topic canvas gets partner topics from PCS in the frontend, not via EMS. Calendar RSVPs land in EMS's inbound mail. PCS pulls them from an <code>/internal</code> feed instead of EMS pushing them. PCS → EMS (event summary, attendance) remains, through <code>/internal</code>.</li>
+  </ul>
+  <p class="foot">Checked: the EventBridge bus <code>batbern-staging</code> is still deployed with 0 rules. Five services (CUMS, PCS, EMS workflow and speaker workflow) still publish into it, and those events reach nobody.</p>
+</section>
+
+<section>
+  <h2>2 · EMS is one context with ten sub-domains and no walls</h2>
+  <figure>
+    <div class="wrap">
+    <svg viewBox="0 0 760 250" role="img" aria-label="Left: EMS today is organized by technical layer, with five vertical packages. Right: the target, nine domain modules with enforced boundaries.">
+      <text x="20" y="20" font-family="var(--mono)" font-size="11" letter-spacing="1" fill="var(--muted)">TODAY · BY LAYER</text>
+      <rect x="20" y="34" width="330" height="36" fill="var(--bad-bg)" stroke="var(--bad)"/>
+      <text x="32" y="57" font-size="12.5" fill="currentColor">controller/ · 48 files · EventController 2,697 lines</text>
+      <rect x="20" y="76" width="330" height="36" fill="var(--bad-bg)" stroke="var(--bad)"/>
+      <text x="32" y="99" font-size="12.5" fill="currentColor">service/ · 104 files</text>
+      <rect x="20" y="118" width="330" height="36" fill="var(--bad-bg)" stroke="var(--bad)"/>
+      <text x="32" y="141" font-size="12.5" fill="currentColor">repository/ · 45 files · entity/ · domain/</text>
+      <text x="20" y="180" font-size="11.5" fill="var(--muted)">already vertical:</text>
+      <g font-size="11" fill="currentColor">
+        <rect x="20" y="190" width="72" height="22" fill="var(--good-bg)" stroke="var(--good)"/><text x="56" y="205" text-anchor="middle">mailcenter</text>
+        <rect x="98" y="190" width="72" height="22" fill="var(--good-bg)" stroke="var(--good)"/><text x="134" y="205" text-anchor="middle">forwarding</text>
+        <rect x="176" y="190" width="72" height="22" fill="var(--good-bg)" stroke="var(--good)"/><text x="212" y="205" text-anchor="middle">usermerge</text>
+        <rect x="254" y="190" width="44" height="22" fill="var(--good-bg)" stroke="var(--good)"/><text x="276" y="205" text-anchor="middle">watch</text>
+        <rect x="304" y="190" width="46" height="22" fill="var(--good-bg)" stroke="var(--good)"/><text x="327" y="205" text-anchor="middle">notif.</text>
+      </g>
+      <line x1="364" y1="125" x2="400" y2="125" stroke="currentColor" stroke-width="1.4" marker-end="url(#a)"/>
+      <text x="410" y="20" font-family="var(--mono)" font-size="11" letter-spacing="1" fill="var(--muted)">TARGET · BY DOMAIN, ARCHUNIT-ENFORCED</text>
+      <g font-size="12" fill="currentColor" text-anchor="middle">
+        <rect x="410" y="34" width="105" height="50" fill="none" stroke="currentColor"/><text x="462" y="56">event core</text><text x="462" y="72" font-size="10.5" fill="var(--muted)">workflow, publish</text>
+        <rect x="522" y="34" width="105" height="50" fill="none" stroke="currentColor"/><text x="574" y="56">sessions</text><text x="574" y="72" font-size="10.5" fill="var(--muted)">agenda, Q&amp;A, live</text>
+        <rect x="634" y="34" width="105" height="50" fill="none" stroke="currentColor"/><text x="686" y="56">speakers</text><text x="686" y="72" font-size="10.5" fill="var(--muted)">pool, portal</text>
+        <rect x="410" y="92" width="105" height="50" fill="none" stroke="currentColor"/><text x="462" y="114">registrations</text><text x="462" y="130" font-size="10.5" fill="var(--muted)">waitlist, badges</text>
+        <rect x="522" y="92" width="105" height="50" fill="none" stroke="currentColor"/><text x="574" y="114">mail</text><text x="574" y="130" font-size="10.5" fill="var(--muted)">center, newsletter</text>
+        <rect x="634" y="92" width="105" height="50" fill="none" stroke="currentColor"/><text x="686" y="114">topics &amp; AI</text><text x="686" y="130" font-size="10.5" fill="var(--muted)">clusters, prompts</text>
+        <rect x="410" y="150" width="105" height="50" fill="none" stroke="currentColor"/><text x="462" y="172">tasks</text><text x="462" y="188" font-size="10.5" fill="var(--muted)">templates, cockpit</text>
+        <rect x="522" y="150" width="105" height="50" fill="none" stroke="currentColor"/><text x="574" y="172">media</text><text x="574" y="188" font-size="10.5" fill="var(--muted)">photos, teasers</text>
+        <rect x="634" y="150" width="105" height="50" fill="none" stroke="currentColor"/><text x="686" y="172">analytics</text><text x="686" y="188" font-size="10.5" fill="var(--muted)">read-only</text>
+      </g>
+      <text x="410" y="228" font-size="11.5" fill="var(--muted)">one deployable · public API per module · no cross-module repository access</text>
+    </svg>
+    </div>
+    <figcaption>File counts per package directory on develop today. The May 2026 plan (<code>docs/plans/ems-modularization-extension-points.md</code>) quoted 39 controllers, about 78 services and migration V107. I don't know how it counted, so the growth to 48 / 104 / V137 is indicative, not exact.</figcaption>
+  </figure>
+  <p>Splitting EMS into more services would be the wrong move: every one of these modules reads the event. The right move is walls inside one deployable. Five packages already show the pattern works. Registration is the most tangled: 14 of its endpoints are hand-mapped inside <code>EventController</code>.</p>
+</section>
+
+<section>
+  <h2>3 · Reuse behind the API: mail yes, uploads no</h2>
+  <figure>
+    <div class="wrap">
+    <svg viewBox="0 0 760 330" role="img" aria-label="Mail: five audience-send endpoints converge on one EmailService before SES. Uploads: seven upload flows each run their own presign service to S3.">
+      <text x="20" y="18" font-family="var(--mono)" font-size="11" letter-spacing="1" fill="var(--good)">MAIL · CONVERGES</text>
+      <g font-size="11.5" fill="currentColor">
+        <rect x="20" y="28" width="230" height="20" fill="none" stroke="var(--line)"/><text x="28" y="42">POST /events/{c}/mails (Mail Center)</text>
+        <rect x="20" y="52" width="230" height="20" fill="none" stroke="var(--line)"/><text x="28" y="66">…/newsletter/send + preview</text>
+        <rect x="20" y="76" width="230" height="20" fill="none" stroke="var(--line)"/><text x="28" y="90">…/registrant-notices/send + preview</text>
+        <rect x="20" y="100" width="230" height="20" fill="none" stroke="var(--line)"/><text x="28" y="114">…/venue-coordination/send + preview</text>
+        <rect x="20" y="124" width="230" height="20" fill="none" stroke="var(--line)"/><text x="28" y="138">…/slides-online/send (no UI caller)</text>
+      </g>
+      <g stroke="currentColor" stroke-width="1.1" fill="none">
+        <path d="M250,38 C330,38 330,86 400,86"/><path d="M250,62 C330,62 330,86 400,86"/><path d="M250,86 L400,86"/>
+        <path d="M250,110 C330,110 330,86 400,86"/><path d="M250,134 C330,134 330,86 400,86"/>
+      </g>
+      <rect x="400" y="68" width="140" height="36" fill="var(--good-bg)" stroke="var(--good)"/>
+      <text x="470" y="91" text-anchor="middle" font-size="12.5" fill="currentColor">EmailService</text>
+      <line x1="540" y1="86" x2="628" y2="86" stroke="currentColor" stroke-width="1.4" marker-end="url(#a)"/>
+      <rect x="630" y="68" width="110" height="36" fill="none" stroke="currentColor"/>
+      <text x="685" y="91" text-anchor="middle" font-size="12.5" fill="currentColor">SES</text>
+
+      <text x="20" y="178" font-family="var(--mono)" font-size="11" letter-spacing="1" fill="var(--bad)">UPLOADS · SEVEN PARALLEL PIPES</text>
+      <g font-size="11.5" fill="currentColor">
+        <text x="20" y="200">company logos</text><text x="20" y="218">profile picture (me)</text><text x="20" y="236">profile picture (admin)</text>
+        <text x="20" y="254">event photos</text><text x="20" y="272">teaser images</text><text x="20" y="290">session materials</text><text x="20" y="308">speaker-portal materials</text>
+      </g>
+      <g stroke="var(--bad)" stroke-width="1.1">
+        <line x1="190" y1="196" x2="400" y2="196"/><line x1="190" y1="214" x2="400" y2="214"/><line x1="190" y1="232" x2="400" y2="232"/>
+        <line x1="190" y1="250" x2="400" y2="250"/><line x1="190" y1="268" x2="400" y2="268"/><line x1="190" y1="286" x2="400" y2="286"/><line x1="190" y1="304" x2="400" y2="304"/>
+      </g>
+      <g fill="var(--bad-bg)" stroke="var(--bad)">
+        <rect x="400" y="189" width="140" height="14"/><rect x="400" y="207" width="140" height="14"/><rect x="400" y="225" width="140" height="14"/>
+        <rect x="400" y="243" width="140" height="14"/><rect x="400" y="261" width="140" height="14"/><rect x="400" y="279" width="140" height="14"/><rect x="400" y="297" width="140" height="14"/>
+      </g>
+      <text x="470" y="182" text-anchor="middle" font-size="11" fill="var(--muted)">own presign + confirm each</text>
+      <g stroke="currentColor" stroke-width="1" fill="none">
+        <path d="M540,196 C590,196 590,250 628,250"/><path d="M540,214 C590,214 590,250 628,250"/><path d="M540,232 C590,232 590,250 628,250"/>
+        <path d="M540,250 L628,250"/><path d="M540,268 C590,268 590,250 628,250"/><path d="M540,286 C590,286 590,250 628,250"/><path d="M540,304 C590,304 590,250 628,250"/>
+      </g>
+      <rect x="630" y="232" width="110" height="36" fill="none" stroke="currentColor"/>
+      <text x="685" y="255" text-anchor="middle" font-size="12.5" fill="currentColor">S3</text>
+    </svg>
+    </div>
+    <figcaption>Mail: <code>EmailService</code> is the only class that calls SES, so the backend already reuses one path. The API on top still has five send endpoints and four preview endpoints. Uploads: eight service classes each build their own presigned URL and confirm step. Correction (7 Nov): ADR-002's 2026-03 clarification makes per-entity upload endpoints the intended pattern, so this is repeated mechanics, not a violation of ADR-002.</figcaption>
+  </figure>
+  <p>Reuse that did happen: attendee "topics from the floor" feed the same suggestion pool as partners. The Mail Center put every outbound mail in one log. Authorization lives in the services, with a guard test.</p>
+</section>
+
+<section>
+  <h2>4 · Where the API repeats itself</h2>
+  <div class="t"><table>
+    <thead><tr><th>Cluster</th><th>Today</th><th>Ops</th><th>Converge to</th></tr></thead>
+    <tbody>
+      <tr><td>Dead specs</td><td><code>speakers-api</code> duplicates <code>event-speakers-api</code> one-to-one; <code>attendees-api</code> is implemented nowhere (ADR-014)</td><td class="n">17</td><td>delete both specs</td></tr>
+      <tr><td>Orphan endpoints</td><td><code>logos/fetch-from-url</code>, <code>speakers/invite-batch</code>, <code>admin/backfill-speaker-names</code>, <code>slides-online/send</code>, <code>sessions/…/materials/upload-from-url</code>, <code>publish/preview</code></td><td class="n">6</td><td>delete</td></tr>
+      <tr><td>Audience mail</td><td>5 send, 4 preview, 2 retry, 2 history endpoints across newsletter, notices, venue and Mail Center</td><td class="n">13</td><td><code>/events/{c}/mails</code> with an audience/template kind (already planned as Story 16.8c)</td></tr>
+      <tr><td>Uploads</td><td>7 presign+confirm pairs, 3 upload-from-url</td><td class="n">17</td><td><code>/uploads/{purpose}</code> + <code>/confirm</code> + <code>/import</code>, routed by purpose to the owning service (ADR-002 decision, 7 Nov)</td></tr>
+      <tr><td>Me vs. admin twins</td><td>picture ×6, <code>PUT /users/{u}</code> + <code>PATCH /users/{u}/profile</code> + <code>PATCH /users/me</code></td><td class="n">9</td><td><code>me</code> as an alias for <code>{username}</code>, authorized by ownership</td></tr>
+      <tr><td>Settings</td><td>4 resources in 2 services: <code>admin/settings</code>, <code>public/settings/features</code>, <code>settings/presentation</code>, <code>users/me/settings</code> + <code>/preferences</code></td><td class="n">9</td><td>one app-settings resource (EMS), one user resource (merge settings and preferences)</td></tr>
+      <tr><td>Task state</td><td><code>PUT complete</code>, <code>PUT reassign</code>, <code>PUT status</code>, <code>PATCH</code></td><td class="n">4</td><td><code>PATCH /tasks/{id}</code></td></tr>
+      <tr><td>Speaker identity in paths</td><td><code>{speakerId}</code> (18), <code>{speakerPoolId}</code> under <code>/speaker-pool/</code> (2), <code>{username}</code> under <code>/speakers/</code> (1), for the same pool entry</td><td class="n">21</td><td>one prefix, one key</td></tr>
+      <tr><td>Registration entry points</td><td><code>registrations</code>, <code>my-registration</code>, <code>participants</code>, <code>enroll-stakeholders</code>, <code>batch_registrations</code> (snake_case)</td><td class="n">5</td><td>keep actor-specific ones, fold batch and stakeholders into <code>participants</code></td></tr>
+    </tbody>
+  </table></div>
+  <p>About 60–70 operations disappear if all of this is done. The figure is my estimate from the counts above, not a measurement. Two smaller conventions are worth a decision rather than a rewrite:</p>
+  <ul class="plain">
+    <li><strong>UUIDs in public paths.</strong> See section 5. Almost all of them are legitimate exceptions, and the rule needs wording, not code changes.</li>
+    <li><strong>Literal segments under <code>/events/</code>.</strong> Six segments (<code>types</code>, <code>current</code>, <code>registrations</code>, <code>recent-photos</code>, …) share the namespace with <code>{eventCode}</code>. An event can never be called <code>types</code>.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>5 · UUIDs in paths: the rule and its exceptions</h2>
+  <p>I agree with you. A sub-entity that exists only inside its parent has nothing a person would call it by, and an invented slug would be noise. There are three more cases where a UUID is the better choice, not just a tolerated one. I propose ADR-003 says this:</p>
+  <div class="verdict" style="border-left-color:var(--good)">
+    <p><strong>A meaningful ID is required</strong> for anything referenced from another service, stored in another service, or bookmarked and spoken by people: events, users, companies, sessions, topics.</p>
+    <p><strong>A UUID is allowed</strong> when all three hold:</p>
+    <ul class="plain">
+      <li>The thing has no natural name.</li>
+      <li>It never crosses a service boundary.</li>
+      <li>It sits in the path under its meaningful parent, and the service loads it scoped to that parent.</li>
+    </ul>
+  </div>
+  <div class="t"><table>
+    <thead><tr><th>Case</th><th>Examples on develop</th><th>Ops</th><th>Verdict</th></tr></thead>
+    <tbody>
+      <tr><td>Owned child, nested under its parent</td><td>event photos, teaser images, thank-you notes, Q&amp;A posts, session materials, partner notes, newsletter sends, watch pairing, speaker-pool entries (no username before READY)</td><td class="n">24</td><td><span class="pill ok">your exception</span></td></tr>
+      <tr><td>Transient technical handle</td><td><code>uploadId</code>, merge <code>requestId</code>: lives for hours or days, only the creator holds it</td><td class="n">6</td><td><span class="pill ok">allowed</span></td></tr>
+      <tr><td>The natural key is personal data</td><td>newsletter subscribers: the natural key is an e-mail address, which must not appear in URLs or access logs</td><td class="n">4</td><td><span class="pill ok">UUID required</span></td></tr>
+      <tr><td>Top-level aggregate with no name and no parent</td><td>tasks (also listed across events), task templates, partner meetings, topic suggestions, notifications (owner-checked)</td><td class="n">19</td><td><span class="pill ok">allowed</span></td></tr>
+      <tr><td>Child escaped from its parent</td><td><code>POST /speakers/{speakerId}/ai/analyze-abstract</code>: a pool entry without its event</td><td class="n">1</td><td><span class="pill no">nest under event</span></td></tr>
+    </tbody>
+  </table></div>
+  <p class="foot">Totals: 54 live operations, 1 violation. The dead specs are excluded. The scoping condition is the one that matters for security: without it, a valid UUID from another event can be edited or deleted through this event's path. I checked 5 of the 24 nested cases (photos, teaser images, materials, partner notes, thank-you notes) and all 5 scope correctly. Materials check the session slug, which has a unique constraint (V4). A shared <code>findByIdAnd{Parent}</code> convention plus one test per nested resource would make this a rule rather than a habit.</p>
+</section>
+
+<section>
+  <h2>6 · EMS module map and where it is violated today</h2>
+  <figure>
+    <div class="wrap">
+    <svg viewBox="0 0 780 490" role="img" aria-label="Proposed EMS modules in seven layers; dependencies may only point downward. Red arrows show the largest current upward dependencies: EventController into registrations and sessions, GlobalExceptionHandler into domain exceptions, and the mail core into the mail center.">
+      <g font-family="var(--mono)" font-size="10.5" fill="var(--muted)" letter-spacing=".5">
+        <text x="10" y="42">L6 edge</text><text x="10" y="112">L5 compose</text><text x="10" y="182">L4</text>
+        <text x="10" y="252">L3 domain</text><text x="10" y="322">L2 kernel</text><text x="10" y="392">L1 shared svc</text><text x="10" y="462">L0 platform</text>
+      </g>
+      <g font-size="12" text-anchor="middle" fill="currentColor">
+        <!-- L6 -->
+        <rect x="120" y="20" width="150" height="36" fill="none" stroke="currentColor"/><text x="195" y="43">mail center · 92</text>
+        <rect x="276" y="20" width="90" height="36" fill="none" stroke="currentColor"/><text x="321" y="43">watch · 27</text>
+        <rect x="372" y="20" width="70" height="36" fill="none" stroke="currentColor"/><text x="407" y="43">ai · 9</text>
+        <rect x="448" y="20" width="90" height="36" fill="none" stroke="currentColor"/><text x="493" y="43">analytics · 4</text>
+        <rect x="544" y="20" width="96" height="36" fill="none" stroke="currentColor"/><text x="592" y="43">usermerge · 4</text>
+        <rect x="646" y="20" width="110" height="36" fill="none" stroke="currentColor"/><text x="701" y="43">org notify · 5</text>
+        <!-- L5 -->
+        <rect x="120" y="90" width="180" height="36" fill="none" stroke="currentColor"/><text x="210" y="113">agenda planning · 15</text>
+        <rect x="306" y="90" width="180" height="36" fill="none" stroke="currentColor"/><text x="396" y="113">publishing · 11</text>
+        <!-- L4 -->
+        <rect x="120" y="160" width="366" height="36" fill="none" stroke="currentColor"/><text x="303" y="183">speakers · 64</text>
+        <!-- L3 -->
+        <rect x="120" y="230" width="130" height="36" fill="none" stroke="currentColor"/><text x="185" y="253">sessions · 64</text>
+        <rect x="256" y="230" width="140" height="36" fill="none" stroke="currentColor"/><text x="326" y="253">registrations · 36</text>
+        <rect x="402" y="230" width="90" height="36" fill="none" stroke="currentColor"/><text x="447" y="253">topics · 18</text>
+        <rect x="498" y="230" width="80" height="36" fill="none" stroke="currentColor"/><text x="538" y="253">tasks · 11</text>
+        <rect x="584" y="230" width="90" height="36" fill="none" stroke="currentColor"/><text x="629" y="253">media · 17</text>
+        <!-- L2 -->
+        <rect x="120" y="300" width="300" height="36" fill="none" stroke="currentColor" stroke-width="1.6"/><text x="270" y="323">event core · 51 (event, workflow, types)</text>
+        <!-- L1 -->
+        <rect x="120" y="370" width="180" height="36" fill="none" stroke="currentColor"/><text x="210" y="393">mail core · 23</text>
+        <rect x="306" y="370" width="114" height="36" fill="none" stroke="currentColor"/><text x="363" y="393">notify core · 5</text>
+        <!-- L0 -->
+        <rect x="120" y="440" width="300" height="36" fill="none" stroke="currentColor"/><text x="270" y="463">platform · 33 (config, security, clients)</text>
+      </g>
+      <!-- allowed sample -->
+      <line x1="540" y1="196" x2="540" y2="228" stroke="var(--muted)" stroke-width="1" stroke-dasharray="3 3" marker-end="url(#a)" opacity=".7"/>
+      <!-- violations -->
+      <line x1="185" y1="300" x2="185" y2="268" stroke="var(--bad)" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="191" y="290" font-size="11.5" fill="var(--bad)">13</text>
+      <line x1="326" y1="300" x2="326" y2="268" stroke="var(--bad)" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="332" y="290" font-size="11.5" fill="var(--bad)">13</text>
+      <text x="428" y="323" font-size="11.5" fill="var(--bad)">← EventController: 27 refs upward</text>
+      <path d="M420,458 H760 V248 H676" fill="none" stroke="var(--bad)" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="752" y="352" text-anchor="end" font-size="11.5" fill="var(--bad)">16 · GlobalExceptionHandler</text>
+      <text x="752" y="367" text-anchor="end" font-size="11" fill="var(--muted)">knows every domain exception</text>
+      <path d="M120,388 H108 V38 H118" fill="none" stroke="var(--bad)" stroke-width="2" marker-end="url(#ar)"/>
+      <text x="124" y="78" font-size="11.5" fill="var(--bad)">10 · mail core → mail center</text>
+    </svg>
+    </div>
+    <figcaption>Each box shows the module and its class count. Dependencies may point only downward, and modules in the same layer must not depend on each other. Today 50 module pairs follow that rule and 28 break it, through 101 class references. Ten classes cause 71 of those 101, so the map is close to true already.</figcaption>
+  </figure>
+  <p>Two cuts differ from section 2. Both came out of the measurement:</p>
+  <ul class="plain">
+    <li><strong>Mail splits in two.</strong> <em>Mail core</em> is the pipeline every domain uses: rendering, variables, sending, delivery status. <em>Mail center</em> composes, forwards and runs conversations, and is allowed to read the domains.</li>
+    <li><strong>Agenda planning and publishing move above speakers.</strong> They are the only places that join sessions with the speaker pool. Without this split, sessions and speakers would depend on each other through 17 references.</li>
+  </ul>
+  <div class="t"><table>
+    <thead><tr><th>Hotspot</th><th>Refs</th><th>Fix</th></tr></thead>
+    <tbody>
+      <tr><td><code>EventController</code></td><td class="n">27</td><td>Move the 14 hand-mapped registration endpoints to a registrations controller. Move publishing, media and AI calls to their own controllers.</td></tr>
+      <tr><td><code>GlobalExceptionHandler</code></td><td class="n">16</td><td>Give domain exceptions a shared base carrying status and code, handled once. The handler then imports none of them.</td></tr>
+      <tr><td><code>MailDeliveryStatusService</code>, <code>MailPipeline</code>, <code>ModeratorReplyAddress</code></td><td class="n">11</td><td>Move delivery-status projection into the mail center. The core publishes an event, the center listens.</td></tr>
+      <tr><td><code>EventTimeResolver</code>, <code>EventWorkflowStateMachine</code></td><td class="n">5</td><td>Workflow guards become an interface in event core, implemented by sessions and speakers. This is the extension point from the May plan.</td></tr>
+      <tr><td><code>TopicSessionDataService</code>, <code>BatbernAiService</code></td><td class="n">9</td><td>Move to topics and to ai respectively. Both sit in the wrong module today.</td></tr>
+      <tr><td><code>Event → Registration</code> JPA association</td><td class="n">1</td><td>Make it one-directional: a registration knows its event, the event doesn't hold its registrations.</td></tr>
+    </tbody>
+  </table></div>
+  <p><strong>Enforcement.</strong> One ArchUnit test using <code>layeredArchitecture()</code> over the module packages, with the 101 current references frozen as known violations (<code>FreezingArchRule</code>). New violations fail the build from day one, and the frozen list can only shrink. This needs the classes moved into module packages first. The cheaper first step is a test over the five packages that are already vertical.</p>
+  <p class="foot">Method: each of the 489 EMS classes was assigned to a module by name and package (rules in <code>scripts/architecture/ems-module-deps.py</code> on the review branch). A reference is any EMS class name appearing in another class's code, comments excluded. About 30 classes were assigned by hand. The counts depend on these assignments, so treat them as a map, not a census.</p>
+</section>
+
+<section>
+  <h2>7 · Recommendations, in order</h2>
+  <ol class="recs">
+    <li><strong>Delete dead surface.</strong> Two specs, six orphan endpoints, the dead <code>fetchPreview</code> hook. <span class="meta">Low effort. Removes about 25 ops. Stopping the speaker-coordination ECS task and removing the subscriber-less EventBridge bus and its publishers are production changes, so they are your decision.</span></li>
+    <li><strong>Add a contract guard for frontend paths.</strong> Fail the build when a frontend service calls a path the spec doesn't have. This would have caught <code>GET /publish/{phase}/preview</code>, which exists in neither the spec nor the backend. <span class="meta">Low effort. Stops the drift from coming back.</span></li>
+    <li><strong>Finish 16.8c.</strong> Fold newsletter, notice, venue and slides sends into the Mail Center endpoint. <span class="meta">Already planned and gated on your go.</span></li>
+    <li><strong>Break the cycles.</strong> Service-to-service calls go through <code>/internal</code> only. Move the four machine-only endpoints out of the public spec. Downstream pulls feeds, and the merge becomes a CUMS-owned contract (section 1). <span class="meta">Medium effort. No new infrastructure.</span></li>
+    <li><strong>One upload contract.</strong> <code>/uploads/{purpose}</code> in every service, with mechanics in shared-kernel and one handler per purpose. Migrate one purpose per story. <span class="meta">Medium effort. 11 operations become 3; decided 7 Nov.</span></li>
+    <li><strong>Wall EMS from the inside</strong> along the module map in section 6. Freeze the 101 current violations in ArchUnit, then work down the hotspots, starting with <code>EventController</code> and <code>GlobalExceptionHandler</code>. <span class="meta">Incremental, never a big bang.</span></li>
+    <li><strong>Settle the conventions.</strong> Amend ADR-003 with the rule from section 5, nest the one stray AI endpoint, pick one speaker key, use one <code>PATCH</code> for tasks, one settings resource. <span class="meta">Decide once, apply when touching each area.</span></li>
+    <li><strong>Follow-up reviews</strong> of what this one left out: frontend architecture, database schema, gateway, Watch API. <span class="meta">Logged in the action list. One review per area.</span></li>
+  </ol>
+</section>
+
+<section>
+  <h2>8 · Keeping agents on the map</h2>
+  <p>ArchUnit catches only one class of drift. Each failure seen in this review needs its own guard. Context points the agent the right way, and the build gate decides.</p>
+  <div class="t"><table>
+    <thead><tr><th>Drift seen in this review</th><th>Context (steers)</th><th>Gate (decides)</th></tr></thead>
+    <tbody>
+      <tr><td>Wrong module dependency in EMS</td><td>module map with allowed directions</td><td>ArchUnit layered rule with frozen violations</td></tr>
+      <tr><td>New service cycle</td><td>upstream/downstream table</td><td>ArchUnit: no new client package toward an upstream service</td></tr>
+      <tr><td>Near-duplicate endpoint</td><td>"nearest existing endpoint" line in the story</td><td>PR report listing added operations next to their most similar existing ones</td></tr>
+      <tr><td>Rebuilt capability (uploads, mail sends)</td><td>reuse catalog: need X, use Y</td><td>review layer that checks the diff against the catalog</td></tr>
+      <tr><td>Convention drift (snake_case, UUID not nested, verbs)</td><td>API conventions, 10 lines</td><td>OpenAPI lint (Spectral) in CI</td></tr>
+      <tr><td>Frontend calls a path that doesn't exist</td><td>none</td><td>frontend path contract check</td></tr>
+    </tbody>
+  </table></div>
+  <p>For the agents themselves, three changes:</p>
+  <ul class="plain">
+    <li><strong>One short map, loaded everywhere.</strong> At most 4 KB: modules, directions, reuse catalog, API rules. It goes in <code>project-context.md</code>, which every BMAD workflow loads, and a pointer goes in <code>CLAUDE.md</code> for sessions without BMAD, like the parallel issue work. Amelia already loads about 80 KB on every activation, so the map should replace something rather than add to it.</li>
+    <li><strong>A design check before coding.</strong> The story carries a five-line architecture note: modules touched, new dependencies, new endpoints with the nearest existing one considered, components reused. Create-story drafts the note and dev-story confirms it before the first test. The thinking happens while it is still cheap to change course.</li>
+    <li><strong>An architecture reviewer in code review.</strong> One more layer in <code>bmad-code-review</code> reads only the diff and the map, with fresh context. A reviewer that didn't write the code finds what the author rationalized.</li>
+  </ul>
+</section>
+
+<section>
+  <h2>How this was measured</h2>
+  <ul class="plain foot">
+    <li><strong>Checked:</strong> operation counts parsed from all 21 specs. Line and file counts per package. The URLs called by every client class. The ECS service list and task counts in production (read-only). Frontend callers found by a path-pattern scan, with every orphan confirmed by hand.</li>
+    <li><strong>Believed, not verified:</strong> the 60–70 reduction estimate. That the registration spec only generates DTOs (the mappings are hand-written in <code>EventController</code>). The cost of the running stub task.</li>
+    <li><strong>Not covered, scheduled as follow-up reviews:</strong> frontend architecture, the database schema, the gateway, and the Watch app's own API.</li>
+  </ul>
+</section>
+</main>

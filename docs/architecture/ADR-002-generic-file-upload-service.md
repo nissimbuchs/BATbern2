@@ -624,6 +624,54 @@ entity-specific service (e.g. `ProfilePictureService`) and is served from
 **Rule of thumb:** client holds the bytes → presigned URL, never proxy. Server must
 obtain the bytes from a third party → `ImageUrlFetcher`, never a hand-rolled fetch.
 
+## Update 2026-11-07: review finding, reuse not routing
+
+The 2026-11 architecture review first reported the per-entity upload services as drift from ADR-002.
+That was wrong: Scope Clarification 1 above makes them the intended pattern for existing entities.
+What the review did measure stands as a reuse finding: eight classes implement the same presign and
+confirm mechanics independently (`ConversationAttachmentService`, `EventPhotoService`,
+`EventTeaserImageService`, `GenericLogoService`, `MaterialsUploadService`, `ProfilePictureService`,
+`SessionMaterialsService`, `SpeakerPortalMaterialsService`).
+
+~~Decision: keep the per-entity endpoints~~ (replaced the same day, see below).
+
+## Decision 2026-11-07: one upload contract (supersedes Scope Clarification 1)
+
+Owner and architect agreed to consolidate the upload API, not only the mechanics. Scope
+Clarification 1 avoided the three-phase lifecycle for existing entities because of its overhead.
+That overhead disappears when confirm can associate directly.
+
+**Contract.** Every upload, in every service, has the same shape:
+
+| Operation | Purpose |
+|---|---|
+| `POST /api/v1/uploads/{purpose}` | `{fileName, contentType, size, target?}` → `{uploadId, uploadUrl, expiresAt}` |
+| `POST /api/v1/uploads/{purpose}/{uploadId}/confirm` | with a `target` (existing entity): verify the object, then associate (ASSOCIATED). Without one (entity not created yet, e.g. company logo in the create form): CONFIRMED, associated at entity creation as today |
+| `POST /api/v1/uploads/{purpose}/import` | server-side import from a URL, through `ImageUrlFetcher` (Scope Clarification 2 still holds) |
+
+`purpose` is an enum, e.g. `company-logo`, `profile-picture`, `event-photo`, `teaser-image`,
+`session-material`, `mail-attachment`. `target` uses meaningful IDs (ADR-003): `eventCode`,
+`sessionSlug`, `username`, `companyName`. Deleting a file and presigned downloads stay on the owning
+resource (`DELETE /events/{c}/photos/{id}`, `…/materials/{id}/download`).
+
+**Placement.** The mechanics (key layout, presign, size and type rules, PENDING → CONFIRMED →
+ASSOCIATED, expiry cleanup) live in one shared-kernel component. Each purpose is a small handler in
+the owning service: who may upload for this target, allowed types and size, the S3 key, what confirm
+attaches. The gateway routes `/api/v1/uploads/{purpose}` by purpose prefix to the owning service, so
+no service handles another service's files. Each service keeps its own `uploads` table; the `logos`
+table that EMS and CUMS share today goes away with the migration.
+
+**Effect.** Measured 2026-11-07: 7 presign/confirm pairs, 3 upload-from-url endpoints and
+`/logos/fetch-from-url` (no caller) become 3 operations. Eight upload service classes become one
+component plus six handlers. 13 frontend files handle uploads today; they move to one hook.
+
+**Migration.** One purpose per story (Epic 17, 17.11 onward). Each story deletes the old endpoints
+and changes the frontend in the same change (breaking changes allowed, owner 2026-11-07).
+
+Two facts for the database review: EMS has its own `GenericLogoService` (137 lines, association only),
+not a copy of the CUMS class, and both services create and use the same `logos` table (EMS `V5`, CUMS
+`V10`) in the shared database. The EMS class should get a distinct name.
+
 ## Consequences
 
 ### Positive

@@ -1,6 +1,4 @@
-**Language:** Use `{communication_language}` for all output.
-**Output Language:** Use `{document_output_language}` for documents.
-**Output Location:** `{planning_artifacts}`
+**Output Location:** `{doc_workspace}`
 **Coaching stance:** Be direct, challenge vague thinking, but offer concrete alternatives when the user is stuck — tough love, not tough silence.
 **Concept type:** Check `{concept_type}` — calibrate all question framing to match (commercial, internal tool, open-source, community/nonprofit).
 
@@ -48,4 +46,4 @@ Before moving on, append a `<!-- coaching-notes-stage-4 -->` block to the output
 
 This stage is complete when the internal questions have honest, specific answers — and the user has a clear-eyed view of what it actually takes to execute this concept. Optimism is fine. Delusion is not.
 
-Route to `./verdict.md`.
+Route to `references/verdict.md`.

@@ -209,6 +209,6 @@ docs/
 - **API gateway**: single entry for the frontend and the watch app; routes by path prefix
   (`DomainRouter`)
 - **Service to service**: HTTP to VPC-only `/internal/**` endpoints via ECS Service Connect
-  (`http://{service}:8080`), no end-user JWT forwarded
+  (`http://{service}:8080`); the user's JWT is forwarded when there is one, never required
 - **Shared kernel**: common types, events and security components
 - **Frontend**: one React application consuming all APIs through its service layer

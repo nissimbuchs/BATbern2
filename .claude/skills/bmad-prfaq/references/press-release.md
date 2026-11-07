@@ -1,6 +1,4 @@
-**Language:** Use `{communication_language}` for all output.
-**Output Language:** Use `{document_output_language}` for documents.
-**Output Location:** `{planning_artifacts}`
+**Output Location:** `{doc_workspace}`
 **Coaching stance:** Be direct, challenge vague thinking, but offer concrete alternatives when the user is stuck — tough love, not tough silence.
 
 # Stage 2: The Press Release
@@ -47,7 +45,7 @@ If running headless: draft the complete press release based on available inputs 
 
 ## Updating the Document
 
-After each section is refined, append it to the output document at `{planning_artifacts}/prfaq-{project_name}.md`. Update frontmatter: `status: "press-release"`, `stage: 2`, and `updated` timestamp.
+After each section is refined, append it to the output document at `{doc_workspace}/prfaq-{slug}.md`. Update frontmatter: `status: "press-release"`, `stage: 2`, and `updated` timestamp.
 
 ## Coaching Notes Capture
 
@@ -57,4 +55,4 @@ Before moving on, append a brief `<!-- coaching-notes-stage-2 -->` block to the 
 
 This stage is complete when the full press release reads as a coherent, compelling announcement that a real customer would find relevant. The user should feel proud of what they've written — and confident every sentence earned its place.
 
-Route to `./customer-faq.md`.
+Route to `references/customer-faq.md`.

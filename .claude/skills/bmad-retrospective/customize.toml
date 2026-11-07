@@ -9,14 +9,14 @@
 #   scalars: override wins • arrays (persistent_facts, activation_steps_*): append
 #   arrays-of-tables with `code`/`id`: replace matching items, append new ones.
 
-# Steps to run before the standard activation (config load, greet).
+# Steps to run before the standard activation.
 # Overrides append. Use for pre-flight loads, compliance checks, etc.
 
 activation_steps_prepend = []
 
-# Steps to run after greet but before the workflow begins.
+# Steps to run after persistent facts load but before the workflow begins.
 # Overrides append. Use for context-heavy setup that should happen
-# once the user has been acknowledged.
+# once activation context is in place.
 
 activation_steps_append = []
 
@@ -30,12 +30,10 @@ activation_steps_append = []
 #   - a file reference prefixed with `file:`, e.g. "file:{project-root}/docs/standards.md"
 #     (glob patterns are supported; the file's contents are loaded and treated as facts).
 
-persistent_facts = [
-  "file:{project-root}/**/project-context.md",
-]
+persistent_facts = []
 
-# Scalar: executed when the workflow reaches Step 12 (Final Summary and Handoff),
-# after the retrospective document is saved and sprint-status is updated. Override wins.
+# Scalar: executed at the end of Phase 5 (Finalize), after the retrospective
+# document is saved. Override wins.
 # Leave empty for no custom post-completion behavior.
 
 on_complete = ""

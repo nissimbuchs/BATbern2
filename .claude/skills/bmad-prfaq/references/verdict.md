@@ -1,6 +1,4 @@
-**Language:** Use `{communication_language}` for all output.
-**Output Language:** Use `{document_output_language}` for documents.
-**Output Location:** `{planning_artifacts}`
+**Output Location:** `{doc_workspace}`
 **Coaching stance:** Be direct and honest — the verdict exists to surface truth, not to soften it. But frame every finding constructively.
 
 # Stage 5: The Verdict
@@ -31,15 +29,15 @@ Review the entire PRFAQ — press release, customer FAQ, internal FAQ — and de
 
 Throughout the process, you captured context beyond what fits in the PRFAQ. Source material for the distillate includes the `<!-- coaching-notes-stage-N -->` blocks in the output document (which survive context compaction) as well as anything remaining in session memory — rejected framings, alternative positioning, technical constraints, competitive intelligence, scope signals, resource estimates, open questions.
 
-**Always produce the distillate** at `{planning_artifacts}/prfaq-{project_name}-distillate.md`:
+**Always produce the distillate** at `{doc_workspace}/prfaq-{slug}-distillate.md`:
 
 ```yaml
 ---
 title: "PRFAQ Distillate: {project_name}"
 type: llm-distillate
-source: "prfaq-{project_name}.md"
+source: "prfaq-{slug}.md"
 created: "{timestamp}"
-purpose: "Token-efficient context for downstream PRD creation"
+purpose: "Token-efficient context for the initiative's requirements or a PRD"
 ---
 ```
 
@@ -57,17 +55,17 @@ purpose: "Token-efficient context for downstream PRD creation"
 
 "Your PRFAQ for {project_name} has survived the gauntlet.
 
-**PRFAQ:** `{planning_artifacts}/prfaq-{project_name}.md`
-**Detail Pack:** `{planning_artifacts}/prfaq-{project_name}-distillate.md`
+**PRFAQ:** `{doc_workspace}/prfaq-{slug}.md`
+**Detail Pack:** `{doc_workspace}/prfaq-{slug}-distillate.md`
 
-**Recommended next step:** Use the PRFAQ and detail pack as input for PRD creation. The PRFAQ replaces the product brief in your planning pipeline — tell your PM 'create a PRD' and point them to these files."
+**Recommended next step:** ask Sofia the Product Owner (`bmad-agent-po`) to write the initiative's requirements from the PRFAQ and detail pack, or update them if the initiative file exists; go through John the Product Manager (`bmad-agent-pm`) first only when the requirements still need drawing out."
 
 **Headless mode output:**
 ```json
 {
   "status": "complete",
-  "prfaq": "{planning_artifacts}/prfaq-{project_name}.md",
-  "distillate": "{planning_artifacts}/prfaq-{project_name}-distillate.md",
+  "prfaq": "{doc_workspace}/prfaq-{slug}.md",
+  "distillate": "{doc_workspace}/prfaq-{slug}-distillate.md",
   "verdict": "forged|needs-heat|cracked",
   "key_risks": ["top unresolved items"],
   "open_questions": ["unresolved items from FAQs"]
@@ -78,6 +76,6 @@ purpose: "Token-efficient context for downstream PRD creation"
 
 This is the terminal stage. If the user wants to revise, loop back to the relevant stage. Otherwise, the workflow is done.
 
-Run: `python3 {project-root}/_bmad/scripts/resolve_customization.py --skill {skill-root} --key workflow.on_complete`
+Run: `uv run {project-root}/_bmad/scripts/resolve_customization.py --skill {skill-root} --project-root {project-root} --key workflow.on_complete`
 
 If the resolved `workflow.on_complete` is non-empty, follow it as the final terminal instruction before exiting.

@@ -1,0 +1,6 @@
+# Team override for bmad-agent-po. v6 loaded project-context.md for every agent; v7 does not.
+
+[agent]
+persistent_facts = [
+  "file:{project-root}/_bmad-output/project-context.md",
+]

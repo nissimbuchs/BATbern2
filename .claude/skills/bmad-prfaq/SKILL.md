@@ -1,6 +1,6 @@
 ---
 name: bmad-prfaq
-description: Working Backwards PRFAQ challenge to forge product concepts. Use when the user requests to 'create a PRFAQ', 'work backwards', or 'run the PRFAQ challenge'.
+description: "Test a product concept with Amazon's Working Backwards method: write the press release for the finished product first, then answer hard customer and stakeholder questions, ending in a complete PRFAQ document. Use when the user requests to 'create a PRFAQ', 'work backwards', or 'run the PRFAQ challenge'"
 ---
 
 # Working Backwards: The PRFAQ Challenge
@@ -15,7 +15,7 @@ The PRFAQ forces customer-first clarity: write the press release announcing the 
 
 **Args:** Accepts `--headless` / `-H` for autonomous first-draft generation from provided context.
 
-**Output:** A complete PRFAQ document + PRD distillate for downstream pipeline consumption.
+**Output:** A complete PRFAQ document + a distillate for the initiative's requirements or a PRD.
 
 **Research-grounded.** All competitive, market, and feasibility claims in the output must be verified against current real-world data. Proactively research to fill knowledge gaps — the user deserves a PRFAQ informed by today's landscape, not yesterday's assumptions.
 
@@ -23,16 +23,18 @@ The PRFAQ forces customer-first clarity: write the press release announcing the 
 
 - Bare paths (e.g. `references/press-release.md`) resolve from the skill root.
 - `{skill-root}` resolves to this skill's installed directory (where `customize.toml` lives).
-- `{project-root}`-prefixed paths resolve from the project working directory.
+- `{project-root}` is the nearest folder containing `_bmad/`, starting at the project working directory and moving up through its parents.
 - `{skill-name}` resolves to the skill directory's basename.
 
 ## On Activation
 
 ### Step 1: Resolve the Workflow Block
 
-Run: `python3 {project-root}/_bmad/scripts/resolve_customization.py --skill {skill-root} --key workflow`
+Run: `uv run {project-root}/_bmad/scripts/resolve_customization.py --skill {skill-root} --project-root {project-root} --key workflow`
 
-**If the script fails**, resolve the `workflow` block yourself by reading these three files in base → team → user order and applying the same structural merge rules as the resolver:
+**If the script is not found**, BMad is not set up here. Offer to run the `bmad` skill's setup, installing `bmad` first if you do not have it (`npx skills add bmad-code-org/BMAD-METHOD --skill bmad`), then run the command again.
+
+**If it fails for any other reason**, resolve the `workflow` block yourself by reading these three files in base → team → user order and applying the same structural merge rules as the resolver:
 
 1. `{skill-root}/customize.toml` — defaults
 2. `{project-root}/_bmad/custom/{skill-name}.toml` — team overrides
@@ -50,29 +52,28 @@ Treat every entry in `{workflow.persistent_facts}` as foundational context you c
 
 ### Step 4: Load Config
 
-Load config from `{project-root}/_bmad/bmm/config.yaml` and resolve:
-- Use `{user_name}` for greeting
-- Use `{communication_language}` for all communications
-- Use `{document_output_language}` for output documents
-- Use `{planning_artifacts}` for output location and artifact scanning
-- Use `{project_knowledge}` for additional context scanning
+Run: `uv run {project-root}/_bmad/scripts/resolve_config.py --project-root {project-root} --key core.output_folder --key core.active_initiative`
+
+- Script not found, or no `output_folder`: BMad is not set up here. Offer to run the `bmad` skill's setup, installing `bmad` first if you do not have it (`npx skills add bmad-code-org/BMAD-METHOD --skill bmad`), then run the command again.
+- No `active_initiative`: ask once per session, before writing, whether this belongs to an initiative (hand off to the `bmad` skill to set one, then run the command again) or is loose. Loose work drops `/{active_initiative}` from every path.
+- `{doc_workspace}` is `{output_folder}/{active_initiative}/prfaq-{slug}/`, `{slug}` the concept's name in kebab-case
 
 ### Step 5: Greet the User
 
-Greet `{user_name}`, speaking in `{communication_language}`. Be warm but efficient — dream builder energy.
+Greet the user. Be warm but efficient — dream builder energy. Let the user know they can invoke `bmad-party-mode` for multi-agent perspectives or `bmad-advanced-elicitation` for deeper exploration at any point.
 
 ### Step 6: Execute Append Steps
 
 Execute each entry in `{workflow.activation_steps_append}` in order.
 
-Activation is complete. Continue below.
+Activation is complete. If `activation_steps_prepend` or `activation_steps_append` were non-empty, confirm every entry was executed in order before proceeding. Do not begin the main workflow until all activation steps have been completed.
 
 ## Pre-workflow Setup
 
-1. **Resume detection:** Check if `{planning_artifacts}/prfaq-{project_name}.md` already exists. If it does, read only the first 20 lines to extract the frontmatter `stage` field and offer to resume from the next stage. Do not read the full document. If the user confirms, route directly to that stage's reference file.
+1. **Resume detection:** Check for an existing `prfaq-*/prfaq-*.md` in `{output_folder}/{active_initiative}/` or `{output_folder}/`. If one exists, read only the first 20 lines to extract the frontmatter `stage` field and offer to resume from the next stage. Do not read the full document. If the user confirms, route directly to that stage's reference file.
 
 2. **Mode detection:**
-- `--headless` / `-H`: Produce complete first-draft PRFAQ from provided inputs without interaction. Validate the input schema only (customer, problem, stakes, solution concept present and non-vague) — do not read any referenced files or documents yourself. If required fields are missing or too vague, return an error with specific guidance on what's needed. Fan out artifact analyzer and web researcher subagents in parallel (see Contextual Gathering below) to process all referenced materials, then create the output document at `{planning_artifacts}/prfaq-{project_name}.md` using `./assets/prfaq-template.md` and route to `./references/press-release.md`.
+- `--headless` / `-H`: Produce complete first-draft PRFAQ from provided inputs without interaction. Validate the input schema only (customer, problem, stakes, solution concept present and non-vague) — do not read any referenced files yourself, except a ticket file (`initiative-*.md`, `tickets/epic-*/epic-*.md`; older projects `SPEC*.md`), which you read first and in full and whose Requirements are settled. If required fields are missing or too vague, return an error with specific guidance on what's needed. Fan out artifact analyzer and web researcher subagents in parallel (see Contextual Gathering below) to process all referenced materials, then create the output document at `{doc_workspace}/prfaq-{slug}.md` using `assets/prfaq-template.md` and route to `references/press-release.md`.
 - Default: Full interactive coaching — the gauntlet.
 
 **Headless input schema:**
@@ -107,29 +108,29 @@ When the user gets stuck, offer concrete suggestions based on what they've share
 
 **Fast-track:** If the user provides all four essentials in their opening message (or via structured input), acknowledge and confirm understanding, then move directly to document creation and Stage 2 without extended discovery.
 
-**Graceful redirect:** If after 2-3 exchanges the user can't articulate a customer or problem, don't force it — suggest the idea may need more exploration first and recommend they invoke the `bmad-brainstorming` skill to develop it further.
+**Graceful redirect:** If after 2-3 exchanges the user can't articulate a customer or problem, don't force it. Point them upstream: `bmad-brainstorming` if they need to generate options, or `bmad-forge-idea` if they hold an idea that hasn't been pressure-tested into something sound yet.
 
 **Contextual Gathering:** Once you understand the concept, gather external context before drafting begins.
 
-1. **Ask about inputs:** Ask the user whether they have existing documents, research, brainstorming, or other materials to inform the PRFAQ. Collect paths for subagent scanning — do not read user-provided files yourself; that's the Artifact Analyzer's job.
+1. **Ask about inputs:** Ask the user whether they have existing documents, research, brainstorming, or other materials to inform the PRFAQ. Collect paths for subagent scanning. When a ticket exists for this concept (`initiative-*.md`, `tickets/epic-*/epic-*.md`; older projects `SPEC*.md`), read it yourself, first and in full, and treat its Requirements as settled; every other file is the Artifact Analyzer's job.
 2. **Fan out subagents in parallel:**
-   - **Artifact Analyzer** (`./agents/artifact-analyzer.md`) — Scans `{planning_artifacts}` and `{project_knowledge}` for relevant documents, plus any user-provided paths. Receives the product intent summary so it knows what's relevant.
-   - **Web Researcher** (`./agents/web-researcher.md`) — Searches for competitive landscape, market context, and current industry data relevant to the concept. Receives the product intent summary.
+   - **Artifact Analyzer** (`agents/artifact-analyzer.md`) — Scans `{output_folder}/{active_initiative}/`, then `{output_folder}/`, for relevant documents, plus any user-provided paths. Receives the product intent summary so it knows what's relevant.
+   - **Web Researcher** (`agents/web-researcher.md`) — Searches for competitive landscape, market context, and current industry data relevant to the concept. Receives the product intent summary.
 3. **Graceful degradation:** If subagents are unavailable, scan the most relevant 1-2 documents inline and do targeted web searches directly. Never block the workflow.
 4. **Merge findings** with what the user shared. Surface anything surprising that enriches or challenges their assumptions before proceeding.
 
-**Create the output document** at `{planning_artifacts}/prfaq-{project_name}.md` using `./assets/prfaq-template.md`. Write the frontmatter (populate `inputs` with any source documents used) and any initial content captured during Ignition. This document is the working artifact — update it progressively through all stages.
+**Create the output document** at `{doc_workspace}/prfaq-{slug}.md` using `assets/prfaq-template.md`. Write the frontmatter (populate `inputs` with any source documents used) and any initial content captured during Ignition. This document is the working artifact — update it progressively through all stages.
 
 **Coaching Notes Capture:** Before moving on, append a `<!-- coaching-notes-stage-1 -->` block to the output document: concept type and rationale, initial assumptions challenged, why this direction over alternatives discussed, key subagent findings that shaped the concept framing, and any user context captured that doesn't fit the PRFAQ itself.
 
-**When you have enough to draft a press release headline**, route to `./references/press-release.md`.
+**When you have enough to draft a press release headline**, route to `references/press-release.md`.
 
 ## Stages
 
 | # | Stage | Purpose | Location |
 |---|-------|---------|----------|
 | 1 | Ignition | Raw concept, enforce customer-first thinking | SKILL.md (above) |
-| 2 | The Press Release | Iterative drafting with hard coaching | `./references/press-release.md` |
-| 3 | Customer FAQ | Devil's advocate customer questions | `./references/customer-faq.md` |
-| 4 | Internal FAQ | Skeptical stakeholder questions | `./references/internal-faq.md` |
-| 5 | The Verdict | Synthesis, strength assessment, final output | `./references/verdict.md` |
+| 2 | The Press Release | Iterative drafting with hard coaching | `references/press-release.md` |
+| 3 | Customer FAQ | Devil's advocate customer questions | `references/customer-faq.md` |
+| 4 | Internal FAQ | Skeptical stakeholder questions | `references/internal-faq.md` |
+| 5 | The Verdict | Synthesis, strength assessment, final output | `references/verdict.md` |

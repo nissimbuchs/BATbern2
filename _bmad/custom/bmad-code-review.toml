@@ -1,0 +1,11 @@
+# Team override (architecture review 2026-11): module map in context + architecture note.
+# Arrays append to the base customize.toml.
+
+[workflow]
+persistent_facts = [
+  "file:{project-root}/_bmad-output/project-context.md",
+  "file:{project-root}/docs/architecture/module-map.md",
+]
+activation_steps_append = [
+  "Add an architecture check, reading only the diff and module-map.md: report every new upward or sideways EMS module dependency, new cross-service call outside /internal, new endpoint that near-duplicates an existing one, and capability rebuilt instead of reused from the reuse table.",
+]

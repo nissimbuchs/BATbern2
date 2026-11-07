@@ -4,11 +4,11 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 
 ## Project Status
 
-**Last Updated:** 2026-06-13
+**Last Updated:** 2026-11-07
 
-**Current Phase:** Post-MVP, feature-rich — Epics 1–6, 8, 10, 11, and 12 complete; Epic 7 (Attendee Experience) implemented and in review; Epic 13 (Spring Boot 4 migration) planned. A separate iOS/watchOS companion app (BATbern Watch) is also complete.
+**Current Phase:** In production at www.batbern.ch. Epics 1–16 are closed; Epic 17 (architecture hardening) is the open work. Stories of epics 1–16 that were never implemented are archived, not planned. A separate iOS/watchOS companion app (BATbern Watch) is also live.
 
-**MVP Status:** ✅ **PRODUCTION READY** — All 5 MVP epics (1–5) complete and live, plus a large body of post-MVP work: speaker portal, partner coordination, "Continue with Google" SSO, admin & newsletter tooling, and attendee contribution features.
+**MVP Status:** ✅ **IN PRODUCTION**. All 5 MVP epics (1–5) are live, plus the post-MVP work: speaker portal, partner coordination, "Continue with Google" SSO, admin and newsletter tooling, attendee contribution features, the organizer cockpit and the Mail Center.
 
 ### Epic Progress Summary
 
@@ -16,25 +16,28 @@ Enterprise event management platform for Berner Architekten Treffen (BATbern) co
 |------|--------|---------------------|
 | **Epic 1: Foundation & Core Infrastructure** | ✅ Complete | Shared Kernel, API Gateway, Auth, User Mgmt, CI/CD, Monitoring |
 | **Epic 2: Entity CRUD & Domain Services** | ✅ Complete | Company, User, Event, Partner Management (backend + frontend) |
-| **Epic 3: Historical Data Migration** | ✅ Complete | Batch import tooling ready — production data import pending trigger |
+| **Epic 3: Historical Data Migration** | ✅ Complete | Batch import tooling ready; production data import pending trigger |
 | **Epic 4: Public Website & Content Discovery** | ✅ Complete | Event landing pages, 3-step registration wizard, archive browsing, content search, SEO |
-| **Epic 5: Enhanced Organizer Workflows** | ✅ Complete | 9-state event workflow, speaker coordination, auto-publishing, lifecycle automation |
+| **Epic 5: Enhanced Organizer Workflows** | ✅ Complete | Event workflow state machine, speaker coordination, auto-publishing, lifecycle automation |
 | **Epic 6: Speaker Self-Service Portal** | ✅ Complete | Invitations, response portal, material submission, dashboard (WCAG 2.1 AA), reminders |
-| **Epic 7: Attendee Experience — Contribution & Touchpoints** | 🔨 In review | Topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, post-event Q&A, attendee event history |
+| **Epic 7: Attendee Experience: Contribution & Touchpoints** | ✅ Complete | Topics from the floor, speaker self-nomination, slides-online mail, thank-the-organizers, per-session Q&A, attendee event history, thank-you marquee |
 | **Epic 8: Partner Coordination** | ✅ Complete | Attendance analytics + XLSX export, topic voting, meeting coordination (ICS), partner notes, iCal RSVP tracking |
 | **Epic 9: Speaker Authentication** | ⛔ Superseded | Original magic-link plan replaced by Epic 11 (unified workflow) + Epic 12 (SSO) |
 | **Epic 10: Admin Tools, Newsletter & Public Enhancements** | ✅ Complete | Administration page, newsletter system, registration status/waitlist/deregistration, photo gallery, teaser images, moderator presentation, Turnstile, legacy BAT export/import, additional user emails |
 | **Epic 11: Unified Speaker Workflow Refactor** | ✅ Complete | 8-state workflow (ADR-009), `SpeakerWorkflowService` sole writer, Cognito speaker auth (magic-link torn down), kanban redesign, speaker company self-service |
-| **Epic 12: Federated Identity / Google SSO** | ✅ Complete | "Continue with Google" live (account linking, JIT provisioning, ToS consent, avatar import); Apple/generic OIDC deferred |
-| **Epic 13: Spring Boot 4 Migration** | 📋 Planned | Staged per-module upgrade (SB 3.5 OSS support ends 2026-06-30) |
+| **Epic 12: Federated Identity / Google SSO** | ✅ Complete | "Continue with Google" live (account linking, JIT provisioning, ToS consent, avatar import); Apple/generic OIDC archived |
+| **Epic 13: Spring Boot 4 Migration** | ✅ Closed | Spring Boot 4.0.9 live (CVE patch 2026-11-05); Jackson 3 switch and BOM unpinning archived |
+| **Epic 14: Event Detail Page Redesign** | ✅ Complete | Lifecycle-aware organizer cockpit with tasks at the right time |
+| **Epic 15: Post-Event #2 Hardening** | ✅ Closed | Live control on REST polling, hardening fixes; WebSocket teardown archived |
+| **Epic 16: Mail Center** | ✅ Closed | Outbound log + delivery status, conversations, answers, shared composer, global Mail page; composer clean-up (16.8c) moved to Epic 17 |
+| **Epic 17: Architecture Hardening** | 📋 Backlog | Test fidelity (17.0a–d), dead API surface and gates, service-to-service calls via `/internal`, API conventions, one upload contract, EMS modularization |
 | **BATbern Watch App** (separate iOS/watchOS track) | ✅ Complete | Public event companion, pairing & organizer access, live countdown & haptics, session control, offline resilience |
 
 ### Next Steps
 
-- **Epic 3: Production data import** — import the ~2,307 historical participants via the batch import modal (~1 day effort)
-- **Epic 7** — complete review + merge of the remaining attendee-contribution stories (incl. 7.7 curated thank-you marquee)
-- **Epic 12 tail (Story 12-10)** — Apple / generic OIDC + Cognito trigger retirement
-- **Epic 13** — Spring Boot 4 migration before SB 3.5 OSS support ends (2026-06-30)
+- **Epic 17**: architecture hardening, in the order of [`docs/prd/epic-17-architecture-hardening.md`](docs/prd/epic-17-architecture-hardening.md); test fidelity (17.0a–d) and the dead surface and gates (17.1–17.5) come first
+- **Pre-deploy gate**: parked until 17.1–17.5 and 17.0a–d are done, see [`docs/plans/pre-deploy-gate-plan.md`](docs/plans/pre-deploy-gate-plan.md)
+- **Epic 3: production data import** of the historical participants via the batch import modal
 
 ## Quick Start
 
@@ -524,8 +527,24 @@ All secrets stored in GitHub Secrets and AWS Secrets Manager.
 4. Meet coverage requirements (90%)
 5. Pass security scans
 6. Create PR with description
-7. Get code review approval
-8. Merge to `develop`
+7. Merge to `develop` (auto-merge when the required checks pass)
+
+> **A pull request against `develop` deploys to production** (www.batbern.ch) as soon as it is opened
+> or updated, before review and merge. Treat opening a PR as a production action. Details:
+> [CI/CD Pipeline Guide](docs/deployment/cicd-pipeline-guide.md).
+
+### Development Method: BMAD v7
+
+Planning and story work use the [BMAD Method](https://github.com/bmad-code-org/BMAD-METHOD) v7 preview,
+installed as skills in `.claude/skills/` (pinned in `skills-lock.json`).
+
+- **Install or update:** `npx skills add bmad-code-org/BMAD-METHOD --skill '*' --agent claude-code -y`, then
+  ask the `bmad` skill for `bmad setup`. Requires [uv](https://docs.astral.sh/uv/).
+- **Backlog:** Sofia (`bmad-agent-po`) keeps initiatives, epics and tickets in `_bmad-output/initiative-*/`.
+- **Build a story:** `bmad-build`; review with `bmad-code-review`.
+- **Team customizations:** `_bmad/custom/*.toml`, never the skill files.
+- **History:** epics 1–16 (story files, `sprint-status.yaml`) are a read-only BMAD v6 archive in
+  `_bmad-output/implementation-artifacts/`.
 
 ### Commit Convention
 ```
