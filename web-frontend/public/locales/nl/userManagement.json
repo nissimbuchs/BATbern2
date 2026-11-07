@@ -382,5 +382,31 @@
     "requestFailed": "Het verzoek kon niet worden verstuurd. Probeer het later opnieuw.",
     "placeholderAddress": "Dit eerdere profiel is zonder uw adres geïmporteerd.",
     "askOrganizers": "Vraag het de organisatoren"
+  },
+  "duplicates": {
+    "title": "Mogelijke duplicaten",
+    "back": "Terug naar gebruikers",
+    "intro": "Paren van profielen die waarschijnlijk bij dezelfde persoon horen: dezelfde naam, voor- en achternaam omgedraaid of dezelfde naam voor de @ bij een ander adres. Vergelijk elk paar en voeg het samen, of markeer het als geen duplicaat. Naamgenoten bestaan, controleer dus bedrijf, adressen en inschrijvingen in de vergelijking.",
+    "loadError": "De lijst kon niet worden geladen.",
+    "all": "Alle",
+    "count": "{{count}} paren",
+    "empty": "Geen mogelijke duplicaten gevonden.",
+    "keep": "Behouden",
+    "mergeIn": "Samenvoegen en verwijderen",
+    "compare": "Vergelijken en samenvoegen",
+    "dismiss": "Geen duplicaat",
+    "dismissError": "Het paar kon niet worden gemarkeerd. Probeer het opnieuw.",
+    "bothLogin": "Beide hebben een login: alleen de persoon zelf kan ze samenvoegen (profiel, e-mailadressen).",
+    "placeholder": "Geïmporteerd plaatsvervangend adres",
+    "confidence": {
+      "HIGH": "Zeer waarschijnlijk",
+      "MEDIUM": "Waarschijnlijk",
+      "LOW": "Alleen een hint"
+    },
+    "rule": {
+      "SAME_NAME": "Dezelfde naam",
+      "SWAPPED_NAME": "Voor- en achternaam omgedraaid",
+      "SAME_ADDRESS_NAME": "Zelfde adresnaam, ander domein"
+    }
   }
 }

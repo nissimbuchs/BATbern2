@@ -772,6 +772,73 @@ paths:
       security:
         - BearerAuth: []
 
+  /users/duplicate-candidates:
+    get:
+      tags:
+        - Profile Merge
+      summary: Profile pairs that are probably one person (organizers)
+      description: |
+        Active profiles compared on the live data, for the organizer merge (#1183 C). Rules:
+        `SAME_NAME` (first and last name equal ignoring case, umlauts as ae/oe/ue, accents, hyphens
+        and underscores), `SWAPPED_NAME` (first and last name swapped), `SAME_ADDRESS_NAME` (the
+        same `x.y` before the @ at another domain, different name). Confidence: `HIGH` for a
+        swapped name, or a same name with an imported placeholder address
+        (`vorname.nachname@batbern.ch`), the same company or the same part before the @; `MEDIUM`
+        for another same name; `LOW` for `SAME_ADDRESS_NAME`. `target` is the suggested profile to
+        keep (the one with a login, else the one without a placeholder, else the older one).
+        `organizerCanMerge` is false when both have a login: only the person can merge those
+        (`POST /users/me/account-merges`). Pairs marked "not a duplicate" are left out. Sorted by
+        confidence, then name.
+      operationId: listDuplicateCandidates
+      responses:
+        '200':
+          description: The pairs
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/DuplicateCandidate'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/duplicate-candidates/dismissals:
+    post:
+      tags:
+        - Profile Merge
+      summary: Mark a pair as not a duplicate (organizers)
+      description: |
+        The pair no longer appears in `GET /users/duplicate-candidates`, in either order.
+        Idempotent. 404 when one of the profiles does not exist.
+      operationId: dismissDuplicateCandidate
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DuplicateDismissal'
+      responses:
+        '204':
+          description: Dismissed
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /users/me/account-merges:
     post:
       tags:
@@ -3053,6 +3120,62 @@ components:
           nullable: true
           allOf:
             - $ref: '#/components/schemas/UserMergePreview'
+    DuplicateCandidate:
+      type: object
+      required: [rule, confidence, organizerCanMerge, target, source]
+      properties:
+        rule:
+          type: string
+          enum: [SAME_NAME, SWAPPED_NAME, SAME_ADDRESS_NAME]
+        confidence:
+          type: string
+          enum: [HIGH, MEDIUM, LOW]
+        organizerCanMerge:
+          type: boolean
+          description: False when both profiles have a login
+        target:
+          $ref: '#/components/schemas/DuplicateCandidateProfile'
+        source:
+          $ref: '#/components/schemas/DuplicateCandidateProfile'
+    DuplicateCandidateProfile:
+      type: object
+      required: [username, email, hasLogin, placeholderAddress]
+      properties:
+        username:
+          type: string
+        firstName:
+          type: string
+          nullable: true
+        lastName:
+          type: string
+          nullable: true
+        email:
+          type: string
+        companyId:
+          type: string
+          nullable: true
+        hasLogin:
+          type: boolean
+        placeholderAddress:
+          type: boolean
+          description: The address is an import placeholder (`vorname.nachname@batbern.ch`)
+        createdAt:
+          type: string
+          format: date-time
+          nullable: true
+    DuplicateDismissal:
+      type: object
+      required: [usernameA, usernameB]
+      additionalProperties: false
+      properties:
+        usernameA:
+          type: string
+          minLength: 1
+          maxLength: 100
+        usernameB:
+          type: string
+          minLength: 1
+          maxLength: 100
     AccountMergeRequest:
       type: object
       required: [email]

@@ -382,5 +382,31 @@
     "requestFailed": "The request could not be sent. Try again later.",
     "placeholderAddress": "This earlier profile was imported without your address.",
     "askOrganizers": "Ask the organizers"
+  },
+  "duplicates": {
+    "title": "Possible duplicates",
+    "back": "Back to users",
+    "intro": "Pairs of profiles that probably belong to one person: same name, first and last name swapped, or the same name before the @ at another address. Compare each pair and merge it, or mark it as not a duplicate. Namesakes exist, so check company, addresses and registrations in the comparison.",
+    "loadError": "The list could not be loaded.",
+    "all": "All",
+    "count": "{{count}} pairs",
+    "empty": "No possible duplicates found.",
+    "keep": "Keep",
+    "mergeIn": "Merge in and delete",
+    "compare": "Compare and merge",
+    "dismiss": "Not a duplicate",
+    "dismissError": "The pair could not be marked. Please try again.",
+    "bothLogin": "Both have a login: only the person can combine them (profile, e-mail addresses).",
+    "placeholder": "Imported placeholder address",
+    "confidence": {
+      "HIGH": "Very likely",
+      "MEDIUM": "Likely",
+      "LOW": "Hint only"
+    },
+    "rule": {
+      "SAME_NAME": "Same name",
+      "SWAPPED_NAME": "First and last name swapped",
+      "SAME_ADDRESS_NAME": "Same address name, other domain"
+    }
   }
 }

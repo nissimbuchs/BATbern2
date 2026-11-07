@@ -1138,6 +1138,19 @@ registration for the same event, 19 of the profiles without login carry speaker 
 | **F: two logins (#1244 step 3)** | the person, logged in as A | Owner decision 2026-11-07: someone with two accounts that both have a login (first the company address, later a private one). On `/profile`, adding B's address answers `ADDITIONAL_EMAIL_DUPLICATE` (making it primary answers `EMAIL_HAS_OTHER_LOGIN`); the page offers "Ist es Ihres?" → `POST /users/me/account-merges {email}`: B is the account whose **primary** address that is and which has a login, else 404. A signed link (same token as D, template `account-merge-{de,en}`) goes to B's address; `/claim-profile?token=` under A's login proves both mailboxes. Confirm: Cognito `disableLogin(B)` → `UserMergeService.mergeLoginAccount(A, B)` (trigger `SELF_CLAIM`, B's addresses carried as confirmed) → `deleteLogin(B)`. A failed merge enables B's login again; a login that cannot be disabled means nothing is merged; a failed delete leaves it disabled (logged `ACCOUNT_MERGE login disabled but not deleted`). Organizers do not get this. |
 | **E: request (#1237)** | the person asks, any ORGANIZER decides | For someone who cannot read the earlier profile's mailbox any more (a former employer's address). "I no longer have access to this address" + an optional note → `POST /users/me/profile-claims/merge-requests` stores a `profile_merge_requests` row (CUMS V23) and opens a Mail Center conversation (EMS `POST /internal/mail-center/merge-requests`, `mail_conversation.merge_request_id`, V145). The conversation shows both profiles, what would move and the note; **Approve** (`POST /users/merge-requests/{id}/approve`) runs the merge as `ORGANIZER` with the approving organizer as `performed_by`, **Decline** (`.../decline`) needs a reason. The person is mailed at their current address either way (templates `profile-merge-approved`/`-declined`, DE + EN) and the conversation is set to Done. |
 
+**Finding the pairs.** Organizers open **Users → Mögliche Duplikate**:
+`GET /users/duplicate-candidates` (`ORGANIZER`, `DuplicateCandidateService`) compares the active
+profiles on the live data each time. `SAME_NAME`: first and last name equal, compared lower-case and
+trimmed, umlauts as ae/oe/ue, ß as ss, accents removed, hyphens and underscores as spaces.
+`SWAPPED_NAME`: first and last name swapped. `SAME_ADDRESS_NAME`: the same `x.y` before the @ at
+another domain, different name. A pair is listed once, under its first rule. Confidence HIGH for a
+swapped name, or a same name with a placeholder address, the same company or the same part before the
+@; MEDIUM for another same name; LOW for `SAME_ADDRESS_NAME`. The suggested target is the profile with
+a login, else the one without a placeholder, else the older. Pairs where both have a login are shown
+but only the person can merge them (row F). "Kein Duplikat" stores the pair in
+`user_duplicate_dismissals` (CUMS V26, smaller id first, cascade on delete) and hides it for good.
+Measured on production 2026-11-07: 257 / 24 / 22 pairs for the three rules, 24 with two logins.
+
 **Rules** (`UserMergeService` in company-user-management):
 - The **source must have no login**. A Cognito user is someone's account; deleting it would lock them out.
   The login profile is always the target; the organizer dialog offers to swap the direction. Two login

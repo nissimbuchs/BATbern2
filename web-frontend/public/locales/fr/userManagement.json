@@ -382,5 +382,31 @@
     "requestFailed": "La demande n'a pas pu être envoyée. Réessayez plus tard.",
     "placeholderAddress": "Ce profil antérieur a été importé sans votre adresse.",
     "askOrganizers": "Demander aux organisateurs"
+  },
+  "duplicates": {
+    "title": "Doublons possibles",
+    "back": "Retour aux utilisateurs",
+    "intro": "Paires de profils qui appartiennent probablement à la même personne : même nom, prénom et nom inversés, ou même nom avant le @ dans une autre adresse. Comparez chaque paire et fusionnez-la, ou marquez-la comme n'étant pas un doublon. Les homonymes existent : vérifiez l'entreprise, les adresses et les inscriptions dans la comparaison.",
+    "loadError": "La liste n'a pas pu être chargée.",
+    "all": "Tous",
+    "count": "{{count}} paires",
+    "empty": "Aucun doublon possible trouvé.",
+    "keep": "Conserver",
+    "mergeIn": "Reprendre et supprimer",
+    "compare": "Comparer et fusionner",
+    "dismiss": "Pas un doublon",
+    "dismissError": "La paire n'a pas pu être marquée. Veuillez réessayer.",
+    "bothLogin": "Les deux ont un identifiant : seule la personne peut les fusionner (profil, adresses e-mail).",
+    "placeholder": "Adresse fictive importée",
+    "confidence": {
+      "HIGH": "Très probable",
+      "MEDIUM": "Probable",
+      "LOW": "Simple indice"
+    },
+    "rule": {
+      "SAME_NAME": "Même nom",
+      "SWAPPED_NAME": "Prénom et nom inversés",
+      "SAME_ADDRESS_NAME": "Même nom d'adresse, autre domaine"
+    }
   }
 }

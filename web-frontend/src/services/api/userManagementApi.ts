@@ -335,6 +335,27 @@ export const declineCompanyLogoRequest = async (
   return response.data;
 };
 
+// Probable duplicate profiles for the organizer merge (GET /users/duplicate-candidates)
+export type DuplicateCandidate = components['schemas']['DuplicateCandidate'];
+
+export const listDuplicateCandidates = async (): Promise<DuplicateCandidate[]> => {
+  const response = await apiClient.get<DuplicateCandidate[]>(
+    `${USER_API_PATH}/duplicate-candidates`
+  );
+  return response.data;
+};
+
+/** Marks the pair as "not a duplicate"; it no longer appears in the list. */
+export const dismissDuplicateCandidate = async (
+  usernameA: string,
+  usernameB: string
+): Promise<void> => {
+  await apiClient.post(`${USER_API_PATH}/duplicate-candidates/dismissals`, {
+    usernameA,
+    usernameB,
+  });
+};
+
 /** Merges `source` into `target` and deletes `source`. */
 export const mergeUserProfile = async (
   target: string,

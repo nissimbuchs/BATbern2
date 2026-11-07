@@ -139,5 +139,31 @@
     "requestFailed": "D Aafrag het nid chönne gschickt wärde. Probier s speter nomau.",
     "placeholderAddress": "Das früechere Profiu isch ohni öii Adrässe importiert worde.",
     "askOrganizers": "D Organisatore bitte"
+  },
+  "duplicates": {
+    "title": "Müglechi Duplikat",
+    "back": "Zrügg zu de Benutzer",
+    "intro": "Profilpaar, wo warschinlech zur glyche Person ghöre: glyche Name, Vor- und Nachname vertuuschet oder glyche Name vor em @ bi nere angere Adrässe. Verglychet jedes Paar und füehret's zäme, oder markieret's als kes Duplikat. Es git Namensvettere, drum prüefet im Verglych Firma, Adrässe und Aamäldige.",
+    "loadError": "D Lischte het nid chönne glade wärde.",
+    "all": "Alli",
+    "count": "{{count}} Paar",
+    "empty": "Kener müglechi Duplikat gfunde.",
+    "keep": "Bhalte",
+    "mergeIn": "Übernäh und lösche",
+    "compare": "Verglyche und zämefüehre",
+    "dismiss": "Kes Duplikat",
+    "dismissError": "S Paar het nid chönne markiert wärde. Bitte probieret's no einisch.",
+    "bothLogin": "Beidi hei es Login: Nume d Person sälber cha se zämefüehre (Profil, E-Mail-Adrässe).",
+    "placeholder": "Importierti Platzhalter-Adrässe",
+    "confidence": {
+      "HIGH": "Sehr warschinlech",
+      "MEDIUM": "Warschinlech",
+      "LOW": "Nume Hiiwis"
+    },
+    "rule": {
+      "SAME_NAME": "Glyche Name",
+      "SWAPPED_NAME": "Vor- und Nachname vertuuschet",
+      "SAME_ADDRESS_NAME": "Glyche Adrässname, angeri Domain"
+    }
   }
 }

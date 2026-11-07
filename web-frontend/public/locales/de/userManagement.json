@@ -382,5 +382,31 @@
     "requestFailed": "Die Anfrage konnte nicht gesendet werden. Bitte später nochmals versuchen.",
     "placeholderAddress": "Dieses frühere Profil wurde ohne Ihre Adresse importiert.",
     "askOrganizers": "Die Organisatoren bitten"
+  },
+  "duplicates": {
+    "title": "Mögliche Duplikate",
+    "back": "Zurück zu den Benutzern",
+    "intro": "Profilpaare, die wahrscheinlich zur selben Person gehören: gleicher Name, Vor- und Nachname vertauscht oder gleicher Name vor dem @ bei einer anderen Adresse. Vergleichen Sie jedes Paar und führen Sie es zusammen, oder markieren Sie es als kein Duplikat. Es gibt Namensvetter, prüfen Sie im Vergleich deshalb Firma, Adressen und Anmeldungen.",
+    "loadError": "Die Liste konnte nicht geladen werden.",
+    "all": "Alle",
+    "count": "{{count}} Paare",
+    "empty": "Keine möglichen Duplikate gefunden.",
+    "keep": "Behalten",
+    "mergeIn": "Übernehmen und löschen",
+    "compare": "Vergleichen und zusammenführen",
+    "dismiss": "Kein Duplikat",
+    "dismissError": "Das Paar konnte nicht markiert werden. Bitte versuchen Sie es noch einmal.",
+    "bothLogin": "Beide haben ein Login: Nur die Person selbst kann sie zusammenführen (Profil, E-Mail-Adressen).",
+    "placeholder": "Importierte Platzhalter-Adresse",
+    "confidence": {
+      "HIGH": "Sehr wahrscheinlich",
+      "MEDIUM": "Wahrscheinlich",
+      "LOW": "Nur Hinweis"
+    },
+    "rule": {
+      "SAME_NAME": "Gleicher Name",
+      "SWAPPED_NAME": "Vor- und Nachname vertauscht",
+      "SAME_ADDRESS_NAME": "Gleicher Adressname, andere Domain"
+    }
   }
 }

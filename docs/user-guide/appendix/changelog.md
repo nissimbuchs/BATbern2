@@ -74,6 +74,9 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ A confirmed further address can become your primary address (**"Als Hauptadresse verwenden"**). You then log in with it and receive the event mails there; the old primary address stays as a confirmed address.
 - ✅ Two accounts of one person, both with a login (for example first with the company address, later with a private one), can be combined by the person: add the other address on your profile, answer "Ist es Ihres?", and open the link we send to that address while you are logged in. The other account's registrations and events move to this one, its address stays as a confirmed address, and its login is deleted.
 
+**New — Possible duplicates for organizers**:
+- ✅ **Users → Mögliche Duplikate** lists profile pairs that probably belong to one person (same name, swapped first and last name, same address name at another domain), with how likely it is and which profile would stay. One click opens the merge preview with the pair chosen; "Kein Duplikat" hides namesakes for good. About 300 pairs were found on 2026-11-07.
+
 **New — Request a new company logo (#1246)**:
 - ✅ On your profile you now see your company's logo. **"Logo-Änderung beantragen"** lets you upload a new one (PNG, JPG or SVG, at most 5 MB) with an optional note. The request appears on the Mail page with the current and the new logo side by side; any organizer accepts it (the company gets the new logo everywhere) or declines it, optionally with a reason. You are told by mail either way.
 
