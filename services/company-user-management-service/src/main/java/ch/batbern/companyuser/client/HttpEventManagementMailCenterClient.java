@@ -40,18 +40,32 @@ public class HttpEventManagementMailCenterClient implements EventManagementMailC
 
     @Override
     public void openMergeRequest(OpenRequest request) {
+        post(baseUrl + "/internal/mail-center/merge-requests", body(request));
+    }
+
+    @Override
+    public void closeMergeRequest(UUID requestId, String decidedBy) {
+        post(baseUrl + "/internal/mail-center/merge-requests/" + requestId + "/done", Map.of("decidedBy", decidedBy));
+    }
+
+    @Override
+    public void openLogoRequest(OpenRequest request) {
+        post(baseUrl + "/internal/mail-center/logo-requests", body(request));
+    }
+
+    @Override
+    public void closeLogoRequest(UUID requestId, String decidedBy) {
+        post(baseUrl + "/internal/mail-center/logo-requests/" + requestId + "/done", Map.of("decidedBy", decidedBy));
+    }
+
+    private static Map<String, Object> body(OpenRequest request) {
         Map<String, Object> body = new LinkedHashMap<>();
         body.put("requestId", request.requestId());
         body.put("requesterName", request.requesterName());
         body.put("requesterEmail", request.requesterEmail());
         body.put("subject", request.subject());
         body.put("note", request.note());
-        post(baseUrl + "/internal/mail-center/merge-requests", body);
-    }
-
-    @Override
-    public void closeMergeRequest(UUID requestId, String decidedBy) {
-        post(baseUrl + "/internal/mail-center/merge-requests/" + requestId + "/done", Map.of("decidedBy", decidedBy));
+        return body;
     }
 
     private void post(String url, Object body) {

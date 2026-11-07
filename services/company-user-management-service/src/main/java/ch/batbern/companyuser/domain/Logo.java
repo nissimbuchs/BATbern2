@@ -186,6 +186,21 @@ public class Logo {
     }
 
     /**
+     * #1246: moves an associated logo to another entity and key, e.g. from a logo request to the
+     * company once an organizer accepts it.
+     */
+    public void reassignTo(String entityType, String entityId, String newS3Key, String cdnUrl) {
+        if (this.status != LogoStatus.ASSOCIATED) {
+            throw new IllegalStateException("Only ASSOCIATED logos can be reassigned. Current status: " + this.status);
+        }
+        this.associatedEntityType = entityType;
+        this.associatedEntityId = entityId;
+        this.s3Key = newS3Key;
+        this.cloudFrontUrl = cdnUrl;
+        this.updatedAt = Instant.now();
+    }
+
+    /**
      * Business method: Mark upload as confirmed
      * Transitions from PENDING to CONFIRMED
      *

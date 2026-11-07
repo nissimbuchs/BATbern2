@@ -31,6 +31,7 @@ public class ConversationQueryService {
     private static final String SELECT = """
             SELECT c.id, c.conversation_key, c.event_code, c.audience, c.subject, c.counterpart_address,
                    c.counterpart_name, c.status, c.assignee_username, c.last_message_at, c.merge_request_id,
+                   c.logo_request_id,
                    (SELECT count(*) FROM mail_message m WHERE m.conversation_id = c.id) AS message_count,
                    (SELECT m.alias_local_part FROM mail_message m WHERE m.conversation_id = c.id
                      ORDER BY m.created_at LIMIT 1) AS first_alias
@@ -45,7 +46,7 @@ public class ConversationQueryService {
     /** One conversation as listed. {@code via} is the alias address, or {@code reply}. */
     public record ConversationEntry(UUID id, String conversationKey, String eventCode, String audience,
             String subject, String counterpartAddress, String counterpartName, String status, String assigneeUsername,
-            String via, Instant lastMessageAt, int messageCount, UUID mergeRequestId) {
+            String via, Instant lastMessageAt, int messageCount, UUID mergeRequestId, UUID logoRequestId) {
     }
 
     public record ConversationPage(List<ConversationEntry> data, long total) {
@@ -144,7 +145,7 @@ public class ConversationQueryService {
                 rs.getString("assignee_username"),
                 alias != null ? alias + "@" + forwarding.domain() : "reply",
                 rs.getTimestamp("last_message_at").toInstant(), rs.getInt("message_count"),
-                rs.getObject("merge_request_id", UUID.class));
+                rs.getObject("merge_request_id", UUID.class), rs.getObject("logo_request_id", UUID.class));
     }
 
     private ConversationMessage message(ResultSet rs, int row) throws SQLException {

@@ -47,7 +47,7 @@ class InternalMergeRequestIntegrationTest extends AbstractIntegrationTest {
     @AfterEach
     void cleanUp() {
         jdbc.update("DELETE FROM mail_conversation WHERE merge_request_id = ?", REQUEST);
-        jdbc.update("DELETE FROM mail_message WHERE send_group_id = ?", MergeRequestConversations.groupId(REQUEST));
+        jdbc.update("DELETE FROM mail_message WHERE send_group_id = ?", RequestConversations.Kind.MERGE.groupId(REQUEST));
     }
 
     private String open() throws Exception {

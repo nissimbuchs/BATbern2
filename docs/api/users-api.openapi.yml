@@ -67,6 +67,10 @@ tags:
       #1183 C/D: merge two profiles of the same person. Organizers merge any profile without a
       login into another profile; a logged-in person claims an earlier profile under their name
       by confirming a link sent to that profile's address.
+  - name: Company Logo Requests
+    description: |
+      #1246: a participant asks the organizers to change their company's logo; any organizer
+      accepts or declines in the Mail Center.
   - name: Public Organizers
     description: Anonymous public organizer directory (About page)
   - name: Public
@@ -948,6 +952,187 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfileMergeRequestView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/me/company-logo-requests:
+    post:
+      tags:
+        - Company Logo Requests
+      summary: Ask the organizers for a new logo of the caller's company
+      description: |
+        #1246. The logo is uploaded first through the logo upload flow (`/logos/presigned-url`,
+        upload, `/logos/{uploadId}/confirm`); this call hands the confirmed upload over. The
+        request is for the company on the caller's profile (409 `NO_COMPANY` without one). At most
+        one open request per person and company (409 `LOGO_REQUEST_OPEN`). An unknown or
+        unconfirmed upload is 400 `LOGO_NOT_READY`. The upload is kept until the decision, and the
+        request opens a conversation in the Mail Center (502 `LOGO_REQUEST_NOT_DELIVERED` when that
+        fails; nothing is stored then).
+      operationId: createCompanyLogoRequest
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyLogoRequestCreate'
+      responses:
+        '201':
+          description: The request is with the organizers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyLogoRequestView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+        '502':
+          description: The Mail Center did not take the request; nothing was stored
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
+
+  /users/me/company-logo-requests/open:
+    get:
+      tags:
+        - Company Logo Requests
+      summary: The caller's open logo request for their current company, if any
+      description: |
+        #1246. Shown on the profile while the organizers have not decided. 204 when there is none.
+      operationId: getMyOpenCompanyLogoRequest
+      responses:
+        '200':
+          description: The open request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyLogoRequestView'
+        '204':
+          description: No open request
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/company-logo-requests/{requestId}:
+    get:
+      tags:
+        - Company Logo Requests
+      summary: A logo request with the old and the new logo (organizers)
+      description: |
+        #1246. Shown in the Mail Center conversation of the request.
+      operationId: getCompanyLogoRequest
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyLogoRequestView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/company-logo-requests/{requestId}/approve:
+    post:
+      tags:
+        - Company Logo Requests
+      summary: Accept a logo request; the company gets the new logo (organizers)
+      description: |
+        #1246. Sets the logo as an organizer edit would. The requester is mailed at their primary
+        address and the conversation is closed. 409 `LOGO_REQUEST_DECIDED` when already decided.
+      operationId: approveCompanyLogoRequest
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Accepted
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyLogoRequestView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/company-logo-requests/{requestId}/decline:
+    post:
+      tags:
+        - Company Logo Requests
+      summary: Decline a logo request, with an optional reason (organizers)
+      description: |
+        #1246. The requester is mailed, with the reason when one is given. The logo stays. The
+        person may ask again. 409 `LOGO_REQUEST_DECIDED` when already decided.
+      operationId: declineCompanyLogoRequest
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CompanyLogoRequestDecline'
+      responses:
+        '200':
+          description: Declined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CompanyLogoRequestView'
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2696,6 +2881,73 @@ components:
             #1244: the earlier profile carries a placeholder address from the historical import
             (`vorname.nachname@batbern.ch`) that reaches nobody. Only the request to the organizers
             (#1237) is offered; a claim link is refused (409 `PLACEHOLDER_ADDRESS`).
+    CompanyLogoRequestCreate:
+      type: object
+      required: [logoUploadId]
+      additionalProperties: false
+      properties:
+        logoUploadId:
+          type: string
+          minLength: 1
+          maxLength: 100
+          description: Upload id of a confirmed logo upload (`/logos/{uploadId}/confirm`)
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: Neues Logo seit dem Rebranding im Juni.
+    CompanyLogoRequestDecline:
+      type: object
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          maxLength: 1000
+          nullable: true
+          description: Optional; mailed to the requester when given
+    CompanyLogoRequestView:
+      type: object
+      required: [requestId, status, requesterUsername, companyName, newLogoUrl, createdAt]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [OPEN, APPROVED, DECLINED]
+        requesterUsername:
+          type: string
+        requesterName:
+          type: string
+          nullable: true
+        companyName:
+          type: string
+          description: Company identifier (ADR-003 slug)
+        companyDisplayName:
+          type: string
+          nullable: true
+        oldLogoUrl:
+          type: string
+          nullable: true
+          description: The company's logo when the request was made; absent when it had none
+        newLogoUrl:
+          type: string
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        decidedBy:
+          type: string
+          nullable: true
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+        reason:
+          type: string
+          nullable: true
     ProfileMergeRequestCreate:
       type: object
       required: [candidateId]

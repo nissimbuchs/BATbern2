@@ -138,7 +138,8 @@ public class MailConversationController implements MailConversationApi {
                 .via(c.via())
                 .lastMessageAt(c.lastMessageAt().atOffset(ZoneOffset.UTC))
                 .messageCount(c.messageCount())
-                .mergeRequestId(c.mergeRequestId());
+                .mergeRequestId(c.mergeRequestId())
+                .logoRequestId(c.logoRequestId());
     }
 
     private static MailMessageDetail message(ConversationMessage m, String conversationKey) {

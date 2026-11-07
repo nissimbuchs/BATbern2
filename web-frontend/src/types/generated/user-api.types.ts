@@ -426,6 +426,114 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
+  '/users/me/company-logo-requests': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Ask the organizers for a new logo of the caller's company
+     * @description #1246. The logo is uploaded first through the logo upload flow (`/logos/presigned-url`,
+     *     upload, `/logos/{uploadId}/confirm`); this call hands the confirmed upload over. The
+     *     request is for the company on the caller's profile (409 `NO_COMPANY` without one). At most
+     *     one open request per person and company (409 `LOGO_REQUEST_OPEN`). An unknown or
+     *     unconfirmed upload is 400 `LOGO_NOT_READY`. The upload is kept until the decision, and the
+     *     request opens a conversation in the Mail Center (502 `LOGO_REQUEST_NOT_DELIVERED` when that
+     *     fails; nothing is stored then).
+     */
+    post: operations['createCompanyLogoRequest'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/me/company-logo-requests/open': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The caller's open logo request for their current company, if any
+     * @description #1246. Shown on the profile while the organizers have not decided. 204 when there is none.
+     */
+    get: operations['getMyOpenCompanyLogoRequest'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/company-logo-requests/{requestId}': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * A logo request with the old and the new logo (organizers)
+     * @description #1246. Shown in the Mail Center conversation of the request.
+     */
+    get: operations['getCompanyLogoRequest'];
+    put?: never;
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/company-logo-requests/{requestId}/approve': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Accept a logo request; the company gets the new logo (organizers)
+     * @description #1246. Sets the logo as an organizer edit would. The requester is mailed at their primary
+     *     address and the conversation is closed. 409 `LOGO_REQUEST_DECIDED` when already decided.
+     */
+    post: operations['approveCompanyLogoRequest'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
+  '/users/company-logo-requests/{requestId}/decline': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    get?: never;
+    put?: never;
+    /**
+     * Decline a logo request, with an optional reason (organizers)
+     * @description #1246. The requester is mailed, with the reason when one is given. The logo stays. The
+     *     person may ask again. 409 `LOGO_REQUEST_DECIDED` when already decided.
+     */
+    post: operations['declineCompanyLogoRequest'];
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/users/admin/reconcile': {
     parameters: {
       query?: never;
@@ -1379,6 +1487,37 @@ export interface components {
        *     (#1237) is offered; a claim link is refused (409 `PLACEHOLDER_ADDRESS`).
        */
       placeholderAddress?: boolean;
+    };
+    CompanyLogoRequestCreate: {
+      /** @description Upload id of a confirmed logo upload (`/logos/{uploadId}/confirm`) */
+      logoUploadId: string;
+      /** @example Neues Logo seit dem Rebranding im Juni. */
+      note?: string | null;
+    };
+    CompanyLogoRequestDecline: {
+      /** @description Optional; mailed to the requester when given */
+      reason?: string | null;
+    };
+    CompanyLogoRequestView: {
+      /** Format: uuid */
+      requestId: string;
+      /** @enum {string} */
+      status: 'OPEN' | 'APPROVED' | 'DECLINED';
+      requesterUsername: string;
+      requesterName?: string | null;
+      /** @description Company identifier (ADR-003 slug) */
+      companyName: string;
+      companyDisplayName?: string | null;
+      /** @description The company's logo when the request was made; absent when it had none */
+      oldLogoUrl?: string | null;
+      newLogoUrl: string;
+      note?: string | null;
+      /** Format: date-time */
+      createdAt: string;
+      decidedBy?: string | null;
+      /** Format: date-time */
+      decidedAt?: string | null;
+      reason?: string | null;
     };
     ProfileMergeRequestCreate: {
       /** Format: uuid */
@@ -2699,6 +2838,157 @@ export interface operations {
         };
         content: {
           'application/json': components['schemas']['ProfileMergeRequestView'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      409: components['responses']['Conflict'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  createCompanyLogoRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompanyLogoRequestCreate'];
+      };
+    };
+    responses: {
+      /** @description The request is with the organizers */
+      201: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyLogoRequestView'];
+        };
+      };
+      400: components['responses']['BadRequest'];
+      401: components['responses']['Unauthorized'];
+      409: components['responses']['Conflict'];
+      500: components['responses']['InternalServerError'];
+      /** @description The Mail Center did not take the request; nothing was stored */
+      502: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['ErrorResponse'];
+        };
+      };
+    };
+  };
+  getMyOpenCompanyLogoRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The open request */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyLogoRequestView'];
+        };
+      };
+      /** @description No open request */
+      204: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content?: never;
+      };
+      401: components['responses']['Unauthorized'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  getCompanyLogoRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        requestId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description The request */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyLogoRequestView'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  approveCompanyLogoRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        requestId: string;
+      };
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Accepted */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyLogoRequestView'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
+      404: components['responses']['NotFound'];
+      409: components['responses']['Conflict'];
+      500: components['responses']['InternalServerError'];
+    };
+  };
+  declineCompanyLogoRequest: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path: {
+        requestId: string;
+      };
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['CompanyLogoRequestDecline'];
+      };
+    };
+    responses: {
+      /** @description Declined */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CompanyLogoRequestView'];
         };
       };
       400: components['responses']['BadRequest'];
