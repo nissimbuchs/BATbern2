@@ -821,7 +821,8 @@
     "pageSubtitle": "Gestisci i tuoi dati personali, il consenso e la newsletter",
     "tabs": {
       "profile": "Profilo",
-      "consent": "Consenso & Newsletter"
+      "consent": "Consenso & Newsletter",
+      "emails": "Indirizzi e-mail"
     },
     "companyLabel": "Azienda",
     "companyInvalid": "L'ID azienda deve contenere da 1 a 12 lettere o cifre",
@@ -835,8 +836,28 @@
     "consentSave": "Accetta e salva",
     "consentSaveError": "Il salvataggio del consenso non è riuscito. Riprova.",
     "newsletterTitle": "Newsletter",
-    "newsletterDescription": "Ricevi inviti e aggiornamenti sui prossimi eventi BATbern.",
+    "newsletterDescription": "Inviti e novità sui prossimi eventi BATbern. Scelga gli indirizzi che la ricevono.",
     "newsletterLabel": "Iscriviti alla newsletter BATbern",
-    "companySaveError": "Impossibile salvare l’azienda. Riprova."
+    "companySaveError": "Impossibile salvare l’azienda. Riprova.",
+    "emails": {
+      "title": "Indirizzi e-mail",
+      "description": "Il suo indirizzo principale riceve tutte le e-mail sulle sue iscrizioni. Altri indirizzi ci aiutano a riconoscerla, per esempio quando cambia lavoro.",
+      "primary": "Indirizzo principale · accesso con password",
+      "confirmed": "Confermato",
+      "pending": "In attesa di conferma",
+      "resend": "Invia di nuovo il link",
+      "resent": "Link inviato",
+      "eventCopy": "Copia delle e-mail degli eventi a questo indirizzo",
+      "remove": "Rimuovi indirizzo",
+      "removeConfirm": "Rimuovi",
+      "cancel": "Annulla",
+      "add": "Aggiungi",
+      "addPlaceholder": "altro@indirizzo.ch",
+      "addHelp": "Inviamo un link di conferma al nuovo indirizzo.",
+      "errorDuplicate": "Questo indirizzo è già registrato.",
+      "errorLimit": "Ha raggiunto il massimo di 5 indirizzi aggiuntivi.",
+      "errorInvalid": "Inserisca un indirizzo e-mail valido.",
+      "loginHint": "Con la password accede con l’indirizzo principale. Con un indirizzo Gmail o Google confermato può accedere anche tramite «Continua con Google»."
+    }
   }
 }

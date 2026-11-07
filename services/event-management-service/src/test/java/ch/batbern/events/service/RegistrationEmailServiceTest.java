@@ -28,6 +28,7 @@ import org.mockito.quality.Strictness;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import java.time.Instant;
+import java.time.OffsetDateTime;
 import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
@@ -571,7 +572,10 @@ class RegistrationEmailServiceTest {
         ch.batbern.events.dto.generated.users.AdditionalEmail hostpoint =
                 new ch.batbern.events.dto.generated.users.AdditionalEmail()
                         .email("info@batbern.ch")
-                        .label("Hostpoint shared");
+                        .label("Hostpoint shared")
+                        // #1244: a copy only to a confirmed address whose owner switched it on
+                        .verifiedAt(OffsetDateTime.now())
+                        .receiveEventMail(true);
 
         UserResponse userProfile = new UserResponse()
                 .id("nissim.buchs")
@@ -741,7 +745,9 @@ class RegistrationEmailServiceTest {
         UserResponse userProfile = new UserResponse()
                 .id("multi.mail").firstName("Multi").lastName("Mail").email("multi@example.com")
                 .additionalEmails(List.of(new ch.batbern.events.dto.generated.users.AdditionalEmail()
-                        .email("second@example.com")));
+                        .email("second@example.com")
+                        .verifiedAt(OffsetDateTime.now())
+                        .receiveEventMail(true)));
         when(icsCalendarService.generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString()))
                 .thenReturn("ics".getBytes());
         when(emailService.replaceVariables(anyString(), anyMap()))
@@ -753,6 +759,33 @@ class RegistrationEmailServiceTest {
 
         verify(emailService).sendHtmlEmailWithAttachments(any(), eq("multi@example.com"), ccCaptor.capture(), anyString(), anyString(), anyList());
         assertThat(ccCaptor.getValue()).containsExactly("second@example.com");
+    }
+
+    @Test
+    @DisplayName("#1244: no copy to an additional address without the copy switched on or unconfirmed")
+    void should_sendToPrimaryOnly_when_noAddressOptedIn() {
+        Registration registration = confirmedRegistration("multi.mail");
+        UserResponse userProfile = new UserResponse()
+                .id("multi.mail").firstName("Multi").lastName("Mail").email("multi@example.com")
+                .additionalEmails(List.of(
+                        new ch.batbern.events.dto.generated.users.AdditionalEmail()
+                                .email("confirmed-off@example.com")
+                                .verifiedAt(OffsetDateTime.now())
+                                .receiveEventMail(false),
+                        new ch.batbern.events.dto.generated.users.AdditionalEmail()
+                                .email("unconfirmed@example.com")
+                                .receiveEventMail(true)));
+        when(icsCalendarService.generateIcsFile(any(IcsCalendarService.IcsEventData.class), anyString(), anyString()))
+                .thenReturn("ics".getBytes());
+        when(emailService.replaceVariables(anyString(), anyMap()))
+                .thenAnswer(invocation -> invocation.getArgument(0, String.class));
+        ArgumentCaptor<List<String>> ccCaptor = ArgumentCaptor.forClass(List.class);
+
+        registrationEmailService.sendRegistrationConfirmed(
+                registration, userProfile, eventFor(registration), Locale.GERMAN);
+
+        verify(emailService).sendHtmlEmailWithAttachments(any(), eq("multi@example.com"), ccCaptor.capture(), anyString(), anyString(), anyList());
+        assertThat(ccCaptor.getValue()).isEmpty();
     }
 
     @Test

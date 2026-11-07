@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "Impossibile inviare l'e-mail di verifica. Riprovare.",
       "additionalEmailResendAlreadyVerified": "Questo indirizzo e-mail è già verificato.",
       "additionalEmailResendAriaLabel": "Invia di nuovo l'e-mail di verifica a {{email}}",
-      "additionalEmailVerifiedAriaLabel": "{{email}} è verificato"
+      "additionalEmailVerifiedAriaLabel": "{{email}} è verificato",
+      "additionalEmailEventCopy": "Copia delle e-mail degli eventi a questo indirizzo"
     },
     "notifications": {
       "title": "Preferenze notifiche",

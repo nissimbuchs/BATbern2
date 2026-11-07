@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "Kan de verificatie-e-mail niet verzenden. Probeer het opnieuw.",
       "additionalEmailResendAlreadyVerified": "Dit e-mailadres is al geverifieerd.",
       "additionalEmailResendAriaLabel": "Verificatie-e-mail opnieuw verzenden naar {{email}}",
-      "additionalEmailVerifiedAriaLabel": "{{email}} is geverifieerd"
+      "additionalEmailVerifiedAriaLabel": "{{email}} is geverifieerd",
+      "additionalEmailEventCopy": "Kopie van evenementmails naar dit adres"
     },
     "notifications": {
       "title": "Meldingsvoorkeuren",

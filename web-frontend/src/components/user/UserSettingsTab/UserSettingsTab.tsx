@@ -44,6 +44,7 @@ import {
   useAddAdditionalEmail,
   useDeleteAdditionalEmail,
   useResendVerification,
+  useUpdateAdditionalEmail,
   useUpdateUserPreferences,
   useUpdateUserSettings,
 } from '@/hooks/useUserAccount/useUserAccount';
@@ -95,6 +96,7 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
   const addMutation = useAddAdditionalEmail();
   const deleteMutation = useDeleteAdditionalEmail();
   const resendMutation = useResendVerification();
+  const updateEmailMutation = useUpdateAdditionalEmail();
   const [emailInput, setEmailInput] = useState('');
   const [labelInput, setLabelInput] = useState('');
   const [inlineError, setInlineError] = useState<string | null>(null);
@@ -304,7 +306,38 @@ function AdditionalEmailsSection({ additionalEmails }: { additionalEmails: Addit
                     )}
                   </Stack>
                 }
-                secondary={entry.label || undefined}
+                secondaryTypographyProps={{ component: 'div' }}
+                secondary={
+                  <>
+                    {entry.label && <span>{entry.label}</span>}
+                    {/* #1244: event mails go to the primary address; a copy is opt-in per
+                        confirmed address */}
+                    {entry.verifiedAt !== null && (
+                      <FormControlLabel
+                        sx={{ display: 'flex', ml: 0 }}
+                        control={
+                          <Checkbox
+                            size="small"
+                            checked={!!entry.receiveEventMail}
+                            disabled={updateEmailMutation.isPending}
+                            onChange={(e) =>
+                              updateEmailMutation.mutate({
+                                email: entry.email,
+                                receiveEventMail: e.target.checked,
+                              })
+                            }
+                            inputProps={
+                              {
+                                'data-testid': `additional-email-event-copy-${entry.email}`,
+                              } as React.InputHTMLAttributes<HTMLInputElement>
+                            }
+                          />
+                        }
+                        label={t('settings.account.additionalEmailEventCopy')}
+                      />
+                    )}
+                  </>
+                }
               />
             </ListItem>
           ))}

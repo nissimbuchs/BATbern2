@@ -28,6 +28,7 @@ import ch.batbern.companyuser.dto.generated.ProfilePictureUploadConfirmResponse;
 import ch.batbern.companyuser.dto.generated.ProfilePictureUploadRequest;
 import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
 import ch.batbern.companyuser.dto.generated.ProvisionUserResponse;
+import ch.batbern.companyuser.dto.generated.UpdateAdditionalEmailRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRolesRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
@@ -421,6 +422,17 @@ public class UserController implements UserManagementApi, UserAccountApi, Profil
         log.info("Adding additional email for current user");
         AdditionalEmail created = userService.addAdditionalEmail(addAdditionalEmailRequest);
         return ResponseEntity.status(HttpStatus.CREATED).body(created);
+    }
+
+    /**
+     * #1244 — switch the copy of event mails for one of the caller's additional addresses.
+     * 404 if not the caller's, 409 {@code NOT_VERIFIED} when switching it on for an unconfirmed one.
+     */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<AdditionalEmail> updateAdditionalEmail(String email,
+            UpdateAdditionalEmailRequest updateAdditionalEmailRequest) {
+        return ResponseEntity.ok(userService.updateAdditionalEmail(email, updateAdditionalEmailRequest));
     }
 
     /**

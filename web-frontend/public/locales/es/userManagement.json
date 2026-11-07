@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "No se pudo enviar el correo de verificación. Inténtelo de nuevo.",
       "additionalEmailResendAlreadyVerified": "Esta dirección de correo ya está verificada.",
       "additionalEmailResendAriaLabel": "Reenviar el correo de verificación a {{email}}",
-      "additionalEmailVerifiedAriaLabel": "{{email}} está verificado"
+      "additionalEmailVerifiedAriaLabel": "{{email}} está verificado",
+      "additionalEmailEventCopy": "Copia de los correos de eventos a esta dirección"
     },
     "notifications": {
       "title": "Preferencias de notificación",

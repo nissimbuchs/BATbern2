@@ -1424,6 +1424,51 @@ paths:
         - BearerAuth: []
 
   /users/me/additional-emails/{email}:
+    patch:
+      tags:
+        - User Account
+      summary: Change the settings of one of the caller's additional email addresses
+      description: |
+        #1244 — switch the copy of event mails for one additional address on or off. Only a
+        confirmed address can receive copies (409 `NOT_VERIFIED` otherwise).
+      operationId: updateAdditionalEmail
+      parameters:
+        - name: email
+          in: path
+          required: true
+          description: URL-encoded email address, case-insensitive.
+          schema:
+            type: string
+            format: email
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateAdditionalEmailRequest'
+      responses:
+        '200':
+          description: The updated additional email
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AdditionalEmail'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          description: No matching additional email on the caller's profile.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+        '409':
+          description: The address is not confirmed yet (`NOT_VERIFIED`).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+      security:
+        - BearerAuth: []
     delete:
       tags:
         - User Account
@@ -2715,6 +2760,23 @@ components:
           description: |
             Reserved for the v2 verification flow (Story 10.32 Resolved Decision #1).
             v1 always returns null.
+        receiveEventMail:
+          type: boolean
+          default: false
+          description: |
+            #1244 — this address gets a copy of event mails (registration, waitlist,
+            invitations, reminders). Event mails go to the primary address; a copy only to
+            confirmed additional addresses that opted in. Off by default.
+
+    UpdateAdditionalEmailRequest:
+      type: object
+      description: "#1244 — settings of one of the caller's additional addresses."
+      required:
+        - receiveEventMail
+      properties:
+        receiveEventMail:
+          type: boolean
+          description: Copy of event mails to this address. Only for a confirmed address.
 
     AddAdditionalEmailRequest:
       type: object

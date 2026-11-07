@@ -50,7 +50,8 @@
       "additionalEmailResendFailed": "D'Bestätigungs-E-Mail het nid chönne gschickt wärde. Probier's bitte nomal.",
       "additionalEmailResendAlreadyVerified": "Die E-Mail-Adrässe isch scho bestätigt.",
       "additionalEmailResendAriaLabel": "Bestätigungs-E-Mail no einisch a {{email}} schicke",
-      "additionalEmailVerifiedAriaLabel": "{{email}} isch bestätigt"
+      "additionalEmailVerifiedAriaLabel": "{{email}} isch bestätigt",
+      "additionalEmailEventCopy": "Kopie vo de Event-Mails a die Adrässe"
     },
     "notifications": {
       "qnaFrequency": "Q&A-Mäldige",

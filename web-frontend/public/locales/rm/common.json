@@ -821,7 +821,8 @@
     "pageSubtitle": "Administrai vossas datas persunalas, il consentiment ed il newsletter",
     "tabs": {
       "profile": "Profil",
-      "consent": "Consentiment & Newsletter"
+      "consent": "Consentiment & Newsletter",
+      "emails": "Adressas dad e-mail"
     },
     "companyLabel": "Interpresa",
     "companyInvalid": "L'ID da l'interpresa sto cuntegnair 1 fin 12 bustabs u cifras",
@@ -835,8 +836,28 @@
     "consentSave": "Acceptar e memorisar",
     "consentSaveError": "Memorisar voss consentiment n’è betg reussì. Empruvai anc ina giada.",
     "newsletterTitle": "Newsletter",
-    "newsletterDescription": "Retschavai invitaziuns e novitads davart ils proxims eveniments BATbern.",
+    "newsletterDescription": "Invitaziuns e novitads davart ils proxims eveniments BATbern. Tscherni las adressas che la survegnan.",
     "newsletterLabel": "Abunar il newsletter da BATbern",
-    "companySaveError": "I n’è betg reussì da memorisar l’interpresa. Empruvai anc ina giada."
+    "companySaveError": "I n’è betg reussì da memorisar l’interpresa. Empruvai anc ina giada.",
+    "emails": {
+      "title": "Adressas dad e-mail",
+      "description": "Vossa adressa principala survegn tut ils e-mails davart vossas annunzias. Ulteriuras adressas ans gidan da As renconuscher, per exempel cura che Vus midais la plazza.",
+      "primary": "Adressa principala · annunzia cun pled-clav",
+      "confirmed": "Confermà",
+      "pending": "Spetga sin conferma",
+      "resend": "Trametter danovamain la colliaziun",
+      "resent": "Colliaziun tramessa",
+      "eventCopy": "Copia dals e-mails d’eveniments a questa adressa",
+      "remove": "Allontanar l’adressa",
+      "removeConfirm": "Allontanar",
+      "cancel": "Interrumper",
+      "add": "Agiuntar",
+      "addPlaceholder": "ulteriura@adressa.ch",
+      "addHelp": "Nus tramettain ina colliaziun da conferma a la nova adressa.",
+      "errorDuplicate": "Questa adressa è gia registrada.",
+      "errorLimit": "Vus avais cuntanschì il maximum da 5 ulteriuras adressas.",
+      "errorInvalid": "Endatai per plaschair ina adressa dad e-mail valida.",
+      "loginHint": "Cun il pled-clav As annunziais Vus cun l’adressa principala. Cun ina adressa Gmail u Google confermada pudais Vus As annunziar era via «Cuntinuar cun Google»."
+    }
   }
 }

@@ -210,7 +210,8 @@
       "additionalEmailResendFailed": "Could not send the verification email. Please try again.",
       "additionalEmailResendAlreadyVerified": "This email is already verified.",
       "additionalEmailResendAriaLabel": "Resend verification email to {{email}}",
-      "additionalEmailVerifiedAriaLabel": "{{email}} is verified"
+      "additionalEmailVerifiedAriaLabel": "{{email}} is verified",
+      "additionalEmailEventCopy": "Copy of event mails to this address"
     },
     "notifications": {
       "title": "Notification Preferences",

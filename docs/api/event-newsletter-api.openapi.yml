@@ -358,6 +358,49 @@ paths:
                 $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
         '401':
           $ref: '#/components/responses/Unauthorized'
+  /newsletter/my-subscriptions:
+    get:
+      tags:
+      - Newsletter
+      summary: The authenticated user's newsletter state per address (#1244)
+      description: |
+        One entry per address of the caller: the primary address first, then every confirmed
+        additional address. Unconfirmed addresses are not listed.
+      operationId: getMyNewsletterSubscriptions
+      responses:
+        '200':
+          description: Subscription state per address
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyNewsletterSubscriptionsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+    put:
+      tags:
+      - Newsletter
+      summary: Subscribe or unsubscribe one of the authenticated user's addresses (#1244)
+      description: |
+        Changes only the given address; the others stay as they are. The address must be the
+        caller's primary or a confirmed additional address (403 otherwise).
+      operationId: putMyNewsletterSubscription
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PutMyNewsletterSubscriptionRequest'
+      responses:
+        '200':
+          description: Subscription state per address after the change
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MyNewsletterSubscriptionsResponse'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
   /newsletter/subscribers/count:
     get:
       tags:
@@ -1261,6 +1304,46 @@ components:
           nullable: true
           description: Updated layout key (null = standalone)
           maxLength: 100
+    MyNewsletterSubscriptionsResponse:
+      type: object
+      required:
+      - addresses
+      properties:
+        addresses:
+          type: array
+          items:
+            $ref: '#/components/schemas/NewsletterAddressSubscription'
+    NewsletterAddressSubscription:
+      type: object
+      required:
+      - email
+      - primary
+      - subscribed
+      properties:
+        email:
+          type: string
+          description: Lower-cased address.
+        primary:
+          type: boolean
+          description: The account's primary address.
+        subscribed:
+          type: boolean
+    PutMyNewsletterSubscriptionRequest:
+      type: object
+      required:
+      - email
+      - subscribed
+      properties:
+        email:
+          type: string
+          format: email
+        subscribed:
+          type: boolean
+        language:
+          type: string
+          nullable: true
+          default: de
+          description: Preferred newsletter language when subscribing; defaults to 'de'.
     PatchNewsletterSubscriptionRequest:
       type: object
       required:

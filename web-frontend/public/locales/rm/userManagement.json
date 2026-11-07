@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "Impussibel da trametter l'e-mail da verificaziun. Empruvai anc ina giada.",
       "additionalEmailResendAlreadyVerified": "Questa adressa d'e-mail è gia verifitgada.",
       "additionalEmailResendAriaLabel": "Trametter danovamain l'e-mail da verificaziun a {{email}}",
-      "additionalEmailVerifiedAriaLabel": "{{email}} è verifitgà"
+      "additionalEmailVerifiedAriaLabel": "{{email}} è verifitgà",
+      "additionalEmailEventCopy": "Copia dals e-mails d’eveniments a questa adressa"
     },
     "notifications": {
       "title": "Preferenzas da notificaziun",

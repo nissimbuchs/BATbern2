@@ -20,8 +20,8 @@ vi.mock('@/services/api/userAccountApi', () => ({
 }));
 
 vi.mock('@/services/newsletterService', () => ({
-  getMySubscription: vi.fn(),
-  patchMySubscription: vi.fn(),
+  getMySubscriptions: vi.fn(),
+  putMySubscription: vi.fn(),
 }));
 
 vi.mock('@/hooks/useAuth', () => ({
@@ -42,14 +42,14 @@ vi.mock('@/services/api/companyApi', () => ({
 }));
 
 import { getUserProfile, updateUserProfile } from '@/services/api/userAccountApi';
-import { getMySubscription, patchMySubscription } from '@/services/newsletterService';
+import { getMySubscriptions, putMySubscription } from '@/services/newsletterService';
 import { useAuth } from '@/hooks/useAuth';
 import ProfilePage from '../ProfilePage';
 
 const mockedGetProfile = vi.mocked(getUserProfile);
 const mockedUpdateProfile = vi.mocked(updateUserProfile);
-const mockedGetMySubscription = vi.mocked(getMySubscription);
-const mockedPatchMySubscription = vi.mocked(patchMySubscription);
+const mockedGetMySubscriptions = vi.mocked(getMySubscriptions);
+const mockedPutMySubscription = vi.mocked(putMySubscription);
 const mockedUseAuth = vi.mocked(useAuth);
 
 const refreshUser = vi.fn();
@@ -98,7 +98,9 @@ describe('ProfilePage — Story 12.11 role-neutral profile with tabs', () => {
       isLoading: false,
       refreshUser,
     } as never);
-    mockedGetMySubscription.mockResolvedValue({ subscribed: false });
+    mockedGetMySubscriptions.mockResolvedValue({
+      addresses: [{ email: 'attendee@example.com', primary: true, subscribed: false }],
+    });
   });
 
   it('should_renderBothTabs_when_nonSpeakerRoleLoadsPage', async () => {
@@ -252,22 +254,48 @@ describe('ProfilePage — Story 12.11 role-neutral profile with tabs', () => {
     });
   });
 
-  it('should_toggleNewsletterViaMySubscription_when_switchClicked', async () => {
+  it('should_subscribeOneAddress_when_newsletterCheckboxClicked', async () => {
     mockedGetProfile.mockResolvedValue(profileFixture() as never);
-    mockedGetMySubscription.mockResolvedValue({ subscribed: false });
-    mockedPatchMySubscription.mockResolvedValue({ subscribed: true } as never);
+    mockedPutMySubscription.mockResolvedValue({
+      addresses: [{ email: 'attendee@example.com', primary: true, subscribed: true }],
+    });
     const user = userEvent.setup();
 
     renderPage();
 
     await user.click(await screen.findByTestId('consent-tab'));
-    await user.click(await screen.findByTestId('newsletter-toggle'));
+    await user.click(await screen.findByTestId('newsletter-address-attendee@example.com'));
 
     await waitFor(() => {
-      // EMS newsletter self-service — NOT a /users/me field (Scope Revision #1)
-      expect(mockedPatchMySubscription).toHaveBeenCalledWith(true, 'en');
+      // #1244: EMS newsletter per address — NOT a /users/me field
+      expect(mockedPutMySubscription).toHaveBeenCalledWith('attendee@example.com', true, 'en');
     });
     expect(mockedUpdateProfile).not.toHaveBeenCalled();
+  });
+
+  it('should_showEmailAddresses_when_emailsTabOpened', async () => {
+    mockedGetProfile.mockResolvedValue(
+      profileFixture({
+        additionalEmails: [
+          {
+            email: 'private@example.com',
+            label: null,
+            createdAt: '2026-11-01T10:00:00Z',
+            verifiedAt: '2026-11-01T10:05:00Z',
+            receiveEventMail: false,
+          },
+        ],
+      }) as never
+    );
+    const user = userEvent.setup();
+
+    renderPage();
+
+    await user.click(await screen.findByTestId('emails-tab'));
+
+    const section = await screen.findByTestId('email-addresses-section');
+    expect(within(section).getByText('attendee@example.com')).toBeInTheDocument();
+    expect(within(section).getByText('private@example.com')).toBeInTheDocument();
   });
 
   it('should_renderErrorUi_when_profileFetchFails', async () => {

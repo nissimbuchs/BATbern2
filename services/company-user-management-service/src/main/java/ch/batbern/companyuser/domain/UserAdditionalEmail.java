@@ -93,6 +93,14 @@ public class UserAdditionalEmail {
     @Column(name = "verified_at")
     private Instant verifiedAt;
 
+    /**
+     * #1244: this address gets a copy of event mails. Only honoured while {@link #verifiedAt}
+     * is set; the owner switches it on their profile.
+     */
+    @Builder.Default
+    @Column(name = "receive_event_mail", nullable = false)
+    private boolean receiveEventMail = false;
+
     @PrePersist
     void onCreate() {
         if (createdAt == null) {

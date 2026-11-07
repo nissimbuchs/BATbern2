@@ -821,7 +821,8 @@
     "pageSubtitle": "Hallinnoi henkilötietojasi, suostumustasi ja uutiskirjettä",
     "tabs": {
       "profile": "Profiili",
-      "consent": "Suostumus & Uutiskirje"
+      "consent": "Suostumus & Uutiskirje",
+      "emails": "Sähköpostiosoitteet"
     },
     "companyLabel": "Yritys",
     "companyInvalid": "Yritystunnuksen on oltava 1–12 kirjainta tai numeroa",
@@ -835,8 +836,28 @@
     "consentSave": "Hyväksy ja tallenna",
     "consentSaveError": "Suostumuksen tallentaminen epäonnistui. Yritä uudelleen.",
     "newsletterTitle": "Uutiskirje",
-    "newsletterDescription": "Saat kutsuja ja uutisia tulevista BATbern-tapahtumista.",
+    "newsletterDescription": "Kutsuja ja uutisia tulevista BATbern-tapahtumista. Valitse osoitteet, jotka saavat sen.",
     "newsletterLabel": "Tilaa BATbern-uutiskirje",
-    "companySaveError": "Yrityksen tallennus epäonnistui. Yritä uudelleen."
+    "companySaveError": "Yrityksen tallennus epäonnistui. Yritä uudelleen.",
+    "emails": {
+      "title": "Sähköpostiosoitteet",
+      "description": "Pääosoitteesi saa kaikki ilmoittautumisiasi koskevat viestit. Muut osoitteet auttavat meitä tunnistamaan sinut esimerkiksi työpaikan vaihtuessa.",
+      "primary": "Pääosoite · kirjautuminen salasanalla",
+      "confirmed": "Vahvistettu",
+      "pending": "Odottaa vahvistusta",
+      "resend": "Lähetä linkki uudelleen",
+      "resent": "Linkki lähetetty",
+      "eventCopy": "Kopio tapahtumaviesteistä tähän osoitteeseen",
+      "remove": "Poista osoite",
+      "removeConfirm": "Poista",
+      "cancel": "Peruuta",
+      "add": "Lisää",
+      "addPlaceholder": "toinen@osoite.fi",
+      "addHelp": "Lähetämme vahvistuslinkin uuteen osoitteeseen.",
+      "errorDuplicate": "Tämä osoite on jo rekisteröity.",
+      "errorLimit": "Olet saavuttanut enintään 5 lisäosoitteen rajan.",
+      "errorInvalid": "Anna kelvollinen sähköpostiosoite.",
+      "loginHint": "Salasanalla kirjaudut pääosoitteella. Vahvistetulla Gmail- tai Google-osoitteella voit kirjautua myös ”Jatka Googlella” -painikkeella."
+    }
   }
 }

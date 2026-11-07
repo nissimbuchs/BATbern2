@@ -4,7 +4,6 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.speakers.dto.generated.SpeakerPoolResponse;
-import ch.batbern.events.dto.generated.users.AdditionalEmail;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserNotFoundException;
 import ch.batbern.events.exception.UserServiceException;
@@ -13,7 +12,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
@@ -103,20 +101,13 @@ public class PrimarySpeakerResolver {
     }
 
     /**
-     * Story 10.32 — flatten the speaker's additional emails into a list of plain
-     * strings. Returns an empty list when the CUMS response predates Story 10.32
+     * Story 10.32, #1244 — the speaker's additional addresses that get a copy of event mails
+     * (confirmed and switched on). Empty when the CUMS response predates Story 10.32
      * (field absent) or when the user has none.
      */
     private static List<String> flattenAdditionalEmails(UserResponse user) {
-        List<AdditionalEmail> raw = user.getAdditionalEmails();
-        if (raw == null || raw.isEmpty()) {
-            return List.of();
-        }
-        return raw.stream()
-                .map(AdditionalEmail::getEmail)
-                .filter(Objects::nonNull)
-                .filter(s -> !s.isBlank())
-                .toList();
+        // #1244: only confirmed addresses whose owner wants a copy of event mails
+        return EventMailCopies.of(user);
     }
 
     /**

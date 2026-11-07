@@ -821,7 +821,8 @@
     "pageSubtitle": "Beheer je persoonlijke gegevens, toestemming en nieuwsbrief",
     "tabs": {
       "profile": "Profiel",
-      "consent": "Toestemming & Nieuwsbrief"
+      "consent": "Toestemming & Nieuwsbrief",
+      "emails": "E-mailadressen"
     },
     "companyLabel": "Bedrijf",
     "companyInvalid": "Het bedrijfs-ID moet uit 1-12 letters of cijfers bestaan",
@@ -835,8 +836,28 @@
     "consentSave": "Accepteren en opslaan",
     "consentSaveError": "Het opslaan van je toestemming is mislukt. Probeer het opnieuw.",
     "newsletterTitle": "Nieuwsbrief",
-    "newsletterDescription": "Ontvang uitnodigingen en updates over komende BATbern-evenementen.",
+    "newsletterDescription": "Uitnodigingen en nieuws over komende BATbern-evenementen. Kies de adressen die hem ontvangen.",
     "newsletterLabel": "Abonneer je op de BATbern-nieuwsbrief",
-    "companySaveError": "Kan het bedrijf niet opslaan. Probeer het opnieuw."
+    "companySaveError": "Kan het bedrijf niet opslaan. Probeer het opnieuw.",
+    "emails": {
+      "title": "E-mailadressen",
+      "description": "Uw hoofdadres ontvangt alle e-mails over uw inschrijvingen. Andere adressen helpen ons u te herkennen, bijvoorbeeld als u van baan verandert.",
+      "primary": "Hoofdadres · inloggen met wachtwoord",
+      "confirmed": "Bevestigd",
+      "pending": "Wacht op bevestiging",
+      "resend": "Link opnieuw versturen",
+      "resent": "Link verstuurd",
+      "eventCopy": "Kopie van evenementmails naar dit adres",
+      "remove": "Adres verwijderen",
+      "removeConfirm": "Verwijderen",
+      "cancel": "Annuleren",
+      "add": "Toevoegen",
+      "addPlaceholder": "ander@adres.nl",
+      "addHelp": "We sturen een bevestigingslink naar het nieuwe adres.",
+      "errorDuplicate": "Dit adres is al geregistreerd.",
+      "errorLimit": "U hebt het maximum van 5 extra adressen bereikt.",
+      "errorInvalid": "Voer een geldig e-mailadres in.",
+      "loginHint": "Met het wachtwoord logt u in met het hoofdadres. Met een bevestigd Gmail- of Google-adres kunt u ook inloggen via ‘Doorgaan met Google’."
+    }
   }
 }

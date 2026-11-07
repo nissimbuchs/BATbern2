@@ -140,6 +140,32 @@ export interface paths {
     patch: operations['patchMyNewsletterSubscription'];
     trace?: never;
   };
+  '/newsletter/my-subscriptions': {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    /**
+     * The authenticated user's newsletter state per address (#1244)
+     * @description One entry per address of the caller: the primary address first, then every confirmed
+     *     additional address. Unconfirmed addresses are not listed.
+     */
+    get: operations['getMyNewsletterSubscriptions'];
+    /**
+     * Subscribe or unsubscribe one of the authenticated user's addresses (#1244)
+     * @description Changes only the given address; the others stay as they are. The address must be the
+     *     caller's primary or a confirmed additional address (403 otherwise).
+     */
+    put: operations['putMyNewsletterSubscription'];
+    post?: never;
+    delete?: never;
+    options?: never;
+    head?: never;
+    patch?: never;
+    trace?: never;
+  };
   '/newsletter/subscribers/count': {
     parameters: {
       query?: never;
@@ -631,6 +657,26 @@ export interface components {
       /** @description Updated layout key (null = standalone) */
       layoutKey?: string | null;
     };
+    MyNewsletterSubscriptionsResponse: {
+      addresses: components['schemas']['NewsletterAddressSubscription'][];
+    };
+    NewsletterAddressSubscription: {
+      /** @description Lower-cased address. */
+      email: string;
+      /** @description The account's primary address. */
+      primary: boolean;
+      subscribed: boolean;
+    };
+    PutMyNewsletterSubscriptionRequest: {
+      /** Format: email */
+      email: string;
+      subscribed: boolean;
+      /**
+       * @description Preferred newsletter language when subscribing; defaults to 'de'.
+       * @default de
+       */
+      language: string | null;
+    };
     PatchNewsletterSubscriptionRequest: {
       subscribed: boolean;
       /**
@@ -1091,6 +1137,53 @@ export interface operations {
         };
       };
       401: components['responses']['Unauthorized'];
+    };
+  };
+  getMyNewsletterSubscriptions: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody?: never;
+    responses: {
+      /** @description Subscription state per address */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyNewsletterSubscriptionsResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+    };
+  };
+  putMyNewsletterSubscription: {
+    parameters: {
+      query?: never;
+      header?: never;
+      path?: never;
+      cookie?: never;
+    };
+    requestBody: {
+      content: {
+        'application/json': components['schemas']['PutMyNewsletterSubscriptionRequest'];
+      };
+    };
+    responses: {
+      /** @description Subscription state per address after the change */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['MyNewsletterSubscriptionsResponse'];
+        };
+      };
+      401: components['responses']['Unauthorized'];
+      403: components['responses']['Forbidden'];
     };
   };
   getSubscriberCount: {

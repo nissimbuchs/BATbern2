@@ -5,6 +5,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.newsletter.api.generated.NewsletterApi;
 import ch.batbern.events.newsletter.dto.generated.ListNewsletterSubscribers200Response;
+import ch.batbern.events.newsletter.dto.generated.MyNewsletterSubscriptionsResponse;
 import ch.batbern.events.newsletter.dto.generated.NewsletterPreviewResponse;
 import ch.batbern.events.newsletter.dto.generated.NewsletterSendRequest;
 import ch.batbern.events.newsletter.dto.generated.NewsletterSendResponse;
@@ -13,6 +14,7 @@ import ch.batbern.events.newsletter.dto.generated.NewsletterSubscribeRequest;
 import ch.batbern.events.newsletter.dto.generated.NewsletterSubscriptionStatusResponse;
 import ch.batbern.events.newsletter.dto.generated.NewsletterUnsubscribeRequest;
 import ch.batbern.events.newsletter.dto.generated.PatchNewsletterSubscriptionRequest;
+import ch.batbern.events.newsletter.dto.generated.PutMyNewsletterSubscriptionRequest;
 import ch.batbern.events.newsletter.dto.generated.SubscriberCountResponse;
 import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
 import ch.batbern.events.newsletter.dto.generated.VerifyUnsubscribeToken200Response;
@@ -21,6 +23,7 @@ import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.security.SecurityContextHelper;
 import ch.batbern.events.service.NewsletterEmailService;
 import ch.batbern.events.service.NewsletterSubscriberService;
+import ch.batbern.events.service.PersonAddresses;
 import ch.batbern.shared.api.PaginationMetadata;
 import ch.batbern.shared.api.PaginationParams;
 import ch.batbern.shared.api.PaginationUtils;
@@ -29,6 +32,7 @@ import ch.batbern.shared.api.SortDirection;
 import ch.batbern.shared.api.SortParser;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
 import org.springframework.web.bind.annotation.RequestMapping;
@@ -36,7 +40,9 @@ import org.springframework.web.bind.annotation.RestController;
 
 import java.util.UUID;
 
+import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 
@@ -60,6 +66,7 @@ public class NewsletterController implements NewsletterApi {
     private final EventRepository eventRepository;
     private final NewsletterSendRepository sendRepository;
     private final SecurityContextHelper securityContextHelper;
+    private final PersonAddresses personAddresses;
 
     // ── Public endpoints ──────────────────────────────────────────────────────
 
@@ -109,6 +116,50 @@ public class NewsletterController implements NewsletterApi {
         String username = securityContextHelper.getCurrentUsername();
         String email = securityContextHelper.getCurrentUserEmail();
         return ResponseEntity.ok(subscriberService.getMySubscription(username, email));
+    }
+
+    /** #1244: the caller's newsletter state per address (primary first, then confirmed ones). */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<MyNewsletterSubscriptionsResponse> getMyNewsletterSubscriptions() {
+        return ResponseEntity.ok(myAddressSubscriptions(securityContextHelper.getCurrentUsername()));
+    }
+
+    /** #1244: subscribe or unsubscribe one address; only the caller's primary or confirmed ones. */
+    @Override
+    @PreAuthorize("isAuthenticated()")
+    public ResponseEntity<MyNewsletterSubscriptionsResponse> putMyNewsletterSubscription(
+            PutMyNewsletterSubscriptionRequest request) {
+        String username = securityContextHelper.getCurrentUsername();
+        String email = request.getEmail() == null ? "" : request.getEmail().trim().toLowerCase(Locale.ROOT);
+        if (!myAddresses(username).contains(email)) {
+            log.warn("Newsletter change refused: {} is not an address of {}", LoggingUtils.maskEmail(email), username);
+            return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        }
+        String language = request.getLanguage() != null ? request.getLanguage() : "de";
+        subscriberService.setAddressSubscription(username, email, Boolean.TRUE.equals(request.getSubscribed()),
+                language);
+        return ResponseEntity.ok(myAddressSubscriptions(username));
+    }
+
+    /** Primary first, then confirmed additional addresses; the login address if CUMS is unreachable. */
+    private List<String> myAddresses(String username) {
+        List<String> addresses = new ArrayList<>(personAddresses.verified(username));
+        if (addresses.isEmpty()) {
+            String email = securityContextHelper.getCurrentUserEmail();
+            if (email != null && !email.isBlank()) {
+                addresses.add(email.trim().toLowerCase(Locale.ROOT));
+            }
+        }
+        return addresses;
+    }
+
+    private MyNewsletterSubscriptionsResponse myAddressSubscriptions(String username) {
+        List<String> addresses = myAddresses(username);
+        String primary = addresses.isEmpty() ? null : addresses.get(0);
+        return MyNewsletterSubscriptionsResponse.builder()
+                .addresses(subscriberService.addressSubscriptions(addresses, primary))
+                .build();
     }
 
     /** AC7: Update authenticated user's subscription status. */

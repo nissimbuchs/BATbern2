@@ -255,19 +255,8 @@ public class RegistrationEmailService {
      * for users whose CUMS response predates the additional-emails field.
      */
     private static List<String> additionalEmailsFor(UserResponse userProfile) {
-        if (userProfile == null) {
-            return List.of();
-        }
-        List<ch.batbern.events.dto.generated.users.AdditionalEmail> raw =
-                userProfile.getAdditionalEmails();
-        if (raw == null || raw.isEmpty()) {
-            return List.of();
-        }
-        return raw.stream()
-                .map(ch.batbern.events.dto.generated.users.AdditionalEmail::getEmail)
-                .filter(java.util.Objects::nonNull)
-                .filter(s -> !s.isBlank())
-                .toList();
+        // #1244: only confirmed addresses whose owner wants a copy
+        return EventMailCopies.of(userProfile);
     }
 
     private record EmailContent(String html, String subject) {}

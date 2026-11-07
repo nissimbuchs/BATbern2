@@ -27,6 +27,7 @@ vi.mock('react-i18next', () => ({
 const mockAddMutate = vi.fn();
 const mockDeleteMutate = vi.fn();
 const mockResendMutate = vi.fn();
+const mockUpdateEmailMutate = vi.fn();
 const mockUpdatePrefs = vi.fn();
 
 vi.mock('@/hooks/useUserAccount/useUserAccount', () => ({
@@ -42,6 +43,10 @@ vi.mock('@/hooks/useUserAccount/useUserAccount', () => ({
   }),
   useResendVerification: () => ({
     mutateAsync: mockResendMutate,
+    isPending: false,
+  }),
+  useUpdateAdditionalEmail: () => ({
+    mutate: mockUpdateEmailMutate,
     isPending: false,
   }),
 }));
@@ -339,5 +344,32 @@ describe('UserSettingsTab — responsive sub-tabs (organizer mobile)', () => {
     expect(
       await screen.findByText('settings.account.additionalEmailResendSuccess')
     ).toBeInTheDocument();
+  });
+
+  // #1244: copy of event mails per confirmed address
+  test('should switch the copy of event mails for a confirmed address and not offer it otherwise', () => {
+    renderWithProviders([
+      {
+        email: 'box@example.com',
+        label: null,
+        createdAt: '2026-06-06T10:00:00Z',
+        verifiedAt: '2026-06-06T11:00:00Z',
+        receiveEventMail: false,
+      },
+      {
+        email: 'pending@example.com',
+        label: null,
+        createdAt: '2026-06-06T10:00:00Z',
+        verifiedAt: null,
+      },
+    ]);
+
+    expect(screen.queryByTestId('additional-email-event-copy-pending@example.com')).toBeNull();
+    fireEvent.click(screen.getByTestId('additional-email-event-copy-box@example.com'));
+
+    expect(mockUpdateEmailMutate).toHaveBeenCalledWith({
+      email: 'box@example.com',
+      receiveEventMail: true,
+    });
   });
 });

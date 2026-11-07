@@ -21,6 +21,17 @@ export interface NewsletterSubscriptionStatusResponse {
   email?: string;
 }
 
+/** #1244: newsletter state of one of the authenticated user's addresses. */
+export interface NewsletterAddressSubscription {
+  email: string;
+  primary: boolean;
+  subscribed: boolean;
+}
+
+export interface MyNewsletterSubscriptionsResponse {
+  addresses: NewsletterAddressSubscription[];
+}
+
 export interface NewsletterSendRequest {
   isReminder: boolean;
   locale: 'de' | 'en';
@@ -118,6 +129,27 @@ export async function patchMySubscription(
   const response = await apiClient.patch<NewsletterSubscriptionStatusResponse>(
     '/newsletter/my-subscription',
     { subscribed, ...(language ? { language } : {}) }
+  );
+  return response.data;
+}
+
+/** #1244: the authenticated user's newsletter state per address (primary first). */
+export async function getMySubscriptions(): Promise<MyNewsletterSubscriptionsResponse> {
+  const response = await apiClient.get<MyNewsletterSubscriptionsResponse>(
+    '/newsletter/my-subscriptions'
+  );
+  return response.data;
+}
+
+/** #1244: subscribe or unsubscribe one of the authenticated user's addresses. */
+export async function putMySubscription(
+  email: string,
+  subscribed: boolean,
+  language?: string
+): Promise<MyNewsletterSubscriptionsResponse> {
+  const response = await apiClient.put<MyNewsletterSubscriptionsResponse>(
+    '/newsletter/my-subscriptions',
+    { email, subscribed, ...(language ? { language } : {}) }
   );
   return response.data;
 }

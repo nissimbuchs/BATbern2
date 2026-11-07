@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "Vahvistusviestin lähettäminen epäonnistui. Yritä uudelleen.",
       "additionalEmailResendAlreadyVerified": "Tämä sähköpostiosoite on jo vahvistettu.",
       "additionalEmailResendAriaLabel": "Lähetä vahvistusviesti uudelleen osoitteeseen {{email}}",
-      "additionalEmailVerifiedAriaLabel": "{{email}} on vahvistettu"
+      "additionalEmailVerifiedAriaLabel": "{{email}} on vahvistettu",
+      "additionalEmailEventCopy": "Kopio tapahtumaviesteistä tähän osoitteeseen"
     },
     "notifications": {
       "title": "Ilmoitusasetukset",

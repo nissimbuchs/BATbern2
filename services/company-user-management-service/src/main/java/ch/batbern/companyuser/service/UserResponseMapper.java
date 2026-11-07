@@ -93,6 +93,7 @@ public class UserResponseMapper {
         dto.setVerifiedAt(row.getVerifiedAt() != null
                 ? OffsetDateTime.ofInstant(row.getVerifiedAt(), ZoneOffset.UTC)
                 : null);
+        dto.setReceiveEventMail(row.isReceiveEventMail());
         return dto;
     }
 }

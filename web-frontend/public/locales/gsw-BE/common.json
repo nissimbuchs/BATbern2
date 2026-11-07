@@ -665,7 +665,8 @@
     "pageSubtitle": "Verwaut dyni persönleche Aagabe, d Yywilligung u dr Newsletter",
     "tabs": {
       "profile": "Profil",
-      "consent": "Yywilligung & Newsletter"
+      "consent": "Yywilligung & Newsletter",
+      "emails": "E-Mail-Adrässe"
     },
     "companyLabel": "Firma",
     "companyInvalid": "D Firme-ID muess us 1-12 Buechstabe oder Zahle bestah",
@@ -679,9 +680,29 @@
     "consentSave": "Akzeptiere u spychere",
     "consentSaveError": "Dyni Yywilligung het nid chönne gspycheret wärde. Probiers no einisch.",
     "newsletterTitle": "Newsletter",
-    "newsletterDescription": "Über chünftigi BATbern-Aaläss informiert blybe.",
+    "newsletterDescription": "Iiladige u Nöiigkeite zu de nächschte BATbern-Aaläss. Wählet, a weli Adrässe.",
     "newsletterLabel": "Dr BATbern-Newsletter abonniere",
-    "companySaveError": "S Unternäme het nid chönne gspeicheret wärde. Bitte versuechs nomal."
+    "companySaveError": "S Unternäme het nid chönne gspeicheret wärde. Bitte versuechs nomal.",
+    "emails": {
+      "title": "E-Mail-Adrässe",
+      "description": "Öii Houptadrässe überchunnt aui Mails zu öine Aamäudige. Wiiteri Adrässe hälfe üs, öich z erkenne, zum Bispiu we dir d Stöu wächslet.",
+      "primary": "Houptadrässe · Aamäude mit Passwort",
+      "confirmed": "Bestätiget",
+      "pending": "Wartet uf Bestätigung",
+      "resend": "Link nomau schicke",
+      "resent": "Link gschickt",
+      "eventCopy": "Kopie vo de Event-Mails a die Adrässe",
+      "remove": "Adrässe entferne",
+      "removeConfirm": "Entferne",
+      "cancel": "Abbräche",
+      "add": "Drzuefüege",
+      "addPlaceholder": "wiiteri@adrässe.ch",
+      "addHelp": "Mir schicke e Bestätigungslink a di nöii Adrässe.",
+      "errorDuplicate": "Die Adrässe isch scho registriert.",
+      "errorLimit": "Dir heit ds Maximum vo 5 wiitere Adrässe erreicht.",
+      "errorInvalid": "Bitte gäbet e gültigi E-Mail-Adrässe ii.",
+      "loginHint": "Mit em Passwort mäudet dir öich mit dr Houptadrässe aa. Mit ere bestätigte Gmail- oder Google-Adrässe chöit dir öich zuesätzlech über «Mit Google aamäude» iilogge."
+    }
   },
   "companySearch": {
     "createOption": "Nöii Firma „{{value}}\" erstelle"

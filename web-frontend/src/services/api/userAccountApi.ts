@@ -356,6 +356,8 @@ export interface AdditionalEmail {
   label: string | null;
   createdAt: string;
   verifiedAt: string | null;
+  /** #1244: this address gets a copy of event mails (only while confirmed). */
+  receiveEventMail?: boolean;
 }
 
 export interface AddAdditionalEmailPayload {
@@ -387,6 +389,21 @@ export const addAdditionalEmail = async (
  */
 export const deleteAdditionalEmail = async (email: string): Promise<void> => {
   await apiClient.delete(`${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}`);
+};
+
+/**
+ * #1244 — switch the copy of event mails for one of the caller's additional addresses.
+ * 409 `NOT_VERIFIED` when switching it on for an unconfirmed address.
+ */
+export const updateAdditionalEmail = async (
+  email: string,
+  payload: { receiveEventMail: boolean }
+): Promise<AdditionalEmail> => {
+  const response = await apiClient.patch<AdditionalEmail>(
+    `${USER_API_PATH}/me/additional-emails/${encodeURIComponent(email)}`,
+    payload
+  );
+  return response.data;
 };
 
 // =====================================================================

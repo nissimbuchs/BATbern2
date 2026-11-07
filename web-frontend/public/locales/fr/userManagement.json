@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "Impossible d'envoyer l'e-mail de vérification. Veuillez réessayer.",
       "additionalEmailResendAlreadyVerified": "Cette adresse e-mail est déjà vérifiée.",
       "additionalEmailResendAriaLabel": "Renvoyer l'e-mail de vérification à {{email}}",
-      "additionalEmailVerifiedAriaLabel": "{{email}} est vérifié"
+      "additionalEmailVerifiedAriaLabel": "{{email}} est vérifié",
+      "additionalEmailEventCopy": "Copie des e-mails d’événement à cette adresse"
     },
     "notifications": {
       "title": "Préférences de notification",

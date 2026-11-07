@@ -237,7 +237,8 @@
       "additionalEmailResendFailed": "確認メールを送信できませんでした。もう一度お試しください。",
       "additionalEmailResendAlreadyVerified": "このメールアドレスはすでに確認済みです。",
       "additionalEmailResendAriaLabel": "{{email}} に確認メールを再送信",
-      "additionalEmailVerifiedAriaLabel": "{{email}} は確認済みです"
+      "additionalEmailVerifiedAriaLabel": "{{email}} は確認済みです",
+      "additionalEmailEventCopy": "このアドレスにイベントメールのコピーを送る"
     },
     "notifications": {
       "title": "通知設定",

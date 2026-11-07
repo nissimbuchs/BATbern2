@@ -1063,8 +1063,20 @@ flowchart LR
     V -- "yes" --> L1["PreSignUp: link a Google sign-in<br/>to the owner's Cognito user"]
     V -- "yes" --> L2["JIT: refuse to create a duplicate user"]
     V -- "yes" --> L3["EMS PersonAddresses: match registrations,<br/>attendee dashboard, deregistration"]
-    AE --> A1["EMS CC fan-out on transactional mails<br/>and ForwardingDirectory sender lookup<br/>use every additional address, verified or not"]
+    V -- "yes" --> C1{"receive_event_mail?"}
+    C1 -- "yes" --> L4["EMS copy (CC) of event mails:<br/>registration, waitlist, deregistration,<br/>speaker mails, composer, -speaker@ / -moderator@ / -participants@"]
+    AE --> A1["ForwardingDirectory: ok@ / partner@ recipients<br/>and the organizer sender check<br/>use every additional address, verified or not"]
 ```
+
+**Event mails and the newsletter per address (#1244, owner decision 2026-11-07).** Event mails go
+to the primary address. A confirmed additional address gets a copy only when its owner switched
+`receive_event_mail` on (CUMS V24, default off, also for existing rows; `PATCH
+/users/me/additional-emails/{email}`, 409 `NOT_VERIFIED` for an unconfirmed address). EMS decides in
+one place, `EventMailCopies.of(UserResponse)`. Until #1244 every additional address got a CC, confirmed
+or not. The newsletter is one `newsletter_subscribers` row per address (#1143); `GET/PUT
+/newsletter/my-subscriptions` lists and changes it per address, for the primary and the confirmed
+additional addresses only (403 otherwise). Participants manage all of this on `/profile` (tabs
+"Einwilligung & Newsletter" and "E-Mail-Adressen"); organizers keep the Account settings.
 
 ## Names, emails and usernames (#1102)
 

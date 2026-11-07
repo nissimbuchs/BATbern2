@@ -15,6 +15,7 @@ import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
 import ch.batbern.companyuser.dto.generated.PatchUserProfileRequest;
 import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
 import ch.batbern.companyuser.dto.generated.ProvisionUserResponse;
+import ch.batbern.companyuser.dto.generated.UpdateAdditionalEmailRequest;
 import ch.batbern.companyuser.dto.generated.UpdateUserRequest;
 import ch.batbern.companyuser.dto.generated.UserResponse;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
@@ -25,6 +26,7 @@ import ch.batbern.companyuser.exception.AdditionalEmailAlreadyVerifiedException;
 import ch.batbern.companyuser.exception.AdditionalEmailDuplicateException;
 import ch.batbern.companyuser.exception.AdditionalEmailLimitReachedException;
 import ch.batbern.companyuser.exception.AdditionalEmailNotFoundException;
+import ch.batbern.companyuser.exception.AdditionalEmailNotVerifiedException;
 import ch.batbern.companyuser.exception.EmailLinkedToAccountException;
 import ch.batbern.companyuser.exception.UnprocessableInvitationStateException;
 import ch.batbern.companyuser.exception.VerificationTokenExpiredException;
@@ -1623,6 +1625,32 @@ public class UserService {
         } catch (JwtException | IllegalArgumentException e) {
             throw new VerificationTokenInvalidException();
         }
+    }
+
+    /**
+     * #1244 — switch the copy of event mails for one of the caller's additional addresses.
+     * Switching it on needs a confirmed address; switching it off always works.
+     */
+    public AdditionalEmail updateAdditionalEmail(String email, UpdateAdditionalEmailRequest request) {
+        String username = securityContext.getCurrentUsername();
+        User user = userRepository.findByUsername(username)
+                .orElseThrow(() -> new UserNotFoundException("Current user profile not found", true));
+
+        String emailNormalized = email.trim().toLowerCase(Locale.ROOT);
+        UserAdditionalEmail row = additionalEmailRepository
+                .findByUserAndEmailIgnoreCase(user, emailNormalized)
+                .orElseThrow(() -> new AdditionalEmailNotFoundException(emailNormalized));
+
+        boolean receive = Boolean.TRUE.equals(request.getReceiveEventMail());
+        if (receive && row.getVerifiedAt() == null) {
+            throw new AdditionalEmailNotVerifiedException(emailNormalized);
+        }
+        row.setReceiveEventMail(receive);
+        additionalEmailRepository.save(row);
+
+        log.info("ADDITIONAL_EMAIL_EVENT_MAIL_COPY user={} email={} receive={}",
+                LoggingUtils.maskEmail(user.getEmail()), LoggingUtils.maskEmail(emailNormalized), receive);
+        return UserResponseMapper.mapAdditionalEmailToDto(row);
     }
 
     /**
