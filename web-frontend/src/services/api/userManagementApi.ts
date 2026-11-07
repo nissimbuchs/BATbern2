@@ -269,6 +269,40 @@ export const getUserMergePreview = async (
   return response.data;
 };
 
+// #1237: a person's request to merge an earlier profile, decided by an organizer in the Mail Center
+export type ProfileMergeRequestView = components['schemas']['ProfileMergeRequestView'];
+
+export const getProfileMergeRequest = async (
+  requestId: string
+): Promise<ProfileMergeRequestView> => {
+  const response = await apiClient.get<ProfileMergeRequestView>(
+    `${USER_API_PATH}/merge-requests/${encodeURIComponent(requestId)}`
+  );
+  return response.data;
+};
+
+/** Runs the merge (without the earlier profile's addresses) and mails the requester. */
+export const approveProfileMergeRequest = async (
+  requestId: string
+): Promise<ProfileMergeRequestView> => {
+  const response = await apiClient.post<ProfileMergeRequestView>(
+    `${USER_API_PATH}/merge-requests/${encodeURIComponent(requestId)}/approve`
+  );
+  return response.data;
+};
+
+/** Declines; the reason is mailed to the requester. */
+export const declineProfileMergeRequest = async (
+  requestId: string,
+  reason: string
+): Promise<ProfileMergeRequestView> => {
+  const response = await apiClient.post<ProfileMergeRequestView>(
+    `${USER_API_PATH}/merge-requests/${encodeURIComponent(requestId)}/decline`,
+    { reason }
+  );
+  return response.data;
+};
+
 /** Merges `source` into `target` and deletes `source`. */
 export const mergeUserProfile = async (
   target: string,

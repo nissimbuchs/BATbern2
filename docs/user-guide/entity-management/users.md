@@ -350,6 +350,14 @@ subscriptions, roles and addresses. Confirm with **Merge and delete**.
 (masked address only). **This is me** sends a confirmation link to that profile's address. Opening it while
 logged in with the account that asked merges the profile the same way.
 
+**No access to the old address any more** (for example a former employer's): under the profile,
+**I no longer have access to this address** sends a request to the organizers, with an optional note. It
+appears on the **Mail** page as a conversation of its own ("Profil zusammenführen: …"), showing both
+profiles, what would move and the note. **Combine** merges as above, but the old profile's addresses are
+**not** added to the account; **Decline** needs a reason. The person gets a mail at their current address
+either way, and the conversation is set to Done. While the request is open the profile shows "Your
+request is with the organizers"; after a decline the same profile can be asked again after 30 days.
+
 ## GDPR Compliance
 
 <span class="feature-status implemented">Implemented</span>

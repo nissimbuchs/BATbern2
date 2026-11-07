@@ -479,6 +479,11 @@ export interface components {
       /** Format: date-time */
       lastMessageAt: string;
       messageCount: number;
+      /**
+       * Format: uuid
+       * @description #1237: set when the conversation is a profile merge request; the Mail Center then shows the request with approve and decline (users API, /users/merge-requests/{id})
+       */
+      mergeRequestId?: string | null;
     };
     MailConversationPage: {
       data: components['schemas']['MailConversationSummary'][];

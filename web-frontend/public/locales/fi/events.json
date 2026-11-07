@@ -633,6 +633,33 @@
         "keywordCancels_other": "{{count}} peruutuslinkkiä lähetetty vastauksen jälkeen",
         "unsubscribes_one": "{{count}} uutiskirjeen peruutus vastauksella",
         "unsubscribes_other": "{{count}} uutiskirjeen peruutusta vastauksella"
+      },
+      "mergeRequest": {
+        "title": "Pyyntö: yhdistä profiilit",
+        "explain": "Tämä henkilö ei voinut vahvistaa sähköpostilla, että aiempi profiili on hänen (ei enää pääsyä vanhaan osoitteeseen). Tarkista, onko kyseessä sama henkilö.",
+        "note": "Henkilön viesti",
+        "target": "Tili, jolla on kirjautuminen",
+        "source": "Aiempi profiili",
+        "name": "Nimi",
+        "username": "Käyttäjätunnus",
+        "email": "Sähköposti",
+        "additionalEmails": "Muut osoitteet",
+        "company": "Yritys",
+        "roles": "Roolit",
+        "moves": "Mitä siirtyy",
+        "nothingMoves": "Ei ilmoittautumisia eikä esityksiä",
+        "cannotMerge": "Yhdistäminen ei ole mahdollista: {{reasons}}",
+        "addressesNotCarried": "Aiemman profiilin osoitteita ei siirretä; ne jäävät vain lokiin.",
+        "approve": "Yhdistä",
+        "decline": "Hylkää",
+        "confirmDecline": "Lähetä hylkäys",
+        "cancel": "Peruuta",
+        "reason": "Perustelu",
+        "reasonHelp": "Perustelu lähetetään henkilölle sähköpostilla.",
+        "approved": "Yhdistänyt {{by}}. Henkilölle on ilmoitettu.",
+        "declined": "Hylännyt {{by}}: {{reason}}",
+        "actionFailed": "Se ei onnistunut. Mitään ei muutettu; yritä uudelleen.",
+        "loadError": "Pyyntöä ei voitu ladata."
       }
     }
   },

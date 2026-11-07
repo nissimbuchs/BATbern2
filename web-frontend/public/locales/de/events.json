@@ -647,6 +647,33 @@
         "keywordCancels_other": "{{count}} Abmeldelinks nach einer Antwort verschickt",
         "unsubscribes_one": "{{count}} Newsletter-Abmeldung per Antwort",
         "unsubscribes_other": "{{count}} Newsletter-Abmeldungen per Antwort"
+      },
+      "mergeRequest": {
+        "title": "Anfrage: Profil zusammenführen",
+        "explain": "Diese Person konnte per Mail nicht bestätigen, dass das frühere Profil ihr gehört (kein Zugang mehr zur alten Adresse). Prüfen Sie, ob es dieselbe Person ist.",
+        "note": "Hinweis der Person",
+        "target": "Konto mit Login",
+        "source": "Früheres Profil",
+        "name": "Name",
+        "username": "Benutzername",
+        "email": "E-Mail",
+        "additionalEmails": "Weitere Adressen",
+        "company": "Firma",
+        "roles": "Rollen",
+        "moves": "Was übernommen wird",
+        "nothingMoves": "Keine Anmeldungen oder Referate",
+        "cannotMerge": "Zusammenführen ist nicht möglich: {{reasons}}",
+        "addressesNotCarried": "Die Adressen des früheren Profils werden nicht übernommen; sie bleiben nur im Protokoll.",
+        "approve": "Zusammenführen",
+        "decline": "Ablehnen",
+        "confirmDecline": "Ablehnung senden",
+        "cancel": "Abbrechen",
+        "reason": "Begründung",
+        "reasonHelp": "Die Begründung geht per Mail an die Person.",
+        "approved": "Zusammengeführt von {{by}}. Die Person ist informiert.",
+        "declined": "Abgelehnt von {{by}}: {{reason}}",
+        "actionFailed": "Das hat nicht funktioniert. Nichts wurde geändert; bitte nochmals versuchen.",
+        "loadError": "Die Anfrage konnte nicht geladen werden."
       }
     }
   },

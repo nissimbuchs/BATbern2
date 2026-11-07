@@ -633,6 +633,33 @@
         "keywordCancels_other": "{{count}} enlaces de baja enviados tras una respuesta",
         "unsubscribes_one": "{{count}} baja del boletín por respuesta",
         "unsubscribes_other": "{{count}} bajas del boletín por respuesta"
+      },
+      "mergeRequest": {
+        "title": "Solicitud: unir perfiles",
+        "explain": "Esta persona no pudo confirmar por correo que el perfil anterior es suyo (ya no tiene acceso a la dirección antigua). Comprueba que sea la misma persona.",
+        "note": "Nota de la persona",
+        "target": "Cuenta con acceso",
+        "source": "Perfil anterior",
+        "name": "Nombre",
+        "username": "Usuario",
+        "email": "Correo",
+        "additionalEmails": "Otras direcciones",
+        "company": "Empresa",
+        "roles": "Roles",
+        "moves": "Qué se traslada",
+        "nothingMoves": "Ninguna inscripción ni charla",
+        "cannotMerge": "No es posible unir: {{reasons}}",
+        "addressesNotCarried": "Las direcciones del perfil anterior no se trasladan; quedan solo en el registro.",
+        "approve": "Unir",
+        "decline": "Rechazar",
+        "confirmDecline": "Enviar rechazo",
+        "cancel": "Cancelar",
+        "reason": "Motivo",
+        "reasonHelp": "El motivo se envía por correo a la persona.",
+        "approved": "Unido por {{by}}. La persona ha sido informada.",
+        "declined": "Rechazado por {{by}}: {{reason}}",
+        "actionFailed": "No ha funcionado. No se ha cambiado nada; inténtalo de nuevo.",
+        "loadError": "No se pudo cargar la solicitud."
       }
     }
   },

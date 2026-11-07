@@ -1059,6 +1059,12 @@ components:
           format: date-time
         messageCount:
           type: integer
+        mergeRequestId:
+          type: string
+          format: uuid
+          nullable: true
+          description: '#1237: set when the conversation is a profile merge request; the Mail Center
+            then shows the request with approve and decline (users API, /users/merge-requests/{id})'
     MailConversationPage:
       type: object
       required:

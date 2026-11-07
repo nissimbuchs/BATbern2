@@ -639,6 +639,33 @@
         "keywordCancels_other": "{{count}} Abmäldelinks nach ere Antwort verschickt",
         "unsubscribes_one": "{{count}} Newsletter-Abmäldig per Antwort",
         "unsubscribes_other": "{{count}} Newsletter-Abmäldige per Antwort"
+      },
+      "mergeRequest": {
+        "title": "Aafrag: Profil zämefüere",
+        "explain": "Die Person het per Mail nid chönne bestätige, dass s früechere Profil ihre ghört (ke Zuegang meh zur aute Adrässe). Prüef, öb s di glychi Person isch.",
+        "note": "Hiwys vo dr Person",
+        "target": "Konto mit Login",
+        "source": "Früechers Profil",
+        "name": "Name",
+        "username": "Benutzername",
+        "email": "E-Mail",
+        "additionalEmails": "Wyteri Adrässe",
+        "company": "Firma",
+        "roles": "Rolle",
+        "moves": "Was übernoh wird",
+        "nothingMoves": "Kener Aamäudige oder Referat",
+        "cannotMerge": "Zämefüere geit nid: {{reasons}}",
+        "addressesNotCarried": "D Adrässe vom früechere Profil wärde nid übernoh; si blybe nume im Protokoll.",
+        "approve": "Zämefüere",
+        "decline": "Abläne",
+        "confirmDecline": "Ablehnig schicke",
+        "cancel": "Abbräche",
+        "reason": "Begründig",
+        "reasonHelp": "D Begründig geit per Mail a d Person.",
+        "approved": "Zämegfüert vo {{by}}. D Person isch informiert.",
+        "declined": "Abglehnt vo {{by}}: {{reason}}",
+        "actionFailed": "Das het nid funktioniert. Nüt isch gänderet worde; bitte nomau probiere.",
+        "loadError": "D Aafrag het nid chönne glade wärde."
       }
     }
   },

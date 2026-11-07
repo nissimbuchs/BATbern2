@@ -191,6 +191,10 @@ disappears at zero and refreshes every minute.
 
 - **Open:** every open or waiting conversation, of every event. Each row names its event. A click
   opens it below the row, exactly as on the event page.
+- **Profile merge requests** (#1237) also arrive under **No event**: someone asks to combine an earlier
+  profile with their account because they cannot read its old address any more. The conversation shows
+  both profiles side by side, with **Combine** and **Decline** (decline needs a reason). See
+  [Users](../entity-management/users.md).
 - **No event:** mail to `info@`, `events@` or `support@` that belongs to no event. **Assign to event**
   beside a row puts the conversation and all its mails on that event: it then shows in that event's
   "Needs an answer". Choosing "(no event)" takes it off again. Inside any conversation the **Event**

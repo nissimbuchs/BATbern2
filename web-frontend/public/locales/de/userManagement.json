@@ -370,6 +370,14 @@
     "otherAccount": "Dieser Link gehört zu einem anderen Konto. Melden Sie sich mit dem Konto an, das ihn angefordert hat.",
     "invalid": "Dieser Link ist ungültig oder abgelaufen. Fordern Sie in den Kontoeinstellungen einen neuen an.",
     "failed": "Das hat nicht geklappt. Es wurde nichts geändert; bitte später erneut versuchen.",
-    "dashboardLink": "Zu meinem Dashboard"
+    "dashboardLink": "Zu meinem Dashboard",
+    "noAccess": "Ich habe keinen Zugang mehr zu dieser Adresse",
+    "noAccessHelp": "Dann prüfen die Organisatoren Ihre Anfrage von Hand. Ein kurzer Hinweis hilft, zum Beispiel bis wann Sie bei welcher Firma waren.",
+    "noteLabel": "Hinweis an die Organisatoren (freiwillig)",
+    "sendRequest": "Anfrage senden",
+    "cancel": "Abbrechen",
+    "requestPending": "Ihre Anfrage liegt bei den Organisatoren.",
+    "requestDeclinedRecently": "Eine Anfrage für dieses Profil wurde vor kurzem abgelehnt. Eine neue ist nach 30 Tagen möglich.",
+    "requestFailed": "Die Anfrage konnte nicht gesendet werden. Bitte später nochmals versuchen."
   }
 }

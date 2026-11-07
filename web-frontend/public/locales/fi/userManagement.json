@@ -370,6 +370,14 @@
     "otherAccount": "This link belongs to another account. Log in with the account that asked for it.",
     "invalid": "This link is invalid or has expired. Request a new one in your account settings.",
     "failed": "This did not work. Nothing was changed; try again later.",
-    "dashboardLink": "Omaan näkymään"
+    "dashboardLink": "Omaan näkymään",
+    "noAccess": "Minulla ei ole enää pääsyä tähän osoitteeseen",
+    "noAccessHelp": "Silloin järjestäjät tarkistavat pyyntösi käsin. Lyhyt huomautus auttaa, esimerkiksi mihin asti olit missäkin yrityksessä.",
+    "noteLabel": "Viesti järjestäjille (vapaaehtoinen)",
+    "sendRequest": "Lähetä pyyntö",
+    "cancel": "Peruuta",
+    "requestPending": "Pyyntösi on järjestäjillä.",
+    "requestDeclinedRecently": "Tätä profiilia koskeva pyyntö hylättiin hiljattain. Voit pyytää uudelleen 30 päivän kuluttua.",
+    "requestFailed": "Pyyntöä ei voitu lähettää. Yritä myöhemmin uudelleen."
   }
 }

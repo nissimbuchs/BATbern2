@@ -38,6 +38,7 @@ import {
   getConversationAttachmentDownloadUrl,
   type MailConversationStatus,
 } from '@/services/mailConversationService';
+import { ProfileMergeRequestPanel } from './ProfileMergeRequestPanel';
 import { ConversationReplyBox } from './ConversationReplyBox';
 import { EventSelect } from './EventSelect';
 import { MailBodyFrame } from './MailBodyFrame';
@@ -104,6 +105,13 @@ export const ConversationDetail: React.FC<ConversationDetailProps> = ({ conversa
 
   return (
     <Stack spacing={2} data-testid="conversation-detail">
+      {/* #1237: a profile merge request is decided here */}
+      {conversation.mergeRequestId && (
+        <ProfileMergeRequestPanel
+          requestId={conversation.mergeRequestId}
+          onDecided={() => void query.refetch()}
+        />
+      )}
       <Stack
         direction={{ xs: 'column', sm: 'row' }}
         spacing={2}

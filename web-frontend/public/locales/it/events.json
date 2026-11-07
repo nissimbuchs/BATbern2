@@ -633,6 +633,33 @@
         "keywordCancels_other": "{{count}} link di disiscrizione inviati dopo una risposta",
         "unsubscribes_one": "{{count}} disiscrizione dalla newsletter via risposta",
         "unsubscribes_other": "{{count}} disiscrizioni dalla newsletter via risposta"
+      },
+      "mergeRequest": {
+        "title": "Richiesta: unire profili",
+        "explain": "Questa persona non ha potuto confermare via e-mail che il profilo precedente è suo (nessun accesso al vecchio indirizzo). Verifica che sia la stessa persona.",
+        "note": "Nota della persona",
+        "target": "Account con login",
+        "source": "Profilo precedente",
+        "name": "Nome",
+        "username": "Nome utente",
+        "email": "E-mail",
+        "additionalEmails": "Altri indirizzi",
+        "company": "Azienda",
+        "roles": "Ruoli",
+        "moves": "Cosa viene trasferito",
+        "nothingMoves": "Nessuna iscrizione o relazione",
+        "cannotMerge": "Unire non è possibile: {{reasons}}",
+        "addressesNotCarried": "Gli indirizzi del profilo precedente non vengono ripresi; restano solo nel registro.",
+        "approve": "Unisci",
+        "decline": "Rifiuta",
+        "confirmDecline": "Invia rifiuto",
+        "cancel": "Annulla",
+        "reason": "Motivo",
+        "reasonHelp": "Il motivo viene inviato via e-mail alla persona.",
+        "approved": "Unito da {{by}}. La persona è informata.",
+        "declined": "Rifiutato da {{by}}: {{reason}}",
+        "actionFailed": "Non ha funzionato. Nulla è stato modificato; riprova.",
+        "loadError": "Non è stato possibile caricare la richiesta."
       }
     }
   },

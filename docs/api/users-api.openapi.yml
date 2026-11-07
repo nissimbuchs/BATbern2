@@ -801,6 +801,160 @@ paths:
       security:
         - BearerAuth: []
 
+  /users/me/profile-claims/merge-requests:
+    post:
+      tags:
+        - Profile Merge
+      summary: Ask the organizers to merge an earlier profile (no access to its address)
+      description: |
+        #1237. For someone who can no longer read the earlier profile's mailbox (a former
+        employer's address). Opens a request that any organizer approves or declines in the Mail
+        Center. The candidate must be one of `GET /users/me/profile-claims` (else 404). At most one
+        open request per profile pair (409 `MERGE_REQUEST_OPEN`); a declined pair can be asked again
+        after 30 days (409 `MERGE_REQUEST_DECLINED`). The old address is not added to the profile.
+      operationId: requestProfileMerge
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileMergeRequestCreate'
+      responses:
+        '201':
+          description: The request is with the organizers
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileMergeRequestCreated'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/merge-requests/{requestId}:
+    get:
+      tags:
+        - Profile Merge
+      summary: A profile merge request with both profiles and what would move (organizers)
+      description: |
+        #1237. Shown in the Mail Center conversation of the request: the requester's note, the
+        status and the merge preview (both profiles, what moves, what blocks).
+      operationId: getProfileMergeRequest
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: The request
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileMergeRequestView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/merge-requests/{requestId}/approve:
+    post:
+      tags:
+        - Profile Merge
+      summary: Approve a profile merge request (organizers)
+      description: |
+        #1237. Runs the organizer merge (the requester's login profile is the target, the profile
+        without login the source), logged in `user_merge_log`. The same rules as an organizer
+        merge apply: 409 when two different talks at the same event block it. The requester is
+        mailed at their current address and the conversation is closed.
+      operationId: approveProfileMergeRequest
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      responses:
+        '200':
+          description: Merged
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileMergeRequestView'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
+  /users/merge-requests/{requestId}/decline:
+    post:
+      tags:
+        - Profile Merge
+      summary: Decline a profile merge request with a reason (organizers)
+      description: |
+        #1237. The reason is mailed to the requester at their current address. The pair is not
+        offered for a new request for 30 days.
+      operationId: declineProfileMergeRequest
+      parameters:
+        - name: requestId
+          in: path
+          required: true
+          schema:
+            type: string
+            format: uuid
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/ProfileMergeRequestDecline'
+      responses:
+        '200':
+          description: Declined
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProfileMergeRequestView'
+        '400':
+          $ref: '#/components/responses/BadRequest'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '500':
+          $ref: '#/components/responses/InternalServerError'
+      security:
+        - BearerAuth: []
+
   /users/admin/reconcile:
     post:
       tags:
@@ -2440,6 +2594,75 @@ components:
         companyName:
           type: string
           nullable: true
+        requestPending:
+          type: boolean
+          description: '#1237: a merge request for this profile is with the organizers'
+    ProfileMergeRequestCreate:
+      type: object
+      required: [candidateId]
+      additionalProperties: false
+      properties:
+        candidateId:
+          type: string
+          format: uuid
+        note:
+          type: string
+          maxLength: 500
+          nullable: true
+          example: Ich war bis 2024 bei Firma X.
+    ProfileMergeRequestCreated:
+      type: object
+      required: [requestId]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+    ProfileMergeRequestDecline:
+      type: object
+      required: [reason]
+      additionalProperties: false
+      properties:
+        reason:
+          type: string
+          minLength: 1
+          maxLength: 1000
+    ProfileMergeRequestView:
+      type: object
+      required: [requestId, status, requesterUsername, sourceUsername, createdAt]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        status:
+          type: string
+          enum: [OPEN, APPROVED, DECLINED]
+        requesterUsername:
+          type: string
+          description: The login profile (merge target)
+        sourceUsername:
+          type: string
+          description: The profile without login (merge source)
+        note:
+          type: string
+          nullable: true
+        createdAt:
+          type: string
+          format: date-time
+        decidedBy:
+          type: string
+          nullable: true
+        decidedAt:
+          type: string
+          format: date-time
+          nullable: true
+        reason:
+          type: string
+          nullable: true
+        preview:
+          description: Both profiles and what would move; absent once the request is decided
+          nullable: true
+          allOf:
+            - $ref: '#/components/schemas/UserMergePreview'
     ProfileClaimRequest:
       type: object
       required: [candidateId]
