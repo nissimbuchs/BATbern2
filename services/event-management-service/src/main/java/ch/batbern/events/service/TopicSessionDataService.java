@@ -26,7 +26,7 @@ import java.util.List;
  * 1. partnerTopics — cross-service call to partner-coordination-service
  * 2. pastEvents    — EMS events table, enriched with cluster from BatbernTopicClusterService
  * 3. organizerBacklog — EMS topics table, status=AVAILABLE (stalenessScore >= 83)
- * 4. trendingTopics — OpenAI GPT-4o-mini, 1-hour in-process cache
+ * 4. trendingTopics — OpenAI chat model (AiConfig), 1-hour in-process cache
  */
 @Service
 @RequiredArgsConstructor

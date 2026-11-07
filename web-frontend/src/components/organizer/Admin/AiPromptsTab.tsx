@@ -2,9 +2,9 @@
  * AiPromptsTab
  *
  * Admin tab for editing the three organizer-editable OpenAI prompts:
- *   - event_description  — GPT-4o event description generation
- *   - theme_image        — DALL-E theme image generation
- *   - abstract_quality   — GPT-4o abstract quality review
+ *   - event_description  — event description (chat model)
+ *   - theme_image        — theme image (image model)
+ *   - abstract_quality   — abstract quality review (chat model)
  *
  * Each card shows the current prompt text in a resizable textarea with
  * Save and Reset to Default buttons.

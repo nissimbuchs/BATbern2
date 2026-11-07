@@ -124,7 +124,7 @@ public class BatbernAiService {
     }
 
     /**
-     * Generates an event description using GPT-4o.
+     * Generates an event description with the configured chat model.
      *
      * @param eventCode event code used for cache key and log
      * @param vars      template variables: EVENT_NR, EVENT_TITLE, TOPIC_TITLE,
@@ -146,7 +146,7 @@ public class BatbernAiService {
         try {
             String prompt = applyVariables(aiPromptService.getPromptText("event_description"), vars);
 
-            String content = callChatCompletions("gpt-4o", prompt);
+            String content = callChatCompletions(aiConfig.getChatModel(), prompt);
             if (content == null) {
                 return Optional.empty();
             }
@@ -161,7 +161,7 @@ public class BatbernAiService {
     }
 
     /**
-     * Downloads a DALL-E image and uploads to S3. Returns empty on any failure.
+     * Generates a theme image and uploads it to S3. Returns empty on any failure.
      *
      * @param eventCode event code used for cache key and log
      * @param vars      template variables: TOPIC_TITLE, TOPIC_DESCRIPTION, TOPIC_CATEGORY,
@@ -231,7 +231,7 @@ public class BatbernAiService {
             vars.put("ABSTRACT", abstractText);
             String prompt = applyVariables(aiPromptService.getPromptText("abstract_quality"), vars);
 
-            String content = callChatCompletionsJson("gpt-4o", prompt);
+            String content = callChatCompletionsJson(aiConfig.getChatModel(), prompt);
             if (content == null) {
                 return Optional.empty();
             }
@@ -308,14 +308,12 @@ public class BatbernAiService {
         if (jsonMode) {
             return Map.of(
                 "model", model,
-                "temperature", 0.3,
                 "response_format", Map.of("type", "json_object"),
                 "messages", buildMessages(userPrompt)
             );
         }
         return Map.of(
             "model", model,
-            "temperature", 0.7,
             "messages", buildMessages(userPrompt)
         );
     }
@@ -347,8 +345,9 @@ public class BatbernAiService {
     /**
      * Calls OpenAI's /images/generations endpoint and returns the raw PNG bytes.
      *
-     * Migrated from `dall-e-3` (retired 2026-05-12) to `gpt-image-1`. Key contract
-     * differences vs the old API:
+     * Model from {@link AiConfig#getImageModel()} (default {@code chatgpt-image-latest}). History:
+     * {@code dall-e-3} retired 2026-05-12, {@code gpt-image-1} retired by 2026-11-07. Contract
+     * differences vs the dall-e API:
      *   - size enum changed: 1792x1024 → 1536x1024 (closest landscape)
      *   - quality enum changed: "standard|hd" → "low|medium|high|auto"
      *   - response is always base64 in `b64_json` — the `url` field is gone, so we
@@ -362,7 +361,7 @@ public class BatbernAiService {
      */
     private byte[] callImageGeneration(String prompt) {
         Map<String, Object> body = Map.of(
-            "model", "gpt-image-1",
+            "model", aiConfig.getImageModel(),
             "prompt", prompt,
             "n", 1,
             "size", "1536x1024",
