@@ -40,7 +40,7 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 | Mail to an audience | Mail Center: an `AudienceAdapter` for `MailComposerService` | add a `…/send` + `…/preview` endpoint pair |
 | User or company data | `UserApiClient` (cached, `/internal`) | store name/email (ADR-004) |
 | A person's proven addresses | `PersonAddresses` | read additional e-mails directly |
-| File upload | per-entity presign + confirm (ADR-002); shared mechanics pending | new presign code from scratch |
+| File upload | `/uploads/{purpose}` + a purpose handler (ADR-002, 2026-11) | new presign code or endpoints |
 | Admin or feature setting | `AdminSettingsService` (`/admin/settings/{key}`) | a new settings resource |
 | Scheduled job | `@Scheduled` + ShedLock | unlocked scheduler. Audience mails are organizer-sent only (#1179) |
 | Error → HTTP status | `ClientErrorClassifier` | another catch-all |

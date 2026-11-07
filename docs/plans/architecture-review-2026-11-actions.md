@@ -44,7 +44,8 @@ All open questions answered. Recorded here so stories need no further sign-off o
    added to `docs/architecture/index.md`.
    - Correction: ADR-002's Scope Clarification (2026-03-03) makes per-entity upload services for
      existing entities the intended pattern. The review's "only logos follow ADR-002" was wrong.
-     17.11 now extracts the shared mechanics and keeps the per-entity endpoints.
+     Owner then confirmed consolidation anyway: ADR-002 "Decision 2026-11-07" supersedes
+     Scope Clarification 1 with one upload contract (`/api/v1/uploads/{purpose}`).
    - EMS `GenericLogoService` is not a copy: it is a 137-line association helper on the `logos` table,
      which EMS (`V5`) and CUMS (`V10`) both create in the one shared database.
 3. Ready for John (see "Brief for John" below).
@@ -68,14 +69,14 @@ the same story.
 | 17.8 | EMS↔PCS direction | topic canvas loads partner topics in the frontend; RSVPs as `/internal` feed pulled by PCS (ShedLock) | 17.6 |
 | 17.9 | API conventions I (breaking) | tasks: one `PATCH`; settings: one app-settings + one user resource; nest `ai/analyze-abstract` under event | 17.4 |
 | 17.10 | API conventions II (breaking) | `me` alias for `{username}` (pictures, profile); one speaker path key; `batch_registrations` + `enroll-stakeholders` folded into `participants`; `/newsletter/my-subscription` folded into `/newsletter/my-subscriptions` | 17.9 |
-| 17.11 | Shared upload mechanics (ADR-002 update 2026-11-07) | one shared-kernel component for key layout, presign, size/type checks and confirm; per-entity endpoints stay; migrate the 8 upload services one per story; rename EMS `GenericLogoService` | – |
+| 17.11 | One upload contract (ADR-002 decision 2026-11-07) | shared-kernel upload component + `uploads` table per service; `/api/v1/uploads/{purpose}` (+ `/{id}/confirm`, `/import`), gateway routes by purpose; first purpose `company-logo` incl. removing the shared `logos` table use in EMS; frontend upload hook. Follow-on stories: one purpose each (profile-picture, event-photo, teaser-image, session-material incl. speaker portal, mail-attachment), deleting old endpoints | 17.4 |
 | 17.12 | EMS modularization design (Winston) | short tech design: package moves, freeze baseline, release slicing | 17.5 |
 | 17.13 | Registrations out of `EventController` | own controller on the generated registrations interface | 17.12 |
 | 17.14 | Domain exception base | status/code on a base class; `GlobalExceptionHandler` imports no domain exception | 17.12 |
 | 17.15 | Mail core / mail center split | delivery-status projection to center; core publishes, center listens | 17.12, 16.8c |
 | 17.16 | Event-core extension points | workflow guards as interface implemented by sessions/speakers; `Event→Registration` one-directional | 17.12 |
 
-Later, not stories yet: further upload-flow migrations (17.11 follow-ons), the remaining EMS module
+Later, not stories yet: the five remaining upload purposes after 17.11, the remaining EMS module
 moves (planning, publishing, ai), follow-up reviews (item 9).
 
 ## Actions, in order

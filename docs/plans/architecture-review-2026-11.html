@@ -80,7 +80,7 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
   </ul>
   <p>Two corrections:</p>
   <ul class="plain">
-    <li>The per-entity upload endpoints follow ADR-002, so only their mechanics are duplicated.</li>
+    <li>The per-entity upload endpoints were allowed by an ADR-002 clarification. You decided to consolidate them anyway, and a new ADR-002 decision replaces that clarification.</li>
     <li>All services share one database. EMS reads CUMS tables (<code>user_profiles</code>, <code>companies</code>) directly in SQL, and both services create <code>logos</code>. This is input for the database review.</li>
   </ul>
   <p>Decisions are recorded in ADR-016 and the ADR-003 amendment.</p>
@@ -263,7 +263,7 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
       <tr><td>Dead specs</td><td><code>speakers-api</code> duplicates <code>event-speakers-api</code> one-to-one; <code>attendees-api</code> is implemented nowhere (ADR-014)</td><td class="n">17</td><td>delete both specs</td></tr>
       <tr><td>Orphan endpoints</td><td><code>logos/fetch-from-url</code>, <code>speakers/invite-batch</code>, <code>admin/backfill-speaker-names</code>, <code>slides-online/send</code>, <code>sessions/…/materials/upload-from-url</code>, <code>publish/preview</code></td><td class="n">6</td><td>delete</td></tr>
       <tr><td>Audience mail</td><td>5 send, 4 preview, 2 retry, 2 history endpoints across newsletter, notices, venue and Mail Center</td><td class="n">13</td><td><code>/events/{c}/mails</code> with an audience/template kind (already planned as Story 16.8c)</td></tr>
-      <tr><td>Uploads</td><td>7 presign+confirm pairs, 3 upload-from-url</td><td class="n">17</td><td>keep the per-entity endpoints, share the mechanics in one shared-kernel component (corrected 7 Nov)</td></tr>
+      <tr><td>Uploads</td><td>7 presign+confirm pairs, 3 upload-from-url</td><td class="n">17</td><td><code>/uploads/{purpose}</code> + <code>/confirm</code> + <code>/import</code>, routed by purpose to the owning service (ADR-002 decision, 7 Nov)</td></tr>
       <tr><td>Me vs. admin twins</td><td>picture ×6, <code>PUT /users/{u}</code> + <code>PATCH /users/{u}/profile</code> + <code>PATCH /users/me</code></td><td class="n">9</td><td><code>me</code> as an alias for <code>{username}</code>, authorized by ownership</td></tr>
       <tr><td>Settings</td><td>4 resources in 2 services: <code>admin/settings</code>, <code>public/settings/features</code>, <code>settings/presentation</code>, <code>users/me/settings</code> + <code>/preferences</code></td><td class="n">9</td><td>one app-settings resource (EMS), one user resource (merge settings and preferences)</td></tr>
       <tr><td>Task state</td><td><code>PUT complete</code>, <code>PUT reassign</code>, <code>PUT status</code>, <code>PATCH</code></td><td class="n">4</td><td><code>PATCH /tasks/{id}</code></td></tr>
@@ -383,7 +383,7 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
     <li><strong>Add a contract guard for frontend paths.</strong> Fail the build when a frontend service calls a path the spec doesn't have. This would have caught <code>GET /publish/{phase}/preview</code>, which exists in neither the spec nor the backend. <span class="meta">Low effort. Stops the drift from coming back.</span></li>
     <li><strong>Finish 16.8c.</strong> Fold newsletter, notice, venue and slides sends into the Mail Center endpoint. <span class="meta">Already planned and gated on your go.</span></li>
     <li><strong>Break the cycles.</strong> Service-to-service calls go through <code>/internal</code> only. Move the four machine-only endpoints out of the public spec. Downstream pulls feeds, and the merge becomes a CUMS-owned contract (section 1). <span class="meta">Medium effort. No new infrastructure.</span></li>
-    <li><strong>Shared upload mechanics.</strong> One shared-kernel component for presign, checks and confirm, used by all eight upload services. The endpoints stay per entity, as ADR-002 intends. <span class="meta">Medium effort. Corrected 7 Nov.</span></li>
+    <li><strong>One upload contract.</strong> <code>/uploads/{purpose}</code> in every service, with mechanics in shared-kernel and one handler per purpose. Migrate one purpose per story. <span class="meta">Medium effort. 11 operations become 3; decided 7 Nov.</span></li>
     <li><strong>Wall EMS from the inside</strong> along the module map in section 6. Freeze the 101 current violations in ArchUnit, then work down the hotspots, starting with <code>EventController</code> and <code>GlobalExceptionHandler</code>. <span class="meta">Incremental, never a big bang.</span></li>
     <li><strong>Settle the conventions.</strong> Amend ADR-003 with the rule from section 5, nest the one stray AI endpoint, pick one speaker key, use one <code>PATCH</code> for tasks, one settings resource. <span class="meta">Decide once, apply when touching each area.</span></li>
     <li><strong>Follow-up reviews</strong> of what this one left out: frontend architecture, database schema, gateway, Watch API. <span class="meta">Logged in the action list. One review per area.</span></li>
