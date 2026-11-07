@@ -1,0 +1,12 @@
+# Team override for bmad-build (v7 successor of v6 create-story, dev-story and quick-dev).
+# Architecture review 2026-11: module map in context and a 5-line Architecture note per change.
+# Arrays append to the base customize.toml.
+
+[workflow]
+persistent_facts = [
+  "file:{project-root}/_bmad-output/project-context.md",
+  "file:{project-root}/docs/architecture/module-map.md",
+]
+activation_steps_append = [
+  "When writing or confirming the plan, put a 5-line Architecture note (see module-map.md) under its Design Notes: modules touched, new dependencies, new endpoints with the nearest existing one, components reused, deviations. Before listing a new endpoint, grep docs/api for the nearest existing one and say why it cannot be extended. A deviation from the map needs a reason there. In oneshot route, state the note before writing code.",
+]

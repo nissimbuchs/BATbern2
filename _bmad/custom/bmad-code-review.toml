@@ -3,6 +3,7 @@
 
 [workflow]
 persistent_facts = [
+  "file:{project-root}/_bmad-output/project-context.md",
   "file:{project-root}/docs/architecture/module-map.md",
 ]
 activation_steps_append = [
