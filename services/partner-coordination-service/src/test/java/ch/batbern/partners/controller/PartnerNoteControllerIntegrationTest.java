@@ -41,8 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests cover AC1–5 (role-based access, list, create, update, delete).
  *
  * Uses AbstractIntegrationTest (PostgreSQL Testcontainer).
- * Integration test profile permits all requests (testFilterChain).
- * @PreAuthorize + SecurityConfig URL rules are tested via security-specific tests.
+ * Runs the production security chain (17.0b3): URL rules and @PreAuthorize both apply.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -247,13 +246,13 @@ class PartnerNoteControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void should_return403_when_unauthenticatedTriesToListNotes() throws Exception {
+    void should_return401_when_unauthenticatedTriesToListNotes() throws Exception {
         mockMvc.perform(get(notesBase(testCompanyName)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void should_return403_when_unauthenticatedTriesToCreateNote() throws Exception {
+    void should_return401_when_unauthenticatedTriesToCreateNote() throws Exception {
         Map<String, String> req = new HashMap<>();
         req.put("title", "Attempt");
         req.put("content", "Unauthenticated create attempt");
@@ -261,11 +260,11 @@ class PartnerNoteControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post(notesBase(testCompanyName))
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(req)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void should_return403_when_unauthenticatedTriesToUpdateNote() throws Exception {
+    void should_return401_when_unauthenticatedTriesToUpdateNote() throws Exception {
         String noteId = createNote(testCompanyName, "Existing", "Content");
 
         Map<String, String> update = new HashMap<>();
@@ -274,15 +273,15 @@ class PartnerNoteControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(patch(notesBase(testCompanyName) + "/" + noteId)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(update)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
-    void should_return403_when_unauthenticatedTriesToDeleteNote() throws Exception {
+    void should_return401_when_unauthenticatedTriesToDeleteNote() throws Exception {
         String noteId = createNote(testCompanyName, "Existing", "Content");
 
         mockMvc.perform(delete(notesBase(testCompanyName) + "/" + noteId))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ─── H1 fix: Cross-partner ownership validation ───────────────────────────

@@ -6,22 +6,19 @@ import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.shared.mail.ComposedMail;
-import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.sql.Timestamp;
@@ -31,17 +28,15 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Story 16.6 AC1–AC3, AC6 against real PostgreSQL: an organizer answers a conversation. No SES in
- * tests, so nothing leaves; the composed mail is captured from the {@link EmailService} spy.
+ * Story 16.6 AC1–AC3, AC6 against real PostgreSQL: an organizer answers a conversation. The real
+ * {@link EmailService} sends to the {@link SesRecorder}, so nothing leaves; the tests read the MIME
+ * message SES received.
  *
  * <p>Not {@code @Transactional}: the recorder writes in its own transaction, so this class removes
  * what it wrote.
@@ -64,8 +59,8 @@ class ConversationReplyIntegrationTest extends AbstractIntegrationTest {
     /** CUMS behind the real UserApiClient (Story 17.0b2). */
     @Autowired
     private CumsContractHarness cums;
-    @MockitoSpyBean
-    private EmailService emailService;
+    @Autowired
+    private SesRecorder sesRecorder;
 
     private final Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
 
@@ -80,6 +75,7 @@ class ConversationReplyIntegrationTest extends AbstractIntegrationTest {
                 .build());
         cums.reset();
         cums.user("anna.muster", "Anna", "Muster", "anna.muster@example.com");
+        sesRecorder.reset();
     }
 
     @AfterEach
@@ -107,31 +103,29 @@ class ConversationReplyIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.message.senderUsername").value("anna.muster"))
                 .andExpect(jsonPath("$.message.conversationKey").value("conv-9101"));
 
-        ArgumentCaptor<MailContext> context = ArgumentCaptor.forClass(MailContext.class);
-        ArgumentCaptor<ComposedMail> mail = ArgumentCaptor.forClass(ComposedMail.class);
-        verify(emailService).sendComposed(context.capture(), mail.capture());
-        ComposedMail sent = mail.getValue();
-        assertThat(sent.to()).isEqualTo(SPEAKER_REPLY_TO);
+        SesRecorder.RecordedMail sent = sesRecorder.single();
+        assertThat(sent.raw()).isTrue();
+        assertThat(sent.to()).containsExactly(SPEAKER_REPLY_TO);
         assertThat(sent.fromName()).isEqualTo("Anna Muster via BATbern");
         // Owner 2026-11-03: answers come from info@, not noreply@; Reply-To keeps the thread
-        assertThat(sent.fromAddress()).isEqualTo("info@batbern.ch");
-        assertThat(sent.replyTo()).isEqualTo("replies+" + TOKEN + "@batbern.ch");
+        assertThat(sent.from()).isEqualTo("info@batbern.ch");
+        assertThat(sent.replyTo()).containsExactly("replies+" + TOKEN + "@batbern.ch");
         assertThat(sent.subject()).isEqualTo("Re: Slides");
-        assertThat(sent.inReplyTo()).isEqualTo("<in-2@mail.batbern-test.ch>");
-        assertThat(sent.references()).containsExactly("<root@mail.batbern-test.ch>",
+        assertThat(sent.headers()).containsEntry("In-Reply-To", "<in-2@mail.batbern-test.ch>");
+        assertThat(sent.headers().get("References").split(" ")).containsExactly("<root@mail.batbern-test.ch>",
                 "<in-1@mail.batbern-test.ch>", "<in-2@mail.batbern-test.ch>");
-        assertThat(sent.messageId()).matches("<[0-9a-f-]{36}@batbern\\.ch>");
-        assertThat(sent.text()).startsWith("Bis Freitag, danke.\nAnna")
+        String messageId = sent.messageIdHeader();
+        assertThat(messageId).matches("<[0-9a-f-]{36}@batbern\\.ch>");
+        assertThat(sent.text().replace("\r\n", "\n")).startsWith("Bis Freitag, danke.\nAnna")
                 .contains("> Wann soll ich die Folien schicken?");
         assertThat(sent.html()).contains("Bis Freitag, danke.<br>Anna").contains("<blockquote");
-        assertThat(context.getValue().contentSource()).isEqualTo(MailContext.ContentSource.OWN_TEXT);
-        assertThat(context.getValue().senderUsername()).isEqualTo("anna.muster");
-        assertThat(context.getValue().audience()).isEqualTo(MailContext.Audience.SPEAKERS);
 
         Map<String, Object> out = jdbc.queryForMap("SELECT conversation_id, message_id_header, content_source, "
-                + "sender_username FROM mail_message WHERE event_code = ? AND direction = 'OUT'", EVENT);
+                + "sender_username, audience FROM mail_message WHERE event_code = ? AND direction = 'OUT'", EVENT);
         assertThat(out.get("conversation_id")).isEqualTo(id);
-        String bare = sent.messageId().substring(1, sent.messageId().length() - 1);
+        assertThat(out.get("sender_username")).isEqualTo("anna.muster");
+        assertThat(out.get("audience")).isEqualTo("SPEAKERS");
+        String bare = messageId.substring(1, messageId.length() - 1);
         assertThat(out.get("message_id_header")).isEqualTo(bare);
         assertThat(out.get("content_source")).isEqualTo("OWN_TEXT");
         assertThat(jdbc.queryForObject("SELECT r.message_id_header FROM mail_recipient r JOIN mail_message m "
@@ -158,11 +152,10 @@ class ConversationReplyIntegrationTest extends AbstractIntegrationTest {
                         .content("{\"text\":\"Gern.\",\"markDone\":true}"))
                 .andExpect(status().isCreated());
 
-        ArgumentCaptor<ComposedMail> mail = ArgumentCaptor.forClass(ComposedMail.class);
-        verify(emailService).sendComposed(any(), mail.capture());
-        assertThat(mail.getValue().subject()).isEqualTo("AW: Slides");
-        assertThat(mail.getValue().to()).isEqualTo(SPEAKER);
-        assertThat(mail.getValue().inReplyTo()).isNull();
+        SesRecorder.RecordedMail sent = sesRecorder.single();
+        assertThat(sent.subject()).isEqualTo("AW: Slides");
+        assertThat(sent.to()).containsExactly(SPEAKER);
+        assertThat(sent.headers()).doesNotContainKey("In-Reply-To");
         assertThat(jdbc.queryForObject("SELECT status FROM mail_conversation WHERE id = ?", String.class, id))
                 .isEqualTo("DONE");
     }
@@ -183,7 +176,7 @@ class ConversationReplyIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/conversations/conv-9103/replies").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"text\":\"x\"}")).andExpect(status().isConflict());
 
-        verify(emailService, never()).sendComposed(any(), any());
+        assertThat(sesRecorder.mails()).isEmpty();
         assertThat(jdbc.queryForObject("SELECT status FROM mail_conversation WHERE id = ?", String.class, id))
                 .isEqualTo("OPEN");
     }
@@ -195,7 +188,7 @@ class ConversationReplyIntegrationTest extends AbstractIntegrationTest {
         conversation("conv-9104", "Frage", SPEAKER, "OPEN");
         mockMvc.perform(post("/api/v1/conversations/conv-9104/replies").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"text\":\"x\"}")).andExpect(status().isForbidden());
-        verify(emailService, never()).sendComposed(any(), any());
+        assertThat(sesRecorder.mails()).isEmpty();
         assertThat(cums.requestedUsers()).isEmpty();
     }
 

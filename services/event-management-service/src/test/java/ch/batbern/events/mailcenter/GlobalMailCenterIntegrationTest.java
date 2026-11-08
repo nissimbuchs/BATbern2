@@ -92,6 +92,9 @@ class GlobalMailCenterIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
+        // GET /mails lists every outbound mail. Since 17.0b3 the real EmailService records the
+        // mails other ITs send (they commit), so this class starts from an empty mail log.
+        jdbc.update("DELETE FROM mail_message");
         event(EVENT_A, 931);
         event(EVENT_B, 932);
         when(directory.organizerEmails()).thenReturn(Set.of("organizer-mail@example.com"));

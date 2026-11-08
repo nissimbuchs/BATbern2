@@ -189,18 +189,18 @@ class SpeakerWorkflowControllerIntegrationTest extends AbstractIntegrationTest {
     class Authorization {
 
         @Test
-        @DisplayName("should return 403 when unauthenticated (Spring Security default)")
-        void should_return403_when_unauthenticated() throws Exception {
+        @DisplayName("should return 401 when unauthenticated")
+        void should_return401_when_unauthenticated() throws Exception {
             // Given: Speaker in IDENTIFIED state
             SpeakerPool speaker = createSpeaker(SpeakerWorkflowState.IDENTIFIED);
 
-            // When/Then: PUT request without auth should return 403 (Spring Security returns 403 for anonymous)
+            // The production chain answers 401 before the controller (17.0b3).
             mockMvc.perform(put(BASE_PATH, TEST_EVENT_CODE, speaker.getId())
                             .contentType(MediaType.APPLICATION_JSON)
                             .content(objectMapper.writeValueAsString(Map.of(
                                     "newStatus", "CONTACTED"
                             ))))
-                    .andExpect(status().isForbidden());
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test

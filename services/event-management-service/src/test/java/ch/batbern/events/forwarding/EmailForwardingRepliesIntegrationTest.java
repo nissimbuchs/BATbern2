@@ -8,38 +8,29 @@ import ch.batbern.events.domain.EmailForwardingOutcome;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.forwarding.EmailForwardingService.Result;
 import ch.batbern.events.repository.EmailForwardingLogRepository;
-import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import jakarta.mail.Session;
-import jakarta.mail.internet.MimeMessage;
+import ch.batbern.shared.test.mail.SesRecorder;
+import ch.batbern.shared.test.mail.SesRecorder.RecordedMail;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.core.io.ClassPathResource;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 
-import java.io.ByteArrayInputStream;
 import java.util.List;
-import java.util.Properties;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
  * Story 16.0 AC3/AC4 (#1160) against real PostgreSQL: an unrecognized {@code replies@} mail is
  * forwarded to the organizers and logged; an out-of-office reply is logged as dropped (V131).
- * Fixtures are synthetic ({@code src/test/resources/mail/*.eml}, SES simulator addresses). SES
- * and CUMS are mocked: nothing is sent.
+ * Fixtures are synthetic ({@code src/test/resources/mail/*.eml}, SES simulator addresses). SES is
+ * the {@link SesRecorder} and CUMS is mocked: nothing is sent.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 @DisplayName("Unrecognized replies@ mail (PostgreSQL)")
@@ -56,11 +47,12 @@ class EmailForwardingRepliesIntegrationTest extends AbstractIntegrationTest {
     private JdbcTemplate jdbcTemplate;
     @MockitoBean
     private UserApiClient userApiClient;
-    @MockitoBean
-    private EmailService emailService;
+    @Autowired
+    private SesRecorder sesRecorder;
 
     @BeforeEach
     void organizers() {
+        sesRecorder.reset();
         when(userApiClient.getOrganizerUsernames()).thenReturn(List.of("organizer"));
         when(userApiClient.getUserByUsername("organizer"))
                 .thenReturn(new UserResponse().id("organizer").email(ORGANIZER));
@@ -79,13 +71,11 @@ class EmailForwardingRepliesIntegrationTest extends AbstractIntegrationTest {
         Result result = service.forwardUnrecognizedReply(key, fixture("mail/human-reply.eml"));
 
         assertThat(result).isEqualTo(Result.FORWARDED);
-        ArgumentCaptor<byte[]> sent = ArgumentCaptor.forClass(byte[].class);
-        verify(emailService).sendRawMessage(sent.capture(), eq(List.of(ORGANIZER)), any());
-        MimeMessage forwarded = new MimeMessage(Session.getInstance(new Properties()),
-                new ByteArrayInputStream(sent.getValue()));
-        assertThat(forwarded.getHeader("Reply-To", null))
-                .isEqualTo("success+registrant@simulator.amazonses.com");
-        assertThat(forwarded.getSubject()).isEqualTo("Re: BATbern60 Anmeldebestaetigung");
+        RecordedMail forwarded = sesRecorder.single();
+        assertThat(forwarded.raw()).isTrue();
+        assertThat(forwarded.envelope()).containsExactly(ORGANIZER);
+        assertThat(forwarded.replyTo()).containsExactly("success+registrant@simulator.amazonses.com");
+        assertThat(forwarded.subject()).isEqualTo("Re: BATbern60 Anmeldebestaetigung");
 
         EmailForwardingLog entry = repository.findByS3Key(key).orElseThrow();
         assertThat(entry.getOutcome()).isEqualTo(EmailForwardingOutcome.FORWARDED);
@@ -101,7 +91,7 @@ class EmailForwardingRepliesIntegrationTest extends AbstractIntegrationTest {
         Result result = service.forwardUnrecognizedReply(key, fixture("mail/ooo-reply.eml"));
 
         assertThat(result).isEqualTo(Result.DROPPED_AUTO_REPLY);
-        verify(emailService, never()).sendRawMessage(any(), anyList(), any());
+        assertThat(sesRecorder.mails()).isEmpty();
         assertThat(repository.findByS3Key(key).orElseThrow().getOutcome())
                 .isEqualTo(EmailForwardingOutcome.DROPPED_AUTO_REPLY);
     }
@@ -116,7 +106,7 @@ class EmailForwardingRepliesIntegrationTest extends AbstractIntegrationTest {
         Result second = service.forwardUnrecognizedReply(key, raw);
 
         assertThat(second).isEqualTo(Result.DUPLICATE);
-        verify(emailService).sendRawMessage(any(), eq(List.of(ORGANIZER)), any());
+        assertThat(sesRecorder.single().envelope()).containsExactly(ORGANIZER);
     }
 
     private static byte[] fixture(String path) throws Exception {

@@ -112,10 +112,10 @@ class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("AC7: anonymous caller is rejected (401 at gateway / 403 in isolation)")
+    @DisplayName("AC7: anonymous caller is rejected with 401")
     void should_reject_anonymous() throws Exception {
         mockMvc.perform(get("/api/v1/attendee-portal/dashboard"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

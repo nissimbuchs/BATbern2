@@ -344,10 +344,10 @@ class AnalyticsControllerIntegrationTest extends AbstractIntegrationTest {
     // ── Authorization tests ──────────────────────────────────────────────────
 
     @Test
-    @DisplayName("should return 403 for unauthenticated request to overview")
-    void should_return403_when_unauthenticated() throws Exception {
+    @DisplayName("should return 401 for unauthenticated request to overview")
+    void should_return401_when_unauthenticated() throws Exception {
         mockMvc.perform(get("/api/v1/analytics/overview"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

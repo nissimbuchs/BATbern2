@@ -62,16 +62,20 @@ import jakarta.mail.internet.MimeMultipart;
 public class EmailService {
 
     /**
-     * Optional — present only in production/staging (bean defined in AwsSesConfig).
-     * Null in local and test environments: EmailService falls back to LocalEmailCapture or logging.
+     * Optional — the real client in production/staging (bean defined in AwsSesConfig). Null only
+     * in local dev, where EmailService falls back to LocalEmailCapture or logging. In integration
+     * tests it is the test fixtures' {@code SesRecorder}: live for this class, nothing is sent
+     * (17.0b3).
      */
     @Autowired(required = false)
     private SesClient sesClient;
 
     /**
-     * Whether mail actually leaves the system: true only with an SES client (staging/production).
-     * Local dev captures mail and tests log it. Guards against sending test content key on this,
-     * like the per-email {@code assertNotTestMarked} wall, which only runs on the SES branch.
+     * Whether mail goes to an SES client: true in staging/production and in integration tests
+     * (the {@code SesRecorder}, which records and sends nothing); false only in local dev, which
+     * captures mail. Guards against sending test content key on this, like the per-email
+     * {@code assertNotTestMarked} wall, which only runs on the SES branch, so both walls apply in
+     * integration tests as in production.
      */
     public boolean isLiveDelivery() {
         return sesClient != null;
@@ -87,6 +91,9 @@ public class EmailService {
      */
     @Autowired(required = false)
     private OutboundMailRecorder outboundMailRecorder;
+
+    /** Failure reason of a send refused for an undeliverable address: SES's own error code for it. */
+    static final String INVALID_ADDRESS = "InvalidParameterValue";
 
     /** SES message tag naming the send group, so SES events can be traced to the recorded mail. */
     static final String MAIL_GROUP_TAG = "mail_group";
@@ -230,12 +237,16 @@ public class EmailService {
     private void sendSyncTo(MailContext context, List<String> toList, List<String> cc, String subject,
             String htmlBody, String configurationSetName, String replyTo) {
         String to = String.join(",", toList);
-        List<String> ccClean = normaliseCc(cc, toList);
+        List<String> ccClean = deliverableCc(normaliseCc(cc, toList));
         // Null/blank guard: callers may pass null (no explicit Reply-To needed) or an empty string
         // from config. Both fall back to the global app.email.reply-to value so the behaviour is
         // identical to the 5-arg overload. An empty-string caller will not accidentally send an
         // empty Reply-To header to SES.
         String effectiveReplyTo = (replyTo != null && !replyTo.isBlank()) ? replyTo : replyToEmail;
+        // 17.0b3: every address is checked before the SES branch, so local dev and tests refuse
+        // what SES would refuse (#1176: a joined To: line passed everywhere but production).
+        List<String> toSes = deliveryForms(toList);
+        List<String> ccSes = deliveryForms(ccClean);
 
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
@@ -260,8 +271,7 @@ public class EmailService {
                     LoggingUtils.maskEmail(to), ccClean.size(), subject, configurationSetName,
                     LoggingUtils.maskEmail(effectiveReplyTo));
 
-            List<String> ccSes = toDeliveryForm(ccClean);
-            Destination.Builder destBuilder = Destination.builder().toAddresses(deliveryForms(toList));
+            Destination.Builder destBuilder = Destination.builder().toAddresses(toSes);
             if (!ccSes.isEmpty()) {
                 destBuilder.ccAddresses(ccSes);
             }
@@ -388,7 +398,10 @@ public class EmailService {
         String to = String.join(",", toList);
         // Story 10.32: normalise CC list the same way the SES MIME path below does,
         // so the local /dev/emails inbox shows exactly what staging/prod would deliver.
-        List<String> ccClean = normaliseCc(cc, toList);
+        List<String> ccClean = deliverableCc(normaliseCc(cc, toList));
+        // 17.0b3: addresses are checked before the SES branch (see sendSyncTo).
+        List<String> toSes = deliveryForms(toList);
+        List<String> ccSes = deliveryForms(ccClean);
         // In test/local environments without SES, capture or log the email
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
@@ -426,14 +439,10 @@ public class EmailService {
 
             // Set headers
             message.setFrom(new InternetAddress(fromEmail, fromName));
-            message.setRecipients(Message.RecipientType.TO,
-                    InternetAddress.parse(String.join(",", deliveryForms(toList))));
+            message.setRecipients(Message.RecipientType.TO, internetAddresses(toSes));
             // Story 10.32: CC additional emails (if any) — list normalised at method top.
-            List<String> ccSes = toDeliveryForm(ccClean);
             if (!ccSes.isEmpty()) {
-                message.setRecipients(
-                        Message.RecipientType.CC,
-                        InternetAddress.parse(String.join(",", ccSes)));
+                message.setRecipients(Message.RecipientType.CC, internetAddresses(ccSes));
             }
             message.setSubject(subject, "UTF-8");
             message.setReplyTo(InternetAddress.parse(replyToEmail));
@@ -522,6 +531,7 @@ public class EmailService {
             String configurationSetName
     ) {
         assertSendable(to);
+        String toSes = EmailAddresses.toDeliveryForm(to); // 17.0b3: checked before the SES branch
         if (sesClient == null) {
             log.warn("SES client not configured - skipping email send (local/test mode)");
             if (localEmailCapture != null) {
@@ -555,7 +565,7 @@ public class EmailService {
             MimeMessage message = messageId != null ? new FixedIdMimeMessage(session, messageId)
                     : new MimeMessage(session);
             message.setFrom(new InternetAddress(fromEmail, fromName));
-            message.setRecipients(Message.RecipientType.TO, InternetAddress.parse(EmailAddresses.toDeliveryForm(to)));
+            message.setRecipients(Message.RecipientType.TO, internetAddresses(List.of(toSes)));
             message.setSubject(subject, "UTF-8");
             message.setReplyTo(InternetAddress.parse(replyToEmail));
 
@@ -617,6 +627,7 @@ public class EmailService {
      */
     public void sendComposed(MailContext context, ComposedMail mail) {
         assertSendable(mail.to());
+        String toSes = EmailAddresses.toDeliveryForm(mail.to()); // 17.0b3: checked before the SES branch
         if (sesClient == null) {
             log.warn("SES client not configured - skipping composed email send (local/test mode)");
             String captured = null;
@@ -630,7 +641,7 @@ public class EmailService {
         assertNotTestMarked(mail.subject(), mail.html());
         byte[] mime;
         try {
-            mime = composedMime(mail);
+            mime = composedMime(mail, toSes);
         } catch (MessagingException | IOException e) {
             throw new EmailSendException("Failed to create email message", e);
         }
@@ -664,11 +675,10 @@ public class EmailService {
                 mail.messageId());
     }
 
-    private byte[] composedMime(ComposedMail mail) throws MessagingException, IOException {
+    private byte[] composedMime(ComposedMail mail, String toSes) throws MessagingException, IOException {
         MimeMessage message = new FixedIdMimeMessage(Session.getInstance(new Properties()), mail.messageId());
         message.setFrom(new InternetAddress(composedFrom(mail), mail.fromName(), "UTF-8"));
-        message.setRecipients(Message.RecipientType.TO,
-                InternetAddress.parse(EmailAddresses.toDeliveryForm(mail.to())));
+        message.setRecipients(Message.RecipientType.TO, internetAddresses(List.of(toSes)));
         message.setSubject(mail.subject(), "UTF-8");
         if (mail.replyTo() != null && !mail.replyTo().isBlank()) {
             message.setReplyTo(InternetAddress.parse(mail.replyTo()));
@@ -749,6 +759,10 @@ public class EmailService {
                 record(context, String.join(",", to), cc, subject, htmlBody, null, errorCode(ses));
             }
             throw e;
+        } catch (IllegalArgumentException e) {
+            // An address refused before SES (17.0b3) is recorded as SES recorded it before.
+            record(context, String.join(",", to), cc, subject, htmlBody, null, INVALID_ADDRESS);
+            throw e;
         }
         record(context, String.join(",", to), cc, subject, htmlBody, messageId, null);
     }
@@ -760,6 +774,7 @@ public class EmailService {
             throw new IllegalArgumentException("destinations must not be empty");
         }
         destinations.forEach(EmailService::assertSendable);
+        List<String> destinationsSes = deliveryForms(destinations); // 17.0b3: checked before the SES branch
 
         String raw = new String(mime, StandardCharsets.UTF_8);
         String subject = rawSubject(mime);
@@ -782,7 +797,7 @@ public class EmailService {
                 ? configurationSetOverride
                 : configurationSetName;
         SendRawEmailRequest.Builder request = SendRawEmailRequest.builder()
-                .destinations(destinations)
+                .destinations(destinationsSes)
                 .rawMessage(RawMessage.builder().data(SdkBytes.fromByteArray(mime)).build());
         if (configurationSet != null && !configurationSet.isBlank()) {
             request.configurationSetName(configurationSet);
@@ -964,9 +979,10 @@ public class EmailService {
      * into the entity names/titles that flow into email subjects/bodies, so a match here means the
      * email was generated from test data and must never reach real recipients.
      *
-     * <p>Called ONLY from the real-send branch (non-null {@code sesClient}) of each send method, so
-     * local dev / test (where {@code LocalEmailCapture} or logging handles the mail) is unaffected —
-     * dev-only send specs still run end-to-end. Logs at ERROR so a CloudWatch log-metric alarm can
+     * <p>Called ONLY from the SES branch (non-null {@code sesClient}) of each send method, so local
+     * dev (where {@code LocalEmailCapture} or logging handles the mail) is unaffected — dev-only send
+     * specs still run end-to-end. Integration tests take the SES branch (the {@code SesRecorder}),
+     * so the wall applies there as in production. Logs at ERROR so a CloudWatch log-metric alarm can
      * fire if a test ever leaks a send onto production, then throws to abort the SES call.
      */
     private static void assertNotTestMarked(String subject, String htmlBody) {
@@ -1012,8 +1028,22 @@ public class EmailService {
                 .toList();
     }
 
+    /**
+     * Each address in the form SES needs ({@link EmailAddresses#toDeliveryForm}), one address per
+     * entry: an entry holding several addresses ({@code "a@x.ch,b@y.ch"}) is not an address and
+     * throws {@link IllegalArgumentException}, with or without an SES client (#1176).
+     */
     private static List<String> deliveryForms(List<String> addresses) {
         return addresses.stream().map(EmailAddresses::toDeliveryForm).toList();
+    }
+
+    /** Header addresses built one by one; never re-parsed from a joined string. */
+    private static InternetAddress[] internetAddresses(List<String> deliveryForms) throws MessagingException {
+        InternetAddress[] result = new InternetAddress[deliveryForms.size()];
+        for (int i = 0; i < deliveryForms.size(); i++) {
+            result[i] = new InternetAddress(deliveryForms.get(i), true);
+        }
+        return result;
     }
 
     /**
@@ -1049,9 +1079,11 @@ public class EmailService {
     /**
      * #1102: SES has no SMTPUTF8, so addresses go out with the domain in Punycode
      * ({@link EmailAddresses#toDeliveryForm}). A CC that cannot be delivered at all (Unicode local
-     * part) is dropped with a warning so the primary recipient still gets the mail.
+     * part, several addresses in one entry) is dropped with a warning so the primary recipient
+     * still gets the mail. The entries kept, in their original spelling, are what the capture and
+     * the mail record list, so neither shows a Cc recipient SES never got (17.0b3).
      */
-    private static List<String> toDeliveryForm(List<String> cc) {
+    private static List<String> deliverableCc(List<String> cc) {
         return cc.stream()
                 .filter(s -> {
                     if (!EmailAddresses.isAcceptable(s)) {
@@ -1060,7 +1092,6 @@ public class EmailService {
                     }
                     return true;
                 })
-                .map(EmailAddresses::toDeliveryForm)
                 .toList();
     }
 

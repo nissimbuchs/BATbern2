@@ -8,7 +8,7 @@ import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.repository.ProfileMergeRequestRepository;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.Role;
 import com.fasterxml.jackson.databind.JsonNode;
@@ -17,7 +17,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -42,7 +41,6 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -71,7 +69,11 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ProfileMergeRequestRepository requestRepository;
     @Autowired
-    private EmailService emailService; // Mockito mock from TestAwsConfig
+    private SesRecorder sesRecorder;
+
+    /** Mail goes only to the requester; the old address must never get one. Both deliverable (simulator). */
+    private static final String REQUESTER = "success+anna.private@simulator.amazonses.com";
+    private static final String OLD_ADDRESS = "success+anna.oldcompany@simulator.amazonses.com";
     @Autowired
     private ObjectMapper objectMapper;
     @MockitoBean
@@ -86,8 +88,7 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(emailService);
-        when(emailService.replaceVariables(anyString(), any())).thenCallRealMethod();
+        sesRecorder.reset();
         when(eventManagement.preview(anyString(), anyString())).thenReturn(new EventManagementUserMergeClient.Preview(
                 Map.of("registrations.attendee_username", 3), Map.of(), List.of()));
         when(eventManagement.merge(any())).thenReturn(new EventManagementUserMergeClient.Result(
@@ -95,10 +96,10 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
         userRepository.save(User.builder().username("orga.nizer").email("orga@example.com")
                 .firstName("Orga").lastName("Nizer").cognitoUserId("cog-orga")
                 .roles(new HashSet<>(Set.of(Role.ORGANIZER))).build());
-        login = userRepository.save(User.builder().username("anna.muster.2").email("anna.private@example.com")
+        login = userRepository.save(User.builder().username("anna.muster.2").email(REQUESTER)
                 .firstName("Anna").lastName("Muster").cognitoUserId("cog-anna")
                 .roles(new HashSet<>(Set.of(Role.ATTENDEE))).build());
-        guest = userRepository.save(User.builder().username("anna.muster").email("anna@oldcompany.example.com")
+        guest = userRepository.save(User.builder().username("anna.muster").email(OLD_ADDRESS)
                 .firstName("Anna").lastName("Muster").companyId("oldco")
                 .roles(new HashSet<>(Set.of(Role.ATTENDEE))).build());
         guest.addAdditionalEmail(UserAdditionalEmail.builder().email("anna.old@example.com")
@@ -135,9 +136,9 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
                 ArgumentCaptor.forClass(EventManagementMailCenterClient.OpenRequest.class);
         verify(mailCenter).openMergeRequest(open.capture());
         assertThat(open.getValue().requestId()).isEqualTo(UUID.fromString(id));
-        assertThat(open.getValue().requesterEmail()).isEqualTo("anna.private@example.com");
+        assertThat(open.getValue().requesterEmail()).isEqualTo(REQUESTER);
         assertThat(open.getValue().note()).isEqualTo("Ich war bis 2024 bei Firma X.");
-        verify(emailService, never()).sendHtmlEmail(eq("anna@oldcompany.example.com"), anyString(), anyString());
+        assertThat(sesRecorder.mailsTo(OLD_ADDRESS)).isEmpty();
     }
 
     @Test
@@ -213,7 +214,7 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.note").value("Firma X bis 2024"))
                 .andExpect(jsonPath("$.preview.target.username").value("anna.muster.2"))
                 .andExpect(jsonPath("$.preview.source.username").value("anna.muster"))
-                .andExpect(jsonPath("$.preview.source.email").value("anna@oldcompany.example.com"))
+                .andExpect(jsonPath("$.preview.source.email").value(OLD_ADDRESS))
                 .andExpect(jsonPath("$.preview.moves['registrations.attendee_username']").value(3))
                 .andExpect(jsonPath("$.preview.canMerge").value(true));
     }
@@ -234,14 +235,15 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
         assertThat(call.getValue().sourceUsername()).isEqualTo("anna.muster");
         assertThat(call.getValue().targetUsername()).isEqualTo("anna.muster.2");
         assertThat(call.getValue().performedBy()).isEqualTo("orga.nizer");
-        assertThat(call.getValue().sourceProfile()).containsEntry("email", "anna@oldcompany.example.com");
+        assertThat(call.getValue().sourceProfile()).containsEntry("email", OLD_ADDRESS);
 
         entityManager.flush();
         entityManager.clear();
         assertThat(userRepository.findByUsername("anna.muster")).isEmpty();
         User target = userRepository.findByUsername("anna.muster.2").orElseThrow();
         assertThat(target.getAdditionalEmails()).isEmpty();
-        verify(emailService).sendHtmlEmail(eq("anna.private@example.com"), anyString(), anyString());
+        assertThat(sesRecorder.mailsTo(REQUESTER)).hasSize(1);
+        assertThat(sesRecorder.mailsTo(OLD_ADDRESS)).isEmpty();
         verify(mailCenter).closeMergeRequest(UUID.fromString(id), "orga.nizer");
     }
 
@@ -261,9 +263,8 @@ class ProfileMergeRequestIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.reason").value("Die Anmeldungen gehören zu einer anderen Person."));
 
         verify(eventManagement, never()).merge(any());
-        ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmail(eq("anna.private@example.com"), anyString(), html.capture());
-        assertThat(html.getValue()).contains("Die Anmeldungen geh");
+        assertThat(sesRecorder.single().to()).containsExactly(REQUESTER);
+        assertThat(sesRecorder.single().html()).contains("Die Anmeldungen geh");
         verify(mailCenter).closeMergeRequest(UUID.fromString(id), "orga.nizer");
         assertThat(userRepository.findByUsername("anna.muster")).isPresent();
     }

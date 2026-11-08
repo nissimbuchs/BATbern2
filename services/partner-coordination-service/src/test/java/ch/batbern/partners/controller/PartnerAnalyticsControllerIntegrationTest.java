@@ -207,13 +207,11 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     // ─── AC6: Unauthenticated access ─────────────────────────────────────────
 
     @Test
-    void should_return403_when_notAuthenticated() throws Exception {
-        // Test filter chain uses permitAll (test profile), so anonymous user passes the filter.
-        // @PreAuthorize method security evaluates → no required role → AccessDeniedException → 403.
-        // Production behavior (API Gateway strips unauthenticated requests before reaching this service).
+    void should_return401_when_notAuthenticated() throws Exception {
+        // The production chain answers 401 before the controller (17.0b3).
         mockMvc.perform(get("/api/v1/partners/GoogleZH/analytics/dashboard")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ─── Helper methods ──────────────────────────────────────────────────────

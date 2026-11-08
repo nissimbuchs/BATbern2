@@ -17,7 +17,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Tests verify that:
  * - Public endpoints are accessible without authentication
  * - Authentication is enforced for protected endpoints
- * - JWT validation happens at API Gateway (services trust gateway)
+ * - The service validates bearer tokens itself; an invalid one answers 401
  */
 @DisplayName("Security Configuration Tests")
 class SecurityConfigIntegrationTest extends AbstractIntegrationTest {
@@ -131,15 +131,12 @@ class SecurityConfigIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("should_notRejectRequests_when_invalidJwtProvided")
-    void should_notRejectRequests_when_invalidJwtProvided() throws Exception {
-        // Given: Request with invalid JWT (API Gateway should have rejected it)
-        // Services should trust API Gateway and not validate JWTs themselves
-
-        // When: Accessing endpoint with invalid token
-        // Then: Should not reject based on token (service trusts gateway)
+    @DisplayName("should_return401_when_invalidJwtProvided")
+    void should_return401_when_invalidJwtProvided() throws Exception {
+        // The service validates every bearer token itself (production chain, 17.0b3): an invalid
+        // token is refused with 401 even on a public endpoint, it does not fall back to anonymous.
         mockMvc.perform(get("/api/v1/events/current")
                         .header("Authorization", "Bearer invalid-jwt"))
-                .andExpect(status().isNotFound()); // No current event, but security passed
+                .andExpect(status().isUnauthorized());
     }
 }

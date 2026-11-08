@@ -152,6 +152,18 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
         createTestEvent("BATbern 2026 Draft", "2026-07-01T09:00:00Z", "CREATED");
     }
 
+    /**
+     * The "BATbern 2025" event {@link #setUp} saves in AGENDA_PUBLISHED. Looked up by title:
+     * {@code findAll()} has no order, so its first row was any of the three seeded events
+     * (one is ARCHIVED), which made the tests that took it order-dependent (17.0b3).
+     */
+    private Event seededAgendaPublishedEvent() {
+        return eventRepository.findAll().stream()
+                .filter(event -> "BATbern 2025".equals(event.getTitle()))
+                .findFirst()
+                .orElseThrow();
+    }
+
     private void mockUserApiClient() {
         // Mock getOrCreateUser() for registration creation - return user based on request data
         when(userApiClient.getOrCreateUser(any(GetOrCreateUserRequest.class)))
@@ -660,7 +672,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_getEventBasic_when_noIncludesProvided")
     void should_getEventBasic_when_noIncludesProvided() throws Exception {
         // Get the first event created in setUp
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         // Story 1.16.2: Use eventCode in URL instead of UUID
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
@@ -689,7 +701,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_includeVenue_when_includeVenueRequested")
     void should_includeVenue_when_includeVenueRequested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         // Story 1.16.2: Use eventCode in URL instead of UUID
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
@@ -709,7 +721,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_includeSessions_when_includeSessionsRequested")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // sessions on /events*: organizers only
     void should_includeSessions_when_includeSessionsRequested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         // Speakers are now accessed through sessions.speakers (not top-level speakers array)
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode())
@@ -727,7 +739,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_includeMultiple_when_multipleIncludesRequested")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // sessions on /events*: organizers only
     void should_includeMultiple_when_multipleIncludesRequested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         // Story 1.16.2: Use eventCode in URL instead of UUID
         // Note: speakers removed from top-level, now accessed via sessions.speakers
@@ -746,7 +758,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_includeMetrics_when_includeMetricsRequested")
     void should_includeMetrics_when_includeMetricsRequested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         // Create speaker pool entries with different statuses
         // 2 ACCEPTED speakers (not yet submitted materials)
@@ -796,7 +808,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_reportOverrideMaxSpeakerSlots_when_agendaConfigSavedAfterMetricsCached")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_reportOverrideMaxSpeakerSlots_when_agendaConfigSavedAfterMetricsCached() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
         String url = "/api/v1/events/" + savedEvent.getEventCode();
 
         mockMvc.perform(get(url).param("include", "metrics"))
@@ -830,6 +842,11 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 {
                     "title": "BATbern 2027",
                     "date": "2027-08-15T09:00:00Z",
+                    "registrationDeadline": "2027-08-01T09:00:00Z",
+                    "venueName": "Kornhausforum",
+                    "venueAddress": "Kornhausplatz 18, 3011 Bern",
+                    "venueCapacity": 200,
+                    "organizerUsername": "test.organizer",
                     "description": "Annual tech conference 2027",
                     "eventType": "EVENING"
                 }
@@ -848,6 +865,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_return400_when_invalidDataProvided")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_return400_when_invalidDataProvided() throws Exception {
         String invalidEvent = """
                 {
@@ -869,12 +887,17 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_replaceEvent_when_putRequested")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_replaceEvent_when_putRequested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         String updatedEvent = """
                 {
                     "title": "BATbern 2025 Updated",
                     "date": "2025-09-15T10:00:00Z",
+                    "registrationDeadline": "2025-09-01T10:00:00Z",
+                    "venueName": "Kornhausforum",
+                    "venueAddress": "Kornhausplatz 18, 3011 Bern",
+                    "venueCapacity": 200,
+                    "organizerUsername": "test.organizer",
                     "description": "Updated description"
                 }
                 """;
@@ -899,7 +922,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_patchFields_when_patchRequested")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_patchFields_when_patchRequested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
         String originalTitle = savedEvent.getTitle();
 
         String patchData = """
@@ -927,7 +950,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_deleteEvent_when_deleteRequested")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_deleteEvent_when_deleteRequested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
         String eventCode = savedEvent.getEventCode();
 
         mockMvc.perform(delete("/api/v1/events/" + eventCode)
@@ -1243,7 +1266,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_listSessions_when_requested")
     void should_listSessions_when_requested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/sessions")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -1256,7 +1279,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_filterSessions_when_filterProvided")
     void should_filterSessions_when_filterProvided() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
         String filter = "{\"sessionType\":\"keynote\"}";
 
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/sessions")
@@ -1284,7 +1307,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_createSession_when_validData")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_createSession_when_validData() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         String newSession = """
                 {
@@ -1307,8 +1330,9 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_return400_when_creatingSessionWithInvalidData")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_return400_when_creatingSessionWithInvalidData() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         String invalidSession = """
                 {
@@ -1326,7 +1350,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_updateSession_when_validData")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_updateSession_when_validData() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         // First create a session
         String newSession = """
@@ -1368,7 +1392,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_deleteSession_when_requested")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_deleteSession_when_requested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         // First create a session
         String newSession = """
@@ -1409,7 +1433,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_listRegistrations_when_requested")
     @WithMockUser(roles = "ORGANIZER")
     void should_listRegistrations_when_requested() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         // Story 3.2: Response format uses paginated wrapper {data: [], pagination: {}}
         mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/registrations")
@@ -1424,7 +1448,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_filterRegistrations_when_filterProvided")
     @WithMockUser(roles = "ORGANIZER")
     void should_filterRegistrations_when_filterProvided() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         // Story 3.2: Response format uses paginated wrapper {data: [], pagination: {}}
         // Note: The API uses query params (status, search, companyId), not a JSON filter param
@@ -1476,7 +1500,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_return400_when_creatingRegistrationWithInvalidData")
     void should_return400_when_creatingRegistrationWithInvalidData() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         String invalidRegistration = """
                 {
@@ -1497,6 +1521,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_returnAnalytics_when_metricsRequested")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_returnAnalytics_when_metricsRequested() throws Exception {
         // Feedback #1: future-dated event so the registrations below pass the deadline guard.
         Event savedEvent = createTestEvent("BATbern RegAnalytics", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
@@ -1544,6 +1569,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @DisplayName("should_filterByTimeframe_when_timeframeProvided")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_filterByTimeframe_when_timeframeProvided() throws Exception {
         // Feedback #1: future-dated event so the registrations below pass the deadline guard.
         Event savedEvent = createTestEvent("BATbern RegTimeframe", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
@@ -1607,7 +1633,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_cacheExpanded_when_includesUsed")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER") // sessions on /events*: organizers only
     void should_cacheExpanded_when_includesUsed() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
 
         // Make 3 requests to warm up and stabilize performance
         // Story 1.16.2: Use eventCode in URL instead of UUID
@@ -1641,7 +1667,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_returnCached_when_withinTTL")
     void should_returnCached_when_withinTTL() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
         String originalDescription = savedEvent.getDescription(); // Store original before any updates
 
         // First request - populate cache
@@ -1672,7 +1698,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_invalidateCache_when_eventUpdated")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_invalidateCache_when_eventUpdated() throws Exception {
-        Event savedEvent = eventRepository.findAll().get(0);
+        Event savedEvent = seededAgendaPublishedEvent();
         String originalDescription = savedEvent.getDescription();
 
         // First request - populate cache
@@ -1913,6 +1939,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 {
                     "title": "Auto-numbered Event",
                     "date": "2025-09-15T09:00:00Z",
+                    "registrationDeadline": "2025-09-01T09:00:00Z",
                     "venueName": "Test Venue",
                     "venueAddress": "Test Address",
                     "venueCapacity": 100,

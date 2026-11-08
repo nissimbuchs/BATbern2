@@ -13,7 +13,7 @@ import software.amazon.awssdk.services.ses.SesClient;
  * AWS SES configuration for sending transactional emails.
  *
  * Production/Staging/Local: Uses real AWS SES (sandbox mode in dev)
- * Test: Uses mock SES client
+ * Test: the test fixtures' SesRecorder provides the SesClient (17.0b3)
  *
  * Story 2.2a Task B12: Email service infrastructure
  */
@@ -30,6 +30,7 @@ public class AwsSesConfig {
     /**
      * AWS SES Client for production and staging only.
      * Local development uses no SesClient — EmailService captures emails in-memory via LocalEmailCapture.
+     * Integration tests get theirs from the test fixtures' {@code SesRecorder} (17.0b3), never from here.
      * Uses DefaultCredentialsProvider which supports:
      * - IAM roles (production/staging ECS tasks)
      * - Named profiles (local development)
@@ -45,17 +46,5 @@ public class AwsSesConfig {
                 .region(Region.of(awsRegion))
                 .credentialsProvider(DefaultCredentialsProvider.builder().build())
                 .build();
-    }
-
-    /**
-     * Mock SES Client for test environment only.
-     * Returns null and EmailService handles it gracefully by logging instead of sending.
-     */
-    @Bean
-    @Profile("test")
-    public SesClient testSesClient() {
-        log.info("Using mock SES client for test environment");
-        // Return null - EmailService checks for null and logs instead of sending
-        return null;
     }
 }

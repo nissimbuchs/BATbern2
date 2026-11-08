@@ -7,9 +7,11 @@ import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.domain.MeetingType;
 import ch.batbern.partners.domain.PartnerMeeting;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
-import ch.batbern.shared.mail.MailContext;
-import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.partners.mail.HttpOutboundMailRecorder;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.contract.ContractServer;
 import org.springframework.cache.CacheManager;
 import org.springframework.http.HttpMethod;
@@ -24,18 +26,15 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.context.annotation.Import;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
+import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -69,12 +68,27 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
     ContractServer ems;
     @MockitoBean
     UserServiceClient userServiceClient;
-    @MockitoSpyBean
-    EmailService emailService;
+    @Autowired
+    SesRecorder sesRecorder;
+    /** The real mail recorder; its POST /internal/mails goes to an EMS stand-in per ems-internal. */
+    @Autowired
+    HttpOutboundMailRecorder mailRecorder;
+    ContractServer emsInternal;
+    final List<String> recordedMails = new CopyOnWriteArrayList<>();
 
     @BeforeEach
     void setUp() {
         meetingRepository.deleteAll();
+        sesRecorder.reset();
+        recordedMails.clear();
+        emsInternal = ContractServer.bindTo(
+                (RestTemplate) ReflectionTestUtils.getField(mailRecorder, "restTemplate"),
+                "docs/api/internal/ems-internal.openapi.yml");
+        emsInternal.expect(HttpMethod.POST, "/internal/mails").times(ExpectedCount.manyTimes())
+                .respondPerRequest(call -> {
+                    recordedMails.add(call.body());
+                    return new ContractServer.Reply(HttpStatus.ACCEPTED, null);
+                });
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
         // Callers are user(...) principals without a JWT to forward, hence ignoringMissingAuthorization.
         ems = ContractServer.bindTo(restTemplate, "docs/api/events-core-api.openapi.yml")
@@ -86,7 +100,7 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
                          "venueName": "Bern", "venueAddress": "Bern", "venueCapacity": 200,
                          "workflowState": "AGENDA_PUBLISHED", "eventType": "EVENING"}""");
         var partner = new UserResponse();
-        partner.setEmail("contact@partner.ch");
+        partner.setEmail("success+contact@simulator.amazonses.com");
         when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(partner));
         when(userServiceClient.getUsersByRole("ORGANIZER")).thenReturn(List.of());
     }
@@ -94,6 +108,7 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
     @AfterEach
     void cleanUp() {
         ems.close();
+        emsInternal.close();
         meetingRepository.deleteAll();
     }
 
@@ -107,9 +122,7 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
                 .endTime(LocalTime.of(14, 0))
                 .createdBy("organizer")
                 .build());
-        doThrow(new IllegalArgumentException("not a deliverable address"))
-                .when(emailService).sendHtmlEmailWithAttachments(any(MailContext.class), anyString(), anyList(),
-                        any(), any(), anyList());
+        sesRecorder.failWith(() -> SesRecorder.sesError("MessageRejected", "Email address is not verified."));
 
         mockMvc.perform(post("/api/v1/partner-meetings/" + meeting.getId() + "/send-invite")
                         .with(user("organizer").roles("ORGANIZER")))
@@ -118,5 +131,13 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
         PartnerMeeting after = meetingRepository.findById(meeting.getId()).orElseThrow();
         assertThat(after.getInviteSentAt()).isNull();
         assertThat(after.getInviteSequence()).isEqualTo(meeting.getInviteSequence());
+
+        // The refused send is in EMS's mail log with SES's error code, nothing reached SES.
+        assertThat(sesRecorder.mails()).isEmpty();
+        assertThat(recordedMails).hasSize(1);
+        JsonNode record = new ObjectMapper().readTree(recordedMails.get(0));
+        assertThat(record.get("failureReason").asText()).isEqualTo("MessageRejected");
+        assertThat(record.get("templateKey").asText()).isEqualTo("partner-meeting-invite");
+        assertThat(record.get("to").asText()).isEqualTo("success+contact@simulator.amazonses.com");
     }
 }

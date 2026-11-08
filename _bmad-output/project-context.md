@@ -186,9 +186,17 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
   PostgreSQL 16 via Testcontainers with `.withReuse(true)` for performance.
 - **NEVER use H2 or `@DataJpaTest` without PostgreSQL** — hides JSONB, function,
   and constraint issues that only surface in production.
-- No class-level `@Transactional` on a write IT: the rollback skips the flush, so DB constraints and
-  triggers never run (#1104). Clean up in `@AfterEach`, or `flush()` before asserting. The CI ratchet
-  counts class-level `@Transactional` ITs (`coding-standards.md` → "Test fidelity rules").
+- No class-level `@Transactional` on a new write IT: clean up in `@AfterEach`. Existing ones are
+  covered by `FlushBeforeRollback` (on `AbstractIntegrationTest`, 17.0b3): it flushes before the
+  rollback, so constraints, triggers and flush-time validation run (#1104). A test that catches a
+  Hibernate exception and continues calls `entityManager.clear()`. The CI ratchet counts class-level
+  `@Transactional` ITs (`coding-standards.md` → "Test fidelity rules").
+- Every IT runs the service's **production security chain** (17.0b3): anonymous answers 401, a wrong
+  role 403. No permit-all test chain; authenticate with `@WithMockUser`, `user(...)` or `jwt()`.
+- Mail: the real `EmailService` runs against the `SesRecorder` (shared-kernel test fixtures), the
+  context's only `SesClient`. Assert what SES received (`sesRecorder.single().to()`, `.html()`),
+  never `verify(emailService)`, never a mocked or spied `EmailService`. Recipients that must get mail:
+  `success+<name>@simulator.amazonses.com`; `@example.com` only for data that never gets mail.
 - `application-test.properties`: `spring.flyway.enabled=true` — always run real migrations.
 
 ### Test Naming Convention

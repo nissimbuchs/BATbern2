@@ -33,9 +33,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Exercises the PRODUCTION EMS filter chain ({@code filterChain}, {@code @Profile("!test")}), #1136.
- * Every integration test runs {@code TestSecurityConfig}, whose chain is {@code anyRequest().permitAll()},
- * so the {@code permitAll} matchers that guard production had no test.
+ * Exercises the PRODUCTION EMS filter chain ({@code filterChain}), #1136, in isolation: every
+ * {@code permitAll} matcher against a catch-all probe. The integration tests run the same chain
+ * since 17.0b3; this probe covers the permit list, {@code ProductionChainIntegrationTest} the 401/403.
  *
  * <p>Lives outside {@code ch.batbern.events}/{@code ch.batbern.shared} on purpose: EMS scans those
  * packages with a plain {@code @ComponentScan} (no test-type exclusion), so a probe controller there

@@ -193,14 +193,14 @@ class SessionQnaIntegrationTest extends AbstractIntegrationTest {
     // ==================== AC3: anonymous cannot post; can read ====================
 
     @Test
-    @DisplayName("AC3: anonymous post is rejected (401 at gateway / 403 in isolation), no row created")
+    @DisplayName("AC3: anonymous post is rejected with 401, no row created")
     void should_reject_anonymousPost() throws Exception {
         openWindow(QnaWindowStatus.OPEN, Instant.now().plus(10, ChronoUnit.DAYS));
 
         mockMvc.perform(post("/api/v1/events/{e}/sessions/{s}/qna/posts", EVENT_CODE, SLUG)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{ \"body\": \"anon question\" }"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         assertThat(postRepository.count()).isZero();
     }

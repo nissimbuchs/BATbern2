@@ -23,9 +23,9 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Story 16.9 AC4 against the PRODUCTION EMS filter chain ({@code @Profile("!test")}): every
- * integration test runs the permit-all {@code TestSecurityConfig}, so the {@code /internal/**}
- * permit that partner-coordination relies on had to be checked here. Only {@link SecurityConfig}
+ * Story 16.9 AC4 against the PRODUCTION EMS filter chain, which every integration test also runs
+ * since 17.0b3. This probe checks the {@code /internal/**} permit that partner-coordination relies
+ * on with nothing but the chain loaded. Only {@link SecurityConfig}
  * and a catch-all probe are loaded: a request the chain lets through reaches the probe (200), a
  * blocked one is rejected with 401 before it. The gateway denies {@code /internal/**}, so this path
  * is reachable only inside the VPC.

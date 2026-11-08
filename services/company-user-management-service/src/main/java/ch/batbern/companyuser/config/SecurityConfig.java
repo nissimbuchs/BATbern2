@@ -112,10 +112,11 @@ public class SecurityConfig {
     }
 
     /**
-     * Production security filter chain with JWT authentication
+     * Production security filter chain with JWT authentication, in every profile but {@code local}:
+     * the integration tests run it too (17.0b3).
      */
     @Bean
-    @Profile("!test & !local")
+    @Profile("!local")
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            JwtAuthenticationConverter jwtAuthenticationConverter)
             throws Exception {
@@ -171,62 +172,6 @@ public class SecurityConfig {
     }
 
     /**
-     * Test security filter chain with authentication enforcement
-     * Uses @WithMockUser for testing authenticated endpoints
-     */
-    @Bean
-    @Profile("test")
-    public SecurityFilterChain testFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            // Enable anonymous authentication for public endpoints
-            .anonymous(anonymous -> anonymous.principal("anonymous"))
-            .authorizeHttpRequests(authz -> authz
-                .requestMatchers("/actuator/health/**", "/actuator/info").permitAll()
-                .requestMatchers("/swagger-ui/**", "/v3/api-docs/**").permitAll()
-                // Internal user API for EMS/PCS/gateway (InternalUserController). Not routed by the
-                // API gateway, which also denies /internal/** explicitly: reachable only in the VPC.
-                .requestMatchers("/internal/**").permitAll()
-                // Story 4.1.5: Public company search for registration autocomplete
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/search").permitAll()
-                // Public company endpoint (GET only for partner showcase enrichment)
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/companies/*").permitAll()
-                // Public organizers endpoint for About page
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
-                // Story 11.C.1: Public user-portrait endpoint (replaces deleted /api/v1/speakers/{username})
-                .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/users/*").permitAll()
-                // Story 10.8a: Public presentation settings (moderator page)
-                .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
-                // Additional-email verification (v2): public token-credentialed verify endpoints
-                .requestMatchers(HttpMethod.GET, "/api/v1/users/additional-emails/verify").permitAll()
-                .requestMatchers(HttpMethod.POST, "/api/v1/users/additional-emails/verify").permitAll()
-                // Current user endpoint always requires authentication (even from VPC)
-                .requestMatchers("/api/v1/users/me").authenticated()
-                // Test environment: Enforce authentication for all user endpoints
-                // (tests run from localhost but should verify authentication logic)
-                .requestMatchers("/api/v1/users/*").authenticated()
-                // W2.2: Watch pairing endpoints — unauthenticated (code/token IS the credential)
-                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/watch/pair").permitAll()
-                .requestMatchers(org.springframework.http.HttpMethod.POST, "/api/v1/watch/authenticate").permitAll()
-                .anyRequest().authenticated() // Enforce authentication in tests
-            )
-            .exceptionHandling(exceptions -> exceptions
-                .authenticationEntryPoint((request, response, authException) -> {
-                    // Return 401 for unauthenticated requests
-                    response.sendError(401, "Unauthorized");
-                })
-                .accessDeniedHandler((request, response, accessDeniedException) -> {
-                    // Return 403 for authenticated but unauthorized requests
-                    response.sendError(403, "Forbidden");
-                })
-            );
-
-        return http.build();
-    }
-
-    /**
      * Multi-issuer JWT decoder accepting both AWS Cognito (RS256) and Watch app (HS256) tokens.
      *
      * Story 11.C.1: Watch organizer JWTs are now propagated to CUMS by EMS's
@@ -240,9 +185,11 @@ public class SecurityConfig {
      *
      * - iss == "batbern-watch" → HMAC-SHA256 decoder (Watch pairing JWT)
      * - anything else          → Cognito RS256 decoder (Cognito ID/access token)
+     *
+     * Every profile, tests included: the test profile points the JWK set at an unreachable host,
+     * since its tests authenticate through MockMvc's {@code jwt()} post-processor.
      */
     @Bean
-    @Profile("!test")
     public JwtDecoder jwtDecoder() {
         if (jwkSetUri == null || jwkSetUri.isEmpty()) {
             throw new IllegalArgumentException("JWT JWK Set URI must be configured");

@@ -16,8 +16,7 @@ import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.AdminSettingsService;
 import ch.batbern.events.service.PrimarySpeakerResolver;
-import ch.batbern.shared.mail.OutboundMailRecorder;
-import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -27,15 +26,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
@@ -49,20 +45,16 @@ import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 
 /**
- * Story 16.5 against real PostgreSQL and the real render and record code (no SES client in tests:
- * nothing leaves the process, AC15). Own text per audience: preview i equals the recorded mail i
+ * Story 16.5 against real PostgreSQL and the real render and record code (SES is the
+ * {@link SesRecorder}: nothing leaves the process, AC15). Own text per audience: preview i equals the recorded mail i
  * (AC4), recorded as OWN_TEXT without a template key (AC5), unknown placeholders refused (AC2), the
  * newsletter footer (AC3), the registrant guard (AC9), speakers by status (AC11, AC12), limits (AC13).
  * Not {@code @Transactional}: the newsletter and registrant sends run on {@code @Async} threads.
@@ -98,18 +90,15 @@ class OwnTextComposerIntegrationTest extends AbstractIntegrationTest {
     private UserApiClient userApiClient;
     @MockitoBean
     private PrimarySpeakerResolver primarySpeakerResolver;
-    @MockitoBean(answers = Answers.CALLS_REAL_METHODS)
-    private EmailService emailService;
     @Autowired
-    private OutboundMailRecorder recorder;
+    private SesRecorder sesRecorder;
 
     private Event event;
 
     @BeforeEach
     void setUp() {
         cleanUp();
-        ReflectionTestUtils.setField(emailService, "outboundMailRecorder", recorder);
-        ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
+        sesRecorder.reset();
         Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
         event = eventRepository.saveAndFlush(Event.builder()
                 .eventCode(EVENT_CODE).title("BATbern Test Event #923").eventNumber(923)
@@ -178,10 +167,7 @@ class OwnTextComposerIntegrationTest extends AbstractIntegrationTest {
         assertThat(row.get("content_source")).isEqualTo("OWN_TEXT");
         assertThat((String) row.get("own_body_html")).isEqualTo("<p>Hallo zusammen, {{eventTitle}}.</p>");
 
-        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService, atLeastOnce()).sendHtmlEmailSync(any(), eq("success+sub923a" + SIM), any(), anyString(),
-                body.capture(), any(), any());
-        assertThat(body.getValue()).contains("/unsubscribe?token=tok-923-");
+        assertThat(lastHtmlTo("success+sub923a" + SIM)).contains("/unsubscribe?token=tok-923-");
     }
 
     @Test
@@ -197,15 +183,12 @@ class OwnTextComposerIntegrationTest extends AbstractIntegrationTest {
                 + " (SELECT id FROM newsletter_sends WHERE event_id = ?)", event.getId());
         jdbc.update("UPDATE newsletter_sends SET status = 'PARTIAL', failed_count = 1, sent_count = 0"
                 + " WHERE event_id = ?", event.getId());
-        org.mockito.Mockito.clearInvocations(emailService);
+        sesRecorder.reset();
 
         mockMvc.perform(post(BASE + "/" + mailKey + "/retry")).andExpect(status().isAccepted());
 
         awaitUntil(() -> "COMPLETED".equals(sendStatus()));
-        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService, atLeastOnce()).sendHtmlEmailSync(any(), eq("success+sub923a" + SIM), any(), anyString(),
-                body.capture(), any(), any());
-        assertThat(body.getValue()).contains("Original own text");
+        assertThat(lastHtmlTo("success+sub923a" + SIM)).contains("Original own text");
     }
 
     // ── registrants ──────────────────────────────────────────────────────────
@@ -481,5 +464,12 @@ class OwnTextComposerIntegrationTest extends AbstractIntegrationTest {
                 {"venue":{"salutation":"Frau","name":"Vera Venue","email":"success+venue923@simulator.amazonses.com"},
                  "coordinatorUsername":"organizer1"}
                 """, "test");
+    }
+
+    /** The HTML of the last mail SES received for {@code address}. */
+    private String lastHtmlTo(String address) {
+        List<SesRecorder.RecordedMail> mails = sesRecorder.mailsTo(address);
+        assertThat(mails).as("mails sent to %s", address).isNotEmpty();
+        return mails.get(mails.size() - 1).html();
     }
 }

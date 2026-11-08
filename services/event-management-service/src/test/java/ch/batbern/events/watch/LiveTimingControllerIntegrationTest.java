@@ -153,13 +153,13 @@ class LiveTimingControllerIntegrationTest extends AbstractIntegrationTest {
     // MARK: - AC7: POST authorization
 
     @Test
-    @DisplayName("should_return403_when_postUnauthenticated")
-    void should_return403_when_postUnauthenticated() throws Exception {
+    @DisplayName("should_return401_when_postUnauthenticated")
+    void should_return401_when_postUnauthenticated() throws Exception {
         saveLiveEvent("BATbern83", 9083);
         mockMvc.perform(post("/api/v1/events/BATbern83/live-timing/actions")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"type\":\"EXTEND_SESSION\",\"sessionSlug\":\"talk-a\",\"minutes\":5}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

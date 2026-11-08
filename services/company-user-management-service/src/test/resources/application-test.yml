@@ -24,6 +24,14 @@ spring:
     caffeine:
       spec: expireAfterWrite=15m,maximumSize=1000
 
+  # 17.0b3: the production security chain and JWT decoder run in every IT. Tests authenticate
+  # with MockMvc's jwt()/user() post-processors, never a real token, so the JWK set is never fetched.
+  security:
+    oauth2:
+      resourceserver:
+        jwt:
+          jwk-set-uri: https://jwks.example.invalid/keys
+
   cloud:
     aws:
       cloudwatch:

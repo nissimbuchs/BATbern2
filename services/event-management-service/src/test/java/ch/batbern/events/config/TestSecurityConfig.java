@@ -1,35 +1,16 @@
 package ch.batbern.events.config;
 
 import org.springframework.boot.test.context.TestConfiguration;
-import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
-import org.springframework.security.config.annotation.web.builders.HttpSecurity;
-import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
-import org.springframework.security.web.SecurityFilterChain;
 
 /**
- * Test Security Configuration
- * Enables method-level security (@PreAuthorize) for integration tests.
+ * Method-level security (@PreAuthorize) for the slice tests that import it.
  *
- * Key configuration:
- * - HTTP-level security: permitAll() to allow @WithMockUser through
- * - Method-level security: @EnableMethodSecurity to enforce @PreAuthorize
- *
- * Note: In production, authentication is handled at API Gateway level (Story 1.2)
- * Services receive pre-authenticated requests with user context headers.
+ * The HTTP chain is the production one, {@link SecurityConfig#filterChain}, in every profile
+ * (17.0b3). This class used to replace it with {@code anyRequest().permitAll()}, which let
+ * anonymous callers reach the controllers in tests while production answered 401.
  */
 @TestConfiguration
-@EnableWebSecurity
-@EnableMethodSecurity(prePostEnabled = true) // Enable @PreAuthorize support
+@EnableMethodSecurity(prePostEnabled = true)
 public class TestSecurityConfig {
-
-    @Bean
-    public SecurityFilterChain filterChain(HttpSecurity http) throws Exception {
-        http
-                .csrf(csrf -> csrf.disable())
-                .authorizeHttpRequests(auth -> auth
-                    .anyRequest().permitAll() // Allow all at HTTP level, @PreAuthorize handles method-level auth
-            );
-        return http.build();
-    }
 }

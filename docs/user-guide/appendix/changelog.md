@@ -55,6 +55,9 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ In the company pickers the exact company is always at the top (it could be missing among many similar names). The company list shows real page numbers when searching.
 - ✅ Characters like `(`, `%` or `'` no longer cause an error in the event search.
 
+**Bug Fix — Requesting a revision of a talk without an abstract (Story 17.0b3)**:
+- ✅ Asking a speaker to revise a talk whose content the organizers had entered themselves, with a title and no abstract yet, failed with an error and was not saved. It is now stored, with an empty abstract.
+
 **Bug Fixes — Mail notices and name badges (#1235, #1236)**:
 - ✅ (#1235) The Mail Center notice for a mail that belongs to no event showed raw tags in subject and text ("Neue Mail{{#eventCode}} für …"). It now reads "Neue Mail von …". Every automatic mail to one person now drops a section whose value is missing instead of printing its tags, and the log names the missing value.
 - ✅ (#1236) Name badges (Word) and the participants list (XLSX) label partners "Partner" and list them after the organizers and speakers. A partner is everyone with the partner role who is registered for the event; someone with two roles gets one badge with the higher one (organizer, speaker, partner, participant).

@@ -5,7 +5,6 @@ import org.springframework.beans.factory.ObjectProvider;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.context.annotation.Profile;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.Customizer;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
@@ -55,14 +54,13 @@ public class SecurityConfig {
     }
 
     /**
-     * Production security filter chain with JWT authentication
-     * Note: Tests use TestSecurityConfig instead
+     * The security filter chain with JWT authentication, in every profile: production, local dev
+     * and the integration tests (17.0b3) run the same matchers and the same decoder.
      *
      * Story 4.1.3: Public endpoints for event discovery
      * QA Fix (SEC-001): Rate limiting filter auto-registered via @Component @Order
      */
     @Bean
-    @Profile("!test")
     public SecurityFilterChain filterChain(HttpSecurity http,
                                            JwtAuthenticationConverter jwtAuthenticationConverter)
             throws Exception {
@@ -190,9 +188,11 @@ public class SecurityConfig {
      *
      * - iss == "batbern-watch" → HMAC-SHA256 decoder (Watch pairing JWT)
      * - anything else          → Cognito RS256 decoder (Cognito ID/access token)
+     *
+     * Every profile, tests included: the test profile points the JWK set at an unreachable host,
+     * since its tests authenticate through MockMvc's {@code jwt()} post-processor, not real tokens.
      */
     @Bean
-    @Profile("!test")
     public JwtDecoder jwtDecoder() {
         if (jwkSetUri == null || jwkSetUri.isEmpty()) {
             throw new IllegalArgumentException("JWT JWK Set URI must be configured");

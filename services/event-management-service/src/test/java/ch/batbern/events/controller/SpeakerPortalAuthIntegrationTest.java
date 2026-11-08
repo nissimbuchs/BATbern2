@@ -169,15 +169,11 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
                 .response(SpeakerResponseType.ACCEPT)
                 .build();
 
-        // Code review 2026-05-18 (P8): pin to the actual MockMvc behaviour (403 via Spring's
-        // default access-denied handler when no JWT is present). Production-side AWS API
-        // Gateway returns 401 before the request reaches Spring at all, which is a separate
-        // concern handled at the gateway layer; this assertion guards the EMS contract.
-        // Pinning to one value catches regressions if the auth chain changes.
+        // The production chain answers 401 before the controller (17.0b3).
         mockMvc.perform(post("/api/v1/speaker-portal/events/" + EVENT_CODE + "/respond")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -185,7 +181,7 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
     void shouldRejectUnauthenticated_whenNoAuthHeader_onDashboard() throws Exception {
         // Code review 2026-05-18 (P8): same pinning as above.
         mockMvc.perform(get("/api/v1/speaker-portal/dashboard"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ---------- 403 paths (wrong role) ----------

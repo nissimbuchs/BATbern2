@@ -197,10 +197,10 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     // ── AC7: GET /newsletter/my-subscription ─────────────────────────────────
 
     @Test
-    @DisplayName("GET /newsletter/my-subscription — unauthenticated → 403")
-    void getMySubscription_unauthenticated_returns403() throws Exception {
+    @DisplayName("GET /newsletter/my-subscription — unauthenticated → 401")
+    void getMySubscription_unauthenticated_returns401() throws Exception {
         mockMvc.perform(get("/api/v1/newsletter/my-subscription"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

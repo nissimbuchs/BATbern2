@@ -74,12 +74,13 @@ public class SecurityConfig {
     }
 
     /**
-     * Production security filter chain with JWT authentication.
+     * Production security filter chain with JWT authentication, in every profile but {@code local}:
+     * the integration tests run it too (17.0b3), so a matcher here is tested.
      * Actuator endpoints are public for health checks.
      * Public partner list endpoint for homepage showcase.
      */
     @Bean
-    @Profile("!local & !test")
+    @Profile("!local")
     public SecurityFilterChain productionFilterChain(HttpSecurity http,
                                                      JwtAuthenticationConverter jwtAuthenticationConverter)
             throws Exception {
@@ -125,9 +126,8 @@ public class SecurityConfig {
                 // These sit AFTER the /topics and /notes matchers above on purpose — a
                 // broader `/api/v1/partners/*` pattern placed earlier would shadow them.
                 //
-                // Belt and braces with @PreAuthorize on the controller methods, which is the
-                // layer that actually gets tested: this chain is replaced by permitAll under
-                // the `test` profile, so a matcher-only rule would be unverifiable.
+                // Belt and braces with @PreAuthorize on the controller methods. Since 17.0b3 the
+                // integration tests run this chain as well.
                 .requestMatchers(HttpMethod.POST, "/api/v1/partners").hasRole("ORGANIZER")
                 .requestMatchers(HttpMethod.PATCH, "/api/v1/partners/*").hasRole("ORGANIZER")
                 .requestMatchers(HttpMethod.DELETE, "/api/v1/partners/*").hasRole("ORGANIZER")
@@ -148,28 +148,10 @@ public class SecurityConfig {
     }
 
     /**
-     * Test security filter chain.
-     * Permits all requests for integration testing.
+     * JWT decoder for AWS Cognito tokens, in every profile. The test profile points the JWK set at
+     * an unreachable host: its tests authenticate through MockMvc's {@code jwt()} post-processor.
      */
     @Bean
-    @Profile("test")
-    public SecurityFilterChain testFilterChain(HttpSecurity http) throws Exception {
-        http
-            .csrf(csrf -> csrf.disable())
-            .sessionManagement(session ->
-                session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
-            .authorizeHttpRequests(authz -> authz
-                .anyRequest().permitAll()
-            );
-
-        return http.build();
-    }
-
-    /**
-     * JWT decoder for AWS Cognito tokens.
-     */
-    @Bean
-    @Profile("!test")
     public JwtDecoder jwtDecoder() {
         if (jwkSetUri == null || jwkSetUri.isEmpty()) {
             throw new IllegalArgumentException("JWT JWK Set URI must be configured");

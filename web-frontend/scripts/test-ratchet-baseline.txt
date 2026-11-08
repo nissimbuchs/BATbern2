@@ -3,6 +3,7 @@
 # Rules: docs/architecture/coding-standards.md, section "Test fidelity rules".
 # Per test file: own-code mocks and class-level @Transactional ITs. Counts may only fall.
 # Format: <category> TAB <path> TAB <count>, sorted, zero counts omitted.
+be-mock-in-process	services/company-user-management-service/src/test/java/ch/batbern/companyuser/config/TestAwsConfig.java	1
 be-mock-in-process	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/AccountMergeIntegrationTest.java	1
 be-mock-in-process	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/LogoControllerTest.java	2
 be-mock-in-process	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PrimaryEmailIntegrationTest.java	1
@@ -14,26 +15,20 @@ be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/PublicSessionVisibilityIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/RegistrationControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/SessionQnaIntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerInvitationControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerReminderControllerIntegrationTest.java	2
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/TopicSessionDataControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/forwarding/CalendarDeclineServiceIntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingRepliesIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/integration/SpeakerAutoRegistrationIntegrationTest.java	3
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/GlobalMailCenterIntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerControllerIntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerSendIntegrationTest.java	2
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailGoldenTest.java	2
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/OwnTextComposerIntegrationTest.java	2
+be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailComposerSendIntegrationTest.java	1
+be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailGoldenTest.java	1
+be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/OwnTextComposerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/ConversationThreadingIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/TokenReplyRoutingIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/DeregistrationLinkOnceIntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/EmailCaseInsensitiveMatchingIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/EventArchivalCleanupAc5IntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterSendIterationIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/QnaNotificationServiceIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/RegistrationCleanupServiceIntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/SlidesOnlineIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/SpeakerWorkflowServiceIntegrationTest.java	3
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/watch/LiveTimingControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/watch/LiveTimingServiceIntegrationTest.java	1

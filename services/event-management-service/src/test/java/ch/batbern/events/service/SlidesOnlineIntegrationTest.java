@@ -19,6 +19,7 @@ import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.TaskTemplateRepository;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -40,9 +41,6 @@ import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.lenient;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -50,7 +48,8 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Story 7.3 — integration tests (real PostgreSQL via Testcontainers, mocked {@link EmailService}).
+ * Story 7.3 — integration tests (real PostgreSQL via Testcontainers, the real {@link EmailService}
+ * against the {@link SesRecorder}).
  *
  * <p>Covers AC7: the task auto-created with due = eventDate+1; the dedicated send goes to active
  * registrants only; global opt-outs are excluded; DE/EN/German-fallback locale selection; the
@@ -90,8 +89,8 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
 
     @MockitoBean
     private UserApiClient userApiClient;
-    @MockitoBean
-    private EmailService emailService;
+    @Autowired
+    private SesRecorder sesRecorder;
 
     private static final String EVENT_CODE = "BATbern760";
 
@@ -100,10 +99,7 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         recipientRepository.deleteAll();
         sendRepository.deleteAll();
         subscriberRepository.deleteAll();
-        // Rendering: keep variable substitution a pass-through so the captured subject still
-        // distinguishes locale (DE vs EN), while mergeWithLayout uses the real EmailTemplateService.
-        lenient().when(emailService.replaceVariables(anyString(), anyMap()))
-                .thenAnswer(inv -> inv.getArgument(0));
+        sesRecorder.reset();
     }
 
     // ── AC1: task auto-created, due = eventDate + 1 day ──────────────────────
@@ -141,17 +137,17 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
     void send_activeRegistrantsOnly_optOutExcluded_perRecipientLocale() {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
 
-        saveRegistration(event.getId(), "att.en", "en@x.ch", "registered");   // EN
-        saveRegistration(event.getId(), "att.de", "de@x.ch", "confirmed");    // DE
-        saveRegistration(event.getId(), "att.fr", "fr@x.ch", "confirmed");    // fr → German fallback
-        saveRegistration(event.getId(), "att.attd", "attended@x.ch", "attended"); // INCLUDED: post-event status
-        saveRegistration(event.getId(), "att.cancel", "cancel@x.ch", "cancelled"); // excluded (status)
-        saveRegistration(event.getId(), "att.wait", "wait@x.ch", "waitlist");      // excluded (status)
-        saveRegistration(event.getId(), "att.opt", "opt@x.ch", "registered");      // excluded (opt-out)
+        saveRegistration(event.getId(), "att.en", sim("en"), "registered");   // EN
+        saveRegistration(event.getId(), "att.de", sim("de"), "confirmed");    // DE
+        saveRegistration(event.getId(), "att.fr", sim("fr"), "confirmed");    // fr → German fallback
+        saveRegistration(event.getId(), "att.attd", sim("attended"), "attended"); // INCLUDED: post-event status
+        saveRegistration(event.getId(), "att.cancel", sim("cancel"), "cancelled"); // excluded (status)
+        saveRegistration(event.getId(), "att.wait", sim("wait"), "waitlist");      // excluded (status)
+        saveRegistration(event.getId(), "att.opt", sim("opt"), "registered");      // excluded (opt-out)
 
-        // opt@x.ch carries a global newsletter suppression → must be excluded (AC3).
+        // The opted-out address carries a global newsletter suppression → must be excluded (AC3).
         subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("opt@x.ch").language("de").source("explicit").unsubscribeToken("tok-opt")
+                .email(sim("opt")).language("de").source("explicit").unsubscribeToken("tok-opt")
                 .suppressedAt(Instant.now()).build());
 
         lenient().when(userApiClient.getPreferredLanguage("att.en")).thenReturn("en");
@@ -162,27 +158,21 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
         NewsletterSend send = savePendingSend(event.getId());
         slidesOnlineEmailService.processSend(send.getId(), event, "slides-online");
 
-        // Capture every (to, subject) the send dispatched.
-        var toCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
-        var subjectCaptor = org.mockito.ArgumentCaptor.forClass(String.class);
-        org.mockito.Mockito.verify(emailService, org.mockito.Mockito.times(4))
-                .sendHtmlEmailSync(any(), toCaptor.capture(), any(), subjectCaptor.capture(), anyString(), any(), any());
-
+        // Every (to, subject) SES received: one mail per recipient.
+        assertThat(sesRecorder.mails()).hasSize(4).allSatisfy(mail -> assertThat(mail.to()).hasSize(1));
         Map<String, String> subjectByEmail = new HashMap<>();
-        for (int i = 0; i < toCaptor.getAllValues().size(); i++) {
-            subjectByEmail.put(toCaptor.getAllValues().get(i), subjectCaptor.getAllValues().get(i));
-        }
+        sesRecorder.mails().forEach(mail -> subjectByEmail.put(mail.to().get(0), mail.subject()));
 
         // The active, non-opted-out registrants — including the post-event 'attended' one — received it.
         assertThat(subjectByEmail.keySet())
-                .containsExactlyInAnyOrder("en@x.ch", "de@x.ch", "fr@x.ch", "attended@x.ch");
-        assertThat(subjectByEmail).doesNotContainKeys("cancel@x.ch", "wait@x.ch", "opt@x.ch");
+                .containsExactlyInAnyOrder(sim("en"), sim("de"), sim("fr"), sim("attended"));
+        assertThat(subjectByEmail).doesNotContainKeys(sim("cancel"), sim("wait"), sim("opt"));
 
         // Per-recipient locale: en → English subject; de + fr(fallback) → German subject.
-        assertThat(subjectByEmail.get("en@x.ch")).contains("The slides are online");
-        assertThat(subjectByEmail.get("de@x.ch")).contains("Die Folien sind online");
-        assertThat(subjectByEmail.get("fr@x.ch")).contains("Die Folien sind online");
-        assertThat(subjectByEmail.get("attended@x.ch")).contains("The slides are online");
+        assertThat(subjectByEmail.get(sim("en"))).contains("The slides are online");
+        assertThat(subjectByEmail.get(sim("de"))).contains("Die Folien sind online");
+        assertThat(subjectByEmail.get(sim("fr"))).contains("Die Folien sind online");
+        assertThat(subjectByEmail.get(sim("attended"))).contains("The slides are online");
 
         NewsletterSend completed = sendRepository.findById(send.getId()).orElseThrow();
         assertThat(completed.getStatus()).isEqualTo("COMPLETED");
@@ -198,12 +188,11 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("AC6: a transient SES failure for one recipient is isolated → PARTIAL, others still sent")
     void send_perRecipientFailureIsolation() {
         Event event = saveEvent(EVENT_CODE, Instant.parse("2026-03-06T15:00:00Z"));
-        saveRegistration(event.getId(), "att.ok", "ok@x.ch", "confirmed");
-        saveRegistration(event.getId(), "att.boom", "boom@x.ch", "confirmed");
+        saveRegistration(event.getId(), "att.ok", sim("ok"), "confirmed");
+        saveRegistration(event.getId(), "att.boom", sim("boom"), "confirmed");
         lenient().when(userApiClient.getPreferredLanguage(anyString())).thenReturn("de");
 
-        org.mockito.Mockito.doThrow(new RuntimeException("SES throttled"))
-                .when(emailService).sendHtmlEmailSync(any(), eq("boom@x.ch"), any(), anyString(), anyString(), any(), any());
+        sesRecorder.failFor(sim("boom"), () -> SesRecorder.sesError("Throttling", "SES throttled"));
 
         NewsletterSend send = savePendingSend(event.getId());
         slidesOnlineEmailService.processSend(send.getId(), event, "slides-online");
@@ -324,5 +313,10 @@ class SlidesOnlineIntegrationTest extends AbstractIntegrationTest {
                 .status("PENDING")
                 .testMode(false)
                 .build());
+    }
+
+    /** A recipient that may receive mail: the SES mailbox simulator (nothing is delivered in tests). */
+    private static String sim(String name) {
+        return "success+" + name + "@simulator.amazonses.com";
     }
 }

@@ -345,9 +345,9 @@ void shouldCreateEventSuccessfully() {
     assertThat(event.getTitle()).isEqualTo("BATbern 2024");
 }
 
-// Integration tests - MUST extend AbstractIntegrationTest. No class-level @Transactional on a
-// write IT: the rollback skips the flush, so DB constraints and triggers never run (see
-// "Test fidelity rules"). Clean up in @AfterEach, or flush() before asserting.
+// Integration tests - MUST extend AbstractIntegrationTest. Prefer no class-level @Transactional on
+// a write IT (clean up in @AfterEach); where one exists, FlushBeforeRollback flushes before the
+// rollback so DB constraints and triggers run (see "Test fidelity rules").
 class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
@@ -493,6 +493,38 @@ CUMS_INTERNAL)`) and expect the CUMS calls there; `close()` in `@AfterEach` rest
 coverage, access-control probe, `lint:api`) does not read `docs/api/internal/`; it is linted by
 `npm run lint:api-internal` with its own reduced ruleset (`docs/api/internal/.spectral.yaml`).
 
+#### Production setup in tests (17.0b3)
+
+Integration tests run what production runs; the base class and the shared test config set it up,
+a test does not opt in.
+
+- **Security chain.** Every IT runs the service's production `SecurityFilterChain` and
+  `JwtDecoder` (EMS: one chain in every profile; PCS and CUMS: the production chain in every profile
+  but `local`). There is no permit-all test chain. An anonymous call answers **401** as in
+  production, a wrong role **403**. Authenticate with `@WithMockUser`, `.with(user(...))` or
+  `.with(jwt()...)`; to exercise the real role mapping, pass the service's
+  `JwtAuthenticationConverter` (`jwt().jwt(t -> t.claim("custom:role", "ATTENDEE"))
+  .authorities(...)`), as `ProductionChainIntegrationTest` (one per service) does. The test
+  properties point the JWK set at `https://jwks.example.invalid/keys`: no test uses a real token.
+- **Mail.** The real `EmailService` runs in every IT. The only `SesClient` in a test context is the
+  `SesRecorder` (shared-kernel test fixtures, `ch.batbern.shared.test.mail`), registered by each
+  service's `TestAwsConfig`: it sends nothing and records what SES received, parsed (To, Cc,
+  Reply-To, From, subject, HTML, text, attachment names, MIME headers, tags). Autowire it,
+  `reset()` it in `@BeforeEach`, assert on `mails()` / `mailsTo(address)` / `single()`; simulate a
+  refusal with `failWith(...)` or `failFor(address, ...)` and `SesRecorder.sesError(...)`. Never
+  `@MockitoBean`, `@MockitoSpyBean` or `mock(EmailService.class)`, never `verify(emailService)`.
+  Because SES is "live" to the `EmailService`, every wall runs: address validation (one address
+  per To:/Cc entry, checked before the SES branch since #1176), reserved domains and the
+  test-marker wall. A recipient that must receive mail uses `success+<name>@simulator.amazonses.com`
+  (AWS mailbox simulator); `@example.com` stays for data that must never receive mail.
+- **Flush before rollback.** `AbstractIntegrationTest` registers `FlushBeforeRollback`: after the
+  test body, before `@AfterEach` and the rollback, the test transaction's persistence context is
+  flushed, so a `@Transactional` IT that leaves data production would refuse (NOT NULL, unique,
+  bean validation, a transient reference) fails with the database error (#1104). It is skipped when
+  the test already failed and when the transaction is aborted (SQLState `25P02`, a test that
+  provoked and asserted a violation itself). A test that catches a Hibernate exception and goes on
+  calls `entityManager.clear()`: a session that threw must not be flushed again.
+
 #### Assertion rules
 
 - **Asserting absence needs a positive control** in the same test: first show that the thing
@@ -523,7 +555,7 @@ baseline `web-frontend/scripts/test-ratchet-baseline.txt`:
 |---|---|
 | `fe-mock-services` / `fe-mock-hooks` / `fe-mock-components` | `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**/*.{test,spec}.ts(x)`, and `vi.spyOn(x, …)` where `x` is imported from own code, by resolved path: `src/services`; `src/hooks` or a `use[A-Z]...` module; `src/components`, `src/pages` or a PascalCase module |
 | `be-mock-s2s-client` | `@MockitoBean` of a type ending in `Client` that is not a boundary type (`UserApiClient`, `UserServiceClient`, ...), and `mock(XClient.class)` / `Mockito.mock(XClient.class)` / a `@Mock XClient` field of such a type anywhere in test sources (a shared `@Primary` mock such as EMS `TestUserApiClientConfig`) |
-| `be-mock-in-process` | any other `@MockitoBean` that is not a boundary type |
+| `be-mock-in-process` | any other `@MockitoBean` that is not a boundary type, and `mock(X.class)` of such a type inside a test `@Configuration` / `@TestConfiguration` class (a shared mock bean, such as the `EmailService` mocks the services' `TestAwsConfig` held until 17.0b3) |
 | `be-transactional-it` | class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is named `*IntegrationTest` / `*IT` |
 
 Boundary types, never counted: `SesClient`, `SesV2Client`, `S3Client`, `S3Presigner`,

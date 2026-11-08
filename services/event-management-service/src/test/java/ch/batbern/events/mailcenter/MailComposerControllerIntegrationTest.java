@@ -17,13 +17,11 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.service.NewsletterEmailService;
 import ch.batbern.shared.mail.MailContext;
-import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -78,9 +76,6 @@ class MailComposerControllerIntegrationTest extends AbstractIntegrationTest {
 
     @MockitoBean
     private UserApiClient userApiClient;
-    /** Real render code behind {@code TestAwsConfig}'s bare mock; nothing here sends. */
-    @MockitoBean(answers = Answers.CALLS_REAL_METHODS)
-    private EmailService emailService;
 
     @BeforeEach
     void setUp() {

@@ -139,9 +139,8 @@ class AdminSettingsControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_denyAccess_when_unauthenticatedUserAccessesGet")
     void should_denyAccess_when_unauthenticatedUserAccessesGet() throws Exception {
-        // Test profile permits every request at HTTP level, so @PreAuthorize is what refuses the
-        // anonymous caller here (403). In production the EMS chain and the gateway answer 401 first.
+        // The production chain answers 401 before the controller (17.0b3).
         mockMvc.perform(get(SETTINGS_URL + "/{key}", SUPPORT_CONTACTS_KEY))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 }

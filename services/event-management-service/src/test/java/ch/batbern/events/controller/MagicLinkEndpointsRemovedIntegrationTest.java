@@ -26,7 +26,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * intermediate 410 response, or a magic-link auth bridge under a different package — i.e.
  * it locks in the AC1 deletion as the final state.
  *
- * <p>Auth matrix covered: anonymous + authenticated speaker, two endpoints — four cases.
+ * <p>Auth matrix covered: anonymous (401) + authenticated speaker (404), two endpoints — four cases.
  */
 @Transactional
 class MagicLinkEndpointsRemovedIntegrationTest extends AbstractIntegrationTest {
@@ -35,12 +35,14 @@ class MagicLinkEndpointsRemovedIntegrationTest extends AbstractIntegrationTest {
     private MockMvc mockMvc;
 
     @Test
-    @DisplayName("POST /api/v1/auth/speaker-magic-login returns 404 anonymously after AC1 deletion")
-    void should_return404_when_postingToSpeakerMagicLoginAsAnonymous() throws Exception {
+    @DisplayName("POST /api/v1/auth/speaker-magic-login answers 401 anonymously: no public magic-link surface is left")
+    void should_return401_when_postingToSpeakerMagicLoginAsAnonymous() throws Exception {
+        // The production chain (17.0b3) has no permitAll for these paths any more, so an
+        // anonymous caller is refused before routing; the authenticated case below shows the 404.
         mockMvc.perform(post("/api/v1/auth/speaker-magic-login")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"any-value\"}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -54,12 +56,14 @@ class MagicLinkEndpointsRemovedIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /api/v1/speaker-portal/validate-token returns 404 anonymously after AC1 deletion")
-    void should_return404_when_postingToValidateTokenAsAnonymous() throws Exception {
+    @DisplayName("POST /api/v1/speaker-portal/validate-token answers 401 anonymously: no public magic-link surface is left")
+    void should_return401_when_postingToValidateTokenAsAnonymous() throws Exception {
+        // The production chain (17.0b3) has no permitAll for these paths any more, so an
+        // anonymous caller is refused before routing; the authenticated case below shows the 404.
         mockMvc.perform(post("/api/v1/speaker-portal/validate-token")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"token\":\"any-value\"}"))
-                .andExpect(status().isNotFound());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

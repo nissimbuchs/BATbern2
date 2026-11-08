@@ -13,7 +13,6 @@ import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -21,11 +20,11 @@ import static org.mockito.Mockito.when;
 /** Story 16.5 AC1/AC2: the own-text preview marks values, keeps attributes valid, flags unknown names. */
 class PreviewHighlighterTest {
 
-    private final EmailService emailService = mock(EmailService.class);
+    /** Only its pure {@code replaceVariables} runs here; no send, so no SES client is needed. */
+    private final EmailService emailService = new EmailService();
     private final EmailTemplateService templates = mock(EmailTemplateService.class);
 
     private RenderedMail highlight(String subject, String body, Map<String, String> vars) {
-        when(emailService.replaceVariables(anyString(), anyMap())).thenCallRealMethod();
         when(templates.mergeWithLayout(anyString(), any(), any())).thenAnswer(i -> i.getArgument(0));
         MailContent content = new MailContent(null, "en", subject, body, MailRenderer.LAYOUT_KEY,
                 MailContext.ContentSource.OWN_TEXT);

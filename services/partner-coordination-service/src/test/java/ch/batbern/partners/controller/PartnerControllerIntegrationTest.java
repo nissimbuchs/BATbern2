@@ -40,6 +40,7 @@ import static org.mockito.Mockito.never;
 import static org.hamcrest.Matchers.contains;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -158,8 +159,14 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         // Given
         createTestPartner("GoogleZH", PartnershipLevel.GOLD);
 
+        // Anonymous: production (and its chain, run here since 17.0b3) and the gateway answer 401.
+        mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+
         // When/Then
         mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .with(user("some.attendee").roles("ATTENDEE"))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyName").value("GoogleZH"))
@@ -169,8 +176,14 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void should_return404_when_companyNameNotFound() throws Exception {
+        // Anonymous: production (and its chain, run here since 17.0b3) and the gateway answer 401.
+        mockMvc.perform(get("/api/v1/partners/NotFoundCo")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+
         // When/Then - Use valid company name length (≤12 chars per VARCHAR(12) schema)
         mockMvc.perform(get("/api/v1/partners/NotFoundCo")
+                        .with(user("some.attendee").roles("ATTENDEE"))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isNotFound())
@@ -183,8 +196,15 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         // Given
         createTestPartner("GoogleZH", PartnershipLevel.GOLD);
 
+        // Anonymous: production (and its chain, run here since 17.0b3) and the gateway answer 401.
+        mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .param("include", "company")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+
         // When/Then
         mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .with(user("some.attendee").roles("ATTENDEE"))
                         .param("include", "company")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -477,11 +497,9 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     // tab is organizer-only in the UI, which is exactly the protection that looks sufficient
     // until someone calls the API directly.
     //
-    // The assertions live on @PreAuthorize rather than on the filter chain deliberately: the
-    // `test` profile chain is permitAll, so a matcher-only rule cannot be tested here at all,
-    // while @EnableMethodSecurity is active in every profile. The matchers are still added in
-    // SecurityConfig for defence in depth (and to reject earlier, before the controller), but
-    // method security is what makes this stick.
+    // Since 17.0b3 these tests run the production chain, so both layers are under test: the
+    // SecurityConfig matchers reject earlier, @PreAuthorize on the controller methods is the
+    // second wall.
 
     @Test
     @WithMockUser(username = "some.attendee", roles = "ATTENDEE")
@@ -601,11 +619,18 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
 
     // Same leak on the detail endpoint, which takes the same `include`.
     @Test
-    void should_omitContacts_when_anonymousCallerRequestsDetailWithContacts() throws Exception {
+    void should_omitContacts_when_attendeeRequestsDetailWithContacts() throws Exception {
         createTestPartner("GoogleZH", PartnershipLevel.GOLD);
         stubOneContactFor("GoogleZH");
 
+        // Anonymous: production (and its chain, run here since 17.0b3) and the gateway answer 401.
         mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .param("include", "contacts")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .with(user("some.attendee").roles("ATTENDEE"))
                         .param("include", "contacts")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())

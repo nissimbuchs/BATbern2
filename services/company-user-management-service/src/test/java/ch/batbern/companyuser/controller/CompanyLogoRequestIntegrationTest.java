@@ -11,7 +11,7 @@ import ch.batbern.companyuser.repository.CompanyLogoRequestRepository;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.repository.LogoRepository;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.Role;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -19,7 +19,6 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -40,12 +39,9 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -77,7 +73,10 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private CompanyLogoRequestRepository requestRepository;
     @Autowired
-    private EmailService emailService; // Mockito mock from TestAwsConfig
+    private SesRecorder sesRecorder;
+
+    /** The requester receives the decision mail: SES mailbox simulator, never delivered. */
+    private static final String REQUESTER = "success+anna.acme@simulator.amazonses.com";
     @Autowired
     private ObjectMapper objectMapper;
     @MockitoBean
@@ -85,12 +84,11 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(emailService);
-        when(emailService.replaceVariables(anyString(), any())).thenCallRealMethod();
+        sesRecorder.reset();
         userRepository.save(User.builder().username("orga.nizer").email("orga@example.com")
                 .firstName("Orga").lastName("Nizer").cognitoUserId("cog-orga")
                 .roles(new HashSet<>(Set.of(Role.ORGANIZER))).build());
-        userRepository.save(User.builder().username("anna.muster").email("anna@acme.example.com")
+        userRepository.save(User.builder().username("anna.muster").email(REQUESTER)
                 .firstName("Anna").lastName("Muster").companyId("acme").cognitoUserId("cog-anna")
                 .roles(new HashSet<>(Set.of(Role.ATTENDEE))).build());
         userRepository.save(User.builder().username("bert.ohne").email("bert@example.com")
@@ -152,7 +150,7 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
                 ArgumentCaptor.forClass(EventManagementMailCenterClient.OpenRequest.class);
         verify(mailCenter).openLogoRequest(open.capture());
         assertThat(open.getValue().requestId()).isEqualTo(id);
-        assertThat(open.getValue().requesterEmail()).isEqualTo("anna@acme.example.com");
+        assertThat(open.getValue().requesterEmail()).isEqualTo(REQUESTER);
         assertThat(open.getValue().subject()).contains("ACME AG");
         assertThat(open.getValue().note()).contains("Neues Logo seit Juni");
 
@@ -267,9 +265,8 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
         assertThat(logo.getAssociatedEntityType()).isEqualTo("COMPANY");
         assertThat(logo.getAssociatedEntityId()).isEqualTo("acme");
 
-        ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmail(eq("anna@acme.example.com"), anyString(), html.capture());
-        assertThat(html.getValue()).contains("ACME AG");
+        assertThat(sesRecorder.single().to()).containsExactly(REQUESTER);
+        assertThat(sesRecorder.single().html()).contains("ACME AG");
         verify(mailCenter).closeLogoRequest(id, "orga.nizer");
     }
 
@@ -285,9 +282,8 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.reason").value("Bitte als SVG <senden>"));
 
         assertThat(companyRepository.findByName("acme").orElseThrow().getLogoUrl()).isEqualTo(OLD_LOGO);
-        ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmail(eq("anna@acme.example.com"), anyString(), html.capture());
-        assertThat(html.getValue()).contains("Bitte als SVG &lt;senden&gt;").contains("<blockquote>");
+        assertThat(sesRecorder.single().to()).containsExactly(REQUESTER);
+        assertThat(sesRecorder.single().html()).contains("Bitte als SVG &lt;senden&gt;").contains("<blockquote>");
         verify(mailCenter).closeLogoRequest(id, "orga.nizer");
     }
 
@@ -301,9 +297,8 @@ class CompanyLogoRequestIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("DECLINED"));
 
-        ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmail(eq("anna@acme.example.com"), anyString(), html.capture());
-        assertThat(html.getValue()).doesNotContain("<blockquote>").doesNotContain("{{");
+        assertThat(sesRecorder.single().to()).containsExactly(REQUESTER);
+        assertThat(sesRecorder.single().html()).doesNotContain("<blockquote>").doesNotContain("{{");
     }
 
     @Test

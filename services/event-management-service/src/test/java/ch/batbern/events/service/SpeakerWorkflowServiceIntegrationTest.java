@@ -547,11 +547,11 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
                 .build();
         session = sessionRepository.save(session);
         SessionUser su = SessionUser.builder()
-                .session(session)
                 .username(username)
                 .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
                 .build();
+        session.addSpeaker(su); // both sides, so deleting the session (DECLINED) cascades (17.0b3)
         sessionUserRepository.save(su);
         speaker.setSessionId(session.getId());
         speakerPoolRepository.save(speaker);
@@ -589,11 +589,13 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         // READY+ so PrimarySpeakerResolver finds a canonical identity.
         if (statusIsAtOrAfter(status, SpeakerWorkflowState.READY)) {
             SessionUser su = SessionUser.builder()
-                    .session(session)
                     .username(randomSpeakerUsername())
                     .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
                     .isConfirmed(false)
                     .build();
+            // Both sides of the association, as a loaded Session has them: deleting the session
+            // (DECLINED) cascades to its speakers instead of leaving a row pointing at it (17.0b3).
+            session.addSpeaker(su);
             sessionUserRepository.save(su);
         }
         return speaker;

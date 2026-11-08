@@ -30,6 +30,7 @@ const DEMO_IT = 'services/demo-service/src/test/java/ch/demo/DemoIntegrationTest
 const READ_ONLY_IT = 'services/demo-service/src/test/java/ch/demo/ReadOnlyIT.java';
 const SLUG_CONFIG = 'shared-kernel/src/testFixtures/java/ch/shared/TestSlugConfig.java';
 const UNIT = 'services/demo-service/src/test/java/ch/demo/SomeUnitTest.java';
+const AWS_CONFIG = 'services/demo-service/src/test/java/ch/demo/config/TestAwsConfig.java';
 
 const asObject = (m: Map<string, number>) => Object.fromEntries([...m].sort());
 
@@ -40,6 +41,7 @@ describe('listTestFiles', () => {
       'services/demo-service/src/test/java/ch/demo/MethodLevelIntegrationTest.java',
       'services/demo-service/src/test/java/ch/demo/ReadOnlyIT.java',
       'services/demo-service/src/test/java/ch/demo/SomeUnitTest.java',
+      AWS_CONFIG,
       SLUG_CONFIG,
       EVENT_PAGE,
       'web-frontend/src/hooks/clean.test.ts',
@@ -226,6 +228,28 @@ describe('scanJavaTest', () => {
     expect(asObject(scanJavaTest(source))).toEqual({ 'be-mock-s2s-client': 3 });
   });
 
+  it('counts mock(OwnType.class) inside a test configuration class, not outside or of the boundary', () => {
+    // Story 17.0b3: the services' TestAwsConfig handed a mocked EmailService to every test.
+    expect(asObject(scanJavaTest(read(AWS_CONFIG)))).toEqual({
+      'be-mock-in-process': 3,
+      'be-mock-s2s-client': 1,
+    });
+  });
+
+  it('counts config mocks only in a class the annotation belongs to', () => {
+    const source = [
+      '@Configuration',
+      'class RealConfig { Repo r() { return mock(Repo.class); } }',
+      'class Other {',
+      '  @Configuration(proxyBeanMethods = false)',
+      '  static final class Inner { Service s() { return Mockito.mock(Service.class); } }',
+      '  Helper h = mock(Helper.class);',
+      '  String text = "@TestConfiguration class X { mock(Y.class) }";',
+      '}',
+    ].join('\n');
+    expect(asObject(scanJavaTest(source))).toEqual({ 'be-mock-in-process': 2 });
+  });
+
   it('reads testFixtures source sets too', () => {
     expect(asObject(scanJavaTest(read(SLUG_CONFIG)))).toEqual({ 'be-mock-in-process': 1 });
   });
@@ -269,7 +293,7 @@ describe('compare (I/O matrix)', () => {
     expect(result.exitCode).toBe(0);
     expect(result.problems).toEqual([]);
     expect(result.summary).toBe(
-      'Test ratchet: be-mock-in-process 3 files/3, be-mock-s2s-client 2 files/3, ' +
+      'Test ratchet: be-mock-in-process 4 files/6, be-mock-s2s-client 3 files/4, ' +
         'be-transactional-it 2 files/2, fe-mock-components 2 files/5, fe-mock-hooks 3 files/6, ' +
         'fe-mock-services 2 files/4.'
     );

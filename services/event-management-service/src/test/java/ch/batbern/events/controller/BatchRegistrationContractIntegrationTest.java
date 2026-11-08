@@ -304,10 +304,10 @@ class BatchRegistrationContractIntegrationTest extends AbstractIntegrationTest {
 
     /**
      * AC1: Authentication - requires authentication
-     * Note: With @PreAuthorize, Spring Security returns 403 Forbidden for unauthenticated requests
+     * Note: With @PreAuthorize, Spring Security returns 401 Forbidden for unauthenticated requests
      */
     @Test
-    void should_return403_when_notAuthenticated() throws Exception {
+    void should_return401_when_notAuthenticated() throws Exception {
         // Arrange
         BatchRegistrationRequest request = new BatchRegistrationRequest()
             .participantEmail("test@example.com")
@@ -321,6 +321,6 @@ class BatchRegistrationContractIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/events/batch_registrations")
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
-            .andExpect(status().isForbidden());
+            .andExpect(status().isUnauthorized());
     }
 }

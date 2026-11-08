@@ -13,6 +13,7 @@ import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
@@ -20,7 +21,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.util.AopTestUtils;
 import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.transaction.annotation.Transactional;
@@ -30,25 +30,20 @@ import java.time.temporal.ChronoUnit;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.function.Consumer;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyMap;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.lenient;
 
 /**
  * #1129: the newsletter send loop and its retry, against real PostgreSQL (Testcontainers).
  *
- * <p>{@link EmailService} is a Mockito mock, so no mail leaves the test. The send and retry
- * cores are driven on the unproxied bean, i.e. synchronously in the test thread and inside the
- * test transaction (rolled back afterwards), so a subscriber can unsubscribe "mid-send" from
- * inside the mocked mail call, exactly as a recipient clicking the link of the mail they just got.
+ * <p>The real {@link EmailService} sends to the {@link SesRecorder}, so no mail leaves the test. The
+ * send and retry cores are driven on the unproxied bean, i.e. synchronously in the test thread and
+ * inside the test transaction (rolled back afterwards), so a subscriber can unsubscribe "mid-send"
+ * from inside the SES call, exactly as a recipient clicking the link of the mail they just got.
  */
 @Transactional
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
@@ -68,13 +63,12 @@ class NewsletterSendIterationIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private EventRepository eventRepository;
 
-    @MockitoBean
-    private EmailService emailService;
+    @Autowired
+    private SesRecorder sesRecorder;
 
     private NewsletterEmailService target;
     private Object originalRateDelay;
     private final List<String> mailedTo = new CopyOnWriteArrayList<>();
-    private final List<Map<String, String>> renderedVariables = new CopyOnWriteArrayList<>();
     private Consumer<String> onMail = email -> { };
 
     @BeforeEach
@@ -87,14 +81,8 @@ class NewsletterSendIterationIntegrationTest extends AbstractIntegrationTest {
         originalRateDelay = ReflectionTestUtils.getField(target, "sendRateDelayMs");
         ReflectionTestUtils.setField(target, "sendRateDelayMs", 0L);
 
-        lenient().when(emailService.replaceVariables(anyString(), anyMap())).thenAnswer(inv -> {
-            renderedVariables.add(Map.copyOf(inv.<Map<String, String>>getArgument(1)));
-            return inv.getArgument(0);
-        });
-        lenient().doAnswer(inv -> recordMail(inv.getArgument(1)))
-                .when(emailService).sendHtmlEmailSync(any(), anyString(), any(), any(), any(), any(), any());
-        lenient().doAnswer(inv -> recordMail(inv.getArgument(1)))
-                .when(emailService).sendHtmlEmailSyncWithAttachments(any(), anyString(), any(), any(), any(), any());
+        sesRecorder.reset();
+        sesRecorder.onEachSend(mail -> mail.to().forEach(this::recordMail));
     }
 
     @AfterEach
@@ -102,10 +90,9 @@ class NewsletterSendIterationIntegrationTest extends AbstractIntegrationTest {
         ReflectionTestUtils.setField(target, "sendRateDelayMs", originalRateDelay);
     }
 
-    private Object recordMail(String email) {
+    private void recordMail(String email) {
         mailedTo.add(email);
         onMail.accept(email);
-        return null;
     }
 
     // ── (b) send loop: a page-1 subscriber unsubscribes mid-send ──────────────
@@ -116,7 +103,7 @@ class NewsletterSendIterationIntegrationTest extends AbstractIntegrationTest {
         Event event = saveEvent();
         List<String> all = new ArrayList<>();
         for (int i = 0; i < SUBSCRIBERS; i++) {
-            all.add(saveSubscriber(String.format("reader%03d@example.com", i), null, null).getEmail());
+            all.add(saveSubscriber(sim(String.format("reader%03d", i)), null, null).getEmail());
         }
         NewsletterSend send = savePendingSend(event.getId(), SUBSCRIBERS);
 
@@ -145,7 +132,7 @@ class NewsletterSendIterationIntegrationTest extends AbstractIntegrationTest {
         Event event = saveEvent();
         List<NewsletterSubscriber> subs = new ArrayList<>();
         for (int i = 0; i < SUBSCRIBERS; i++) {
-            subs.add(saveSubscriber(String.format("later%03d@example.com", i), null, null));
+            subs.add(saveSubscriber(sim(String.format("later%03d", i)), null, null));
         }
         NewsletterSend send = savePendingSend(event.getId(), SUBSCRIBERS);
         Set<String> leavers = new HashSet<>();
@@ -180,36 +167,31 @@ class NewsletterSendIterationIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_skipFailedRecipients_when_subscriberDeletedUnsubscribedOrSuppressed")
     void should_skipFailedRecipients_when_subscriberDeletedUnsubscribedOrSuppressed() {
         Event event = saveEvent();
-        NewsletterSubscriber stillActive = saveSubscriber("Active@Example.com", null, null);
-        saveSubscriber("left@example.com", Instant.now(), null);
-        saveSubscriber("bounced@example.com", null, Instant.now());
+        NewsletterSubscriber stillActive = saveSubscriber("Success+Active@Simulator.AmazonSES.com", null, null);
+        saveSubscriber(sim("left"), Instant.now(), null);
+        saveSubscriber(sim("bounced"), null, Instant.now());
         NewsletterSend send = savePendingSend(event.getId(), 4);
         send.setStatus(NewsletterEmailService.STATUS_PARTIAL);
         send.setSentCount(0);
         send.setFailedCount(4);
         sendRepository.save(send);
 
-        recordRecipient(send.getId(), "active@example.com", "failed"); // case differs from the subscriber row
-        recordRecipient(send.getId(), "left@example.com", "failed");
-        recordRecipient(send.getId(), "bounced@example.com", "failed");
-        recordRecipient(send.getId(), "deleted-bot@example.com", "failed"); // subscriber row deleted since
+        recordRecipient(send.getId(), sim("active"), "failed"); // case differs from the subscriber row
+        recordRecipient(send.getId(), sim("left"), "failed");
+        recordRecipient(send.getId(), sim("bounced"), "failed");
+        recordRecipient(send.getId(), sim("deleted-bot"), "failed"); // subscriber row deleted since
         recipientRepository.flush();
 
         target.executeRetryAsync(send.getId(), event, false, "de", "newsletter-event");
 
-        assertThat(mailedTo).containsExactly("active@example.com");
-        // Per-recipient renders carry the subscriber's own token, never an empty one. (The subject
-        // is rendered once from the base variables, whose unsubscribeLink is blank by design.)
-        assertThat(renderedVariables)
-                .extracting(vars -> vars.getOrDefault("unsubscribeLink", ""))
-                .filteredOn(link -> !link.isEmpty())
-                .isNotEmpty()
-                .allSatisfy(link -> assertThat(link).endsWith("token=" + stillActive.getUnsubscribeToken()));
+        assertThat(mailedTo).containsExactly(sim("active"));
+        // The per-recipient render carries the subscriber's own token, never an empty one.
+        assertThat(sesRecorder.single().html()).contains("token=" + stillActive.getUnsubscribeToken());
 
-        assertThat(status(send.getId(), "active@example.com")).isEqualTo("sent");
-        assertThat(status(send.getId(), "left@example.com")).isEqualTo("skipped");
-        assertThat(status(send.getId(), "bounced@example.com")).isEqualTo("skipped");
-        assertThat(status(send.getId(), "deleted-bot@example.com")).isEqualTo("skipped");
+        assertThat(status(send.getId(), sim("active"))).isEqualTo("sent");
+        assertThat(status(send.getId(), sim("left"))).isEqualTo("skipped");
+        assertThat(status(send.getId(), sim("bounced"))).isEqualTo("skipped");
+        assertThat(status(send.getId(), sim("deleted-bot"))).isEqualTo("skipped");
 
         NewsletterSend done = sendRepository.findById(send.getId()).orElseThrow();
         assertThat(done.getStatus()).isEqualTo(NewsletterEmailService.STATUS_COMPLETED);
@@ -273,5 +255,10 @@ class NewsletterSendIterationIntegrationTest extends AbstractIntegrationTest {
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build());
+    }
+
+    /** A recipient that may receive mail: the SES mailbox simulator (nothing is delivered in tests). */
+    private static String sim(String name) {
+        return "success+" + name + "@simulator.amazonses.com";
     }
 }

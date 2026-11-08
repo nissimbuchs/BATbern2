@@ -357,13 +357,9 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
     }
 
     /**
-     * Test: Unauthorized access returns 401
-     * NOTE: Disabled in test mode because TestSecurityConfig uses .permitAll() at HTTP level
-     * to allow testing method-level @PreAuthorize security. In production, SecurityConfig
-     * requires authentication at HTTP level.
+     * Test: Unauthorized access returns 401 (the production chain runs in tests since 17.0b3)
      */
     @Test
-    @org.junit.jupiter.api.Disabled("HTTP-level auth disabled in TestSecurityConfig - method-level @PreAuthorize tested separately")
     void should_return401_when_notAuthenticated() throws Exception {
         mockMvc.perform(post("/api/v1/events/{eventCode}/publish/topic", eventCode))
                 .andExpect(status().isUnauthorized());
@@ -504,12 +500,12 @@ public class PublishingEngineControllerIntegrationTest extends AbstractIntegrati
 
     /**
      * Test: Status endpoint requires authentication
-     * Note: Spring Security returns 403 (Forbidden) for unauthenticated requests
+     * Note: the production chain returns 401 (Unauthorized) for unauthenticated requests
      */
     @Test
-    void should_return403_when_statusRequestedWithoutAuth() throws Exception {
+    void should_return401_when_statusRequestedWithoutAuth() throws Exception {
         mockMvc.perform(get("/api/v1/events/{eventCode}/publish/status", eventCode))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     /**

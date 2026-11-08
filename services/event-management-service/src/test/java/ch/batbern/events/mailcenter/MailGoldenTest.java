@@ -32,16 +32,14 @@ import ch.batbern.events.service.SpeakerReminderEmailService;
 import ch.batbern.events.service.TaskReminderEmailService;
 import ch.batbern.events.service.VenueCoordinationService;
 import ch.batbern.events.service.WaitlistPromotionEmailService;
-import ch.batbern.shared.service.CapturedEmail;
 import ch.batbern.shared.service.EmailService;
-import ch.batbern.shared.service.LocalEmailCapture;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -72,8 +70,8 @@ import static org.mockito.Mockito.lenient;
  * it, so the move to one pipeline and one variable catalog can be proven byte-identical (except
  * the owner-decided changes, which update the goldens in one visible commit).
  *
- * <p>Renders through the real {@link EmailService} (no SES client: the local capture branch, nothing
- * is sent) and the real templates seeded from the classpath. Fixed fixtures; {@code currentYear} is
+ * <p>Renders through the real {@link EmailService} against the {@link SesRecorder} (nothing is sent)
+ * and the real templates seeded from the classpath. Fixed fixtures; {@code currentYear} is
  * normalised. A missing golden file is created under {@code src/test/resources/mail-golden}; a
  * mismatch fails and writes the actual output to {@code build/mail-golden-actual} for the diff.
  * Synthetic SES simulator addresses only.
@@ -88,8 +86,8 @@ class MailGoldenTest extends AbstractIntegrationTest {
     private static final Path GOLDEN = Path.of("src/test/resources/mail-golden");
     private static final Path ACTUAL = Path.of("build/mail-golden-actual");
 
-    @MockitoBean(answers = Answers.CALLS_REAL_METHODS)
-    private EmailService emailService;
+    @Autowired
+    private SesRecorder sesRecorder;
     @MockitoBean
     private UserApiClient userApiClient;
     @MockitoBean
@@ -130,15 +128,13 @@ class MailGoldenTest extends AbstractIntegrationTest {
     @Autowired
     private ConversationNotices conversationNotices;
 
-    private final LocalEmailCapture capture = new LocalEmailCapture();
     private final List<String> mismatches = new ArrayList<>();
     private Event event;
 
     @BeforeEach
     void setUp() {
         cleanUp();
-        ReflectionTestUtils.setField(emailService, "localEmailCapture", capture);
-        ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
+        sesRecorder.reset();
         event = eventRepository.saveAndFlush(Event.builder()
                 .eventCode(EVENT_CODE).title("Architektur im Wandel").eventNumber(931)
                 .date(EVENT_DATE).registrationDeadline(EVENT_DATE.minusSeconds(86_400))
@@ -301,17 +297,18 @@ class MailGoldenTest extends AbstractIntegrationTest {
                 ReflectionTestUtils.invokeMethod(mail, "html"));
     }
 
-    /** Runs one send and pins what reached the capture (sends may be asynchronous). */
+    /** Runs one send and pins what reached SES (sends may be asynchronous). */
     private void check(String name, Runnable send) throws InterruptedException {
-        capture.clear();
+        sesRecorder.reset();
         send.run();
         long deadline = System.nanoTime() + 10_000_000_000L;
-        while (capture.getAll().isEmpty() && System.nanoTime() < deadline) {
+        while (sesRecorder.mails().isEmpty() && System.nanoTime() < deadline) {
             Thread.sleep(50);
         }
-        assertThat(capture.getAll()).as("no mail captured for %s", name).isNotEmpty();
-        CapturedEmail email = capture.getAll().get(0);
-        compare(name, email.subject(), email.htmlBody());
+        assertThat(sesRecorder.mails()).as("no mail sent to SES for %s", name).isNotEmpty();
+        SesRecorder.RecordedMail email = sesRecorder.mails().get(0);
+        // A raw (MIME) send comes back with CRLF line ends; the goldens hold the rendered text.
+        compare(name, email.subject(), email.raw() ? email.html().replace("\r\n", "\n") : email.html());
     }
 
     private void compare(String name, String subject, String html) {

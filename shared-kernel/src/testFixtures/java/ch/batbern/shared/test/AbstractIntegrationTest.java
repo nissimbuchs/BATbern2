@@ -7,6 +7,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
+import org.springframework.test.context.TestExecutionListeners;
 import org.testcontainers.containers.PostgreSQLContainer;
 
 /**
@@ -21,9 +22,13 @@ import org.testcontainers.containers.PostgreSQLContainer;
  * The container is shared across all test classes for performance (manual singleton pattern).
  * We do NOT use @Testcontainers/@Container to avoid premature container shutdown.
  *
- * Usage (no class-level @Transactional on a write IT: the rollback skips the flush, so DB
- * constraints and triggers never run; see docs/architecture/coding-standards.md, "Test fidelity
- * rules"):
+ * Every test runs the service's production security chain and the real {@code EmailService}
+ * against the {@code SesRecorder} (17.0b3). {@link FlushBeforeRollback} flushes a
+ * {@code @Transactional} test before its rollback, so DB constraints, triggers and flush-time
+ * validation run. Still prefer a non-transactional write IT that commits (see
+ * docs/architecture/coding-standards.md, "Test fidelity rules").
+ *
+ * Usage:
  * ```java
  * @Import(TestSecurityConfig.class) // If needed
  * public class MyServiceIntegrationTest extends AbstractIntegrationTest {
@@ -41,6 +46,9 @@ import org.testcontainers.containers.PostgreSQLContainer;
 // auto-config that used to do this, which otherwise drops the @WithMockUser SecurityContext and
 // makes every @PreAuthorize request return 403. Inherited by all integration tests.
 @Import(MockMvcSecuritySetup.class)
+// 17.0b3: send the pending SQL before every rollback, so a constraint violation fails the test.
+@TestExecutionListeners(listeners = FlushBeforeRollback.class,
+        mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public abstract class AbstractIntegrationTest {
 
     /**

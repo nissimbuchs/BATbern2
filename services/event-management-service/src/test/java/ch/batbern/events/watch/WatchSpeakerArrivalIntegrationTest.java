@@ -132,24 +132,22 @@ public class WatchSpeakerArrivalIntegrationTest extends AbstractIntegrationTest 
     }
 
     // ============================================================================
-    // Task 12.5: 401 when unauthenticated
+    // Task 12.5: 401 when unauthenticated (production chain, 17.0b3)
     // ============================================================================
 
     @Test
-    @DisplayName("shouldReturn403_whenUnauthenticated")
+    @DisplayName("shouldReturn401_whenUnauthenticated")
     void shouldReturn401_whenUnauthenticated() throws Exception {
-        // TestSecurityConfig uses permitAll() at HTTP level + @PreAuthorize at method level.
-        // Anonymous users hit @PreAuthorize("hasRole('ORGANIZER')") → AccessDeniedException → 403.
-        // In production, the API Gateway rejects unauthenticated requests with 401 before reaching the service.
+        // The production chain answers 401 before the controller (17.0b3).
         mockMvc.perform(get(ARRIVALS_URL, EVENT_CODE)
                 .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         String requestBody = "{\"speakerUsername\":\"" + SPEAKER_USERNAME + "\"}";
         mockMvc.perform(post(ARRIVALS_URL, EVENT_CODE)
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(requestBody))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ============================================================================

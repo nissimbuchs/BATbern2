@@ -25,7 +25,10 @@
  *       sources, so a shared `@Primary` mock config (EMS TestUserApiClientConfig) counts too
  *       (Story 17.0b1). Retire these onto the S2S contract harness (`ContractServer`).
  *   be-mock-in-process
- *       any other `@MockitoBean` that is not a boundary type.
+ *       any other `@MockitoBean` that is not a boundary type, and `mock(X.class)` of such a type
+ *       inside a test `@Configuration` / `@TestConfiguration` class: a shared `@Primary` mock bean
+ *       replaces the real one in every test that imports the config (Story 17.0b3; how the
+ *       `EmailService` mocks in the services' `TestAwsConfig` escaped the count).
  *   be-transactional-it
  *       class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is
  *       named `*IntegrationTest` / `*IT`.
@@ -334,6 +337,48 @@ export function mockCallTypes(masked: string): string[] {
   return [...masked.matchAll(MOCK_CALL)].map((m) => simpleName(m[1]));
 }
 
+const CONFIGURATION = /@(?:[\w.]+\.)?(?:Test)?Configuration\b/g;
+
+/**
+ * Body ranges `[start, end)` of every class annotated `@Configuration` or `@TestConfiguration`
+ * (top level or nested) in a masked Java source.
+ */
+export function configurationClassBodies(masked: string): Array<[number, number]> {
+  const bodies: Array<[number, number]> = [];
+  for (const m of masked.matchAll(CONFIGURATION)) {
+    let start = skipSpace(masked, m.index + m[0].length);
+    if (masked[start] === '(') start = skipBalanced(masked, start, '(', ')');
+    const rest = masked.slice(start);
+    const decl = /\b(class|interface|record|enum)\s+\w+/.exec(rest);
+    if (!decl || decl[1] !== 'class') continue;
+    // Only annotations and modifiers may stand between the annotation and its class.
+    const between = rest.slice(0, decl.index).replace(/@[\w.]+(\s*\([^)]*\))?/g, '');
+    if (!/^[\s\w]*$/.test(between)) continue;
+    const open = masked.indexOf('{', start + decl.index);
+    if (open < 0) continue;
+    bodies.push([open, skipBalanced(masked, open, '{', '}')]);
+  }
+  return bodies;
+}
+
+/**
+ * Simple type names of every `mock(X.class)` inside a test configuration class body: the mocks
+ * a config hands to every test that imports it.
+ */
+export function configurationMockTypes(masked: string): string[] {
+  const bodies = configurationClassBodies(masked);
+  return [...masked.matchAll(MOCK_CALL)]
+    .filter((m) => bodies.some(([from, to]) => m.index >= from && m.index < to))
+    .map((m) => simpleName(m[1]));
+}
+
+/** True for a type that leaves the process (a boundary type, the AWS SDK, or the JDK). */
+function isBoundary(type: string, fqn: string): boolean {
+  return (
+    BOUNDARY_TYPES.has(type) || fqn.startsWith('software.amazon.awssdk.') || fqn.startsWith('java.')
+  );
+}
+
 /** Counts of one Java test file, by category. */
 export function scanJavaTest(source: string): Map<Category, number> {
   const counts = new Map<Category, number>();
@@ -346,16 +391,14 @@ export function scanJavaTest(source: string): Map<Category, number> {
     add(type.endsWith('Client') ? 'be-mock-s2s-client' : 'be-mock-in-process');
   }
   for (const type of [...mockCallTypes(masked), ...mockFieldTypes(masked)]) {
-    const fqn = imports.get(type) ?? '';
     // JDK types (java.net.http.HttpClient) leave the process: boundary, like the AWS SDK.
-    if (
-      BOUNDARY_TYPES.has(type) ||
-      fqn.startsWith('software.amazon.awssdk.') ||
-      fqn.startsWith('java.')
-    ) {
-      continue;
-    }
+    if (isBoundary(type, imports.get(type) ?? '')) continue;
     if (type.endsWith('Client')) add('be-mock-s2s-client');
+  }
+  for (const type of configurationMockTypes(masked)) {
+    // S2S clients are counted above; own in-process types mocked for every importing test here.
+    if (isBoundary(type, imports.get(type) ?? '') || type.endsWith('Client')) continue;
+    add('be-mock-in-process');
   }
   if (isTransactionalIt(masked)) add('be-transactional-it');
   return counts;

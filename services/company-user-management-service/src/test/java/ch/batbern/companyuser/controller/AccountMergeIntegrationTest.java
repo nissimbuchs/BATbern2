@@ -7,15 +7,13 @@ import ch.batbern.companyuser.exception.CognitoOperationException;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.service.CognitoIntegrationService;
 import ch.batbern.companyuser.service.ProfileClaimTokenService;
-import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.Role;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.mockito.InOrder;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -34,7 +32,6 @@ import java.util.Set;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.never;
@@ -63,8 +60,11 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
     private MockMvc mockMvc;
     @Autowired
     private UserRepository userRepository;
+    /** The other login's address receives the claim link: SES mailbox simulator, never delivered. */
+    private static final String WORK = "success+anna.work@simulator.amazonses.com";
+
     @Autowired
-    private EmailService emailService; // Mockito mock from TestAwsConfig
+    private SesRecorder sesRecorder;
     @Autowired
     private ProfileClaimTokenService tokenService;
     @MockitoBean
@@ -77,14 +77,13 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(emailService);
-        when(emailService.replaceVariables(anyString(), any())).thenCallRealMethod();
+        sesRecorder.reset();
         when(eventManagement.merge(any())).thenReturn(new EventManagementUserMergeClient.Result(
                 Map.of("registrations.attendee_username", 3), Map.of()));
         a = userRepository.save(User.builder().username("anna.muster.2").email("anna@private.example.com")
                 .firstName("Anna").lastName("Muster").cognitoUserId("cog-a")
                 .roles(new HashSet<>(Set.of(Role.ATTENDEE))).build());
-        b = userRepository.save(User.builder().username("anna.muster").email("anna@work.example.com")
+        b = userRepository.save(User.builder().username("anna.muster").email(WORK)
                 .firstName("Anna").lastName("Muster").cognitoUserId("cog-b")
                 .roles(new HashSet<>(Set.of(Role.ATTENDEE, Role.SPEAKER))).build());
     }
@@ -98,12 +97,11 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("asking for an address that is another login sends a link to that address, nothing else")
     void should_sendLinkToTheOtherAddress_when_mergeRequested() throws Exception {
         mockMvc.perform(post("/api/v1/users/me/account-merges").contentType(MediaType.APPLICATION_JSON)
-                        .content(request("Anna@Work.example.com")))
+                        .content(request("Success+Anna.Work@Simulator.AmazonSES.com")))
                 .andExpect(status().isAccepted());
 
-        ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
-        verify(emailService).sendHtmlEmail(eq("anna@work.example.com"), anyString(), html.capture());
-        assertThat(html.getValue()).contains("/claim-profile?token=");
+        assertThat(sesRecorder.single().to()).containsExactly(WORK);
+        assertThat(sesRecorder.single().html()).contains("/claim-profile?token=");
         verify(cognito, never()).disableLogin(anyString());
         assertThat(userRepository.findByUsername("anna.muster")).isPresent();
     }
@@ -117,7 +115,7 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
                             .content(request(email)))
                     .andExpect(status().isNotFound());
         }
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        assertThat(sesRecorder.mails()).isEmpty();
     }
 
     @Test
@@ -132,15 +130,15 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.merged").value(true));
 
         InOrder order = inOrder(cognito, eventManagement);
-        order.verify(cognito).disableLogin("anna@work.example.com");
+        order.verify(cognito).disableLogin(WORK);
         order.verify(eventManagement).merge(any());
-        order.verify(cognito).deleteLogin("anna@work.example.com");
+        order.verify(cognito).deleteLogin(WORK);
         assertThat(userRepository.findByUsername("anna.muster")).isEmpty();
         User merged = userRepository.findByUsername("anna.muster.2").orElseThrow();
         assertThat(merged.getRoles()).contains(Role.SPEAKER);
         assertThat(merged.getAdditionalEmails())
                 .anySatisfy(e -> {
-                    assertThat(e.getEmail()).isEqualTo("anna@work.example.com");
+                    assertThat(e.getEmail()).isEqualTo(WORK);
                     assertThat(e.getVerifiedAt()).isNotNull();
                 });
     }
@@ -157,8 +155,8 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
                         .content("{\"token\": \"" + token + "\"}"))
                 .andExpect(status().isBadGateway());
 
-        verify(cognito).disableLogin("anna@work.example.com");
-        verify(cognito).enableLogin("anna@work.example.com");
+        verify(cognito).disableLogin(WORK);
+        verify(cognito).enableLogin(WORK);
         verify(cognito, never()).deleteLogin(anyString());
     }
 
@@ -166,7 +164,7 @@ class AccountMergeIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = "anna.muster.2", roles = "ATTENDEE")
     @DisplayName("the login cannot be disabled: nothing is merged (502)")
     void should_notMerge_when_loginCannotBeDisabled() throws Exception {
-        doThrow(new CognitoOperationException("adminDisableUser", "a***@work.example.com",
+        doThrow(new CognitoOperationException("adminDisableUser", "s***@simulator.amazonses.com",
                 new RuntimeException("x"))).when(cognito).disableLogin(anyString());
         String token = tokenService.generateToken(a.getId(), b.getId(), b.getEmail());
 

@@ -61,6 +61,9 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
     @Autowired
     private ch.batbern.events.repository.SpeakerStatusHistoryRepository statusHistoryRepository;
 
+    @Autowired
+    private ch.batbern.events.repository.SessionContentHistoryRepository sessionContentHistoryRepository;
+
     private static final String TEST_EVENT_CODE = "BATbern997";
     private static final String ORGANIZER_USERNAME = "john.doe";
 
@@ -345,18 +348,18 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
     }
 
     /**
-     * AC16: should_require403_when_notAuthenticated
+     * AC16: should_require401_when_notAuthenticated
      * Story 5.4 AC16: REST API requires ORGANIZER role
-     * Note: @PreAuthorize returns 403 (not 401) when authentication is missing
+     * Note: the production chain answers 401 before @PreAuthorize runs
      */
     @Test
-    @DisplayName("Should return 403 when not authenticated")
-    void should_require403_when_notAuthenticated() throws Exception {
+    @DisplayName("Should return 401 when not authenticated")
+    void should_require401_when_notAuthenticated() throws Exception {
         // When: Request without authentication
         mockMvc.perform(get("/api/v1/events/{code}/speakers/status-summary", TEST_EVENT_CODE))
                 .andDo(print())
-                // Then: Should return 403 Forbidden (method-level security)
-                .andExpect(status().isForbidden());
+                // The production chain answers 401 before the controller (17.0b3).
+                .andExpect(status().isUnauthorized());
     }
 
     /**
@@ -745,5 +748,15 @@ public class SpeakerStatusControllerIntegrationTest extends AbstractIntegrationT
                 .isEqualTo(ch.batbern.shared.types.SpeakerWorkflowState.CONTENT_SUBMITTED);
         org.assertj.core.api.Assertions.assertThat(updatedSpeaker.getNotes())
                 .contains("Abstract needs more focus on lessons learned.");
+
+        // 17.0b3: the session has a title but no abstract (organizer-path content). The synthesized
+        // v1 history row must still be stored: "abstract" is NOT NULL, and without the flush before
+        // rollback this test passed while production answered 500.
+        sessionContentHistoryRepository.flush();
+        ch.batbern.events.domain.SessionContentVersion version = sessionContentHistoryRepository
+                .findFirstBySessionIdOrderBySubmissionVersionDesc(testSession.getId()).orElseThrow();
+        org.assertj.core.api.Assertions.assertThat(version.getReviewerFeedback())
+                .isEqualTo("Abstract needs more focus on lessons learned.");
+        org.assertj.core.api.Assertions.assertThat(version.getContentAbstract()).isEmpty();
     }
 }

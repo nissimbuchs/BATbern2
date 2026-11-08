@@ -381,13 +381,12 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Test
     @DisplayName("should_denyAccess_when_anonymousListsRegistrations")
     void should_denyAccess_when_anonymousListsRegistrations() throws Exception {
-        // Test profile permits every request at HTTP level, so @PreAuthorize is what refuses the
-        // anonymous caller here (403). In production the EMS chain and the gateway answer 401 first.
+        // The production chain answers 401 before the controller (17.0b3).
         createTestRegistration("john.doe", "confirmed");
 
         mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

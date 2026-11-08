@@ -1,11 +1,12 @@
 package ch.batbern.events.config;
 
-import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.test.mail.SesRecorder;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
+import software.amazon.awssdk.services.ses.SesClient;
 import software.amazon.awssdk.services.sqs.SqsAsyncClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.model.CopyObjectRequest;
@@ -92,15 +93,20 @@ public class TestAwsConfig {
     }
 
     /**
-     * Mock EmailService for testing email functionality
-     * Provides mock shared-kernel EmailService for integration tests
+     * Story 17.0b3: the real {@code EmailService} runs in every integration test, against this
+     * recording {@code SesClient} (nothing is sent). Tests autowire {@link SesRecorder}, reset it in
+     * {@code @BeforeEach} and assert on what SES received, never on {@code EmailService} calls.
      */
     @Bean
+    public SesRecorder sesRecorder() {
+        return new SesRecorder();
+    }
+
+    /** The context's only SES client: the recorder's. */
+    @Bean
     @Primary
-    public EmailService emailService() {
-        EmailService mockEmailService = Mockito.mock(EmailService.class);
-        // sendEmail is void, no need to configure
-        return mockEmailService;
+    public SesClient sesRecorderClient(SesRecorder sesRecorder) {
+        return sesRecorder.client();
     }
 
     /**
