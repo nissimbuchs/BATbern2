@@ -19,11 +19,10 @@ gitProperties {
 }
 
 dependencies {
-    // Service-specific: AWS SDK (S3, Cognito, EventBridge)
+    // Service-specific: AWS SDK (S3, Cognito)
     implementation platform('software.amazon.awssdk:bom:2.57.6')
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:url-connection-client'
-    implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:cognitoidentityprovider'
 
     // Service-specific: Caching
@@ -49,6 +48,8 @@ dependencies {
     // Service-specific: Testing
     testImplementation 'io.rest-assured:rest-assured:6.0.1'
     testImplementation 'org.awaitility:awaitility:4.3.0'
+    // Frozen ArchUnit rule (service direction), store in src/test/resources
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'
 
     // Service-specific: DevTools
     developmentOnly 'org.springframework.boot:spring-boot-devtools'

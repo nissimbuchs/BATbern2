@@ -9,6 +9,8 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import userEvent from '@testing-library/user-event';
 import { FileUpload } from './FileUpload';
 import { useFileUpload } from '@/hooks/useFileUpload/useFileUpload';
+import { logoUploadTarget } from '@/services/api/companyApi';
+import { materialUploadTarget } from '@/services/api/sessionApiClient';
 
 // Mock the useFileUpload hook
 vi.mock('@/hooks/useFileUpload/useFileUpload');
@@ -250,6 +252,22 @@ describe('FileUpload Component', () => {
       expect.objectContaining({
         maxFileSize: 10 * 1024 * 1024,
       })
+    );
+  });
+
+  it('should_uploadAsLogo_when_noTargetGiven', () => {
+    render(<FileUpload />);
+
+    expect(mockUseFileUpload).toHaveBeenCalledWith(
+      expect.objectContaining({ target: logoUploadTarget })
+    );
+  });
+
+  it('should_passUploadTarget_when_provided', () => {
+    render(<FileUpload uploadTarget={materialUploadTarget} />);
+
+    expect(mockUseFileUpload).toHaveBeenCalledWith(
+      expect.objectContaining({ target: materialUploadTarget })
     );
   });
 

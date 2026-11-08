@@ -608,3 +608,10 @@ export const uploadProfilePictureForUser = async (
 
   return confirmResponse.cloudFrontUrl;
 };
+
+/**
+ * Remove a specific user's profile picture (Admin).
+ */
+export const removeProfilePictureForUser = async (username: string): Promise<void> => {
+  await apiClient.delete(`${USER_API_PATH}/${username}/picture`);
+};

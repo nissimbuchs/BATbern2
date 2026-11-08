@@ -9,7 +9,7 @@
  * - Mark notifications as read
  * - Delete notifications
  * - Get unread count
- * - EventBridge-triggered notifications
+ * - notifications created from domain events
  */
 
 import apiClient from '@/services/api/apiClient';

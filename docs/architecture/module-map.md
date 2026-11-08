@@ -30,7 +30,25 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 - A lower module needs to trigger a higher one? Define an interface in the lower module and
   implement it above. `AudienceAdapter` is the model.
 - No new endpoints in `EventController`. New exceptions go in their own module, not in
-  `GlobalExceptionHandler`.
+  `GlobalExceptionHandler`; a module's own advice is the model (`mailcenter/MailCenterExceptionHandler`,
+  `@Order(HIGHEST_PRECEDENCE)` because the global advice has a catch-all).
+
+## Gates (ArchUnit, frozen, in each service's `test`)
+
+- EMS `architecture/EmsModuleWallsTest`: nothing outside mail center (`mailcenter` + `forwarding`),
+  `watch`, `usermerge` uses them (mail core in `mailcenter.render|variables` excepted); mail core
+  (`mailcenter.render|variables`) uses no other mail-center class; `notification` uses none of
+  them; no `*Partner*Client*`. CUMS `ServiceDirectionTest`: no `*EventManagement*Client*`,
+  `*Partner*Client*`. PCS: none, it is the most downstream service.
+- `FrozenRuleKeysTest` (EMS, CUMS) fails when a frozen rule is added, renamed or removed without
+  its store: ArchUnit would otherwise accept all its current violations on the first run.
+- Today's violations sit in `src/test/resources/archunit_store`. A new one fails the build; a fixed
+  one drops out of the store on the next run: commit that. Never edit the store or its properties
+  to accept a new one.
+- Left frozen after 17.5 (each with its owner): mail center wall 3 lines, `NewsletterEmailService`
+  and `SlidesOnlineEmailService` using `mailcenter.compose` (16.8c, 17.15); mail core 2 lines,
+  `MailPipeline` using `compose.MailRenderer` and `PlaceholderScanner` (17.15); EMS
+  `*Partner*Client*` 4 (17.8); CUMS clients 4 (17.6, 17.7). Watch, usermerge, notification: 0.
 
 ## Reuse before you build
 

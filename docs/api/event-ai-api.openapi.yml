@@ -334,6 +334,8 @@ components:
   schemas:
     AiDescriptionResponse:
       type: object
+      required:
+      - description
       properties:
         description:
           type: string
@@ -375,6 +377,13 @@ components:
           description: CloudFront URL of the AI-generated image to persist on the event
     AbstractAnalysisResponse:
       type: object
+      required:
+      - noPromotionScore
+      - noPromotionFeedback
+      - lessonsLearnedScore
+      - lessonsLearnedFeedback
+      - wordCount
+      - shortenedAbstract
       properties:
         noPromotionScore:
           type: integer

@@ -130,7 +130,7 @@ The architecture is governed by the ADRs in `docs/architecture/ADR-*.md`. ADR-01
 - **ADR-010**: Federated Identity via Cognito (Google SSO over OIDC) — **delivered 2026-06-04 (Epic 12)**. Cognito as OIDC broker on the custom domain `auth.batbern.ch` (backend JWT contract unchanged), existing accounts link via `AdminLinkProviderForUser` in `PreSignUp_ExternalProvider`, new Google users auto-provision as ATTENDEE via canonical JIT and pass the ToS consent gate (Pattern C). Inactive-blocking moved to the API-Gateway `is_active` gate; `companyId` removed from the token (resolved via user-api). Runtime kill-switch: `FEATURES_SSO_ENABLED`. **Deferred tail (backlog Story 12.10)**: Apple/generic OIDC + trigger-retirement cleanup to the target set `PreSignUp`, `PreTokenGeneration`, `CustomEmailSender` — PostConfirmation/PreAuthentication remain deployed until then. See `ADR-010-federated-identity-via-cognito.md` and the delivery record in `docs/plans/sso-oidc-federation.md`.
 - **[ADR-012](./ADR-012-self-nomination-proposals.md)**: Pre-READY speaker proposals live in `session_proposals`, never on `speaker_pool`
 - **[ADR-013](./ADR-013-rest-api-crud-conventions.md)**: REST API CRUD Conventions
-- **[ADR-014](./ADR-014-backend-service-consolidation.md)**: Backend Service Consolidation. EMS + CUMS primary, partner-coordination separate, speaker-coordination and attendee-experience dormant (operational state 2026-11-04 appended)
+- **[ADR-014](./ADR-014-backend-service-consolidation.md)**: Backend Service Consolidation. EMS + CUMS primary, partner-coordination separate; the speaker and attendee stub services were removed by Story 17.2 (2026-11)
 - **[ADR-015](./ADR-015-test-data-markers-and-email-send-guards.md)**: Test-Data Markers and Email Send-Guards
 - **[ADR-016](./ADR-016-service-directions-and-service-to-service-calls.md)**: Service Directions and Service-to-Service Calls. CUMS upstream of all, EMS upstream of PCS, `/internal` only, user JWT forwarded when present and never required, pull feeds instead of an event bus, profile merge as the one callback
 
@@ -140,8 +140,8 @@ The architecture is governed by the ADRs in `docs/architecture/ADR-*.md`. ADR-01
   projects (`web-frontend`, `infrastructure`), and the watchOS app in `apps/BATbern-watch`. See
   [source-tree.md](./source-tree.md).
 - **Services** (ADR-014): event-management (EMS) and company-user-management (CUMS) carry almost
-  all logic; partner-coordination stays a separate service; speaker-coordination and
-  attendee-experience are dormant.
+  all logic; partner-coordination stays a separate service. The speaker and attendee stub
+  services were removed by Story 17.2 (2026-11).
 - **Stack**: React 19 + TypeScript + MUI, Java 21 + Spring Boot 4.0.x, PostgreSQL 15 on RDS,
   ECS Fargate (ARM64), Cognito, SES, S3 + CloudFront, AWS CDK, GitHub Actions.
 

@@ -9,7 +9,7 @@ import ch.batbern.events.forwarding.ForwardingDirectory;
 import ch.batbern.events.mailcenter.MailCenterMetrics;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.service.CalendarInviteUid;
-import ch.batbern.events.service.InboundEmailRouter;
+import ch.batbern.events.forwarding.InboundEmailRouter;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.exception.NotFoundException;
 import ch.batbern.shared.exception.ValidationException;

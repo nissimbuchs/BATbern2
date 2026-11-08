@@ -10,6 +10,7 @@ import apiClient from '@/services/api/apiClient';
 import { AxiosError } from 'axios';
 import type { components } from '@/types/generated/company-api.types';
 import type { CompanyFilters, PaginationParams } from '@/types/company.types';
+import type { FileUploadPresignedUrl, FileUploadTarget } from '@/types/fileUpload.types';
 
 // Type aliases for cleaner code
 type Company = components['schemas']['CompanyResponse'];
@@ -279,6 +280,39 @@ class CompanyApiClient {
 
 // Export singleton instance
 export const companyApiClient = new CompanyApiClient();
+
+/**
+ * Logo upload target for useFileUpload (ADR-002): phase 1 presign and phase 3
+ * confirm of the generic logo upload. Errors are passed through for the hook to report.
+ *
+ * POST /api/v1/logos/presigned-url, POST /api/v1/logos/{uploadId}/confirm
+ */
+export const logoUploadTarget: FileUploadTarget = {
+  purpose: 'logo',
+  presign: async (request) => {
+    const response = await apiClient.post<FileUploadPresignedUrl>('/logos/presigned-url', request);
+    return response.data;
+  },
+  confirm: async (fileId, request) => {
+    await apiClient.post(`/logos/${fileId}/confirm`, request);
+  },
+};
+
+/**
+ * Server-side logo upload from an external URL (batch import): the backend fetches the image
+ * and stores it, so no binary passes through the browser. Returns the uploadId for
+ * `CreateCompanyRequest.logoUploadId`.
+ * Errors are passed through.
+ *
+ * POST /api/v1/logos/upload-from-url
+ */
+export const uploadLogoFromUrl = async (url: string, filename: string): Promise<string> => {
+  const response = await apiClient.post<{ uploadId: string }>('/logos/upload-from-url', {
+    url,
+    filename,
+  });
+  return response.data.uploadId;
+};
 
 // Export convenience methods for direct use
 export const {

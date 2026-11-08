@@ -802,12 +802,14 @@ ch.batbern.events.watch/
 ├── WatchSessionActionService.java      # Action processor (session lifecycle)
 ├── WatchSpeakerArrivalService.java     # Speaker arrival tracking
 ├── WatchRestController.java            # REST fallback + arrivals
-├── JwtStompInterceptor.java            # WebSocket auth
 └── dto/
     ├── WatchStateUpdate.java
     ├── WatchAction.java
     ├── WatchActionAck.java
     └── SpeakerArrivalUpdate.java
+
+ch.batbern.events.security/
+└── JwtStompInterceptor.java            # WebSocket auth (every STOMP CONNECT, platform)
 ```
 
 **Backend Extension Organization (company-user-management-service):**
@@ -986,12 +988,13 @@ services/event-management-service/
 │   │   ├── WatchSessionActionService.java
 │   │   ├── WatchSpeakerArrivalService.java         # NEW: arrival tracking
 │   │   ├── WatchRestController.java
-│   │   ├── JwtStompInterceptor.java
 │   │   └── dto/
 │   │       ├── WatchStateUpdate.java
 │   │       ├── WatchAction.java
 │   │       ├── WatchActionAck.java
 │   │       └── SpeakerArrivalUpdate.java           # NEW
+│   ├── security/
+│   │   └── JwtStompInterceptor.java                # WebSocket auth (moved from watch/)
 │   └── domain/
 │       ├── Session.java                            # MODIFIED: Add 4 watch fields
 │       └── SpeakerArrival.java                     # NEW: arrival entity

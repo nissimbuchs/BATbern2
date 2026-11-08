@@ -40,6 +40,7 @@ import type { Topic } from '@/types/topic.types';
 import type { Event, EventDetailUI, EventUI } from '@/types/event.types';
 import { EventTypeSelector } from '@/components/organizer/EventTypeSelector/EventTypeSelector';
 import { AiAssistDrawer } from './AiAssistDrawer';
+import { logoUploadTarget } from '@/services/api/companyApi';
 import { TopicSelectionOverlay } from './topicOverlay/TopicSelectionOverlay';
 import {
   createEventSchema,
@@ -80,7 +81,7 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
   const [previewUrl, setPreviewUrl] = useState<string | null>(null);
   const [imageRemoved, setImageRemoved] = useState(false);
   const { uploadFile, isUploading } = useFileUpload({
-    uploadEndpoint: '/logos/presigned-url',
+    target: logoUploadTarget,
     maxFileSize: 5 * 1024 * 1024,
     allowedTypes: ['image/png', 'image/jpeg', 'image/svg+xml'],
     onUploadSuccess: (data) => {

@@ -10,7 +10,7 @@
  * - useBatchMarkAsRead: Batch mark as read mutation
  * - useDeleteNotification: Delete notification mutation
  *
- * EventBridge Integration: Automatically fetches notifications triggered by domain events
+ * Fetches the notifications that in-process domain events created
  */
 
 import {

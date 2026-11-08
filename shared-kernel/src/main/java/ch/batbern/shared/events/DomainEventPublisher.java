@@ -1,23 +1,13 @@
 package ch.batbern.shared.events;
 
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequestEntry;
-
-import java.util.List;
-import java.util.concurrent.CompletableFuture;
-
+/**
+ * Publishes a domain event to the listeners in the same service.
+ *
+ * <p>Story 17.2 part B: domain events stay in process. The only implementation,
+ * {@link SpringDomainEventPublisher}, hands the event to Spring's
+ * {@code ApplicationEventPublisher}; there is no message bus behind it.
+ */
 public interface DomainEventPublisher {
 
     void publish(DomainEvent<?> event);
-
-    CompletableFuture<Void> publishAsync(DomainEvent<?> event);
-
-    void publishBatch(List<? extends DomainEvent<?>> events);
-
-    void publishWithRetry(DomainEvent<?> event, int maxRetries);
-
-    PutEventsRequestEntry createEventBridgeEntry(DomainEvent<?> event);
-
-    void ensureEventBusExists(String eventBusName);
-
-    boolean isDeadLetterQueueConfigured(String dlqName);
 }

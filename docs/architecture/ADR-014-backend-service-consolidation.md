@@ -100,3 +100,40 @@ So the decision above is implemented in code ownership (all speaker and attendee
 EMS and partner-coordination) but only partly in the runtime: SCS still runs a Fargate task that
 serves nothing, and the gateway still routes one prefix to the parked AES. See #1216.
 
+
+## Operational state (2026-11, Story 17.2 part A)
+
+Both stub services are removed from the code: the two Gradle modules, their CDK stacks
+(`BATbern-staging-SpeakerCoordination`, `-AttendeeExperience`), their entries in the CICD
+stack's ECR list, the build matrix and deploy steps, dev scripts and compose, and the gateway
+route `/api/v1/content/**` with its two service-URL settings. The table above (2026-11-04) is the
+state before that change.
+
+What stays, on purpose: the database table `flyway_schema_history_speaker_coordination` (no
+migration touches it), and the event bus, which is part B of Story 17.2.
+
+Production cleanup is outside the PR and needs the owner's go at each step: drop the two
+`build-services (…)` required checks before merge, then `delete-stack` the two orphaned stacks
+after the deploy. The CICD stack's ECR repositories carry `DeletionPolicy: Retain` in production
+(`isProduction: true`), so removing them from the template leaves both repositories in the
+account; they have to be deleted by hand (`aws ecr delete-repository --force`) as well.
+
+## Operational state (2026-11, Story 17.2 part B)
+
+The event bus is removed from the code. Domain events stay in process: `DomainEventPublisher`
+keeps its `publish` method and its only implementation, `SpringDomainEventPublisher`, hands each
+event to Spring's `ApplicationEventPublisher` (what the EMS listeners always consumed). Removed:
+the EventBridge publisher and its configuration in the shared kernel, the
+`software.amazon.awssdk:eventbridge`, Resilience4j and Guava dependencies of the shared kernel,
+the local and test EventBridge mocks, the CDK stack `BATbern-staging-EventBus`, the bus import,
+`EVENT_BUS_NAME` and `events:PutEvents` grant of CUMS and PCS, the EMS grant on the
+never-created bus `batbern-events`, and the per-service `-EventBridge-Failures` alarms. The EMS
+auto-publish rule grants on the default bus stay.
+
+Found on the way: the bean `eventBridgeObjectMapper` was the only Jackson `ObjectMapper` bean in
+every service, so it has always been the mapper of the HTTP converters (API JSON is indented,
+`spring.jackson2.*` has no effect). It moved unchanged to the shared kernel as
+`SharedObjectMapperConfig`; API payloads stay byte-identical.
+
+Production cleanup after the deploy, with the owner's go: `delete-stack` the orphaned
+`BATbern-staging-EventBus` stack (CUMS and PCS no longer import its exports once deployed).

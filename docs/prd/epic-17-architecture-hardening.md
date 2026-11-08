@@ -66,6 +66,13 @@ contract check or test), not by a document.
   first test (`_bmad/custom/bmad-build.toml`).
 - **Named guard.** Every acceptance criterion that states an architectural property names the gate
   that proves it. A property without a gate is not done.
+- **Leave the architecture cleaner (owner, 2026-11-08).** The epic exists to change the code, not
+  to document it. Every story moves code to the module the map assigns it, splits or redesigns what
+  stands in the way, and fixes the violations its own gate or change exposes when the fix lies inside
+  the story's service. A gate story (17.3, 17.4, 17.5) freezes only what needs a later story's
+  design or a cross-service change, and names that story per frozen group. A baseline or store
+  committed at the end of a story is smaller than at its start, or the story says why not. "No
+  production code change" is never a boundary in this epic.
 - **Re-measure.** A story that claims to remove violations re-runs
   `scripts/architecture/ems-module-deps.py` and `ems-module-target.py` and records before/after
   numbers in its Dev Agent Record.
@@ -90,30 +97,40 @@ Protective and cheap first, then decoupling, then restructuring.
 | 17.2 | Dormant infrastructure: stubs and event bus | – | dev + prod infra |
 | 17.3 | Frontend path contract check | 17.1 | gate |
 | 17.4 | OpenAPI lint and spec-diff report | 17.1 | gate |
-| 17.5 | ArchUnit freeze | – | gate |
+| 17.5 | ArchUnit freeze and first wall fixes | – | gate + dev |
+| 17.3b | Frontend HTTP calls moved into the service layer | 17.3 | dev |
+| 17.3c | Gate against hand-written copies of generated API types (ADR-006) | 17.3b | gate + dev |
 | *16.8c* | *Mail Center consolidation (stays in Epic 16)* | *17.1* | *dev* |
-| 17.6 | Service-to-service calls via `/internal` | 17.4, **17.0a, 17.0b** | dev |
+| 17.6 | Service-to-service calls via `/internal` | 17.4, 17.3c, **17.0a, 17.0b** | dev |
 | 17.7 | User-reference contract and request pull | 17.6 | dev |
 | 17.8 | EMS↔PCS direction | 17.6 | dev |
 | 17.9 | API conventions I (breaking) | 17.4, **17.0c, 17.0d** | dev |
 | 17.10 | API conventions II (breaking) | 17.9 | dev |
 | 17.11 | One upload contract, first purpose `company-logo` | 17.4, **17.0c, 17.0d** | dev |
+| 17.9b | One transition idiom for the event lifecycle (breaking) | 17.9 | dev |
+| 17.10b | API conventions III (breaking) | 17.10 | dev |
+| 17.11a–d | Upload purposes profile-picture, event-photo, teaser-image, session-material | 17.11, 17.10b (17.11c, d after 17.11b) | dev |
 | 17.12 | EMS modularization design | 17.5 | **design (Winston)** |
 | 17.13 | Registrations out of `EventController` | 17.12 | dev |
 | 17.14 | Domain exception base | 17.12 | dev |
 | 17.15 | Mail core / mail center split | 17.12, 16.8c | dev |
 | 17.16 | Event-core extension points | 17.12 | dev |
 
-**20 stories** (17.0a–d, 17.1–17.16); 17.12 is a design task. 17.1–17.5 do not wait for 17.0a–d and
+**28 stories** (17.0a–d, 17.1–17.16, 17.3b, 17.3c, 17.9b, 17.10b, 17.11a–d); 17.12 is a design task. 17.1–17.5 do not wait for 17.0a–d and
 can run alongside them; 17.1, 17.2, 17.5 and 17.0a have no dependencies. 17.6 to 17.11 can run in
 parallel once their dependencies are in, as long as only one PR is open at a time. Winston's estimate
 (not measured): 17.0a–d are about 5–6 stories of work, so 17.0b and 17.0c may each split into two
 PRs (as 16.8a/b did).
 
-**Not stories yet:** the five remaining upload purposes after 17.11 (profile-picture, event-photo,
-teaser-image, session-material incl. speaker portal, mail-attachment; one story each, created after
-17.11 proves the pattern), the remaining EMS module moves (planning, publishing, ai) after 17.12, and
-the follow-up reviews (database, frontend, schema, Spring gateway, Watch API; action list item 9).
+**Not stories yet:** the upload purpose mail-attachment, the remaining EMS module moves (planning, publishing, ai)
+after 17.12, and the follow-up reviews (database, frontend, schema, Spring gateway, Watch API; action
+list item 9). Since 2026-11-08 (owner) the purposes profile-picture, event-photo, teaser-image and
+session-material incl. speaker portal are backlog stories 17.11a–d, each built after 17.11 proves the
+pattern, 17.10b (API conventions III) and 17.9b own their Spectral baseline lines, and 17.9b folds
+the event lifecycle into one transition idiom (ADR-013 §1); all sit in
+epic 4 of the v7 initiative `initiative-architecture-hardening`. Every baseline line's owner (story,
+issue or owner-accepted exception, e.g. `/watch/pair` and `/watch/authenticate` as credential
+exchange) is in `web-frontend/scripts/api-lint-owners.txt`, checked by `npm run lint:api`.
 
 ---
 
@@ -373,20 +390,27 @@ endpoints: none · reused: `docs/api/` · deviations: none.
 
 ---
 
-### Story 17.5 — ArchUnit freeze
+### Story 17.5 — ArchUnit freeze and first wall fixes
 
-**As** the owner, **I want** the EMS layering and the service directions checked by the build,
-**so that** the 100 known violations can only shrink.
+**As** the owner, **I want** the EMS layering and the service directions checked by the build, and
+the violations that need no design fixed in the same story, **so that** the known violations can
+only shrink and start shrinking now.
 
 **Scope:**
-- Add ArchUnit (test scope) to all three services.
+- Add ArchUnit (test scope) to CUMS and EMS. PCS calls no downstream service, so it has nothing to
+  freeze (owner, 2026-11-08).
 - EMS: `FreezingArchRule` for the 5 vertical packages that already exist as packages (the review names
   them; 17.12 extends this to the full layering). Frozen store committed.
 - All services: "no new client toward a downstream service" (ADR-016): CUMS has no client package
   toward EMS or PCS except the frozen merge and mail-center clients; EMS none toward PCS except frozen
   ones.
+- Fix in the same story what the gate shows and what needs no 17.12 design: classes that belong to an
+  L6 module by the map but sit outside its package (inbound and retention parts of the mail center,
+  dev mail controller, watch wiring), mail-center exception handlers out of `GlobalExceptionHandler`
+  into the module, address helpers of the mail core out of `forwarding`. Pure moves and splits inside
+  EMS; what stays frozen names its story (17.8 PCS clients, 17.6/17.7 CUMS clients, 17.15 mail core).
 
-**Architecture note (draft):** modules: test sources of CUMS, EMS, PCS · new dependencies: ArchUnit
+**Architecture note (draft):** modules: test sources of CUMS, EMS · new dependencies: ArchUnit
 (test) · endpoints: none · reused: `scripts/architecture/*` numbers as cross-check · deviations: none.
 
 **Acceptance criteria:**
@@ -395,6 +419,8 @@ endpoints: none · reused: `docs/api/` · deviations: none.
 2. Removing a frozen violation shrinks the store; the store is committed and reviewed like code.
 3. The frozen count matches the script measurement for the same packages (difference explained in the
    story).
+4. The committed EMS store is smaller than the first freeze of the same rules, with before/after per
+   rule and the owning story for every remaining group.
 
 ---
 
@@ -431,7 +457,8 @@ deviations: none.
 1. No client class in any service calls an `/api/v1` URL of another service. Guard: ArchUnit or a
    source-scan test over client packages.
 2. No `/internal` path in a public spec and the moved operations are gone from them. Guard: 17.4 lint,
-   baseline shrinks accordingly.
+   baseline shrinks accordingly (`issue-invitation-credentials` is a valid ADR-013 action since
+   2026-11-08 and has no baseline line; it moves to `/internal` all the same).
 3. Each moved call works with and without a user JWT. Guard: integration test per client, both cases;
    the receiver records the actor or `system:<job>`.
 4. The Spring gateway still denies `/internal/**` from outside. Guard: `ProductionSecurityFilterChainTest`
@@ -546,8 +573,9 @@ existing `participants` resource · deviations: none.
    enforced by one `@PreAuthorize` rule. Guard: integration test (own = allowed, other = 403,
    organizer = allowed where it was).
 2. One speaker path key across all specs. Guard: Spectral rule added for the parameter name.
-3. `batch_registrations`, `enroll-stakeholders` and `my-subscription` are gone. Guard: Spectral
-   baseline shrinks, 17.3 contract check passes.
+3. `batch_registrations`, `enroll-stakeholders` and `my-subscription` are gone. Guard: 404 checks,
+   Spectral baseline shrinks by the `batch_registrations` lines (`enroll-stakeholders` has none since
+   the ADR-013 rule change of 2026-11-08), 17.3 contract check passes.
 4. Registration, enrolment and newsletter self-service work end to end. Guard: Bruno, Playwright.
 
 ---
@@ -618,7 +646,7 @@ exceptions extend it; `GlobalExceptionHandler` maps the base class and imports n
 
 **Acceptance criteria:**
 1. `GlobalExceptionHandler` imports no class from a domain module. Guard: ArchUnit rule; script
-   re-run shows its 16 violations gone.
+   re-run shows its 14 violations gone (16 before 17.5 moved the two mail-center handlers out).
 2. Every existing exception keeps its status and error code. Guard: `ClientErrorContract.verify`
    plus a parameterized test over all domain exceptions.
 
@@ -628,10 +656,12 @@ exceptions extend it; `GlobalExceptionHandler` maps the base class and imports n
 
 **Scope:** delivery status becomes a projection owned by the mail center; mail core (`MailPipeline`,
 delivery) publishes in-process events, the mail center listens. `MailDeliveryStatusService`,
-`MailPipeline`, `ModeratorReplyAddress` stop depending on mail-center classes.
+`MailPipeline`, `AudienceAdapter` stop depending on mail-center classes (17.5 already made
+`ModeratorReplyAddress` a mail-core interface implemented in `forwarding`).
 
 **Acceptance criteria:**
-1. Mail core has no dependency on mail center. Guard: ArchUnit, script re-run (11 violations).
+1. Mail core has no dependency on mail center. Guard: ArchUnit (17.5's frozen rule "mail core uses no mail center class" ends with an empty store),
+   script re-run (9 violations after 17.5, 11 before).
 2. Delivery status, "What went out" and moderator Reply-To behave as before. Guard: existing 16.1b
    and 16.0 tests, local-dev send check (`/dev/mails`).
 

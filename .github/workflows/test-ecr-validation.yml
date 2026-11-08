@@ -34,7 +34,7 @@ jobs:
 
           VALIDATION_FAILED=false
 
-          for SERVICE in event-management-service speaker-coordination-service partner-coordination-service attendee-experience-service company-user-management-service api-gateway; do
+          for SERVICE in event-management-service partner-coordination-service company-user-management-service api-gateway; do
             REPO_NAME="batbern/staging/${SERVICE}"
             echo "  Checking ${REPO_NAME}:${IMAGE_TAG}..."
 

@@ -351,9 +351,7 @@ function logGroupForAlarm(alarmName: string): string {
   const env = getEnvironment(alarmName);
   const service = [
     ['EventManagement', 'event-management'],
-    ['SpeakerCoordination', 'speaker-coordination'],
     ['PartnerCoordination', 'partner-coordination'],
-    ['AttendeeExperience', 'attendee-experience'],
     ['CompanyManagement', 'company-user-management'],
   ].find(([token]) => alarmName.includes(token));
   return `/aws/ecs/BATbern-${env}/${service ? service[1] : 'api-gateway'}`;
@@ -569,10 +567,7 @@ function getLabels(alarm: CloudWatchAlarm): string[] {
     alarm.AlarmName.includes('Task-Failures')
   ) {
     labels.push('severity:high');
-  } else if (
-    alarm.AlarmName.includes('budget') ||
-    alarm.AlarmName.includes('EventBridge-Failures')
-  ) {
+  } else if (alarm.AlarmName.includes('budget')) {
     labels.push('severity:medium');
   } else {
     labels.push('severity:low');
@@ -587,8 +582,7 @@ function getLabels(alarm: CloudWatchAlarm): string[] {
   } else if (
     alarm.AlarmName.includes('High-Memory') ||
     alarm.AlarmName.includes('OOM-Kills') ||
-    alarm.AlarmName.includes('Task-Failures') ||
-    alarm.AlarmName.includes('EventBridge-Failures')
+    alarm.AlarmName.includes('Task-Failures')
   ) {
     labels.push('component:ecs');
   } else {
@@ -598,7 +592,7 @@ function getLabels(alarm: CloudWatchAlarm): string[] {
   // Platform Stability Improvements (Phase 3): Add service attribution label
   // Extract service name from alarm (e.g., "batbern-staging-EventManagement-High-Memory" → "service:event-management")
   const serviceMatch = alarm.AlarmName.match(
-    /-(EventManagement|SpeakerCoordination|PartnerCoordination|AttendeeExperience|CompanyManagement|ApiGatewayService)-/
+    /-(EventManagement|PartnerCoordination|CompanyManagement|ApiGatewayService)-/
   );
   if (serviceMatch) {
     const serviceName = serviceMatch[1]

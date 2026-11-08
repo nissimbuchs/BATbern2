@@ -47,7 +47,7 @@ import { useTranslation } from 'react-i18next';
 import { AxiosError } from 'axios';
 import type { SessionUI, SessionMaterial } from '@/types/event.types';
 import { FileUpload, type UploadedFile } from '@/components/shared/FileUpload/FileUpload';
-import { sessionApiClient } from '@/services/api/sessionApiClient';
+import { materialUploadTarget, sessionApiClient } from '@/services/api/sessionApiClient';
 import { SessionSpeakersTab } from './SessionSpeakersTab';
 import { isStructuralSession } from '@/utils/sessionTypes';
 
@@ -644,7 +644,7 @@ export const SessionEditModal: React.FC<SessionEditModalProps> = ({
                 multiple={true}
                 maxFiles={10}
                 uploadedFiles={uploadedMaterials}
-                uploadEndpoint="/materials/presigned-url" // Story 5.9: Use materials endpoint
+                uploadTarget={materialUploadTarget} // Story 5.9: Use materials endpoint
               />
             </Box>
 

@@ -12,7 +12,7 @@
 #
 # Available services:
 #   api-gateway, company-user-management, event-management,
-#   speaker-coordination, partner-coordination, attendee-experience,
+#   partner-coordination,
 #   web-frontend
 
 set -e
@@ -46,13 +46,12 @@ fi
 ENV_NATIVE_FILE="${PROJECT_ROOT}/.env.native.${INSTANCE}"
 
 # Calculate ports - consistent for all instances
-# Pattern: BASE_PORT for API Gateway, BASE_PORT+1..5 for services, BASE_PORT+100 for frontend
+# Pattern: BASE_PORT for API Gateway, BASE_PORT+1/+2/+4 for services, BASE_PORT+100 for frontend
+# (+3 and +5 belonged to the speaker and attendee stubs removed by Story 17.2; left unused)
 API_GATEWAY_PORT=$BASE_PORT
 COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
 EVENT_MGMT_PORT=$((BASE_PORT + 2))
-SPEAKER_COORD_PORT=$((BASE_PORT + 3))
 PARTNER_COORD_PORT=$((BASE_PORT + 4))
-ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
 FRONTEND_PORT=$((BASE_PORT + 100))
 
 # Helper functions to get service config (bash 3.2 compatible)
@@ -61,9 +60,7 @@ get_gradle_task() {
         api-gateway) echo ":api-gateway:bootRun" ;;
         company-user-management) echo ":services:company-user-management-service:bootRun" ;;
         event-management) echo ":services:event-management-service:bootRun" ;;
-        speaker-coordination) echo ":services:speaker-coordination-service:bootRun" ;;
         partner-coordination) echo ":services:partner-coordination-service:bootRun" ;;
-        attendee-experience) echo ":services:attendee-experience-service:bootRun" ;;
         *) echo "" ;;
     esac
 }
@@ -73,9 +70,7 @@ get_service_port() {
         api-gateway) echo "$API_GATEWAY_PORT" ;;
         company-user-management) echo "$COMPANY_USER_MGMT_PORT" ;;
         event-management) echo "$EVENT_MGMT_PORT" ;;
-        speaker-coordination) echo "$SPEAKER_COORD_PORT" ;;
         partner-coordination) echo "$PARTNER_COORD_PORT" ;;
-        attendee-experience) echo "$ATTENDEE_EXP_PORT" ;;
         web-frontend) echo "$FRONTEND_PORT" ;;
         *) echo "" ;;
     esac
@@ -89,9 +84,7 @@ show_usage() {
     echo "  api-gateway                 API Gateway service"
     echo "  company-user-management     Company User Management service"
     echo "  event-management            Event Management service"
-    echo "  speaker-coordination        Speaker Coordination service"
     echo "  partner-coordination        Partner Coordination service"
-    echo "  attendee-experience         Attendee Experience service"
     echo "  web-frontend                Web Frontend service"
     echo "  all                         All services (default)"
     echo ""
@@ -265,7 +258,7 @@ restart_all() {
 
     # Stop all services
     echo -e "${CYAN}→ Stopping all services...${NC}"
-    for service in api-gateway company-user-management event-management speaker-coordination partner-coordination attendee-experience web-frontend; do
+    for service in api-gateway company-user-management event-management partner-coordination web-frontend; do
         stop_service "$service"
     done
     echo ""
@@ -282,11 +275,7 @@ restart_all() {
     echo ""
     start_spring_service "event-management"
     echo ""
-    start_spring_service "speaker-coordination"
-    echo ""
     start_spring_service "partner-coordination"
-    echo ""
-    start_spring_service "attendee-experience"
     echo ""
 
     # Start frontend

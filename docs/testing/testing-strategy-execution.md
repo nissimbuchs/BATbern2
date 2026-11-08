@@ -80,7 +80,7 @@ npm run test:unit
 - ✅ Real PostgreSQL (via Testcontainers)
 - ✅ Real database queries and transactions
 - ✅ Spring Boot context loaded
-- ❌ Mocked AWS services (EventBridge, S3)
+- ❌ Mocked AWS services (S3, SES, Cognito)
 - ❌ No real AWS API calls
 
 **Key Implementation Detail:**
@@ -94,16 +94,16 @@ Integration tests extend `AbstractIntegrationTest` which provides:
 // TestAwsConfig.java provides mocked AWS clients
 @Bean
 @Primary
-public EventBridgeAsyncClient eventBridgeAsyncClient() {
-    EventBridgeAsyncClient mockClient = Mockito.mock(EventBridgeAsyncClient.class);
+public S3Client testS3Client() {
+    S3Client mockS3Client = Mockito.mock(S3Client.class);
     // Mocked to return successful responses
-    return mockClient;
+    return mockS3Client;
 }
 ```
 
 **Examples:**
 - `CompanyControllerIntegrationTest.java` - REST API + Database
-- `EventPublishingIntegrationTest.java` - Event publishing (mocked)
+- `EventPublishingIntegrationTest.java` - domain events through the real in-process publisher
 - `AuthenticationIntegrationTest.java` - Auth flows
 
 **Run Locally:**
@@ -302,9 +302,9 @@ npm run test:e2e           # E2E tests (requires running app)
 public class TestAwsConfig {
     @Bean
     @Primary
-    public EventBridgeAsyncClient eventBridgeAsyncClient() {
+    public S3Client testS3Client() {
         // Returns a Mockito mock that simulates successful responses
-        return Mockito.mock(EventBridgeAsyncClient.class);
+        return Mockito.mock(S3Client.class);
     }
 }
 ```
@@ -378,7 +378,7 @@ jobs:
 - Total test time is acceptable (~2-3 minutes)
 
 ### Q: Do I need LocalStack?
-**A:** No! AWS services (EventBridge, S3) are mocked using Mockito in tests. LocalStack is not required.
+**A:** No! AWS services (S3, SES, Cognito) are mocked using Mockito in tests. LocalStack is not required.
 
 ### Q: Can I run tests without Docker?
 **A:** Unit tests - yes. Integration tests - no (they require Testcontainers PostgreSQL).

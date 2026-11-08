@@ -3,7 +3,7 @@ package ch.batbern.events.service;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.OutreachHistory;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.forwarding.ModeratorReplyAddress;
+import ch.batbern.events.mailcenter.render.ModeratorReplyAddress;
 import ch.batbern.events.mailcenter.render.RenderedMail;
 import ch.batbern.events.repository.OutreachHistoryRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;

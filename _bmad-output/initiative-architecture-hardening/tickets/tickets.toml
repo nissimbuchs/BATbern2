@@ -4,8 +4,8 @@
 id = 1
 slug = "epic-dead-surface-and-gates"
 title = "Dead surface removed, gates in place"
-description = "Production runs three services and no event bus; dead specs, orphan endpoints and the old compose endpoints are gone; the FE path contract check, Spectral and the ArchUnit freeze run in required CI jobs with committed baselines. Hands on: 17.3's importable spec matcher to epic 2 (17.0c); the Spectral baseline and ArchUnit store that epics 3, 4 and 5 shrink."
-covers = ["R5", "R6", "R7", "R8", "R9", "R10"]
+description = "Production runs three services and no event bus; dead specs, orphan endpoints and the old compose endpoints are gone; the FE path contract check, Spectral and the ArchUnit freeze run in required CI jobs with committed baselines; 17.5 has moved the EMS classes that need no design into their modules and 3b the frozen frontend calls into the service layer, 3c gates hand-written copies of generated API types with a shrinking baseline, so the ArchUnit store and the frontend layer baseline end smaller than their first freeze. Hands on: 17.3's importable spec matcher to epic 2 (17.0c); the remaining Spectral and ArchUnit groups, each with its owning story, to epics 3, 4 and 5."
+covers = ["R5", "R6", "R7", "R8", "R9", "R10", "R25"]
 
 [[epic]]
 id = 2
@@ -22,7 +22,7 @@ title = "Services call in one direction over /internal"
 description = "Every S2S call goes through /internal with or without a user JWT; CUMS owns the user-reference contract; EMS has no PCS client; the ArchUnit store holds no reverse-direction client."
 covers = ["R11", "R12", "R13"]
 after = [
-  { epic = 1, needs = "17.4 Spectral baseline (shrinks when operations leave the public specs) and 17.5 ArchUnit freeze (proves the direction)" },
+  { epic = 1, needs = "17.4 Spectral baseline (shrinks when operations leave the public specs), 17.5 ArchUnit freeze (proves the direction) and 3c generated-types gate (owner 2026-11-08: built before 17.6, so the regenerated types of the moved operations are not copied by hand)" },
   { epic = 2, needs = "17.0a ratchet and 17.0b S2S contract harness, so moved calls fail when the caller is wrong" },
 ]
 
@@ -30,8 +30,8 @@ after = [
 id = 4
 slug = "epic-api-conventions-and-uploads"
 title = "One way in per resource, one upload contract"
-description = "Tasks, settings, user and speaker paths, registrations and newsletter subscriptions follow the conventions with the old operations removed; company-logo uploads run on /api/v1/uploads/{purpose} in production."
-covers = ["R14", "R15", "R16"]
+description = "Tasks, settings, the event lifecycle transitions, user and speaker paths, registrations, newsletter subscriptions, notifications, AI prompts, session import, additional e-mails, event types and get-or-create follow the conventions with the old operations removed; company-logo, profile-picture, event-photo, teaser-image and session-material uploads run on /api/v1/uploads/{purpose} in production."
+covers = ["R14", "R15", "R16", "R22", "R23", "R24"]
 after = [
   { epic = 3, needs = "17.6's /internal move of PATCH /users/{u}/profile (17.10 merges the profile twins) and 17.7's removal of the logo-request push (17.11 rebuilds the logo request flow)" },
   { epic = 1, needs = "17.4 Spectral baseline and 17.3 FE path contract check, the guards of every breaking change" },
@@ -45,7 +45,7 @@ title = "EMS has walls a build checks"
 description = "An accepted EMS modularization design, then registrations, exceptions, mail core and event core moved behind ArchUnit rules, with the module script showing fewer violations than the 2026-11-07 baseline."
 covers = ["R17", "R18", "R19", "R20", "R21"]
 after = [
-  { epic = 1, needs = "17.5 ArchUnit freeze, extended by 17.12 to the full layering; 16.8c clean-up before 17.15 splits mail core from mail center" },
+  { epic = 1, needs = "17.5 ArchUnit freeze and its first wall fixes (inbound mail chain, retention schedulers and dev mail controller in forwarding/mailcenter, JwtStompInterceptor in security, ModeratorReplyAddress in mailcenter/render, mail-center exception handlers out of GlobalExceptionHandler), the store 17.12 designs from; 16.8c clean-up before 17.15 splits mail core from mail center" },
   { epic = 2, needs = "17.0a ratchet baseline settled before 17.13 moves registration tests" },
   { epic = 3, needs = "17.7 and 17.8 done in mail center and InboundEmailRouter before 17.15 splits mail core from mail center" },
   { epic = 4, needs = "17.10's folding of batch_registrations and enroll-stakeholders before 17.13 moves the registration endpoints" },

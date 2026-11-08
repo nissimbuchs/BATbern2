@@ -6,17 +6,17 @@
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, act, waitFor } from '@testing-library/react';
+import MockAdapter from 'axios-mock-adapter';
 import { useFileUpload } from './useFileUpload';
 import apiClient from '@/services/api/apiClient';
+import { logoUploadTarget } from '@/services/api/companyApi';
+import { materialUploadTarget } from '@/services/api/sessionApiClient';
 
-// Mock apiClient
-vi.mock('@/services/api/apiClient', () => ({
-  default: {
-    post: vi.fn(),
-  },
-}));
-
-const mockApiClient = vi.mocked(apiClient);
+// Backend calls are stubbed at the HTTP boundary: the real upload targets and
+// apiClient run. The S3 PUT goes through XMLHttpRequest, replaced per test below.
+const PRESIGN = '/logos/presigned-url';
+const CONFIRM = /^\/logos\/[^/]+\/confirm$/;
+let http: MockAdapter;
 
 describe('useFileUpload Hook', () => {
   let mockXHR: Partial<XMLHttpRequest>;
@@ -24,6 +24,7 @@ describe('useFileUpload Hook', () => {
 
   beforeEach(() => {
     vi.clearAllMocks();
+    http = new MockAdapter(apiClient);
 
     // Mock XMLHttpRequest
     mockXHR = {
@@ -45,6 +46,7 @@ describe('useFileUpload Hook', () => {
   });
 
   afterEach(() => {
+    http.restore();
     vi.restoreAllMocks();
   });
 
@@ -52,7 +54,7 @@ describe('useFileUpload Hook', () => {
 
   it('should_initializeWithDefaultState_when_hookCreated', () => {
     // Arrange & Act
-    const { result } = renderHook(() => useFileUpload());
+    const { result } = renderHook(() => useFileUpload({ target: logoUploadTarget }));
 
     // Assert
     expect(result.current.isUploading).toBe(false);
@@ -76,13 +78,13 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    mockApiClient.post
-      .mockResolvedValueOnce(mockPresignedResponse) // Phase 1: presigned URL
-      .mockResolvedValueOnce({ data: {} }); // Phase 3: confirm
+    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data); // Phase 1: presigned URL
+    http.onPost(CONFIRM).replyOnce(200, {}); // Phase 3: confirm
 
     const onUploadSuccess = vi.fn();
     const { result } = renderHook(() =>
       useFileUpload({
+        target: logoUploadTarget,
         onUploadSuccess,
       })
     );
@@ -95,11 +97,12 @@ describe('useFileUpload Hook', () => {
 
     // Wait for presigned URL request
     await waitFor(() => {
-      expect(mockApiClient.post).toHaveBeenCalledWith('/logos/presigned-url', {
-        fileName: 'test-logo.png',
-        fileSize: file.size,
-        mimeType: 'image/png',
-      });
+      expect(http.history.post[0]?.url).toBe(PRESIGN);
+    });
+    expect(JSON.parse(http.history.post[0].data)).toEqual({
+      fileName: 'test-logo.png',
+      fileSize: file.size,
+      mimeType: 'image/png',
     });
 
     // Simulate S3 upload completion
@@ -114,14 +117,12 @@ describe('useFileUpload Hook', () => {
 
     // Wait for confirm request
     await waitFor(() => {
-      expect(mockApiClient.post).toHaveBeenCalledWith(
-        '/logos/upload-123/confirm',
-        expect.objectContaining({
-          fileId: 'upload-123',
-          fileExtension: 'png',
-          checksum: expect.any(String),
-        })
-      );
+      expect(http.history.post[1]?.url).toBe('/logos/upload-123/confirm');
+    });
+    expect(JSON.parse(http.history.post[1].data)).toEqual({
+      fileId: 'upload-123',
+      fileExtension: 'png',
+      checksum: expect.any(String),
     });
 
     // Assert
@@ -154,11 +155,10 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    mockApiClient.post
-      .mockResolvedValueOnce(mockPresignedResponse)
-      .mockResolvedValueOnce({ data: {} });
+    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data);
+    http.onPost(CONFIRM).replyOnce(200, {});
 
-    const { result } = renderHook(() => useFileUpload());
+    const { result } = renderHook(() => useFileUpload({ target: logoUploadTarget }));
 
     // Act
     act(() => {
@@ -214,6 +214,7 @@ describe('useFileUpload Hook', () => {
 
     const { result } = renderHook(() =>
       useFileUpload({
+        target: logoUploadTarget,
         allowedTypes: ['image/png', 'image/jpeg'],
         onUploadError,
       })
@@ -236,7 +237,7 @@ describe('useFileUpload Hook', () => {
 
     const uploadId = await uploadPromise!;
     expect(uploadId).toBeNull();
-    expect(mockApiClient.post).not.toHaveBeenCalled();
+    expect(http.history.post).toHaveLength(0);
   });
 
   it('should_rejectLargeFile_when_fileSizeExceedsLimit', async () => {
@@ -247,6 +248,7 @@ describe('useFileUpload Hook', () => {
 
     const { result } = renderHook(() =>
       useFileUpload({
+        target: logoUploadTarget,
         maxFileSize: 5 * 1024 * 1024, // 5 MB limit
         onUploadError,
       })
@@ -269,7 +271,7 @@ describe('useFileUpload Hook', () => {
 
     const uploadId = await uploadPromise!;
     expect(uploadId).toBeNull();
-    expect(mockApiClient.post).not.toHaveBeenCalled();
+    expect(http.history.post).toHaveLength(0);
   });
 
   // ============ Error Handling Tests ============
@@ -277,11 +279,12 @@ describe('useFileUpload Hook', () => {
   it('should_handlePresignedUrlError_when_backendFails', async () => {
     // Arrange
     const file = new File(['test content'], 'test-logo.png', { type: 'image/png' });
-    mockApiClient.post.mockRejectedValueOnce(new Error('Backend error'));
+    http.onPost(PRESIGN).replyOnce(500, { message: 'Backend error' });
 
     const onUploadError = vi.fn();
     const { result } = renderHook(() =>
       useFileUpload({
+        target: logoUploadTarget,
         onUploadError,
       })
     );
@@ -326,11 +329,12 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    mockApiClient.post.mockResolvedValueOnce(mockPresignedResponse);
+    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data);
 
     const onUploadError = vi.fn();
     const { result } = renderHook(() =>
       useFileUpload({
+        target: logoUploadTarget,
         onUploadError,
       })
     );
@@ -384,7 +388,7 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    mockApiClient.post.mockResolvedValueOnce(mockPresignedResponse);
+    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data);
 
     // The XHR constructor in the test harness copies mockXHR's props onto the
     // new instance once, at construction time — so we need the 403 state set
@@ -399,6 +403,7 @@ describe('useFileUpload Hook', () => {
     const onUploadError = vi.fn();
     const { result } = renderHook(() =>
       useFileUpload({
+        target: logoUploadTarget,
         onUploadError,
       })
     );
@@ -434,19 +439,17 @@ describe('useFileUpload Hook', () => {
   it('should_handleS3Timeout_when_putTimesOut', async () => {
     // Arrange — XHR fires its 'timeout' event after xhr.timeout ms.
     const file = new File(['test content'], 'test-logo.png', { type: 'image/png' });
-    mockApiClient.post.mockResolvedValueOnce({
-      data: {
-        uploadUrl: 'https://s3.amazonaws.com/bucket/test.png',
-        fileId: 'upload-timeout',
-        s3Key: 'logos/test.png',
-        fileExtension: 'png',
-        expiresInMinutes: 15,
-        requiredHeaders: {},
-      },
+    http.onPost(PRESIGN).replyOnce(200, {
+      uploadUrl: 'https://s3.amazonaws.com/bucket/test.png',
+      fileId: 'upload-timeout',
+      s3Key: 'logos/test.png',
+      fileExtension: 'png',
+      expiresInMinutes: 15,
+      requiredHeaders: {},
     });
 
     const onUploadError = vi.fn();
-    const { result } = renderHook(() => useFileUpload({ onUploadError }));
+    const { result } = renderHook(() => useFileUpload({ target: logoUploadTarget, onUploadError }));
 
     act(() => {
       result.current.uploadFile(file);
@@ -489,13 +492,13 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    mockApiClient.post
-      .mockResolvedValueOnce(mockPresignedResponse)
-      .mockRejectedValueOnce(new Error('Confirm failed'));
+    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data);
+    http.onPost(CONFIRM).replyOnce(500, { message: 'Confirm failed' });
 
     const onUploadError = vi.fn();
     const { result } = renderHook(() =>
       useFileUpload({
+        target: logoUploadTarget,
         onUploadError,
       })
     );
@@ -539,7 +542,7 @@ describe('useFileUpload Hook', () => {
   it('should_resetState_when_resetCalled', async () => {
     // Arrange
     const file = new File(['test content'], 'invalid.pdf', { type: 'application/pdf' });
-    const { result } = renderHook(() => useFileUpload());
+    const { result } = renderHook(() => useFileUpload({ target: logoUploadTarget }));
 
     // Upload with invalid file to set error state
     await act(async () => {
@@ -574,6 +577,7 @@ describe('useFileUpload Hook', () => {
     // Act
     const { result } = renderHook(() =>
       useFileUpload({
+        target: logoUploadTarget,
         maxFileSize: customMaxSize,
         allowedTypes: customAllowedTypes,
         onUploadSuccess: onSuccess,
@@ -603,11 +607,10 @@ describe('useFileUpload Hook', () => {
       },
     };
 
-    mockApiClient.post
-      .mockResolvedValueOnce(mockPresignedResponse)
-      .mockResolvedValueOnce({ data: {} });
+    http.onPost(PRESIGN).replyOnce(200, mockPresignedResponse.data);
+    http.onPost(CONFIRM).replyOnce(200, {});
 
-    const { result } = renderHook(() => useFileUpload());
+    const { result } = renderHook(() => useFileUpload({ target: logoUploadTarget }));
 
     // Act
     act(() => {
@@ -634,5 +637,42 @@ describe('useFileUpload Hook', () => {
       expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('Content-Type', 'image/png');
       expect(mockXHR.setRequestHeader).toHaveBeenCalledWith('x-amz-acl', 'private');
     });
+  });
+
+  it('should_presignAndConfirmAtMaterials_when_materialTargetGiven', async () => {
+    const file = new File(['slides'], 'talk.pdf', { type: 'application/pdf' });
+    http.onPost('/materials/presigned-url').replyOnce(200, {
+      uploadUrl: 'https://s3.amazonaws.com/bucket/talk.pdf',
+      fileId: 'mat-1',
+      s3Key: 'materials/temp/mat-1/talk.pdf',
+      fileExtension: 'pdf',
+      expiresInMinutes: 15,
+      requiredHeaders: {},
+    });
+    http.onPost('/materials/mat-1/confirm').replyOnce(200, {});
+
+    const { result } = renderHook(() =>
+      useFileUpload({ target: materialUploadTarget, allowedTypes: ['application/pdf'] })
+    );
+
+    let uploadPromise: Promise<string | null>;
+    act(() => {
+      uploadPromise = result.current.uploadFile(file);
+    });
+    await waitFor(() => {
+      expect(mockXHR.open).toHaveBeenCalledWith('PUT', 'https://s3.amazonaws.com/bucket/talk.pdf');
+    });
+    await act(async () => {
+      const mockFn = mockXHR.addEventListener as ReturnType<typeof vi.fn>;
+      const loadListener = mockFn.mock.calls.find((call: unknown[]) => call[0] === 'load')?.[1] as
+        (() => void) | undefined;
+      loadListener?.();
+    });
+
+    expect(await uploadPromise!).toBe('mat-1');
+    expect(http.history.post.map((r) => r.url)).toEqual([
+      '/materials/presigned-url',
+      '/materials/mat-1/confirm',
+    ]);
   });
 });

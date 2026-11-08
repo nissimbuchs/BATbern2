@@ -27,14 +27,26 @@ refine = true
 [[entry]]
 id = 2
 type = "story"
-title = "Stub services and event bus gone from production"
-description = "17.2: removes the SpeakerCoordination and AttendeeExperience services, stacks and modules and the EventBridge bus; DomainEventPublisher keeps working on in-process Spring events. A person picks a deploy date that is not an event day."
-verify = "aws ecs list-services and aws events list-event-buses in production list neither stub service nor the batbern-staging bus, and an integration test per in-process listener still sees its event."
+title = "Stub services gone from production"
+description = "17.2 part A: removes the SpeakerCoordination and AttendeeExperience services, stacks, ECR repos and modules, their CI, deploy, dev-native and compose entries and the gateway route /api/v1/content/**; orphaned stacks are deleted after the deploy."
+verify = "aws ecs list-services in production lists neither stub service, CloudFormation has no BATbern-staging-SpeakerCoordination or -AttendeeExperience stack, and make dev-native-up starts the remaining services."
 covers = ["R2"]
 after = [1]
 hitl = true
 risk = "high"
-notes = ["Closes #1216 and the bus part of #1220."]
+notes = ["Closes #1216."]
+
+[[entry]]
+id = "2b"
+type = "story"
+title = "Event bus gone, domain events in process"
+description = "17.2 part B: DomainEventPublisher keeps its callers but only calls ApplicationEventPublisher; EventBridgeConfig, EventBridgeEventPublisher, the EventBus stack, the CUMS and PCS bus imports and grants and the never-firing PublishingFailures alarm are removed."
+verify = "aws events list-event-buses in production no longer lists batbern-staging, no code depends on software.amazon.awssdk.services.eventbridge, and an integration test per in-process listener (4) sees its event through the real publisher."
+covers = ["R2"]
+after = [2]
+hitl = true
+risk = "high"
+notes = ["Closes the bus part of #1220."]
 
 [[entry]]
 id = 4
@@ -50,9 +62,9 @@ risk = "low"
 [[entry]]
 id = 5
 type = "story"
-title = "ArchUnit freeze in all three services"
-description = "17.5: ArchUnit in CUMS, EMS and PCS tests; EMS package rules and the no-downstream-client rule frozen with a committed store."
-verify = "Adding a violating dependency fails the service's test task, and the frozen EMS count matches the module script for the same packages."
+title = "ArchUnit freeze and first wall fixes"
+description = "17.5: ArchUnit in CUMS and EMS tests (not PCS, owner 2026-11-08); EMS package rules and the no-downstream-client rule frozen with a committed store; violations that need no 17.12 design are fixed in the same story (moves and splits inside EMS), the rest frozen with their owning story named."
+verify = "Adding a violating dependency fails the service's test task, the frozen EMS count matches the module script for the same packages, and the committed EMS store is smaller than the first freeze of the same rules."
 covers = ["R5"]
 after = []
 hitl = false
@@ -61,13 +73,37 @@ references = ["docs/plans/architecture-review-2026-11.html"]
 notes = ["The 5 already-vertical EMS packages: mailcenter, forwarding, usermerge, watch, notification (review report, EMS figure). The rule is no new client toward a DOWNSTREAM service (PRD, ADR-016); the action list says upstream, which is a slip."]
 
 [[entry]]
+id = "3b"
+type = "story"
+title = "Frontend HTTP calls moved into the service layer"
+description = "Follow-up of 17.3 (owner 2026-11-08): the 13 files in web-frontend/scripts/api-layer-baseline.txt (hooks, components, AuthContext) get their HTTP calls from a function in web-frontend/src/services/, reusing the existing service of the resource where one exists (e.g. userService, partnerService, companyApi, eventApiClient); the presigned S3 PUT of useEventTeaserImages moves beside the one in eventApiClient; useFileUpload takes a service upload function per purpose instead of an endpoint string, which also removes its 2 allow-list entries. Callers keep their behaviour and React Query keys; tests of the moved calls move to the service tests, and the touched hook and component tests stub HTTP at the boundary (axios or MSW), not the new service functions, so the 17.0a ratchet count does not rise."
+verify = "npm run check:api-paths passes with an empty layer baseline (header only) and an allow-list no larger than at the start, each remaining line with its reason; the start and end sizes of both files are recorded in the plan; type-check, lint and the frontend tests of the touched hooks and components pass."
+covers = ["R3"]
+after = [3]
+hitl = false
+risk = "medium"
+notes = ["Owner 2026-11-08: move these calls into the service layer and shrink the baseline to zero where possible; built right after 17.5."]
+
+[[entry]]
+id = "3c"
+type = "story"
+title = "Frontend gate against hand-written copies of generated API types"
+description = "17.3c (owner 2026-11-08): a check beside check:api-paths (a new script name such as check:api-type-copies; check:api-types already exists for the freshness of the generated files), in the same required build-frontend job, fails any NEW `export interface`, or `export type` with an object literal, under web-frontend/src whose name equals a schema name in src/types/generated/ (ADR-006; project-context already forbids the copies, and 17.3b still moved some into the service layer). Aliases such as `export type X = components['schemas']['X']` pass. A committed baseline may only shrink: NEW and STALE both fail, as in scripts/test-ratchet.ts and scripts/api-lint.ts; every baseline line names its owning story or a reason, through an owner file like api-lint-owners.txt. Leave it cleaner (C15): the true copies that an alias replaces without changing callers are replaced in this story; name matches that are not copies (a different shape for the same name) are renamed or listed with the reason; the rest stay frozen with their owning story named (e.g. 16.8c for the newsletter types it deletes, 17.10 for the user and speaker paths). Unit tests for the script cover new, stale, alias and object-literal cases, like check-api-paths.test.ts."
+verify = "A fixture `export interface` named after a generated schema fails the build-frontend check, an alias of the same name passes, and removing a type still on the baseline fails as STALE; develop passes with the committed baseline, every line owned; the start count (measured 2026-11-08 by name match: 75 interfaces in 20 files; the deferred-work count was 71) and the end count are recorded in the plan, the end count lower; type-check, lint and the tests of the touched files pass."
+covers = ["R7"]
+after = ["3b"]
+hitl = false
+risk = "low"
+notes = ["Owner 2026-11-08: built before 17.6 (epic 3 waits on it in the initiative breakdown), so the S2S moves and the breaking API stories run under the gate.", "Not name matches today, so neither baseline nor allow-list needs them: FileUploadPresignedUrl (src/types/fileUpload.types.ts, the upload hook's cross-purpose contract) and CompanySession / CompanySessionSpeaker (sessionApiClient.ts; GET /sessions has no response schema in the spec). If the gate is widened beyond name matches, they go on the allow-list with these reasons.", "Source: deferred-work.md, last item (v7 quality review 2026-11-08)."]
+
+[[entry]]
 id = "168c"
 type = "story"
 title = "Mail Center composer clean-up"
-description = "16.8c: deletes the old compose components and the retired preview, send, history, status and retry endpoints with their specs, types and Bruno files; every send stays on /events/{c}/mails. Takes over from 17.1: the slides-online 409 coverage that 17.1 moved onto /registrant-notices/send moves on to /events/{c}/mails."
-verify = "Each retired path answers 404 in production, and newsletter, registrant, speaker and venue sends work from the Mail Center composer on local dev (/dev/mails)."
+description = "16.8c: deletes the old compose components and the retired preview, send, history, status and retry endpoints with their specs, types and Bruno files; every send stays on /events/{c}/mails, and the hand-written types it deletes leave the 3c generated-types baseline. Takes over from 17.1: the slides-online 409 coverage that 17.1 moved onto /registrant-notices/send moves on to /events/{c}/mails."
+verify = "Each retired path answers 404 in production, newsletter, registrant, speaker and venue sends work from the Mail Center composer on local dev (/dev/mails), and the Spectral baseline, the EMS ArchUnit store and the 3c generated-types baseline lose the lines of the deleted operations, send paths and newsletter types (before and after recorded)."
 covers = ["R6"]
-after = [1, 3, 4]
+after = [1, 3, 4, "3c"]
 hitl = false
 risk = "medium"
 references = ["_bmad-output/implementation-artifacts/16-8-shared-composer.md"]
@@ -80,6 +116,6 @@ title = "Refactor sweep"
 description = "Clean-up only, scoped at its start from the plans and review findings this epic deferred."
 verify = "The deferred items listed at its start are closed or moved to a new story, and CI on develop is green."
 covers = []
-after = [1, 3, 2, 4, 5, "168c"]
+after = [1, 3, 2, "2b", 4, 5, "3b", "3c", "168c"]
 hitl = false
 risk = "low"

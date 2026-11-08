@@ -1,0 +1,89 @@
+# Epic 2 stories in build order. Ids keep the Epic 17 story number; a split story adds a digit (0b1, 0b2, 0b3).
+
+[[entry]]
+id = "0a"
+type = "story"
+title = "Test rules and ratchet"
+description = "17.0a: the mocking and assertion rules in coding-standards.md, the bmad-build override and project-context (contradiction at :459 removed), and a CI ratchet with a committed per-file baseline of own-code vi.mock, in-process @MockitoBean and class-level @Transactional write ITs; tracer bullet of the epic."
+verify = "The ratchet's fixture tests show a raised count failing, a lowered count passing with its baseline update and a stale entry failing; the check runs in a required CI job on the PR, and grep finds no 'mock the service layer' guidance."
+covers = ["R1"]
+after = []
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = "0b1"
+type = "story"
+title = "S2S contract harness on the public-API clients"
+description = "17.0b part 1: the real client against MockRestServiceServer, every request validated against the provider's OpenAPI and answered from its examples; UserApiClientImpl first, then the CompanyApiClient, PartnerApiClient and the PCS clients' /api/v1 calls; one provider-side test per provider that its spec examples are valid responses of the real controller."
+verify = "A fixture reproducing #1072 (limit=1000 against a spec maximum of 100) fails the UserApiClientImpl contract test, every public-API client has a passing contract test, and the ratchet baseline falls by the UserApiClient mocks the harness replaces (TestUserApiClientConfig retired or counted)."
+covers = ["R2"]
+after = ["0a"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = "0b2"
+type = "story"
+title = "/internal operations specified and contract-tested"
+description = "17.0b part 2: an OpenAPI spec per provider for the /internal operations its clients call (docs/api/internal/, outside the frontend path check), and the 0b1 harness run on every /internal client call; 17.6 extends these specs when it moves the 12 machine calls."
+verify = "Every client call to /internal/** has a contract test against docs/api/internal/, a call to an /internal path that spec lacks fails it, and the frontend path check still ignores docs/api/internal/."
+covers = ["R2"]
+after = ["0b1"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = "0b3"
+type = "story"
+title = "Production setup in tests"
+description = "17.0b part 3: a production security-chain guard test in EMS and PCS (CUMS and the gateway have one), the real EmailService against a mocked SesClient with address validation no longer behind sesClient == null, and the flush or non-transactional rule for write paths with DB constraints."
+verify = "Each service's chain test shows an anonymous write answering 401 and an attendee on an organizer endpoint answering 403, an EmailService test with a joined To: line (#1176) fails without SES credentials, and the ratchet baseline does not rise."
+covers = ["R2"]
+after = ["0a"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = "0c1"
+type = "story"
+title = "Frontend MSW harness"
+description = "17.0c part 1: web-frontend/src/test/msw/ with a default handler per operation in docs/api/*.openapi.yml, data typed from src/types/generated/, a request validator built on 17.3's specMatcher, and real i18next with the en locale as the test default."
+verify = "The harness's own test calls a path no spec defines and fails with the validator's message, and a handler with a wrong data shape fails npm run type-check."
+covers = ["R3"]
+after = ["0a", "1.3"]
+hitl = false
+risk = "high"
+
+[[entry]]
+id = "0d"
+type = "story"
+title = "Production-shaped fixtures"
+description = "17.0d: one shared fixture set per side (frontend builders, backend test fixtures) used by default: Hông Ân, O’Neill, 王, mixed-case and IDN e-mails, two namesakes, more rows than the page limit, sort-key ties, past and future events, every registration status; default in the 0c1 harness and the backend test base."
+verify = "A test asserts every listed shape is present in each fixture set, and the #1034 (umlaut search, more than 20 namesakes) and #1104 (Hông Ân username) regression tests run on the shared fixtures."
+covers = ["R4"]
+after = ["0a", "0c1"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = "0c2"
+type = "story"
+title = "Ten worst mock-heavy frontend tests converted"
+description = "17.0c part 2: the 10 files with the highest own-code vi.mock count in the 0a baseline (e.g. EventPage.test.tsx, 13 mocked modules) moved onto the MSW harness and the shared fixtures."
+verify = "The 10 converted files mock no own @/services, @/hooks or child component, and the ratchet baseline falls by their counts in the same PR."
+covers = ["R3"]
+after = ["0c1", "0d"]
+hitl = false
+risk = "medium"
+
+[[entry]]
+id = "sweep"
+type = "story"
+title = "Refactor sweep"
+description = "Cleanup only, scoped at its start from the epic's plans and deferred review findings; scope pushed out of another story is a new story."
+verify = "The deferred findings it takes on are closed or moved to a named story, and the ratchet baseline does not rise."
+covers = []
+after = ["0a", "0b1", "0b2", "0b3", "0c1", "0d", "0c2"]
+hitl = false
+risk = "low"

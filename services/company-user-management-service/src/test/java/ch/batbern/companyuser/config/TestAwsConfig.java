@@ -2,18 +2,12 @@ package ch.batbern.companyuser.config;
 
 import ch.batbern.companyuser.service.CognitoIntegrationService;
 import ch.batbern.shared.service.EmailService;
-import com.fasterxml.jackson.databind.ObjectMapper;
-import com.fasterxml.jackson.databind.SerializationFeature;
-import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
-import software.amazon.awssdk.services.eventbridge.EventBridgeAsyncClient;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsRequest;
-import software.amazon.awssdk.services.eventbridge.model.PutEventsResponse;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -25,7 +19,6 @@ import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.http.HttpClient;
-import java.util.concurrent.CompletableFuture;
 import java.util.concurrent.Executor;
 
 import static org.mockito.ArgumentMatchers.any;
@@ -38,22 +31,6 @@ import static org.mockito.Mockito.when;
 @TestConfiguration
 @Profile("test")
 public class TestAwsConfig {
-
-    @Bean
-    @Primary
-    public EventBridgeAsyncClient eventBridgeAsyncClient() {
-        EventBridgeAsyncClient mockClient = Mockito.mock(EventBridgeAsyncClient.class);
-
-        // Configure mock to return successful response for putEvents
-        PutEventsResponse successResponse = PutEventsResponse.builder()
-                .failedEntryCount(0)
-                .build();
-
-        when(mockClient.putEvents(any(PutEventsRequest.class)))
-                .thenReturn(CompletableFuture.completedFuture(successResponse));
-
-        return mockClient;
-    }
 
     /**
      * Mock S3Client for tests
@@ -113,16 +90,6 @@ public class TestAwsConfig {
     public CognitoIdentityProviderClient cognitoIdentityProviderClient() {
         // Mock Cognito client for tests (Story 1.14-2 Task 12)
         return Mockito.mock(CognitoIdentityProviderClient.class);
-    }
-
-    @Bean
-    @Primary
-    public ObjectMapper eventBridgeObjectMapper() {
-        ObjectMapper mapper = new ObjectMapper();
-        mapper.registerModule(new JavaTimeModule());
-        mapper.disable(SerializationFeature.WRITE_DATES_AS_TIMESTAMPS);
-        mapper.enable(SerializationFeature.INDENT_OUTPUT);
-        return mapper;
     }
 
     @Bean

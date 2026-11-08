@@ -43,16 +43,12 @@ flowchart LR
         EMS["event-management-service<br/>events, speakers, registrations,<br/>mail, Q&A, live timing"]
         CUMS["company-user-management-service<br/>companies, users, roles, logos"]
         PCS["partner-coordination-service<br/>partners, meetings, topic votes"]
-        SCS["speaker-coordination-service<br/>dormant"]
-        AES["attendee-experience-service<br/>parked"]
     end
     P1 --> EMS
     P2 -->|"speaker workflow moved, ADR-009/014"| EMS
     P4 -->|"registration, dashboard, archive moved"| EMS
     P5 --> CUMS
     P3 --> PCS
-    P2 -.-> SCS
-    P4 -.-> AES
 ```
 
 The reasons given in 2024 for separate services (team ownership, independent deployment, a
@@ -159,8 +155,6 @@ flowchart LR
         EMS["EMS<br/>event-management-service"]
         CUMS["CUMS<br/>company-user-management-service"]
         PCS["PCS<br/>partner-coordination-service"]
-        SCS["SCS<br/>running, no routes"]
-        AES["AES<br/>0 tasks, still routed"]
     end
 
     subgraph data["Data and messaging"]
@@ -169,7 +163,6 @@ flowchart LR
         S3M["S3 inbound mail bucket"]
         SQSIN["SQS inbound-email<br/>SQS forwarding-email"]
         SQSOUT["SQS bounce-processing<br/>SQS mail-delivery-status"]
-        EB["EventBridge bus<br/>batbern-staging<br/>no rules, no consumers"]
     end
 
     subgraph aws["AWS managed"]
@@ -188,7 +181,6 @@ flowchart LR
     GW --> EMS
     GW --> CUMS
     GW --> PCS
-    GW -.->|"/api/v1/content"| AES
     EMS & CUMS & PCS --> RDS
     EMS & CUMS --> S3C
     EMS --> SES
@@ -199,7 +191,6 @@ flowchart LR
     SQSIN --> EMS
     SES -->|"SNS"| SQSOUT
     SQSOUT --> EMS
-    CUMS & PCS -.->|"PutEvents"| EB
     EMS --> OAI
     COG -.->|"triggers read and write user_profiles"| RDS
     CUMS -->|"AdminCreateUser"| COG
@@ -214,8 +205,8 @@ flowchart LR
    ([ADR-008](./ADR-008-simplified-api-gateway-routing.md)).
 2. **Service Connect, no internal ALBs.** Services find each other through ECS Service Connect
    (`batbern.local`, `domain-service-construct.ts`). Only the gateway has a load balancer.
-3. **Sizes (CDK):** gateway 512 CPU / 1024 MB, EMS 256 / 2048, CUMS 256 / 1024, PCS 256 / 1024,
-   SCS 256 / 1024. Production runs on on-demand Fargate only; the 70/30 Spot split applies to
+3. **Sizes (CDK):** gateway 512 CPU / 1024 MB, EMS 256 / 2048, CUMS 256 / 1024, PCS 256 / 1024.
+   Production runs on on-demand Fargate only; the 70/30 Spot split applies to
    non-production environments.
 4. **One database.** PostgreSQL 15 on `db.t4g.micro`, Single-AZ. Each service has its own Flyway
    history table. ElastiCache Redis is defined in CDK but disabled (`numNodes: 0`); caching is
@@ -230,14 +221,17 @@ flowchart LR
    - `github-issues` (monitoring stack).
    - `EcsScalerFunction` (auto-shutdown stack, development environment only; not in production).
    - CloudFront Functions (not Lambdas): `spa-router` and `html-no-cache`.
-6. **EventBridge** is a bus that CUMS and PCS may publish to. CDK defines no rules or targets on
-   it. `EventBridgeEventPublisher` in the shared kernel first publishes each domain event as an
-   in-process Spring event (this is what drives the EMS listeners) and then sends it to
-   EventBridge, fire-and-forget. The EMS task role has no `events:PutEvents` grant in CDK, so EMS
-   puts presumably fail and are logged (not verified 2026-11-04).
-7. **Runtime differs from ADR-014:** the speaker-coordination stack still runs one task, and the
-   gateway still routes `/api/v1/content` to the attendee-experience service, which is parked at
-   0 tasks. See the "Operational state" section of ADR-014.
+6. **No event bus.** Domain events stay in the service that raises them:
+   `SpringDomainEventPublisher` in the shared kernel hands each one to Spring's
+   `ApplicationEventPublisher`, which drives the EMS listeners. The EventBridge bus, its publisher
+   and the `events:PutEvents` grants were removed in Story 17.2 part B (2026-11), because nothing
+   consumed them. The only EventBridge use left is the EMS auto-publish rule grant on the default
+   bus (`event-management-stack.ts`).
+7. **The two stub services are gone from the code** (Story 17.2, 2026-11): the speaker and
+   attendee stub modules, their CDK stack definitions, their entries in the CICD ECR list and the
+   gateway route `/api/v1/content/**` were removed. In production the owner deletes the two
+   orphaned stacks after the deploy; the two ECR repositories are retained by CloudFormation
+   (`RemovalPolicy.RETAIN`, `isProduction`) until the owner deletes them by hand. See ADR-014.
 
 ### Request path and authorization
 
@@ -275,7 +269,7 @@ sequenceDiagram
   `tasks`, `notifications`, `materials`, `speaker-portal`, `attendee-portal`, `sessions`,
   `email-templates`, `analytics`, `newsletter`, `thanks`, `conversations`, `mails`, `ai`,
   `public/settings/features` and `public/events` go to EMS; `partners`, `partner-meetings` and
-  `attendees/topics` go to PCS; `content` goes to AES; `companies`, `users`, `logos`, the other
+  `attendees/topics` go to PCS; `companies`, `users`, `logos`, the other
   `public` paths and `settings` go to CUMS; `admin` goes to EMS except the per-service
   test-fixture paths.
 
@@ -389,7 +383,7 @@ flowchart TB
   [06a-workflow-state-machines.md](./06a-workflow-state-machines.md).
 - **Domain events** are in-process: `DomainEventPublisher` raises a Spring event that
   `listener/` (for example `SpeakerAcceptedEventListener`, `EventWorkflowTransitionListener`)
-  consumes in the same JVM; the EventBridge copy has no consumers.
+  consumes in the same JVM. There is no cross-service event bus (Story 17.2 part B).
 - **Live timing** is REST polling with `If-None-Match` (Story 15.1,
   `GET /api/v1/events/{eventCode}/live-timing`, anonymous read, organizer-only actions). It
   replaced the STOMP broadcast. EMS still registers STOMP endpoints at `/ws` and
@@ -508,7 +502,7 @@ screen, Watch pairing, and the VPC-only `/internal/users` reads for other servic
 [04-api-user-management.md](./04-api-user-management.md).
 
 **Dependencies:** Cognito admin API, S3, SES through the shared-kernel `EmailService`
-(additional-email verification, profile claim), EMS (merge), EventBridge (publish only).
+(additional-email verification, profile claim), EMS (merge).
 
 **Technology:** Java 21, Spring Boot 4.0.x, Flyway (V1 to V22), Caffeine (`companySearch`,
 `userSearch`, 15-minute TTL), ShedLock.
@@ -528,17 +522,17 @@ the VPC-only `/internal/partner-meetings/rsvps`. See
 [04-api-partner-coordination.md](./04-api-partner-coordination.md).
 
 **Dependencies:** CUMS (companies, users), EMS (attendance summary, event data, and
-`/internal/mails` to record partner mail in the Mail Center), SES (meeting invitations),
-EventBridge (publish only).
+`/internal/mails` to record partner mail in the Mail Center), SES (meeting invitations).
 
 **Technology:** Java 21, Spring Boot 4.0.x, Flyway (V1 to V10).
 
-### Speaker Coordination Service (dormant)
+### Speaker logic (former speaker service, removed)
 
-> **Dormant per [ADR-014](./ADR-014-backend-service-consolidation.md).** The module has four Java
-> files (application class, security, cache and exception configuration), no controllers, no
-> entities, no migrations of its own (only the shared-kernel baseline) and no gateway route. Its
-> CDK stack still runs one task.
+> **Removed by Story 17.2 (2026-11) per [ADR-014](./ADR-014-backend-service-consolidation.md).**
+> The stub module had no controllers and no entities; the module and its CDK stack definition
+> are gone. Its ECR repository is retained (`RemovalPolicy.RETAIN`) until the owner deletes it by
+> hand, see ADR-014. Its Flyway history table `flyway_schema_history_speaker_coordination` stays in the
+> database.
 
 **What moved to EMS:** the speaker pool and speaker workflow (ADR-009), invitations and
 responses, reminders, content submission and quality review, materials upload and the speaker
@@ -548,11 +542,12 @@ The pre-ADR-009 design described here earlier (an 11-state workflow with paralle
 management with organizer voting, magic-link login, a `Speaker` entity) is listed under
 [Not implemented](#not-implemented).
 
-### Attendee Experience Service (parked)
+### Attendee logic (former attendee service, removed)
 
-> **Parked per [ADR-014](./ADR-014-backend-service-consolidation.md).** One Java file (the
-> application class), no datasource, no entities. The CDK stack sets `desiredCount: 0`, but the
-> gateway still routes `/api/v1/content` to it.
+> **Removed by Story 17.2 (2026-11) per [ADR-014](./ADR-014-backend-service-consolidation.md).**
+> The stub module had one Java file and no datasource; the module, its CDK stack definition and
+> the gateway route `/api/v1/content/**` are gone. Its ECR repository is retained
+> (`RemovalPolicy.RETAIN`) until the owner deletes it by hand, see ADR-014.
 
 **What moved to EMS:** registration (3-step wizard, capacity, waitlist, deregistration), the
 attendee dashboard (`/api/v1/attendee-portal`), the historical archive and content search
@@ -562,7 +557,8 @@ attendee contributions (self-nomination, thanks, Q&A). Topic suggestions from at
 ### Shared Kernel
 
 Types (`EventWorkflowState`, `SpeakerWorkflowState`, identifiers), domain-event base classes and
-`EventBridgeEventPublisher`, security components (JWT role conversion with the local DB fallback,
+the in-process `SpringDomainEventPublisher`, the services' Jackson `ObjectMapper`
+(`SharedObjectMapperConfig`), security components (JWT role conversion with the local DB fallback,
 audit logging), slug and username generation (`SlugGenerationService`), mail helpers and the test
 fixtures shared by all services (for example the `EndpointAuthorizationGuard` used by each
 service's guard test). It also carries the Flyway baseline `V1__Initial_baseline.sql`
@@ -614,7 +610,7 @@ Prompts are editable in `ai_prompts`; calls are logged in `ai_generation_log`. S
 | Backend | Java 21, Spring Boot 4.0.x, Spring Security, Spring Data JPA, Flyway, Caffeine (in-process cache, no Redis), ShedLock |
 | API contracts | OpenAPI specs in `docs/api/*.openapi.yml`, code generated for Java and TypeScript ([ADR-006](./ADR-006-openapi-contract-first-code-generation.md)) |
 | Data | PostgreSQL 15 on RDS, one database; each service owns its tables via its own Flyway migrations |
-| Runtime | ECS Fargate on ARM64, Service Connect, S3 + CloudFront, Cognito, SES, SQS, EventBridge (publish only, no consumers) |
+| Runtime | ECS Fargate on ARM64, Service Connect, S3 + CloudFront, Cognito, SES, SQS |
 | Infrastructure | AWS CDK 2 (TypeScript), `infrastructure/` |
 | CI/CD | GitHub Actions; a PR against `develop` builds, deploys to production and runs Bruno and Playwright against it ([02-infrastructure-deployment.md](./02-infrastructure-deployment.md)) |
 

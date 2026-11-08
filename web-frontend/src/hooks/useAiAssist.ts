@@ -1,24 +1,24 @@
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTranslation } from 'react-i18next';
-import apiClient from '@/services/api/apiClient';
+import {
+  analyzeAbstract,
+  applyThemeImage,
+  generateEventDescription,
+  getThemeImageJob,
+  startThemeImageJob,
+  type AiAbstractAnalysisResponse,
+  type AiDescriptionResponse,
+} from '@/services/aiAssistService';
 
-interface DescriptionResponse {
-  description: string;
-}
+type DescriptionResponse = AiDescriptionResponse;
+type AbstractResponse = AiAbstractAnalysisResponse;
+
 interface ThemeImageRequest {
   seed?: string;
 }
 interface ThemeImageResponse {
   imageUrl: string;
   s3Key: string;
-}
-interface AbstractResponse {
-  noPromotionScore: number;
-  noPromotionFeedback: string;
-  lessonsLearnedScore: number;
-  lessonsLearnedFeedback: string;
-  wordCount: number;
-  shortenedAbstract: string | null;
 }
 
 export function useAiGenerateDescription(eventCode: string) {
@@ -27,10 +27,7 @@ export function useAiGenerateDescription(eventCode: string) {
   return useMutation<DescriptionResponse, Error, void>({
     mutationFn: async () => {
       try {
-        const response = await apiClient.post<DescriptionResponse>(
-          `/events/${eventCode}/ai/description`
-        );
-        return response.data;
+        return await generateEventDescription(eventCode);
       } catch (err: unknown) {
         const axiosErr = err as { response?: { status?: number } };
         if (axiosErr?.response?.status === 503)
@@ -39,13 +36,6 @@ export function useAiGenerateDescription(eventCode: string) {
       }
     },
   });
-}
-
-interface ThemeImageJob {
-  jobId: string;
-  status: 'PENDING' | 'DONE' | 'FAILED';
-  imageUrl?: string | null;
-  s3Key?: string | null;
 }
 
 /**
@@ -61,17 +51,12 @@ export function useAiGenerateThemeImage(
   return useMutation<ThemeImageResponse, Error, ThemeImageRequest>({
     mutationFn: async (req) => {
       try {
-        const qs = req.seed ? `?seed=${encodeURIComponent(req.seed)}` : '';
-        const started = await apiClient.post<ThemeImageJob>(
-          `/events/${eventCode}/ai/theme-image${qs}`
-        );
-        const jobId = started.data.jobId;
+        const started = await startThemeImageJob(eventCode, req.seed);
+        const jobId = started.jobId;
         const deadline = Date.now() + maxWaitMs;
         while (Date.now() < deadline) {
           await new Promise((resolve) => setTimeout(resolve, pollMs));
-          const { data: job } = await apiClient.get<ThemeImageJob>(
-            `/events/${eventCode}/ai/theme-image/jobs/${jobId}`
-          );
+          const job = await getThemeImageJob(eventCode, jobId);
           if (job.status === 'DONE' && job.imageUrl) {
             return { imageUrl: job.imageUrl, s3Key: job.s3Key ?? '' };
           }
@@ -94,7 +79,7 @@ export function useAiApplyThemeImage(eventCode: string) {
   return useMutation<void, Error, { imageUrl: string }>({
     mutationFn: async ({ imageUrl }) => {
       try {
-        await apiClient.post(`/events/${eventCode}/ai/theme-image/apply`, { imageUrl });
+        await applyThemeImage(eventCode, imageUrl);
       } catch {
         throw new Error(t('aiAssist.error'));
       }
@@ -111,10 +96,7 @@ export function useAiAnalyzeAbstract(speakerPoolId: string) {
   return useMutation<AbstractResponse, Error, void>({
     mutationFn: async () => {
       try {
-        const response = await apiClient.post<AbstractResponse>(
-          `/speakers/${speakerPoolId}/ai/analyze-abstract`
-        );
-        return response.data;
+        return await analyzeAbstract(speakerPoolId);
       } catch {
         throw new Error(t('aiAssist.error'));
       }

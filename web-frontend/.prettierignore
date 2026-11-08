@@ -42,3 +42,11 @@ web-frontend/public/assets/**/*.pdf
 *.webm
 *.srt
 .gitignore
+
+# Story 17.0a: fixture sources for scripts/test-ratchet.test.ts, read as text. Their layout
+# (multi-line calls, comments in odd places) is part of what the tests check.
+scripts/__fixtures__/test-ratchet
+
+# Story 17.4: fixture specs for scripts/api-lint.test.ts, read by Spectral. A path like
+# `speakerSlots` or a `#` comment between paths is part of what the tests check.
+scripts/__fixtures__/api-lint

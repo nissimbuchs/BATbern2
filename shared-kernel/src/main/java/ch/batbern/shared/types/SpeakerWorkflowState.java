@@ -27,7 +27,6 @@ package ch.batbern.shared.types;
  *
  * Stored in speaker_pool.status (event-management-service database).
  *
- * @see ch.batbern.speakers.converter.SpeakerWorkflowStateConverter
  * @see <a href="../../../../../../../../docs/architecture/ADR-009-unified-speaker-workflow.md">ADR-009 §0.1</a>
  */
 public enum SpeakerWorkflowState {

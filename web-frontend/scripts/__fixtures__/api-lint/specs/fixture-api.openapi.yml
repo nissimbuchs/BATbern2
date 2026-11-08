@@ -1,0 +1,228 @@
+openapi: 3.1.0
+info:
+  title: Story 17.4 lint fixture
+  version: 1.0.0
+paths:
+  # Clean: kebab-case literals, meaningful parent, no verb.
+  /events/{eventCode}/speaker-slots:
+    parameters:
+      - $ref: '#/components/parameters/EventCode'
+    get:
+      operationId: listSpeakerSlots
+      responses:
+        '200':
+          description: ok
+  # path-kebab-case
+  /events/{eventCode}/speakerSlots:
+    get:
+      operationId: listSpeakerSlotsCamel
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+      responses:
+        '200':
+          description: ok
+  # no-verb-segment
+  /tasks/{id}/complete:
+    put:
+      operationId: completeTask
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '204':
+          description: ok
+  # no-internal-path
+  /internal/foo:
+    get:
+      operationId: internalFoo
+      responses:
+        '200':
+          description: ok
+  # no-literal-under-events
+  /events/batch-things:
+    post:
+      operationId: batchThings
+      responses:
+        '200':
+          description: ok
+  # uuid-path-param: a path-level parameter by $ref, reported for each operation
+  /events/{eventCode}/photos/{photoId}:
+    parameters:
+      - $ref: '#/components/parameters/EventCode'
+      - $ref: '#/components/parameters/PhotoId'
+    get:
+      operationId: getPhoto
+      responses:
+        '200':
+          description: ok
+    delete:
+      operationId: deletePhoto
+      responses:
+        '204':
+          description: ok
+  # no-verb-segment: a verb followed by a parameter, in a write operation
+  /events/{eventCode}/publish/{phase}:
+    post:
+      operationId: publishPhase
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+        - name: phase
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ok
+  # no-verb-segment: a verb followed by a qualifier, in a write operation
+  /registrations/deregister/by-email:
+    post:
+      operationId: deregisterByEmail
+      responses:
+        '204':
+          description: ok
+  # Clean: a verb before the last segment of a read is a sub-resource name
+  /events/{eventCode}/publish/status:
+    get:
+      operationId: getPublishStatus
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+      responses:
+        '200':
+          description: ok
+  # uuid-path-param: a string `*Id` without a format (an unformatted UUID)
+  /events/{eventCode}/uploads/{uploadId}:
+    get:
+      operationId: getUpload
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+        - name: uploadId
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+  # uuid-path-param: the GET parameter replaces the path-level UUID one (same name + in), DELETE
+  # inherits it
+  /events/{eventCode}/teasers/{teaserId}:
+    parameters:
+      - $ref: '#/components/parameters/EventCode'
+      - name: teaserId
+        in: path
+        required: true
+        schema:
+          type: string
+          format: uuid
+    get:
+      operationId: getTeaser
+      parameters:
+        - name: teaserId
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ok
+    delete:
+      operationId: deleteTeaser
+      responses:
+        '204':
+          description: ok
+  # Clean: the ADR-013 action shape POST /{id}/{verb}, after a parameter
+  /companies/{name}/verify:
+    post:
+      operationId: verifyCompany
+      parameters:
+        - name: name
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '204':
+          description: ok
+  # Clean: the ADR-013 action shape after `me`
+  /users/me/merge:
+    post:
+      operationId: mergeMe
+      responses:
+        '204':
+          description: ok
+  # no-verb-segment: a verb after a literal (`profile-claims` is no instance)
+  /users/me/profile-claims/confirm:
+    post:
+      operationId: confirmProfileClaim
+      responses:
+        '204':
+          description: ok
+  # no-verb-segment: a verb on a collection
+  /users/provision:
+    post:
+      operationId: provisionUser
+      responses:
+        '201':
+          description: ok
+  # no-verb-segment: a read verb as the last segment, even after a parameter
+  /events/{eventCode}/attachments/{index}/download:
+    get:
+      operationId: downloadAttachment
+      parameters:
+        - $ref: '#/components/parameters/EventCode'
+        - name: index
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        '200':
+          description: ok
+  # no-personal-data-path-param: an email in the path (path-level parameter)
+  /users/me/additional-emails/{email}:
+    parameters:
+      - name: email
+        in: path
+        required: true
+        schema:
+          type: string
+    delete:
+      operationId: deleteAdditionalEmail
+      responses:
+        '204':
+          description: ok
+  # Clean: a username is no personal-data parameter
+  /users/{username}/profile:
+    get:
+      operationId: getUserProfile
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+      responses:
+        '200':
+          description: ok
+components:
+  parameters:
+    EventCode:
+      name: eventCode
+      in: path
+      required: true
+      schema:
+        type: string
+    PhotoId:
+      name: photoId
+      in: path
+      required: true
+      schema:
+        $ref: '#/components/schemas/Uuid'
+  schemas:
+    Uuid:
+      type: string
+      format: uuid

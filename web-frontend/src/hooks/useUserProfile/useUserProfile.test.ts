@@ -3,18 +3,21 @@
  * Story 1.17, Task 5a: TDD for React Query user profile hook
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
+import { describe, test, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useUserProfile } from './useUserProfile';
-import apiClient from '@/services/api/apiClient';
+import apiClient, { setNavigationCallback } from '@/services/api/apiClient';
 import React, { type ReactNode } from 'react';
+import MockAdapter from 'axios-mock-adapter';
 
-// Mock API client
-vi.mock('@/services/api/apiClient');
+// HTTP is stubbed at the boundary: the real userApi and apiClient run.
+const PROFILE_URL = '/users/me';
 
 describe('useUserProfile Hook', () => {
   let queryClient: QueryClient;
+  let http: MockAdapter;
+  const profileCalls = () => http.history.get.filter((r) => r.url === PROFILE_URL);
   let wrapper: React.ComponentType<{ children: ReactNode }>;
 
   beforeEach(() => {
@@ -31,8 +34,11 @@ describe('useUserProfile Hook', () => {
     wrapper = ({ children }: { children: ReactNode }) =>
       React.createElement(QueryClientProvider, { client: queryClient }, children);
 
-    // Clear all mocks
-    vi.clearAllMocks();
+    http = new MockAdapter(apiClient);
+  });
+
+  afterEach(() => {
+    http.restore();
   });
 
   describe('Successful Query', () => {
@@ -56,7 +62,7 @@ describe('useUserProfile Hook', () => {
         },
       };
 
-      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockUserProfile });
+      http.onGet(PROFILE_URL).replyOnce(200, mockUserProfile);
 
       const { result } = renderHook(() => useUserProfile(), { wrapper });
 
@@ -65,13 +71,12 @@ describe('useUserProfile Hook', () => {
       });
 
       expect(result.current.data).toEqual(mockUserProfile);
-      expect(apiClient.get).toHaveBeenCalledWith('/users/me?include=roles,preferences');
+      expect(profileCalls()).toHaveLength(1);
+      expect(profileCalls()[0].params).toEqual({ include: 'roles,preferences' });
     });
 
     test('should_showLoading_when_queryInProgress', () => {
-      vi.mocked(apiClient.get).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
-      );
+      http.onGet(PROFILE_URL).reply(() => new Promise(() => {})); // Never resolves
 
       const { result } = renderHook(() => useUserProfile(), { wrapper });
 
@@ -101,7 +106,7 @@ describe('useUserProfile Hook', () => {
         },
       };
 
-      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockUserProfile });
+      http.onGet(PROFILE_URL).replyOnce(200, mockUserProfile);
 
       const { result } = renderHook(() => useUserProfile(), { wrapper });
 
@@ -113,7 +118,7 @@ describe('useUserProfile Hook', () => {
       const { result: result2 } = renderHook(() => useUserProfile(), { wrapper });
 
       expect(result2.current.data).toEqual(mockUserProfile);
-      expect(apiClient.get).toHaveBeenCalledTimes(1); // Only called once
+      expect(profileCalls()).toHaveLength(1); // Only called once
     });
 
     test('should_haveStaleTime_when_configured', async () => {
@@ -136,7 +141,7 @@ describe('useUserProfile Hook', () => {
         },
       };
 
-      vi.mocked(apiClient.get).mockResolvedValue({ data: mockUserProfile });
+      http.onGet(PROFILE_URL).reply(200, mockUserProfile);
 
       const { result } = renderHook(() => useUserProfile(), { wrapper });
 
@@ -151,8 +156,7 @@ describe('useUserProfile Hook', () => {
 
   describe('Error Handling', () => {
     test('should_handleError_when_apiFails', async () => {
-      const mockError = new Error('Failed to fetch user profile');
-      vi.mocked(apiClient.get).mockRejectedValueOnce(mockError);
+      http.onGet(PROFILE_URL).replyOnce(500, { message: 'Failed to fetch user profile' });
 
       const { result } = renderHook(() => useUserProfile(), { wrapper });
 
@@ -164,14 +168,9 @@ describe('useUserProfile Hook', () => {
     });
 
     test('should_handle401Error_when_unauthorized', async () => {
-      const mockError = {
-        response: {
-          status: 401,
-          data: { message: 'Unauthorized' },
-        },
-      };
-
-      vi.mocked(apiClient.get).mockRejectedValueOnce(mockError);
+      const navigate = vi.fn();
+      setNavigationCallback(navigate);
+      http.onGet(PROFILE_URL).replyOnce(401, { message: 'Unauthorized' });
 
       const { result } = renderHook(() => useUserProfile(), { wrapper });
 
@@ -180,6 +179,7 @@ describe('useUserProfile Hook', () => {
       });
 
       expect(result.current.error).toBeTruthy();
+      expect(navigate).toHaveBeenCalledWith('/login');
     });
   });
 
@@ -204,7 +204,7 @@ describe('useUserProfile Hook', () => {
         },
       };
 
-      vi.mocked(apiClient.get).mockResolvedValue({ data: mockUserProfile });
+      http.onGet(PROFILE_URL).reply(200, mockUserProfile);
 
       const { result } = renderHook(() => useUserProfile(), { wrapper });
 
@@ -212,12 +212,12 @@ describe('useUserProfile Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      const callCountBefore = vi.mocked(apiClient.get).mock.calls.length;
+      const callCountBefore = profileCalls().length;
 
       // Trigger refetch
       await result.current.refetch();
 
-      expect(vi.mocked(apiClient.get).mock.calls.length).toBeGreaterThan(callCountBefore);
+      expect(profileCalls().length).toBeGreaterThan(callCountBefore);
     });
   });
 });

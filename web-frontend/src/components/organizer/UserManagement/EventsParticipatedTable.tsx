@@ -23,10 +23,7 @@ import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import axios from 'axios';
-import apiClient from '@/services/api/apiClient';
-import type { components } from '@/types/generated/event-registrations-api.types';
-
-type Registration = components['schemas']['Registration'];
+import { getRegistrationsForAttendee } from '@/services/api/eventRegistrationService';
 
 interface EventParticipation {
   eventCode: string;
@@ -53,12 +50,10 @@ export const EventsParticipatedTable: React.FC<EventsParticipatedTableProps> = (
         setError(null);
 
         // Fetch registrations for this user using the new endpoint
-        const response = await apiClient.get<Registration[]>(`/events/registrations`, {
-          headers: { 'X-Attendee-Username': userId },
-        });
+        const registrations = await getRegistrationsForAttendee(userId);
 
         // Transform response to table data with Swiss date format (de-CH)
-        const participations: EventParticipation[] = response.data.map((reg) => ({
+        const participations: EventParticipation[] = registrations.map((reg) => ({
           eventCode: reg.eventCode || 'N/A',
           title: reg.eventTitle || reg.eventCode || t('userDetail.eventsTable.untitledEvent'),
           date: reg.eventDate

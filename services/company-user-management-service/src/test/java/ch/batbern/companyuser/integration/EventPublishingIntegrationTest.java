@@ -4,6 +4,9 @@ import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
 import ch.batbern.companyuser.dto.generated.UpdateCompanyRequest;
+import ch.batbern.companyuser.event.CompanyCreatedEvent;
+import ch.batbern.companyuser.event.CompanyDeletedEvent;
+import ch.batbern.companyuser.event.CompanyUpdatedEvent;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.service.CompanyService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
@@ -13,6 +16,8 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
+import org.springframework.test.context.event.ApplicationEvents;
+import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -20,8 +25,8 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * Integration tests for EventBridge event publishing
- * Tests AC7: Domain events published to EventBridge
+ * Integration tests for domain event publishing
+ * Tests AC7: domain events published through the real in-process publisher (Story 17.2 part B)
  *
  * Events published:
  * - CompanyCreated
@@ -33,8 +38,12 @@ import static org.assertj.core.api.Assertions.assertThat;
  */
 @Transactional
 @Import(TestAwsConfig.class)
-@DisplayName("EventBridge Event Publishing Integration Tests")
+@RecordApplicationEvents
+@DisplayName("Domain Event Publishing Integration Tests")
 class EventPublishingIntegrationTest extends AbstractIntegrationTest {
+
+    @Autowired
+    private ApplicationEvents applicationEvents;
 
     @Autowired
     private CompanyService companyService;
@@ -82,11 +91,11 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         assertThat(response.getName()).isNotNull();
         assertThat(response.getName()).isEqualTo("New Company");
 
-        // In test profile, EventBridge client is mocked or disabled
-        // In integration environment, you would verify the event was published
-        // For now, we verify the company was created successfully
         var savedCompany = companyRepository.findByName(response.getName());
         assertThat(savedCompany).isPresent();
+        assertThat(applicationEvents.stream(CompanyCreatedEvent.class))
+                .singleElement()
+                .satisfies(e -> assertThat(e.getName()).isEqualTo("New Company"));
     }
 
     @Test
@@ -112,6 +121,9 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         // Verify the update was persisted
         var updatedCompany = companyRepository.findByName(testCompany.getName()).orElseThrow();
         assertThat(updatedCompany.getDisplayName()).isEqualTo("Updated Display Name");
+        assertThat(applicationEvents.stream(CompanyUpdatedEvent.class))
+                .singleElement()
+                .satisfies(e -> assertThat(e.getDisplayName()).isEqualTo("Updated Display Name"));
     }
 
     @Test
@@ -129,6 +141,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         // Then
         // Verify the company was deleted
         assertThat(companyRepository.findByName(companyName)).isEmpty();
+        assertThat(applicationEvents.stream(CompanyDeletedEvent.class)).hasSize(1);
     }
 
     // EVENT CONTENT VERIFICATION TESTS
@@ -259,6 +272,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
 
         // Verify only one company exists (duplicate was not created)
         assertThat(companyRepository.count()).isEqualTo(1);
+        assertThat(applicationEvents.stream(CompanyCreatedEvent.class)).isEmpty();
     }
 
     @Test

@@ -21,7 +21,7 @@ source "$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)/lib/native-services.sh"
 PID_DIR="/tmp"
 
 # Service names (per instance)
-SERVICES=("api-gateway" "company-user-management" "event-management" "speaker-coordination" "partner-coordination" "attendee-experience" "web-frontend")
+SERVICES=("api-gateway" "company-user-management" "event-management" "partner-coordination" "web-frontend")
 
 # Shared infrastructure services
 SHARED_SERVICES=("minio")
@@ -105,12 +105,9 @@ for instance in "${found_instances[@]}"; do
     echo -e "  ${CYAN}Summary:${NC} ${GREEN}${running_count} running${NC}, ${YELLOW}${stopped_count} stopped${NC}"
 
     # Calculate ports
-    port_offset=$((base_port / 1000))
-    api_port=$((port_offset * 1000 + 80))
-    frontend_port=$((3000 + (instance - 1) * 1000))
-    db_port=$((5432 + (instance - 1) * 1000))
-    minio_api=$((9000 + (instance - 1) * 100))
-    minio_console=$((9001 + (instance - 1) * 100))
+    # Same scheme as start-all-native.sh: gateway on BASE_PORT, frontend on BASE_PORT + 100
+    api_port=$base_port
+    frontend_port=$((base_port + 100))
 
     echo -e "  ${CYAN}Endpoints:${NC}"
     echo -e "    API Gateway:    http://localhost:${api_port}"

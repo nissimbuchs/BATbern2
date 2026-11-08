@@ -5,7 +5,7 @@ import ch.batbern.events.mailcenter.MailCenterSwitch;
 import ch.batbern.events.mailcenter.inbound.InboundMail;
 import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
 import ch.batbern.events.mailcenter.inbound.InboundMailParser;
-import ch.batbern.events.service.InboundReplyProcessor;
+import ch.batbern.events.mailcenter.inbound.InboundReplyProcessor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Component;
 

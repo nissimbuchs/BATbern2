@@ -24,16 +24,16 @@ dependencies {
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
     // Service-specific: Resilience4j for circuit breaker
-    // Epic 13 (SB4): -spring-boot3 was renamed to -spring-boot4 (per the 13-1 compat matrix; shared-kernel
-    // already moved). Keeping -spring-boot3 here put BOTH the springboot3 and the (transitive, from
-    // shared-kernel) springboot4 auto-configs on the classpath → duplicate bulkheadRegistryEventConsumer
-    // bean → BeanDefinitionOverrideException → context fails. Align to -spring-boot4:2.4.0.
+    // Epic 13 (SB4): -spring-boot3 was renamed to -spring-boot4 (per the 13-1 compat matrix). Keeping
+    // -spring-boot3 put BOTH the springboot3 and the springboot4 auto-configs on the classpath →
+    // duplicate bulkheadRegistryEventConsumer bean → context fails. (Shared-kernel no longer brings
+    // Resilience4j since Story 17.2 part B.)
     implementation 'io.github.resilience4j:resilience4j-spring-boot4:2.4.0'
     implementation 'io.github.resilience4j:resilience4j-circuitbreaker:2.4.0'
 
-    // Service-specific: AWS SDK
+    // Service-specific: AWS SDK version alignment (BOM; the SDK modules come in through shared-kernel
+    // and micrometer-registry-cloudwatch2)
     implementation platform('software.amazon.awssdk:bom:2.57.6')
-    implementation 'software.amazon.awssdk:eventbridge'
 
     // Service-specific: Monitoring
     implementation 'io.micrometer:micrometer-core'

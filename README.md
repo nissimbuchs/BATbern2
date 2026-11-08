@@ -80,9 +80,9 @@ make dev-native-down
 
 **What runs locally:**
 - ✅ PostgreSQL 15 (Docker container with persistent volume)
-- ✅ API Gateway (http://localhost:8080) - uses Caffeine in-memory cache
-- ✅ All microservices (ports 8081-8085) - native Java processes
-- ✅ Web Frontend (http://localhost:3000) - Vite dev server
+- ✅ API Gateway (http://localhost:8000) - uses Caffeine in-memory cache
+- ✅ Event Management, Company/User Management, Partner Coordination (ports 8002, 8001, 8004) - native Java processes
+- ✅ Web Frontend (http://localhost:8100) - Vite dev server
 
 **What uses AWS (production account):**
 - ✅ Cognito User Pool (production authentication)

@@ -53,8 +53,8 @@ class EventCreatedEventTest {
     }
 
     @Test
-    @DisplayName("should_serializeEventToJSON_when_publishingToEventBridge")
-    void should_serializeEventToJSON_when_publishingToEventBridge() throws Exception {
+    @DisplayName("should_serializeEventToJSON_when_serialized")
+    void should_serializeEventToJSON_when_serialized() throws Exception {
         EventCreatedEvent event = EventCreatedEvent.builder()
             .eventCode("BATbern56")
             .title("BATbern 2024")
@@ -75,8 +75,8 @@ class EventCreatedEventTest {
     }
 
     @Test
-    @DisplayName("should_deserializeEventFromJSON_when_receivedFromEventBridge")
-    void should_deserializeEventFromJSON_when_receivedFromEventBridge() throws Exception {
+    @DisplayName("should_deserializeEventFromJSON_when_readBack")
+    void should_deserializeEventFromJSON_when_readBack() throws Exception {
         EventCreatedEvent originalEvent = EventCreatedEvent.builder()
             .eventCode("BATbern56")
             .title("BATbern 2024")

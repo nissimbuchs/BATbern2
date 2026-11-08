@@ -9,9 +9,10 @@
  * - Form validation
  */
 
-import { describe, it, expect, vi, beforeEach, type MockInstance } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
-import { sessionApiClient } from '@/services/api/sessionApiClient';
+import MockAdapter from 'axios-mock-adapter';
+import apiClient from '@/services/api/apiClient';
 import { renderWithProviders as render } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { SessionEditModal, type SessionUpdateData } from '../SessionEditModal';
@@ -23,14 +24,16 @@ vi.mock('../SessionSpeakersTab', () => ({
   SessionSpeakersTab: () => <div data-testid="session-speakers-tab">No speakers assigned yet</div>,
 }));
 
-// Mock sessionApiClient
-vi.mock('@/services/api/sessionApiClient', () => ({
-  sessionApiClient: {
-    getMaterialDownloadUrl: vi.fn(),
-    deleteMaterial: vi.fn(),
-    associateMaterials: vi.fn(),
-  },
-}));
+// Session API calls are stubbed at the HTTP boundary; the real sessionApiClient
+// (and its materialUploadTarget, handed to FileUpload) runs.
+const MATERIAL_URL = '/events/BATbern99/sessions/test-session/materials/mat-1';
+let http: MockAdapter;
+beforeEach(() => {
+  http = new MockAdapter(apiClient);
+});
+afterEach(() => {
+  http.restore();
+});
 
 // Mock i18n
 vi.mock('react-i18next', () => ({
@@ -835,7 +838,7 @@ describe('SessionEditModal - Delete Material', () => {
   };
 
   beforeEach(() => {
-    vi.mocked(sessionApiClient.deleteMaterial).mockResolvedValue(undefined);
+    http.onDelete(MATERIAL_URL).reply(204);
   });
 
   it('should_renderDeleteButton_when_existingMaterialsDisplayed', async () => {
@@ -877,11 +880,7 @@ describe('SessionEditModal - Delete Material', () => {
     await user.click(deleteButton);
 
     await waitFor(() => {
-      expect(sessionApiClient.deleteMaterial).toHaveBeenCalledWith(
-        'BATbern99',
-        'test-session',
-        'mat-1'
-      );
+      expect(http.history.delete.map((r) => r.url)).toEqual([MATERIAL_URL]);
     });
 
     await waitFor(() => {
@@ -890,7 +889,7 @@ describe('SessionEditModal - Delete Material', () => {
   });
 
   it('should_showError_when_deleteFails', async () => {
-    vi.mocked(sessionApiClient.deleteMaterial).mockRejectedValue(new Error('Network error'));
+    http.onDelete(MATERIAL_URL).networkError();
     const user = userEvent.setup();
     render(
       <SessionEditModal
@@ -909,7 +908,7 @@ describe('SessionEditModal - Delete Material', () => {
     await user.click(deleteButton);
 
     await waitFor(() => {
-      expect(screen.getByText('Network error')).toBeInTheDocument();
+      expect(screen.getByText('Network Error')).toBeInTheDocument();
     });
 
     // Material should still be in list

@@ -59,7 +59,7 @@ This setup ensures full compliance with:
 
 **Event Infrastructure:**
 - `ch.batbern.shared.events.DomainEvent` - Base event class
-- `ch.batbern.shared.events.DomainEventPublisher` - EventBridge integration
+- `ch.batbern.shared.events.DomainEventPublisher` - in-process domain events
 
 ## Generated Code Location
 

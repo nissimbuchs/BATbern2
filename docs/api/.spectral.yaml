@@ -1,0 +1,166 @@
+# BATbern API convention lint (Story 17.4).
+#
+# Run it through the baseline wrapper, never bare:
+#   cd web-frontend && npm run lint:api            (make lint-api, CI frontend-static)
+#   cd web-frontend && npm run lint:api -- --update  rewrite the baseline after a fix
+# Findings are compared with web-frontend/scripts/api-lint-baseline.txt (rule + spec file + HTTP
+# method + path, no line numbers): a NEW finding fails, and so does a baselined one that is gone
+# (STALE). Policy: docs/architecture/coding-standards.md, section "API conventions lint".
+#
+# Only these six rules: no `extends: spectral:oas` (the recommended ruleset is out of scope).
+# Every rule reports one finding per operation (spectral-functions/apiConventions.js).
+# Applies to the public specs docs/api/*.openapi.yml (not `_shared.openapi.yml`, which holds
+# components only, and not a future docs/api/internal/).
+
+functionsDir: ./spectral-functions
+functions:
+  - apiConventions
+
+rules:
+  # Literal path segments are kebab-case: lowercase words joined by `-`. A file extension
+  # (`export.xlsx`) is allowed. Path parameters are exempt. Catches `snake_case`, `camelCase` and
+  # the retired colon form `:get-or-create` (ADR-013 section 2).
+  path-kebab-case:
+    description: Literal path segments are kebab-case (ADR-013).
+    message: '{{error}}'
+    severity: error
+    given: $.paths[*]
+    then:
+      function: apiConventions
+      functionOptions:
+        check: kebab
+
+  # A verb segment makes the endpoint an RPC call (`/tasks/{id}/complete`), except in the one shape
+  # ADR-013 section 1 (row "state transition with side effects") prescribes: `POST /{id}/{verb}`, a
+  # verb as the last segment of a POST directly after an instance identifier (a path parameter, or
+  # `me`): `POST /companies/{name}/verify`, `POST /users/me/merge`. Everywhere else a verb is
+  # flagged: after a literal (`POST /users/me/profile-claims/confirm`), with another method
+  # (`PUT /tasks/{taskId}/complete`), on a collection (`POST /users/provision`), or followed by a
+  # parameter or qualifier (`/publish/{phase}`, `/deregister/by-email`). For a read (GET, HEAD,
+  # OPTIONS) only the last segment counts: `GET /publish/status` names a sub-resource.
+  # The list below is a detector that tells a verb from a sub-resource noun, not a permission list:
+  # no action name is allowed by being on or off it. The right verb for the right action.
+  # Contents: the Story 17.4 set (first block) plus every verb segment found in the specs on
+  # 2026-11-07. Deliberately not listed: `search` (ADR-013 section 3), `get-or-create`
+  # (ADR-013 section 2), `vote` (ADR-013 toggle), and nouns such as `status`, `schedule`, `roles`.
+  # An `.ext` suffix is ignored (`export.docx` counts as `export`).
+  # Every baselined finding has an owner in web-frontend/scripts/api-lint-owners.txt.
+  no-verb-segment:
+    description: No verb path segments outside the ADR-013 action shape POST /{id}/{verb}.
+    message: '{{error}}'
+    severity: error
+    given: $.paths[*]
+    then:
+      function: apiConventions
+      functionOptions:
+        check: verb
+        verbs:
+          # Story 17.4
+          - complete
+          - reassign
+          - send
+          - approve
+          - decline
+          - publish
+          - unpublish
+          - cancel
+          - retry
+          - resend
+          - analyze-abstract
+          - preview
+          # found in docs/api on 2026-11-07
+          - apply
+          - authenticate
+          - auto-assign
+          - batch-delete
+          - batch-import
+          - batch-read
+          - calculate-similarities
+          - cleanup
+          - confirm
+          - deregister
+          - download
+          - enroll-stakeholders
+          - export
+          - invite
+          - issue-invitation-credentials
+          - make-primary
+          - merge
+          - merge-preview
+          - pair
+          - promote
+          - provision
+          - reactivate
+          - read
+          - reconcile
+          - reset
+          - resend-confirmation
+          - resend-verification
+          - respond
+          - resubscribe
+          - review
+          - self-nominate
+          - send-invitation
+          - send-invite
+          - send-reminder
+          - submit
+          - subscribe
+          - transition
+          - trigger
+          - unsubscribe
+          - unsuppress
+          - upload-from-url
+          - verify
+
+  # Service-to-service endpoints live under /internal/** and never in a public spec (ADR-016).
+  no-internal-path:
+    description: No /internal path in a public spec (ADR-016).
+    message: '{{error}}'
+    severity: error
+    given: $.paths[*]
+    then:
+      function: apiConventions
+      functionOptions:
+        check: internal
+
+  # `/events/{eventCode}` owns the namespace: a literal directly under `/events/` (`/events/current`)
+  # collides with event codes and grows a second resource beside the collection.
+  no-literal-under-events:
+    description: No literal segment directly under /events/ (ADR-013).
+    message: '{{error}}'
+    severity: error
+    given: $.paths[*]
+    then:
+      function: apiConventions
+      functionOptions:
+        check: events-literal
+
+  # The ADR-003 2026-11 amendment allows a UUID in a path only when the thing has no natural name,
+  # never crosses a service boundary, and sits under its meaningful parent, loaded scoped to it.
+  # A linter cannot decide "no natural name", so every UUID path parameter is reported; the
+  # existing ones are baselined and a new one needs its ADR-003 case stated in the PR.
+  # Detected: `format: uuid`, and a string parameter named `id` or `*Id` without a format
+  # (`uploadId`). An operation parameter replaces the path-level one with the same name + in.
+  # Limit: a UUID parameter with another name and no format (`{key}`, `{token}`) is not seen.
+  uuid-path-param:
+    description: UUID path parameters only per the ADR-003 2026-11 amendment.
+    message: '{{error}}'
+    severity: error
+    given: $.paths[*]
+    then:
+      function: apiConventions
+      functionOptions:
+        check: uuid
+
+  # Personal data never goes in a path (ADR-003 2026-11 amendment): a path ends up in access logs,
+  # browser history and caches. Detected by name: a path parameter named `email` or ending in
+  # `Email` (case-insensitive), path-level or operation-level, as for uuid-path-param.
+  no-personal-data-path-param:
+    description: No personal data in a path parameter (ADR-003 amendment).
+    message: '{{error}}'
+    severity: error
+    given: $.paths[*]
+    then:
+      function: apiConventions
+      functionOptions:
+        check: personal-data

@@ -4,7 +4,9 @@
 > diagrams, and corrected in place against `infrastructure/bin/batbern-infrastructure.ts`,
 > `infrastructure/lib/**`, `.github/workflows/*.yml` and `api-gateway/` on `develop`.
 > Live AWS state checked on 2026-11-04: all six ECS services run on plain `FARGATE` (no Spot);
-> running tasks are gateway 2, EMS 1, CUMS 1, PCS 1, SCS 1, AES 0.
+> running tasks are gateway 2, EMS 1, CUMS 1, PCS 1, SCS 1, AES 0. Story 17.2 (2026-11) removed
+> the two stubs (SCS, AES) from the code; their stacks are deleted by the owner after that deploy,
+> which leaves four services.
 >
 > Statements that could not be checked are marked **(not verified 2026-11-04)**. Content that
 > described things never built is shortened to "Not implemented" and listed again in
@@ -22,7 +24,7 @@ production. There is **no separate staging environment**; the CloudFormation sta
 graph LR
     subgraph DEV["Development: developer machine"]
         PG[("PostgreSQL 15<br/>Docker")]
-        SVC["6 Spring Boot services<br/>native, ports 8000-8005"]
+        SVC["4 Spring Boot services<br/>native, ports 8000-8002, 8004"]
         VITE["Vite dev server<br/>port 8100"]
         VITE --> SVC --> PG
     end
@@ -87,7 +89,7 @@ graph TB
         CICD[CICD] ~~~ DNS["DNS, us-east-1"] ~~~ MON[Monitoring] ~~~ SES[SES]
     end
     subgraph L1["Layer 1: Infrastructure"]
-        NET[Network] ~~~ SEC[Secrets] ~~~ BUS[EventBus] ~~~ IN[InboundEmail]
+        NET[Network] ~~~ SEC[Secrets] ~~~ IN[InboundEmail]
     end
     subgraph L2["Layer 2: Data"]
         DB[Database] ~~~ STO[Storage] ~~~ BAS["Bastion, separate script"]
@@ -96,7 +98,7 @@ graph TB
         COG[Cognito] ~~~ CLU[Cluster]
     end
     subgraph L4["Layer 4: Services, deployed one by one"]
-        CM[CompanyManagement] ~~~ EM[EventManagement] ~~~ SC[SpeakerCoordination] ~~~ PC[PartnerCoordination] ~~~ AE[AttendeeExperience] ~~~ GWS[ApiGatewayService]
+        CM[CompanyManagement] ~~~ EM[EventManagement] ~~~ PC[PartnerCoordination] ~~~ GWS[ApiGatewayService]
     end
     subgraph L5["Layer 5: Gateway"]
         API[ApiGateway] ~~~ FE[Frontend]
@@ -117,7 +119,6 @@ Reference: what each stack contains.
 | `Database` | RDS PostgreSQL 15, `db.t4g.micro`, Single-AZ, 20 GB, encrypted, deletion protection, 7-day backups. ElastiCache configured with 0 nodes, so not created |
 | `Bastion` | EC2 in a public subnet, reachable only via SSM Session Manager, for port-forwarding to RDS |
 | `Storage` | Buckets `batbern-content-*`, `batbern-logs-*`, `batbern-backups-*`; CloudFront for cdn.batbern.ch with the `image-resize` Lambda@Edge |
-| `EventBus` | EventBridge bus. CUMS and PCS may publish; no rules or consumers are defined |
 | `Monitoring` | SNS alarm topic, dashboards, RDS and SES alarms, alarm-to-GitHub-issue Lambda |
 | `CICD` | ECR repositories, GitHub OIDC deploy role |
 | `Cognito` | User pool, Lambda triggers, Google OIDC federation, hosted UI on auth.batbern.ch ([ADR-010](./ADR-010-federated-identity-via-cognito.md)) |
@@ -162,8 +163,6 @@ graph TB
             SVC1["Event Management<br/>primary"]
             SVC5["Company and User Mgmt<br/>primary"]
             SVC3["Partner Coordination"]
-            SVC2["Speaker Coordination<br/>dormant, 1 task"]
-            SVC4["Attendee Experience<br/>parked, 0 tasks"]
             APIGW["API Gateway Service<br/>Spring Boot, 2 tasks"]
         end
 
@@ -177,9 +176,9 @@ graph TB
         STOR -.->|"certificate"| DNS
         FE -.->|"certificate"| DNS
         CLUST --> SVCS
-        SVC1 & SVC2 & SVC3 & SVC4 & SVC5 & APIGW --> DB
+        SVC1 & SVC3 & SVC5 & APIGW --> DB
         API --> APIGW
-        APIGW --> SVC1 & SVC3 & SVC4 & SVC5
+        APIGW --> SVC1 & SVC3 & SVC5
         MAIL --> SVC1
     end
 
@@ -192,12 +191,10 @@ graph TB
     style CLUST fill:#FFE0B2,stroke:#FF9800,color:#000
     style API fill:#FCE4EC,stroke:#E91E63,color:#000
     style FE fill:#F3E5F5,stroke:#9C27B0,color:#000
-    style SVC2 stroke-dasharray: 5 5
-    style SVC4 stroke-dasharray: 5 5
 ```
 
-The gateway does not route to Speaker Coordination: `DomainRouter` has no prefix that resolves to
-it (its endpoints moved to EMS in Epics 5 and 11). It still runs one task (#1216).
+The speaker and attendee stub services were removed by Story 17.2 (#1216, ADR-014): their
+logic lives in EMS and PCS.
 
 ## Cost-Optimized AWS Infrastructure
 
@@ -247,9 +244,7 @@ graph LR
     GW --> CUMS["company-user-management :8001"]
     GW --> EMS["event-management :8002"]
     GW --> PCS["partner-coordination :8004"]
-    GW --> AES["attendee-experience :8005"]
-    SCS["speaker-coordination :8003"]
-    CUMS & EMS & PCS & AES & SCS --> PG[("PostgreSQL :5432<br/>Docker")]
+    CUMS & EMS & PCS --> PG[("PostgreSQL :5432<br/>Docker")]
     EMS -.->|"mail capture"| MAILS["/dev/mails<br/>no real sending"]
     GW -.->|"JWKS"| COG["Cognito, production pool"]
 ```
@@ -291,8 +286,6 @@ graph TB
         TASK_EM["Event Management<br/>256 CPU / 2048 MiB<br/>1 task"]
         TASK_CM["Company and User Mgmt<br/>256 CPU / 1024 MiB<br/>1 task"]
         TASK_PC["Partner Coordination<br/>256 CPU / 1024 MiB<br/>1 task"]
-        TASK_SC["Speaker Coordination<br/>256 CPU / 1024 MiB<br/>1 task, dormant"]
-        TASK_AE["Attendee Experience<br/>256 CPU / 1024 MiB<br/>0 tasks, parked"]
     end
 
     subgraph DATA["Data layer"]
@@ -304,9 +297,8 @@ graph TB
     TASK_GW -->|"http://event-management:8080"| TASK_EM
     TASK_GW -->|"http://company-user-management:8080"| TASK_CM
     TASK_GW -->|"http://partner-coordination:8080"| TASK_PC
-    TASK_GW -.->|"/api/v1/content"| TASK_AE
     TASK_EM <-->|"/internal/** calls"| TASK_CM
-    TASK_EM & TASK_SC & TASK_PC & TASK_AE & TASK_CM & TASK_GW --> RDS
+    TASK_EM & TASK_PC & TASK_CM & TASK_GW --> RDS
     TASK_CM & TASK_PC --- CACHE
 
     style ALB_PUB fill:#FF9900,stroke:#FF6600,color:#000
@@ -343,8 +335,6 @@ without JWT); the exact set of internal callers per service is not drawn.
 | Event Management | 256 | 2048 MiB | min 1, max 2 | 1 | primary |
 | Company and User Management | 256 | 1024 MiB | min 1, max 2 | 1 | primary |
 | Partner Coordination | 256 | 1024 MiB | min 1, max 2 | 1 | active |
-| Speaker Coordination | 256 | 1024 MiB | min 1, max 2 | 1 | dormant (#1216) |
-| Attendee Experience | 256 | 1024 MiB | desired 0, scaling off | 0 | parked |
 
 Per-service monthly costs from the earlier table were estimates and are dropped (not verified).
 
@@ -482,7 +472,6 @@ graph LR
     C -->|"Service Connect"| D1["Event Management"]
     C -->|"Service Connect"| D3["Partner Coordination"]
     C -->|"Service Connect"| D5["Company and User Mgmt"]
-    C -.->|"/api/v1/content"| D4["Attendee Experience<br/>parked"]
 
     style A fill:#E0E0E0,stroke:#757575,color:#000
     style B fill:#FF9900,stroke:#FF6600,color:#000
@@ -490,7 +479,6 @@ graph LR
     style C fill:#527FFF,stroke:#0066CC,color:#fff
     style D1 fill:#527FFF,stroke:#0066CC,color:#fff
     style D3 fill:#527FFF,stroke:#0066CC,color:#fff
-    style D4 fill:#BBBBBB,stroke:#777777,color:#000
     style D5 fill:#527FFF,stroke:#0066CC,color:#fff
 ```
 
@@ -545,21 +533,18 @@ graph LR
     GW -->|"/watch/**"| EMS["event-management"]
     GW -->|"/events, /event-types, /registrations,<br/>/topics, /tasks, /notifications, /materials,<br/>/speaker-portal, /attendee-portal, /sessions,<br/>/email-templates, /analytics, /newsletter,<br/>/thanks, /conversations, /mails, /ai,<br/>/public/events, /public/settings/features,<br/>/speakers/ID/ai/**, /admin/**"| EMS
     GW -->|"/partners, /partner-meetings,<br/>/attendees/topics"| PCS["partner-coordination"]
-    GW -->|"/content"| AES["attendee-experience"]
     GW -->|"/companies, /users, /logos,<br/>/public/** other, /settings"| CUMS
     GW -->|"/admin/test-fixtures/cums, ems, pcs"| FIX["matching service"]
     GW -->|"anything else, incl. bare /speakers"| NF["404"]
 ```
 
 All paths are under `/api/v1`. Order matters in the code (e.g. `/public/events` is checked
-before the `/public` fallback to CUMS). Speaker Coordination has no route.
+before the `/public` fallback to CUMS).
 
 **Environment variables (set in `api-gateway-service-stack.ts`):**
 ```bash
 EVENT_MANAGEMENT_SERVICE_URL=http://event-management:8080
-SPEAKER_COORDINATION_SERVICE_URL=http://speaker-coordination:8080
 PARTNER_COORDINATION_SERVICE_URL=http://partner-coordination:8080
-ATTENDEE_EXPERIENCE_SERVICE_URL=http://attendee-experience:8080
 COMPANY_USER_MANAGEMENT_SERVICE_URL=http://company-user-management:8080
 ```
 
@@ -628,15 +613,13 @@ graph TB
             SVC_EM["EMS :8080"]
             SVC_CM["CUMS :8080"]
             SVC_PC["PCS :8080"]
-            SVC_SC["SCS :8080"]
-            SVC_AE["AES :8080, 0 tasks"]
         end
     end
 
     CLIENT -->|"HTTPS :443"| HTTPAPI
     HTTPAPI -->|"HTTP :80"| ALB_PUBLIC
     ALB_PUBLIC -->|"HTTP :8080"| GW_TASKS
-    GW_TASKS -->|"Service Connect :8080"| SVC_EM & SVC_CM & SVC_PC & SVC_AE
+    GW_TASKS -->|"Service Connect :8080"| SVC_EM & SVC_CM & SVC_PC
 
     style CLIENT fill:#E0E0E0,stroke:#757575,color:#000
     style HTTPAPI fill:#FF9900,stroke:#FF6600,color:#000
@@ -728,7 +711,7 @@ graph TD
 ```bash
 cd infrastructure
 npm run deploy:staging:layer4-event-management     # one layer or stack, see package.json
-npm run deploy:staging:selective -- BATbern-staging-SpeakerCoordination
+npm run deploy:staging:selective -- BATbern-staging-PartnerCoordination
 AWS_PROFILE=batbern-staging npx cdk deploy BATbern-staging-FrontendBeta \
   --context environment=staging --context betaFrontend=true --require-approval never
 ```
@@ -749,9 +732,10 @@ Infrastructure PRs also deploy on open, so they must deploy cleanly before merge
 ### Branch Protection Rules
 
 `develop` is protected with `strict: true`. Required checks: `build-frontend`,
-`build-shared-kernel`, and the six `build-services (…)` contexts (api-gateway,
-event-management-service, company-user-management-service, speaker-coordination-service,
-partner-coordination-service, attendee-experience-service).
+`build-shared-kernel`, and the four `build-services (…)` contexts (api-gateway,
+event-management-service, company-user-management-service, partner-coordination-service).
+The two contexts of the removed stub services are dropped by the owner before Story 17.2
+merges; a required check that no job reports any more would block every PR.
 
 **Why this matters for Dependabot:** the monthly batch (`dependabot-batch-merge.yml`, #1076)
 includes a Dependabot PR only when these checks are green, and the batch PR merges through
@@ -778,6 +762,7 @@ graph LR
     FC["frontend-changes"]
     TF["test-frontend"]
     FS["frontend-static<br/>incl. generated API types"]
+    TR["test-ratchet<br/>no path filter"]
     BF["build-frontend"]
     BI["build-infrastructure<br/>if infrastructure/ changed"]
     SONAR["sonarcloud<br/>disabled"]
@@ -785,6 +770,7 @@ graph LR
 
     SK --> SVC
     FC --> TF & FS --> BF
+    TR --> BF
     SVC & BF & BI --> DEP
     style SONAR stroke-dasharray: 5 5
 ```

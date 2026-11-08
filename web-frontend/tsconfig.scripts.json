@@ -12,5 +12,12 @@
     "skipLibCheck": true,
     "types": ["node"]
   },
-  "include": ["scripts/check-api-paths*.ts", "src/test/contract/*.ts"]
+  "include": [
+    "scripts/check-api-paths*.ts",
+    "scripts/test-ratchet*.ts",
+    "scripts/api-lint*.ts",
+    "scripts/api-similarity*.ts",
+    "scripts/lib/*.ts",
+    "src/test/contract/*.ts"
+  ]
 }

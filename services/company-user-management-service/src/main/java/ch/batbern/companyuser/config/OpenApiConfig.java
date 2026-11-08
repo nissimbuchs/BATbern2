@@ -39,7 +39,7 @@ public class OpenApiConfig {
                                 - Company search with autocomplete (Caffeine-cached)
                                 - Company logo management via S3 presigned URLs
                                 - Company verification workflow
-                                - Domain event publishing via EventBridge
+                                - In-process domain events
 
                                 ## Authentication
                                 All endpoints require JWT authentication via AWS Cognito.

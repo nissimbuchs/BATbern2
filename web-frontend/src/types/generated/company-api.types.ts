@@ -175,7 +175,7 @@ export interface paths {
      *     - Company name must be unique
      *     - Website must be valid URL (if provided)
      *
-     *     **Events Published**: CompanyCreatedEvent to EventBridge
+     *     **Events Published**: CompanyCreatedEvent (in-process domain event)
      *
      *     **Performance**: <200ms (P95)
      */
@@ -214,7 +214,7 @@ export interface paths {
      *
      *     **Story 1.16.2**: Uses company name as identifier instead of UUID
      *
-     *     **Events Published**: CompanyDeletedEvent to EventBridge
+     *     **Events Published**: CompanyDeletedEvent (in-process domain event)
      *
      *     **Cache Invalidation**: All company caches cleared on deletion
      */
@@ -232,7 +232,7 @@ export interface paths {
      *     **Validation Rules**:
      *     - Company name must be unique
      *
-     *     **Events Published**: CompanyUpdatedEvent to EventBridge
+     *     **Events Published**: CompanyUpdatedEvent (in-process domain event)
      *
      *     **Cache Invalidation**: All company caches cleared on update
      */
@@ -294,7 +294,7 @@ export interface paths {
      *
      *     **Authorization**: ORGANIZER role required
      *
-     *     **Events Published**: CompanyVerifiedEvent to EventBridge
+     *     **Events Published**: CompanyVerifiedEvent (in-process domain event)
      *
      *     **Idempotency**: Safe to call multiple times (no error if already verified)
      */

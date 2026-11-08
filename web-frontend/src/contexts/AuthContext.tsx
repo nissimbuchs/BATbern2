@@ -14,7 +14,7 @@ import {
   UserContext,
   UserRole,
 } from '@/types/auth';
-import apiClient from '@/services/api/apiClient';
+import { getMyPartnerCompany } from '@/services/api/partnerApi';
 import { getUserProfile } from '@/services/api/userApi';
 import { hasCognitoSession } from '@/utils/auth/cognitoSession';
 
@@ -207,8 +207,8 @@ async function hydrateUserFromDb(user: UserContext): Promise<UserContext> {
  */
 async function resolvePartnerCompanyName(): Promise<string | undefined> {
   try {
-    const response = await apiClient.get<{ companyName: string }>('/partners/me');
-    return response.data?.companyName;
+    const partner = await getMyPartnerCompany();
+    return partner?.companyName;
   } catch {
     console.warn(
       '[AuthProvider] Could not resolve companyName via GET /partners/me — ' +

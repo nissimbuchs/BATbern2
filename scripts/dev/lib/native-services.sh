@@ -29,16 +29,11 @@ compose_cmd() {
 
 # Every service the platform can run, in port order. Used for "what is NOT running"
 # reporting — do not reorder without checking the callers.
-ALL_NATIVE_SERVICES="api-gateway company-user-management event-management speaker-coordination partner-coordination attendee-experience"
+ALL_NATIVE_SERVICES="api-gateway company-user-management event-management partner-coordination"
 
-# Services started by default: all of them.
-#
-# Between 2026-08-08 and 2026-08-14 this defaulted to a 4-service subset (Speaker
-# Coordination and Attendee Experience excluded, ~400-500 MB each) because the dev host
-# was a 6 GB NAS. That box is being decommissioned, so the subset no longer buys anything
-# — and a partial set is actively misleading: the API Gateway routes to the missing
-# services and fails, which reads as a broken gateway rather than a service that was
-# never started.
+# Services started by default: all of them. A partial set is misleading: the API Gateway
+# routes to the missing services and fails, which reads as a broken gateway rather than a
+# service that was never started.
 #
 # To run a subset anyway (a genuinely small machine, or isolating one service), name it:
 #   DEV_SERVICES="api-gateway company-user-management" make dev-native-up
@@ -72,9 +67,7 @@ service_port() {
         api-gateway)             echo "${API_GATEWAY_PORT}" ;;
         company-user-management) echo "${COMPANY_USER_MGMT_PORT}" ;;
         event-management)        echo "${EVENT_MGMT_PORT}" ;;
-        speaker-coordination)    echo "${SPEAKER_COORD_PORT}" ;;
         partner-coordination)    echo "${PARTNER_COORD_PORT}" ;;
-        attendee-experience)     echo "${ATTENDEE_EXP_PORT}" ;;
     esac
 }
 

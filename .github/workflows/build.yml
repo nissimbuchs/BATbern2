@@ -5,7 +5,7 @@ name: Build Pipeline
 # Services are implemented in stages:
 #   1. shared-kernel (foundation) - IMPLEMENTED
 #   2. api-gateway (routing layer) - IMPLEMENTED
-#   3. Domain microservices (event-management, speaker-coordination, etc.) - IN PROGRESS
+#   3. Domain microservices (event-management, partner-coordination, company-user-management) - IMPLEMENTED
 #   4. web-frontend (user interface) - PLANNED
 #
 # The pipeline gracefully handles missing services/features:
@@ -146,9 +146,7 @@ jobs:
       matrix:
         service:
           - event-management-service
-          - speaker-coordination-service
           - partner-coordination-service
-          - attendee-experience-service
           - company-user-management-service
           - api-gateway
       fail-fast: false
@@ -300,7 +298,7 @@ jobs:
           chmod +x gradlew
           # Build from root to resolve shared-kernel dependency
           # Tests use Testcontainers PostgreSQL for production parity
-          # AWS services (EventBridge, S3) are mocked via TestAwsConfig
+          # AWS services (S3, SES, Cognito) are mocked via TestAwsConfig
           if [ "${{ matrix.service }}" = "api-gateway" ]; then
             ./gradlew :api-gateway:clean :api-gateway:build :api-gateway:test --no-daemon
           else
@@ -562,6 +560,18 @@ jobs:
         working-directory: ./web-frontend
         run: npm run check:api-paths
 
+      # Story 17.4: Spectral with the convention ruleset docs/api/.spectral.yaml over the public
+      # specs, against web-frontend/scripts/api-lint-baseline.txt. A NEW violation fails, and so
+      # does a fixed one still in the baseline (STALE), and a baseline line without exactly one
+      # owner group in web-frontend/scripts/api-lint-owners.txt. The rules are proven here first.
+      - name: OpenAPI convention lint tests
+        working-directory: ./web-frontend
+        run: npx vitest run scripts/api-lint.test.ts scripts/api-similarity.test.ts
+
+      - name: OpenAPI convention lint
+        working-directory: ./web-frontend
+        run: npm run lint:api
+
       - name: Verify API types are up-to-date
         if: needs.frontend-changes.outputs.run == 'true'
         working-directory: ./web-frontend
@@ -609,15 +619,111 @@ jobs:
           path: web-frontend/dist/
           retention-days: 7
 
+  # Story 17.0a: the test fidelity ratchet. Counts own-code mocks (vi.mock of our services,
+  # hooks and components; @MockitoBean of in-process beans and S2S clients) and class-level
+  # @Transactional ITs per test file, against web-frontend/scripts/test-ratchet-baseline.txt.
+  # A rise fails, and so does a fall without the baseline update. No path filter: it scans the
+  # Java tests too, so it must run on PRs that touch only Java. build-frontend (required) needs it.
+  test-ratchet:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Set up Node.js 22
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web-frontend/package-lock.json
+
+      - name: Install dependencies
+        working-directory: ./web-frontend
+        run: npm ci
+
+      # The check's own rules are proven in the job that enforces them (same as 17.3).
+      - name: Test ratchet tests
+        working-directory: ./web-frontend
+        run: npx vitest run scripts/test-ratchet.test.ts
+
+      - name: Test ratchet
+        working-directory: ./web-frontend
+        run: npm run check:test-ratchet
+
+  # Story 17.4: for every operation a PR adds to docs/api/*.openapi.yml, the 3 most similar
+  # existing operations, as one PR comment (marked, updated in place on every push). Informative:
+  # continue-on-error, and nothing needs this job.
+  api-similarity:
+    if: github.event_name == 'pull_request'
+    runs-on: ubuntu-latest
+    continue-on-error: true
+    permissions:
+      contents: read
+      pull-requests: write
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+        with:
+          fetch-depth: 0
+
+      - name: Detect spec changes
+        id: specs
+        run: |
+          if git diff --name-only "${{ github.event.pull_request.base.sha }}" "${{ github.event.pull_request.head.sha }}" | grep -q '^docs/api/'; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Set up Node.js 22
+        if: steps.specs.outputs.changed == 'true'
+        uses: actions/setup-node@v6
+        with:
+          node-version: '22'
+          cache: 'npm'
+          cache-dependency-path: web-frontend/package-lock.json
+
+      - name: Install dependencies
+        if: steps.specs.outputs.changed == 'true'
+        working-directory: ./web-frontend
+        run: npm ci
+
+      - name: Build the report
+        if: steps.specs.outputs.changed == 'true'
+        working-directory: ./web-frontend
+        run: npm run --silent report:api-similarity -- --base "${{ github.event.pull_request.base.sha }}" > "$RUNNER_TEMP/api-similarity.md"
+
+      - name: Post or update the PR comment
+        if: steps.specs.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          PR: ${{ github.event.pull_request.number }}
+        run: |
+          set -euo pipefail
+          report="$RUNNER_TEMP/api-similarity.md"
+          id=$(gh api --paginate "repos/$REPO/issues/$PR/comments" \
+            --jq '.[] | select(.body | startswith("<!-- api-similarity-report -->")) | .id' | head -n 1)
+          if [ -n "$id" ]; then
+            gh api -X PATCH "repos/$REPO/issues/comments/$id" -F "body=@$report" > /dev/null
+            echo "Updated comment $id"
+          elif grep -q 'no added operations' "$report"; then
+            echo "No added operations and no earlier comment: nothing to post"
+          else
+            gh api -X POST "repos/$REPO/issues/$PR/comments" -F "body=@$report" > /dev/null
+            echo "Posted the report"
+          fi
+          cat "$report" >> "$GITHUB_STEP_SUMMARY"
+
   build-frontend:
-    needs: [frontend-changes, test-frontend, frontend-static]
+    needs: [frontend-changes, test-frontend, frontend-static, test-ratchet]
     if: always()
     runs-on: ubuntu-latest
     steps:
-      - name: Fail when a shard or the static checks failed
+      - name: Fail when a shard, the static checks or the test ratchet failed
         if: contains(needs.*.result, 'failure') || contains(needs.*.result, 'cancelled')
         run: |
-          echo "frontend-changes=${{ needs.frontend-changes.result }} test-frontend=${{ needs.test-frontend.result }} frontend-static=${{ needs.frontend-static.result }}"
+          echo "frontend-changes=${{ needs.frontend-changes.result }} test-frontend=${{ needs.test-frontend.result }} frontend-static=${{ needs.frontend-static.result }} test-ratchet=${{ needs.test-ratchet.result }}"
           exit 1
 
       - name: Checkout code
@@ -853,7 +959,7 @@ jobs:
           if [ -z "$CHANGED_FILES" ]; then
             echo "⚠️  Cannot determine changed files, will analyze all modules"
             echo "analyze_all=true" >> $GITHUB_OUTPUT
-            echo "modules=shared-kernel,api-gateway,event-management-service,attendee-experience-service,company-user-management-service,partner-coordination-service,speaker-coordination-service,web-frontend" >> $GITHUB_OUTPUT
+            echo "modules=shared-kernel,api-gateway,event-management-service,company-user-management-service,partner-coordination-service,web-frontend" >> $GITHUB_OUTPUT
             exit 0
           fi
 
@@ -892,19 +998,9 @@ jobs:
             CHANGED_SERVICES="$CHANGED_SERVICES event-management-service"
           fi
 
-          if echo "$CHANGED_FILES" | grep -q "^services/speaker-coordination-service/"; then
-            MODULES="$MODULES,speaker-coordination-service"
-            CHANGED_SERVICES="$CHANGED_SERVICES speaker-coordination-service"
-          fi
-
           if echo "$CHANGED_FILES" | grep -q "^services/partner-coordination-service/"; then
             MODULES="$MODULES,partner-coordination-service"
             CHANGED_SERVICES="$CHANGED_SERVICES partner-coordination-service"
-          fi
-
-          if echo "$CHANGED_FILES" | grep -q "^services/attendee-experience-service/"; then
-            MODULES="$MODULES,attendee-experience-service"
-            CHANGED_SERVICES="$CHANGED_SERVICES attendee-experience-service"
           fi
 
           if echo "$CHANGED_FILES" | grep -q "^services/company-user-management-service/"; then
@@ -919,7 +1015,7 @@ jobs:
 
           # If analyze all, include all modules
           if [ "$ANALYZE_ALL" = "true" ]; then
-            MODULES="shared-kernel,api-gateway,event-management-service,attendee-experience-service,company-user-management-service,partner-coordination-service,speaker-coordination-service,web-frontend"
+            MODULES="shared-kernel,api-gateway,event-management-service,company-user-management-service,partner-coordination-service,web-frontend"
           fi
 
           echo "analyze_all=$ANALYZE_ALL" >> $GITHUB_OUTPUT
@@ -965,7 +1061,7 @@ jobs:
           # Only build services that changed (or all if analyze_all=true)
           MODULES="${{ steps.detect-changes.outputs.modules }}"
 
-          for service in event-management-service attendee-experience-service company-user-management-service partner-coordination-service speaker-coordination-service; do
+          for service in event-management-service company-user-management-service partner-coordination-service; do
             # Check if this service is in the modules list
             if echo "$MODULES" | grep -q "$service"; then
               if [ -d "services/$service" ]; then

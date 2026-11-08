@@ -20,6 +20,7 @@ import {
 } from '@/services/api/partnerApi';
 import apiClient from '@/services/api/apiClient';
 import { AxiosError } from 'axios';
+import MockAdapter from 'axios-mock-adapter';
 
 // ============================================================================
 // Story 2.8.1: Partner Directory Tests
@@ -571,6 +572,60 @@ describe('Partner API Client - Story 2.8.3 (Partner Create/Edit)', () => {
       expect(typeof partnerApi.updatePartner).toBe('function');
       expect(partnerApi.getPartnerContacts).toBeDefined();
       expect(typeof partnerApi.getPartnerContacts).toBe('function');
+    });
+  });
+});
+
+// ============================================================================
+// ============================================================================
+
+describe('Partner API Client (moved calls)', () => {
+  let http: MockAdapter;
+  let skipAuth: string[];
+  let interceptorId: number;
+
+  beforeEach(() => {
+    http = new MockAdapter(apiClient);
+    skipAuth = [];
+    // The request interceptor strips the Skip-Auth marker before the adapter sees it; this
+    // one runs first (axios runs the last-added request interceptor first).
+    interceptorId = apiClient.interceptors.request.use((config) => {
+      if (config.headers?.['Skip-Auth'] === 'true') skipAuth.push(config.url ?? '');
+      return config;
+    });
+  });
+
+  afterEach(() => {
+    apiClient.interceptors.request.eject(interceptorId);
+    http.restore();
+  });
+
+  it('should_listActivePartnersWithoutAuth_when_listPublicPartners', async () => {
+    const page = { data: [{ companyName: 'acme' }], pagination: { totalItems: 1 } };
+    http.onGet('/partners').reply(200, page);
+
+    await expect(partnerApi.listPublicPartners()).resolves.toEqual(page);
+    expect(http.history.get[0].params).toEqual({
+      page: 0,
+      size: 100,
+      include: 'company',
+      filter: 'isActive:true',
+    });
+    expect(skipAuth).toEqual(['/partners']);
+  });
+
+  it('should_returnCompany_when_getMyPartnerCompany', async () => {
+    http.onGet('/partners/me').reply(200, { companyName: 'acme' });
+
+    await expect(partnerApi.getMyPartnerCompany()).resolves.toEqual({ companyName: 'acme' });
+    expect(skipAuth).toEqual([]);
+  });
+
+  it('should_passErrorThrough_when_getMyPartnerCompanyFails', async () => {
+    http.onGet('/partners/me').reply(404);
+
+    await expect(partnerApi.getMyPartnerCompany()).rejects.toMatchObject({
+      response: { status: 404 },
     });
   });
 });

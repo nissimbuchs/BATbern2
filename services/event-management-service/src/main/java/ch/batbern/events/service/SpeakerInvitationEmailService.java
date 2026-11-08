@@ -4,7 +4,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
-import ch.batbern.events.forwarding.ModeratorReplyAddress;
+import ch.batbern.events.mailcenter.render.ModeratorReplyAddress;
 import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.render.MailPipeline;
 import ch.batbern.events.mailcenter.render.RenderedMail;

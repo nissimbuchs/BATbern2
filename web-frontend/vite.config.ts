@@ -449,6 +449,7 @@ export default defineConfig({
       '**/node_modules/**',
       '**/dist/**',
       '**/e2e/**', // E2E tests run with Playwright, not Vitest
+      'scripts/__fixtures__/**', // Fixture sources read as text by the script tests, never run
       '**/.{idea,git,cache,output,temp}/**',
     ],
     reporters: [

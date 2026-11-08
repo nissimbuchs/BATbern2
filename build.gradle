@@ -122,8 +122,7 @@ configure(subprojects.findAll { it.path.startsWith(':services:') }) {
             // into its own module (org.springframework.boot.flyway.autoconfigure.FlywayAutoConfiguration).
             // Without it, migrations never run at boot → Hibernate ddl-auto=validate hits an empty
             // schema → "Schema validation: missing table [...]" and every @SpringBootTest fails to
-            // load its context. Required by the DB services (CUMS/EMS/partner); attendee has no
-            // datasource and excludes it explicitly in its @SpringBootApplication. BOM-managed version.
+            // load its context. Required by the DB services (CUMS/EMS/partner). BOM-managed version.
             implementation 'org.springframework.boot:spring-boot-flyway'
             
             // OpenAPI/Swagger

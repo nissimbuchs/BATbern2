@@ -415,7 +415,7 @@ line 422 for `ApiGatewayServiceStack`).
 |---|---|---|
 | ALB (platform ingress) | `alb-5xx`, `alb-latency-p95`, `alb-availability`, `alb-unhealthy-targets` | `AlbAlarms`, instantiated by `ApiGatewayServiceStack` |
 | Gateway API surface | `api-4xx-ratio` | `AlbAlarms`, fed by MetricFilters over the api-gateway log group |
-| ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-EventBridge-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
+| ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
 | RDS | `database-connections`, `database-storage-low`, `database-cpu` | `AlarmConstruct`, in `MonitoringStack` |
 | SES reputation | `bounce-rate-critical` (`Reputation.BounceRate` > 5%), `complaint-rate-critical` | `MonitoringStack` |
 | SES bounce volume | `bounce-rate-warning` — `Bounce` count > 5/hour, NOT the rolling rate (#984) | `MonitoringStack` |
@@ -1011,18 +1011,6 @@ Event Management Service:
       throughput: "> 100 req/min"
       validation_time: "< 50ms"
 
-Speaker Coordination Service:
-  endpoints:
-    "GET /speakers":
-      p95_response_time: "< 100ms"
-      throughput: "> 300 req/min"
-      database_query_time: "< 30ms"
-
-    "POST /speakers/invitations":
-      p95_response_time: "< 250ms"
-      throughput: "> 50 req/min"
-      email_delivery_sla: "< 5 minutes"
-
 Partner Coordination Service:
   endpoints:
     "GET /partners/{id}/topic-votes":
@@ -1031,13 +1019,6 @@ Partner Coordination Service:
     "POST /topics/voting":
       p95_response_time: "< 300ms"
       throughput: "> 30 req/min"
-
-Attendee Experience Service:
-  endpoints:
-    "GET /search":
-      p95_response_time: "< 300ms"
-      throughput: "> 500 req/min"
-      search_relevance_score: "> 85%"
 ```
 
 **Database Performance Standards:**

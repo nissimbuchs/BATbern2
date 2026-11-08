@@ -7,7 +7,6 @@ import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.exception.UserServiceException;
 import ch.batbern.events.forwarding.EmailForwardingService.Result;
 import ch.batbern.events.service.AdminSettingsService;
-import ch.batbern.events.service.CalendarDeclineService;
 import ch.batbern.events.service.DistributionListService;
 import ch.batbern.shared.service.EmailService;
 import jakarta.mail.Session;

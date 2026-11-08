@@ -7,7 +7,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.forwarding.EmailForwardingService;
 import ch.batbern.events.forwarding.ForwardingDirectory;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.service.InboundEmailRouter;
+import ch.batbern.events.forwarding.InboundEmailRouter;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.AfterEach;

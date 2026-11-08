@@ -8,8 +8,7 @@
 
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
-import { companyApiClient } from '@/services/api/companyApi';
-import apiClient from '@/services/api/apiClient';
+import { companyApiClient, uploadLogoFromUrl } from '@/services/api/companyApi';
 import type { ImportCandidate, BatchImportResult } from '@/types/companyImport.types';
 
 /**
@@ -24,12 +23,7 @@ async function uploadLogo(logoUrl: string, companyName: string): Promise<string>
     const filename = `${companyName}-logo`;
 
     // Use server-side upload endpoint (bypasses frontend entirely)
-    const response = await apiClient.post<{ uploadId: string }>('/logos/upload-from-url', {
-      url: logoUrl,
-      filename,
-    });
-
-    return response.data.uploadId;
+    return await uploadLogoFromUrl(logoUrl, filename);
   } catch (error) {
     // Re-throw with more context
     if (error instanceof Error) {

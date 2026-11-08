@@ -1,0 +1,117 @@
+# Epic 4 stories in build order. Ids keep the Epic 17 story number; a lettered id is a follow-up of that number
+# (10b after 17.10, 11a-11d after 17.11). The epic is not refined yet: 9, 10 and 11 are thin entries taken from
+# the PRD so that the follow-ups can name them in `after`; refining the epic revises them in place.
+# Baseline lines are cited as `<rule> <spec> <METHOD> <path>` from web-frontend/scripts/api-lint-baseline.txt
+# (no line numbers: the file is sorted and regenerated).
+
+[[entry]]
+id = 9
+type = "story"
+title = "API conventions I (breaking)"
+description = "17.9: one PATCH /tasks/{id} replaces the complete, reassign and status operations; one app-settings resource (AdminSettingsService) and one user settings resource merging users/me/settings and /preferences; analyze-abstract nested under the event and loaded scoped to it. Spec, generated types, frontend, Bruno and Playwright in the same PR."
+verify = "The old operations answer 404 in production and their Spectral baseline lines are gone (before and after recorded); npm run lint:api and the 17.3 contract check pass; a speaker id from another event returns 404 on the nested AI operation; integration tests per new operation, Bruno, and Playwright for task completion and settings pass."
+covers = ["R14"]
+after = ["1.3", "1.4", "2.0c1", "2.0d"]
+hitl = false
+risk = "high"
+references = ["docs/prd/epic-17-architecture-hardening.md#story-179--api-conventions-i-breaking"]
+
+[[entry]]
+id = "9b"
+type = "story"
+title = "One transition idiom for the event lifecycle (breaking)"
+description = "Owner 2026-11-08: ADR-013 section 1 (one transition idiom per service, its problem 3) is still violated in EMS: publishing and advancing an event has POST /events/{eventCode}/publish, /publish/{phase}, /unpublish/{phase}, /publish/schedule (configures the auto-publish schedule) and /workflow/transition. The story picks one action-sub-resource idiom per ADR-013 row 4 for the event lifecycle, folds the others into it (the schedule becomes configuration of its resource, not a verb), and records the choice with the nearest existing operation in its architecture note. Touches EventController and PublishingEngineController, PublishingService and the PublishingScheduledService path to the CDN. Breaking: spec, generated types, frontend callers in web-frontend/src/services/, Bruno and Playwright in the same PR. Baseline lines touched (17.4 file): no-verb-segment events-core-api POST /events/{eventCode}/publish, POST /events/{eventCode}/publish/schedule, POST /events/{eventCode}/publish/{phase}, POST /events/{eventCode}/unpublish/{phase}, POST /events/{eventCode}/workflow/transition."
+verify = "The event lifecycle in events-core-api.openapi.yml has one transition idiom (the architecture note names it); the folded operations answer 404 in production; the Spectral baseline loses the folded operations' lines (before and after recorded) and npm run lint:api passes; the 17.3 contract check passes; on local dev an organizer publishes and unpublishes a phase (topic, speakers, agenda), advances the workflow state and sets the auto-publish schedule, and the public event page shows the phase; integration tests per new operation, Bruno and Playwright for publishing pass."
+covers = ["R24"]
+after = [9]
+hitl = false
+risk = "medium"
+references = ["docs/architecture/ADR-013-rest-api-crud-conventions.md"]
+notes = ["Owner 2026-11-08: risk medium because it touches production publishing and the CDN."]
+
+[[entry]]
+id = 10
+type = "story"
+title = "API conventions II (breaking)"
+description = "17.10: one endpoint set with an ownership rule replaces the me/{username} twins for pictures and profile; one speaker path key across the specs, chosen per the ADR-003 amendment; batch_registrations and enroll-stakeholders folded into participants; newsletter my-subscription folded into my-subscriptions."
+verify = "No /users/me/* and /users/{username}/* twin remains for pictures and profile (integration test: own allowed, other 403, organizer allowed where it was); a Spectral rule holds the one speaker path key; batch_registrations, enroll-stakeholders and my-subscription answer 404 in production and their remaining baseline lines are gone; npm run lint:api and the 17.3 contract check pass; registration, enrolment and newsletter self-service pass Bruno and Playwright."
+covers = ["R15"]
+after = ["9b", "1.3b", "epic-one-service-direction"]
+hitl = false
+risk = "high"
+references = ["docs/prd/epic-17-architecture-hardening.md#story-1710--api-conventions-ii-breaking"]
+notes = ["epic-one-service-direction stands for 17.6 (the /internal move of PATCH /users/{u}/profile); repoint to 3.6 when epic 3 is planned."]
+
+[[entry]]
+id = "10b"
+type = "story"
+title = "API conventions III (breaking)"
+description = "Owns 13 Spectral baseline lines (owner 2026-11-08). Notifications: batch-read, batch-delete and {id}/read become PATCH operations (ADR-013 section 1). ai-prompts: reset becomes DELETE /ai-prompts/{promptKey}/override (delete the override, the default applies). Sessions: batch-import becomes a bulk create on the sessions collection. Additional e-mails: make-primary, resend-verification and DELETE /users/me/additional-emails/{email} move to a key without the e-mail address (ADR-003 amendment: natural key is personal data, UUID required; real violation: personal data in a path and its access logs); the DELETE has no baseline line but is in scope. Event types: /events/types, GET and PUT /events/types/{type} become /event-types. /events/recent-photos and GET /events/registrations move out of the literal-under-/events namespace. /companies:get-or-create becomes /companies/get-or-create (ADR-013 section 2). Breaking: spec, generated types, frontend callers in web-frontend/src/services/, Bruno and Playwright in the same PR; the story's architecture note names each new path with its nearest existing operation. Baseline lines owned: no-literal-under-events event-media-api GET /events/recent-photos; no-literal-under-events event-registrations-api GET /events/registrations; no-literal-under-events events-core-api GET /events/types, GET /events/types/{type}, PUT /events/types/{type}; no-verb-segment event-ai-api POST /ai-prompts/{promptKey}/reset; no-verb-segment event-notifications-api DELETE /notifications/batch-delete, PUT /notifications/batch-read, PUT /notifications/{id}/read; no-verb-segment event-sessions-api POST /events/{eventCode}/sessions/batch-import; no-verb-segment users-api POST /users/me/additional-emails/{email}/make-primary, POST /users/me/additional-emails/{email}/resend-verification; path-kebab-case companies-api POST /companies:get-or-create."
+verify = "The 13 cited baseline lines are gone, and so is uuid-path-param event-notifications-api PUT /notifications/{id}/read, which leaves with its operation; npm run lint:api passes with the smaller baseline, and any line added is a replacement operation under an owner-accepted exception (own notifications: unnamed top-level aggregate; additional-e-mail id: personal-data key), named in the PR, with before and after counts recorded; no path in users-api.openapi.yml carries an e-mail address; the old operations answer 404 in production; the 17.3 contract check passes; integration tests per new operation, and Bruno and Playwright for notifications read and delete, AI prompt reset, session batch import, additional e-mail make-primary, resend and delete (local dev, /dev/mails), event-type edit and company get-or-create pass."
+covers = ["R23"]
+after = [10]
+hitl = false
+risk = "high"
+references = ["docs/architecture/ADR-013-rest-api-crud-conventions.md", "docs/architecture/ADR-003-meaningful-identifiers-public-apis.md#amendment-2026-11-uuids-in-paths"]
+notes = ["Owner 2026-11-08: additional-emails {email} in a path is a real ADR-003 violation (personal data in a path); DELETE /users/me/additional-emails/{email} has the same problem and is in scope.", "Owner 2026-11-08 (17.4 follow-up): the new Spectral rule no-personal-data-path-param reports 4 lines on /users/me/additional-emails/{email} (DELETE, PATCH, POST make-primary, POST resend-verification), all owned by 10b; the story ends when that rule reports none."]
+
+[[entry]]
+id = 11
+type = "story"
+title = "One upload contract, first purpose company-logo"
+description = "17.11: shared-kernel upload component (key layout, presign, size and type rules, PENDING to CONFIRMED to ASSOCIATED, expiry cleanup), an uploads table per service, POST /api/v1/uploads/{purpose}, /{uploadId}/confirm and /import; company-logo in CUMS including the logo request flow (#1246); EMS stops using logos; one frontend upload hook; old /logos upload operations deleted."
+verify = "Company logo upload (create form and existing company) and the logo request work through /uploads/company-logo in production (CUMS integration tests per path, Playwright on company create); the old /logos upload operations answer 404 and their baseline lines are gone; npm run lint:api and the 17.3 contract check pass; a test or ArchUnit rule shows no EMS repository maps logos; the shared-kernel state machine and expiry cleanup have unit tests."
+covers = ["R16"]
+after = ["1.3", "1.4", "1.3b", "2.0c1", "2.0d", "epic-one-service-direction"]
+hitl = false
+risk = "high"
+references = ["docs/prd/epic-17-architecture-hardening.md#story-1711--one-upload-contract-first-purpose-company-logo", "docs/architecture/ADR-002-generic-file-upload-service.md"]
+notes = ["epic-one-service-direction stands for 17.7 (removal of the logo-request push); repoint to 3.7 when epic 3 is planned."]
+
+[[entry]]
+id = "11a"
+type = "story"
+title = "Upload purpose profile-picture"
+description = "Second purpose on the 17.11 contract, in CUMS: profile pictures (own and, for organizers, another user's) and picture URLs from the speaker batch import go through /uploads/profile-picture and /import; the old picture presign, confirm and upload-from-url operations are removed with their frontend callers, Bruno and Playwright. Builds on the one picture endpoint set 17.10 leaves; after 10b, which changes the same UserController and users-api spec. Baseline lines owned: no-verb-segment users-api POST /users/{username}/picture/confirm; no-verb-segment users-api POST /users/{username}/profile-picture/upload-from-url."
+verify = "The 2 cited baseline lines are gone and npm run lint:api passes with a baseline 2 lines smaller (no line added beyond those 17.11 accepted for /uploads/{purpose}); the old picture presign, confirm and upload-from-url operations answer 404 in production; the 17.3 contract check passes; CUMS integration tests (own allowed, other user 403, organizer allowed) and Playwright on a profile picture change pass, and a speaker batch import with a picture URL shows the picture."
+covers = ["R22"]
+after = ["10b", 11]
+hitl = false
+risk = "medium"
+references = ["docs/architecture/ADR-002-generic-file-upload-service.md"]
+
+[[entry]]
+id = "11b"
+type = "story"
+title = "Upload purpose event-photo"
+description = "Event photos go through /uploads/event-photo on the 17.11 contract in EMS (EMS uploads table), associated to the event and loaded scoped to it. As the first EMS purpose it creates the EMS uploads table and wiring that 11c and 11d reuse; it follows 10b, which moves GET /events/recent-photos out of the same EventPhotoController. The old event photo presign and confirm operations are removed with their frontend callers (useEventPhotos via the service layer), Bruno and Playwright. Baseline line owned: no-verb-segment event-media-api POST /events/{eventCode}/photos/confirm."
+verify = "The cited baseline line is gone and npm run lint:api passes with a baseline 1 line smaller (no line added beyond those 17.11 accepted for /uploads/{purpose}); the old event photo presign and confirm operations answer 404 in production; the 17.3 contract check passes; an integration test shows an uploadId confirmed against another event is refused; Playwright uploads an event photo and sees it in the gallery."
+covers = ["R22"]
+after = ["10b", 11]
+hitl = false
+risk = "medium"
+references = ["docs/architecture/ADR-002-generic-file-upload-service.md"]
+
+[[entry]]
+id = "11c"
+type = "story"
+title = "Upload purpose teaser-image"
+description = "Event teaser images go through /uploads/teaser-image on the 17.11 contract in EMS (reusing the EMS uploads table 11b creates), associated to the event and loaded scoped to it; the old teaser presign and confirm operations are removed with their frontend callers (useEventTeaserImages via the service layer), Bruno and Playwright. Baseline line owned: no-verb-segment events-core-api POST /events/{eventCode}/teaser-images/confirm."
+verify = "The cited baseline line is gone and npm run lint:api passes with a baseline 1 line smaller (no line added beyond those 17.11 accepted for /uploads/{purpose}); the old teaser presign and confirm operations answer 404 in production; the 17.3 contract check passes; an integration test shows an uploadId confirmed against another event is refused; Playwright uploads a teaser image and sees it on the event page."
+covers = ["R22"]
+after = ["11b"]
+hitl = false
+risk = "low"
+references = ["docs/architecture/ADR-002-generic-file-upload-service.md"]
+
+[[entry]]
+id = "11d"
+type = "story"
+title = "Upload purpose session-material, organizer and speaker portal"
+description = "Session materials, from the organizer's session editor and from the speaker portal, go through /uploads/session-material on the 17.11 contract in EMS (reusing the EMS uploads table 11b creates), associated to the session and loaded scoped to it; the old materials presign and confirm operations of both paths are removed with their frontend callers (sessionApiClient, speakerPortalService), Bruno and Playwright. Material download and delete stay as they are. Baseline lines owned: no-verb-segment event-media-api POST /materials/{uploadId}/confirm; uuid-path-param event-media-api POST /materials/{uploadId}/confirm; no-verb-segment event-speakers-api POST /speaker-portal/events/{eventCode}/materials/confirm."
+verify = "The 3 cited baseline lines are gone and npm run lint:api passes with a baseline 3 lines smaller (no line added beyond those 17.11 accepted for /uploads/{purpose}); the old materials presign and confirm operations answer 404 in production; the 17.3 contract check passes; an integration test shows a speaker cannot attach material to a session that is not theirs; Playwright uploads material as organizer and as speaker (speaker project) and downloads it."
+covers = ["R22"]
+after = ["11b"]
+hitl = false
+risk = "medium"
+references = ["docs/architecture/ADR-002-generic-file-upload-service.md"]

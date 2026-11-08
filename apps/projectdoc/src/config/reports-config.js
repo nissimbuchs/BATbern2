@@ -29,9 +29,7 @@ export default {
         'shared-kernel',
         'api-gateway',
         'services/event-management-service',
-        'services/speaker-coordination-service',
         'services/partner-coordination-service',
-        'services/attendee-experience-service',
         'services/company-user-management-service'
       ]
     },
@@ -133,10 +131,8 @@ export default {
       'shared-kernel',
       'api-gateway',
       'services/event-management-service',
-      'services/attendee-experience-service',
       'services/company-user-management-service',
       'services/partner-coordination-service',
-      'services/speaker-coordination-service',
       'web-frontend'
     ]
   },

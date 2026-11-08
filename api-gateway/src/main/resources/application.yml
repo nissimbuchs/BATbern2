@@ -34,12 +34,8 @@ app:
 services:
   event-management:
     url: ${EVENT_MANAGEMENT_SERVICE_URL:http://localhost:8081}
-  speaker-coordination:
-    url: ${SPEAKER_COORDINATION_SERVICE_URL:http://localhost:8082}
   partner-coordination:
     url: ${PARTNER_COORDINATION_SERVICE_URL:http://localhost:8083}
-  attendee-experience:
-    url: ${ATTENDEE_EXPERIENCE_SERVICE_URL:http://localhost:8084}
   company-user-management:
     url: ${COMPANY_USER_MANAGEMENT_SERVICE_URL:http://localhost:8085}
 

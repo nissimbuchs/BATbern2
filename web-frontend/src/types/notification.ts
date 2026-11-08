@@ -1,6 +1,6 @@
 /**
  * Notification types for BATbern platform
- * Based on Story BAT-7 (Notification System) and EventBridge integration
+ * Based on Story BAT-7 (Notification System)
  */
 
 export type NotificationType =

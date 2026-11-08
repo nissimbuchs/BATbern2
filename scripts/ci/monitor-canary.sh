@@ -40,9 +40,7 @@ echo "- Min success rate: ${MIN_SUCCESS_RATE}%"
 # Services to monitor
 SERVICES=(
     "event-management-service"
-    "speaker-coordination-service"
     "partner-coordination-service"
-    "attendee-experience-service"
     "company-user-management-service"
 )
 

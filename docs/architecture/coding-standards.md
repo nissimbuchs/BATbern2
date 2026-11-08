@@ -11,6 +11,8 @@
 - **File Uploads:** Use presigned URLs for direct S3 uploads, never proxy through backend
 - **Presigned links:** build them with `ch.batbern.shared.utils.S3Links` (`uploadUrl`, `downloadUrl`), never with an inline `Put/GetObjectPresignRequest` (#1187). A presigned link is a bearer credential until it expires: never log it, log the S3 key.
 - **Role-Based Access:** Always check user roles before displaying/executing functionality
+- **Module walls:** frozen ArchUnit rules in the EMS and CUMS `test` task fail a new EMS module-wall violation or a new client toward a downstream service; never edit the store to accept one (`docs/architecture/module-map.md` → "Gates")
+- **Tests:** Mock only at the process boundary, never our own code (see "Test fidelity rules" under Testing Standards). A CI ratchet keeps the count of old own-code mocks from rising
 
 ## Naming Conventions
 
@@ -206,6 +208,7 @@ that nothing consumed.
 ### Code Review Checklist
 - [ ] **TDD Followed**: Tests were written before implementation
 - [ ] **Test Coverage**: Each acceptance criterion has corresponding tests
+- [ ] **Test Fidelity**: New and touched tests follow the "Test fidelity rules" (mocks at the process boundary only, positive control for absence, effect not call)
 - [ ] Code follows established patterns and conventions
 - [ ] All tests pass and coverage meets requirements (≥85%)
 - [ ] Test names clearly describe expected behavior
@@ -342,8 +345,9 @@ void shouldCreateEventSuccessfully() {
     assertThat(event.getTitle()).isEqualTo("BATbern 2024");
 }
 
-// Integration tests - MUST extend AbstractIntegrationTest
-@Transactional
+// Integration tests - MUST extend AbstractIntegrationTest. No class-level @Transactional on a
+// write IT: the rollback skips the flush, so DB constraints and triggers never run (see
+// "Test fidelity rules"). Clean up in @AfterEach, or flush() before asserting.
 class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
@@ -413,6 +417,84 @@ spring.flyway.locations=classpath:db/migration
 spring.flyway.baseline-on-migrate=true
 ```
 
+### Test fidelity rules
+
+Story 17.0a, from the test-fidelity analysis (`docs/plans/test-fidelity-proposal-2026-11.md`): in
+15 of 57 production bugs since 2026-08, a mock sat exactly on the code that was wrong, and the
+test passed because the behaviour under test was mocked. These rules apply to every **new** test
+and to every test a story **touches**. They are binding for agents as well (the `bmad-build`
+override and `_bmad-output/project-context.md` point here).
+
+#### Mock at the process boundary, nowhere else
+
+A test may replace only what leaves the process: SES, S3, Cognito, OpenAI, SQS, the
+clock, and **another service's HTTP API at the wire** (never its Java client). Everything inside
+the process runs for real: our services, repositories, mappers, validators, templates, the
+security filter chain, our hooks and our service modules.
+
+| Layer | Allowed to replace | Not allowed |
+|---|---|---|
+| Backend IT | `SesClient`, `S3Client`, Cognito client, OpenAI HTTP, the peer service via `MockRestServiceServer` / WireMock | `@MockitoBean` of own services, repositories, `UserApiClient`, `EmailService`, `SlugGenerationService` |
+| Backend unit | pure logic only; a unit test that needs more than 2 mocks is at the wrong test level | `verify(mock).call(eq(<expected value>))` as the main assertion |
+| Frontend component | the network via MSW; Amplify; browser APIs that jsdom lacks | `vi.mock('@/services/...')`, `vi.mock('@/hooks/...')`, `vi.spyOn` on an imported service or hook module, `vi.mock` of child components of the screen under test |
+| Frontend i18n | real i18next with the real `en` locale files | the per-file `react-i18next` stub |
+
+Unit tests of pure functions stay as they are. The rule targets tests that claim to test
+behaviour while the behaviour is mocked. Until the shared harnesses exist (17.0b: S2S contract
+harness, 17.0c: MSW harness), a new test that cannot avoid an own-code mock says why in a comment,
+and the ratchet below makes that visible in review.
+
+#### Assertion rules
+
+- **Asserting absence needs a positive control** in the same test: first show that the thing
+  would be there (#1012, #960).
+- **Assert the effect, not the call.** Check the parsed MIME `To:` or the stored row, not
+  `verify(times(2))` (#1176, #1181).
+- **A fallback must be distinguishable from success** in the test data (#1243).
+- **No silent catch in `@Async`, schedulers or listeners** without a metric. The test asserts that
+  the failure surfaces (#1176, #1181, #1145).
+- **Wiring test at the parent** for every callback prop that triggers a mutation (#962).
+- **Cache tests read, mutate, then read again** (#1069, #1095).
+- **No test copies of production resources** (templates, configs) on the test classpath. Tests
+  run against the real ones (#1096).
+
+#### Touch rule
+
+A story that changes a screen or a service method moves that screen's or method's tests off
+own-code mocks, onto the harness, once the harness exists (17.0b for backend S2S clients, 17.0c
+for the frontend). There are no separate rewrite stories, except one for the top offenders.
+
+#### The ratchet
+
+`web-frontend/scripts/test-ratchet.ts` counts, per test file, what these rules forbid, and CI
+(`test-ratchet`, required through `build-frontend`) compares the counts with the committed
+baseline `web-frontend/scripts/test-ratchet-baseline.txt`:
+
+| Category | Counts |
+|---|---|
+| `fe-mock-services` / `fe-mock-hooks` / `fe-mock-components` | `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**/*.{test,spec}.ts(x)`, and `vi.spyOn(x, …)` where `x` is imported from own code, by resolved path: `src/services`; `src/hooks` or a `use[A-Z]...` module; `src/components`, `src/pages` or a PascalCase module |
+| `be-mock-s2s-client` | `@MockitoBean` of a type ending in `Client` that is not a boundary type (`UserApiClient`, `UserServiceClient`, ...) |
+| `be-mock-in-process` | any other `@MockitoBean` that is not a boundary type |
+| `be-transactional-it` | class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is named `*IntegrationTest` / `*IT` |
+
+Boundary types, never counted: `SesClient`, `SesV2Client`, `S3Client`, `S3Presigner`,
+`CognitoIdentityProviderClient`, `SqsClient`, `Clock`, `JwtDecoder`, and any
+type imported from `software.amazon.awssdk`. Mentions in comments and Javadoc are not counted;
+in Java, mentions in string and text-block literals are not counted either (the frontend scan
+skips comments only).
+
+- **RAISED** (a count went up, or a new file has a counted mock): the build fails. Follow the rules
+  above instead.
+- **STALE** (a count went down, or the file is gone): the build fails until the gain is locked in.
+  Run `cd web-frontend && npm run check:test-ratchet -- --update` and commit the baseline in the
+  same PR.
+- Never use `--update` to accept a rise. A baseline diff with a higher number needs an explicit
+  reason in the PR and the owner's go. Exception: when the RAISED lines are exactly a renamed or
+  moved file carrying the same counts as its STALE lines (a `git mv`), `--update` is fine and the
+  PR says so.
+
+Locally: `make check-test-ratchet`.
+
 ### Lambda Handler Testing (Infrastructure)
 
 Lambda handlers are **deployed artifacts**, not just code. CDK unit tests (`Template.fromStack`) verify that a Lambda is *declared* in CloudFormation — they do **not** test that the handler module can load and run. These are two completely different things, and only one of them catches production failures.
@@ -474,6 +556,49 @@ test('organizer can create and publish event', async ({ page }) => {
 - Include request/response examples
 - Document all error codes and scenarios
 - Provide usage examples for complex workflows
+
+### API conventions lint
+
+`npm run lint:api` (in `web-frontend/`, `make lint-api`, CI `frontend-static` in the required
+`build-frontend` check) runs Spectral with the repo ruleset `docs/api/.spectral.yaml` over the
+public specs `docs/api/*.openapi.yml` (not `_shared.openapi.yml`). Six rules, one finding per
+operation (Story 17.4):
+
+| Rule | Fails on | Source |
+|---|---|---|
+| `path-kebab-case` | a literal path segment that is not kebab-case (`speakerSlots`, `batch_registrations`, `companies:get-or-create`); an `.ext` suffix is allowed, path parameters are exempt | ADR-013, naming table above |
+| `no-verb-segment` | a verb outside the ADR-013 §1 action shape `POST /{id}/{verb}` (the verb is the last segment of a POST, directly after a parameter or `me`: `POST /companies/{name}/verify`, `POST /users/me/merge` pass). Flagged: a verb after a literal (`POST /users/me/profile-claims/confirm`), with another method (`PUT /tasks/{taskId}/complete`), on a collection (`POST /users/provision`), followed by a parameter or qualifier (`POST …/publish/{phase}`, `POST /registrations/deregister/by-email`); for a read only the last segment counts (`GET …/download` fails, `GET …/publish/status` passes). The verb list in the ruleset only tells a verb from a sub-resource noun; it allows nothing. `search`, `get-or-create`, `vote` are not on it | ADR-013 |
+| `no-internal-path` | a path under `/internal` in a public spec | ADR-016 |
+| `no-literal-under-events` | a literal directly under `/events/` (`/events/current`): it shares the namespace of `{eventCode}` | ADR-013 |
+| `uuid-path-param` | a path parameter with `format: uuid`, or a string named `id` / `*Id` without a format (`uploadId`); an operation parameter replaces the path-level one of the same name. Not seen: a UUID under another name without a format | ADR-003 amendment 2026-11 |
+| `no-personal-data-path-param` | a path parameter named `email` or ending in `Email`, case-insensitive (`/users/me/additional-emails/{email}`); path-level and operation-level parameters as for `uuid-path-param`. Personal data never goes in a path | ADR-003 amendment 2026-11 |
+
+**Baseline policy.** Existing violations are listed in `web-frontend/scripts/api-lint-baseline.txt`
+(rule, spec file, method, path; no line numbers). The lint fails on a NEW finding and on a STALE one
+(fixed in the spec, still in the baseline). After a fix, run `npm run lint:api -- --update` and
+commit the smaller baseline in the same PR. Never use `--update` to accept a new violation without
+the reason in the PR description. For `uuid-path-param` the reason is the ADR-003 case (no natural
+name, never crosses a service, nested under its meaningful parent and loaded scoped to it); a linter
+cannot decide that, so every UUID path parameter is listed and reviewed by a person. For
+`no-verb-segment` it is why no ADR-013 shape fits.
+
+**Owner file.** Every baseline line matches exactly one group in
+`web-frontend/scripts/api-lint-owners.txt` (hand-maintained, reviewed like code): `<group id> TAB
+<owner> TAB <rule regex> TAB <operation regex>`, the owner being the story that removes the lines
+(`17.9b`), an issue (`#1070`), or `exception: <reason>` accepted by the owner. No exception without a
+written reason, and no allow-list of action names: the right verb for the right action. A group
+owned by a story or issue covers a family by regex (all `/logos/` lines), so the file is not a
+second copy of the baseline; an exception group lists its exact operations (`^(METHOD /path|…)$`),
+so no new line falls into an exception without its own entry.
+`npm run lint:api` fails on `UNOWNED` (a line no group matches), `AMBIGUOUS` (two or more groups),
+`STALE OWNER` (a group that matches nothing any more: remove it with the fix) and `BAD OWNER` (an
+unparseable line), also right after `--update`, so a PR that accepts a new line adds its owner
+group in the same PR.
+
+**Similarity report.** On a PR that changes `docs/api/`, the CI job `api-similarity` posts one
+comment: for every added operation, the 3 most similar existing ones (path and summary). It never
+fails a build. Check it for near-duplicates before adding an operation. Locally:
+`npm run report:api-similarity -- --base origin/develop`.
 
 ### Code Documentation
 ```java

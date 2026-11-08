@@ -16,7 +16,7 @@ import { isAxiosError } from 'axios';
 import { Clock, ImageIcon, Loader2 } from 'lucide-react';
 import { Button } from '@/components/public/ui/button';
 import { useFileUpload } from '@/hooks/useFileUpload/useFileUpload';
-import { companyApiClient } from '@/services/api/companyApi';
+import { companyApiClient, logoUploadTarget } from '@/services/api/companyApi';
 import {
   createCompanyLogoRequest,
   getMyOpenCompanyLogoRequest,
@@ -54,7 +54,7 @@ export function CompanyLogoSection({ companyName }: CompanyLogoSectionProps) {
   const [preview, setPreview] = useState<string | null>(null);
   const [note, setNote] = useState('');
   const [sent, setSent] = useState(false);
-  const { uploadFile } = useFileUpload();
+  const { uploadFile } = useFileUpload({ target: logoUploadTarget });
 
   const company = useQuery({
     queryKey: ['company', companyName],

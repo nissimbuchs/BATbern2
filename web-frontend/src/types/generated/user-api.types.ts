@@ -174,7 +174,7 @@ export interface paths {
      *     - Default role: ATTENDEE (unless initialRoles specified)
      *     - Password set via Cognito welcome email
      *
-     *     **Events Published**: UserCreatedEvent to EventBridge
+     *     **Events Published**: UserCreatedEvent (in-process domain event)
      *
      *     **Performance**: <200ms (P95)
      */
@@ -705,7 +705,7 @@ export interface paths {
      *     - Cannot delete last ORGANIZER user
      *     - Cascade deletion across Event, Speaker, Partner, Attendee services
      *
-     *     **Events Published**: UserDeletedEvent to EventBridge
+     *     **Events Published**: UserDeletedEvent (in-process domain event)
      *
      *     **Audit Logging**: GDPR compliance logging
      */
@@ -994,7 +994,7 @@ export interface paths {
      *     - System must maintain at least 2 active ORGANIZER role users
      *     - Removing ORGANIZER role requires approval if only 2 remain
      *
-     *     **Events Published**: UserRoleChangedEvent to EventBridge
+     *     **Events Published**: UserRoleChangedEvent (in-process domain event)
      *
      *     **Cache Invalidation**: All user caches cleared on role update
      */

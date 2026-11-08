@@ -3,7 +3,6 @@ import * as ec2 from 'aws-cdk-lib/aws-ec2';
 import * as ecs from 'aws-cdk-lib/aws-ecs';
 import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
-import * as events from 'aws-cdk-lib/aws-events';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
@@ -20,7 +19,6 @@ export interface PartnerCoordinationStackProps extends cdk.StackProps {
   databaseSecret?: secretsmanager.ISecret;
   userPool: cognito.IUserPool;
   userPoolClient: cognito.IUserPoolClient;
-  eventBus?: events.IEventBus;
   alarmTopic?: sns.ITopic;
   /**
    * Transactional SES Configuration Set name — shared EmailService default so partner
@@ -48,10 +46,6 @@ export class PartnerCoordinationStack extends cdk.Stack {
 
     // Build additional environment variables specific to this service
     const additionalEnvironment: Record<string, string> = {
-      // EventBridge for domain events (PartnerCreatedEvent, TopicVoteSubmittedEvent, etc.)
-      ...(props.eventBus && {
-        EVENT_BUS_NAME: props.eventBus.eventBusName,
-      }),
       // Transactional SES config set → shared EmailService default (delivery tracking)
       ...(props.sesTransactionalConfigurationSetName && {
         BATBERN_SES_CONFIGURATION_SET_NAME: props.sesTransactionalConfigurationSetName,
@@ -106,7 +100,6 @@ export class PartnerCoordinationStack extends cdk.Stack {
           memoryUtilization: 85, // JVM heap capped via MaxRAMPercentage; 85% gives headroom for non-heap
           oomKillCount: envName === 'production' ? 1 : 3,
           taskFailureCount: envName === 'production' ? 2 : 5,
-          eventBridgePublishingFailures: envName === 'production' ? 5 : 10,
         },
       });
     }
@@ -128,17 +121,5 @@ export class PartnerCoordinationStack extends cdk.Stack {
         ],
       })
     );
-
-    // Grant EventBridge permissions for domain events
-    // Service publishes: PartnerCreatedEvent, PartnerUpdatedEvent, TopicVoteSubmittedEvent, TopicSuggestionSubmittedEvent
-    if (props.eventBus) {
-      this.service.taskDefinition.taskRole.addToPrincipalPolicy(
-        new iam.PolicyStatement({
-          effect: iam.Effect.ALLOW,
-          actions: ['events:PutEvents'],
-          resources: [props.eventBus.eventBusArn],
-        })
-      );
-    }
   }
 }

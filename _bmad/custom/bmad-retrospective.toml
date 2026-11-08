@@ -1,0 +1,7 @@
+# Team override for bmad-retrospective. Arrays append to the base customize.toml.
+# v7 does not load project-context.md by itself, so it is named here.
+
+[workflow]
+persistent_facts = [
+  "file:{project-root}/_bmad-output/project-context.md",
+]

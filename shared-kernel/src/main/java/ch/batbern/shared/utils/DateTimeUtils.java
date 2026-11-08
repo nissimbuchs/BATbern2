@@ -59,10 +59,6 @@ public class DateTimeUtils {
         return SWISS_DATETIME_FORMATTER.format(dateTime);
     }
 
-    public static String formatForEventBridge(Instant instant) {
-        return instant.toString(); // EventBridge accepts ISO-8601 format
-    }
-
     public static String formatRFC3339(ZonedDateTime dateTime) {
         return RFC3339_FORMATTER.format(dateTime);
     }

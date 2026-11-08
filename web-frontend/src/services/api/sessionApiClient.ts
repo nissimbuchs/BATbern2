@@ -9,6 +9,8 @@
 import apiClient from '@/services/api/apiClient';
 import { AxiosError } from 'axios';
 import type { Session, SessionMaterial, SessionSpeaker } from '@/types/event.types';
+import type { FileUploadPresignedUrl, FileUploadTarget } from '@/types/fileUpload.types';
+import type { components as EventSessionsComponents } from '@/types/generated/event-sessions-api.types';
 
 // API base path for session endpoints
 const SESSION_API_PATH = '/events';
@@ -24,17 +26,31 @@ export interface AssignSpeakerRequest {
   speakerRole: 'PRIMARY_SPEAKER' | 'CO_SPEAKER' | 'MODERATOR' | 'PANELIST';
 }
 
-export interface MaterialUploadItem {
-  uploadId: string;
-  materialType: string; // PRESENTATION, DOCUMENT, VIDEO, ARCHIVE, OTHER
-  fileName: string;
-  fileExtension: string;
-  fileSize: number;
-  mimeType: string;
+/** materialType: PRESENTATION, DOCUMENT, VIDEO, ARCHIVE or OTHER. */
+export type MaterialUploadItem = EventSessionsComponents['schemas']['MaterialUploadItem'];
+export type SessionMaterialAssociationRequest =
+  EventSessionsComponents['schemas']['SessionMaterialAssociationRequest'];
+
+/** A speaker on a session in the company view (enriched by `GET /sessions`). */
+export interface CompanySessionSpeaker {
+  username: string;
+  firstName?: string;
+  lastName?: string;
+  company?: string;
+  profilePictureUrl?: string;
 }
 
-export interface SessionMaterialAssociationRequest {
-  materials: MaterialUploadItem[];
+/** A session with at least one speaker of a company, across events (`GET /sessions`). */
+export interface CompanySession {
+  sessionSlug: string;
+  eventCode: string;
+  eventTitle?: string;
+  eventDate?: string;
+  title: string;
+  sessionType?: string;
+  startTime?: string;
+  room?: string;
+  speakers: CompanySessionSpeaker[];
 }
 
 /**
@@ -241,6 +257,19 @@ class SessionApiClient {
   }
 
   /**
+   * Sessions with a speaker of the given company, across events (company detail view).
+   * Errors are passed through unchanged.
+   *
+   * GET /api/v1/sessions?companyName={companyName}&limit={limit}
+   */
+  async listSessionsByCompany(companyName: string, limit = 50): Promise<CompanySession[]> {
+    const response = await apiClient.get<{ data: CompanySession[] }>('/sessions', {
+      params: { companyName, limit },
+    });
+    return response.data.data ?? [];
+  }
+
+  /**
    * Transform Axios errors into user-friendly error messages
    */
   private transformError(error: unknown): Error {
@@ -277,3 +306,24 @@ class SessionApiClient {
 
 // Export singleton instance
 export const sessionApiClient = new SessionApiClient();
+
+/**
+ * Session material upload target for useFileUpload (Story 5.9): phase 1 presign
+ * and phase 3 confirm. The uploads are associated with a session afterwards
+ * (`associateMaterials`). Errors are passed through for the hook to report.
+ *
+ * POST /api/v1/materials/presigned-url, POST /api/v1/materials/{uploadId}/confirm
+ */
+export const materialUploadTarget: FileUploadTarget = {
+  purpose: 'material',
+  presign: async (request) => {
+    const response = await apiClient.post<FileUploadPresignedUrl>(
+      '/materials/presigned-url',
+      request
+    );
+    return response.data;
+  },
+  confirm: async (fileId, request) => {
+    await apiClient.post(`/materials/${fileId}/confirm`, request);
+  },
+};

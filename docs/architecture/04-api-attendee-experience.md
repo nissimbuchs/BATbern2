@@ -21,6 +21,10 @@ The Attendee Experience API provides endpoints for:
 
 ### Content Discovery & Search
 
+> **Not implemented, not routed.** No service implements `GET /api/v1/content/search`. The
+> gateway route `/api/v1/content/**` went to the attendee stub service, which Story 17.2 removed
+> (ADR-014); the prefix now returns 404. The archive search that exists is served by EMS.
+
 #### Search Historical Content
 
 ```yaml

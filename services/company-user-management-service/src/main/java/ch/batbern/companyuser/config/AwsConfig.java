@@ -15,8 +15,7 @@ import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 /**
  * AWS Configuration for Company User Management Service
  *
- * Provides AWS client beans for S3 and EventBridge.
- * EventBridgeAsyncClient is provided by shared-kernel's EventBridgeConfig.
+ * Provides AWS client beans for S3 and CloudWatch.
  *
  * Note: This configuration is NOT active for 'local' profile.
  * LocalAwsConfig provides mock beans for local development.

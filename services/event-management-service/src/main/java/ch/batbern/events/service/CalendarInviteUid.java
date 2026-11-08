@@ -11,7 +11,8 @@ import java.util.regex.Pattern;
 /**
  * The iCalendar UID of a registration invite: {@code reg-{calendarUid}@batbern.ch} (Story 16.0,
  * #1161). Written by {@link RegistrationEmailService}, read back from calendar "Declined" replies by
- * {@link CalendarDeclineService}. Both sides use this class so the format cannot drift.
+ * {@link ch.batbern.events.forwarding.CalendarDeclineService}. Both sides use this class so the
+ * format cannot drift.
  */
 public final class CalendarInviteUid {
 

@@ -18,21 +18,9 @@
 
 import { useQuery } from '@tanstack/react-query';
 import axios from 'axios';
-import apiClient from '@/services/api/apiClient';
+import { getPublicUser, type PublicUserResponse } from '@/services/api/userApi';
 
-export interface PublicUserResponse {
-  username: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  profilePictureUrl?: string | null;
-}
-
-async function fetchPublicUser(username: string): Promise<PublicUserResponse> {
-  const response = await apiClient.get<PublicUserResponse>(`/public/users/${username}`, {
-    headers: { 'Skip-Auth': 'true' },
-  });
-  return response.data;
-}
+export type { PublicUserResponse };
 
 /**
  * Fetch the full public projection (firstName, lastName, profilePictureUrl) for a
@@ -46,7 +34,7 @@ async function fetchPublicUser(username: string): Promise<PublicUserResponse> {
 export function usePublicUser(username: string | undefined, enabled: boolean = true) {
   return useQuery({
     queryKey: ['public-user', username],
-    queryFn: () => fetchPublicUser(username!),
+    queryFn: () => getPublicUser(username!),
     enabled: !!username && enabled,
     staleTime: 24 * 60 * 60 * 1000, // 24 hours — public projections change rarely
     gcTime: 30 * 60 * 1000,

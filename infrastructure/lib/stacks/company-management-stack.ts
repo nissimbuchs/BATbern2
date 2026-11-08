@@ -5,7 +5,6 @@ import * as cognito from 'aws-cdk-lib/aws-cognito';
 import * as iam from 'aws-cdk-lib/aws-iam';
 import * as s3 from 'aws-cdk-lib/aws-s3';
 import * as cloudfront from 'aws-cdk-lib/aws-cloudfront';
-import * as events from 'aws-cdk-lib/aws-events';
 import * as secretsmanager from 'aws-cdk-lib/aws-secretsmanager';
 import * as sns from 'aws-cdk-lib/aws-sns';
 import { Construct } from 'constructs';
@@ -25,7 +24,6 @@ export interface CompanyManagementStackProps extends cdk.StackProps {
   userPoolClient: cognito.IUserPoolClient;
   contentBucket?: s3.IBucket;
   cloudFrontDistribution?: cloudfront.IDistribution;
-  eventBus?: events.IEventBus;
   alarmTopic?: sns.ITopic;
   watchJwtSecret?: secretsmanager.ISecret;
   /**
@@ -75,10 +73,6 @@ export class CompanyManagementStack extends cdk.Stack {
         CLOUDFRONT_DOMAIN: props.config.domain?.cdnDomain
           ? `https://${props.config.domain.cdnDomain}`
           : `https://${props.cloudFrontDistribution.distributionDomainName}`,
-      }),
-      // EventBridge for domain events
-      ...(props.eventBus && {
-        EVENT_BUS_NAME: props.eventBus.eventBusName,
       }),
       // Transactional SES config set → shared EmailService default (delivery tracking)
       ...(props.sesTransactionalConfigurationSetName && {
@@ -161,7 +155,6 @@ export class CompanyManagementStack extends cdk.Stack {
           memoryUtilization: 85, // JVM heap capped via MaxRAMPercentage; 85% gives headroom for non-heap
           oomKillCount: envName === 'production' ? 1 : 3,
           taskFailureCount: envName === 'production' ? 2 : 5,
-          eventBridgePublishingFailures: envName === 'production' ? 5 : 10,
         },
       });
     }
@@ -175,17 +168,6 @@ export class CompanyManagementStack extends cdk.Stack {
           effect: iam.Effect.ALLOW,
           actions: ['s3:PutObject', 's3:GetObject', 's3:DeleteObject'],
           resources: [`${props.contentBucket.bucketArn}/*`],
-        })
-      );
-    }
-
-    // Grant EventBridge permissions for domain events
-    if (props.eventBus) {
-      this.service.taskDefinition.taskRole.addToPrincipalPolicy(
-        new iam.PolicyStatement({
-          effect: iam.Effect.ALLOW,
-          actions: ['events:PutEvents'],
-          resources: [props.eventBus.eventBusArn],
         })
       );
     }

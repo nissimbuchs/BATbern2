@@ -4,7 +4,6 @@ import ch.batbern.events.domain.EmailForwardingOutcome;
 import ch.batbern.events.mailcenter.inbound.InboundMail;
 import ch.batbern.events.mailcenter.inbound.InboundMailParser;
 import ch.batbern.events.mailcenter.inbound.InboundMailStore;
-import ch.batbern.events.service.CalendarDeclineService;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.service.EmailService;

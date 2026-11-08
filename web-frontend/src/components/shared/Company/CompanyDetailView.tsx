@@ -32,7 +32,7 @@ import {
 import { useTranslation } from 'react-i18next';
 import { useQuery } from '@tanstack/react-query';
 import { useNavigate, useLocation } from 'react-router-dom';
-import apiClient from '@/services/api/apiClient';
+import { sessionApiClient } from '@/services/api/sessionApiClient';
 import type { components } from '@/types/generated/company-api.types';
 import type { User } from '@/types/user.types';
 import DeleteCompanyDialog from '@/components/shared/Company/DeleteCompanyDialog';
@@ -216,37 +216,12 @@ const CompanySpeakersPanel: React.FC<{ companyName: string; isMobile: boolean }>
 
 // ─── Company Sessions Panel ────────────────────────────────────────────────────
 
-interface SessionSpeaker {
-  username: string;
-  firstName?: string;
-  lastName?: string;
-  company?: string;
-  profilePictureUrl?: string;
-}
-
-interface CompanySession {
-  sessionSlug: string;
-  eventCode: string;
-  eventTitle?: string;
-  eventDate?: string;
-  title: string;
-  sessionType?: string;
-  startTime?: string;
-  room?: string;
-  speakers: SessionSpeaker[];
-}
-
 const CompanySessionsPanel: React.FC<{ companyName: string }> = ({ companyName }) => {
   const navigate = useNavigate();
 
   const { data, isLoading, isError } = useQuery({
     queryKey: ['sessions', 'byCompany', companyName],
-    queryFn: async () => {
-      const res = await apiClient.get<{ data: CompanySession[] }>('/sessions', {
-        params: { companyName, limit: 50 },
-      });
-      return res.data.data ?? [];
-    },
+    queryFn: () => sessionApiClient.listSessionsByCompany(companyName),
     enabled: !!companyName,
     staleTime: 5 * 60 * 1000,
   });

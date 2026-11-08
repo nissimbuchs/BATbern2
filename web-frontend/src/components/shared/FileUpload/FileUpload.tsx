@@ -45,6 +45,8 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { useFileUpload } from '@/hooks/useFileUpload/useFileUpload';
+import { logoUploadTarget } from '@/services/api/companyApi';
+import type { FileUploadTarget } from '@/types/fileUpload.types';
 
 export interface UploadedFile {
   uploadId: string;
@@ -72,7 +74,7 @@ interface FileUploadProps {
   multiple?: boolean; // Enable multiple file uploads
   maxFiles?: number; // Maximum number of files (default 10)
   uploadedFiles?: UploadedFile[]; // List of uploaded files (for multiple mode)
-  uploadEndpoint?: string; // API endpoint for presigned URL (default: '/logos/presigned-url')
+  uploadTarget?: FileUploadTarget; // presign + confirm of the upload's purpose (default: logo)
 }
 
 // Helper function to format file size
@@ -111,7 +113,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
   multiple = false,
   maxFiles = 10,
   uploadedFiles = [],
-  uploadEndpoint = '/logos/presigned-url', // Default to logos for backward compatibility
+  uploadTarget = logoUploadTarget, // Default to logos for backward compatibility
 }) => {
   const { t } = useTranslation('common');
   const [fileUrl, setFileUrl] = useState<string | undefined>(currentFileUrl);
@@ -134,7 +136,7 @@ export const FileUpload: React.FC<FileUploadProps> = ({
       }
     },
     onUploadError,
-    uploadEndpoint, // Pass through the endpoint
+    target: uploadTarget,
   });
 
   // Sync fileUrl with currentFileUrl prop

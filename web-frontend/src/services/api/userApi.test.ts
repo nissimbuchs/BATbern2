@@ -6,7 +6,12 @@
 import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import MockAdapter from 'axios-mock-adapter';
 import apiClient from './apiClient';
-import { getUserProfile, updateUserPreferences } from './userApi';
+import {
+  getPublicUser,
+  getUserProfile,
+  updateUserPreferences,
+  uploadProfilePictureFromUrl,
+} from './userApi';
 import { UserProfileResponse, UpdatePreferencesResponse } from '@/types/user';
 
 describe('User API', () => {
@@ -170,6 +175,53 @@ describe('User API', () => {
       });
 
       await expect(updateUserPreferences({ language: 'en' })).rejects.toThrow();
+    });
+  });
+
+  describe('getPublicUser', () => {
+    it('should_getPublicProjectionWithoutAuth_when_called', async () => {
+      // The request interceptor strips the Skip-Auth marker before the adapter sees it, so
+      // record it with an interceptor that runs first (the last-added runs first).
+      const skipAuth: string[] = [];
+      const id = apiClient.interceptors.request.use((config) => {
+        if (config.headers?.['Skip-Auth'] === 'true') skipAuth.push(config.url ?? '');
+        return config;
+      });
+      const user = { username: 'alice', firstName: 'Alice', profilePictureUrl: null };
+      mockAxios.onGet('/public/users/alice').reply(200, user);
+
+      try {
+        await expect(getPublicUser('alice')).resolves.toEqual(user);
+        expect(skipAuth).toEqual(['/public/users/alice']);
+      } finally {
+        apiClient.interceptors.request.eject(id);
+      }
+    });
+
+    it('should_passErrorThrough_when_userUnknown', async () => {
+      mockAxios.onGet('/public/users/ghost').reply(404);
+
+      await expect(getPublicUser('ghost')).rejects.toMatchObject({ response: { status: 404 } });
+    });
+  });
+
+  describe('uploadProfilePictureFromUrl', () => {
+    it('should_postUrlAndFilename_when_called', async () => {
+      mockAxios
+        .onPost('/users/jane%40example.com/profile-picture/upload-from-url')
+        .reply(200, { profilePictureUrl: 'https://cdn.example.com/p.jpg' });
+
+      await expect(
+        uploadProfilePictureFromUrl(
+          'jane@example.com',
+          'https://img.example.com/p.jpg',
+          'Jane-portrait'
+        )
+      ).resolves.toEqual({ profilePictureUrl: 'https://cdn.example.com/p.jpg' });
+      expect(JSON.parse(mockAxios.history.post[0].data)).toEqual({
+        url: 'https://img.example.com/p.jpg',
+        filename: 'Jane-portrait',
+      });
     });
   });
 });

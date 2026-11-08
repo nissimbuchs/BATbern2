@@ -21,9 +21,10 @@ import org.testcontainers.containers.PostgreSQLContainer;
  * The container is shared across all test classes for performance (manual singleton pattern).
  * We do NOT use @Testcontainers/@Container to avoid premature container shutdown.
  *
- * Usage:
+ * Usage (no class-level @Transactional on a write IT: the rollback skips the flush, so DB
+ * constraints and triggers never run; see docs/architecture/coding-standards.md, "Test fidelity
+ * rules"):
  * ```java
- * @Transactional
  * @Import(TestSecurityConfig.class) // If needed
  * public class MyServiceIntegrationTest extends AbstractIntegrationTest {
  *     // Test implementation

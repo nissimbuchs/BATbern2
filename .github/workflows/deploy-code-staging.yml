@@ -54,14 +54,8 @@ jobs:
               company-management)
                 ECS_SERVICE_PATTERN="BATbern-staging-CompanyManagement-Service"
                 ;;
-              speaker-coordination)
-                ECS_SERVICE_PATTERN="BATbern-staging-SpeakerCoordination-Service"
-                ;;
               partner-coordination)
                 ECS_SERVICE_PATTERN="BATbern-staging-PartnerCoordination-Service"
-                ;;
-              attendee-experience)
-                ECS_SERVICE_PATTERN="BATbern-staging-AttendeeExperience-Service"
                 ;;
               api-gateway-service|api-gateway)
                 ECS_SERVICE_PATTERN="BATbern-staging-ApiGatewayService-Service"

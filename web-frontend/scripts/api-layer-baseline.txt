@@ -1,22 +1,9 @@
-# Frontend API path check (Story 17.3): files OUTSIDE src/services/ that make HTTP calls.
+# Frontend API path check: files OUTSIDE src/services/ that make HTTP calls.
 #
 # The rule (docs/architecture/module-map.md, Placement): API calls only in src/services/.
-# These files broke it before the check existed and are frozen here, not fixed. A new file
-# with an HTTP call outside src/services/ fails the check; so does an entry whose file no
-# longer makes one (STALE): delete the line when a call moves into a service.
+# Files that broke it before the check existed were frozen here (13 on 2026-11-07); their calls
+# moved into services on 2026-11-08, so the list is empty. A file with an HTTP
+# call outside src/services/ fails the check; so does an entry whose file no longer makes one
+# (STALE). Add a line only with the owner's go and a reason.
 #
 # Format: file  # reason (what it calls)
-
-src/components/organizer/UserManagement/EventsParticipatedTable.tsx  # frozen 2026-11-07: GET /events/registrations
-src/components/organizer/UserManagement/UserCreateEditModal.tsx  # frozen 2026-11-07: DELETE /users/{id}/picture
-src/components/shared/Company/CompanyDetailView.tsx  # frozen 2026-11-07: GET /sessions
-src/contexts/AuthContext.tsx  # frozen 2026-11-07: GET /partners/me
-src/hooks/useAiAssist.ts  # frozen 2026-11-07: event and speaker AI endpoints (/events/{c}/ai/*, /speakers/{id}/ai/*)
-src/hooks/useCompanyBatchImport/useCompanyBatchImport.ts  # frozen 2026-11-07: POST /logos/upload-from-url
-src/hooks/useEventTeaserImages.ts  # frozen 2026-11-07: presigned S3 PUT through bare axios (not an API call, but HTTP)
-src/hooks/useFeatureFlags.ts  # frozen 2026-11-07: GET /public/settings/features
-src/hooks/useFileUpload/useFileUpload.ts  # frozen 2026-11-07: presigned-url and confirm of /logos and /materials
-src/hooks/usePublicPartners.ts  # frozen 2026-11-07: GET /partners
-src/hooks/useSpeakerBatchImport/useSpeakerBatchImport.ts  # frozen 2026-11-07: POST /users/{u}/profile-picture/upload-from-url
-src/hooks/useUserPortrait.ts  # frozen 2026-11-07: GET /public/users/{u}
-src/hooks/useUserProfile/useUserProfile.ts  # frozen 2026-11-07: GET /users/me

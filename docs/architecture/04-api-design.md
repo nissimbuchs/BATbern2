@@ -93,7 +93,9 @@ Partner relationship management, strategic topic voting, and partnership analyti
 Attendee registration, content discovery, and historical archive search across 20+ years of content.
 
 **Key Endpoints:**
-- `/api/v1/content/search` - Full-text content discovery
+- `/api/v1/attendee-portal/**` and `/api/v1/registrations/**` - served by EMS
+- `/api/v1/content/search` was never implemented; the gateway route `/api/v1/content/**` pointed
+  at the attendee stub service and was removed with it by Story 17.2 (ADR-014)
 
 **Core Workflows:**
 - Content discovery and search with caching
@@ -145,7 +147,7 @@ Each API domain represents a **bounded context** with:
 ### Cross-Domain Communication
 
 Domains communicate through:
-- **Domain Events**: Published via AWS EventBridge for async communication
+- **Domain Events**: in process only, inside the service that raises them (no message bus, Story 17.2 part B)
 - **API Gateway**: Unified entry point for all domain APIs
 - **Shared Kernel**: Common types, events, and utilities
 - **REST APIs**: Synchronous cross-domain requests when necessary

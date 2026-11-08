@@ -1,0 +1,10 @@
+openapi: 3.1.0
+info:
+  title: Shared components, never linted
+  version: 1.0.0
+paths:
+  /internal/shared_thing/{id}/send:
+    get:
+      responses:
+        '200':
+          description: ok

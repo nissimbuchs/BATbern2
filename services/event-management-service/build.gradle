@@ -37,14 +37,15 @@ gitProperties {
 dependencies {
     // Shared test infrastructure (PostgreSQL Testcontainers base class)
     testImplementation testFixtures(project(':shared-kernel'))
+    // Frozen ArchUnit rules (module walls, service direction), store in src/test/resources
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'
 
     // Service-specific: Caching (Caffeine in-memory cache)
     implementation 'com.github.ben-manes.caffeine:caffeine:3.3.1'
     implementation 'org.springframework.boot:spring-boot-starter-cache'
 
-    // Service-specific: AWS SDK for EventBridge, S3, CloudFront, and SES
+    // Service-specific: AWS SDK for S3, CloudFront, and SES
     implementation platform('software.amazon.awssdk:bom:2.57.6')
-    implementation 'software.amazon.awssdk:eventbridge'
     implementation 'software.amazon.awssdk:s3'
     implementation 'software.amazon.awssdk:cloudfront'
     implementation 'software.amazon.awssdk:ses'  // BAT-7: Email notifications

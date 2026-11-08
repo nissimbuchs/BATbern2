@@ -23,7 +23,6 @@ flowchart LR
     GW -->|"path prefix, headers copied"| EMS["event-management-service"]
     GW --> CUMS["company-user-management-service"]
     GW --> PCS["partner-coordination-service"]
-    GW -.->|"/api/v1/content only"| AES["attendee-experience-service"]
     GW -->|"/internal/** denyAll"| X["403"]
     EMS <-->|"/internal/** no JWT,<br/>Service Connect inside the VPC"| CUMS
     PCS -->|"/internal/users"| CUMS
@@ -39,8 +38,6 @@ route without an authorizer; the Spring gateway (`api-gateway/`) authenticates a
 prefix in `DomainRouter.determineTargetService`, and copies the incoming headers, including
 `Authorization`, to the service (`DomainRouter.routeRequest`). Service URLs are Service Connect
 names (`http://event-management:8080`, see `api-gateway-service-stack.ts`).
-speaker-coordination-service has no gateway route; attendee-experience-service receives only
-`/api/v1/content/**`.
 
 ### Package layout
 
@@ -344,7 +341,7 @@ with `NotFoundException`, `ValidationException`, `InvalidStateTransitionExceptio
 
 ### Global Exception Handler
 
-Each service has its own `GlobalExceptionHandler` (`@RestControllerAdvice` in EMS, CUMS, PCS and SCS;
+Each service has its own `GlobalExceptionHandler` (`@RestControllerAdvice` in EMS, CUMS and PCS;
 `@ControllerAdvice` in the gateway). The EMS handler has 60 `@ExceptionHandler` methods, among them
 `MethodArgumentNotValidException`, `ConstraintViolationException`, `PropertyReferenceException`,
 `HttpMessageNotReadableException` and `MethodArgumentTypeMismatchException` (all 400),
@@ -389,49 +386,14 @@ been 400s:
   punctuation — the injection vector Spring Data's guard exists to stop — out of sort expressions
   entirely. (Issue #903.)
 
-### Circuit Breaker, Bulkhead and Retry (EventBridge publishing)
+### Circuit Breaker, Bulkhead and Retry
 
-The platform uses **Resilience4j** (`resilience4j-*` 2.4.0 in `shared-kernel/build.gradle`). The
-only place it is applied is `shared-kernel/.../events/EventBridgeEventPublisher`, which decorates
-the EventBridge `putEvents` call programmatically, not with annotations:
-
-```java
-// EventBridgeEventPublisher.publish(...)
-Bulkhead.decorateSupplier(bulkhead,
-    CircuitBreaker.decorateSupplier(circuitBreaker,
-        Retry.decorateSupplier(retry, publishSupplier)));
-```
-
-The instances are configured in `shared-kernel/src/main/resources/application-shared.yml`:
-
-```yaml
-resilience4j:
-  circuitbreaker:
-    instances:
-      eventBridgePublisher:
-        slidingWindowSize: 50
-        failureRateThreshold: 60          # open after 60% failures
-        waitDurationInOpenState: 10s
-        permittedNumberOfCallsInHalfOpenState: 5
-  bulkhead:
-    instances:
-      eventBridgePublisher:
-        maxConcurrentCalls: 50
-        maxWaitDuration: 100ms
-  retry:
-    instances:
-      eventBridgePublisher:
-        maxAttempts: 3
-        waitDuration: 1000ms
-        enableExponentialBackoff: true
-        exponentialBackoffMultiplier: 2
-```
-
-Failed entries in a `putEvents` response are handled in `handleFailedEntries`; there is no
-fallback store for events that could not be published.
+There is no generic resilience layer. The shared kernel used Resilience4j only around the
+EventBridge publisher; both were removed with the event bus (Story 17.2 part B, 2026-11), and
+the shared kernel no longer depends on Resilience4j.
 
 There is no generic retry service: no `RetryService` class, no Spring Retry dependency and no
-`@Retryable` in the codebase. Other outbound calls (SES, S3, cross-service HTTP) do not go
+`@Retryable` in the codebase. Outbound calls (SES, S3, cross-service HTTP) do not go
 through Resilience4j. partner-coordination-service declares circuit breaker instances
 `companyService` and `userService` in its `application.yml`, but no code in `services/*/src/main`
 references Resilience4j, so those instances are configuration only.
@@ -458,26 +420,24 @@ synchronous HTTP (`/internal/**`, see above) or SQS for mail, not events.
 
 ```mermaid
 flowchart LR
-    SVC["Service code, e.g. SpeakerWorkflowService,<br/>EventWorkflowStateMachine, UserService"] -->|"publish(event)"| PUB["EventBridgeEventPublisher<br/>shared kernel"]
-    PUB -->|"1 - synchronous"| SPRING["Spring ApplicationEventPublisher"]
+    SVC["Service code, e.g. SpeakerWorkflowService,<br/>EventWorkflowStateMachine, UserService"] -->|"publish(event)"| PUB["SpringDomainEventPublisher<br/>shared kernel"]
+    PUB -->|"synchronous"| SPRING["Spring ApplicationEventPublisher"]
     SPRING --> L1["@EventListener in the same service<br/>e.g. EventWorkflowTransitionListener,<br/>SpeakerAcceptedEventListener,<br/>OrganizerNotificationListener - async"]
-    PUB -->|"2 - fire and forget<br/>Bulkhead, CircuitBreaker, Retry"| EB["EventBridge putEvents"]
-    EB --> BUS[("event bus<br/>no rules, no consumer")]
 ```
 
-- `DomainEventPublisher` (shared kernel) is an interface; `EventBridgeEventPublisher` implements it
-  and first calls Spring's `ApplicationEventPublisher`, then sends to EventBridge asynchronously
-  with Resilience4j (next section). A failed EventBridge put is logged; the caller never waits.
-- The CDK creates one bus `batbern-{env}` (`event-bus-stack.ts`) and **no rule** on it, so nothing
-  consumes what reaches EventBridge. CUMS and PCS set `aws.eventbridge.bus-name` from
-  `EVENT_BUS_NAME`; EMS sets no bus name and falls back to the code default `batbern-events`, which
-  the CDK does not create. Whether EMS's puts fail in production was not checked
-  (not verified 2026-11-04).
+- `DomainEventPublisher` (shared kernel) is an interface with one method, `publish`;
+  `SpringDomainEventPublisher` implements it by validating the event and handing it to Spring's
+  `ApplicationEventPublisher`. A synchronous listener that throws is logged at ERROR with the event
+  type and does not fail the caller (the behaviour before the bus was removed; whether it should
+  fail the caller is story 17.12).
+- There is no message bus. The EventBridge bus, the EventBridge publisher with its Resilience4j
+  wrapping, the `EVENT_BUS_NAME` settings and the `events:PutEvents` grants were removed in
+  Story 17.2 part B (2026-11): the bus had no rules and EMS published to a bus name that did not
+  exist. `DomainEventListenersIntegrationTest` (EMS) proves each listener still gets its event.
 - Listeners differ in transaction handling: the workflow auto-transition listeners run in
   `REQUIRES_NEW` and never fail the triggering request; `OrganizerNotificationListener` is `@Async`.
-- Some events are plain Spring events that never go to EventBridge, e.g. EMS's
-  `SpeakersPhasePublishedEvent` (task activation), a record published through
-  `ApplicationEventPublisher` directly.
+- Some events are plain Spring events published through `ApplicationEventPublisher` directly,
+  e.g. EMS's `SpeakersPhasePublishedEvent` (task activation), a record, not a `DomainEvent`.
 
 ### Data Validation and Business Rules
 
@@ -1413,7 +1373,7 @@ The BATbern backend uses Testcontainers PostgreSQL for all integration tests to 
   `/internal/**` without JWT, denied at the gateway.
 - **Errors**: one `ErrorResponse` shape, built per service by its `GlobalExceptionHandler`, passed
   through by the gateway with a correlation id that is also logged.
-- **Resilience4j** only around EventBridge publishing; there is no generic retry layer.
+- **No Resilience4j** in the shared kernel (it wrapped only the EventBridge publisher, removed in Story 17.2 part B); there is no generic retry layer.
 - **Two state machines** (8 event states, 8 speaker states) that push each other forward through
   in-process domain events, plus schedulers for live, completed and archived.
 - **One mail record** for everything that goes out and comes in (Mail Center), with delivery status

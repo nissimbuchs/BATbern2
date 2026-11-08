@@ -89,15 +89,6 @@ class DateTimeUtilsTest {
         }
 
         @Test
-        void should_formatAsEventBridgeTimestamp_when_instantProvided() {
-            Instant instant = Instant.parse("2024-01-15T10:30:00Z");
-
-            String formatted = DateTimeUtils.formatForEventBridge(instant);
-
-            assertThat(formatted).matches("\\d{4}-\\d{2}-\\d{2}T\\d{2}:\\d{2}:\\d{2}(\\.\\d{3})?Z");
-        }
-
-        @Test
         void should_formatAsRFC3339_when_zonedDateTimeProvided() {
             ZonedDateTime dateTime = ZonedDateTime.parse("2024-01-15T10:30:00+01:00[Europe/Zurich]");
 

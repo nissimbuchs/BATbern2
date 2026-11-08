@@ -186,7 +186,9 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
   PostgreSQL 16 via Testcontainers with `.withReuse(true)` for performance.
 - **NEVER use H2 or `@DataJpaTest` without PostgreSQL** — hides JSONB, function,
   and constraint issues that only surface in production.
-- Annotate integration test classes with `@Transactional` so each test rolls back.
+- No class-level `@Transactional` on a write IT: the rollback skips the flush, so DB constraints and
+  triggers never run (#1104). Clean up in `@AfterEach`, or `flush()` before asserting. The CI ratchet
+  counts class-level `@Transactional` ITs (`coding-standards.md` → "Test fidelity rules").
 - `application-test.properties`: `spring.flyway.enabled=true` — always run real migrations.
 
 ### Test Naming Convention
@@ -198,7 +200,7 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
 - Use `screen` queries from React Testing Library — no `container.querySelector`.
 - Prefer `userEvent` over `fireEvent` for realistic interaction simulation.
 - Use `waitFor()` for any assertion that depends on async state or CSS transitions.
-- `msw` 2.x is available for mocking HTTP in unit tests — use it instead of mocking service modules.
+- What a test may mock: only the process boundary (MSW for the network, Amplify), never our services, hooks or child components. Binding rules and the CI ratchet: `docs/architecture/coding-standards.md` → "Test fidelity rules".
 
 ### E2E Testing (Playwright)
 - Three projects: `chromium` (organizer — always active), `speaker` (activated by
@@ -456,8 +458,6 @@ type(scope): description
   `.not.toBeInTheDocument()` assertions.
 - i18n: ALL user-visible strings go through `useTranslation()`. Add keys to ALL 10 locale
   files (see i18n/Localization rule). Missing keys silently fall back to the key string.
-- Never import directly from `src/types/generated/` in test files when testing with MSW —
-  mock the service layer instead.
 
 ### Build & CI Gotchas
 

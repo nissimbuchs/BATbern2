@@ -39,9 +39,7 @@ class RequestRoutingIntegrationTest {
 
         // Set service URL properties
         ReflectionTestUtils.setField(domainRouter, "eventManagementUrl", "http://localhost:8081");
-        ReflectionTestUtils.setField(domainRouter, "speakerCoordinationUrl", "http://localhost:8082");
         ReflectionTestUtils.setField(domainRouter, "partnerCoordinationUrl", "http://localhost:8083");
-        ReflectionTestUtils.setField(domainRouter, "attendeeExperienceUrl", "http://localhost:8084");
         ReflectionTestUtils.setField(domainRouter, "companyUserManagementUrl", "http://localhost:8085");
     }
 

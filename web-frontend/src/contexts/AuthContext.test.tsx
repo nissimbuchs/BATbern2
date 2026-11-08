@@ -5,13 +5,15 @@
  * Uses renderHook with AuthProvider wrapper (same pattern as useAuth.test.tsx)
  */
 
-import { describe, test, expect, vi, beforeEach } from 'vitest';
+import { describe, test, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import React from 'react';
 import { AuthProvider } from './AuthContext';
 import { ConfigContext } from './createConfigContext';
 import type { AppConfig } from '@/config/runtime-config';
 import { useAuth } from '@/hooks/useAuth';
+import MockAdapter from 'axios-mock-adapter';
+import apiClient from '@/services/api/apiClient';
 
 // AuthProvider gates session restore on runtime config being present (it needs the
 // Cognito pool/client IDs to configure Amplify). In production it always renders inside
@@ -36,19 +38,15 @@ vi.mock('@services/auth/authService', () => ({
   },
 }));
 
-// Story 12.1: AuthContext now hydrates company + preferences from GET /users/me on
-// every login/init (hydrateUserFromDb). Mock the userApi so tests don't hit the network.
-vi.mock('@/services/api/userApi', () => ({
-  getUserProfile: vi
-    .fn()
-    .mockResolvedValue({ roles: [], companyId: undefined, preferences: undefined }),
-}));
-
-// Import the mocked modules
+// Import the mocked module
 import { authService } from '@services/auth/authService';
-import { getUserProfile } from '@/services/api/userApi';
 const mockAuthService = vi.mocked(authService);
-const mockGetUserProfile = vi.mocked(getUserProfile);
+
+// Story 12.1: AuthContext hydrates company + preferences from GET /users/me on every
+// login/init (hydrateUserFromDb). Stubbed at the HTTP boundary, the real userApi
+// and partnerApi run. Re-registering the same route replaces the previous reply.
+let http: MockAdapter;
+const usersMeReplies = (body: unknown) => http.onGet('/users/me').reply(200, body);
 
 const wrapper = ({ children }: { children: React.ReactNode }) => (
   <ConfigContext.Provider value={TEST_CONFIG}>
@@ -87,6 +85,7 @@ function mockMultiRoleUser(roles: readonly string[]) {
 describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    http = new MockAdapter(apiClient);
     // AuthProvider now skips session restore unless a Cognito session exists in storage
     // (perf/public-homepage-followup #2). Seed one so these tests exercise the restore path;
     // the anonymous-skip behaviour is covered by its own test below.
@@ -96,11 +95,11 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
     mockAuthService.getCurrentUser.mockResolvedValue(null);
     mockAuthService.isTokenExpired.mockReturnValue(false);
     // Default: /users/me hydration is a no-op (JWT already carries roles in staging).
-    mockGetUserProfile.mockResolvedValue({
-      roles: [],
-      companyId: undefined,
-      preferences: undefined,
-    } as never);
+    usersMeReplies({ roles: [] });
+  });
+
+  afterEach(() => {
+    http.restore();
   });
 
   describe('Session restore gating (perf/public-homepage-followup #2)', () => {
@@ -272,7 +271,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
 
     test('should populate companyId + preferences.language from /users/me', async () => {
       mockTokenUserWithoutCompanyOrPrefs(['organizer']);
-      mockGetUserProfile.mockResolvedValue({
+      usersMeReplies({
         roles: ['ORGANIZER'],
         companyId: 'Swiss IT Solutions AG',
         preferences: {
@@ -281,7 +280,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
           emailNotifications: false,
           pushNotifications: false,
         },
-      } as never);
+      });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
@@ -293,11 +292,11 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
 
     test('regression guard: preferences.language is set on the user the moment isAuthenticated flips true (before LanguageSync runs)', async () => {
       mockTokenUserWithoutCompanyOrPrefs(['speaker']);
-      mockGetUserProfile.mockResolvedValue({
+      usersMeReplies({
         roles: ['SPEAKER'],
         companyId: 'Acme AG',
         preferences: { language: 'de', theme: 'light' },
-      } as never);
+      });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       // The very assertion that isAuthenticated is true happens only after hydration
@@ -310,11 +309,11 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
     test('does NOT override JWT roles with DB roles when the token already carries roles', async () => {
       mockTokenUserWithoutCompanyOrPrefs(['organizer', 'speaker']);
       // DB returns a different (single) role set — must be ignored since JWT had roles.
-      mockGetUserProfile.mockResolvedValue({
+      usersMeReplies({
         roles: ['ATTENDEE'],
         companyId: 'Acme AG',
         preferences: { language: 'en' },
-      } as never);
+      });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
@@ -331,17 +330,17 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
     test('should pick up termsAcceptedAt from /users/me on refreshUser()', async () => {
       mockMultiRoleUser(['attendee']);
       // Initial hydration: consent confirmed absent → null (gate armed).
-      mockGetUserProfile.mockResolvedValue({ roles: [], companyId: undefined } as never);
+      usersMeReplies({ roles: [], companyId: undefined });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
       expect(result.current.user?.termsAcceptedAt).toBeNull();
 
       // Consent recorded server-side; the refresh GET now returns it.
-      mockGetUserProfile.mockResolvedValue({
+      usersMeReplies({
         roles: [],
         termsAcceptedAt: '2026-06-04T18:00:00Z',
-      } as never);
+      });
       await act(async () => result.current.refreshUser());
 
       expect(result.current.user?.termsAcceptedAt).toBe('2026-06-04T18:00:00Z');
@@ -349,7 +348,7 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
 
     test('regression guard (review patch 2026-06-04): overrides survive a silently-failed hydration — the gate must lift after a successful consent PUT even when the refresh GET fails', async () => {
       mockMultiRoleUser(['attendee']);
-      mockGetUserProfile.mockResolvedValue({ roles: [], companyId: undefined } as never);
+      usersMeReplies({ roles: [], companyId: undefined });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
@@ -358,12 +357,44 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
       // The refresh GET fails transiently — hydrateUserFromDb fails open and returns
       // the stale user (termsAcceptedAt: null). The server-authoritative override from
       // the consent PUT response must still land, or ProtectedRoute re-fires the gate.
-      mockGetUserProfile.mockRejectedValue(new Error('503 transient') as never);
+      http.onGet('/users/me').reply(503);
       await act(async () =>
         result.current.refreshUser({ termsAcceptedAt: '2026-06-04T18:00:00Z' })
       );
 
       expect(result.current.user?.termsAcceptedAt).toBe('2026-06-04T18:00:00Z');
+    });
+  });
+
+  describe('partner companyName resolution (GET /partners/me)', () => {
+    test('should set companyName from /partners/me when the token has none', async () => {
+      mockMultiRoleUser(['partner']);
+      http.onGet('/partners/me').reply(200, { companyName: 'Acme AG' });
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+      expect(result.current.user?.companyName).toBe('Acme AG');
+      expect(http.history.get.filter((r) => r.url === '/partners/me')).toHaveLength(1);
+    });
+
+    test('should stay authenticated without companyName when /partners/me fails', async () => {
+      mockMultiRoleUser(['partner']);
+      http.onGet('/partners/me').reply(404);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+      expect(result.current.user?.companyName).toBeUndefined();
+    });
+
+    test('should not call /partners/me for a non-partner', async () => {
+      mockMultiRoleUser(['organizer']);
+
+      const { result } = renderHook(() => useAuth(), { wrapper });
+      await waitFor(() => expect(result.current.isAuthenticated).toBe(true));
+
+      expect(http.history.get.filter((r) => r.url === '/partners/me')).toHaveLength(0);
     });
   });
 
@@ -442,11 +473,11 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
         accessToken: 'fed-access-token',
       } as never);
       // /users/me carries the regression-critical language ('de' here).
-      mockGetUserProfile.mockResolvedValue({
+      usersMeReplies({
         roles: ['attendee'],
         companyId: undefined,
         preferences: { language: 'de' },
-      } as never);
+      });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
       await waitFor(() => expect(result.current.isLoading).toBe(false));

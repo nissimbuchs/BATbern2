@@ -7,20 +7,19 @@
 #   BASE_PORT=9000 ./scripts/dev/start-all-native.sh  # Second instance (BASE_PORT=9000)
 #
 # Parallel Instance Support:
-#   - Instance 1: BASE_PORT=8000 (default) → services 8080-8085, frontend 3000, DB tunnel 5432, MinIO 9000-9001
-#   - Instance 2: BASE_PORT=9000 → services 9080-9085, frontend 4000, DB tunnel 6432, MinIO 9100-9101
+#   - Instance 1: BASE_PORT=8000 (default) → gateway 8000, services 8001/8002/8004, frontend 8100
+#   - Instance 2: BASE_PORT=9000 → gateway 9000, services 9001/9002/9004, frontend 9100
 #   - Both instances share the same database but have isolated processes
 #
 # Services started BY DEFAULT (with default ports):
-#   - API Gateway (port 8080)
-#   - Company User Management Service (port 8081)
-#   - Event Management Service (port 8082)
-#   - Partner Coordination Service (port 8084)
-#   - Web Frontend (port 3000)
+#   - API Gateway (port BASE_PORT, 8000)
+#   - Company User Management Service (port BASE_PORT+1, 8001)
+#   - Event Management Service (port BASE_PORT+2, 8002)
+#   - Partner Coordination Service (port BASE_PORT+4, 8004)
+#   - Web Frontend (port BASE_PORT+100, 8100)
 #
-# All six services start by default (see DEV_SERVICES in lib/native-services.sh). The
-# 4-service default that ran 2026-08-08..2026-08-14 existed only for the 6 GB NAS dev
-# host, which is being decommissioned. To run a subset on a small machine, name it:
+# All services start by default (see DEV_SERVICES in lib/native-services.sh). To run a
+# subset on a small machine, name it:
 #   DEV_SERVICES="api-gateway company-user-management event-management" make dev-native-up
 #
 # Memory tuning (added 2026-08-08 for the 6 GB NAS dev host; kept — it also helps laptops
@@ -71,13 +70,12 @@ fi
 ENV_NATIVE_FILE="${PROJECT_ROOT}/.env.native.${INSTANCE}"
 
 # Calculate ports - consistent for all instances
-# Pattern: BASE_PORT for API Gateway, BASE_PORT+1..5 for services, BASE_PORT+100 for frontend
+# Pattern: BASE_PORT for API Gateway, BASE_PORT+1/+2/+4 for services, BASE_PORT+100 for frontend
+# (+3 and +5 belonged to the speaker and attendee stubs removed by Story 17.2; left unused)
 API_GATEWAY_PORT=$BASE_PORT
 COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
 EVENT_MGMT_PORT=$((BASE_PORT + 2))
-SPEAKER_COORD_PORT=$((BASE_PORT + 3))
 PARTNER_COORD_PORT=$((BASE_PORT + 4))
-ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
 FRONTEND_PORT=$((BASE_PORT + 100))
 
 # Shared infrastructure ports (all instances use the same DB tunnel and MinIO)
@@ -188,9 +186,7 @@ create_env_native() {
     API_GATEWAY_PORT=$BASE_PORT
     COMPANY_USER_MGMT_PORT=$((BASE_PORT + 1))
     EVENT_MGMT_PORT=$((BASE_PORT + 2))
-    SPEAKER_COORD_PORT=$((BASE_PORT + 3))
     PARTNER_COORD_PORT=$((BASE_PORT + 4))
-    ATTENDEE_EXP_PORT=$((BASE_PORT + 5))
     FRONTEND_PORT=$((BASE_PORT + 100))
 
     # Create .env.native.{INSTANCE} with localhost overrides and instance-specific ports
@@ -278,14 +274,7 @@ API_GATEWAY_PORT=${API_GATEWAY_PORT}
 # Services communicate via localhost with instance-specific ports
 COMPANY_USER_MANAGEMENT_SERVICE_URL="http://localhost:${COMPANY_USER_MGMT_PORT}"
 EVENT_MANAGEMENT_SERVICE_URL="http://localhost:${EVENT_MGMT_PORT}"
-SPEAKER_COORDINATION_SERVICE_URL="http://localhost:${SPEAKER_COORD_PORT}"
 PARTNER_COORDINATION_SERVICE_URL="http://localhost:${PARTNER_COORD_PORT}"
-ATTENDEE_EXPERIENCE_SERVICE_URL="http://localhost:${ATTENDEE_EXP_PORT}"
-
-# ==============================================
-# EventBridge Configuration
-# ==============================================
-EVENT_BUS_NAME=${EVENT_BUS_NAME:-batbern-development}
 
 # ==============================================
 # MinIO Configuration (Instance ${INSTANCE})
@@ -646,9 +635,7 @@ main() {
     service_enabled "api-gateway"             && echo -e "  ${GREEN}API Gateway:${NC}                http://localhost:${API_GATEWAY_PORT}  (heap $(service_heap api-gateway))" || true
     service_enabled "company-user-management" && echo -e "  ${GREEN}Company User Management:${NC}    http://localhost:${COMPANY_USER_MGMT_PORT}  (heap $(service_heap company-user-management))" || true
     service_enabled "event-management"        && echo -e "  ${GREEN}Event Management:${NC}           http://localhost:${EVENT_MGMT_PORT}  (heap $(service_heap event-management))" || true
-    service_enabled "speaker-coordination"    && echo -e "  ${GREEN}Speaker Coordination:${NC}       http://localhost:${SPEAKER_COORD_PORT}  (heap $(service_heap speaker-coordination))" || true
     service_enabled "partner-coordination"    && echo -e "  ${GREEN}Partner Coordination:${NC}       http://localhost:${PARTNER_COORD_PORT}  (heap $(service_heap partner-coordination))" || true
-    service_enabled "attendee-experience"     && echo -e "  ${GREEN}Attendee Experience:${NC}        http://localhost:${ATTENDEE_EXP_PORT}  (heap $(service_heap attendee-experience))" || true
     echo -e "  ${GREEN}Web Frontend:${NC}               http://localhost:${FRONTEND_PORT}"
     echo ""
 

@@ -1,0 +1,114 @@
+openapi: 3.0.3
+info:
+  title: BATbern Gateway Runtime Config API
+  version: 1.0.0
+  description: 'Runtime configuration the web frontend loads once at startup ("build once, deploy everywhere").
+
+
+    Served by the Spring API gateway itself (`ConfigController`), not by a domain service. Public: the
+    frontend calls it before any login. Paths are relative to the server base URL (/api/v1), like every
+    sibling spec. Added by the architecture-hardening initiative (deferred finding of Story 17.3).'
+  contact:
+    name: BATbern Platform Team
+    email: platform@batbern.ch
+  license:
+    name: Proprietary
+servers:
+- url: https://api.batbern.ch/api/v1
+  description: Production
+- url: http://localhost:8080/api/v1
+  description: Development
+tags:
+- name: Config
+  description: Frontend runtime configuration
+paths:
+  /config:
+    get:
+      tags:
+      - Config
+      operationId: getFrontendConfig
+      summary: Get the frontend runtime configuration
+      description: 'Environment, API base URL, Cognito client settings, feature flags and the public
+        Turnstile site key. No secret is returned. Called by `web-frontend/src/config/runtime-config.ts`.'
+      security: []
+      responses:
+        '200':
+          description: Runtime configuration of the current environment
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/FrontendConfig'
+components:
+  schemas:
+    FrontendConfig:
+      type: object
+      required:
+      - environment
+      - apiBaseUrl
+      - cognito
+      - features
+      properties:
+        environment:
+          type: string
+          description: Environment name from `app.environment` (development, staging or production).
+          example: production
+        apiBaseUrl:
+          type: string
+          description: Base URL of the API, including `/api/v1`.
+          example: https://api.batbern.ch/api/v1
+        cognito:
+          $ref: '#/components/schemas/CognitoConfig'
+        features:
+          $ref: '#/components/schemas/FeatureFlags'
+        turnstile:
+          allOf:
+          - $ref: '#/components/schemas/TurnstileConfig'
+          nullable: true
+          description: Present only when Turnstile is enabled; null otherwise.
+    CognitoConfig:
+      type: object
+      required:
+      - userPoolId
+      - clientId
+      - region
+      properties:
+        userPoolId:
+          type: string
+          description: Cognito user pool ID.
+        clientId:
+          type: string
+          description: Cognito app client ID (public client).
+        region:
+          type: string
+          example: eu-central-1
+    FeatureFlags:
+      type: object
+      required:
+      - notifications
+      - analytics
+      - pwa
+      - turnstile
+      - sso
+      properties:
+        notifications:
+          type: boolean
+        analytics:
+          type: boolean
+          description: Off in development.
+        pwa:
+          type: boolean
+          description: Off in development.
+        turnstile:
+          type: boolean
+          description: Cloudflare Turnstile bot protection.
+        sso:
+          type: boolean
+          description: '"Continue with Google" button, runtime kill switch `features.sso.enabled` (ADR-010 D8).'
+    TurnstileConfig:
+      type: object
+      required:
+      - siteKey
+      properties:
+        siteKey:
+          type: string
+          description: Cloudflare Turnstile site key (public). The secret key is never returned.

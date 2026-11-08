@@ -946,7 +946,7 @@ class JITUserProvisioningInterceptorTest {
 
         User savedUser = createUser(cognitoUserId, "eventerror", "eventerror@example.com", Set.of(Role.ATTENDEE));
         when(userRepository.save(any(User.class))).thenReturn(savedUser);
-        doThrow(new RuntimeException("EventBridge unavailable"))
+        doThrow(new RuntimeException("listener failed"))
                 .when(eventPublisher).publishEvent(any(UserCreatedEvent.class));
 
         // When: Interceptor pre-handle is called

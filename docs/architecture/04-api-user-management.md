@@ -88,7 +88,7 @@ description: |
 
   **Database Only**: User updates stored in PostgreSQL only (per ADR-001, NO Cognito sync)
 
-  **Events Published**: UserUpdatedEvent to EventBridge
+  **Events Published**: UserUpdatedEvent (in-process domain event)
 
   **Cache Invalidation**: All user caches cleared on update
 
@@ -554,7 +554,7 @@ description: |
   - System must maintain at least 2 active ORGANIZER role users
   - Removing ORGANIZER role from user requires approval if only 2 organizers remain
 
-  **Events Published**: UserRoleChangedEvent to EventBridge
+  **Events Published**: UserRoleChangedEvent (in-process domain event)
 
   **Cache Invalidation**: All user caches cleared on role update
 
@@ -852,7 +852,7 @@ description: |
   - Cascade deletion across Event, Speaker, Partner, Attendee services
   - Audit logging for GDPR compliance
 
-  **Events Published**: UserDeletedEvent to EventBridge
+  **Events Published**: UserDeletedEvent (in-process domain event)
 
   **Deletion Scope**:
   - User profile and authentication
@@ -1292,34 +1292,15 @@ PaginationMetadata:
 - Reduces database load for frequently searched users
 - X-Cache-Status header indicates HIT or MISS
 
-### Event-Driven Architecture
+### Domain Events
 
-**EventBridge Integration**:
-- Event bus: `batbern-{environment}-event-bus`
-- Event source: `ch.batbern.user`
-- Published events:
-  - `UserCreatedEvent`: When new user is created
-  - `UserUpdatedEvent`: When user data is modified
-  - `UserRoleChangedEvent`: When user roles are updated
-  - `UserDeletedEvent`: When user is removed (GDPR)
+The service raises these domain events in process (`DomainEventPublisher`, shared kernel). No
+other service consumes them and there is no message bus (Story 17.2 part B, 2026-11):
 
-**Event Schema Example**:
-```json
-{
-  "username": "john.doe",
-  "email": "john.doe@example.com",
-  "roles": ["SPEAKER", "ATTENDEE"],
-  "companyName": "GoogleZH",
-  "eventTimestamp": "2025-01-15T10:00:00Z"
-}
-```
-
-**Event Consumers**:
-- Speaker Coordination Service: Associates speaker records with user accounts
-- Partner Coordination Service: Associates partner contacts with user accounts
-- Event Management Service: Updates event registrations and attendance
-- Notification Service: Triggers welcome emails and notification setup
-- Analytics Service: Tracks user engagement metrics
+- `UserCreatedEvent`: When new user is created
+- `UserUpdatedEvent`: When user data is modified
+- `UserRoleChangedEvent`: When user roles are updated
+- `UserDeletedEvent`: When user is removed (GDPR)
 
 ### Advanced Query Patterns
 

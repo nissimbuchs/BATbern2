@@ -9,7 +9,7 @@ import java.time.Instant;
 
 /**
  * Domain event published when a company is verified
- * Published to EventBridge for downstream services to consume
+ * Published as an in-process domain event (DomainEventPublisher)
  *
  * Extends shared-kernel DomainEvent for consistent event handling
  *

@@ -1,6 +1,6 @@
 # Team override for bmad-agent-dev (Amelia). Arrays append to the base customize.toml.
 # v6 loaded project-context.md for every agent; v7 does not, so it is named here.
-# tech-stack, coding-standards and module-map: the foundational docs Amelia keeps in context.
+# tech-stack, coding-standards, source-tree (the v6 devLoadAlwaysFiles) and module-map: the foundational docs Amelia keeps in context.
 
 [agent]
 persistent_facts = [
@@ -8,4 +8,5 @@ persistent_facts = [
   "file:{project-root}/docs/architecture/tech-stack.md",
   "file:{project-root}/docs/architecture/coding-standards.md",
   "file:{project-root}/docs/architecture/module-map.md",
+  "file:{project-root}/docs/architecture/source-tree.md",
 ]

@@ -10,11 +10,11 @@ import { render, screen, waitFor } from '@testing-library/react';
 import { I18nextProvider } from 'react-i18next';
 import i18n from '@/i18n/config';
 import { EventsParticipatedTable } from './EventsParticipatedTable';
+import MockAdapter from 'axios-mock-adapter';
 import apiClient from '@/services/api/apiClient';
 
-vi.mock('@/services/api/apiClient', () => ({
-  default: { get: vi.fn() },
-}));
+// HTTP is stubbed at the boundary: the real service and apiClient run.
+let http: MockAdapter;
 
 const mockRegistrations = [
   {
@@ -63,11 +63,13 @@ describe('EventsParticipatedTable', () => {
   const originalMatchMedia = window.matchMedia;
 
   beforeEach(() => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: mockRegistrations } as any);
+    http = new MockAdapter(apiClient);
+    http.onGet('/events/registrations').reply(200, mockRegistrations);
     installMatchMediaForWidth(1280);
   });
 
   afterEach(() => {
+    http.restore();
     vi.clearAllMocks();
     window.matchMedia = originalMatchMedia;
   });
@@ -80,6 +82,7 @@ describe('EventsParticipatedTable', () => {
     expect(screen.queryByTestId('events-participated-cards')).not.toBeInTheDocument();
     expect(screen.getByText('BATbern56')).toBeInTheDocument();
     expect(screen.getByText('Resilient Systems')).toBeInTheDocument();
+    expect(http.history.get[0].headers?.['X-Attendee-Username']).toBe('alice.smith');
   });
 
   it('should_renderCards_when_mobileViewport', async () => {
@@ -100,8 +103,19 @@ describe('EventsParticipatedTable', () => {
     expect(screen.getByText('Attended')).toBeInTheDocument();
   });
 
+  it('should_showLoadError_when_requestFails', async () => {
+    http.reset();
+    http.onGet('/events/registrations').reply(500, { message: 'boom' });
+    renderTable();
+
+    expect(
+      await screen.findByText(/failed to load event participation history/i)
+    ).toBeInTheDocument();
+  });
+
   it('should_showEmptyState_when_noParticipations', async () => {
-    vi.mocked(apiClient.get).mockResolvedValue({ data: [] } as any);
+    http.reset();
+    http.onGet('/events/registrations').reply(200, []);
     installMatchMediaForWidth(375);
     renderTable();
 

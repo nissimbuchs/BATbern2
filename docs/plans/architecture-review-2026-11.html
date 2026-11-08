@@ -1,3 +1,6 @@
+<!doctype html>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
 <title>BATbern Architecture Review</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="preconnect" href="https://fonts.googleapis.com">
@@ -53,7 +56,18 @@ ol.recs li::marker{font-family:var(--mono);color:var(--muted)}
 ol.recs .meta{font:12px var(--mono);color:var(--muted)}
 ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;max-width:72ch}
 .foot{font-size:13px;color:var(--muted)}
-@media (max-width:560px){.score div.row{grid-template-columns:1fr;gap:4px}}
+.todo{color:var(--muted);background:transparent;border:1px solid var(--line)}
+.epics{display:flex;flex-direction:column;border:1px solid var(--line);background:var(--panel)}
+.epics .e{display:grid;grid-template-columns:minmax(0,15rem) minmax(0,1fr);gap:12px;padding:10px 14px;border-top:1px solid var(--line);align-items:start}
+.epics .e:first-child{border-top:0}
+.epics .chips{display:flex;flex-wrap:wrap;gap:6px}
+.chip{font:500 12px/1 var(--mono);padding:5px 7px;border-radius:2px;white-space:nowrap}
+.sb rect{stroke-width:1}.sb text{font:500 10px var(--mono)}
+.sb.bl rect{fill:var(--good-bg);stroke:var(--good)}.sb.bl text{fill:var(--good)}
+.sb.bb rect{fill:var(--warn-bg);stroke:var(--warn)}.sb.bb text{fill:var(--warn)}
+.sb.bo rect{fill:var(--panel);stroke:var(--muted);stroke-dasharray:3 2}.sb.bo text{fill:var(--muted)}
+.legend{display:flex;flex-wrap:wrap;gap:14px;font-size:13px;color:var(--muted);align-items:center}
+@media (max-width:560px){.score div.row{grid-template-columns:1fr;gap:4px}.epics .e{grid-template-columns:1fr;gap:6px}}
 </style>
 
 <main>
@@ -84,6 +98,50 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
     <li>All services share one database. EMS reads CUMS tables (<code>user_profiles</code>, <code>companies</code>) directly in SQL, and both services create <code>logos</code>. This is input for the database review.</li>
   </ul>
   <p>Decisions are recorded in ADR-016 and the ADR-003 amendment.</p>
+</section>
+
+<section>
+  <h2>Progress · 8 Nov 2026 (Epic 17)</h2>
+  <div class="verdict" style="border-left-color:var(--good)">
+    <p><strong>Where we stand.</strong> 8 of 34 stories are built. Two are live in production: 17.1 and 17.3, via #1250 on 7 Nov. The other six are committed on <code>feature/17-4-17-5-gates</code> (HEAD <code>6abb87bf</code>): 17.0a, 17.2 A and B, 17.4, 17.5 and 17.3b. That branch is <strong>not pushed and has no PR</strong>, so it exists only on rack and nothing in it has reached production yet. Epic 1 has two stories left: 16.8c and the sweep. Epics 2 to 5 have not started beyond 17.0a.</p>
+  </div>
+  <div class="legend">
+    <span><span class="chip ok">live</span> merged to develop, in production</span>
+    <span><span class="chip mid">built</span> committed locally, no PR yet</span>
+    <span><span class="chip todo">open</span> not started</span>
+  </div>
+  <div class="epics">
+    <div class="e"><span><strong>1 · Dead surface, gates</strong><br><span class="foot">7 of 9</span></span><span class="chips">
+      <span class="chip ok">17.1 dead API</span><span class="chip ok">17.3 FE path check</span>
+      <span class="chip mid">17.2A stub services</span><span class="chip mid">17.2B event bus</span><span class="chip mid">17.4 Spectral</span><span class="chip mid">17.5 ArchUnit</span><span class="chip mid">17.3b FE service layer</span>
+      <span class="chip todo">16.8c composer</span><span class="chip todo">sweep</span></span></div>
+    <div class="e"><span><strong>2 · Test fidelity</strong><br><span class="foot">1 of 8</span></span><span class="chips">
+      <span class="chip mid">17.0a ratchet</span>
+      <span class="chip todo">0b1 S2S harness</span><span class="chip todo">0b2 /internal specs</span><span class="chip todo">0b3 prod setup</span><span class="chip todo">0c1 MSW</span><span class="chip todo">0d fixtures</span><span class="chip todo">0c2 10 worst tests</span><span class="chip todo">sweep</span></span></div>
+    <div class="e"><span><strong>3 · One service direction</strong><br><span class="foot">0 of 3</span></span><span class="chips">
+      <span class="chip todo">17.6 /internal</span><span class="chip todo">17.7 CUMS merge contract</span><span class="chip todo">17.8 EMS without PCS client</span></span></div>
+    <div class="e"><span><strong>4 · API conventions, uploads</strong><br><span class="foot">0 of 9</span></span><span class="chips">
+      <span class="chip todo">17.9</span><span class="chip todo">17.9b lifecycle</span><span class="chip todo">17.10</span><span class="chip todo">17.10b</span><span class="chip todo">17.11 company-logo</span><span class="chip todo">11a</span><span class="chip todo">11b</span><span class="chip todo">11c</span><span class="chip todo">11d</span></span></div>
+    <div class="e"><span><strong>5 · EMS walls</strong><br><span class="foot">0 of 5</span></span><span class="chips">
+      <span class="chip todo">17.12 design</span><span class="chip todo">17.13 registrations</span><span class="chip todo">17.14 exceptions</span><span class="chip todo">17.15 mail core</span><span class="chip todo">17.16 event core</span></span></div>
+  </div>
+
+  <h3>Against the recommendations in section 7</h3>
+  <div class="t"><table>
+    <thead><tr><th>#</th><th>Recommendation</th><th>State</th><th>Evidence (measured)</th></tr></thead>
+    <tbody>
+      <tr><td class="n">1</td><td>Delete dead surface</td><td><span class="pill ok">live</span> <span class="pill mid">built</span></td><td>17.1 live: 2 specs and 6 orphan operations gone, operation count 325 → 319. 17.2 built: both stub services and the EventBridge bus removed in code. Your step remains after the deploy: delete the orphaned stacks and the retained ECR repos.</td></tr>
+      <tr><td class="n">2</td><td>Contract guard for frontend paths</td><td><span class="pill ok">live</span> <span class="pill mid">built</span></td><td>17.3 live as a required check. 17.3b built: layer baseline 13 → 0, allow-list 2 → 0, 301 of 301 calls match the spec.</td></tr>
+      <tr><td class="n">3</td><td>Finish 16.8c</td><td><span class="pill todo">open</span></td><td>Next in epic 1. It also removes the frozen <code>NewsletterEmailService</code> and <code>SlidesOnlineEmailService</code> lines.</td></tr>
+      <tr><td class="n">4</td><td>Break the cycles</td><td><span class="pill todo">open</span></td><td>Epic 3 (17.6–17.8). 17.5 froze the reverse clients, so no new ones can be added.</td></tr>
+      <tr><td class="n">5</td><td>One upload contract</td><td><span class="pill todo">open</span></td><td>Epic 4 (17.11, 11a–11d).</td></tr>
+      <tr><td class="n">6</td><td>Wall EMS from the inside</td><td><span class="pill mid">started</span></td><td>17.5 built: ArchUnit freeze in CUMS and EMS. Mail-center wall 73 → 3, watch 2 → 0. Module script 28 → 26 edges, 99 → 94 refs. <code>GlobalExceptionHandler</code> 16 → 14. 17.12 design is next for epic 5.</td></tr>
+      <tr><td class="n">7</td><td>Settle the conventions</td><td><span class="pill mid">gated</span></td><td>17.4 built: Spectral in required CI, baseline 150 → 124 after the ADR-013 verb rule. Every line has an owning story or an accepted exception. The fixes themselves are epic 4.</td></tr>
+      <tr><td class="n">8</td><td>Follow-up reviews</td><td><span class="pill todo">open</span></td><td>Not scheduled in Epic 17 (out of scope, action list item 9).</td></tr>
+    </tbody>
+  </table></div>
+  <p>Section 8 gates: the frontend path check is live. The Spectral lint, the ArchUnit freeze and the 17.0a mock ratchet are built but not live. The similarity report, Spectral's non-blocking PR comment, is built too. The design check, the architecture reviewer and the reuse catalog are not started.</p>
+  <p class="foot">Source: <code>git log origin/develop..HEAD</code> and the commit bodies on 8 Nov, <code>gh pr list</code>, the ticket store in <code>_bmad-output/initiative-architecture-hardening/</code>. The figures are quoted from the commit messages. I did not re-measure them today. "Live" means merged to develop, which deploys to production. I did not check production for 17.1 and 17.3 today.</p>
 </section>
 
 <section>
@@ -152,9 +210,15 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
       <!-- PCS -> CUMS -->
       <line x1="460" y1="318" x2="302" y2="318" stroke="currentColor" stroke-width="1.4" marker-end="url(#a)"/>
       <text x="381" y="310" text-anchor="middle" font-size="11.5" fill="currentColor">users, companies</text>
+      <!-- Epic 17 stories, 8 Nov -->
+      <g class="sb bb"><rect x="590" y="116" width="144" height="15" rx="2"/><text x="595" y="127">17.2A removed · built</text></g>
+      <g class="sb bo"><rect x="65" y="197" width="157" height="15" rx="2"/><text x="70" y="208">17.6 → /internal · open</text></g>
+      <g class="sb bo"><rect x="290" y="188" width="170" height="15" rx="2"/><text x="295" y="199">17.7 CUMS contract · open</text></g>
+      <g class="sb bo"><rect x="392" y="152" width="80" height="15" rx="2"/><text x="397" y="163">17.6 · open</text></g>
+      <g class="sb bo"><rect x="540" y="197" width="170" height="15" rx="2"/><text x="545" y="208">17.8 no PCS client · open</text></g>
     </svg>
     </div>
-    <figcaption>Red edges close a cycle. Every service pair calls in both directions except PCS→CUMS. Of the distinct URLs the client classes call, 9 go through <code>/internal</code> and 12 through the public API carrying the end user's token. That forces machine-only endpoints into the public spec: <code>/users/provision</code>, <code>/issue-invitation-credentials</code>, <code>PATCH /users/{u}/profile</code>, <code>/events/attendance-summary</code>.</figcaption>
+    <figcaption>Red edges close a cycle. Every service pair calls in both directions except PCS→CUMS. Of the distinct URLs the client classes call, 9 go through <code>/internal</code> and 12 through the public API carrying the end user's token. That forces machine-only endpoints into the public spec: <code>/users/provision</code>, <code>/issue-invitation-credentials</code>, <code>PATCH /users/{u}/profile</code>, <code>/events/attendance-summary</code>.<br><strong>Stories (8 Nov):</strong> 17.2A removes both stubs and 17.2B the EventBridge bus (built, not yet deployed). 17.6 moves the public S2S calls to <code>/internal</code>, 17.7 turns the merge into a CUMS-owned contract, 17.8 removes the EMS client toward PCS (all open). Badge colours as in the progress section.</figcaption>
   </figure>
   <p><strong>Why it matters.</strong> A cycle means neither service can be deployed, tested or reasoned about alone. The fix is to name one direction as upstream, and it needs no message bus. Downstream services pull from upstream through <code>/internal</code> feeds polled by a ShedLock job, which the platform already has. That is boring, replayable and costs nothing extra.</p>
   <ul class="plain">
@@ -168,7 +232,7 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
   <h2>2 · EMS is one context with ten sub-domains and no walls</h2>
   <figure>
     <div class="wrap">
-    <svg viewBox="0 0 760 250" role="img" aria-label="Left: EMS today is organized by technical layer, with five vertical packages. Right: the target, nine domain modules with enforced boundaries.">
+    <svg viewBox="0 0 760 266" role="img" aria-label="Left: EMS today is organized by technical layer, with five vertical packages. Right: the target, nine domain modules with enforced boundaries.">
       <text x="20" y="20" font-family="var(--mono)" font-size="11" letter-spacing="1" fill="var(--muted)">TODAY · BY LAYER</text>
       <rect x="20" y="34" width="330" height="36" fill="var(--bad-bg)" stroke="var(--bad)"/>
       <text x="32" y="57" font-size="12.5" fill="currentColor">controller/ · 48 files · EventController 2,697 lines</text>
@@ -197,7 +261,9 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
         <rect x="522" y="150" width="105" height="50" fill="none" stroke="currentColor"/><text x="574" y="172">media</text><text x="574" y="188" font-size="10.5" fill="var(--muted)">photos, teasers</text>
         <rect x="634" y="150" width="105" height="50" fill="none" stroke="currentColor"/><text x="686" y="172">analytics</text><text x="686" y="188" font-size="10.5" fill="var(--muted)">read-only</text>
       </g>
-      <text x="410" y="228" font-size="11.5" fill="var(--muted)">one deployable · public API per module · no cross-module repository access</text>
+      <text x="410" y="228" font-size="10.5" fill="var(--muted)">one deployable · public API per module · no cross-module repository access</text>
+      <g class="sb bb"><rect x="20" y="222" width="240" height="15" rx="2"/><text x="25" y="233">17.5 ArchUnit walls on these · built</text></g>
+      <g class="sb bo"><rect x="410" y="240" width="132" height="15" rx="2"/><text x="415" y="251">17.12 design · open</text></g><g class="sb bo"><rect x="548" y="240" width="164" height="15" rx="2"/><text x="553" y="251">17.13–17.16 moves · open</text></g>
     </svg>
     </div>
     <figcaption>File counts per package directory on develop today. The May 2026 plan (<code>docs/plans/ems-modularization-extension-points.md</code>) quoted 39 controllers, about 78 services and migration V107. I don't know how it counted, so the growth to 48 / 104 / V137 is indicative, not exact.</figcaption>
@@ -216,7 +282,7 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
         <rect x="20" y="52" width="230" height="20" fill="none" stroke="var(--line)"/><text x="28" y="66">…/newsletter/send + preview</text>
         <rect x="20" y="76" width="230" height="20" fill="none" stroke="var(--line)"/><text x="28" y="90">…/registrant-notices/send + preview</text>
         <rect x="20" y="100" width="230" height="20" fill="none" stroke="var(--line)"/><text x="28" y="114">…/venue-coordination/send + preview</text>
-        <rect x="20" y="124" width="230" height="20" fill="none" stroke="var(--line)"/><text x="28" y="138">…/slides-online/send (no UI caller)</text>
+        <rect x="20" y="124" width="230" height="20" fill="none" stroke="var(--line)"/><text x="28" y="138" opacity=".55">…/slides-online/send (no UI caller)</text><line x1="26" y1="134" x2="244" y2="134" stroke="var(--good)" stroke-width="1.4"/>
       </g>
       <g stroke="currentColor" stroke-width="1.1" fill="none">
         <path d="M250,38 C330,38 330,86 400,86"/><path d="M250,62 C330,62 330,86 400,86"/><path d="M250,86 L400,86"/>
@@ -228,6 +294,7 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
       <rect x="630" y="68" width="110" height="36" fill="none" stroke="currentColor"/>
       <text x="685" y="91" text-anchor="middle" font-size="12.5" fill="currentColor">SES</text>
 
+      <g class="sb bl"><rect x="20" y="150" width="253" height="15" rx="2"/><text x="25" y="161">17.1 removed slides-online/send · live</text></g><g class="sb bo"><rect x="282" y="150" width="292" height="15" rx="2"/><text x="287" y="161">16.8c folds rows 2–4 into Mail Center · open</text></g>
       <text x="20" y="178" font-family="var(--mono)" font-size="11" letter-spacing="1" fill="var(--bad)">UPLOADS · SEVEN PARALLEL PIPES</text>
       <g font-size="11.5" fill="currentColor">
         <text x="20" y="200">company logos</text><text x="20" y="218">profile picture (me)</text><text x="20" y="236">profile picture (admin)</text>
@@ -241,7 +308,8 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
         <rect x="400" y="189" width="140" height="14"/><rect x="400" y="207" width="140" height="14"/><rect x="400" y="225" width="140" height="14"/>
         <rect x="400" y="243" width="140" height="14"/><rect x="400" y="261" width="140" height="14"/><rect x="400" y="279" width="140" height="14"/><rect x="400" y="297" width="140" height="14"/>
       </g>
-      <text x="470" y="182" text-anchor="middle" font-size="11" fill="var(--muted)">own presign + confirm each</text>
+      <g font-family="var(--mono)" font-size="9" fill="var(--bad)"><text x="470" y="200" text-anchor="middle">17.11 company-logo</text><text x="470" y="218" text-anchor="middle">11a profile-picture</text><text x="470" y="236" text-anchor="middle">11a profile-picture</text><text x="470" y="254" text-anchor="middle">11b event-photo</text><text x="470" y="272" text-anchor="middle">11c teaser-image</text><text x="470" y="290" text-anchor="middle">11d session-material</text><text x="470" y="308" text-anchor="middle">11d session-material</text></g>
+      <text x="470" y="182" text-anchor="middle" font-size="11" fill="var(--muted)">own presign + confirm each · owning story, all open</text>
       <g stroke="currentColor" stroke-width="1" fill="none">
         <path d="M540,196 C590,196 590,250 628,250"/><path d="M540,214 C590,214 590,250 628,250"/><path d="M540,232 C590,232 590,250 628,250"/>
         <path d="M540,250 L628,250"/><path d="M540,268 C590,268 590,250 628,250"/><path d="M540,286 C590,286 590,250 628,250"/><path d="M540,304 C590,304 590,250 628,250"/>
@@ -307,7 +375,7 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
   <h2>6 · EMS module map and where it is violated today</h2>
   <figure>
     <div class="wrap">
-    <svg viewBox="0 0 780 490" role="img" aria-label="Proposed EMS modules in seven layers; dependencies may only point downward. Red arrows show the largest current upward dependencies: EventController into registrations and sessions, GlobalExceptionHandler into domain exceptions, and the mail core into the mail center.">
+    <svg viewBox="0 0 780 492" role="img" aria-label="Proposed EMS modules in seven layers; dependencies may only point downward. Red arrows show the largest current upward dependencies: EventController into registrations and sessions, GlobalExceptionHandler into domain exceptions, and the mail core into the mail center.">
       <g font-family="var(--mono)" font-size="10.5" fill="var(--muted)" letter-spacing=".5">
         <text x="10" y="42">L6 edge</text><text x="10" y="112">L5 compose</text><text x="10" y="182">L4</text>
         <text x="10" y="252">L3 domain</text><text x="10" y="322">L2 kernel</text><text x="10" y="392">L1 shared svc</text><text x="10" y="462">L0 platform</text>
@@ -352,9 +420,16 @@ ul.plain{margin:0;padding-left:1.2em;display:flex;flex-direction:column;gap:6px;
       <text x="752" y="367" text-anchor="end" font-size="11" fill="var(--muted)">knows every domain exception</text>
       <path d="M120,388 H108 V38 H118" fill="none" stroke="var(--bad)" stroke-width="2" marker-end="url(#ar)"/>
       <text x="124" y="78" font-size="11.5" fill="var(--bad)">10 · mail core → mail center</text>
+      <!-- Epic 17 stories, 8 Nov -->
+      <g class="sb bb"><rect x="120" y="2" width="311" height="15" rx="2"/><text x="125" y="13">17.5 walls: mail center 73→3, watch 2→0 · built</text></g>
+      <g class="sb bo"><rect x="300" y="67" width="285" height="15" rx="2"/><text x="305" y="78">17.15 split mail core · open (11→9 by 17.5)</text></g>
+      <g class="sb bo"><rect x="636" y="313" width="87" height="15" rx="2"/><text x="641" y="324">17.13 · open</text></g>
+      <g class="sb bo"><rect x="428" y="284" width="196" height="15" rx="2"/><text x="433" y="295">17.16 extension points · open</text></g>
+      <g class="sb bo"><rect x="467" y="374" width="285" height="15" rx="2"/><text x="472" y="385">17.14 base exception · open (16→14 by 17.5)</text></g>
+      <g class="sb bo"><rect x="430" y="470" width="189" height="15" rx="2"/><text x="435" y="481">17.6–17.8 S2S clients · open</text></g>
     </svg>
     </div>
-    <figcaption>Each box shows the module and its class count. Dependencies may point only downward, and modules in the same layer must not depend on each other. Today 50 module pairs follow that rule and 28 break it, through 101 class references. Ten classes cause 71 of those 101, so the map is close to true already.</figcaption>
+    <figcaption>Each box shows the module and its class count. Dependencies may point only downward, and modules in the same layer must not depend on each other. Today 50 module pairs follow that rule and 28 break it, through 101 class references. Ten classes cause 71 of those 101, so the map is close to true already.<br><strong>Stories (8 Nov):</strong> 17.5 (built) froze the rules and fixed the moves that needed no design: module script 28 → 26 edges, 99 → 94 refs. 17.12 designs the target packages; 17.13 to 17.16 work down the hotspots. The box counts and arrows above are still the 7 Nov measurement.</figcaption>
   </figure>
   <p>Two cuts differ from section 2. Both came out of the measurement:</p>
   <ul class="plain">

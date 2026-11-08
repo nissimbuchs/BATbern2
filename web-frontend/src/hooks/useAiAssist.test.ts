@@ -8,14 +8,11 @@
  * - useAiAnalyzeAbstract: POST /speakers/{id}/ai/analyze-abstract
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-
-vi.mock('@/services/api/apiClient', () => ({
-  default: { post: vi.fn(), get: vi.fn() },
-}));
+import MockAdapter from 'axios-mock-adapter';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
@@ -29,8 +26,16 @@ import {
   useAiAnalyzeAbstract,
 } from './useAiAssist';
 
-const mockPost = vi.mocked(apiClient.post);
-const mockGet = vi.mocked(apiClient.get);
+// HTTP is stubbed at the boundary: the real service and apiClient run.
+let http: MockAdapter;
+beforeEach(() => {
+  http = new MockAdapter(apiClient);
+});
+afterEach(() => {
+  http.restore();
+});
+const posted = () => http.history.post.map((r) => r.url);
+const fetched = () => http.history.get.map((r) => r.url);
 
 const createQC = () =>
   new QueryClient({
@@ -53,7 +58,9 @@ describe('useAiGenerateDescription', () => {
   });
 
   it('should POST to event AI description endpoint', async () => {
-    mockPost.mockResolvedValue({ data: { description: 'Generated description' } });
+    http
+      .onPost('/events/BAT142/ai/description')
+      .reply(200, { description: 'Generated description' });
 
     const { result } = renderHook(() => useAiGenerateDescription('BAT142'), {
       wrapper: wrapper(qc),
@@ -63,13 +70,13 @@ describe('useAiGenerateDescription', () => {
       await result.current.mutateAsync();
     });
 
-    expect(mockPost).toHaveBeenCalledWith('/events/BAT142/ai/description');
+    expect(posted()).toEqual(['/events/BAT142/ai/description']);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.description).toBe('Generated description');
   });
 
   it('should throw mapped error on 503', async () => {
-    mockPost.mockRejectedValue({ response: { status: 503 } });
+    http.onPost('/events/BAT142/ai/description').reply(503);
 
     const { result } = renderHook(() => useAiGenerateDescription('BAT142'), {
       wrapper: wrapper(qc),
@@ -80,10 +87,11 @@ describe('useAiGenerateDescription', () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(result.current.error?.message).toBe('aiAssist.disabled');
   });
 
   it('should throw generic error on other failures', async () => {
-    mockPost.mockRejectedValue(new Error('Network error'));
+    http.onPost('/events/BAT142/ai/description').networkError();
 
     const { result } = renderHook(() => useAiGenerateDescription('BAT142'), {
       wrapper: wrapper(qc),
@@ -104,7 +112,8 @@ describe('useAiGenerateThemeImage', () => {
   // (202), the hook polls it until DONE or FAILED.
   let qc: QueryClient;
   const FAST = { pollMs: 1, maxWaitMs: 1000 };
-  const started = { data: { jobId: 'job-1', status: 'PENDING' } };
+  const started = { jobId: 'job-1', status: 'PENDING' };
+  const jobUrl = '/events/BAT142/ai/theme-image/jobs/job-1';
 
   beforeEach(() => {
     qc = createQC();
@@ -112,11 +121,16 @@ describe('useAiGenerateThemeImage', () => {
   });
 
   it('should start a job and return the image once the job is DONE', async () => {
-    mockPost.mockResolvedValue(started);
-    mockGet
-      .mockResolvedValueOnce({ data: { jobId: 'job-1', status: 'PENDING' } })
-      .mockResolvedValueOnce({
-        data: { jobId: 'job-1', status: 'DONE', imageUrl: 'https://cdn.x.com/img.png', s3Key: 'k' },
+    http.onPost('/events/BAT142/ai/theme-image').reply(202, started);
+    http
+      .onGet(jobUrl)
+      .replyOnce(200, { jobId: 'job-1', status: 'PENDING' })
+      .onGet(jobUrl)
+      .replyOnce(200, {
+        jobId: 'job-1',
+        status: 'DONE',
+        imageUrl: 'https://cdn.x.com/img.png',
+        s3Key: 'k',
       });
 
     const { result } = renderHook(() => useAiGenerateThemeImage('BAT142', FAST), {
@@ -128,15 +142,18 @@ describe('useAiGenerateThemeImage', () => {
       image = await result.current.mutateAsync({});
     });
 
-    expect(mockPost).toHaveBeenCalledWith('/events/BAT142/ai/theme-image');
-    expect(mockGet).toHaveBeenCalledWith('/events/BAT142/ai/theme-image/jobs/job-1');
+    expect(posted()).toEqual(['/events/BAT142/ai/theme-image']);
+    expect(fetched()).toEqual([jobUrl, jobUrl]);
     expect(image).toEqual({ imageUrl: 'https://cdn.x.com/img.png', s3Key: 'k' });
   });
 
   it('should include seed query param when provided', async () => {
-    mockPost.mockResolvedValue(started);
-    mockGet.mockResolvedValue({
-      data: { jobId: 'job-1', status: 'DONE', imageUrl: 'https://cdn.x.com/img.png', s3Key: 'k' },
+    http.onPost('/events/BAT142/ai/theme-image?seed=tech-clouds').reply(202, started);
+    http.onGet(jobUrl).reply(200, {
+      jobId: 'job-1',
+      status: 'DONE',
+      imageUrl: 'https://cdn.x.com/img.png',
+      s3Key: 'k',
     });
 
     const { result } = renderHook(() => useAiGenerateThemeImage('BAT142', FAST), {
@@ -147,12 +164,12 @@ describe('useAiGenerateThemeImage', () => {
       await result.current.mutateAsync({ seed: 'tech-clouds' });
     });
 
-    expect(mockPost).toHaveBeenCalledWith('/events/BAT142/ai/theme-image?seed=tech-clouds');
+    expect(posted()).toEqual(['/events/BAT142/ai/theme-image?seed=tech-clouds']);
   });
 
   it('should fail when the job ends FAILED', async () => {
-    mockPost.mockResolvedValue(started);
-    mockGet.mockResolvedValue({ data: { jobId: 'job-1', status: 'FAILED' } });
+    http.onPost('/events/BAT142/ai/theme-image').reply(202, started);
+    http.onGet(jobUrl).reply(200, { jobId: 'job-1', status: 'FAILED' });
 
     const { result } = renderHook(() => useAiGenerateThemeImage('BAT142', FAST), {
       wrapper: wrapper(qc),
@@ -167,8 +184,8 @@ describe('useAiGenerateThemeImage', () => {
   });
 
   it('should give up when the job stays PENDING too long', async () => {
-    mockPost.mockResolvedValue(started);
-    mockGet.mockResolvedValue({ data: { jobId: 'job-1', status: 'PENDING' } });
+    http.onPost('/events/BAT142/ai/theme-image').reply(202, started);
+    http.onGet(jobUrl).reply(200, { jobId: 'job-1', status: 'PENDING' });
 
     const { result } = renderHook(
       () => useAiGenerateThemeImage('BAT142', { pollMs: 1, maxWaitMs: 20 }),
@@ -183,7 +200,7 @@ describe('useAiGenerateThemeImage', () => {
   });
 
   it('should set isError when the start fails', async () => {
-    mockPost.mockRejectedValue(new Error('AI unavailable'));
+    http.onPost('/events/BAT142/ai/theme-image').reply(503);
 
     const { result } = renderHook(() => useAiGenerateThemeImage('BAT142', FAST), {
       wrapper: wrapper(qc),
@@ -194,7 +211,7 @@ describe('useAiGenerateThemeImage', () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(mockGet).not.toHaveBeenCalled();
+    expect(fetched()).toEqual([]);
   });
 });
 
@@ -209,7 +226,7 @@ describe('useAiApplyThemeImage', () => {
   });
 
   it('should POST apply with imageUrl', async () => {
-    mockPost.mockResolvedValue({ data: undefined });
+    http.onPost('/events/BAT142/ai/theme-image/apply').reply(200);
 
     const { result } = renderHook(() => useAiApplyThemeImage('BAT142'), { wrapper: wrapper(qc) });
 
@@ -217,14 +234,15 @@ describe('useAiApplyThemeImage', () => {
       await result.current.mutateAsync({ imageUrl: 'https://cdn.x.com/img.jpg' });
     });
 
-    expect(mockPost).toHaveBeenCalledWith('/events/BAT142/ai/theme-image/apply', {
+    expect(posted()).toEqual(['/events/BAT142/ai/theme-image/apply']);
+    expect(JSON.parse(http.history.post[0].data)).toEqual({
       imageUrl: 'https://cdn.x.com/img.jpg',
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
   it('should invalidate event cache on success', async () => {
-    mockPost.mockResolvedValue({ data: undefined });
+    http.onPost('/events/BAT142/ai/theme-image/apply').reply(200);
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
     const { result } = renderHook(() => useAiApplyThemeImage('BAT142'), { wrapper: wrapper(qc) });
@@ -237,7 +255,7 @@ describe('useAiApplyThemeImage', () => {
   });
 
   it('should set isError on failure', async () => {
-    mockPost.mockRejectedValue(new Error('Forbidden'));
+    http.onPost('/events/BAT142/ai/theme-image/apply').reply(500);
 
     const { result } = renderHook(() => useAiApplyThemeImage('BAT142'), { wrapper: wrapper(qc) });
 
@@ -268,7 +286,7 @@ describe('useAiAnalyzeAbstract', () => {
       wordCount: 150,
       shortenedAbstract: null,
     };
-    mockPost.mockResolvedValue({ data: response });
+    http.onPost('/speakers/sp-pool-1/ai/analyze-abstract').reply(200, response);
 
     const { result } = renderHook(() => useAiAnalyzeAbstract('sp-pool-1'), {
       wrapper: wrapper(qc),
@@ -278,13 +296,13 @@ describe('useAiAnalyzeAbstract', () => {
       await result.current.mutateAsync();
     });
 
-    expect(mockPost).toHaveBeenCalledWith('/speakers/sp-pool-1/ai/analyze-abstract');
+    expect(posted()).toEqual(['/speakers/sp-pool-1/ai/analyze-abstract']);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.noPromotionScore).toBe(90);
   });
 
   it('should set isError on failure', async () => {
-    mockPost.mockRejectedValue(new Error('Service unavailable'));
+    http.onPost('/speakers/sp-pool-1/ai/analyze-abstract').reply(503);
 
     const { result } = renderHook(() => useAiAnalyzeAbstract('sp-pool-1'), {
       wrapper: wrapper(qc),

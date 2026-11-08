@@ -871,8 +871,8 @@ of ≤24h). Kill-switch `security.active-gate.enabled` (default `false` in `appl
 sets `SECURITY_ACTIVE_GATE_ENABLED=true` in `infrastructure/lib/stacks/api-gateway-service-stack.ts`,
 checked 2026-11-04). The **`PreAuthentication` trigger is now redundant** and is slated for
 retirement in the cleanup track, **after** the gateway gate is confirmed live in prod (it is left
-in place for now as defence-in-depth). Active eviction (EventBridge `UserDeactivated` → evict cache
-key) is a documented FUTURE option, not built. See `ADR-010-federated-identity-via-cognito.md` (D5)
+in place for now as defence-in-depth). Active eviction (a `UserDeactivated` signal → evict cache
+key) is a documented FUTURE option, not built; there is no event bus to carry it (Story 17.2 part B). See `ADR-010-federated-identity-via-cognito.md` (D5)
 and `docs/plans/sso-oidc-federation.md` (PR 1 — Part A).
 
 ## Pattern F: Federated sign-in + account linking (Story 12.6, SSO Phase 2)
@@ -1432,31 +1432,11 @@ Per ADR-001, a future invitation-based flow will allow admins to create users vi
 
 **Note**: `cognito_user_id` is already nullable in the current schema — invitation-based flow is supported.
 
-### EventBridge Integration (Optional)
+### Cross-service lifecycle events: not built
 
-Publish user lifecycle events for cross-service notification:
-
-```typescript
-// Optional: Publish UserCreated event from PostConfirmation
-await eventBridgeClient.send(new PutEventsCommand({
-  Entries: [{
-    Source: 'ch.batbern.user-sync',
-    DetailType: 'UserCreated',
-    Detail: JSON.stringify({
-      userId: userId,
-      cognitoUserId: cognitoUserId,
-      email: email,
-      role: 'ATTENDEE',
-      createdAt: new Date().toISOString()
-    })
-  }]
-}));
-```
-
-**Use Cases**:
-- Cache invalidation in microservices
-- Welcome email sending
-- Analytics tracking
+There is no event bus (the unused EventBridge bus was removed in Story 17.2 part B, 2026-11), so
+the Cognito triggers publish no lifecycle events. A service that must react to a user change reads
+it from CUMS (`/internal/users`, ADR-016).
 
 ## Related Documentation
 

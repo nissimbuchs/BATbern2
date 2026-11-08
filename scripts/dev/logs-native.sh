@@ -11,7 +11,7 @@
 #
 # Available services:
 #   api-gateway, company-user-management, event-management,
-#   speaker-coordination, partner-coordination, attendee-experience,
+#   partner-coordination,
 #   web-frontend, db-tunnel
 
 # Colors for output
@@ -31,9 +31,7 @@ declare -A SERVICE_COLORS=(
     ["api-gateway"]="${BLUE}"
     ["company-user-management"]="${GREEN}"
     ["event-management"]="${CYAN}"
-    ["speaker-coordination"]="${YELLOW}"
     ["partner-coordination"]="${MAGENTA}"
-    ["attendee-experience"]="${RED}"
     ["web-frontend"]="${GREEN}"
     ["db-tunnel"]="${CYAN}"
 )
@@ -46,9 +44,7 @@ show_usage() {
     echo "  api-gateway                 API Gateway service"
     echo "  company-user-management     Company User Management service"
     echo "  event-management            Event Management service"
-    echo "  speaker-coordination        Speaker Coordination service"
     echo "  partner-coordination        Partner Coordination service"
-    echo "  attendee-experience         Attendee Experience service"
     echo "  web-frontend                Web Frontend service"
     echo "  db-tunnel                   Database tunnel"
     echo "  all                         All services (default)"
@@ -100,7 +96,7 @@ tail_all_logs() {
 
     if [ -n "$lines" ]; then
         # Show last N lines from all services
-        for service in api-gateway company-user-management event-management speaker-coordination partner-coordination attendee-experience web-frontend db-tunnel; do
+        for service in api-gateway company-user-management event-management partner-coordination web-frontend db-tunnel; do
             tail_service_log "$service" "$lines"
             echo ""
         done
@@ -111,7 +107,7 @@ tail_all_logs() {
         echo ""
 
         # Start tail for each service in background
-        for service in api-gateway company-user-management event-management speaker-coordination partner-coordination attendee-experience web-frontend db-tunnel; do
+        for service in api-gateway company-user-management event-management partner-coordination web-frontend db-tunnel; do
             tail_service_log "$service" &
         done
 
@@ -145,7 +141,7 @@ main() {
                 service_name=""
                 shift
                 ;;
-            api-gateway|company-user-management|event-management|speaker-coordination|partner-coordination|attendee-experience|web-frontend|db-tunnel)
+            api-gateway|company-user-management|event-management|partner-coordination|web-frontend|db-tunnel)
                 service_name="$1"
                 shift
                 ;;

@@ -101,6 +101,37 @@ export const listPartners = async (
 };
 
 /**
+ * List active partners for the public homepage showcase (no authentication).
+ *
+ * Skip-Auth: public endpoint, prevents a 401 (and the /login redirect) with an expired token.
+ */
+export const listPublicPartners = async (): Promise<PartnerListResponse> => {
+  const response = await apiClient.get<PartnerListResponse>(PARTNER_API_PATH, {
+    params: {
+      page: 0,
+      size: 100, // Get all partners for showcase
+      include: 'company', // Need logos and websites
+      filter: 'isActive:true', // Only active partners
+    },
+    headers: {
+      'Skip-Auth': 'true',
+    },
+  });
+  return response.data;
+};
+
+export type MyPartnerCompanyResponse = components['schemas']['MyPartnerCompanyResponse'];
+
+/**
+ * The partner company of the current PARTNER user (partner_contacts lookup).
+ * Errors are passed through.
+ */
+export const getMyPartnerCompany = async (): Promise<MyPartnerCompanyResponse> => {
+  const response = await apiClient.get<MyPartnerCompanyResponse>(`${PARTNER_API_PATH}/me`);
+  return response.data;
+};
+
+/**
  * Get partner statistics for overview dashboard
  * Epic 8 feature - currently returns mock data
  *
