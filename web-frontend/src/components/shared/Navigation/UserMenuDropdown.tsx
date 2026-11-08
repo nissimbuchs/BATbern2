@@ -21,6 +21,7 @@ import AdminPanelSettingsIcon from '@mui/icons-material/AdminPanelSettings';
 import { UserContext } from '../../../types/auth';
 import { updateUserPreferences } from '../../../services/api/userApi';
 import type { UpdatePreferencesRequest } from '../../../types/user';
+import { USER_GUIDE_URL } from '@/config/navigationConfig';
 
 interface UserMenuDropdownProps {
   user: UserContext;
@@ -58,7 +59,7 @@ const UserMenuDropdown: React.FC<UserMenuDropdownProps> = ({
   };
 
   const handleHelpClick = () => {
-    navigate('/help');
+    window.open(USER_GUIDE_URL, '_blank', 'noopener,noreferrer');
     onClose();
   };
 

@@ -18,6 +18,9 @@ import {
   MailOutline,
 } from '@mui/icons-material';
 
+/** The user guide on the project documentation site; the app has no /help page. */
+export const USER_GUIDE_URL = 'https://project.batbern.ch/user-guide/README.html';
+
 export interface NavigationItem {
   labelKey: string;
   path: string;
