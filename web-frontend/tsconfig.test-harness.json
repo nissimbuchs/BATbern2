@@ -36,7 +36,8 @@
     "src/components/organizer/EventManagement/__tests__/EventManagementDashboard.test.tsx",
     "src/components/organizer/EventPage/__tests__/EventPage.test.tsx",
     "src/pages/organizer/EventManagementAdminPage.test.tsx",
-    "src/components/TopicBacklogManager/TopicBacklogManager.test.tsx"
+    "src/components/TopicBacklogManager/TopicBacklogManager.test.tsx",
+    "src/components/organizer/EventPage/__tests__/EventSpeakersTab.test.tsx"
   ],
   "exclude": []
 }
