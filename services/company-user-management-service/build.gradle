@@ -46,7 +46,7 @@ dependencies {
     runtimeOnly 'io.jsonwebtoken:jjwt-jackson:0.13.0'
 
     // Service-specific: Testing
-    testImplementation 'io.rest-assured:rest-assured:6.0.1'
+    testImplementation 'io.rest-assured:rest-assured:6.3.0'
     testImplementation 'org.awaitility:awaitility:4.3.0'
     // Frozen ArchUnit rule (service direction), store in src/test/resources
     testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'

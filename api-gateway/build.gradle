@@ -89,7 +89,7 @@ dependencies {
     testImplementation 'org.testcontainers:testcontainers'
     testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
     testImplementation 'org.testcontainers:testcontainers-localstack'
-    testImplementation 'io.rest-assured:rest-assured:6.0.1'
+    testImplementation 'io.rest-assured:rest-assured:6.3.0'
 }
 
 dependencyManagement {
