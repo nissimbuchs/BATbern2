@@ -103,6 +103,19 @@ describe('RegistrationWizard Component', () => {
     });
   });
 
+  // The registration confirmation mail links to /auth/register?email=<encoded address>
+  it('should_prefillEmail_when_linkCarriesEncodedEmail', async () => {
+    render(
+      <AllProviders initialEntries={['/auth/register?email=anna%2Bbatbern%40example.com']}>
+        <RegistrationWizard />
+      </AllProviders>
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/^email/i)).toHaveValue('anna+batbern@example.com');
+    });
+  });
+
   // Test 3.2: should_displayStepper_when_wizardRendered
   it('should_showStepperIndicator_when_componentMounted', async () => {
     render(
