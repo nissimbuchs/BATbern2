@@ -362,18 +362,32 @@ describe('useUserPortrait', () => {
     expect(result.current.data).toBeNull();
   });
 
-  it('should not fetch when username is undefined', () => {
-    const { result } = renderHook(() => useUserPortrait(undefined), { wrapper: wrapper(qc) });
+  // Positive control in each test: an enabled portrait rendered next to the disabled one is
+  // fetched, so the absence below is observed after requests had time to go out.
+  it('should not fetch when username is undefined', async () => {
+    http
+      .onGet('/public/users/carol')
+      .reply(200, { profilePictureUrl: 'https://cdn.example.com/c.jpg' });
 
+    const { result } = renderHook(() => useUserPortrait(undefined), { wrapper: wrapper(qc) });
+    const control = renderHook(() => useUserPortrait('carol'), { wrapper: wrapper(qc) });
+
+    await waitFor(() => expect(control.result.current.data).toBe('https://cdn.example.com/c.jpg'));
     expect(result.current.isLoading).toBe(false);
-    expect(fetched()).toHaveLength(0);
+    expect(fetched().map((r) => r.url)).toEqual(['/public/users/carol']);
   });
 
-  it('should not fetch when enabled is false', () => {
-    const { result } = renderHook(() => useUserPortrait('alice', false), { wrapper: wrapper(qc) });
+  it('should not fetch when enabled is false', async () => {
+    http
+      .onGet('/public/users/carol')
+      .reply(200, { profilePictureUrl: 'https://cdn.example.com/c.jpg' });
 
+    const { result } = renderHook(() => useUserPortrait('alice', false), { wrapper: wrapper(qc) });
+    const control = renderHook(() => useUserPortrait('carol'), { wrapper: wrapper(qc) });
+
+    await waitFor(() => expect(control.result.current.data).toBe('https://cdn.example.com/c.jpg'));
     expect(result.current.isLoading).toBe(false);
-    expect(fetched()).toHaveLength(0);
+    expect(fetched().map((r) => r.url)).toEqual(['/public/users/carol']);
   });
 
   it('should not retry on 404 (legitimate persistent miss)', async () => {

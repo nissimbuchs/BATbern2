@@ -10,6 +10,7 @@ import apiClient from '@/services/api/apiClient';
 import { AxiosError } from 'axios';
 import type { Session, SessionMaterial, SessionSpeaker } from '@/types/event.types';
 import type { FileUploadPresignedUrl, FileUploadTarget } from '@/types/fileUpload.types';
+import type { components as EventSessionsComponents } from '@/types/generated/event-sessions-api.types';
 
 // API base path for session endpoints
 const SESSION_API_PATH = '/events';
@@ -25,18 +26,10 @@ export interface AssignSpeakerRequest {
   speakerRole: 'PRIMARY_SPEAKER' | 'CO_SPEAKER' | 'MODERATOR' | 'PANELIST';
 }
 
-export interface MaterialUploadItem {
-  uploadId: string;
-  materialType: string; // PRESENTATION, DOCUMENT, VIDEO, ARCHIVE, OTHER
-  fileName: string;
-  fileExtension: string;
-  fileSize: number;
-  mimeType: string;
-}
-
-export interface SessionMaterialAssociationRequest {
-  materials: MaterialUploadItem[];
-}
+/** materialType: PRESENTATION, DOCUMENT, VIDEO, ARCHIVE or OTHER. */
+export type MaterialUploadItem = EventSessionsComponents['schemas']['MaterialUploadItem'];
+export type SessionMaterialAssociationRequest =
+  EventSessionsComponents['schemas']['SessionMaterialAssociationRequest'];
 
 /** A speaker on a session in the company view (enriched by `GET /sessions`). */
 export interface CompanySessionSpeaker {

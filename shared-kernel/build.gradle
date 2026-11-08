@@ -90,6 +90,7 @@ dependencies {
     testImplementation 'org.mockito:mockito-core'
     testImplementation 'org.mockito:mockito-junit-jupiter'
     testImplementation 'org.assertj:assertj-core'
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'
     // Epic 13 (SB4): testcontainers versions from the testcontainers-bom imported in the root
     // subprojects dependencyManagement block.
     testImplementation 'org.testcontainers:testcontainers'
@@ -97,6 +98,8 @@ dependencies {
 
     // Test Fixtures dependencies (exposed to consuming projects)
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-test'
+    // Story 17.5 follow-up: FrozenArchRuleKeys (ArchUnit store keys), used by the services that freeze rules.
+    testFixturesImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'
     // Epic 13 (SB4): AbstractIntegrationTest uses @AutoConfigureMockMvc + @AutoConfigureTestDatabase,
     // which moved out of spring-boot-test-autoconfigure into per-technology test modules.
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-webmvc-test'

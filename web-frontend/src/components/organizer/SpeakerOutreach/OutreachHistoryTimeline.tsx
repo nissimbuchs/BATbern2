@@ -25,7 +25,7 @@ import { Email as EmailIcon, Phone as PhoneIcon, Person as PersonIcon } from '@m
 import { BATbernLoader } from '@components/shared/BATbernLoader';
 import { useTranslation } from 'react-i18next';
 import { format } from 'date-fns';
-import { useSpeakerOutreachHistory } from '../../../hooks/useSpeakerOutreach';
+import { useSpeakerOutreachHistory } from '@/hooks/useSpeakerOutreach';
 import type { ContactMethod } from '../../../types/speakerOutreach.types';
 
 interface OutreachHistoryTimelineProps {

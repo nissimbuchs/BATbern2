@@ -171,7 +171,7 @@ export type webhooks = Record<string, never>;
 export interface components {
   schemas: {
     AiDescriptionResponse: {
-      description?: string;
+      description: string;
     };
     AiThemeImageJob: {
       /** Format: uuid */
@@ -191,17 +191,17 @@ export interface components {
     };
     AbstractAnalysisResponse: {
       /** @description 1=heavy product promotion, 10=no promotion at all */
-      noPromotionScore?: number;
+      noPromotionScore: number;
       /** @description Brief German explanation of the noPromotionScore */
-      noPromotionFeedback?: string;
+      noPromotionFeedback: string;
       /** @description 1=no real-world experience mentioned, 10=clearly practical lessons learned */
-      lessonsLearnedScore?: number;
+      lessonsLearnedScore: number;
       /** @description Brief German explanation of the lessonsLearnedScore */
-      lessonsLearnedFeedback?: string;
+      lessonsLearnedFeedback: string;
       /** @description Number of words in the original abstract */
-      wordCount?: number;
+      wordCount: number;
       /** @description Shortened German abstract (max 150 words) if original exceeds 160 words, otherwise null */
-      shortenedAbstract?: string | null;
+      shortenedAbstract: string | null;
     };
     /** @description Organizer-editable OpenAI prompt configuration */
     AiPromptResponse: {

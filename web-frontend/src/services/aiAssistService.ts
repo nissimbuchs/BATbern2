@@ -13,26 +13,11 @@
  */
 
 import apiClient from '@/services/api/apiClient';
+import type { components } from '@/types/generated/event-ai-api.types';
 
-export interface AiDescriptionResponse {
-  description: string;
-}
-
-export interface AiThemeImageJob {
-  jobId: string;
-  status: 'PENDING' | 'DONE' | 'FAILED';
-  imageUrl?: string | null;
-  s3Key?: string | null;
-}
-
-export interface AiAbstractAnalysisResponse {
-  noPromotionScore: number;
-  noPromotionFeedback: string;
-  lessonsLearnedScore: number;
-  lessonsLearnedFeedback: string;
-  wordCount: number;
-  shortenedAbstract: string | null;
-}
+export type AiDescriptionResponse = components['schemas']['AiDescriptionResponse'];
+export type AiThemeImageJob = components['schemas']['AiThemeImageJob'];
+export type AiAbstractAnalysisResponse = components['schemas']['AbstractAnalysisResponse'];
 
 export const generateEventDescription = async (
   eventCode: string

@@ -436,7 +436,7 @@ security filter chain, our hooks and our service modules.
 |---|---|---|
 | Backend IT | `SesClient`, `S3Client`, Cognito client, OpenAI HTTP, the peer service via `MockRestServiceServer` / WireMock | `@MockitoBean` of own services, repositories, `UserApiClient`, `EmailService`, `SlugGenerationService` |
 | Backend unit | pure logic only; a unit test that needs more than 2 mocks is at the wrong test level | `verify(mock).call(eq(<expected value>))` as the main assertion |
-| Frontend component | the network via MSW; Amplify; browser APIs that jsdom lacks | `vi.mock('@/services/...')`, `vi.mock('@/hooks/...')`, `vi.mock` of child components of the screen under test |
+| Frontend component | the network via MSW; Amplify; browser APIs that jsdom lacks | `vi.mock('@/services/...')`, `vi.mock('@/hooks/...')`, `vi.spyOn` on an imported service or hook module, `vi.mock` of child components of the screen under test |
 | Frontend i18n | real i18next with the real `en` locale files | the per-file `react-i18next` stub |
 
 Unit tests of pure functions stay as they are. The rule targets tests that claim to test
@@ -472,7 +472,7 @@ baseline `web-frontend/scripts/test-ratchet-baseline.txt`:
 
 | Category | Counts |
 |---|---|
-| `fe-mock-services` / `fe-mock-hooks` / `fe-mock-components` | `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**/*.{test,spec}.ts(x)`, by resolved path: `src/services`; `src/hooks` or a `use[A-Z]...` module; `src/components`, `src/pages` or a PascalCase module |
+| `fe-mock-services` / `fe-mock-hooks` / `fe-mock-components` | `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**/*.{test,spec}.ts(x)`, and `vi.spyOn(x, …)` where `x` is imported from own code, by resolved path: `src/services`; `src/hooks` or a `use[A-Z]...` module; `src/components`, `src/pages` or a PascalCase module |
 | `be-mock-s2s-client` | `@MockitoBean` of a type ending in `Client` that is not a boundary type (`UserApiClient`, `UserServiceClient`, ...) |
 | `be-mock-in-process` | any other `@MockitoBean` that is not a boundary type |
 | `be-transactional-it` | class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is named `*IntegrationTest` / `*IT` |

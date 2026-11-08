@@ -122,6 +122,39 @@ describe('scanFrontendTest', () => {
     const src = "vi.mock('aws-amplify');\nvi.mock('aws-amplify/auth');\nvi.mock('msw');";
     expect(scanFrontendTest(EVENT_PAGE, src).size).toBe(0);
   });
+
+  it('counts vi.spyOn on an imported own module like vi.mock of that module', () => {
+    const src = [
+      "import * as authModule from '@/contexts/useAuth';",
+      "import companyApi, { eventApi as events } from '@/services/companyApi';",
+      "import { usePartners } from '../../hooks/usePartners';",
+      "import * as Dialog from './ConfirmDialog';",
+      "vi.spyOn(authModule, 'useAuth');",
+      "vi.spyOn(companyApi, 'getCompany');",
+      'vi.spyOn(\n  events,\n  "list",\n);',
+      "vi.spyOn(Dialog, 'default');",
+      "vi.spyOn(usePartners, 'call');",
+    ].join('\n');
+    expect(asObject(scanFrontendTest(EVENT_PAGE, src))).toEqual({
+      'fe-mock-components': 1,
+      'fe-mock-hooks': 2,
+      'fe-mock-services': 2,
+    });
+  });
+
+  it('does not count vi.spyOn on packages, globals, locals or in comments', () => {
+    const src = [
+      "import { QueryClient } from '@tanstack/react-query';",
+      "import * as format from '@/utils/format';",
+      'const qc = new QueryClient();',
+      "vi.spyOn(qc, 'invalidateQueries');",
+      "vi.spyOn(console, 'error');",
+      "vi.spyOn(window, 'open');",
+      "vi.spyOn(format, 'formatDate');",
+      "// vi.spyOn(companyApi, 'getCompany');",
+    ].join('\n');
+    expect(scanFrontendTest(EVENT_PAGE, src).size).toBe(0);
+  });
 });
 
 describe('scanJavaTest', () => {

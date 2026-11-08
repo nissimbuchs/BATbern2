@@ -13,7 +13,8 @@
  *
  * Categories (baseline line `<category>\t<path>\t<count>`, sorted, zero counts omitted):
  *   fe-mock-services, fe-mock-hooks, fe-mock-components
- *       `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**\/*.{test,spec}.ts(x)`. The specifier is resolved
+ *       `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**\/*.{test,spec}.ts(x)`, and
+       `vi.spyOn(x, ...)` where `x` is imported from own code (same classification). The specifier is resolved
  *       (aliases from vite.config.ts, relative paths against the test file) to a path under
  *       `src/`: under `src/services` -> services; under `src/hooks` or basename `use[A-Z]...` ->
  *       hooks; under `src/components` / `src/pages` or a PascalCase basename -> components;
@@ -119,13 +120,49 @@ export function classifySpecifier(specifier: string, testFile: string): Category
 const VI_MOCK =
   /\bvi\s*\.\s*(?:mock|doMock)\s*\(\s*(?:import\s*\(\s*)?(?:'([^'\n]*)'|"([^"\n]*)"|`([^`$\n]*)`)/g;
 
-/** Counted `vi.mock(` / `vi.doMock(` calls of one frontend test file, by category. */
+const IMPORT = /\bimport\s+(?!type\b)([^'";]*?)\s+from\s+(?:'([^'\n]*)'|"([^"\n]*)")/g;
+const VI_SPY_ON = /\bvi\s*\.\s*spyOn\s*\(\s*([A-Za-z_$][\w$]*)\s*,/g;
+
+/** Local binding name -> module specifier, for every value import of a test file. */
+export function importedBindings(masked: string): Map<string, string> {
+  const bindings = new Map<string, string>();
+  for (const m of masked.matchAll(IMPORT)) {
+    const clause = m[1];
+    const specifier = m[2] ?? m[3] ?? '';
+    const namespace = /\*\s*as\s+([A-Za-z_$][\w$]*)/.exec(clause);
+    if (namespace) bindings.set(namespace[1], specifier);
+    const named = /\{([^}]*)\}/.exec(clause);
+    for (const part of named ? named[1].split(',') : []) {
+      const name = part
+        .trim()
+        .replace(/^type\s+/, '')
+        .split(/\s+as\s+/)
+        .pop()
+        ?.trim();
+      if (name && !part.trim().startsWith('type ')) bindings.set(name, specifier);
+    }
+    const defaultName = /^\s*([A-Za-z_$][\w$]*)\s*(?:,|$)/.exec(clause.replace(/\{[^}]*\}/, ''));
+    if (defaultName) bindings.set(defaultName[1], specifier);
+  }
+  return bindings;
+}
+
+/**
+ * Counted own-code mocks of one frontend test file, by category: `vi.mock(` / `vi.doMock(` of a
+ * module, and `vi.spyOn(<binding>, ...)` where the binding is imported from that module.
+ */
 export function scanFrontendTest(file: string, source: string): Map<Category, number> {
   const counts = new Map<Category, number>();
-  const masked = maskComments(source);
-  for (const m of masked.matchAll(VI_MOCK)) {
-    const category = classifySpecifier(m[1] ?? m[2] ?? m[3] ?? '', file);
+  const add = (category: Category | null) => {
     if (category) counts.set(category, (counts.get(category) ?? 0) + 1);
+  };
+  const masked = maskComments(source);
+  for (const m of masked.matchAll(VI_MOCK))
+    add(classifySpecifier(m[1] ?? m[2] ?? m[3] ?? '', file));
+  const bindings = importedBindings(masked);
+  for (const m of masked.matchAll(VI_SPY_ON)) {
+    const specifier = bindings.get(m[1]);
+    if (specifier) add(classifySpecifier(specifier, file));
   }
   return counts;
 }

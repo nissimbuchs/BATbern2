@@ -13,6 +13,7 @@ import {
   UpdatePreferencesRequest,
   UpdatePreferencesResponse,
 } from '@/types/user';
+import type { components as UserApiComponents } from '@/types/generated/user-api.types';
 
 /**
  * Fetch authenticated user profile with optional includes
@@ -44,12 +45,7 @@ export const updateUserPreferences = async (
 /**
  * Public projection of a user (CUMS `GET /public/users/{username}`).
  */
-export interface PublicUserResponse {
-  username: string;
-  firstName?: string | null;
-  lastName?: string | null;
-  profilePictureUrl?: string | null;
-}
+export type PublicUserResponse = UserApiComponents['schemas']['PublicUserResponse'];
 
 /**
  * Fetch the public projection of a user.
