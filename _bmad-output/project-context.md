@@ -211,6 +211,7 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
 - What a test may mock: only the process boundary (MSW for the network, Amplify), never our services, hooks or child components. Binding rules and the CI ratchet: `docs/architecture/coding-standards.md` → "Test fidelity rules".
 - The network is the MSW harness, active in every test (`src/test/msw/`, 17.0c1): each request is checked against `docs/api/*.openapi.yml` (a path, method or query no spec defines fails the test), answered with the spec example, or with a typed override `api.on('<operationId>', () => body)`; read what was sent with `api.calls('<operationId>')`. Never a per-file `setupServer`. Usage: coding-standards → "Frontend: the MSW harness".
 - i18n is the real i18next with `en` (set up in `src/test/setup.ts`); no new `vi.mock('react-i18next')` (ratchet category `fe-mock-i18n`).
+- Auth state comes from `src/test/auth.tsx` (`renderWithAuth(ui, { auth: signedInAs('organizer') })`, `AuthTestProvider`, `signedOut()`), through the real `AuthContext`, with the provider's own `canAccess`/`hasRole` rules; never `vi.mock('@/hooks/useAuth')`. Zustand stores run for real (`useXStore.setState` in `beforeEach`; persisted stores: `localStorage.clear()`).
 
 ### E2E Testing (Playwright)
 - Three projects: `chromium` (organizer — always active), `speaker` (activated by

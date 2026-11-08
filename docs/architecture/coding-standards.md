@@ -531,6 +531,17 @@ adds its own handler with `server.use(...)` from `@/test/msw/server`, never for 
 i18n stays the real i18next with `en` from `setup.ts`; a per-file `vi.mock('react-i18next')` is
 counted by the ratchet (`fe-mock-i18n`).
 
+**Auth, stores, WebSockets (17.0c2).** A screen that calls `useAuth` gets its state from
+`src/test/auth.tsx`: `renderWithAuth(ui, { auth: signedInAs('organizer') })` (or
+`AuthTestProvider` around a custom tree; `signedOut()`, `anAuthState(user, overrides)`) puts a
+signed-in or signed-out state into the real `AuthContext`, so `useAuth` and every consumer run for
+real, and `hasRole`, `hasPermission` and `canAccess` are the provider's own rules
+(`src/contexts/authRules.ts`). Never `vi.mock('@/hooks/useAuth')`. Zustand stores run for real: set
+the state a test needs with `useXStore.setState(...)` and reset it in `beforeEach` (a persisted
+store also needs `localStorage.clear()`). A STOMP/SockJS connection is a network boundary: mock
+the third-party packages (`@stomp/stompjs`, `sockjs-client`) or rely on the condition the client
+already uses to stay off, never our own WebSocket hook or client.
+
 New examples come from the local anonymized database:
 `cd web-frontend && node ../scripts/dev/capture-spec-examples.ts` against `make dev-native-up`
 (refuses any non-localhost URL; scrubs e-mail addresses, names, usernames and free text and checks
@@ -589,7 +600,7 @@ small builder is the exception**; a test that needs one says why.
   without an `api.on` override, `listUsers`, `searchUsers`, `listEvents` and `listRegistrations`
   answer from this set with real paging from `page`/`limit` (`src/test/msw/fixtureDefaults.ts`);
   the search approximates `batbern_fold` (accents, ß/ø/æ/œ/đ/ł/þ, ü = ue = u) and requires every
-  word. It is a stand-in, not the backend's ranking: a test that depends on ranking, a filter the
+  word; `listRegistrations` pages 25 by default and applies `status` like EMS. It is a stand-in, not the backend's ranking: a test that depends on ranking, a filter the
   stand-in ignores or a specific body sets `api.on`. Every other operation answers with its spec example.
 - **Backend:** shared-kernel test fixtures `ch.batbern.shared.test.fixtures.ProductionShapedPeople`
   (named shapes `VIETNAMESE`, `APOSTROPHE`, `CJK`, `MIXED_CASE_EMAIL`, `IDN_EMAIL`, `BRUENNIMANN`,
