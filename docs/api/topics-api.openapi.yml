@@ -97,6 +97,18 @@ paths:
           schema:
             type: string
             example: 'similarity,history'
+        - name: search
+          in: query
+          description: |
+            Free-text search. Every word must occur in the topic title or
+            description, in any order, ignoring case, accents and umlaut spelling (ü = ue = u).
+            Evaluated over all topics before sorting and paging, so `pagination.totalItems`
+            counts every match. Combines with `filter`. Blank means no search.
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+            example: 'cloud architektur'
       responses:
         '200':
           description: Paginated list of topics

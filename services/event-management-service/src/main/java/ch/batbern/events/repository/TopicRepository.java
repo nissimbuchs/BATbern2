@@ -1,9 +1,13 @@
 package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.Topic;
+import ch.batbern.shared.search.SearchPredicates;
+import ch.batbern.shared.search.SearchTerms;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -23,7 +27,7 @@ import java.util.UUID;
  * ADR-003: Use topicCode (slug-format) as the primary external identifier.
  */
 @Repository
-public interface TopicRepository extends JpaRepository<Topic, UUID> {
+public interface TopicRepository extends JpaRepository<Topic, UUID>, JpaSpecificationExecutor<Topic> {
 
     /**
      * Find topic by topicCode (ADR-003 primary lookup).
@@ -69,20 +73,23 @@ public interface TopicRepository extends JpaRepository<Topic, UUID> {
     List<Topic> findAllForSimilarityCalculation();
 
     /**
-     * Find topics with optional category and status filters, with pagination support.
-     * Used for topic backlog with database-level pagination (AC1).
+     * Find topics with optional category, active and free-text filters, with pagination support,
+     * all in SQL before paging (AC1).
      *
      * @param category Optional category filter (null to skip)
      * @param active Optional active status filter (null to skip)
+     * @param search Optional search: every word occurs in the title or description, folded by
+     *     {@code batbern_fold}, in any order (blank to skip)
      * @param pageable Pagination and sort parameters
      * @return Page of topics matching filters
      */
-    @Query("SELECT t FROM Topic t WHERE "
-            + "(:category IS NULL OR t.category = :category) "
-            + "AND (:active IS NULL OR t.active = :active)")
-    Page<Topic> findByFilters(
-            @Param("category") String category,
-            @Param("active") Boolean active,
-            Pageable pageable);
+    default Page<Topic> findByFilters(String category, Boolean active, String search, Pageable pageable) {
+        SearchTerms terms = SearchTerms.parse(search);
+        Specification<Topic> spec = (root, query, cb) -> cb.and(
+                category != null ? cb.equal(root.get("category"), category) : cb.conjunction(),
+                active != null ? cb.equal(root.get("active"), active) : cb.conjunction(),
+                SearchPredicates.allTermsInAnyField(cb, terms, root.get("title"), root.get("description")));
+        return findAll(spec, pageable);
+    }
 
 }

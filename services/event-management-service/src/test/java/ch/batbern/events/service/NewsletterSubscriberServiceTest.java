@@ -12,12 +12,13 @@ import org.junit.jupiter.api.extension.ExtendWith;
 import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 
 import java.time.Instant;
-import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Optional;
 import java.util.UUID;
@@ -249,55 +250,19 @@ class NewsletterSubscriberServiceTest {
     }
 
     @Nested
-    @DisplayName("findSubscribers (Story 10.28)")
+    @DisplayName("findSubscribers (Story 10.28): page and sort; search and status run in SQL (integration test)")
     class FindSubscribers {
-
-        @Test
-        @DisplayName("should_filterBySearch_when_searchParamProvided")
-        void should_filterBySearch_when_searchParamProvided() {
-            PaginationParams params = PaginationParams.builder().page(1).limit(20).build();
-            when(subscriberRepository.findFiltered(eq("alice"), eq("%alice%"), eq("all"), any(Pageable.class)))
-                    .thenReturn(List.of(activeSubscriber));
-
-            List<NewsletterSubscriber> result = newsletterSubscriberService.findSubscribers("Alice", "all", "subscribedAt", "desc", params);
-
-            assertThat(result).hasSize(1);
-        }
-
-        @Test
-        @DisplayName("should_filterByStatus_when_statusIsActive")
-        void should_filterByStatus_when_statusIsActive() {
-            PaginationParams params = PaginationParams.builder().page(1).limit(20).build();
-            when(subscriberRepository.findFiltered(any(), any(), eq("active"), any(Pageable.class)))
-                    .thenReturn(List.of(activeSubscriber));
-
-            List<NewsletterSubscriber> result = newsletterSubscriberService.findSubscribers(null, "active", "subscribedAt", "desc", params);
-
-            assertThat(result).hasSize(1);
-        }
-
-        @Test
-        @DisplayName("should_filterByStatus_when_statusIsUnsubscribed")
-        void should_filterByStatus_when_statusIsUnsubscribed() {
-            PaginationParams params = PaginationParams.builder().page(1).limit(20).build();
-            when(subscriberRepository.findFiltered(any(), any(), eq("unsubscribed"), any(Pageable.class)))
-                    .thenReturn(List.of(alreadyUnsubscribedSubscriber));
-
-            List<NewsletterSubscriber> result = newsletterSubscriberService.findSubscribers(null, "unsubscribed", "subscribedAt", "desc", params);
-
-            assertThat(result).hasSize(1);
-        }
 
         @Test
         @DisplayName("should_paginateCorrectly_when_pageAndLimitProvided")
         void should_paginateCorrectly_when_pageAndLimitProvided() {
             PaginationParams params = PaginationParams.builder().page(2).limit(10).build();
-            when(subscriberRepository.findFiltered(any(), any(), any(), any(Pageable.class)))
-                    .thenReturn(List.of());
+            when(subscriberRepository.findAll(anySubscriberSpec(), any(Pageable.class)))
+                    .thenReturn(Page.empty());
 
             newsletterSubscriberService.findSubscribers(null, "all", "subscribedAt", "desc", params);
 
-            verify(subscriberRepository).findFiltered(any(), any(), any(),
+            verify(subscriberRepository).findAll(anySubscriberSpec(),
                     eq(PageRequest.of(1, 10, Sort.by(Sort.Order.desc("subscribedAt"), Sort.Order.asc("id")))));
         }
 
@@ -305,40 +270,18 @@ class NewsletterSubscriberServiceTest {
         @DisplayName("should_sortByEmail_when_sortByEmailRequested")
         void should_sortByEmail_when_sortByEmailRequested() {
             PaginationParams params = PaginationParams.builder().page(1).limit(20).build();
-            when(subscriberRepository.findFiltered(any(), any(), any(), any(Pageable.class)))
-                    .thenReturn(List.of());
+            when(subscriberRepository.findAll(anySubscriberSpec(), any(Pageable.class)))
+                    .thenReturn(Page.empty());
 
             newsletterSubscriberService.findSubscribers(null, "all", "email", "asc", params);
 
-            verify(subscriberRepository).findFiltered(any(), any(), any(),
+            verify(subscriberRepository).findAll(anySubscriberSpec(),
                     eq(PageRequest.of(0, 20, Sort.by(Sort.Order.asc("email"), Sort.Order.asc("id")))));
         }
-    }
 
-    @Nested
-    @DisplayName("countSubscribers (Story 10.28)")
-    class CountSubscribers {
-
-        @Test
-        @DisplayName("should_countWithSearch_when_searchProvided")
-        void should_countWithSearch_when_searchProvided() {
-            when(subscriberRepository.countFiltered(eq("alice"), eq("%alice%"), eq("all")))
-                    .thenReturn(5L);
-
-            long count = newsletterSubscriberService.countSubscribers("Alice", "all");
-
-            assertThat(count).isEqualTo(5L);
-        }
-
-        @Test
-        @DisplayName("should_countAll_when_noFilters")
-        void should_countAll_when_noFilters() {
-            when(subscriberRepository.countFiltered(any(), any(), eq("all")))
-                    .thenReturn(10L);
-
-            long count = newsletterSubscriberService.countSubscribers(null, "all");
-
-            assertThat(count).isEqualTo(10L);
+        @SuppressWarnings("unchecked")
+        private Specification<NewsletterSubscriber> anySubscriberSpec() {
+            return any(Specification.class);
         }
     }
 

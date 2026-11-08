@@ -1,7 +1,8 @@
 /**
  * TopicSelectionOverlay tests (Epic 14, Story 14.F.3)
  *
- * State A (pick) ↔ State B (brainstorm), client-side search, select→pin→continue.
+ * State A (pick) ↔ State B (brainstorm), select→pin→continue. The search runs in the backend
+ *: TopicSelectionOverlay.search.test.tsx.
  */
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent } from '@testing-library/react';
@@ -93,13 +94,6 @@ describe('TopicSelectionOverlay', () => {
     setup({ currentTopicCode: 'cloud-native' });
     expect(screen.getByTestId('topic-overlay-pinned-banner')).toBeInTheDocument();
     expect(screen.getByTestId('brainstorm-panel')).toBeInTheDocument();
-  });
-
-  it('filters the grid client-side by search', () => {
-    setup();
-    fireEvent.change(screen.getByTestId('topic-overlay-search'), { target: { value: 'cloud' } });
-    expect(screen.getByTestId('topic-card-cloud-native')).toBeInTheDocument();
-    expect(screen.queryByTestId('topic-card-ai-ops')).not.toBeInTheDocument();
   });
 
   it('selecting a safe topic pins it and switches to brainstorm', () => {

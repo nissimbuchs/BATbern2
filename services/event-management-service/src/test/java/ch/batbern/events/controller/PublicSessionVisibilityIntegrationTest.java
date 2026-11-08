@@ -22,6 +22,8 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
@@ -281,6 +283,31 @@ class PublicSessionVisibilityIntegrationTest extends AbstractIntegrationTest {
             mockMvc.perform(get("/api/v1/public/events").param("scope", "archive").param("search", "Quantum"))
                     .andExpect(status().isOk())
                     .andExpect(jsonPath("$.data[*].eventCode", containsInAnyOrder("BATbern9062")));
+        }
+
+        @ParameterizedTest
+        @CsvSource({
+            "Archi,1", "Zürich,1", "zuerich,1", "zurich bern,1", "bern architektur,1",
+            "(test,-1", "a  b,-1", "100%,-1"
+        })
+        @DisplayName("should_searchArchiveByFoldedSubstringInAnyOrder_and_neverFail_when_anonymous")
+        void should_searchArchiveByFoldedSubstringInAnyOrder_and_neverFail_when_anonymous(String search, int hits)
+                throws Exception {
+            Event a = saveEvent("BATbern9062", 9062, Instant.now().minus(200, ChronoUnit.DAYS),
+                    EventWorkflowState.ARCHIVED, "agenda");
+            a.setTitle("Architektur zwischen Zürich und Bern");
+            eventRepository.save(a);
+            saveEvent("BATbern9063", 9063, Instant.now().minus(300, ChronoUnit.DAYS),
+                    EventWorkflowState.ARCHIVED, "agenda");
+
+            // hits -1: hostile input, only a 2xx is asserted
+            var result = mockMvc.perform(get("/api/v1/public/events").param("scope", "archive")
+                            .param("search", search))
+                    .andExpect(status().isOk());
+            if (hits == 1) {
+                result.andExpect(jsonPath("$.data", hasSize(1)))
+                        .andExpect(jsonPath("$.data[0].eventCode").value("BATbern9062"));
+            }
         }
 
         @Test

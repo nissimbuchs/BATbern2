@@ -1,6 +1,8 @@
 package ch.batbern.events.specification;
 
 import ch.batbern.events.domain.Registration;
+import ch.batbern.shared.search.SearchPredicates;
+import ch.batbern.shared.search.SearchTerms;
 import jakarta.persistence.criteria.Predicate;
 import org.springframework.data.jpa.domain.Specification;
 
@@ -12,76 +14,19 @@ import java.util.UUID;
  * JPA Specification builder for Registration filtering
  * Story 3.3: Event Participants Tab - Filter support
  */
-public class RegistrationSpecification {
+public final class RegistrationSpecification {
 
-    /**
-     * Build specification for filtering registrations by event and optional status
-     *
-     * @param eventId Event UUID (required)
-     * @param statuses List of status values to filter by (optional)
-     * @return Specification for filtering registrations
-     */
-    public static Specification<Registration> filterByEventAndStatus(
-            UUID eventId,
-            List<String> statuses
-    ) {
-        return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            // Always filter by event ID
-            predicates.add(criteriaBuilder.equal(root.get("eventId"), eventId));
-
-            // Filter by status if provided
-            if (statuses != null && !statuses.isEmpty()) {
-                // Convert to uppercase for case-insensitive matching
-                List<String> upperStatuses = statuses.stream()
-                        .map(String::toUpperCase)
-                        .toList();
-                predicates.add(criteriaBuilder.upper(root.get("status")).in(upperStatuses));
-            }
-
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
+    private RegistrationSpecification() {
     }
 
     /**
-     * Build specification for filtering registrations by event and attendee username search
-     *
-     * @param eventId Event UUID (required)
-     * @param searchTerm Search term for attendee username (optional)
-     * @return Specification for filtering registrations
-     */
-    public static Specification<Registration> filterByEventAndUsernameSearch(
-            UUID eventId,
-            String searchTerm
-    ) {
-        return (root, query, criteriaBuilder) -> {
-            List<Predicate> predicates = new ArrayList<>();
-
-            // Always filter by event ID
-            predicates.add(criteriaBuilder.equal(root.get("eventId"), eventId));
-
-            // Search in attendee username if provided
-            if (searchTerm != null && !searchTerm.isEmpty()) {
-                predicates.add(
-                        criteriaBuilder.like(
-                                criteriaBuilder.lower(root.get("attendeeUsername")),
-                                "%" + searchTerm.toLowerCase() + "%"
-                        )
-                );
-            }
-
-            return criteriaBuilder.and(predicates.toArray(new Predicate[0]));
-        };
-    }
-
-    /**
-     * Build combined specification for all database-level filters
-     * Performance Optimization: Now supports search across denormalized attendee fields
+     * Build combined specification for all database-level filters, evaluated before paging.
      *
      * @param eventId Event UUID (required)
      * @param statuses List of status values to filter by (optional)
-     * @param search Search term for attendee name/email (optional, searches denormalized fields)
+     * @param search Free-text search (optional): every word occurs in the attendee's
+     *     username, first name, last name, e-mail or company id (denormalized columns), folded by
+     *     {@code batbern_fold}, in any order; blank means no search
      * @param companyId Company ID to filter by (optional, uses denormalized field)
      * @return Specification for filtering registrations
      */
@@ -91,6 +36,7 @@ public class RegistrationSpecification {
             String search,
             String companyId
     ) {
+        SearchTerms terms = SearchTerms.parse(search);
         return (root, query, criteriaBuilder) -> {
             List<Predicate> predicates = new ArrayList<>();
 
@@ -105,20 +51,13 @@ public class RegistrationSpecification {
                 predicates.add(criteriaBuilder.upper(root.get("status")).in(upperStatuses));
             }
 
-            // Search across denormalized attendee fields (username, firstName, lastName, email)
-            if (search != null && !search.isEmpty()) {
-                String searchLower = "%" + search.toLowerCase() + "%";
-                Predicate usernamePredicate = criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("attendeeUsername")), searchLower);
-                Predicate firstNamePredicate = criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("attendeeFirstName")), searchLower);
-                Predicate lastNamePredicate = criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("attendeeLastName")), searchLower);
-                Predicate emailPredicate = criteriaBuilder.like(
-                        criteriaBuilder.lower(root.get("attendeeEmail")), searchLower);
-
-                predicates.add(criteriaBuilder.or(
-                        usernamePredicate, firstNamePredicate, lastNamePredicate, emailPredicate));
+            if (!terms.isEmpty()) {
+                predicates.add(SearchPredicates.allTermsInAnyField(criteriaBuilder, terms,
+                        root.get("attendeeUsername"),
+                        root.get("attendeeFirstName"),
+                        root.get("attendeeLastName"),
+                        root.get("attendeeEmail"),
+                        root.get("attendeeCompanyId")));
             }
 
             // Filter by company ID (uses denormalized field)

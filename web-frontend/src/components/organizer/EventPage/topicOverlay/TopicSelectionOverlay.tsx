@@ -52,6 +52,7 @@ import { useMutation, useQueryClient } from '@tanstack/react-query';
 import { useTopics, useTopic } from '@/hooks/useTopics';
 import { useEvents } from '@/hooks/useEvents';
 import { useUserList } from '@/hooks/useUserManagement/useUserList';
+import { useDebounce } from '@/hooks/useDebounce';
 import { topicService } from '@/services/topicService';
 import type { Event } from '@/types/event.types';
 import type { Topic, TopicFilters, TopicStatus } from '@/types/topic.types';
@@ -120,7 +121,12 @@ export const TopicSelectionOverlay: React.FC<TopicSelectionOverlayProps> = ({
 
   const selection = useTopicSelection({ eventCode, onConfirmed: handleConfirmed });
 
-  const { data, isLoading, isError } = useTopics(filters);
+  // The search runs in the backend over all topics (title and description, folded) before
+  // sorting and paging; filtering the first 50 here missed the rest.
+  const debouncedSearch = useDebounce(search.trim(), 300);
+  const { data, isLoading, isError } = useTopics(
+    debouncedSearch ? { ...filters, search: debouncedSearch } : filters
+  );
   const { data: confirmedTopic } = useTopic(confirmedTopicCode ?? '');
   const { data: allEventsData } = useEvents({ page: 1, limit: 1000 });
   const { data: organizersData } = useUserList({
@@ -151,11 +157,7 @@ export const TopicSelectionOverlay: React.FC<TopicSelectionOverlayProps> = ({
     [organizersData]
   );
 
-  const visibleTopics = useMemo(() => {
-    const topics = data?.data ?? [];
-    const q = search.trim().toLowerCase();
-    return q ? topics.filter((tp) => tp.title.toLowerCase().includes(q)) : topics;
-  }, [data, search]);
+  const visibleTopics = useMemo(() => data?.data ?? [], [data]);
 
   const handleFilter =
     (key: keyof TopicFilters) =>

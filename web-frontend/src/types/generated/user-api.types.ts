@@ -730,13 +730,14 @@ export interface paths {
      *
      *     **Authorization**: ADMIN or ORGANIZER role required; any other role gets 403.
      *
-     *     **Matched fields**: `username`, `email`, `firstName`, `lastName`, and the concatenated
-     *     full name (`firstName + ' ' + lastName`), each as a case-insensitive substring. The full
-     *     name is matched so that a stored display name such as `speaker_pool.speaker_name`
-     *     ("Matthias Stürmer") resolves.
+     *     **Matched fields**: every word of `query` must occur, in any order, in
+     *     `username`, `firstName`, `lastName`, the primary `email`, an additional e-mail (verified
+     *     or not) or `companyId`, ignoring case, accents and umlaut spelling (ü = ue = u). So
+     *     "Matthias Stürmer", "stuermer matthias" and "Stürmer" all resolve the same user, and
+     *     `%` or `_` match literally.
      *
-     *     **Ranking** (applied in SQL, before the limit): exact full-name match, then an exact
-     *     single-field match, then a prefix match, then any substring; ties broken by
+     *     **Ranking** (applied in SQL, before the limit): exact full name (either order), then an
+     *     exact single field, then a name prefix, then any other match; ties broken by
      *     `lastName, firstName, username` so the order is stable across identical requests.
      *
      *     **Filtering**: `role` is applied in the database BEFORE the limit, so a role-filtered
@@ -2564,7 +2565,11 @@ export interface operations {
         fields?: string;
         /** @description Comma-separated list of resources to include */
         include?: string;
-        /** @description Free-text search across name and email */
+        /**
+         * @description Free-text search: every word must occur, in any order, in username,
+         *     first or last name, primary or additional e-mail or company id, ignoring case, accents
+         *     and umlaut spelling (ü = ue = u). Evaluated before paging. Blank means no search.
+         */
         search?: string;
       };
       header?: never;

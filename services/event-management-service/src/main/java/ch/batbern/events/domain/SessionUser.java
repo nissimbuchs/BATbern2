@@ -125,13 +125,6 @@ public class SessionUser {
     @Column(name = "speaker_last_name", length = 100)
     private String speakerLastName;
 
-    /**
-     * Full-text search vector for speaker names (GENERATED ALWAYS AS in PostgreSQL)
-     * Story 4.2 - BAT-109: Archive browsing with speaker name search
-     */
-    @Column(name = "speaker_name_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
-    private Object speakerNameVector;
-
     @Column(name = "created_at")
     private Instant createdAt;
 

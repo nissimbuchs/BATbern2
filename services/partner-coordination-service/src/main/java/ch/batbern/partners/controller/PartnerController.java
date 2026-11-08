@@ -13,6 +13,7 @@ import ch.batbern.partners.service.PartnerService;
 import ch.batbern.shared.api.PaginationMetadata;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.access.prepost.PreAuthorize;
@@ -44,27 +45,30 @@ public class PartnerController implements PartnersApi {
             String filter,
             String include,
             Integer page,
-            Integer size) {
+            Integer size,
+            String search) {
 
-        log.debug("GET /partners - filter: {}, include: {}, page: {}, size: {}", filter, include, page, size);
+        log.debug("GET /partners - filter: {}, include: {}, page: {}, size: {}, search: {}",
+                filter, include, page, size, search);
 
         // #961: the LIST spans companies, so only an organizer may expand contacts here.
         Set<String> includes = withContactsAuthorized(parseIncludes(include), null);
-        List<PartnerResponse> partners = partnerService.listPartners(filter, null, page, size, includes);
+        // Filter, search and paging in SQL, so the metadata describes every match
+        Page<PartnerResponse> partnerPage = partnerService.listPartners(filter, search, page, size, includes);
+        List<PartnerResponse> partners = partnerPage.getContent();
         // GHSA-qhqv: the public About page shows "partner since"; when a contract ends is
         // commercial data for organizers only.
         if (!partnerSecurityService.isOrganizer()) {
             partners.forEach(p -> p.setPartnershipEndDate(null));
         }
 
-        // Create pagination metadata
         PaginationMetadata metadata = new PaginationMetadata();
-        metadata.setPage(page);
-        metadata.setLimit(size);
-        metadata.setTotalItems((long) partners.size());
-        metadata.setTotalPages((int) Math.ceil((double) partners.size() / size));
-        metadata.setHasNext(page + 1 < metadata.getTotalPages());
-        metadata.setHasPrev(page > 0);
+        metadata.setPage(partnerPage.getNumber());
+        metadata.setLimit(partnerPage.getSize());
+        metadata.setTotalItems(partnerPage.getTotalElements());
+        metadata.setTotalPages(partnerPage.getTotalPages());
+        metadata.setHasNext(partnerPage.hasNext());
+        metadata.setHasPrev(partnerPage.hasPrevious());
 
         PartnerListResponse response = new PartnerListResponse();
         response.setData(partners);

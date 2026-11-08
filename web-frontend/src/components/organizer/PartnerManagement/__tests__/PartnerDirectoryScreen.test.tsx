@@ -141,7 +141,8 @@ describe('PartnerDirectoryScreen - Main Screen Component', () => {
           sortBy: mockStoreState.sortBy,
           sortOrder: mockStoreState.sortOrder,
         },
-        { page: mockStoreState.page, size: 20 }
+        { page: mockStoreState.page, size: 20 },
+        mockStoreState.searchQuery
       );
     });
 
@@ -186,7 +187,8 @@ describe('PartnerDirectoryScreen - Main Screen Component', () => {
             sortBy: updatedStoreState.sortBy,
             sortOrder: updatedStoreState.sortOrder,
           },
-          { page: updatedStoreState.page, size: 20 }
+          { page: updatedStoreState.page, size: 20 },
+          updatedStoreState.searchQuery
         );
       });
     });

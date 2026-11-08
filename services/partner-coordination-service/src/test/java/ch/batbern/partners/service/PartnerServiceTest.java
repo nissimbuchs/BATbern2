@@ -22,9 +22,7 @@ import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
 import java.time.LocalDate;
-import java.util.Arrays;
 import java.util.Collections;
-import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
@@ -208,48 +206,6 @@ class PartnerServiceTest {
         // Then
         verify(partnerRepository).save(argThat(p -> !p.isActive()));
         verify(eventPublisher).publish(any());
-    }
-
-    @Test
-    void should_listPartners_when_noFiltersProvided() {
-        // Given
-        List<Partner> partners = Arrays.asList(partner);
-        when(partnerRepository.findAll()).thenReturn(partners);
-
-        // When
-        List<PartnerResponse> responses = partnerService.listPartners(null, null, 0, 20, null);
-
-        // Then
-        assertThat(responses).hasSize(1);
-        assertThat(responses.get(0).getCompanyName()).isEqualTo("GoogleZH");
-    }
-
-    @Test
-    void should_filterByPartnershipLevel_when_filterProvided() {
-        // Given
-        List<Partner> partners = Arrays.asList(partner);
-        when(partnerRepository.findByPartnershipLevel(PartnershipLevel.GOLD)).thenReturn(partners);
-
-        // When (accepts both uppercase and lowercase, but uppercase is clearer)
-        List<PartnerResponse> responses = partnerService.listPartners("partnershipLevel=GOLD", null, 0, 20, null);
-
-        // Then
-        assertThat(responses).hasSize(1);
-        assertThat(responses.get(0).getPartnershipLevel()).isEqualTo(ch.batbern.partners.dto.generated.PartnershipLevel.GOLD);
-    }
-
-    @Test
-    void should_filterByActiveStatus_when_isActiveFilterProvided() {
-        // Given
-        List<Partner> partners = Arrays.asList(partner);
-        when(partnerRepository.findActivePartners(any(LocalDate.class))).thenReturn(partners);
-
-        // When
-        List<PartnerResponse> responses = partnerService.listPartners("isActive=true", null, 0, 20, null);
-
-        // Then
-        assertThat(responses).hasSize(1);
-        assertThat(responses.get(0).getIsActive()).isTrue();
     }
 
     @Test

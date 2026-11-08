@@ -47,15 +47,18 @@ export const PartnerDirectoryScreen: React.FC = () => {
   const { t } = useTranslation('partners');
   const theme = useTheme();
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
-  const { filters, viewMode, sortBy, sortOrder, page, setViewMode, setSortBy } = usePartnerStore();
+  const { filters, searchQuery, viewMode, sortBy, sortOrder, page, setViewMode, setSortBy } =
+    usePartnerStore();
   const effectiveViewMode = isMobile ? 'list' : viewMode;
   const { openCreateModal } = usePartnerModalStore();
 
   // Fetch partners with current filters, sort, and pagination
+  // Same arguments as PartnerList, so both share one query
   const { data: partnersData, isLoading: isLoadingPartners } = usePartners(
     filters,
     { sortBy, sortOrder },
-    { page, size: 20 }
+    { page, size: 20 },
+    searchQuery
   );
 
   const handleViewModeChange = (

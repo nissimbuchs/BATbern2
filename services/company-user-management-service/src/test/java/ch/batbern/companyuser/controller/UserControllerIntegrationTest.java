@@ -1,5 +1,6 @@
 package ch.batbern.companyuser.controller;
 
+import org.springframework.cache.CacheManager;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
@@ -31,6 +32,7 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasItem;
@@ -1445,5 +1447,160 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/users/by-company")
                         .param("company", "sbb"))
                 .andExpect(status().isUnauthorized());
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // One search for the user list and the user picker. Every word in username,
+    // first/last name, primary or additional e-mail or company id, folded by batbern_fold
+    // (case, accents, umlaut spelling), in any order, in SQL before paging and limit.
+    // ------------------------------------------------------------------------------------------
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    private void saveSearchUser(String username, String first, String last, String companyId) {
+        userRepository.save(User.builder()
+                .username(username)
+                .email(username + "@example.com")
+                .firstName(first)
+                .lastName(last)
+                .cognitoUserId("cognito-" + username)
+                .companyId(companyId)
+                .roles(new HashSet<>(Set.of(Role.SPEAKER)))
+                .build());
+        var cache = cacheManager.getCache("userSearch");
+        if (cache != null) {
+            cache.clear();
+        }
+    }
+
+    private void saveUmlautNamesakes() {
+        saveSearchUser("anna.mueller.1", "Anna", "Müller", null);
+        saveSearchUser("anna.mueller.2", "Anna", "Mueller", null);
+        saveSearchUser("anna.muller.3", "Anna", "Muller", null);
+        saveSearchUser("anna.meier", "Anna", "Meier", null);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Müller", "Mueller", "Muller", "MÜLLER"})
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_findAllUmlautSpellings_when_anySpellingIsSearched (list and picker)")
+    void should_findAllUmlautSpellings_when_anySpellingIsSearched(String input) throws Exception {
+        saveUmlautNamesakes();
+
+        mockMvc.perform(get("/api/v1/users").param("search", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(3))
+                .andExpect(jsonPath("$.data[*].id", containsInAnyOrder(
+                        "anna.mueller.1", "anna.mueller.2", "anna.muller.3")));
+        mockMvc.perform(get("/api/v1/users/search").param("query", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(3)));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"muster hans", "peter", "hans muster", "Hans-Peter"})
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_findMiddleNameAndAnyWordOrder (list and picker)")
+    void should_findMiddleNameAndAnyWordOrder(String input) throws Exception {
+        saveSearchUser("hp.muster", "Hans Peter", "Muster", null);
+        saveSearchUser("hans.meier", "Hans", "Meier", null);
+
+        mockMvc.perform(get("/api/v1/users").param("search", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(1))
+                .andExpect(jsonPath("$.data[0].id").value("hp.muster"));
+        mockMvc.perform(get("/api/v1/users/search").param("query", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0].id").value("hp.muster"));
+    }
+
+    @ParameterizedTest
+    @CsvSource({"alt.address@x.ch,true", "alt.address@x.ch,false", "x.ch alt,true"})
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_findOwner_when_additionalEmailIsSearched (verified or not; list and picker)")
+    void should_findOwner_when_additionalEmailIsSearched(String input, boolean verified) throws Exception {
+        saveSearchUser("olga.owner", "Olga", "Owner", null);
+        User owner = userRepository.findByUsername("olga.owner").orElseThrow();
+        owner.addAdditionalEmail(UserAdditionalEmail.builder()
+                .email("alt.address@x.ch")
+                .verifiedAt(verified ? Instant.now() : null)
+                .build());
+        userRepository.saveAndFlush(owner);
+
+        mockMvc.perform(get("/api/v1/users").param("search", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(1))
+                .andExpect(jsonPath("$.data[0].id").value("olga.owner"));
+        mockMvc.perform(get("/api/v1/users/search").param("query", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("olga.owner"));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_matchCompanyIdAndUsername_when_searched")
+    void should_matchCompanyIdAndUsername_when_searched() throws Exception {
+        saveSearchUser("zed.somebody", "Zed", "Somebody", "bundesamtfx");
+
+        mockMvc.perform(get("/api/v1/users").param("search", "bundesamt"))
+                .andExpect(jsonPath("$.data[*].id", hasItem("zed.somebody")));
+        mockMvc.perform(get("/api/v1/users").param("search", "zed.some"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(1));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_returnMatchBeyondFirstPage_and_countAllMatches")
+    void should_returnMatchBeyondFirstPage_and_countAllMatches() throws Exception {
+        saveUmlautNamesakes();
+
+        mockMvc.perform(get("/api/v1/users").param("search", "mueller").param("page", "2").param("limit", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(3))
+                .andExpect(jsonPath("$.data", hasSize(1)));
+    }
+
+    @Test
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_rankExactFullNameInEitherOrderFirst_in_picker")
+    void should_rankExactFullNameInEitherOrderFirst_in_picker() throws Exception {
+        saveSearchUser("hans.amuster", "Hans", "Amuster", null); // sorts first by name, must rank after
+        saveSearchUser("hans.muster", "Hans", "Muster", null);
+
+        mockMvc.perform(get("/api/v1/users/search").param("query", "Muster Hans"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].id").value("hans.muster"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"(test", "a  b", "100%", "'", "C++", "\\", "_"})
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_answer2xx_and_matchWildcardsLiterally_when_inputIsHostile")
+    void should_answer2xx_and_matchWildcardsLiterally_when_inputIsHostile(String input) throws Exception {
+        saveSearchUser("x.hostile", "Hundred", "100x", null);
+
+        mockMvc.perform(get("/api/v1/users").param("search", input))
+                .andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/users/search").param("query", input))
+                .andExpect(status().isOk());
+        if ("100%".equals(input)) {
+            mockMvc.perform(get("/api/v1/users").param("search", input))
+                    .andExpect(jsonPath("$.pagination.totalItems").value(0));
+        }
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "   "})
+    @WithMockUser(username = "admin", roles = {"ORGANIZER"})
+    @DisplayName("should_notFilter_when_searchIsBlank")
+    void should_notFilter_when_searchIsBlank(String input) throws Exception {
+        saveUmlautNamesakes();
+        long all = userRepository.count();
+
+        mockMvc.perform(get("/api/v1/users").param("search", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value((int) all));
     }
 }

@@ -13,7 +13,9 @@ export interface paths {
     };
     /**
      * List all partners
-     * @description Get a list of all partner companies with optional filtering
+     * @description Get a page of partner companies with optional filtering and search, sorted by company
+     *     slug. Filter, search and paging all run in the database, so
+     *     `metadata.totalItems` counts every match and `page` 1 holds the next matches.
      */
     get: operations['listPartners'];
     put?: never;
@@ -719,7 +721,15 @@ export interface operations {
         /** @description Related resources to include (e.g., "company,contacts") */
         include?: string;
         page?: number;
+        /** @description Page size (zero-based `page`) */
         size?: number;
+        /**
+         * @description Free-text search. Every word must occur in the partner's company slug or
+         *     company display name, in any order, ignoring case, accents and umlaut spelling
+         *     (ü = ue = u). Combines with `filter`. Blank means no search.
+         * @example mobiliar
+         */
+        search?: string;
       };
       header?: never;
       path?: never;

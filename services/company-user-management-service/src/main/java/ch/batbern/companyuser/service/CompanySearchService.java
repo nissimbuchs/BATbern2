@@ -20,6 +20,8 @@ import java.util.stream.Collectors;
  * AC5: Company search functionality
  * AC9: Caffeine-based caching with 15-minute TTL
  * AC11: Advanced search with autocomplete (max 20 results)
+ * Every word in slug or display name, folded, ranked (exact, prefix, other) and
+ * limited in SQL ({@link CompanyRepository#searchRanked}).
  *
  * Caching Strategy:
  * - Cache key: "companySearch::{query}"
@@ -49,11 +51,10 @@ public class CompanySearchService {
     public List<CompanySearchResponse> searchCompanies(String query) {
         log.debug("Searching companies with query: {}", query);
 
-        List<Company> companies = companyRepository.searchByNameOrDisplayName(query);
+        // Ranked and limited in SQL: an exact match is never cut away
+        List<Company> companies = companyRepository.searchRanked(query, DEFAULT_AUTOCOMPLETE_LIMIT);
 
-        // Limit to 20 autocomplete results
         return companies.stream()
-                .limit(DEFAULT_AUTOCOMPLETE_LIMIT)
                 .map(this::mapToSearchResponse)
                 .collect(Collectors.toList());
     }
@@ -69,10 +70,9 @@ public class CompanySearchService {
     public List<CompanySearchResponse> searchCompanies(String query, int limit) {
         log.debug("Searching companies with query: {} and limit: {}", query, limit);
 
-        List<Company> companies = companyRepository.searchByNameOrDisplayName(query);
+        List<Company> companies = companyRepository.searchRanked(query, limit);
 
         return companies.stream()
-                .limit(limit)
                 .map(this::mapToSearchResponse)
                 .collect(Collectors.toList());
     }
@@ -89,12 +89,11 @@ public class CompanySearchService {
     public List<CompanySearchResponse> searchCompanies(String query, int limit, String include) {
         log.debug("Searching companies with query: {}, limit: {}, include: {}", query, limit, include);
 
-        List<Company> companies = companyRepository.searchByNameOrDisplayName(query);
+        List<Company> companies = companyRepository.searchRanked(query, limit);
 
         boolean includeLogo = include != null && include.contains("logo");
 
         return companies.stream()
-                .limit(limit)
                 .map(company -> mapToSearchResponse(company, includeLogo))
                 .collect(Collectors.toList());
     }

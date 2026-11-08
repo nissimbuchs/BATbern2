@@ -8,9 +8,11 @@ import ch.batbern.events.newsletter.dto.generated.SubscriberResponse;
 import ch.batbern.events.exception.DuplicateSubscriberException;
 import ch.batbern.events.exception.ReservedEmailDomainException;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
+import ch.batbern.events.specification.NewsletterSubscriberSpecification;
 import ch.batbern.shared.api.DeterministicPaging;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -341,7 +343,7 @@ public class NewsletterSubscriberService {
     /**
      * Find subscribers with filtering, search, sorting, and pagination.
      *
-     * @param search   case-insensitive partial match against email or firstName
+     * @param search   every word in e-mail, first name or username (folded, any order)
      * @param status   "active", "unsubscribed", or "all"
      * @param sortBy   field name (whitelisted)
      * @param sortDir  "asc" or "desc"
@@ -362,11 +364,7 @@ public class NewsletterSubscriberService {
                 springPage, params.getLimit(),
                 org.springframework.data.domain.Sort.by(direction, safeSortBy));
 
-        String searchParam = (search != null && !search.isBlank()) ? search.toLowerCase() : null;
-        String searchLikeParam = (searchParam != null) ? "%" + searchParam + "%" : "%";
-
-        return subscriberRepository.findFiltered(searchParam, searchLikeParam,
-                status != null ? status : "all", pageable);
+        return subscriberRepository.findAll(subscriberFilter(search, status), pageable).getContent();
     }
 
     /**
@@ -374,10 +372,15 @@ public class NewsletterSubscriberService {
      */
     @Transactional(readOnly = true)
     public long countSubscribers(String search, String status) {
-        String searchParam = (search != null && !search.isBlank()) ? search.toLowerCase() : null;
-        String searchLikeParam = (searchParam != null) ? "%" + searchParam + "%" : "%";
-        return subscriberRepository.countFiltered(searchParam, searchLikeParam,
-                status != null ? status : "all");
+        return subscriberRepository.count(subscriberFilter(search, status));
+    }
+
+    /** Search (e-mail, first name, username; folded, any order) and status, in SQL. */
+    private static Specification<NewsletterSubscriber> subscriberFilter(
+            String search, String status) {
+        return Specification.allOf(
+                NewsletterSubscriberSpecification.matchesSearch(search),
+                NewsletterSubscriberSpecification.hasStatus(status));
     }
 
     /**

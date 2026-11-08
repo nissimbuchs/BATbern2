@@ -1,0 +1,60 @@
+meta {
+  name: Search Partners (server-side)
+  type: http
+  seq: 1.5
+}
+
+get {
+  url: {{baseUrl}}/partners?search=Bruno%20Test%20Partner&page=0&size=20
+  body: none
+  auth: bearer
+}
+
+params:query {
+  search: Bruno Test Partner
+  page: 0
+  size: 20
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isArray
+}
+
+tests {
+  test("should find the test partner by its company display name", function() {
+    const body = res.getBody();
+    const names = body.data.map(p => p.companyName);
+    expect(names).to.include(bru.getVar("testPartnerCompanyName"));
+  });
+
+  test("totalItems counts every match, not the rows on the page", function() {
+    const body = res.getBody();
+    expect(body.metadata.totalItems).to.be.at.least(body.data.length);
+    expect(body.metadata.page).to.equal(0);
+  });
+
+  test("every row matches the search", function() {
+    const body = res.getBody();
+    body.data.forEach(p => {
+      const text = ((p.company && p.company.displayName) || "") + " " + p.companyName;
+      expect(text.toLowerCase()).to.match(/bruno|brtest/);
+    });
+  });
+}
+
+docs {
+  The partner search runs in the backend over every partner (display name resolved
+  by CUMS /internal/companies). The test partner's company is "Bruno Test Partner Co"
+  (00-create-test-partner); its slug brtestN does not contain the words, so only the
+  display-name resolution can find it.
+}

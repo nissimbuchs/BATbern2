@@ -17,19 +17,24 @@ import ch.batbern.partners.exception.PartnerAlreadyExistsException;
 import ch.batbern.partners.exception.PartnerNotFoundException;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.partners.security.SecurityContextHelper;
+import ch.batbern.shared.api.DeterministicPaging;
 import ch.batbern.shared.events.DomainEventPublisher;
 import io.micrometer.core.annotation.Timed;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Service layer for Partner CRUD operations.
@@ -55,58 +60,61 @@ public class PartnerService {
     private final PartnerContactService partnerContactService;
 
     /**
-     * List all partners with optional filtering and HTTP enrichment.
+     * One page of partners, filtered, searched and paged in SQL, sorted by company slug
+     * with the id as tie-breaker, then HTTP-enriched (ADR-004).
      *
-     * @param filter Filter expression (e.g., "partnershipLevel=gold,isActive=true")
-     * @param sort Sort expression (e.g., "partnershipLevel,desc")
+     * <p>The list used to load the whole table, sort it in Java and return every row whatever the
+     * page, while the frontend searched only the rows it had; a filter on tier AND status applied
+     * only the tier.
+     *
+     * @param filter Filter expression ({@code partnershipLevel=gold,isActive=true}; {@code :} works too)
+     * @param search Free text: every word in the company slug or display name, resolved to slugs by
+     *     CUMS {@code GET /internal/companies} because {@code partners.company_name} holds only the
+     *     slug; blank means no search
      * @param page Page number (0-indexed)
      * @param size Page size
      * @param includes Set of resources to include (e.g., "company", "contacts")
-     * @return List of partner responses
+     * @return The page of partner responses; {@code getTotalElements()} counts every match
      */
     @Timed(value = "partner.list", description = "Time taken to list partners")
-    public List<PartnerResponse> listPartners(String filter, String sort, int page, int size,
+    @Transactional(readOnly = true)
+    public Page<PartnerResponse> listPartners(String filter, String search, int page, int size,
             Set<String> includes) {
-        log.debug("Listing partners with filter: {}, sort: {}, page: {}, size: {}, includes: {}",
-                filter, sort, page, size, includes);
+        log.debug("Listing partners with filter: {}, search: {}, page: {}, size: {}, includes: {}",
+                filter, search, page, size, includes);
 
-        List<Partner> partners;
-
-        // Simple filtering logic - support both : and = syntax
-        if (filter != null && (filter.contains("partnershipLevel:") || filter.contains("partnershipLevel="))) {
-            String level = extractFilterValue(filter, "partnershipLevel");
-            PartnershipLevel partnershipLevel = PartnershipLevel.valueOf(level.toUpperCase());
-            partners = partnerRepository.findByPartnershipLevel(partnershipLevel);
-        } else if (filter != null && (filter.contains("isActive:") || filter.contains("isActive="))) {
-            boolean isActive = Boolean.parseBoolean(extractFilterValue(filter, "isActive"));
-            partners = isActive
-                    ? partnerRepository.findActivePartners(java.time.LocalDate.now())
-                    : partnerRepository.findInactivePartners(java.time.LocalDate.now());
-        } else {
-            partners = partnerRepository.findAll();
+        Specification<Partner> spec = Specification.allOf(
+                PartnerRepository.hasLevel(levelFilter(filter)),
+                PartnerRepository.isActiveOn(activeFilter(filter), LocalDate.now()));
+        if (search != null && !search.isBlank()) {
+            spec = spec.and(PartnerRepository.companyNameIn(companyServiceClient.findCompanyNames(search.strip())));
         }
 
-        // Sort alphabetically by company name for better UX
-        return partners.stream()
-                .sorted((p1, p2) -> {
-                    String name1 = p1.getCompanyName() != null ? p1.getCompanyName() : "";
-                    String name2 = p2.getCompanyName() != null ? p2.getCompanyName() : "";
-                    return name1.compareToIgnoreCase(name2);
-                })
-                .map(partner -> {
-                    PartnerResponse response = mapToResponse(partner);
+        Pageable pageable = DeterministicPaging.pageRequest(Math.max(0, page), Math.max(1, size),
+                Sort.by(Sort.Direction.ASC, "companyName"));
+        return partnerRepository.findAll(spec, pageable).map(partner -> {
+            PartnerResponse response = mapToResponse(partner);
 
-                    // HTTP enrichment per ADR-004
-                    if (includes != null && includes.contains("company")) {
-                        enrichWithCompanyData(response, partner.getCompanyName());
-                    }
-                    if (includes != null && includes.contains("contacts")) {
-                        enrichWithContacts(response, partner.getCompanyName());
-                    }
+            // HTTP enrichment per ADR-004
+            if (includes != null && includes.contains("company")) {
+                enrichWithCompanyData(response, partner.getCompanyName());
+            }
+            if (includes != null && includes.contains("contacts")) {
+                enrichWithContacts(response, partner.getCompanyName());
+            }
 
-                    return response;
-                })
-                .collect(Collectors.toList());
+            return response;
+        });
+    }
+
+    private PartnershipLevel levelFilter(String filter) {
+        String level = filter != null ? extractFilterValue(filter, "partnershipLevel") : null;
+        return level != null ? PartnershipLevel.valueOf(level.toUpperCase()) : null;
+    }
+
+    private Boolean activeFilter(String filter) {
+        String active = filter != null ? extractFilterValue(filter, "isActive") : null;
+        return active != null ? Boolean.parseBoolean(active) : null;
     }
 
     /**

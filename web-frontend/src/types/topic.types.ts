@@ -48,6 +48,7 @@ export interface TopicFilters {
   page?: number;
   limit?: number;
   include?: string; // e.g., "similarity,history"
+  search?: string; // free text over title and description, matched by the backend
 }
 
 export interface TopicDetailsUI extends Topic {

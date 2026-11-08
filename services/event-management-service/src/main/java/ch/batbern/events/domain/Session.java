@@ -100,14 +100,6 @@ public class Session {
     @Column(columnDefinition = "TEXT")
     private String description;
 
-    // Full-text search vector columns (GENERATED ALWAYS AS in PostgreSQL)
-    // Story 4.2 - BAT-109: Archive browsing with full-text search
-    @Column(name = "title_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
-    private Object titleVector;
-
-    @Column(name = "description_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
-    private Object descriptionVector;
-
     @Column(name = "session_type", length = 50)
     private String sessionType; // keynote, presentation, workshop, panel_discussion, networking, break, lunch
 

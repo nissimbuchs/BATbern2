@@ -12,6 +12,7 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
@@ -254,8 +255,7 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         createAndSaveUser("max.smith", "max@example.com", "Max", "Smith");
 
         // When
-        List<User> doeUsers = userRepository.searchByNameOrEmail(
-                "Doe", org.springframework.data.domain.PageRequest.of(0, 20));
+        List<User> doeUsers = userRepository.searchRanked("Doe", null, PageRequest.of(0, 20));
 
         // Then
         assertThat(doeUsers).hasSize(2);
@@ -357,8 +357,7 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         createAndSaveUser("matthias.stuermer", "matthias.stuermer@bfh.ch", "Matthias", "Stuermer");
 
         // When: searching the surname, limited to 5
-        List<User> results = userRepository.searchByNameOrEmail(
-                "Stuermer", org.springframework.data.domain.PageRequest.of(0, 5));
+        List<User> results = userRepository.searchRanked("Stuermer", null, PageRequest.of(0, 5));
 
         // Then: the exact surname match is first, not lost in the namesakes
         assertThat(results).isNotEmpty();
@@ -373,10 +372,8 @@ class UserRepositoryTest extends AbstractIntegrationTest {
                     "Matthias", "Filler" + i);
         }
 
-        List<User> capped = userRepository.searchByNameOrEmail(
-                "Matthias", org.springframework.data.domain.PageRequest.of(0, 7));
-        List<User> wide = userRepository.searchByNameOrEmail(
-                "Matthias", org.springframework.data.domain.PageRequest.of(0, 25));
+        List<User> capped = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 7));
+        List<User> wide = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 25));
 
         assertThat(capped).hasSize(7);
         assertThat(wide).hasSize(25);
@@ -390,11 +387,9 @@ class UserRepositoryTest extends AbstractIntegrationTest {
                     "Matthias", "Filler" + i);
         }
 
-        var first = userRepository.searchByNameOrEmail(
-                "Matthias", org.springframework.data.domain.PageRequest.of(0, 10))
+        var first = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 10))
                 .stream().map(User::getUsername).toList();
-        var second = userRepository.searchByNameOrEmail(
-                "Matthias", org.springframework.data.domain.PageRequest.of(0, 10))
+        var second = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 10))
                 .stream().map(User::getUsername).toList();
 
         assertThat(first).isEqualTo(second);
@@ -408,8 +403,7 @@ class UserRepositoryTest extends AbstractIntegrationTest {
 
         // The old query matched firstName OR lastName separately, so a full name — exactly what
         // `speaker_pool.speaker_name` holds — could never match anybody.
-        List<User> results = userRepository.searchByNameOrEmail(
-                "Matthias Stuermer", org.springframework.data.domain.PageRequest.of(0, 20));
+        List<User> results = userRepository.searchRanked("Matthias Stuermer", null, PageRequest.of(0, 20));
 
         assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
     }
@@ -421,8 +415,7 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         createAndSaveUser("matthias.germann", "matthias.germann@dvbern.ch", "Matthias", "Germann");
 
         // users-api.openapi.yml documents "Search users by name or email"; only name was implemented.
-        List<User> results = userRepository.searchByNameOrEmail(
-                "bfh.ch", org.springframework.data.domain.PageRequest.of(0, 20));
+        List<User> results = userRepository.searchRanked("bfh.ch", null, PageRequest.of(0, 20));
 
         assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
     }
@@ -444,8 +437,8 @@ class UserRepositoryTest extends AbstractIntegrationTest {
 
         // When: role filtering happens in SQL, before the limit. Filtering in Java after a
         // 20-row truncation (the old behaviour) would return nothing here.
-        List<User> results = userRepository.searchByNameOrEmailAndRole(
-                "Matthias", Role.SPEAKER, org.springframework.data.domain.PageRequest.of(0, 20));
+        List<User> results = userRepository.searchRanked(
+                "Matthias", Role.SPEAKER, PageRequest.of(0, 20));
 
         assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
     }

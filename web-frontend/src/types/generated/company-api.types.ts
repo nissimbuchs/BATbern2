@@ -252,6 +252,11 @@ export interface paths {
      *
      *     **Acceptance Criteria**: AC5, AC11
      *
+     *     **Matching**: every word of `query` must occur, in any order, in the slug
+     *     (`name`) or the display name, ignoring case, accents and umlaut spelling (ü = ue = u).
+     *     Ranked in SQL before the limit: exact match, then prefix, then any other match, ties by
+     *     display name and slug. A paged search is `GET /companies?search=`.
+     *
      *     **Caching**:
      *     - Caffeine in-memory cache with 15-minute TTL
      *     - Cache key includes query, limit, and include parameters
@@ -910,6 +915,13 @@ export interface operations {
       query?: {
         /** @description MongoDB-style JSON filter criteria */
         filter?: string;
+        /**
+         * @description Free-text search. Every word must occur in the company slug (`name`) or
+         *     the display name, in any order, ignoring case, accents and umlaut spelling (ü = ue = u).
+         *     Evaluated before paging, so `pagination.totalItems` counts every match. Combines with
+         *     `filter`. Blank means no search.
+         */
+        search?: string;
         /** @description Sort fields (comma-separated, prefix with - for descending) */
         sort?: string;
         /** @description Page number (1-indexed) */

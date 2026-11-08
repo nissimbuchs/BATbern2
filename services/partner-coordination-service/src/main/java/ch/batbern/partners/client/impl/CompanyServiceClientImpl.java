@@ -7,6 +7,7 @@ import ch.batbern.partners.exception.CompanyServiceException;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.core.ParameterizedTypeReference;
 import org.springframework.cache.annotation.Cacheable;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
@@ -17,8 +18,14 @@ import org.springframework.security.oauth2.jwt.Jwt;
 import org.springframework.stereotype.Component;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
+import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.ResourceAccessException;
+import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
+
+import java.net.URI;
+import java.util.List;
 
 /**
  * Implementation of CompanyServiceClient using Spring RestTemplate.
@@ -109,6 +116,36 @@ public class CompanyServiceClientImpl implements CompanyServiceClient {
                     "Unexpected error fetching company: " + companyName,
                     e
             );
+        }
+    }
+
+    /**
+     * {@inheritDoc}
+     *
+     * <p>{@code /internal/companies} is not routed by the API gateway and needs no JWT
+     * (service-to-service inside the VPC, like {@code /internal/users}); the user's JWT is
+     * forwarded when there is one.
+     */
+    @Override
+    public List<String> findCompanyNames(String search) {
+        URI uri = UriComponentsBuilder.fromUriString(companyServiceBaseUrl)
+                .path("/internal/companies")
+                .queryParam("search", "{search}")
+                .encode()
+                .buildAndExpand(search) // a template variable is encoded strictly: & + % ( too
+                .toUri();
+        try {
+            ResponseEntity<List<String>> response = restTemplate.exchange(
+                    uri, HttpMethod.GET, new HttpEntity<>(createHeadersWithJwtToken()),
+                    new ParameterizedTypeReference<List<String>>() { });
+            List<String> names = response.getBody();
+            return names != null ? names : List.of();
+        } catch (HttpStatusCodeException e) {
+            log.error("Company Service answered {} to the company-name search", e.getStatusCode());
+            throw new CompanyServiceException("Company name search failed", e.getStatusCode().value(), e);
+        } catch (RestClientException e) {
+            log.error("Company name search failed: {}", e.getMessage());
+            throw new CompanyServiceException("Failed to connect to Company Service for the company-name search", e);
         }
     }
 

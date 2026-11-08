@@ -105,26 +105,6 @@ describe('companyApiClient', () => {
       expect(call).toContain('filter=');
     });
 
-    it('should use search endpoint when searchQuery provided', async () => {
-      const mockResponse = {
-        data: [],
-        pagination: {
-          page: 1,
-          limit: 20,
-          totalItems: 0,
-          totalPages: 1,
-          hasNext: false,
-          hasPrev: false,
-        },
-      };
-
-      vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
-
-      await companyApiClient.getCompanies({ page: 1, limit: 20 }, { searchQuery: 'TechCorp' });
-
-      expect(apiClient.get).toHaveBeenCalledWith(expect.stringContaining('/companies/search'));
-    });
-
     it('should include expand parameter when provided', async () => {
       const mockResponse = {
         data: [],
@@ -218,37 +198,6 @@ describe('companyApiClient', () => {
       await companyApiClient.searchCompanies('Tech', 20, { expand: ['logo'] });
 
       expect(apiClient.get).toHaveBeenCalledWith(expect.stringContaining('include=logo'));
-    });
-  });
-
-  describe('searchCompaniesWithPagination', () => {
-    it('should wrap search results in pagination format', async () => {
-      const mockCompanies = [
-        { id: 'company-1', name: 'TechCorp AG' },
-        { id: 'company-2', name: 'TechSoft GmbH' },
-      ];
-
-      vi.mocked(apiClient.get).mockResolvedValue({ data: mockCompanies });
-
-      const result = await companyApiClient.searchCompaniesWithPagination('Tech');
-
-      expect(result.data).toEqual(mockCompanies);
-      expect(result.pagination).toEqual({
-        page: 1,
-        limit: 20,
-        totalItems: 2,
-        totalPages: 1,
-        hasNext: false,
-        hasPrev: false,
-      });
-    });
-
-    it('should use custom pagination params', async () => {
-      vi.mocked(apiClient.get).mockResolvedValue({ data: [] });
-
-      await companyApiClient.searchCompaniesWithPagination('Tech', { page: 2, limit: 50 });
-
-      expect(apiClient.get).toHaveBeenCalledWith(expect.stringContaining('limit=50'));
     });
   });
 

@@ -11,7 +11,10 @@ import ch.batbern.events.repository.TopicUsageHistoryRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
@@ -541,5 +544,61 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         history.setAttendeeCount(attendance);
         history.setEngagementScore(engagementScore);
         return topicUsageHistoryRepository.save(history);
+    }
+
+    // ==================== Topic search (title, description; folded) ==============
+
+    private void saveSearchTopics() {
+        for (int i = 10; i < 70; i++) {
+            createTestTopic("Filler Topic " + i, "technical");
+        }
+        Topic target = createTestTopic("Zürcher Stadtplanung", "technical");
+        target.setDescription("Künstliche Intelligenz im Hochbau");
+        topicRepository.save(target);
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"zuercher", "Zürcher", "zurcher plan", "kunstliche", "hochbau intelligenz"})
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    @DisplayName("Topic search finds a topic beyond the first 50, by title or description")
+    void should_findTopicBeyondFirstPage_bySearch(String input) throws Exception {
+        saveSearchTopics();
+
+        mockMvc.perform(get("/api/v1/topics").param("page", "1").param("limit", "50").param("search", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].title").value("Zürcher Stadtplanung"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(1));
+        // the overlay's in-memory staleness sort filters in SQL first
+        mockMvc.perform(get("/api/v1/topics").param("page", "1").param("limit", "50")
+                        .param("sort", "-stalenessScore").param("search", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(1));
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    @DisplayName("Search pages in SQL and combines with the category filter")
+    void should_pageTopicSearch_andCombineWithFilter() throws Exception {
+        saveSearchTopics();
+
+        mockMvc.perform(get("/api/v1/topics").param("page", "2").param("limit", "50").param("search", "filler"))
+                .andExpect(jsonPath("$.data", hasSize(10)))
+                .andExpect(jsonPath("$.pagination.totalItems").value(60));
+        mockMvc.perform(get("/api/v1/topics").param("search", "filler")
+                        .param("filter", "{\"category\":\"management\"}"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(0));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"(test", "a  b", "100%", "'", "C++", "", "   "})
+    @DisplayName("Hostile or blank topic search answers 2xx (anonymous archive filter too)")
+    void should_answer2xx_when_topicSearchIsHostileOrBlank(String input) throws Exception {
+        createTestTopic("Cloud Native Architecture", "technical");
+
+        var result = mockMvc.perform(get("/api/v1/topics").param("search", input)).andExpect(status().isOk());
+        if (input.isBlank()) {
+            result.andExpect(jsonPath("$.pagination.totalItems").value(1));
+        }
     }
 }

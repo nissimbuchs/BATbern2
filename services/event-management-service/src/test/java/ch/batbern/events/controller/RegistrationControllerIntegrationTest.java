@@ -18,6 +18,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
@@ -925,5 +928,76 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
             return str;
         }
         return str.substring(0, 1).toUpperCase() + str.substring(1).toLowerCase();
+    }
+
+    // ============================================================================
+    // Participant search. Every word in username, first/last name, e-mail or
+    // company id (denormalized columns), folded, any order, in SQL before paging.
+    // ============================================================================
+
+    private void saveParticipant(String username, String first, String last, String companyId) {
+        registrationRepository.save(Registration.builder()
+                .registrationCode(testEvent.getEventCode() + "-reg-" + generateRandomCode())
+                .eventId(testEvent.getId())
+                .attendeeUsername(username)
+                .attendeeFirstName(first)
+                .attendeeLastName(last)
+                .attendeeEmail(username + "@example.com")
+                .attendeeCompanyId(companyId)
+                .status("registered")
+                .registrationDate(Instant.parse("2025-06-01T10:00:00Z"))
+                .build());
+    }
+
+    private void saveParticipants() {
+        saveParticipant("anna.mueller", "Anna", "Müller", "mobiliar");
+        saveParticipant("ben.mueller", "Ben", "Mueller", "sbb");
+        saveParticipant("carl.muller", "Carl", "Muller", "post");
+        saveParticipant("hp.muster", "Hans Peter", "Muster", "swisscom");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "Müller,3", "Mueller,3", "Muller,3", "muster hans,1", "peter,1", "hans muster,1",
+        "mobiliar,1", "ben.mueller@example,1", "anna mobiliar,1", "anna sbb,0"
+    })
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("Participant search folds, matches any word order and every field")
+    void should_findParticipants_bySearch(String input, int expected) throws Exception {
+        saveParticipants();
+
+        mockMvc.perform(get("/api/v1/events/BATbern142/registrations").param("search", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(expected));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("A match beyond page 1 is returned and totalItems counts all")
+    void should_returnParticipantBeyondFirstPage() throws Exception {
+        saveParticipants();
+
+        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
+                        .param("search", "mueller").param("page", "2").param("limit", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.pagination.totalItems").value(3));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"(test", "a  b", "100%", "'", "C++", "", "   "})
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("Hostile or blank participant search answers 2xx; blank is no search")
+    void should_answer2xx_when_participantSearchIsHostileOrBlank(String input) throws Exception {
+        saveParticipants();
+
+        var result = mockMvc.perform(get("/api/v1/events/BATbern142/registrations").param("search", input))
+                .andExpect(status().isOk());
+        if (input.isBlank()) {
+            result.andExpect(jsonPath("$.pagination.totalItems").value(4));
+        }
+        if ("100%".equals(input)) {
+            result.andExpect(jsonPath("$.pagination.totalItems").value(0));
+        }
     }
 }

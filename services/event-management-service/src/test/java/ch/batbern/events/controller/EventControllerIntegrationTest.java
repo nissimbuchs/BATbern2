@@ -7,6 +7,13 @@ import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import com.jayway.jsonpath.JsonPath;
+import java.util.Map;
+import org.springframework.test.web.servlet.ResultActions;
+import ch.batbern.events.domain.SessionUser;
+import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser.SpeakerRole;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.GetOrCreateUserRequest;
@@ -2776,5 +2783,85 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 // Then: currentAttendeeCount = 3 (cancelled excluded via ACTIVE_STATUSES)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data[0].currentAttendeeCount").value(3));
+    }
+
+    // ============================================================================
+    // Event search ("title contains" = the search box). Every word in event title,
+    // description or code, a session title or abstract, or a speaker name; folded; substring;
+    // any order; never a 5xx.
+    // ============================================================================
+
+    private void searchFixture() {
+        Event archi = createTestEvent("Architektur im Wandel", "2025-08-15T09:00:00Z", "CREATED");
+        archi.setEventNumber(8756);
+        archi.setEventCode("BATbern8756");
+        archi.setDescription("Ein Abend über Räume");
+        eventRepository.save(archi);
+        Session session = sessionRepository.save(Session.builder()
+                .eventId(archi.getId())
+                .eventCode(archi.getEventCode())
+                .title("Kubernetes im Betrieb")
+                .description("Erfahrungen mit Plattform-Teams")
+                .sessionSlug("kubernetes-im-betrieb")
+                .startTime(Instant.parse("2025-08-15T10:00:00Z"))
+                .endTime(Instant.parse("2025-08-15T11:00:00Z"))
+                .build());
+        applicationContext.getBean(ch.batbern.events.repository.SessionUserRepository.class)
+                .save(SessionUser.builder()
+                        .session(session)
+                        .username("hans.mueller")
+                        .speakerFirstName("Hans Peter")
+                        .speakerLastName("Müller")
+                        .speakerRole(SpeakerRole.PRIMARY_SPEAKER)
+                        .isConfirmed(true)
+                        .build());
+        createTestEvent("Cloud Native Day", "2025-09-15T09:00:00Z", "CREATED");
+    }
+
+    private ResultActions searchEvents(String input) throws Exception {
+        String filter = objectMapper.writeValueAsString(Map.of("title", Map.of("$contains", input)));
+        return mockMvc.perform(get("/api/v1/events").param("filter", filter));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "Archi", "architektur", "8756", "BATbern8756", "raume", "Räume",
+        "kubernetes", "plattform teams", "Mueller", "muller", "peter", "muster", "muller archi"
+    })
+    @DisplayName("Substring in title, description, code, session, speaker; folded, any order")
+    void should_findEvent_bySubstringInAnySearchableField(String input) throws Exception {
+        searchFixture();
+
+        if ("muster".equals(input)) {
+            searchEvents(input).andExpect(status().isOk()).andExpect(jsonPath("$.data", hasSize(0)));
+            return;
+        }
+        searchEvents(input)
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].eventCode").value("BATbern8756"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(1));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"(test", "a  b", "C++", "'", "100%", "a & b | !c", ":*"})
+    @DisplayName("Hostile search input answers 2xx (former to_tsquery threw)")
+    void should_answer2xx_when_searchInputIsHostile(String input) throws Exception {
+        searchFixture();
+
+        searchEvents(input).andExpect(status().isOk());
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"", "   "})
+    @DisplayName("A blank search is no search")
+    void should_notFilter_when_searchIsBlank(String input) throws Exception {
+        searchFixture();
+
+        // same as no filter: the two fixture events plus the two non-archived events of setUp()
+        int unfiltered = JsonPath.read(mockMvc.perform(get("/api/v1/events"))
+                .andReturn().getResponse().getContentAsString(), "$.data.length()");
+        searchEvents(input).andExpect(status().isOk()).andExpect(jsonPath("$.data", hasSize(unfiltered)));
+        assertThat(unfiltered).isEqualTo(4);
     }
 }

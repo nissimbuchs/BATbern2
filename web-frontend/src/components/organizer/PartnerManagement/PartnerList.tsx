@@ -24,24 +24,16 @@ export const PartnerList: React.FC = () => {
   const isMobile = useMediaQuery(theme.breakpoints.down('sm'));
   const effectiveViewMode = isMobile ? 'list' : viewMode;
 
-  // Fetch partners using React Query
+  // Fetch partners using React Query. The search runs in the backend over all partners
+  //; filtering the loaded page here missed partners on other pages.
   const { data, isLoading, isError, error } = usePartners(
     filters,
     { sortBy, sortOrder },
-    { page, size: 20 }
+    { page, size: 20 },
+    searchQuery
   );
 
-  const allPartners = data?.data || [];
-  const partners = searchQuery
-    ? allPartners.filter((partner) => {
-        const q = searchQuery.toLowerCase();
-        return (
-          partner.companyName.toLowerCase().includes(q) ||
-          partner.company?.displayName?.toLowerCase().includes(q) ||
-          partner.company?.name?.toLowerCase().includes(q)
-        );
-      })
-    : allPartners;
+  const partners = data?.data || [];
   const pagination = data?.metadata;
 
   // Loading state

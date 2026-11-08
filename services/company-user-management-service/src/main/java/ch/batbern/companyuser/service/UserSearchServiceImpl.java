@@ -52,7 +52,8 @@ public class UserSearchServiceImpl implements UserSearchService {
      * AC13: Caffeine caching with 10-min TTL
      * AC14: Performance <100ms P95
      *
-     * @param query Search query, matched against username, email, first name, last name and full name
+     * @param query Search input: every word in username, first/last name, primary or additional
+     *     e-mail or company id, folded
      * @param role Optional role filter, applied in SQL before the limit
      * @param limit Maximum number of results, clamped to {@code [1, 100]}
      * @return List of matching users, most relevant first
@@ -66,11 +67,9 @@ public class UserSearchServiceImpl implements UserSearchService {
 
         // Ranking, role filtering and limiting all happen in the database. Doing any of it here
         // would mean filtering an already-truncated page — the 2026-09-09 bug.
-        // The queries' ORDER BY ends in the unique username, so the limit cuts a total order.
+        // The specification's ORDER BY ends in the unique username, so the limit cuts a total order.
         Pageable page = DeterministicPaging.orderedByQuery(0, effectiveLimit);
-        List<User> users = role != null
-                ? userRepository.searchByNameOrEmailAndRole(query, role, page)
-                : userRepository.searchByNameOrEmail(query, page);
+        List<User> users = userRepository.searchRanked(query, role, page);
 
         log.debug("Found {} users (limit {})", users.size(), effectiveLimit);
 

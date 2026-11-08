@@ -621,6 +621,13 @@ export interface operations {
         limit?: number;
         /** @description Comma-separated resources to include (similarity, history) */
         include?: string;
+        /**
+         * @description Free-text search. Every word must occur in the topic title or
+         *     description, in any order, ignoring case, accents and umlaut spelling (ü = ue = u).
+         *     Evaluated over all topics before sorting and paging, so `pagination.totalItems`
+         *     counts every match. Combines with `filter`. Blank means no search.
+         */
+        search?: string;
       };
       header?: never;
       path?: never;

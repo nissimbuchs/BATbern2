@@ -2,28 +2,27 @@ package ch.batbern.partners.repository;
 
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
+import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.stereotype.Repository;
 
 import java.time.LocalDate;
-import java.util.List;
+import java.util.Collection;
 import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Repository for Partner entities.
  *
- * Provides standard CRUD operations plus custom queries:
+ * Provides standard CRUD operations plus:
  * - findByCompanyName: Lookup by meaningful ID (ADR-003)
- * - findByPartnershipLevel: Filter by partnership tier
- * - findActivePartners / findInactivePartners: Filter by computed active status
+ * - the list filters as {@link Specification}s, combined and paged in SQL
  *
  * Database: partners table
  */
 @Repository
-public interface PartnerRepository extends JpaRepository<Partner, UUID> {
+public interface PartnerRepository extends JpaRepository<Partner, UUID>, JpaSpecificationExecutor<Partner> {
 
     /**
      * Find partner by company name (meaningful ID per ADR-003).
@@ -33,29 +32,41 @@ public interface PartnerRepository extends JpaRepository<Partner, UUID> {
      */
     Optional<Partner> findByCompanyName(String companyName);
 
-    /**
-     * Find partners by partnership level.
-     *
-     * @param partnershipLevel Partnership tier (BRONZE, SILVER, GOLD, PLATINUM, STRATEGIC)
-     * @return List of partners with specified partnership level
-     */
-    List<Partner> findByPartnershipLevel(PartnershipLevel partnershipLevel);
+    /** Partners of one tier; {@code null} is unrestricted. */
+    static Specification<Partner> hasLevel(PartnershipLevel level) {
+        if (level == null) {
+            return Specification.unrestricted();
+        }
+        return (root, query, cb) -> cb.equal(root.get("partnershipLevel"), level);
+    }
 
     /**
-     * Find active partners (partnership start date <= today AND (end date IS NULL OR end date >= today)).
-     *
-     * @return List of currently active partners
+     * Active on {@code today} (start &lt;= today and no end or end &gt;= today), or the opposite for
+     * {@code false}; {@code null} is unrestricted.
      */
-    @Query("SELECT p FROM Partner p WHERE p.partnershipStartDate <= :today "
-            + "AND (p.partnershipEndDate IS NULL OR p.partnershipEndDate >= :today)")
-    List<Partner> findActivePartners(@Param("today") LocalDate today);
+    static Specification<Partner> isActiveOn(Boolean active, LocalDate today) {
+        if (active == null) {
+            return Specification.unrestricted();
+        }
+        Specification<Partner> activeSpec = (root, query, cb) -> cb.and(
+                cb.lessThanOrEqualTo(root.get("partnershipStartDate"), today),
+                cb.or(cb.isNull(root.get("partnershipEndDate")),
+                        cb.greaterThanOrEqualTo(root.get("partnershipEndDate"), today)));
+        Specification<Partner> inactiveSpec = (root, query, cb) -> cb.or(
+                cb.greaterThan(root.get("partnershipStartDate"), today),
+                cb.and(cb.isNotNull(root.get("partnershipEndDate")),
+                        cb.lessThan(root.get("partnershipEndDate"), today)));
+        return active ? activeSpec : inactiveSpec;
+    }
 
     /**
-     * Find inactive partners (partnership start date > today OR end date < today).
-     *
-     * @return List of inactive partners
+     * Partners whose company slug is one of {@code companyNames} (resolved by CUMS from
+     * the search input); an empty collection matches nothing.
      */
-    @Query("SELECT p FROM Partner p WHERE p.partnershipStartDate > :today "
-            + "OR (p.partnershipEndDate IS NOT NULL AND p.partnershipEndDate < :today)")
-    List<Partner> findInactivePartners(@Param("today") LocalDate today);
+    static Specification<Partner> companyNameIn(Collection<String> companyNames) {
+        if (companyNames.isEmpty()) {
+            return (root, query, cb) -> cb.disjunction();
+        }
+        return (root, query, cb) -> root.get("companyName").in(companyNames);
+    }
 }

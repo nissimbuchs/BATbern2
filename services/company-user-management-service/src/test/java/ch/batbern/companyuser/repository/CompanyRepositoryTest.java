@@ -175,9 +175,9 @@ class CompanyRepositoryTest extends AbstractIntegrationTest {
 
         // When — user types the spaced/cased display name, which the slug column
         // alone (findByNameContainingIgnoreCase) would NOT match.
-        List<Company> bySpacedDisplayName = companyRepository.searchByNameOrDisplayName("Infowell GmbH");
+        List<Company> bySpacedDisplayName = companyRepository.searchRanked("Infowell GmbH", 20);
         // And the slug still matches
-        List<Company> bySlug = companyRepository.searchByNameOrDisplayName("infowell");
+        List<Company> bySlug = companyRepository.searchRanked("infowell", 20);
 
         // Then
         assertThat(bySpacedDisplayName)

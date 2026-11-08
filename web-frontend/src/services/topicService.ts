@@ -69,6 +69,9 @@ class TopicService {
       if (filters.include) {
         params.include = filters.include;
       }
+      if (filters.search && filters.search.trim()) {
+        params.search = filters.search.trim();
+      }
     }
 
     const response = await apiClient.get<TopicListResponse>(TOPICS_API_PATH, { params });
