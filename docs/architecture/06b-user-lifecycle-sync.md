@@ -1159,7 +1159,9 @@ Measured on production 2026-11-07: 257 / 24 / 22 pairs for the three rules, 24 w
 - **Order**: lock both profiles → event-management moves its rows (`POST /internal/users/merge`, Service
   Connect, no JWT) and commits → company-user-management moves roles, `activity_history`,
   `watch_pairings`, `role_assignments.granted_by`, fills an empty company and bio, deletes the source and
-  adds its address (verified, label "merged profile") and its additional addresses to the target. If the
+  adds its address (verified, label "merged profile") and its additional addresses to the target, except an
+  import placeholder (`vorname.nachname@batbern.ch`), which reaches nobody and stays only in the merge log.
+  Until 2026-11-08 placeholders were carried too; the 48 such rows were deleted by hand that day. If the
   second step fails, the source still exists and owns nothing in event-management; running the merge again
   finishes it (event-management's part is idempotent).
 - **What moves in event-management** (`UserMergeService` there): registrations, speaker slots
