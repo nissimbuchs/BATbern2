@@ -723,7 +723,11 @@ Two rules follow:
 - **An alarm action that resolves to a topic with no subscribers is not delivery.** Guarded
   structurally in `monitoring-stack.test.ts`
   (`should_routeEveryAlarmToASubscribedTopic_when_stackSynthesised`) and behaviourally in
-  `test/e2e/monitoring/incident-response.spec.ts`.
+  `test/e2e/monitoring/incident-response.spec.ts`, which runs in the nightly infrastructure job.
+  Until November 2026 that check could not run: the GitHub Actions role had no SNS read grant, so
+  its three delivery tests failed every night on `SNS:ListSubscriptionsByTopic` /
+  `GetTopicAttributes` denied. The role's `github-workflow-runtime` policy now grants both, read-only,
+  on `batbern-{env}-*` topics (`cicd-stack.test.ts` asserts the scope).
 - **Never point an SNS email subscription at a role mailbox** (`admin@`, `info@`, `noreply@`,
   `support@`, `alerts@`). Nobody owns it, so nobody confirms it, so it silently expires.
 

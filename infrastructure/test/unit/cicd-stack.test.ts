@@ -286,6 +286,34 @@ describe('CICDStack — GitHub Actions role permissions', () => {
     expect(hasAction(template, 'cloudformation:ListExports')).toBe(true);
   });
 
+  // ── SNS reads (nightly incident-response E2E) ─────────────────────────────
+  // Used by: nightly-e2e.yml "Infrastructure integration + Layer 4 E2E", which checks
+  // test/e2e/monitoring/incident-response.spec.ts: every alarm topic has a confirmed
+  // subscriber. The role never had SNS reads, so the job failed every night (at least
+  // 2026-10-20 to 2026-11-08) with SNS:ListSubscriptionsByTopic / GetTopicAttributes denied.
+  // Read-only, scoped to the environment's own topics.
+
+  test('should_grantSnsTopicReads_onEnvironmentTopicsOnly_for_nightlyIncidentResponseCheck', () => {
+    const policies = template.findResources('AWS::IAM::ManagedPolicy');
+    const runtime = Object.values(policies).find((p) =>
+      JSON.stringify(
+        (p as { Properties?: { ManagedPolicyName?: unknown } }).Properties?.ManagedPolicyName ?? ''
+      ).includes('github-workflow-runtime')
+    ) as {
+      Properties: { PolicyDocument: { Statement: Array<{ Action: unknown; Resource: unknown }> } };
+    };
+    const sns = runtime.Properties.PolicyDocument.Statement.filter((st) =>
+      JSON.stringify(st.Action).includes('sns:')
+    );
+    const actions = JSON.stringify(sns.map((st) => st.Action));
+    expect(actions).toContain('sns:ListSubscriptionsByTopic');
+    expect(actions).toContain('sns:GetTopicAttributes');
+    expect(actions).not.toMatch(/sns:(Publish|Subscribe|Unsubscribe|Set|Create|Delete|\*)/);
+    const resources = JSON.stringify(sns.map((st) => st.Resource));
+    expect(resources).toContain(':batbern-staging-*');
+    expect(resources).not.toMatch(/"\*"/);
+  });
+
   // ── Policy separation ─────────────────────────────────────────────────────
   // Runtime actions must live in WorkflowRuntimePolicy, not bleed into the CDK policy.
 
