@@ -1,10 +1,8 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.EventManagementClient;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.client.dto.EventSummaryDTO;
 import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.domain.MeetingType;
 import ch.batbern.partners.domain.PartnerMeeting;
@@ -12,6 +10,12 @@ import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer;
+import org.springframework.cache.CacheManager;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.web.client.ExpectedCount;
+import org.springframework.web.client.RestTemplate;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
@@ -57,8 +61,12 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
     @Autowired
     PartnerMeetingRepository meetingRepository;
 
-    @MockitoBean
-    EventManagementClient eventManagementClient;
+    @Autowired
+    RestTemplate restTemplate;
+    @Autowired
+    CacheManager cacheManager;
+    /** EMS behind the real EventManagementClient, answering per events-core-api (Story 17.0b1). */
+    ContractServer ems;
     @MockitoBean
     UserServiceClient userServiceClient;
     @MockitoSpyBean
@@ -67,9 +75,16 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
     @BeforeEach
     void setUp() {
         meetingRepository.deleteAll();
-        when(eventManagementClient.getEventSummary(anyString()))
-                .thenReturn(new EventSummaryDTO("BATbern60", "Digitale Souveränität",
-                        LocalDate.of(2026, 11, 6), LocalTime.of(16, 0), LocalTime.of(22, 0), "Bern"));
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+        // Callers are user(...) principals without a JWT to forward, hence ignoringMissingAuthorization.
+        ems = ContractServer.bindTo(restTemplate, "docs/api/events-core-api.openapi.yml")
+                .ignoringMissingAuthorization();
+        ems.expect(HttpMethod.GET, "/api/v1/events/{eventCode}").times(ExpectedCount.manyTimes())
+                .respondWith(HttpStatus.OK, """
+                        {"eventCode": "BATbern60", "title": "Digitale Souveränität", "eventNumber": 60,
+                         "date": "2026-11-06T15:00:00Z", "registrationDeadline": "2026-10-30T15:00:00Z",
+                         "venueName": "Bern", "venueAddress": "Bern", "venueCapacity": 200,
+                         "workflowState": "AGENDA_PUBLISHED", "eventType": "EVENING"}""");
         var partner = new UserResponse();
         partner.setEmail("contact@partner.ch");
         when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(partner));
@@ -78,6 +93,7 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
 
     @AfterEach
     void cleanUp() {
+        ems.close();
         meetingRepository.deleteAll();
     }
 

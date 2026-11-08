@@ -190,6 +190,42 @@ describe('scanJavaTest', () => {
     });
   });
 
+  it('counts mock(XClient.class) of an own S2S client, not of the boundary or other types', () => {
+    const source = [
+      'import software.amazon.awssdk.services.s3.S3Client;',
+      'import java.net.http.HttpClient;',
+      'class TestUserApiClientConfig {',
+      '  UserApiClient a() { return Mockito.mock(UserApiClient.class); }',
+      '  PartnerApiClient b() { return mock(ch.batbern.events.client.PartnerApiClient.class); }',
+      '  S3Client c() { return mock(S3Client.class); }',
+      '  SesClient d() { return Mockito.mock(SesClient.class); }',
+      '  RestTemplate e() { return mock(RestTemplate.class); }',
+      '  HttpClient h() { return Mockito.mock(HttpClient.class); }',
+      '  // UserApiClient f = mock(UserApiClient.class);',
+      '  String g = "mock(UserApiClient.class)";',
+      '}',
+    ].join('\n');
+    expect(asObject(scanJavaTest(source))).toEqual({ 'be-mock-s2s-client': 2 });
+  });
+
+  it('counts @Mock fields of own S2S clients, not of the boundary, JDK or other types', () => {
+    const source = [
+      'import java.net.http.HttpClient;',
+      'import org.mockito.Mock;',
+      'class EmailForwardingServiceTest {',
+      '  @Mock private UserApiClient userApiClient;',
+      '  @Mock(answer = Answers.RETURNS_DEEP_STUBS)',
+      '  PartnerMeetingRsvpClient rsvpClient;',
+      '  @org.mockito.Mock SesClient sesClient;',
+      '  @Mock HttpClient httpClient;',
+      '  @Mock RestTemplate restTemplate;',
+      '  @MockitoBean UserServiceClient userServiceClient;',
+      '  // @Mock UserApiClient commented;',
+      '}',
+    ].join('\n');
+    expect(asObject(scanJavaTest(source))).toEqual({ 'be-mock-s2s-client': 3 });
+  });
+
   it('reads testFixtures source sets too', () => {
     expect(asObject(scanJavaTest(read(SLUG_CONFIG)))).toEqual({ 'be-mock-in-process': 1 });
   });

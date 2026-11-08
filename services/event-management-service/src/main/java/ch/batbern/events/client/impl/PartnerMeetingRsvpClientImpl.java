@@ -28,7 +28,7 @@ public class PartnerMeetingRsvpClientImpl implements PartnerMeetingRsvpClient {
 
     private final RestTemplate restTemplate;
 
-    @Value("${partner-coordination-service.base-url:http://partner-coordination:8080}")
+    @Value("${partner-service.base-url:http://partner-coordination:8080}")
     private String partnerCoordinationBaseUrl;
 
     @Override

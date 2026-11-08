@@ -20,15 +20,19 @@
  *       hooks; under `src/components` / `src/pages` or a PascalCase basename -> components;
  *       anything else (packages, stores, utils, types) is not counted.
  *   be-mock-s2s-client
- *       `@MockitoBean` whose type ends in `Client` and is not a boundary type (UserApiClient, ...).
+ *       `@MockitoBean` whose type ends in `Client` and is not a boundary type (UserApiClient, ...),
+ *       and `mock(XClient.class)` / `Mockito.mock(XClient.class)` / a `@Mock XClient` field of such a type in test
+ *       sources, so a shared `@Primary` mock config (EMS TestUserApiClientConfig) counts too
+ *       (Story 17.0b1). Retire these onto the S2S contract harness (`ContractServer`).
  *   be-mock-in-process
  *       any other `@MockitoBean` that is not a boundary type.
  *   be-transactional-it
  *       class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is
  *       named `*IntegrationTest` / `*IT`.
  * Boundary types (not counted): BOUNDARY_TYPES below, and any type imported from
- * `software.amazon.awssdk.*`. Comments and Javadoc are never counted; in Java, string and
- * text-block literals are skipped too (the frontend scan masks comments only).
+ * `software.amazon.awssdk.*` (for `mock(...)` calls also from `java.*`). Comments and Javadoc
+ * are never counted; in Java, string and text-block literals are skipped too (the frontend scan
+ * masks comments only).
  *
  * Deterministic and dependency-free: plain TypeScript for Node >= 22.18 type stripping, no npm
  * packages, so CI can run it without `npm ci`.
@@ -238,8 +242,16 @@ const TYPE_KEYWORDS = new Set(['class', 'interface', 'record', 'enum']);
 
 /** Simple type names of every `@MockitoBean` in a masked Java source (field or class level). */
 export function mockitoBeanTypes(masked: string): string[] {
+  return annotatedTypes(masked, /@(?:[\w.]+\.)?MockitoBean\b/g);
+}
+
+/** Simple type names of every Mockito `@Mock` field in a masked Java source. */
+export function mockFieldTypes(masked: string): string[] {
+  return annotatedTypes(masked, /@(?:[\w.]+\.)?Mock\b/g);
+}
+
+function annotatedTypes(masked: string, re: RegExp): string[] {
   const types: string[] = [];
-  const re = /@(?:[\w.]+\.)?MockitoBean\b/g;
   for (const m of masked.matchAll(re)) {
     let i = skipSpace(masked, m.index + m[0].length);
     let args = '';
@@ -315,6 +327,13 @@ export function isTransactionalIt(masked: string): boolean {
   return /@(?:[\w.]+\.)?Transactional\b/.test(annotations);
 }
 
+const MOCK_CALL = /\b(?:Mockito\s*\.\s*)?mock\s*\(\s*([\w.]+)\s*\.\s*class\b/g;
+
+/** Simple type names of every `mock(X.class)` / `Mockito.mock(X.class)` in a masked Java source. */
+export function mockCallTypes(masked: string): string[] {
+  return [...masked.matchAll(MOCK_CALL)].map((m) => simpleName(m[1]));
+}
+
 /** Counts of one Java test file, by category. */
 export function scanJavaTest(source: string): Map<Category, number> {
   const counts = new Map<Category, number>();
@@ -325,6 +344,18 @@ export function scanJavaTest(source: string): Map<Category, number> {
     const fqn = imports.get(type) ?? '';
     if (BOUNDARY_TYPES.has(type) || fqn.startsWith('software.amazon.awssdk.')) continue;
     add(type.endsWith('Client') ? 'be-mock-s2s-client' : 'be-mock-in-process');
+  }
+  for (const type of [...mockCallTypes(masked), ...mockFieldTypes(masked)]) {
+    const fqn = imports.get(type) ?? '';
+    // JDK types (java.net.http.HttpClient) leave the process: boundary, like the AWS SDK.
+    if (
+      BOUNDARY_TYPES.has(type) ||
+      fqn.startsWith('software.amazon.awssdk.') ||
+      fqn.startsWith('java.')
+    ) {
+      continue;
+    }
+    if (type.endsWith('Client')) add('be-mock-s2s-client');
   }
   if (isTransactionalIt(masked)) add('be-transactional-it');
   return counts;

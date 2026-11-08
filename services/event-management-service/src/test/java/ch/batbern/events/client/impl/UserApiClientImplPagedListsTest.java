@@ -1,6 +1,5 @@
 package ch.batbern.events.client.impl;
 
-import ch.batbern.events.dto.CompanyBasicDto;
 import ch.batbern.events.dto.generated.users.PaginatedUserResponse;
 import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.shared.api.PaginationMetadata;
@@ -39,6 +38,9 @@ import static org.mockito.Mockito.when;
  * without their partners enrolled (logged only as a warning). getAllCompanies sent
  * {@code limit=1000} the same way. getOrganizerUsernames sent no limit and silently received only
  * the first 20.
+ *
+ * <p>The company list ({@code GET /api/v1/companies}) is public API and is checked against the
+ * CUMS spec in {@link UserApiClientImplContractTest} (Story 17.0b1).
  */
 @ExtendWith(MockitoExtension.class)
 @DisplayName("UserApiClientImpl paged role and company lists")
@@ -109,27 +111,5 @@ class UserApiClientImplPagedListsTest {
         List<String> usernames = client.getOrganizerUsernames();
 
         assertThat(usernames).hasSize(101);
-    }
-
-    @Test
-    @DisplayName("should_collectCompaniesFromAllPages_when_moreThanOnePage")
-    void should_collectCompaniesFromAllPages_when_moreThanOnePage() {
-        when(restTemplate.exchange(any(String.class), eq(HttpMethod.GET), any(HttpEntity.class),
-                eq(String.class)))
-                .thenReturn(ResponseEntity.ok("""
-                        {"data":[{"name":"AcmeZH"},{"name":"GoogleZH"}],
-                         "pagination":{"page":1,"limit":100,"totalPages":2,"hasNext":true}}"""))
-                .thenReturn(ResponseEntity.ok("""
-                        {"data":[{"name":"ElcaBE"}],
-                         "pagination":{"page":2,"limit":100,"totalPages":2,"hasNext":false}}"""));
-
-        List<CompanyBasicDto> companies = client.getAllCompanies();
-
-        assertThat(companies).hasSize(3);
-        ArgumentCaptor<String> urls = ArgumentCaptor.forClass(String.class);
-        verify(restTemplate, times(2)).exchange(urls.capture(), eq(HttpMethod.GET), any(HttpEntity.class),
-                eq(String.class));
-        assertThat(urls.getAllValues()).allSatisfy(u -> assertThat(u).contains("limit=100"));
-        assertThat(urls.getAllValues().get(1)).contains("page=2");
     }
 }

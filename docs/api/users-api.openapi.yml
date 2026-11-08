@@ -2380,6 +2380,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProvisionUserResponse'
+              examples:
+                created:
+                  summary: New user created and SPEAKER role granted
+                  value:
+                    username: jane.smith
+                    created: true
+                alreadyExisted:
+                  summary: User existed; role granted if missing
+                  value:
+                    username: jane.smith
+                    created: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2536,6 +2547,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+              examples:
+                patchedSpeaker:
+                  summary: Speaker profile after a bio and portrait patch
+                  value:
+                    id: jane.smith
+                    email: jane.smith@example.com
+                    firstName: Jane
+                    lastName: Smith
+                    bio: "Experienced security architect with 15 years in the industry."
+                    profilePictureUrl: "https://cdn.batbern.ch/users/jane.smith.jpg"
+                    roles: [SPEAKER]
+                    active: true
+                    createdAt: 2025-01-15T10:00:00Z
+                    updatedAt: 2025-01-20T14:30:00Z
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2805,7 +2830,6 @@ components:
         - firstName
         - lastName
         - roles
-        - isActive
         - createdAt
         - updatedAt
       properties:

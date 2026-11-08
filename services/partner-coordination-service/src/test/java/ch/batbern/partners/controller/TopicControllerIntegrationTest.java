@@ -1,6 +1,5 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.CompanyServiceClient;
 import ch.batbern.partners.client.UserServiceClient;
 import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.config.TestAwsConfig;
@@ -66,8 +65,6 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     TopicRepository topicRepository;
     @Autowired
     TopicVoteRepository topicVoteRepository;
-    @MockitoBean
-    CompanyServiceClient companyServiceClient;
     @MockitoBean
     UserServiceClient userServiceClient;
 

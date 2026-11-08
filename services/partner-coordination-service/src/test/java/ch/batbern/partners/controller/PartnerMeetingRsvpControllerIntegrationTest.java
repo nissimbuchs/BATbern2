@@ -1,6 +1,5 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.EventManagementClient;
 import ch.batbern.partners.client.UserServiceClient;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
@@ -57,8 +56,6 @@ class PartnerMeetingRsvpControllerIntegrationTest extends AbstractIntegrationTes
     @Autowired
     PartnerMeetingRepository meetingRepository;
 
-    @MockitoBean
-    EventManagementClient eventManagementClient;
     @MockitoBean
     UserServiceClient userServiceClient;
 

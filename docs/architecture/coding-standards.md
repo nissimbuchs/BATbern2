@@ -441,8 +441,38 @@ security filter chain, our hooks and our service modules.
 
 Unit tests of pure functions stay as they are. The rule targets tests that claim to test
 behaviour while the behaviour is mocked. Until the shared harnesses exist (17.0b: S2S contract
-harness, 17.0c: MSW harness), a new test that cannot avoid an own-code mock says why in a comment,
+harness, in place for public `/api/v1` calls since 17.0b1; 17.0c: MSW harness), a new test that cannot avoid an own-code mock says why in a comment,
 and the ratchet below makes that visible in review.
+
+#### S2S contract harness (backend)
+
+Story 17.0b1. A service-to-service client is tested as itself, on its real `RestTemplate`, against
+the provider's spec in `docs/api/`: `ContractServer` (shared-kernel test fixtures,
+`ch.batbern.shared.test.contract`) binds `MockRestServiceServer` to the client's `RestTemplate`,
+validates every request against the spec (path and method exist, parameters within their limits,
+body against its schema, `Authorization` where the spec requires it) and answers with the spec's
+example, or with a test body that is first checked against the response schema. A request the
+provider would reject fails the test with the validator's message, as an `AssertionError` that a
+client's `catch (Exception e)` cannot swallow:
+
+```java
+var server = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml");
+server.expect(GET, "/api/v1/companies").respondWithExample();   // or .respondWith(OK, json)
+var companies = client.getAllCompanies();                       // request validated, example returned
+server.verify();
+```
+
+Client contract tests live next to the client (`UserApiClientImplContractTest`,
+`CompanyServiceClientContractTest`, ...). An IT whose code calls a peer service binds the harness to
+the context's `RestTemplate` bean in `@BeforeEach` instead of a `@MockitoBean` of the client, and
+calls `close()` in `@AfterEach` (the bean is shared by the cached context);
+`.ignoringMissingAuthorization()` is allowed there only because a `@WithMockUser` caller has no JWT
+to forward. Each provider proves its side in `S2sProviderContractIntegrationTest` (CUMS, EMS, PCS):
+every consumed operation runs through the real controller and `ProviderContract` checks the
+response, and the examples, against the same spec. A spec without a usable example for a consumed
+operation gets one. How the harness reads `null` and `format: time` (as the generated code does) is
+documented in `GeneratedCodeSemantics`. `/internal/**` calls have no spec yet (17.0b2) and keep
+`MockRestServiceServer` without validation until then.
 
 #### Assertion rules
 
@@ -473,13 +503,14 @@ baseline `web-frontend/scripts/test-ratchet-baseline.txt`:
 | Category | Counts |
 |---|---|
 | `fe-mock-services` / `fe-mock-hooks` / `fe-mock-components` | `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**/*.{test,spec}.ts(x)`, and `vi.spyOn(x, …)` where `x` is imported from own code, by resolved path: `src/services`; `src/hooks` or a `use[A-Z]...` module; `src/components`, `src/pages` or a PascalCase module |
-| `be-mock-s2s-client` | `@MockitoBean` of a type ending in `Client` that is not a boundary type (`UserApiClient`, `UserServiceClient`, ...) |
+| `be-mock-s2s-client` | `@MockitoBean` of a type ending in `Client` that is not a boundary type (`UserApiClient`, `UserServiceClient`, ...), and `mock(XClient.class)` / `Mockito.mock(XClient.class)` / a `@Mock XClient` field of such a type anywhere in test sources (a shared `@Primary` mock such as EMS `TestUserApiClientConfig`) |
 | `be-mock-in-process` | any other `@MockitoBean` that is not a boundary type |
 | `be-transactional-it` | class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is named `*IntegrationTest` / `*IT` |
 
 Boundary types, never counted: `SesClient`, `SesV2Client`, `S3Client`, `S3Presigner`,
 `CognitoIdentityProviderClient`, `SqsClient`, `Clock`, `JwtDecoder`, and any
-type imported from `software.amazon.awssdk`. Mentions in comments and Javadoc are not counted;
+type imported from `software.amazon.awssdk` (for `mock(...)` calls also from `java.*`, e.g.
+`java.net.http.HttpClient`). Mentions in comments and Javadoc are not counted;
 in Java, mentions in string and text-block literals are not counted either (the frontend scan
 skips comments only).
 

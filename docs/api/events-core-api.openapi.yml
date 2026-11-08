@@ -513,12 +513,12 @@ paths:
                     eventCode: BATbern142
                     title: Spring Conference 2025
                     eventNumber: 142
-                    date: 2025-05-15 09:00:00+00:00
-                    registrationDeadline: 2025-05-01 23:59:59+00:00
+                    date: '2025-05-15T09:00:00Z'
+                    registrationDeadline: '2025-05-01T23:59:59Z'
                     venueName: Kursaal Bern
                     venueAddress: Kornhausstrasse 3, 3013 Bern
                     venueCapacity: 500
-                    workflowState: PUBLISHED
+                    workflowState: AGENDA_PUBLISHED
                     organizerUsername: john.doe
                     currentAttendeeCount: 187
                     description: Cloud Native Architecture
@@ -528,12 +528,12 @@ paths:
                     eventCode: BATbern142
                     title: Spring Conference 2025
                     eventNumber: 142
-                    date: 2025-05-15 09:00:00+00:00
-                    registrationDeadline: 2025-05-01 23:59:59+00:00
+                    date: '2025-05-15T09:00:00Z'
+                    registrationDeadline: '2025-05-01T23:59:59Z'
                     venueName: Kursaal Bern
                     venueAddress: Kornhausstrasse 3, 3013 Bern
                     venueCapacity: 500
-                    workflowState: PUBLISHED
+                    workflowState: AGENDA_PUBLISHED
                     organizerUsername: john.doe
                     currentAttendeeCount: 187
                     description: Cloud Native Architecture

@@ -21,7 +21,6 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
-import ch.batbern.partners.client.EventManagementClient;
 import ch.batbern.partners.client.UserServiceClient;
 
 import java.time.LocalDate;
@@ -65,8 +64,6 @@ class PartnerNoteControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     PartnerRepository partnerRepository;
 
-    @MockitoBean
-    EventManagementClient eventManagementClient;
     @MockitoBean
     UserServiceClient userServiceClient;
 

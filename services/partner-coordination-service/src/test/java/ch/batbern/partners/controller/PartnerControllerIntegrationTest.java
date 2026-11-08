@@ -1,16 +1,16 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.CompanyServiceClient;
 import ch.batbern.partners.client.UserServiceClient;
 import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
-import ch.batbern.partners.client.company.dto.CompanyResponse;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,7 +18,12 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.cache.CacheManager;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.client.ExpectedCount;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
@@ -64,24 +69,34 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private CompanyServiceClient companyServiceClient;
-
-    @MockitoBean
     private UserServiceClient userServiceClient;
 
-    private CompanyResponse mockCompanyResponse;
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    /** CUMS behind the real CompanyServiceClient, answering per companies-api (Story 17.0b1). */
+    private ContractServer cums;
 
     @BeforeEach
     void setUp() {
         partnerRepository.deleteAll();
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
 
-        // Mock Company Service HTTP response
-        mockCompanyResponse = new CompanyResponse();
-        mockCompanyResponse.setName("GoogleZH");  // Generated DTO uses setName()
-        mockCompanyResponse.setDisplayName("Google Zurich");
-        // Note: Logo is CompanyLogo object in generated DTO, skip for this test
+        // @WithMockUser callers carry no JWT to forward, hence ignoringMissingAuthorization.
+        cums = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml")
+                .ignoringMissingAuthorization();
+        cums.expect(HttpMethod.GET, "/api/v1/companies/{name}").times(ExpectedCount.manyTimes())
+                .respondWith(HttpStatus.OK, """
+                        {"name": "GoogleZH", "displayName": "Google Zurich", "isVerified": true,
+                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}""");
+    }
 
-        when(companyServiceClient.getCompany(anyString())).thenReturn(mockCompanyResponse);
+    @AfterEach
+    void releaseCums() {
+        cums.close();
     }
 
     @Test

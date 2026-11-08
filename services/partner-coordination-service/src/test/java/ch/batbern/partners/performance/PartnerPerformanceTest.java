@@ -1,8 +1,6 @@
 package ch.batbern.partners.performance;
 
-import ch.batbern.partners.client.CompanyServiceClient;
 import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.client.company.dto.CompanyResponse;
 import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
@@ -10,13 +8,20 @@ import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
+import org.springframework.cache.CacheManager;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.web.client.ExpectedCount;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
@@ -51,8 +56,14 @@ class PartnerPerformanceTest extends AbstractIntegrationTest {
     @Autowired
     private PartnerRepository partnerRepository;
 
-    @MockitoBean
-    private CompanyServiceClient companyServiceClient;
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    /** CUMS behind the real CompanyServiceClient, answering per companies-api (Story 17.0b1). */
+    private ContractServer cums;
 
     @MockitoBean
     private UserServiceClient userServiceClient;
@@ -70,11 +81,13 @@ class PartnerPerformanceTest extends AbstractIntegrationTest {
         testPartner.setCreatedAt(java.time.Instant.now());
         testPartner = partnerRepository.save(testPartner);
 
-        // Mock HTTP clients
-        CompanyResponse mockCompany = new CompanyResponse();
-        mockCompany.setName("PerfTestCo");
-        mockCompany.setDisplayName("Performance Test Company");
-        when(companyServiceClient.getCompany(anyString())).thenReturn(mockCompany);
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+        cums = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml")
+                .ignoringMissingAuthorization();
+        cums.expect(HttpMethod.GET, "/api/v1/companies/{name}").times(ExpectedCount.manyTimes())
+                .respondWith(HttpStatus.OK, """
+                        {"name": "PerfTestCo", "displayName": "Performance Test Company", "isVerified": true,
+                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}""");
 
         UserResponse mockUser = new UserResponse();
         mockUser.setId("perf.user");
@@ -83,6 +96,11 @@ class PartnerPerformanceTest extends AbstractIntegrationTest {
         mockUser.setLastName("User");
         when(userServiceClient.getUsersByCompanyAndRole(anyString(), anyString()))
                 .thenReturn(java.util.List.of(mockUser));
+    }
+
+    @AfterEach
+    void releaseCums() {
+        cums.close();
     }
 
     @Test

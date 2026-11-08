@@ -70,6 +70,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/AttendanceSummaryDTO'
+              examples:
+                twoEvents:
+                  summary: Two events, newest first
+                  value:
+                  - eventCode: BATbern142
+                    eventTitle: BATbern 142 - Cloud Native
+                    eventDate: '2026-06-11T16:00:00Z'
+                    totalAttendees: 180
+                    companyAttendees: 6
+                  - eventCode: BATbern141
+                    eventTitle: BATbern 141 - Security
+                    eventDate: '2025-11-13T16:00:00Z'
+                    totalAttendees: 160
+                    companyAttendees: 4
         '401':
           description: Unauthorized
         '403':

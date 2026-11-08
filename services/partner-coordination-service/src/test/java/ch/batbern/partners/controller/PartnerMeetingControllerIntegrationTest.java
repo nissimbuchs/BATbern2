@@ -1,8 +1,6 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.EventManagementClient;
 import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.client.dto.EventSummaryDTO;
 import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
@@ -14,8 +12,15 @@ import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer;
+import org.springframework.cache.CacheManager;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.web.client.ExpectedCount;
+import org.springframework.web.client.RestTemplate;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.ArgumentCaptor;
@@ -30,7 +35,6 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -78,8 +82,12 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     PartnerRepository partnerRepository;
 
-    @MockitoBean
-    EventManagementClient eventManagementClient;
+    @Autowired
+    RestTemplate restTemplate;
+    @Autowired
+    CacheManager cacheManager;
+    /** EMS behind the real EventManagementClient, answering per events-core-api (Story 17.0b1). */
+    ContractServer ems;
     @MockitoBean
     UserServiceClient userServiceClient;
     /** Mock from TestAwsConfig: no mail leaves the test; Story 16.9 asserts the context it gets. */
@@ -91,16 +99,17 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
         meetingRepository.deleteAll();
         partnerRepository.deleteAll();
 
-        // Default stub: any event code → a known event summary
-        when(eventManagementClient.getEventSummary(anyString()))
-                .thenReturn(new EventSummaryDTO(
-                        "BATbern57",
-                        "BATbern Spring 2026",
-                        LocalDate.of(2026, 5, 14),
-                        LocalTime.of(18, 0),
-                        LocalTime.of(22, 0),
-                        "Bern Congress Centre"
-                ));
+        // EMS answers any event code with a known event (validated against events-core-api).
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+        // Callers are user(...) principals without a JWT to forward, hence ignoringMissingAuthorization.
+        ems = ContractServer.bindTo(restTemplate, "docs/api/events-core-api.openapi.yml")
+                .ignoringMissingAuthorization();
+        ems.expect(HttpMethod.GET, "/api/v1/events/{eventCode}").times(ExpectedCount.manyTimes())
+                .respondWith(HttpStatus.OK, """
+                        {"eventCode": "BATbern57", "title": "BATbern Spring 2026", "eventNumber": 57,
+                         "date": "2026-05-14T16:00:00Z", "registrationDeadline": "2026-05-07T16:00:00Z",
+                         "venueName": "Bern Congress Centre", "venueAddress": "Bern", "venueCapacity": 200,
+                         "workflowState": "AGENDA_PUBLISHED", "eventType": "EVENING"}""");
 
         // Stub getUsersByRole so sendInvite can collect partner emails
         UserResponse mockPartner = new UserResponse();
@@ -109,6 +118,11 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
 
         // Stub organizer role — empty by default; individual tests override when needed
         when(userServiceClient.getUsersByRole("ORGANIZER")).thenReturn(List.of());
+    }
+
+    @AfterEach
+    void releaseEms() {
+        ems.close();
     }
 
     // ─── AC1: Create meeting record ───────────────────────────────────────────
