@@ -174,7 +174,8 @@ public class UserMergeService {
     }
 
     private static void addAddress(User target, Set<String> held, String email, String label, Instant verifiedAt) {
-        if (email == null || !held.add(email.toLowerCase(Locale.ROOT))) {
+        // An import placeholder reaches nobody; carried, it would become a "verified" address. It stays in the log.
+        if (email == null || ProfileClaimService.isPlaceholder(email) || !held.add(email.toLowerCase(Locale.ROOT))) {
             return;
         }
         target.addAdditionalEmail(UserAdditionalEmail.builder()

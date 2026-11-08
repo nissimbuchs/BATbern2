@@ -152,6 +152,30 @@ class UserMergeIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     @WithMockUser(username = "orga.nizer", roles = "ORGANIZER")
+    @DisplayName("C: an import placeholder address (vorname.nachname@batbern.ch) is not carried, only logged")
+    void merge_placeholderAddress_isNotCarried() throws Exception {
+        User placeholder = userRepository.saveAndFlush(User.builder().username("anna.muster.3")
+                .email("anna.muster@batbern.ch").firstName("Anna").lastName("Muster")
+                .roles(new HashSet<>(Set.of(Role.ATTENDEE))).build());
+
+        mockMvc.perform(post("/api/v1/users/anna.muster.2/merge").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"sourceUsername\": \"" + placeholder.getUsername() + "\"}"))
+                .andExpect(status().isOk());
+
+        entityManager.flush();
+        entityManager.clear();
+        assertThat(userRepository.findByUsername("anna.muster.3")).isEmpty();
+        assertThat(additionalEmailRepository.findAll())
+                .extracting(UserAdditionalEmail::getEmail)
+                .doesNotContain("anna.muster@batbern.ch");
+        ArgumentCaptor<EventManagementUserMergeClient.MergeCall> call =
+                ArgumentCaptor.forClass(EventManagementUserMergeClient.MergeCall.class);
+        verify(eventManagement).merge(call.capture());
+        assertThat(call.getValue().sourceProfile().toString()).contains("anna.muster@batbern.ch");
+    }
+
+    @Test
+    @WithMockUser(username = "orga.nizer", roles = "ORGANIZER")
     @DisplayName("C: an unknown profile is 404 with a plain message (not wrapped twice)")
     void preview_unknownSource_is404() throws Exception {
         mockMvc.perform(get("/api/v1/users/anna.muster.2/merge-preview").param("source", "nobody.here"))
