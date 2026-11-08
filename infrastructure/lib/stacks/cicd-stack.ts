@@ -269,6 +269,16 @@ export class CICDStack extends cdk.Stack {
             actions: ['cloudformation:ListExports'],
             resources: ['*'],
           }),
+
+          // SNS reads for the nightly incident-response E2E (test/e2e/monitoring/
+          // incident-response.spec.ts): every alarm topic must have a confirmed subscriber.
+          // Without these the nightly infrastructure job failed every night with
+          // SNS:ListSubscriptionsByTopic / GetTopicAttributes denied. Read-only, own topics only.
+          new iam.PolicyStatement({
+            effect: iam.Effect.ALLOW,
+            actions: ['sns:ListSubscriptionsByTopic', 'sns:GetTopicAttributes'],
+            resources: [`arn:aws:sns:${this.region}:${this.account}:batbern-${config.envName}-*`],
+          }),
         ],
       }),
     });
