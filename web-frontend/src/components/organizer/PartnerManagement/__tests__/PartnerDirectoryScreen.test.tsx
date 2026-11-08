@@ -1,413 +1,252 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+/**
+ * PartnerDirectoryScreen (Story 2.8.1, AC1 + AC5)
+ *
+ * The real tree runs against the MSW harness (17.0c2): `usePartners` / `usePartnerStatistics`,
+ * the partner API client, both Zustand stores, the five children (stats, search, filters, list,
+ * create/edit modal) and en i18n. `GET /partners` and `GET /partners/statistics` are checked
+ * against partners-api and answered with typed bodies; the test reads what went over the wire.
+ */
+
+import { describe, it, expect, beforeEach } from 'vitest';
+import { act, screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
-import { PartnerDirectoryScreen } from '../PartnerDirectoryScreen';
+import { HttpResponse, delay } from 'msw';
+import { api } from '@/test/msw/api';
+import type { ResponseBody } from '@/test/msw/api';
+import { renderWithAuth, signedInAs } from '@/test/auth';
+import type { PartnerResponse } from '@/services/api/partnerApi';
 import { usePartnerStore } from '@/stores/partnerStore';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
-import * as usePartnersHook from '@/hooks/usePartners';
+import { PartnerDirectoryScreen } from '../PartnerDirectoryScreen';
 
-// Mock the hooks
-vi.mock('@/hooks/usePartners');
-vi.mock('@/stores/partnerStore');
-vi.mock('@/stores/partnerModalStore');
+type PartnerList = ResponseBody<'listPartners', 200>;
+type Statistics = ResponseBody<'getPartnerStatistics', 200>;
 
-// Mock child components
-vi.mock('../PartnerOverviewStats', () => ({
-  PartnerOverviewStats: () => <div data-testid="partner-overview-stats">Stats</div>,
-}));
-vi.mock('../PartnerSearch', () => ({
-  PartnerSearch: () => <div data-testid="partner-search">Search</div>,
-}));
-vi.mock('../PartnerFilters', () => ({
-  PartnerFilters: () => <div data-testid="partner-filters">Filters</div>,
-}));
-vi.mock('../PartnerList', () => ({
-  PartnerList: () => <div data-testid="partner-list">List</div>,
-}));
-vi.mock('../PartnerCreateEditModal', () => ({
-  PartnerCreateEditModal: () => <div data-testid="partner-create-edit-modal">Modal</div>,
-}));
-
-const createTestQueryClient = () =>
-  new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-    },
-  });
-
-const renderWithProviders = (component: React.ReactElement) => {
-  const queryClient = createTestQueryClient();
-  return render(
-    <QueryClientProvider client={queryClient}>
-      <MemoryRouter>{component}</MemoryRouter>
-    </QueryClientProvider>
-  );
+const gold: PartnerResponse = {
+  companyName: 'mobiliar',
+  partnershipLevel: 'GOLD',
+  partnershipStartDate: '2020-01-01',
+  isActive: true,
+  company: { name: 'mobiliar', displayName: 'Die Mobiliar', industry: 'Insurance' },
 };
 
-describe('PartnerDirectoryScreen - Main Screen Component', () => {
-  const mockPartners = [
-    {
-      id: '1',
-      companyName: 'TechCorp',
-      partnershipLevel: 'GOLD',
-      isActive: true,
-      company: { industry: 'Technology' },
-    },
-  ];
-
-  const mockPagination = {
+const page = (data: PartnerResponse[]): PartnerList => ({
+  data,
+  metadata: {
     page: 0,
-    size: 20,
-    totalItems: 1,
+    limit: 20,
+    totalItems: data.length,
     totalPages: 1,
-  };
+    hasNext: false,
+    hasPrev: false,
+  },
+});
 
-  const mockStoreState = {
-    filters: { tier: 'all', status: 'all' },
-    viewMode: 'grid',
-    searchQuery: '',
-    sortBy: 'engagement',
-    sortOrder: 'desc',
-    page: 0,
-    setFilters: vi.fn(),
-    setViewMode: vi.fn(),
-    setSearchQuery: vi.fn(),
-    setSortBy: vi.fn(),
-    setSortOrder: vi.fn(),
-    setPage: vi.fn(),
-    resetFilters: vi.fn(),
-  };
+const statistics: Statistics = {
+  totalPartners: 17,
+  activePartners: 14,
+  tierCounts: { STRATEGIC: 1, PLATINUM: 2, GOLD: 5, SILVER: 4, BRONZE: 5 },
+};
 
+const renderScreen = () =>
+  renderWithAuth(<PartnerDirectoryScreen />, { auth: signedInAs('organizer') });
+
+/** The query of the latest `GET /partners`. */
+const lastListQuery = () => api.calls('listPartners').at(-1)!.query;
+
+describe('PartnerDirectoryScreen - Main Screen Component', () => {
   beforeEach(() => {
-    vi.clearAllMocks();
-    vi.mocked(usePartnerStore).mockReturnValue(mockStoreState);
-    vi.mocked(usePartnerModalStore).mockReturnValue({
-      isOpen: false,
-      mode: 'create',
-      partnerToEdit: null,
-      openCreateModal: vi.fn(),
-      openEditModal: vi.fn(),
-      closeModal: vi.fn(),
+    localStorage.clear();
+    usePartnerStore.setState({
+      filters: { tier: 'all', status: 'all' },
+      viewMode: 'grid',
+      searchQuery: '',
+      sortBy: 'engagement',
+      sortOrder: 'desc',
+      page: 0,
     });
+    usePartnerModalStore.getState().closeModal();
+    api.on('listPartners', () => page([gold]));
+    api.on('getPartnerStatistics', () => statistics);
   });
 
   describe('AC1 & AC5 Tests: Component Rendering and Data Loading', () => {
-    it('should_renderPartnerDirectoryScreen_when_componentMounts', () => {
-      // Mock successful data loading
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
+    it('should_renderPartnerDirectoryScreen_when_componentMounts', async () => {
+      renderScreen();
 
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
-
-      // Should render main components
       expect(screen.getByTestId('partner-directory-screen')).toBeInTheDocument();
-      expect(screen.getByText('Partner Directory')).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Partner Directory' })).toBeInTheDocument();
+      expect(await screen.findByText(gold.companyName)).toBeInTheDocument();
     });
 
-    it('should_loadPartnersOnMount_when_hookCalled', () => {
-      const usePartnersSpy = vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
+    it('should_loadPartnersOnMount_when_hookCalled', async () => {
+      renderScreen();
 
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
-
-      // Should call usePartners hook with store state
-      expect(usePartnersSpy).toHaveBeenCalledWith(
-        mockStoreState.filters,
-        {
-          sortBy: mockStoreState.sortBy,
-          sortOrder: mockStoreState.sortOrder,
-        },
-        { page: mockStoreState.page, size: 20 },
-        mockStoreState.searchQuery
+      expect(await screen.findByText(gold.companyName)).toBeInTheDocument();
+      // Screen and PartnerList call usePartners with the same arguments: one shared query.
+      expect(api.calls('listPartners')).toHaveLength(1);
+      const query = lastListQuery();
+      expect(query.get('page')).toBe('0');
+      expect(query.get('size')).toBe('20');
+      expect(query.get('include')).toBe('company,contacts');
+      expect(query.has('filter')).toBe(false);
+      expect(query.has('search')).toBe(false);
+      // The screen's own result announcement reads the same response.
+      expect(screen.getByRole('status', { name: 'Search partners' })).toHaveTextContent(
+        '1 partner found'
       );
     });
 
     it('should_updatePartnersOnFilterChange_when_filtersChanged', async () => {
-      const usePartnersSpy = vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
+      const user = userEvent.setup();
+      renderScreen();
+      expect(await screen.findByText(gold.companyName)).toBeInTheDocument();
+      expect(lastListQuery().has('filter')).toBe(false);
 
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
+      // Drive the real tier filter.
+      await user.click(screen.getByRole('combobox', { name: 'Partnership Tier' }));
+      await user.click(await screen.findByRole('option', { name: /Gold/ }));
 
-      const { rerender } = renderWithProviders(<PartnerDirectoryScreen />);
-
-      // Change filters in store
-      const updatedStoreState = {
-        ...mockStoreState,
-        filters: { tier: 'GOLD', status: 'all' },
-      };
-      vi.mocked(usePartnerStore).mockReturnValue(updatedStoreState);
-
-      // Re-render with new store state
-      rerender(
-        <QueryClientProvider client={createTestQueryClient()}>
-          <MemoryRouter>
-            <PartnerDirectoryScreen />
-          </MemoryRouter>
-        </QueryClientProvider>
+      await waitFor(() => expect(lastListQuery().get('filter')).toBe('partnershipLevel:GOLD'));
+      expect(lastListQuery().get('page')).toBe('0');
+      expect(usePartnerStore.getState().filters.tier).toBe('GOLD');
+      expect(screen.getByRole('status', { name: 'Filters updated' })).toHaveTextContent(
+        'Filtered by tier: GOLD'
       );
-
-      await waitFor(() => {
-        // Should call usePartners hook with updated filters
-        expect(usePartnersSpy).toHaveBeenCalledWith(
-          updatedStoreState.filters,
-          {
-            sortBy: updatedStoreState.sortBy,
-            sortOrder: updatedStoreState.sortOrder,
-          },
-          { page: updatedStoreState.page, size: 20 },
-          updatedStoreState.searchQuery
-        );
-      });
     });
 
     it.todo('should_navigateToDetail_when_partnerClicked - tested in PartnerCard.test.tsx');
   });
 
   describe('Layout and Component Integration Tests', () => {
-    it('should_renderOverviewStats_when_mounted', () => {
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
+    it('should_renderOverviewStats_when_mounted', async () => {
+      renderScreen();
 
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
-
-      expect(screen.getByTestId('partner-overview-stats')).toBeInTheDocument();
+      const total = await screen.findByTestId('stats-total-partners');
+      await waitFor(() => expect(total).toHaveTextContent('17'));
+      expect(screen.getByTestId('stats-active-partners')).toHaveTextContent('14');
+      expect(screen.getByTestId('stats-tier-distribution')).toHaveTextContent('Gold: 5');
+      expect(api.calls('getPartnerStatistics')).toHaveLength(1);
     });
 
-    it('should_renderSearchComponent_when_mounted', () => {
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
+    it('should_renderSearchComponent_when_mounted', async () => {
+      const user = userEvent.setup();
+      renderScreen();
 
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
+      const search = screen.getByRole('textbox', { name: 'Search partners' });
+      expect(search).toBeInTheDocument();
+      expect(await screen.findByText(gold.companyName)).toBeInTheDocument();
 
-      renderWithProviders(<PartnerDirectoryScreen />);
-
-      expect(screen.getByTestId('partner-search')).toBeInTheDocument();
+      // The real search box reaches the backend (after its 300 ms debounce).
+      await user.type(search, 'mobi');
+      await waitFor(() => expect(lastListQuery().get('search')).toBe('mobi'));
     });
 
     it('should_renderFiltersComponent_when_mounted', () => {
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
+      renderScreen();
 
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
-
-      expect(screen.getByTestId('partner-filters')).toBeInTheDocument();
+      expect(screen.getByTestId('tier-filter-select')).toBeInTheDocument();
+      expect(screen.getByTestId('status-filter-select')).toBeInTheDocument();
+      expect(screen.getByTestId('reset-filters-button')).toBeInTheDocument();
     });
 
-    it('should_renderPartnerList_when_mounted', () => {
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
+    it('should_renderPartnerList_when_mounted', async () => {
+      renderScreen();
 
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
-
-      expect(screen.getByTestId('partner-list')).toBeInTheDocument();
+      const grid = await screen.findByTestId('partner-grid');
+      const cards = within(grid).getAllByTestId('partner-card');
+      expect(cards).toHaveLength(1);
+      expect(cards[0]).toHaveTextContent(gold.companyName);
+      expect(cards[0]).toHaveTextContent('Insurance');
     });
 
     it('should_renderAddPartnerButton_when_mounted', () => {
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
+      renderScreen();
 
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
-
-      expect(screen.getByTestId('add-partner-button')).toBeInTheDocument();
+      expect(screen.getByTestId('add-partner-button')).toHaveTextContent('Add Partner');
     });
 
-    it('should_renderViewModeToggle_when_mounted', () => {
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
+    it('should_renderViewModeToggle_when_mounted', async () => {
+      const user = userEvent.setup();
+      renderScreen();
 
       expect(screen.getByTestId('view-mode-toggle')).toBeInTheDocument();
+      expect(await screen.findByTestId('partner-grid')).toBeInTheDocument();
+
+      // The real toggle switches the real list to the single-column view.
+      await user.click(screen.getByRole('button', { name: 'List view' }));
+      expect(await screen.findByTestId('partner-list-list')).toBeInTheDocument();
+      expect(screen.queryByTestId('partner-grid')).not.toBeInTheDocument();
+      expect(usePartnerStore.getState().viewMode).toBe('list');
     });
 
     it('should_renderSortSelect_when_mounted', () => {
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
+      renderScreen();
 
       expect(screen.getByTestId('partner-sort-select')).toBeInTheDocument();
+      expect(screen.getByRole('combobox', { name: 'Sort by' })).toHaveTextContent(
+        'Engagement Score'
+      );
     });
   });
 
   describe('Loading and Error States', () => {
-    it('should_showLoadingState_when_partnersLoading', () => {
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: undefined,
-        isLoading: true,
-        isError: false,
-        error: null,
+    it('should_showLoadingState_when_partnersLoading', async () => {
+      api.on('listPartners', async () => {
+        await delay('infinite');
+        return page([]);
       });
+      renderScreen();
 
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 0, active: 0, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
-
-      // Loading state should be passed to PartnerList component
-      expect(screen.getByTestId('partner-list')).toBeInTheDocument();
+      expect(await screen.findByTestId('partner-list-loading')).toBeInTheDocument();
+      expect(screen.getByRole('status', { name: 'Loading partners' })).toHaveTextContent(
+        'Loading partners...'
+      );
+      expect(screen.queryByTestId('partner-card')).not.toBeInTheDocument();
     });
 
-    it('should_showErrorState_when_partnersFetchFails', () => {
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        isError: true,
-        error: new Error('Failed to fetch partners'),
-      });
+    it('should_showErrorState_when_partnersFetchFails', async () => {
+      api.on('listPartners', () =>
+        HttpResponse.json(
+          { error: 'INTERNAL_ERROR', message: 'Failed to fetch partners', status: 500 },
+          { status: 500 }
+        )
+      );
+      renderScreen();
 
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 0, active: 0, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
-
-      // Error state should be passed to PartnerList component
-      expect(screen.getByTestId('partner-list')).toBeInTheDocument();
+      expect(await screen.findByTestId('partner-list-error')).toBeInTheDocument();
+      expect(screen.queryByTestId('partner-card')).not.toBeInTheDocument();
+      // Positive control: the rest of the screen still renders.
+      expect(screen.getByTestId('add-partner-button')).toBeInTheDocument();
     });
   });
 
   describe('Toolbar Actions', () => {
     it('should_openCreateModal_when_addButtonClicked', async () => {
-      vi.spyOn(usePartnersHook, 'usePartners').mockReturnValue({
-        data: { partners: mockPartners, pagination: mockPagination },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      vi.spyOn(usePartnersHook, 'usePartnerStatistics').mockReturnValue({
-        data: { total: 1, active: 1, tierDistribution: {} },
-        isLoading: false,
-        isError: false,
-        error: null,
-      });
-
-      renderWithProviders(<PartnerDirectoryScreen />);
+      const user = userEvent.setup();
+      renderScreen();
 
       const addButton = screen.getByTestId('add-partner-button');
       expect(addButton).not.toBeDisabled();
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-      // Click the button to open modal
-      await userEvent.click(addButton);
+      await user.click(addButton);
 
-      // Modal should open (verified by checking modal store state)
-      // Note: Actual modal rendering is tested in PartnerCreateEditModal.test.tsx
+      expect(usePartnerModalStore.getState()).toMatchObject({ isOpen: true, mode: 'create' });
+      const dialog = await screen.findByRole('dialog');
+      expect(within(dialog).getByText('Create Partnership')).toBeInTheDocument();
     });
+  });
+
+  it('keeps the filter announcement in step with the store', async () => {
+    renderScreen();
+    expect(await screen.findByText(gold.companyName)).toBeInTheDocument();
+
+    act(() => usePartnerStore.getState().setFilters({ status: 'active' }));
+
+    await waitFor(() => expect(lastListQuery().get('filter')).toBe('isActive:true'));
+    expect(screen.getByRole('status', { name: 'Filters updated' })).toHaveTextContent(
+      'Status: active'
+    );
   });
 });
