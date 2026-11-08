@@ -194,7 +194,7 @@ that knows the policy.
 
 `scripts/ci/access-control-check.py` is that check. It reads every operation in
 `docs/api/*.openapi.yml` and calls each one **anonymously** against production after every deploy
-(`deploy-staging.yml`, before `staging-current` is promoted). Every operation not listed in
+(`deploy-staging.yml`, job `post-deploy-checks`, before `staging-current` is promoted). Every operation not listed in
 `scripts/ci/access-control-public.txt` must answer `401` or `403`; anything else fails the deploy.
 A new operation is protected by default: it fails until someone adds it to the allowlist, with a
 reason. The build runs its regression test and an offline `--check-allowlist`, so a renamed path
@@ -215,7 +215,8 @@ flowchart LR
         D4 --> D5["Bruno, then Playwright @smoke"]
         D5 -- "green" --> D6["promote to staging-stable"]
         D5 -- "red" --> D7["auto-rollback job"]
-        D3 -- "any other status" --> DF["deploy job fails,<br/>staging-current not advanced"]
+        D3 -- "any other status" --> DF["post-deploy-checks fails,<br/>staging-current not advanced"]
+        DF --> D7
     end
     subgraph Weekly["security-scan.yml, Mondays"]
         W1["ZAP API scan per spec"]
@@ -223,9 +224,11 @@ flowchart LR
     Build --> Deploy
 ```
 
-A failed access-control check stops the job before `staging-current` is promoted, so Bruno, Playwright
-and the auto-rollback job (which depend on the deploy job) do not run; the new tasks stay in service
-until someone acts. (Read from `deploy-staging.yml` job dependencies, not observed in a real failure.)
+A failed access-control check fails the `post-deploy-checks` job before `staging-current` is promoted:
+Bruno and Playwright do not run, and the auto-rollback job restores `staging-stable`. Until
+2026-11-08 the check was a step of the deploy job, and its failure skipped the rollback too: on PR
+#1258 the new tasks stayed in service, neither promoted nor rolled back. (The new topology is read
+from `deploy-staging.yml`, not yet observed in a real failure.)
 
 It is safe against production by construction: path ids that do not exist, `text/plain` bodies
 that every JSON endpoint refuses with `415` before the controller runs, required query and header

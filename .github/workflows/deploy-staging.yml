@@ -48,6 +48,8 @@ jobs:
       id-token: write
       contents: read
       deployments: write  # Required for deployment tracking
+    outputs:
+      image_tag: ${{ steps.image-tag.outputs.IMAGE_TAG }}
     steps:
       - name: Checkout code
         uses: actions/checkout@v7
@@ -1040,71 +1042,8 @@ jobs:
           fi
           echo "✅ SES IAM permissions verified"
 
-      - name: Run smoke tests
-        run: |
-          if [ -f "scripts/ci/smoke-tests.sh" ]; then
-            chmod +x scripts/ci/smoke-tests.sh
-            echo "Running smoke tests against deployed staging environment..."
-            ./scripts/ci/smoke-tests.sh \
-              https://www.batbern.ch \
-              https://api.batbern.ch \
-              https://cdn.batbern.ch
-            echo "✅ Smoke tests passed"
-          else
-            echo "::warning::Smoke tests script not found at scripts/ci/smoke-tests.sh - skipping"
-          fi
-
-      - name: Run CORS validation tests
-        run: |
-          if [ -f "scripts/ci/cors-validation-tests.sh" ]; then
-            chmod +x scripts/ci/cors-validation-tests.sh
-            echo "Running CORS validation tests..."
-            ./scripts/ci/cors-validation-tests.sh \
-              https://api.batbern.ch \
-              https://www.batbern.ch
-            echo "✅ CORS validation tests passed"
-          else
-            echo "::error::CORS validation tests script not found"
-          fi
-
-      # #1155 / GHSA-qhqv: every operation in docs/api that is not on the reviewed public
-      # allowlist (scripts/ci/access-control-public.txt) must reject an anonymous caller with
-      # 401/403. Generic scanners cannot tell a public endpoint from a forgotten rule; this
-      # check can. Inert by construction (non-existent ids, text/plain bodies, id-less and
-      # body-less writes never sent), so it is safe against production.
-      - name: Run access-control check (anonymous caller)
-        run: |
-          python3 -m pip install --quiet pyyaml==6.0.2
-          python3 scripts/ci/access-control-check.py --base-url https://api.batbern.ch/api/v1
-
-      # Promote the just-deployed IMAGE_TAG to the mutable `staging-current` tag in every
-      # service ECR repo. This runs AFTER smoke + CORS gates pass — so a deploy that
-      # didn't actually come up healthy never advances `staging-current`. The bruno-tests
-      # job (added later in this plan, §A5b) reads `staging-current` to know what was
-      # just deployed; the `tag-stable-on-success` job then promotes it to
-      # `staging-stable` if Bruno passes. Refs: docs/plans/bruno-staging-hardening.md §A4.
-      - name: Promote ECR images to staging-current
-        env:
-          IMAGE_TAG: ${{ steps.image-tag.outputs.IMAGE_TAG }}
-        run: |
-          chmod +x scripts/ci/promote-ecr-tag.sh
-          ./scripts/ci/promote-ecr-tag.sh staging "$IMAGE_TAG" staging-current
-
-      - name: Run header propagation tests
-        continue-on-error: true
-        run: |
-          if [ -f "scripts/ci/header-propagation-tests.sh" ]; then
-            chmod +x scripts/ci/header-propagation-tests.sh
-            echo "Running header propagation tests..."
-            if ./scripts/ci/header-propagation-tests.sh https://api.batbern.ch; then
-              echo "✅ Header propagation tests passed"
-            else
-              echo "::warning::Header propagation tests failed - see details above"
-              echo "::warning::This is a non-blocking test failure"
-            fi
-          else
-            echo "::warning::Header propagation tests script not found"
-          fi
+      # Smoke, CORS, access-control and header checks, and the staging-current promotion, run in
+      # the `post-deploy-checks` job below, so that their failure triggers the rollback.
 
       # Test-user Cognito authentication is no longer done in this job. Both downstream
       # test jobs (`bruno-tests`, `playwright-tests`) re-fetch their own tokens fresh —
@@ -1163,6 +1102,98 @@ jobs:
           echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
   # ─────────────────────────────────────────────────────────────────────────────
+  # Post-deploy checks run as their own job, not as steps of deploy-to-staging. As steps, a
+  # failure (PR #1258, 2026-11-08: the access-control probe) failed the deploy job, which
+  # skipped Bruno and Playwright and therefore BOTH tag-stable-on-success and
+  # rollback-on-test-failure: production kept an unvalidated release, neither promoted nor
+  # rolled back. As a job, a failure here triggers rollback-on-test-failure like a Bruno
+  # failure, and bruno-tests runs only after these checks (and the staging-current
+  # promotion) are green.
+  # ─────────────────────────────────────────────────────────────────────────────
+  post-deploy-checks:
+    name: Post-deploy checks (smoke, CORS, access control)
+    needs: deploy-to-staging
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+      contents: read
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v7
+
+      - name: Configure AWS credentials
+        uses: aws-actions/configure-aws-credentials@v4
+        with:
+          role-to-assume: arn:aws:iam::188701360969:role/batbern-staging-github-actions-role
+          aws-region: ${{ env.AWS_REGION }}
+
+      - name: Run smoke tests
+        run: |
+          if [ -f "scripts/ci/smoke-tests.sh" ]; then
+            chmod +x scripts/ci/smoke-tests.sh
+            echo "Running smoke tests against deployed staging environment..."
+            ./scripts/ci/smoke-tests.sh \
+              https://www.batbern.ch \
+              https://api.batbern.ch \
+              https://cdn.batbern.ch
+            echo "✅ Smoke tests passed"
+          else
+            echo "::warning::Smoke tests script not found at scripts/ci/smoke-tests.sh - skipping"
+          fi
+
+      - name: Run CORS validation tests
+        run: |
+          if [ -f "scripts/ci/cors-validation-tests.sh" ]; then
+            chmod +x scripts/ci/cors-validation-tests.sh
+            echo "Running CORS validation tests..."
+            ./scripts/ci/cors-validation-tests.sh \
+              https://api.batbern.ch \
+              https://www.batbern.ch
+            echo "✅ CORS validation tests passed"
+          else
+            echo "::error::CORS validation tests script not found"
+          fi
+
+      # #1155 / GHSA-qhqv: every operation in docs/api that is not on the reviewed public
+      # allowlist (scripts/ci/access-control-public.txt) must reject an anonymous caller with
+      # 401/403. Generic scanners cannot tell a public endpoint from a forgotten rule; this
+      # check can. Inert by construction (non-existent ids, text/plain bodies, id-less and
+      # body-less writes never sent), so it is safe against production.
+      - name: Run access-control check (anonymous caller)
+        run: |
+          python3 -m pip install --quiet pyyaml==6.0.2
+          python3 scripts/ci/access-control-check.py --base-url https://api.batbern.ch/api/v1
+
+      # Promote the just-deployed IMAGE_TAG to the mutable `staging-current` tag in every
+      # service ECR repo. This runs AFTER the smoke, CORS and access-control gates pass — so a deploy that
+      # didn't actually come up healthy never advances `staging-current`. The bruno-tests
+      # job (added later in this plan, §A5b) reads `staging-current` to know what was
+      # just deployed; the `tag-stable-on-success` job then promotes it to
+      # `staging-stable` if Bruno passes. Refs: docs/plans/bruno-staging-hardening.md §A4.
+      - name: Promote ECR images to staging-current
+        env:
+          IMAGE_TAG: ${{ needs.deploy-to-staging.outputs.image_tag }}
+        run: |
+          chmod +x scripts/ci/promote-ecr-tag.sh
+          ./scripts/ci/promote-ecr-tag.sh staging "$IMAGE_TAG" staging-current
+
+      - name: Run header propagation tests
+        continue-on-error: true
+        run: |
+          if [ -f "scripts/ci/header-propagation-tests.sh" ]; then
+            chmod +x scripts/ci/header-propagation-tests.sh
+            echo "Running header propagation tests..."
+            if ./scripts/ci/header-propagation-tests.sh https://api.batbern.ch; then
+              echo "✅ Header propagation tests passed"
+            else
+              echo "::warning::Header propagation tests failed - see details above"
+              echo "::warning::This is a non-blocking test failure"
+            fi
+          else
+            echo "::warning::Header propagation tests script not found"
+          fi
+
+  # ─────────────────────────────────────────────────────────────────────────────
   # Bruno API contract tests run as a separate job so that downstream jobs
   # (tag-stable-on-success / rollback-on-test-failure) can react to a clean
   # job-level result.
@@ -1180,7 +1211,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   bruno-tests:
     name: Bruno API contract tests
-    needs: deploy-to-staging
+    needs: [deploy-to-staging, post-deploy-checks]
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -1309,7 +1340,7 @@ jobs:
   # ─────────────────────────────────────────────────────────────────────────────
   tag-stable-on-success:
     name: Promote staging-current → staging-stable
-    needs: [deploy-to-staging, bruno-tests, playwright-tests]
+    needs: [deploy-to-staging, post-deploy-checks, bruno-tests, playwright-tests]
     # Gate flipped (PR 15, plan §D/§A2): promotion now requires BOTH test jobs green.
     # `continue-on-error` is gone from both the Bruno and Playwright run steps, so each
     # job `result` authoritatively reflects its suite. Promote only when Bruno AND
@@ -1317,7 +1348,7 @@ jobs:
     # result is then 'skipped' ≠ 'success') leaves staging-stable pinned to the last
     # known-good deploy. No `always()` here → a failed `needs` skips this job, which is
     # the intended no-promote behaviour.
-    if: needs.bruno-tests.result == 'success' && needs.playwright-tests.result == 'success'
+    if: needs.post-deploy-checks.result == 'success' && needs.bruno-tests.result == 'success' && needs.playwright-tests.result == 'success'
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -1370,9 +1401,9 @@ jobs:
   # (plan §E.2).
   # ─────────────────────────────────────────────────────────────────────────────
   rollback-on-test-failure:
-    name: Auto-rollback after Bruno or Playwright failure
-    needs: [deploy-to-staging, bruno-tests, playwright-tests]
-    if: ${{ always() && (needs.bruno-tests.result == 'failure' || needs.playwright-tests.result == 'failure') }}
+    name: Auto-rollback after a post-deploy check, Bruno or Playwright failure
+    needs: [deploy-to-staging, post-deploy-checks, bruno-tests, playwright-tests]
+    if: ${{ always() && (needs.post-deploy-checks.result == 'failure' || needs.bruno-tests.result == 'failure' || needs.playwright-tests.result == 'failure') }}
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -1392,7 +1423,9 @@ jobs:
           SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           chmod +x scripts/ci/rollback-deployment.sh
-          if [ "${{ needs.bruno-tests.result }}" = "failure" ]; then
+          if [ "${{ needs.post-deploy-checks.result }}" = "failure" ]; then
+            echo "🚨 Post-deploy check (smoke, CORS or access control) failed — rolling back to staging-stable"
+          elif [ "${{ needs.bruno-tests.result }}" = "failure" ]; then
             echo "🚨 Bruno failed — rolling back to staging-stable"
           else
             echo "🚨 Playwright @smoke failed — rolling back to staging-stable"
@@ -1444,7 +1477,7 @@ jobs:
       - name: Notify rollback
         if: always()
         run: |
-          echo "🚨 Auto-rollback triggered after test failure (Bruno: ${{ needs.bruno-tests.result }}, Playwright: ${{ needs.playwright-tests.result }})"
+          echo "🚨 Auto-rollback triggered after test failure (post-deploy checks: ${{ needs.post-deploy-checks.result }}, Bruno: ${{ needs.bruno-tests.result }}, Playwright: ${{ needs.playwright-tests.result }})"
           echo "   Backend → staging-stable ECR images; frontend → stable S3 snapshot (+ CloudFront invalidation)."
           echo "Workflow: ${{ github.server_url }}/${{ github.repository }}/actions/runs/${{ github.run_id }}"
 
