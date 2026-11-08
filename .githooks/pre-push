@@ -96,11 +96,38 @@ while IFS= read -r file; do
         docs/api/events-core-api.openapi.yml|docs/api/event-*-api.openapi.yml|docs/api/topics-api.openapi.yml)
             add_service event-management-service
             ;;
-        docs/api/companies-api.openapi.yml|docs/api/users-api.openapi.yml)
+        docs/api/companies-api.openapi.yml)
             add_service company-user-management-service
+            ;;
+        docs/api/users-api.openapi.yml)
+            # Owner CUMS; consumers' contract tests read it directly and via cums-internal's $ref (17.0b2).
+            add_service company-user-management-service
+            add_service event-management-service
+            add_service partner-coordination-service
+            TEST_API_GATEWAY=true
             ;;
         docs/api/partner*.openapi.yml)
             add_service partner-coordination-service
+            ;;
+        # Internal S2S specs (17.0b2): the provider's tests, every consumer's contract tests and the
+        # harness self-test in shared-kernel (ContractServerTest loads all three) read them.
+        docs/api/internal/cums-internal.openapi.yml)
+            TEST_SHARED_KERNEL=true
+            add_service company-user-management-service
+            add_service event-management-service
+            add_service partner-coordination-service
+            TEST_API_GATEWAY=true
+            ;;
+        docs/api/internal/ems-internal.openapi.yml)
+            TEST_SHARED_KERNEL=true
+            add_service event-management-service
+            add_service company-user-management-service
+            add_service partner-coordination-service
+            ;;
+        docs/api/internal/pcs-internal.openapi.yml)
+            TEST_SHARED_KERNEL=true
+            add_service partner-coordination-service
+            add_service event-management-service
             ;;
         docs/api/_shared.openapi.yml)
             # Cross-cutting contract — exercise the primary backend services that codegen from it.

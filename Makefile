@@ -509,8 +509,8 @@ check-frontend-api-paths: ## Check every frontend HTTP call against docs/api/ (S
 check-test-ratchet: ## Test fidelity ratchet: own-code mock counts may only fall (Story 17.0a, same as CI)
 	@cd web-frontend && npm run --silent check:test-ratchet
 
-lint-api: ## OpenAPI convention lint against its baseline (Story 17.4, same as CI)
-	@cd web-frontend && npm run --silent lint:api
+lint-api: ## OpenAPI convention lint against its baseline (Story 17.4) + internal specs (17.0b2), same as CI
+	@cd web-frontend && npm run --silent lint:api && npm run --silent lint:api-internal
 
 verify: lint check-generated-types test ## Pre-commit verification (lint + check + test)
 	@echo "✓ Verification complete - ready to commit!"

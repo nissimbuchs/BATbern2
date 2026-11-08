@@ -1,0 +1,501 @@
+openapi: 3.1.0
+info:
+  title: BATbern event-management internal API
+  version: 1.0.0
+  description: |
+    Service-to-service operations of event-management under `/internal/**` (Story 17.0b2).
+    Callers: company-user-management (`HttpEventManagementUserMergeClient`,
+    `HttpEventManagementMailCenterClient`) and partner-coordination (`HttpOutboundMailRecorder`).
+
+    Not a public API: the API gateway does not route `/internal/**` and denies it explicitly; the
+    services reach it inside the VPC through Service Connect, without a JWT. Public API tooling does
+    not read `docs/api/internal/`. The specs describe the endpoints as they are; Story 17.6
+    redesigns them (the verb segments stay until then). Paths are full paths (server `/`).
+servers:
+  - url: /
+security: []
+
+paths:
+  /internal/users/merge-preview:
+    get:
+      operationId: previewUserMerge
+      summary: What a profile merge would move (#1183)
+      description: Counts per table and the rows that would collide; changes nothing.
+      parameters:
+        - name: source
+          in: query
+          required: true
+          description: Username of the profile that disappears.
+          schema:
+            type: string
+          example: anna.meier.2
+        - name: target
+          in: query
+          required: true
+          description: Username of the profile that stays.
+          schema:
+            type: string
+          example: anna.meier
+      responses:
+        '200':
+          description: The preview
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergePreview'
+              examples:
+                clean:
+                  value:
+                    moves: {registrations.attendee_username: 2, session_users.username: 1}
+                    conflicts: {}
+                    blockers: []
+                blocked:
+                  value:
+                    moves: {registrations.attendee_username: 1, session_users.username: 1}
+                    conflicts: {registrations: 1}
+                    blockers: [BATbern58]
+        '400':
+          description: |
+            Source and target are the same username (`MergeError`, controller handler), or `source` /
+            `target` missing (the shared `ErrorResponse` of the global handler)
+          content:
+            application/json:
+              schema:
+                # anyOf, not oneOf: a MergeError body ({error, message}) is also a valid
+                # ErrorResponse (no required fields), so oneOf would reject every MergeError.
+                anyOf:
+                  - $ref: '#/components/schemas/MergeError'
+                  - $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                error: INVALID_MERGE
+                message: Source and target must be two different usernames
+
+  /internal/users/merge:
+    post:
+      operationId: mergeUsers
+      summary: Move every event-management row of one profile to another (#1183)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/MergeRequest'
+            example:
+              sourceUsername: anna.meier.2
+              targetUsername: anna.meier
+              performedBy: organizer.alice
+              trigger: ORGANIZER
+              sourceProfile: {email: anna.private@example.com, firstName: Anna, lastName: Meier}
+      responses:
+        '200':
+          description: What was moved and removed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeResult'
+              examples:
+                merged:
+                  value:
+                    moved: {registrations.attendee_username: 2, session_users.username: 1}
+                    removed: {registrations.attendee_username: 1}
+        '400':
+          description: Invalid request (validation, or source equals target)
+          content:
+            application/json:
+              schema:
+                # anyOf, not oneOf: a MergeError body ({error, message}) is also a valid
+                # ErrorResponse (no required fields), so oneOf would reject every MergeError.
+                anyOf:
+                  - $ref: '#/components/schemas/MergeError'
+                  - $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+        '409':
+          description: Both profiles lead a different talk at the same event; nothing was moved
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/MergeError'
+              example:
+                error: MERGE_BLOCKED
+                message: 'Both profiles lead a different talk at BATbern58'
+
+  /internal/users/primary-email:
+    post:
+      operationId: primaryEmailChanged
+      summary: Upcoming registrations follow a new primary address (#1244)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/PrimaryEmailChange'
+            example:
+              username: anna.meier
+              oldEmail: anna.old@example.com
+              newEmail: anna.meier@example.com
+      responses:
+        '200':
+          description: Number of registrations moved to the new address
+          content:
+            application/json:
+              schema:
+                type: object
+                required: [updated]
+                properties:
+                  updated:
+                    type: integer
+                    minimum: 0
+                additionalProperties: false
+              examples:
+                twoUpdated:
+                  value: {updated: 2}
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+  /internal/mails:
+    post:
+      operationId: recordInternalMail
+      summary: Record a mail another service sent in the event's "What went out" (Story 16.9)
+      description: |
+        partner-coordination posts its meeting invites and cancellations. Only audience `PARTNERS`
+        is accepted; at most 500 addresses (To and Cc) per mail. Subject and body arrive already
+        redacted.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/InternalMailRequest'
+            example:
+              sendGroupId: 9f0c7c55-0d37-4d0e-9b5f-3b0f3f3c1e21
+              eventCode: BATbern58
+              audience: PARTNERS
+              templateKey: partner-meeting-invite
+              contentSource: TEMPLATE
+              senderUsername: organizer.alice
+              test: false
+              reference: 'meeting:4b1f5a2e-6d3c-4f8a-9a51-0c8e7d2b1f00'
+              to: anna.meier@example.com
+              cc: []
+              subject: 'Partner meeting BATbern58'
+              htmlBody: '<p>Invitation</p>'
+              sesMessageId: 0100018f-ses-message-id
+      responses:
+        '202':
+          description: Recorded
+        '400':
+          description: Invalid request (validation, audience other than PARTNERS, too many addresses)
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+  /internal/mail-center/merge-requests:
+    post:
+      operationId: openMergeRequestConversation
+      summary: Open the Mail Center conversation of a profile merge request (#1237)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenRequestConversation'
+            example:
+              requestId: 2f6d8c1a-5b7e-4c3d-9a0f-1e2d3c4b5a69
+              requesterName: Anna Meier
+              requesterEmail: anna.meier@example.com
+              subject: Merge my two profiles
+              note: I registered twice.
+      responses:
+        '200':
+          description: The conversation key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationKey'
+              examples:
+                opened:
+                  value: {conversationKey: 'c-8f3a2b1c'}
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+  /internal/mail-center/merge-requests/{requestId}/done:
+    post:
+      operationId: closeMergeRequestConversation
+      summary: Close the conversation of a decided merge request (#1237)
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoneRequest'
+            example:
+              decidedBy: organizer.alice
+      responses:
+        '204':
+          description: Closed
+        '400':
+          description: Invalid request body or request id
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+  /internal/mail-center/logo-requests:
+    post:
+      operationId: openLogoRequestConversation
+      summary: Open the Mail Center conversation of a company logo request (#1246)
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/OpenRequestConversation'
+            example:
+              requestId: 7a1b2c3d-4e5f-4a6b-8c7d-9e0f1a2b3c4d
+              requesterName: Anna Meier
+              requesterEmail: anna.meier@example.com
+              subject: New logo for Swiss IT Solutions AG
+      responses:
+        '200':
+          description: The conversation key
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ConversationKey'
+              examples:
+                opened:
+                  value: {conversationKey: 'c-5d4e3f2a'}
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+  /internal/mail-center/logo-requests/{requestId}/done:
+    post:
+      operationId: closeLogoRequestConversation
+      summary: Close the conversation of a decided logo request (#1246)
+      parameters:
+        - $ref: '#/components/parameters/RequestId'
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/DoneRequest'
+            example:
+              decidedBy: organizer.alice
+      responses:
+        '204':
+          description: Closed
+        '400':
+          description: Invalid request body or request id
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+components:
+  parameters:
+    RequestId:
+      name: requestId
+      in: path
+      required: true
+      description: Id of the merge or logo request in company-user-management.
+      schema:
+        type: string
+        format: uuid
+      example: 2f6d8c1a-5b7e-4c3d-9a0f-1e2d3c4b5a69
+
+  schemas:
+    Counts:
+      type: object
+      description: Row count per table (`moves`, `moved` and `removed` keyed `table.column`, `conflicts` by table).
+      additionalProperties:
+        type: integer
+        minimum: 0
+
+    MergePreview:
+      type: object
+      description: Hand-written record `UserMergeService.Preview`.
+      required: [moves, conflicts, blockers]
+      properties:
+        moves:
+          $ref: '#/components/schemas/Counts'
+        conflicts:
+          $ref: '#/components/schemas/Counts'
+        blockers:
+          type: array
+          description: Event codes at which both profiles lead a different talk; a merge is refused.
+          items:
+            type: string
+      additionalProperties: false
+
+    MergeResult:
+      type: object
+      description: Hand-written record `UserMergeService.Result`.
+      required: [moved, removed]
+      properties:
+        moved:
+          $ref: '#/components/schemas/Counts'
+        removed:
+          $ref: '#/components/schemas/Counts'
+      additionalProperties: false
+
+    MergeError:
+      type: object
+      description: Error body of the merge endpoints (controller-local handler, not the shared ErrorResponse).
+      required: [error, message]
+      properties:
+        error:
+          type: string
+          enum: [MERGE_BLOCKED, INVALID_MERGE]
+        message:
+          type: string
+      additionalProperties: false
+
+    MergeRequest:
+      type: object
+      required: [sourceUsername, targetUsername, performedBy, trigger]
+      properties:
+        sourceUsername:
+          type: string
+          minLength: 1
+          maxLength: 100
+        targetUsername:
+          type: string
+          minLength: 1
+          maxLength: 100
+        performedBy:
+          type: string
+          minLength: 1
+          maxLength: 100
+        trigger:
+          type: string
+          enum: [ORGANIZER, SELF_CLAIM]
+        sourceProfile:
+          type: object
+          description: Snapshot of the source profile, kept in the merge log.
+          additionalProperties: true
+
+    PrimaryEmailChange:
+      type: object
+      required: [username, oldEmail, newEmail]
+      properties:
+        username:
+          type: string
+          minLength: 1
+          maxLength: 100
+        oldEmail:
+          type: string
+          minLength: 1
+          maxLength: 255
+        newEmail:
+          type: string
+          minLength: 1
+          maxLength: 255
+
+    InternalMailRequest:
+      type: object
+      description: Flat mirror of `MailContext` + `OutboundMail` (record `InternalMailRequest`).
+      required: [sendGroupId, audience, to]
+      properties:
+        sendGroupId:
+          type: string
+          minLength: 1
+          maxLength: 256
+        eventCode:
+          type: string
+          maxLength: 50
+        audience:
+          type: string
+          description: Only `PARTNERS` is accepted (400 otherwise).
+          minLength: 1
+        templateKey:
+          type: string
+          maxLength: 100
+        contentSource:
+          type: string
+          description: A `MailContext.ContentSource`; absent means `TEMPLATE`.
+          enum: [TEMPLATE, OWN_TEXT]
+        senderUsername:
+          type: string
+          maxLength: 100
+        test:
+          type: boolean
+        reference:
+          type: string
+          maxLength: 100
+        to:
+          type: string
+          description: The To line, comma-separated addresses.
+          maxLength: 64000
+        cc:
+          type: array
+          maxItems: 500
+          items:
+            type: string
+            maxLength: 320
+        subject:
+          type: string
+          maxLength: 1000
+        htmlBody:
+          type: string
+          maxLength: 2097152
+        sesMessageId:
+          type: string
+          maxLength: 255
+        failureReason:
+          type: string
+          maxLength: 500
+
+    OpenRequestConversation:
+      type: object
+      required: [requestId, requesterEmail, subject]
+      properties:
+        requestId:
+          type: string
+          format: uuid
+        requesterName:
+          type: string
+          maxLength: 255
+        requesterEmail:
+          type: string
+          format: email
+          minLength: 1
+          maxLength: 320
+        subject:
+          type: string
+          minLength: 1
+          maxLength: 500
+        note:
+          type: string
+          maxLength: 500
+
+    DoneRequest:
+      type: object
+      required: [decidedBy]
+      properties:
+        decidedBy:
+          type: string
+          minLength: 1
+          maxLength: 100
+
+    ConversationKey:
+      type: object
+      required: [conversationKey]
+      properties:
+        conversationKey:
+          type: string
+      additionalProperties: false

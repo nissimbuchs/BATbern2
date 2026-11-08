@@ -1,11 +1,10 @@
 package ch.batbern.events.mailcenter;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.mail.ComposedMail;
 import ch.batbern.shared.mail.MailContext;
@@ -22,7 +21,6 @@ import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.web.servlet.MockMvc;
 
@@ -34,10 +32,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -65,8 +61,9 @@ class ConversationReplyIntegrationTest extends AbstractIntegrationTest {
     private JdbcTemplate jdbc;
     @Autowired
     private EventRepository eventRepository;
-    @MockitoBean
-    private UserApiClient userApiClient;
+    /** CUMS behind the real UserApiClient (Story 17.0b2). */
+    @Autowired
+    private CumsContractHarness cums;
     @MockitoSpyBean
     private EmailService emailService;
 
@@ -81,14 +78,13 @@ class ConversationReplyIntegrationTest extends AbstractIntegrationTest {
                 .organizerUsername("anna.muster").currentAttendeeCount(0)
                 .eventType(EventType.EVENING).workflowState(EventWorkflowState.AGENDA_PUBLISHED)
                 .build());
-        UserResponse organizer = new UserResponse();
-        organizer.setFirstName("Anna");
-        organizer.setLastName("Muster");
-        when(userApiClient.getUserByUsername("anna.muster")).thenReturn(organizer);
+        cums.reset();
+        cums.user("anna.muster", "Anna", "Muster", "anna.muster@example.com");
     }
 
     @AfterEach
     void tearDown() {
+        cums.reset();
         jdbc.update("DELETE FROM mail_recipient WHERE mail_message_id IN "
                 + "(SELECT id FROM mail_message WHERE event_code = ?)", EVENT);
         jdbc.update("DELETE FROM mail_message WHERE event_code = ?", EVENT);
@@ -200,7 +196,7 @@ class ConversationReplyIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(post("/api/v1/conversations/conv-9104/replies").contentType(MediaType.APPLICATION_JSON)
                 .content("{\"text\":\"x\"}")).andExpect(status().isForbidden());
         verify(emailService, never()).sendComposed(any(), any());
-        verify(userApiClient, never()).getUserByUsername(anyString());
+        assertThat(cums.requestedUsers()).isEmpty();
     }
 
     private UUID conversation(String key, String subject, String counterpart, String status) {

@@ -5,7 +5,7 @@ import static org.springframework.test.web.servlet.request.MockMvcRequestBuilder
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.speakers.dto.generated.SpeakerResponseRequest;
@@ -13,14 +13,13 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import org.mockito.Mockito;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerResponseType;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -74,13 +73,9 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private SpeakerStatusHistoryRepository statusHistoryRepository;
 
-    /**
-     * UserApiClient is mocked because the dashboard happy-path fetches the speaker's
-     * profile for profile-completeness; without a mock the call fails the integration test
-     * with a 500 (no user service available in Testcontainers).
-     */
-    @MockitoBean
-    private UserApiClient userApiClient;
+    /** CUMS behind the real UserApiClient (Story 17.0b2). */
+    @Autowired
+    private CumsContractHarness cums;
 
     private static final String EVENT_CODE = "BATbern777";
     private static final String FOREIGN_EVENT_CODE = "BATbern778";
@@ -89,6 +84,11 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
 
     private Event testEvent;
     private Event foreignEvent;
+
+    @AfterEach
+    void resetCums() {
+        cums.reset();
+    }
 
     @BeforeEach
     void setUp() {
@@ -156,9 +156,8 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
                 .build());
 
         // Dashboard happy-path fetches the speaker's user profile for profile-completeness;
-        // return null (no profile yet) so the service falls through gracefully without
-        // making an HTTP call to the user service.
-        Mockito.when(userApiClient.getUserByUsername(Mockito.anyString())).thenReturn(null);
+        // CUMS (the S2S contract harness, Story 17.0b2) answers with its default profile.
+        cums.reset();
     }
 
     // ---------- 401 paths ----------

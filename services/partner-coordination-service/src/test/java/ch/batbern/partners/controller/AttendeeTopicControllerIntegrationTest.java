@@ -1,21 +1,23 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.UserServiceClient;
+import ch.batbern.partners.config.CumsInternalUsers;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.repository.TopicRepository;
 import ch.batbern.partners.repository.TopicVoteRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -50,6 +52,10 @@ class AttendeeTopicControllerIntegrationTest extends AbstractIntegrationTest {
     static final String PARTNER_BASE = "/api/v1/partners/topics";
 
     @Autowired
+    RestTemplate restTemplate;
+    @Autowired
+    CacheManager cacheManager;
+    @Autowired
     MockMvc mockMvc;
     @Autowired
     ObjectMapper objectMapper;
@@ -57,8 +63,6 @@ class AttendeeTopicControllerIntegrationTest extends AbstractIntegrationTest {
     TopicRepository topicRepository;
     @Autowired
     TopicVoteRepository topicVoteRepository;
-    @MockitoBean
-    UserServiceClient userServiceClient;
 
     @BeforeEach
     void setUp() {
@@ -215,24 +219,18 @@ class AttendeeTopicControllerIntegrationTest extends AbstractIntegrationTest {
         Map<String, String> body = new HashMap<>();
         body.put("title", "Partner-sourced topic stays PARTNER");
 
-        // Partner submits via the existing partner endpoint
-        org.mockito.Mockito.when(userServiceClient.getUserByUsername("alice"))
-                .thenReturn(makeUser("alice", "AlphaCo"));
+        // Partner submits via the existing partner endpoint; CUMS (on the wire) puts alice in AlphaCo
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+        try (ContractServer cums = ContractServer.bindTo(restTemplate, CumsInternalUsers.CUMS_INTERNAL)) {
+            CumsInternalUsers.answerOn(cums).put("alice", "alice.alpha", "AlphaCo");
 
-        mockMvc.perform(post(PARTNER_BASE)
-                        .with(user("alice").roles("PARTNER"))
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(objectMapper.writeValueAsString(body)))
-                .andExpect(status().isCreated())
-                .andExpect(jsonPath("$.source", is("PARTNER")))
-                .andExpect(jsonPath("$.suggestedByCompany", is("AlphaCo")));
-    }
-
-    private ch.batbern.partners.client.user.dto.UserResponse makeUser(String username, String companyId) {
-        ch.batbern.partners.client.user.dto.UserResponse user =
-                new ch.batbern.partners.client.user.dto.UserResponse();
-        user.setId(username);
-        user.setCompanyId(companyId);
-        return user;
+            mockMvc.perform(post(PARTNER_BASE)
+                            .with(user("alice").roles("PARTNER"))
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(body)))
+                    .andExpect(status().isCreated())
+                    .andExpect(jsonPath("$.source", is("PARTNER")))
+                    .andExpect(jsonPath("$.suggestedByCompany", is("AlphaCo")));
+        }
     }
 }

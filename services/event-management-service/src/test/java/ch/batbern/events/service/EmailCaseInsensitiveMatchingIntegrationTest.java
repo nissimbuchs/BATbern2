@@ -1,6 +1,5 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
@@ -57,8 +56,6 @@ class EmailCaseInsensitiveMatchingIntegrationTest extends AbstractIntegrationTes
     @Autowired
     private EventRepository eventRepository;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
     @MockitoBean
     private EmailService emailService;
 

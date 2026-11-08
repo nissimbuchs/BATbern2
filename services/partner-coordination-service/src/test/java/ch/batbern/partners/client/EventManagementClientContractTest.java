@@ -87,6 +87,19 @@ class EventManagementClientContractTest {
     }
 
     @Test
+    void should_encodeCompanyNameStrictly_inAttendanceQuery() {
+        server = ContractServer.bindTo(restTemplate, ANALYTICS);
+        server.expect(GET, "/api/v1/events/attendance-summary")
+                .withQueryParam("companyName", "Meier+Partner & Co")
+                .andExpect(r -> assertThat(r.getURI().getRawQuery())
+                        .isEqualTo("companyName=Meier%2BPartner%20%26%20Co&fromYear=2021"))
+                .respondWithExample();
+
+        assertThat(client.getAttendanceSummary("Meier+Partner & Co", 2021)).hasSize(2);
+        server.verify();
+    }
+
+    @Test
     void should_buildEventSummary_fromSpecExample() {
         server = ContractServer.bindTo(restTemplate, EVENTS);
         server.expect(GET, "/api/v1/events/{eventCode}").withQueryParam("include", "sessions")

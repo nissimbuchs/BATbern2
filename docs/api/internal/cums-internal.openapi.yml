@@ -1,0 +1,282 @@
+openapi: 3.1.0
+info:
+  title: BATbern company-user-management internal API
+  version: 1.0.0
+  description: |
+    Service-to-service operations of company-user-management under `/internal/**` (Story 17.0b2).
+    Callers: event-management (`UserApiClientImpl`), partner-coordination (`UserServiceClientImpl`)
+    and the API gateway (`GatewayUserStatusClient`).
+
+    Not a public API: the API gateway does not route `/internal/**` and denies it explicitly; the
+    services reach it inside the VPC through Service Connect, without a JWT. The public tooling
+    (frontend path check, type generation, API similarity, ZAP coverage, access-control probe,
+    `lint:api`) does not read `docs/api/internal/`; `npm run lint:api-internal` lints it with the
+    reduced ruleset `docs/api/internal/.spectral.yaml`.
+
+    The specs describe the endpoints as they are; Story 17.6 redesigns them. Paths are full paths
+    (server `/`), so a path here is the path on the wire.
+servers:
+  - url: /
+security: []
+
+paths:
+  /internal/users/{username}:
+    get:
+      operationId: getInternalUser
+      summary: One user by username
+      description: |
+        Same `UserResponse` as the public users-api. `include` adds the related objects
+        (`company`, `roles`, `preferences`, comma-separated). The username is a path segment and
+        must be percent-encoded by the caller.
+      parameters:
+        - name: username
+          in: path
+          required: true
+          schema:
+            type: string
+          example: anna.meier
+        - name: include
+          in: query
+          required: false
+          description: Comma-separated related objects, e.g. `preferences` or `company,roles,preferences`.
+          schema:
+            type: string
+          example: preferences
+      responses:
+        '200':
+          description: The user
+          content:
+            application/json:
+              schema:
+                $ref: '../users-api.openapi.yml#/components/schemas/UserResponse'
+              examples:
+                user:
+                  value:
+                    id: anna.meier
+                    hasCognitoAccount: true
+                    email: anna.meier@example.com
+                    firstName: Anna
+                    lastName: Meier
+                    bio: Software architect
+                    companyId: Swiss IT Solutions AG
+                    roles: [SPEAKER]
+                    active: true
+                    createdAt: '2025-01-15T10:00:00Z'
+                    updatedAt: '2025-01-15T10:00:00Z'
+                    additionalEmails: []
+                withPreferences:
+                  value:
+                    id: anna.meier
+                    email: anna.meier@example.com
+                    firstName: Anna
+                    lastName: Meier
+                    roles: [SPEAKER]
+                    active: true
+                    createdAt: '2025-01-15T10:00:00Z'
+                    updatedAt: '2025-01-15T10:00:00Z'
+                    additionalEmails: []
+                    preferences:
+                      language: en
+                      emailNotifications: true
+                      inAppNotifications: true
+                      pushNotifications: false
+                      notificationFrequency: immediate
+                      qnaNotificationFrequency: daily
+        '404':
+          description: No user with this username
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-08T10:00:00Z'
+                path: /internal/users/ghost.user
+                status: 404
+                error: Not Found
+                message: 'User not found: ghost.user'
+                severity: LOW
+
+  /internal/users:
+    get:
+      operationId: listInternalUsers
+      summary: Users by role and/or company, 1-based paging
+      description: |
+        A page of users. Callers read every page: they follow `pagination.hasNext` until it is
+        false. Without a filter all users are listed.
+      parameters:
+        - name: role
+          in: query
+          required: false
+          description: Role filter. CUMS also accepts lower case; the callers send upper case.
+          schema:
+            type: string
+            enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
+          example: PARTNER
+        - name: company
+          in: query
+          required: false
+          description: Company name (the company's identifier).
+          schema:
+            type: string
+          example: Swiss IT Solutions AG
+        - name: page
+          in: query
+          required: false
+          description: 1-based page number.
+          schema:
+            type: integer
+            minimum: 1
+            default: 1
+          example: 1
+        - name: limit
+          in: query
+          required: false
+          description: Page size.
+          schema:
+            type: integer
+            minimum: 1
+            default: 100
+          example: 100
+      responses:
+        '200':
+          description: One page of users
+          content:
+            application/json:
+              schema:
+                $ref: '../users-api.openapi.yml#/components/schemas/PaginatedUserResponse'
+              examples:
+                onePage:
+                  value:
+                    data:
+                      - id: anna.meier
+                        email: anna.meier@example.com
+                        firstName: Anna
+                        lastName: Meier
+                        companyId: Swiss IT Solutions AG
+                        roles: [PARTNER]
+                        active: true
+                        createdAt: '2025-01-15T10:00:00Z'
+                        updatedAt: '2025-01-15T10:00:00Z'
+                        additionalEmails: []
+                    pagination:
+                      page: 1
+                      limit: 100
+                      totalItems: 1
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
+        '400':
+          description: Unknown role
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+  /internal/email-owners:
+    get:
+      operationId: getEmailOwners
+      summary: Usernames owning an address
+      description: |
+        #1183: the usernames whose primary address, or verified additional address, is `email`;
+        an empty list when none. It reveals whether an address is known, so it is internal only.
+      parameters:
+        - name: email
+          in: query
+          required: true
+          schema:
+            type: string
+          example: anna.meier@example.com
+      responses:
+        '200':
+          description: The owning usernames, possibly none
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+              examples:
+                oneOwner:
+                  value: [anna.meier]
+                none:
+                  value: []
+
+  /internal/users/get-or-create:
+    post:
+      operationId: getOrCreateInternalUser
+      summary: Get or create a user by email (ADR-005)
+      description: |
+        Used by event-management for anonymous event registration and speaker provisioning. A
+        verified additional email resolves to its owner; an unverified one answers 409
+        `EMAIL_LINKED_TO_ACCOUNT`.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '../users-api.openapi.yml#/components/schemas/GetOrCreateUserRequest'
+            example:
+              email: anna.meier@example.com
+              firstName: Anna
+              lastName: Meier
+              companyId: Swiss IT Solutions AG
+              cognitoSync: false
+      responses:
+        '200':
+          description: The existing or new user
+          content:
+            application/json:
+              schema:
+                $ref: '../users-api.openapi.yml#/components/schemas/GetOrCreateUserResponse'
+              examples:
+                created:
+                  value:
+                    username: anna.meier
+                    created: true
+                    companyUpdated: false
+                    user:
+                      id: anna.meier
+                      email: anna.meier@example.com
+                      firstName: Anna
+                      lastName: Meier
+                      companyId: Swiss IT Solutions AG
+                      roles: [ATTENDEE]
+                      active: true
+                      createdAt: '2025-01-15T10:00:00Z'
+                      updatedAt: '2025-01-15T10:00:00Z'
+                      additionalEmails: []
+                existing:
+                  value:
+                    username: anna.meier
+                    created: false
+                    companyUpdated: false
+                    user:
+                      id: anna.meier
+                      email: anna.meier@example.com
+                      firstName: Anna
+                      lastName: Meier
+                      roles: [SPEAKER]
+                      active: true
+                      createdAt: '2025-01-15T10:00:00Z'
+                      updatedAt: '2025-01-15T10:00:00Z'
+                      additionalEmails: []
+        '400':
+          description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+        '409':
+          description: The email is another user's unverified additional email
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+              example:
+                timestamp: '2026-11-08T10:00:00Z'
+                path: /internal/users/get-or-create
+                status: 409
+                error: Conflict
+                errorCode: EMAIL_LINKED_TO_ACCOUNT
+                message: This email is linked to an existing account, please sign in
+                severity: LOW

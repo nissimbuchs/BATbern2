@@ -1,6 +1,5 @@
 package ch.batbern.events.watch;
 
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.core.dto.generated.EventType;
@@ -52,10 +51,6 @@ class LiveTimingServiceIntegrationTest extends AbstractIntegrationTest {
     /** WatchSessionService broadcasts over STOMP — no broker in tests. */
     @MockitoBean
     private SimpMessagingTemplate messagingTemplate;
-
-    /** Speaker enrichment makes HTTP calls; mocked (tests here use speaker-less sessions). */
-    @MockitoBean
-    private UserApiClient userApiClient;
 
     // MARK: - Helpers
 

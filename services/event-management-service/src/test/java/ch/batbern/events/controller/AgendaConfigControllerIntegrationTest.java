@@ -2,7 +2,6 @@ package ch.batbern.events.controller;
 
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
-import ch.batbern.events.config.TestUserApiClientConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.repository.EventAgendaConfigRepository;
@@ -39,7 +38,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * AC5 (apéro persists as a 'networking' Session — V127 CHECK, #1123 + V121 seed).</p>
  */
 @Transactional
-@Import({TestSecurityConfig.class, TestAwsConfig.class, TestUserApiClientConfig.class})
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
 class AgendaConfigControllerIntegrationTest extends AbstractIntegrationTest {
 
     private static final String VALID_BODY = """

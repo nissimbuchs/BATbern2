@@ -1,6 +1,6 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.core.dto.generated.EventType;
@@ -8,7 +8,6 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.LogoRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -18,6 +17,7 @@ import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -38,8 +38,6 @@ import java.util.Objects;
 
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -94,23 +92,26 @@ class PublicSessionVisibilityIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private EntityManager entityManager;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    /** CUMS behind the real UserApiClient (Story 17.0b2). */
+    @Autowired
+    private CumsContractHarness cums;
 
     @MockitoBean
     private LogoRepository logoRepository;
 
     private Event event;
 
+    @AfterEach
+    void resetCums() {
+        cums.reset();
+    }
+
     @BeforeEach
     void setUp() {
         cacheManager.getCacheNames().forEach(name ->
                 Objects.requireNonNull(cacheManager.getCache(name)).clear());
         eventRepository.deleteAll();
-        when(userApiClient.getUserByUsername(anyString())).thenAnswer(inv -> {
-            String username = inv.getArgument(0);
-            return new UserResponse().id(username).firstName("First " + username).lastName("Last");
-        });
+        cums.reset();
 
         event = saveEvent(CODE, 9060, EVENT_DATE, EventWorkflowState.SLOT_ASSIGNMENT, "speakers");
         speakerSession(event, "Invited talk", "invited.talk", SpeakerWorkflowState.INVITED, true);

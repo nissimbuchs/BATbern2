@@ -47,7 +47,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * Uses Testcontainers PostgreSQL for production parity.
  */
 @Transactional
-@Import({TestSecurityConfig.class, TestAwsConfig.class, ch.batbern.events.config.TestUserApiClientConfig.class})
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
 public class WatchEventControllerIntegrationTest extends AbstractIntegrationTest {
 
     private static final String ENDPOINT = "/api/v1/watch/organizers/me/active-events";

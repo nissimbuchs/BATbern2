@@ -1,6 +1,6 @@
 package ch.batbern.events.listener;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.core.dto.generated.EventType;
@@ -39,7 +39,6 @@ import java.util.List;
 import java.util.function.Supplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -52,11 +51,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * {@code OrganizerNotificationListener} on an async thread, so both must see committed rows. Every
  * test cleans up what it created.
  *
- * <p>Own-code mock, on purpose and temporary: in the EMS test context {@code UserApiClient} is
- * already the Mockito mock of {@code TestUserApiClientConfig} ({@code @Primary}, picked up by
- * component scanning), so the CUMS wire cannot be reached without a new context. This test stubs
- * that shared mock for the stakeholder lists and resets them afterwards; Story 17.0b's S2S contract
- * harness moves it to the wire. The publisher and every listener run for real.
+ * <p>CUMS is the S2S contract harness on the wire (Story 17.0b2): the real {@code UserApiClient}
+ * asks {@code GET /internal/users?role=...}, and {@link CumsContractHarness} answers the
+ * stakeholder lists, checked against the CUMS internal spec. The publisher and every listener run
+ * for real.
  */
 @Import({TestSecurityConfig.class, TestAwsConfig.class})
 class DomainEventListenersIntegrationTest extends AbstractIntegrationTest {
@@ -69,9 +67,9 @@ class DomainEventListenersIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
 
-    /** The shared Mockito mock from TestUserApiClientConfig (see the class comment). */
+    /** CUMS on the wire (see the class comment). */
     @Autowired
-    private UserApiClient userApiClient;
+    private CumsContractHarness cums;
 
     @Autowired
     private EventTaskService eventTaskService;
@@ -104,17 +102,16 @@ class DomainEventListenersIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        when(userApiClient.getOrganizerUsernames()).thenReturn(List.of(ORGANIZER));
-        when(userApiClient.getPartnerUsernames()).thenReturn(List.of(PARTNER));
+        cums.usersWithRole("ORGANIZER", ORGANIZER);
+        cums.usersWithRole("PARTNER", PARTNER);
     }
 
     @AfterEach
     void tearDown() {
         try {
-            // First back to the mock's defaults, so other tests sharing this context see no
+            // First back to the defaults, so other tests sharing this context see no
             // stakeholders, and a late async listener run finds no organizer to notify.
-            when(userApiClient.getOrganizerUsernames()).thenReturn(List.of());
-            when(userApiClient.getPartnerUsernames()).thenReturn(List.of());
+            cums.reset();
         } finally {
             if (eventCode != null) {
                 // Every published domain event also reaches the @Async OrganizerNotificationListener;

@@ -2,7 +2,6 @@ package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.contract.ContractServer;
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.service.TrendingTopicsService;
@@ -40,9 +39,6 @@ public class TopicSessionDataControllerIntegrationTest extends AbstractIntegrati
 
     @Autowired
     private MockMvc mockMvc;
-
-    @MockitoBean
-    private UserApiClient userApiClient;
 
     @Autowired
     private RestTemplate restTemplate;

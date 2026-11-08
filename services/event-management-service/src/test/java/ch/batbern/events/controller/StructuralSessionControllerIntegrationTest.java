@@ -1,17 +1,17 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.core.dto.generated.EventType;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.types.EventWorkflowState;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -19,12 +19,8 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
-
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.when;
 
 import java.time.Instant;
 import java.time.LocalTime;
@@ -63,8 +59,9 @@ class StructuralSessionControllerIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private EventTypeRepository eventTypeRepository;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    /** CUMS behind the real UserApiClient (Story 17.0b2). */
+    @Autowired
+    private CumsContractHarness cums;
 
     private static final String EVENT_CODE = "BATbern999";
 
@@ -74,19 +71,12 @@ class StructuralSessionControllerIntegrationTest extends AbstractIntegrationTest
         eventRepository.deleteAll();
         createTestEvent();
         updateEventTypeConfig();
-        mockUserApiClient();
+        cums.reset();
     }
 
-    private void mockUserApiClient() {
-        when(userApiClient.getUserByUsername(anyString())).thenAnswer(invocation -> {
-            String username = invocation.getArgument(0);
-            return new UserResponse()
-                    .id(username)
-                    .firstName("John")
-                    .lastName("Doe")
-                    .email(username + "@example.com")
-                    .companyId("test-company");
-        });
+    @AfterEach
+    void resetCums() {
+        cums.reset();
     }
 
     private void createTestEvent() {

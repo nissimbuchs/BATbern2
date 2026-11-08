@@ -1,6 +1,5 @@
 package ch.batbern.events.forwarding;
 
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.core.dto.generated.EventType;
@@ -55,8 +54,6 @@ class CalendarDeclineServiceIntegrationTest extends AbstractIntegrationTest {
     private RegistrationRepository registrationRepository;
     @MockitoBean
     private DeregistrationEmailService deregistrationEmailService;
-    @MockitoBean
-    private UserApiClient userApiClient;
 
     private final List<UUID> createdEventIds = new ArrayList<>();
     private Event event;

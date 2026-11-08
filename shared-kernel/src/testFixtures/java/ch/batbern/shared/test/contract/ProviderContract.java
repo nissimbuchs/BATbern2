@@ -10,7 +10,7 @@ import java.util.List;
 import java.util.Map;
 
 /**
- * Provider half of the S2S contract harness (Story 17.0b1): proves that what a consumer's
+ * Provider half of the S2S contract harness (Story 17.0b1; internal specs 17.0b2): proves that what a consumer's
  * {@link ContractServer} answers with is what the real controller produces.
  *
  * <ul>
@@ -43,12 +43,15 @@ public final class ProviderContract {
 
     /**
      * Fails unless every JSON response example of the operation (path as a spec template, base
-     * path included) is valid against its schema, and unless the success response has one.
+     * path included) is valid against its schema, and unless the success response, when it has a
+     * JSON body (not a bodiless 202 or 204), has one.
      */
     public static void assertExamplesMatchSchema(String specPath, String method, String pathTemplate) {
         OpenApiContract contract = OpenApiContract.load(specPath);
         int success = contract.successStatus(method, pathTemplate);
-        contract.example(method, pathTemplate, success, null);
+        if (contract.hasJsonBody(method, pathTemplate, success)) {
+            contract.example(method, pathTemplate, success, null);
+        }
         String concrete = pathTemplate.replaceAll("\\{[^}]+}", "x");
         List<String> problems = new ArrayList<>();
         for (Map.Entry<String, String> e : contract.responseExamples(method, pathTemplate).entrySet()) {

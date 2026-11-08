@@ -36,7 +36,9 @@ import org.springframework.web.client.RestClientException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.net.URI;
 
 /**
@@ -100,7 +102,7 @@ public class UserApiClientImpl implements UserApiClient {
         }
         log.debug("Fetching user profile for username: {}", username);
 
-        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/" + username;
+        URI url = internalUserUri(username, null);
 
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -270,7 +272,7 @@ public class UserApiClientImpl implements UserApiClient {
 
         // #1146: CUMS has no /api/v1/users/{username}/preferences; the internal read carries
         // the preferences (VPC-only, no JWT, like getPreferredLanguage).
-        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/" + username + "?include=preferences";
+        URI url = internalUserUri(username, "preferences");
 
         try {
             HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
@@ -359,7 +361,7 @@ public class UserApiClientImpl implements UserApiClient {
         }
         log.debug("Fetching preferred language for username: {}", username);
 
-        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/" + username + "?include=preferences";
+        URI url = internalUserUri(username, "preferences");
 
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -404,7 +406,7 @@ public class UserApiClientImpl implements UserApiClient {
         }
         log.debug("Fetching Q&A notification frequency for username: {}", username);
 
-        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/" + username + "?include=preferences";
+        URI url = internalUserUri(username, "preferences");
 
         try {
             HttpHeaders headers = new HttpHeaders();
@@ -433,6 +435,23 @@ public class UserApiClientImpl implements UserApiClient {
                     username, e.getMessage());
             return null;
         }
+    }
+
+    /** {@code /internal/users/{username}}, optionally with {@code ?include=}. */
+    private URI internalUserUri(String username, String include) {
+        return include == null
+                ? cumsUri(INTERNAL_USERS_PATH + "/{username}", username)
+                : cumsUri(INTERNAL_USERS_PATH + "/{username}?include={include}", username, include);
+    }
+
+    /**
+     * A CUMS URI from a path template, every variable strictly percent-encoded: a {@code /},
+     * {@code ?}, {@code #}, {@code %} or space in a username or company name can neither change the
+     * path nor start a query (17.0b2; the values were concatenated before).
+     */
+    private URI cumsUri(String pathTemplate, Object... variables) {
+        return UriComponentsBuilder.fromUriString(userServiceBaseUrl + pathTemplate)
+                .encode().buildAndExpand(variables).toUri();
     }
 
     @Override
@@ -527,7 +546,7 @@ public class UserApiClientImpl implements UserApiClient {
     public UserResponse patchUserProfile(String username, PatchUserProfileRequest request) {
         log.debug("Patching user profile (Story 11.C.2) for username: {}", username);
 
-        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/profile";
+        URI url = cumsUri("/api/v1/users/{username}/profile", username);
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
@@ -595,7 +614,7 @@ public class UserApiClientImpl implements UserApiClient {
     public InvitationCredentialsResponse issueInvitationCredentials(String username) {
         log.debug("Issuing invitation credentials (Story 11.E.2) for username: {}", username);
 
-        String url = userServiceBaseUrl + "/api/v1/users/" + username + "/issue-invitation-credentials";
+        URI url = cumsUri("/api/v1/users/{username}/issue-invitation-credentials", username);
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
@@ -725,15 +744,21 @@ public class UserApiClientImpl implements UserApiClient {
         try {
             HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
             for (int page = 1; page <= MAX_PAGES; page++) {
+                Map<String, Object> vars = new HashMap<>();
+                vars.put("role", role);
+                vars.put("page", page);
+                vars.put("limit", MAX_PAGE_SIZE);
                 UriComponentsBuilder builder = UriComponentsBuilder
                         .fromUriString(userServiceBaseUrl + INTERNAL_USERS_PATH)
-                        .queryParam("role", role)
-                        .queryParam("page", page)
-                        .queryParam("limit", MAX_PAGE_SIZE);
+                        .queryParam("role", "{role}")
+                        .queryParam("page", "{page}")
+                        .queryParam("limit", "{limit}");
                 if (company != null) {
-                    builder.queryParam("company", company);
+                    // Strict encoding: a '+' or '&' in a company name stays part of the value.
+                    builder.queryParam("company", "{company}");
+                    vars.put("company", company);
                 }
-                URI url = builder.build().encode().toUri();
+                URI url = builder.encode().buildAndExpand(vars).toUri();
                 PaginatedUserResponse body = restTemplate.exchange(
                         url, HttpMethod.GET, request, PaginatedUserResponse.class).getBody();
                 if (body == null || body.getData() == null) {
@@ -846,8 +871,9 @@ public class UserApiClientImpl implements UserApiClient {
         if (email == null || email.isBlank()) {
             return List.of();
         }
-        String url = UriComponentsBuilder.fromUriString(userServiceBaseUrl + "/internal/email-owners")
-                .queryParam("email", email.trim()).encode().toUriString();
+        // Strict encoding: a plus address (success+x@...) must not arrive as a space.
+        URI url = UriComponentsBuilder.fromUriString(userServiceBaseUrl + "/internal/email-owners")
+                .queryParam("email", "{email}").encode().buildAndExpand(email.trim()).toUri();
         try {
             ResponseEntity<String[]> response = restTemplate.exchange(
                     url, HttpMethod.GET, new HttpEntity<>(new HttpHeaders()), String[].class);
@@ -868,7 +894,7 @@ public class UserApiClientImpl implements UserApiClient {
         if (companySlug == null || companySlug.isBlank()) {
             return null;
         }
-        String url = userServiceBaseUrl + "/api/v1/companies/" + companySlug;
+        URI url = cumsUri("/api/v1/companies/{name}", companySlug);
         try {
             HttpHeaders headers = createHeadersWithJwtToken();
             HttpEntity<Void> request = new HttpEntity<>(headers);

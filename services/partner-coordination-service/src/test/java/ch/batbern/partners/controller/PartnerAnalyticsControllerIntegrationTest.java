@@ -1,9 +1,8 @@
 package ch.batbern.partners.controller;
 
+import ch.batbern.partners.config.CumsInternalUsers;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
-import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerRepository;
@@ -22,7 +21,6 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -33,7 +31,6 @@ import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -68,8 +65,6 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     /** EMS behind the real EventManagementClient, answering per event-analytics-api (Story 17.0b1). */
     private ContractServer ems;
 
-    @MockitoBean
-    private UserServiceClient userServiceClient;
 
     private Partner googlePartner;
     private Partner microsoftPartner;
@@ -79,16 +74,15 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
         partnerRepository.deleteAll();
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
         // @WithMockUser callers carry no JWT to forward, hence ignoringMissingAuthorization.
-        ems = ContractServer.bindTo(restTemplate, "docs/api/event-analytics-api.openapi.yml")
-                .ignoringMissingAuthorization();
+        // One RestTemplate, two providers: EMS analytics and the CUMS user lookup (Story 17.0b2).
+        ems = ContractServer.bindTo(restTemplate, "docs/api/event-analytics-api.openapi.yml",
+                CumsInternalUsers.CUMS_INTERNAL).ignoringMissingAuthorization();
 
         googlePartner = createPartner("GoogleZH", PartnershipLevel.GOLD, new BigDecimal("10000.00"));
         microsoftPartner = createPartner("MicrosoftZH", PartnershipLevel.PLATINUM, new BigDecimal("20000.00"));
 
-        // Associate "partner.google" with GoogleZH via User Service
-        UserResponse googleUser = new UserResponse();
-        googleUser.setCompanyId("GoogleZH");
-        when(userServiceClient.getUserByUsername("partner.google")).thenReturn(googleUser);
+        // Associate "partner.google" with GoogleZH via CUMS
+        CumsInternalUsers.answerOn(ems).put("partner.google", "partner.google", "GoogleZH");
     }
 
     @AfterEach

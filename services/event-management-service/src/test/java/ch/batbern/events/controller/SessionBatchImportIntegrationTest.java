@@ -1,19 +1,19 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.core.dto.generated.EventType;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.shared.types.EventWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -21,7 +21,6 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -32,9 +31,6 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.reset;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -74,8 +70,9 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private ObjectMapper objectMapper;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    /** CUMS behind the real UserApiClient (Story 17.0b2). */
+    @Autowired
+    private CumsContractHarness cums;
 
     private Event testEvent;
     private static final String TEST_EVENT_CODE = "BATbern142";
@@ -83,15 +80,14 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        // Reset mocks
-        reset(userApiClient);
+        cums.reset();
 
         // Clean database
         sessionUserRepository.deleteAll();
         sessionRepository.deleteAll();
         eventRepository.deleteAll();
 
-        // Mock UserApiClient
+        // CUMS answers for the speakers
         mockUserApiClient();
 
         // Create test event
@@ -119,31 +115,17 @@ public class SessionBatchImportIntegrationTest extends AbstractIntegrationTest {
     }
 
     private void mockUserApiClient() {
-        // Mock getUserByUsername() for speaker assignments
-        when(userApiClient.getUserByUsername(anyString()))
-                .thenAnswer(invocation -> {
-                    String username = invocation.getArgument(0);
+        // CUMS knows two speakers; an unknown one answers 404, and the import skips it.
+        cums.user("thomas.goetz", CumsContractHarness.userJson("thomas.goetz", "Thomas", "Goetz",
+                "thomas.goetz@mobiliar.ch", "mobiliar"));
+        cums.user("john.doe", CumsContractHarness.userJson("john.doe", "John", "Doe",
+                "john.doe@example.com", "test-company"));
+        cums.unknownUser("unknown.person");
+    }
 
-                    // Return different users based on username
-                    if (username.equals("thomas.goetz")) {
-                        return new UserResponse()
-                                .id(username)
-                                .firstName("Thomas")
-                                .lastName("Goetz")
-                                .email("thomas.goetz@mobiliar.ch")
-                                .companyId("mobiliar");
-                    } else if (username.equals("john.doe")) {
-                        return new UserResponse()
-                                .id(username)
-                                .firstName("John")
-                                .lastName("Doe")
-                                .email("john.doe@example.com")
-                                .companyId("test-company");
-                    } else {
-                        // Unknown speaker - return null to test graceful handling
-                        return null;
-                    }
-                });
+    @AfterEach
+    void resetCums() {
+        cums.reset();
     }
 
     @Test

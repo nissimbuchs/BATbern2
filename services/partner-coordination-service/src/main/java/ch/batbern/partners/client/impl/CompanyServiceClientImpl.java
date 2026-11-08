@@ -63,7 +63,9 @@ public class CompanyServiceClientImpl implements CompanyServiceClient {
     public CompanyResponse getCompanyByName(String companyName) {
         log.debug("Fetching company data for company name: {}", companyName);
 
-        String url = companyServiceBaseUrl + "/api/v1/companies/" + companyName;
+        // One strictly encoded path segment: a '/', '?' or space in the name cannot change the path.
+        URI url = UriComponentsBuilder.fromUriString(companyServiceBaseUrl + "/api/v1/companies/{name}")
+                .encode().buildAndExpand(companyName).toUri();
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();

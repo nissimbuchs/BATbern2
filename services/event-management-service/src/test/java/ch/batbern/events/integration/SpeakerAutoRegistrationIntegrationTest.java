@@ -1,16 +1,14 @@
 package ch.batbern.events.integration;
 
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
+import ch.batbern.shared.test.contract.ContractServer.Reply;
 import ch.batbern.events.config.TestSecurityConfig;
-import ch.batbern.events.config.TestUserApiClientConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.core.dto.generated.EventType;
-import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
-import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -25,6 +23,7 @@ import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -39,9 +38,8 @@ import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
+import static org.springframework.http.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.when;
 
 /**
  * End-to-end integration: drive the speaker workflow at the three trigger points enumerated
@@ -52,7 +50,7 @@ import static org.mockito.Mockito.when;
  * (F1). Runs against Testcontainers PostgreSQL via {@link AbstractIntegrationTest}.
  */
 @Transactional
-@Import({TestSecurityConfig.class, TestUserApiClientConfig.class})
+@Import({TestSecurityConfig.class})
 class SpeakerAutoRegistrationIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -69,8 +67,9 @@ class SpeakerAutoRegistrationIntegrationTest extends AbstractIntegrationTest {
     private EventRepository eventRepository;
     @Autowired
     private RegistrationRepository registrationRepository;
+    /** CUMS behind the real UserApiClient (Story 17.0b2). */
     @Autowired
-    private UserApiClient userApiClient;
+    private CumsContractHarness cums;
 
     @MockitoBean
     private SpeakerInvitationEmailService invitationEmailService;
@@ -83,7 +82,7 @@ class SpeakerAutoRegistrationIntegrationTest extends AbstractIntegrationTest {
 
     @BeforeEach
     void setUp() {
-        org.mockito.Mockito.clearInvocations(userApiClient);
+        cums.reset();
         registrationRepository.deleteAll();
         sessionUserRepository.deleteAll();
         sessionRepository.deleteAll();
@@ -105,12 +104,15 @@ class SpeakerAutoRegistrationIntegrationTest extends AbstractIntegrationTest {
                 .build();
         event = eventRepository.save(event);
 
-        when(userApiClient.provisionUserWithRole(any()))
-                .thenAnswer(inv -> new ProvisionUserResponse("speaker.user", true));
-        when(userApiClient.issueInvitationCredentials(any())).thenAnswer(inv ->
-                new InvitationCredentialsResponse(
-                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
-                        .temporaryPassword("Test1234!@#abcde"));
+        cums.answer(POST, "/api/v1/users/provision",
+                call -> Reply.ok("{\"username\": \"speaker.user\", \"created\": true}"));
+        cums.answer(POST, "/api/v1/users/{username}/issue-invitation-credentials", call -> Reply.ok(
+                "{\"action\": \"FRESH_TEMP_PASSWORD\", \"temporaryPassword\": \"Test1234!@#abcde\"}"));
+    }
+
+    @AfterEach
+    void resetCums() {
+        cums.reset();
     }
 
     @Test

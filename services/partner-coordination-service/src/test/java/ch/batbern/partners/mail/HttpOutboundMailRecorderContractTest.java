@@ -3,6 +3,7 @@ package ch.batbern.partners.mail;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.mail.MailTrigger;
 import ch.batbern.shared.mail.OutboundMail;
+import ch.batbern.shared.test.contract.ContractServer;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.spi.ILoggingEvent;
@@ -12,37 +13,40 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
-import org.springframework.http.HttpMethod;
+import com.jayway.jsonpath.DocumentContext;
+import com.jayway.jsonpath.JsonPath;
+import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
-import org.springframework.test.web.client.MockRestServiceServer;
+import org.springframework.mock.http.client.MockClientHttpRequest;
 import org.springframework.web.client.RestTemplate;
 
 import java.net.ConnectException;
 import java.net.SocketTimeoutException;
 import java.util.List;
+import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.headerDoesNotExist;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.jsonPath;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
-import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
+import static org.springframework.http.HttpMethod.POST;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withException;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withStatus;
 
 /**
  * Story 16.9 AC1/AC2: partner-coordination records its meeting mails in EMS through
- * {@code POST /internal/mails}, best effort. No real mail and no real EMS: a mock server only.
+ * {@code POST /internal/mails}, best effort. Contract test (Story 17.0b2): every request is validated
+ * against {@code docs/api/internal/ems-internal.openapi.yml}. No real mail and no real EMS.
  */
 @DisplayName("HttpOutboundMailRecorder (Story 16.9)")
-class HttpOutboundMailRecorderTest {
+class HttpOutboundMailRecorderContractTest {
 
     private static final String BASE = "http://event-management:8080";
     private static final String TO = "success+p1@simulator.amazonses.com,success+p2@simulator.amazonses.com";
 
-    private MockRestServiceServer server;
+    private static final String EMS_INTERNAL = "docs/api/internal/ems-internal.openapi.yml";
+    private static final String MAILS = "/internal/mails";
+
+    private ContractServer server;
     private HttpOutboundMailRecorder recorder;
     private MailContext context;
     private final ListAppender<ILoggingEvent> logs = new ListAppender<>();
@@ -52,7 +56,7 @@ class HttpOutboundMailRecorderTest {
         logs.start();
         ((Logger) LoggerFactory.getLogger(HttpOutboundMailRecorder.class)).addAppender(logs);
         RestTemplate restTemplate = new RestTemplate();
-        server = MockRestServiceServer.bindTo(restTemplate).build();
+        server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
         recorder = new HttpOutboundMailRecorder(restTemplate, BASE);
         context = MailContext.of(MailTrigger.organizer("organizer1"), "BATbern60", MailContext.Audience.PARTNERS,
                 "partner-meeting-invite").withReference("partner-meeting:6f1c");
@@ -61,30 +65,33 @@ class HttpOutboundMailRecorderTest {
     @AfterEach
     void tearDown() {
         ((Logger) LoggerFactory.getLogger(HttpOutboundMailRecorder.class)).detachAppender(logs);
+        server.close();
     }
 
     @Test
     @DisplayName("AC1: posts the flat payload to /internal/mails without an Authorization header")
     void record_postsPayloadWithoutToken() {
-        server.expect(requestTo(BASE + "/internal/mails"))
-                .andExpect(method(HttpMethod.POST))
-                .andExpect(headerDoesNotExist("Authorization"))
-                .andExpect(content().contentTypeCompatibleWith(MediaType.APPLICATION_JSON))
-                .andExpect(jsonPath("$.sendGroupId").value(context.sendGroupId()))
-                .andExpect(jsonPath("$.eventCode").value("BATbern60"))
-                .andExpect(jsonPath("$.audience").value("PARTNERS"))
-                .andExpect(jsonPath("$.templateKey").value("partner-meeting-invite"))
-                .andExpect(jsonPath("$.contentSource").value("TEMPLATE"))
-                .andExpect(jsonPath("$.senderUsername").value("organizer1"))
-                .andExpect(jsonPath("$.test").value(false))
-                .andExpect(jsonPath("$.reference").value("partner-meeting:6f1c"))
-                .andExpect(jsonPath("$.to").value(TO))
-                .andExpect(jsonPath("$.cc").isEmpty())
-                .andExpect(jsonPath("$.subject").value("Invite"))
-                .andExpect(jsonPath("$.htmlBody").value("<p>i</p>"))
-                .andExpect(jsonPath("$.sesMessageId").value("ses-1"))
-                .andExpect(jsonPath("$.secrets").doesNotExist())
-                .andRespond(withStatus(HttpStatus.ACCEPTED));
+        server.expect(POST, MAILS).andExpect(request -> {
+            assertThat(request.getURI().toString()).isEqualTo(BASE + MAILS);
+            assertThat(request.getHeaders().containsHeader(HttpHeaders.AUTHORIZATION)).isFalse();
+            assertThat(request.getHeaders().getContentType()).isNotNull()
+                    .matches(t -> t.isCompatibleWith(MediaType.APPLICATION_JSON));
+            DocumentContext json = JsonPath.parse(((MockClientHttpRequest) request).getBodyAsString());
+            assertThat(json.read("$.sendGroupId", String.class)).isEqualTo(context.sendGroupId());
+            assertThat(json.read("$.eventCode", String.class)).isEqualTo("BATbern60");
+            assertThat(json.read("$.audience", String.class)).isEqualTo("PARTNERS");
+            assertThat(json.read("$.templateKey", String.class)).isEqualTo("partner-meeting-invite");
+            assertThat(json.read("$.contentSource", String.class)).isEqualTo("TEMPLATE");
+            assertThat(json.read("$.senderUsername", String.class)).isEqualTo("organizer1");
+            assertThat(json.read("$.test", Boolean.class)).isFalse();
+            assertThat(json.read("$.reference", String.class)).isEqualTo("partner-meeting:6f1c");
+            assertThat(json.read("$.to", String.class)).isEqualTo(TO);
+            assertThat(json.read("$.cc", List.class)).isEmpty();
+            assertThat(json.read("$.subject", String.class)).isEqualTo("Invite");
+            assertThat(json.read("$.htmlBody", String.class)).isEqualTo("<p>i</p>");
+            assertThat(json.read("$.sesMessageId", String.class)).isEqualTo("ses-1");
+            assertThat(json.read("$", Map.class)).doesNotContainKey("secrets");
+        }).respondWithStatus(HttpStatus.ACCEPTED);
 
         recorder.record(context, new OutboundMail(TO, List.of(), "Invite", "<p>i</p>", "ses-1", null));
 
@@ -94,7 +101,9 @@ class HttpOutboundMailRecorderTest {
     @Test
     @DisplayName("AC2: EMS answering 503 is logged once as WARN with the group, never thrown")
     void record_serverError_warnsOnly() {
-        server.expect(requestTo(BASE + "/internal/mails")).andRespond(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
+        // 503 is not an EMS answer the spec declares (an ALB/Service Connect one): custom creator,
+        // the request is still validated.
+        server.expect(POST, MAILS).respondWith(withStatus(HttpStatus.SERVICE_UNAVAILABLE));
 
         assertThatCode(() -> recorder.record(context, mail())).doesNotThrowAnyException();
 
@@ -104,8 +113,7 @@ class HttpOutboundMailRecorderTest {
     @Test
     @DisplayName("AC2: a timeout is logged once as WARN, never thrown")
     void record_timeout_warnsOnly() {
-        server.expect(requestTo(BASE + "/internal/mails"))
-                .andRespond(withException(new SocketTimeoutException("Read timed out")));
+        server.expect(POST, MAILS).respondWith(withException(new SocketTimeoutException("Read timed out")));
 
         assertThatCode(() -> recorder.record(context, mail())).doesNotThrowAnyException();
 
@@ -115,12 +123,21 @@ class HttpOutboundMailRecorderTest {
     @Test
     @DisplayName("AC2: connection refused is logged once as WARN, never thrown")
     void record_connectionRefused_warnsOnly() {
-        server.expect(requestTo(BASE + "/internal/mails"))
-                .andRespond(withException(new ConnectException("Connection refused")));
+        server.expect(POST, MAILS).respondWith(withException(new ConnectException("Connection refused")));
 
         assertThatCode(() -> recorder.record(context, mail())).doesNotThrowAnyException();
 
         assertWarnedOnce("ResourceAccessException");
+    }
+
+    @Test
+    @DisplayName("EMS refusing the record (400, e.g. more than 500 addresses) is logged once as WARN, never thrown")
+    void record_refused_warnsOnly() {
+        server.expect(POST, MAILS).respondWithStatus(HttpStatus.BAD_REQUEST);
+
+        assertThatCode(() -> recorder.record(context, mail())).doesNotThrowAnyException();
+
+        assertWarnedOnce("400");
     }
 
     private static OutboundMail mail() {

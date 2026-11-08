@@ -1,19 +1,18 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
-import ch.batbern.events.config.TestUserApiClientConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.shared.types.EventWorkflowState;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.entity.AppSettingEntity;
 import ch.batbern.events.repository.AppSettingRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.shared.service.EmailService;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -41,7 +40,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Transactional
-@Import({TestSecurityConfig.class, TestAwsConfig.class, TestUserApiClientConfig.class})
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
 class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest {
 
     private static final String EVENT_CODE = "BATtest-venue-coord";
@@ -50,7 +49,7 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
             {
               "venue": { "salutation": "Frau", "name": "Gabriela Senn", "email": "venue@test.invalid" },
               "catering": { "salutation": "Herr", "name": "Stefan Oppliger", "email": "catering@test.invalid" },
-              "coordinatorUsername": "nissim.buchs"
+              "coordinatorUsername": "anna.coordinator"
             }
             """;
 
@@ -66,8 +65,9 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private EventRepository eventRepository;
 
+    /** CUMS behind the real UserApiClient (Story 17.0b2). */
     @Autowired
-    private UserApiClient userApiClient;
+    private CumsContractHarness cums;
 
     @Autowired
     private EmailService emailService;
@@ -95,19 +95,13 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
         event.setVenueCapacity(150);
         event.setDate(eventDate);
         event.setRegistrationDeadline(eventDate.minusSeconds(14L * 24L * 3600L));
-        event.setOrganizerUsername("nissim.buchs");
+        event.setOrganizerUsername("anna.coordinator");
         event.setEventType(EventType.FULL_DAY);
         event.setWorkflowState(EventWorkflowState.SLOT_ASSIGNMENT);
         eventRepository.save(event);
 
-        // Coordinator user — override mock returns to provide a real email
-        UserResponse coordinator = new UserResponse()
-                .id("nissim.buchs")
-                .email("nissim.buchs@elca.ch")
-                .firstName("Nissim")
-                .lastName("Buchs")
-                .active(true);
-        when(userApiClient.getUserByUsername("nissim.buchs")).thenReturn(coordinator);
+        // Coordinator user: CUMS answers with a real email
+        cums.user("anna.coordinator", "Anna", "Coordinator", "anna.coordinator@example.com");
 
         // TestAwsConfig provides a @Primary Mockito mock for EmailService; pure-logic
         // methods like replaceVariables therefore return null by default and crash the
@@ -121,6 +115,11 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
         });
 
         // sendHtmlEmailSync is void on a Mockito mock → doNothing by default. No stub needed.
+    }
+
+    @AfterEach
+    void resetCums() {
+        cums.reset();
     }
 
     private static String realReplace(String template, java.util.Map<String, String> vars) {
@@ -167,12 +166,12 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(jsonPath("$.toEmail", is("venue@test.invalid")))
                 .andExpect(jsonPath("$.ccEmails").isArray())
                 .andExpect(jsonPath("$.ccEmails", org.hamcrest.Matchers.empty()))
-                .andExpect(jsonPath("$.replyToEmail", is("nissim.buchs@elca.ch")))
+                .andExpect(jsonPath("$.replyToEmail", is("anna.coordinator@example.com")))
                 .andExpect(jsonPath("$.subject", containsString("Samstag, 15. August 2026")))
                 .andExpect(content().string(containsString("Frau Senn")))
                 // Notes preserve their newlines as <br>
                 .andExpect(content().string(containsString("Drei Headsets reichen wieder.<br>")))
-                .andExpect(content().string(containsString("Nissim Buchs")));
+                .andExpect(content().string(containsString("Anna Coordinator")));
     }
 
     @Test
@@ -220,7 +219,7 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
         verify(emailService, times(1)).sendHtmlEmailSync(any(), toCaptor.capture(), ccCaptor.capture(), anyString(), anyString(), any(), replyToCaptor.capture());
         org.assertj.core.api.Assertions.assertThat(toCaptor.getValue()).isEqualTo("venue@test.invalid");
         org.assertj.core.api.Assertions.assertThat(ccCaptor.getValue()).containsExactly("catering@test.invalid");
-        org.assertj.core.api.Assertions.assertThat(replyToCaptor.getValue()).isEqualTo("nissim.buchs@elca.ch");
+        org.assertj.core.api.Assertions.assertThat(replyToCaptor.getValue()).isEqualTo("anna.coordinator@example.com");
     }
 
     @Test

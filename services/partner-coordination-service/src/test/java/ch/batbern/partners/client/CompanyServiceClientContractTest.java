@@ -80,6 +80,17 @@ class CompanyServiceClientContractTest {
     }
 
     @Test
+    void should_encodeCompanyName_asOnePathSegment() {
+        server.expect(GET, COMPANY)
+                .andExpect(r -> assertThat(r.getURI().getRawPath())
+                        .isEqualTo("/api/v1/companies/Meier%2FPartner%20AG"))
+                .respondWithExample();
+
+        assertThat(companyServiceClient.getCompanyByName("Meier/Partner AG")).isNotNull();
+        server.verify();
+    }
+
+    @Test
     void should_propagateJwt_when_callingCompanyService() {
         server.expect(GET, COMPANY)
                 .andExpect(r -> assertThat(r.getHeaders().getFirst(HttpHeaders.AUTHORIZATION))

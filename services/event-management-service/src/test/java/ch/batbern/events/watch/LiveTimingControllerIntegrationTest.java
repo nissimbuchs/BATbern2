@@ -2,7 +2,6 @@ package ch.batbern.events.watch;
 
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
-import ch.batbern.events.config.TestUserApiClientConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.core.dto.generated.EventType;
@@ -43,7 +42,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * the method layer, so unauthenticated POST yields 403 (the gateway returns 401 in prod).
  */
 @Transactional
-@Import({TestSecurityConfig.class, TestAwsConfig.class, TestUserApiClientConfig.class})
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
 class LiveTimingControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired

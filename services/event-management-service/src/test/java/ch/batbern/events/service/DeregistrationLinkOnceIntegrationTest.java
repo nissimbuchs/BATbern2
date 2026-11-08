@@ -1,6 +1,5 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.core.dto.generated.EventType;
@@ -51,8 +50,6 @@ class DeregistrationLinkOnceIntegrationTest extends AbstractIntegrationTest {
     private RegistrationRepository registrationRepository;
     @MockitoBean
     private DeregistrationEmailService deregistrationEmailService;
-    @MockitoBean
-    private UserApiClient userApiClient;
 
     private Registration active;
 

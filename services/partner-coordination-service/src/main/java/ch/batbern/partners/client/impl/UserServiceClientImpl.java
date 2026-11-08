@@ -23,8 +23,10 @@ import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
 import java.net.URI;
-import java.util.Collections;
+import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Implementation of UserServiceClient using Spring RestTemplate.
@@ -45,6 +47,15 @@ public class UserServiceClientImpl implements UserServiceClient {
      */
     private static final String INTERNAL_USERS_PATH = "/internal/users";
 
+    /**
+     * Page size asked of {@code GET /internal/users}. The internal list declares and enforces no
+     * maximum (cums-internal, {@code InternalUserController}); 100 matches its default and EMS.
+     */
+    private static final int PAGE_SIZE = 100;
+
+    /** Upper bound on pages read, so a misbehaving hasNext can never loop forever. */
+    private static final int MAX_PAGES = 100;
+
     @Value("${user-service.base-url}")
     private String userServiceBaseUrl;
 
@@ -57,7 +68,9 @@ public class UserServiceClientImpl implements UserServiceClient {
     public UserResponse getUserByUsername(String username) {
         log.debug("Fetching user profile for username: {}", username);
 
-        String url = userServiceBaseUrl + INTERNAL_USERS_PATH + "/" + username;
+        // The username is one strictly encoded path segment (17.0b2; concatenated before).
+        URI url = UriComponentsBuilder.fromUriString(userServiceBaseUrl + INTERNAL_USERS_PATH + "/{username}")
+                .encode().buildAndExpand(username).toUri();
 
         try {
             HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
@@ -149,47 +162,64 @@ public class UserServiceClientImpl implements UserServiceClient {
 
     /**
      * List all users for a company with the given role.
-     * Calls the CUMS internal API {@code GET /internal/users?company=…&role=…}, without JWT.
+     * Calls the CUMS internal API {@code GET /internal/users?company=…&role=…}, without JWT, page by page.
      */
     @Override
     @Cacheable(value = "usersByCompanyRoleCache", key = "#companyName + '-' + #role")
     public List<UserResponse> getUsersByCompanyAndRole(String companyName, String role) {
         log.debug("Fetching users for company={}, role={}", companyName, role);
-
-        URI uri = UriComponentsBuilder
-                .fromUriString(userServiceBaseUrl + INTERNAL_USERS_PATH)
-                .queryParam("company", companyName)
-                .queryParam("role", role)
-                .queryParam("limit", 100)
-                .build()
-                .encode()
-                .toUri();
-
-        return fetchUserList(uri, "company=" + companyName + ", role=" + role);
+        return fetchAllPages(companyName, role, "company=" + companyName + ", role=" + role);
     }
 
     /**
      * List all users with the given role across all companies.
-     * Calls the CUMS internal API {@code GET /internal/users?role=…&limit=100}, without JWT.
+     * Calls the CUMS internal API {@code GET /internal/users?role=…}, without JWT, page by page.
      */
     @Override
     @Cacheable(value = "usersByRoleCache", key = "#role")
     public List<UserResponse> getUsersByRole(String role) {
         log.debug("Fetching all users with role={}", role);
-
-        URI uri = UriComponentsBuilder
-                .fromUriString(userServiceBaseUrl + INTERNAL_USERS_PATH)
-                .queryParam("role", role)
-                .queryParam("limit", 100)
-                .build()
-                .encode()
-                .toUri();
-
-        return fetchUserList(uri, "role=" + role);
+        return fetchAllPages(null, role, "role=" + role);
     }
 
-    /** Fetch a user list from the CUMS internal API (no JWT). */
-    private List<UserResponse> fetchUserList(URI url, String context) {
+    /**
+     * Every page of {@code GET /internal/users} for the filters (17.0b2). Before, PCS read only the
+     * first page: invites and contact lists stopped silently at 100 users. Follows
+     * {@code pagination.hasNext}, at most {@link #MAX_PAGES} pages, like EMS
+     * {@code UserApiClientImpl}. Filter values are strictly encoded, so a {@code +} or {@code &}
+     * in a company name stays part of the value.
+     */
+    private List<UserResponse> fetchAllPages(String company, String role, String context) {
+        List<UserResponse> users = new ArrayList<>();
+        for (int page = 1; page <= MAX_PAGES; page++) {
+            Map<String, Object> vars = new HashMap<>();
+            vars.put("role", role);
+            vars.put("page", page);
+            vars.put("limit", PAGE_SIZE);
+            UriComponentsBuilder builder = UriComponentsBuilder
+                    .fromUriString(userServiceBaseUrl + INTERNAL_USERS_PATH)
+                    .queryParam("role", "{role}")
+                    .queryParam("page", "{page}")
+                    .queryParam("limit", "{limit}");
+            if (company != null) {
+                builder.queryParam("company", "{company}");
+                vars.put("company", company);
+            }
+            PaginatedUserResponse body = fetchUserPage(builder.encode().buildAndExpand(vars).toUri(), context);
+            if (body == null || body.getData() == null) {
+                break;
+            }
+            users.addAll(body.getData());
+            if (body.getPagination() == null || !Boolean.TRUE.equals(body.getPagination().getHasNext())) {
+                break;
+            }
+        }
+        log.debug("Fetched {} users for {}", users.size(), context);
+        return users;
+    }
+
+    /** One page from the CUMS internal API (no JWT). */
+    private PaginatedUserResponse fetchUserPage(URI url, String context) {
         try {
             HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());
 
@@ -199,14 +229,7 @@ public class UserServiceClientImpl implements UserServiceClient {
                     request,
                     PaginatedUserResponse.class
             );
-
-            PaginatedUserResponse body = response.getBody();
-            if (body == null || body.getData() == null) {
-                return Collections.emptyList();
-            }
-
-            log.debug("Fetched {} users for {}", body.getData().size(), context);
-            return body.getData();
+            return response.getBody();
 
         } catch (HttpClientErrorException e) {
             log.error("Client error fetching users ({}): {} - {}", context, e.getStatusCode(), e.getMessage());

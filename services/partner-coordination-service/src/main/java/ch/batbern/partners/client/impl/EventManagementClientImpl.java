@@ -20,6 +20,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.LocalTime;
@@ -58,11 +59,14 @@ public class EventManagementClientImpl implements EventManagementClient {
         log.debug("Fetching attendance summary from event-management-service: company={}, fromYear={}",
                 companyName, fromYear);
 
-        String url = UriComponentsBuilder
+        // Strictly encoded: a '+' or '&' in a company name stays part of the value.
+        URI url = UriComponentsBuilder
                 .fromUriString(eventManagementBaseUrl + "/api/v1/events/attendance-summary")
-                .queryParam("companyName", companyName)
-                .queryParam("fromYear", fromYear)
-                .toUriString();
+                .queryParam("companyName", "{companyName}")
+                .queryParam("fromYear", "{fromYear}")
+                .encode()
+                .buildAndExpand(companyName, fromYear)
+                .toUri();
 
         try {
             HttpHeaders headers = createHeadersWithJwtToken();

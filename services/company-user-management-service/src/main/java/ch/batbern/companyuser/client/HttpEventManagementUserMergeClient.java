@@ -11,6 +11,7 @@ import org.springframework.web.client.HttpStatusCodeException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.time.Duration;
 import java.util.ArrayList;
 import java.util.LinkedHashMap;
@@ -47,9 +48,11 @@ public class HttpEventManagementUserMergeClient implements EventManagementUserMe
 
     @Override
     public Preview preview(String sourceUsername, String targetUsername) {
-        String url = UriComponentsBuilder.fromUriString(baseUrl + "/internal/users/merge-preview")
-                .queryParam("source", sourceUsername).queryParam("target", targetUsername)
-                .build().toUriString();
+        // Strictly encoded (17.0b2): built without encode() before, so a '+' arrived as a space and
+        // a '&' or '#' cut the query.
+        URI url = UriComponentsBuilder.fromUriString(baseUrl + "/internal/users/merge-preview")
+                .queryParam("source", "{source}").queryParam("target", "{target}")
+                .encode().buildAndExpand(sourceUsername, targetUsername).toUri();
         JsonNode body = call(() -> restTemplate.getForObject(url, String.class));
         return new Preview(counts(body.path("moves")), counts(body.path("conflicts")), strings(body.path("blockers")));
     }

@@ -1,7 +1,7 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.config.TestUserApiClientConfig;
+import ch.batbern.events.config.CumsContractHarness;
+import ch.batbern.shared.test.contract.ContractServer.Reply;
 import ch.batbern.events.domain.SessionContentVersion;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
@@ -10,7 +10,6 @@ import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.speakers.dto.generated.ContentSubmitResponse;
 import ch.batbern.events.core.dto.generated.EventType;
-import ch.batbern.events.dto.generated.users.PatchUserProfileRequest;
 import ch.batbern.events.event.SpeakerContentSubmittedEvent;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
 import ch.batbern.events.repository.EventRepository;
@@ -22,11 +21,11 @@ import ch.batbern.events.service.content.ContentSubmissionPayload;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.context.annotation.Import;
 import org.springframework.test.context.event.ApplicationEvents;
 import org.springframework.test.context.event.RecordApplicationEvents;
 import org.springframework.transaction.annotation.Transactional;
@@ -37,12 +36,8 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.springframework.http.HttpMethod.PATCH;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 
 /**
  * Integration tests for the consolidated {@link ContentSubmissionService#submit
@@ -58,12 +53,11 @@ import static org.mockito.Mockito.verify;
  *   <li>Resubmission semantics (AC9 #3 — bonus coverage of same-state self-transition)</li>
  * </ul>
  *
- * <p>The cross-service {@link UserApiClient} HTTP boundary is mocked via
- * {@link TestUserApiClientConfig} (no second Testcontainer for CUMS in EMS tests);
+ * <p>The cross-service {@code UserApiClient} runs for real against the S2S contract harness
+ * ({@link CumsContractHarness}, Story 17.0b2: no second Testcontainer for CUMS in EMS tests);
  * {@link ApplicationEventPublisher} is spied to assert event publication.
  */
 @Transactional
-@Import(TestUserApiClientConfig.class)
 @RecordApplicationEvents
 class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
 
@@ -82,18 +76,27 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private SessionUserRepository sessionUserRepository;
     @Autowired
-    private UserApiClient userApiClient;
+    private CumsContractHarness cums;
     @Autowired
     private ApplicationEvents recordedEvents;
 
     private static final String EVENT_CODE = "BAT-11C2-INT";
     private static final String ORGANIZER = "organizer.alice";
     private static final String SPEAKER = "speaker.jane";
+    private static final String PROFILE = "/api/v1/users/{username}/profile";
 
     private Event testEvent;
 
+    @AfterEach
+    void resetCums() {
+        cums.reset();
+    }
+
     @BeforeEach
     void setUp() {
+        cums.reset();
+        cums.answer(PATCH, PROFILE, call -> Reply.ok(CumsContractHarness.userJson(
+                call.pathVariables().get("username"), "Jane", "Speaker", "speaker.jane@example.com", null)));
         testEvent = Event.builder()
                 .eventCode(EVENT_CODE)
                 .eventNumber(11202)
@@ -210,8 +213,8 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(history.get(0).getNewStatus()).isEqualTo(SpeakerWorkflowState.CONTENT_SUBMITTED);
 
         // UserApiClient.patchUserProfile was invoked with bio + pictureUrl.
-        verify(userApiClient, times(1)).patchUserProfile(eq(SPEAKER),
-                any(PatchUserProfileRequest.class));
+        assertThat(cums.calls(PATCH, PROFILE)).singleElement()
+                .satisfies(call -> assertThat(call.pathVariables()).containsEntry("username", SPEAKER));
 
         // SpeakerContentSubmittedEvent was published.
         assertThat(recordedEvents.stream(SpeakerContentSubmittedEvent.class).count()).isEqualTo(1);
@@ -299,7 +302,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
 
         contentSubmissionService.submit(speaker.getId(), EVENT_CODE, payload, ORGANIZER);
 
-        verify(userApiClient, never()).patchUserProfile(any(), any());
+        assertThat(cums.calls(PATCH, PROFILE)).isEmpty();
     }
 
     // ============================================================
@@ -348,7 +351,7 @@ class ContentSubmissionServiceIntegrationTest extends AbstractIntegrationTest {
                 speaker.getId(), EVENT_CODE, payload, ORGANIZER);
 
         assertThat(response.getStatus()).isEqualTo("SUBMITTED");
-        verify(userApiClient, never()).patchUserProfile(any(), any());
+        assertThat(cums.calls(PATCH, PROFILE)).isEmpty();
     }
 
     // ============================================================

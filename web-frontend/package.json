@@ -39,6 +39,7 @@
     "generate:api-types": "npm run generate:api-types:companies && npm run generate:api-types:users && npm run generate:api-types:events && npm run generate:api-types:topics && npm run generate:api-types:partners && npm run generate:api-types:partner-meetings",
     "check:test-ratchet": "node -e \"process.features.typescript || (console.error('check:test-ratchet needs Node >= 22.18 (type stripping)'), process.exit(1))\" && node scripts/test-ratchet.ts",
     "lint:api": "node -e \"process.features.typescript || (console.error('lint:api needs Node >= 22.18 (type stripping)'), process.exit(1))\" && node scripts/api-lint.ts",
+    "lint:api-internal": "spectral lint --ruleset ../docs/api/internal/.spectral.yaml --fail-severity=warn ../docs/api/internal/*.openapi.yml",
     "report:api-similarity": "node -e \"process.features.typescript || (console.error('report:api-similarity needs Node >= 22.18 (type stripping)'), process.exit(1))\" && node scripts/api-similarity.ts",
     "check:api-types": "npm run generate:api-types && git diff --exit-code src/types/generated/ || (echo '\n\u274c ERROR: Generated API types are out of date!\n\nRun the following command to update them:\n  cd web-frontend && npm run generate:api-types\n\nThen commit the updated files.\n' && exit 1)",
     "generate:api-types:companies": "openapi-typescript ../docs/api/companies-api.openapi.yml -o src/types/generated/company-api.types.ts && prettier --write src/types/generated/company-api.types.ts",

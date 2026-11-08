@@ -21,14 +21,17 @@ import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
+import org.springframework.test.web.servlet.request.MockHttpServletRequestBuilder;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 
+import java.net.URI;
 import java.time.Instant;
 import java.util.HashSet;
 import java.util.Set;
 
 import static ch.batbern.shared.test.contract.ProviderContract.assertExamplesMatchSchema;
 import static ch.batbern.shared.test.contract.ProviderContract.assertResponseMatchesSpec;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.jwt;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -44,6 +47,10 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * <p>Consumers: EMS {@code UserApiClientImpl} (provision, patch profile, invitation credentials,
  * company list and detail), PCS {@code CompanyServiceClientImpl} (company detail) and
  * {@code UserServiceClientImpl} ({@code /users/me}).
+ *
+ * <p>Story 17.0b2: the same for every {@code /internal} operation in
+ * {@code docs/api/internal/cums-internal.openapi.yml}, called by EMS {@code UserApiClientImpl},
+ * PCS {@code UserServiceClientImpl} and the gateway's {@code GatewayUserStatusClient}.
  */
 @Import(TestAwsConfig.class)
 @DisplayName("CUMS honours the S2S contract its consumers are tested against")
@@ -51,6 +58,7 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
     private static final String USERS = "docs/api/users-api.openapi.yml";
     private static final String COMPANIES = "docs/api/companies-api.openapi.yml";
+    private static final String CUMS_INTERNAL = "docs/api/internal/cums-internal.openapi.yml";
     private static final String SPEAKER = "contract.speaker";
     private static final String SPEAKER_EMAIL = "contract.speaker@example.com";
     private static final String COMPANY = "ContractCo";
@@ -169,5 +177,73 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
                 .andReturn();
 
         assertResponseMatchesSpec(COMPANIES, result);
+    }
+
+    // ------------------------------------------------------------------ /internal (Story 17.0b2)
+
+    @ParameterizedTest(name = "{0} {1}")
+    @CsvSource({
+        "GET,  /internal/users/{username}",
+        "GET,  /internal/users",
+        "GET,  /internal/email-owners",
+        "POST, /internal/users/get-or-create",
+    })
+    @DisplayName("internal spec examples match their schema")
+    void should_haveValidExamples_forInternalOperations(String method, String path) {
+        assertExamplesMatchSchema(CUMS_INTERNAL, method, path);
+    }
+
+    private MvcResult internal(MockHttpServletRequestBuilder request, int expectedStatus) throws Exception {
+        MvcResult result = mockMvc.perform(request).andExpect(status().is(expectedStatus)).andReturn();
+        assertResponseMatchesSpec(CUMS_INTERNAL, result);
+        return result;
+    }
+
+    @Test
+    @DisplayName("GET /internal/users/{username}, plain and with include=preferences, without any JWT")
+    void internalUser_matchesSpec() throws Exception {
+        internal(get("/internal/users/" + SPEAKER), 200);
+        internal(get("/internal/users/" + SPEAKER).param("include", "preferences"), 200);
+        internal(get("/internal/users/" + SPEAKER).param("include", "company,roles,preferences"), 200);
+        internal(get("/internal/users/ghost.user"), 404);
+    }
+
+    @Test
+    @DisplayName("an encoded path segment is decoded: the provider looks up exactly the name the client sent")
+    void internalUser_decodesEncodedSegment() throws Exception {
+        // CUMS usernames match ^[a-z]+\.[a-z]+(\.[0-9]+)?$ (DB check), so this one cannot exist: a 404
+        // naming the decoded value proves the segment arrived whole, not cut at the apostrophe or space.
+        MvcResult result = internal(get(URI.create("/internal/users/jean-luc.o%27brien%20x")), 404);
+
+        assertThat(result.getResponse().getContentAsString()).contains("jean-luc.o'brien x");
+    }
+
+    @Test
+    @DisplayName("GET /internal/users?role&page&limit, as EMS and PCS page it")
+    void internalUserList_matchesSpec() throws Exception {
+        MvcResult result = internal(get("/internal/users").param("role", "SPEAKER").param("page", "1")
+                .param("limit", "100"), 200);
+        internal(get("/internal/users").param("role", "SPEAKER").param("company", COMPANY).param("page", "1")
+                .param("limit", "100"), 200);
+
+        assertThat(result.getResponse().getContentAsString()).contains("\"" + SPEAKER + "\"");
+    }
+
+    @Test
+    void internalEmailOwners_matchesSpec() throws Exception {
+        MvcResult known = internal(get("/internal/email-owners").param("email", SPEAKER_EMAIL), 200);
+        internal(get("/internal/email-owners").param("email", "nobody@example.com"), 200);
+
+        assertThat(known.getResponse().getContentAsString().replaceAll("\\s", "")).isEqualTo("[\"" + SPEAKER + "\"]");
+    }
+
+    @Test
+    void internalGetOrCreate_matchesSpec() throws Exception {
+        internal(post("/internal/users/get-or-create").contentType(MediaType.APPLICATION_JSON).content("""
+                {"email": "%s", "firstName": "Contract", "lastName": "Speaker", "cognitoSync": false}"""
+                .formatted(SPEAKER_EMAIL)), 200);
+        internal(post("/internal/users/get-or-create").contentType(MediaType.APPLICATION_JSON).content("""
+                {"email": "contract.new@example.com", "firstName": "Contract", "lastName": "New",
+                 "cognitoSync": false}"""), 200);
     }
 }

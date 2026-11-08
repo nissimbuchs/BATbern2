@@ -4,19 +4,29 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.http.HttpEntity;
 import org.springframework.http.HttpHeaders;
 import org.springframework.http.HttpStatus;
+import org.springframework.http.client.ClientHttpRequestFactory;
 import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.mock.http.client.MockClientHttpRequest;
+import org.springframework.mock.http.client.MockClientHttpResponse;
 import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.Map;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.springframework.http.HttpMethod.GET;
 import static org.springframework.http.HttpMethod.PATCH;
+import static org.springframework.http.HttpMethod.POST;
 
 /**
  * Self-test of the S2S contract harness (Story 17.0b1) against the real CUMS specs: the #1072
@@ -105,7 +115,7 @@ class ContractServerTest {
                 .isInstanceOf(AssertionError.class)
                 .hasMessageContaining("GET")
                 .hasMessageContaining("/api/v1/companies-typo")
-                .hasMessageContaining("No API path found");
+                .hasMessageContaining("is not an operation of " + COMPANIES);
     }
 
     @Test
@@ -217,14 +227,159 @@ class ContractServerTest {
         ProviderContract.assertExamplesMatchSchema(COMPANIES, "GET", "/api/v1/companies");
     }
 
-    @Test
-    void should_answerInternalCall_withoutSpec_andRefuseOtherPaths() {
-        server.ignoringMissingAuthorization().expectInternalWithoutSpec(GET, "/internal/users/{username}")
-                .respondWith(HttpStatus.OK, "{\"anything\": true}");
+    // ---------------------------------------------------------------- internal specs (17.0b2)
 
-        assertThat(restTemplate.getForObject(BASE + "/internal/users/jane.smith", String.class)).contains("anything");
-        assertThatThrownBy(() -> server.expectInternalWithoutSpec(GET, "/api/v1/companies"))
-                .isInstanceOf(IllegalArgumentException.class);
+    private static final String CUMS_INTERNAL = "docs/api/internal/cums-internal.openapi.yml";
+
+    @Test
+    @DisplayName("an internal spec (server /, full paths) routes /internal paths and answers its example")
+    void should_routeInternalSpec_withFullPaths() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(GET, "/internal/users/{username}").respondWithExample();
+
+        String body = restTemplate.getForObject(BASE + "/internal/users/anna.meier", String.class);
+
+        assertThat(body).contains("\"id\":\"anna.meier\"");
+        assertThat(OpenApiContract.load(CUMS_INTERNAL).basePath()).isEmpty();
+        assertThat(OpenApiContract.load(COMPANIES).basePath()).isEqualTo("/api/v1");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("an /internal path the spec lacks fails, naming method, path and spec")
+    void should_fail_when_internalPathNotInSpec() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(GET, "/internal/users/{username}").respondWithExample();
+
+        assertThatThrownBy(() -> restTemplate.getForObject(BASE + "/internal/users/anna.meier/roles", String.class))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("GET /internal/users/anna.meier/roles is not an operation of " + CUMS_INTERNAL);
+        assertThatThrownBy(() -> server.expect(GET, "/internal/users/{username}/roles"))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("GET /internal/users/{username}/roles")
+                .hasMessageContaining(CUMS_INTERNAL);
+    }
+
+    @Test
+    @DisplayName("an unknown query parameter on an internal operation fails")
+    void should_fail_when_internalQueryParamNotInSpec() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(GET, "/internal/users").respondWithExample();
+
+        String url = BASE + "/internal/users?role=PARTNER&size=500";
+        assertThatThrownBy(() -> restTemplate.getForObject(url, String.class))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("(parameter 'size')");
+    }
+
+    @Test
+    @DisplayName("one RestTemplate, two specs: each request is checked against the spec that has its path")
+    void should_routeEachRequest_toTheSpecThatHasItsPath() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, COMPANIES, CUMS_INTERNAL);
+        server.expect(GET, "/api/v1/companies").respondWithExample();
+        server.expect(GET, "/internal/email-owners").respondWithExample();
+
+        assertThat(getCompanies("page=1&limit=100")).contains("\"data\"");
+        assertThat(restTemplate.getForObject(BASE + "/internal/email-owners?email=a@example.com", String.class))
+                .contains("anna.meier");
+        server.verify();
+        assertThatThrownBy(() -> restTemplate.getForObject(BASE + "/internal/nothing", String.class))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining(COMPANIES + ", " + CUMS_INTERNAL);
+    }
+
+    @Test
+    @DisplayName("respondPerRequest builds each body from the decoded path variables and checks it")
+    void should_answerPerRequest_fromPathVariables() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(GET, "/internal/users/{username}").times(org.springframework.test.web.client.ExpectedCount
+                .manyTimes()).respondPerRequest(HttpStatus.OK, call -> """
+                        {"id": "%s", "email": "x@example.com", "firstName": "F", "lastName": "L", "roles": [],
+                         "createdAt": "2025-01-01T00:00:00Z", "updatedAt": "2025-01-01T00:00:00Z"}"""
+                .formatted(call.pathVariables().get("username")));
+
+        assertThat(restTemplate.getForObject(BASE + "/internal/users/jane.smith", String.class))
+                .contains("\"jane.smith\"");
+        // The id pattern of UserResponse rejects a body built for an invalid username.
+        assertThatThrownBy(() -> restTemplate.getForObject(BASE + "/internal/users/Not Valid", String.class))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Test body for GET /internal/users/{username} 200")
+                .hasMessageContaining("/id");
+    }
+
+    @Test
+    @DisplayName("onlyFor: routed requests reach the harness, all others the real request factory")
+    void should_routeOnlySelectedRequests_toTheHarness() {
+        // A stub stands in for the real request factory: the non-routed request must reach it,
+        // never the network.
+        List<URI> reachedStub = new ArrayList<>();
+        ClientHttpRequestFactory stub = (uri, method) -> {
+            reachedStub.add(uri);
+            MockClientHttpRequest request = new MockClientHttpRequest(method, uri);
+            request.setResponse(new MockClientHttpResponse("\"from the stub\"".getBytes(StandardCharsets.UTF_8),
+                    HttpStatus.OK));
+            return request;
+        };
+        server.close();
+        restTemplate = new RestTemplate(stub);
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL).onlyFor(uri -> uri.getHost().equals("cums"));
+        server.expect(GET, "/internal/email-owners").respondPerRequest(call ->
+                ContractServer.Reply.ok("[\"" + call.queryParam("email").split("@")[0] + "\"]"));
+
+        assertThat(restTemplate.getForObject(BASE + "/internal/email-owners?email=anna.meier@example.com",
+                String.class)).isEqualTo("[\"anna.meier\"]");
+        assertThat(reachedStub).isEmpty();
+        assertThat(restTemplate.getForObject("http://other.test/internal/email-owners", String.class))
+                .isEqualTo("\"from the stub\"");
+        assertThat(reachedStub).containsExactly(URI.create("http://other.test/internal/email-owners"));
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("an encoded '/' in a path parameter stays inside its segment")
+    void should_keepEncodedSlash_insideOneSegment() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(GET, "/internal/users/{username}").respondWithExample();
+
+        String body = restTemplate.getForObject(URI.create(BASE + "/internal/users/a%2Fb%3Fc"), String.class);
+
+        assertThat(body).contains("anna.meier");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("a declared error example answers with its status and body")
+    void should_answerDeclaredErrorExample() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(POST, "/internal/users/get-or-create").respondWithExample(HttpStatus.CONFLICT);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+
+        assertThatThrownBy(() -> restTemplate.postForObject(BASE + "/internal/users/get-or-create",
+                new HttpEntity<>(Map.of("email", "a@example.com", "firstName", "A", "lastName", "B"), headers),
+                String.class))
+                .isInstanceOf(HttpClientErrorException.Conflict.class)
+                .hasMessageContaining("EMAIL_LINKED_TO_ACCOUNT");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "docs/api/internal/cums-internal.openapi.yml",
+        "docs/api/internal/ems-internal.openapi.yml",
+        "docs/api/internal/pcs-internal.openapi.yml"
+    })
+    @DisplayName("every response example of every internal operation matches its schema")
+    void should_haveValidExamples_inEveryInternalSpec(String spec) {
+        OpenApiContract contract = OpenApiContract.load(spec);
+        contract.operations().forEach((method, paths) -> paths.forEach(path ->
+                ProviderContract.assertExamplesMatchSchema(spec, method, path)));
     }
 
     // ---------------------------------------------------------------- GeneratedCodeSemantics

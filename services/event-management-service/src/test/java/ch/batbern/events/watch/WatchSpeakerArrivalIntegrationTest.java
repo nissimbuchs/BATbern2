@@ -37,7 +37,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * See WatchSpeakerArrivalWebSocketIntegrationTest for the STOMP broadcast integration test.
  */
 @Transactional
-@Import({TestSecurityConfig.class, TestAwsConfig.class, ch.batbern.events.config.TestUserApiClientConfig.class})
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
 public class WatchSpeakerArrivalIntegrationTest extends AbstractIntegrationTest {
 
     private static final String ARRIVALS_URL = "/api/v1/watch/events/{eventCode}/arrivals";

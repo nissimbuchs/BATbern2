@@ -60,7 +60,7 @@ function renderWithProviders(additionalEmails: AdditionalEmail[] = []) {
   const qc = new QueryClient({ defaultOptions: { queries: { retry: false } } });
   return render(
     <QueryClientProvider client={qc}>
-      <UserSettingsTab email="nissim.buchs@elca.ch" additionalEmails={additionalEmails} />
+      <UserSettingsTab email="anna.coordinator@example.com" additionalEmails={additionalEmails} />
     </QueryClientProvider>
   );
 }

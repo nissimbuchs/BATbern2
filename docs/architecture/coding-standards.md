@@ -441,13 +441,15 @@ security filter chain, our hooks and our service modules.
 
 Unit tests of pure functions stay as they are. The rule targets tests that claim to test
 behaviour while the behaviour is mocked. Until the shared harnesses exist (17.0b: S2S contract
-harness, in place for public `/api/v1` calls since 17.0b1; 17.0c: MSW harness), a new test that cannot avoid an own-code mock says why in a comment,
+harness, in place for public `/api/v1` calls since 17.0b1 and for `/internal/**` since 17.0b2;
+17.0c: MSW harness), a new test that cannot avoid an own-code mock says why in a comment,
 and the ratchet below makes that visible in review.
 
 #### S2S contract harness (backend)
 
-Story 17.0b1. A service-to-service client is tested as itself, on its real `RestTemplate`, against
-the provider's spec in `docs/api/`: `ContractServer` (shared-kernel test fixtures,
+Stories 17.0b1 and 17.0b2. A service-to-service client is tested as itself, on its real
+`RestTemplate`, against the provider's spec: `docs/api/` for the public `/api/v1` API,
+`docs/api/internal/{cums,ems,pcs}-internal.openapi.yml` for `/internal/**`. `ContractServer` (shared-kernel test fixtures,
 `ch.batbern.shared.test.contract`) binds `MockRestServiceServer` to the client's `RestTemplate`,
 validates every request against the spec (path and method exist, parameters within their limits,
 body against its schema, `Authorization` where the spec requires it) and answers with the spec's
@@ -471,8 +473,25 @@ to forward. Each provider proves its side in `S2sProviderContractIntegrationTest
 every consumed operation runs through the real controller and `ProviderContract` checks the
 response, and the examples, against the same spec. A spec without a usable example for a consumed
 operation gets one. How the harness reads `null` and `format: time` (as the generated code does) is
-documented in `GeneratedCodeSemantics`. `/internal/**` calls have no spec yet (17.0b2) and keep
-`MockRestServiceServer` without validation until then.
+documented in `GeneratedCodeSemantics`.
+
+`/internal/**` (17.0b2): every internal operation is specified in `docs/api/internal/` (one spec per
+provider, server `/`, full paths; schemas `$ref` the public components where the DTO is generated
+from them). There is no unvalidated way to answer a call: a path no bound spec has fails, naming
+method, path and spec. A client whose one `RestTemplate` reaches several specs binds them all
+(`bindTo(restTemplate, USERS, CUMS_INTERNAL)`). In EMS, `CumsContractHarness` (test
+`ch.batbern.events.config`, picked up by the application's component scan like `TestAwsConfig`)
+is CUMS for every integration test context: the real `UserApiClientImpl` runs, defaults answer the
+user, user-list and email-owner reads, and a test registers other answers (`cums.user(...)`,
+`cums.answer(POST, "/api/v1/users/provision", ...)`) and reads what was sent (`cums.calls(...)`),
+then calls `cums.reset()`. A test that binds its own `ContractServer` to that `RestTemplate` (for
+PCS) displaces the CUMS harness for its duration, and CUMS calls then fail as "not an operation of
+..."; to keep CUMS, bind with `.onlyFor(uri -> !uri.toString().startsWith(cumsBaseUrl))` so CUMS
+requests fall through to the harness, or bind both specs (`bindTo(restTemplate, PARTNERS,
+CUMS_INTERNAL)`) and expect the CUMS calls there; `close()` in `@AfterEach` restores the harness. In PCS, `CumsInternalUsers` registers the user lookup on the test's
+`ContractServer`. The public tooling (frontend path check, type generation, API similarity, ZAP
+coverage, access-control probe, `lint:api`) does not read `docs/api/internal/`; it is linted by
+`npm run lint:api-internal` with its own reduced ruleset (`docs/api/internal/.spectral.yaml`).
 
 #### Assertion rules
 

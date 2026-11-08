@@ -1,7 +1,6 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.client.user.dto.UserResponse;
+import ch.batbern.partners.config.CumsInternalUsers;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
@@ -12,15 +11,18 @@ import ch.batbern.partners.repository.TopicVoteRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import ch.batbern.shared.test.contract.ContractServer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.cache.CacheManager;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -32,7 +34,6 @@ import java.util.UUID;
 
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -65,8 +66,12 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     TopicRepository topicRepository;
     @Autowired
     TopicVoteRepository topicVoteRepository;
-    @MockitoBean
-    UserServiceClient userServiceClient;
+
+    @Autowired
+    RestTemplate restTemplate;
+    @Autowired
+    CacheManager cacheManager;
+    ContractServer cums;
 
     Partner partnerAlpha;
     Partner partnerBeta;
@@ -80,9 +85,15 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         partnerAlpha = createPartner("AlphaCo");
         partnerBeta  = createPartner("BetaCo");
 
-        // Stub User Service: alice belongs to AlphaCo, bob to BetaCo
-        when(userServiceClient.getUserByUsername("alice")).thenReturn(makeUser("alice", "AlphaCo"));
-        when(userServiceClient.getUserByUsername("bob")).thenReturn(makeUser("bob", "BetaCo"));
+        // CUMS (Story 17.0b2, on the wire): alice belongs to AlphaCo, bob to BetaCo
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+        cums = ContractServer.bindTo(restTemplate, CumsInternalUsers.CUMS_INTERNAL);
+        CumsInternalUsers.answerOn(cums).put("alice", "alice.alpha", "AlphaCo").put("bob", "bob.beta", "BetaCo");
+    }
+
+    @AfterEach
+    void releaseCums() {
+        cums.close();
     }
 
     // ─── AC1: Topic list sorted by vote count descending ─────────────────────
@@ -445,12 +456,5 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .partnershipStartDate(LocalDate.now().minusYears(1))
                 .partnershipEndDate(LocalDate.now().plusYears(1))
                 .build());
-    }
-
-    private UserResponse makeUser(String username, String companyId) {
-        UserResponse user = new UserResponse();
-        user.setId(username);
-        user.setCompanyId(companyId);
-        return user;
     }
 }

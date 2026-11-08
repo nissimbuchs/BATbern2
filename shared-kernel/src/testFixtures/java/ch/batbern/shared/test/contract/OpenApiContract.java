@@ -17,6 +17,7 @@ import io.swagger.v3.parser.OpenAPIV3Parser;
 import io.swagger.v3.parser.core.models.ParseOptions;
 import io.swagger.v3.parser.core.models.SwaggerParseResult;
 
+import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -26,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
 import java.util.stream.Collectors;
@@ -39,18 +41,18 @@ import java.util.stream.Collectors;
  * {@code com.atlassian.oai:openapi-request-validator-core}; every message it reports counts as an
  * error.
  *
- * <p>Paths are the full request paths, base path included ({@code /api/v1/companies}); the
- * specs declare {@code /api/v1} as their server URL.
+ * <p>Paths are the full request paths, base path included. The base path is the path of the
+ * spec's first server URL: {@code /api/v1} for the public specs in {@code docs/api/}
+ * ({@code /api/v1/companies}), empty for the internal specs in {@code docs/api/internal/}, which
+ * declare server {@code /} and full paths ({@code /internal/users/{username}}, Story 17.0b2).
  */
 public final class OpenApiContract {
-
-    /** Base path of every public spec in {@code docs/api/}. */
-    public static final String BASE_PATH = "/api/v1";
 
     private static final Map<String, OpenApiContract> CACHE = new ConcurrentHashMap<>();
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private final String specPath;
+    private final String basePath;
     private final OpenAPI openApi;
     private final OpenApiInteractionValidator validator;
     private final List<Route> routes;
@@ -65,10 +67,11 @@ public final class OpenApiContract {
             throw new IllegalStateException("Cannot parse " + specPath + ": " + parsed.getMessages());
         }
         this.openApi = parsed.getOpenAPI();
+        this.basePath = basePathOf(openApi, specPath);
         GeneratedCodeSemantics.apply(openApi);
         this.validator = OpenApiInteractionValidator
                 .createFor(openApi)
-                .withBasePathOverride(BASE_PATH)
+                .withBasePathOverride(basePath.isEmpty() ? "/" : basePath)
                 // Merge allOf into one schema: otherwise the library adds additionalProperties:false to
                 // each part and rejects every property of the other parts (EventDetail = Event + more).
                 .withResolveCombinators(true)
@@ -86,7 +89,8 @@ public final class OpenApiContract {
 
     /**
      * The spec at {@code specPath}, relative to the repository root (for example
-     * {@code docs/api/companies-api.openapi.yml}). Looked up from the working directory upwards,
+     * {@code docs/api/companies-api.openapi.yml} or
+     * {@code docs/api/internal/cums-internal.openapi.yml}). Looked up from the working directory upwards,
      * so it works from the root and from a module directory alike.
      */
     public static OpenApiContract load(String specPath) {
@@ -108,6 +112,29 @@ public final class OpenApiContract {
         return specPath;
     }
 
+    /** The base path every operation path starts with: {@code /api/v1}, or empty (server {@code /}). */
+    public String basePath() {
+        return basePath;
+    }
+
+    /** Path of the first server URL, without a trailing slash; empty for {@code /} or no server. */
+    private static String basePathOf(OpenAPI openApi, String specPath) {
+        if (openApi.getServers() == null || openApi.getServers().isEmpty()) {
+            return "";
+        }
+        String url = openApi.getServers().get(0).getUrl();
+        String path;
+        try {
+            path = URI.create(url).getPath();
+        } catch (IllegalArgumentException e) {
+            throw new IllegalStateException("Server URL " + url + " of " + specPath + " is not a URI", e);
+        }
+        if (path == null) {
+            return "";
+        }
+        return path.endsWith("/") ? path.substring(0, path.length() - 1) : path;
+    }
+
     // ------------------------------------------------------------------------------------------
     // Operations
     // ------------------------------------------------------------------------------------------
@@ -118,16 +145,31 @@ public final class OpenApiContract {
                 .get(PathItem.HttpMethod.valueOf(method.toUpperCase(Locale.ROOT))));
     }
 
+    /** Every operation of the spec: HTTP method to full path templates (base path included). */
+    public Map<String, List<String>> operations() {
+        Map<String, List<String>> out = new TreeMap<>();
+        openApi.getPaths().forEach((template, item) -> item.readOperationsMap().keySet().forEach(m ->
+                out.computeIfAbsent(m.name(), k -> new ArrayList<>()).add(basePath + template)));
+        return out;
+    }
+
+    /** True when the operation's response {@code status} has an {@code application/json} body. */
+    boolean hasJsonBody(String method, String path, int status) {
+        ApiResponse response = requireOperation(method, path).getResponses().get(String.valueOf(status));
+        return response != null && response.getContent() != null
+                && response.getContent().get("application/json") != null;
+    }
+
     /** True when {@code path} (concrete or template, base path included) is a path of the spec. */
     public boolean hasPath(String path) {
         return route(path).isPresent();
     }
 
     private Optional<Route> route(String path) {
-        if (!path.startsWith(BASE_PATH + "/")) {
+        if (!path.startsWith(basePath + "/")) {
             return Optional.empty();
         }
-        String relative = path.substring(BASE_PATH.length());
+        String relative = path.substring(basePath.length());
         return routes.stream().filter(r -> r.template.equals(relative) || r.pattern.matcher(relative).matches())
                 .findFirst();
     }

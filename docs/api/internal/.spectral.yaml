@@ -1,0 +1,50 @@
+# Lint of the internal service-to-service specs docs/api/internal/*.openapi.yml (Story 17.0b2).
+#
+#   cd web-frontend && npm run lint:api-internal      (CI: the same job as lint:api)
+#
+# A reduced ruleset, by owner decision 2026-11-08: structure, examples, and the personal-data-in-path
+# rule of the public ruleset. Not the naming rules (no-verb-segment, path-kebab-case, ...): the
+# internal paths keep their verbs (/internal/users/merge-preview, .../get-or-create) until Story 17.6
+# redesigns them, and no-internal-path exists to keep /internal out of the public specs. No baseline:
+# every finding fails. The public ruleset ../.spectral.yaml and its baseline are untouched.
+
+extends: [[spectral:oas, off]]
+
+functionsDir: ../spectral-functions
+functions:
+  - apiConventions
+
+rules:
+  # Structure: the document is valid OpenAPI, operations are identifiable, paths and parameters agree.
+  oas3-schema: error
+  oas2-schema: off
+  operation-operationId: error
+  operation-operationId-unique: error
+  operation-operationId-valid-in-url: error
+  operation-success-response: error
+  operation-parameters: error
+  path-params: error
+  path-declarations-must-exist: error
+  path-keys-no-trailing-slash: error
+  path-not-include-query: error
+  no-$ref-siblings: error
+  typed-enum: error
+  duplicated-entry-in-enum: error
+  oas3-server-not-example.com: error
+  oas3-server-trailing-slash: off
+  oas3-unused-component: error
+
+  # Examples: every example is valid against its schema (the contract harness answers with them).
+  oas3-valid-media-example: error
+  oas3-valid-schema-example: error
+
+  # Personal data never goes in a path (ADR-003 2026-11 amendment), same rule as the public specs.
+  no-personal-data-path-param:
+    description: No personal data in a path parameter (ADR-003 amendment).
+    message: '{{error}}'
+    severity: error
+    given: $.paths[*]
+    then:
+      function: apiConventions
+      functionOptions:
+        check: personal-data

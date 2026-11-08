@@ -572,6 +572,13 @@ jobs:
         working-directory: ./web-frontend
         run: npm run lint:api
 
+      # Story 17.0b2: the internal service-to-service specs docs/api/internal/ with their own reduced
+      # ruleset (structure, examples, no personal data in a path; not the naming rules, owner decision
+      # 2026-11-08). No baseline: any finding fails. The public lint above never reads that folder.
+      - name: OpenAPI internal spec lint
+        working-directory: ./web-frontend
+        run: npm run lint:api-internal
+
       - name: Verify API types are up-to-date
         if: needs.frontend-changes.outputs.run == 'true'
         working-directory: ./web-frontend

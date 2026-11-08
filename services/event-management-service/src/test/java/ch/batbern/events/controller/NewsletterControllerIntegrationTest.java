@@ -1,15 +1,14 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.dto.generated.users.AdditionalEmail;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.NewsletterSubscriber;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -20,7 +19,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -31,10 +29,8 @@ import java.util.Map;
 import java.util.Set;
 
 import java.time.Instant;
-import java.time.OffsetDateTime;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -56,8 +52,12 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private MockMvc mockMvc;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    /** CUMS behind the real UserApiClient (Story 17.0b2). */
+    @Autowired
+    private CumsContractHarness cums;
+
+    /** A CUMS username (lower-case first.last); the old bare "dora" could never exist there. */
+    private static final String DORA = "dora.meier";
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -68,6 +68,12 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     @BeforeEach
     void setUp() {
         subscriberRepository.deleteAll();
+        cums.reset();
+    }
+
+    @AfterEach
+    void resetCums() {
+        cums.reset();
     }
 
     // ── AC2: POST /newsletter/subscribe ──────────────────────────────────────
@@ -209,13 +215,13 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     /** #1143: username is not unique (one row per address); two rows must not 500. */
     @Test
     @DisplayName("GET /newsletter/my-subscription — two rows for one username → 200, subscribed if any is active")
-    @WithMockUser(username = "dora", roles = "USER")
+    @WithMockUser(username = DORA, roles = "USER")
     void should_reportSubscribed_when_userHasTwoSubscriberRows() throws Exception {
         subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("dora.old@example.com").language("de").source("account").username("dora")
+                .email("dora.old@example.com").language("de").source("account").username(DORA)
                 .unsubscribeToken("tok-dora-1").unsubscribedAt(Instant.now()).build());
         subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("dora@example.com").language("de").source("account").username("dora")
+                .email("dora@example.com").language("de").source("account").username(DORA)
                 .unsubscribeToken("tok-dora-2").build());
 
         mockMvc.perform(get("/api/v1/newsletter/my-subscription"))
@@ -227,13 +233,13 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
     /** #1143: unsubscribing from the account settings stops every address of that user. */
     @Test
     @DisplayName("PATCH /newsletter/my-subscription — unsubscribe with two rows → all rows unsubscribed")
-    @WithMockUser(username = "dora", roles = "USER")
+    @WithMockUser(username = DORA, roles = "USER")
     void should_unsubscribeAllRows_when_userHasTwoSubscriberRows() throws Exception {
         subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("dora.old@example.com").language("de").source("account").username("dora")
+                .email("dora.old@example.com").language("de").source("account").username(DORA)
                 .unsubscribeToken("tok-dora-3").build());
         subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("dora@example.com").language("de").source("account").username("dora")
+                .email("dora@example.com").language("de").source("account").username(DORA)
                 .unsubscribeToken("tok-dora-4").build());
 
         mockMvc.perform(patch("/api/v1/newsletter/my-subscription")
@@ -243,27 +249,30 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(jsonPath("$.subscribed").value(false));
 
         assertThat(subscriberRepository.findAll())
-                .filteredOn(s -> "dora".equals(s.getUsername()))
+                .filteredOn(s -> DORA.equals(s.getUsername()))
                 .allSatisfy(s -> assertThat(s.getUnsubscribedAt()).isNotNull());
     }
 
     // ── #1244: newsletter per address ─────────────────────────────────────────
 
     private void doraHasAddresses() {
-        UserResponse dora = new UserResponse().id("dora").email("Dora@Batbern-Test.ch");
-        dora.addAdditionalEmailsItem(new AdditionalEmail("dora.private@batbern-test.ch", OffsetDateTime.now())
-                .verifiedAt(OffsetDateTime.now()));
-        dora.addAdditionalEmailsItem(new AdditionalEmail("dora.pending@batbern-test.ch", OffsetDateTime.now()));
-        when(userApiClient.getUserByUsername("dora")).thenReturn(dora);
+        cums.user(DORA, """
+                {"id": "%s", "email": "Dora@Batbern-Test.ch", "firstName": "Dora", "lastName": "Meier",
+                 "roles": ["ATTENDEE"], "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z",
+                 "additionalEmails": [
+                   {"email": "dora.private@batbern-test.ch", "createdAt": "2025-01-15T10:00:00Z",
+                    "verifiedAt": "2025-01-16T10:00:00Z"},
+                   {"email": "dora.pending@batbern-test.ch", "createdAt": "2025-01-15T10:00:00Z"}]}"""
+                .formatted(DORA));
     }
 
     @Test
     @DisplayName("#1244 GET /newsletter/my-subscriptions — primary first, then confirmed addresses, each with its state")
-    @WithMockUser(username = "dora", roles = "USER")
+    @WithMockUser(username = DORA, roles = "USER")
     void should_listPrimaryAndConfirmedAddresses_when_gettingMySubscriptions() throws Exception {
         doraHasAddresses();
         subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("dora.private@batbern-test.ch").language("de").source("account").username("dora")
+                .email("dora.private@batbern-test.ch").language("de").source("account").username(DORA)
                 .unsubscribeToken("tok-dora-5").build());
 
         mockMvc.perform(get("/api/v1/newsletter/my-subscriptions"))
@@ -279,11 +288,11 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
 
     @Test
     @DisplayName("#1244 PUT /newsletter/my-subscriptions — subscribe and unsubscribe one address, the others stay")
-    @WithMockUser(username = "dora", roles = "USER")
+    @WithMockUser(username = DORA, roles = "USER")
     void should_changeOnlyThatAddress_when_puttingOneSubscription() throws Exception {
         doraHasAddresses();
         subscriberRepository.save(NewsletterSubscriber.builder()
-                .email("dora@batbern-test.ch").language("de").source("account").username("dora")
+                .email("dora@batbern-test.ch").language("de").source("account").username(DORA)
                 .unsubscribeToken("tok-dora-6").build());
 
         mockMvc.perform(put("/api/v1/newsletter/my-subscriptions")
@@ -295,7 +304,7 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
 
         assertThat(subscriberRepository.findByEmailIgnoreCase("dora.private@batbern-test.ch"))
                 .get().satisfies(sub -> {
-                    assertThat(sub.getUsername()).isEqualTo("dora");
+                    assertThat(sub.getUsername()).isEqualTo(DORA);
                     assertThat(sub.getUnsubscribedAt()).isNull();
                 });
 
@@ -309,7 +318,7 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
 
     @Test
     @DisplayName("#1244 PUT /newsletter/my-subscriptions — an unconfirmed or foreign address → 403, nothing stored")
-    @WithMockUser(username = "dora", roles = "USER")
+    @WithMockUser(username = DORA, roles = "USER")
     void should_return403_when_addressIsNotOneOfMine() throws Exception {
         doraHasAddresses();
 

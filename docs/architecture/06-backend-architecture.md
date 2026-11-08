@@ -191,7 +191,17 @@ the VPC through Service Connect. Callers send **no** JWT.
 | `POST /internal/mails` | Event Management | PCS records its partner meeting invites and cancellations in "What went out" (Story 16.9) |
 | `POST /internal/users/get-or-create` | Company-User Management | EMS anonymous registration and speaker provisioning (ADR-005) |
 | `GET /internal/email-owners?email=` | Company-User Management | EMS by-email deregistration across a person's profiles (#1183) |
-| `GET /internal/users/merge-preview`, `POST /internal/users/merge` | Event Management | CUMS profile merge (#1183 C/D, below) |
+| `GET /internal/users/merge-preview`, `POST /internal/users/merge`, `POST /internal/users/primary-email` | Event Management | CUMS profile merge (#1183 C/D, below) and primary-address change (#1244) |
+| `POST /internal/mail-center/{merge,logo}-requests[/{requestId}/done]` | Event Management | CUMS opens and closes the Mail Center conversation of a merge or logo request (#1237, #1246) |
+
+The CUMS→EMS calls other than the merge itself (`primary-email`, `mail-center/*`) are upstream→downstream
+exceptions to the module map, owned by Story 17.7 (request pull); no new one is added.
+
+Every operation above is specified in `docs/api/internal/` (`cums-`, `ems-`, `pcs-internal.openapi.yml`,
+Story 17.0b2) and contract-tested on both sides; the public tooling does not read that folder.
+Callers read list endpoints page by page (`pagination.hasNext`; PCS read only the first 100 users
+before 17.0b2) and percent-encode every username, company name and address they put in a path or
+query.
 
 Why a separate API rather than forwarding the user's JWT: the public user directory
 (`GET /api/v1/users`, `/users/search`, `/users/{username}`) is ORGANIZER/ADMIN only, while EMS and
