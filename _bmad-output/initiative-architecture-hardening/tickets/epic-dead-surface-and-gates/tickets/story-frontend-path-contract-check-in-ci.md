@@ -93,3 +93,4 @@ Verify: a fixture call to an unknown path fails the `build-frontend` check, and 
 - Decision: 2026-11-07, Winston. The matcher is TypeScript, shared with the 17.0c MSW validator, rather than Python beside `scripts/ci/`.
 - Decision: 2026-11-07, owner. Converted from the v6 story file `17-3-frontend-path-contract-check.md`, which was deleted. Its code-level findings are in the notes file.
 - Risk: medium. A false positive blocks every frontend PR in a required check; a false negative lets drift ship.
+- Decision: 2026-11-08, owner. The calls this story froze (13 files in `api-layer-baseline.txt` at the end of the build) move into the service layer in a follow-up, entry 3b of this epic, built right after 17.5. This story's Boundaries are left as built.

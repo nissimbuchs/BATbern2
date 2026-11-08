@@ -16,7 +16,7 @@ id = "0b1"
 type = "story"
 title = "S2S contract harness on the public-API clients"
 description = "17.0b part 1: the real client against MockRestServiceServer, every request validated against the provider's OpenAPI and answered from its examples; UserApiClientImpl first, then the CompanyApiClient, PartnerApiClient and the PCS clients' /api/v1 calls; one provider-side test per provider that its spec examples are valid responses of the real controller."
-verify = "A fixture reproducing #1072 (limit=1000 against a spec maximum of 100) fails the UserApiClientImpl contract test, and every public-API client has a passing contract test."
+verify = "A fixture reproducing #1072 (limit=1000 against a spec maximum of 100) fails the UserApiClientImpl contract test, every public-API client has a passing contract test, and the ratchet baseline falls by the UserApiClient mocks the harness replaces (TestUserApiClientConfig retired or counted)."
 covers = ["R2"]
 after = ["0a"]
 hitl = false
@@ -38,7 +38,7 @@ id = "0b3"
 type = "story"
 title = "Production setup in tests"
 description = "17.0b part 3: a production security-chain guard test in EMS and PCS (CUMS and the gateway have one), the real EmailService against a mocked SesClient with address validation no longer behind sesClient == null, and the flush or non-transactional rule for write paths with DB constraints."
-verify = "Each service's chain test shows an anonymous write answering 401 and an attendee on an organizer endpoint answering 403, and an EmailService test with a joined To: line (#1176) fails without SES credentials."
+verify = "Each service's chain test shows an anonymous write answering 401 and an attendee on an organizer endpoint answering 403, an EmailService test with a joined To: line (#1176) fails without SES credentials, and the ratchet baseline does not rise."
 covers = ["R2"]
 after = ["0a"]
 hitl = false

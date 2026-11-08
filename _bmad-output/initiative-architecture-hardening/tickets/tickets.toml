@@ -4,7 +4,7 @@
 id = 1
 slug = "epic-dead-surface-and-gates"
 title = "Dead surface removed, gates in place"
-description = "Production runs three services and no event bus; dead specs, orphan endpoints and the old compose endpoints are gone; the FE path contract check, Spectral and the ArchUnit freeze run in required CI jobs with committed baselines. Hands on: 17.3's importable spec matcher to epic 2 (17.0c); the Spectral baseline and ArchUnit store that epics 3, 4 and 5 shrink."
+description = "Production runs three services and no event bus; dead specs, orphan endpoints and the old compose endpoints are gone; the FE path contract check, Spectral and the ArchUnit freeze run in required CI jobs with committed baselines; 17.5 has moved the EMS classes that need no design into their modules and 3b the frozen frontend calls into the service layer, so the ArchUnit store and the frontend layer baseline end smaller than their first freeze. Hands on: 17.3's importable spec matcher to epic 2 (17.0c); the remaining Spectral and ArchUnit groups, each with its owning story, to epics 3, 4 and 5."
 covers = ["R5", "R6", "R7", "R8", "R9", "R10"]
 
 [[epic]]
@@ -45,7 +45,7 @@ title = "EMS has walls a build checks"
 description = "An accepted EMS modularization design, then registrations, exceptions, mail core and event core moved behind ArchUnit rules, with the module script showing fewer violations than the 2026-11-07 baseline."
 covers = ["R17", "R18", "R19", "R20", "R21"]
 after = [
-  { epic = 1, needs = "17.5 ArchUnit freeze, extended by 17.12 to the full layering; 16.8c clean-up before 17.15 splits mail core from mail center" },
+  { epic = 1, needs = "17.5 ArchUnit freeze and its first wall fixes (inbound mail chain, retention schedulers and dev mail controller in forwarding/mailcenter, JwtStompInterceptor in security, ModeratorReplyAddress in mailcenter/render, mail-center exception handlers out of GlobalExceptionHandler), the store 17.12 designs from; 16.8c clean-up before 17.15 splits mail core from mail center" },
   { epic = 2, needs = "17.0a ratchet baseline settled before 17.13 moves registration tests" },
   { epic = 3, needs = "17.7 and 17.8 done in mail center and InboundEmailRouter before 17.15 splits mail core from mail center" },
   { epic = 4, needs = "17.10's folding of batch_registrations and enroll-stakeholders before 17.13 moves the registration endpoints" },

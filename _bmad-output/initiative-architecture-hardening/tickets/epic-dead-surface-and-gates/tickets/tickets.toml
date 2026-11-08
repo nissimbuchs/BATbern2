@@ -62,9 +62,9 @@ risk = "low"
 [[entry]]
 id = 5
 type = "story"
-title = "ArchUnit freeze in all three services"
-description = "17.5: ArchUnit in CUMS, EMS and PCS tests; EMS package rules and the no-downstream-client rule frozen with a committed store."
-verify = "Adding a violating dependency fails the service's test task, and the frozen EMS count matches the module script for the same packages."
+title = "ArchUnit freeze and first wall fixes"
+description = "17.5: ArchUnit in CUMS and EMS tests (not PCS, owner 2026-11-08); EMS package rules and the no-downstream-client rule frozen with a committed store; violations that need no 17.12 design are fixed in the same story (moves and splits inside EMS), the rest frozen with their owning story named."
+verify = "Adding a violating dependency fails the service's test task, the frozen EMS count matches the module script for the same packages, and the committed EMS store is smaller than the first freeze of the same rules."
 covers = ["R5"]
 after = []
 hitl = false
@@ -73,11 +73,23 @@ references = ["docs/plans/architecture-review-2026-11.html"]
 notes = ["The 5 already-vertical EMS packages: mailcenter, forwarding, usermerge, watch, notification (review report, EMS figure). The rule is no new client toward a DOWNSTREAM service (PRD, ADR-016); the action list says upstream, which is a slip."]
 
 [[entry]]
+id = "3b"
+type = "story"
+title = "Frontend HTTP calls moved into the service layer"
+description = "Follow-up of 17.3 (owner 2026-11-08): the 13 files in web-frontend/scripts/api-layer-baseline.txt (hooks, components, AuthContext) get their HTTP calls from a function in web-frontend/src/services/, reusing the existing service of the resource where one exists (e.g. userService, partnerService, companyApi, eventApiClient); the presigned S3 PUT of useEventTeaserImages moves beside the one in eventApiClient; useFileUpload takes a service upload function per purpose instead of an endpoint string, which also removes its 2 allow-list entries. Callers keep their behaviour and React Query keys; tests of the moved calls move to the service tests, and the touched hook and component tests stub HTTP at the boundary (axios or MSW), not the new service functions, so the 17.0a ratchet count does not rise."
+verify = "npm run check:api-paths passes with an empty layer baseline (header only) and an allow-list no larger than at the start, each remaining line with its reason; the start and end sizes of both files are recorded in the plan; type-check, lint and the frontend tests of the touched hooks and components pass."
+covers = ["R3"]
+after = [3]
+hitl = false
+risk = "medium"
+notes = ["Owner 2026-11-08: move these calls into the service layer and shrink the baseline to zero where possible; built right after 17.5."]
+
+[[entry]]
 id = "168c"
 type = "story"
 title = "Mail Center composer clean-up"
 description = "16.8c: deletes the old compose components and the retired preview, send, history, status and retry endpoints with their specs, types and Bruno files; every send stays on /events/{c}/mails. Takes over from 17.1: the slides-online 409 coverage that 17.1 moved onto /registrant-notices/send moves on to /events/{c}/mails."
-verify = "Each retired path answers 404 in production, and newsletter, registrant, speaker and venue sends work from the Mail Center composer on local dev (/dev/mails)."
+verify = "Each retired path answers 404 in production, newsletter, registrant, speaker and venue sends work from the Mail Center composer on local dev (/dev/mails), and the Spectral baseline and the EMS ArchUnit store lose the lines of the deleted operations and send paths (before and after recorded)."
 covers = ["R6"]
 after = [1, 3, 4]
 hitl = false
@@ -92,6 +104,6 @@ title = "Refactor sweep"
 description = "Clean-up only, scoped at its start from the plans and review findings this epic deferred."
 verify = "The deferred items listed at its start are closed or moved to a new story, and CI on develop is green."
 covers = []
-after = [1, 3, 2, "2b", 4, 5, "168c"]
+after = [1, 3, 2, "2b", 4, 5, "3b", "168c"]
 hitl = false
 risk = "low"

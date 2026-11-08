@@ -36,7 +36,7 @@ Developers and agents get tests that fail when a caller is wrong. The signal is 
 ## Done when
 
 - The mocking and assertion rules are in `coding-standards.md`, the `bmad-build` override and project-context, and the contradicting line is gone.
-- The ratchet runs in a required CI job with a committed baseline that can only fall.
+- The ratchet runs in a required CI job with a committed baseline that can only fall, and each story after 0a ends with it lower than at its start or says why.
 - Every S2S client has a contract test against a spec of its provider, `/internal` calls included, and every service has a production-chain test.
 - The MSW harness, with real i18n and production-shaped fixtures, is the default for frontend tests, and the 10 worst files are converted.
 - Each story reached production through its PR, and CI on `develop` runs the new checks.
@@ -59,3 +59,4 @@ Developers and agents get tests that fail when a caller is wrong. The signal is 
 - Decision: 2026-11-07, owner. The `/internal` calls get provider specs in `docs/api/internal/` (outside the frontend path check); 17.0b splits into 0b1 (public-API clients), 0b2 (`/internal` specs and their clients) and 0b3 (production setup in tests). 17.0c splits into 0c1 (harness) and 0c2 (10 files converted).
 - Decision: 2026-11-07. The tracer bullet is 0a: the rule written down and the ratchet in a required CI job. 0b before 0c because epic 3 (17.6) needs it first; 0d waits on 0c1 because its fixtures are the harness default. A refactor sweep closes the epic.
 - Decision: 2026-11-07, owner. 17.0a and 17.2 ship in one branch and one PR; the PR deploys on 17.2's date, which is not an event day.
+- Decision: 2026-11-08, owner. Epic 17 exists to make the architecture cleaner, not to document or freeze it (initiative C15). Every story in this epic converts the own-code mocks it makes redundant in the same story: 0b1 retires the `UserApiClient` mocks its harness replaces (including `TestUserApiClientConfig`, deferred-work item 1), 0b3 the mocks its real `EmailService` test replaces, 0c2 the 10 worst files. The gradual conversion under the touch rule stays for files no story touches.
