@@ -40,6 +40,8 @@ import static org.springframework.http.HttpMethod.GET;
 class CompanyServiceClientContractTest {
 
     private static final String COMPANIES = "docs/api/companies-api.openapi.yml";
+    private static final String CUMS_INTERNAL = "docs/api/internal/cums-internal.openapi.yml";
+    private static final String COMPANY_NAMES = "/internal/companies";
     private static final String COMPANY = "/api/v1/companies/{name}";
     private static final String TOKEN = "test-jwt-token-abc123";
 
@@ -59,7 +61,7 @@ class CompanyServiceClientContractTest {
         Jwt jwt = Jwt.withTokenValue(TOKEN).header("alg", "RS256").claim("sub", "organizer.user").build();
         SecurityContextHolder.getContext().setAuthentication(new JwtAuthenticationToken(jwt));
         Objects.requireNonNull(cacheManager.getCache("companyApiCache")).clear();
-        server = ContractServer.bindTo(restTemplate, COMPANIES);
+        server = ContractServer.bindTo(restTemplate, COMPANIES, CUMS_INTERNAL);
     }
 
     @AfterEach
@@ -141,6 +143,40 @@ class CompanyServiceClientContractTest {
         assertThatThrownBy(() -> companyServiceClient.getCompanyByName("GoogleZH"))
                 .isInstanceOf(CompanyServiceException.class)
                 .hasMessageContaining("Failed to connect");
+        server.verify();
+    }
+
+    // Story 17.17: the partner search resolves display names to slugs through CUMS /internal/companies
+
+    @Test
+    void should_returnSlugsFromInternalCompanies_when_searching() {
+        server.expect(GET, COMPANY_NAMES).withQueryParam("search", "Die Mobiliar").respondWithExample("matches");
+
+        assertThat(companyServiceClient.findCompanyNames("Die Mobiliar"))
+                .containsExactly("diemobiliar", "mobiliarag");
+        server.verify();
+    }
+
+    @Test
+    void should_encodeHostileInput_asOneSearchValue() {
+        server.expect(GET, COMPANY_NAMES)
+                .andExpect(r -> assertThat(r.getURI().getRawQuery())
+                        .isEqualTo("search=100%25%20%28test%20%26x"))
+                .respondWithExample("none");
+
+        assertThat(companyServiceClient.findCompanyNames("100% (test &x")).isEmpty();
+        server.verify();
+    }
+
+    @Test
+    void should_throwServiceException_when_searchCannotReachCums() {
+        server.expect(GET, COMPANY_NAMES).respondWith(request -> {
+            throw new ResourceAccessException("Connection refused");
+        });
+
+        assertThatThrownBy(() -> companyServiceClient.findCompanyNames("ag"))
+                .isInstanceOf(CompanyServiceException.class)
+                .hasMessageContaining("company-name search");
         server.verify();
     }
 }

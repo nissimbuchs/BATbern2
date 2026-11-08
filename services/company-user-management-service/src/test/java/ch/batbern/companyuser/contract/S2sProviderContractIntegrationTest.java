@@ -186,6 +186,7 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         "GET,  /internal/users/{username}",
         "GET,  /internal/users",
         "GET,  /internal/email-owners",
+        "GET,  /internal/companies",
         "POST, /internal/users/get-or-create",
     })
     @DisplayName("internal spec examples match their schema")
@@ -227,6 +228,16 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
                 .param("limit", "100"), 200);
 
         assertThat(result.getResponse().getContentAsString()).contains("\"" + SPEAKER + "\"");
+    }
+
+    @Test
+    @DisplayName("GET /internal/companies?search, as the PCS partner search calls it (Story 17.17)")
+    void internalCompanyNames_matchesSpec() throws Exception {
+        MvcResult byDisplayName = internal(get("/internal/companies").param("search", "contract co"), 200);
+        internal(get("/internal/companies").param("search", "zz-no-such-company-zz"), 200);
+        internal(get("/internal/companies"), 200);
+
+        assertThat(byDisplayName.getResponse().getContentAsString()).contains("\"" + COMPANY + "\"");
     }
 
     @Test

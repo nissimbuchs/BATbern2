@@ -30,15 +30,11 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.never;
 import static org.hamcrest.Matchers.contains;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -78,7 +74,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private CacheManager cacheManager;
 
-    /** CUMS behind the real CompanyServiceClient, answering per companies-api (Story 17.0b1). */
+    /** CUMS behind the real CompanyServiceClient, per companies-api and cums-internal (17.0b1, 17.17). */
     private ContractServer cums;
 
     @BeforeEach
@@ -87,7 +83,8 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
 
         // @WithMockUser callers carry no JWT to forward, hence ignoringMissingAuthorization.
-        cums = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml")
+        cums = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml",
+                        "docs/api/internal/cums-internal.openapi.yml")
                 .ignoringMissingAuthorization();
         cums.expect(HttpMethod.GET, "/api/v1/companies/{name}").times(ExpectedCount.manyTimes())
                 .respondWith(HttpStatus.OK, """
@@ -681,7 +678,8 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     void should_findPartnerBeyondFirstPage_when_searchMatchesItsDisplayName() throws Exception {
         createPartners(25);
         // CUMS resolves the display name typed by the organizer to the slug (#23 of 25)
-        when(companyServiceClient.findCompanyNames("Die Mobiliar")).thenReturn(List.of("partner32", "notapartner"));
+        cums.expect(HttpMethod.GET, "/internal/companies").withQueryParam("search", "Die Mobiliar")
+                .respondWith(HttpStatus.OK, "[\"partner32\", \"notapartner\"]");
 
         mockMvc.perform(get("/api/v1/partners").param("search", " Die Mobiliar ").param("size", "20"))
                 .andExpect(status().isOk())
@@ -697,8 +695,8 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         ended.setPartnershipStartDate(LocalDate.now().minusYears(3));
         ended.setPartnershipEndDate(LocalDate.now().minusYears(1));
         partnerRepository.save(ended);
-        when(companyServiceClient.findCompanyNames("ag"))
-                .thenReturn(List.of("partner10", "partner11", "partner12", "partner99"));
+        cums.expect(HttpMethod.GET, "/internal/companies").withQueryParam("search", "ag")
+                .respondWith(HttpStatus.OK, "[\"partner10\", \"partner11\", \"partner12\", \"partner99\"]");
 
         mockMvc.perform(get("/api/v1/partners").param("search", "ag")
                         .param("filter", "partnershipLevel:gold,isActive:true"))
@@ -710,7 +708,8 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void should_returnNothing_when_cumsMatchesNoCompany() throws Exception {
         createPartners(3);
-        when(companyServiceClient.findCompanyNames("(test")).thenReturn(List.of());
+        cums.expect(HttpMethod.GET, "/internal/companies").withQueryParam("search", "(test")
+                .respondWith(HttpStatus.OK, "[]");
 
         mockMvc.perform(get("/api/v1/partners").param("search", "(test"))
                 .andExpect(status().isOk())
@@ -725,6 +724,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/partners").param("search", "   "))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.metadata.totalItems").value(3));
-        verify(companyServiceClient, never()).findCompanyNames(anyString());
+        // No /internal/companies expectation is registered: a call to CUMS would fail the request
+        // on the contract server. The search tests above show the same server answering it.
     }
 }

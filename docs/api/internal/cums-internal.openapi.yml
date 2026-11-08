@@ -201,6 +201,37 @@ paths:
                 none:
                   value: []
 
+  /internal/companies:
+    get:
+      operationId: findCompanyNames
+      summary: Company slugs matching a search
+      description: |
+        Story 17.17: the slugs of all companies whose slug or display name matches `search` (every
+        word, ignoring case, accents and umlaut spelling, any order), sorted by slug; every slug for
+        a blank or missing search. PCS uses it for the partner search, because `partners.company_name`
+        holds only the slug while organizers type the display name.
+      parameters:
+        - name: search
+          in: query
+          required: false
+          schema:
+            type: string
+          example: Die Mobiliar
+      responses:
+        '200':
+          description: The matching company slugs, possibly none
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  type: string
+              examples:
+                matches:
+                  value: [diemobiliar, mobiliarag]
+                none:
+                  value: []
+
   /internal/users/get-or-create:
     post:
       operationId: getOrCreateInternalUser
