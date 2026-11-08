@@ -1,8 +1,9 @@
-# OpenAPI convention lint baseline (Story 17.4). Generated, do not edit by hand:
+# OpenAPI convention lint baseline. Generated, do not edit by hand:
 #   cd web-frontend && npm run lint:api -- --update
 # Rules: docs/api/.spectral.yaml. Policy: docs/architecture/coding-standards.md, section "API conventions lint".
-# Existing violations only. It shrinks with Stories 17.6, 17.9, 17.10; a PR that grows it
-# states why (for uuid-path-param: the ADR-003 amendment case).
+# Existing violations only. Every line has exactly one owner group in web-frontend/scripts/api-lint-owners.txt:
+# the story or issue that removes it, or an accepted exception with its reason. A PR that
+# grows the baseline states why and adds the owner group.
 # Format: <rule> TAB <spec file> TAB <METHOD> <path>, sorted.
 no-literal-under-events	event-analytics-api.openapi.yml	GET /events/attendance-summary
 no-literal-under-events	event-media-api.openapi.yml	GET /events/recent-photos
@@ -12,28 +13,23 @@ no-literal-under-events	events-core-api.openapi.yml	GET /events/current
 no-literal-under-events	events-core-api.openapi.yml	GET /events/types
 no-literal-under-events	events-core-api.openapi.yml	GET /events/types/{type}
 no-literal-under-events	events-core-api.openapi.yml	PUT /events/types/{type}
-no-verb-segment	companies-api.openapi.yml	POST /companies/{name}/verify
+no-personal-data-path-param	users-api.openapi.yml	DELETE /users/me/additional-emails/{email}
+no-personal-data-path-param	users-api.openapi.yml	PATCH /users/me/additional-emails/{email}
+no-personal-data-path-param	users-api.openapi.yml	POST /users/me/additional-emails/{email}/make-primary
+no-personal-data-path-param	users-api.openapi.yml	POST /users/me/additional-emails/{email}/resend-verification
 no-verb-segment	companies-api.openapi.yml	POST /logos/cleanup/trigger
 no-verb-segment	companies-api.openapi.yml	POST /logos/upload-from-url
-no-verb-segment	companies-api.openapi.yml	POST /logos/{uploadId}/confirm
-no-verb-segment	event-ai-api.openapi.yml	POST /ai-prompts/{promptKey}/reset
 no-verb-segment	event-ai-api.openapi.yml	POST /events/{eventCode}/ai/theme-image/apply
 no-verb-segment	event-ai-api.openapi.yml	POST /speakers/{speakerId}/ai/analyze-abstract
 no-verb-segment	event-mail-api.openapi.yml	GET /conversations/{conversationKey}/messages/{mailKey}/attachments/{index}/download
 no-verb-segment	event-mail-api.openapi.yml	POST /events/{eventCode}/mails/preview
-no-verb-segment	event-mail-api.openapi.yml	POST /events/{eventCode}/mails/{mailKey}/retry
 no-verb-segment	event-media-api.openapi.yml	POST /events/{eventCode}/photos/confirm
-no-verb-segment	event-media-api.openapi.yml	POST /materials/{uploadId}/confirm
 no-verb-segment	event-newsletter-api.openapi.yml	GET /newsletter/unsubscribe/verify
 no-verb-segment	event-newsletter-api.openapi.yml	POST /events/{eventCode}/newsletter/preview
 no-verb-segment	event-newsletter-api.openapi.yml	POST /events/{eventCode}/newsletter/send
-no-verb-segment	event-newsletter-api.openapi.yml	POST /events/{eventCode}/newsletter/sends/{sendId}/retry
 no-verb-segment	event-newsletter-api.openapi.yml	POST /events/{eventCode}/registrant-notices/preview
 no-verb-segment	event-newsletter-api.openapi.yml	POST /events/{eventCode}/registrant-notices/send
 no-verb-segment	event-newsletter-api.openapi.yml	POST /newsletter/subscribe
-no-verb-segment	event-newsletter-api.openapi.yml	POST /newsletter/subscribers/{id}/resubscribe
-no-verb-segment	event-newsletter-api.openapi.yml	POST /newsletter/subscribers/{id}/unsubscribe
-no-verb-segment	event-newsletter-api.openapi.yml	POST /newsletter/subscribers/{id}/unsuppress
 no-verb-segment	event-newsletter-api.openapi.yml	POST /newsletter/unsubscribe
 no-verb-segment	event-notifications-api.openapi.yml	DELETE /notifications/batch-delete
 no-verb-segment	event-notifications-api.openapi.yml	PUT /notifications/batch-read
@@ -41,29 +37,18 @@ no-verb-segment	event-notifications-api.openapi.yml	PUT /notifications/{id}/read
 no-verb-segment	event-registrations-api.openapi.yml	GET /events/{eventCode}/participants/export.docx
 no-verb-segment	event-registrations-api.openapi.yml	GET /events/{eventCode}/participants/export.xlsx
 no-verb-segment	event-registrations-api.openapi.yml	GET /registrations/deregister/verify
-no-verb-segment	event-registrations-api.openapi.yml	POST /events/{eventCode}/enroll-stakeholders
 no-verb-segment	event-registrations-api.openapi.yml	POST /events/{eventCode}/registrations/confirm
-no-verb-segment	event-registrations-api.openapi.yml	POST /events/{eventCode}/registrations/{registrationCode}/promote
-no-verb-segment	event-registrations-api.openapi.yml	POST /events/{eventCode}/registrations/{registrationCode}/resend-confirmation
 no-verb-segment	event-registrations-api.openapi.yml	POST /registrations/deregister
 no-verb-segment	event-registrations-api.openapi.yml	POST /registrations/deregister/by-email
 no-verb-segment	event-sessions-api.openapi.yml	GET /events/{eventCode}/sessions/{sessionSlug}/materials/{materialId}/download
 no-verb-segment	event-sessions-api.openapi.yml	POST /events/{eventCode}/sessions/auto-assign
 no-verb-segment	event-sessions-api.openapi.yml	POST /events/{eventCode}/sessions/batch-import
-no-verb-segment	event-sessions-api.openapi.yml	POST /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/confirm
-no-verb-segment	event-sessions-api.openapi.yml	POST /events/{eventCode}/sessions/{sessionSlug}/speakers/{username}/decline
-no-verb-segment	event-speakers-api.openapi.yml	POST /events/{eventCode}/speaker-pool/{speakerPoolId}/send-reminder
 no-verb-segment	event-speakers-api.openapi.yml	POST /events/{eventCode}/speakers/invite
 no-verb-segment	event-speakers-api.openapi.yml	POST /events/{eventCode}/speakers/self-nominate
-no-verb-segment	event-speakers-api.openapi.yml	POST /events/{eventCode}/speakers/{speakerId}/promote
-no-verb-segment	event-speakers-api.openapi.yml	POST /events/{eventCode}/speakers/{speakerId}/review
-no-verb-segment	event-speakers-api.openapi.yml	POST /events/{eventCode}/speakers/{username}/send-invitation
 no-verb-segment	event-speakers-api.openapi.yml	POST /speaker-portal/events/{eventCode}/content/submit
 no-verb-segment	event-speakers-api.openapi.yml	POST /speaker-portal/events/{eventCode}/materials/confirm
-no-verb-segment	event-speakers-api.openapi.yml	POST /speaker-portal/events/{eventCode}/respond
 no-verb-segment	event-tasks-api.openapi.yml	PUT /tasks/{taskId}/complete
 no-verb-segment	event-tasks-api.openapi.yml	PUT /tasks/{taskId}/reassign
-no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/publish
 no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/publish/schedule
 no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/publish/{phase}
 no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/teaser-images/confirm
@@ -71,25 +56,15 @@ no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/unpublish/{
 no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/venue-coordination/preview
 no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/venue-coordination/send
 no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/workflow/transition
-no-verb-segment	partner-meetings-api.openapi.yml	POST /partner-meetings/{meetingId}/send-invite
 no-verb-segment	partners-api.openapi.yml	GET /partners/{companyName}/analytics/export
-no-verb-segment	partners-api.openapi.yml	POST /partners/{companyName}/reactivate
 no-verb-segment	topics-api.openapi.yml	POST /topics/calculate-similarities
 no-verb-segment	users-api.openapi.yml	GET /users/additional-emails/verify
 no-verb-segment	users-api.openapi.yml	GET /users/{username}/merge-preview
 no-verb-segment	users-api.openapi.yml	POST /users/additional-emails/verify
 no-verb-segment	users-api.openapi.yml	POST /users/admin/reconcile
-no-verb-segment	users-api.openapi.yml	POST /users/company-logo-requests/{requestId}/approve
-no-verb-segment	users-api.openapi.yml	POST /users/company-logo-requests/{requestId}/decline
-no-verb-segment	users-api.openapi.yml	POST /users/me/additional-emails/{email}/make-primary
-no-verb-segment	users-api.openapi.yml	POST /users/me/additional-emails/{email}/resend-verification
 no-verb-segment	users-api.openapi.yml	POST /users/me/picture/confirm
 no-verb-segment	users-api.openapi.yml	POST /users/me/profile-claims/confirm
-no-verb-segment	users-api.openapi.yml	POST /users/merge-requests/{requestId}/approve
-no-verb-segment	users-api.openapi.yml	POST /users/merge-requests/{requestId}/decline
 no-verb-segment	users-api.openapi.yml	POST /users/provision
-no-verb-segment	users-api.openapi.yml	POST /users/{username}/issue-invitation-credentials
-no-verb-segment	users-api.openapi.yml	POST /users/{username}/merge
 no-verb-segment	users-api.openapi.yml	POST /users/{username}/picture/confirm
 no-verb-segment	users-api.openapi.yml	POST /users/{username}/profile-picture/upload-from-url
 no-verb-segment	users-api.openapi.yml	POST /watch/authenticate

@@ -561,16 +561,17 @@ test('organizer can create and publish event', async ({ page }) => {
 
 `npm run lint:api` (in `web-frontend/`, `make lint-api`, CI `frontend-static` in the required
 `build-frontend` check) runs Spectral with the repo ruleset `docs/api/.spectral.yaml` over the
-public specs `docs/api/*.openapi.yml` (not `_shared.openapi.yml`). Five rules, one finding per
+public specs `docs/api/*.openapi.yml` (not `_shared.openapi.yml`). Six rules, one finding per
 operation (Story 17.4):
 
 | Rule | Fails on | Source |
 |---|---|---|
 | `path-kebab-case` | a literal path segment that is not kebab-case (`speakerSlots`, `batch_registrations`, `companies:get-or-create`); an `.ext` suffix is allowed, path parameters are exempt | ADR-013, naming table above |
-| `no-verb-segment` | a path segment from the verb list in the ruleset: any literal segment of a write (`POST /tasks/{id}/complete`, `POST …/publish/{phase}`, `POST /registrations/deregister/by-email`), only the last segment of a read (`GET …/publish/status` passes); `search`, `get-or-create`, `vote` are not on the list | ADR-013 |
+| `no-verb-segment` | a verb outside the ADR-013 §1 action shape `POST /{id}/{verb}` (the verb is the last segment of a POST, directly after a parameter or `me`: `POST /companies/{name}/verify`, `POST /users/me/merge` pass). Flagged: a verb after a literal (`POST /users/me/profile-claims/confirm`), with another method (`PUT /tasks/{taskId}/complete`), on a collection (`POST /users/provision`), followed by a parameter or qualifier (`POST …/publish/{phase}`, `POST /registrations/deregister/by-email`); for a read only the last segment counts (`GET …/download` fails, `GET …/publish/status` passes). The verb list in the ruleset only tells a verb from a sub-resource noun; it allows nothing. `search`, `get-or-create`, `vote` are not on it | ADR-013 |
 | `no-internal-path` | a path under `/internal` in a public spec | ADR-016 |
 | `no-literal-under-events` | a literal directly under `/events/` (`/events/current`): it shares the namespace of `{eventCode}` | ADR-013 |
 | `uuid-path-param` | a path parameter with `format: uuid`, or a string named `id` / `*Id` without a format (`uploadId`); an operation parameter replaces the path-level one of the same name. Not seen: a UUID under another name without a format | ADR-003 amendment 2026-11 |
+| `no-personal-data-path-param` | a path parameter named `email` or ending in `Email`, case-insensitive (`/users/me/additional-emails/{email}`); path-level and operation-level parameters as for `uuid-path-param`. Personal data never goes in a path | ADR-003 amendment 2026-11 |
 
 **Baseline policy.** Existing violations are listed in `web-frontend/scripts/api-lint-baseline.txt`
 (rule, spec file, method, path; no line numbers). The lint fails on a NEW finding and on a STALE one
@@ -579,8 +580,20 @@ commit the smaller baseline in the same PR. Never use `--update` to accept a new
 the reason in the PR description. For `uuid-path-param` the reason is the ADR-003 case (no natural
 name, never crosses a service, nested under its meaningful parent and loaded scoped to it); a linter
 cannot decide that, so every UUID path parameter is listed and reviewed by a person. For
-`no-verb-segment` it is why the ADR-013 action sub-resource is the right shape. Stories 17.6, 17.9 and
-17.10 shrink the baseline.
+`no-verb-segment` it is why no ADR-013 shape fits.
+
+**Owner file.** Every baseline line matches exactly one group in
+`web-frontend/scripts/api-lint-owners.txt` (hand-maintained, reviewed like code): `<group id> TAB
+<owner> TAB <rule regex> TAB <operation regex>`, the owner being the story that removes the lines
+(`17.9b`), an issue (`#1070`), or `exception: <reason>` accepted by the owner. No exception without a
+written reason, and no allow-list of action names: the right verb for the right action. A group
+owned by a story or issue covers a family by regex (all `/logos/` lines), so the file is not a
+second copy of the baseline; an exception group lists its exact operations (`^(METHOD /path|…)$`),
+so no new line falls into an exception without its own entry.
+`npm run lint:api` fails on `UNOWNED` (a line no group matches), `AMBIGUOUS` (two or more groups),
+`STALE OWNER` (a group that matches nothing any more: remove it with the fix) and `BAD OWNER` (an
+unparseable line), also right after `--update`, so a PR that accepts a new line adds its owner
+group in the same PR.
 
 **Similarity report.** On a PR that changes `docs/api/`, the CI job `api-similarity` posts one
 comment: for every added operation, the 3 most similar existing ones (path and summary). It never

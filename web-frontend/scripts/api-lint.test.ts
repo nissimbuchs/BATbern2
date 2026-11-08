@@ -3,18 +3,21 @@
  * (`docs/api/.spectral.yaml`) over the fixture specs in `scripts/__fixtures__/api-lint/specs`
  * (excluded from Vitest and Prettier: read by Spectral, never run).
  */
-import { beforeAll, describe, expect, it } from 'vitest';
+import { afterEach, beforeAll, describe, expect, it, vi } from 'vitest';
 import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import {
+  checkOwners,
   compare,
   defaultPaths,
   findingKey,
   formatBaseline,
   lintSpecs,
   parseBaseline,
+  parseOwners,
+  run,
   runSpectral,
   toFindings,
   type Finding,
@@ -35,11 +38,19 @@ const VERB_BEFORE_PARAM = `no-verb-segment\t${FIXTURE}\tPOST /events/{eventCode}
 const VERB_BEFORE_QUALIFIER = `no-verb-segment\t${FIXTURE}\tPOST /registrations/deregister/by-email`;
 const UUID_UNFORMATTED = `uuid-path-param\t${FIXTURE}\tGET /events/{eventCode}/uploads/{uploadId}`;
 const UUID_INHERITED = `uuid-path-param\t${FIXTURE}\tDELETE /events/{eventCode}/teasers/{teaserId}`;
+const VERB_AFTER_LITERAL = `no-verb-segment\t${FIXTURE}\tPOST /users/me/profile-claims/confirm`;
+const VERB_ON_COLLECTION = `no-verb-segment\t${FIXTURE}\tPOST /users/provision`;
+const READ_VERB = `no-verb-segment\t${FIXTURE}\tGET /events/{eventCode}/attachments/{index}/download`;
+const PERSONAL_DATA = `no-personal-data-path-param\t${FIXTURE}\tDELETE /users/me/additional-emails/{email}`;
 const ALL = [
   KEBAB,
   VERB,
   VERB_BEFORE_PARAM,
   VERB_BEFORE_QUALIFIER,
+  VERB_AFTER_LITERAL,
+  VERB_ON_COLLECTION,
+  READ_VERB,
+  PERSONAL_DATA,
   INTERNAL,
   EVENTS_LITERAL,
   UUID_GET,
@@ -81,8 +92,31 @@ describe('rule details', () => {
     );
   });
 
+  it('reports an {email} path parameter as personal data, not a {username} one', () => {
+    const byKey = new Map(findings.map((f) => [findingKey(f), f.message]));
+    expect(byKey.get(PERSONAL_DATA)).toContain('email');
+    expect(byKey.get(PERSONAL_DATA)).toContain('ADR-003');
+    expect(findings.some((f) => f.path === '/users/{username}/profile')).toBe(false);
+  });
+
   it('checks every segment of a write, only the last of a read', () => {
     expect(findings.map(findingKey).some((k) => k.includes('/publish/status'))).toBe(false);
+  });
+
+  it('allows the ADR-013 action shape POST /{id}/{verb}, after a parameter or `me`', () => {
+    const keys = findings.map(findingKey);
+    expect(keys.some((k) => k.includes('/companies/{name}/verify'))).toBe(false);
+    expect(keys.some((k) => k.includes('/users/me/merge'))).toBe(false);
+  });
+
+  it.each([
+    ['a verb after a literal', VERB_AFTER_LITERAL],
+    ['a verb with another method than POST', VERB],
+    ['a verb on a collection', VERB_ON_COLLECTION],
+    ['a verb followed by a parameter', VERB_BEFORE_PARAM],
+    ['a read verb as the last segment', READ_VERB],
+  ])('flags %s', (_name, key) => {
+    expect(findings.map(findingKey)).toContain(key);
   });
 });
 
@@ -92,7 +126,7 @@ describe('compare', () => {
     expect(result.problems).toEqual([]);
     expect(result.exitCode).toBe(0);
     expect(result.summary).toBe(
-      'API lint: 10 finding(s): no-internal-path 1, no-literal-under-events 1, no-verb-segment 3, path-kebab-case 1, uuid-path-param 4.'
+      'API lint: 14 finding(s): no-internal-path 1, no-literal-under-events 1, no-personal-data-path-param 1, no-verb-segment 6, path-kebab-case 1, uuid-path-param 4.'
     );
   });
 
@@ -104,6 +138,7 @@ describe('compare', () => {
     ['internal', INTERNAL],
     ['events literal', EVENTS_LITERAL],
     ['uuid', UUID_GET],
+    ['personal data in a path', PERSONAL_DATA],
     ['unformatted string *Id', UUID_UNFORMATTED],
   ])('fails on a NEW finding: %s', (_name, key) => {
     const result = compare(findings, baselineOf(ALL.filter((k) => k !== key)));
@@ -212,12 +247,126 @@ describe('the committed baseline', () => {
       'no-verb-segment POST /speakers/{speakerId}/ai/analyze-abstract',
       'no-verb-segment PUT /tasks/{taskId}/complete',
       'no-verb-segment PUT /tasks/{taskId}/reassign',
-      'no-verb-segment POST /users/company-logo-requests/{requestId}/approve',
-      'no-verb-segment POST /users/company-logo-requests/{requestId}/decline',
-      'no-verb-segment POST /users/merge-requests/{requestId}/approve',
-      'no-verb-segment POST /users/merge-requests/{requestId}/decline',
+      'uuid-path-param POST /users/company-logo-requests/{requestId}/approve',
+      'uuid-path-param POST /users/merge-requests/{requestId}/decline',
     ]) {
       expect(keys).toContain(expected);
     }
+    // ADR-013 actions are no verb violations
+    for (const action of [
+      'no-verb-segment POST /users/company-logo-requests/{requestId}/approve',
+      'no-verb-segment POST /users/merge-requests/{requestId}/decline',
+      'no-verb-segment POST /companies/{name}/verify',
+    ]) {
+      expect(keys).not.toContain(action);
+    }
+  });
+
+  it('gives every line exactly one owner group in the committed owner file', () => {
+    const { entries } = parseBaseline(readFileSync(paths.baselinePath, 'utf8'));
+    expect(checkOwners(entries, readFileSync(paths.ownersPath, 'utf8'))).toEqual([]);
+  });
+});
+
+describe('owners', () => {
+  const entries = parseBaseline(baselineOf([VERB, KEBAB])).entries;
+  const owners = (...lines: string[]) => lines.join('\n') + '\n';
+  const VERB_GROUP = 'A1\t17.9\tno-verb-segment\tPUT /tasks/';
+  const KEBAB_GROUP =
+    'A2\texception: legacy path kept for a reason\tpath-kebab-case\t/speakerSlots$';
+
+  it('passes when every line matches exactly one group and every group a line', () => {
+    expect(checkOwners(entries, owners('# comment', VERB_GROUP, KEBAB_GROUP))).toEqual([]);
+  });
+
+  it('reports a line without owner (UNOWNED)', () => {
+    const problems = checkOwners(entries, owners(VERB_GROUP));
+    expect(problems[0]).toMatch(/^UNOWNED +path-kebab-case {2}fixture-api\.openapi\.yml {2}GET /);
+    expect(problems.at(-1)).toContain('without an owner');
+  });
+
+  it('reports a line in two groups (AMBIGUOUS), naming the line and the groups', () => {
+    const problems = checkOwners(
+      entries,
+      owners(VERB_GROUP, KEBAB_GROUP, 'A3\t#1070\t(no-verb-segment|uuid-path-param)\t/complete$')
+    );
+    expect(problems).toEqual([
+      `AMBIGUOUS    no-verb-segment  ${FIXTURE}  PUT /tasks/{id}/complete  matches groups A1, A3`,
+    ]);
+  });
+
+  it('reports a group that matches nothing (STALE OWNER)', () => {
+    const problems = checkOwners(
+      entries,
+      owners(VERB_GROUP, KEBAB_GROUP, 'A4\t17.10\tno-verb-segment\t/fixed-away$')
+    );
+    expect(problems).toHaveLength(1);
+    expect(problems[0]).toMatch(/^STALE OWNER +group A4 \(17\.10\)/);
+  });
+
+  it('matches the rule regex against the whole rule name', () => {
+    const problems = checkOwners(entries, owners('A1\t17.9\tverb\tPUT /tasks/', KEBAB_GROUP));
+    expect(problems.some((p) => p.startsWith('UNOWNED'))).toBe(true);
+  });
+
+  it('rejects an owner without a story, an issue or a reasoned exception', () => {
+    const { groups, errors } = parseOwners(
+      owners(
+        'B1\texception:\tno-verb-segment\t/a',
+        'B2\tsomeone\tno-verb-segment\t/a',
+        'B3\t17.9\tno-verb-segment\t(',
+        'B4\t17.9\tno-verb-segment',
+        'B5\t17.9b\tno-verb-segment\t/a',
+        'B5\t#12\tno-verb-segment\t/b'
+      )
+    );
+    expect(groups.map((g) => g.id)).toEqual(['B5']);
+    expect(errors).toHaveLength(5);
+    expect(errors.every((e) => e.startsWith('BAD OWNER'))).toBe(true);
+  });
+});
+
+describe('run (the exit code of npm run lint:api)', () => {
+  const ALL_OWNED = 'R1\t17.9\t.*\t.\n';
+  const KEBAB_UNOWNED =
+    'R1\t17.9\t(no-verb-segment|no-personal-data-path-param|no-internal-path|no-literal-under-events|uuid-path-param)\t.\n';
+  let dir: string;
+  const runIn = (argv: string[], baseline: string | null, owners: string) => {
+    dir = mkdtempSync(join(tmpdir(), 'api-lint-run-'));
+    const baselinePath = join(dir, 'baseline.txt');
+    const ownersPath = join(dir, 'owners.txt');
+    if (baseline !== null) writeFileSync(baselinePath, baseline);
+    writeFileSync(ownersPath, owners);
+    vi.spyOn(console, 'log').mockImplementation(() => {});
+    const code = run(argv, { ...paths, specDir: fixtureSpecs, baselinePath, ownersPath });
+    return { code, baselinePath, logs: vi.mocked(console.log).mock.calls.map((c) => String(c[0])) };
+  };
+
+  afterEach(() => {
+    vi.restoreAllMocks();
+    rmSync(dir, { recursive: true, force: true });
+  });
+
+  it('exits 0 when the baseline matches and every line is owned', () => {
+    expect(runIn([], baselineOf(ALL), ALL_OWNED).code).toBe(0);
+  });
+
+  it('exits 1 on an UNOWNED baseline line', () => {
+    const { code, logs } = runIn([], baselineOf(ALL), KEBAB_UNOWNED);
+    expect(code).toBe(1);
+    expect(logs.some((l) => l.startsWith('UNOWNED') && l.includes('speakerSlots'))).toBe(true);
+  });
+
+  it('--update writes the baseline and exits 1 when a written line is unowned', () => {
+    const { code, baselinePath, logs } = runIn(['--update'], null, KEBAB_UNOWNED);
+    expect(code).toBe(1);
+    expect(
+      parseBaseline(readFileSync(baselinePath, 'utf8')).entries.map(findingKey).sort()
+    ).toEqual([...ALL].sort());
+    expect(logs.some((l) => l.startsWith('UNOWNED'))).toBe(true);
+  });
+
+  it('--update exits 0 when every written line is owned', () => {
+    expect(runIn(['--update'], null, ALL_OWNED).code).toBe(0);
   });
 });

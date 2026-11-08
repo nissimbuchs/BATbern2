@@ -7,7 +7,7 @@
 # method + path, no line numbers): a NEW finding fails, and so does a baselined one that is gone
 # (STALE). Policy: docs/architecture/coding-standards.md, section "API conventions lint".
 #
-# Only these five rules: no `extends: spectral:oas` (the recommended ruleset is out of scope).
+# Only these six rules: no `extends: spectral:oas` (the recommended ruleset is out of scope).
 # Every rule reports one finding per operation (spectral-functions/apiConventions.js).
 # Applies to the public specs docs/api/*.openapi.yml (not `_shared.openapi.yml`, which holds
 # components only, and not a future docs/api/internal/).
@@ -30,19 +30,23 @@ rules:
       functionOptions:
         check: kebab
 
-  # A verb segment makes the endpoint an RPC call (`/tasks/{id}/complete`). For a write
-  # (POST, PUT, PATCH, DELETE) every literal segment is checked, so a verb followed by a parameter
-  # or a qualifier (`/publish/{phase}`, `/deregister/by-email`) is caught too. For a read (GET,
-  # HEAD, OPTIONS) only the last segment counts: `GET /publish/status` and
-  # `GET /logos/cleanup/statistics` name a sub-resource. The ADR-013 row "state transition" allows
-  # `POST /{id}/{verb}`, so every existing one is baselined, and Stories 17.9 and 17.10 reduce
-  # them; a new one needs its reason stated in the PR that grows the baseline.
-  # The list: the Story 17.4 set (first line) plus every verb segment found in the specs on
+  # A verb segment makes the endpoint an RPC call (`/tasks/{id}/complete`), except in the one shape
+  # ADR-013 section 1 (row "state transition with side effects") prescribes: `POST /{id}/{verb}`, a
+  # verb as the last segment of a POST directly after an instance identifier (a path parameter, or
+  # `me`): `POST /companies/{name}/verify`, `POST /users/me/merge`. Everywhere else a verb is
+  # flagged: after a literal (`POST /users/me/profile-claims/confirm`), with another method
+  # (`PUT /tasks/{taskId}/complete`), on a collection (`POST /users/provision`), or followed by a
+  # parameter or qualifier (`/publish/{phase}`, `/deregister/by-email`). For a read (GET, HEAD,
+  # OPTIONS) only the last segment counts: `GET /publish/status` names a sub-resource.
+  # The list below is a detector that tells a verb from a sub-resource noun, not a permission list:
+  # no action name is allowed by being on or off it. The right verb for the right action.
+  # Contents: the Story 17.4 set (first block) plus every verb segment found in the specs on
   # 2026-11-07. Deliberately not listed: `search` (ADR-013 section 3), `get-or-create`
   # (ADR-013 section 2), `vote` (ADR-013 toggle), and nouns such as `status`, `schedule`, `roles`.
   # An `.ext` suffix is ignored (`export.docx` counts as `export`).
+  # Every baselined finding has an owner in web-frontend/scripts/api-lint-owners.txt.
   no-verb-segment:
-    description: No verb path segments (ADR-013).
+    description: No verb path segments outside the ADR-013 action shape POST /{id}/{verb}.
     message: '{{error}}'
     severity: error
     given: $.paths[*]
@@ -147,3 +151,16 @@ rules:
       function: apiConventions
       functionOptions:
         check: uuid
+
+  # Personal data never goes in a path (ADR-003 2026-11 amendment): a path ends up in access logs,
+  # browser history and caches. Detected by name: a path parameter named `email` or ending in
+  # `Email` (case-insensitive), path-level or operation-level, as for uuid-path-param.
+  no-personal-data-path-param:
+    description: No personal data in a path parameter (ADR-003 amendment).
+    message: '{{error}}'
+    severity: error
+    given: $.paths[*]
+    then:
+      function: apiConventions
+      functionOptions:
+        check: personal-data

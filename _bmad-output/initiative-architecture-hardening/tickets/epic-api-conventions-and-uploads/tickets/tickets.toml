@@ -34,7 +34,7 @@ id = 10
 type = "story"
 title = "API conventions II (breaking)"
 description = "17.10: one endpoint set with an ownership rule replaces the me/{username} twins for pictures and profile; one speaker path key across the specs, chosen per the ADR-003 amendment; batch_registrations and enroll-stakeholders folded into participants; newsletter my-subscription folded into my-subscriptions."
-verify = "No /users/me/* and /users/{username}/* twin remains for pictures and profile (integration test: own allowed, other 403, organizer allowed where it was); a Spectral rule holds the one speaker path key; batch_registrations, enroll-stakeholders and my-subscription answer 404 in production and their baseline lines are gone; npm run lint:api and the 17.3 contract check pass; registration, enrolment and newsletter self-service pass Bruno and Playwright."
+verify = "No /users/me/* and /users/{username}/* twin remains for pictures and profile (integration test: own allowed, other 403, organizer allowed where it was); a Spectral rule holds the one speaker path key; batch_registrations, enroll-stakeholders and my-subscription answer 404 in production and their remaining baseline lines are gone; npm run lint:api and the 17.3 contract check pass; registration, enrolment and newsletter self-service pass Bruno and Playwright."
 covers = ["R15"]
 after = ["9b", "1.3b", "epic-one-service-direction"]
 hitl = false
@@ -53,7 +53,7 @@ after = [10]
 hitl = false
 risk = "high"
 references = ["docs/architecture/ADR-013-rest-api-crud-conventions.md", "docs/architecture/ADR-003-meaningful-identifiers-public-apis.md#amendment-2026-11-uuids-in-paths"]
-notes = ["Owner 2026-11-08: additional-emails {email} in a path is a real ADR-003 violation (personal data in a path); DELETE /users/me/additional-emails/{email} has the same problem and is in scope."]
+notes = ["Owner 2026-11-08: additional-emails {email} in a path is a real ADR-003 violation (personal data in a path); DELETE /users/me/additional-emails/{email} has the same problem and is in scope.", "Owner 2026-11-08 (17.4 follow-up): the new Spectral rule no-personal-data-path-param reports 4 lines on /users/me/additional-emails/{email} (DELETE, PATCH, POST make-primary, POST resend-verification), all owned by 10b; the story ends when that rule reports none."]
 
 [[entry]]
 id = 11

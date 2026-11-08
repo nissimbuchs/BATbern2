@@ -121,14 +121,15 @@ parallel once their dependencies are in, as long as only one PR is open at a tim
 (not measured): 17.0a–d are about 5–6 stories of work, so 17.0b and 17.0c may each split into two
 PRs (as 16.8a/b did).
 
-**Not stories yet:** the upload purpose mail-attachment, the Watch API path changes (`/watch/pair`,
-`/watch/authenticate`; owner deciding), the remaining EMS module moves (planning, publishing, ai)
+**Not stories yet:** the upload purpose mail-attachment, the remaining EMS module moves (planning, publishing, ai)
 after 17.12, and the follow-up reviews (database, frontend, schema, Spring gateway, Watch API; action
 list item 9). Since 2026-11-08 (owner) the purposes profile-picture, event-photo, teaser-image and
 session-material incl. speaker portal are backlog stories 17.11a–d, each built after 17.11 proves the
-pattern, 17.10b (API conventions III) owns the remaining Spectral baseline lines, and 17.9b folds
+pattern, 17.10b (API conventions III) and 17.9b own their Spectral baseline lines, and 17.9b folds
 the event lifecycle into one transition idiom (ADR-013 §1); all sit in
-epic 4 of the v7 initiative `initiative-architecture-hardening`.
+epic 4 of the v7 initiative `initiative-architecture-hardening`. Every baseline line's owner (story,
+issue or owner-accepted exception, e.g. `/watch/pair` and `/watch/authenticate` as credential
+exchange) is in `web-frontend/scripts/api-lint-owners.txt`, checked by `npm run lint:api`.
 
 ---
 
@@ -455,7 +456,8 @@ deviations: none.
 1. No client class in any service calls an `/api/v1` URL of another service. Guard: ArchUnit or a
    source-scan test over client packages.
 2. No `/internal` path in a public spec and the moved operations are gone from them. Guard: 17.4 lint,
-   baseline shrinks accordingly.
+   baseline shrinks accordingly (`issue-invitation-credentials` is a valid ADR-013 action since
+   2026-11-08 and has no baseline line; it moves to `/internal` all the same).
 3. Each moved call works with and without a user JWT. Guard: integration test per client, both cases;
    the receiver records the actor or `system:<job>`.
 4. The Spring gateway still denies `/internal/**` from outside. Guard: `ProductionSecurityFilterChainTest`
@@ -570,8 +572,9 @@ existing `participants` resource · deviations: none.
    enforced by one `@PreAuthorize` rule. Guard: integration test (own = allowed, other = 403,
    organizer = allowed where it was).
 2. One speaker path key across all specs. Guard: Spectral rule added for the parameter name.
-3. `batch_registrations`, `enroll-stakeholders` and `my-subscription` are gone. Guard: Spectral
-   baseline shrinks, 17.3 contract check passes.
+3. `batch_registrations`, `enroll-stakeholders` and `my-subscription` are gone. Guard: 404 checks,
+   Spectral baseline shrinks by the `batch_registrations` lines (`enroll-stakeholders` has none since
+   the ADR-013 rule change of 2026-11-08), 17.3 contract check passes.
 4. Registration, enrolment and newsletter self-service work end to end. Guard: Bruno, Playwright.
 
 ---
