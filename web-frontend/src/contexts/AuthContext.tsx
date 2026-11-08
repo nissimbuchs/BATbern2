@@ -17,6 +17,7 @@ import {
 import { getMyPartnerCompany } from '@/services/api/partnerApi';
 import { getUserProfile } from '@/services/api/userApi';
 import { hasCognitoSession } from '@/utils/auth/cognitoSession';
+import { canAccessPath, userHasPermission, userHasRole } from './authRules';
 
 /**
  * Discriminated outcome of a sign-in attempt. Epic 11 bug fix 2026-05-19 — the
@@ -29,7 +30,7 @@ import { hasCognitoSession } from '@/utils/auth/cognitoSession';
 export type SignInOutcome =
   { kind: 'success' } | { kind: 'requires-new-password' } | { kind: 'failed' };
 
-interface UseAuthReturn extends AuthenticationState {
+export interface UseAuthReturn extends AuthenticationState {
   refreshToken: () => Promise<boolean>;
   signIn: (credentials: LoginCredentials) => Promise<SignInOutcome>;
   /**
@@ -657,11 +658,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Check if user has specific role (supports multi-role users)
    */
   const hasRole = useCallback(
-    (role: UserRole): boolean => {
-      const roles = state.user?.roles;
-      if (roles && roles.length > 0) return roles.includes(role);
-      return state.user?.role === role;
-    },
+    (role: UserRole): boolean => userHasRole(state.user, role),
     [state.user]
   );
 
@@ -669,47 +666,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Check if user has permission for resource/action
    */
   const hasPermission = useCallback(
-    (resource: string, action: string): boolean => {
-      if (!state.user) return false;
-
-      const { role } = state.user;
-
-      // Role-based permission matrix based on Story 1.2 specifications
-      const permissions: Record<UserRole, Record<string, string[]>> = {
-        organizer: {
-          events: ['create', 'read', 'update', 'delete'],
-          speakers: ['create', 'read', 'update', 'delete'],
-          partners: ['create', 'read', 'update', 'delete'],
-          content: ['read'],
-          analytics: ['read'],
-        },
-        speaker: {
-          events: ['read'],
-          speakers: ['read', 'update'], // own profile only
-          content: ['create', 'read', 'update'], // own content only
-          analytics: ['read'], // own analytics only
-        },
-        partner: {
-          events: ['read'],
-          partners: ['read', 'update'], // own profile only
-          analytics: ['read'], // own analytics only
-          content: ['read'],
-        },
-        attendee: {
-          events: ['read'],
-          content: ['read'],
-          speakers: ['read'],
-        },
-      };
-
-      const rolePermissions = permissions[role];
-      if (!rolePermissions) return false;
-
-      const resourcePermissions = rolePermissions[resource];
-      if (!resourcePermissions) return false;
-
-      return resourcePermissions.includes(action);
-    },
+    (resource: string, action: string): boolean => userHasPermission(state.user, resource, action),
     [state.user]
   );
 
@@ -717,90 +674,7 @@ export const AuthProvider: React.FC<AuthProviderProps> = ({ children }) => {
    * Check if user can access specific path
    */
   const canAccess = useCallback(
-    (path: string): boolean => {
-      // Public paths accessible to everyone (authenticated and unauthenticated)
-      const publicPaths = [
-        '/login',
-        '/signup',
-        '/forgot-password',
-        '/auth',
-        '/about',
-        '/archive',
-        '/register',
-      ];
-      const isPublicPath = publicPaths.some((publicPath) => path.startsWith(publicPath));
-
-      // Homepage is always accessible
-      if (path === '/' || isPublicPath) {
-        return true;
-      }
-
-      if (!state.isAuthenticated) {
-        return false;
-      }
-
-      if (!state.user) return false;
-
-      // 2026-05-20 (Q#2c) — canAccess previously only consulted `state.user.role` (the
-      // primary role). For a user with roles [organizer, speaker] the primary is
-      // 'organizer', so `/speaker-portal/*` failed the check, bounced through
-      // ProtectedRoute → /dashboard → /organizer/events — landing the user on the
-      // organizer dashboard instead of the speaker portal. Iterate over the full
-      // `roles` array (falling back to the singular `role` for legacy callers) and
-      // accept the path if ANY role allows it.
-      const effectiveRoles: UserRole[] =
-        state.user.roles && state.user.roles.length > 0
-          ? state.user.roles
-          : state.user.role
-            ? [state.user.role]
-            : [];
-
-      // Role-based path access
-      const pathAccess: Record<UserRole, string[]> = {
-        organizer: [
-          '/dashboard',
-          '/profile', // Story 12.11: role-neutral profile page
-          '/events',
-          '/speakers',
-          '/partners',
-          '/analytics',
-          '/organizer',
-          '/account',
-        ],
-        speaker: [
-          '/dashboard',
-          '/profile',
-          '/events',
-          '/materials',
-          '/speaker',
-          '/speaker-portal',
-          '/account',
-        ],
-        partner: [
-          '/dashboard',
-          '/profile',
-          '/analytics',
-          '/organizer/analytics',
-          '/events',
-          '/partner',
-          '/account',
-        ],
-        // Story 12.11: '/profile' for every role — the role-neutral profile page is
-        // also the onboarding-gate target, so every authenticated role must reach it.
-        attendee: [
-          '/dashboard',
-          '/profile',
-          '/events',
-          '/content',
-          '/search',
-          '/attendee',
-          '/account',
-        ],
-      };
-
-      const allowedPaths = effectiveRoles.flatMap((r) => pathAccess[r] ?? []);
-      return allowedPaths.some((allowedPath) => path.startsWith(allowedPath));
-    },
+    (path: string): boolean => canAccessPath(state.isAuthenticated, state.user, path),
     [state.isAuthenticated, state.user]
   );
 
