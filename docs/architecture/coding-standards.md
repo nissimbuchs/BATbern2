@@ -442,8 +442,8 @@ security filter chain, our hooks and our service modules.
 Unit tests of pure functions stay as they are. The rule targets tests that claim to test
 behaviour while the behaviour is mocked. Until the shared harnesses exist (17.0b: S2S contract
 harness, in place for public `/api/v1` calls since 17.0b1 and for `/internal/**` since 17.0b2;
-17.0c: MSW harness), a new test that cannot avoid an own-code mock says why in a comment,
-and the ratchet below makes that visible in review.
+17.0c: MSW harness, in place since 17.0c1), a new test that cannot avoid an own-code mock says why
+in a comment, and the ratchet below makes that visible in review.
 
 #### S2S contract harness (backend)
 
@@ -492,6 +492,48 @@ CUMS_INTERNAL)`) and expect the CUMS calls there; `close()` in `@AfterEach` rest
 `ContractServer`. The public tooling (frontend path check, type generation, API similarity, ZAP
 coverage, access-control probe, `lint:api`) does not read `docs/api/internal/`; it is linted by
 `npm run lint:api-internal` with its own reduced ruleset (`docs/api/internal/.spectral.yaml`).
+
+#### Frontend: the MSW harness (17.0c1)
+
+Every Vitest test runs against one MSW server (`web-frontend/src/test/msw/`, started in
+`src/test/setup.ts`). It is the frontend twin of `ContractServer`:
+
+- **Every request is checked against `docs/api/*.openapi.yml`** with the 17.3 `specMatcher`: the
+  path exists, the method exists for it, every query parameter is declared and within its enum,
+  minimum and maximum. `/api/...` (the test baseURL of `apiClient`) and `/api/v1/...` are the same
+  operation. A request outside the specs fails as a network error **and** fails the test afterwards
+  with the matcher's reason (`SpecViolationError`), so code that swallows the error cannot hide it.
+  `docs/api/internal/` is not frontend-callable and not served.
+- **Default answer:** the spec example of the operation's lowest 2xx response (an empty body for a
+  204 or a binary download). Every JSON 2xx response in the specs has one; `examples.test.ts`
+  guards that it exists, validates against the schema and carries no personal data.
+- **Overrides by `operationId`**, typed from `src/types/generated/`: a missing required field or a
+  wrong shape fails `npm run type-check` (`tsconfig.test-harness.json` covers the harness and the
+  tests listed there). An operationId two specs share is qualified by its spec
+  (`topics-api/listTopics`, `partners-api/listTopics`).
+
+```ts
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+
+api.on('listCompanies', ({ query }) => ({ data: [company], pagination }));   // typed body
+api.on('getCompany', () => HttpResponse.json(problem, { status: 404 }));      // any Response
+api.on('createCompany', ({ body }) => created, { status: 201 });
+render(<CompanyPage />);                                                      // real hooks, services
+expect(api.calls('listCompanies')[0].query.get('search')).toBe('Müller');     // what was sent
+```
+
+Overrides and recorded calls are reset after every test. Render the real screen with its real
+hooks and services; do not `vi.mock` them. A test that talks to another host (an S3 presigned URL)
+adds its own handler with `server.use(...)` from `@/test/msw/server`, never for an `/api` URL.
+i18n stays the real i18next with `en` from `setup.ts`; a per-file `vi.mock('react-i18next')` is
+counted by the ratchet (`fe-mock-i18n`).
+
+New examples come from the local anonymized database:
+`cd web-frontend && node ../scripts/dev/capture-spec-examples.ts` against `make dev-native-up`
+(refuses any non-localhost URL; scrubs e-mail addresses, names, usernames and free text and checks
+the result by value against the database). A spec change that adds a JSON 2xx response adds its
+example in the same PR.
 
 #### Production setup in tests (17.0b3)
 
@@ -554,6 +596,7 @@ baseline `web-frontend/scripts/test-ratchet-baseline.txt`:
 | Category | Counts |
 |---|---|
 | `fe-mock-services` / `fe-mock-hooks` / `fe-mock-components` | `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**/*.{test,spec}.ts(x)`, and `vi.spyOn(x, …)` where `x` is imported from own code, by resolved path: `src/services`; `src/hooks` or a `use[A-Z]...` module; `src/components`, `src/pages` or a PascalCase module |
+| `fe-mock-i18n` | `vi.mock('react-i18next')` / `vi.doMock('react-i18next')`: a per-file i18n stub instead of the real i18next with `en` (17.0c1; the stub dropped interpolation in #959 and hides missing keys) |
 | `be-mock-s2s-client` | `@MockitoBean` of a type ending in `Client` that is not a boundary type (`UserApiClient`, `UserServiceClient`, ...), and `mock(XClient.class)` / `Mockito.mock(XClient.class)` / a `@Mock XClient` field of such a type anywhere in test sources (a shared `@Primary` mock such as EMS `TestUserApiClientConfig`) |
 | `be-mock-in-process` | any other `@MockitoBean` that is not a boundary type, and `mock(X.class)` of such a type inside a test `@Configuration` / `@TestConfiguration` class (a shared mock bean, such as the `EmailService` mocks the services' `TestAwsConfig` held until 17.0b3) |
 | `be-transactional-it` | class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is named `*IntegrationTest` / `*IT` |

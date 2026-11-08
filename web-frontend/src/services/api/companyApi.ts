@@ -87,21 +87,45 @@ class CompanyApiClient {
   }
 
   /**
-   * Get single company by name with optional resource expansion
-   * Story 1.16.2: Uses company name as identifier instead of UUID
+   * Every company matching `filters`, read page by page at the spec maximum of 100. For the batch
+   * import duplicate check, which used to ask for `limit=1000` in one call (#1072 class; found by
+   * the MSW harness, 17.0c1).
    */
-  async getCompany(name: string, options?: { expand?: string[] }): Promise<Company> {
+  async getAllCompanies(
+    filters?: CompanyFilters,
+    options?: { expand?: string[] }
+  ): Promise<CompanyListResponse> {
+    const first = await this.getCompanies({ page: 1, limit: 100 }, filters, options);
+    const data = [...first.data];
+    let current = first;
+    // Our own page counter, never the response's (a server repeating `page: 1, hasNext: true`
+    // would loop forever). Bounded: 100 pages of 100 cover 10,000 companies.
+    for (let page = 2; current.pagination.hasNext && page <= 100; page++) {
+      current = await this.getCompanies({ page, limit: 100 }, filters, options);
+      data.push(...current.data);
+    }
+    return {
+      data,
+      pagination: {
+        ...current.pagination,
+        page: 1,
+        limit: data.length,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      },
+    };
+  }
+
+  /**
+   * Get single company by name. Story 1.16.2: the name is the identifier.
+   *
+   * GET /companies/{name} declares no query parameter and always returns the logo. The
+   * `?expand=logo` this used to add was ignored by CUMS (found by the MSW harness, 17.0c1).
+   */
+  async getCompany(name: string): Promise<Company> {
     try {
-      const params = new URLSearchParams();
-      if (options?.expand && options.expand.length > 0) {
-        params.append('expand', options.expand.join(','));
-      }
-
-      const url = params.toString()
-        ? `${COMPANY_API_PATH}/${name}?${params.toString()}`
-        : `${COMPANY_API_PATH}/${name}`;
-
-      const response = await apiClient.get<Company>(url);
+      const response = await apiClient.get<Company>(`${COMPANY_API_PATH}/${name}`);
       return response.data;
     } catch (error) {
       throw this.transformError(error);

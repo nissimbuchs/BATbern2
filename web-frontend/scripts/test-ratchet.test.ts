@@ -63,7 +63,7 @@ describe('classifySpecifier', () => {
     ['@/contexts/useConfig', 'fe-mock-hooks'],
     ['@/stores/uiStore', null],
     ['@/utils/date/dateFormat', null],
-    ['react-i18next', null],
+    ['react-i18next', 'fe-mock-i18n'],
     ['aws-amplify/auth', null],
     ['@tanstack/react-query', null],
     ['@mui/material', null],
@@ -93,6 +93,7 @@ describe('scanFrontendTest', () => {
     expect(asObject(scanFrontendTest(EVENT_PAGE, read(EVENT_PAGE)))).toEqual({
       'fe-mock-components': 4,
       'fe-mock-hooks': 2,
+      'fe-mock-i18n': 1,
       'fe-mock-services': 3,
     });
   });
@@ -117,7 +118,19 @@ describe('scanFrontendTest', () => {
 
   it('counts vi.doMock like vi.mock', () => {
     const src = "vi.doMock('@/hooks/useSpeakerPool', () => ({}));\nvi.doMock('react-i18next');";
-    expect(asObject(scanFrontendTest(EVENT_PAGE, src))).toEqual({ 'fe-mock-hooks': 1 });
+    expect(asObject(scanFrontendTest(EVENT_PAGE, src))).toEqual({
+      'fe-mock-hooks': 1,
+      'fe-mock-i18n': 1,
+    });
+  });
+
+  it('counts a per-file react-i18next stub as fe-mock-i18n, other packages not', () => {
+    const src = [
+      "vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));",
+      "vi.mock('i18next');",
+      "vi.mock('react-i18next-extra');",
+    ].join('\n');
+    expect(asObject(scanFrontendTest(EVENT_PAGE, src))).toEqual({ 'fe-mock-i18n': 1 });
   });
 
   it('does not count boundary mocks', () => {
@@ -295,7 +308,7 @@ describe('compare (I/O matrix)', () => {
     expect(result.summary).toBe(
       'Test ratchet: be-mock-in-process 4 files/6, be-mock-s2s-client 3 files/4, ' +
         'be-transactional-it 2 files/2, fe-mock-components 2 files/5, fe-mock-hooks 3 files/6, ' +
-        'fe-mock-services 2 files/4.'
+        'fe-mock-i18n 1 files/1, fe-mock-services 2 files/4.'
     );
   });
 

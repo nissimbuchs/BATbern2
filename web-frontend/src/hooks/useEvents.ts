@@ -4,7 +4,6 @@
  * React Query hooks for Event Management feature:
  * - useEvents: List query with filters, sort, pagination (cache 5min)
  * - useEvent: Detail query with resource expansion (cache 15min)
- * - useEventWorkflow: Workflow state query (cache 10min)
  * - useCreateEvent: Create mutation
  * - useUpdateEvent: Update mutation with optimistic updates
  * - useDeleteEvent: Delete mutation
@@ -25,7 +24,6 @@ import type {
   EventDetailUI,
   EventFilters,
   EventListResponse,
-  WorkflowState,
   CreateEventRequest,
   PatchEventRequest,
   PaginationParams,
@@ -79,21 +77,6 @@ export const useEvent = (
     enabled: !!eventCode, // Only fetch if eventCode is provided
     staleTime: 15 * 60 * 1000, // 15 minutes
     refetchOnWindowFocus: true,
-  });
-};
-
-/**
- * useEventWorkflow - Fetch event workflow state
- * Cache: 10 minutes (workflow changes moderately)
- */
-export const useEventWorkflow = (
-  eventCode: string | undefined
-): UseQueryResult<WorkflowState, Error> => {
-  return useQuery({
-    queryKey: ['eventWorkflow', eventCode],
-    queryFn: () => eventApiClient.getEventWorkflow(eventCode!),
-    enabled: !!eventCode,
-    staleTime: 10 * 60 * 1000, // 10 minutes
   });
 };
 

@@ -1801,19 +1801,21 @@ export interface operations {
           /**
            * @example [
            *       {
-           *         "registrationCode": "BATbern34-reg-A3X9K2",
+           *         "registrationCode": "BAT-2023-000341",
            *         "eventCode": "BATbern34",
+           *         "attendeeUsername": "anna.muster",
            *         "eventTitle": "Cloud Native Architecture",
            *         "eventDate": "2023-03-15T18:00:00Z",
-           *         "status": "attended",
+           *         "status": "ATTENDED",
            *         "registrationDate": "2023-02-01T10:30:00Z"
            *       },
            *       {
-           *         "registrationCode": "BATbern36-reg-B7Y1M4",
+           *         "registrationCode": "BAT-2023-000362",
            *         "eventCode": "BATbern36",
+           *         "attendeeUsername": "anna.muster",
            *         "eventTitle": "Microservices Patterns",
            *         "eventDate": "2023-05-20T18:00:00Z",
-           *         "status": "attended",
+           *         "status": "ATTENDED",
            *         "registrationDate": "2023-04-10T14:20:00Z"
            *       }
            *     ]

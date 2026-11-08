@@ -34,6 +34,35 @@ paths:
                 type: array
                 items:
                   $ref: "#/components/schemas/PartnerMeetingDTO"
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - id: 92fec106-ec8b-4220-9142-25429941cd10
+                      eventCode: BATbern60
+                      meetingType: AUTUMN
+                      meetingDate: "2026-11-06"
+                      startTime: "13:00:00"
+                      endTime: "16:00:00"
+                      location: Restaurant Schöngrün, Monument im Fruchtland 1, 3006 Bern
+                      agenda: Sample text for the API example.
+                      inviteSentAt: "2026-11-02T06:08:32.535496Z"
+                      createdBy: carla.muster
+                      createdAt: "2026-03-14T12:46:22.266248Z"
+                      updatedAt: "2026-11-02T06:08:30.845371Z"
+                    - id: 66cd8485-f0f6-47a3-aacb-1627f60b1881
+                      eventCode: BATbern58
+                      meetingType: SPRING
+                      meetingDate: "2026-03-06"
+                      startTime: "13:30:00"
+                      endTime: "15:30:00"
+                      location: Restaurant Schöngrün
+                      agenda: Sample text for the API example.
+                      notes: Sample text for the API example.
+                      inviteSentAt: "2026-03-12T16:10:07.348715Z"
+                      createdBy: carla.muster
+                      createdAt: "2026-02-23T10:12:52.777161Z"
+                      updatedAt: "2026-11-04T20:49:19.89827Z"
         "403":
           description: "Forbidden — ORGANIZER role required"
           content:
@@ -63,6 +92,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PartnerMeetingDTO"
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    id: 92fec106-ec8b-4220-9142-25429941cd10
+                    eventCode: BATbern60
+                    meetingType: AUTUMN
+                    meetingDate: "2026-11-06"
+                    startTime: "13:00:00"
+                    endTime: "16:00:00"
+                    location: Restaurant Schöngrün, Monument im Fruchtland 1, 3006 Bern
+                    agenda: Sample text for the API example.
+                    inviteSentAt: "2026-11-02T06:08:32.535496Z"
+                    createdBy: carla.muster
+                    createdAt: "2026-03-14T12:46:22.266248Z"
+                    updatedAt: "2026-11-02T06:08:30.845371Z"
         "400":
           description: "Invalid request"
         "403":
@@ -89,6 +134,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PartnerMeetingDTO"
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    id: 92fec106-ec8b-4220-9142-25429941cd10
+                    eventCode: BATbern60
+                    meetingType: AUTUMN
+                    meetingDate: "2026-11-06"
+                    startTime: "13:00:00"
+                    endTime: "16:00:00"
+                    location: Restaurant Schöngrün, Monument im Fruchtland 1, 3006 Bern
+                    agenda: Sample text for the API example.
+                    inviteSentAt: "2026-11-02T06:08:32.535496Z"
+                    createdBy: carla.muster
+                    createdAt: "2026-03-14T12:46:22.266248Z"
+                    updatedAt: "2026-11-02T06:08:30.845371Z"
         "403":
           description: "Forbidden"
         "404":
@@ -123,6 +184,22 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/PartnerMeetingDTO"
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    id: 92fec106-ec8b-4220-9142-25429941cd10
+                    eventCode: BATbern60
+                    meetingType: AUTUMN
+                    meetingDate: "2026-11-06"
+                    startTime: "13:00:00"
+                    endTime: "16:00:00"
+                    location: Restaurant Schöngrün, Monument im Fruchtland 1, 3006 Bern
+                    agenda: Sample text for the API example.
+                    inviteSentAt: "2026-11-02T06:08:32.535496Z"
+                    createdBy: carla.muster
+                    createdAt: "2026-03-14T12:46:22.266248Z"
+                    updatedAt: "2026-11-02T06:08:30.845371Z"
         "400":
           description: "Invalid request"
         "403":
@@ -184,6 +261,13 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/SendInviteResponse"
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
+                    meetingId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    recipientCount: 1
         "403":
           description: "Forbidden"
           content:
@@ -232,6 +316,23 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/MeetingRsvpListResponse"
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    meetingId: 92fec106-ec8b-4220-9142-25429941cd10
+                    inviteSentAt: "2026-11-02T06:08:32.535496Z"
+                    rsvps:
+                      - attendeeEmail: ines.beispiel@example.com
+                        status: ACCEPTED
+                        respondedAt: "2026-03-14T12:51:55.370048Z"
+                      - attendeeEmail: anna.beispiel@example.com
+                        status: ACCEPTED
+                        respondedAt: "2026-03-15T10:41:51.850652Z"
+                    summary:
+                      accepted: 12
+                      declined: 1
+                      tentative: 0
         "403":
           description: "Forbidden — ORGANIZER role required"
           content:

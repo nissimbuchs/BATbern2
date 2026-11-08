@@ -520,7 +520,6 @@ export default defineConfig({
         'src/data/**/*.json',
         // i18n framework setup (side effects only, no business logic)
         'src/i18n/config.ts',
-        'src/mocks/**', // Mock handlers/service workers - test support code, not production logic
         'src/components/TopicHeatMap/**', // Pending refactor - excluded until redesigned
         // Analytics dashboard charts — Recharts components not testable in JSDOM
         'src/components/organizer/Analytics/**',

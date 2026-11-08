@@ -37,7 +37,7 @@ const CompanyLogo: React.FC<CompanyLogoProps> = ({
   maxHeight = 48,
   showName = true,
 }) => {
-  const { data: company, isLoading, isError } = useCompany(companyName, { expand: ['logo'] });
+  const { data: company, isLoading, isError } = useCompany(companyName);
 
   // ─── Loading ───────────────────────────────────────────────────────────────
 

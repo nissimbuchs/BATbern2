@@ -1,16 +1,18 @@
 /**
  * MailComposer tests (Story 16.8b, AC11, AC13, AC14, AC16).
  *
- * The composer talks to the real service layer; MSW answers the HTTP calls (preview, send,
- * templates, venue config), so the request bodies the backend would get are what is asserted.
+ * The composer talks to the real service layer; the MSW harness (src/test/msw) answers the HTTP
+ * calls (preview, send, templates, venue config) and checks them against the spec, so the request
+ * bodies the backend would get are what is asserted.
  * Nothing leaves the test process.
  */
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import type { ResponseBody } from '@/test/msw/api';
 import { MailComposer } from '../MailComposer';
 import type {
   ComposeAudience,
@@ -71,7 +73,7 @@ let previews: MailComposeRequest[] = [];
 let sends: MailSendRequest[] = [];
 let previewOverride: Partial<MailPreviewResponse> = {};
 let sendStatus = 202;
-let sendBody: unknown = null;
+let sendBody: Record<string, unknown> | null = null;
 
 function previewFor(req: MailComposeRequest): MailPreviewResponse {
   const personalized = req.audience === 'REGISTRANTS' || req.audience === 'SPEAKERS';
@@ -104,44 +106,47 @@ function previewFor(req: MailComposeRequest): MailPreviewResponse {
   };
 }
 
-const server = setupServer(
-  http.get('*/email-templates', ({ request }) => {
-    const category = new URL(request.url).searchParams.get('category') ?? '';
-    return HttpResponse.json(
-      (TEMPLATES[category] ?? []).flatMap((key) =>
-        ['de', 'en'].map((locale) => ({ templateKey: key, locale, category, isLayout: false }))
-      )
+type TemplateCategory = ResponseBody<'listEmailTemplates', 200>[number]['category'];
+
+function answerBackend() {
+  api.on('listEmailTemplates', ({ query }) => {
+    const category = (query.get('category') ?? '') as TemplateCategory;
+    return (TEMPLATES[category] ?? []).flatMap((key) =>
+      ['de', 'en'].map((locale) => ({
+        templateKey: key,
+        locale,
+        category,
+        isLayout: false,
+        isSystemTemplate: true,
+        htmlBody: '<p>Template</p>',
+        updatedAt: '2026-05-14T16:00:00Z',
+      }))
     );
-  }),
-  http.get('*/admin/settings/:key', () =>
-    HttpResponse.json({ key: 'venue.coordination.config', value: VENUE_CONFIG })
-  ),
-  http.post('*/events/:code/mails/preview', async ({ request }) => {
-    const body = (await request.json()) as MailComposeRequest;
-    previews.push(body);
-    return HttpResponse.json(previewFor(body));
-  }),
-  http.post('*/events/:code/mails', async ({ request }) => {
-    const body = (await request.json()) as MailSendRequest;
-    sends.push(body);
+  });
+  api.on('getAdminSetting', () => ({ key: 'venue.coordination.config', value: VENUE_CONFIG }));
+  api.on('previewEventMail', ({ body }) => {
+    const req = body as MailComposeRequest;
+    previews.push(req);
+    return previewFor(req);
+  });
+  api.on('sendEventMail', ({ body }) => {
+    const req = body as MailSendRequest;
+    sends.push(req);
     if (sendStatus !== 202) return HttpResponse.json(sendBody, { status: sendStatus });
     return HttpResponse.json(
       sendBody ?? {
         mailKeys: ['BAT1-5'],
-        target: body.target,
-        recipientCount: body.target === 'ORGANIZERS' ? 2 : 3,
+        target: req.target,
+        recipientCount: req.target === 'ORGANIZERS' ? 2 : 3,
         skipped: [],
       },
       { status: 202 }
     );
-  })
-);
-
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterAll(() => server.close());
-afterEach(() => server.resetHandlers());
+  });
+}
 
 beforeEach(() => {
+  answerBackend();
   previews = [];
   sends = [];
   previewOverride = {};
@@ -295,13 +300,8 @@ describe('MailComposer: steps', () => {
   });
 
   it('shows the preview error from the server', async () => {
-    server.use(
-      http.post('*/events/:code/mails/preview', () =>
-        HttpResponse.json(
-          { message: 'Nobody in this audience would get the mail' },
-          { status: 400 }
-        )
-      )
+    api.on('previewEventMail', () =>
+      HttpResponse.json({ message: 'Nobody in this audience would get the mail' }, { status: 400 })
     );
     renderComposer('REGISTRANTS');
     expect(await screen.findByTestId('composer-error')).toHaveTextContent(

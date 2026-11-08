@@ -82,7 +82,7 @@ describe('useCompany Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(companyApiClient.getCompany).toHaveBeenCalledWith('company-123', undefined);
+      expect(companyApiClient.getCompany).toHaveBeenCalledWith('company-123');
       expect(result.current.data).toEqual(mockCompany);
     });
 
@@ -134,7 +134,7 @@ describe('useCompany Hook', () => {
       vi.mocked(companyApiClient.getCompany).mockResolvedValue(mockCompany);
 
       // Act
-      const { result } = renderHook(() => useCompany('company-123', { expand: ['logo'] }), {
+      const { result } = renderHook(() => useCompany('company-123'), {
         wrapper: createWrapper(),
       });
 
@@ -143,9 +143,8 @@ describe('useCompany Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(companyApiClient.getCompany).toHaveBeenCalledWith('company-123', {
-        expand: ['logo'],
-      });
+      // The logo is always in GET /companies/{name}; nothing about it is sent (17.0c1).
+      expect(companyApiClient.getCompany).toHaveBeenCalledWith('company-123');
     });
 
     it('should_includeMultipleResources_when_multipleExpansionsRequested', async () => {
@@ -165,7 +164,7 @@ describe('useCompany Hook', () => {
       vi.mocked(companyApiClient.getCompany).mockResolvedValue(mockCompany);
 
       // Act
-      const { result } = renderHook(() => useCompany('company-123', { expand: ['logo'] }), {
+      const { result } = renderHook(() => useCompany('company-123'), {
         wrapper: createWrapper(),
       });
 
@@ -174,9 +173,8 @@ describe('useCompany Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(companyApiClient.getCompany).toHaveBeenCalledWith('company-123', {
-        expand: ['logo'],
-      });
+      // The logo is always in GET /companies/{name}; nothing about it is sent (17.0c1).
+      expect(companyApiClient.getCompany).toHaveBeenCalledWith('company-123');
     });
 
     it('should_notIncludeExpandParam_when_noExpansionRequested', async () => {
@@ -205,7 +203,7 @@ describe('useCompany Hook', () => {
         expect(result.current.isSuccess).toBe(true);
       });
 
-      expect(companyApiClient.getCompany).toHaveBeenCalledWith('company-123', undefined);
+      expect(companyApiClient.getCompany).toHaveBeenCalledWith('company-123');
     });
   });
 
@@ -258,45 +256,6 @@ describe('useCompany Hook', () => {
       // Assert - Should use cached data
       expect(result2.current.data).toEqual(mockCompany);
       expect(companyApiClient.getCompany).toHaveBeenCalledTimes(1);
-    });
-
-    it('should_haveDifferentCacheKeys_when_expansionDiffers', async () => {
-      // Arrange
-      const mockCompany: Company = {
-        id: 'company-123',
-        name: 'Test Company',
-        industry: 'Technology',
-        location: { city: 'Zurich', canton: 'ZH', country: 'Switzerland' },
-        isVerified: true,
-        verificationStatus: 'Verified',
-        createdAt: '2024-01-01T00:00:00Z',
-        updatedAt: '2024-01-01T00:00:00Z',
-        createdBy: 'user-1',
-      };
-
-      vi.mocked(companyApiClient.getCompany).mockResolvedValue(mockCompany);
-
-      // Act - First query without expansion
-      const { result: result1 } = renderHook(() => useCompany('company-123'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result1.current.isSuccess).toBe(true);
-      });
-
-      // Act - Second query with expansion
-      const { result: result2 } = renderHook(
-        () => useCompany('company-123', { expand: ['logo'] }),
-        { wrapper: createWrapper() }
-      );
-
-      await waitFor(() => {
-        expect(result2.current.isSuccess).toBe(true);
-      });
-
-      // Assert - Both API calls should have been made (different cache keys)
-      expect(companyApiClient.getCompany).toHaveBeenCalledTimes(2);
     });
   });
 
@@ -414,7 +373,7 @@ describe('useCompany Hook', () => {
       expect(result2.current.data?.name).toBe('Company Two');
     });
 
-    it('should_includeExpansionInKey_when_expandProvided', async () => {
+    it('should_keyTheCacheByNameOnly', async () => {
       // Arrange
       const mockCompany: Company = {
         id: 'company-123',
@@ -431,14 +390,14 @@ describe('useCompany Hook', () => {
       vi.mocked(companyApiClient.getCompany).mockResolvedValue(mockCompany);
 
       // Act
-      const { result } = renderHook(() => useCompany('company-123', { expand: ['logo'] }), {
+      const { result } = renderHook(() => useCompany('company-123'), {
         wrapper: createWrapper(),
       });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Assert - Query key should include expansion
-      const queryKey = ['company', 'company-123', { expand: ['logo'] }];
+      // Assert - the cache is keyed by the company name only
+      const queryKey = ['company', 'company-123'];
       const cachedData = queryClient.getQueryData(queryKey);
       expect(cachedData).toBeDefined();
     });

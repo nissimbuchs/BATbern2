@@ -74,6 +74,30 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EmailTemplateResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - templateKey: registration-confirmed
+                      locale: de
+                      category: REGISTRATION
+                      subject: Anmeldung bestätigt - {{eventCode}} - {{eventTitle}}
+                      htmlBody: <p>Sample text for the API example.</p>
+                      variables: null
+                      isLayout: false
+                      layoutKey: batbern-default
+                      isSystemTemplate: true
+                      updatedAt: "2026-10-18T16:40:06.364789Z"
+                    - templateKey: registration-confirmed
+                      locale: en
+                      category: REGISTRATION
+                      subject: Registration confirmed - {{eventCode}} - {{eventTitle}}
+                      htmlBody: <p>Sample text for the API example.</p>
+                      variables: null
+                      isLayout: false
+                      layoutKey: batbern-default
+                      isSystemTemplate: true
+                      updatedAt: "2026-10-18T16:40:06.762901Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -106,6 +130,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EmailTemplateResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    templateKey: registration-confirmed
+                    locale: de
+                    category: REGISTRATION
+                    subject: Anmeldung bestätigt - {{eventCode}} - {{eventTitle}}
+                    htmlBody: <p>Sample text for the API example.</p>
+                    variables: null
+                    isLayout: false
+                    layoutKey: batbern-default
+                    isSystemTemplate: true
+                    updatedAt: "2026-10-18T16:40:06.364789Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -150,6 +188,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EmailTemplateResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    templateKey: registration-confirmed
+                    locale: de
+                    category: REGISTRATION
+                    subject: Anmeldung bestätigt - {{eventCode}} - {{eventTitle}}
+                    htmlBody: <p>Sample text for the API example.</p>
+                    variables: null
+                    isLayout: false
+                    layoutKey: batbern-default
+                    isSystemTemplate: true
+                    updatedAt: "2026-10-18T16:40:06.364789Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -197,6 +249,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EmailTemplateResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    templateKey: registration-confirmed
+                    locale: de
+                    category: REGISTRATION
+                    subject: Anmeldung bestätigt - {{eventCode}} - {{eventTitle}}
+                    htmlBody: <p>Sample text for the API example.</p>
+                    variables: null
+                    isLayout: false
+                    layoutKey: batbern-default
+                    isSystemTemplate: true
+                    updatedAt: "2026-10-18T16:40:06.364789Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -301,6 +367,11 @@ paths:
                 properties:
                   email:
                     type: string
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    email: ines.probe@example.com
         '404':
           description: Token not found or already unsubscribed
   /newsletter/unsubscribe:
@@ -334,6 +405,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    subscribed: true
+                    email: hugo.muster@example.com
         '401':
           $ref: '#/components/responses/Unauthorized'
     patch:
@@ -354,6 +431,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NewsletterSubscriptionStatusResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    subscribed: true
+                    email: hugo.muster@example.com
         '401':
           $ref: '#/components/responses/Unauthorized'
   /newsletter/my-subscriptions:
@@ -372,6 +455,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyNewsletterSubscriptionsResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    addresses:
+                      - email: hugo.muster@example.com
+                        primary: true
+                        subscribed: true
         '401':
           $ref: '#/components/responses/Unauthorized'
     put:
@@ -395,6 +486,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyNewsletterSubscriptionsResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    addresses:
+                      - email: hugo.muster@example.com
+                        primary: true
+                        subscribed: true
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -415,6 +514,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SubscriberCountResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    totalActive: 1057
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -477,6 +581,40 @@ paths:
                       $ref: '#/components/schemas/SubscriberResponse'
                   pagination:
                     $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    data:
+                      - id: de815d05-4537-4b40-97dd-072aa9ae79e8
+                        email: ines.muster@example.com
+                        firstName: Ines
+                        language: de
+                        source: explicit
+                        subscribedAt: "2026-11-03T15:50:15.533757Z"
+                        unsubscribedAt: null
+                        bounceType: null
+                        bounceCount: 0
+                        lastBouncedAt: null
+                        suppressedAt: null
+                      - id: f619e766-ed75-477d-a0a9-4d222ed20ce8
+                        email: jonas.muster@example.com
+                        firstName: Jonas
+                        language: de
+                        source: explicit
+                        subscribedAt: "2026-11-03T15:17:20.799099Z"
+                        unsubscribedAt: null
+                        bounceType: null
+                        bounceCount: 0
+                        lastBouncedAt: null
+                        suppressedAt: null
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 2114
+                      totalPages: 1057
+                      hasNext: true
+                      hasPrev: false
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -501,6 +639,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SubscriberResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: de815d05-4537-4b40-97dd-072aa9ae79e8
+                    email: jonas.probe@example.com
+                    firstName: Jonas
+                    language: de
+                    source: explicit
+                    subscribedAt: "2026-11-03T15:50:15.533757Z"
+                    unsubscribedAt: null
+                    bounceType: null
+                    bounceCount: 0
+                    lastBouncedAt: null
+                    suppressedAt: null
         '404':
           description: Subscriber not found
           content:
@@ -537,6 +690,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SubscriberResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: de815d05-4537-4b40-97dd-072aa9ae79e8
+                    email: jonas.probe@example.com
+                    firstName: Jonas
+                    language: de
+                    source: explicit
+                    subscribedAt: "2026-11-03T15:50:15.533757Z"
+                    unsubscribedAt: null
+                    bounceType: null
+                    bounceCount: 0
+                    lastBouncedAt: null
+                    suppressedAt: null
         '404':
           description: Subscriber not found
           content:
@@ -573,6 +741,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SubscriberResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: de815d05-4537-4b40-97dd-072aa9ae79e8
+                    email: jonas.probe@example.com
+                    firstName: Jonas
+                    language: de
+                    source: explicit
+                    subscribedAt: "2026-11-03T15:50:15.533757Z"
+                    unsubscribedAt: null
+                    bounceType: null
+                    bounceCount: 0
+                    lastBouncedAt: null
+                    suppressedAt: null
         '404':
           description: Subscriber not found
           content:
@@ -649,6 +832,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RegistrantNoticePreviewResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    subject: Sample title
+                    htmlPreview: sample
+                    recipientCount: 1
         '400':
           description: Template is not a registrant-notice template
         '401':
@@ -691,6 +881,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SlidesOnlineSendResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    sendId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: PENDING
+                    recipientCount: 1
         '400':
           description: Template is not a registrant-notice template
         '401':
@@ -726,6 +923,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NewsletterSendResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    sentAt: "2026-05-14T16:00:00Z"
+                    isReminder: true
+                    locale: de
+                    recipientCount: 1
+                    sentByUsername: anna.muster
+                    status: PENDING
+                    sentCount: 1
+                    failedCount: 1
+                    startedAt: "2026-05-14T16:00:00Z"
+                    completedAt: "2026-05-14T16:00:00Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -757,6 +969,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NewsletterPreviewResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    subject: Sample title
+                    htmlPreview: sample
+                    recipientCount: 1
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -784,6 +1003,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/NewsletterSendResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -815,6 +1039,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NewsletterSendStatusResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: PENDING
+                    sentCount: 1
+                    failedCount: 1
+                    totalCount: 1
+                    percentComplete: 1
+                    startedAt: "2026-05-14T16:00:00Z"
+                    completedAt: "2026-05-14T16:00:00Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -846,6 +1082,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NewsletterSendResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    sentAt: "2026-05-14T16:00:00Z"
+                    isReminder: true
+                    locale: de
+                    recipientCount: 1
+                    sentByUsername: anna.muster
+                    status: PENDING
+                    sentCount: 1
+                    failedCount: 1
+                    startedAt: "2026-05-14T16:00:00Z"
+                    completedAt: "2026-05-14T16:00:00Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

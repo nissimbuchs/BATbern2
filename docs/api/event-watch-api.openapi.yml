@@ -185,6 +185,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerArrivalBroadcast'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    type: SPEAKER_ARRIVED
+                    eventCode: BATbern56
+                    speakerUsername: gina.vorlage
+                    speakerFirstName: Anna
+                    speakerLastName: Muster
+                    confirmedBy: marco.muster
+                    arrivedAt: "2026-02-16T17:15:00Z"
+                    arrivalCount:
+                      arrived: 2
+                      total: 4
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -258,6 +272,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveTimingResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    eventCode: BATbern66
+                    version: 0
+                    organizerPresent: true
+                    currentSessionSlug: null
+                    arrivedSpeakerCount: 0
+                    totalSpeakerCount: 0
+                    sessions: []
         '304':
           description: Not modified — the version is unchanged since the supplied ETag.
         '404':
@@ -294,6 +319,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LiveTimingResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    eventCode: BATbern66
+                    version: 0
+                    organizerPresent: true
+                    currentSessionSlug: null
+                    arrivedSpeakerCount: 0
+                    totalSpeakerCount: 0
+                    sessions: []
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':

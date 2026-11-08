@@ -1,0 +1,22 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "types": ["node", "vite/client", "vitest/globals"]
+  },
+  "include": [
+    "src/test/msw/**/*.ts",
+    "src/vite-env.d.ts",
+    "src/services/api/companyApi.search.test.ts",
+    "src/services/api/partnerApi.search.test.ts",
+    "src/components/organizer/PartnerManagement/__tests__/PartnerList.search.test.tsx",
+    "src/components/organizer/EventPage/topicOverlay/__tests__/TopicSelectionOverlay.search.test.tsx",
+    "src/components/organizer/EventPage/communications/composer/__tests__/MailComposer.test.tsx",
+    "src/components/organizer/EventPage/communications/composer/__tests__/MailComposerOwnText.test.tsx",
+    "src/services/api/listAllPages.test.ts",
+    "src/services/eventApiClient.test.ts",
+    "src/hooks/usePartnerDetail.test.ts",
+    "src/hooks/useUserManagement/useUserList.allPages.test.tsx",
+    "src/components/organizer/UserManagement/SpeakerBatchImportModal.paging.test.tsx"
+  ],
+  "exclude": []
+}

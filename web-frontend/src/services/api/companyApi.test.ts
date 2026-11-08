@@ -145,7 +145,7 @@ describe('companyApiClient', () => {
       expect(result).toEqual(mockCompany);
     });
 
-    it('should fetch company with expand options', async () => {
+    it('should not send expand: GET /companies/{name} declares no query and always has the logo', async () => {
       const mockCompany = {
         id: 'company-1',
         name: 'TechCorp AG',
@@ -153,9 +153,9 @@ describe('companyApiClient', () => {
 
       vi.mocked(apiClient.get).mockResolvedValue({ data: mockCompany });
 
-      await companyApiClient.getCompany('TechCorp AG', { expand: ['logo'] });
+      await companyApiClient.getCompany('TechCorp AG');
 
-      expect(apiClient.get).toHaveBeenCalledWith('/companies/TechCorp AG?expand=logo');
+      expect(apiClient.get).toHaveBeenCalledWith('/companies/TechCorp AG');
     });
 
     it('should handle errors gracefully', async () => {

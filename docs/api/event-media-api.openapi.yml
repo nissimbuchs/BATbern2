@@ -53,6 +53,24 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EventPhotoResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - id: 51ae2297-44ab-4364-9fd7-36c4dd95daa8
+                      eventCode: BATbern58
+                      displayUrl: https://cdn.batbern.ch/events/BATbern58/photos/51ae2297-44ab-4364-9fd7-36c4dd95daa8.jpg
+                      filename: 51ae2297-44ab-4364-9fd7-36c4dd95daa8.jpg
+                      uploadedBy: b3d43852-e071-707b-c4e7-1ca6257dba68
+                      uploadedAt: "2026-06-12T09:01:58.796642Z"
+                      sortOrder: 0
+                    - id: 4669269d-04b8-43c8-a104-00836f4e8aef
+                      eventCode: BATbern56
+                      displayUrl: https://cdn.batbern.ch/events/BATbern56/photos/4669269d-04b8-43c8-a104-00836f4e8aef.jpg
+                      filename: 4669269d-04b8-43c8-a104-00836f4e8aef.jpg
+                      uploadedBy: c334a852-10c1-70d2-f403-136e0a60acf7
+                      uploadedAt: "2026-03-04T19:59:15.790226Z"
+                      sortOrder: 0
   /events/{eventCode}/photos:
     get:
       tags:
@@ -75,6 +93,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EventPhotoResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
   /events/{eventCode}/photos/upload-url:
     post:
       tags:
@@ -102,6 +125,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventPhotoUploadResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    photoId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    uploadUrl: https://www.batbern.ch/
+                    s3Key: uploads/2026/sample/file.png
+                    expiresIn: 1
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -133,6 +164,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventPhotoResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 51ae2297-44ab-4364-9fd7-36c4dd95daa8
+                    eventCode: BATbern58
+                    displayUrl: https://cdn.batbern.ch/events/BATbern58/photos/51ae2297-44ab-4364-9fd7-36c4dd95daa8.jpg
+                    filename: 51ae2297-44ab-4364-9fd7-36c4dd95daa8.jpg
+                    uploadedBy: b3d43852-e071-707b-c4e7-1ca6257dba68
+                    uploadedAt: "2026-06-12T09:01:58.796642Z"
+                    sortOrder: 0
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -187,6 +229,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PresignedMaterialUploadUrl'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    uploadUrl: https://www.batbern.ch/
+                    fileId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    s3Key: uploads/2026/sample/file.png
+                    fileExtension: png
+                    expiresInMinutes: 1
+                    requiredHeaders:
+                      key: uploads/2026/sample/file.png
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':

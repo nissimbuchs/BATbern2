@@ -111,6 +111,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublicUserResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    username: ben.beispiel
+                    firstName: Ben
+                    lastName: Beispiel
+                    profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/ben.beispiel/profile-6d1506ec-681f-4307-a1d0-62a366e8b055.png
         '404':
           description: User not found
           content:
@@ -143,6 +151,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PairingCodeResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    pairingCode: "482910"
+                    expiresAt: "2026-05-14T16:00:00Z"
+                    hoursUntilExpiry: 24
         '409':
           description: Maximum 2 watches already paired (AC2)
           content:
@@ -175,6 +190,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PairingStatusResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    pairedWatches:
+                      - id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                        deviceName: Sample name
+                        pairedAt: "2026-05-14T16:00:00Z"
+                    pendingCode:
+                      code: "482910"
+                      expiresAt: "2026-05-14T16:00:00Z"
         '401':
           description: Unauthorized - missing or invalid JWT
         '403':
@@ -313,6 +339,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    id: hugo.muster
+                    hasCognitoAccount: true
+                    email: hugo.muster@example.com
+                    firstName: Hugo
+                    lastName: Muster
+                    bio: Software architect with a focus on APIs.
+                    roles:
+                      - ORGANIZER
+                    active: true
+                    createdAt: "2026-02-22T12:54:23.442285Z"
+                    updatedAt: "2026-11-08T14:43:13.089114Z"
+                    termsAcceptedAt: "2026-02-22T12:54:23.442285Z"
+                    additionalEmails: []
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -433,6 +476,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PaginatedUserResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    data:
+                      - id: elena.muster
+                        hasCognitoAccount: true
+                        email: elena.muster@example.com
+                        firstName: Elena
+                        lastName: Muster
+                        companyId: mobiliar
+                        roles:
+                          - SPEAKER
+                        profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/elena.muster/profile-026623a0-a861-40f1-9f9a-88f94059b824.jpeg
+                        active: true
+                        createdAt: "2025-11-30T21:49:41.836671Z"
+                        updatedAt: "2026-02-25T17:06:54.373809Z"
+                        termsAcceptedAt: null
+                        additionalEmails: []
+                      - id: felix.muster
+                        hasCognitoAccount: true
+                        email: felix.muster@example.com
+                        firstName: Felix
+                        lastName: Muster
+                        companyId: promino
+                        roles:
+                          - ATTENDEE
+                        active: true
+                        createdAt: "2025-12-27T13:57:45.62845Z"
+                        updatedAt: "2025-12-27T13:57:45.62845Z"
+                        termsAcceptedAt: null
+                        additionalEmails: []
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 2595
+                      totalPages: 1298
+                      hasNext: true
+                      hasPrev: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -569,6 +651,21 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PublicOrganizerResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - id: carla.muster
+                      firstName: Carla
+                      lastName: Muster
+                      bio: Software architect with a focus on APIs.
+                      profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2026/carla.muster/profile-d7907c4d-011f-47b3-98ce-e22d76ed7302.jpeg
+                      companyId: elca
+                    - id: anna.beispiel
+                      firstName: Anna
+                      lastName: Beispiel
+                      profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                      companyId: galenica
         '500':
           $ref: '#/components/responses/InternalServerError'
 
@@ -605,6 +702,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminUploadProfilePictureFromUrlResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    profilePictureUrl: https://www.batbern.ch/
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -653,6 +755,41 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserMergePreview'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    target:
+                      username: anna.muster
+                      firstName: Hugo
+                      lastName: Vorlage
+                      email: ines.probe@example.com
+                      companyId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                      hasLogin: true
+                      roles:
+                        - sample
+                      additionalEmails:
+                        - ines.probe@example.com
+                    source:
+                      username: anna.muster
+                      firstName: Hugo
+                      lastName: Vorlage
+                      email: ines.probe@example.com
+                      companyId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                      hasLogin: true
+                      roles:
+                        - sample
+                      additionalEmails:
+                        - ines.probe@example.com
+                    moves:
+                      key: 1
+                    conflicts:
+                      key: 1
+                    blockers:
+                      - sample
+                    canMerge: true
+                    reasons:
+                      - sample
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -700,6 +837,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserMergeResult'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    targetUsername: anna.muster
+                    sourceUsername: anna.muster
+                    moved:
+                      key: 1
+                    removed:
+                      key: 1
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -734,6 +881,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/ProfileClaimCandidate'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -802,6 +954,52 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/DuplicateCandidate'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - rule: SAME_NAME
+                      confidence: HIGH
+                      organizerCanMerge: false
+                      target:
+                        username: ben.beispiel
+                        firstName: Ben
+                        lastName: Beispiel
+                        email: ben.beispiel@example.com
+                        companyId: swisscom
+                        hasLogin: true
+                        placeholderAddress: false
+                        createdAt: "2025-11-30T21:49:37.171342Z"
+                      source:
+                        username: carla.beispiel
+                        firstName: Carla
+                        lastName: Beispiel
+                        email: carla.beispiel@example.com
+                        companyId: swisscom
+                        hasLogin: true
+                        placeholderAddress: false
+                        createdAt: "2025-12-27T13:41:08.424726Z"
+                    - rule: SAME_NAME
+                      confidence: HIGH
+                      organizerCanMerge: false
+                      target:
+                        username: david.beispiel
+                        firstName: David
+                        lastName: Beispiel
+                        email: david.beispiel@example.com
+                        companyId: postfinance
+                        hasLogin: true
+                        placeholderAddress: false
+                        createdAt: "2025-12-27T13:40:01.659675Z"
+                      source:
+                        username: elena.beispiel
+                        firstName: Elena
+                        lastName: Beispiel
+                        email: elena.beispiel@example.com
+                        companyId: postfinance
+                        hasLogin: true
+                        placeholderAddress: false
+                        createdAt: "2025-12-27T13:41:29.829025Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -905,6 +1103,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfileClaimConfirmResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    merged: true
+                    alreadyMerged: true
         '400':
           description: Token is invalid (`TOKEN_INVALID`) or expired (`TOKEN_EXPIRED`).
           content:
@@ -947,6 +1151,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfileMergeRequestCreated'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    requestId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -983,6 +1192,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfileMergeRequestView'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    requestId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: OPEN
+                    requesterUsername: anna.muster
+                    sourceUsername: anna.muster
+                    note: Sample text for the API example.
+                    createdAt: "2026-05-14T16:00:00Z"
+                    decidedBy: anna.muster
+                    decidedAt: "2026-05-14T16:00:00Z"
+                    reason: Sample text for the API example.
+                    preview:
+                      target:
+                        username: anna.muster
+                        firstName: Hugo
+                        lastName: Vorlage
+                        email: ines.probe@example.com
+                        companyId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                        hasLogin: true
+                        roles:
+                          - sample
+                        additionalEmails:
+                          - ines.probe@example.com
+                      source:
+                        username: anna.muster
+                        firstName: Hugo
+                        lastName: Vorlage
+                        email: ines.probe@example.com
+                        companyId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                        hasLogin: true
+                        roles:
+                          - sample
+                        additionalEmails:
+                          - ines.probe@example.com
+                      moves:
+                        key: 1
+                      conflicts:
+                        key: 1
+                      blockers:
+                        - sample
+                      canMerge: true
+                      reasons:
+                        - sample
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1019,6 +1273,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfileMergeRequestView'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    requestId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: OPEN
+                    requesterUsername: anna.muster
+                    sourceUsername: anna.muster
+                    note: Sample text for the API example.
+                    createdAt: "2026-05-14T16:00:00Z"
+                    decidedBy: anna.muster
+                    decidedAt: "2026-05-14T16:00:00Z"
+                    reason: Sample text for the API example.
+                    preview:
+                      target:
+                        username: anna.muster
+                        firstName: Hugo
+                        lastName: Vorlage
+                        email: ines.probe@example.com
+                        companyId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                        hasLogin: true
+                        roles:
+                          - sample
+                        additionalEmails:
+                          - ines.probe@example.com
+                      source:
+                        username: anna.muster
+                        firstName: Hugo
+                        lastName: Vorlage
+                        email: ines.probe@example.com
+                        companyId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                        hasLogin: true
+                        roles:
+                          - sample
+                        additionalEmails:
+                          - ines.probe@example.com
+                      moves:
+                        key: 1
+                      conflicts:
+                        key: 1
+                      blockers:
+                        - sample
+                      canMerge: true
+                      reasons:
+                        - sample
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1061,6 +1360,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfileMergeRequestView'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    requestId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: OPEN
+                    requesterUsername: anna.muster
+                    sourceUsername: anna.muster
+                    note: Sample text for the API example.
+                    createdAt: "2026-05-14T16:00:00Z"
+                    decidedBy: anna.muster
+                    decidedAt: "2026-05-14T16:00:00Z"
+                    reason: Sample text for the API example.
+                    preview:
+                      target:
+                        username: anna.muster
+                        firstName: Hugo
+                        lastName: Vorlage
+                        email: ines.probe@example.com
+                        companyId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                        hasLogin: true
+                        roles:
+                          - sample
+                        additionalEmails:
+                          - ines.probe@example.com
+                      source:
+                        username: anna.muster
+                        firstName: Hugo
+                        lastName: Vorlage
+                        email: ines.probe@example.com
+                        companyId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                        hasLogin: true
+                        roles:
+                          - sample
+                        additionalEmails:
+                          - ines.probe@example.com
+                      moves:
+                        key: 1
+                      conflicts:
+                        key: 1
+                      blockers:
+                        - sample
+                      canMerge: true
+                      reasons:
+                        - sample
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1103,6 +1447,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyLogoRequestView'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    requestId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: OPEN
+                    requesterUsername: anna.muster
+                    requesterName: Sample name
+                    companyName: Sample name
+                    companyDisplayName: Sample name
+                    oldLogoUrl: https://www.batbern.ch/
+                    newLogoUrl: https://www.batbern.ch/
+                    note: Sample text for the API example.
+                    createdAt: "2026-05-14T16:00:00Z"
+                    decidedBy: anna.muster
+                    decidedAt: "2026-05-14T16:00:00Z"
+                    reason: Sample text for the API example.
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1135,6 +1496,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyLogoRequestView'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    requestId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: OPEN
+                    requesterUsername: anna.muster
+                    requesterName: Sample name
+                    companyName: Sample name
+                    companyDisplayName: Sample name
+                    oldLogoUrl: https://www.batbern.ch/
+                    newLogoUrl: https://www.batbern.ch/
+                    note: Sample text for the API example.
+                    createdAt: "2026-05-14T16:00:00Z"
+                    decidedBy: anna.muster
+                    decidedAt: "2026-05-14T16:00:00Z"
+                    reason: Sample text for the API example.
         '204':
           description: No open request
         '401':
@@ -1166,6 +1544,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyLogoRequestView'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    requestId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: OPEN
+                    requesterUsername: anna.muster
+                    requesterName: Sample name
+                    companyName: Sample name
+                    companyDisplayName: Sample name
+                    oldLogoUrl: https://www.batbern.ch/
+                    newLogoUrl: https://www.batbern.ch/
+                    note: Sample text for the API example.
+                    createdAt: "2026-05-14T16:00:00Z"
+                    decidedBy: anna.muster
+                    decidedAt: "2026-05-14T16:00:00Z"
+                    reason: Sample text for the API example.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1200,6 +1595,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyLogoRequestView'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    requestId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: OPEN
+                    requesterUsername: anna.muster
+                    requesterName: Sample name
+                    companyName: Sample name
+                    companyDisplayName: Sample name
+                    oldLogoUrl: https://www.batbern.ch/
+                    newLogoUrl: https://www.batbern.ch/
+                    note: Sample text for the API example.
+                    createdAt: "2026-05-14T16:00:00Z"
+                    decidedBy: anna.muster
+                    decidedAt: "2026-05-14T16:00:00Z"
+                    reason: Sample text for the API example.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1242,6 +1654,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyLogoRequestView'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    requestId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: OPEN
+                    requesterUsername: anna.muster
+                    requesterName: Sample name
+                    companyName: Sample name
+                    companyDisplayName: Sample name
+                    oldLogoUrl: https://www.batbern.ch/
+                    newLogoUrl: https://www.batbern.ch/
+                    note: Sample text for the API example.
+                    createdAt: "2026-05-14T16:00:00Z"
+                    decidedBy: anna.muster
+                    decidedAt: "2026-05-14T16:00:00Z"
+                    reason: Sample text for the API example.
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1274,6 +1703,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserReconciliationReport'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    orphanedUsersDeactivated: 1
+                    missingUsersCreated: 1
+                    durationMs: 1
+                    errors:
+                      - sample
+                    success: true
+                    message: Sample text for the API example.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1300,6 +1740,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserSyncStatus'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    cognitoUserCount: 2159
+                    databaseUserCount: 2590
+                    missingInDatabase: 2153
+                    orphanedInDatabase: 2583
+                    missingCognitoIds:
+                      - e3c46852-4091-701c-4dd4-9a093fb070bd
+                      - 73a47812-d071-70df-10dd-745f026b9af3
+                    inSync: false
+                    message: Sample text for the API example.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1352,6 +1805,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    id: ben.beispiel
+                    hasCognitoAccount: true
+                    email: ben.beispiel@example.com
+                    firstName: Ben
+                    lastName: Beispiel
+                    companyId: swisscom
+                    roles:
+                      - SPEAKER
+                    profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/ben.beispiel/profile-6d1506ec-681f-4307-a1d0-62a366e8b055.png
+                    active: true
+                    createdAt: "2025-11-30T21:49:37.171342Z"
+                    updatedAt: "2026-02-25T17:06:54.373809Z"
+                    termsAcceptedAt: null
+                    additionalEmails: []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1394,6 +1865,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    id: hugo.muster
+                    hasCognitoAccount: true
+                    email: hugo.muster@example.com
+                    firstName: Hugo
+                    lastName: Muster
+                    bio: Software architect with a focus on APIs.
+                    roles:
+                      - ORGANIZER
+                    active: true
+                    createdAt: "2026-02-22T12:54:23.442285Z"
+                    updatedAt: "2026-11-08T14:43:13.089114Z"
+                    termsAcceptedAt: "2026-02-22T12:54:23.442285Z"
+                    additionalEmails: []
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1530,6 +2018,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/UserSearchResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1561,6 +2054,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserPreferences'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    theme: auto
+                    language: de
+                    emailNotifications: true
+                    inAppNotifications: true
+                    pushNotifications: false
+                    notificationFrequency: immediate
+                    qnaNotificationFrequency: live
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -1603,6 +2107,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserPreferences'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    theme: auto
+                    language: de
+                    emailNotifications: true
+                    inAppNotifications: true
+                    pushNotifications: false
+                    notificationFrequency: immediate
+                    qnaNotificationFrequency: live
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1632,6 +2147,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserSettings'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    profileVisibility: public
+                    showEmail: false
+                    showCompany: true
+                    showActivityHistory: true
+                    allowMessaging: true
+                    allowCalendarSync: false
+                    timezone: Europe/Zurich
+                    twoFactorEnabled: false
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -1665,6 +2192,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserSettings'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    profileVisibility: public
+                    showEmail: false
+                    showCompany: true
+                    showActivityHistory: true
+                    allowMessaging: true
+                    allowCalendarSync: false
+                    timezone: Europe/Zurich
+                    twoFactorEnabled: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1702,6 +2241,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdditionalEmail'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    email: ines.vorlage@example.com
+                    label: Hostpoint shared
+                    createdAt: "2026-05-22T10:00:00Z"
+                    verifiedAt: "2026-05-14T16:00:00Z"
+                    receiveEventMail: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1756,6 +2304,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdditionalEmail'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    email: ines.vorlage@example.com
+                    label: Hostpoint shared
+                    createdAt: "2026-05-22T10:00:00Z"
+                    verifiedAt: "2026-05-14T16:00:00Z"
+                    receiveEventMail: false
         '401':
           $ref: '#/components/responses/Unauthorized'
         '404':
@@ -1921,6 +2478,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdditionalEmailVerificationCheckResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    email: jonas.vorlage@example.com
+                    verified: false
         '400':
           description: |
             Token is invalid (`TOKEN_INVALID`) or expired (`TOKEN_EXPIRED`).
@@ -1958,6 +2521,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdditionalEmailVerificationConfirmResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    email: jonas.vorlage@example.com
+                    verified: true
+                    alreadyVerified: false
         '400':
           description: |
             Token is invalid (`TOKEN_INVALID`) or expired (`TOKEN_EXPIRED`).
@@ -2007,6 +2577,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserRolesResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    username: ben.beispiel
+                    roles:
+                      - SPEAKER
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -2062,6 +2639,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UserRolesResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    username: ben.beispiel
+                    roles:
+                      - SPEAKER
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2136,6 +2720,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PresignedUploadUrl'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    uploadUrl: https://s3.eu-central-1.amazonaws.com/bucket/...
+                    fileId: f3e8d1a4-5b2c-4d6e-8a9b-1c2d3e4f5a6b
+                    s3Key: profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
+                    fileExtension: jpg
+                    expiresInMinutes: 15
+                    requiredHeaders:
+                      Content-Type: image/jpeg
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2171,6 +2766,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfilePictureUploadConfirmResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2224,6 +2824,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PresignedUploadUrl'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    uploadUrl: https://s3.eu-central-1.amazonaws.com/bucket/...
+                    fileId: f3e8d1a4-5b2c-4d6e-8a9b-1c2d3e4f5a6b
+                    s3Key: profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
+                    fileExtension: jpg
+                    expiresInMinutes: 15
+                    requiredHeaders:
+                      Content-Type: image/jpeg
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2272,6 +2883,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ProfilePictureUploadConfirmResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/john.doe/profile-f3e8d1a4.jpg
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':

@@ -120,6 +120,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailMessagePage'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    data: []
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 0
+                      totalPages: 0
+                      hasNext: false
+                      hasPrev: false
         '401':
           description: Not authenticated
         '403':
@@ -218,6 +230,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailCounts'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    failedDeliveries: 0
+                    outOfOffice: 0
+                    bounces: 0
+                    calendarAccepts: 0
+                    calendarDeclines: 0
+                    keywordAccepts: 0
+                    keywordCancels: 0
+                    unsubscribes: 0
         '401':
           description: Not authenticated
         '403':
@@ -324,6 +348,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailMessageDetail'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    message:
+                      mailKey: BATbern60-100
+                      sentAt: "2026-11-04T20:35:18.591831Z"
+                      senderUsername: null
+                      audience: REGISTRANTS
+                      templateKey: waitlist-promotion
+                      contentSource: TEMPLATE
+                      subject: Sample subject
+                      recipientCount: 1
+                      deliveredCount: 1
+                      failedCount: 0
+                      messageCount: 1
+                      newsletterSendId: null
+                      newsletterStatus: null
+                      test: false
+                      reference: null
+                      direction: OUT
+                      fromAddress: null
+                      fromName: null
+                      eventCode: BATbern60
+                      conversationKey: null
+                      spam: false
+                      participantStatus: null
+                    bodyHtml: <p>Sample text for the API example.</p>
+                    recipients:
+                      - address: gina.muster@example.com
+                        kind: TO
+                        status: DELIVERED
+                        failureReason: null
+                    progress: null
         '401':
           description: Not authenticated
         '403':
@@ -375,6 +433,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailConversationPage'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    data: []
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 0
+                      totalPages: 0
+                      hasNext: false
+                      hasPrev: false
         '401':
           description: Not authenticated
         '403':
@@ -484,6 +554,62 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailMessagePage'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    data:
+                      - mailKey: BATbern60-100
+                        sentAt: "2026-11-04T20:35:18.591831Z"
+                        senderUsername: null
+                        audience: REGISTRANTS
+                        templateKey: waitlist-promotion
+                        contentSource: TEMPLATE
+                        subject: Sample subject
+                        recipientCount: 37
+                        deliveredCount: 35
+                        failedCount: 1
+                        messageCount: 36
+                        newsletterSendId: null
+                        newsletterStatus: null
+                        test: false
+                        reference: null
+                        direction: OUT
+                        fromAddress: null
+                        fromName: null
+                        eventCode: BATbern60
+                        conversationKey: null
+                        spam: false
+                        participantStatus: null
+                      - mailKey: BATbern60-99
+                        sentAt: "2026-11-04T20:35:01.754355Z"
+                        senderUsername: null
+                        audience: REGISTRANTS
+                        templateKey: deregistration-link
+                        contentSource: TEMPLATE
+                        subject: Sample subject
+                        recipientCount: 5
+                        deliveredCount: 5
+                        failedCount: 0
+                        messageCount: 5
+                        newsletterSendId: null
+                        newsletterStatus: null
+                        test: false
+                        reference: null
+                        direction: OUT
+                        fromAddress: null
+                        fromName: null
+                        eventCode: BATbern60
+                        conversationKey: null
+                        spam: false
+                        participantStatus: null
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 31
+                      totalPages: 16
+                      hasNext: true
+                      hasPrev: false
         '400':
           description: '`eventCode` with `noEvent`, or both participant filters'
         '401':
@@ -516,6 +642,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailMessageDetail'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    message:
+                      mailKey: BATbern60-100
+                      sentAt: "2026-11-04T20:35:18.591831Z"
+                      senderUsername: null
+                      audience: REGISTRANTS
+                      templateKey: waitlist-promotion
+                      contentSource: TEMPLATE
+                      subject: Sample subject
+                      recipientCount: 1
+                      deliveredCount: 1
+                      failedCount: 0
+                      messageCount: 1
+                      newsletterSendId: null
+                      newsletterStatus: null
+                      test: false
+                      reference: null
+                      direction: OUT
+                      fromAddress: null
+                      fromName: null
+                      eventCode: BATbern60
+                      conversationKey: null
+                      spam: false
+                      participantStatus: null
+                    bodyHtml: <p>Sample text for the API example.</p>
+                    recipients:
+                      - address: gina.muster@example.com
+                        kind: TO
+                        status: DELIVERED
+                        failureReason: null
+                    progress: null
         '401':
           description: Not authenticated
         '403':
@@ -552,6 +712,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailMessageDetail'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    message:
+                      mailKey: BATbern60-100
+                      sentAt: "2026-11-04T20:35:18.591831Z"
+                      senderUsername: null
+                      audience: REGISTRANTS
+                      templateKey: waitlist-promotion
+                      contentSource: TEMPLATE
+                      subject: Sample subject
+                      recipientCount: 1
+                      deliveredCount: 1
+                      failedCount: 0
+                      messageCount: 1
+                      newsletterSendId: null
+                      newsletterStatus: null
+                      test: false
+                      reference: null
+                      direction: OUT
+                      fromAddress: null
+                      fromName: null
+                      eventCode: BATbern60
+                      conversationKey: null
+                      spam: false
+                      participantStatus: null
+                    bodyHtml: <p>Sample text for the API example.</p>
+                    recipients:
+                      - address: gina.muster@example.com
+                        kind: TO
+                        status: DELIVERED
+                        failureReason: null
+                    progress: null
         '400':
           description: Anything else than `spam=false`, or the mail is not spam
         '401':
@@ -614,6 +808,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailConversationPage'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    data:
+                      - conversationKey: conv-5
+                        eventCode: null
+                        audience: SYSTEM
+                        subject: "Neues Logo für SBB CFF FFS: Batbern Partner"
+                        counterpartAddress: david.muster@example.com
+                        counterpartName: Anna Muster
+                        status: DONE
+                        assigneeUsername: null
+                        via: reply
+                        lastMessageAt: "2026-11-07T11:10:33.423665Z"
+                        messageCount: 1
+                        mergeRequestId: null
+                        logoRequestId: ee6686ff-a8d5-42af-bed4-fef768eec25d
+                      - conversationKey: conv-4
+                        eventCode: null
+                        audience: SYSTEM
+                        subject: "Neues Logo für SBB CFF FFS: Batbern Partner"
+                        counterpartAddress: david.muster@example.com
+                        counterpartName: Anna Muster
+                        status: DONE
+                        assigneeUsername: null
+                        via: reply
+                        lastMessageAt: "2026-11-07T11:09:47.601376Z"
+                        messageCount: 1
+                        mergeRequestId: null
+                        logoRequestId: 02f3fc85-52f0-4621-8149-76eb8b107421
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 5
+                      totalPages: 3
+                      hasNext: true
+                      hasPrev: false
         '401':
           description: Not authenticated
         '403':
@@ -636,6 +868,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailConversationCounts'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    open: 0
+                    waiting: 0
+                    noEvent: 0
+                    spam: 0
         '401':
           description: Not authenticated
         '403':
@@ -664,6 +904,51 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailConversationDetail'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    conversation:
+                      conversationKey: conv-5
+                      eventCode: null
+                      audience: SYSTEM
+                      subject: "Neues Logo für SBB CFF FFS: Batbern Partner"
+                      counterpartAddress: david.muster@example.com
+                      counterpartName: Anna Muster
+                      status: DONE
+                      assigneeUsername: null
+                      via: reply
+                      lastMessageAt: "2026-11-07T11:10:33.423665Z"
+                      messageCount: 1
+                      mergeRequestId: null
+                      logoRequestId: ee6686ff-a8d5-42af-bed4-fef768eec25d
+                    messages:
+                      - message:
+                          mailKey: general-102
+                          sentAt: "2026-11-07T11:10:33.42372Z"
+                          senderUsername: null
+                          audience: SYSTEM
+                          templateKey: null
+                          contentSource: OWN_TEXT
+                          subject: "Neues Logo für SBB CFF FFS: Batbern Partner"
+                          recipientCount: 0
+                          deliveredCount: 0
+                          failedCount: 0
+                          messageCount: 1
+                          newsletterSendId: null
+                          newsletterStatus: null
+                          test: false
+                          reference: null
+                          direction: IN
+                          fromAddress: david.muster@example.com
+                          fromName: Anna Muster
+                          eventCode: null
+                          conversationKey: conv-5
+                          participantStatus: null
+                          attachments: []
+                        bodyHtml: <p>Sample text for the API example.</p>
+                        recipients: []
+                        progress: null
         '401':
           description: Not authenticated
         '403':
@@ -704,6 +989,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailConversationSummary'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    conversationKey: conv-5
+                    eventCode: null
+                    audience: SYSTEM
+                    subject: "Neues Logo für SBB CFF FFS: Batbern Partner"
+                    counterpartAddress: david.muster@example.com
+                    counterpartName: Anna Muster
+                    status: DONE
+                    assigneeUsername: null
+                    via: reply
+                    lastMessageAt: "2026-11-07T11:10:33.423665Z"
+                    messageCount: 1
+                    mergeRequestId: null
+                    logoRequestId: ee6686ff-a8d5-42af-bed4-fef768eec25d
         '400':
           description: The assignee is not an organizer, or `eventCode` with `clearEvent`
         '401':
@@ -746,6 +1048,40 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailMessageDetail'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    message:
+                      mailKey: BATbern60-100
+                      sentAt: "2026-11-04T20:35:18.591831Z"
+                      senderUsername: null
+                      audience: REGISTRANTS
+                      templateKey: waitlist-promotion
+                      contentSource: TEMPLATE
+                      subject: Sample subject
+                      recipientCount: 1
+                      deliveredCount: 1
+                      failedCount: 0
+                      messageCount: 1
+                      newsletterSendId: null
+                      newsletterStatus: null
+                      test: false
+                      reference: null
+                      direction: OUT
+                      fromAddress: null
+                      fromName: null
+                      eventCode: BATbern60
+                      conversationKey: null
+                      spam: false
+                      participantStatus: null
+                    bodyHtml: <p>Sample text for the API example.</p>
+                    recipients:
+                      - address: gina.muster@example.com
+                        kind: TO
+                        status: DELIVERED
+                        failureReason: null
+                    progress: null
         '400':
           description: Empty or too long text
         '401':
@@ -794,6 +1130,11 @@ paths:
             application/json:
               schema:
                 $ref: ./_shared.openapi.yml#/components/schemas/DownloadUrlResponse
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    downloadUrl: https://batbern-inbound-emails-staging.s3.eu-central-1.amazonaws.com/...&X-Amz-Signature=...
         '401':
           description: Not authenticated
         '403':
@@ -829,6 +1170,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MailSendResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    mailKeys:
+                      - sample
+                    target: RECIPIENTS
+                    recipientCount: 1
+                    skipped:
+                      - displayName: Sample name
+                        reason: OPTED_OUT
         '400':
           description: The mail is not a newsletter
         '401':

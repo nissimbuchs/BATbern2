@@ -92,6 +92,38 @@ paths:
                       $ref: '#/components/schemas/Registration'
                   pagination:
                     $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    data:
+                      - registrationCode: BAT-2025-000123
+                        eventCode: BATbern25
+                        eventTitle: Sample title
+                        eventDate: "2026-05-14T16:00:00Z"
+                        attendeeUsername: john.doe
+                        firstName: Ines
+                        lastName: Probe
+                        email: ines.probe@example.com
+                        company: sample
+                        status: REGISTERED
+                        waitlistPosition: 2
+                        registrationDate: "2026-05-14T16:00:00Z"
+                        sessionPreferences:
+                          - sample
+                        specialRequests: sample
+                        communicationPreferences:
+                          newsletterSubscribed: false
+                          eventReminders: true
+                        createdAt: "2026-05-14T16:00:00Z"
+                        updatedAt: "2026-05-14T16:00:00Z"
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 31
+                      totalPages: 16
+                      hasNext: true
+                      hasPrev: false
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -189,6 +221,13 @@ paths:
                   User must click email link to confirm registration.
 
                   '
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
+                    email: anna.vorlage@example.com
+                    companyUpdated: false
         '400':
           description: Invalid request (validation errors)
           content:
@@ -239,6 +278,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DistributionListResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    eventCode: BATbern57
+                    kind: speakers
+                    emails:
+                      - ben.vorlage@example.com
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -285,6 +332,13 @@ paths:
                   attendeeUsername:
                     type: string
                     example: jane.doe
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    registrationCode: BATbern57-A1B2C3
+                    status: confirmed
+                    attendeeUsername: jane.doe
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -475,6 +529,12 @@ paths:
                     pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
                     maxLength: 254
                     example: john.doe@example.com
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
+                    email: anna.vorlage@example.com
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
@@ -566,6 +626,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Registration'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    registrationCode: BAT-2025-000123
+                    eventCode: BATbern25
+                    eventTitle: Sample title
+                    eventDate: "2026-05-14T16:00:00Z"
+                    attendeeUsername: john.doe
+                    firstName: Ines
+                    lastName: Probe
+                    email: ines.probe@example.com
+                    company: sample
+                    status: REGISTERED
+                    waitlistPosition: 2
+                    registrationDate: "2026-05-14T16:00:00Z"
+                    sessionPreferences:
+                      - sample
+                    specialRequests: sample
+                    communicationPreferences:
+                      newsletterSubscribed: false
+                      eventReminders: true
+                    createdAt: "2026-05-14T16:00:00Z"
+                    updatedAt: "2026-05-14T16:00:00Z"
         '404':
           description: Registration not found (invalid confirmation code)
         '500':
@@ -613,6 +697,30 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Registration'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    registrationCode: BAT-2025-000123
+                    eventCode: BATbern25
+                    eventTitle: Sample title
+                    eventDate: "2026-05-14T16:00:00Z"
+                    attendeeUsername: john.doe
+                    firstName: Ines
+                    lastName: Probe
+                    email: ines.probe@example.com
+                    company: sample
+                    status: REGISTERED
+                    waitlistPosition: 2
+                    registrationDate: "2026-05-14T16:00:00Z"
+                    sessionPreferences:
+                      - sample
+                    specialRequests: sample
+                    communicationPreferences:
+                      newsletterSubscribed: false
+                      eventReminders: true
+                    createdAt: "2026-05-14T16:00:00Z"
+                    updatedAt: "2026-05-14T16:00:00Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -744,6 +852,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResendConfirmationResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
         '409':
           description: Registration is not pending (cannot resend)
           content:
@@ -780,6 +893,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EnrollStakeholdersResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    enrolled: 1
+                    skipped: 1
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -850,6 +969,12 @@ paths:
                     enum:
                     - CONFIRMED
                     example: CONFIRMED
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
+                    status: CONFIRMED
         '400':
           description: Invalid or expired token
           content:
@@ -917,6 +1042,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeregistrationVerifyResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    registrationCode: BATbern142-reg-A3X9K2
+                    eventCode: BATbern142
+                    eventTitle: BATbern — Berner Architekten Treffen
+                    eventDate: "2026-06-15T18:00:00Z"
+                    attendeeFirstName: Anna
         '404':
           description: Token not found or registration already cancelled
           content:
@@ -962,6 +1096,11 @@ paths:
                   message:
                     type: string
                     example: Registration cancelled successfully
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
         '404':
           description: Token not found
           content:
@@ -1018,6 +1157,11 @@ paths:
                   message:
                     type: string
                     example: If you are registered for this event, you'll receive a cancellation link by email.
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
   /events/batch_registrations:
     post:
       tags:
@@ -1193,17 +1337,19 @@ paths:
                 items:
                   $ref: '#/components/schemas/Registration'
               example:
-              - registrationCode: BATbern34-reg-A3X9K2
+              - registrationCode: BAT-2023-000341
                 eventCode: BATbern34
+                attendeeUsername: anna.muster
                 eventTitle: Cloud Native Architecture
                 eventDate: '2023-03-15T18:00:00Z'
-                status: attended
+                status: ATTENDED
                 registrationDate: '2023-02-01T10:30:00Z'
-              - registrationCode: BATbern36-reg-B7Y1M4
+              - registrationCode: BAT-2023-000362
                 eventCode: BATbern36
+                attendeeUsername: anna.muster
                 eventTitle: Microservices Patterns
                 eventDate: '2023-05-20T18:00:00Z'
-                status: attended
+                status: ATTENDED
                 registrationDate: '2023-04-10T14:20:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'

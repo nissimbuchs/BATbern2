@@ -87,7 +87,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
   // Resolve the selected company's logo for the start-adornment avatar. Only fires for a
   // real slug (existing company) — a brand-new (name === '') value has no logo to fetch.
   const selectedSlug = value && !isCreateOption(value) ? value.name : '';
-  const { data: selectedCompany } = useCompany(selectedSlug, { expand: ['logo'] });
+  const { data: selectedCompany } = useCompany(selectedSlug);
   const selectedLogoUrl = selectedCompany?.logo?.url;
 
   // Only search if input ≥2 chars and doesn't already match the selected value's label

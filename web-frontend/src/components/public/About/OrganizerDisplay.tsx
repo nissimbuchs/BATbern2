@@ -27,9 +27,7 @@ export const OrganizerDisplay = ({
   showBio = true,
   className = '',
 }: OrganizerDisplayProps) => {
-  const { data: company } = useCompany(organizer.companyId || '', {
-    expand: ['logo'],
-  });
+  const { data: company } = useCompany(organizer.companyId || '');
 
   const logoUrl = company?.logo?.url;
   const companyName = company?.displayName || company?.name;

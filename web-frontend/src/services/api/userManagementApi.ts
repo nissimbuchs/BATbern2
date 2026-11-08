@@ -87,6 +87,38 @@ export const listUsers = async (
   return response.data;
 };
 
+/** The spec maximum of `limit` on GET /users (users-api.openapi.yml). */
+export const MAX_USER_PAGE_SIZE = 100;
+
+/**
+ * Every user matching `filters`, read page by page at the spec maximum. For the batch-import
+ * duplicate checks, which used to ask for `limit=1000` in one call, above the maximum of 100 the
+ * spec declares (#1072 class; found by the MSW harness, 17.0c1).
+ */
+export const listAllUsers = async (filters: UserFilters): Promise<PaginatedUserResponse> => {
+  const first = await listUsers(filters, { page: 1, limit: MAX_USER_PAGE_SIZE });
+  const data = [...first.data];
+  let current = first;
+  // Our own page counter, never the response's: a server that kept answering `page: 1,
+  // hasNext: true` would otherwise loop forever. Bounded: 100 pages of 100 cover 10,000 users,
+  // four times today's count.
+  for (let page = 2; current.pagination.hasNext && page <= 100; page++) {
+    current = await listUsers(filters, { page, limit: MAX_USER_PAGE_SIZE });
+    data.push(...current.data);
+  }
+  return {
+    data,
+    pagination: {
+      ...current.pagination,
+      page: 1,
+      limit: data.length,
+      totalPages: 1,
+      hasNext: false,
+      hasPrev: false,
+    },
+  };
+};
+
 /**
  * Search users with autocomplete (300ms debouncing should be handled by the hook/component)
  * AC6: Search & Autocomplete

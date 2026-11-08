@@ -46,6 +46,28 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TaskTemplateResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - id: b6ce1ea6-8486-4227-86cf-49f14f8966b7
+                      name: Venue Booking
+                      triggerState: topic_selection
+                      dueDateType: relative_to_event
+                      dueDateOffsetDays: -90
+                      activationLeadDays: 14
+                      isDefault: true
+                      createdAt: "2025-12-23T21:46:44.141702Z"
+                      updatedAt: "2025-12-23T21:46:44.141702Z"
+                    - id: aeeccba0-d8bb-4d2f-b39f-4f941a188224
+                      name: Partner Meeting Coordination
+                      triggerState: topic_selection
+                      dueDateType: relative_to_event
+                      dueDateOffsetDays: 0
+                      activationLeadDays: 14
+                      isDefault: true
+                      createdAt: "2025-12-23T21:46:44.141702Z"
+                      updatedAt: "2025-12-23T21:46:44.141702Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -73,6 +95,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TaskTemplateResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: b6ce1ea6-8486-4227-86cf-49f14f8966b7
+                    name: Venue Booking
+                    triggerState: topic_selection
+                    dueDateType: relative_to_event
+                    dueDateOffsetDays: -90
+                    activationLeadDays: 14
+                    isDefault: true
+                    createdAt: "2025-12-23T21:46:44.141702Z"
+                    updatedAt: "2025-12-23T21:46:44.141702Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -111,6 +146,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TaskTemplateResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: b6ce1ea6-8486-4227-86cf-49f14f8966b7
+                    name: Venue Booking
+                    triggerState: topic_selection
+                    dueDateType: relative_to_event
+                    dueDateOffsetDays: -90
+                    activationLeadDays: 14
+                    isDefault: true
+                    createdAt: "2025-12-23T21:46:44.141702Z"
+                    updatedAt: "2025-12-23T21:46:44.141702Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -165,6 +213,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EventTaskResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -192,6 +245,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventTaskResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3cf5db30-92c0-44d2-bb74-4b0f2b4aa574
+                    eventId: 8dd9c9a4-35c1-4adb-b1aa-ef81e7b65fe3
+                    eventCode: BATbern60
+                    templateId: 47540622-0710-4396-a8d4-e0a7d952f86a
+                    taskName: Wein
+                    triggerState: agenda_published
+                    dueDate: "2026-11-06T00:00:00Z"
+                    status: todo
+                    createdAt: "2026-10-25T09:46:11.349885Z"
+                    updatedAt: "2026-10-25T09:46:11.350173Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -225,6 +292,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EventTaskResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    []
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -250,6 +322,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EventTaskResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -271,6 +348,32 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/EventTaskResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - id: 3cf5db30-92c0-44d2-bb74-4b0f2b4aa574
+                      eventId: 8dd9c9a4-35c1-4adb-b1aa-ef81e7b65fe3
+                      eventCode: BATbern60
+                      templateId: 47540622-0710-4396-a8d4-e0a7d952f86a
+                      taskName: Wein
+                      triggerState: agenda_published
+                      dueDate: "2026-11-06T00:00:00Z"
+                      status: todo
+                      createdAt: "2026-10-25T09:46:11.349885Z"
+                      updatedAt: "2026-10-25T09:46:11.350173Z"
+                    - id: eb3be7fc-0448-45d8-89a7-a7d9e53d5ef0
+                      eventId: 0a5736a5-254c-4ec1-b084-f99be1eb884a
+                      eventCode: BATbern58
+                      templateId: 51136668-ae83-4506-b7fd-bdad2d64ba22
+                      taskName: Catering Coordination
+                      triggerState: agenda_published
+                      dueDate: "2026-02-04T00:00:00Z"
+                      assignedOrganizerUsername: carla.muster
+                      status: completed
+                      completedDate: "2026-02-25T06:47:16.167211Z"
+                      createdAt: "2026-01-09T15:49:11.666082Z"
+                      updatedAt: "2026-03-09T10:02:16.054886Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -298,6 +401,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventTaskResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3cf5db30-92c0-44d2-bb74-4b0f2b4aa574
+                    eventId: 8dd9c9a4-35c1-4adb-b1aa-ef81e7b65fe3
+                    eventCode: BATbern60
+                    templateId: 47540622-0710-4396-a8d4-e0a7d952f86a
+                    taskName: Wein
+                    triggerState: agenda_published
+                    dueDate: "2026-11-06T00:00:00Z"
+                    status: todo
+                    createdAt: "2026-10-25T09:46:11.349885Z"
+                    updatedAt: "2026-10-25T09:46:11.350173Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -329,6 +446,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventTaskResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3cf5db30-92c0-44d2-bb74-4b0f2b4aa574
+                    eventId: 8dd9c9a4-35c1-4adb-b1aa-ef81e7b65fe3
+                    eventCode: BATbern60
+                    templateId: 47540622-0710-4396-a8d4-e0a7d952f86a
+                    taskName: Wein
+                    triggerState: agenda_published
+                    dueDate: "2026-11-06T00:00:00Z"
+                    status: todo
+                    createdAt: "2026-10-25T09:46:11.349885Z"
+                    updatedAt: "2026-10-25T09:46:11.350173Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -360,6 +491,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventTaskResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3cf5db30-92c0-44d2-bb74-4b0f2b4aa574
+                    eventId: 8dd9c9a4-35c1-4adb-b1aa-ef81e7b65fe3
+                    eventCode: BATbern60
+                    templateId: 47540622-0710-4396-a8d4-e0a7d952f86a
+                    taskName: Wein
+                    triggerState: agenda_published
+                    dueDate: "2026-11-06T00:00:00Z"
+                    status: todo
+                    createdAt: "2026-10-25T09:46:11.349885Z"
+                    updatedAt: "2026-10-25T09:46:11.350173Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -391,6 +536,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventTaskResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3cf5db30-92c0-44d2-bb74-4b0f2b4aa574
+                    eventId: 8dd9c9a4-35c1-4adb-b1aa-ef81e7b65fe3
+                    eventCode: BATbern60
+                    templateId: 47540622-0710-4396-a8d4-e0a7d952f86a
+                    taskName: Wein
+                    triggerState: agenda_published
+                    dueDate: "2026-11-06T00:00:00Z"
+                    status: todo
+                    createdAt: "2026-10-25T09:46:11.349885Z"
+                    updatedAt: "2026-10-25T09:46:11.350173Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':

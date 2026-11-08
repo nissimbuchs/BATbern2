@@ -204,71 +204,33 @@ describe('Partner API Client - Story 2.8.1 (Partner Directory)', () => {
     });
   });
 
-  describe('AC10: Test 10.4 - should_includeSortParams_when_listPartnersInvoked', () => {
-    it('should include sort parameter with sortBy and sortOrder', async () => {
-      const filters = { tier: 'all' as const, status: 'all' as const };
-      const sort = { sortBy: 'name' as const, sortOrder: 'asc' as const };
-      const pagination = { page: 0, size: 20 };
-
-      const getSpy = vi.mocked(apiClient.get);
-
-      try {
-        await partnerApi.listPartners(filters, sort, pagination);
-      } catch {
-        // Expected to fail
-      }
-
-      expect(getSpy).toHaveBeenCalledWith(
-        '/partners',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            sort: 'name:asc',
-          }),
-        })
-      );
-    });
-
-    it('should support different sort fields (engagement, tier, lastEvent)', async () => {
+  describe('AC10: Test 10.4 - sort is not sent', () => {
+    // GET /partners declares no sort parameter and PCS always sorts by company slug: the
+    // `sort=name:asc` this test used to pin was ignored by the backend (found by the MSW harness,
+    // 17.0c1). Whether the directory gets a backend sort is an open owner decision.
+    it('sends no sort parameter, whatever the sort configuration', async () => {
       const filters = { tier: 'all' as const, status: 'all' as const };
       const pagination = { page: 0, size: 20 };
-
       const getSpy = vi.mocked(apiClient.get);
 
-      // Test engagement sort
-      try {
-        await partnerApi.listPartners(
-          filters,
-          { sortBy: 'engagement', sortOrder: 'desc' },
-          pagination
-        );
-      } catch {
-        // Expected to fail
+      for (const sort of [
+        { sortBy: 'name' as const, sortOrder: 'asc' as const },
+        { sortBy: 'engagement' as const, sortOrder: 'desc' as const },
+      ]) {
+        try {
+          await partnerApi.listPartners(filters, sort, pagination);
+        } catch {
+          // the mocked apiClient answers nothing useful
+        }
       }
 
-      expect(getSpy).toHaveBeenLastCalledWith(
-        '/partners',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            sort: 'engagement:desc',
-          }),
-        })
-      );
-
-      // Test tier sort
-      try {
-        await partnerApi.listPartners(filters, { sortBy: 'tier', sortOrder: 'asc' }, pagination);
-      } catch {
-        // Expected to fail
+      expect(getSpy).toHaveBeenCalledTimes(2);
+      for (const [, config] of getSpy.mock.calls) {
+        expect((config as { params: Record<string, unknown> }).params).not.toHaveProperty('sort');
+        expect((config as { params: Record<string, unknown> }).params).toMatchObject({
+          include: 'company,contacts',
+        });
       }
-
-      expect(getSpy).toHaveBeenLastCalledWith(
-        '/partners',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            sort: 'tier:asc',
-          }),
-        })
-      );
     });
   });
 

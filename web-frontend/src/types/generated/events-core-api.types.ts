@@ -2250,7 +2250,7 @@ export interface operations {
            *       "eventCode": "BATbern57",
            *       "title": "Cloud-Native Architecture in Practice",
            *       "eventNumber": 57,
-           *       "workflowState": "PUBLISHED",
+           *       "workflowState": "AGENDA_PUBLISHED",
            *       "description": "Join us for an evening exploring modern cloud-native architecture patterns and best practices.",
            *       "date": "2025-03-15T18:00:00Z",
            *       "registrationDeadline": "2025-03-10T23:59:59Z",

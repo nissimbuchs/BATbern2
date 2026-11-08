@@ -56,11 +56,11 @@ export interface PartnerSort {
 }
 
 /**
- * List partners with filters, sorting, and pagination
+ * List partners with filters and pagination
  * Includes HTTP enrichment via ?include=company,contacts (ADR-004)
  *
  * @param filters - Tier and status filters
- * @param sort - Sort configuration
+ * @param _sort - Ignored, see the parameter comment
  * @param pagination - Page and size parameters
  * @param search - Free text, matched by the backend over every partner's company slug and
  *   display name before paging; blank sends no search
@@ -68,7 +68,10 @@ export interface PartnerSort {
  */
 export const listPartners = async (
   filters: PartnerFilters,
-  sort: PartnerSort,
+  // Not sent: GET /partners declares no sort parameter and PCS always sorts by company slug, so
+  // the `sort=` this used to send was ignored (found by the MSW harness, 17.0c1). Whether the
+  // directory's sort control gets a backend sort or goes away is an open owner decision.
+  _sort: PartnerSort,
   pagination: PartnerPagination,
   search?: string
 ): Promise<PartnerListResponse> => {
@@ -99,11 +102,8 @@ export const listPartners = async (
     params.filter = filterParts.join(',');
   }
 
-  // Build sort query parameter
-  params.sort = `${sort.sortBy}:${sort.sortOrder}`;
-
   const response = await apiClient.get<PartnerListResponse>(PARTNER_API_PATH, { params });
-  // ✅ Resolves to: http://localhost:8080/api/v1/partners?page=0&size=20&include=company,contacts&filter=...&sort=...
+  // Resolves to: <api>/partners?page=0&size=20&include=company,contacts&filter=...&search=...
   return response.data;
 };
 

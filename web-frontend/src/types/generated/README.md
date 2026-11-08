@@ -30,6 +30,11 @@ This will generate TypeScript types from:
 | `docs/api/event-watch-api.openapi.yml`         | `event-watch-api.types.ts`         |
 | `docs/api/topics-api.openapi.yml`              | `topics-api.types.ts`              |
 | `docs/api/partners-api.openapi.yml`            | `partner-api.types.ts`             |
+| `docs/api/partner-meetings-api.openapi.yml`    | `partner-meetings-api.types.ts`    |
+| `docs/api/event-tasks-api.openapi.yml`         | `event-tasks-api.types.ts`         |
+| `docs/api/event-mail-api.openapi.yml`          | `event-mail-api.types.ts`          |
+| `docs/api/event-notifications-api.openapi.yml` | `event-notifications-api.types.ts` |
+| `docs/api/gateway-config-api.openapi.yml`      | `gateway-config-api.types.ts`      |
 
 ### Usage
 

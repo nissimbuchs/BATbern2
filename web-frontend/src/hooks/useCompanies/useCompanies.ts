@@ -26,11 +26,17 @@ import type { CompanyFilters, PaginationParams } from '@/types/company.types';
 export const useCompanies = (
   pagination: PaginationParams,
   filters?: CompanyFilters,
-  options?: { expand?: string[]; enabled?: boolean }
+  // allPages: every page instead of `pagination` (page by page at the spec maximum of 100)
+  options?: { expand?: string[]; enabled?: boolean; allPages?: boolean }
 ) => {
   return useQuery({
-    queryKey: ['companies', pagination, filters, options?.expand],
-    queryFn: () => companyApiClient.getCompanies(pagination, filters, options),
+    queryKey: options?.allPages
+      ? ['companies', 'all', filters, options?.expand]
+      : ['companies', pagination, filters, options?.expand],
+    queryFn: () =>
+      options?.allPages
+        ? companyApiClient.getAllCompanies(filters, options)
+        : companyApiClient.getCompanies(pagination, filters, options),
     staleTime: 5 * 60 * 1000, // 5 minutes (AC 10 - Performance requirement)
     gcTime: 10 * 60 * 1000, // 10 minutes garbage collection
     refetchOnWindowFocus: true, // AC 14 - State Management requirement

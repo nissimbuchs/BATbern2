@@ -88,7 +88,7 @@ export const UserDetailView: React.FC<UserDetailViewProps> = ({
   const [mergeOpen, setMergeOpen] = useState(false);
 
   // Fetch company with logo if user has a company
-  const { data: companyWithLogo } = useCompany(user.company?.name || '', { expand: ['logo'] });
+  const { data: companyWithLogo } = useCompany(user.company?.name || '');
 
   const handleTabChange = (_event: React.SyntheticEvent, newValue: number) => {
     setActiveTab(newValue);

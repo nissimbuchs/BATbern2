@@ -68,6 +68,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotificationsResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    data: []
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 0
+                      totalPages: 0
   /notifications/count:
     get:
       description: |
@@ -97,6 +107,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/NotificationCountResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    count: 0
   /notifications/{id}/read:
     put:
       description: |
@@ -121,6 +136,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MarkAsReadResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    success: true
+                    markedCount: 1
+                    updatedAt: "2026-05-14T16:00:00Z"
         '404':
           description: Notification not found
   /notifications/batch-read:
@@ -146,6 +168,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MarkAsReadResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    success: true
+                    markedCount: 1
+                    updatedAt: "2026-05-14T16:00:00Z"
   /notifications/history:
     get:
       description: |
@@ -177,6 +206,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/NotificationResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
   /notifications/{id}:
     delete:
       description: |
@@ -201,6 +235,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteNotificationResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    success: true
         '404':
           description: Notification not found
   /notifications/batch-delete:
@@ -226,6 +265,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeleteNotificationResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    success: true
 components:
   schemas:
     NotificationResponse:

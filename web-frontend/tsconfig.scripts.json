@@ -18,6 +18,8 @@
     "scripts/api-lint*.ts",
     "scripts/api-similarity*.ts",
     "scripts/lib/*.ts",
-    "src/test/contract/*.ts"
+    "src/test/contract/*.ts",
+    "src/test/msw/openapi.ts",
+    "../scripts/dev/capture-spec-examples.ts"
   ]
 }

@@ -67,14 +67,12 @@ export function ParticipantBatchImportModal({
 
   const { importCandidates, isImporting, candidates, reset } = useParticipantBatchImport();
 
-  // Fetch all users to check for existing participants
-  // Only fetch when we have candidates to check
+  // Fetch all users to check for existing participants, page by page (GET /users caps limit at
+  // 100). Only fetch when we have candidates to check.
   const { data: existingUsersData } = useUserList({
     filters: {},
-    pagination: {
-      page: 1,
-      limit: 1000, // Large limit to get all users
-    },
+    pagination: { page: 1, limit: 100 },
+    allPages: true,
     enabled: shouldCheckUsers,
   });
 

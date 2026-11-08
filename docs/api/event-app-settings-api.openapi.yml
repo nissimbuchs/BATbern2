@@ -37,6 +37,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FeatureFlagsResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    aiContentEnabled: false
 components:
   schemas:
     FeatureFlagsResponse:

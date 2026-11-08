@@ -209,6 +209,8 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
 - Prefer `userEvent` over `fireEvent` for realistic interaction simulation.
 - Use `waitFor()` for any assertion that depends on async state or CSS transitions.
 - What a test may mock: only the process boundary (MSW for the network, Amplify), never our services, hooks or child components. Binding rules and the CI ratchet: `docs/architecture/coding-standards.md` → "Test fidelity rules".
+- The network is the MSW harness, active in every test (`src/test/msw/`, 17.0c1): each request is checked against `docs/api/*.openapi.yml` (a path, method or query no spec defines fails the test), answered with the spec example, or with a typed override `api.on('<operationId>', () => body)`; read what was sent with `api.calls('<operationId>')`. Never a per-file `setupServer`. Usage: coding-standards → "Frontend: the MSW harness".
+- i18n is the real i18next with `en` (set up in `src/test/setup.ts`); no new `vi.mock('react-i18next')` (ratchet category `fe-mock-i18n`).
 
 ### E2E Testing (Playwright)
 - Three projects: `chromium` (organizer — always active), `speaker` (activated by

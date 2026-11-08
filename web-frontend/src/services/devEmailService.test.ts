@@ -7,11 +7,13 @@
  * - replyToEmail: POST /dev/emails/{id}/reply
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { devEmailService, type CapturedEmailWithSource } from './devEmailService';
 
+// The /dev/emails endpoints exist only in local dev and are in no spec, so this test replaces
+// fetch itself. Stubbed per test: the MSW harness (src/test/setup.ts) patches fetch in beforeAll,
+// after this module's top level ran.
 const mockFetch = vi.fn();
-vi.stubGlobal('fetch', mockFetch);
 
 const EMS_EMAIL = {
   id: 'ems-1',
@@ -38,7 +40,11 @@ const PCS_EMAIL = {
 };
 
 describe('devEmailService', () => {
-  beforeEach(() => vi.clearAllMocks());
+  beforeEach(() => {
+    vi.clearAllMocks();
+    vi.stubGlobal('fetch', mockFetch);
+  });
+  afterEach(() => vi.unstubAllGlobals());
 
   describe('fetchAll', () => {
     it('merges emails from EMS, PCS and CUMS, sorted newest first, tagged with source URL', async () => {

@@ -120,7 +120,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
   // the profile page; registration holds a display name, so it is skipped there.
   const { data: chipCompany } = useQuery({
     queryKey: ['company', 'detail', value],
-    queryFn: () => getCompany(value, { expand: ['logo'] }),
+    queryFn: () => getCompany(value),
     enabled: !!selected && valueIsSlug && value.length > 0,
   });
   const chipLogoUrl = chipCompany?.logo?.url ?? null;

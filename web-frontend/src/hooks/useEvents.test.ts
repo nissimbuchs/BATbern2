@@ -4,7 +4,6 @@
  * Coverage for:
  * - useEvents: paginated list with optional filters/expand
  * - useEvent: detail with eventCode guard + include
- * - useEventWorkflow: workflow state with guard
  * - useCreateEvent: mutation + cache invalidation
  * - useUpdateEvent: mutation + invalidation
  * - useDeleteEvent: mutation + cache invalidation
@@ -19,7 +18,6 @@ vi.mock('@/services/eventApiClient', () => ({
   eventApiClient: {
     getEvents: vi.fn(),
     getEvent: vi.fn(),
-    getEventWorkflow: vi.fn(),
     createEvent: vi.fn(),
     patchEvent: vi.fn(),
     deleteEvent: vi.fn(),
@@ -27,18 +25,10 @@ vi.mock('@/services/eventApiClient', () => ({
 }));
 
 import { eventApiClient } from '@/services/eventApiClient';
-import {
-  useEvents,
-  useEvent,
-  useEventWorkflow,
-  useCreateEvent,
-  useUpdateEvent,
-  useDeleteEvent,
-} from './useEvents';
+import { useEvents, useEvent, useCreateEvent, useUpdateEvent, useDeleteEvent } from './useEvents';
 
 const mockGetEvents = vi.mocked(eventApiClient.getEvents);
 const mockGetEvent = vi.mocked(eventApiClient.getEvent);
-const mockGetEventWorkflow = vi.mocked(eventApiClient.getEventWorkflow);
 const mockCreateEvent = vi.mocked(eventApiClient.createEvent);
 const mockPatchEvent = vi.mocked(eventApiClient.patchEvent);
 const mockDeleteEvent = vi.mocked(eventApiClient.deleteEvent);
@@ -55,7 +45,6 @@ const wrapper =
 
 const MOCK_EVENT = { eventCode: 'BAT142', title: 'BATbern #142', status: 'PUBLISHED' };
 const MOCK_EVENTS_PAGE = { data: [MOCK_EVENT], total: 1, page: 1, limit: 20 };
-const MOCK_WORKFLOW = { state: 'IN_PROGRESS', transitions: [] };
 
 // ── useEvents ─────────────────────────────────────────────────────────────────
 
@@ -152,35 +141,6 @@ describe('useEvent', () => {
 
     expect(result.current.isLoading).toBe(false);
     expect(mockGetEvent).not.toHaveBeenCalled();
-  });
-});
-
-// ── useEventWorkflow ──────────────────────────────────────────────────────────
-
-describe('useEventWorkflow', () => {
-  let qc: QueryClient;
-
-  beforeEach(() => {
-    qc = createQC();
-    vi.clearAllMocks();
-  });
-
-  it('should fetch workflow state for event', async () => {
-    mockGetEventWorkflow.mockResolvedValue(MOCK_WORKFLOW as never);
-
-    const { result } = renderHook(() => useEventWorkflow('BAT142'), { wrapper: wrapper(qc) });
-
-    await waitFor(() => expect(result.current.isLoading).toBe(false));
-
-    expect(mockGetEventWorkflow).toHaveBeenCalledWith('BAT142');
-    expect(result.current.data).toEqual(MOCK_WORKFLOW);
-  });
-
-  it('should not fetch when eventCode is undefined', () => {
-    const { result } = renderHook(() => useEventWorkflow(undefined), { wrapper: wrapper(qc) });
-
-    expect(result.current.isLoading).toBe(false);
-    expect(mockGetEventWorkflow).not.toHaveBeenCalled();
   });
 });
 

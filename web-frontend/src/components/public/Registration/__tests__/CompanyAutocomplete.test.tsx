@@ -121,7 +121,7 @@ describe('CompanyAutocomplete Component', () => {
 
       const logo = await screen.findByAltText('Infowell GmbH');
       expect(logo).toHaveAttribute('src', 'https://cdn.batbern.ch/logos/infowell/logo.png');
-      expect(companyApi.getCompany).toHaveBeenCalledWith('infowellgmbh', { expand: ['logo'] });
+      expect(companyApi.getCompany).toHaveBeenCalledWith('infowellgmbh');
     });
 
     it('should_showInitialAvatar_when_slugCompanyHasNoLogo', async () => {

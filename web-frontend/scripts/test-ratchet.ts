@@ -19,6 +19,10 @@
  *       `src/`: under `src/services` -> services; under `src/hooks` or basename `use[A-Z]...` ->
  *       hooks; under `src/components` / `src/pages` or a PascalCase basename -> components;
  *       anything else (packages, stores, utils, types) is not counted.
+ *   fe-mock-i18n
+ *       `vi.mock('react-i18next')` / `vi.doMock('react-i18next')`: a per-file i18n stub instead of
+ *       the real i18next with `en` that `src/test/setup.ts` provides (Story 17.0c1). The stub
+ *       drops interpolation and hides missing keys (#959, #1150).
  *   be-mock-s2s-client
  *       `@MockitoBean` whose type ends in `Client` and is not a boundary type (UserApiClient, ...),
  *       and `mock(XClient.class)` / `Mockito.mock(XClient.class)` / a `@Mock XClient` field of such a type in test
@@ -51,6 +55,7 @@ export const CATEGORIES = [
   'be-transactional-it',
   'fe-mock-components',
   'fe-mock-hooks',
+  'fe-mock-i18n',
   'fe-mock-services',
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -108,6 +113,7 @@ export function resolveSpecifier(specifier: string, testFile: string): string | 
 
 /** The ratchet category of a `vi.mock` specifier in `testFile`, or null when not counted. */
 export function classifySpecifier(specifier: string, testFile: string): Category | null {
+  if (specifier === 'react-i18next') return 'fe-mock-i18n';
   const resolved = resolveSpecifier(specifier, testFile);
   if (!resolved || !resolved.startsWith(FRONTEND_SRC)) return null;
   const segments = resolved.slice(FRONTEND_SRC.length).split('/').filter(Boolean);

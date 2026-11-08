@@ -72,6 +72,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LogoPresignedUploadUrl'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    uploadUrl: https://www.batbern.ch/
+                    fileId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    s3Key: uploads/2026/sample/file.png
+                    fileExtension: png
+                    expiresInMinutes: 1
+                    requiredHeaders:
+                      key: uploads/2026/sample/file.png
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -148,6 +159,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LogoCleanupStatistics'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    pendingCount: 0
+                    confirmedCount: 0
+                    associatedCount: 157
+                    expiredPendingCount: 0
+                    expiredConfirmedCount: 0
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -194,6 +214,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UploadImageFromUrlResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    uploadId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
         '400':
           $ref: '#/components/responses/BadRequest'
         '413':
@@ -392,6 +417,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    name: 44aiag
+                    displayName: 44ai AG
+                    website: https://44ai.ch/
+                    isVerified: false
+                    createdAt: "2026-10-04T07:24:12.697691Z"
+                    updatedAt: "2026-10-13T13:05:09.486695Z"
+                    createdBy: ben.muster
+                    logo:
+                      url: https://cdn.batbern.ch/logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      s3Key: logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      fileId: d4884d93-e5c1-4ed1-acc0-02e796bb60b5
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -496,6 +536,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    name: 44aiag
+                    displayName: 44ai AG
+                    website: https://44ai.ch/
+                    isVerified: false
+                    createdAt: "2026-10-04T07:24:12.697691Z"
+                    updatedAt: "2026-10-13T13:05:09.486695Z"
+                    createdBy: ben.muster
+                    logo:
+                      url: https://cdn.batbern.ch/logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      s3Key: logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      fileId: d4884d93-e5c1-4ed1-acc0-02e796bb60b5
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -627,7 +682,7 @@ paths:
                       displayName: Swiss IT Solutions AG
                       industry: Technology
                       isVerified: true
-                    - name: Swiss Bank Corp
+                    - name: SwissBankCorp
                       displayName: Swiss Bank
                       industry: Finance
                       isVerified: true
@@ -674,6 +729,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    name: 44aiag
+                    displayName: 44ai AG
+                    website: https://44ai.ch/
+                    isVerified: false
+                    createdAt: "2026-10-04T07:24:12.697691Z"
+                    updatedAt: "2026-10-13T13:05:09.486695Z"
+                    createdBy: ben.muster
+                    logo:
+                      url: https://cdn.batbern.ch/logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      s3Key: logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      fileId: d4884d93-e5c1-4ed1-acc0-02e796bb60b5
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -752,7 +822,6 @@ paths:
                     isVerified: false
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
-                    createdBy: anonymous
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -829,6 +898,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PresentationSettingsResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    aboutText: |-
+                      BATbern ist seit 2005 eine unabhängige Plattform zum Technologie Austausch zwischen IT-Experten.
+                      Sie bietet Fachvorträge aus der Praxis.
+                      Eine hervorragende Plattform zum Gedanken- und Erfahrungsaustausch.
+                      Platz für Networking während dem Apéro oder Lunch.
+                    partnerCount: 9
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':

@@ -1,18 +1,19 @@
 /**
  * MailComposer own text (Story 16.5, AC1, AC2, AC6–AC9, AC11, AC13).
  *
- * Same setup as MailComposer.test.tsx: the real service layer, MSW answering preview, send and the
- * template store, so the asserted request bodies are what the backend would get. TinyMCE does not
+ * Same setup as MailComposer.test.tsx: the real service layer, the MSW harness (src/test/msw)
+ * answering preview, send and the template store and checking each call against the spec, so the asserted request bodies are what the backend would get. TinyMCE does not
  * run in jsdom; it is replaced by a textarea whose editor handle inserts at the textarea's cursor,
  * the way `editor.insertContent` does. Nothing leaves the test process.
  */
 import React from 'react';
-import { describe, it, expect, vi, beforeAll, afterAll, afterEach, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, fireEvent, waitFor, within } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { MemoryRouter } from 'react-router-dom';
-import { setupServer } from 'msw/node';
-import { http, HttpResponse } from 'msw';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import type { ResponseBody } from '@/test/msw/api';
 import { MailComposer } from '../MailComposer';
 import type {
   ComposeAudience,
@@ -110,7 +111,7 @@ let sends: MailSendRequest[] = [];
 let templateWrites: { method: string; url: string; body: unknown }[] = [];
 let templateGets: string[] = [];
 let previewOverride: Partial<MailPreviewResponse> = {};
-let sendResponses: { status: number; body: unknown }[] = [];
+let sendResponses: { status: number; body: Record<string, unknown> }[] = [];
 let createStatus = 201;
 
 function previewFor(req: MailComposeRequest): MailPreviewResponse {
@@ -141,63 +142,65 @@ function previewFor(req: MailComposeRequest): MailPreviewResponse {
   };
 }
 
-const server = setupServer(
-  http.get('*/email-templates', ({ request }) => {
-    const category = new URL(request.url).searchParams.get('category') ?? '';
-    return HttpResponse.json(
-      (TEMPLATES[category] ?? []).flatMap((key) =>
-        ['de', 'en'].map((locale) => ({ templateKey: key, locale, category, isLayout: false }))
-      )
+type TemplateCategory = ResponseBody<'listEmailTemplates', 200>[number]['category'];
+
+function answerBackend() {
+  api.on('listEmailTemplates', ({ query }) => {
+    const category = (query.get('category') ?? '') as TemplateCategory;
+    return (TEMPLATES[category] ?? []).flatMap((key) =>
+      ['de', 'en'].map((locale) => ({
+        templateKey: key,
+        locale,
+        category,
+        isLayout: false,
+        isSystemTemplate: true,
+        htmlBody: '<p>Template</p>',
+        updatedAt: '2026-05-14T16:00:00Z',
+      }))
     );
-  }),
-  http.get('*/email-templates/:key/:locale', ({ params }) => {
-    templateGets.push(`${params.key}/${params.locale}`);
+  });
+  api.on('getEmailTemplate', ({ params }) => {
+    templateGets.push(`${params.templateKey}/${params.locale}`);
     return HttpResponse.json({ ...STORED_TEMPLATE, locale: params.locale });
-  }),
-  http.post('*/email-templates', async ({ request }) => {
-    const body = await request.json();
-    templateWrites.push({ method: 'POST', url: request.url, body });
+  });
+  api.on('createEmailTemplate', ({ body, url }) => {
+    templateWrites.push({ method: 'POST', url: url.href, body });
     if (createStatus !== 201) {
       return HttpResponse.json({ message: 'exists' }, { status: createStatus });
     }
-    return HttpResponse.json(body, { status: 201 });
-  }),
-  http.put('*/email-templates/:key/:locale', async ({ request }) => {
-    templateWrites.push({ method: 'PUT', url: request.url, body: await request.json() });
+    return HttpResponse.json(body as Record<string, unknown>, { status: 201 });
+  });
+  api.on('updateEmailTemplate', ({ body, url }) => {
+    templateWrites.push({ method: 'PUT', url: url.href, body });
     return HttpResponse.json({});
-  }),
-  http.get('*/admin/settings/:key', () =>
-    HttpResponse.json({
-      key: 'venue.coordination.config',
-      value: JSON.stringify({
-        venue: { salutation: 'Frau', name: 'Vera Venue', email: 'venue@example.com' },
-        catering: { salutation: 'Herr', name: 'Carl Catering', email: 'catering@example.com' },
-        coordinatorUsername: 'organizer1',
-      }),
-    })
-  ),
-  http.post('*/events/:code/mails/preview', async ({ request }) => {
-    const body = (await request.json()) as MailComposeRequest;
-    previews.push(body);
-    return HttpResponse.json(previewFor(body));
-  }),
-  http.post('*/events/:code/mails', async ({ request }) => {
-    const body = (await request.json()) as MailSendRequest;
-    sends.push(body);
+  });
+  api.on('getAdminSetting', () => ({
+    key: 'venue.coordination.config',
+    value: JSON.stringify({
+      venue: { salutation: 'Frau', name: 'Vera Venue', email: 'venue@example.com' },
+      catering: { salutation: 'Herr', name: 'Carl Catering', email: 'catering@example.com' },
+      coordinatorUsername: 'organizer1',
+    }),
+  }));
+  api.on('previewEventMail', ({ body }) => {
+    const req = body as MailComposeRequest;
+    previews.push(req);
+    return HttpResponse.json(previewFor(req));
+  });
+  api.on('sendEventMail', ({ body }) => {
+    const req = body as MailSendRequest;
+    sends.push(req);
     const next = sendResponses.shift();
     if (next) return HttpResponse.json(next.body, { status: next.status });
     return HttpResponse.json(
-      { mailKeys: ['BAT1-9'], target: body.target, recipientCount: 3, skipped: [] },
+      { mailKeys: ['BAT1-9'], target: req.target, recipientCount: 3, skipped: [] },
       { status: 202 }
     );
-  })
-);
-
-beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
-afterAll(() => server.close());
-afterEach(() => server.resetHandlers());
+  });
+}
 
 beforeEach(() => {
+  answerBackend();
   previews = [];
   sends = [];
   templateWrites = [];

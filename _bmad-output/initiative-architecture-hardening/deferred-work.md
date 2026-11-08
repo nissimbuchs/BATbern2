@@ -20,3 +20,6 @@
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-test-fidelity/tickets/story-production-setup-in-tests-plan.md`
   summary: An `@Async` mail send started by one integration test can land in the shared `SesRecorder` after the next test's `reset()`, breaking its `single()` or empty assertions (EMS, PCS).
   evidence: maybe-false, medium if true (flaky mail tests). EMS runs a real ThreadPoolTaskExecutor in tests and nothing drains it between tests; not observed in two full EMS runs. Settle with repeated runs of the mail ITs (VenueCoordination, NewsletterSendIteration, ConversationReply, EmailForwardingReplies); fix by a recorder drain or recipient-scoped assertions.
+- source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-test-fidelity/tickets/story-frontend-msw-harness-plan.md`
+  summary: The partner directory's "Sort by" control has never had an effect (PCS always sorts by company slug, GET /partners declares no sort); owner decides between a backend sort and removing the control.
+  evidence: 17.0c1 MSW harness rejected the undeclared `sort=` query; `partnerApi.ts` no longer sends it; the UI control is unchanged.

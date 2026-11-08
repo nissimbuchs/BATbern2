@@ -365,36 +365,6 @@ describe('EventApiClient — mocked', () => {
     });
   });
 
-  // ── checkEventExists ──────────────────────────────────────────────────────────
-
-  describe('checkEventExists', () => {
-    it('should return true when events returned', async () => {
-      mockApiClient.get.mockResolvedValue({
-        data: { data: [{ eventCode: 'BATbern56' }], total: 1 },
-      });
-
-      const result = await eventApiClient.checkEventExists(56);
-
-      expect(result).toBe(true);
-    });
-
-    it('should return false when no events returned', async () => {
-      mockApiClient.get.mockResolvedValue({ data: { data: [], total: 0 } });
-
-      const result = await eventApiClient.checkEventExists(999);
-
-      expect(result).toBe(false);
-    });
-
-    it('should throw transformed error on non-404 network error', async () => {
-      // checkEventExists delegates to getEvents which transforms errors.
-      // A 500 error becomes a plain "Server Error" — not swallowed.
-      mockApiClient.get.mockRejectedValue(axiosErr(500));
-
-      await expect(eventApiClient.checkEventExists(999)).rejects.toThrow('Server Error');
-    });
-  });
-
   // ── Event Photos (Story 10.21) ────────────────────────────────────────────────
 
   describe('listEventPhotos', () => {

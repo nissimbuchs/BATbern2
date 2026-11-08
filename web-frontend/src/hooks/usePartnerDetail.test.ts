@@ -11,6 +11,7 @@
 import { describe, it, expect, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { api } from '@/test/msw/api';
 import { usePartnerDetail } from './usePartnerDetail';
 import React from 'react';
 
@@ -48,13 +49,14 @@ describe('usePartnerDetail', () => {
     expect(result.current.isLoading).toBe(true);
     expect(result.current.data).toBeUndefined();
 
-    // Wait for query to settle (will fail with network error in test env)
+    // The MSW harness answers with the spec example of GET /partners/{companyName}
     await waitFor(() => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    // Should have error (no backend in test env)
-    expect(result.current.error).toBeTruthy();
+    expect(result.current.error).toBeNull();
+    expect(result.current.data?.companyName).toBeTruthy();
+    expect(api.calls('getPartnerByCompanyName')[0].params).toEqual({ companyName: 'GoogleZH' });
   });
 
   // Test 2: should_cachePartnerDetail_when_staleTimeSet
@@ -89,8 +91,10 @@ describe('usePartnerDetail', () => {
       expect(result.current.isLoading).toBe(false);
     });
 
-    // Should attempt to fetch with include param (will fail in test env)
-    expect(result.current.error).toBeTruthy();
+    expect(result.current.error).toBeNull();
+    expect(api.calls('getPartnerByCompanyName')[0].query.get('include')).toBe(
+      'company,contacts,votes,meetings,activity'
+    );
   });
 
   // Test 4: should_notFetch_when_companyNameUndefined

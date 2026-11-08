@@ -151,6 +151,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    companyName: aity
+                    partnershipLevel: PLATINUM
+                    partnershipStartDate: "2005-01-06"
+                    isActive: true
         '400':
           description: Validation error
           content:
@@ -191,6 +199,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    companyName: aity
+                    partnershipLevel: PLATINUM
+                    partnershipStartDate: "2005-01-06"
+                    isActive: true
         '404':
           description: Partner not found
           content:
@@ -215,6 +231,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    companyName: aity
+                    partnershipLevel: PLATINUM
+                    partnershipStartDate: "2005-01-06"
+                    isActive: true
         '400':
           description: Validation error
           content:
@@ -273,6 +297,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    companyName: aity
+                    partnershipLevel: PLATINUM
+                    partnershipStartDate: "2005-01-06"
+                    isActive: true
         '404':
           description: Partner not found
           content:
@@ -307,6 +339,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PartnerContactResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - username: jonas.beispiel
+                      email: jonas.beispiel@example.com
+                      firstName: Jonas
+                      lastName: Beispiel
         '404':
           description: Partner not found
           content:
@@ -336,6 +376,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerStatistics'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    totalPartners: 9
+                    activePartners: 9
+                    tierCounts:
+                      BRONZE: 0
+                      SILVER: 0
+                      GOLD: 2
+                      PLATINUM: 3
+                      STRATEGIC: 4
 
   /partners/me:
     get:
@@ -355,6 +407,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyPartnerCompanyResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    companyName: sbb
 
   /partners/{companyName}/notes:
     parameters:
@@ -381,6 +438,16 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PartnerNoteDTO'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - id: 7bfe35fe-de8d-4f32-a7c2-d94231f4adba
+                      title: Rechnungskontakt
+                      content: Sample text for the API example.
+                      authorUsername: carla.muster
+                      createdAt: "2026-02-24T18:05:28.377146Z"
+                      updatedAt: "2026-11-04T20:49:19.89827Z"
         '403':
           description: Forbidden — ORGANIZER role required
           content:
@@ -415,6 +482,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerNoteDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 7bfe35fe-de8d-4f32-a7c2-d94231f4adba
+                    title: Rechnungskontakt
+                    content: Sample text for the API example.
+                    authorUsername: carla.muster
+                    createdAt: "2026-02-24T18:05:28.377146Z"
+                    updatedAt: "2026-11-04T20:49:19.89827Z"
         '400':
           description: Invalid request
           content:
@@ -469,6 +546,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerNoteDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 7bfe35fe-de8d-4f32-a7c2-d94231f4adba
+                    title: Rechnungskontakt
+                    content: Sample text for the API example.
+                    authorUsername: carla.muster
+                    createdAt: "2026-02-24T18:05:28.377146Z"
+                    updatedAt: "2026-11-04T20:49:19.89827Z"
         '400':
           description: Invalid request
           content:
@@ -543,6 +630,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerDashboardResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    attendanceSummary:
+                      - eventCode: BATbern66
+                        eventTitle: TBD Herbst 28
+                        eventDate: "2028-11-03T00:00:00Z"
+                        totalAttendees: 7
+                        companyAttendees: 0
+                      - eventCode: BATbern65
+                        eventTitle: TBD Sommer 28
+                        eventDate: "2028-06-16T00:00:00Z"
+                        totalAttendees: 7
+                        companyAttendees: 0
+                    costPerAttendee: null
         '403':
           description: Forbidden — PARTNER may only access their own company's analytics
           content:
@@ -678,6 +781,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: bc916d9d-7b12-4b04-a8aa-1a6a6b474968
+                    title: Föderation
+                    description: null
+                    suggestedByCompany: iscejpd
+                    voteCount: 1
+                    currentPartnerHasVoted: false
+                    status: PROPOSED
+                    plannedEvent: null
+                    createdAt: "2025-11-07T13:00:00Z"
+                    source: PARTNER
         '400':
           description: Validation error or missing companyName (organizer path)
           content:
@@ -714,6 +831,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: bc916d9d-7b12-4b04-a8aa-1a6a6b474968
+                    title: Föderation
+                    description: null
+                    suggestedByCompany: iscejpd
+                    voteCount: 1
+                    currentPartnerHasVoted: false
+                    status: PROPOSED
+                    plannedEvent: null
+                    createdAt: "2025-11-07T13:00:00Z"
+                    source: PARTNER
         '400':
           description: Validation error
           content:
@@ -832,6 +963,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: bc916d9d-7b12-4b04-a8aa-1a6a6b474968
+                    title: Föderation
+                    description: null
+                    suggestedByCompany: iscejpd
+                    voteCount: 1
+                    currentPartnerHasVoted: false
+                    status: PROPOSED
+                    plannedEvent: null
+                    createdAt: "2025-11-07T13:00:00Z"
+                    source: PARTNER
         '400':
           description: Invalid status value
           content:
@@ -876,6 +1021,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: bc916d9d-7b12-4b04-a8aa-1a6a6b474968
+                    title: Föderation
+                    description: null
+                    suggestedByCompany: iscejpd
+                    voteCount: 1
+                    currentPartnerHasVoted: false
+                    status: PROPOSED
+                    plannedEvent: null
+                    createdAt: "2025-11-07T13:00:00Z"
+                    source: PARTNER
         '400':
           description: Validation error (title 5–255 chars, description ≤ 500 chars)
           content:

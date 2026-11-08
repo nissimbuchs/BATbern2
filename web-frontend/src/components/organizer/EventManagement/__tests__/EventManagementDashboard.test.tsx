@@ -22,7 +22,6 @@ import { EventManagementDashboard } from '../EventManagementDashboard';
 import {
   useEvents,
   useEvent,
-  useEventWorkflow,
   useCreateEvent,
   useUpdateEvent,
   useDeleteEvent,
@@ -36,7 +35,6 @@ import type { Notification } from '@/types/notification';
 vi.mock('@/hooks/useEvents', () => ({
   useEvents: vi.fn(),
   useEvent: vi.fn(),
-  useEventWorkflow: vi.fn(),
   useCreateEvent: vi.fn(),
   useUpdateEvent: vi.fn(),
   useDeleteEvent: vi.fn(),
@@ -289,14 +287,6 @@ describe('EventManagementDashboard Component', () => {
 
     // Provide default mocks for query hooks
     vi.mocked(useEvent).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isSuccess: false,
-      isError: false,
-      error: null,
-    } as any);
-
-    vi.mocked(useEventWorkflow).mockReturnValue({
       data: undefined,
       isLoading: false,
       isSuccess: false,
