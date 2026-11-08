@@ -7,26 +7,8 @@
  */
 
 import { useQuery } from '@tanstack/react-query';
-import apiClient from '@/services/api/apiClient';
-
-interface UserProfile {
-  userId: string;
-  email: string;
-  firstName: string;
-  lastName: string;
-  currentRole: string;
-  availableRoles: string[];
-  companyId: string;
-  profilePhotoUrl: string | null;
-  preferences: {
-    language: string;
-    notifications: {
-      emailEnabled: boolean;
-      inAppEnabled: boolean;
-    };
-    theme: string;
-  };
-}
+import { getUserProfile } from '@/services/api/userApi';
+import type { UserProfileResponse } from '@/types/user';
 
 interface UseUserProfileOptions {
   enabled?: boolean;
@@ -36,10 +18,8 @@ interface UseUserProfileOptions {
 /**
  * Fetch user profile with roles and preferences
  */
-const fetchUserProfile = async (): Promise<UserProfile> => {
-  const response = await apiClient.get('/users/me?include=roles,preferences');
-  return response.data;
-};
+const fetchUserProfile = (): Promise<UserProfileResponse> =>
+  getUserProfile(['roles', 'preferences']);
 
 /**
  * Custom hook to fetch and cache user profile data

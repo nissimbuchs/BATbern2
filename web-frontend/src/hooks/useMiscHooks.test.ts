@@ -8,36 +8,41 @@
  * - useUserPortrait
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import MockAdapter from 'axios-mock-adapter';
 
 // ── Mocks ─────────────────────────────────────────────────────────────────────
-
-vi.mock('@/services/api/apiClient', () => ({
-  default: {
-    get: vi.fn(),
-  },
-}));
-
-vi.mock('@/services/api/sessionApiClient', () => ({
-  sessionApiClient: {
-    assignSpeaker: vi.fn(),
-    removeSpeaker: vi.fn(),
-  },
-}));
+// HTTP is stubbed at the boundary: the real services and apiClient run.
 
 import apiClient from '@/services/api/apiClient';
-import { sessionApiClient } from '@/services/api/sessionApiClient';
 import { usePublicPartners } from './usePublicPartners';
 import { useAssignSpeaker, useRemoveSpeaker } from './useSessionSpeakers';
 import { useDebounce } from './useDebounce';
 import { useUserPortrait } from './useUserPortrait';
 
-const mockGet = vi.mocked(apiClient.get);
-const mockAssignSpeaker = vi.mocked(sessionApiClient.assignSpeaker);
-const mockRemoveSpeaker = vi.mocked(sessionApiClient.removeSpeaker);
+// The request interceptor strips the Skip-Auth marker before the adapter sees the request,
+// so record it with an interceptor that runs first (axios runs the last-added one first).
+let http: MockAdapter;
+let skipAuthUrls: string[];
+let interceptorId: number;
+beforeEach(() => {
+  http = new MockAdapter(apiClient);
+  skipAuthUrls = [];
+  interceptorId = apiClient.interceptors.request.use((config) => {
+    if (config.headers?.['Skip-Auth'] === 'true') skipAuthUrls.push(config.url ?? '');
+    return config;
+  });
+});
+afterEach(() => {
+  apiClient.interceptors.request.eject(interceptorId);
+  http.restore();
+});
+const fetched = () => http.history.get;
+const ASSIGN_URL = (event: string, session: string) =>
+  `/events/${event}/sessions/${session}/speakers`;
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -63,38 +68,33 @@ describe('usePublicPartners', () => {
 
   it('should fetch public partners via GET /partners with Skip-Auth header', async () => {
     const partners = { data: [{ companyName: 'TechCorp' }], total: 1 };
-    mockGet.mockResolvedValue({ data: partners });
+    http.onGet('/partners').reply(200, partners);
 
     const { result } = renderHook(() => usePublicPartners(), { wrapper: wrapper(qc) });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockGet).toHaveBeenCalledWith(
-      '/partners',
-      expect.objectContaining({
-        headers: expect.objectContaining({ 'Skip-Auth': 'true' }),
-      })
-    );
+    expect(skipAuthUrls).toEqual(['/partners']);
     expect(result.current.data).toEqual(partners);
   });
 
   it('should include page=0, size=100 params', async () => {
-    mockGet.mockResolvedValue({ data: { data: [], total: 0 } });
+    http.onGet('/partners').reply(200, { data: [], total: 0 });
 
     const { result } = renderHook(() => usePublicPartners(), { wrapper: wrapper(qc) });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockGet).toHaveBeenCalledWith(
-      '/partners',
-      expect.objectContaining({
-        params: expect.objectContaining({ page: 0, size: 100 }),
-      })
-    );
+    expect(fetched()[0].params).toEqual({
+      page: 0,
+      size: 100,
+      include: 'company',
+      filter: 'isActive:true',
+    });
   });
 
   it('should set isError on fetch failure', async () => {
-    mockGet.mockRejectedValue(new Error('Service unavailable'));
+    http.onGet('/partners').reply(503);
 
     const { result } = renderHook(() => usePublicPartners(), { wrapper: wrapper(qc) });
 
@@ -102,7 +102,7 @@ describe('usePublicPartners', () => {
   });
 
   it('should use public-partners query key', async () => {
-    mockGet.mockResolvedValue({ data: { data: [], total: 0 } });
+    http.onGet('/partners').reply(200, { data: [], total: 0 });
 
     renderHook(() => usePublicPartners(), { wrapper: wrapper(qc) });
 
@@ -131,8 +131,8 @@ describe('useAssignSpeaker', () => {
     vi.clearAllMocks();
   });
 
-  it('should call assignSpeaker with all params', async () => {
-    mockAssignSpeaker.mockResolvedValue({} as never);
+  it('should POST the assignment with all params', async () => {
+    http.onPost(ASSIGN_URL('BAT142', 'cloud-talk')).reply(201, {});
 
     const { result } = renderHook(() => useAssignSpeaker(), { wrapper: wrapper(qc) });
 
@@ -144,7 +144,8 @@ describe('useAssignSpeaker', () => {
       });
     });
 
-    expect(mockAssignSpeaker).toHaveBeenCalledWith('BAT142', 'cloud-talk', {
+    expect(http.history.post).toHaveLength(1);
+    expect(JSON.parse(http.history.post[0].data)).toEqual({
       username: 'john.doe',
       speakerRole: 'PRIMARY_SPEAKER',
     });
@@ -152,7 +153,7 @@ describe('useAssignSpeaker', () => {
   });
 
   it('should invalidate event cache on success', async () => {
-    mockAssignSpeaker.mockResolvedValue({} as never);
+    http.onPost(ASSIGN_URL('BAT142', 'cloud-talk')).reply(201, {});
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
     const { result } = renderHook(() => useAssignSpeaker(), { wrapper: wrapper(qc) });
@@ -169,7 +170,7 @@ describe('useAssignSpeaker', () => {
   });
 
   it('should set isError on failure', async () => {
-    mockAssignSpeaker.mockRejectedValue(new Error('Not found'));
+    http.onPost(ASSIGN_URL('BAT142', 's1')).reply(404, { message: 'Not found' });
 
     const { result } = renderHook(() => useAssignSpeaker(), { wrapper: wrapper(qc) });
 
@@ -193,8 +194,8 @@ describe('useRemoveSpeaker', () => {
     vi.clearAllMocks();
   });
 
-  it('should call removeSpeaker with all params', async () => {
-    mockRemoveSpeaker.mockResolvedValue(undefined as never);
+  it('should DELETE the speaker with all params', async () => {
+    http.onDelete(`${ASSIGN_URL('BAT142', 'cloud-talk')}/john.doe`).reply(204);
 
     const { result } = renderHook(() => useRemoveSpeaker(), { wrapper: wrapper(qc) });
 
@@ -206,12 +207,12 @@ describe('useRemoveSpeaker', () => {
       });
     });
 
-    expect(mockRemoveSpeaker).toHaveBeenCalledWith('BAT142', 'cloud-talk', 'john.doe');
+    expect(http.history.delete).toHaveLength(1);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
   it('should invalidate event cache on success', async () => {
-    mockRemoveSpeaker.mockResolvedValue(undefined as never);
+    http.onDelete(`${ASSIGN_URL('BAT142', 's1')}/bob`).reply(204);
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
     const { result } = renderHook(() => useRemoveSpeaker(), { wrapper: wrapper(qc) });
@@ -228,7 +229,7 @@ describe('useRemoveSpeaker', () => {
   });
 
   it('should set isError on failure', async () => {
-    mockRemoveSpeaker.mockRejectedValue(new Error('Forbidden'));
+    http.onDelete(`${ASSIGN_URL('BAT142', 's1')}/ghost`).reply(500, { message: 'Server error' });
 
     const { result } = renderHook(() => useRemoveSpeaker(), { wrapper: wrapper(qc) });
 
@@ -337,9 +338,9 @@ describe('useUserPortrait', () => {
   });
 
   it('should fetch portrait URL for username with Skip-Auth header', async () => {
-    mockGet.mockResolvedValue({
-      data: { profilePictureUrl: 'https://cdn.example.com/portrait.jpg' },
-    });
+    http
+      .onGet('/public/users/alice')
+      .reply(200, { profilePictureUrl: 'https://cdn.example.com/portrait.jpg' });
 
     const { result } = renderHook(() => useUserPortrait('alice'), { wrapper: wrapper(qc) });
 
@@ -347,14 +348,12 @@ describe('useUserPortrait', () => {
 
     // Story 11.C.1: public endpoint must NOT attach the Cognito token; otherwise a stale
     // ID token triggers the apiClient 401 → /login redirect from anonymous archive views.
-    expect(mockGet).toHaveBeenCalledWith('/public/users/alice', {
-      headers: { 'Skip-Auth': 'true' },
-    });
+    expect(skipAuthUrls).toEqual(['/public/users/alice']);
     expect(result.current.data).toBe('https://cdn.example.com/portrait.jpg');
   });
 
   it('should return null when profilePictureUrl is missing', async () => {
-    mockGet.mockResolvedValue({ data: {} });
+    http.onGet('/public/users/bob').reply(200, {});
 
     const { result } = renderHook(() => useUserPortrait('bob'), { wrapper: wrapper(qc) });
 
@@ -367,29 +366,25 @@ describe('useUserPortrait', () => {
     const { result } = renderHook(() => useUserPortrait(undefined), { wrapper: wrapper(qc) });
 
     expect(result.current.isLoading).toBe(false);
-    expect(mockGet).not.toHaveBeenCalled();
+    expect(fetched()).toHaveLength(0);
   });
 
   it('should not fetch when enabled is false', () => {
     const { result } = renderHook(() => useUserPortrait('alice', false), { wrapper: wrapper(qc) });
 
     expect(result.current.isLoading).toBe(false);
-    expect(mockGet).not.toHaveBeenCalled();
+    expect(fetched()).toHaveLength(0);
   });
 
   it('should not retry on 404 (legitimate persistent miss)', async () => {
     // Story 11.C.1: 404 means the user isn't a speaker (or doesn't exist); don't retry.
     // Other errors are retried up to 2 times (Fargate-spot replacement absorption).
-    const axiosError = Object.assign(new Error('Not Found'), {
-      isAxiosError: true,
-      response: { status: 404 },
-    });
-    mockGet.mockRejectedValue(axiosError);
+    http.onGet('/public/users/ghost').reply(404);
 
     const { result } = renderHook(() => useUserPortrait('ghost'), { wrapper: wrapper(qc) });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
     // retry: false for 404 → exactly one network call
-    expect(mockGet).toHaveBeenCalledTimes(1);
+    expect(fetched()).toHaveLength(1);
   });
 });

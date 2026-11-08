@@ -10,7 +10,6 @@
  * 3. POST .../confirm → TeaserImageItem
  */
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import axios from 'axios';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { components } from '@/types/generated/events-core-api.types';
 
@@ -43,9 +42,7 @@ export const useUploadTeaserImage = (eventCode?: string | null) => {
   return useMutation({
     mutationFn: async ({ file, request }: { file: File; request: TeaserImageUploadUrlRequest }) => {
       const urlResponse = await eventApiClient.requestTeaserImageUploadUrl(eventCode, request);
-      await axios.put(urlResponse.uploadUrl, file, {
-        headers: { 'Content-Type': file.type },
-      });
+      await eventApiClient.uploadPhotoToS3(urlResponse.uploadUrl, file);
       return eventApiClient.confirmTeaserImageUpload(eventCode, { s3Key: urlResponse.s3Key });
     },
     onSuccess: () => {

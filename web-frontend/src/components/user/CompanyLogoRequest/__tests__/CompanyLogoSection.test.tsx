@@ -1,36 +1,34 @@
 /**
  * #1246: on /profile the participant sees the company logo and asks the organizers for a new one.
  */
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { AxiosError, AxiosHeaders } from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import apiClient from '@/services/api/apiClient';
 
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({ t: (key: string) => key }),
 }));
 
 const uploadFile = vi.fn();
+const useFileUploadOptions = vi.fn();
 vi.mock('@/hooks/useFileUpload/useFileUpload', () => ({
-  useFileUpload: () => ({ uploadFile, isUploading: false, uploadProgress: 0, error: null }),
+  useFileUpload: (options: unknown) => {
+    useFileUploadOptions(options);
+    return { uploadFile, isUploading: false, uploadProgress: 0, error: null };
+  },
 }));
 
-vi.mock('@/services/api/companyApi', () => ({
-  companyApiClient: { getCompany: vi.fn() },
-}));
-
-vi.mock('@/services/api/userAccountApi', () => ({
-  createCompanyLogoRequest: vi.fn(),
-  getMyOpenCompanyLogoRequest: vi.fn(),
-}));
-
-import { companyApiClient } from '@/services/api/companyApi';
-import {
-  createCompanyLogoRequest,
-  getMyOpenCompanyLogoRequest,
-} from '@/services/api/userAccountApi';
 import { CompanyLogoSection } from '../CompanyLogoSection';
+import { logoUploadTarget } from '@/services/api/companyApi';
+
+// Company and logo-request calls are stubbed at the HTTP boundary.
+const COMPANY_URL = '/companies/acme';
+const OPEN_REQUEST_URL = '/users/me/company-logo-requests/open';
+const REQUESTS_URL = '/users/me/company-logo-requests';
+let http: MockAdapter;
 
 const company = {
   name: 'acme',
@@ -54,21 +52,16 @@ function renderSection() {
 
 const png = () => new File(['x'], 'logo.png', { type: 'image/png' });
 
-function conflict(code: string) {
-  return new AxiosError('conflict', '409', undefined, undefined, {
-    status: 409,
-    statusText: 'Conflict',
-    data: { errorCode: code },
-    headers: {},
-    config: { headers: new AxiosHeaders() },
-  });
-}
-
 describe('CompanyLogoSection', () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    vi.mocked(companyApiClient.getCompany).mockResolvedValue(company as never);
-    vi.mocked(getMyOpenCompanyLogoRequest).mockResolvedValue(null);
+    http = new MockAdapter(apiClient);
+    http.onGet(COMPANY_URL).reply(200, company);
+    http.onGet(OPEN_REQUEST_URL).reply(204);
+  });
+
+  afterEach(() => {
+    http.restore();
   });
 
   it('shows the current logo and the request button', async () => {
@@ -81,8 +74,17 @@ describe('CompanyLogoSection', () => {
     expect(screen.getByTestId('company-logo-request-button')).toBeEnabled();
   });
 
+  it('uploads the logo to the logo upload target', async () => {
+    renderSection();
+
+    await screen.findByTestId('company-logo-current');
+    expect(useFileUploadOptions).toHaveBeenCalledWith(
+      expect.objectContaining({ target: logoUploadTarget })
+    );
+  });
+
   it('says so when the company has no logo yet', async () => {
-    vi.mocked(companyApiClient.getCompany).mockResolvedValue({ name: 'acme' } as never);
+    http.onGet(COMPANY_URL).reply(200, { name: 'acme' });
     renderSection();
 
     expect(await screen.findByTestId('company-logo-none')).toBeInTheDocument();
@@ -90,7 +92,7 @@ describe('CompanyLogoSection', () => {
 
   it('uploads the chosen file and sends the request with the note', async () => {
     uploadFile.mockResolvedValue('up-1');
-    vi.mocked(createCompanyLogoRequest).mockResolvedValue({ status: 'OPEN' } as never);
+    http.onPost(REQUESTS_URL).reply(200, { status: 'OPEN' });
     renderSection();
 
     await userEvent.click(await screen.findByTestId('company-logo-request-button'));
@@ -99,7 +101,11 @@ describe('CompanyLogoSection', () => {
     await userEvent.click(screen.getByTestId('company-logo-send'));
 
     expect(uploadFile).toHaveBeenCalled();
-    expect(createCompanyLogoRequest).toHaveBeenCalledWith('up-1', 'Rebranding');
+    expect(http.history.post).toHaveLength(1);
+    expect(JSON.parse(http.history.post[0].data)).toEqual({
+      logoUploadId: 'up-1',
+      note: 'Rebranding',
+    });
     expect(await screen.findByTestId('company-logo-sent')).toBeInTheDocument();
   });
 
@@ -119,18 +125,18 @@ describe('CompanyLogoSection', () => {
     await userEvent.upload(screen.getByTestId('company-logo-file'), png());
     await userEvent.click(screen.getByTestId('company-logo-send'));
 
-    expect(createCompanyLogoRequest).not.toHaveBeenCalled();
+    expect(http.history.post).toHaveLength(0);
     expect(await screen.findByTestId('company-logo-error')).toHaveTextContent(
       'profile.logo.errorUpload'
     );
   });
 
   it('an open request replaces the button with a notice', async () => {
-    vi.mocked(getMyOpenCompanyLogoRequest).mockResolvedValue({
+    http.onGet(OPEN_REQUEST_URL).reply(200, {
       requestId: 'r-1',
       status: 'OPEN',
       newLogoUrl: 'https://cdn.example.com/new.png',
-    } as never);
+    });
     renderSection();
 
     expect(await screen.findByTestId('company-logo-pending')).toBeInTheDocument();
@@ -139,7 +145,7 @@ describe('CompanyLogoSection', () => {
 
   it('shows the reason when the server refuses the request', async () => {
     uploadFile.mockResolvedValue('up-1');
-    vi.mocked(createCompanyLogoRequest).mockRejectedValue(conflict('LOGO_REQUEST_OPEN'));
+    http.onPost(REQUESTS_URL).reply(409, { errorCode: 'LOGO_REQUEST_OPEN' });
     renderSection();
 
     await userEvent.click(await screen.findByTestId('company-logo-request-button'));

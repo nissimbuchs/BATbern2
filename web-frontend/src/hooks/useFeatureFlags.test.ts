@@ -7,19 +7,16 @@
  * - Falls back to defaults on error
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-
-vi.mock('@/services/api/apiClient', () => ({
-  default: { get: vi.fn() },
-}));
+import MockAdapter from 'axios-mock-adapter';
 
 import apiClient from '@/services/api/apiClient';
 import { useFeatureFlags } from './useFeatureFlags';
 
-const mockGet = vi.mocked(apiClient.get);
+const FLAGS_URL = '/public/settings/features';
 
 const createQC = () =>
   new QueryClient({
@@ -33,14 +30,19 @@ const wrapper =
 
 describe('useFeatureFlags', () => {
   let qc: QueryClient;
+  let http: MockAdapter;
 
   beforeEach(() => {
     qc = createQC();
-    vi.clearAllMocks();
+    http = new MockAdapter(apiClient);
+  });
+
+  afterEach(() => {
+    http.restore();
   });
 
   it('should return default flags while loading', () => {
-    mockGet.mockImplementation(() => new Promise(() => {})); // never resolves
+    http.onGet(FLAGS_URL).reply(() => new Promise(() => {})); // never resolves
 
     const { result } = renderHook(() => useFeatureFlags(), { wrapper: wrapper(qc) });
 
@@ -49,17 +51,17 @@ describe('useFeatureFlags', () => {
   });
 
   it('should return fetched flags on success', async () => {
-    mockGet.mockResolvedValue({ data: { aiContentEnabled: true } });
+    http.onGet(FLAGS_URL).reply(200, { aiContentEnabled: true });
 
     const { result } = renderHook(() => useFeatureFlags(), { wrapper: wrapper(qc) });
 
     await waitFor(() => expect(result.current.aiContentEnabled).toBe(true));
 
-    expect(mockGet).toHaveBeenCalledWith('/public/settings/features');
+    expect(http.history.get.map((r) => r.url)).toEqual([FLAGS_URL]);
   });
 
   it('should fall back to defaults on error', async () => {
-    mockGet.mockRejectedValue(new Error('Not found'));
+    http.onGet(FLAGS_URL).reply(404);
 
     const { result } = renderHook(() => useFeatureFlags(), { wrapper: wrapper(qc) });
 
@@ -73,11 +75,11 @@ describe('useFeatureFlags', () => {
   });
 
   it('should return all expected flag keys', async () => {
-    mockGet.mockResolvedValue({ data: { aiContentEnabled: false } });
+    http.onGet(FLAGS_URL).reply(200, { aiContentEnabled: false });
 
     const { result } = renderHook(() => useFeatureFlags(), { wrapper: wrapper(qc) });
 
-    await waitFor(() => mockGet.mock.calls.length > 0);
+    await waitFor(() => expect(http.history.get.length).toBeGreaterThan(0));
 
     expect('aiContentEnabled' in result.current).toBe(true);
   });

@@ -3,25 +3,26 @@
  * Story 1.16.3: Generic File Upload Service
  * ADR-002: Generic File Upload Service Architecture
  *
- * Reusable hook for file uploads using the generic logo upload service
- * Supports three-phase upload flow:
- * 1. Generate presigned URL from backend
- * 2. Upload file directly to S3
- * 3. Confirm upload with backend
+ * Reusable hook for file uploads. Supports the three-phase upload flow:
+ * 1. Generate presigned URL from backend   (target.presign)
+ * 2. Upload file directly to S3            (XHR PUT, here, for progress events)
+ * 3. Confirm upload with backend           (target.confirm)
  *
- * Can be used for any file upload: company logos, user profile pictures, event banners, etc.
+ * The backend calls live in the service that owns the resource; the caller passes
+ * the upload target for its purpose, e.g. `companyApi.logoUploadTarget` or
+ * `sessionApiClient.materialUploadTarget`.
  */
 
 import { useState, useCallback } from 'react';
-import apiClient from '@/services/api/apiClient';
 import { formatErrorForDisplay } from '@/utils/errorHandling/errorMessages';
+import type { FileUploadPresignedUrl, FileUploadTarget } from '@/types/fileUpload.types';
 
 interface UseFileUploadOptions {
+  target: FileUploadTarget; // presign + confirm of the upload's purpose (logo, material)
   maxFileSize?: number; // in bytes, default 5MB
   allowedTypes?: string[]; // MIME types, default: PNG, JPEG, SVG
   onUploadSuccess?: (data: UploadSuccessData) => void;
   onUploadError?: (error: UploadError) => void;
-  uploadEndpoint?: string; // endpoint for presigned URL, default: '/logos/presigned-url'
 }
 
 interface UploadSuccessData {
@@ -51,15 +52,6 @@ interface UploadError {
   message: string;
 }
 
-interface PresignedUrlResponse {
-  uploadUrl: string;
-  fileId: string;
-  s3Key: string; // S3 key for constructing CloudFront URL
-  fileExtension: string;
-  expiresInMinutes: number;
-  requiredHeaders: Record<string, string>;
-}
-
 const DEFAULT_MAX_FILE_SIZE = 5 * 1024 * 1024; // 5MB
 const DEFAULT_ALLOWED_TYPES = ['image/png', 'image/jpeg', 'image/svg+xml'];
 
@@ -80,13 +72,13 @@ function getCloudFrontUrl(): string {
   return 'https://cdn.batbern.ch';
 }
 
-export const useFileUpload = (options: UseFileUploadOptions = {}) => {
+export const useFileUpload = (options: UseFileUploadOptions) => {
   const {
+    target,
     maxFileSize = DEFAULT_MAX_FILE_SIZE,
     allowedTypes = DEFAULT_ALLOWED_TYPES,
     onUploadSuccess,
     onUploadError,
-    uploadEndpoint = '/logos/presigned-url', // Default to logos for backward compatibility
   } = options;
 
   const [isUploading, setIsUploading] = useState(false);
@@ -148,21 +140,20 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
       }
 
       // ── Phase 1: Request presigned URL from backend ─────────────────────────
-      let presigned: PresignedUrlResponse;
+      let presigned: FileUploadPresignedUrl;
       try {
-        const presignedResponse = await apiClient.post<PresignedUrlResponse>(uploadEndpoint, {
+        presigned = await target.presign({
           fileName: file.name,
           fileSize: file.size,
           mimeType: file.type,
         });
-        presigned = presignedResponse.data;
       } catch (err) {
         const formatted = formatErrorForDisplay(err);
         console.error('[FileUpload] Phase 1 (presigned URL request) failed', {
           fileName: file.name,
           fileSize: file.size,
           mimeType: file.type,
-          endpoint: uploadEndpoint,
+          purpose: target.purpose,
           statusCode: formatted.statusCode,
           serverMessage: formatted.message,
           correlationId: formatted.correlationId,
@@ -315,9 +306,7 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
       // ── Phase 3: Confirm upload with backend ────────────────────────────────
       try {
         const checksum = await calculateChecksum(file);
-        // Extract base path from uploadEndpoint (/logos/presigned-url -> /logos)
-        const basePath = uploadEndpoint.split('/').slice(0, -1).join('/');
-        await apiClient.post(`${basePath}/${fileId}/confirm`, {
+        await target.confirm(fileId, {
           fileId,
           fileExtension,
           checksum,
@@ -356,7 +345,7 @@ export const useFileUpload = (options: UseFileUploadOptions = {}) => {
 
       return fileId;
     },
-    [validateFile, handleError, onUploadSuccess, uploadEndpoint]
+    [validateFile, handleError, onUploadSuccess, target]
   );
 
   const reset = useCallback(() => {

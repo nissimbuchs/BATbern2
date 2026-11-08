@@ -38,8 +38,10 @@ import { useTranslation } from 'react-i18next';
 import { emailProblem } from '@/utils/validation/email';
 import { useCreateUser, useUpdateUser } from '../../../hooks/useUserManagement';
 import { CompanyAutocomplete } from '../PartnerManagement/CompanyAutocomplete';
-import { uploadProfilePictureForUser } from '@/services/api/userAccountApi';
-import apiClient from '@/services/api/apiClient';
+import {
+  removeProfilePictureForUser,
+  uploadProfilePictureForUser,
+} from '@/services/api/userAccountApi';
 import { formatErrorForDisplay } from '@/utils/errorHandling/errorMessages';
 import type { Role, User } from '../../../types/user.types';
 import type { components } from '@/types/generated/company-api.types';
@@ -232,7 +234,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
     setIsUploadingPhoto(true);
     try {
       // Use admin endpoint to remove for the specific user
-      await apiClient.delete(`/users/${user.id}/picture`);
+      await removeProfilePictureForUser(user.id);
       setProfilePictureUrl(undefined);
     } catch (error) {
       console.error('Photo removal failed:', error);

@@ -9,7 +9,7 @@
 import { useState, useCallback } from 'react';
 import { useQueryClient } from '@tanstack/react-query';
 import { createUser, updateUser, UpdateUserData } from '@/services/api/userManagementApi';
-import apiClient from '@/services/api/apiClient';
+import { uploadProfilePictureFromUrl } from '@/services/api/userApi';
 import type { SpeakerImportCandidate, SpeakerBatchImportResult } from '@/types/speakerImport.types';
 import type { CreateUserFormData } from '@/types/user.types';
 
@@ -54,16 +54,10 @@ async function uploadPortraitForUser(
 
     // Use server-side upload endpoint (bypasses frontend entirely)
     // This endpoint fetches the image, uploads to S3, and associates with the user in one call
-    const response = await apiClient.post<{ profilePictureUrl: string }>(
-      `/users/${encodeURIComponent(username)}/profile-picture/upload-from-url`,
-      {
-        url: portraitUrl,
-        filename,
-      }
-    );
+    const uploaded = await uploadProfilePictureFromUrl(username, portraitUrl, filename);
 
     console.log(
-      `[BatchImport] Successfully uploaded portrait for ${speakerName}: ${response.data.profilePictureUrl}`
+      `[BatchImport] Successfully uploaded portrait for ${speakerName}: ${uploaded.profilePictureUrl}`
     );
   } catch (error) {
     // Log but don't fail the import - portrait is optional

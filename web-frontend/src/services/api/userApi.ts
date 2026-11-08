@@ -40,3 +40,42 @@ export const updateUserPreferences = async (
   );
   return response.data;
 };
+
+/**
+ * Public projection of a user (CUMS `GET /public/users/{username}`).
+ */
+export interface PublicUserResponse {
+  username: string;
+  firstName?: string | null;
+  lastName?: string | null;
+  profilePictureUrl?: string | null;
+}
+
+/**
+ * Fetch the public projection of a user.
+ *
+ * Skip-Auth: public endpoint, does NOT attach the Cognito token. A stale ID token would
+ * otherwise produce a 401 and the apiClient interceptor's `/login` redirect.
+ */
+export const getPublicUser = async (username: string): Promise<PublicUserResponse> => {
+  const response = await apiClient.get<PublicUserResponse>(`/public/users/${username}`, {
+    headers: { 'Skip-Auth': 'true' },
+  });
+  return response.data;
+};
+
+/**
+ * Admin: the server fetches an image from `url`, stores it as the user's profile picture and
+ * returns its CDN URL.
+ */
+export const uploadProfilePictureFromUrl = async (
+  username: string,
+  url: string,
+  filename: string
+): Promise<{ profilePictureUrl?: string }> => {
+  const response = await apiClient.post<{ profilePictureUrl?: string }>(
+    `/users/${encodeURIComponent(username)}/profile-picture/upload-from-url`,
+    { url, filename }
+  );
+  return response.data;
+};

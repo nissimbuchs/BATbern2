@@ -7,37 +7,33 @@
  * - useUpdateTeaserImagePosition: update position mutation + cache invalidation
  */
 
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
-
-vi.mock('@/services/eventApiClient', () => ({
-  eventApiClient: {
-    requestTeaserImageUploadUrl: vi.fn(),
-    confirmTeaserImageUpload: vi.fn(),
-    deleteTeaserImage: vi.fn(),
-    updateTeaserImage: vi.fn(),
-  },
-}));
-
-vi.mock('axios', () => ({
-  default: { put: vi.fn() },
-}));
-
-import { eventApiClient } from '@/services/eventApiClient';
 import axios from 'axios';
+import MockAdapter from 'axios-mock-adapter';
+import apiClient from '@/services/api/apiClient';
 import {
   useUploadTeaserImage,
   useDeleteTeaserImage,
   useUpdateTeaserImagePosition,
 } from './useEventTeaserImages';
 
-const mockRequestUploadUrl = vi.mocked(eventApiClient.requestTeaserImageUploadUrl);
-const mockConfirmUpload = vi.mocked(eventApiClient.confirmTeaserImageUpload);
-const mockDeleteTeaserImage = vi.mocked(eventApiClient.deleteTeaserImage);
-const mockUpdateTeaserImage = vi.mocked(eventApiClient.updateTeaserImage);
-const mockAxiosPut = vi.mocked(axios.put);
+// HTTP is stubbed at the boundaries: the API on apiClient, the presigned S3 PUT
+// on bare axios. The real eventApiClient runs.
+const BASE = '/events/BAT142/teaser-images';
+const S3_URL = 'https://s3.example.com/put-url';
+let api: MockAdapter;
+let s3: MockAdapter;
+beforeEach(() => {
+  api = new MockAdapter(apiClient);
+  s3 = new MockAdapter(axios);
+});
+afterEach(() => {
+  api.restore();
+  s3.restore();
+});
 
 const createQC = () =>
   new QueryClient({
@@ -62,12 +58,12 @@ describe('useUploadTeaserImage', () => {
   });
 
   it('should execute 3-phase upload: get URL → PUT to S3 → confirm', async () => {
-    mockRequestUploadUrl.mockResolvedValue({
-      uploadUrl: 'https://s3.example.com/put-url',
+    api.onPost(`${BASE}/upload-url`).reply(200, {
+      uploadUrl: S3_URL,
       s3Key: 'events/BAT142/teaser-1.jpg',
-    } as never);
-    mockAxiosPut.mockResolvedValue({});
-    mockConfirmUpload.mockResolvedValue(MOCK_IMAGE as never);
+    });
+    s3.onPut(S3_URL).reply(200);
+    api.onPost(`${BASE}/confirm`).reply(200, MOCK_IMAGE);
 
     const { result } = renderHook(() => useUploadTeaserImage('BAT142'), { wrapper: wrapper(qc) });
 
@@ -80,22 +76,22 @@ describe('useUploadTeaserImage', () => {
       });
     });
 
-    expect(mockRequestUploadUrl).toHaveBeenCalledWith('BAT142', { filename: 'teaser.jpg' });
-    expect(mockAxiosPut).toHaveBeenCalledWith(
-      'https://s3.example.com/put-url',
-      file,
-      expect.objectContaining({ headers: { 'Content-Type': 'image/jpeg' } })
-    );
-    expect(mockConfirmUpload).toHaveBeenCalledWith('BAT142', {
+    expect(api.history.post.map((r) => r.url)).toEqual([`${BASE}/upload-url`, `${BASE}/confirm`]);
+    expect(JSON.parse(api.history.post[0].data)).toEqual({ filename: 'teaser.jpg' });
+    expect(s3.history.put).toHaveLength(1);
+    expect(s3.history.put[0].url).toBe(S3_URL);
+    expect(s3.history.put[0].data).toBe(file);
+    expect(s3.history.put[0].headers?.['Content-Type']).toBe('image/jpeg');
+    expect(JSON.parse(api.history.post[1].data)).toEqual({
       s3Key: 'events/BAT142/teaser-1.jpg',
     });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
   it('should invalidate event cache on success', async () => {
-    mockRequestUploadUrl.mockResolvedValue({ uploadUrl: 'https://s3.x.com', s3Key: 'k' } as never);
-    mockAxiosPut.mockResolvedValue({});
-    mockConfirmUpload.mockResolvedValue(MOCK_IMAGE as never);
+    api.onPost(`${BASE}/upload-url`).reply(200, { uploadUrl: S3_URL, s3Key: 'k' });
+    s3.onPut(S3_URL).reply(200);
+    api.onPost(`${BASE}/confirm`).reply(200, MOCK_IMAGE);
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
     const { result } = renderHook(() => useUploadTeaserImage('BAT142'), { wrapper: wrapper(qc) });
@@ -108,7 +104,7 @@ describe('useUploadTeaserImage', () => {
   });
 
   it('should set isError when upload URL request fails', async () => {
-    mockRequestUploadUrl.mockRejectedValue(new Error('Forbidden'));
+    api.onPost(`${BASE}/upload-url`).reply(403);
 
     const { result } = renderHook(() => useUploadTeaserImage('BAT142'), { wrapper: wrapper(qc) });
 
@@ -133,7 +129,7 @@ describe('useDeleteTeaserImage', () => {
   });
 
   it('should call deleteTeaserImage with eventCode and imageId', async () => {
-    mockDeleteTeaserImage.mockResolvedValue(undefined as never);
+    api.onDelete(`${BASE}/img-1`).reply(204);
 
     const { result } = renderHook(() => useDeleteTeaserImage('BAT142'), { wrapper: wrapper(qc) });
 
@@ -141,12 +137,12 @@ describe('useDeleteTeaserImage', () => {
       await result.current.mutateAsync('img-1');
     });
 
-    expect(mockDeleteTeaserImage).toHaveBeenCalledWith('BAT142', 'img-1');
+    expect(api.history.delete.map((r) => r.url)).toEqual([`${BASE}/img-1`]);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
   it('should invalidate event cache on success', async () => {
-    mockDeleteTeaserImage.mockResolvedValue(undefined as never);
+    api.onDelete(`${BASE}/img-1`).reply(204);
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
     const { result } = renderHook(() => useDeleteTeaserImage('BAT142'), { wrapper: wrapper(qc) });
@@ -159,7 +155,7 @@ describe('useDeleteTeaserImage', () => {
   });
 
   it('should set isError on failure', async () => {
-    mockDeleteTeaserImage.mockRejectedValue(new Error('Not found'));
+    api.onDelete(`${BASE}/ghost`).reply(404);
 
     const { result } = renderHook(() => useDeleteTeaserImage('BAT142'), { wrapper: wrapper(qc) });
 
@@ -182,7 +178,7 @@ describe('useUpdateTeaserImagePosition', () => {
   });
 
   it('should call updateTeaserImage with imageId and request', async () => {
-    mockUpdateTeaserImage.mockResolvedValue(MOCK_IMAGE as never);
+    api.onPatch(`${BASE}/img-1`).reply(200, MOCK_IMAGE);
 
     const { result } = renderHook(() => useUpdateTeaserImagePosition('BAT142'), {
       wrapper: wrapper(qc),
@@ -195,12 +191,13 @@ describe('useUpdateTeaserImagePosition', () => {
       });
     });
 
-    expect(mockUpdateTeaserImage).toHaveBeenCalledWith('BAT142', 'img-1', { position: 2 });
+    expect(api.history.patch.map((r) => r.url)).toEqual([`${BASE}/img-1`]);
+    expect(JSON.parse(api.history.patch[0].data)).toEqual({ position: 2 });
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
   it('should invalidate event cache on success', async () => {
-    mockUpdateTeaserImage.mockResolvedValue(MOCK_IMAGE as never);
+    api.onPatch(`${BASE}/img-1`).reply(200, MOCK_IMAGE);
     const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
     const { result } = renderHook(() => useUpdateTeaserImagePosition('BAT142'), {
@@ -215,7 +212,7 @@ describe('useUpdateTeaserImagePosition', () => {
   });
 
   it('should set isError on failure', async () => {
-    mockUpdateTeaserImage.mockRejectedValue(new Error('Conflict'));
+    api.onPatch(`${BASE}/img-1`).reply(409);
 
     const { result } = renderHook(() => useUpdateTeaserImagePosition('BAT142'), {
       wrapper: wrapper(qc),

@@ -8,6 +8,3 @@
 # no endpoint never goes here without a GitHub issue number in its reason. An entry that no
 # longer matches a failing call fails the check as STALE. Above about 15 entries: stop and ask
 # the owner (fallback: the TypeScript compiler API).
-
-src/hooks/useFileUpload/useFileUpload.ts:POST:uploadEndpoint  # endpoint is a hook option; callers pass '/logos/presigned-url' (default, EventInfoTab) or '/materials/presigned-url' (SessionEditModal), both in the spec (checked 2026-11-07)
-src/hooks/useFileUpload/useFileUpload.ts:POST:`${basePath}/${fileId}/confirm`  # basePath is derived from uploadEndpoint at runtime: /logos/{uploadId}/confirm or /materials/{uploadId}/confirm, both in the spec (checked 2026-11-07)

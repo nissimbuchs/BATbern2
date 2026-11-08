@@ -11,6 +11,7 @@ import type {
   EventRegistrationsResponse,
   FetchEventRegistrationsOptions,
 } from '@/types/eventParticipant.types';
+import type { components } from '@/types/generated/event-registrations-api.types';
 
 /**
  * Backend API response format (field names differ from frontend)
@@ -233,6 +234,23 @@ export const addParticipant = async (
     username: params.username,
     force: params.force ?? false,
     notify: params.notify ?? true,
+  });
+  return response.data;
+};
+
+export type AttendeeRegistration = components['schemas']['Registration'];
+
+/**
+ * All registrations of one attendee across events (organizer view of a user).
+ * Errors are passed through.
+ *
+ * @param username - the attendee, sent in the `X-Attendee-Username` header
+ */
+export const getRegistrationsForAttendee = async (
+  username: string
+): Promise<AttendeeRegistration[]> => {
+  const response = await apiClient.get<AttendeeRegistration[]>('/events/registrations', {
+    headers: { 'X-Attendee-Username': username },
   });
   return response.data;
 };
