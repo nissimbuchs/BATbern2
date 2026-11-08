@@ -11,7 +11,7 @@ import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.mail.MailContext;
 import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.SpeakerWorkflowState;
-import ch.batbern.events.forwarding.ModeratorReplyAddress;
+import ch.batbern.events.mailcenter.render.ModeratorReplyAddress;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;

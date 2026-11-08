@@ -5,7 +5,7 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.forwarding.EmailForwardingProperties;
-import ch.batbern.events.forwarding.ModeratorReplyAddress;
+import ch.batbern.events.forwarding.ForwardingModeratorReplyAddress;
 import ch.batbern.events.mailcenter.render.MailPipelines;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.shared.service.EmailService;
@@ -77,7 +77,7 @@ class SpeakerAcceptanceEmailServiceTest {
         acceptanceEmailService = new SpeakerAcceptanceEmailService(
                 emailService, sessionRepository, MailPipelines.over(emailService, emailTemplateService),
                 primarySpeakerResolver,
-                new ModeratorReplyAddress(new EmailForwardingProperties(false, null, null, null, null, 0)));
+                new ForwardingModeratorReplyAddress(new EmailForwardingProperties(false, null, null, null, null, 0)));
         ReflectionTestUtils.setField(acceptanceEmailService, "baseUrl", "https://batbern.ch");
 
         // Set up test data

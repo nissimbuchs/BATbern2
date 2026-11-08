@@ -4,7 +4,8 @@ import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.forwarding.EmailForwardingProperties;
-import ch.batbern.events.forwarding.ModeratorReplyAddress;
+import ch.batbern.events.forwarding.ForwardingModeratorReplyAddress;
+import ch.batbern.events.mailcenter.render.ModeratorReplyAddress;
 import ch.batbern.events.mailcenter.render.MailPipelines;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SessionContentHistoryRepository;
@@ -69,7 +70,7 @@ class SpeakerModeratorReplyToTest {
     private SpeakerWorkflowService speakerWorkflowService;
 
     private final ModeratorReplyAddress moderatorReplyAddress =
-            new ModeratorReplyAddress(new EmailForwardingProperties(false, null, null, null, null, 0));
+            new ForwardingModeratorReplyAddress(new EmailForwardingProperties(false, null, null, null, null, 0));
     private SpeakerPool speaker;
     private Event event;
 

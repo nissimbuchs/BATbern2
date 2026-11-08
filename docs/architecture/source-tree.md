@@ -68,9 +68,10 @@ services/{name}-service/
 
 Service-specific packages worth knowing:
 
-- **EMS** (`ch.batbern.events`): `mailcenter/` (Epic 16), `forwarding/` (alias forwarding),
-  `listener/` (SQS listeners), `scheduler/` and `scheduled/`, `notification/`, `usermerge/`,
-  `watch/`, `specification/`.
+- **EMS** (`ch.batbern.events`): `mailcenter/` (Epic 16), `forwarding/` (alias forwarding and
+  the inbound mail pipeline), `listener/` (SQS listeners), `scheduler/` and `scheduled/`,
+  `notification/`, `usermerge/`, `watch/`, `security/` (incl. the STOMP CONNECT guard),
+  `specification/`.
 - **CUMS** (`ch.batbern.companyuser`): `watch/` (pairing), `interceptor/`, `events/` (domain
   events).
 - **PCS** (`ch.batbern.partners`): `mail/`, `events/`.

@@ -1,6 +1,6 @@
 package ch.batbern.events.config;
 
-import ch.batbern.events.watch.JwtStompInterceptor;
+import ch.batbern.events.security.JwtStompInterceptor;
 import lombok.RequiredArgsConstructor;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.messaging.simp.config.ChannelRegistration;

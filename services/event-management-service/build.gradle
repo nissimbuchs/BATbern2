@@ -37,6 +37,8 @@ gitProperties {
 dependencies {
     // Shared test infrastructure (PostgreSQL Testcontainers base class)
     testImplementation testFixtures(project(':shared-kernel'))
+    // Frozen ArchUnit rules (module walls, service direction), store in src/test/resources
+    testImplementation 'com.tngtech.archunit:archunit-junit5:1.4.1'
 
     // Service-specific: Caching (Caffeine in-memory cache)
     implementation 'com.github.ben-manes.caffeine:caffeine:3.3.1'

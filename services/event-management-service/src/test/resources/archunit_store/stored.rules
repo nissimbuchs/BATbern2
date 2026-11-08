@@ -1,0 +1,8 @@
+#
+#Sun Nov 08 08:34:24 CET 2026
+EMS\ module\ wall\:\ mail\ core\ (mailcenter.render,\ mailcenter.variables,\ L1)\ uses\ no\ other\ mail\ center\ class\ (mailcenter,\ forwarding)=c1e3ecec-d524-4207-b8f5-068d3e6bfe6e
+EMS\ module\ wall\:\ no\ class\ outside\ mail\ center\ (L6,\ packages\ [mailcenter,\ forwarding])\ depends\ on\ it,\ mail\ core\ in\ mailcenter.render\ and\ mailcenter.variables\ excepted=f5e9936d-b4a3-4913-93f7-cba02fa75bbe
+EMS\ module\ wall\:\ no\ class\ outside\ usermerge\ (L6,\ packages\ [usermerge])\ depends\ on\ it=a8d90f5c-fbc9-4693-8cac-58d607b50d01
+EMS\ module\ wall\:\ no\ class\ outside\ watch\ (L6,\ packages\ [watch])\ depends\ on\ it=ea043ff2-0560-457a-bdd1-1b7c5a48e419
+EMS\ module\ wall\:\ notification\ uses\ no\ L6\ module\ (mail\ center,\ watch,\ usermerge),\ mail\ core\ in\ mailcenter.render\ and\ mailcenter.variables\ excepted=d7a115c3-187b-4ecb-8308-01089ed0fb5d
+Service\ direction\:\ EMS\ has\ no\ client\ toward\ partner-coordination\ (downstream)=98b035c9-a3b2-46b1-8f9f-fdabeefa111a

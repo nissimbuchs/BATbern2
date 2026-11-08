@@ -17,6 +17,7 @@ be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerInvitationControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/SpeakerReminderControllerIntegrationTest.java	2
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/TopicSessionDataControllerIntegrationTest.java	1
+be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/forwarding/CalendarDeclineServiceIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingRepliesIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/integration/SpeakerAutoRegistrationIntegrationTest.java	3
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/GlobalMailCenterIntegrationTest.java	1
@@ -26,7 +27,6 @@ be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/OwnTextComposerIntegrationTest.java	2
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/ConversationThreadingIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/TokenReplyRoutingIntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/CalendarDeclineServiceIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/DeregistrationLinkOnceIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/EmailCaseInsensitiveMatchingIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/EventArchivalCleanupAc5IntegrationTest.java	1
@@ -70,6 +70,7 @@ be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/StructuralSessionControllerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/TopicSessionDataControllerIntegrationTest.java	2
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/TopicSimilarityControllerIntegrationTest.java	1
+be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/CalendarDeclineServiceIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/forwarding/EmailForwardingRepliesIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/ConversationReplyIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/GlobalMailCenterIntegrationTest.java	1
@@ -79,7 +80,6 @@ be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailGoldenTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/OwnTextComposerIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/notification/NotificationControllerIntegrationTest.java	1
-be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/CalendarDeclineServiceIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/DeregistrationLinkOnceIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/EmailCaseInsensitiveMatchingIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/service/NewsletterSendIterationIntegrationTest.java	1
@@ -194,7 +194,6 @@ be-transactional-it	services/event-management-service/src/test/java/ch/batbern/e
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/security/OrganizerOnlyEndpointsIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/security/RemovedEndpointsIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/service/AgendaStructuralSessionsIntegrationTest.java	1
-be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/service/CalendarDeclineServiceIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/service/ContentSubmissionServiceIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/service/DeregistrationLinkOnceIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/service/EmailCaseInsensitiveMatchingIntegrationTest.java	1

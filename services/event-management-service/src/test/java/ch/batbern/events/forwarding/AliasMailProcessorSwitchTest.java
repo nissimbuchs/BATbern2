@@ -3,7 +3,7 @@ package ch.batbern.events.forwarding;
 import ch.batbern.events.mailcenter.ConversationNotices;
 import ch.batbern.events.mailcenter.MailCenterSwitch;
 import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
-import ch.batbern.events.service.InboundReplyProcessor;
+import ch.batbern.events.mailcenter.inbound.InboundReplyProcessor;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;

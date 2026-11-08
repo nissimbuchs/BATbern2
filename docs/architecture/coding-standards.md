@@ -11,6 +11,7 @@
 - **File Uploads:** Use presigned URLs for direct S3 uploads, never proxy through backend
 - **Presigned links:** build them with `ch.batbern.shared.utils.S3Links` (`uploadUrl`, `downloadUrl`), never with an inline `Put/GetObjectPresignRequest` (#1187). A presigned link is a bearer credential until it expires: never log it, log the S3 key.
 - **Role-Based Access:** Always check user roles before displaying/executing functionality
+- **Module walls:** frozen ArchUnit rules in the EMS and CUMS `test` task fail a new EMS module-wall violation or a new client toward a downstream service; never edit the store to accept one (`docs/architecture/module-map.md` → "Gates")
 - **Tests:** Mock only at the process boundary, never our own code (see "Test fidelity rules" under Testing Standards). A CI ratchet keeps the count of old own-code mocks from rising
 
 ## Naming Conventions

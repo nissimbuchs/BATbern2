@@ -1,7 +1,5 @@
 package ch.batbern.events.exception;
 
-import ch.batbern.events.mailcenter.compose.AlreadySentException;
-import ch.batbern.events.mailcenter.compose.UnknownPlaceholderException;
 import ch.batbern.shared.dto.ErrorResponse;
 import ch.batbern.shared.exception.ClientErrorClassifier;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
@@ -1392,50 +1390,6 @@ public class GlobalExceptionHandler {
                 .severity("LOW")
                 .build();
 
-        return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
-    }
-
-    /** Story 16.5 AC2: own text names a placeholder the audience does not have (400). */
-    @ExceptionHandler(UnknownPlaceholderException.class)
-    public ResponseEntity<ErrorResponse> handleUnknownPlaceholderException(
-            UnknownPlaceholderException ex,
-            HttpServletRequest request) {
-        log.warn("Own text with unknown placeholder(s): {}", ex.getPlaceholders());
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "UNKNOWN_PLACEHOLDER");
-        details.put("placeholders", ex.getPlaceholders());
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.BAD_REQUEST.value())
-                .error("Bad Request")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
-        return ResponseEntity.badRequest().body(error);
-    }
-
-    /** Story 16.5 AC9: own text with this subject already went to the registrants (409). */
-    @ExceptionHandler(AlreadySentException.class)
-    public ResponseEntity<ErrorResponse> handleAlreadySentException(
-            AlreadySentException ex,
-            HttpServletRequest request) {
-        log.warn("Own-text registrant send needs confirmResend: {}", ex.getMessage());
-        Map<String, Object> details = new HashMap<>();
-        details.put("code", "ALREADY_SENT");
-        details.put("sentAt", ex.getSentAt().toString());
-        ErrorResponse error = ErrorResponse.builder()
-                .timestamp(Instant.now())
-                .path(request.getRequestURI())
-                .status(HttpStatus.CONFLICT.value())
-                .error("Conflict")
-                .message(ex.getMessage())
-                .correlationId(CorrelationIdGenerator.current())
-                .severity("LOW")
-                .details(details)
-                .build();
         return ResponseEntity.status(HttpStatus.CONFLICT).body(error);
     }
 

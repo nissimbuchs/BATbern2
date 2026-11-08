@@ -12,7 +12,7 @@ import ch.batbern.events.forwarding.EmailForwardingService;
 import ch.batbern.events.forwarding.ForwardingDirectory;
 import ch.batbern.events.mailcenter.inbound.InboundMailCenter;
 import ch.batbern.events.repository.EventRepository;
-import ch.batbern.events.scheduler.MailMessageRetentionScheduler;
+import ch.batbern.events.mailcenter.inbound.MailMessageRetentionScheduler;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import org.junit.jupiter.api.AfterEach;
