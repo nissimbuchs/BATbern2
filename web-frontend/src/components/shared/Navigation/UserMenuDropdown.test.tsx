@@ -279,8 +279,9 @@ describe('UserMenuDropdown', () => {
       });
     });
 
-    it('should_navigateToHelp_when_helpMenuItemClicked', async () => {
+    it('should_openUserGuideInNewTab_when_helpMenuItemClicked', async () => {
       const mockOnClose = vi.fn();
+      const openSpy = vi.spyOn(window, 'open').mockReturnValue(null);
       renderWithRouter(
         <UserMenuDropdown
           user={mockUser}
@@ -300,8 +301,15 @@ describe('UserMenuDropdown', () => {
       }
 
       await waitFor(() => {
+        expect(openSpy).toHaveBeenCalledWith(
+          'https://project.batbern.ch/user-guide/README.html',
+          '_blank',
+          'noopener,noreferrer'
+        );
+        expect(mockNavigate).not.toHaveBeenCalledWith('/help');
         expect(mockOnClose).toHaveBeenCalled();
       });
+      openSpy.mockRestore();
     });
 
     it('should_callOnLogout_when_logoutMenuItemClicked', async () => {
