@@ -7,7 +7,7 @@
  * page. Every other operation keeps its spec example (`server.ts`).
  *
  * The search is a stand-in for the backend's, not a re-implementation of its ranking: both sides
- * folded like the SQL `batbern_fold` (lower case, accents removed, `ae/oe/ue` as `a/o/u`, `-`, `'`
+ * folded approximately like the SQL `batbern_fold` (lower case, accents removed, `ae/oe/ue` as `a/o/u`, `-`, `'`
  * and `_` as a space), every word must occur in one field (users-api `listUsers.search`). A test
  * that depends on ranking or on a filter this stand-in ignores sets `api.on`.
  */
@@ -19,12 +19,28 @@ import type { OperationKey, ResponseBody } from './api.ts';
 
 type Pagination = NonNullable<ResponseBody<'listUsers', 200>['pagination']>;
 
-/** The fold of SQL `batbern_fold` (shared-kernel `db/search/batbern_fold.sql`). */
+/**
+ * Approximates SQL `batbern_fold` (shared-kernel `db/search/batbern_fold.sql`): lower case, accents
+ * removed like Postgres `unaccent` (including the letters NFD does not decompose: ß, ø, æ, œ, đ, ł,
+ * þ), `-`, `'`, `’` and `_` as a space, then `ae/oe/ue` as `a/o/u`. Letters outside these that
+ * `unaccent` maps but NFD does not are not covered.
+ */
+const UNACCENT_EXTRA: Array<[RegExp, string]> = [
+  [/ß/g, 'ss'],
+  [/ø/g, 'o'],
+  [/æ/g, 'ae'],
+  [/œ/g, 'oe'],
+  [/đ/g, 'd'],
+  [/ł/g, 'l'],
+  [/þ/g, 'th'],
+];
+
 export function searchFold(value: string): string {
-  return value
+  let folded = value.toLowerCase();
+  for (const [from, to] of UNACCENT_EXTRA) folded = folded.replace(from, to);
+  return folded
     .normalize('NFD')
     .replace(/\p{M}/gu, '')
-    .toLowerCase()
     .replace(/[-'’_]/g, ' ')
     .replace(/ae/g, 'a')
     .replace(/oe/g, 'o')

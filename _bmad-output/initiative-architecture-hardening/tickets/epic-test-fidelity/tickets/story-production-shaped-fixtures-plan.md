@@ -8,16 +8,33 @@ baseline_revision: '77071b06057989de23e43dc908196f77537171bd'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
   - '{project-root}/docs/plans/test-fidelity-proposal-2026-11.md'
   - '/tmp/claude-1000/-home-nissim-dev-bat-BATbern-bmad-v7/4631b2e5-8c64-4b93-94d3-3fc01dbf8c22/scratchpad/overnight-brief.md'
 warnings: ['oversized']
-deferred: []
+deferred:
+  - summary: >-
+      CUMS TestAwsConfig still holds a Mockito mock of our own CognitoIntegrationService.
+    evidence: |-
+      Touched in 17.0d (createCognitoUser now returns null as the real impl does). The real
+      CognitoIntegrationServiceImpl could run on the already-mocked CognitoIdentityProviderClient
+      boundary; removing the shared mock affects every CUMS IT, so it belongs to the refactor sweep.
+    location: >-
+      services/company-user-management-service/src/test/java/ch/batbern/companyuser/config/TestAwsConfig.java
+    severity: medium
+  - summary: >-
+      UserControllerIntegrationTest and UserRepositoryTest keep class-level @Transactional.
+    evidence: |-
+      Pre-existing (counted by the be-transactional-it ratchet). FlushBeforeRollback flushes before
+      rollback, so constraints run; converting 153 tests to committing ITs with cleanup is sweep work.
+    location: >-
+      services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserControllerIntegrationTest.java
+    severity: low
 ---
 
 <intent-contract>
@@ -106,21 +123,41 @@ deferred: []
 
 ## Plan Change Log
 
-- Search fold of the FE default mirrors SQL `batbern_fold` exactly (accents stripped, then
-  `ae/oe/ue` → `a/o/u`, `-'’_` → space) instead of the plan's `ü→ue` then strip: the spec says
-  ü = ue = u, and only the SQL form makes "Stuermer" and "Stürmer" fold to the same string.
+- Search fold of the FE default approximates SQL `batbern_fold` (lower case; ß, ø, æ, œ, đ, ł, þ
+  mapped as `unaccent` does; other accents stripped via NFD; `-'’_` → space; `ae/oe/ue` → `a/o/u`)
+  instead of the plan's `ü→ue` then strip: the spec says ü = ue = u, and only this form makes
+  "Bruennimann" and "Brünnimann" fold to the same string. Letters `unaccent` maps beyond these are
+  not covered.
 - CUMS #1104 regression: `@MethodSource` over `PEOPLE`, each case first creating the namesakes that
   precede the person (`ProductionShapedPeople.namesakesBefore`), so the second "Matthias Keller"
   is asserted as `matthias.keller.2`. The Cyrillic/CJK email-derived rows stay as `@CsvSource`.
 - `listEvents` default excludes `ARCHIVED` unless `includeArchived=true` (the spec's documented
   default); `listUsers` honours `filter={"role":...}`; other filters and `sort` are ignored
   (stand-in, documented in `fixtureDefaults.ts`).
-- The fixture uses "Matthias Stürmer" (the plan's search example) with an `example.ch` address; all
-  other names are invented. Former real-looking surnames in the converted tests (Germann, Imsand,
-  `bfh.ch`) were dropped from the converted files; `UserRepositoryTest`'s e-mail-fragment test was
-  outside the #1034 range and is unchanged.
+- Names are invented, including the #1034 umlaut target "Matthias Brünnimann"
+  (`matthias.bruennimann`); the plan's "Stürmer" example was replaced after review because
+  "Matthias Stürmer" is a real, identifiable person. Real-looking surnames and domains in the
+  converted tests (Germann, Imsand, `bfh.ch`, `dvbern.ch`) were dropped. Addresses are
+  `example.com` or an IDN under the reserved `.example` TLD only (review: `example.ch` is not
+  reserved); both guards enforce it.
+- Review follow-ups: the fixture-backed default bodies are validated against the response schemas
+  (`fixtureDefaults.test.ts`, same validator as `examples.test.ts`); the EMS fixture registers the
+  IDN-e-mail attendee too; the `createdAt` tie is frontend-only.
 
 ## Review Triage Log
+
+### 2026-11-08 — Review pass
+- verdicts: 9 findings — high 0, medium 3, low 4, false 0, maybe-false 0 (2 medium/low deferred as pre-existing)
+- findings:
+  - `[medium]` `[patch]` Fixture contained a real, identifiable person ("Matthias Stürmer", company fhbern) — replaced by invented "Matthias Brünnimann" (`matthias.bruennimann`, no company) in both sets and all tests; last `bfh.ch`/`dvbern.ch` addresses removed from UserRepositoryTest.
+  - `[medium]` `[patch]` `@example.ch` is not reserved; CLAUDE.md allows `@example.com` only — all addresses now `example.com` or `*.example` (IDN); both guards tightened.
+  - `[medium]` `[defer]` TestAwsConfig keeps a mock of own CognitoIntegrationService — pre-existing shared mock, only its return value was corrected; removal touches every CUMS IT, deferred to the sweep.
+  - `[low]` `[defer]` Touched CUMS ITs keep class-level @Transactional — pre-existing, FlushBeforeRollback runs the constraints; ratchet-counted, deferred to the sweep.
+  - `[medium]` `[patch]` Fixture-backed default bodies not validated against the response schema — `fixtureDefaults.test.ts` now validates one request per operation with the `examples.test.ts` validator, covers exactly FIXTURE_BACKED_OPERATIONS, with a positive control.
+  - `[low]` `[patch]` EMS Javadoc claimed an IDN attendee that never registered — IDN_EMAIL now registered (confirmed, future event) and asserted stored as entered.
+  - `[low]` `[patch]` coding-standards claimed a backend createdAt tie — text now says the createdAt tie is frontend-only.
+  - `[low]` `[patch]` searchFold claimed to equal batbern_fold (unaccent maps ß, ø, æ…) — mappings added, wording changed to "approximates", gap named.
+  - `[low]` `[patch]` UserAutocomplete test name said "ambiguous first name" for an identical-full-name case — renamed `..._when_twoPeopleShareTheFullName`.
 
 ## Design Notes
 
@@ -140,3 +177,20 @@ Rack rules: one heavy job at a time; Vitest `--maxWorkers=4`; Gradle one module,
 - `./gradlew :services:company-user-management-service:test --tests '*UserControllerIntegrationTest' --tests '*UserRepositoryTest' --max-workers=4` -- expected: pass.
 - `./gradlew :services:event-management-service:test --tests '*ProductionShapedEvents*' --max-workers=4` -- expected: pass.
 - `make check-test-ratchet` -- expected: no RAISED, no STALE after `--update`.
+
+## Auto Run Result
+
+Status: built (2026-11-08, local commits only, nothing pushed).
+
+**Summary:** One production-shaped fixture set per side, used by default. Frontend `web-frontend/src/test/fixtures/` (typed from generated types) and MSW harness defaults for `listUsers`, `searchUsers`, `listEvents`, `listRegistrations` with real paging and a folded search; backend `ProductionShapedPeople` (shared-kernel test fixtures, exposed as `AbstractIntegrationTest.PEOPLE`, not seeded) and EMS `ProductionShapedEvents`. Guard tests on both sides; #1034 and #1104 regressions run on the shared sets.
+
+**Files:** fixtures + guard (`web-frontend/src/test/fixtures/*`), harness defaults (`src/test/msw/fixtureDefaults.ts`, `server.ts`, `fixtureDefaults.test.ts`), converted tests (UserAutocomplete, PromoteSpeakerSubView, userManagementApi.search, RegistrationStep1, personName, email, eventApiClient), `tsconfig.test-harness.json`, ratchet baseline (6 lines fell); shared-kernel `ProductionShapedPeople` + test, `AbstractIntegrationTest`; CUMS `UserControllerIntegrationTest`, `UserRepositoryTest`, `TestAwsConfig` (Cognito stub returns null like production); EMS `ProductionShapedEvents` + IT; `coding-standards.md`.
+
+**Review:** 7 patches applied, 2 deferred (pre-existing own-code Cognito mock; class-level @Transactional), 0 rejected.
+
+**Follow-up review recommended:** false. Patched 0 high, 3 medium, 4 low on a first pass; the medium ones were data/doc corrections plus one added validation test, all re-verified, no unverified risk remains that can be named.
+
+**Verification:** Vitest targeted (13 files, 285 tests) pass after patches; full Vitest before patches 464 files / 5990 tests pass, exit 1 on 4 pre-existing ForgotPasswordForm "Maximum update depth" errors (same in the 17.0c1 logs). `npm run type-check`, `npm run lint`, prettier clean. `make check-test-ratchet` no RAISED/STALE. Gradle (implementing agent, result XML checked): ProductionShapedPeopleTest 16/16, CUMS UserRepositoryTest 24/24, UserControllerIntegrationTest 129 (8 skipped, 0 failed), EMS ProductionShapedEventsIntegrationTest 4/4; full CUMS suite green before patches. Full EMS suite not run (only change there: new static field in the base class and new test files).
+
+**Residual risks:** Tests elsewhere that relied on spec examples for the four list operations now get fixture data (only one needed a change in this suite). The FE search fold approximates `batbern_fold`. ForgotPasswordForm errors keep the full Vitest exit code non-zero.
+

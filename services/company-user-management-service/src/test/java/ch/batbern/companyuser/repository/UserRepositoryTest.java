@@ -342,28 +342,28 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     // The previous derived query
     //   findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(q, q)
     // had NO ORDER BY, and the service truncated the result in memory at a hard 20. On
-    // production 32 users matched "Matthias" and `matthias.stuermer` sat at position 29 of an
+    // production 32 users matched "Matthias" and `matthias.bruennimann` sat at position 29 of an
     // arbitrary plan-dependent order, so he could never be picked in the promote dropdown.
     // ------------------------------------------------------------------------
 
     // The production-shaped people (17.0d) carry the shape: more than 20 "Matthias", two identical
-    // "Matthias Keller", "Stürmer" with an umlaut, Hông Ân, O’Neill, 王.
+    // "Matthias Keller", "Brünnimann" with an umlaut, Hông Ân, O’Neill, 王.
 
     @Test
     @DisplayName("should_rankExactSurnameFirst_when_manyNamesakesMatch")
     void should_rankExactSurnameFirst_when_manyNamesakesMatch() {
         // Given: every other "Matthias" saved BEFORE the target, so an unordered query would push
         // the target past any sane limit (this is the production shape).
-        saveAll(PEOPLE.stream().filter(p -> p != ProductionShapedPeople.STUERMER).toList());
-        saveAll(List.of(ProductionShapedPeople.STUERMER));
+        saveAll(PEOPLE.stream().filter(p -> p != ProductionShapedPeople.BRUENNIMANN).toList());
+        saveAll(List.of(ProductionShapedPeople.BRUENNIMANN));
         assertThat(ProductionShapedPeople.NAMESAKES).hasSizeGreaterThan(20);
 
         // When: searching the surname, limited to 5
-        List<User> results = userRepository.searchRanked("Stuermer", null, PageRequest.of(0, 5));
+        List<User> results = userRepository.searchRanked("Bruennimann", null, PageRequest.of(0, 5));
 
         // Then: the exact surname match is first, not lost in the namesakes
         assertThat(results).isNotEmpty();
-        assertThat(results.get(0).getUsername()).isEqualTo("matthias.stuermer");
+        assertThat(results.get(0).getUsername()).isEqualTo("matthias.bruennimann");
     }
 
     @Test
@@ -371,12 +371,12 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     void should_findTheUmlautSurname_when_queriedWithOrWithoutTheUmlaut() {
         saveAll(PEOPLE);
 
-        // #1034: "Stürmer" returned 0 results in production. ü = ue = u, both directions.
-        for (String query : List.of("Stürmer", "Stuermer", "STÜRMER", "Matthias Stürmer")) {
+        // #1034: "Brünnimann" returned 0 results in production. ü = ue = u, both directions.
+        for (String query : List.of("Brünnimann", "Bruennimann", "BRÜNNIMANN", "Matthias Brünnimann")) {
             assertThat(userRepository.searchRanked(query, null, PageRequest.of(0, 20)))
                     .as(query)
                     .extracting(User::getUsername)
-                    .containsExactly("matthias.stuermer");
+                    .containsExactly("matthias.bruennimann");
         }
     }
 
@@ -389,7 +389,7 @@ class UserRepositoryTest extends AbstractIntegrationTest {
                 .extracting(User::getUsername).containsExactly(ProductionShapedPeople.VIETNAMESE.username());
         assertThat(userRepository.searchRanked("王", null, PageRequest.of(0, 20)))
                 .extracting(User::getUsername).containsExactly(ProductionShapedPeople.CJK.username());
-        assertThat(userRepository.searchRanked("anna.keller@example.ch", null, PageRequest.of(0, 20)))
+        assertThat(userRepository.searchRanked("anna.keller@example.com", null, PageRequest.of(0, 20)))
                 .extracting(User::getUsername).containsExactly(ProductionShapedPeople.MIXED_CASE_EMAIL.username());
     }
 
@@ -431,21 +431,22 @@ class UserRepositoryTest extends AbstractIntegrationTest {
 
         // The old query matched firstName OR lastName separately, so a full name — exactly what
         // `speaker_pool.speaker_name` holds — could never match anybody.
-        List<User> results = userRepository.searchRanked("Matthias Stuermer", null, PageRequest.of(0, 20));
+        List<User> results = userRepository.searchRanked("Matthias Bruennimann", null, PageRequest.of(0, 20));
 
-        assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
+        assertThat(results).extracting(User::getUsername).containsExactly("matthias.bruennimann");
     }
 
     @Test
     @DisplayName("should_matchTheEmail_when_theQueryIsAnEmailFragment")
     void should_matchTheEmail_when_theQueryIsAnEmailFragment() {
-        createAndSaveUser("matthias.stuermer", "matthias.stuermer@bfh.ch", "Matthias", "Stuermer");
-        createAndSaveUser("matthias.germann", "matthias.germann@dvbern.ch", "Matthias", "Germann");
+        saveAll(PEOPLE);
 
         // users-api.openapi.yml documents "Search users by name or email"; only name was implemented.
-        List<User> results = userRepository.searchRanked("bfh.ch", null, PageRequest.of(0, 20));
+        // The IDN domain is the only one of its kind in the set.
+        List<User> results = userRepository.searchRanked("bücherstube.example", null, PageRequest.of(0, 20));
 
-        assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
+        assertThat(results).extracting(User::getUsername)
+                .containsExactly(ProductionShapedPeople.IDN_EMAIL.username());
     }
 
     @Test

@@ -7,7 +7,9 @@ import apiClient from '@/services/api/apiClient';
 import { listUsers, searchUsers } from '@/services/api/userManagementApi';
 import { namesakes, people, REGISTRATION_STATUSES, shapes, toSearchResult } from '@/test/fixtures';
 import { api } from './api';
-import { searchFold } from './fixtureDefaults';
+import { FIXTURE_BACKED_OPERATIONS, fixtureDefault, searchFold } from './fixtureDefaults';
+import { harness, SPEC_DIR } from './server';
+import { loadSpecFiles, validateAgainstSchema } from './openapi';
 
 describe('MSW harness fixture defaults', () => {
   it('answers GET /users page 2 from the fixture people, with real paging', async () => {
@@ -28,13 +30,13 @@ describe('MSW harness fixture defaults', () => {
   });
 
   it('searches folded: case, accents and ü = ue', async () => {
-    const umlaut = await searchUsers('Stürmer', 20);
-    const spelled = await searchUsers('stuermer', 20);
-    const listed = await listUsers({ searchQuery: 'STÜRMER' }, { page: 1, limit: 20 });
+    const umlaut = await searchUsers('Brünnimann', 20);
+    const spelled = await searchUsers('bruennimann', 20);
+    const listed = await listUsers({ searchQuery: 'BRÜNNIMANN' }, { page: 1, limit: 20 });
 
-    expect(umlaut.map((u) => u.id)).toEqual([shapes.stuermer.id]);
+    expect(umlaut.map((u) => u.id)).toEqual([shapes.bruennimann.id]);
     expect(spelled).toEqual(umlaut);
-    expect(listed.data.map((u) => u.id)).toEqual([shapes.stuermer.id]);
+    expect(listed.data.map((u) => u.id)).toEqual([shapes.bruennimann.id]);
     expect(listed.pagination.totalItems).toBe(1);
   });
 
@@ -63,7 +65,7 @@ describe('MSW harness fixture defaults', () => {
   it('lets an override win over the fixtures', async () => {
     api.on('searchUsers', () => [toSearchResult(shapes.cjk)]);
 
-    expect((await searchUsers('Stürmer', 20)).map((u) => u.id)).toEqual([shapes.cjk.id]);
+    expect((await searchUsers('Brünnimann', 20)).map((u) => u.id)).toEqual([shapes.cjk.id]);
   });
 
   it('answers GET /events with past and future events, archived ones only on request', async () => {
@@ -87,10 +89,49 @@ describe('MSW harness fixture defaults', () => {
     expect(data.every((r: { eventCode: string }) => r.eventCode === 'BATbern57')).toBe(true);
   });
 
-  it('folds like batbern_fold', () => {
-    expect(searchFold('  Stürmer ')).toBe('sturmer');
-    expect(searchFold('Stuermer')).toBe('sturmer');
+  it('approximates batbern_fold, including the letters NFD does not decompose', () => {
+    expect(searchFold('  Brünnimann ')).toBe('brunnimann');
+    expect(searchFold('Bruennimann')).toBe('brunnimann');
+    expect(searchFold('Straße Søren Ærø Œuvre Đurić Łukasz Þóra')).toBe(
+      'strasse soren aro ouvre duric lukasz thora'
+    );
     expect(searchFold('Jean-Luc O’Neill')).toBe('jean luc o neill');
     expect(searchFold('Hông Ân'.normalize('NFD'))).toBe('hong an');
+  });
+});
+
+describe('fixture-backed default bodies', () => {
+  const files = loadSpecFiles(SPEC_DIR);
+  /** A representative request per operation: a search, a role filter, archived events, page 2. */
+  const REQUESTS: Record<string, { query: string; params?: Record<string, string> }> = {
+    listUsers: { query: 'page=2&limit=20' },
+    searchUsers: { query: 'query=Matthias&role=SPEAKER&limit=20' },
+    listEvents: { query: 'includeArchived=true' },
+    listRegistrations: { query: 'page=1&limit=20', params: { eventCode: 'BATbern57' } },
+  };
+
+  it('covers every fixture-backed operation (positive control)', () => {
+    expect(Object.keys(REQUESTS).sort()).toEqual([...FIXTURE_BACKED_OPERATIONS].sort());
+  });
+
+  it.each(Object.keys(REQUESTS))('%s answers a body valid against its response schema', (key) => {
+    const op = [...harness().byId.values()].find((o) => o.key === key)!;
+    const response = op.success[0];
+    const { query, params = {} } = REQUESTS[key];
+    const fixture = fixtureDefault(key, new URLSearchParams(query), params);
+
+    expect(fixture).toBeDefined();
+    expect(validateAgainstSchema(files, op.file, response.media.schema, fixture!.body)).toEqual([]);
+  });
+
+  it('the validator rejects a broken fixture body (positive control)', () => {
+    const op = [...harness().byId.values()].find((o) => o.key === 'listUsers')!;
+    // A copy: the body holds the shared fixture objects.
+    const body = structuredClone(fixtureDefault('listUsers', new URLSearchParams(), {})!.body) as {
+      data: Array<Record<string, unknown>>;
+    };
+    delete body.data[0].email;
+
+    expect(validateAgainstSchema(files, op.file, op.success[0].media.schema, body)).not.toEqual([]);
   });
 });

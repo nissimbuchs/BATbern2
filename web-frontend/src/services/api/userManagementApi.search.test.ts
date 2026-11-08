@@ -3,7 +3,7 @@
  *
  * The former tests used axios-mock-adapter, which compares the `params` object, not the URL on the
  * wire, with an ASCII-only query ('Anna'). That is how the double encoding of #1034 survived:
- * typing the surname "Stürmer" sent a literal `St%25C3%25BCrmer` and matched nobody. The harness
+ * typing an umlaut surname sent a literal `%25C3%25BC` for `ü` and matched nobody. The harness
  * sees the real request, and answers from the fixture people (>20 "Matthias", umlauts).
  */
 import { describe, expect, it } from 'vitest';
@@ -14,23 +14,23 @@ import { searchUsers } from './userManagementApi';
 
 describe('searchUsers', () => {
   it('should_findTheUmlautSurname_when_queryContainsUmlaut', async () => {
-    const result = await searchUsers('Stürmer', 20);
+    const result = await searchUsers('Brünnimann', 20);
 
     const [call] = api.calls('searchUsers');
     // Encoded once by axios: 'ü' is %C3%BC on the wire, never %25C3%25BC.
-    expect(call.url.search).toContain('query=St%C3%BCrmer');
+    expect(call.url.search).toContain('query=Br%C3%BCnnimann');
     expect(call.url.search).not.toContain('%25');
-    expect(call.query.get('query')).toBe('Stürmer');
-    expect(result.map((u) => u.id)).toEqual([shapes.stuermer.id]);
+    expect(call.query.get('query')).toBe('Brünnimann');
+    expect(result.map((u) => u.id)).toEqual([shapes.bruennimann.id]);
   });
 
   it('should_sendTheFullNameOnce_when_queryContainsSpace', async () => {
-    const result = await searchUsers('Matthias Stürmer', 20);
+    const result = await searchUsers('Matthias Brünnimann', 20);
 
     const [call] = api.calls('searchUsers');
     expect(call.url.search).not.toContain('%25');
-    expect(call.query.get('query')).toBe('Matthias Stürmer');
-    expect(result.map((u) => u.id)).toEqual([shapes.stuermer.id]);
+    expect(call.query.get('query')).toBe('Matthias Brünnimann');
+    expect(result.map((u) => u.id)).toEqual([shapes.bruennimann.id]);
   });
 
   it('should_returnAtMostTheLimit_when_moreNamesakesMatch', async () => {

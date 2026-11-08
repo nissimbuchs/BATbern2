@@ -49,7 +49,7 @@ class ProductionShapedPeopleTest {
                 new Shape("a CJK character (王)", people -> people.stream()
                         .anyMatch(p -> p.fullName().codePoints()
                                 .anyMatch(c -> Character.UnicodeScript.of(c) == Character.UnicodeScript.HAN))),
-                new Shape("an umlaut in a surname (Stürmer)", people -> people.stream()
+                new Shape("an umlaut in a surname (Brünnimann)", people -> people.stream()
                         .anyMatch(p -> p.lastName().matches(".*[äöü].*"))),
                 new Shape("a mixed-case e-mail address", people -> people.stream()
                         .anyMatch(p -> !p.email().equals(p.email().toLowerCase(Locale.ROOT)))),
@@ -109,7 +109,7 @@ class ProductionShapedPeopleTest {
         assertThat(ProductionShapedPeople.ALL).allMatch(p -> EmailAddresses.isAcceptable(p.email()));
         assertThat(ProductionShapedPeople.ALL)
                 .allMatch(p -> domainOf(p.email()).toLowerCase(Locale.ROOT)
-                        .matches("example\\.(com|ch)|[^.]+\\.example"));
+                        .matches("example\\.com|[^.]+\\.example"));
     }
 
     @Test

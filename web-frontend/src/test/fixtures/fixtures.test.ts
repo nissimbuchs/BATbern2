@@ -42,7 +42,7 @@ const SHAPES: Array<[shape: string, present: (set: FixtureSet) => boolean]> = [
   ['a typographic apostrophe (O’Neill)', ({ people }) => people.some((u) => /’/.test(fullName(u)))],
   ['a CJK character (王)', ({ people }) => people.some((u) => /\p{Script=Han}/u.test(fullName(u)))],
   [
-    'an umlaut in a surname (Stürmer)',
+    'an umlaut in a surname (Brünnimann)',
     ({ people }) => people.some((u) => /[äöü]/.test(u.lastName)),
   ],
   [
@@ -134,7 +134,7 @@ describe('production-shaped fixtures', () => {
     expect(
       people
         .map((u) => domainOf(u.email).toLowerCase())
-        .filter((d) => !/^(example\.(com|ch)|[^.]+\.example)$/.test(d))
+        .filter((d) => !/^(example\.com|[^.]+\.example)$/.test(d))
     ).toEqual([]);
   });
 

@@ -7,8 +7,8 @@
  *   1. the `role` filter ran CLIENT-side, on the already-truncated page of results, so a
  *      SPEAKER filter filtered whatever arbitrary rows the server happened to return rather
  *      than the best matches. It now goes to the backend.
- *   2. `getOptionLabel` returned `option.id` (the username), so selecting "Matthias Stürmer"
- *      put `matthias.stuermer` in the text field. It now shows the person's real name.
+ *   2. `getOptionLabel` returned `option.id` (the username), so selecting a person put their
+ *      username in the text field. It now shows the person's real name.
  */
 import React from 'react';
 import { describe, it, expect, vi } from 'vitest';
@@ -21,7 +21,7 @@ import { shapes, toSearchResult } from '@/test/fixtures';
 
 // Story 17.0d: real userManagementApi and i18next; the MSW harness answers GET /users/search from
 // the production-shaped people (umlauts, >20 "Matthias"). No vi.mock of own code.
-const stuermer = toSearchResult(shapes.stuermer);
+const bruennimann = toSearchResult(shapes.bruennimann);
 
 const renderComponent = (props: Partial<React.ComponentProps<typeof UserAutocomplete>> = {}) => {
   const queryClient = new QueryClient({
@@ -45,18 +45,18 @@ describe('UserAutocomplete', () => {
   it('should_passRoleToTheBackend_when_roleFilterProvided', async () => {
     renderComponent({ role: 'SPEAKER' });
 
-    await userEvent.type(screen.getByTestId('user-search-field'), 'Stürmer');
+    await userEvent.type(screen.getByTestId('user-search-field'), 'Brünnimann');
 
     await waitFor(
       () => {
-        expect(api.calls('searchUsers').map((c) => c.query.get('query'))).toContain('Stürmer');
+        expect(api.calls('searchUsers').map((c) => c.query.get('query'))).toContain('Brünnimann');
       },
       { timeout: 2000 }
     );
-    const call = api.calls('searchUsers').find((c) => c.query.get('query') === 'Stürmer');
+    const call = api.calls('searchUsers').find((c) => c.query.get('query') === 'Brünnimann');
     expect(call?.query.get('role')).toBe('SPEAKER');
     expect(call?.query.get('limit')).toBe('20');
-    expect(await screen.findByTestId('user-option-matthias.stuermer')).toBeInTheDocument();
+    expect(await screen.findByTestId('user-option-matthias.bruennimann')).toBeInTheDocument();
   });
 
   it('should_notFilterOptionsClientSide_when_roleFilterProvided', async () => {
@@ -64,20 +64,20 @@ describe('UserAutocomplete', () => {
     // if its `roles` array does not literally contain the filter (e.g. the server matched on
     // a role granted after the projection was cached) — client-side re-filtering is what used
     // to silently empty the dropdown.
-    api.on('searchUsers', () => [{ ...stuermer, roles: [] }]);
+    api.on('searchUsers', () => [{ ...bruennimann, roles: [] }]);
     renderComponent({ role: 'SPEAKER' });
 
-    await userEvent.type(screen.getByTestId('user-search-field'), 'Stürmer');
+    await userEvent.type(screen.getByTestId('user-search-field'), 'Brünnimann');
 
     await waitFor(
       () => {
-        expect(screen.getByTestId('user-option-matthias.stuermer')).toBeInTheDocument();
+        expect(screen.getByTestId('user-option-matthias.bruennimann')).toBeInTheDocument();
       },
       { timeout: 2000 }
     );
   });
 
-  it('should_showEveryNamesakeTheServerReturns_when_theFirstNameIsAmbiguous', async () => {
+  it('should_showEveryNamesakeTheServerReturns_when_twoPeopleShareTheFullName', async () => {
     renderComponent();
 
     await userEvent.type(screen.getByTestId('user-search-field'), 'Matthias Keller');
@@ -87,10 +87,10 @@ describe('UserAutocomplete', () => {
   });
 
   it('should_showTheRealName_when_userIsSelected', async () => {
-    renderComponent({ value: stuermer });
+    renderComponent({ value: bruennimann });
 
     await waitFor(() => {
-      expect(screen.getByTestId('user-search-field')).toHaveValue('Matthias Stürmer');
+      expect(screen.getByTestId('user-search-field')).toHaveValue('Matthias Brünnimann');
     });
   });
 
@@ -105,14 +105,14 @@ describe('UserAutocomplete', () => {
   it('should_fallBackToUsername_when_userHasNoName', async () => {
     renderComponent({
       value: {
-        ...stuermer,
+        ...bruennimann,
         firstName: undefined,
         lastName: undefined,
-      } as unknown as typeof stuermer,
+      } as unknown as typeof bruennimann,
     });
 
     await waitFor(() => {
-      expect(screen.getByTestId('user-search-field')).toHaveValue('matthias.stuermer');
+      expect(screen.getByTestId('user-search-field')).toHaveValue('matthias.bruennimann');
     });
   });
 
@@ -120,10 +120,10 @@ describe('UserAutocomplete', () => {
     // `isValueSelected` suppresses the query once the field holds the selection's label.
     // It used to compare against the username; with a name label it must compare against
     // the name, otherwise every selection fires a pointless extra search.
-    renderComponent({ value: stuermer });
+    renderComponent({ value: bruennimann });
 
     await waitFor(() => {
-      expect(screen.getByTestId('user-search-field')).toHaveValue('Matthias Stürmer');
+      expect(screen.getByTestId('user-search-field')).toHaveValue('Matthias Brünnimann');
     });
     await new Promise((resolve) => setTimeout(resolve, 500));
 

@@ -23,7 +23,7 @@ import java.util.stream.Stream;
  *
  * <p>The set is data, not rows: nothing is seeded. A test persists the people it needs.
  *
- * <p>Invented names only. E-mail addresses use {@code example.com}, {@code example.ch} or an IDN
+ * <p>Invented names only. E-mail addresses use {@code example.com} or an IDN
  * under the reserved {@code .example} TLD (ASCII local part: SES has no SMTPUTF8). Names are NFC.
  * {@link Person#username()} is what {@code SlugGenerationService} generates for the person, with
  * {@code ensureUniqueUsername} applied in list order, so the second namesake is {@code .2}.
@@ -50,7 +50,7 @@ public final class ProductionShapedPeople {
     }
 
     /** Vietnamese diacritics, NFC. Generated {@code hong.an.meier} once and broke the constraint. */
-    public static final Person VIETNAMESE = person("Hông Ân", "Meier", "hongan.meier@example.ch",
+    public static final Person VIETNAMESE = person("Hông Ân", "Meier", "hongan.meier@example.com",
             "hongan.meier", null, Role.SPEAKER);
 
     /** Typographic apostrophe (U+2019), as phones type it. */
@@ -62,7 +62,7 @@ public final class ProductionShapedPeople {
             Role.ATTENDEE);
 
     /** Capitals in the stored address (#1107: 58 production rows). */
-    public static final Person MIXED_CASE_EMAIL = person("Anna", "Keller", "Anna.Keller@Example.CH",
+    public static final Person MIXED_CASE_EMAIL = person("Anna", "Keller", "Anna.Keller@Example.COM",
             "anna.keller", null, Role.ORGANIZER);
 
     /** An internationalised domain; the local part stays ASCII. */
@@ -70,14 +70,14 @@ public final class ProductionShapedPeople {
             "juerg.brunner", "buecherstube", Role.PARTNER);
 
     /** The #1034 target: an umlaut surname among many "Matthias". */
-    public static final Person STUERMER = person("Matthias", "Stürmer", "matthias.stuermer@example.ch",
-            "matthias.stuermer", "fhbern", Role.SPEAKER);
+    public static final Person BRUENNIMANN = person("Matthias", "Brünnimann", "matthias.bruennimann@example.com",
+            "matthias.bruennimann", null, Role.SPEAKER);
 
     /** Two people with the identical full name; the second username gets {@code .2}. */
     public static final List<Person> IDENTICAL_NAMES = List.of(
             person("Matthias", "Keller", "matthias.keller@example.com", "matthias.keller", null,
                     Role.ATTENDEE),
-            person("Matthias", "Keller", "m.keller@example.ch", "matthias.keller.2", null, Role.SPEAKER));
+            person("Matthias", "Keller", "m.keller@example.com", "matthias.keller.2", null, Role.SPEAKER));
 
     private static final List<String[]> MORE_MATTHIAS = List.of(
             new String[] {"Aebischer", "aebischer"},
@@ -114,12 +114,12 @@ public final class ProductionShapedPeople {
 
     static {
         List<Person> namesakes = new ArrayList<>();
-        namesakes.add(STUERMER);
+        namesakes.add(BRUENNIMANN);
         namesakes.addAll(IDENTICAL_NAMES);
         for (int i = 0; i < MORE_MATTHIAS.size(); i++) {
             String[] entry = MORE_MATTHIAS.get(i);
             String username = "matthias." + entry[1];
-            namesakes.add(person("Matthias", entry[0], username + "@example." + (i % 2 == 0 ? "com" : "ch"),
+            namesakes.add(person("Matthias", entry[0], username + "@example.com",
                     username, null, i % 3 == 0 ? Role.SPEAKER : Role.ATTENDEE));
         }
         NAMESAKES = List.copyOf(namesakes);

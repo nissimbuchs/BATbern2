@@ -72,14 +72,15 @@ public final class ProductionShapedEvents {
 
     /**
      * One registration per status of {@link #ATTENDEE_BY_STATUS}, on the saved {@code past} or
-     * {@code future} event, plus the namesake of the waitlisted attendee as a confirmed one: same
-     * name, a different person.
+     * {@code future} event, plus two more confirmed ones on the future event: the namesake of the
+     * waitlisted attendee (same name, a different person) and the attendee with the IDN e-mail.
      */
     public static List<Registration> registrations(Event past, Event future, Clock clock) {
         List<Registration> all = new ArrayList<>();
         ATTENDEE_BY_STATUS.forEach((status, person) ->
                 all.add(registration(PAST_STATUSES.contains(status) ? past : future, person, status, clock)));
         all.add(registration(future, ProductionShapedPeople.IDENTICAL_NAMES.get(1), "confirmed", clock));
+        all.add(registration(future, ProductionShapedPeople.IDN_EMAIL, "confirmed", clock));
         return all;
     }
 

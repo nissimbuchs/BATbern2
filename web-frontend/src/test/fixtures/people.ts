@@ -8,7 +8,7 @@
  * when a test sets no override (`src/test/msw/fixtureDefaults.ts`); `fixtures.test.ts` guards that
  * every shape stays in it. The backend twin is shared-kernel `ProductionShapedPeople`.
  *
- * Invented names only. E-mail addresses use `example.com`, `example.ch` or an IDN under the
+ * Invented names only. E-mail addresses use `example.com` or an IDN under the
  * reserved `.example` TLD (ASCII local part: SES has no SMTPUTF8). Usernames are what
  * `SlugGenerationService` generates (namesakes get `.2`), so they match `chk_username_format`.
  *
@@ -27,7 +27,7 @@ export const FIXTURE_CREATED_AT = '2025-03-01T09:00:00Z';
 export function aUser(overrides: Partial<UserResponse> = {}): UserResponse {
   return {
     id: 'anna.keller',
-    email: 'Anna.Keller@Example.CH',
+    email: 'Anna.Keller@Example.COM',
     firstName: 'Anna',
     lastName: 'Keller',
     roles: ['ATTENDEE'],
@@ -73,7 +73,7 @@ const person = (
 /** The named shapes, so a test can say which one it means. */
 export const shapes = {
   /** Vietnamese diacritics, stored NFC. Generated `hong.an.meier` once and broke the constraint. */
-  vietnamese: person('hongan.meier', 'Hông Ân', 'Meier', 'hongan.meier@example.ch', ['SPEAKER']),
+  vietnamese: person('hongan.meier', 'Hông Ân', 'Meier', 'hongan.meier@example.com', ['SPEAKER']),
   /** Typographic apostrophe (U+2019), as phones type it. */
   apostrophe: person('jeanluc.oneill', 'Jean-Luc', 'O’Neill', 'jeanluc.oneill@example.com', [
     'SPEAKER',
@@ -82,7 +82,7 @@ export const shapes = {
   /** A CJK surname: the username comes from the e-mail. */
   cjk: person('fang.wang', '芳', '王', 'fang.wang@example.com'),
   /** Capitals in the stored address (#1107: 58 production rows). */
-  mixedCaseEmail: person('anna.keller', 'Anna', 'Keller', 'Anna.Keller@Example.CH', ['ORGANIZER']),
+  mixedCaseEmail: person('anna.keller', 'Anna', 'Keller', 'Anna.Keller@Example.COM', ['ORGANIZER']),
   /** An internationalised domain; the local part stays ASCII. */
   idnEmail: person(
     'juerg.brunner',
@@ -93,18 +93,17 @@ export const shapes = {
     'buecherstube'
   ),
   /** The #1034 target: an umlaut surname among many "Matthias". */
-  stuermer: person(
-    'matthias.stuermer',
+  bruennimann: person(
+    'matthias.bruennimann',
     'Matthias',
-    'Stürmer',
-    'matthias.stuermer@example.ch',
-    ['SPEAKER'],
-    'fhbern'
+    'Brünnimann',
+    'matthias.bruennimann@example.com',
+    ['SPEAKER']
   ),
   /** Two people with the identical full name; the second username gets `.2`. */
   identicalNames: [
     person('matthias.keller', 'Matthias', 'Keller', 'matthias.keller@example.com'),
-    person('matthias.keller.2', 'Matthias', 'Keller', 'm.keller@example.ch', ['SPEAKER']),
+    person('matthias.keller.2', 'Matthias', 'Keller', 'm.keller@example.com', ['SPEAKER']),
   ] as const,
 };
 
@@ -151,14 +150,14 @@ const moreMatthias = MORE_MATTHIAS.map((lastName, i) =>
     `matthias.${fold(lastName)}`,
     'Matthias',
     lastName,
-    `matthias.${fold(lastName)}@example.${i % 2 === 0 ? 'com' : 'ch'}`,
+    `matthias.${fold(lastName)}@example.com`,
     i % 3 === 0 ? ['SPEAKER'] : ['ATTENDEE']
   )
 );
 
 /** Everyone called "Matthias": more than the default page limit (20). */
 export const namesakes: readonly UserResponse[] = [
-  shapes.stuermer,
+  shapes.bruennimann,
   ...shapes.identicalNames,
   ...moreMatthias,
 ];

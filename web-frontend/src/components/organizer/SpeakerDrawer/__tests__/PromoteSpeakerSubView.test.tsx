@@ -8,7 +8,7 @@
  *
  * Story 17.0d: the real screen with its real children (UserAutocomplete, UserCreateEditModal),
  * hooks and userManagementApi. The MSW harness answers GET /users/search from the
- * production-shaped people (two "Matthias Keller", more than 20 "Matthias", "Stürmer"); what the
+ * production-shaped people (two "Matthias Keller", more than 20 "Matthias", "Brünnimann"); what the
  * picker shows is read from the real autocomplete field.
  */
 import { describe, test, expect } from 'vitest';
@@ -67,8 +67,8 @@ describe('PromoteSpeakerSubView prefill', () => {
   });
 
   // Bug fix 2026-09-09. The prefill used to do `setSelectedUser(users[0])` on the FIRST-NAME
-  // fallback. For "Matthias Stürmer" the full-name search returned nothing (the backend had no
-  // full-name matching, and the frontend double-encoded the umlaut), so the fallback searched
+  // fallback. For a "Matthias" with an umlaut surname the full-name search returned nothing
+  // (the backend had no full-name matching, and the frontend double-encoded the umlaut), so the fallback searched
   // "Matthias", got an arbitrary unordered page of 32 namesakes, and silently pre-selected
   // the wrong Matthias. Pressing Promote then granted SPEAKER + a PRIMARY_SPEAKER session row to
   // the wrong person. An ambiguous fallback must select nobody and say so.
@@ -109,45 +109,45 @@ describe('PromoteSpeakerSubView prefill', () => {
     test('should_selectTheUser_when_theFullNameSearchMatchesExactly', async () => {
       render(
         <PromoteSpeakerSubView
-          speaker={speakerNamed('Matthias Stürmer')}
+          speaker={speakerNamed('Matthias Brünnimann')}
           eventCode="BATbern73"
           onBack={() => {}}
         />
       );
 
-      await waitFor(() => expect(pickerField()).toHaveValue('Matthias Stürmer'));
-      expect(searchedQueries()).toEqual(['Matthias Stürmer']);
+      await waitFor(() => expect(pickerField()).toHaveValue('Matthias Brünnimann'));
+      expect(searchedQueries()).toEqual(['Matthias Brünnimann']);
       expect(screen.queryByTestId('promote-ambiguous-hint')).not.toBeInTheDocument();
     });
 
     test('should_selectTheUser_when_thePoolSpellsTheUmlautOut', async () => {
-      // The pool says "Stuermer"; the backend search folds ü = ue and still finds him.
+      // The pool says "Bruennimann"; the backend search folds ü = ue and still finds him.
       render(
         <PromoteSpeakerSubView
-          speaker={speakerNamed('Matthias Stuermer')}
+          speaker={speakerNamed('Matthias Bruennimann')}
           eventCode="BATbern73"
           onBack={() => {}}
         />
       );
 
-      await waitFor(() => expect(pickerField()).toHaveValue('Matthias Stürmer'));
+      await waitFor(() => expect(pickerField()).toHaveValue('Matthias Brünnimann'));
     });
 
     test('should_selectTheUser_when_theSurnameFallbackReturnsExactlyOne', async () => {
       api.on('searchUsers', ({ query }) =>
-        query.get('query') === 'Stürmer' ? [toSearchResult(shapes.stuermer)] : []
+        query.get('query') === 'Brünnimann' ? [toSearchResult(shapes.bruennimann)] : []
       );
 
       render(
         <PromoteSpeakerSubView
-          speaker={speakerNamed('Matthias Stürmer')}
+          speaker={speakerNamed('Matthias Brünnimann')}
           eventCode="BATbern73"
           onBack={() => {}}
         />
       );
 
-      await waitFor(() => expect(pickerField()).toHaveValue('Matthias Stürmer'));
-      expect(searchedQueries()).toEqual(['Matthias Stürmer', 'Stürmer']);
+      await waitFor(() => expect(pickerField()).toHaveValue('Matthias Brünnimann'));
+      expect(searchedQueries()).toEqual(['Matthias Brünnimann', 'Brünnimann']);
     });
 
     test('should_searchTheSurnameBeforeTheFirstName_when_theFullNameMisses', async () => {
@@ -155,7 +155,7 @@ describe('PromoteSpeakerSubView prefill', () => {
 
       render(
         <PromoteSpeakerSubView
-          speaker={speakerNamed('Matthias Stürmer')}
+          speaker={speakerNamed('Matthias Brünnimann')}
           eventCode="BATbern73"
           onBack={() => {}}
         />
@@ -163,7 +163,7 @@ describe('PromoteSpeakerSubView prefill', () => {
 
       // Surname is far more selective than "Matthias", so it must be tried first.
       await waitFor(() => expect(api.calls('searchUsers')).toHaveLength(3));
-      expect(searchedQueries()).toEqual(['Matthias Stürmer', 'Stürmer', 'Matthias']);
+      expect(searchedQueries()).toEqual(['Matthias Brünnimann', 'Brünnimann', 'Matthias']);
     });
   });
 });

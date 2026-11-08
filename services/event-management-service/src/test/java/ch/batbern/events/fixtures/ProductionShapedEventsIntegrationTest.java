@@ -115,7 +115,8 @@ class ProductionShapedEventsIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(stored).extracting(Registration::getAttendeeLastName)
                 .contains("O’Neill", "王", "Meier", "Keller");
-        assertThat(stored).extracting(Registration::getAttendeeEmail).contains("Anna.Keller@Example.CH");
+        assertThat(stored).extracting(Registration::getAttendeeEmail)
+                .contains("Anna.Keller@Example.COM", "juerg.brunner@bücherstube.example");
         // The two identical "Matthias Keller" are two registrations of two people.
         assertThat(stored.stream().filter(r -> "Keller".equals(r.getAttendeeLastName())
                         && "Matthias".equals(r.getAttendeeFirstName()))
