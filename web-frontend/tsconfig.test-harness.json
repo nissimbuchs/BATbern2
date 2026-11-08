@@ -28,7 +28,10 @@
     "src/test/test-utils.tsx",
     "src/services/api/companyApi.errors.test.ts",
     "src/services/publishingService/publishingService.test.ts",
-    "src/components/auth/ProtectedRoute/ProtectedRoute.test.tsx"
+    "src/components/auth/ProtectedRoute/ProtectedRoute.test.tsx",
+    "src/services/api/partnerApi.test.ts",
+    "src/hooks/useEventManagement/useEventRegistrations.test.tsx",
+    "src/components/organizer/PartnerManagement/CompanyAutocomplete.test.tsx"
   ],
   "exclude": []
 }

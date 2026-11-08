@@ -1,206 +1,126 @@
 /**
- * Partner API Client Tests (Combined from Stories 2.8.1 and 2.8.2)
+ * Partner API Client Tests (Stories 2.8.1, 2.8.2, 2.8.3)
  *
- * TDD tests for Partner API client methods
+ * Every call runs through the real apiClient against the MSW harness (17.0c2): the request is
+ * checked against partners-api, and the test reads what went over the wire (`api.calls`) instead
+ * of the arguments of a spied apiClient. Bodies are typed from the generated partner types.
+ *
  * - Story 2.8.1: Partner Directory (listPartners, getPartnerStatistics)
- * - Story 2.8.2: Partner Detail View (detail, votes, meetings, activity, notes)
- *
- * Test Scenarios:
- * - AC10: API Integration tests for partner list with filters, sort, pagination
- * - AC13: API Integration tests for partner detail, votes, meetings, activity, notes
+ * - Story 2.8.2: Partner Detail View (getPartnerDetail)
+ * - Story 2.8.3: Partner Create/Edit (createPartner, updatePartner, getPartnerContacts)
  */
 
-import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
+import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
+import { HttpResponse } from 'msw';
+import { fetchAuthSession } from 'aws-amplify/auth';
+import { api } from '@/test/msw/api';
+import type { ResponseBody } from '@/test/msw/api';
 import * as partnerApi from './partnerApi';
-import {
-  getPartnerDetail,
-  createPartner,
-  updatePartner,
-  getPartnerContacts,
-} from '@/services/api/partnerApi';
-import apiClient from '@/services/api/apiClient';
-import { AxiosError } from 'axios';
-import MockAdapter from 'axios-mock-adapter';
+import type { PartnerFilters, PartnerResponse } from './partnerApi';
+
+type PartnerList = ResponseBody<'listPartners', 200>;
+
+const gold: PartnerResponse = {
+  companyName: 'mobiliar',
+  partnershipLevel: 'GOLD',
+  partnershipStartDate: '2020-01-01',
+  isActive: true,
+};
+
+const page = (data: PartnerResponse[], pageNo = 0, limit = 20): PartnerList => ({
+  data,
+  metadata: {
+    page: pageNo,
+    limit,
+    totalItems: data.length,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: pageNo > 0,
+  },
+});
+
+const problem = (status: number, message: string) =>
+  HttpResponse.json({ error: 'ERROR', message, status }, { status });
+
+const all: PartnerFilters = { tier: 'all', status: 'all' };
+const byEngagement = { sortBy: 'engagement', sortOrder: 'desc' } as const;
+const firstPage = { page: 0, size: 20 };
+
+/** The `filter` query of the only listPartners call of the test. */
+const sentFilter = () => api.calls('listPartners')[0].query.get('filter');
 
 // ============================================================================
 // Story 2.8.1: Partner Directory Tests
 // ============================================================================
 
 describe('Partner API Client - Story 2.8.1 (Partner Directory)', () => {
-  beforeEach(() => {
-    // Mock apiClient methods to prevent real network calls
-    vi.spyOn(apiClient, 'get').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'post').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'put').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'delete').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe('AC10: Test 10.1 - should_callPartnersAPI_when_listPartnersInvoked', () => {
-    it('should have listPartners method', () => {
-      expect(partnerApi).toHaveProperty('listPartners');
-      expect(typeof partnerApi.listPartners).toBe('function');
+    it('should call GET /partners and return the page the backend sends', async () => {
+      api.on('listPartners', () => page([gold]));
+
+      const result = await partnerApi.listPartners(all, byEngagement, firstPage);
+
+      const calls = api.calls('listPartners');
+      expect(calls).toHaveLength(1);
+      expect(calls[0].method).toBe('GET');
+      expect(result.data).toEqual([gold]);
+      expect(result.metadata.totalItems).toBe(1);
     });
 
-    it('should return a promise when listPartners is called', () => {
-      const filters = { tier: 'all' as const, status: 'all' as const };
-      const sort = { sortBy: 'engagement' as const, sortOrder: 'desc' as const };
-      const pagination = { page: 0, size: 20 };
+    it('should reject with ERR_NETWORK when the partner service is unreachable', async () => {
+      api.on('listPartners', () => HttpResponse.error());
 
-      const promise = partnerApi.listPartners(filters, sort, pagination).catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
-    });
-
-    it('should call GET /partners endpoint', async () => {
-      const filters = { tier: 'all' as const, status: 'all' as const };
-      const sort = { sortBy: 'engagement' as const, sortOrder: 'desc' as const };
-      const pagination = { page: 0, size: 20 };
-
-      // This will fail with network error (expected - backend not running in tests)
-      await expect(partnerApi.listPartners(filters, sort, pagination)).rejects.toThrow();
+      await expect(partnerApi.listPartners(all, byEngagement, firstPage)).rejects.toMatchObject({
+        code: 'ERR_NETWORK',
+      });
     });
   });
 
   describe('AC10: Test 10.2 - should_buildCorrectQueryParams_when_filtersApplied', () => {
     it('should build filter query parameter for tier filter', async () => {
-      const filters = { tier: 'GOLD' as const, status: 'all' as const };
-      const sort = { sortBy: 'engagement' as const, sortOrder: 'desc' as const };
-      const pagination = { page: 0, size: 20 };
+      await partnerApi.listPartners({ tier: 'GOLD', status: 'all' }, byEngagement, firstPage);
 
-      const getSpy = vi.mocked(apiClient.get);
-
-      try {
-        await partnerApi.listPartners(filters, sort, pagination);
-      } catch {
-        // Expected to fail (backend not running), but we can check the call
-      }
-
-      // Verify the API was called with correct path
-      expect(getSpy).toHaveBeenCalledWith(
-        '/partners',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            filter: expect.stringContaining('partnershipLevel:GOLD'),
-          }),
-        })
-      );
+      expect(sentFilter()).toBe('partnershipLevel:GOLD');
     });
 
     it('should build filter query parameter for status filter (active)', async () => {
-      const filters = { tier: 'all' as const, status: 'active' as const };
-      const sort = { sortBy: 'name' as const, sortOrder: 'asc' as const };
-      const pagination = { page: 0, size: 20 };
+      await partnerApi.listPartners({ tier: 'all', status: 'active' }, byEngagement, firstPage);
 
-      const getSpy = vi.mocked(apiClient.get);
-
-      try {
-        await partnerApi.listPartners(filters, sort, pagination);
-      } catch {
-        // Expected to fail
-      }
-
-      expect(getSpy).toHaveBeenCalledWith(
-        '/partners',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            filter: expect.stringContaining('isActive:true'),
-          }),
-        })
-      );
+      expect(sentFilter()).toBe('isActive:true');
     });
 
     it('should build filter query parameter for status filter (inactive)', async () => {
-      const filters = { tier: 'all' as const, status: 'inactive' as const };
-      const sort = { sortBy: 'name' as const, sortOrder: 'asc' as const };
-      const pagination = { page: 0, size: 20 };
+      await partnerApi.listPartners({ tier: 'all', status: 'inactive' }, byEngagement, firstPage);
 
-      const getSpy = vi.mocked(apiClient.get);
-
-      try {
-        await partnerApi.listPartners(filters, sort, pagination);
-      } catch {
-        // Expected to fail
-      }
-
-      expect(getSpy).toHaveBeenCalledWith(
-        '/partners',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            filter: expect.stringContaining('isActive:false'),
-          }),
-        })
-      );
+      expect(sentFilter()).toBe('isActive:false');
     });
 
     it('should combine multiple filters when both tier and status are set', async () => {
-      const filters = { tier: 'PLATINUM' as const, status: 'active' as const };
-      const sort = { sortBy: 'tier' as const, sortOrder: 'desc' as const };
-      const pagination = { page: 0, size: 20 };
-
-      const getSpy = vi.mocked(apiClient.get);
-
-      try {
-        await partnerApi.listPartners(filters, sort, pagination);
-      } catch {
-        // Expected to fail
-      }
-
-      expect(getSpy).toHaveBeenCalledWith(
-        '/partners',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            filter: expect.stringMatching(
-              /partnershipLevel:PLATINUM.*isActive:true|isActive:true.*partnershipLevel:PLATINUM/
-            ),
-          }),
-        })
+      await partnerApi.listPartners(
+        { tier: 'PLATINUM', status: 'active' },
+        { sortBy: 'tier', sortOrder: 'desc' },
+        firstPage
       );
+
+      expect(sentFilter()).toBe('partnershipLevel:PLATINUM,isActive:true');
     });
 
     it('should not include filter parameter when filters are all', async () => {
-      const filters = { tier: 'all' as const, status: 'all' as const };
-      const sort = { sortBy: 'engagement' as const, sortOrder: 'desc' as const };
-      const pagination = { page: 0, size: 20 };
+      await partnerApi.listPartners(all, byEngagement, firstPage);
 
-      const getSpy = vi.mocked(apiClient.get);
-
-      try {
-        await partnerApi.listPartners(filters, sort, pagination);
-      } catch {
-        // Expected to fail
-      }
-
-      const callParams = getSpy.mock.calls[0]?.[1]?.params;
-      expect(callParams).not.toHaveProperty('filter');
+      const { query } = api.calls('listPartners')[0];
+      expect(query.has('filter')).toBe(false);
+      expect(query.get('include')).toBe('company,contacts'); // positive control: params sent
     });
   });
 
   describe('AC10: Test 10.3 - should_includePaginationParams_when_listPartnersInvoked', () => {
     it('should include page and size parameters', async () => {
-      const filters = { tier: 'all' as const, status: 'all' as const };
-      const sort = { sortBy: 'engagement' as const, sortOrder: 'desc' as const };
-      const pagination = { page: 2, size: 50 };
+      await partnerApi.listPartners(all, byEngagement, { page: 2, size: 50 });
 
-      const getSpy = vi.mocked(apiClient.get);
-
-      try {
-        await partnerApi.listPartners(filters, sort, pagination);
-      } catch {
-        // Expected to fail
-      }
-
-      expect(getSpy).toHaveBeenCalledWith(
-        '/partners',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            page: 2,
-            size: 50,
-          }),
-        })
-      );
+      const { query } = api.calls('listPartners')[0];
+      expect(query.get('page')).toBe('2');
+      expect(query.get('size')).toBe('50');
     });
   });
 
@@ -209,74 +129,46 @@ describe('Partner API Client - Story 2.8.1 (Partner Directory)', () => {
     // `sort=name:asc` this test used to pin was ignored by the backend (found by the MSW harness,
     // 17.0c1). Whether the directory gets a backend sort is an open owner decision.
     it('sends no sort parameter, whatever the sort configuration', async () => {
-      const filters = { tier: 'all' as const, status: 'all' as const };
-      const pagination = { page: 0, size: 20 };
-      const getSpy = vi.mocked(apiClient.get);
+      await partnerApi.listPartners(all, { sortBy: 'name', sortOrder: 'asc' }, firstPage);
+      await partnerApi.listPartners(all, byEngagement, firstPage);
 
-      for (const sort of [
-        { sortBy: 'name' as const, sortOrder: 'asc' as const },
-        { sortBy: 'engagement' as const, sortOrder: 'desc' as const },
-      ]) {
-        try {
-          await partnerApi.listPartners(filters, sort, pagination);
-        } catch {
-          // the mocked apiClient answers nothing useful
-        }
-      }
-
-      expect(getSpy).toHaveBeenCalledTimes(2);
-      for (const [, config] of getSpy.mock.calls) {
-        expect((config as { params: Record<string, unknown> }).params).not.toHaveProperty('sort');
-        expect((config as { params: Record<string, unknown> }).params).toMatchObject({
-          include: 'company,contacts',
-        });
+      const calls = api.calls('listPartners');
+      expect(calls).toHaveLength(2);
+      for (const { query } of calls) {
+        expect(query.has('sort')).toBe(false);
+        expect(query.get('include')).toBe('company,contacts');
       }
     });
   });
 
   describe('AC10: Test 10.5 - should_includeHTTPEnrichment_when_listPartnersInvoked', () => {
     it('should include ?include=company,contacts parameter for HTTP enrichment (ADR-004)', async () => {
-      const filters = { tier: 'all' as const, status: 'all' as const };
-      const sort = { sortBy: 'engagement' as const, sortOrder: 'desc' as const };
-      const pagination = { page: 0, size: 20 };
+      await partnerApi.listPartners(all, byEngagement, firstPage);
 
-      const getSpy = vi.mocked(apiClient.get);
-
-      try {
-        await partnerApi.listPartners(filters, sort, pagination);
-      } catch {
-        // Expected to fail
-      }
-
-      expect(getSpy).toHaveBeenCalledWith(
-        '/partners',
-        expect.objectContaining({
-          params: expect.objectContaining({
-            include: 'company,contacts',
-          }),
-        })
-      );
+      expect(api.calls('listPartners')[0].query.get('include')).toBe('company,contacts');
     });
   });
 
   describe('AC11: Test 11.1 - should_callStatisticsAPI_when_getPartnerStatisticsInvoked', () => {
-    it('should have getPartnerStatistics method', () => {
-      expect(partnerApi).toHaveProperty('getPartnerStatistics');
-      expect(typeof partnerApi.getPartnerStatistics).toBe('function');
+    it('should call GET /partners/statistics and return the statistics', async () => {
+      api.on('getPartnerStatistics', () => ({
+        totalPartners: 12,
+        activePartners: 10,
+        tierCounts: { GOLD: 4, SILVER: 6 },
+      }));
+
+      const stats = await partnerApi.getPartnerStatistics();
+
+      expect(api.calls('getPartnerStatistics')).toHaveLength(1);
+      expect(stats).toMatchObject({ totalPartners: 12, activePartners: 10 });
     });
 
-    it('should return a promise when getPartnerStatistics is called', () => {
-      const promise = partnerApi.getPartnerStatistics().catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
-    });
+    it('should reject when the statistics fail', async () => {
+      api.on('getPartnerStatistics', () => problem(500, 'Statistics unavailable'));
 
-    it('should call GET /partners/statistics endpoint', async () => {
-      const getSpy = vi.mocked(apiClient.get);
-
-      // This will fail with network error (expected - backend not running in tests)
-      await expect(partnerApi.getPartnerStatistics()).rejects.toThrow();
-
-      expect(getSpy).toHaveBeenCalledWith('/partners/statistics');
+      await expect(partnerApi.getPartnerStatistics()).rejects.toMatchObject({
+        response: { status: 500 },
+      });
     });
   });
 });
@@ -286,62 +178,33 @@ describe('Partner API Client - Story 2.8.1 (Partner Directory)', () => {
 // ============================================================================
 
 describe('Partner API Client - Story 2.8.2 (Partner Detail View)', () => {
-  beforeEach(() => {
-    // Mock apiClient methods to prevent real network calls
-    vi.spyOn(apiClient, 'get').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'post').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'put').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'delete').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe('getPartnerDetail', () => {
-    // Test 1: should_fetchPartnerDetail_when_companyNameProvided
     it('should_fetchPartnerDetail_when_companyNameProvided', async () => {
-      const companyName = 'GoogleZH';
+      api.on('getPartnerByCompanyName', ({ params }) => ({
+        ...gold,
+        companyName: params.companyName,
+      }));
 
-      // Should attempt to call API (will fail with network/timeout error in test env)
-      await expect(getPartnerDetail(companyName)).rejects.toThrow(
-        /(Network Error|status code 500|timeout|Not implemented)/
-      );
+      const partner = await partnerApi.getPartnerDetail('mobiliar');
+
+      const [call] = api.calls('getPartnerByCompanyName');
+      expect(call.params.companyName).toBe('mobiliar');
+      expect(call.query.has('include')).toBe(false);
+      expect(partner).toMatchObject({ companyName: 'mobiliar', partnershipLevel: 'GOLD' });
     });
 
-    // Test 2: should_includeAllData_when_includeParamUsed
     it('should_includeAllData_when_includeParamUsed', async () => {
-      const companyName = 'GoogleZH';
-      const include = 'company,contacts,votes,meetings,activity';
+      await partnerApi.getPartnerDetail('mobiliar', 'company,contacts');
 
-      // Should attempt to call API with include parameter
-      await expect(getPartnerDetail(companyName, include)).rejects.toThrow(
-        /(Network Error|status code 500|timeout|Not implemented)/
-      );
+      expect(api.calls('getPartnerByCompanyName')[0].query.get('include')).toBe('company,contacts');
     });
 
-    // Test 3: should_handle404_when_partnerNotFound
     it('should_handle404_when_partnerNotFound', async () => {
-      const invalidCompanyName = 'NonExistentCompany';
+      api.on('getPartnerByCompanyName', () => problem(404, 'Partner not found'));
 
-      // Should attempt to call API (will fail in test env)
-      await expect(getPartnerDetail(invalidCompanyName)).rejects.toThrow(
-        /(Network Error|status code 500|status code 404|timeout|Not implemented)/
-      );
-    });
-  });
-
-  describe('API Structure', () => {
-    it('should_haveAllRequiredMethods_when_apiImported', () => {
-      // Verify currently implemented API methods exist
-      expect(getPartnerDetail).toBeDefined();
-    });
-
-    it('should_returnPromises_when_methodsCalled', () => {
-      // All methods should be async functions - catch errors to prevent unhandled rejections
-      const promise1 = getPartnerDetail('test').catch(() => {});
-
-      expect(promise1).toBeInstanceOf(Promise);
+      await expect(partnerApi.getPartnerDetail('unbekannt')).rejects.toMatchObject({
+        response: { status: 404, data: { message: 'Partner not found' } },
+      });
     });
   });
 });
@@ -351,240 +214,161 @@ describe('Partner API Client - Story 2.8.2 (Partner Detail View)', () => {
 // ============================================================================
 
 describe('Partner API Client - Story 2.8.3 (Partner Create/Edit)', () => {
-  beforeEach(() => {
-    // Mock apiClient methods to prevent real network calls
-    vi.spyOn(apiClient, 'get').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'post').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'put').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'patch').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-    vi.spyOn(apiClient, 'delete').mockRejectedValue(new AxiosError('Network Error', 'ERR_NETWORK'));
-  });
-
-  afterEach(() => {
-    vi.restoreAllMocks();
-  });
-
   describe('createPartner', () => {
-    it('should_callCreatePartnerAPI_when_createPartnerCalled', async () => {
+    it('should_returnCreatedPartner_when_apiReturnsSuccess', async () => {
       const request = {
-        companyName: 'test-company',
+        companyName: 'brunnimann',
         partnershipLevel: 'GOLD' as const,
         partnershipStartDate: '2025-01-01',
         partnershipEndDate: '2025-12-31',
       };
+      api.on('createPartner', ({ body }) => ({ ...body!, isActive: true }), { status: 201 });
 
-      // Expect network/server/timeout error (not "Not implemented" error)
-      // This confirms the actual API call is being made
-      await expect(partnerApi.createPartner(request)).rejects.toThrow(
-        /(Network Error|status code 500|timeout|status code 404)/
-      );
+      const result = await partnerApi.createPartner(request);
+
+      const [call] = api.calls('createPartner');
+      expect(call.method).toBe('POST');
+      expect(call.body).toEqual(request);
+      expect(result).toEqual({ ...request, isActive: true });
     });
 
-    it('should_validateRequiredFields_when_createPartnerCalled', async () => {
+    it('should_sendOnlyRequiredFields_when_noEndDate', async () => {
       const request = {
-        companyName: 'test-company',
+        companyName: 'brunnimann',
         partnershipLevel: 'BRONZE' as const,
         partnershipStartDate: '2025-01-01',
       };
 
-      // Should attempt API call with valid required fields
-      await expect(partnerApi.createPartner(request)).rejects.toThrow(
-        /(Network Error|status code 500|timeout|status code 404)/
-      );
+      await partnerApi.createPartner(request);
+
+      expect(api.calls('createPartner')[0].body).toEqual(request);
+    });
+
+    it('should_handleConflictError_when_partnershipExists', async () => {
+      api.on('createPartner', () => problem(409, 'Partnership already exists'));
+
+      await expect(
+        partnerApi.createPartner({
+          companyName: 'mobiliar',
+          partnershipLevel: 'GOLD',
+          partnershipStartDate: '2025-01-01',
+        })
+      ).rejects.toMatchObject({ response: { status: 409 } });
     });
   });
 
   describe('updatePartner', () => {
-    it('should_callUpdatePartnerAPI_when_updatePartnerCalled', async () => {
-      const companyName = 'test-company';
-      const request = {
-        partnershipLevel: 'PLATINUM' as const,
-        partnershipEndDate: '2026-12-31',
-        isActive: true,
-      };
+    it('should_returnUpdatedPartner_when_apiReturnsSuccess', async () => {
+      const request = { partnershipLevel: 'PLATINUM' as const, partnershipEndDate: '2026-12-31' };
+      api.on('updatePartner', ({ body, params }) => ({
+        ...gold,
+        companyName: params.companyName,
+        ...body,
+      }));
 
-      // Expect network/server/timeout error (not "Not implemented" error)
-      await expect(partnerApi.updatePartner(companyName, request)).rejects.toThrow(
-        /(Network Error|status code 500|timeout|status code 404)/
-      );
+      const result = await partnerApi.updatePartner('mobiliar', request);
+
+      const [call] = api.calls('updatePartner');
+      expect(call.method).toBe('PATCH');
+      expect(call.params.companyName).toBe('mobiliar');
+      expect(call.body).toEqual(request);
+      expect(result).toMatchObject({ companyName: 'mobiliar', partnershipLevel: 'PLATINUM' });
     });
 
     it('should_updatePartialFields_when_updatePartnerCalled', async () => {
-      const companyName = 'test-company';
-      const request = {
-        partnershipLevel: 'SILVER' as const,
-      };
+      await partnerApi.updatePartner('mobiliar', { partnershipLevel: 'SILVER' });
 
-      // Should allow partial updates
-      await expect(partnerApi.updatePartner(companyName, request)).rejects.toThrow(
-        /(Network Error|status code 500|timeout|status code 404)/
-      );
-    });
-  });
-
-  describe('error handling', () => {
-    it('should_handleConflictError_when_partnershipExists', async () => {
-      const request = {
-        companyName: 'existing-company',
-        partnershipLevel: 'GOLD' as const,
-        partnershipStartDate: '2025-01-01',
-      };
-
-      // In production, conflict errors would be 409
-      // In test environment, we expect network/server error since backend is unavailable
-      await expect(partnerApi.createPartner(request)).rejects.toThrow(
-        /(Network Error|status code 500|timeout|status code 404|status code 409)/
-      );
-    });
-  });
-
-  describe('createPartner - success path', () => {
-    it('should_returnCreatedPartner_when_apiReturnsSuccess', async () => {
-      const request = {
-        companyName: 'new-partner',
-        partnershipLevel: 'GOLD' as const,
-        partnershipStartDate: '2025-01-01',
-      };
-
-      const mockResponse = {
-        companyName: 'new-partner',
-        partnershipLevel: 'GOLD',
-        partnershipStartDate: '2025-01-01',
-        isActive: true,
-      };
-
-      vi.mocked(apiClient.post).mockResolvedValueOnce({ data: mockResponse });
-
-      const result = await createPartner(request);
-
-      expect(result).toEqual(mockResponse);
-      expect(apiClient.post).toHaveBeenCalledWith('/partners', request);
-    });
-  });
-
-  describe('updatePartner - success path', () => {
-    it('should_returnUpdatedPartner_when_apiReturnsSuccess', async () => {
-      const companyName = 'existing-partner';
-      const request = {
-        partnershipLevel: 'PLATINUM' as const,
-        isActive: true,
-      };
-
-      const mockResponse = {
-        companyName: 'existing-partner',
-        partnershipLevel: 'PLATINUM',
-        isActive: true,
-      };
-
-      vi.mocked(apiClient.patch).mockResolvedValueOnce({ data: mockResponse });
-
-      const result = await updatePartner(companyName, request);
-
-      expect(result).toEqual(mockResponse);
-      expect(apiClient.patch).toHaveBeenCalledWith('/partners/existing-partner', request);
+      expect(api.calls('updatePartner')[0].body).toEqual({ partnershipLevel: 'SILVER' });
     });
   });
 
   describe('getPartnerContacts', () => {
     it('should_fetchContacts_when_companyNameProvided', async () => {
-      const companyName = 'GoogleZH';
-      const mockContacts = [
-        { id: 'contact-1', firstName: 'John', lastName: 'Doe', email: 'john@google.ch' },
-        { id: 'contact-2', firstName: 'Jane', lastName: 'Smith', email: 'jane@google.ch' },
+      const contacts = [
+        {
+          username: 'hong.an',
+          firstName: 'Hông',
+          lastName: 'Ân',
+          email: 'hong.an@example.com',
+        },
+        {
+          username: 'matthias.keller',
+          firstName: 'Matthias',
+          lastName: 'Keller',
+          email: 'Matthias.Keller@example.com',
+        },
       ];
+      api.on('getPartnerContacts', () => contacts);
 
-      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: mockContacts });
+      const result = await partnerApi.getPartnerContacts('mobiliar');
 
-      const result = await getPartnerContacts(companyName);
-
-      expect(result).toEqual(mockContacts);
-      expect(result).toHaveLength(2);
-      expect(apiClient.get).toHaveBeenCalledWith('/partners/GoogleZH/contacts');
+      expect(api.calls('getPartnerContacts')[0].params.companyName).toBe('mobiliar');
+      expect(result).toEqual(contacts);
     });
 
     it('should_returnEmptyArray_when_noContactsFound', async () => {
-      vi.mocked(apiClient.get).mockResolvedValueOnce({ data: [] });
+      api.on('getPartnerContacts', () => []);
 
-      const result = await getPartnerContacts('no-contacts-company');
-
-      expect(result).toEqual([]);
-      expect(apiClient.get).toHaveBeenCalledWith('/partners/no-contacts-company/contacts');
+      expect(await partnerApi.getPartnerContacts('ohnekontakt')).toEqual([]);
+      expect(api.calls('getPartnerContacts')[0].params.companyName).toBe('ohnekontakt');
     });
 
     it('should_throwError_when_partnerNotFound', async () => {
-      vi.mocked(apiClient.get).mockRejectedValueOnce(
-        new AxiosError('Not Found', 'ERR_BAD_REQUEST', undefined, undefined, {
-          status: 404,
-          data: { message: 'Partner not found' },
-          statusText: 'Not Found',
-          headers: {},
-          config: {} as never,
-        })
-      );
+      api.on('getPartnerContacts', () => problem(404, 'Partner not found'));
 
-      await expect(getPartnerContacts('NonExistentCompany')).rejects.toThrow();
-    });
-  });
-
-  describe('API Structure', () => {
-    it('should have all required mutation methods', () => {
-      expect(partnerApi.createPartner).toBeDefined();
-      expect(typeof partnerApi.createPartner).toBe('function');
-      expect(partnerApi.updatePartner).toBeDefined();
-      expect(typeof partnerApi.updatePartner).toBe('function');
-      expect(partnerApi.getPartnerContacts).toBeDefined();
-      expect(typeof partnerApi.getPartnerContacts).toBe('function');
+      await expect(partnerApi.getPartnerContacts('unbekannt')).rejects.toMatchObject({
+        response: { status: 404 },
+      });
     });
   });
 });
 
 // ============================================================================
+// Public partner list and the partner's own company
 // ============================================================================
 
 describe('Partner API Client (moved calls)', () => {
-  let http: MockAdapter;
-  let skipAuth: string[];
-  let interceptorId: number;
-
+  // A signed-in browser: a Cognito key in storage, and Amplify (the boundary) hands out a token.
   beforeEach(() => {
-    http = new MockAdapter(apiClient);
-    skipAuth = [];
-    // The request interceptor strips the Skip-Auth marker before the adapter sees it; this
-    // one runs first (axios runs the last-added request interceptor first).
-    interceptorId = apiClient.interceptors.request.use((config) => {
-      if (config.headers?.['Skip-Auth'] === 'true') skipAuth.push(config.url ?? '');
-      return config;
-    });
+    localStorage.setItem('CognitoIdentityServiceProvider.test.LastAuthUser', 'anna.keller');
+    vi.mocked(fetchAuthSession).mockResolvedValue({
+      tokens: { idToken: { toString: () => 'id-token-of-anna' } },
+    } as never);
   });
-
   afterEach(() => {
-    apiClient.interceptors.request.eject(interceptorId);
-    http.restore();
+    localStorage.clear();
+    vi.mocked(fetchAuthSession).mockReset();
   });
 
   it('should_listActivePartnersWithoutAuth_when_listPublicPartners', async () => {
-    const page = { data: [{ companyName: 'acme' }], pagination: { totalItems: 1 } };
-    http.onGet('/partners').reply(200, page);
+    api.on('listPartners', () => page([gold], 0, 100));
 
-    await expect(partnerApi.listPublicPartners()).resolves.toEqual(page);
-    expect(http.history.get[0].params).toEqual({
-      page: 0,
-      size: 100,
+    await expect(partnerApi.listPublicPartners()).resolves.toEqual(page([gold], 0, 100));
+
+    const [{ query, request }] = api.calls('listPartners');
+    expect(Object.fromEntries(query)).toEqual({
+      page: '0',
+      size: '100',
       include: 'company',
       filter: 'isActive:true',
     });
-    expect(skipAuth).toEqual(['/partners']);
+    // The Skip-Auth marker never leaves the browser, and neither does the token.
+    expect(request.headers.has('Skip-Auth')).toBe(false);
+    expect(request.headers.has('Authorization')).toBe(false);
   });
 
-  it('should_returnCompany_when_getMyPartnerCompany', async () => {
-    http.onGet('/partners/me').reply(200, { companyName: 'acme' });
+  it('should_returnCompany_when_getMyPartnerCompany (signed in, with the token)', async () => {
+    api.on('getMyPartnerCompany', () => ({ companyName: 'mobiliar' }));
 
-    await expect(partnerApi.getMyPartnerCompany()).resolves.toEqual({ companyName: 'acme' });
-    expect(skipAuth).toEqual([]);
+    await expect(partnerApi.getMyPartnerCompany()).resolves.toEqual({ companyName: 'mobiliar' });
+    // Positive control for the test above: a normal call carries the token.
+    expect(api.calls('getMyPartnerCompany')[0].request.headers.get('Authorization')).toBe(
+      'Bearer id-token-of-anna'
+    );
   });
 
   it('should_passErrorThrough_when_getMyPartnerCompanyFails', async () => {
-    http.onGet('/partners/me').reply(404);
+    api.on('getMyPartnerCompany', () => problem(404, 'No partner company'));
 
     await expect(partnerApi.getMyPartnerCompany()).rejects.toMatchObject({
       response: { status: 404 },
