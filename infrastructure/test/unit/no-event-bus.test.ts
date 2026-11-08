@@ -34,6 +34,8 @@ describe('No event bus (Story 17.2 part B)', () => {
     process.env.ENVIRONMENT = 'staging';
     process.env.CDK_DEFAULT_ACCOUNT = stagingConfig.account;
     process.env.CDK_OUTDIR = outdir;
+    // CI sets CI=true, and then the services need a pre-built image tag (container-image-helper).
+    process.env.IMAGE_TAG = 'test-image-tag';
     // The app logs its target account and CDK reports template warnings; neither matters here.
     const quiet = (['log', 'warn', 'error'] as const).map((level) =>
       jest.spyOn(console, level).mockImplementation(() => undefined)
