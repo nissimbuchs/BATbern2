@@ -7,7 +7,7 @@
  * - Sort options
  */
 
-import React from 'react';
+import React, { useId } from 'react';
 import {
   Paper,
   Typography,
@@ -28,6 +28,10 @@ export interface TopicFilterPanelProps {
 
 export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onFilterChange }) => {
   const { t } = useTranslation('organizer');
+  const idPrefix = useId();
+  const categoryLabelId = `${idPrefix}-category-label`;
+  const statusLabelId = `${idPrefix}-status-label`;
+  const sortLabelId = `${idPrefix}-sort-label`;
 
   const handleCategoryChange = (event: SelectChangeEvent<string>) => {
     onFilterChange({ category: event.target.value || undefined });
@@ -52,8 +56,11 @@ export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onF
       <Box sx={{ display: 'flex', flexDirection: 'column', gap: 2, mt: 2 }}>
         {/* Category Filter */}
         <FormControl fullWidth size="small">
-          <InputLabel>{t('topicBacklog.filters.category', 'Category')}</InputLabel>
+          <InputLabel id={categoryLabelId}>
+            {t('topicBacklog.filters.category', 'Category')}
+          </InputLabel>
           <Select
+            labelId={categoryLabelId}
             value={filters.category || ''}
             onChange={handleCategoryChange}
             label={t('topicBacklog.filters.category', 'Category')}
@@ -82,8 +89,9 @@ export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onF
 
         {/* Status Filter (AC3 - Color-coded freshness) */}
         <FormControl fullWidth size="small">
-          <InputLabel>{t('common:labels.status')}</InputLabel>
+          <InputLabel id={statusLabelId}>{t('common:labels.status')}</InputLabel>
           <Select
+            labelId={statusLabelId}
             value={filters.status || ''}
             onChange={handleStatusChange}
             label={t('common:labels.status')}
@@ -105,8 +113,9 @@ export const TopicFilterPanel: React.FC<TopicFilterPanelProps> = ({ filters, onF
 
         {/* Sort Options */}
         <FormControl fullWidth size="small">
-          <InputLabel>{t('common:labels.sortBy', 'Sort By')}</InputLabel>
+          <InputLabel id={sortLabelId}>{t('common:labels.sortBy', 'Sort By')}</InputLabel>
           <Select
+            labelId={sortLabelId}
             value={filters.sort || '-stalenessScore'}
             onChange={handleSortChange}
             label={t('common:labels.sortBy', 'Sort By')}
