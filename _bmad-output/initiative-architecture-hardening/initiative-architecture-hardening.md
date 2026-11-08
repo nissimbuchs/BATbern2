@@ -53,6 +53,7 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - R22 (owner 2026-11-08, PRD "Not stories yet"): after 17.11, the purposes profile-picture, event-photo, teaser-image and session-material (organizer and speaker portal) run on `/api/v1/uploads/{purpose}` in production, one story each, and their old presign, confirm and upload-from-url operations are gone.
 - R23 (owner 2026-11-08, API conventions III): the notification state changes are PATCH operations, the AI prompt reset deletes the override, session batch import is a bulk create, no path carries an e-mail address (additional e-mails), event types sit at `/event-types`, recent photos and the cross-event registrations list sit outside `/events/{literal}`, and get-or-create uses the slash form (ADR-013 §2).
 - R24 (owner 2026-11-08, ADR-013 §1): the event lifecycle (publish, phase publish and unpublish, auto-publish schedule, workflow transition) has one transition idiom in the specs, the other operations folded into it, and publishing still reaches the public site.
+- R25 (owner 2026-11-08, 17.3c, ADR-006): frontend types of API payloads come from `src/types/generated/`. A required CI check fails a new hand-written `export interface` or object-literal `export type` whose name equals a generated schema; aliases of the generated schema pass. Its baseline only shrinks, and every line names its owning story or a reason.
 
 ## Constraints
 
@@ -74,7 +75,7 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 
 ## Done when
 
-- Every gate the initiative adds (mock ratchet, S2S contract tests, MSW validator, FE path contract check, Spectral, ArchUnit) runs in a required CI job on `develop`.
+- Every gate the initiative adds (mock ratchet, S2S contract tests, MSW validator, FE path contract check, generated-types check, Spectral, ArchUnit) runs in a required CI job on `develop`.
 - Production runs three services and no EventBridge bus, and the 6 orphan operations and the 16.8c endpoints answer 404 (checked live).
 - The ArchUnit store holds zero EMS→PCS and zero CUMS→EMS client dependencies, and every S2S call goes through `/internal`.
 - The frontend layer baseline (`web-frontend/scripts/api-layer-baseline.txt`) is empty, or each remaining line says why.
@@ -118,3 +119,4 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - Decision: 2026-11-08, owner. The frontend calls 17.3 froze move into the service layer, baseline to zero where possible: entry 3b in epic 1, built right after 17.5.
 - Decision: 2026-11-08, owner. Every line of the 17.4 Spectral baseline names its owning story or an owner-accepted exception; all proposed exception classes accepted. The 20 lines no story owned (beside the 2 Watch API lines, owner still deciding) become backlog entries in epic 4: 11a to 11d (upload purposes profile-picture, event-photo, teaser-image, session-material) and 10b (API conventions III). New R22 and R23; Boundaries and Done when follow.
 - Decision: 2026-11-08, owner. Backlog story 9b in epic 4, one transition idiom for the event lifecycle (ADR-013 §1), after 17.9; new R24.
+- Decision: 2026-11-08, owner. Entry 3c in epic 1 (PRD 17.3c): a gate against hand-written copies of generated API types, from the last item of `deferred-work.md`; new R25. Built before 17.6: epic 3's wait on epic 1 names it.

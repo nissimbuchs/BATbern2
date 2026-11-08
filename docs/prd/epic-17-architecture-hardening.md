@@ -99,8 +99,9 @@ Protective and cheap first, then decoupling, then restructuring.
 | 17.4 | OpenAPI lint and spec-diff report | 17.1 | gate |
 | 17.5 | ArchUnit freeze and first wall fixes | – | gate + dev |
 | 17.3b | Frontend HTTP calls moved into the service layer | 17.3 | dev |
+| 17.3c | Gate against hand-written copies of generated API types (ADR-006) | 17.3b | gate + dev |
 | *16.8c* | *Mail Center consolidation (stays in Epic 16)* | *17.1* | *dev* |
-| 17.6 | Service-to-service calls via `/internal` | 17.4, **17.0a, 17.0b** | dev |
+| 17.6 | Service-to-service calls via `/internal` | 17.4, 17.3c, **17.0a, 17.0b** | dev |
 | 17.7 | User-reference contract and request pull | 17.6 | dev |
 | 17.8 | EMS↔PCS direction | 17.6 | dev |
 | 17.9 | API conventions I (breaking) | 17.4, **17.0c, 17.0d** | dev |
@@ -115,7 +116,7 @@ Protective and cheap first, then decoupling, then restructuring.
 | 17.15 | Mail core / mail center split | 17.12, 16.8c | dev |
 | 17.16 | Event-core extension points | 17.12 | dev |
 
-**27 stories** (17.0a–d, 17.1–17.16, 17.3b, 17.9b, 17.10b, 17.11a–d); 17.12 is a design task. 17.1–17.5 do not wait for 17.0a–d and
+**28 stories** (17.0a–d, 17.1–17.16, 17.3b, 17.3c, 17.9b, 17.10b, 17.11a–d); 17.12 is a design task. 17.1–17.5 do not wait for 17.0a–d and
 can run alongside them; 17.1, 17.2, 17.5 and 17.0a have no dependencies. 17.6 to 17.11 can run in
 parallel once their dependencies are in, as long as only one PR is open at a time. Winston's estimate
 (not measured): 17.0a–d are about 5–6 stories of work, so 17.0b and 17.0c may each split into two

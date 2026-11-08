@@ -2,7 +2,7 @@
 type: epic
 title: "Dead surface removed, gates in place"
 parent: initiative-architecture-hardening
-covers: [R5, R6, R7, R8, R9, R10]
+covers: [R5, R6, R7, R8, R9, R10, R25]
 sources: []
 companions: []
 after: []
@@ -14,11 +14,11 @@ risk: high
 
 ## Description
 
-Removes what nothing calls and puts the gates in place that every later epic measures against. The two reference specs, six orphan operations and the frontend publish-preview chain go (17.1). The two stub services and the EventBridge bus leave production (17.2). The old compose endpoints of the Mail Center go (16.8c). The FE path contract check (17.3), Spectral with a baseline (17.4) and the ArchUnit freeze (17.5) run in required CI jobs. The gate stories also clean up: 17.5 moves the EMS classes that sit outside their module, and the frontend calls that 17.3 froze move into the service layer (3b).
+Removes what nothing calls and puts the gates in place that every later epic measures against. The two reference specs, six orphan operations and the frontend publish-preview chain go (17.1). The two stub services and the EventBridge bus leave production (17.2). The old compose endpoints of the Mail Center go (16.8c). The FE path contract check (17.3), Spectral with a baseline (17.4) and the ArchUnit freeze (17.5) run in required CI jobs. The gate stories also clean up: 17.5 moves the EMS classes that sit outside their module, and the frontend calls that 17.3 froze move into the service layer (3b). A fourth gate (3c) fails new hand-written copies of generated API types and replaces the copies an alias can replace.
 
 ## Outcome
 
-The owner and every later story get a smaller platform, a cleaner EMS and frontend, and three gates with committed baselines. The signal is that the operation count, the running ECS services and the event buses fall as measured, that each gate fails a fixture violation in CI, and that the ArchUnit store and the frontend layer baseline end smaller than their first freeze.
+The owner and every later story get a smaller platform, a cleaner EMS and frontend, and four gates with committed baselines. The signal is that the operation count, the running ECS services and the event buses fall as measured, that each gate fails a fixture violation in CI, and that the ArchUnit store and the frontend layer baseline end smaller than their first freeze.
 
 ## Requirements
 
@@ -28,6 +28,7 @@ The owner and every later story get a smaller platform, a cleaner EMS and fronte
 - R4 (parent R8): Spectral, with a repo ruleset and a violation baseline, fails a PR only on new convention violations. Every added operation gets a comment naming its 3 nearest existing operations.
 - R5 (parent R9): ArchUnit runs in the test task of CUMS and EMS (not PCS, owner 2026-11-08). The EMS package rules and the no-downstream-client rule are frozen, and the store can only shrink. Violations that need no 17.12 design or cross-service change are fixed in 17.5, and every group left in the store names the story that removes it.
 - R6 (parent R10): the old compose components and the old preview, send and history endpoints and specs are deleted, including newsletter status and retry. Every organizer send goes through `/events/{c}/mails`.
+- R7 (parent R25): a required CI check beside the FE path contract check fails a new hand-written `export interface` or object-literal `export type` whose name equals a generated schema; aliases pass. Its baseline only shrinks, and every line names its owning story or a reason.
 
 ## Constraints
 
@@ -45,6 +46,7 @@ The owner and every later story get a smaller platform, a cleaner EMS and fronte
 - The FE path contract check, Spectral and ArchUnit each run in a required CI job and fail on a fixture violation. Their baselines are committed, with their sizes recorded.
 - The EMS ArchUnit store after 17.5 is smaller than its first freeze, with before and after per rule, and holds only the groups whose owning story is named: `NewsletterEmailService` and `SlidesOnlineEmailService` (16.8c, 17.15), the EMS PCS clients (17.8), the CUMS clients (17.6, 17.7).
 - The frontend layer baseline is empty after 3b, and the allow-list is no larger than after 17.3.
+- The generated-types check (3c) runs in the build-frontend job and fails a fixture copy; its baseline after 3c is smaller than its start count, every line owned.
 - Each story reached production through its own PR (or a batch the owner agreed) and was verified there.
 
 ## Boundaries
@@ -52,11 +54,11 @@ The owner and every later story get a smaller platform, a cleaner EMS and fronte
 - In: every gate story fixes what its gate shows when the fix lies inside one service and needs no later design. 17.5 moves the inbound mail chain, the retention schedulers and the dev mail controller into `forwarding` / `mailcenter`, `JwtStompInterceptor` into `security`, `ModeratorReplyAddress` into `mailcenter/render`, and the mail-center exception handlers out of `GlobalExceptionHandler`. 3b moves the frozen frontend calls into `services/`.
 - Out: violations whose fix needs a later story's design or a cross-service change: the mail-core split (17.12, 17.15), the EMS PCS clients (17.8), the CUMS clients (17.6, 17.7), and Spectral entries whose fix is a breaking API change owned by epics 3 and 4 (C4). The mock ratchet is epic 2.
 - Out: the CDK and ECS parts of the stubs in 17.1; they belong to 17.2.
-- Hands on: 17.3's spec matcher to epic 2 (17.0c); the remaining Spectral baseline and ArchUnit store groups to the stories named for them in epics 3, 4 and 5.
+- Hands on: 17.3's spec matcher to epic 2 (17.0c); the 3c generated-types baseline groups to 16.8c and 17.10; the remaining Spectral baseline and ArchUnit store groups to the stories named for them in epics 3, 4 and 5.
 
 ## References
 
-- parent — `_bmad-output/initiative-architecture-hardening/initiative-architecture-hardening.md`, section Requirements (R5, R6, R7, R8, R9, R10), Constraints, Notes (Decision lines)
+- parent — `_bmad-output/initiative-architecture-hardening/initiative-architecture-hardening.md`, section Requirements (R5, R6, R7, R8, R9, R10, R25), Constraints, Notes (Decision lines)
 - prd — `docs/prd/epic-17-architecture-hardening.md`, Rules for every story, Story order, Stories 17.1 to 17.5
 - story — `_bmad-output/implementation-artifacts/16-8-shared-composer.md`, Part 16.8c, AC18, Dev Notes "Endpoints retired in 16.8c" (v6 archive, covers 16.8a to c)
 
@@ -81,3 +83,6 @@ The owner and every later story get a smaller platform, a cleaner EMS and fronte
 - Decision: 2026-11-08, owner. Every line of the 17.4 Spectral baseline names its owning story or is an owner-accepted ADR-003 exception, enforced by `api-lint` through an owner file beside the baseline; groups no story covers become backlog stories.
 - Decision: 2026-11-08, owner. R5 (parent R9) narrowed to CUMS and EMS: PCS is the most downstream service and has nothing to freeze.
 - Decision: 2026-11-08, set check. 3b gets no wait on 2.0a: the ratchet only forbids new own-code mocks, and 3b's entry says its tests stub HTTP at the boundary. If 0a merges first, 3b's PR runs under it; if not, 0a's baseline is generated after 3b and is no larger.
+- Decision: 2026-11-08, owner. New entry 3c (PRD 17.3c), a gate against hand-written copies of generated API types, from the last item of `deferred-work.md`; new R7 (parent R25). Built before 17.6: it waits on 3b (3b moved the copies into the service layer, and both edit the same service files), and epic 3's wait on epic 1 in the initiative breakdown names it.
+- Decision: 2026-11-08, set check. 168c waits on 3c: 3c's baseline lists the 10 hand-written types in `newsletterService.ts` that 168c deletes, so 168c removes those lines; 3c first keeps the gate early, as the owner asked.
+- Assumption: 2026-11-08. The before-17.6 order is declared in epic 3's `after` on epic 1 in the initiative breakdown; when epic 3 is sliced, 17.6's entry gets `after` including `1.3c` so `tickets.py` gates it.

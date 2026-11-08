@@ -85,13 +85,25 @@ risk = "medium"
 notes = ["Owner 2026-11-08: move these calls into the service layer and shrink the baseline to zero where possible; built right after 17.5."]
 
 [[entry]]
+id = "3c"
+type = "story"
+title = "Frontend gate against hand-written copies of generated API types"
+description = "17.3c (owner 2026-11-08): a check beside check:api-paths (a new script name such as check:api-type-copies; check:api-types already exists for the freshness of the generated files), in the same required build-frontend job, fails any NEW `export interface`, or `export type` with an object literal, under web-frontend/src whose name equals a schema name in src/types/generated/ (ADR-006; project-context already forbids the copies, and 17.3b still moved some into the service layer). Aliases such as `export type X = components['schemas']['X']` pass. A committed baseline may only shrink: NEW and STALE both fail, as in scripts/test-ratchet.ts and scripts/api-lint.ts; every baseline line names its owning story or a reason, through an owner file like api-lint-owners.txt. Leave it cleaner (C15): the true copies that an alias replaces without changing callers are replaced in this story; name matches that are not copies (a different shape for the same name) are renamed or listed with the reason; the rest stay frozen with their owning story named (e.g. 16.8c for the newsletter types it deletes, 17.10 for the user and speaker paths). Unit tests for the script cover new, stale, alias and object-literal cases, like check-api-paths.test.ts."
+verify = "A fixture `export interface` named after a generated schema fails the build-frontend check, an alias of the same name passes, and removing a type still on the baseline fails as STALE; develop passes with the committed baseline, every line owned; the start count (measured 2026-11-08 by name match: 75 interfaces in 20 files; the deferred-work count was 71) and the end count are recorded in the plan, the end count lower; type-check, lint and the tests of the touched files pass."
+covers = ["R7"]
+after = ["3b"]
+hitl = false
+risk = "low"
+notes = ["Owner 2026-11-08: built before 17.6 (epic 3 waits on it in the initiative breakdown), so the S2S moves and the breaking API stories run under the gate.", "Not name matches today, so neither baseline nor allow-list needs them: FileUploadPresignedUrl (src/types/fileUpload.types.ts, the upload hook's cross-purpose contract) and CompanySession / CompanySessionSpeaker (sessionApiClient.ts; GET /sessions has no response schema in the spec). If the gate is widened beyond name matches, they go on the allow-list with these reasons.", "Source: deferred-work.md, last item (v7 quality review 2026-11-08)."]
+
+[[entry]]
 id = "168c"
 type = "story"
 title = "Mail Center composer clean-up"
-description = "16.8c: deletes the old compose components and the retired preview, send, history, status and retry endpoints with their specs, types and Bruno files; every send stays on /events/{c}/mails. Takes over from 17.1: the slides-online 409 coverage that 17.1 moved onto /registrant-notices/send moves on to /events/{c}/mails."
-verify = "Each retired path answers 404 in production, newsletter, registrant, speaker and venue sends work from the Mail Center composer on local dev (/dev/mails), and the Spectral baseline and the EMS ArchUnit store lose the lines of the deleted operations and send paths (before and after recorded)."
+description = "16.8c: deletes the old compose components and the retired preview, send, history, status and retry endpoints with their specs, types and Bruno files; every send stays on /events/{c}/mails, and the hand-written types it deletes leave the 3c generated-types baseline. Takes over from 17.1: the slides-online 409 coverage that 17.1 moved onto /registrant-notices/send moves on to /events/{c}/mails."
+verify = "Each retired path answers 404 in production, newsletter, registrant, speaker and venue sends work from the Mail Center composer on local dev (/dev/mails), and the Spectral baseline, the EMS ArchUnit store and the 3c generated-types baseline lose the lines of the deleted operations, send paths and newsletter types (before and after recorded)."
 covers = ["R6"]
-after = [1, 3, 4]
+after = [1, 3, 4, "3c"]
 hitl = false
 risk = "medium"
 references = ["_bmad-output/implementation-artifacts/16-8-shared-composer.md"]
@@ -104,6 +116,6 @@ title = "Refactor sweep"
 description = "Clean-up only, scoped at its start from the plans and review findings this epic deferred."
 verify = "The deferred items listed at its start are closed or moved to a new story, and CI on develop is green."
 covers = []
-after = [1, 3, 2, "2b", 4, 5, "3b", "168c"]
+after = [1, 3, 2, "2b", 4, 5, "3b", "3c", "168c"]
 hitl = false
 risk = "low"
