@@ -2073,6 +2073,12 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '422':
+          description: The event's content is not ready for this phase (PublishingEngineController).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishValidationError'
       security:
         - BearerAuth: []
 
@@ -2418,6 +2424,9 @@ components:
           type: boolean
     ValidationStatus:
       type: object
+      required:
+        - isValid
+        - errors
       properties:
         isValid:
           type: boolean
@@ -2434,6 +2443,12 @@ components:
           type: string
     SessionValidationStatus:
       type: object
+      required:
+        - isValid
+        - errors
+        - assignedCount
+        - totalCount
+        - unassignedSessions
       properties:
         isValid:
           type: boolean
@@ -2451,9 +2466,16 @@ components:
             $ref: '#/components/schemas/UnassignedSession'
     PublishingStatusResponse:
       type: object
+      required:
+        - publishedPhases
+        - topic
+        - speakers
+        - sessions
       properties:
         currentPhase:
           type: string
+          nullable: true
+          description: The phase published last (topic, speakers, agenda); null before the first.
         publishedPhases:
           type: array
           items:
@@ -2464,6 +2486,27 @@ components:
           $ref: '#/components/schemas/ValidationStatus'
         sessions:
           $ref: '#/components/schemas/SessionValidationStatus'
+    PublishValidationError:
+      type: object
+      description: 422 of publishPhase, the reasons the phase cannot be published yet.
+      properties:
+        error:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+        validationErrors:
+          type: array
+          items:
+            type: object
+            properties:
+              sessionSlug:
+                type: string
+                nullable: true
+              field:
+                type: string
+              message:
+                type: string
     AutoPublishScheduleRequest:
       type: object
       properties:

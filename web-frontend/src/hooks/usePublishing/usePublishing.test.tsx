@@ -28,16 +28,10 @@ describe('usePublishing', () => {
   describe('publishPhase', () => {
     it('should publish phase successfully', async () => {
       const mockPublishResponse = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        eventCode: 'BATbern142',
-        versionNumber: 1,
-        publishedPhase: 'TOPIC',
+        phase: 'topic',
+        published: true,
         publishedAt: '2025-01-15T10:00:00Z',
-        publishedBy: 'john.doe',
-        cdnInvalidationId: 'INV123',
-        cdnInvalidationStatus: 'PENDING',
-        contentSnapshot: {},
-        isCurrent: true,
+        cdnInvalidated: true,
       };
 
       vi.mocked(publishingService.publishPhase).mockResolvedValue(mockPublishResponse);
@@ -122,12 +116,17 @@ describe('usePublishing', () => {
 
   describe('auto-publish scheduling', () => {
     it('should schedule auto-publish successfully', async () => {
+      const schedule = {
+        phase2Enabled: true,
+        phase2DaysBeforeEvent: 30,
+        phase3Enabled: true,
+        phase3DaysBeforeEvent: 14,
+      };
       const mockScheduleResponse = {
-        eventCode: 'BATbern142',
-        phase: 'SPEAKERS',
-        scheduledDate: '2025-04-15T08:00:00Z',
-        isEnabled: true,
-        ruleArn: 'arn:aws:events:eu-central-1:123456789012:rule/batbern-auto-publish',
+        scheduled: true,
+        ...schedule,
+        phase2TriggerDate: '2025-04-15T08:00:00Z',
+        phase3TriggerDate: '2025-05-01T08:00:00Z',
       };
 
       vi.mocked(publishingService.scheduleAutoPublish).mockResolvedValue(mockScheduleResponse);
@@ -137,32 +136,24 @@ describe('usePublishing', () => {
       });
 
       await waitFor(() => {
-        result.current.scheduleAutoPublish('speakers', {
-          scheduledDate: '2025-04-15T08:00:00Z',
-        });
+        result.current.scheduleAutoPublish(schedule);
       });
 
       await waitFor(() => {
         expect(result.current.isScheduling).toBe(false);
       });
 
-      expect(publishingService.scheduleAutoPublish).toHaveBeenCalledWith('BATbern142', 'speakers', {
-        scheduledDate: '2025-04-15T08:00:00Z',
-      });
+      expect(publishingService.scheduleAutoPublish).toHaveBeenCalledWith('BATbern142', schedule);
     });
   });
 
   describe('real-time updates', () => {
     it('should refetch data when publishing phase completes', async () => {
       const mockPublishResponse = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        eventCode: 'BATbern142',
-        versionNumber: 1,
-        publishedPhase: 'TOPIC',
+        phase: 'topic',
+        published: true,
         publishedAt: '2025-01-15T10:00:00Z',
-        publishedBy: 'john.doe',
-        cdnInvalidationId: 'INV123',
-        cdnInvalidationStatus: 'PENDING',
+        cdnInvalidated: true,
       };
 
       vi.mocked(publishingService.publishPhase).mockResolvedValue(mockPublishResponse);

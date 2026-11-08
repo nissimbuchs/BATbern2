@@ -14,6 +14,7 @@ import type {
   PublishingPhase,
   PublishingStatusResponse,
   AutoPublishScheduleRequest,
+  PublishValidationDetail,
   PublishValidationError,
 } from '@/types/event.types';
 
@@ -28,10 +29,10 @@ export interface UsePublishingReturn {
   isPublishing: boolean;
   isUnpublishing: boolean;
   publishError: Error | null;
-  validationErrors: Array<{ field: string; message: string; requirement: string }>;
+  validationErrors: PublishValidationDetail[];
 
-  // Auto-publish scheduling
-  scheduleAutoPublish: (phase: PublishingPhase, options: AutoPublishScheduleRequest) => void;
+  // Auto-publish scheduling (one schedule per event: the phase 2 and phase 3 triggers)
+  scheduleAutoPublish: (request: AutoPublishScheduleRequest) => void;
   isScheduling: boolean;
 }
 
@@ -73,17 +74,12 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
 
   // Schedule auto-publish mutation
   const scheduleAutoPublishMutation = useMutation({
-    mutationFn: ({
-      phase,
-      options,
-    }: {
-      phase: PublishingPhase;
-      options: AutoPublishScheduleRequest;
-    }) => publishingService.scheduleAutoPublish(eventCode, phase, options),
+    mutationFn: (request: AutoPublishScheduleRequest) =>
+      publishingService.scheduleAutoPublish(eventCode, request),
   });
 
   // Extract validation errors from publish error (422 response)
-  const validationErrors: Array<{ field: string; message: string; requirement: string }> =
+  const validationErrors: PublishValidationDetail[] =
     publishPhaseMutation.error &&
     typeof publishPhaseMutation.error === 'object' &&
     'response' in publishPhaseMutation.error &&
@@ -109,7 +105,7 @@ export const usePublishing = (eventCode: string): UsePublishingReturn => {
     validationErrors,
 
     // Auto-publish scheduling
-    scheduleAutoPublish: (phase, options) => scheduleAutoPublishMutation.mutate({ phase, options }),
+    scheduleAutoPublish: (request) => scheduleAutoPublishMutation.mutate(request),
     isScheduling: scheduleAutoPublishMutation.isPending,
   };
 };

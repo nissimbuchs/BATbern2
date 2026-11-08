@@ -23,7 +23,9 @@
     "src/components/organizer/SpeakerDrawer/__tests__/PromoteSpeakerSubView.test.tsx",
     "src/utils/validation/personName.test.ts",
     "src/utils/validation/email.test.ts",
-    "src/components/auth/RegistrationStep1/RegistrationStep1.test.tsx"
+    "src/components/auth/RegistrationStep1/RegistrationStep1.test.tsx",
+    "src/services/api/companyApi.errors.test.ts",
+    "src/services/publishingService/publishingService.test.ts"
   ],
   "exclude": []
 }

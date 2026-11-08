@@ -115,12 +115,13 @@ describe('usePublishing', () => {
     await waitFor(() => expect(result.current.isLoadingStatus).toBe(false));
 
     act(() => {
-      result.current.scheduleAutoPublish('topic' as never, { scheduledFor: '2025-12-01' } as never);
+      result.current.scheduleAutoPublish({ phase2Enabled: true, phase2DaysBeforeEvent: 30 });
     });
 
     await waitFor(() => expect(mockScheduleAutoPublish).toHaveBeenCalled());
-    expect(mockScheduleAutoPublish).toHaveBeenCalledWith('BAT142', 'topic', {
-      scheduledFor: '2025-12-01',
+    expect(mockScheduleAutoPublish).toHaveBeenCalledWith('BAT142', {
+      phase2Enabled: true,
+      phase2DaysBeforeEvent: 30,
     });
   });
 

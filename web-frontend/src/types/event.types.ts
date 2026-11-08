@@ -433,112 +433,16 @@ export interface ConflictAnalysisResponse {
  */
 export type PublishingPhase = 'topic' | 'speakers' | 'agenda';
 
-/**
- * CDN invalidation status
- */
-export type CDNInvalidationStatus = 'pending' | 'in_progress' | 'completed' | 'failed';
-
-/**
- * Response from publishing a phase
- */
-export interface PublishPhaseResponse {
-  id: string;
-  eventCode: string;
-  versionNumber: number;
-  publishedPhase: string; // UPPERCASE in API
-  publishedAt: string;
-  publishedBy: string;
-  cdnInvalidationId?: string;
-  cdnInvalidationStatus?: string; // UPPERCASE in API
-}
-
-/**
- * Response from unpublishing a phase
- */
-export interface UnpublishPhaseResponse {
-  eventCode: string;
-  unpublishedPhase: string; // UPPERCASE in API
-  newCurrentPhase: string | null; // UPPERCASE in API
-  unpublishedAt: string;
-  unpublishedBy: string;
-}
-
-/**
- * Validation status for a publishing phase
- */
-export interface ValidationStatus {
-  isValid: boolean;
-  errors: string[];
-}
-
-/**
- * Extended validation status for sessions with assignment counts
- */
-export interface SessionValidationStatus extends ValidationStatus {
-  assignedCount: number;
-  totalCount: number;
-  unassignedSessions: Array<{ sessionSlug: string; title: string }>;
-}
-
-/**
- * Publishing status response with validation for all phases
- * Story BAT-11: Used by EventPublishingTab to display real validation data
- */
-export interface PublishingStatusResponse {
-  currentPhase: PublishingPhase | null;
-  publishedPhases: PublishingPhase[];
-  topic: ValidationStatus;
-  speakers: ValidationStatus;
-  sessions: SessionValidationStatus;
-}
-
-/**
- * Change log entry
- */
-export interface ChangeLogEntry {
-  timestamp: string;
-  changedBy: string;
-  changeType: string; // UPPERCASE in API
-  description: string;
-  affectedPhase: string; // UPPERCASE in API
-}
-
-/**
- * Change log response
- */
-export interface ChangeLogResponse {
-  eventCode: string;
-  changes: ChangeLogEntry[];
-}
-
-/**
- * Auto-publish schedule request
- */
-export interface AutoPublishScheduleRequest {
-  scheduledDate: string; // ISO 8601 date-time
-}
-
-/**
- * Auto-publish schedule response
- */
-export interface AutoPublishScheduleResponse {
-  eventCode: string;
-  phase: string; // UPPERCASE in API
-  scheduledDate: string;
-  isEnabled: boolean;
-  ruleArn?: string; // AWS EventBridge rule ARN
-}
-
-/**
- * Publishing validation error (422 response)
- */
-export interface PublishValidationError {
-  error: string;
-  message: string;
-  phase: string; // UPPERCASE in API
-  validationErrors: Array<{
-    field: string;
-    message: string;
-    requirement: string;
-  }>;
-}
+// Publishing engine (events-core-api `publishPhase`, `unpublishPhase`, `getPublishingStatus`,
+// `configureAutoPublish`): the types EMS sends, from the spec. Hand-written copies that had
+// drifted from the backend (version numbers, `{ scheduledDate }`) were removed in 17.0c2.
+export type PublishPhaseResponse = coreComponents['schemas']['PublishPhaseResponse'];
+export type UnpublishPhaseResponse = coreComponents['schemas']['UnpublishPhaseResponse'];
+export type PublishingStatusResponse = coreComponents['schemas']['PublishingStatusResponse'];
+export type AutoPublishScheduleRequest = coreComponents['schemas']['AutoPublishScheduleRequest'];
+export type AutoPublishScheduleResponse = coreComponents['schemas']['AutoPublishScheduleResponse'];
+/** The 422 body of `publishPhase`: why the phase cannot be published yet. */
+export type PublishValidationError = coreComponents['schemas']['PublishValidationError'];
+export type PublishValidationDetail = NonNullable<
+  PublishValidationError['validationErrors']
+>[number];

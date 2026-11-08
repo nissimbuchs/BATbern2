@@ -827,26 +827,38 @@ export interface components {
       cdnInvalidated?: boolean;
     };
     ValidationStatus: {
-      isValid?: boolean;
-      errors?: string[];
+      isValid: boolean;
+      errors: string[];
     };
     UnassignedSession: {
       sessionSlug?: string;
       title?: string;
     };
     SessionValidationStatus: {
-      isValid?: boolean;
-      errors?: string[];
-      assignedCount?: number;
-      totalCount?: number;
-      unassignedSessions?: components['schemas']['UnassignedSession'][];
+      isValid: boolean;
+      errors: string[];
+      assignedCount: number;
+      totalCount: number;
+      unassignedSessions: components['schemas']['UnassignedSession'][];
     };
     PublishingStatusResponse: {
-      currentPhase?: string;
-      publishedPhases?: string[];
-      topic?: components['schemas']['ValidationStatus'];
-      speakers?: components['schemas']['ValidationStatus'];
-      sessions?: components['schemas']['SessionValidationStatus'];
+      /** @description The phase published last (topic, speakers, agenda); null before the first. */
+      currentPhase?: string | null;
+      publishedPhases: string[];
+      topic: components['schemas']['ValidationStatus'];
+      speakers: components['schemas']['ValidationStatus'];
+      sessions: components['schemas']['SessionValidationStatus'];
+    };
+    /** @description 422 of publishPhase, the reasons the phase cannot be published yet. */
+    PublishValidationError: {
+      /** @example VALIDATION_ERROR */
+      error?: string;
+      message?: string;
+      validationErrors?: {
+        sessionSlug?: string | null;
+        field?: string;
+        message?: string;
+      }[];
     };
     AutoPublishScheduleRequest: {
       phase2Enabled?: boolean;
@@ -3178,6 +3190,15 @@ export interface operations {
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+      /** @description The event's content is not ready for this phase (PublishingEngineController). */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublishValidationError'];
+        };
+      };
     };
   };
   unpublishPhase: {
