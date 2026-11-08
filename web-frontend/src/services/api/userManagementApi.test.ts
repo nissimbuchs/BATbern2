@@ -17,7 +17,6 @@ import MockAdapter from 'axios-mock-adapter';
 import apiClient from './apiClient';
 import {
   listUsers,
-  searchUsers,
   getUserById,
   createUser,
   updateUser,
@@ -283,84 +282,7 @@ describe('UserManagementApi', () => {
     });
   });
 
-  describe('searchUsers', () => {
-    it('should_searchUsers_when_queryProvided', async () => {
-      const mockResponse = [
-        {
-          id: 'anna.mueller',
-          email: 'anna.m@techcorp.ch',
-          firstName: 'Anna',
-          lastName: 'Müller',
-          roles: ['ORGANIZER', 'SPEAKER'],
-          profilePictureUrl: 'https://cdn.batbern.ch/profile-pictures/anna.jpg',
-        },
-      ];
-
-      mock
-        .onGet('/users/search', { params: { query: 'Anna', limit: 10 } })
-        .reply(200, mockResponse);
-
-      const result = await searchUsers('Anna');
-
-      expect(result).toHaveLength(1);
-      expect(result[0].firstName).toBe('Anna');
-      expect(result[0].lastName).toBe('Müller');
-    });
-
-    it('should_returnEmptyArray_when_noResultsFound', async () => {
-      mock.onGet('/users/search', { params: { query: 'NonExistent', limit: 10 } }).reply(200, []);
-
-      const result = await searchUsers('NonExistent');
-
-      expect(result).toHaveLength(0);
-    });
-
-    // Bug fix 2026-09-09: `searchUsers` used to call `encodeURIComponent(query)` and hand the
-    // result to axios `params`, which percent-encodes again. A query with a non-ASCII character
-    // or a space therefore reached the backend as a literal `St%C3%BCrmer` and matched nothing:
-    // typing the surname "Stürmer" returned 0 results while ASCII surnames worked, which is why
-    // the promote-speaker picker looked intermittently broken. axios owns the encoding.
-    it('should_sendQueryUnencoded_when_queryContainsUmlaut', async () => {
-      mock
-        .onGet('/users/search', { params: { query: 'Stürmer', limit: 20 } })
-        .reply(200, [{ id: 'matthias.stuermer', email: 'matthias.stuermer@bfh.ch' }]);
-
-      const result = await searchUsers('Stürmer', 20);
-
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('matthias.stuermer');
-    });
-
-    it('should_sendQueryUnencoded_when_queryContainsSpace', async () => {
-      mock
-        .onGet('/users/search', { params: { query: 'Matthias Stürmer', limit: 20 } })
-        .reply(200, [{ id: 'matthias.stuermer', email: 'matthias.stuermer@bfh.ch' }]);
-
-      const result = await searchUsers('Matthias Stürmer', 20);
-
-      expect(result).toHaveLength(1);
-    });
-
-    it('should_passRoleToBackend_when_roleFilterProvided', async () => {
-      mock
-        .onGet('/users/search', { params: { query: 'Doe', limit: 20, role: 'SPEAKER' } })
-        .reply(200, [{ id: 'jane.doe', roles: ['SPEAKER'] }]);
-
-      const result = await searchUsers('Doe', 20, 'SPEAKER');
-
-      expect(result).toHaveLength(1);
-      expect(result[0].id).toBe('jane.doe');
-    });
-
-    it('should_omitRoleParam_when_noRoleFilterProvided', async () => {
-      mock.onGet('/users/search').reply((config) => {
-        expect(config.params).not.toHaveProperty('role');
-        return [200, []];
-      });
-
-      await searchUsers('Doe', 20);
-    });
-  });
+  // searchUsers: userManagementApi.search.test.ts, on the MSW harness (sees the wire URL; 17.0d).
 
   describe('getUserById', () => {
     it('should_fetchUserById_when_validIdProvided', async () => {

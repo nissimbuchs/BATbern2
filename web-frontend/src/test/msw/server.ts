@@ -9,7 +9,9 @@
  *      is a violation: the request fails as a network error and the test fails afterwards with
  *      the matcher's reason (`SpecViolationError`), so code that swallows errors cannot hide it.
  *   2. An override registered with `api.on(operationId, ...)` answers, else
- *   3. the spec example of the lowest 2xx response (an empty body when it has no JSON).
+ *   3. for `listUsers`, `searchUsers`, `listEvents` and `listRegistrations`, the production-shaped
+ *      fixture set with real paging (`fixtureDefaults.ts`, Story 17.0d), else
+ *   4. the spec example of the lowest 2xx response (an empty body when it has no JSON).
  *
  * A test that talks to something outside our API (S3 presigned URLs, a CDN) adds its own handler
  * with `server.use(http.put('https://bucket.example/...', ...))`. Never for an `/api` URL: that
@@ -24,6 +26,7 @@ import type { SpecIndex } from '../contract/specMatcher.ts';
 import { listOperations, loadSpecFiles, mediaExample } from './openapi.ts';
 import type { SpecOperation } from './openapi.ts';
 import { harnessState } from './api.ts';
+import { fixtureDefault } from './fixtureDefaults.ts';
 import type { ApiCall } from './api.ts';
 
 const here = dirname(fileURLToPath(import.meta.url));
@@ -146,7 +149,12 @@ async function answer(request: Request): Promise<Response> {
   };
   harnessState.record(call);
   const override = harnessState.override(op.key);
-  if (!override) return defaultResponse(op);
+  if (!override) {
+    const fixture = fixtureDefault(op.key, call.query, call.params);
+    if (fixture)
+      return HttpResponse.json(fixture.body as never, { status: op.success[0]?.status ?? 200 });
+    return defaultResponse(op);
+  }
   const body = await override.resolver(call);
   if (body instanceof Response) return body;
   const status = override.status ?? op.success[0]?.status ?? 200;

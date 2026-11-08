@@ -5,6 +5,7 @@
   },
   "include": [
     "src/test/msw/**/*.ts",
+    "src/test/fixtures/**/*.ts",
     "src/vite-env.d.ts",
     "src/services/api/companyApi.search.test.ts",
     "src/services/api/partnerApi.search.test.ts",
@@ -16,7 +17,13 @@
     "src/services/eventApiClient.test.ts",
     "src/hooks/usePartnerDetail.test.ts",
     "src/hooks/useUserManagement/useUserList.allPages.test.tsx",
-    "src/components/organizer/UserManagement/SpeakerBatchImportModal.paging.test.tsx"
+    "src/components/organizer/UserManagement/SpeakerBatchImportModal.paging.test.tsx",
+    "src/services/api/userManagementApi.search.test.ts",
+    "src/components/shared/__tests__/UserAutocomplete.test.tsx",
+    "src/components/organizer/SpeakerDrawer/__tests__/PromoteSpeakerSubView.test.tsx",
+    "src/utils/validation/personName.test.ts",
+    "src/utils/validation/email.test.ts",
+    "src/components/auth/RegistrationStep1/RegistrationStep1.test.tsx"
   ],
   "exclude": []
 }

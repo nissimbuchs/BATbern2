@@ -270,7 +270,6 @@ fe-mock-components	web-frontend/src/components/organizer/PartnerMeetingsPage.tes
 fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/AssignedOrganizerField.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/ContentSubmissionSubView.test.tsx	3
 fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/DetailsTabPanel.test.tsx	1
-fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/PromoteSpeakerSubView.test.tsx	2
 fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/SpeakerDetailDrawer.test.tsx	3
 fe-mock-components	web-frontend/src/components/organizer/SpeakerStatus/__tests__/SpeakerStatusLanes.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/Tasks/__tests__/TaskWidget.test.tsx	2
@@ -374,7 +373,6 @@ fe-mock-hooks	web-frontend/src/components/organizer/PartnerManagement/__tests__/
 fe-mock-hooks	web-frontend/src/components/organizer/PartnerMeetingsPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/AssignedOrganizerField.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/DetailsTabPanel.test.tsx	3
-fe-mock-hooks	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/PromoteSpeakerSubView.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/SpeakerDetailDrawer.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/UserManagement/DeleteUserDialog.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/UserManagement/ParticipantBatchImportModal.test.tsx	1
@@ -523,7 +521,6 @@ fe-mock-i18n	web-frontend/src/components/shared/Layout/ResponsiveLayout.test.tsx
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/AppHeader.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/shared/Navigation/UserMenuDropdown.test.tsx	1
-fe-mock-i18n	web-frontend/src/components/shared/__tests__/UserAutocomplete.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/user/CompanyLogoRequest/__tests__/CompanyLogoSection.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileEmailAddresses.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileNewsletterAddresses.test.tsx	1
@@ -547,7 +544,6 @@ fe-mock-services	web-frontend/src/components/attendee/__tests__/SpeakerSelfNomin
 fe-mock-services	web-frontend/src/components/auth/AuthCallbackPage/AuthCallbackPage.test.tsx	1
 fe-mock-services	web-frontend/src/components/auth/ForgotPasswordForm/ForgotPasswordForm.test.tsx	1
 fe-mock-services	web-frontend/src/components/auth/LoginForm/LoginForm.test.tsx	2
-fe-mock-services	web-frontend/src/components/auth/RegistrationStep1/RegistrationStep1.test.tsx	1
 fe-mock-services	web-frontend/src/components/auth/RegistrationStep2/RegistrationStep2.test.tsx	1
 fe-mock-services	web-frontend/src/components/auth/ResendConfirmationAction/ResendConfirmationAction.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/Admin/AdminSettingsTab.test.tsx	1
@@ -588,7 +584,6 @@ fe-mock-services	web-frontend/src/components/organizer/PartnerManagement/__tests
 fe-mock-services	web-frontend/src/components/organizer/PartnerMeetingInviteAction.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/PartnerMeetingRsvpPanel.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/ContentSubmissionSubView.test.tsx	2
-fe-mock-services	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/PromoteSpeakerSubView.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/SpeakerDetailDrawer.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/SpeakerStatus/__tests__/SpeakerStatusLanes.test.tsx	2
 fe-mock-services	web-frontend/src/components/organizer/SpeakerStatus/__tests__/StatusHistoryTimeline.test.tsx	1
@@ -610,7 +605,6 @@ fe-mock-services	web-frontend/src/components/shared/Company/__tests__/CompanySea
 fe-mock-services	web-frontend/src/components/shared/Navigation/MobileDrawer.test.tsx	1
 fe-mock-services	web-frontend/src/components/shared/Navigation/NavigationMenu.test.tsx	1
 fe-mock-services	web-frontend/src/components/shared/Navigation/UserMenuDropdown.test.tsx	1
-fe-mock-services	web-frontend/src/components/shared/__tests__/UserAutocomplete.test.tsx	1
 fe-mock-services	web-frontend/src/components/speaker-portal/__tests__/PresentationUpload.test.tsx	1
 fe-mock-services	web-frontend/src/components/speaker-portal/__tests__/ProfilePhotoUpload.test.tsx	1
 fe-mock-services	web-frontend/src/components/user/EarlierProfilesSection/EarlierProfilesSection.test.tsx	1

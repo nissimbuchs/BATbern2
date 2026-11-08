@@ -504,9 +504,11 @@ Every Vitest test runs against one MSW server (`web-frontend/src/test/msw/`, sta
   operation. A request outside the specs fails as a network error **and** fails the test afterwards
   with the matcher's reason (`SpecViolationError`), so code that swallows the error cannot hide it.
   `docs/api/internal/` is not frontend-callable and not served.
-- **Default answer:** the spec example of the operation's lowest 2xx response (an empty body for a
-  204 or a binary download). Every JSON 2xx response in the specs has one; `examples.test.ts`
-  guards that it exists, validates against the schema and carries no personal data.
+- **Default answer:** for `listUsers`, `searchUsers`, `listEvents` and `listRegistrations`, the
+  production-shaped fixture set with real paging (17.0d, below); for every other operation the spec
+  example of its lowest 2xx response (an empty body for a 204 or a binary download). Every JSON
+  2xx response in the specs has one; `examples.test.ts` guards that it exists, validates against
+  the schema and carries no personal data.
 - **Overrides by `operationId`**, typed from `src/types/generated/`: a missing required field or a
   wrong shape fails `npm run type-check` (`tsconfig.test-harness.json` covers the harness and the
   tests listed there). An operationId two specs share is qualified by its spec
@@ -566,6 +568,39 @@ a test does not opt in.
   the test already failed and when the transaction is aborted (SQLState `25P02`, a test that
   provoked and asserted a violation itself). A test that catches a Hibernate exception and goes on
   calls `entityManager.clear()`: a session that threw must not be flushed again.
+
+#### Production-shaped fixtures (17.0d)
+
+Test data that is ASCII, lower case, unique and small hid 12 of the 57 bugs: the umlaut search and
+the 32 "Matthias" of #1034, "Hông Ân" → 500 in #1104, mixed-case e-mails in #1107, sort ties in
+#1131. One shared set per side carries those shapes, and it is the default. **An ASCII-only, unique,
+small builder is the exception**; a test that needs one says why.
+
+- **Shapes:** `Hông Ân` (NFC), `O’Neill` (typographic apostrophe), `王`, an umlaut surname
+  (`Stürmer`), a mixed-case e-mail, an IDN e-mail domain (ASCII local part: SES has no SMTPUTF8),
+  two people with the identical full name (usernames `matthias.keller`, `matthias.keller.2`), more
+  than 20 "Matthias" (more than one default page), ties in the sort key and in `createdAt`, past and
+  future events, every registration status. Invented names, `example.com` / `example.ch` / `*.example`
+  only. A guard test per side fails by name when a shape disappears.
+- **Frontend:** `web-frontend/src/test/fixtures/` (`people`, `shapes`, `namesakes`, `nonAsciiNames`,
+  `emails`, `aUser()`, `toSearchResult()`, `events()`, `pastEvent()`, `futureEvent()`,
+  `registrations()`), typed from `src/types/generated/`, guard `fixtures.test.ts`. **Harness default:**
+  without an `api.on` override, `listUsers`, `searchUsers`, `listEvents` and `listRegistrations`
+  answer from this set with real paging from `page`/`limit` (`src/test/msw/fixtureDefaults.ts`);
+  the search folds like `batbern_fold` and requires every word. It is a stand-in, not the backend's
+  ranking: a test that depends on ranking, a filter the stand-in ignores or a specific body sets
+  `api.on`. Every other operation answers with its spec example.
+- **Backend:** shared-kernel test fixtures `ch.batbern.shared.test.fixtures.ProductionShapedPeople`
+  (named shapes `VIETNAMESE`, `APOSTROPHE`, `CJK`, `MIXED_CASE_EMAIL`, `IDN_EMAIL`, `STUERMER`,
+  `IDENTICAL_NAMES`, `NAMESAKES`, `ALL`), exposed by `AbstractIntegrationTest` as `PEOPLE`. Each
+  person's `username` is what `SlugGenerationService` generates in list order (guard
+  `ProductionShapedPeopleTest`). The set is **exposed, not seeded**: an IT persists the people it
+  needs, so existing row counts do not change. EMS adds `ch.batbern.events.fixtures.ProductionShapedEvents`
+  (past and future event, one registration per status); `ProductionShapedEventsIntegrationTest`
+  checks the statuses against `registrations_status_check`, read from the database.
+- **Dates are relative to the clock**, never a calendar date (`daysFromNow(40)`,
+  `futureEvent(clock)`). A fixed date that is "in the future" today becomes a past one later and
+  turns a test red for no code change (#1069, #1241).
 
 #### Assertion rules
 

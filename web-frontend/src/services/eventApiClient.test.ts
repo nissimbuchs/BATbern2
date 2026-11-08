@@ -152,10 +152,12 @@ describe('Event API client', () => {
 
   describe('getEvents', () => {
     it('sends page and limit, and nothing else by default', async () => {
-      const result = await eventApiClient.getEvents({ page: 2, limit: 10 });
+      // The harness answers from the production-shaped events with real paging (17.0d).
+      const result = await eventApiClient.getEvents({ page: 2, limit: 1 });
 
-      expect(listQuery()).toEqual({ page: '2', limit: '10' });
-      expect(result.data.length).toBeGreaterThan(0);
+      expect(listQuery()).toEqual({ page: '2', limit: '1' });
+      expect(result.data).toHaveLength(1);
+      expect(result.pagination).toMatchObject({ page: 2, limit: 1, hasPrev: true });
     });
 
     it('builds the JSON filter from workflow states, year, search and topic codes', async () => {

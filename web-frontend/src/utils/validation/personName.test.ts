@@ -1,8 +1,15 @@
 import { describe, expect, test } from 'vitest';
+import { nonAsciiNames } from '@/test/fixtures';
 import { PERSON_NAME_MAX_LENGTH, isValidPersonName } from './personName';
 
 // #1102: names are free text. Anything a person can be called is accepted.
 describe('isValidPersonName', () => {
+  // The production-shaped people (17.0d): Hông Ân, O’Neill, 王, umlauts.
+  test.each(nonAsciiNames)('should accept the fixture name %s', (name) => {
+    expect(isValidPersonName(name)).toBe(true);
+  });
+
+  // Further shapes beyond the fixture set.
   test.each([
     'O’Neill',
     "O'Neill",

@@ -7,12 +7,16 @@ import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.fixtures.ProductionShapedPeople;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.MethodSource;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -23,12 +27,15 @@ import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.ResultActions;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
+import java.util.stream.Stream;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -70,6 +77,9 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
+
+    /** JSON for request bodies: names with quotes or apostrophes must not break the body. */
+    private static final ObjectMapper JSON = new ObjectMapper();
 
     private User testUser;
 
@@ -840,12 +850,44 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * #1102: production rejected "Hông Ân" with a 500 (chk_username_format). Names are free text;
-     * whatever a person is called, registration must succeed and keep the name as entered.
+     * #1102/#1104: production rejected "Hông Ân" with a 500 (chk_username_format). Names are free
+     * text; whatever a person is called, registration must succeed, keep the name as entered and
+     * get the username the generator promises. Runs over the production-shaped people (17.0d):
+     * Hông Ân, O’Neill, 王, a mixed-case and an IDN e-mail, the namesakes. A namesake's
+     * predecessors are created first, so the second "Matthias Keller" gets {@code .2}.
+     */
+    @ParameterizedTest(name = "[{index}] {0}")
+    @MethodSource("productionShapedPeople")
+    void should_createUserWithItsFixtureUsername_when_productionShapedPersonRegisters(
+            String fullName, ProductionShapedPeople.Person person) throws Exception {
+        for (ProductionShapedPeople.Person earlier : ProductionShapedPeople.namesakesBefore(person)) {
+            getOrCreate(earlier.email(), earlier.firstName(), earlier.lastName())
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.username").value(earlier.username()));
+        }
+
+        getOrCreate(person.email(), person.firstName(), person.lastName())
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.created").value(true))
+                .andExpect(jsonPath("$.username").value(person.username()))
+                .andExpect(jsonPath("$.user.firstName").value(person.firstName()))
+                .andExpect(jsonPath("$.user.lastName").value(person.lastName()));
+
+        // The class is @Transactional: the JPQL read flushes the insert, so chk_username_format
+        // and the other constraints run here (FlushBeforeRollback would also catch it later).
+        assertThat(userRepository.findByUsername(person.username())).isPresent();
+    }
+
+    static Stream<Arguments> productionShapedPeople() {
+        return PEOPLE.stream().map(p -> Arguments.of(p.fullName(), p));
+    }
+
+    /**
+     * Further #1102 shapes beyond the fixture set: names that spell nothing in ASCII fall back to
+     * the e-mail local part, or to {@code user.<part>}.
      */
     @ParameterizedTest(name = "[{index}] {0} {1} -> {3}")
     @CsvSource(delimiter = '|', value = {
-        "Hông Ân    | Meier        | h.meier.1102@example.com     | hongan.meier",
         "Jan        | van der Berg | jvdb.1102@example.com        | jan.vanderberg",
         "Maria José | García       | mjg.1102@example.com         | mariajose.garcia",
         "太郎        | 山田          | taro.yamada.1102@example.com | taro.yamada",
@@ -853,22 +895,22 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     })
     void should_createUserWithValidUsername_when_nameHasSpacesOrNonLatinScript(
             String firstName, String lastName, String email, String expectedUsername) throws Exception {
-        String body = """
-                {"email": "%s", "firstName": "%s", "lastName": "%s", "createIfMissing": true}
-                """.formatted(email, firstName, lastName);
-
-        mockMvc.perform(post("/internal/users/get-or-create")
-                        .contentType(MediaType.APPLICATION_JSON)
-                        .content(body))
+        getOrCreate(email, firstName, lastName)
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.created").value(true))
                 .andExpect(jsonPath("$.username").value(expectedUsername))
                 .andExpect(jsonPath("$.user.firstName").value(firstName))
                 .andExpect(jsonPath("$.user.lastName").value(lastName));
 
-        // The class is @Transactional, so without a flush chk_username_format never runs and a 200
-        // proves nothing. A JPQL query auto-flushes the insert: this is where production failed.
         assertThat(userRepository.findByUsername(expectedUsername)).isPresent();
+    }
+
+    private ResultActions getOrCreate(String email, String firstName, String lastName) throws Exception {
+        String body = JSON.writeValueAsString(Map.of(
+                "email", email, "firstName", firstName, "lastName", lastName, "createIfMissing", true));
+        return mockMvc.perform(post("/internal/users/get-or-create")
+                .contentType(MediaType.APPLICATION_JSON)
+                .content(body));
     }
 
     @ParameterizedTest

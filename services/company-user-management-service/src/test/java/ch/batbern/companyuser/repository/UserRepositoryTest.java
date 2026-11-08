@@ -6,6 +6,7 @@ import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.domain.UserSettings;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.fixtures.ProductionShapedPeople;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -345,16 +346,17 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     // arbitrary plan-dependent order, so he could never be picked in the promote dropdown.
     // ------------------------------------------------------------------------
 
+    // The production-shaped people (17.0d) carry the shape: more than 20 "Matthias", two identical
+    // "Matthias Keller", "Stürmer" with an umlaut, Hông Ân, O’Neill, 王.
+
     @Test
     @DisplayName("should_rankExactSurnameFirst_when_manyNamesakesMatch")
     void should_rankExactSurnameFirst_when_manyNamesakesMatch() {
-        // Given: 30 "Matthias" namesakes saved BEFORE the target, so an unordered query would
-        // push the target past any sane limit (this is the production shape).
-        for (int i = 0; i < 30; i++) {
-            createAndSaveUser("matthias.filler." + i, "matthias.filler" + i + "@example.com",
-                    "Matthias", "Filler" + i);
-        }
-        createAndSaveUser("matthias.stuermer", "matthias.stuermer@bfh.ch", "Matthias", "Stuermer");
+        // Given: every other "Matthias" saved BEFORE the target, so an unordered query would push
+        // the target past any sane limit (this is the production shape).
+        saveAll(PEOPLE.stream().filter(p -> p != ProductionShapedPeople.STUERMER).toList());
+        saveAll(List.of(ProductionShapedPeople.STUERMER));
+        assertThat(ProductionShapedPeople.NAMESAKES).hasSizeGreaterThan(20);
 
         // When: searching the surname, limited to 5
         List<User> results = userRepository.searchRanked("Stuermer", null, PageRequest.of(0, 5));
@@ -365,41 +367,67 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("should_findTheUmlautSurname_when_queriedWithOrWithoutTheUmlaut")
+    void should_findTheUmlautSurname_when_queriedWithOrWithoutTheUmlaut() {
+        saveAll(PEOPLE);
+
+        // #1034: "Stürmer" returned 0 results in production. ü = ue = u, both directions.
+        for (String query : List.of("Stürmer", "Stuermer", "STÜRMER", "Matthias Stürmer")) {
+            assertThat(userRepository.searchRanked(query, null, PageRequest.of(0, 20)))
+                    .as(query)
+                    .extracting(User::getUsername)
+                    .containsExactly("matthias.stuermer");
+        }
+    }
+
+    @Test
+    @DisplayName("should_findUnicodeNames_when_queriedAsTyped")
+    void should_findUnicodeNames_when_queriedAsTyped() {
+        saveAll(PEOPLE);
+
+        assertThat(userRepository.searchRanked("Hông Ân", null, PageRequest.of(0, 20)))
+                .extracting(User::getUsername).containsExactly(ProductionShapedPeople.VIETNAMESE.username());
+        assertThat(userRepository.searchRanked("王", null, PageRequest.of(0, 20)))
+                .extracting(User::getUsername).containsExactly(ProductionShapedPeople.CJK.username());
+        assertThat(userRepository.searchRanked("anna.keller@example.ch", null, PageRequest.of(0, 20)))
+                .extracting(User::getUsername).containsExactly(ProductionShapedPeople.MIXED_CASE_EMAIL.username());
+    }
+
+    @Test
     @DisplayName("should_honourTheRequestedLimit_when_moreRowsMatch")
     void should_honourTheRequestedLimit_when_moreRowsMatch() {
-        for (int i = 0; i < 30; i++) {
-            createAndSaveUser("matthias.filler." + i, "matthias.filler" + i + "@example.com",
-                    "Matthias", "Filler" + i);
-        }
+        saveAll(PEOPLE);
 
         List<User> capped = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 7));
         List<User> wide = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 25));
+        List<User> all = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 100));
 
         assertThat(capped).hasSize(7);
         assertThat(wide).hasSize(25);
+        assertThat(all).hasSize(ProductionShapedPeople.NAMESAKES.size());
     }
 
     @Test
     @DisplayName("should_returnAStableOrder_when_theSameQueryRunsTwice")
     void should_returnAStableOrder_when_theSameQueryRunsTwice() {
-        for (int i = 0; i < 12; i++) {
-            createAndSaveUser("matthias.filler." + i, "matthias.filler" + i + "@example.com",
-                    "Matthias", "Filler" + i);
-        }
+        // Two identical "Matthias Keller" tie on every name column; the username breaks the tie.
+        saveAll(PEOPLE);
 
         var first = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 10))
                 .stream().map(User::getUsername).toList();
         var second = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 10))
                 .stream().map(User::getUsername).toList();
+        var kellers = userRepository.searchRanked("Matthias Keller", null, PageRequest.of(0, 10))
+                .stream().map(User::getUsername).toList();
 
         assertThat(first).isEqualTo(second);
+        assertThat(kellers).containsExactly("matthias.keller", "matthias.keller.2");
     }
 
     @Test
     @DisplayName("should_matchTheFullName_when_firstAndLastNameAreQueriedTogether")
     void should_matchTheFullName_when_firstAndLastNameAreQueriedTogether() {
-        createAndSaveUser("matthias.stuermer", "matthias.stuermer@bfh.ch", "Matthias", "Stuermer");
-        createAndSaveUser("matthias.germann", "matthias.germann@dvbern.ch", "Matthias", "Germann");
+        saveAll(PEOPLE);
 
         // The old query matched firstName OR lastName separately, so a full name — exactly what
         // `speaker_pool.speaker_name` holds — could never match anybody.
@@ -423,24 +451,27 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_filterByRoleInTheDatabase_when_roleProvided")
     void should_filterByRoleInTheDatabase_when_roleProvided() {
-        // Given: 30 ATTENDEE namesakes and one SPEAKER, the SPEAKER saved last.
-        for (int i = 0; i < 30; i++) {
-            User filler = createTestUser("matthias.filler." + i,
-                    "matthias.filler" + i + "@example.com", "Matthias", "Filler" + i);
-            filler.addRole(Role.ATTENDEE);
-            userRepository.saveAndFlush(filler);
-        }
-        User speaker = createTestUser("matthias.stuermer", "matthias.stuermer@bfh.ch",
-                "Matthias", "Stuermer");
-        speaker.addRole(Role.SPEAKER);
-        userRepository.saveAndFlush(speaker);
+        // Given: more than 20 "Matthias", only some of them SPEAKER.
+        saveAll(PEOPLE);
+        List<String> speakers = ProductionShapedPeople.NAMESAKES.stream()
+                .filter(p -> p.roles().contains(Role.SPEAKER)).map(ProductionShapedPeople.Person::username).toList();
+        assertThat(speakers).hasSizeBetween(2, ProductionShapedPeople.NAMESAKES.size() - 1);
 
         // When: role filtering happens in SQL, before the limit. Filtering in Java after a
-        // 20-row truncation (the old behaviour) would return nothing here.
+        // 20-row truncation (the old behaviour) would miss speakers ranked after row 20.
         List<User> results = userRepository.searchRanked(
                 "Matthias", Role.SPEAKER, PageRequest.of(0, 20));
 
-        assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
+        assertThat(results).extracting(User::getUsername).containsExactlyInAnyOrderElementsOf(speakers);
+    }
+
+    private void saveAll(List<ProductionShapedPeople.Person> people) {
+        for (ProductionShapedPeople.Person p : people) {
+            User user = createTestUser(p.username(), p.email(), p.firstName(), p.lastName());
+            user.setCompanyId(p.companyId());
+            p.roles().forEach(user::addRole);
+            userRepository.saveAndFlush(user);
+        }
     }
 
     private User createTestUser(String username, String email, String firstName, String lastName) {

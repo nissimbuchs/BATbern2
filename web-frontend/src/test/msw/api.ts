@@ -12,8 +12,9 @@
  * qualified by its spec, e.g. `topics-api/listTopics`. The body a resolver returns is typed from
  * `src/types/generated/` (`operations[key]['responses'][status]['content']['application/json']`),
  * so a missing required field or a wrong shape fails `npm run type-check`. Overrides and calls
- * are reset after every test by `src/test/setup.ts`. Without an override, the operation answers
- * with its spec example (`server.ts`).
+ * are reset after every test by `src/test/setup.ts`. Without an override, the people, event and
+ * registration lists answer from the production-shaped fixtures (`fixtureDefaults.ts`, 17.0d) and
+ * every other operation with its spec example (`server.ts`).
  */
 import type { operations as CompanyOps } from '../../types/generated/company-api.types';
 import type { operations as AiOps } from '../../types/generated/event-ai-api.types';

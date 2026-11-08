@@ -1,5 +1,6 @@
 package ch.batbern.shared.test;
 
+import ch.batbern.shared.test.fixtures.ProductionShapedPeople;
 import org.springframework.boot.jdbc.test.autoconfigure.AutoConfigureTestDatabase;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -9,6 +10,8 @@ import org.springframework.test.context.DynamicPropertyRegistry;
 import org.springframework.test.context.DynamicPropertySource;
 import org.springframework.test.context.TestExecutionListeners;
 import org.testcontainers.containers.PostgreSQLContainer;
+
+import java.util.List;
 
 /**
  * Abstract base class for integration tests using Testcontainers PostgreSQL.
@@ -50,6 +53,18 @@ import org.testcontainers.containers.PostgreSQLContainer;
 @TestExecutionListeners(listeners = FlushBeforeRollback.class,
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)
 public abstract class AbstractIntegrationTest {
+
+    /**
+     * The production-shaped people (Story 17.0d): unicode names ({@code Hông Ân}, {@code O’Neill},
+     * {@code 王}), a mixed-case and an IDN e-mail, two identical full names and more than 20
+     * "Matthias", each with the username the backend generates. Use it for every new or touched
+     * test that stores, searches, sorts or pages people; see {@link ProductionShapedPeople} for the
+     * named shapes ({@code VIETNAMESE}, {@code NAMESAKES}, ...).
+     *
+     * <p>Exposed, not seeded: the database of an IT stays empty until the test persists what it
+     * needs, so existing row counts do not change.
+     */
+    protected static final List<ProductionShapedPeople.Person> PEOPLE = ProductionShapedPeople.ALL;
 
     /**
      * Shared PostgreSQL container for all tests using manual singleton pattern.

@@ -1,8 +1,15 @@
 import { describe, expect, test } from 'vitest';
+import { emails } from '@/test/fixtures';
 import { EMAIL_MAX_LENGTH, emailProblem, isValidEmail } from './email';
 
 // #1102: same rule as shared-kernel EmailAddresses (backend) and the OpenAPI `pattern`.
 describe('isValidEmail', () => {
+  // The production-shaped people (17.0d): mixed case, an IDN domain.
+  test.each(emails)('should accept the fixture address %s', (email) => {
+    expect(isValidEmail(email)).toBe(true);
+    expect(emailProblem(email)).toBeNull();
+  });
+
   test.each([
     'john.doe@example.com',
     "o'neill@example.ie",
