@@ -33,7 +33,8 @@
     "src/hooks/useEventManagement/useEventRegistrations.test.tsx",
     "src/components/organizer/PartnerManagement/CompanyAutocomplete.test.tsx",
     "src/components/organizer/PartnerManagement/__tests__/PartnerDirectoryScreen.test.tsx",
-    "src/components/organizer/EventManagement/__tests__/EventManagementDashboard.test.tsx"
+    "src/components/organizer/EventManagement/__tests__/EventManagementDashboard.test.tsx",
+    "src/components/organizer/EventPage/__tests__/EventPage.test.tsx"
   ],
   "exclude": []
 }
