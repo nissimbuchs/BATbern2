@@ -22,22 +22,25 @@ import {
 /**
  * usePartners - Fetch paginated list of partners with filters and sorting
  *
- * Query Key: ['partners', filters, sort, pagination]
+ * Query Key: ['partners', filters, sort, pagination, search]
  * Cache: 2 minutes (partner list is moderately volatile)
  *
  * @param filters - Tier and status filters
  * @param sort - Sort configuration (by engagement, name, tier, lastEvent)
  * @param pagination - Page and size parameters (zero-based indexing)
+ * @param search - Free-text search, evaluated by the backend over all partners
  * @returns UseQueryResult with PartnerListResponse
  */
 export const usePartners = (
   filters: PartnerFilters,
   sort: PartnerSort,
-  pagination: PartnerPagination
+  pagination: PartnerPagination,
+  search = ''
 ): UseQueryResult<PartnerListResponse, Error> => {
+  const trimmedSearch = search.trim();
   return useQuery({
-    queryKey: ['partners', filters, sort, pagination],
-    queryFn: () => listPartners(filters, sort, pagination),
+    queryKey: ['partners', filters, sort, pagination, trimmedSearch],
+    queryFn: () => listPartners(filters, sort, pagination, trimmedSearch),
     staleTime: 2 * 60 * 1000, // 2 minutes (AC8: Performance)
     refetchOnWindowFocus: true, // Refetch when user returns to tab
   });

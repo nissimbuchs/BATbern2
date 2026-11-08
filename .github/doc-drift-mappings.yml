@@ -62,6 +62,22 @@ mappings:
       - "docs/architecture/06-backend-architecture.md"
       - "docs/architecture/06a-workflow-state-machines.md"
 
+  # ── Search (Story 17.17) ─────────────────────────────────────────────────────
+  # The fold, the term parser and every search specification: the field sets and semantics
+  # are documented in one place.
+  - source_pattern: "shared-kernel/src/main/java/ch/batbern/shared/search/"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+  - source_pattern: "shared-kernel/src/main/resources/db/search/"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+  - source_pattern: "services/company-user-management-service/src/main/java/ch/batbern/companyuser/specification/"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+  - source_pattern: "services/event-management-service/src/main/java/ch/batbern/events/specification/"
+    docs:
+      - "docs/architecture/06-backend-architecture.md"
+
   # ── Frontend ─────────────────────────────────────────────────────────────────
   - source_pattern: "web-frontend/src/components/speaker"
     docs:

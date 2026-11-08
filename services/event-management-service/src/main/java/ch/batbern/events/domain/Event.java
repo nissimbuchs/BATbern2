@@ -108,14 +108,6 @@ public class Event {
     @Column(name = "description", columnDefinition = "TEXT")
     private String description;
 
-    // Full-text search vector columns (GENERATED ALWAYS AS in PostgreSQL)
-    // Story 4.2 - BAT-109: Archive browsing with full-text search
-    @Column(name = "title_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
-    private Object titleVector;
-
-    @Column(name = "description_vector", columnDefinition = "tsvector", insertable = false, updatable = false)
-    private Object descriptionVector;
-
     @Column(name = "created_at", nullable = false, updatable = false)
     private Instant createdAt;
 
@@ -171,9 +163,8 @@ public class Event {
     @Column(name = "qna_window_days", nullable = false)
     private Integer qnaWindowDays = 14;
 
-    // Note: title_vector and description_vector columns exist in DB (V35 migration)
-    // but are not mapped here because they're PostgreSQL tsvector types used only
-    // in SQL queries via HibernateConfig.ts_match() function (Story 4.2 AC9, AC19)
+    // Note: the generated tsvector columns title_vector / description_vector (V35) stay in the DB
+    // unmapped; search runs on batbern_fold substrings.
 
     @Version
     @Column(name = "version")

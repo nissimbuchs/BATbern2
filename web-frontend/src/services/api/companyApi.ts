@@ -49,10 +49,11 @@ class CompanyApiClient {
       params.append('page', pagination.page.toString());
       params.append('limit', pagination.limit.toString());
 
-      // If there's a search query, use the search endpoint instead
-      if (filters?.searchQuery) {
-        // Use the dedicated search endpoint which is optimized for text search
-        return this.searchCompaniesWithPagination(filters.searchQuery, pagination, options);
+      // Free-text search runs in the backend over every company before paging,
+      // so totalItems and page 2 are real. The autocomplete endpoint returned one cut page.
+      const search = filters?.searchQuery?.trim();
+      if (search) {
+        params.append('search', search);
       }
 
       // Build MongoDB-style JSON filter object for non-search filters
@@ -130,47 +131,6 @@ class CompanyApiClient {
       );
 
       return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  /**
-   * Search companies with pagination wrapper
-   * Wraps the search endpoint results in paginated format for consistency
-   */
-  async searchCompaniesWithPagination(
-    query: string,
-    pagination: PaginationParams = { page: 1, limit: 20 },
-    options?: { expand?: string[] }
-  ): Promise<CompanyListResponse> {
-    try {
-      const params = new URLSearchParams();
-      params.append('query', query);
-      params.append('limit', pagination.limit.toString());
-
-      // Add include parameter for resource expansion (e.g., ?include=logo)
-      if (options?.expand && options.expand.length > 0) {
-        params.append('include', options.expand.join(','));
-      }
-
-      const response = await apiClient.get<Company[]>(
-        `${COMPANY_API_PATH}/search?${params.toString()}`
-      );
-
-      // Wrap in paginated response format
-      const data = response.data;
-      return {
-        data,
-        pagination: {
-          page: pagination.page,
-          limit: pagination.limit,
-          totalItems: data.length,
-          totalPages: 1,
-          hasNext: false,
-          hasPrev: false,
-        },
-      };
     } catch (error) {
       throw this.transformError(error);
     }

@@ -26,6 +26,7 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
+import static org.mockito.ArgumentMatchers.isNull;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.times;
@@ -137,7 +138,7 @@ class UserSearchServiceTest {
         // Given
         String query = "doe";
         List<User> users = Arrays.asList(testUser1, testUser2);
-        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query), isNull(), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
@@ -147,7 +148,7 @@ class UserSearchServiceTest {
         assertThat(results).hasSize(2);
         assertThat(results.get(0).getFirstName()).isEqualTo("John");
         assertThat(results.get(1).getFirstName()).isEqualTo("Jane");
-        verify(userRepository).searchByNameOrEmail(eq(query), any(Pageable.class));
+        verify(userRepository).searchRanked(eq(query), isNull(), any(Pageable.class));
     }
 
     @Test
@@ -157,7 +158,7 @@ class UserSearchServiceTest {
         String query = "doe";
         Role roleFilter = Role.ORGANIZER;
         List<User> users = Collections.singletonList(testUser1);
-        when(userRepository.searchByNameOrEmailAndRole(eq(query), eq(roleFilter), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query), eq(roleFilter), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
@@ -167,8 +168,8 @@ class UserSearchServiceTest {
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getRoles()).contains(UserResponse.RolesEnum.ORGANIZER);
         // The role filter is applied by the DATABASE now, not by streaming over a truncated page.
-        verify(userRepository).searchByNameOrEmailAndRole(eq(query), eq(roleFilter), any(Pageable.class));
-        verify(userRepository, never()).searchByNameOrEmail(eq(query), any(Pageable.class));
+        verify(userRepository).searchRanked(eq(query), eq(roleFilter), any(Pageable.class));
+        verify(userRepository, never()).searchRanked(eq(query), isNull(), any(Pageable.class));
     }
 
     @Test
@@ -177,7 +178,7 @@ class UserSearchServiceTest {
         // Given
         String partialQuery = "jo";
         List<User> users = Collections.singletonList(testUser1);
-        when(userRepository.searchByNameOrEmail(eq(partialQuery), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(partialQuery), isNull(), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
@@ -186,7 +187,7 @@ class UserSearchServiceTest {
         // Then
         assertThat(results).hasSize(1);
         assertThat(results.get(0).getFirstName().toLowerCase()).contains(partialQuery);
-        verify(userRepository).searchByNameOrEmail(eq(partialQuery), any(Pageable.class));
+        verify(userRepository).searchRanked(eq(partialQuery), isNull(), any(Pageable.class));
     }
 
     @Test
@@ -194,7 +195,7 @@ class UserSearchServiceTest {
     void should_pushTheRequestedLimitToTheDatabase_when_searching() {
         // Given
         String query = "user";
-        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query), isNull(), any(Pageable.class)))
                 .thenReturn(createManyUsers(7));
 
         // When
@@ -203,7 +204,7 @@ class UserSearchServiceTest {
         // Then: the limit is the DB's page size, not an in-memory truncation of an unordered set
         assertThat(results).hasSize(7);
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(userRepository).searchByNameOrEmail(eq(query), captor.capture());
+        verify(userRepository).searchRanked(eq(query), isNull(), captor.capture());
         assertThat(captor.getValue().getPageSize()).isEqualTo(7);
     }
 
@@ -214,14 +215,14 @@ class UserSearchServiceTest {
         // applied INSIDE the service, so `limit=50` was silently capped at 20 and the caller
         // could not widen the window to reach a user ranked past position 20.
         String query = "matthias";
-        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query), isNull(), any(Pageable.class)))
                 .thenReturn(createManyUsers(50));
 
         List<UserResponse> results = userSearchService.searchUsers(query, null, 50);
 
         assertThat(results).hasSize(50);
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(userRepository).searchByNameOrEmail(eq(query), captor.capture());
+        verify(userRepository).searchRanked(eq(query), isNull(), captor.capture());
         assertThat(captor.getValue().getPageSize()).isEqualTo(50);
     }
 
@@ -229,13 +230,13 @@ class UserSearchServiceTest {
     @DisplayName("Test 4.7: should_clampTheLimit_when_callerExceedsTheSpecMaximum")
     void should_clampTheLimit_when_callerExceedsTheSpecMaximum() {
         String query = "matthias";
-        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query), isNull(), any(Pageable.class)))
                 .thenReturn(Collections.emptyList());
 
         userSearchService.searchUsers(query, null, 5000);
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(userRepository).searchByNameOrEmail(eq(query), captor.capture());
+        verify(userRepository).searchRanked(eq(query), isNull(), captor.capture());
         // users-api.openapi.yml declares `maximum: 100`
         assertThat(captor.getValue().getPageSize()).isEqualTo(100);
     }
@@ -244,13 +245,13 @@ class UserSearchServiceTest {
     @DisplayName("Test 4.8: should_fallBackToTheDefaultLimit_when_limitIsNotPositive")
     void should_fallBackToTheDefaultLimit_when_limitIsNotPositive() {
         String query = "matthias";
-        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query), isNull(), any(Pageable.class)))
                 .thenReturn(Collections.emptyList());
 
         userSearchService.searchUsers(query, null, 0);
 
         ArgumentCaptor<Pageable> captor = ArgumentCaptor.forClass(Pageable.class);
-        verify(userRepository).searchByNameOrEmail(eq(query), captor.capture());
+        verify(userRepository).searchRanked(eq(query), isNull(), captor.capture());
         assertThat(captor.getValue().getPageSize()).isEqualTo(20);
     }
 
@@ -259,7 +260,7 @@ class UserSearchServiceTest {
     void should_returnEmptyList_when_noMatchesFound() {
         // Given
         String query = "nonexistent";
-        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query), isNull(), any(Pageable.class)))
                 .thenReturn(Collections.emptyList());
 
         // When
@@ -267,7 +268,7 @@ class UserSearchServiceTest {
 
         // Then
         assertThat(results).isEmpty();
-        verify(userRepository).searchByNameOrEmail(eq(query), any(Pageable.class));
+        verify(userRepository).searchRanked(eq(query), isNull(), any(Pageable.class));
     }
 
     // AC13 Tests: Caffeine Caching
@@ -278,7 +279,7 @@ class UserSearchServiceTest {
         // Given
         String query = "doe";
         List<User> users = Arrays.asList(testUser1, testUser2);
-        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query), isNull(), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
@@ -292,7 +293,7 @@ class UserSearchServiceTest {
         assertThat(secondCall).hasSize(2);
         // Note: In unit tests without Spring context, cache annotations don't work
         // We verify the method returns correct results - caching verified in integration tests
-        verify(userRepository, atLeastOnce()).searchByNameOrEmail(eq(query), any(Pageable.class));
+        verify(userRepository, atLeastOnce()).searchRanked(eq(query), isNull(), any(Pageable.class));
     }
 
     @Test
@@ -318,9 +319,9 @@ class UserSearchServiceTest {
         List<User> doeUsers = Arrays.asList(testUser1, testUser2);
         List<User> smithUsers = Collections.singletonList(testUser3);
 
-        when(userRepository.searchByNameOrEmail(eq(query1), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query1), isNull(), any(Pageable.class)))
                 .thenReturn(doeUsers);
-        when(userRepository.searchByNameOrEmail(eq(query2), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query2), isNull(), any(Pageable.class)))
                 .thenReturn(smithUsers);
 
         // When
@@ -330,8 +331,8 @@ class UserSearchServiceTest {
         // Then - Each query should hit the repository once
         assertThat(results1).hasSize(2);
         assertThat(results2).hasSize(1);
-        verify(userRepository).searchByNameOrEmail(eq(query1), any(Pageable.class));
-        verify(userRepository).searchByNameOrEmail(eq(query2), any(Pageable.class));
+        verify(userRepository).searchRanked(eq(query1), isNull(), any(Pageable.class));
+        verify(userRepository).searchRanked(eq(query2), isNull(), any(Pageable.class));
     }
 
     @Test
@@ -342,7 +343,7 @@ class UserSearchServiceTest {
         List<User> initialUsers = Collections.singletonList(testUser1);
         List<User> updatedUsers = Arrays.asList(testUser1, testUser2);
 
-        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query), isNull(), any(Pageable.class)))
                 .thenReturn(initialUsers)
                 .thenReturn(updatedUsers);
         when(cacheManager.getCache("userSearch")).thenReturn(cache);
@@ -355,7 +356,7 @@ class UserSearchServiceTest {
         // Then
         assertThat(firstCall).hasSize(1);
         assertThat(secondCall).hasSize(2); // Fresh data after cache invalidation
-        verify(userRepository, times(2)).searchByNameOrEmail(eq(query), any(Pageable.class));
+        verify(userRepository, times(2)).searchRanked(eq(query), isNull(), any(Pageable.class));
     }
 
     // AC14 Tests: Cache Performance (<100ms P95)
@@ -367,7 +368,7 @@ class UserSearchServiceTest {
         String query = "doe";
         Role roleFilter = Role.SPEAKER;
         List<User> users = Collections.singletonList(testUser2);
-        when(userRepository.searchByNameOrEmailAndRole(eq(query), eq(roleFilter), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query), eq(roleFilter), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
@@ -379,7 +380,7 @@ class UserSearchServiceTest {
         assertThat(results2).hasSize(1);
         assertThat(results1.get(0).getRoles()).contains(UserResponse.RolesEnum.SPEAKER);
         verify(userRepository, atLeastOnce())
-                .searchByNameOrEmailAndRole(eq(query), eq(roleFilter), any(Pageable.class));
+                .searchRanked(eq(query), eq(roleFilter), any(Pageable.class));
     }
 
     @Test
@@ -388,7 +389,7 @@ class UserSearchServiceTest {
         // Given
         String query = "doe";
         List<User> users = Arrays.asList(testUser1, testUser2);
-        when(userRepository.searchByNameOrEmail(eq(query), any(Pageable.class)))
+        when(userRepository.searchRanked(eq(query), isNull(), any(Pageable.class)))
                 .thenReturn(users);
 
         // When
@@ -396,7 +397,7 @@ class UserSearchServiceTest {
 
         // Then - Should return all matching users without role filter
         assertThat(results).hasSize(2);
-        verify(userRepository).searchByNameOrEmail(eq(query), any(Pageable.class));
+        verify(userRepository).searchRanked(eq(query), isNull(), any(Pageable.class));
     }
 
     // Helper Methods

@@ -1,5 +1,8 @@
 package ch.batbern.companyuser.integration;
 
+import org.junit.jupiter.params.provider.ValueSource;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.springframework.cache.CacheManager;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.dto.generated.CreateCompanyRequest;
@@ -595,5 +598,137 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     void shouldReturn403_whenVerifyNotOrganizer() throws Exception {
         mockMvc.perform(post("/api/v1/companies/{name}/verify", testCompany.getName()))
                 .andExpect(status().isForbidden());
+    }
+
+    // ------------------------------------------------------------------------------------------
+    // Company search. Every word in slug or display name, folded, any order; the list
+    // pages in SQL, the autocomplete ranks before its limit, /internal/companies returns slugs.
+    // ------------------------------------------------------------------------------------------
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    private void saveCompany(String name, String displayName) {
+        companyRepository.save(Company.builder()
+                .name(name)
+                .displayName(displayName)
+                .isVerified(false)
+                .createdAt(Instant.now())
+                .updatedAt(Instant.now())
+                .createdBy("test-user")
+                .build());
+        var cache = cacheManager.getCache("companySearch");
+        if (cache != null) {
+            cache.clear();
+        }
+    }
+
+    @Test
+    @WithMockUser(roles = {"ORGANIZER"})
+    @DisplayName("Exact company 'Bundes' is first in the 10-row public picker among 14 matches")
+    void should_rankExactCompanyFirst_when_moreMatchesThanTheLimit() throws Exception {
+        for (char c = 'A'; c <= 'M'; c++) {
+            saveCompany("bundesamt" + c, "Bundesamt " + c);
+        }
+        saveCompany("bundes", "Bundes");
+
+        mockMvc.perform(get("/api/v1/companies/search").param("query", "Bundes").param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(10)))
+                .andExpect(jsonPath("$[0].name").value("bundes"));
+        // every word in any order; equal rank, so display name breaks the tie
+        mockMvc.perform(get("/api/v1/companies/search").param("query", "amt b"))
+                .andExpect(jsonPath("$[0].name").value("bundesamtA"));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"Müller", "Mueller", "muller"})
+    @WithMockUser(roles = {"ORGANIZER"})
+    @DisplayName("Every umlaut spelling finds all three, in the list and the picker")
+    void should_findAllUmlautSpellings(String input) throws Exception {
+        saveCompany("mullerag", "Müller AG");
+        saveCompany("muellergmbh", "Mueller GmbH");
+        saveCompany("mullersa", "Muller SA");
+
+        mockMvc.perform(get("/api/v1/companies").param("search", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(3));
+        mockMvc.perform(get("/api/v1/companies/search").param("query", input))
+                .andExpect(jsonPath("$", hasSize(3)));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ORGANIZER"})
+    @DisplayName("The list search pages in SQL; totalItems counts every match")
+    void should_pageSearchResults_when_moreThanOnePageMatches() throws Exception {
+        for (int i = 10; i < 35; i++) {
+            saveCompany("firma" + i, "Firma " + i + " AG");
+        }
+
+        mockMvc.perform(get("/api/v1/companies").param("search", "ag firma").param("page", "3")
+                        .param("limit", "10"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(5)))
+                .andExpect(jsonPath("$.data[0].name").value("firma30"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(25))
+                .andExpect(jsonPath("$.pagination.totalPages").value(3))
+                .andExpect(jsonPath("$.pagination.hasNext").value(false));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ORGANIZER"})
+    @DisplayName("The slug and the display name are both searched; filter still applies")
+    void should_searchSlugAndDisplayName_andCombineWithFilter() throws Exception {
+        saveCompany("infowellgmbh", "Infowell GmbH");
+
+        mockMvc.perform(get("/api/v1/companies").param("search", "infowellg"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(1));
+        mockMvc.perform(get("/api/v1/companies").param("search", "gmbh infowell"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(1));
+        mockMvc.perform(get("/api/v1/companies").param("search", "infowell")
+                        .param("filter", "{\"isVerified\":true}"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(0));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"(test", "a  b", "100%", "'", "C++", "_"})
+    @WithMockUser(roles = {"ORGANIZER"})
+    @DisplayName("Hostile input answers 2xx and % is literal")
+    void should_answer2xx_when_inputIsHostile(String input) throws Exception {
+        saveCompany("hundertx", "100x AG");
+
+        mockMvc.perform(get("/api/v1/companies").param("search", input)).andExpect(status().isOk());
+        mockMvc.perform(get("/api/v1/companies/search").param("query", input)).andExpect(status().isOk());
+        mockMvc.perform(get("/internal/companies").param("search", input)).andExpect(status().isOk());
+        if ("100%".equals(input)) {
+            mockMvc.perform(get("/api/v1/companies").param("search", input))
+                    .andExpect(jsonPath("$.pagination.totalItems").value(0));
+        }
+    }
+
+    @Test
+    @WithMockUser(roles = {"ORGANIZER"})
+    @DisplayName("A blank search is no search")
+    void should_notFilter_when_searchIsBlank() throws Exception {
+        saveCompany("mullerag", "Müller AG");
+        long all = companyRepository.count();
+
+        mockMvc.perform(get("/api/v1/companies").param("search", "   "))
+                .andExpect(jsonPath("$.pagination.totalItems").value((int) all));
+    }
+
+    @Test
+    @WithMockUser(roles = {"ORGANIZER"})
+    @DisplayName("GET /internal/companies returns the matching slugs, every slug when blank")
+    void should_returnMatchingSlugs_fromInternalCompanies() throws Exception {
+        saveCompany("mullerag", "Müller AG");
+        saveCompany("diemobiliar", "Die Mobiliar");
+
+        mockMvc.perform(get("/internal/companies").param("search", "Mueller"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$", hasSize(1)))
+                .andExpect(jsonPath("$[0]").value("mullerag"));
+        mockMvc.perform(get("/internal/companies"))
+                .andExpect(jsonPath("$", hasSize((int) companyRepository.count())));
     }
 }

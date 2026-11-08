@@ -72,7 +72,7 @@ describe('usePartners', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockListPartners).toHaveBeenCalledWith(filters, sort, pagination);
+    expect(mockListPartners).toHaveBeenCalledWith(filters, sort, pagination, '');
     expect(result.current.data).toEqual(MOCK_PARTNERS_PAGE);
   });
 

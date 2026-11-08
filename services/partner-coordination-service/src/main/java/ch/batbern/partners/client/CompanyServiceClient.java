@@ -2,6 +2,8 @@ package ch.batbern.partners.client;
 
 import ch.batbern.partners.client.company.dto.CompanyResponse;
 
+import java.util.List;
+
 /**
  * Client interface for communicating with the Company Service API.
  *
@@ -35,4 +37,15 @@ public interface CompanyServiceClient {
     default CompanyResponse getCompany(String companyName) {
         return getCompanyByName(companyName);
     }
+
+    /**
+     * Slugs of every company whose slug or display name matches {@code search}, via CUMS
+     * {@code GET /internal/companies?search=}. Not cached: the partner list's search
+     * must see a company renamed a minute ago.
+     *
+     * @param search Search input, non-blank
+     * @return Matching company slugs, possibly empty
+     * @throws ch.batbern.partners.exception.CompanyServiceException if CUMS cannot answer
+     */
+    List<String> findCompanyNames(String search);
 }

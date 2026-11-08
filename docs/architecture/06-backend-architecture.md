@@ -1352,6 +1352,44 @@ at an already-deleted row; the service enforces this defensively
 Together these close the "first confirmation email missed/expired → recovery dead-end → locked out"
 failure mode without manual admin intervention.
 
+## Search (Story 17.17)
+
+Every free-text search in the organizer and public UI means the same thing: **every word of the
+input occurs as a substring of at least one searchable field, in any order, after folding both
+sides**. It runs in SQL before paging, so `totalItems` counts every match and page 2 holds the next
+ones. A blank input is no search; the other filters (role, company, status, tier, topic codes,
+workflow state) combine with it unchanged.
+
+- **Fold**: the SQL function `batbern_fold(text)`: lower case, `unaccent` (also `ß` to `ss`),
+  `ae/oe/ue` read as `a/o/u`, hyphen, apostrophe and underscore as a space, whitespace collapsed.
+  So "Müller", "Mueller" and "Muller" find each other. Canonical body:
+  `shared-kernel/src/main/resources/db/search/batbern_fold.sql`; created by CUMS `V27__search_fold.sql`
+  and EMS `V147__search_fold.sql` (one shared database, both `CREATE OR REPLACE` the same body under
+  an advisory lock). `SearchFoldContract` (test fixture) fails a service whose copy differs by one
+  byte. No `pg_trgm`, no typo tolerance.
+- **Terms**: `ch.batbern.shared.search.SearchTerms` splits on whitespace, `-`, `'`, `_` (at most 8
+  terms) and escapes `\`, `%`, `_` for `LIKE ... ESCAPE '\'`, so they match literally;
+  `SearchPredicates` builds `batbern_fold(field) LIKE '%' || batbern_fold(:term) || '%'`. Java never
+  folds.
+- **Field sets**:
+
+  | Search | Fields |
+  |---|---|
+  | Users (list `GET /users?search`, picker `GET /users/search`) | username, first and last name, primary e-mail, additional e-mails (verified or not), company id |
+  | Participants (`GET /events/{code}/registrations?search`) | attendee username, first and last name, e-mail, company id (denormalized columns) |
+  | Newsletter subscribers | e-mail, first name, username (the username of a subscriber with a profile carries the last name; no EMS read of `user_profiles`) |
+  | Companies (list `GET /companies?search`, picker `GET /companies/search`) | slug (`name`), display name |
+  | Partners (`GET /partners?search`) | company slug and display name, resolved to slugs by CUMS `GET /internal/companies?search=` (PCS holds only the slug) |
+  | Topics (`GET /topics?search`) | title, description |
+  | Events and archive (`title $contains`, `GET /public/events?scope=archive&search`) | event title, description, event code (`56` finds BATbern56), session titles and abstracts, speaker first and last names |
+
+- **Ranking**: the user and company pickers return at most N rows, ordered in SQL before the limit:
+  exact match (full name in either order for users), then prefix, then the rest, with a unique
+  tie-break. Lists keep their explicit sort (events: date); there is no relevance rank.
+- **Kept on purpose**: the `tsvector` columns and the V39 functions stay in the EMS schema, unused
+  by the code since 17.17 (dropping them needs a migration and gains nothing now).
+
+
 ## Testing Strategy
 
 The BATbern backend uses Testcontainers PostgreSQL for all integration tests to ensure production parity. This approach catches PostgreSQL-specific issues (JSONB, functions, constraints) that would be missed with H2.

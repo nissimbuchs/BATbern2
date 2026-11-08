@@ -74,11 +74,12 @@ public class TopicService {
      *               - "available" for staleness >= 70 (green zone)
      *               - "caution" for staleness 40-69 (yellow zone)
      *               - "unavailable" for staleness < 40 (red zone)
+     * @param search Optional free text: every word in title or description, folded
      * @param pageable Pagination and sort parameters
      * @return Page of topics matching filters
      */
     @Transactional(readOnly = true)
-    public Page<Topic> getAllTopics(String category, String status, Pageable pageable) {
+    public Page<Topic> getAllTopics(String category, String status, String search, Pageable pageable) {
         // Staleness-based status filter: compute in memory
         if (status != null && !status.isBlank()
                 && (status.equalsIgnoreCase("available")
@@ -88,7 +89,7 @@ public class TopicService {
             // Fetch all topics by category (no pagination — staleness filter is in-memory), in the
             // requested order plus id, so the manual pages below are stable (#1131)
             List<Topic> all = topicRepository.findByFilters(
-                    category, null, DeterministicPaging.withTieBreaker(Pageable.unpaged(pageable.getSort())))
+                    category, null, search, DeterministicPaging.withTieBreaker(Pageable.unpaged(pageable.getSort())))
                     .getContent();
 
             // Batch-compute staleness in one query
@@ -134,7 +135,7 @@ public class TopicService {
             }
         }
 
-        return topicRepository.findByFilters(category, active, pageable);
+        return topicRepository.findByFilters(category, active, search, pageable);
     }
 
     /**

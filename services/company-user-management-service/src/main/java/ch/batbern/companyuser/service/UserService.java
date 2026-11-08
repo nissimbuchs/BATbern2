@@ -271,74 +271,6 @@ public class UserService {
     }
 
     /**
-     * List users with filters (admin/organizer only)
-     * Story 1.16.2: Public API uses username
-     * AC3: List users with role, company, search, and JSON filters
-     *
-     * @deprecated Use listUsersPaginated() for better performance
-     */
-    @Deprecated
-    @Transactional(readOnly = true)
-    public java.util.List<UserResponse> listUsers(String roleFilter, String companyFilter, String search,
-            String jsonFilter) {
-        log.debug("User Service Listing users with filters: role={}, company={}, search={}, filter={}",
-                roleFilter, companyFilter, search, jsonFilter);
-
-        java.util.List<User> users;
-
-        if (roleFilter != null && companyFilter != null) {
-            // Both filters
-            Role role = parseRole(roleFilter);
-            log.debug("Filtering by role: {} and company: {}", role, companyFilter);
-            users = userRepository.findByRolesContaining(role).stream()
-                    .filter(u -> companyFilter.equals(u.getCompanyId()))
-                    .toList();
-        } else if (roleFilter != null) {
-            // Role filter only
-            Role role = parseRole(roleFilter);
-            log.debug("Filtering by role: {}", role);
-            users = userRepository.findByRolesContaining(role);
-            log.debug("Found {} users with role {}", users.size(), role);
-        } else if (companyFilter != null) {
-            // Company filter only
-            users = userRepository.findByCompanyId(companyFilter);
-        } else {
-            // No filters
-            users = userRepository.findAll();
-        }
-
-        // Apply search filter (name, email, or username)
-        if (search != null && !search.isBlank()) {
-            String searchLower = search.toLowerCase();
-            users = users.stream()
-                    .filter(u ->
-                            (u.getFirstName() != null && u.getFirstName().toLowerCase().contains(searchLower))
-                            || (u.getLastName() != null && u.getLastName().toLowerCase().contains(searchLower))
-                            || (u.getEmail() != null && u.getEmail().toLowerCase().contains(searchLower))
-                            || (u.getUsername() != null && u.getUsername().toLowerCase().contains(searchLower))
-                    )
-                    .toList();
-        }
-
-        // Apply JSON filter (active status, etc.)
-        if (jsonFilter != null && !jsonFilter.isBlank()) {
-            users = applyJsonFilter(users, jsonFilter);
-        }
-
-        // Sort alphabetically by lastName, then firstName
-        return users.stream()
-                .sorted((u1, u2) -> {
-                    int lastNameCompare = compareNullable(u1.getLastName(), u2.getLastName());
-                    if (lastNameCompare != 0) {
-                        return lastNameCompare;
-                    }
-                    return compareNullable(u1.getFirstName(), u2.getFirstName());
-                })
-                .map(responseMapper::mapToResponse)
-                .toList();
-    }
-
-    /**
      * List users with filters and database-level pagination (admin/organizer only)
      * Performance optimized version using JOIN FETCH and proper pagination
      *
@@ -405,34 +337,6 @@ public class UserService {
 
         // Map to response DTOs
         return filteredPage.map(responseMapper::mapToResponse);
-    }
-
-    /**
-     * Helper method to compare nullable strings (null values sorted last)
-     */
-    private int compareNullable(String s1, String s2) {
-        if (s1 == null && s2 == null) {
-            return 0;
-        }
-        if (s1 == null) {
-            return 1;  // null comes after non-null
-        }
-        if (s2 == null) {
-            return -1; // null comes after non-null
-        }
-        return s1.compareToIgnoreCase(s2);
-    }
-
-    /**
-     * Apply JSON filter to user list
-     * Supports: {"active": true/false}
-     */
-    private java.util.List<User> applyJsonFilter(java.util.List<User> users, String jsonFilter) {
-        Boolean active = parseActiveFilter(jsonFilter);
-        if (active == null) {
-            return users;
-        }
-        return users.stream().filter(u -> u.isActive() == active).toList();
     }
 
     /**

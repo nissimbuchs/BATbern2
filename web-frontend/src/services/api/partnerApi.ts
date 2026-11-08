@@ -62,18 +62,25 @@ export interface PartnerSort {
  * @param filters - Tier and status filters
  * @param sort - Sort configuration
  * @param pagination - Page and size parameters
+ * @param search - Free text, matched by the backend over every partner's company slug and
+ *   display name before paging; blank sends no search
  * @returns Promise<PartnerListResponse>
  */
 export const listPartners = async (
   filters: PartnerFilters,
   sort: PartnerSort,
-  pagination: PartnerPagination
+  pagination: PartnerPagination,
+  search?: string
 ): Promise<PartnerListResponse> => {
   const params: Record<string, string | number> = {
     page: pagination.page,
     size: pagination.size,
     include: 'company,contacts', // ADR-004 HTTP enrichment
   };
+
+  if (search && search.trim()) {
+    params.search = search.trim();
+  }
 
   // Build filter query parameter
   const filterParts: string[] = [];

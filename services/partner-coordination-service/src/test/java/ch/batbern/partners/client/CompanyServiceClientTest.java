@@ -26,6 +26,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
+import static org.springframework.test.web.client.match.MockRestRequestMatchers.headerDoesNotExist;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.method;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.requestTo;
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withResourceNotFound;
@@ -251,6 +252,66 @@ class CompanyServiceClientTest {
                 .isInstanceOf(CompanyServiceException.class)
                 .hasMessageContaining("Failed to connect");
 
+        mockServer.verify();
+    }
+
+    // The partner search resolves display names to slugs through CUMS /internal/companies
+
+    @Test
+    void should_returnSlugsFromInternalCompanies_when_searching() {
+        mockServer.expect(requestTo("http://company-user-management:8080/internal/companies?search=Die%20Mobiliar"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("[\"diemobiliar\",\"mobiliarag\"]", MediaType.APPLICATION_JSON));
+
+        assertThat(companyServiceClient.findCompanyNames("Die Mobiliar"))
+                .containsExactly("diemobiliar", "mobiliarag");
+        mockServer.verify();
+    }
+
+    @Test
+    void should_encodeHostileInput_when_searching() {
+        mockServer.expect(requestTo("http://company-user-management:8080/internal/companies?search=100%25%20%28test%20%26x"))
+                .andExpect(method(HttpMethod.GET))
+                .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+
+        assertThat(companyServiceClient.findCompanyNames("100% (test &x")).isEmpty();
+        mockServer.verify();
+    }
+
+    @Test
+    void should_throwCompanyServiceException_when_nameSearchFails() {
+        mockServer.expect(requestTo("http://company-user-management:8080/internal/companies?search=x"))
+                .andRespond(withServerError());
+
+        assertThatThrownBy(() -> companyServiceClient.findCompanyNames("x"))
+                .isInstanceOf(CompanyServiceException.class);
+    }
+
+    @Test
+    void should_forwardUserJwt_when_searchingCompanyNamesWithAJwt() {
+        Jwt jwt = Jwt.withTokenValue("search-jwt-token")
+                .header("alg", "RS256")
+                .claim("sub", "organizer@batbern.ch")
+                .build();
+        when(securityContext.getAuthentication()).thenReturn(authentication);
+        when(authentication.getPrincipal()).thenReturn(jwt);
+
+        mockServer.expect(requestTo("http://company-user-management:8080/internal/companies?search=x"))
+                .andExpect(header(HttpHeaders.AUTHORIZATION, "Bearer search-jwt-token"))
+                .andRespond(withSuccess("[\"x\"]", MediaType.APPLICATION_JSON));
+
+        assertThat(companyServiceClient.findCompanyNames("x")).containsExactly("x");
+        mockServer.verify();
+    }
+
+    @Test
+    void should_sendNoAuthorization_when_searchingCompanyNamesWithoutAJwt() {
+        // e.g. the public partner list: no authentication in the SecurityContext
+        mockServer.expect(requestTo("http://company-user-management:8080/internal/companies?search=x"))
+                .andExpect(headerDoesNotExist(HttpHeaders.AUTHORIZATION))
+                .andRespond(withSuccess("[]", MediaType.APPLICATION_JSON));
+
+        assertThat(companyServiceClient.findCompanyNames("x")).isEmpty();
         mockServer.verify();
     }
 }

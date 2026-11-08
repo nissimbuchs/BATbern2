@@ -79,6 +79,8 @@ public class TopicController implements TopicsApi {
      * @param limit   Page size (default 50)
      * @param sort    Optional sort parameter (e.g., "stalenessScore,desc")
      * @param include Optional comma-separated includes (e.g., "history,similarity")
+     * @param search  Optional free text over title and description, in SQL before sort and page
+     *
      * @return Paginated list of topics
      */
     @Override
@@ -87,7 +89,8 @@ public class TopicController implements TopicsApi {
             String sort,
             Integer page,
             Integer limit,
-            String include) {
+            String include,
+            String search) {
 
         // Parse filter JSON
         String category = null;
@@ -118,7 +121,7 @@ public class TopicController implements TopicsApi {
         final List<Topic> baseTopics;
         final long totalItems;
         if (inMemorySort) {
-            List<Topic> all = topicService.getAllTopics(category, status,
+            List<Topic> all = topicService.getAllTopics(category, status, search,
                     DeterministicPaging.pageRequest(0, Integer.MAX_VALUE, Sort.unsorted())).getContent();
             Map<UUID, StalenessScoreService.StalenessData> allStaleness =
                     stalenessScoreService.computeStalenessDataBatch(all);
@@ -139,7 +142,8 @@ public class TopicController implements TopicsApi {
             baseTopics = sorted.subList(from, to);
             totalItems = sorted.size();
         } else {
-            Page<Topic> topicPage = topicService.getAllTopics(category, status, createPageable(page - 1, limit, sort));
+            Page<Topic> topicPage = topicService.getAllTopics(
+                    category, status, search, createPageable(page - 1, limit, sort));
             baseTopics = topicPage.getContent();
             totalItems = topicPage.getTotalElements();
         }

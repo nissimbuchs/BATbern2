@@ -42,6 +42,14 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — Search finds what you mean, everywhere (Story 17.17)**:
+- ✅ Every search box (users, participants, newsletter subscribers, companies, partners, topics, events and the archive) searches all records, not only the ones on the current page. The partner list and the topic picker used to search only the rows already loaded.
+- ✅ Spelling variants find each other: "Müller", "Mueller" and "Muller", "Zürich" and "Zurich", "Strasse" and "Straße". Capital letters and accents do not matter.
+- ✅ Several words can be typed in any order: "muster hans" finds "Hans Peter Muster". Each word may be part of a word: "Archi" finds "Architektur", "56" finds BATbern56.
+- ✅ Users are also found by an additional e-mail address; participants by their company; newsletter subscribers by their last name; events by the speakers' names and the talks' titles.
+- ✅ In the company pickers the exact company is always at the top (it could be missing among many similar names). The company list shows real page numbers when searching.
+- ✅ Characters like `(`, `%` or `'` no longer cause an error in the event search.
+
 **Bug Fixes — Mail notices and name badges (#1235, #1236)**:
 - ✅ (#1235) The Mail Center notice for a mail that belongs to no event showed raw tags in subject and text ("Neue Mail{{#eventCode}} für …"). It now reads "Neue Mail von …". Every automatic mail to one person now drops a section whose value is missing instead of printing its tags, and the log names the missing value.
 - ✅ (#1236) Name badges (Word) and the participants list (XLSX) label partners "Partner" and list them after the organizers and speakers. A partner is everyone with the partner role who is registered for the event; someone with two roles gets one badge with the higher one (organizer, speaker, partner, participant).

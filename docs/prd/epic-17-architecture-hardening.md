@@ -115,8 +115,9 @@ Protective and cheap first, then decoupling, then restructuring.
 | 17.14 | Domain exception base | 17.12 | dev |
 | 17.15 | Mail core / mail center split | 17.12, 16.8c | dev |
 | 17.16 | Event-core extension points | 17.12 | dev |
+| 17.17 | Exhaustive search (owner go 2026-11-08) | – | dev |
 
-**28 stories** (17.0a–d, 17.1–17.16, 17.3b, 17.3c, 17.9b, 17.10b, 17.11a–d); 17.12 is a design task. 17.1–17.5 do not wait for 17.0a–d and
+**29 stories** (17.0a–d, 17.1–17.17, 17.3b, 17.3c, 17.9b, 17.10b, 17.11a–d); 17.12 is a design task. 17.1–17.5 do not wait for 17.0a–d and
 can run alongside them; 17.1, 17.2, 17.5 and 17.0a have no dependencies. 17.6 to 17.11 can run in
 parallel once their dependencies are in, as long as only one PR is open at a time. Winston's estimate
 (not measured): 17.0a–d are about 5–6 stories of work, so 17.0b and 17.0c may each split into two
@@ -678,3 +679,21 @@ delivery) publishes in-process events, the mail center listens. `MailDeliverySta
    association).
 2. All workflow transitions behave as before. Guard: existing state machine tests plus one test per
    guard implementation.
+
+### Story 17.17 — Exhaustive search
+
+**Added** by the owner on 2026-11-08 after a search audit. Ticket with findings and full criteria:
+`_bmad-output/initiative-architecture-hardening/backlog/story-exhaustive-search.md`.
+
+**Scope:** every UI search runs in the backend over the whole table; one SQL fold (case,
+`unaccent`, umlaut spellings, `ß`) on both sides; several words match in any order across the
+record's fields; partner and topic search move from the browser to the server; company search is
+ranked before the cut and paged; event and archive search find substrings and never fail on input.
+No `pg_trgm`.
+
+**Acceptance criteria:**
+1. "Müller", "Mueller" and "Muller" find each other, and "muster hans" finds "Hans Peter Muster",
+   in every search. Guard: Testcontainers integration test per search.
+2. A match beyond the first page is found by the partner, topic and company searches. Guard:
+   integration tests, frontend tests assert the term reaches the service call.
+3. No search input produces a 5xx. Guard: integration tests with `(test`, `a  b`, `100%`, `'`.

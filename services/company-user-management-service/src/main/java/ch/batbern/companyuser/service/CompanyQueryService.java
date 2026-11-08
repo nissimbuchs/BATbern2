@@ -50,14 +50,15 @@ public class CompanyQueryService {
      */
     public PaginatedCompanyResponse queryCompanies(
             String filterJson,
+            String search,
             String sortStr,
             Integer page,
             Integer limit,
             String fieldsStr,
             String includeStr) {
 
-        log.debug("Querying companies - filter: {}, sort: {}, page: {}, limit: {}, fields: {}, include: {}",
-                filterJson, sortStr, page, limit, fieldsStr, includeStr);
+        log.debug("Querying companies - filter: {}, search: {}, sort: {}, page: {}, limit: {}, fields: {},"
+                + " include: {}", filterJson, search, sortStr, page, limit, fieldsStr, includeStr);
 
         // Parse query parameters
         FilterCriteria filterCriteria = FilterParser.parse(filterJson);
@@ -66,8 +67,12 @@ public class CompanyQueryService {
         Set<String> selectedFields = FieldSelector.parse(fieldsStr);
         Set<String> includes = IncludeParser.parse(includeStr);
 
-        // Build JPA Specification from FilterCriteria
-        Specification<Company> spec = CompanySpecification.fromFilterCriteria(filterCriteria);
+        // Build JPA Specification from FilterCriteria plus the free-text search,
+        // both in SQL before paging, so totalItems counts every match
+        Specification<Company> filterSpec = CompanySpecification.fromFilterCriteria(filterCriteria);
+        Specification<Company> spec = Specification.allOf(
+                filterSpec != null ? filterSpec : Specification.unrestricted(),
+                CompanySpecification.matchesSearch(search));
 
         // Build Pageable from sort and pagination
         Pageable pageable = buildPageable(sortCriteria, paginationParams);
@@ -91,6 +96,19 @@ public class CompanyQueryService {
                 .data(companyResponses)
                 .pagination(paginationMetadata)
                 .build();
+    }
+
+    /**
+     * Slugs of every company whose slug or display name matches {@code search}, for
+     * {@code GET /internal/companies}: PCS resolves a partner search typed as a display name to the
+     * partners' company slugs. Same {@link CompanySpecification#matchesSearch} as the public list;
+     * unlimited (the table holds a few hundred companies); blank search returns every slug.
+     */
+    public List<String> findCompanyNames(String search) {
+        return companyRepository.findAll(CompanySpecification.matchesSearch(search),
+                        Sort.by(Sort.Direction.ASC, "name")).stream()
+                .map(Company::getName)
+                .collect(Collectors.toList());
     }
 
     /**

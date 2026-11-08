@@ -1,0 +1,52 @@
+meta {
+  name: List Companies - search with real paging
+  type: http
+  seq: 5.5
+}
+
+get {
+  url: {{baseUrl}}/companies?search=BRUNOTESTCO&page=1&limit=1
+  body: none
+  auth: bearer
+}
+
+params:query {
+  search: BRUNOTESTCO
+  page: 1
+  limit: 1
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isArray
+}
+
+tests {
+  test("pages the search in the backend: one row, totalItems counts every match", function() {
+    const body = res.getBody();
+    expect(body.data.length).to.be.at.most(1);
+    expect(body.pagination.totalItems).to.be.at.least(1);
+    expect(body.pagination.totalPages).to.equal(Math.ceil(body.pagination.totalItems / 1));
+    expect(body.pagination.hasNext).to.equal(body.pagination.totalItems > 1);
+  });
+
+  test("every row matches the search", function() {
+    res.getBody().data.forEach(c => {
+      expect((c.name + " " + (c.displayName || "")).toLowerCase()).to.include("brunotestco");
+    });
+  });
+}
+
+docs {
+  GET /companies?search= filters before paging. The company list used to call the
+  autocomplete and fake one page (totalPages 1, no page 2).
+}

@@ -22,7 +22,17 @@ import org.springframework.data.domain.Sort;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.stereotype.Service;
 
+import ch.batbern.events.domain.Session;
+import ch.batbern.events.domain.SessionUser;
+import ch.batbern.shared.search.SearchPredicates;
+import ch.batbern.shared.search.SearchTerms;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.CriteriaQuery;
 import jakarta.persistence.criteria.Expression;
+import jakarta.persistence.criteria.Join;
+import jakarta.persistence.criteria.Predicate;
+import jakarta.persistence.criteria.Root;
+import jakarta.persistence.criteria.Subquery;
 import java.time.Instant;
 import java.time.LocalDate;
 import java.time.ZoneId;
@@ -321,27 +331,23 @@ public class EventSearchService {
                     return criteriaBuilder.not(root.get(field).in(convertedValue));
 
                 case CONTAINS:
-                    // Use PostgreSQL full-text search for title field (Story 4.2 AC9, AC19)
+                    // "Title contains" is the event and archive search box. Every word
+                    // must occur in the event title, description or code, a session title or
+                    // abstract, or a speaker name, folded by batbern_fold. Substring, any order,
+                    // never a parse error (the former to_tsquery on raw input threw on "(test").
                     if ("title".equals(field)) {
-                        return buildFullTextSearchPredicate(root, query, criteriaBuilder, value);
+                        return buildSearchPredicate(root, query, criteriaBuilder, value);
                     }
-                    // Fallback to LIKE for other fields
-                    return criteriaBuilder.like(
-                            criteriaBuilder.lower(root.get(field)),
-                            "%" + value.toString().toLowerCase() + "%"
-                    );
+                    return criteriaBuilder.like(criteriaBuilder.lower(root.get(field)),
+                            "%" + likeValue(value) + "%", SearchTerms.ESCAPE);
 
                 case STARTS_WITH:
-                    return criteriaBuilder.like(
-                            criteriaBuilder.lower(root.get(field)),
-                            value.toString().toLowerCase() + "%"
-                    );
+                    return criteriaBuilder.like(criteriaBuilder.lower(root.get(field)),
+                            likeValue(value) + "%", SearchTerms.ESCAPE);
 
                 case ENDS_WITH:
-                    return criteriaBuilder.like(
-                            criteriaBuilder.lower(root.get(field)),
-                            "%" + value.toString().toLowerCase()
-                    );
+                    return criteriaBuilder.like(criteriaBuilder.lower(root.get(field)),
+                            "%" + likeValue(value), SearchTerms.ESCAPE);
 
                 default:
                     log.warn("Unsupported filter operator: {}", operator);
@@ -397,102 +403,48 @@ public class EventSearchService {
         }
     }
 
+    /** Lower-cased, LIKE-escaped filter value: {@code %}, {@code _} and {@code \} match literally. */
+    private static String likeValue(Object value) {
+        return SearchTerms.escapeLike(value.toString().toLowerCase());
+    }
+
     /**
-     * Build PostgreSQL full-text search predicate across events, sessions, and speakers
-     * Searches across: event titles, event descriptions, session titles, session descriptions, speaker names
-     * Uses GIN indexes on title_vector, description_vector, and speaker_name_vector columns
-     *
-     * @param root Event query root
-     * @param query CriteriaQuery for subquery creation
-     * @param criteriaBuilder CriteriaBuilder for predicate construction
-     * @param value Search term value
-     * @return Predicate matching events where any indexed field contains the search term
+     * The event search: every word of {@code value} occurs in the event title,
+     * description or event code ("56" and "BATbern56" find BATbern56), in the title or abstract of
+     * one of its sessions, or in the first or last name of one of its speakers, folded by
+     * {@code batbern_fold} on both sides. A blank value matches every event. Results keep the
+     * caller's explicit sort (date by default); substring matches are a superset of the former
+     * whole-word full-text matches, so nothing that was found before is lost.
      */
-    private jakarta.persistence.criteria.Predicate buildFullTextSearchPredicate(
-            jakarta.persistence.criteria.Root<Event> root,
-            jakarta.persistence.criteria.CriteriaQuery<?> query,
-            jakarta.persistence.criteria.CriteriaBuilder criteriaBuilder,
+    private Predicate buildSearchPredicate(Root<Event> root, CriteriaQuery<?> query, CriteriaBuilder cb,
             Object value) {
+        SearchTerms terms = SearchTerms.parse(value != null ? value.toString() : null);
+        return SearchPredicates.allTerms(cb, terms, term -> cb.or(
+                SearchPredicates.contains(cb, root.get("title"), term),
+                SearchPredicates.contains(cb, root.get("description"), term),
+                SearchPredicates.contains(cb, root.get("eventCode"), term),
+                cb.exists(sessionMatches(root, query, cb, term)),
+                cb.exists(speakerMatches(root, query, cb, term))));
+    }
 
-        // PostgreSQL full-text search: title_vector @@ to_tsquery('german', searchTerm)
-        // Convert user input to tsquery format (replace spaces with & for AND logic)
-        String searchTerm = value.toString().trim().replace(" ", " & ");
+    private static Subquery<Integer> sessionMatches(Root<Event> root, CriteriaQuery<?> query, CriteriaBuilder cb,
+            String term) {
+        Subquery<Integer> sub = query.subquery(Integer.class);
+        Root<Session> session = sub.from(Session.class);
+        return sub.select(cb.literal(1)).where(
+                cb.equal(session.get("eventId"), root.get("id")),
+                cb.or(SearchPredicates.contains(cb, session.get("title"), term),
+                        SearchPredicates.contains(cb, session.get("description"), term)));
+    }
 
-        // Create tsquery expression once
-        jakarta.persistence.criteria.Expression<Object> tsquery = criteriaBuilder.function(
-            "to_tsquery",
-            Object.class,
-            criteriaBuilder.literal("german"),
-            criteriaBuilder.literal(searchTerm)
-        );
-
-        // Search in event title_vector
-        jakarta.persistence.criteria.Predicate eventTitleMatch = criteriaBuilder.isTrue(
-            criteriaBuilder.function("ts_match", Boolean.class, root.get("titleVector"), tsquery)
-        );
-
-        // Search in event description_vector
-        jakarta.persistence.criteria.Predicate eventDescriptionMatch = criteriaBuilder.isTrue(
-            criteriaBuilder.function("ts_match", Boolean.class, root.get("descriptionVector"), tsquery)
-        );
-
-        // Search in sessions: EXISTS (SELECT 1 FROM sessions WHERE event_id = events.id
-        //   AND (title_vector @@ tsquery OR description_vector @@ tsquery))
-        jakarta.persistence.criteria.Subquery<Integer> sessionSubquery = query.subquery(Integer.class);
-        jakarta.persistence.criteria.Root<ch.batbern.events.domain.Session> sessionRoot =
-            sessionSubquery.from(ch.batbern.events.domain.Session.class);
-
-        sessionSubquery.select(criteriaBuilder.literal(1));
-        sessionSubquery.where(
-            criteriaBuilder.and(
-                criteriaBuilder.equal(sessionRoot.get("eventId"), root.get("id")),
-                criteriaBuilder.or(
-                    // Session title match
-                    criteriaBuilder.isTrue(
-                        criteriaBuilder.function("ts_match", Boolean.class, sessionRoot.get("titleVector"), tsquery)
-                    ),
-                    // Session description match
-                    criteriaBuilder.isTrue(
-                        criteriaBuilder.function(
-                            "ts_match", Boolean.class,
-                            sessionRoot.get("descriptionVector"), tsquery)
-                    )
-                )
-            )
-        );
-
-        // Search in speakers: EXISTS (SELECT 1 FROM session_users su
-        //   JOIN sessions s ON su.session_id = s.id
-        //   WHERE s.event_id = events.id AND su.speaker_name_vector @@ tsquery)
-        jakarta.persistence.criteria.Subquery<Integer> speakerSubquery = query.subquery(Integer.class);
-        jakarta.persistence.criteria.Root<ch.batbern.events.domain.SessionUser> speakerRoot =
-            speakerSubquery.from(ch.batbern.events.domain.SessionUser.class);
-
-        // Join to sessions to get event_id
-        jakarta.persistence.criteria.Join<
-            ch.batbern.events.domain.SessionUser,
-            ch.batbern.events.domain.Session> sessionJoin = speakerRoot.join("session");
-
-        speakerSubquery.select(criteriaBuilder.literal(1));
-        speakerSubquery.where(
-            criteriaBuilder.and(
-                criteriaBuilder.equal(sessionJoin.get("eventId"), root.get("id")),
-                // Speaker name match
-                criteriaBuilder.isTrue(
-                    criteriaBuilder.function("ts_match", Boolean.class, speakerRoot.get("speakerNameVector"), tsquery)
-                )
-            )
-        );
-
-        // Return events where ANY of these match:
-        // - Event title OR event description
-        // - Any session title OR session description
-        // - Any speaker name
-        return criteriaBuilder.or(
-            eventTitleMatch,
-            eventDescriptionMatch,
-            criteriaBuilder.exists(sessionSubquery),
-            criteriaBuilder.exists(speakerSubquery)
-        );
+    private static Subquery<Integer> speakerMatches(Root<Event> root, CriteriaQuery<?> query, CriteriaBuilder cb,
+            String term) {
+        Subquery<Integer> sub = query.subquery(Integer.class);
+        Root<SessionUser> speaker = sub.from(SessionUser.class);
+        Join<SessionUser, Session> session = speaker.join("session");
+        return sub.select(cb.literal(1)).where(
+                cb.equal(session.get("eventId"), root.get("id")),
+                cb.or(SearchPredicates.contains(cb, speaker.get("speakerFirstName"), term),
+                        SearchPredicates.contains(cb, speaker.get("speakerLastName"), term)));
     }
 }

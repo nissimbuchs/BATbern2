@@ -25,10 +25,14 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.never;
+import static org.hamcrest.Matchers.contains;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -609,4 +613,78 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                 .thenReturn(java.util.List.of(contact));
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Partner list: filter, search and paging in SQL; search resolved by CUMS
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    private void createPartners(int count) {
+        for (int i = 10; i < 10 + count; i++) {
+            createTestPartner("partner" + i, i % 2 == 0 ? PartnershipLevel.GOLD : PartnershipLevel.SILVER);
+        }
+    }
+
+    @Test
+    void should_returnSecondPage_withExactTotals_when_morePartnersThanOnePage() throws Exception {
+        createPartners(25);
+
+        mockMvc.perform(get("/api/v1/partners").param("page", "1").param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(5)))
+                .andExpect(jsonPath("$.data[0].companyName").value("partner30"))
+                .andExpect(jsonPath("$.metadata.totalItems").value(25))
+                .andExpect(jsonPath("$.metadata.totalPages").value(2))
+                .andExpect(jsonPath("$.metadata.hasNext").value(false))
+                .andExpect(jsonPath("$.metadata.hasPrev").value(true));
+    }
+
+    @Test
+    void should_findPartnerBeyondFirstPage_when_searchMatchesItsDisplayName() throws Exception {
+        createPartners(25);
+        // CUMS resolves the display name typed by the organizer to the slug (#23 of 25)
+        when(companyServiceClient.findCompanyNames("Die Mobiliar")).thenReturn(List.of("partner32", "notapartner"));
+
+        mockMvc.perform(get("/api/v1/partners").param("search", " Die Mobiliar ").param("size", "20"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].companyName").value("partner32"))
+                .andExpect(jsonPath("$.metadata.totalItems").value(1));
+    }
+
+    @Test
+    void should_combineSearchWithTierAndStatusFilters() throws Exception {
+        createPartners(4);
+        Partner ended = createTestPartner("partner99", PartnershipLevel.GOLD);
+        ended.setPartnershipStartDate(LocalDate.now().minusYears(3));
+        ended.setPartnershipEndDate(LocalDate.now().minusYears(1));
+        partnerRepository.save(ended);
+        when(companyServiceClient.findCompanyNames("ag"))
+                .thenReturn(List.of("partner10", "partner11", "partner12", "partner99"));
+
+        mockMvc.perform(get("/api/v1/partners").param("search", "ag")
+                        .param("filter", "partnershipLevel:gold,isActive:true"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].companyName", contains("partner10", "partner12")))
+                .andExpect(jsonPath("$.metadata.totalItems").value(2));
+    }
+
+    @Test
+    void should_returnNothing_when_cumsMatchesNoCompany() throws Exception {
+        createPartners(3);
+        when(companyServiceClient.findCompanyNames("(test")).thenReturn(List.of());
+
+        mockMvc.perform(get("/api/v1/partners").param("search", "(test"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(0)))
+                .andExpect(jsonPath("$.metadata.totalItems").value(0));
+    }
+
+    @Test
+    void should_notCallCums_and_notFilter_when_searchIsBlank() throws Exception {
+        createPartners(3);
+
+        mockMvc.perform(get("/api/v1/partners").param("search", "   "))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.metadata.totalItems").value(3));
+        verify(companyServiceClient, never()).findCompanyNames(anyString());
+    }
 }

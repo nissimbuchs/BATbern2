@@ -1,0 +1,49 @@
+meta {
+  name: Search Events - substring, any word order
+  type: http
+  seq: 4.1
+}
+
+get {
+  url: {{baseUrl}}/events?filter={{eventSearchFilter}}&page=1&limit=20
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~filter: {"title":{"$contains":"<testTimestamp> runo"}}
+  page: 1
+  limit: 20
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+script:pre-request {
+  const filter = { title: { $contains: bru.getVar("testTimestamp") + " runo" } };
+  bru.setVar("eventSearchFilter", encodeURIComponent(JSON.stringify(filter)));
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isArray
+}
+
+tests {
+  test("should find the created event by a word fragment ('runo' of 'Bruno') in any order", function() {
+    const codes = res.getBody().data.map(e => e.eventCode);
+    expect(codes).to.include(bru.getVar("createdEventCode"));
+  });
+}
+
+docs {
+  The event search matches substrings of every word in any order (the former
+  to_tsquery matched whole words only, so "runo" found nothing). The filter is built and
+  percent-encoded in the pre-request script: raw braces in a query string are rejected.
+}

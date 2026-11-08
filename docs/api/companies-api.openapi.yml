@@ -243,6 +243,18 @@ paths:
           schema:
             type: string
             example: '{"industry":"Technology","isVerified":true}'
+        - name: search
+          in: query
+          description: |
+            Free-text search. Every word must occur in the company slug (`name`) or
+            the display name, in any order, ignoring case, accents and umlaut spelling (ü = ue = u).
+            Evaluated before paging, so `pagination.totalItems` counts every match. Combines with
+            `filter`. Blank means no search.
+          required: false
+          schema:
+            type: string
+            maxLength: 200
+            example: 'bundes amt'
         - name: sort
           in: query
           description: Sort fields (comma-separated, prefix with - for descending)
@@ -546,6 +558,11 @@ paths:
         Search companies by name with autocomplete functionality.
 
         **Acceptance Criteria**: AC5, AC11
+
+        **Matching**: every word of `query` must occur, in any order, in the slug
+        (`name`) or the display name, ignoring case, accents and umlaut spelling (ü = ue = u).
+        Ranked in SQL before the limit: exact match, then prefix, then any other match, ties by
+        display name and slug. A paged search is `GET /companies?search=`.
 
         **Caching**:
         - Caffeine in-memory cache with 15-minute TTL

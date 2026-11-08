@@ -1,10 +1,10 @@
 package ch.batbern.companyuser.repository;
 
 import ch.batbern.companyuser.domain.Company;
+import ch.batbern.companyuser.specification.CompanySpecification;
+import ch.batbern.shared.api.DeterministicPaging;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
-import org.springframework.data.jpa.repository.Query;
-import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
@@ -39,24 +39,23 @@ public interface CompanyRepository extends JpaRepository<Company, UUID>, JpaSpec
     List<Company> findByNameContainingIgnoreCase(String name);
 
     /**
-     * Find companies whose meaningful name (slug) OR human-readable display name
-     * contains the query, case-insensitively.
+     * Autocomplete search over the slug ({@code name}) and the display name, ranked and limited in
+     * the DATABASE.
      *
-     * <p>Autocomplete must match what the user actually typed. Users type the
-     * <em>display name</em> ("Infowell GmbH"), but the {@code name} column holds
-     * the ADR-003 slug ("infowellgmbh") — so matching {@code name} alone returns
-     * nothing for a spaced/cased display name and pushes the user into creating a
-     * duplicate company. Matching both columns surfaces the existing company.
+     * <p>Users type the display name ("Infowell GmbH") while {@code name} holds the ADR-003 slug
+     * ("infowellgmbh"), so both columns are searched. Every word must occur in one of them, folded
+     * by {@code batbern_fold}. The former JPQL had no ORDER BY and the service cut it in Java, so
+     * the exact company "Bundes" sat at position 12 of 13 and never reached the 10-row public
+     * picker; now an exact match ranks first, then a prefix, then the rest, by display name and slug.
      *
-     * @param query Partial company name or display name (case-insensitive)
-     * @return List of matching companies
+     * @param query Search input; blank matches every company (ordered by display name)
+     * @param limit Maximum number of rows, applied by the database
+     * @return Matching companies, most relevant first
      */
-    @Query("""
-            SELECT c FROM Company c
-            WHERE LOWER(c.name) LIKE LOWER(CONCAT('%', :query, '%'))
-               OR LOWER(c.displayName) LIKE LOWER(CONCAT('%', :query, '%'))
-            """)
-    List<Company> searchByNameOrDisplayName(@Param("query") String query);
+    default List<Company> searchRanked(String query, int limit) {
+        return findAll(CompanySpecification.matchesSearchRanked(query),
+                DeterministicPaging.orderedByQuery(0, limit)).getContent();
+    }
 
     /**
      * Check if company exists by name

@@ -1,0 +1,41 @@
+meta {
+  name: Search Events - hostile input answers 200
+  type: http
+  seq: 4.2
+}
+
+get {
+  url: {{baseUrl}}/events?filter=%7B%22title%22%3A%7B%22%24contains%22%3A%22(test%20100%25%20C%2B%2B%22%7D%7D&page=1&limit=20
+  body: none
+  auth: bearer
+}
+
+params:query {
+  ~filter: {"title":{"$contains":"(test 100% C++"}}
+  page: 1
+  limit: 20
+}
+
+auth:bearer {
+  token: {{authToken}}
+}
+
+headers {
+  X-Correlation-ID: {{$guid}}
+  Accept: application/json
+}
+
+assert {
+  res.status: eq 200
+  res.body.data: isArray
+}
+
+tests {
+  test("should answer 200 for input that broke to_tsquery", function() {
+    expect(res.getStatus()).to.equal(200);
+  });
+}
+
+docs {
+  "(test" raised "syntax error in tsquery" (500) before; % is literal now.
+}

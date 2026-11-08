@@ -2,8 +2,8 @@ package ch.batbern.events.repository;
 
 import ch.batbern.events.domain.NewsletterSubscriber;
 import org.springframework.data.domain.Limit;
-import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
@@ -13,10 +13,12 @@ import java.util.Optional;
 import java.util.UUID;
 
 /**
- * Repository for newsletter subscribers (Story 10.7).
+ * Repository for newsletter subscribers (Story 10.7). The organizer list filters through
+ * {@link ch.batbern.events.specification.NewsletterSubscriberSpecification}.
  */
 @Repository
-public interface NewsletterSubscriberRepository extends JpaRepository<NewsletterSubscriber, UUID> {
+public interface NewsletterSubscriberRepository extends JpaRepository<NewsletterSubscriber, UUID>,
+        JpaSpecificationExecutor<NewsletterSubscriber> {
 
     /**
      * Case-insensitive email lookup: the only email finder on purpose (#1099). Subscribe, bounce /
@@ -72,43 +74,4 @@ public interface NewsletterSubscriberRepository extends JpaRepository<Newsletter
 
     /** Story 10.29 AC8: Find suppressed subscribers for admin listing. */
     List<NewsletterSubscriber> findBySuppressedAtIsNotNull();
-
-    /**
-     * Find subscribers with search, status filter, and pagination (Story 10.28).
-     * Dynamic ORDER BY comes from Spring Data Sort on the Pageable parameter, which the caller builds
-     * with {@code DeterministicPaging} so that {@code id} breaks ties (#1131).
-     */
-    @Query("""
-            SELECT s FROM NewsletterSubscriber s
-            WHERE (:search IS NULL
-                   OR LOWER(s.email) LIKE :searchLike
-                   OR LOWER(s.firstName) LIKE :searchLike)
-              AND (:status = 'all'
-                   OR (:status = 'active'       AND s.unsubscribedAt IS NULL AND s.suppressedAt IS NULL)
-                   OR (:status = 'unsubscribed' AND s.unsubscribedAt IS NOT NULL)
-                   OR (:status = 'suppressed'   AND s.suppressedAt IS NOT NULL))
-            """)
-    List<NewsletterSubscriber> findFiltered(
-            @Param("search") String search,
-            @Param("searchLike") String searchLike,
-            @Param("status") String status,
-            Pageable pageable);
-
-    /**
-     * Count subscribers matching search + status filter (Story 10.28, extended Story 10.29).
-     */
-    @Query("""
-            SELECT COUNT(s) FROM NewsletterSubscriber s
-            WHERE (:search IS NULL
-                   OR LOWER(s.email) LIKE :searchLike
-                   OR LOWER(s.firstName) LIKE :searchLike)
-              AND (:status = 'all'
-                   OR (:status = 'active'       AND s.unsubscribedAt IS NULL AND s.suppressedAt IS NULL)
-                   OR (:status = 'unsubscribed' AND s.unsubscribedAt IS NOT NULL)
-                   OR (:status = 'suppressed'   AND s.suppressedAt IS NOT NULL))
-            """)
-    long countFiltered(
-            @Param("search") String search,
-            @Param("searchLike") String searchLike,
-            @Param("status") String status);
 }

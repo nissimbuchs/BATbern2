@@ -13,6 +13,9 @@ import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.CsvSource;
+import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -729,5 +732,70 @@ public class NewsletterControllerIntegrationTest extends AbstractIntegrationTest
         }
         assertThat(seen).hasSize(270).doesNotHaveDuplicates();
         assertThat(new HashSet<>(seen)).isEqualTo(expectedIds);
+    }
+
+    // ── Subscriber search (e-mail, first name, username; folded, any order) ──────
+
+    private void saveSubscriber(String email, String firstName, String username) {
+        subscriberRepository.save(NewsletterSubscriber.builder()
+                .email(email).firstName(firstName).username(username).language("de")
+                .source("explicit").unsubscribeToken("tok-" + email)
+                .build());
+    }
+
+    private void saveSearchSubscribers() {
+        saveSubscriber("a1@example.com", "Anna", "anna.mueller");
+        saveSubscriber("b2@example.com", "Ben", "ben.muller");
+        saveSubscriber("c3@example.com", "Jürg", null);
+        saveSubscriber("hpm@example.com", "Hans Peter", "hanspeter.muster");
+    }
+
+    @ParameterizedTest
+    @CsvSource({
+        "Müller,2", "Mueller,2", "muller,2", "muster hans,1", "peter,1", "jurg,1", "Juerg,1",
+        "b2@example,1", "anna muller,1", "anna ben,0"
+    })
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    @DisplayName("Subscriber search folds and matches the last name via the username")
+    void should_findSubscribers_bySearch(String input, int expected) throws Exception {
+        saveSearchSubscribers();
+
+        mockMvc.perform(get("/api/v1/newsletter/subscribers").param("search", input))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.pagination.totalItems").value(expected));
+    }
+
+    @Test
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    @DisplayName("A subscriber beyond page 1 is returned, totalItems counts all, status combines")
+    void should_pageSubscriberSearch_andCombineWithStatus() throws Exception {
+        saveSearchSubscribers();
+
+        mockMvc.perform(get("/api/v1/newsletter/subscribers").param("search", "example")
+                        .param("sort", "email").param("page", "2").param("limit", "3"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data.length()").value(1))
+                .andExpect(jsonPath("$.data[0].email").value("hpm@example.com"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(4));
+        mockMvc.perform(get("/api/v1/newsletter/subscribers").param("search", "mueller")
+                        .param("status", "unsubscribed"))
+                .andExpect(jsonPath("$.pagination.totalItems").value(0));
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {"(test", "a  b", "100%", "'", "C++", "", "   "})
+    @WithMockUser(username = "organizer", roles = "ORGANIZER")
+    @DisplayName("Hostile or blank subscriber search answers 2xx; blank is no search")
+    void should_answer2xx_when_subscriberSearchIsHostileOrBlank(String input) throws Exception {
+        saveSearchSubscribers();
+
+        var result = mockMvc.perform(get("/api/v1/newsletter/subscribers").param("search", input))
+                .andExpect(status().isOk());
+        if (input.isBlank()) {
+            result.andExpect(jsonPath("$.pagination.totalItems").value(4));
+        }
+        if ("100%".equals(input)) {
+            result.andExpect(jsonPath("$.pagination.totalItems").value(0));
+        }
     }
 }

@@ -95,6 +95,8 @@ dependencies {
     // subprojects dependencyManagement block.
     testImplementation 'org.testcontainers:testcontainers'
     testImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    // SearchPredicatesSqlTest runs the canonical batbern_fold against a real PostgreSQL.
+    testImplementation 'org.testcontainers:testcontainers-postgresql'
 
     // Test Fixtures dependencies (exposed to consuming projects)
     testFixturesImplementation 'org.springframework.boot:spring-boot-starter-test'
