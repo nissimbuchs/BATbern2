@@ -56,3 +56,6 @@ GET    /users/additional-emails/verify           # verify an added email address
 POST   /users/additional-emails/verify           # same, form post
 POST   /watch/pair                               # Watch pairing with a one-time code
 POST   /watch/authenticate                       # Watch token exchange with the paired secret
+
+# --- Frontend bootstrap ----------------------------------------------------------------------------
+GET    /config                                   # runtime config the SPA loads before any login (API URL, Cognito ids, feature flags); no data about people
