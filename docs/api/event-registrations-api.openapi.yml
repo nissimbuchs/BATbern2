@@ -46,11 +46,8 @@ paths:
         **Auth**: ORGANIZER role.
 
 
-        **Filter Examples**:
-
-        - By status: `{"status":"confirmed"}`
-
-        - By date: `{"registrationDate":{"$gte":"2025-01-01"}}`
+        Sorted by attendee last name, then first name. Filters: `status` (repeatable), `search`,
+        `companyId`.
 
         '
       operationId: listRegistrations
@@ -63,20 +60,45 @@ paths:
           type: string
           pattern: ^BATbern[0-9]+$
           example: BATbern142
-      - name: filter
+      - name: status
         in: query
+        description: Only registrations with one of these statuses (repeatable, `status=CONFIRMED&status=WAITLIST`; case-insensitive).
+        style: form
+        explode: true
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - REGISTERED
+            - WAITLIST
+            - CONFIRMED
+            - CANCELLED
+            - ATTENDED
+      - name: search
+        in: query
+        description: Words searched in the attendee's first name, last name and e-mail.
+        schema:
+          type: string
+      - name: companyId
+        in: query
+        description: Only attendees of this company.
         schema:
           type: string
       - name: page
         in: query
+        description: Page number, 1-indexed.
         schema:
           type: integer
-          default: 0
+          minimum: 1
+          default: 1
       - name: limit
         in: query
+        description: Items per page.
         schema:
           type: integer
-          default: 20
+          minimum: 1
+          default: 25
           maximum: 100
       responses:
         '200':
@@ -85,6 +107,9 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                - data
+                - pagination
                 properties:
                   data:
                     type: array
@@ -102,19 +127,13 @@ paths:
                         eventTitle: Sample title
                         eventDate: "2026-05-14T16:00:00Z"
                         attendeeUsername: john.doe
-                        firstName: Ines
-                        lastName: Probe
-                        email: ines.probe@example.com
-                        company: sample
+                        attendeeFirstName: Ines
+                        attendeeLastName: Probe
+                        attendeeEmail: ines.probe@example.com
+                        attendeeCompany: sample
                         status: REGISTERED
-                        waitlistPosition: 2
+                        waitlistPosition: null
                         registrationDate: "2026-05-14T16:00:00Z"
-                        sessionPreferences:
-                          - sample
-                        specialRequests: sample
-                        communicationPreferences:
-                          newsletterSubscribed: false
-                          eventReminders: true
                         createdAt: "2026-05-14T16:00:00Z"
                         updatedAt: "2026-05-14T16:00:00Z"
                     pagination:
@@ -635,19 +654,13 @@ paths:
                     eventTitle: Sample title
                     eventDate: "2026-05-14T16:00:00Z"
                     attendeeUsername: john.doe
-                    firstName: Ines
-                    lastName: Probe
-                    email: ines.probe@example.com
-                    company: sample
+                    attendeeFirstName: Ines
+                    attendeeLastName: Probe
+                    attendeeEmail: ines.probe@example.com
+                    attendeeCompany: sample
                     status: REGISTERED
-                    waitlistPosition: 2
+                    waitlistPosition: null
                     registrationDate: "2026-05-14T16:00:00Z"
-                    sessionPreferences:
-                      - sample
-                    specialRequests: sample
-                    communicationPreferences:
-                      newsletterSubscribed: false
-                      eventReminders: true
                     createdAt: "2026-05-14T16:00:00Z"
                     updatedAt: "2026-05-14T16:00:00Z"
         '404':
@@ -706,19 +719,13 @@ paths:
                     eventTitle: Sample title
                     eventDate: "2026-05-14T16:00:00Z"
                     attendeeUsername: john.doe
-                    firstName: Ines
-                    lastName: Probe
-                    email: ines.probe@example.com
-                    company: sample
+                    attendeeFirstName: Ines
+                    attendeeLastName: Probe
+                    attendeeEmail: ines.probe@example.com
+                    attendeeCompany: sample
                     status: REGISTERED
-                    waitlistPosition: 2
+                    waitlistPosition: null
                     registrationDate: "2026-05-14T16:00:00Z"
-                    sessionPreferences:
-                      - sample
-                    specialRequests: sample
-                    communicationPreferences:
-                      newsletterSubscribed: false
-                      eventReminders: true
                     createdAt: "2026-05-14T16:00:00Z"
                     updatedAt: "2026-05-14T16:00:00Z"
         '400':
@@ -1456,9 +1463,10 @@ components:
             example: alice@example.com
     Registration:
       type: object
-      description: 'Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
+      description: 'A registration as the organizer endpoints return it (`RegistrationResponse` in EMS):
+        the registration, its event, and the attendee from user_profiles (ADR-004, ADR-006).
 
-        All users (anonymous + authenticated) are in user_profiles table. Anonymous users have cognito_user_id = NULL.
+        Anonymous users are in user_profiles too (cognito_user_id = NULL).
 
         '
       required:
@@ -1478,10 +1486,12 @@ components:
           example: BATbern25
         eventTitle:
           type: string
+          nullable: true
           description: Event title (included for convenience)
         eventDate:
           type: string
           format: date-time
+          nullable: true
           description: Event date (included for convenience)
         attendeeUsername:
           type: string
@@ -1490,25 +1500,24 @@ components:
 
             Format: firstname.lastname or firstname.lastname.2 for duplicates.
 
-            Always present - anonymous users are in user_profiles with cognito_user_id = NULL.
-
-            ADR-006: Unified table eliminates need for separate anonymous_* fields.
-
             '
           example: john.doe
-        firstName:
+        attendeeFirstName:
           type: string
+          nullable: true
           description: First name from user_profiles
-        lastName:
+        attendeeLastName:
           type: string
+          nullable: true
           description: Last name from user_profiles
-        email:
+        attendeeEmail:
           type: string
-          format: email
-          description: Email from user_profiles
-        company:
+          nullable: true
+          description: E-mail from user_profiles
+        attendeeCompany:
           type: string
-          description: Company name from user_profiles.company_id (FK to companies table)
+          nullable: true
+          description: Company ID from user_profiles.company_id; null for attendees without a company
         status:
           type: string
           enum:
@@ -1522,35 +1531,20 @@ components:
         waitlistPosition:
           type: integer
           nullable: true
-          description: Story 10.11 — Position on the waitlist (1-based). Null when status is not WAITLIST.
+          description: Position on the waitlist (1-based, Story 10.11). Null when status is not WAITLIST.
           example: 2
         registrationDate:
           type: string
           format: date-time
-        sessionPreferences:
-          type: array
-          items:
-            type: string
-          description: Event-level registration - sessions are preferences only, not commitments
-        specialRequests:
-          type: string
           nullable: true
-          description: Dietary preferences, accessibility needs, etc.
-        communicationPreferences:
-          type: object
-          properties:
-            newsletterSubscribed:
-              type: boolean
-              default: false
-            eventReminders:
-              type: boolean
-              default: true
         createdAt:
           type: string
           format: date-time
+          nullable: true
         updatedAt:
           type: string
           format: date-time
+          nullable: true
     CreateRegistrationRequest:
       type: object
       description: 'Story 4.1.5a: Event registration request (ADR-006)

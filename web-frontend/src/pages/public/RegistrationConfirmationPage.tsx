@@ -236,17 +236,17 @@ const RegistrationConfirmationPage = () => {
                 <div className="flex justify-between">
                   <span className="text-zinc-400">{t('common:labels.name')}:</span>
                   <span className="text-zinc-100">
-                    {registration.firstName} {registration.lastName}
+                    {registration.attendeeFirstName} {registration.attendeeLastName}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-zinc-400">{t('common:labels.email')}:</span>
-                  <span className="text-zinc-100">{registration.email}</span>
+                  <span className="text-zinc-100">{registration.attendeeEmail}</span>
                 </div>
-                {registration.company && (
+                {registration.attendeeCompany && (
                   <div className="flex justify-between">
                     <span className="text-zinc-400">{t('common:labels.company')}:</span>
-                    <span className="text-zinc-100">{registration.company}</span>
+                    <span className="text-zinc-100">{registration.attendeeCompany}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -283,7 +283,7 @@ const RegistrationConfirmationPage = () => {
                     </h3>
                     <p className="text-sm text-zinc-400 mb-4">
                       Your registration will be automatically linked when you create an account with{' '}
-                      {registration.email}
+                      {registration.attendeeEmail}
                     </p>
                     <Button asChild variant="outline" size="sm">
                       {/* The lookup returns the address masked (GHSA-qhqv), so it cannot prefill */}
@@ -338,7 +338,7 @@ const RegistrationConfirmationPage = () => {
 
             {/* Email Confirmation Notice */}
             <p className="text-center text-sm text-zinc-400">
-              A confirmation email has been sent to {registration.email}
+              A confirmation email has been sent to {registration.attendeeEmail}
             </p>
           </>
         )}

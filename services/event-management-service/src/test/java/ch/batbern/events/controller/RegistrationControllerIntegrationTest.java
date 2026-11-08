@@ -34,6 +34,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
@@ -981,6 +982,26 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.pagination.totalItems").value(3));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("A waitlisted registration carries its queue position in the list, others null")
+    void should_returnWaitlistPosition_when_listingRegistrations() throws Exception {
+        // The organizer's waitlist view numbers and orders rows by this position (Epic 14 FR28).
+        Registration waiting = createTestRegistration("anna.wartend", "waitlist");
+        waiting.setWaitlistPosition(3);
+        registrationRepository.save(waiting);
+        createTestRegistration("ben.dabei", "confirmed");
+
+        mockMvc.perform(get("/api/v1/events/BATbern142/registrations").param("status", "WAITLIST"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].waitlistPosition").value(3));
+        mockMvc.perform(get("/api/v1/events/BATbern142/registrations").param("status", "CONFIRMED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].waitlistPosition").value(nullValue()));
     }
 
     @ParameterizedTest

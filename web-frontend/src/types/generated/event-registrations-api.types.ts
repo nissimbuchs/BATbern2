@@ -20,9 +20,7 @@ export interface paths {
      *
      *     **Auth**: ORGANIZER role.
      *
-     *     **Filter Examples**:
-     *     - By status: `{"status":"confirmed"}`
-     *     - By date: `{"registrationDate":{"$gte":"2025-01-01"}}`
+     *     Sorted by attendee last name, then first name. Filters: `status` (repeatable), `search`, `companyId`.
      */
     get: operations['listRegistrations'];
     put?: never;
@@ -578,8 +576,8 @@ export interface components {
       emails: string[];
     };
     /**
-     * @description Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
-     *     All users (anonymous + authenticated) are in user_profiles table. Anonymous users have cognito_user_id = NULL.
+     * @description A registration as the organizer endpoints return it (`RegistrationResponse` in EMS): the registration, its event, and the attendee from user_profiles (ADR-004, ADR-006).
+     *     Anonymous users are in user_profiles too (cognito_user_id = NULL).
      */
     Registration: {
       /**
@@ -593,57 +591,42 @@ export interface components {
        */
       eventCode: string;
       /** @description Event title (included for convenience) */
-      eventTitle?: string;
+      eventTitle?: string | null;
       /**
        * Format: date-time
        * @description Event date (included for convenience)
        */
-      eventDate?: string;
+      eventDate?: string | null;
       /**
        * @description Attendee username from user_profiles (ADR-003: meaningful identifiers in public APIs).
        *     Format: firstname.lastname or firstname.lastname.2 for duplicates.
-       *     Always present - anonymous users are in user_profiles with cognito_user_id = NULL.
-       *     ADR-006: Unified table eliminates need for separate anonymous_* fields.
        * @example john.doe
        */
       attendeeUsername: string;
       /** @description First name from user_profiles */
-      firstName?: string;
+      attendeeFirstName?: string | null;
       /** @description Last name from user_profiles */
-      lastName?: string;
-      /**
-       * Format: email
-       * @description Email from user_profiles
-       */
-      email?: string;
-      /** @description Company name from user_profiles.company_id (FK to companies table) */
-      company?: string;
+      attendeeLastName?: string | null;
+      /** @description E-mail from user_profiles */
+      attendeeEmail?: string | null;
+      /** @description Company ID from user_profiles.company_id; null for attendees without a company */
+      attendeeCompany?: string | null;
       /**
        * @description NO_SHOW = registered for a past event and did not come (not counted as attendance).
        * @enum {string}
        */
       status: 'REGISTERED' | 'WAITLIST' | 'CONFIRMED' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW';
       /**
-       * @description Story 10.11 — Position on the waitlist (1-based). Null when status is not WAITLIST.
+       * @description Position on the waitlist (1-based, Story 10.11). Null when status is not WAITLIST.
        * @example 2
        */
       waitlistPosition?: number | null;
       /** Format: date-time */
-      registrationDate?: string;
-      /** @description Event-level registration - sessions are preferences only, not commitments */
-      sessionPreferences?: string[];
-      /** @description Dietary preferences, accessibility needs, etc. */
-      specialRequests?: string | null;
-      communicationPreferences?: {
-        /** @default false */
-        newsletterSubscribed: boolean;
-        /** @default true */
-        eventReminders: boolean;
-      };
+      registrationDate?: string | null;
       /** Format: date-time */
-      createdAt?: string;
+      createdAt?: string | null;
       /** Format: date-time */
-      updatedAt?: string;
+      updatedAt?: string | null;
     };
     /**
      * @description Story 4.1.5a: Event registration request (ADR-006)
@@ -1025,8 +1008,15 @@ export interface operations {
   listRegistrations: {
     parameters: {
       query?: {
-        filter?: string;
+        /** @description Only registrations with one of these statuses (repeatable, `status=CONFIRMED&status=WAITLIST`; case-insensitive). */
+        status?: ('REGISTERED' | 'WAITLIST' | 'CONFIRMED' | 'CANCELLED' | 'ATTENDED')[];
+        /** @description Words searched in the attendee's first name, last name and e-mail. */
+        search?: string;
+        /** @description Only attendees of this company. */
+        companyId?: string;
+        /** @description Page number, 1-indexed. */
         page?: number;
+        /** @description Items per page. */
         limit?: number;
       };
       header?: never;
@@ -1045,8 +1035,8 @@ export interface operations {
         };
         content: {
           'application/json': {
-            data?: components['schemas']['Registration'][];
-            pagination?: components['schemas']['PaginationMetadata'];
+            data: components['schemas']['Registration'][];
+            pagination: components['schemas']['PaginationMetadata'];
           };
         };
       };

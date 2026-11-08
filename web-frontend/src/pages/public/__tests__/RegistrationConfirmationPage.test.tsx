@@ -53,13 +53,14 @@ describe('RegistrationConfirmationPage Component', () => {
     eventCode: 'BATbern25',
     eventTitle: 'BATbern 2025',
     eventDate: '2025-06-15T18:00:00Z',
-    firstName: 'John',
-    lastName: 'Doe',
-    email: 'john.doe@example.com',
-    company: 'Acme Corp',
+    // The field names EMS RegistrationResponse sends; an anonymous caller gets the address
+    // masked (GHSA-qhqv).
+    attendeeFirstName: 'John',
+    attendeeLastName: 'Doe',
+    attendeeEmail: 'j***@example.com',
+    attendeeCompany: 'acmecorp',
     attendeeUsername: 'john.doe',
-    status: 'confirmed',
-    specialRequests: 'vegetarian',
+    status: 'CONFIRMED',
     createdAt: '2025-01-09T10:00:00Z',
   };
 
@@ -393,7 +394,7 @@ describe('RegistrationConfirmationPage Component', () => {
 
       // Verify the CTA contains the account linking message
       const cta = screen.getByTestId('account-linking-cta');
-      expect(cta).toHaveTextContent(/john.doe@example.com/);
+      expect(cta).toHaveTextContent('j***@example.com');
       expect(cta).toHaveTextContent(/Create an account to manage your registrations/);
     });
   });

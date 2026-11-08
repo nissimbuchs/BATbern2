@@ -11,35 +11,13 @@ import type {
   EventRegistrationsResponse,
   FetchEventRegistrationsOptions,
 } from '@/types/eventParticipant.types';
-import type { components } from '@/types/generated/event-registrations-api.types';
+import type { components, operations } from '@/types/generated/event-registrations-api.types';
 
-/**
- * Backend API response format (field names differ from frontend)
- */
-interface BackendRegistrationItem {
-  registrationCode: string;
-  eventCode: string;
-  status: string;
-  registrationDate: string;
-  attendeeUsername: string;
-  attendeeFirstName: string; // Backend uses attendeeFirstName
-  attendeeLastName: string; // Backend uses attendeeLastName
-  attendeeEmail: string; // Backend uses attendeeEmail
-  attendeeCompany?: string; // Company ID (optional)
-  waitlistPosition?: number | null; // Story 10.11 — 1-based; null unless status === WAITLIST
-}
+/** A registration as EMS lists it (`RegistrationResponse`), from the spec. */
+type BackendRegistrationItem = components['schemas']['Registration'];
 
-interface BackendPaginatedResponse {
-  data: BackendRegistrationItem[];
-  pagination: {
-    page: number;
-    limit: number;
-    totalItems: number;
-    totalPages: number;
-    hasNext: boolean;
-    hasPrev: boolean;
-  };
-}
+type BackendPaginatedResponse =
+  operations['listRegistrations']['responses'][200]['content']['application/json'];
 
 /**
  * Transform backend registration item to frontend EventParticipant type
@@ -48,14 +26,14 @@ const transformRegistration = (backendReg: BackendRegistrationItem): EventPartic
   registrationCode: backendReg.registrationCode,
   eventCode: backendReg.eventCode,
   attendeeUsername: backendReg.attendeeUsername,
-  firstName: backendReg.attendeeFirstName, // Transform from attendeeFirstName
-  lastName: backendReg.attendeeLastName, // Transform from attendeeLastName
-  email: backendReg.attendeeEmail, // Transform from attendeeEmail
+  firstName: backendReg.attendeeFirstName ?? '',
+  lastName: backendReg.attendeeLastName ?? '',
+  email: backendReg.attendeeEmail ?? '',
   company: backendReg.attendeeCompany
     ? { id: backendReg.attendeeCompany, name: backendReg.attendeeCompany }
     : undefined,
   status: backendReg.status as EventParticipant['status'],
-  registrationDate: backendReg.registrationDate,
+  registrationDate: backendReg.registrationDate ?? '',
   // Epic 14 FR28: carry the authoritative 1-based queue position so the
   // Waitlisted-filter view numbers rows by the backend, not by page index.
   waitlistPosition: backendReg.waitlistPosition ?? null,

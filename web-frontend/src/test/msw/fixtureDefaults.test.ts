@@ -89,6 +89,22 @@ describe('MSW harness fixture defaults', () => {
     expect(data.every((r: { eventCode: string }) => r.eventCode === 'BATbern57')).toBe(true);
   });
 
+  it('pages registrations like EMS: 1-indexed, 25 per page by default', async () => {
+    const { pagination } = (await apiClient.get('/events/BATbern57/registrations')).data;
+
+    expect(pagination).toMatchObject({ page: 1, limit: 25, hasPrev: false });
+  });
+
+  it('filters registrations by every given status, like EMS', async () => {
+    const { data } = (
+      await apiClient.get('/events/BATbern57/registrations', {
+        params: { status: ['WAITLIST', 'CANCELLED'] },
+      })
+    ).data;
+
+    expect(data.map((r: { status: string }) => r.status).sort()).toEqual(['CANCELLED', 'WAITLIST']);
+  });
+
   it('approximates batbern_fold, including the letters NFD does not decompose', () => {
     expect(searchFold('  Brünnimann ')).toBe('brunnimann');
     expect(searchFold('Bruennimann')).toBe('brunnimann');

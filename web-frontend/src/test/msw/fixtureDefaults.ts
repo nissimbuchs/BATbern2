@@ -132,7 +132,13 @@ function listRegistrations(
   query: URLSearchParams,
   params: Record<string, string>
 ): ResponseBody<'listRegistrations', 200> {
-  return paginate(registrations(params.eventCode), query);
+  // EMS: `status` repeatable and case-insensitive, 25 per page by default. `search` and
+  // `companyId` are not applied here; a test that needs them sets `api.on`.
+  const statuses = query.getAll('status').map((s) => s.toUpperCase());
+  const rows = registrations(params.eventCode).filter(
+    (r) => statuses.length === 0 || statuses.includes(r.status)
+  );
+  return paginate(rows, query, 25);
 }
 
 const DEFAULTS: Partial<

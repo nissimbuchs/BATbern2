@@ -269,6 +269,7 @@ public class RegistrationService {
                             ? ISO_FORMATTER.format(registration.getCreatedAt()) : null)
                     .updatedAt(registration.getUpdatedAt() != null
                             ? ISO_FORMATTER.format(registration.getUpdatedAt()) : null)
+                    .waitlistPosition(registration.getWaitlistPosition())
                     // Enriched user fields (ADR-004)
                     .attendeeUsername(userProfile.getId())
                     .attendeeFirstName(userProfile.getFirstName())
@@ -294,6 +295,7 @@ public class RegistrationService {
                             ? ISO_FORMATTER.format(registration.getCreatedAt()) : null)
                     .updatedAt(registration.getUpdatedAt() != null
                             ? ISO_FORMATTER.format(registration.getUpdatedAt()) : null)
+                    .waitlistPosition(registration.getWaitlistPosition())
                     // Placeholder user fields (data integrity issue)
                     .attendeeUsername(registration.getAttendeeUsername())
                     .attendeeFirstName("[User Not Found]")
