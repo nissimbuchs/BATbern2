@@ -732,10 +732,10 @@ describe('useSlotAssignment Hook (Story 5.7 - Task 4a RED Phase)', () => {
       expect(
         slotAssignmentServiceModule.slotAssignmentService.clearAllTimings
       ).toHaveBeenCalledWith(mockEventCode);
-      // getUnassignedSessions called on mount (+ possible re-fire from totalSessions dep) + once on refresh after clear
+      // getUnassignedSessions called once on mount + once on refresh after clear
       expect(
         slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
-      ).toHaveBeenCalledTimes(3);
+      ).toHaveBeenCalledTimes(2);
       expect(result.current.error).toBeNull();
     });
 
@@ -821,10 +821,10 @@ describe('useSlotAssignment Hook (Story 5.7 - Task 4a RED Phase)', () => {
       expect(
         slotAssignmentServiceModule.slotAssignmentService.autoAssignTimings
       ).toHaveBeenCalledWith(mockEventCode);
-      // getUnassignedSessions called on mount (+ possible re-fire from totalSessions dep) + once on refresh after auto-assign
+      // getUnassignedSessions called once on mount + once on refresh after auto-assign
       expect(
         slotAssignmentServiceModule.slotAssignmentService.getUnassignedSessions
-      ).toHaveBeenCalledTimes(3);
+      ).toHaveBeenCalledTimes(2);
       expect(result.current.error).toBeNull();
     });
 
