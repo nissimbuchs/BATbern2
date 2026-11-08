@@ -15,6 +15,7 @@ import type { FileUploadPresignedUrl, FileUploadTarget } from '@/types/fileUploa
 // Type aliases for cleaner code
 type Company = components['schemas']['CompanyResponse'];
 type CompanyListResponse = components['schemas']['PaginatedCompanyResponse'];
+type CompanySearchResult = components['schemas']['CompanySearchResponse'];
 type CreateCompanyRequest = components['schemas']['CreateCompanyRequest'];
 type UpdateCompanyRequest = components['schemas']['UpdateCompanyRequest'];
 // Note: Logo upload types removed in Story 1.16.3 - use generic file upload API instead
@@ -139,7 +140,7 @@ class CompanyApiClient {
     query: string,
     limit: number = 20,
     options?: { expand?: string[] }
-  ): Promise<Company[]> {
+  ): Promise<CompanySearchResult[]> {
     try {
       const params = new URLSearchParams();
       params.append('query', query);
@@ -150,7 +151,7 @@ class CompanyApiClient {
         params.append('include', options.expand.join(','));
       }
 
-      const response = await apiClient.get<Company[]>(
+      const response = await apiClient.get<CompanySearchResult[]>(
         `${COMPANY_API_PATH}/search?${params.toString()}`
       );
 
@@ -298,16 +299,12 @@ export const uploadLogoFromUrl = async (url: string, filename: string): Promise<
   return response.data.uploadId;
 };
 
-// Export convenience methods for direct use
-export const {
-  getCompanies,
-  getCompany,
-  searchCompanies,
-  createCompany,
-  updateCompany,
-  deleteCompany,
-} = companyApiClient;
-
-// Bound separately so the profile "create new company" flow keeps `this` when the
-// method's catch path calls this.transformError (destructured methods lose binding).
+// Exported for direct use. Bound: every method's catch path calls this.transformError, and a
+// destructured method has no `this` (it rejected with a TypeError instead, found in 17.0c2).
+export const getCompanies = companyApiClient.getCompanies.bind(companyApiClient);
+export const getCompany = companyApiClient.getCompany.bind(companyApiClient);
+export const searchCompanies = companyApiClient.searchCompanies.bind(companyApiClient);
+export const createCompany = companyApiClient.createCompany.bind(companyApiClient);
+export const updateCompany = companyApiClient.updateCompany.bind(companyApiClient);
+export const deleteCompany = companyApiClient.deleteCompany.bind(companyApiClient);
 export const getOrCreateCompany = companyApiClient.getOrCreateCompany.bind(companyApiClient);

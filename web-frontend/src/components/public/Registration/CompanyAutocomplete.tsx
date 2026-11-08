@@ -37,7 +37,7 @@ import { searchCompanies, getCompany } from '@/services/api/companyApi';
 import type { components } from '@/types/generated/company-api.types';
 import { Loader2 } from 'lucide-react';
 
-type Company = components['schemas']['CompanyResponse'];
+type Company = components['schemas']['CompanySearchResponse'];
 
 /** A resolved company selection. `name` is the ADR-003 slug; '' means a brand-new,
  * not-yet-materialised company that the parent will create from `displayName`. */

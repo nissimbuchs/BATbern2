@@ -28,7 +28,11 @@ import { searchCompanies, getOrCreateCompany } from '@/services/api/companyApi';
 import { useCompany } from '@/hooks/useCompany/useCompany';
 import type { components } from '@/types/generated/company-api.types';
 
-type Company = components['schemas']['CompanyResponse'];
+/**
+ * What the search returns (`GET /companies/search`), and all this component needs. A full
+ * `CompanyResponse` (a selected value, a get-or-create result) is one too.
+ */
+type Company = components['schemas']['CompanySearchResponse'];
 
 interface CompanyAutocompleteProps {
   value: Company | null;
@@ -127,8 +131,6 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
     name: '',
     displayName: trimmedInput,
     isVerified: false,
-    createdAt: '',
-    updatedAt: '',
   };
   const options = showCreate ? [...companies, createOption] : companies;
 
