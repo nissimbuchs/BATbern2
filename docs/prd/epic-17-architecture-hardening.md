@@ -106,22 +106,29 @@ Protective and cheap first, then decoupling, then restructuring.
 | 17.9 | API conventions I (breaking) | 17.4, **17.0c, 17.0d** | dev |
 | 17.10 | API conventions II (breaking) | 17.9 | dev |
 | 17.11 | One upload contract, first purpose `company-logo` | 17.4, **17.0c, 17.0d** | dev |
+| 17.9b | One transition idiom for the event lifecycle (breaking) | 17.9 | dev |
+| 17.10b | API conventions III (breaking) | 17.10 | dev |
+| 17.11a–d | Upload purposes profile-picture, event-photo, teaser-image, session-material | 17.11, 17.10b (17.11c, d after 17.11b) | dev |
 | 17.12 | EMS modularization design | 17.5 | **design (Winston)** |
 | 17.13 | Registrations out of `EventController` | 17.12 | dev |
 | 17.14 | Domain exception base | 17.12 | dev |
 | 17.15 | Mail core / mail center split | 17.12, 16.8c | dev |
 | 17.16 | Event-core extension points | 17.12 | dev |
 
-**21 stories** (17.0a–d, 17.1–17.16, 17.3b); 17.12 is a design task. 17.1–17.5 do not wait for 17.0a–d and
+**27 stories** (17.0a–d, 17.1–17.16, 17.3b, 17.9b, 17.10b, 17.11a–d); 17.12 is a design task. 17.1–17.5 do not wait for 17.0a–d and
 can run alongside them; 17.1, 17.2, 17.5 and 17.0a have no dependencies. 17.6 to 17.11 can run in
 parallel once their dependencies are in, as long as only one PR is open at a time. Winston's estimate
 (not measured): 17.0a–d are about 5–6 stories of work, so 17.0b and 17.0c may each split into two
 PRs (as 16.8a/b did).
 
-**Not stories yet:** the five remaining upload purposes after 17.11 (profile-picture, event-photo,
-teaser-image, session-material incl. speaker portal, mail-attachment; one story each, created after
-17.11 proves the pattern), the remaining EMS module moves (planning, publishing, ai) after 17.12, and
-the follow-up reviews (database, frontend, schema, Spring gateway, Watch API; action list item 9).
+**Not stories yet:** the upload purpose mail-attachment, the Watch API path changes (`/watch/pair`,
+`/watch/authenticate`; owner deciding), the remaining EMS module moves (planning, publishing, ai)
+after 17.12, and the follow-up reviews (database, frontend, schema, Spring gateway, Watch API; action
+list item 9). Since 2026-11-08 (owner) the purposes profile-picture, event-photo, teaser-image and
+session-material incl. speaker portal are backlog stories 17.11a–d, each built after 17.11 proves the
+pattern, 17.10b (API conventions III) owns the remaining Spectral baseline lines, and 17.9b folds
+the event lifecycle into one transition idiom (ADR-013 §1); all sit in
+epic 4 of the v7 initiative `initiative-architecture-hardening`.
 
 ---
 

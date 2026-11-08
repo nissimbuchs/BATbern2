@@ -50,6 +50,9 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - R19 (17.14): `GlobalExceptionHandler` imports no domain class, and every exception keeps its status and error code.
 - R20 (17.15): mail core depends on no mail-center class. Delivery status, "What went out" and the moderator Reply-To behave as before.
 - R21 (17.16): event core depends on no L3+ module, and all workflow transitions behave as before.
+- R22 (owner 2026-11-08, PRD "Not stories yet"): after 17.11, the purposes profile-picture, event-photo, teaser-image and session-material (organizer and speaker portal) run on `/api/v1/uploads/{purpose}` in production, one story each, and their old presign, confirm and upload-from-url operations are gone.
+- R23 (owner 2026-11-08, API conventions III): the notification state changes are PATCH operations, the AI prompt reset deletes the override, session batch import is a bulk create, no path carries an e-mail address (additional e-mails), event types sit at `/event-types`, recent photos and the cross-event registrations list sit outside `/events/{literal}`, and get-or-create uses the slash form (ADR-013 §2).
+- R24 (owner 2026-11-08, ADR-013 §1): the event lifecycle (publish, phase publish and unpublish, auto-publish schedule, workflow transition) has one transition idiom in the specs, the other operations folded into it, and publishing still reaches the public site.
 
 ## Constraints
 
@@ -76,14 +79,14 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - The ArchUnit store holds zero EMS→PCS and zero CUMS→EMS client dependencies, and every S2S call goes through `/internal`.
 - The frontend layer baseline (`web-frontend/scripts/api-layer-baseline.txt`) is empty, or each remaining line says why.
 - Every baseline and store still holding entries names the story or the owner decision behind each group.
-- The Spectral baseline has shrunk by the entries of 17.6, 17.9, 17.10 and 17.11, and `company-logo` uploads run on `/uploads/company-logo` in production.
+- The Spectral baseline has shrunk by the entries of 17.6, 17.9, 17.9b, 17.10, 17.10b, 17.11 and 17.11a to 17.11d, every line left names its owning story or an owner-accepted exception, and `company-logo` uploads run on `/uploads/company-logo` in production.
 - The EMS module script, re-run, shows fewer violating pairs and references than the 2026-11-07 baseline (28 pairs, 100 references), with the numbers recorded.
 - Each story reached production through its own PR and was verified there.
 
 ## Boundaries
 
 - Out: the P5 pre-deploy gate (parked until 17.1 to 17.5 and 17.0a to 17.0d, `docs/plans/pre-deploy-gate-plan.md`).
-- Out: the five upload purposes after `company-logo`, the remaining EMS module moves (planning, publishing, ai) after 17.12, and the follow-up reviews (action list item 9). Each becomes a story only after its predecessor proves the pattern.
+- Out: the `mail-attachment` upload purpose (the other four after `company-logo` are R22, owner 2026-11-08), the Watch API path changes (owner deciding), the remaining EMS module moves (planning, publishing, ai) after 17.12, and the follow-up reviews (action list item 9). Each becomes a story only after its predecessor proves the pattern.
 - Out: 16.12 and 16.13 (archived), and converting every existing `@MockitoBean UserApiClient` at once (gradual, under the 17.0a touch rule).
 - Out: the target storage design in `docs/prd-enhanced.md` §4.2 (per-type buckets, ClamAV, quotas). 17.11 unifies the upload API on the one existing content bucket. §4.2 waits for the owner's strike/defer/rewrite decision (#1210).
 - Must not change: user-visible behaviour outside the breaking API stories. The registration wizard, the Mail Center sends, the topic canvas and the workflow transitions behave as before.
@@ -113,3 +116,5 @@ Developers and agents working on BATbern find one endpoint, one transport and on
 - Decision: 2026-11-07. Epic 1 is the platform-baseline epic: the gates and the dead-surface clean-up that every later epic measures against. The ratchet 17.0a sits in epic 2, which starts in parallel.
 - Decision: 2026-11-08, owner. Epic 17 exists to make the architecture cleaner, not to document or freeze it ("With every story it should get better"). New constraint C15; R7 and R9 extended; gate stories fix in-service violations that need no later design and name the owning story of every frozen group. Applied to the PRD (Rules for every story, Story 17.5) and `_bmad/custom/bmad-build.toml` by the owner's session; replanned across the five epics the same day.
 - Decision: 2026-11-08, owner. The frontend calls 17.3 froze move into the service layer, baseline to zero where possible: entry 3b in epic 1, built right after 17.5.
+- Decision: 2026-11-08, owner. Every line of the 17.4 Spectral baseline names its owning story or an owner-accepted exception; all proposed exception classes accepted. The 20 lines no story owned (beside the 2 Watch API lines, owner still deciding) become backlog entries in epic 4: 11a to 11d (upload purposes profile-picture, event-photo, teaser-image, session-material) and 10b (API conventions III). New R22 and R23; Boundaries and Done when follow.
+- Decision: 2026-11-08, owner. Backlog story 9b in epic 4, one transition idiom for the event lifecycle (ADR-013 §1), after 17.9; new R24.

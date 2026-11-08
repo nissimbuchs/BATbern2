@@ -30,8 +30,8 @@ after = [
 id = 4
 slug = "epic-api-conventions-and-uploads"
 title = "One way in per resource, one upload contract"
-description = "Tasks, settings, user and speaker paths, registrations and newsletter subscriptions follow the conventions with the old operations removed; company-logo uploads run on /api/v1/uploads/{purpose} in production."
-covers = ["R14", "R15", "R16"]
+description = "Tasks, settings, the event lifecycle transitions, user and speaker paths, registrations, newsletter subscriptions, notifications, AI prompts, session import, additional e-mails, event types and get-or-create follow the conventions with the old operations removed; company-logo, profile-picture, event-photo, teaser-image and session-material uploads run on /api/v1/uploads/{purpose} in production."
+covers = ["R14", "R15", "R16", "R22", "R23", "R24"]
 after = [
   { epic = 3, needs = "17.6's /internal move of PATCH /users/{u}/profile (17.10 merges the profile twins) and 17.7's removal of the logo-request push (17.11 rebuilds the logo request flow)" },
   { epic = 1, needs = "17.4 Spectral baseline and 17.3 FE path contract check, the guards of every breaking change" },
