@@ -439,7 +439,11 @@ flowchart LR
   `SpringDomainEventPublisher` implements it by validating the event and handing it to Spring's
   `ApplicationEventPublisher`. A synchronous listener that throws is logged at ERROR with the event
   type and does not fail the caller (the behaviour before the bus was removed; whether it should
-  fail the caller is story 17.12).
+  fail the caller is story 17.12). Each such failure also increments the Micrometer counter
+  `domain.events.listener.failures`, tagged `event_type` and `listener` (`Class.method`, or
+  `unknown`), readable at `/actuator/metrics/domain.events.listener.failures` and in the Prometheus
+  scrape. No service exports Micrometer metrics to CloudWatch today (`CLOUDWATCH_METRICS_ENABLED`
+  is not set in the CDK), so no alarm watches the counter yet.
 - There is no message bus. The EventBridge bus, the EventBridge publisher with its Resilience4j
   wrapping, the `EVENT_BUS_NAME` settings and the `events:PutEvents` grants were removed in
   Story 17.2 part B (2026-11): the bus had no rules and EMS published to a bus name that did not

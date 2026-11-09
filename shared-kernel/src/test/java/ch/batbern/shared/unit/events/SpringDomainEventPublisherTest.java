@@ -13,6 +13,9 @@ import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.slf4j.LoggerFactory;
+import io.micrometer.core.instrument.Counter;
+import io.micrometer.core.instrument.MeterRegistry;
+import io.micrometer.core.instrument.simple.SimpleMeterRegistry;
 import org.springframework.context.annotation.AnnotationConfigApplicationContext;
 import org.springframework.context.event.EventListener;
 
@@ -51,7 +54,14 @@ class SpringDomainEventPublisherTest {
     }
 
     private DomainEventPublisher publisherWith(Class<?>... listeners) {
+        return publisherWith(null, listeners);
+    }
+
+    private DomainEventPublisher publisherWith(MeterRegistry registry, Class<?>... listeners) {
         context = new AnnotationConfigApplicationContext();
+        if (registry != null) {
+            context.registerBean(MeterRegistry.class, () -> registry);
+        }
         context.register(SpringDomainEventPublisher.class);
         context.register(listeners);
         context.refresh();
@@ -120,6 +130,37 @@ class SpringDomainEventPublisherTest {
 
         assertThat(context.getBean(RecordingListener.class).received).hasSize(1);
         assertThat(logAppender.list).noneMatch(e -> e.getLevel() == Level.ERROR);
+    }
+
+    @Test
+    @DisplayName("should_countFailureByEventTypeAndListener_when_listenerThrows")
+    void should_countFailureByEventTypeAndListener_when_listenerThrows() {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        DomainEventPublisher publisher = publisherWith(registry, ThrowingListener.class);
+        EventCreatedEvent event = sampleEvent();
+
+        publisher.publish(event);
+        publisher.publish(event);
+
+        Counter failures = registry.find(SpringDomainEventPublisher.LISTENER_FAILURES)
+            .tag("event_type", event.getEventType())
+            .tag("listener", "ThrowingListener.on")
+            .counter();
+        assertThat(failures).as("failure counter by event type and listener").isNotNull();
+        assertThat(failures.count()).isEqualTo(2.0);
+        assertThat(context.getBean(ThrowingListener.class).calls).isEqualTo(2);
+    }
+
+    @Test
+    @DisplayName("should_countNothing_when_listenerSucceeds")
+    void should_countNothing_when_listenerSucceeds() {
+        SimpleMeterRegistry registry = new SimpleMeterRegistry();
+        DomainEventPublisher publisher = publisherWith(registry, RecordingListener.class);
+
+        publisher.publish(sampleEvent());
+
+        assertThat(context.getBean(RecordingListener.class).received).as("positive control").hasSize(1);
+        assertThat(registry.find(SpringDomainEventPublisher.LISTENER_FAILURES).counters()).isEmpty();
     }
 
     static class RecordingListener {

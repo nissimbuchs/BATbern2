@@ -38,6 +38,8 @@ dependencies {
     // Spring Boot dependencies
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // 17.0 deferred work: SpringDomainEventPublisher counts swallowed listener failures (Micrometer).
+    implementation 'io.micrometer:micrometer-core'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     // Epic 13 (SB4): spring-boot-starter-aop was removed in SB4. Spring AOP proxy infra comes
     // transitively via spring-boot-starter (spring-context); AuditLoggingAspect's @Aspect/@Around
