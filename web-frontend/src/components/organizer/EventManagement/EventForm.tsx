@@ -293,19 +293,23 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     [initialFormData]
   );
 
-  // Auto-save functionality (5-second debounce, always enabled)
-  const formValues = watch();
-  const debouncedFormValues = useDebounce(formValues, 5000);
+  // Auto-save functionality (5-second debounce, always enabled). The debounce runs on the form's
+  // content, not on `watch()`'s object: that is new on every render, so any re-render (the save's
+  // own status) restarted the timer and re-sent a failed save with nothing edited.
+  const formSnapshot = JSON.stringify(watch());
+  const debouncedFormSnapshot = useDebounce(formSnapshot, 5000);
 
   useEffect(() => {
     if (mode === 'edit' && isDirty && event && hasEditPermission) {
-      const changedFields = getChangedFields(debouncedFormValues);
+      const changedFields = getChangedFields(
+        JSON.parse(debouncedFormSnapshot) as PartialEventFormData
+      );
       if (Object.keys(changedFields).length > 0) {
         handleAutoSave(changedFields);
       }
     }
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [debouncedFormValues, mode, isDirty, event, hasEditPermission]);
+  }, [debouncedFormSnapshot, mode, isDirty, event, hasEditPermission]);
 
   const handleAutoSave = async (changedFields: PartialEventFormData) => {
     if (!event) return;

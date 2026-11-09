@@ -305,7 +305,7 @@ fe-mock-hooks	web-frontend/src/components/organizer/Admin/EmailTemplateEditModal
 fe-mock-hooks	web-frontend/src/components/organizer/Admin/EmailTemplatesTab.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/Admin/EventTypesTab.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/Admin/TaskTemplatesTab.test.tsx	1
-fe-mock-hooks	web-frontend/src/components/organizer/EventManagement/__tests__/EventForm.test.tsx	2
+fe-mock-hooks	web-frontend/src/components/organizer/EventManagement/__tests__/EventForm.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventManagement/__tests__/SessionSpeakersTab.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventManagement/__tests__/TeamActivityFeed.test.tsx	1
 fe-mock-hooks	web-frontend/src/components/organizer/EventPage/AiAssistDrawer.test.tsx	1
