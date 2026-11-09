@@ -263,6 +263,29 @@ describe('scanJavaTest', () => {
     expect(asObject(scanJavaTest(source))).toEqual({ 'be-mock-in-process': 2 });
   });
 
+  it('counts @MockitoSpyBean and @SpyBean of own types like @MockitoBean, not of the boundary', () => {
+    // A spy stubs (doReturn) and verifies own code exactly like a mock; it escaped the count
+    // until the 17.0 deferred-work fix (TokenReplyRoutingIntegrationTest spied two own services).
+    const source = [
+      'import software.amazon.awssdk.services.ses.SesClient;',
+      'class SpyIntegrationTest {',
+      '  @MockitoSpyBean private InboundEmailRouter router;',
+      '  @MockitoSpyBean',
+      '  EmailForwardingService forwardingService;',
+      '  @org.springframework.test.context.bean.override.mockito.MockitoSpyBean PartnerApiClient partners;',
+      '  @SpyBean UserApiClient legacy;',
+      '  @MockitoSpyBean SesClient sesClient;',
+      '  @MockitoSpyBean Clock clock;',
+      '  // @MockitoSpyBean Commented commented;',
+      '  String s = "@MockitoSpyBean InString x;";',
+      '}',
+    ].join('\n');
+    expect(asObject(scanJavaTest(source))).toEqual({
+      'be-mock-in-process': 2,
+      'be-mock-s2s-client': 2,
+    });
+  });
+
   it('reads testFixtures source sets too', () => {
     expect(asObject(scanJavaTest(read(SLUG_CONFIG)))).toEqual({ 'be-mock-in-process': 1 });
   });

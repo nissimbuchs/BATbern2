@@ -16,7 +16,6 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.events.service.workflow.SpeakerProvisioningHook;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.events.DomainEventPublisher;
 import ch.batbern.shared.events.SpeakerAcceptedEvent;
@@ -83,8 +82,6 @@ class SpeakerWorkflowServiceTest {
     @Mock
     private UserApiClient userApiClient;
     @Mock
-    private SpeakerProvisioningHook speakerProvisioningHook;
-    @Mock
     private SpeakerInvitationEmailService invitationEmailService;
     @Mock
     private SpeakerAcceptanceEmailService acceptanceEmailService;
@@ -122,7 +119,6 @@ class SpeakerWorkflowServiceTest {
                 sessionContentHistoryRepository,
                 agendaConfigResolver,
                 userApiClient,
-                speakerProvisioningHook,
                 invitationEmailService,
                 acceptanceEmailService,
                 organizerNotificationService,
@@ -270,7 +266,6 @@ class SpeakerWorkflowServiceTest {
         assertThat(historyCaptor.getValue().getChangeReason()).isEqualTo("re-affirmed");
 
         verify(speakerPoolRepository, never()).save(any(SpeakerPool.class));
-        verify(speakerProvisioningHook, never()).grantSpeakerRole(any(), any());
         verify(invitationEmailService, never()).sendInvitationEmail(any(), any(), any(), any(), any());
         verify(organizerNotificationService, never()).notifyOrganizerOfResponse(any(), any(), any());
 
@@ -434,7 +429,7 @@ class SpeakerWorkflowServiceTest {
         service.transition(SPEAKER_ID, SpeakerWorkflowState.READY, ORGANIZER, payload);
 
         // Story 11.D.1: provisionUserWithRole is the single canonical call (replaces
-        // the legacy getOrCreateUser + speakerProvisioningHook.grantSpeakerRole pair).
+        // the legacy getOrCreateUser + role-grant pair).
         ArgumentCaptor<ProvisionUserRequest> provisionCaptor =
                 ArgumentCaptor.forClass(ProvisionUserRequest.class);
         inOrder.verify(userApiClient).provisionUserWithRole(provisionCaptor.capture());
@@ -446,10 +441,6 @@ class SpeakerWorkflowServiceTest {
         assertThat(captured.getFirstName()).isEqualTo("Test");
         assertThat(captured.getLastName()).isEqualTo("Speaker");
         assertThat(captured.getRole()).isEqualTo(ProvisionUserRequest.RoleEnum.SPEAKER);
-
-        // The legacy SpeakerProvisioningHook is no longer called from the READY hook —
-        // provisioning is now a single call to UserApiClient.provisionUserWithRole.
-        verify(speakerProvisioningHook, never()).grantSpeakerRole(any(), any());
 
         ArgumentCaptor<SpeakerPromotedToReadyEvent> promoted =
                 ArgumentCaptor.forClass(SpeakerPromotedToReadyEvent.class);

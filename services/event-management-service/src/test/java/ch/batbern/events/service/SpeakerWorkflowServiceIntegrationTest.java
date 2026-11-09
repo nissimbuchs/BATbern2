@@ -19,7 +19,6 @@ import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.events.service.workflow.SpeakerProvisioningHook;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.exception.NotFoundException;
@@ -37,7 +36,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -52,7 +50,6 @@ import static org.springframework.http.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
@@ -92,8 +89,6 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
     private SpeakerAcceptanceEmailService acceptanceEmailService;
     @MockitoBean
     private OrganizerNotificationService organizerNotificationService;
-    @MockitoSpyBean
-    private SpeakerProvisioningHook speakerProvisioningHook;
 
     private Event testEvent;
     private UUID testEventId;
@@ -287,7 +282,6 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(history.get(0).getNewStatus()).isEqualTo(state);
         assertThat(history.get(0).getChangeReason()).isEqualTo("re-affirmed");
 
-        verify(speakerProvisioningHook, never()).grantSpeakerRole(anyString(), anyString());
         verify(invitationEmailService, never()).sendInvitationEmail(any(), any(), any(), any(), any());
         verify(organizerNotificationService, never()).notifyOrganizerOfResponse(any(), any(), any());
     }
@@ -323,7 +317,7 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         workflowService.transition(speaker.getId(), SpeakerWorkflowState.READY, ORGANIZER, payload);
 
         // Story 11.D.1: provisionUserWithRole is the canonical single call (replaces the
-        // legacy getOrCreateUser + speakerProvisioningHook.grantSpeakerRole pair).
+        // legacy getOrCreateUser + role-grant pair).
         assertThat(cums.calls(POST, PROVISION)).singleElement().satisfies(call -> {
             JsonNode sent = new ObjectMapper().readTree(call.body());
             assertThat(sent.path("email").asText()).isEqualTo("speaker@example.com");
@@ -331,10 +325,6 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
             assertThat(sent.path("lastName").asText()).isEqualTo("Speaker");
             assertThat(sent.path("role").asText()).isEqualTo("SPEAKER");
         });
-
-        // The legacy SpeakerProvisioningHook is no longer called from the READY hook —
-        // provisioning is now a single call to UserApiClient.provisionUserWithRole.
-        verify(speakerProvisioningHook, never()).grantSpeakerRole(anyString(), anyString());
 
         SpeakerPool persisted = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
         assertThat(persisted.getStatus()).isEqualTo(SpeakerWorkflowState.READY);

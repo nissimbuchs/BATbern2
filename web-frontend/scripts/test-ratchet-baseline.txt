@@ -24,7 +24,6 @@ be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/MailGoldenTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/OwnTextComposerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/ConversationThreadingIntegrationTest.java	1
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/mailcenter/inbound/TokenReplyRoutingIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/DeregistrationLinkOnceIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/EventArchivalCleanupAc5IntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/service/QnaNotificationServiceIntegrationTest.java	1

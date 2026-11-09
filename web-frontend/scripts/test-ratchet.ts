@@ -24,9 +24,10 @@
  *       the real i18next with `en` that `src/test/setup.ts` provides (Story 17.0c1). The stub
  *       drops interpolation and hides missing keys (#959, #1150).
  *   be-mock-s2s-client
- *       `@MockitoBean` whose type ends in `Client` and is not a boundary type (UserApiClient, ...),
+ *       `@MockitoBean` (also `@MockitoSpyBean`, and the older `@MockBean` / `@SpyBean`, everywhere
+ *       below) whose type ends in `Client` and is not a boundary type (UserApiClient, ...),
  *       and `mock(XClient.class)` / `Mockito.mock(XClient.class)` / a `@Mock XClient` field of such a type in test
- *       sources, so a shared `@Primary` mock config (EMS TestUserApiClientConfig) counts too
+ *       sources, so a shared `@Primary` mock config (EMS TestUserApiClientConfig, retired in 17.0b1) counts too
  *       (Story 17.0b1). Retire these onto the S2S contract harness (`ContractServer`).
  *   be-mock-in-process
  *       any other `@MockitoBean` that is not a boundary type, and `mock(X.class)` of such a type
@@ -249,9 +250,13 @@ const MODIFIERS = new Set([
 ]);
 const TYPE_KEYWORDS = new Set(['class', 'interface', 'record', 'enum']);
 
-/** Simple type names of every `@MockitoBean` in a masked Java source (field or class level). */
+/**
+ * Simple type names of every `@MockitoBean` in a masked Java source (field or class level), and of
+ * every `@MockitoSpyBean`: a spy stubs (`doReturn`) and verifies own code just like a mock. The
+ * pre-Boot-4 `@MockBean` / `@SpyBean` count the same.
+ */
 export function mockitoBeanTypes(masked: string): string[] {
-  return annotatedTypes(masked, /@(?:[\w.]+\.)?MockitoBean\b/g);
+  return annotatedTypes(masked, /@(?:[\w.]+\.)?(?:MockitoBean|MockitoSpyBean|MockBean|SpyBean)\b/g);
 }
 
 /** Simple type names of every Mockito `@Mock` field in a masked Java source. */
