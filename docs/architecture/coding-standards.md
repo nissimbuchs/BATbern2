@@ -539,8 +539,8 @@ Every Vitest test runs against one MSW server (`web-frontend/src/test/msw/`, sta
   2xx response in the specs has one; `examples.test.ts` guards that it exists, validates against
   the schema and carries no personal data.
 - **Overrides by `operationId`**, typed from `src/types/generated/`: a missing required field or a
-  wrong shape fails `npm run type-check` (`tsconfig.test-harness.json` covers the harness and the
-  tests listed there). An operationId two specs share is qualified by its spec
+  wrong shape fails `npm run type-check` (`tsconfig.test-harness.json` covers all of `src`, tests
+  included, see "Frontend: tests are type-checked" below). An operationId two specs share is qualified by its spec
   (`topics-api/listTopics`, `partners-api/listTopics`).
 
 ```ts
@@ -708,6 +708,19 @@ skips comments only).
   PR says so.
 
 Locally: `make check-test-ratchet`.
+
+#### Frontend: tests are type-checked
+
+`npm run type-check` (CI `build-frontend`) compiles all of `web-frontend/src`, tests included, with
+`tsconfig.test-harness.json` (since 2026-11-09; before, only the tests listed there). Its `exclude`
+list holds the test files that did not compile at the switch (115). The list only shrinks:
+`scripts/check-test-typecheck.ts`, the last step of `type-check`, compiles every file of `src` with
+nothing excluded and fails STALE for an excluded file that compiles now (remove the line) and NOT
+TEST for an entry that is not a test file. A test that is not excluded and does not compile fails
+`tsc` itself, so a new test can only be excluded by editing the list, which is review matter: fix
+the test instead, with fixtures in the wire shape (`src/test/fixtures`, the generated types). A test
+whose basename equals a `.ts` twin (`x.test.ts` and `x.test.tsx`) is invisible to `tsc`: name the
+second one `x.hooks.test.tsx` (or similar).
 
 #### Frontend: i18n keys
 

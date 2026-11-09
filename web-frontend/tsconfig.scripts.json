@@ -19,6 +19,7 @@
     "scripts/api-lint*.ts",
     "scripts/api-similarity*.ts",
     "scripts/check-i18n-keys*.ts",
+    "scripts/check-test-typecheck*.ts",
     "scripts/lib/*.ts",
     "src/test/contract/*.ts",
     "src/test/msw/openapi.ts",

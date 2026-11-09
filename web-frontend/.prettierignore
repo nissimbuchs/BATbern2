@@ -57,3 +57,7 @@ scripts/__fixtures__/i18n-keys
 # Story 17.3c: fixture sources for scripts/check-api-type-copies.test.ts, read as text. Their
 # layout (the generator's indentation, comments around declarations) is part of what they check.
 scripts/__fixtures__/api-type-copies
+
+# Test type-check exclude list: fixture tree for scripts/check-test-typecheck.test.ts, one file
+# that must not compile on purpose.
+scripts/__fixtures__/test-typecheck
