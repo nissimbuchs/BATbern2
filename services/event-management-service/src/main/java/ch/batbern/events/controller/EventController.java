@@ -1859,8 +1859,13 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
      * @param metrics Comma-separated list of metrics to return
      * @param timeframe Optional timeframe as "startTime,endTime" in ISO-8601 format
      * @return Analytics data for the event
+     *
+     * <p>Deliberately open to every authenticated user, not only organizers: the answer holds
+     * aggregate counts (registrations, attendance, engagement), no personal data (owner decision
+     * 2026-11-09). Anonymous callers get 401 from the filter chain.
      */
     @Override
+    @PreAuthorize("isAuthenticated()")
     public ResponseEntity<EventAnalytics> getEventAnalytics(
             String eventCode,
             String metrics,

@@ -71,6 +71,7 @@
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-test-fidelity/tickets/story-production-setup-in-tests-plan.md`
   summary: OWNER DECIDES. `GET /api/v1/events/{code}/analytics` (`EventController.getEventAnalytics`) has no `@PreAuthorize`: any authenticated user reads registration and attendance counts of an event. Aggregate numbers, no personal data; whether it becomes organizer-only is a role decision.
   evidence: 17.0b3 findings; no `@PreAuthorize` on the method, re-read 2026-11-09.
+  resolved: owner decision 2026-11-09: keep. `getEventAnalytics` now states the rule (`@PreAuthorize("isAuthenticated()")` plus a comment why); two ITs pin it (attendee 200, anonymous 401). Behaviour unchanged.
 - source_plan: `_bmad-output/initiative-architecture-hardening/tickets/epic-test-fidelity/tickets/story-production-setup-in-tests-plan.md`
   summary: TOUCH RULE. Unit tests that `@Mock EmailService` and assert with `verify(emailService)` (13 per the 0b3 plan: PCS `PartnerInviteEmailServiceTest`, EMS `*EmailServiceTest`, ...) are not counted by the ratchet; and `DragDropSlotAssignment.test.tsx` mocks 4 own hooks. Each moves to the recorder / MSW harness when a story touches its code.
   evidence: 17.0b3 findings; sweep plan Code Map. Not recounted on 2026-11-09 (a grep heuristic finds 11 to 26 files depending on the pattern, so the 0b3 number stands).

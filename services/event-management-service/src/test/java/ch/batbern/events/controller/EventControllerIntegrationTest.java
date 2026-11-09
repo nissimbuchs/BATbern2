@@ -1568,6 +1568,29 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("should_returnAnalytics_when_callerIsAnyAuthenticatedUser")
+    @WithMockUser(username = "some.attendee", roles = "ATTENDEE")
+    void should_returnAnalytics_when_callerIsAnyAuthenticatedUser() throws Exception {
+        // Owner decision 2026-11-09: aggregate counts, open to every signed-in account.
+        Event savedEvent = createTestEvent("BATbern AnalyticsOpen", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
+
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/analytics")
+                        .param("metrics", "registrations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()));
+    }
+
+    @Test
+    @DisplayName("should_return401_when_analyticsRequestedAnonymously")
+    void should_return401_when_analyticsRequestedAnonymously() throws Exception {
+        Event savedEvent = createTestEvent("BATbern AnalyticsAnon", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
+
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/analytics")
+                        .param("metrics", "registrations"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("should_filterByTimeframe_when_timeframeProvided")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_filterByTimeframe_when_timeframeProvided() throws Exception {
