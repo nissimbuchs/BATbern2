@@ -1302,9 +1302,6 @@
         "error": "エラー",
         "warning": "警告"
       },
-      "timeRange": "コンフリクトの時間範囲",
-      "start": "開始",
-      "end": "終了",
       "conflictingSession": "コンフリクトするセッション",
       "resolutionOptions": "解決オプション",
       "resolutionMessage": "このコンフリクトを解決するために別の時間スロットまたは部屋を選択してください。",

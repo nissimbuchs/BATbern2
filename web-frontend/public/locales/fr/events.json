@@ -1302,9 +1302,6 @@
         "error": "ERREUR",
         "warning": "AVERTISSEMENT"
       },
-      "timeRange": "Plage horaire du conflit",
-      "start": "Début",
-      "end": "Fin",
       "conflictingSession": "Session en conflit",
       "resolutionOptions": "Options de résolution",
       "resolutionMessage": "Choisissez un autre créneau horaire ou une autre salle pour résoudre ce conflit.",

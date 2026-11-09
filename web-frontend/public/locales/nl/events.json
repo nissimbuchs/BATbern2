@@ -1302,9 +1302,6 @@
         "error": "FOUT",
         "warning": "WAARSCHUWING"
       },
-      "timeRange": "Conflicttijdbereik",
-      "start": "Begin",
-      "end": "Einde",
       "conflictingSession": "Conflicterende sessie",
       "resolutionOptions": "Oplossingsopties",
       "resolutionMessage": "Kies een ander tijdslot of zaal om dit conflict op te lossen.",

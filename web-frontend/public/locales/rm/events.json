@@ -1302,9 +1302,6 @@
         "error": "SBAGL",
         "warning": "AVIS"
       },
-      "timeRange": "Rango temporal dal conflict",
-      "start": "Entschatta",
-      "end": "Fin",
       "conflictingSession": "Sessiun en conflict",
       "resolutionOptions": "Opziuns da soluziun",
       "resolutionMessage": "Tscherna in auter slot temporal u chombra per resolver quest conflict.",

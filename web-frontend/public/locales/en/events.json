@@ -1326,9 +1326,6 @@
         "error": "ERROR",
         "warning": "WARNING"
       },
-      "timeRange": "Conflict Time Range",
-      "start": "Start",
-      "end": "End",
       "conflictingSession": "Conflicting Session",
       "resolutionOptions": "Resolution Options",
       "resolutionMessage": "Choose a different time slot or room to resolve this conflict.",

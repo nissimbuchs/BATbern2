@@ -1326,9 +1326,6 @@
         "error": "FEHLER",
         "warning": "WARNUNG"
       },
-      "timeRange": "Konflikt-Zeitbereich",
-      "start": "Start",
-      "end": "Ende",
       "conflictingSession": "Konflikt-Sitzung",
       "resolutionOptions": "Lösungsoptionen",
       "resolutionMessage": "Wählen Sie ein anderes Zeitfenster oder einen anderen Raum, um diesen Konflikt zu lösen.",

@@ -1302,9 +1302,6 @@
         "error": "VIRHE",
         "warning": "VAROITUS"
       },
-      "timeRange": "Konfliktin aikaväli",
-      "start": "Alku",
-      "end": "Loppu",
       "conflictingSession": "Ristiriitainen istunto",
       "resolutionOptions": "Ratkaisuvaihtoehdot",
       "resolutionMessage": "Valitse eri aikapaikka tai huone konfliktin ratkaisemiseksi.",

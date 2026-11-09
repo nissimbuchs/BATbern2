@@ -1305,9 +1305,6 @@
         "error": "FÄHLER",
         "warning": "WARNIG"
       },
-      "timeRange": "Konfliktzytberiich",
-      "start": "Start",
-      "end": "End",
       "conflictingSession": "Konfliktierende Session",
       "resolutionOptions": "Lösigsmöglighkeite",
       "resolutionMessage": "En andere Zytslot oder Raum uswähle zum Konflikt löse.",

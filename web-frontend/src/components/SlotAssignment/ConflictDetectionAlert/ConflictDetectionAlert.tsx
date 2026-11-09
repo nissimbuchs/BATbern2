@@ -108,53 +108,6 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
                 />
               </Box>
 
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                {conf.details}
-              </Typography>
-
-              {/* Visual Timeline */}
-              {conf.conflictingTimeRange && (
-                <Box
-                  data-testid="conflict-timeline"
-                  sx={{
-                    mt: 2,
-                    p: 2,
-                    bgcolor: 'background.paper',
-                    borderRadius: 1,
-                    border: 1,
-                    borderColor: conflictSeverity === 'error' ? 'error.light' : 'warning.light',
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary" gutterBottom>
-                    {t('slotAssignment.conflicts.timeRange')}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('slotAssignment.conflicts.start')}
-                      </Typography>
-                      <Typography variant="body2" fontWeight="medium">
-                        {new Date(conf.conflictingTimeRange.start).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('slotAssignment.conflicts.end')}
-                      </Typography>
-                      <Typography variant="body2" fontWeight="medium">
-                        {new Date(conf.conflictingTimeRange.end).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              )}
-
               {/* Conflicting Session Info */}
               {conf.conflictingSessionSlug && (
                 <Box

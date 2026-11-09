@@ -1302,9 +1302,6 @@
         "error": "ERROR",
         "warning": "ADVERTENCIA"
       },
-      "timeRange": "Rango de tiempo del conflicto",
-      "start": "Inicio",
-      "end": "Fin",
       "conflictingSession": "Sesión en conflicto",
       "resolutionOptions": "Opciones de resolución",
       "resolutionMessage": "Elija un espacio horario o sala diferente para resolver este conflicto.",
