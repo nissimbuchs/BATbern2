@@ -919,7 +919,8 @@
     "imageInvalidType": "Tip d'maletg invalid (utilisar PNG, JPEG u SVG)",
     "MULTIPLE_FILES": "Chargia mo in fichier per giada",
     "FILE_TOO_LARGE": "La grondezza dal fichier surpassa il limit da 5MB",
-    "INVALID_FILE_TYPE": "Tip da fichier invalid. Chargia mo maletgs PNG, JPEG u SVG"
+    "INVALID_FILE_TYPE": "Tip da fichier invalid. Chargia mo maletgs PNG, JPEG u SVG",
+    "materialDownloadFailed": "Il material n'ha betg pudì vegnir telechargià. Empruvai anc ina giada."
   },
   "confirmations": {
     "unsavedChanges": "Midadas betg salvadas",
@@ -1108,7 +1109,8 @@
       "date": "Data",
       "time": "Temp",
       "location": "Lieu",
-      "capacity": "Registraziuns"
+      "capacity": "Registraziuns",
+      "topic": "Tema"
     },
     "errors": {
       "loadFailed": "Chargiar eveniment fallì",
@@ -1128,7 +1130,13 @@
     "program": {
       "title": "Program dal eveniment",
       "speaker": "Referent",
-      "materials": "Materialas"
+      "materials": "Materialas",
+      "materialTypes": {
+        "presentation": "Preschentaziun",
+        "document": "Document",
+        "video": "Video",
+        "other": "Auter"
+      }
     },
     "venue": {
       "title": "Lieu",

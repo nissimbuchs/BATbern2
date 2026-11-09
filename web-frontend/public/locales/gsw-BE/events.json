@@ -923,7 +923,8 @@
     "imageInvalidType": "Ungültige Bildtyp (PNG, JPEG oder SVG verwände)",
     "MULTIPLE_FILES": "Bitte nur es Datei gleichzytig ufelade",
     "FILE_TOO_LARGE": "Dateigrösse übersteigt d'5MB-Limite",
-    "INVALID_FILE_TYPE": "Ungültige Dateityp. Bitte nur PNG, JPEG oder SVG-Bilder ufelade"
+    "INVALID_FILE_TYPE": "Ungültige Dateityp. Bitte nur PNG, JPEG oder SVG-Bilder ufelade",
+    "materialDownloadFailed": "S Material het nid chönne abeglade wärde. Bitte nomau probiere."
   },
   "confirmations": {
     "unsavedChanges": "Ungspycherte Änderige",
@@ -1108,7 +1109,8 @@
       "date": "Datum",
       "time": "Zyt",
       "location": "Ort",
-      "capacity": "Amäldige"
+      "capacity": "Amäldige",
+      "topic": "Thema"
     },
     "errors": {
       "loadFailed": "Veranstatig chöne nid gglade werde",
@@ -1131,7 +1133,13 @@
     "program": {
       "title": "Veranstautigsprogramm",
       "speaker": "Redner",
-      "materials": "Materialien"
+      "materials": "Materialien",
+      "materialTypes": {
+        "presentation": "Präsentation",
+        "document": "Dokumänt",
+        "video": "Video",
+        "other": "Anders"
+      }
     },
     "venue": {
       "title": "Veranstautigsort",

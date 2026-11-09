@@ -919,7 +919,8 @@
     "imageInvalidType": "Ongeldig afbeeldingstype (gebruik PNG, JPEG of SVG)",
     "MULTIPLE_FILES": "Upload slechts één bestand tegelijk",
     "FILE_TOO_LARGE": "Bestandsgrootte overschrijdt de limiet van 5 MB",
-    "INVALID_FILE_TYPE": "Ongeldig bestandstype. Upload alleen PNG-, JPEG- of SVG-afbeeldingen"
+    "INVALID_FILE_TYPE": "Ongeldig bestandstype. Upload alleen PNG-, JPEG- of SVG-afbeeldingen",
+    "materialDownloadFailed": "Materiaal downloaden mislukt. Probeer het opnieuw."
   },
   "confirmations": {
     "unsavedChanges": "Niet-opgeslagen wijzigingen",
@@ -1108,7 +1109,8 @@
       "date": "Datum",
       "time": "Tijd",
       "location": "Locatie",
-      "capacity": "Aanmeldingen"
+      "capacity": "Aanmeldingen",
+      "topic": "Onderwerp"
     },
     "errors": {
       "loadFailed": "Laden van evenement mislukt",
@@ -1128,7 +1130,13 @@
     "program": {
       "title": "Evenementprogramma",
       "speaker": "Spreker",
-      "materials": "Materialen"
+      "materials": "Materialen",
+      "materialTypes": {
+        "presentation": "Presentatie",
+        "document": "Document",
+        "video": "Video",
+        "other": "Overig"
+      }
     },
     "venue": {
       "title": "Locatie",

@@ -38,7 +38,9 @@
     },
     "mail": "Correo",
     "mailOpenCount_one": "{{count}} conversación abierta",
-    "mailOpenCount_other": "{{count}} conversaciones abiertas"
+    "mailOpenCount_other": "{{count}} conversaciones abiertas",
+    "mySessions": "Mis sesiones",
+    "myProfile": "Mi perfil"
   },
   "public": {
     "login": "Iniciar sesión",
@@ -597,7 +599,8 @@
     "photos": {
       "viewPhoto": "Ver foto"
     },
-    "eventsProgress": "{{shown}} de {{total}} eventos"
+    "eventsProgress": "{{shown}} de {{total}} eventos",
+    "scrollForMore": "Desplácese para ver más eventos"
   },
   "notifications": {
     "title": "Notificaciones",

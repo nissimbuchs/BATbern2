@@ -919,7 +919,8 @@
     "imageInvalidType": "Virheellinen kuvatyyppi (käytä PNG, JPEG tai SVG)",
     "MULTIPLE_FILES": "Lataa vain yksi tiedosto kerrallaan",
     "FILE_TOO_LARGE": "Tiedoston koko ylittää 5 Mt:n rajan",
-    "INVALID_FILE_TYPE": "Virheellinen tiedostotyyppi. Lataa vain PNG, JPEG tai SVG -kuvia"
+    "INVALID_FILE_TYPE": "Virheellinen tiedostotyyppi. Lataa vain PNG, JPEG tai SVG -kuvia",
+    "materialDownloadFailed": "Materiaalin lataus epäonnistui. Yritä uudelleen."
   },
   "confirmations": {
     "unsavedChanges": "Tallentamattomat muutokset",
@@ -1108,7 +1109,8 @@
       "date": "Päivämäärä",
       "time": "Aika",
       "location": "Sijainti",
-      "capacity": "Ilmoittautumiset"
+      "capacity": "Ilmoittautumiset",
+      "topic": "Aihe"
     },
     "errors": {
       "loadFailed": "Tapahtuman lataaminen epäonnistui",
@@ -1128,7 +1130,13 @@
     "program": {
       "title": "Tapahtuman ohjelma",
       "speaker": "Puhuja",
-      "materials": "Materiaalit"
+      "materials": "Materiaalit",
+      "materialTypes": {
+        "presentation": "Esitys",
+        "document": "Asiakirja",
+        "video": "Video",
+        "other": "Muu"
+      }
     },
     "venue": {
       "title": "Paikka",

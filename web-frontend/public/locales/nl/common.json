@@ -38,7 +38,9 @@
     },
     "mail": "Mail",
     "mailOpenCount_one": "{{count}} open gesprek",
-    "mailOpenCount_other": "{{count}} open gesprekken"
+    "mailOpenCount_other": "{{count}} open gesprekken",
+    "mySessions": "Mijn sessies",
+    "myProfile": "Mijn profiel"
   },
   "public": {
     "login": "Inloggen",
@@ -597,7 +599,8 @@
     "photos": {
       "viewPhoto": "Foto bekijken"
     },
-    "eventsProgress": "{{shown}} van {{total}} evenementen"
+    "eventsProgress": "{{shown}} van {{total}} evenementen",
+    "scrollForMore": "Scroll voor meer evenementen"
   },
   "notifications": {
     "title": "Meldingen",

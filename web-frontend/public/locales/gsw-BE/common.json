@@ -38,7 +38,9 @@
     },
     "mail": "Mail",
     "mailOpenCount_one": "{{count}} offeni Underhaltig",
-    "mailOpenCount_other": "{{count}} offeni Underhaltige"
+    "mailOpenCount_other": "{{count}} offeni Underhaltige",
+    "mySessions": "Myni Sessions",
+    "myProfile": "Mys Profil"
   },
   "public": {
     "login": "Ämälde",
@@ -505,7 +507,8 @@
     "photos": {
       "viewPhoto": "Foti aaluege"
     },
-    "eventsProgress": "{{shown}} vo {{total}} Veranstaltige"
+    "eventsProgress": "{{shown}} vo {{total}} Veranstaltige",
+    "scrollForMore": "Für meh Veranstautige scrolle"
   },
   "notifications": {
     "title": "Benarichtigige",

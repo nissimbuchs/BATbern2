@@ -38,7 +38,9 @@
     },
     "mail": "Posti",
     "mailOpenCount_one": "{{count}} avoin keskustelu",
-    "mailOpenCount_other": "{{count}} avointa keskustelua"
+    "mailOpenCount_other": "{{count}} avointa keskustelua",
+    "mySessions": "Omat istunnot",
+    "myProfile": "Oma profiili"
   },
   "public": {
     "login": "Kirjaudu sisään",
@@ -597,7 +599,8 @@
     "photos": {
       "viewPhoto": "Katso kuva"
     },
-    "eventsProgress": "{{shown}} / {{total}} tapahtumaa"
+    "eventsProgress": "{{shown}} / {{total}} tapahtumaa",
+    "scrollForMore": "Vieritä nähdäksesi lisää tapahtumia"
   },
   "notifications": {
     "title": "Ilmoitukset",

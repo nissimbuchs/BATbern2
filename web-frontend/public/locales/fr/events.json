@@ -919,7 +919,8 @@
     "imageInvalidType": "Type d'image invalide (utilisez PNG, JPEG ou SVG)",
     "MULTIPLE_FILES": "Veuillez téléverser un seul fichier à la fois",
     "FILE_TOO_LARGE": "La taille du fichier dépasse la limite de 5 Mo",
-    "INVALID_FILE_TYPE": "Type de fichier invalide. Veuillez téléverser uniquement des images PNG, JPEG ou SVG"
+    "INVALID_FILE_TYPE": "Type de fichier invalide. Veuillez téléverser uniquement des images PNG, JPEG ou SVG",
+    "materialDownloadFailed": "Impossible de télécharger le support. Veuillez réessayer."
   },
   "confirmations": {
     "unsavedChanges": "Modifications non enregistrées",
@@ -1108,7 +1109,8 @@
       "date": "Date",
       "time": "Heure",
       "location": "Lieu",
-      "capacity": "Inscriptions"
+      "capacity": "Inscriptions",
+      "topic": "Sujet"
     },
     "errors": {
       "loadFailed": "Échec du chargement de l'événement",
@@ -1128,7 +1130,13 @@
     "program": {
       "title": "Programme de l'événement",
       "speaker": "Intervenant",
-      "materials": "Documents"
+      "materials": "Documents",
+      "materialTypes": {
+        "presentation": "Présentation",
+        "document": "Document",
+        "video": "Vidéo",
+        "other": "Autre"
+      }
     },
     "venue": {
       "title": "Lieu",

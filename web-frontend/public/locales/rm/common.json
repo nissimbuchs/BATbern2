@@ -38,7 +38,9 @@
     },
     "mail": "Mail",
     "mailOpenCount_one": "{{count}} conversaziun averta",
-    "mailOpenCount_other": "{{count}} conversaziuns avertas"
+    "mailOpenCount_other": "{{count}} conversaziuns avertas",
+    "mySessions": "Mias sessiuns",
+    "myProfile": "Mes profil"
   },
   "public": {
     "login": "Annunziar",
@@ -597,7 +599,8 @@
     "photos": {
       "viewPhoto": "Vesair la foto"
     },
-    "eventsProgress": "{{shown}} da {{total}} events"
+    "eventsProgress": "{{shown}} da {{total}} events",
+    "scrollForMore": "Scrollar per ulteriurs eveniments"
   },
   "notifications": {
     "title": "Notificaziuns",

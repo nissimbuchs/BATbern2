@@ -38,7 +38,9 @@
     },
     "mail": "メール",
     "mailOpenCount_one": "未対応の会話 {{count}} 件",
-    "mailOpenCount_other": "未対応の会話 {{count}} 件"
+    "mailOpenCount_other": "未対応の会話 {{count}} 件",
+    "mySessions": "マイセッション",
+    "myProfile": "マイプロフィール"
   },
   "public": {
     "login": "ログイン",
@@ -597,7 +599,8 @@
     "photos": {
       "viewPhoto": "写真を見る"
     },
-    "eventsProgress": "{{total}}件中{{shown}}件のイベント"
+    "eventsProgress": "{{total}}件中{{shown}}件のイベント",
+    "scrollForMore": "スクロールしてさらにイベントを表示"
   },
   "notifications": {
     "title": "通知",

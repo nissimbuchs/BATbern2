@@ -919,7 +919,8 @@
     "imageInvalidType": "無効な画像タイプ（PNG、JPEG、またはSVGを使用してください）",
     "MULTIPLE_FILES": "一度に1つのファイルのみアップロードしてください",
     "FILE_TOO_LARGE": "ファイルサイズが5MBの制限を超えています",
-    "INVALID_FILE_TYPE": "無効なファイルタイプ。PNG、JPEG、またはSVG画像のみアップロードしてください"
+    "INVALID_FILE_TYPE": "無効なファイルタイプ。PNG、JPEG、またはSVG画像のみアップロードしてください",
+    "materialDownloadFailed": "資料をダウンロードできませんでした。もう一度お試しください。"
   },
   "confirmations": {
     "unsavedChanges": "未保存の変更",
@@ -1108,7 +1109,8 @@
       "date": "日付",
       "time": "時間",
       "location": "場所",
-      "capacity": "登録者数"
+      "capacity": "登録者数",
+      "topic": "トピック"
     },
     "errors": {
       "loadFailed": "イベントの読み込みに失敗しました",
@@ -1128,7 +1130,13 @@
     "program": {
       "title": "イベントプログラム",
       "speaker": "スピーカー",
-      "materials": "資料"
+      "materials": "資料",
+      "materialTypes": {
+        "presentation": "プレゼンテーション",
+        "document": "ドキュメント",
+        "video": "動画",
+        "other": "その他"
+      }
     },
     "venue": {
       "title": "会場",

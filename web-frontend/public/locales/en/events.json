@@ -933,7 +933,8 @@
     "imageInvalidType": "Invalid image type (use PNG, JPEG, or SVG)",
     "MULTIPLE_FILES": "Please upload only one file at a time",
     "FILE_TOO_LARGE": "File size exceeds 5MB limit",
-    "INVALID_FILE_TYPE": "Invalid file type. Please upload PNG, JPEG, or SVG images only"
+    "INVALID_FILE_TYPE": "Invalid file type. Please upload PNG, JPEG, or SVG images only",
+    "materialDownloadFailed": "Failed to download material. Please try again."
   },
   "confirmations": {
     "unsavedChanges": "Unsaved Changes",
@@ -1130,7 +1131,8 @@
       "date": "Date",
       "time": "Time",
       "location": "Location",
-      "capacity": "Registrations"
+      "capacity": "Registrations",
+      "topic": "Topic"
     },
     "errors": {
       "loadFailed": "Failed to load event",
@@ -1150,7 +1152,13 @@
     "program": {
       "title": "Event Program",
       "speaker": "Speaker",
-      "materials": "Materials"
+      "materials": "Materials",
+      "materialTypes": {
+        "presentation": "Presentation",
+        "document": "Document",
+        "video": "Video",
+        "other": "Other"
+      }
     },
     "venue": {
       "title": "Venue",

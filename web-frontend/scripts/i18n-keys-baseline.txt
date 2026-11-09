@@ -2,8 +2,3 @@
 #   cd web-frontend && npm run check:i18n-keys -- --update
 # Per source file: t() calls whose key is in no public/locales/en bundle. Counts may only fall.
 # Format: <path> TAB <count>, sorted, zero counts omitted.
-src/components/public/Event/EventLogistics.tsx	1
-src/components/public/Event/EventProgram.tsx	5
-src/components/public/Event/SessionCards.tsx	5
-src/components/public/Navigation/PublicNavigation.tsx	4
-src/pages/public/ArchivePage.tsx	1
