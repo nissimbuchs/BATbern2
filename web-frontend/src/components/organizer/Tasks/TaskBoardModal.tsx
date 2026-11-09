@@ -93,7 +93,7 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
   // Complete task mutation
   const completeTaskMutation = useMutation({
     mutationFn: ({ taskId, notes }: { taskId: string; notes?: string }) =>
-      taskService.completeTask(taskId, { notes }),
+      taskService.updateTask(taskId, { status: 'completed', notes }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setCompletingTaskId(null);

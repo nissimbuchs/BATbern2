@@ -717,14 +717,14 @@ Task appears in Task Board when event reaches trigger state:
 ## API Reference
 
 ```
-GET    /api/tasks                           List all tasks (filterable by event, assignee, status)
-POST   /api/tasks                           Create custom task
-GET    /api/tasks/{id}                      Get task details
-PUT    /api/tasks/{id}                      Update task (status, assignee, due date)
-PUT    /api/tasks/{id}/status               Update task status (TODO/IN_PROGRESS/COMPLETED/CANCELLED)
-DELETE /api/tasks/{id}                      Delete custom task
-GET    /api/tasks/templates                 Get default task templates (7 system tasks)
-POST   /api/tasks/templates                 Create custom task template
+GET    /api/v1/events/{eventCode}/tasks         List the tasks of an event
+POST   /api/v1/events/{eventCode}/tasks         Create custom task
+GET    /api/v1/tasks/my-tasks                   Tasks assigned to me (every status)
+GET    /api/v1/tasks/all-tasks                  All tasks (every status)
+PATCH  /api/v1/tasks/{taskId}                   Update task: status (pending/todo/in_progress/completed), notes, due date, assignee
+DELETE /api/v1/tasks/{taskId}                   Delete task
+GET    /api/v1/tasks/templates                  Get task templates
+POST   /api/v1/tasks/templates                  Create custom task template
 ```
 
 See [API Documentation](../../api/) for complete specifications.

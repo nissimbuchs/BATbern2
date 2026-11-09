@@ -19,8 +19,6 @@
 # --- Stories and issues that remove the lines ---
 G01	17.6	no-literal-under-events	GET /events/attendance-summary$
 G02	17.6	no-verb-segment	POST /users/provision$
-G03	17.9	no-verb-segment	PUT /tasks/\{taskId\}/(complete|reassign)$
-G04	17.9	uuid-path-param	PUT /tasks/\{taskId\}/(complete|reassign|status)$
 G05	17.9	(no-verb-segment|uuid-path-param)	POST /speakers/\{speakerId\}/ai/analyze-abstract$
 T1	17.9b	no-verb-segment	POST /events/\{eventCode\}/(publish/schedule|publish/\{phase\}|unpublish/\{phase\}|workflow/transition)$
 G06	17.10	(no-literal-under-events|path-kebab-case)	POST /events/batch_registrations$

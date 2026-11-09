@@ -257,7 +257,6 @@ fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__
 fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/DetailsTabPanel.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/SpeakerDetailDrawer.test.tsx	3
 fe-mock-components	web-frontend/src/components/organizer/SpeakerStatus/__tests__/SpeakerStatusLanes.test.tsx	1
-fe-mock-components	web-frontend/src/components/organizer/Tasks/__tests__/TaskWidget.test.tsx	2
 fe-mock-components	web-frontend/src/components/organizer/TopicStatusPanel.test.tsx	2
 fe-mock-components	web-frontend/src/components/organizer/UserManagement/DuplicateCandidatesPage.test.tsx	1
 fe-mock-components	web-frontend/src/components/organizer/UserManagement/MergeProfileDialog.test.tsx	1
@@ -553,7 +552,6 @@ fe-mock-services	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/C
 fe-mock-services	web-frontend/src/components/organizer/SpeakerDrawer/__tests__/SpeakerDetailDrawer.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/SpeakerStatus/__tests__/SpeakerStatusLanes.test.tsx	2
 fe-mock-services	web-frontend/src/components/organizer/SpeakerStatus/__tests__/StatusHistoryTimeline.test.tsx	1
-fe-mock-services	web-frontend/src/components/organizer/Tasks/__tests__/TaskWidget.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/TopicStatusPanel.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/UserManagement/DuplicateCandidatesPage.test.tsx	1
 fe-mock-services	web-frontend/src/components/organizer/UserManagement/MergeProfileDialog.test.tsx	1
@@ -613,8 +611,8 @@ fe-mock-services	web-frontend/src/hooks/usePartnerMeetings.test.ts	1
 fe-mock-services	web-frontend/src/hooks/usePartnerMutations/__tests__/usePartnerMutations.test.tsx	1
 fe-mock-services	web-frontend/src/hooks/usePartnerMutations/usePartnerMutations.test.ts	1
 fe-mock-services	web-frontend/src/hooks/usePartnerNotes.test.ts	1
-fe-mock-services	web-frontend/src/hooks/usePartners.test.ts	1
 fe-mock-services	web-frontend/src/hooks/usePartners.hooks.test.tsx	1
+fe-mock-services	web-frontend/src/hooks/usePartners.test.ts	1
 fe-mock-services	web-frontend/src/hooks/usePresentationData.test.ts	2
 fe-mock-services	web-frontend/src/hooks/usePublicDataHooks.test.ts	3
 fe-mock-services	web-frontend/src/hooks/useRecentEventPhotos.test.ts	1
@@ -676,7 +674,6 @@ fe-mock-services	web-frontend/src/services/speakerOutreachService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerPoolService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerPortalService.test.ts	1
 fe-mock-services	web-frontend/src/services/speakerStatusService.test.ts	1
-fe-mock-services	web-frontend/src/services/taskService.test.ts	1
 fe-mock-services	web-frontend/src/services/timetableService/__tests__/timetableService.test.ts	1
 fe-mock-services	web-frontend/src/services/topicService.test.ts	1
 fe-mock-services	web-frontend/src/services/workflowService.test.ts	1

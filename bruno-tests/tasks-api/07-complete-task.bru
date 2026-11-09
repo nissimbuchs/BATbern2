@@ -4,8 +4,8 @@ meta {
   seq: 7
 }
 
-put {
-  url: {{baseUrl}}/tasks/{{testTaskId}}/complete
+patch {
+  url: {{baseUrl}}/tasks/{{testTaskId}}
   body: json
   auth: bearer
 }
@@ -16,6 +16,7 @@ auth:bearer {
 
 body:json {
   {
+    "status": "completed",
     "notes": "Task completed successfully"
   }
 }
@@ -48,4 +49,9 @@ tests {
     const diffMs = now.getTime() - completedDate.getTime();
     expect(diffMs).to.be.at.most(60000); // 1 minute tolerance
   });
+}
+
+docs {
+  Story 4.9: completing goes through PATCH /tasks/{taskId} with status completed; the former
+  PUT /tasks/{taskId}/complete verb endpoint is gone.
 }

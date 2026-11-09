@@ -24,7 +24,9 @@ import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.put;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -39,8 +41,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - GET  /api/v1/events/{eventCode}/tasks - List tasks for event
  * - POST /api/v1/events/{eventCode}/tasks - Create ad-hoc task
  * - GET  /api/v1/tasks/my-tasks - Get tasks assigned to current organizer
- * - PUT  /api/v1/tasks/{taskId}/complete - Mark task complete
- * - PUT  /api/v1/tasks/{taskId}/reassign - Reassign task to different organizer
+ * - PATCH /api/v1/tasks/{taskId} - Complete, reopen, move, reassign or edit a task
  */
 @Transactional
 class EventTaskControllerIntegrationTest extends AbstractIntegrationTest {
@@ -151,56 +152,124 @@ class EventTaskControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * Test: PUT /api/v1/tasks/{taskId}/complete marks task as complete (AC25)
+     * Test: PATCH /api/v1/tasks/{taskId} with status completed completes the task (AC25): the
+     * caller is recorded as completedByUsername, the completion date is set, notes are stored.
      */
     @Test
     @WithMockUser(username = "alice.organizer", roles = "ORGANIZER")
-    void should_completeTask_when_requestedByOrganizer() throws Exception {
-        // Given: Active task
-        EventTask task = createTask(testEvent.getId(), "Task to Complete", "alice.organizer", "todo");
+    void should_completeTask_when_patchedWithStatusCompleted() throws Exception {
+        EventTask task = createTask(testEvent.getId(), "Task to Complete", "bob.organizer", "todo");
 
-        // And: Completion request
-        String requestBody = """
-                {
-                    "notes": "Budget approved by CFO"
-                }
-                """;
-
-        // When: PUT /api/v1/tasks/{taskId}/complete
-        mockMvc.perform(put("/api/v1/tasks/" + task.getId() + "/complete")
+        mockMvc.perform(patch("/api/v1/tasks/" + task.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                // Then: Returns 200 OK
+                        .content("""
+                                {"status": "completed", "notes": "Budget approved by CFO"}
+                                """))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.status").value("completed"))
                 .andExpect(jsonPath("$.completedByUsername").value("alice.organizer"))
                 .andExpect(jsonPath("$.completedDate").exists())
-                .andExpect(jsonPath("$.notes").value("Budget approved by CFO"));
+                .andExpect(jsonPath("$.notes").value("Budget approved by CFO"))
+                .andExpect(jsonPath("$.assignedOrganizerUsername").value("bob.organizer"));
+
+        EventTask stored = eventTaskRepository.findById(task.getId()).orElseThrow();
+        assertThat(stored.getStatus()).isEqualTo("completed");
+        assertThat(stored.getCompletedByUsername()).isEqualTo("alice.organizer");
+        assertThat(stored.getCompletedDate()).isNotNull();
     }
 
     /**
-     * Test: PUT /api/v1/tasks/{taskId}/reassign reassigns task to different organizer (AC27)
+     * Test: PATCH status todo on a completed task reopens it and clears the completion.
      */
     @Test
     @WithMockUser(username = "alice.organizer", roles = "ORGANIZER")
-    void should_reassignTask_when_requestedByOrganizer() throws Exception {
-        // Given: Task assigned to alice
+    void should_clearCompletion_when_completedTaskIsReopened() throws Exception {
+        EventTask task = createTask(testEvent.getId(), "Task to Reopen", "alice.organizer", "completed");
+        task.setCompletedDate(Instant.now().minus(1, ChronoUnit.DAYS));
+        task.setCompletedByUsername("bob.organizer");
+        eventTaskRepository.save(task);
+
+        mockMvc.perform(patch("/api/v1/tasks/" + task.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"status": "todo"}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.status").value("todo"))
+                .andExpect(jsonPath("$.completedByUsername").doesNotExist())
+                .andExpect(jsonPath("$.completedDate").doesNotExist());
+
+        EventTask stored = eventTaskRepository.findById(task.getId()).orElseThrow();
+        assertThat(stored.getCompletedDate()).isNull();
+        assertThat(stored.getCompletedByUsername()).isNull();
+    }
+
+    /**
+     * Test: PATCH assignedOrganizerUsername reassigns a task (AC27); an empty string unassigns it.
+     */
+    @Test
+    @WithMockUser(username = "alice.organizer", roles = "ORGANIZER")
+    void should_reassignAndUnassignTask_when_patchedWithAssignee() throws Exception {
         EventTask task = createTask(testEvent.getId(), "Task to Reassign", "alice.organizer", "todo");
 
-        // And: Reassignment request
-        String requestBody = """
-                {
-                    "newOrganizerUsername": "bob.organizer"
-                }
-                """;
-
-        // When: PUT /api/v1/tasks/{taskId}/reassign
-        mockMvc.perform(put("/api/v1/tasks/" + task.getId() + "/reassign")
+        mockMvc.perform(patch("/api/v1/tasks/" + task.getId())
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content(requestBody))
-                // Then: Returns 200 OK
+                        .content("""
+                                {"assignedOrganizerUsername": "bob.organizer"}
+                                """))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.assignedOrganizerUsername").value("bob.organizer"));
+                .andExpect(jsonPath("$.assignedOrganizerUsername").value("bob.organizer"))
+                .andExpect(jsonPath("$.status").value("todo"));
+
+        mockMvc.perform(patch("/api/v1/tasks/" + task.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"assignedOrganizerUsername": ""}
+                                """))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.assignedOrganizerUsername").doesNotExist());
+
+        assertThat(eventTaskRepository.findById(task.getId()).orElseThrow().getAssignedOrganizerUsername())
+                .isNull();
+    }
+
+    /**
+     * Test: an unknown status is rejected with 400 and the task stays as it was.
+     */
+    @Test
+    @WithMockUser(username = "alice.organizer", roles = "ORGANIZER")
+    void should_return400_when_patchedWithUnknownStatus() throws Exception {
+        EventTask task = createTask(testEvent.getId(), "Task", "alice.organizer", "todo");
+
+        mockMvc.perform(patch("/api/v1/tasks/" + task.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("""
+                                {"status": "done"}
+                                """))
+                .andExpect(status().isBadRequest());
+
+        assertThat(eventTaskRepository.findById(task.getId()).orElseThrow().getStatus()).isEqualTo("todo");
+    }
+
+    /**
+     * Test: the former verb endpoints are gone (no aliases), while PATCH on the same task works.
+     */
+    @Test
+    @WithMockUser(username = "alice.organizer", roles = "ORGANIZER")
+    void should_notServeFormerTaskVerbs() throws Exception {
+        EventTask task = createTask(testEvent.getId(), "Task", "alice.organizer", "todo");
+
+        mockMvc.perform(patch("/api/v1/tasks/" + task.getId())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"notes\": \"positive control\"}"))
+                .andExpect(status().isOk());
+        for (String verb : new String[] {"complete", "reassign", "status"}) {
+            mockMvc.perform(put("/api/v1/tasks/" + task.getId() + "/" + verb)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content("{\"status\": \"completed\", \"newOrganizerUsername\": \"bob\"}"))
+                    .andExpect(result -> assertThat(result.getResponse().getStatus()).isIn(404, 405));
+        }
+        assertThat(eventTaskRepository.findById(task.getId()).orElseThrow().getStatus()).isEqualTo("todo");
     }
 
     /**

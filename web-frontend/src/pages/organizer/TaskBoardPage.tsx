@@ -112,7 +112,7 @@ const TaskBoardPage: React.FC = () => {
   // Complete task mutation
   const completeTaskMutation = useMutation({
     mutationFn: ({ taskId, notes }: { taskId: string; notes?: string }) =>
-      taskService.completeTask(taskId, { notes }),
+      taskService.updateTask(taskId, { status: 'completed', notes }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
       setCompletingTaskId(null);
@@ -137,7 +137,7 @@ const TaskBoardPage: React.FC = () => {
     }: {
       taskId: string;
       newStatus: 'pending' | 'todo' | 'in_progress' | 'completed';
-    }) => taskService.updateTaskStatus(taskId, newStatus),
+    }) => taskService.updateTask(taskId, { status: newStatus }),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['tasks'] });
     },

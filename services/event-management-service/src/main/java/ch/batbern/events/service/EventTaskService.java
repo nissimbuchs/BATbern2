@@ -361,37 +361,6 @@ public class EventTaskService {
     }
 
     /**
-     * Mark a task as complete (AC25).
-     *
-     * @param taskId the task ID
-     * @param completedByUsername the username of the organizer completing the task
-     * @param notes optional completion notes
-     * @return the updated task
-     * @throws jakarta.persistence.EntityNotFoundException if task not found
-     */
-    @Transactional
-    public EventTask completeTask(UUID taskId, String completedByUsername, String notes) {
-        log.info("Completing task: {} by user: {}", taskId, completedByUsername);
-
-        // Find task
-        EventTask task = eventTaskRepository.findById(taskId)
-                .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
-
-        // Update completion details
-        task.setStatus("completed");
-        task.setCompletedDate(Instant.now());
-        task.setCompletedByUsername(completedByUsername);
-        if (notes != null && !notes.trim().isEmpty()) {
-            task.setNotes(notes);
-        }
-
-        EventTask updated = eventTaskRepository.save(task);
-        log.info("Task {} marked as completed by {}", taskId, completedByUsername);
-
-        return updated;
-    }
-
-    /**
      * Get all tasks assigned to an organizer (AC24).
      *
      * @param username the organizer's username
@@ -411,87 +380,6 @@ public class EventTaskService {
     public List<EventTask> getAllTasks() {
         log.debug("Fetching all tasks");
         return eventTaskRepository.findAll();
-    }
-
-    /**
-     * Reassign a task to a different organizer (AC27).
-     *
-     * @param taskId the task ID
-     * @param newOrganizerUsername the new organizer's username
-     * @return the updated task
-     * @throws jakarta.persistence.EntityNotFoundException if task not found
-     */
-    @Transactional
-    public EventTask reassignTask(UUID taskId, String newOrganizerUsername) {
-        log.info("Reassigning task {} to organizer: {}", taskId, newOrganizerUsername);
-
-        // Find task
-        EventTask task = eventTaskRepository.findById(taskId)
-                .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
-
-        // Update assignee
-        task.setAssignedOrganizerUsername(newOrganizerUsername);
-
-        EventTask updated = eventTaskRepository.save(task);
-        log.info("Task {} reassigned to {}", taskId, newOrganizerUsername);
-
-        return updated;
-    }
-
-    /**
-     * Update task status (for drag-and-drop transitions).
-     * Story 5.5: Allow manual status transitions via drag-and-drop
-     *
-     * Supported transitions:
-     * - pending → todo (manual activation)
-     * - pending → completed (skip todo phase)
-     * - todo → completed (normal completion)
-     * - todo → pending (revert to pending)
-     * - completed → todo (reopen task)
-     * - completed → pending (reopen and revert)
-     *
-     * @param taskId the task ID
-     * @param newStatus the new status
-     * @return the updated task
-     * @throws jakarta.persistence.EntityNotFoundException if task not found
-     */
-    @Transactional
-    public EventTask updateTaskStatus(UUID taskId, String newStatus) {
-        log.info("Updating task {} status to: {}", taskId, newStatus);
-
-        // Find task
-        EventTask task = eventTaskRepository.findById(taskId)
-                .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
-
-        // Validate status value
-        if (!newStatus.matches("pending|todo|in_progress|completed")) {
-            throw new IllegalArgumentException(
-                    "Invalid status: " + newStatus
-                            + ". Must be one of: pending, todo, in_progress, completed");
-        }
-
-        String oldStatus = task.getStatus();
-
-        // Update status
-        task.setStatus(newStatus);
-
-        // If transitioning to completed, set completion details (if not already set)
-        if ("completed".equals(newStatus) && task.getCompletedDate() == null) {
-            task.setCompletedDate(Instant.now());
-            // Note: completedByUsername should be set separately via completeTask() for proper tracking
-            // This is for drag-and-drop quick completion without notes
-        }
-
-        // If reopening from completed, clear completion details
-        if (!"completed".equals(newStatus) && "completed".equals(oldStatus)) {
-            task.setCompletedDate(null);
-            task.setCompletedByUsername(null);
-        }
-
-        EventTask updated = eventTaskRepository.save(task);
-        log.info("Task {} status updated from {} to {}", taskId, oldStatus, newStatus);
-
-        return updated;
     }
 
     /**
@@ -561,38 +449,70 @@ public class EventTaskService {
      */
     public record TemplateAssignmentConfig(UUID templateId, String assignedOrganizerUsername) {}
 
+    /** The task statuses a caller may set. */
+    private static final Set<String> TASK_STATUSES =
+            Set.of("pending", "todo", "in_progress", "completed");
+
     /**
-     * Update an existing task (patch semantics — only non-null fields are applied).
+     * Changes to a task, patch semantics: a null field keeps the stored value.
      *
-     * Allows editing notes, due date, and assigned organizer without changing task status.
+     * @param status                    new status (pending, todo, in_progress, completed)
+     * @param notes                     new notes (empty = clear)
+     * @param dueDate                   new due date
+     * @param assignedOrganizerUsername new assignee (empty = unassign)
+     */
+    public record TaskChanges(String status, String notes, Instant dueDate, String assignedOrganizerUsername) {}
+
+    /**
+     * Update a task: status (complete, reopen, move on the board), notes, due date and assignee
+     * (Story 5.5 AC25, AC27). Only non-null fields are applied.
      *
-     * @param taskId the task ID
-     * @param notes updated notes (null = keep existing)
-     * @param dueDate updated due date (null = keep existing)
-     * @param assignedOrganizerUsername updated assignee (null = keep existing, empty = unassign)
+     * <p>Moving a task that is not completed to {@code completed} records the completion date and
+     * the caller as completedByUsername. Moving a completed task to any other status clears both.
+     * A completed task set to {@code completed} again keeps its original completion.
+     *
+     * @param taskId         the task ID
+     * @param changes        the fields to change
+     * @param callerUsername the organizer making the change
      * @return the updated task
      * @throws jakarta.persistence.EntityNotFoundException if task not found
+     * @throws IllegalArgumentException if the status is not a task status
      */
     @Transactional
-    public EventTask updateTask(
-            UUID taskId, String notes, java.time.Instant dueDate, String assignedOrganizerUsername) {
-        log.info("Updating task {}: notes={}, dueDate={}, assignee={}",
-                taskId, notes != null, dueDate, assignedOrganizerUsername);
+    public EventTask updateTask(UUID taskId, TaskChanges changes, String callerUsername) {
+        log.info("Updating task {}: status={}, notes={}, dueDate={}, assignee={}",
+                taskId, changes.status(), changes.notes() != null, changes.dueDate(),
+                changes.assignedOrganizerUsername());
+
+        if (changes.status() != null && !TASK_STATUSES.contains(changes.status())) {
+            throw new IllegalArgumentException("Invalid status: " + changes.status()
+                    + ". Must be one of: pending, todo, in_progress, completed");
+        }
 
         EventTask task = eventTaskRepository.findById(taskId)
                 .orElseThrow(() -> new EntityNotFoundException("Task not found: " + taskId));
 
-        if (notes != null) {
-            task.setNotes(notes.trim().isEmpty() ? null : notes);
+        if (changes.status() != null) {
+            boolean wasCompleted = "completed".equals(task.getStatus());
+            boolean completes = "completed".equals(changes.status());
+            if (completes && !wasCompleted) {
+                task.setCompletedDate(Instant.now());
+                task.setCompletedByUsername(callerUsername);
+            } else if (!completes && wasCompleted) {
+                task.setCompletedDate(null);
+                task.setCompletedByUsername(null);
+            }
+            task.setStatus(changes.status());
         }
-        if (dueDate != null) {
-            task.setDueDate(dueDate);
+        if (changes.notes() != null) {
+            task.setNotes(changes.notes().trim().isEmpty() ? null : changes.notes());
         }
-        if (assignedOrganizerUsername != null) {
-            // Empty string means unassign; non-empty means assign
-            task.setAssignedOrganizerUsername(
-                    assignedOrganizerUsername.trim().isEmpty() ? null : assignedOrganizerUsername
-            );
+        if (changes.dueDate() != null) {
+            task.setDueDate(changes.dueDate());
+        }
+        if (changes.assignedOrganizerUsername() != null) {
+            String assignee = changes.assignedOrganizerUsername().trim();
+            task.setAssignedOrganizerUsername(assignee.isEmpty() ? null : assignee);
         }
 
         EventTask updated = eventTaskRepository.save(task);

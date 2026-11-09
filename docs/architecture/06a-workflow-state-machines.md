@@ -495,9 +495,9 @@ Organizers see tasks grouped by status:
 
 **My tasks / all tasks:** `GET /tasks/my-tasks` and `GET /tasks/all-tasks` return tasks in every status. The former `critical` (overdue + due within 3 days) filter was removed 2026-10-24; clients filter, using the same visibility rule as the event cockpit.
 
-**Task reassignment:** `reassignTask(taskId, newOrganizerUsername)` allows changing the assigned organizer on any open task.
+**Task updates (Story 4.9):** one `PATCH /api/v1/tasks/{taskId}` carries status, notes, due date and assignee; there are no verb endpoints (`/complete`, `/reassign`, `/status` were removed). Setting status `completed` on a task that is not completed records the completion date and the caller as `completedByUsername`; any other status on a completed task clears both. An empty `assignedOrganizerUsername` unassigns the task. An unknown status answers 400.
 
-**Task deletion:** `DELETE /api/v1/events/{code}/tasks/{taskId}` (ORGANIZER only). Default template tasks cannot be deleted — throws `IllegalStateException` (HTTP 400). Custom tasks are permanently removed. The frontend shows a red delete `IconButton` on Kanban cards with a confirmation dialog.
+**Task deletion:** `DELETE /api/v1/tasks/{taskId}` (ORGANIZER only). Default template tasks cannot be deleted — throws `IllegalStateException` (HTTP 400). Custom tasks are permanently removed. The frontend shows a red delete `IconButton` on Kanban cards with a confirmation dialog.
 
 **Task creation idempotency:** Calling `createTasksForEvent` twice for the same template/event pair does not create duplicate tasks. The creation guard prevents duplicates even if a workflow transition event is replayed.
 

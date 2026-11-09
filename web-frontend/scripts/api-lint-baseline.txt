@@ -47,8 +47,6 @@ no-verb-segment	event-speakers-api.openapi.yml	POST /events/{eventCode}/speakers
 no-verb-segment	event-speakers-api.openapi.yml	POST /events/{eventCode}/speakers/self-nominate
 no-verb-segment	event-speakers-api.openapi.yml	POST /speaker-portal/events/{eventCode}/content/submit
 no-verb-segment	event-speakers-api.openapi.yml	POST /speaker-portal/events/{eventCode}/materials/confirm
-no-verb-segment	event-tasks-api.openapi.yml	PUT /tasks/{taskId}/complete
-no-verb-segment	event-tasks-api.openapi.yml	PUT /tasks/{taskId}/reassign
 no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/publish/schedule
 no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/publish/{phase}
 no-verb-segment	events-core-api.openapi.yml	POST /events/{eventCode}/teaser-images/confirm
@@ -104,9 +102,6 @@ uuid-path-param	event-tasks-api.openapi.yml	DELETE /tasks/templates/{templateId}
 uuid-path-param	event-tasks-api.openapi.yml	DELETE /tasks/{taskId}
 uuid-path-param	event-tasks-api.openapi.yml	PATCH /tasks/{taskId}
 uuid-path-param	event-tasks-api.openapi.yml	PUT /tasks/templates/{templateId}
-uuid-path-param	event-tasks-api.openapi.yml	PUT /tasks/{taskId}/complete
-uuid-path-param	event-tasks-api.openapi.yml	PUT /tasks/{taskId}/reassign
-uuid-path-param	event-tasks-api.openapi.yml	PUT /tasks/{taskId}/status
 uuid-path-param	events-core-api.openapi.yml	DELETE /events/{eventCode}/teaser-images/{imageId}
 uuid-path-param	events-core-api.openapi.yml	PATCH /events/{eventCode}/teaser-images/{imageId}
 uuid-path-param	events-core-api.openapi.yml	PATCH /events/{eventCode}/thanks/{id}

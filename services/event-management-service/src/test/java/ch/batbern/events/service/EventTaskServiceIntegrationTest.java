@@ -219,7 +219,8 @@ class EventTaskServiceIntegrationTest extends AbstractIntegrationTest {
 
         // When: Task is marked complete
         String completionNotes = "Task completed successfully. Venue booked for 200 attendees.";
-        eventTaskService.completeTask(task.getId(), TEST_ORGANIZER, completionNotes);
+        eventTaskService.updateTask(task.getId(),
+                new EventTaskService.TaskChanges("completed", completionNotes, null, null), TEST_ORGANIZER);
 
         // Then: Task status updated to "completed"
         EventTask completedTask = eventTaskRepository.findById(task.getId()).orElseThrow();
@@ -293,7 +294,8 @@ class EventTaskServiceIntegrationTest extends AbstractIntegrationTest {
         eventTaskRepository.save(task);
 
         // When: Task reassigned to organizer B
-        eventTaskService.reassignTask(task.getId(), "organizer.b");
+        eventTaskService.updateTask(task.getId(),
+                new EventTaskService.TaskChanges(null, null, null, "organizer.b"), TEST_ORGANIZER);
 
         // Then: Task assignee updated
         EventTask reassignedTask = eventTaskRepository.findById(task.getId()).orElseThrow();
@@ -308,7 +310,8 @@ class EventTaskServiceIntegrationTest extends AbstractIntegrationTest {
         // When/Then: Attempting to complete non-existent task throws exception
         UUID nonExistentId = UUID.randomUUID();
         assertThatThrownBy(() ->
-                eventTaskService.completeTask(nonExistentId, TEST_ORGANIZER, "Notes")
+                eventTaskService.updateTask(nonExistentId,
+                        new EventTaskService.TaskChanges("completed", "Notes", null, null), TEST_ORGANIZER)
         ).isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
          .hasMessageContaining("Task not found");
     }
@@ -321,7 +324,8 @@ class EventTaskServiceIntegrationTest extends AbstractIntegrationTest {
         // When/Then: Attempting to reassign non-existent task throws exception
         UUID nonExistentId = UUID.randomUUID();
         assertThatThrownBy(() ->
-                eventTaskService.reassignTask(nonExistentId, "new.organizer")
+                eventTaskService.updateTask(nonExistentId,
+                        new EventTaskService.TaskChanges(null, null, null, "new.organizer"), TEST_ORGANIZER)
         ).isInstanceOf(jakarta.persistence.EntityNotFoundException.class)
          .hasMessageContaining("Task not found");
     }

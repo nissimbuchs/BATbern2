@@ -144,66 +144,6 @@ export interface paths {
     patch?: never;
     trace?: never;
   };
-  '/tasks/{taskId}/complete': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Mark a task complete
-     * @description Story 5.5 AC25. ORGANIZER role required.
-     */
-    put: operations['completeTask'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/tasks/{taskId}/reassign': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Reassign a task to a different organizer
-     * @description Story 5.5 AC27. ORGANIZER role required.
-     */
-    put: operations['reassignTask'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
-  '/tasks/{taskId}/status': {
-    parameters: {
-      query?: never;
-      header?: never;
-      path?: never;
-      cookie?: never;
-    };
-    get?: never;
-    /**
-     * Update a task's status (drag-and-drop)
-     * @description Story 5.5. ORGANIZER role required.
-     */
-    put: operations['updateTaskStatus'];
-    post?: never;
-    delete?: never;
-    options?: never;
-    head?: never;
-    patch?: never;
-    trace?: never;
-  };
   '/tasks/{taskId}': {
     parameters: {
       query?: never;
@@ -222,8 +162,8 @@ export interface paths {
     options?: never;
     head?: never;
     /**
-     * Update task details (notes, due date, assignee)
-     * @description Patch semantics — only provided fields are updated. ORGANIZER role required.
+     * Update a task (status, notes, due date, assignee)
+     * @description Patch semantics: only provided fields are updated. Completing, reopening, moving on the board and reassigning all use this operation. ORGANIZER role required.
      */
     patch: operations['updateTask'];
     trace?: never;
@@ -341,22 +281,13 @@ export interface components {
       /** @description Optional organizer username to assign the created task to */
       assignedOrganizerUsername?: string;
     };
-    /** @description Request to complete a task (Story 5.5 AC25) */
-    CompleteTaskRequest: {
-      /** @description Optional completion notes */
-      notes?: string;
-    };
-    /** @description Request to reassign a task (Story 5.5 AC27) */
-    ReassignTaskRequest: {
-      newOrganizerUsername: string;
-    };
-    /** @description Request to update a task's status (drag-and-drop) */
-    UpdateTaskStatusRequest: {
-      /** @description New task status: pending, todo, in_progress, or completed */
-      status: string;
-    };
-    /** @description Patch request for task details — only provided fields are updated */
+    /** @description Patch request for a task: only provided fields are updated. Status changes go through this body too (there are no verb endpoints). Setting status `completed` on a task that is not completed records the completion date and the caller as completedByUsername; any other status on a completed task clears both. */
     UpdateEventTaskRequest: {
+      /**
+       * @description New task status: pending, todo, in_progress, or completed
+       * @enum {string}
+       */
+      status?: 'pending' | 'todo' | 'in_progress' | 'completed';
       notes?: string;
       /** Format: date-time */
       dueDate?: string;
@@ -694,99 +625,6 @@ export interface operations {
       };
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
-    };
-  };
-  completeTask: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Task ID */
-        taskId: components['parameters']['TaskId'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['CompleteTaskRequest'];
-      };
-    };
-    responses: {
-      /** @description Task completed */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['EventTaskResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-    };
-  };
-  reassignTask: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Task ID */
-        taskId: components['parameters']['TaskId'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['ReassignTaskRequest'];
-      };
-    };
-    responses: {
-      /** @description Task reassigned */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['EventTaskResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
-    };
-  };
-  updateTaskStatus: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Task ID */
-        taskId: components['parameters']['TaskId'];
-      };
-      cookie?: never;
-    };
-    requestBody: {
-      content: {
-        'application/json': components['schemas']['UpdateTaskStatusRequest'];
-      };
-    };
-    responses: {
-      /** @description Task status updated */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['EventTaskResponse'];
-        };
-      };
-      400: components['responses']['BadRequest'];
-      401: components['responses']['Unauthorized'];
-      403: components['responses']['Forbidden'];
-      404: components['responses']['NotFound'];
     };
   };
   deleteTask: {
