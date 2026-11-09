@@ -147,7 +147,7 @@ describe('useUpdateCompany', () => {
     mockUpdateCompany.mockResolvedValue(MOCK_COMPANY as never);
 
     // Seed existing data in cache
-    qc.setQueryData(['company', 'AcmeCH', undefined], MOCK_COMPANY);
+    qc.setQueryData(['company', 'AcmeCH'], MOCK_COMPANY);
 
     const { result } = renderHook(() => useUpdateCompany(), { wrapper: wrapper(qc) });
 
@@ -165,7 +165,7 @@ describe('useUpdateCompany', () => {
     mockUpdateCompany.mockRejectedValue(new Error('Server error'));
 
     // Seed previous value in cache so rollback code path executes
-    qc.setQueryData(['company', 'AcmeCH', undefined], MOCK_COMPANY);
+    qc.setQueryData(['company', 'AcmeCH'], MOCK_COMPANY);
 
     const { result } = renderHook(() => useUpdateCompany(), { wrapper: wrapper(qc) });
 

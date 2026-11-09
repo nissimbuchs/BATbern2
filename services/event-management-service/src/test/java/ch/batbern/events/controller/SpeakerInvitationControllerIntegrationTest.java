@@ -9,7 +9,6 @@ import ch.batbern.events.dto.generated.users.GetOrCreateUserResponse;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
-import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -28,10 +27,8 @@ import java.time.temporal.ChronoUnit;
 
 import static org.hamcrest.Matchers.is;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
 import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
@@ -46,7 +43,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - POST /api/v1/events/{eventCode}/speakers/invite
  * - POST /api/v1/events/{eventCode}/speakers/{username}/send-invitation
  *
- * Uses real PostgreSQL (Testcontainers) but mocks UserApiClient and EmailService.
+ * Uses real PostgreSQL (Testcontainers), mocks UserApiClient; mail goes to the test SES recorder.
  */
 @Transactional
 class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest {
@@ -72,12 +69,9 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
     @MockitoBean
     private UserApiClient userApiClient;
 
-    @MockitoBean
-    private EmailService emailService;
-
     private Event testEvent;
     private final String testEventCode = "batbern-2026-spring";
-    private final String testEmail = "speaker@example.com";
+    private final String testEmail = "success+speaker@simulator.amazonses.com";
     private final String testUsername = "speaker.test";
 
     @BeforeEach
@@ -110,9 +104,6 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         userResponse.setCreated(true);
         when(userApiClient.getOrCreateUser(any(GetOrCreateUserRequest.class)))
                 .thenReturn(userResponse);
-
-        // Mock EmailService (don't actually send emails)
-        doNothing().when(emailService).sendHtmlEmail(any(), anyString(), anyList(), anyString(), anyString(), any());
 
         // Story 11.E.9: sendInvitation resolves the recipient email via
         // PrimarySpeakerResolver → UserApiClient.getUserByUsername (the pool.email
@@ -352,6 +343,10 @@ class SpeakerInvitationControllerIntegrationTest extends AbstractIntegrationTest
         // happened — verify the CUMS sibling endpoint was called exactly once with the
         // expected username so a future no-op'd runInvitedHook fails this test.
         verify(userApiClient).issueInvitationCredentials(testUsername);
+
+        // The invitation mail itself is sent @Async and resolves the speaker from session_users on
+        // its own thread, which cannot see this class's uncommitted test transaction. Its content
+        // is pinned by MailGoldenTest (speaker-invitation-*) against the real EmailService.
     }
 
     /**

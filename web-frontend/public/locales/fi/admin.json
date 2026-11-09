@@ -64,5 +64,32 @@
       },
       "alwaysForwarded": "Aina edelleenlähetetään: mitä järjestäjät lähettävät listoille -speaker@, -participants@, batbern{N}@ ja partner@, viestit osoitteeseen ok@ sekä automaattiset viestit, kuten poissaoloilmoitukset ja palautukset."
     }
+  },
+  "importData": {
+    "events": {
+      "title": "Tapahtumat",
+      "description": "Tuo historiallisia tapahtumatietoja CSV- tai JSON-tiedostosta.",
+      "button": "Tuo tapahtumat"
+    },
+    "sessions": {
+      "title": "Sessiot",
+      "description": "Tuo sessioita olemassa oleviin tapahtumiin.",
+      "button": "Tuo sessiot"
+    },
+    "companies": {
+      "title": "Yritykset",
+      "description": "Tuo yritys- ja kumppanitietoja.",
+      "button": "Tuo yritykset"
+    },
+    "speakers": {
+      "title": "Puhujat",
+      "description": "Tuo puhujaprofiileja vanhoista tiedoista.",
+      "button": "Tuo puhujat"
+    },
+    "participants": {
+      "title": "Osallistujat",
+      "description": "Tuo osallistujia ja heidän ilmoittautumisiaan.",
+      "button": "Tuo osallistujat"
+    }
   }
 }

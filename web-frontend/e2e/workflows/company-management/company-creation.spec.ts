@@ -34,7 +34,7 @@
 
 import { test, expect } from '@playwright/test';
 import * as factory from '../../helpers/test-data-factory';
-import { readOrganizerToken } from '../../helpers/event-fixture';
+import { companySlug, readOrganizerToken } from '../../helpers/event-fixture';
 import { cleanupById } from '../../helpers/test-fixtures-cleanup';
 
 test.describe('Company Creation', { tag: '@gate' }, () => {
@@ -77,7 +77,9 @@ test.describe('Company Creation', { tag: '@gate' }, () => {
     { tag: ['@smoke', '@gate'] },
     async ({ page }) => {
       const name = factory.companyName(); // BRUNOTESTCO<ts> — alphanumeric, swept
-      createdNames.push(name); // register for cleanup before the network call
+      // The service stores the slug of the typed name as key (owner 2026-11-09); a suffixed key
+      // after a leftover is caught by the case-insensitive BRUNOTESTCO sweep
+      createdNames.push(companySlug(name)); // register for cleanup before the network call
 
       await page.getByTestId('create-company-button').click();
       await expect(page.getByTestId('company-form-dialog')).toBeVisible();

@@ -56,7 +56,7 @@ vi.mock('@/services/venueCoordinationService', () => ({
 const FULL_CONFIG = JSON.stringify({
   venue: { salutation: 'Frau', name: 'Gabriela Senn', email: 'venue@test.invalid' },
   catering: { salutation: 'Herr', name: 'Stefan Oppliger', email: 'catering@test.invalid' },
-  coordinatorUsername: 'nissim.buchs',
+  coordinatorUsername: 'anna.coordinator',
 });
 
 const DE_TEMPLATES = [
@@ -94,7 +94,7 @@ describe('VenueCoordinationComposer', () => {
       htmlBody: '<p>Guten Tag Frau Senn</p>',
       toEmail: 'venue@test.invalid',
       ccEmails: [],
-      replyToEmail: 'nissim.buchs@elca.ch',
+      replyToEmail: 'anna.coordinator@example.com',
     });
     mockSend.mockResolvedValue({ sentTo: ['VENUE'] });
   });
@@ -190,7 +190,7 @@ describe('VenueCoordinationComposer', () => {
       htmlBody: '<p>Guten Tag</p>',
       toEmail: 'venue@test.invalid',
       ccEmails: ['catering@test.invalid'],
-      replyToEmail: 'nissim.buchs@elca.ch',
+      replyToEmail: 'anna.coordinator@example.com',
     });
 
     renderComposer();

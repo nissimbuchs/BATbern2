@@ -1,183 +1,184 @@
-import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { renderHook, waitFor } from '@testing-library/react';
+/**
+ * usePublishing Hook Tests (Story 5.7)
+ *
+ * The hook runs with the real publishingService and apiClient against the MSW harness (Epic 17
+ * test fidelity): every request is checked against events-core-api, the status read answers with
+ * its spec example unless a test overrides it, and the assertions read what went over the wire.
+ * One file for the hook (the former .test.ts and .test.tsx mocked the same service twice).
+ */
+
+import { describe, it, expect, beforeEach, afterEach } from 'vitest';
+import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
 import { usePublishing } from './usePublishing';
-import * as publishingService from '@/services/publishingService/publishingService';
+import type { PublishingStatusResponse } from '@/types/event.types';
 
-// Mock publishingService
-vi.mock('@/services/publishingService/publishingService');
+const EVENT = 'BATbern142';
 
-const createWrapper = () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: { retry: false },
-      mutations: { retry: false },
-    },
-  });
-  return ({ children }: { children: React.ReactNode }) => (
-    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-  );
+const status: PublishingStatusResponse = {
+  currentPhase: 'topic',
+  publishedPhases: ['topic'],
+  topic: { isValid: true, errors: [] },
+  speakers: { isValid: false, errors: ['No accepted speakers yet'] },
+  sessions: {
+    isValid: false,
+    errors: [],
+    assignedCount: 0,
+    totalCount: 2,
+    unassignedSessions: [{ sessionSlug: 'keynote', title: 'Keynote' }],
+  },
 };
 
 describe('usePublishing', () => {
+  let queryClient: QueryClient;
+
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
+
   beforeEach(() => {
-    vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false, gcTime: 0 }, mutations: { retry: false } },
+    });
+    api.on('getPublishingStatus', () => status);
+  });
+
+  afterEach(() => {
+    queryClient.clear();
+  });
+
+  const renderLoaded = async () => {
+    const view = renderHook(() => usePublishing(EVENT), { wrapper });
+    await waitFor(() => expect(view.result.current.isLoadingStatus).toBe(false));
+    return view;
+  };
+
+  describe('status', () => {
+    it('should fetch the publishing status of the event on mount', async () => {
+      const { result } = await renderLoaded();
+
+      expect(result.current.publishingStatus).toEqual(status);
+      expect(api.calls('getPublishingStatus')[0].params.eventCode).toBe(EVENT);
+    });
+
+    it('should start idle, with no validation errors', async () => {
+      const { result } = await renderLoaded();
+
+      expect(result.current.validationErrors).toEqual([]);
+      expect(result.current.publishError).toBeNull();
+      expect(result.current.isPublishing).toBe(false);
+      expect(result.current.isUnpublishing).toBe(false);
+      expect(result.current.isScheduling).toBe(false);
+    });
   });
 
   describe('publishPhase', () => {
-    it('should publish phase successfully', async () => {
-      const mockPublishResponse = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        eventCode: 'BATbern142',
-        versionNumber: 1,
-        publishedPhase: 'TOPIC',
+    it('should publish the phase and refetch the status', async () => {
+      api.on('publishPhase', ({ params }) => ({
+        phase: params.phase,
+        published: true,
         publishedAt: '2025-01-15T10:00:00Z',
-        publishedBy: 'john.doe',
-        cdnInvalidationId: 'INV123',
-        cdnInvalidationStatus: 'PENDING',
-        contentSnapshot: {},
-        isCurrent: true,
-      };
+        cdnInvalidated: true,
+      }));
+      const { result } = await renderLoaded();
+      expect(api.calls('getPublishingStatus')).toHaveLength(1);
 
-      vi.mocked(publishingService.publishPhase).mockResolvedValue(mockPublishResponse);
+      act(() => result.current.publishPhase('speakers'));
 
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        result.current.publishPhase('topic');
-      });
-
-      await waitFor(() => {
-        expect(result.current.isPublishing).toBe(false);
-      });
-
-      expect(publishingService.publishPhase).toHaveBeenCalledWith('BATbern142', 'topic');
+      await waitFor(() => expect(api.calls('publishPhase')).toHaveLength(1));
+      expect(api.calls('publishPhase')[0].params).toEqual({ eventCode: EVENT, phase: 'speakers' });
+      await waitFor(() => expect(result.current.isPublishing).toBe(false));
+      await waitFor(() => expect(api.calls('getPublishingStatus')).toHaveLength(2));
+      expect(result.current.publishError).toBeNull();
     });
 
-    it('should handle validation error when content not ready', async () => {
-      const mockError = {
-        response: {
-          status: 422,
-          data: {
+    it('should expose the validation errors of a 422 answer', async () => {
+      api.on('publishPhase', () =>
+        HttpResponse.json(
+          {
             error: 'PUBLISH_VALIDATION_FAILED',
             message: 'Content not ready for this publishing phase',
-            phase: 'AGENDA',
             validationErrors: [
-              {
-                field: 'sessions.timing',
-                message: 'Not all sessions have timing assigned',
-              },
+              { sessionSlug: 'keynote', field: 'sessions.timing', message: 'No timing assigned' },
             ],
           },
-        },
-      };
+          { status: 422 }
+        )
+      );
+      const { result } = await renderLoaded();
 
-      vi.mocked(publishingService.publishPhase).mockRejectedValue(mockError);
+      act(() => result.current.publishPhase('agenda'));
 
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
+      await waitFor(() => expect(result.current.publishError).toBeTruthy());
+      expect(result.current.validationErrors).toEqual([
+        { sessionSlug: 'keynote', field: 'sessions.timing', message: 'No timing assigned' },
+      ]);
+    });
 
-      await waitFor(() => {
-        result.current.publishPhase('agenda');
-      });
+    it('should expose no validation errors for an error that is not a 422', async () => {
+      api.on('publishPhase', () =>
+        HttpResponse.json(
+          { timestamp: '2026-11-09T08:00:00Z', status: 403, error: 'Forbidden', message: 'No' },
+          { status: 403 }
+        )
+      );
+      const { result } = await renderLoaded();
 
-      await waitFor(() => {
-        expect(result.current.publishError).toBeTruthy();
-        expect(result.current.validationErrors).toHaveLength(1);
-      });
+      act(() => result.current.publishPhase('topic'));
+
+      await waitFor(() => expect(result.current.publishError).toBeTruthy());
+      expect(result.current.validationErrors).toEqual([]);
     });
   });
 
   describe('unpublishPhase', () => {
-    it('should unpublish phase successfully', async () => {
-      const mockUnpublishResponse = {
-        eventCode: 'BATbern142',
-        unpublishedPhase: 'SPEAKERS',
-        newCurrentPhase: 'TOPIC',
+    it('should unpublish the phase and refetch the status', async () => {
+      api.on('unpublishPhase', ({ params }) => ({
+        phase: params.phase,
+        published: false,
         unpublishedAt: '2025-01-15T11:00:00Z',
-        unpublishedBy: 'john.doe',
-      };
+        cdnInvalidated: true,
+      }));
+      const { result } = await renderLoaded();
 
-      vi.mocked(publishingService.unpublishPhase).mockResolvedValue(mockUnpublishResponse);
+      act(() => result.current.unpublishPhase('speakers'));
 
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
+      await waitFor(() => expect(api.calls('unpublishPhase')).toHaveLength(1));
+      expect(api.calls('unpublishPhase')[0].params).toEqual({
+        eventCode: EVENT,
+        phase: 'speakers',
       });
-
-      await waitFor(() => {
-        result.current.unpublishPhase('speakers');
-      });
-
-      await waitFor(() => {
-        expect(result.current.isUnpublishing).toBe(false);
-      });
-
-      expect(publishingService.unpublishPhase).toHaveBeenCalledWith('BATbern142', 'speakers');
+      await waitFor(() => expect(result.current.isUnpublishing).toBe(false));
+      await waitFor(() => expect(api.calls('getPublishingStatus')).toHaveLength(2));
     });
   });
 
-  describe('auto-publish scheduling', () => {
-    it('should schedule auto-publish successfully', async () => {
-      const mockScheduleResponse = {
-        eventCode: 'BATbern142',
-        phase: 'SPEAKERS',
-        scheduledDate: '2025-04-15T08:00:00Z',
-        isEnabled: true,
-        ruleArn: 'arn:aws:events:eu-central-1:123456789012:rule/batbern-auto-publish',
+  describe('scheduleAutoPublish', () => {
+    it('should send the schedule of both triggers', async () => {
+      const schedule = {
+        phase2Enabled: true,
+        phase2DaysBeforeEvent: 30,
+        phase3Enabled: true,
+        phase3DaysBeforeEvent: 14,
       };
+      api.on('configureAutoPublish', ({ body }) => ({
+        scheduled: true,
+        ...body,
+        phase2TriggerDate: '2025-04-15T08:00:00Z',
+        phase3TriggerDate: '2025-05-01T08:00:00Z',
+      }));
+      const { result } = await renderLoaded();
 
-      vi.mocked(publishingService.scheduleAutoPublish).mockResolvedValue(mockScheduleResponse);
+      act(() => result.current.scheduleAutoPublish(schedule));
 
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        result.current.scheduleAutoPublish('speakers', {
-          scheduledDate: '2025-04-15T08:00:00Z',
-        });
-      });
-
-      await waitFor(() => {
-        expect(result.current.isScheduling).toBe(false);
-      });
-
-      expect(publishingService.scheduleAutoPublish).toHaveBeenCalledWith('BATbern142', 'speakers', {
-        scheduledDate: '2025-04-15T08:00:00Z',
-      });
-    });
-  });
-
-  describe('real-time updates', () => {
-    it('should refetch data when publishing phase completes', async () => {
-      const mockPublishResponse = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        eventCode: 'BATbern142',
-        versionNumber: 1,
-        publishedPhase: 'TOPIC',
-        publishedAt: '2025-01-15T10:00:00Z',
-        publishedBy: 'john.doe',
-        cdnInvalidationId: 'INV123',
-        cdnInvalidationStatus: 'PENDING',
-      };
-
-      vi.mocked(publishingService.publishPhase).mockResolvedValue(mockPublishResponse);
-
-      const { result } = renderHook(() => usePublishing('BATbern142'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        result.current.publishPhase('topic');
-      });
-
-      await waitFor(() => {
-        expect(result.current.isPublishing).toBe(false);
-      });
+      await waitFor(() => expect(api.calls('configureAutoPublish')).toHaveLength(1));
+      const [call] = api.calls('configureAutoPublish');
+      expect(call.params.eventCode).toBe(EVENT);
+      expect(call.body).toEqual(schedule);
+      await waitFor(() => expect(result.current.isScheduling).toBe(false));
     });
   });
 });

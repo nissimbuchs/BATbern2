@@ -33,7 +33,7 @@ import static org.mockito.Mockito.when;
 /**
  * AWS SDK Mock Configuration for Tests
  *
- * Provides mock AWS SDK clients (Cognito, SES) to prevent network calls during tests.
+ * Provides mock AWS SDK clients (Cognito) to prevent network calls during tests.
  * Fixes QA issue TEST-001: Backend test coverage at 40% due to AWS SDK mocking issues.
  *
  * Uses @Order(HIGHEST_PRECEDENCE) to override TestSecurityConfig beans when both are imported.

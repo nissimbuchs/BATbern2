@@ -1,540 +1,402 @@
 /**
- * EventManagementDashboard Component Tests (RED Phase - TDD)
+ * EventManagementDashboard (Story 2.5.3, AC1 + AC2)
  *
- * Story 2.5.3 - Task 8a
- * AC: 1 (Event Dashboard Display), 2 (Event List & Filters)
- * Wireframe: docs/wireframes/story-1.16-event-management-dashboard.md v1.0
+ * The real tree runs against the MSW harness (17.0c2): `useEvents`, `useNotifications`, the
+ * notification WebSocket hook and client, the persisted `eventStore`, the children (EventSearch,
+ * EventList/EventCard, EventPagination, QuickActions, TaskWidget, TeamActivityFeed, EventForm)
+ * and en i18n. `GET /events`, `GET /notifications` and `GET /tasks/my-tasks` are checked against
+ * the specs and answered with typed bodies. Auth comes from the real `AuthContext` (`renderWithAuth`).
  *
- * Tests for main organizer dashboard with:
- * - Active events pipeline with progress bars
- * - Critical tasks list
- * - Team activity feed
- * - Quick actions sidebar
- * - Event filters and search
+ * The only mocks are the third-party STOMP/SockJS packages (a network boundary, plan Decision 3):
+ * jsdom's hostname is `localhost`, so our `notificationWebSocketClient` really connects; the fake
+ * `Client` records its config so a test can play the server (connect, push a message).
  */
 
-import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { QueryClient, QueryClientProvider, type UseQueryResult } from '@tanstack/react-query';
-import { BrowserRouter } from 'react-router-dom';
+import { describe, it, expect, beforeEach, vi } from 'vitest';
+import { act, screen, waitFor, within } from '@testing-library/react';
+import userEvent from '@testing-library/user-event';
+import { HttpResponse, delay } from 'msw';
+import { api } from '@/test/msw/api';
+import type { ResponseBody } from '@/test/msw/api';
+import { renderWithAuth, signedInAs } from '@/test/auth';
+import { daysFromNow, futureEvent, type Event } from '@/test/fixtures';
+import { useEventStore } from '@/stores/eventStore';
 import { EventManagementDashboard } from '../EventManagementDashboard';
-import {
-  useEvents,
-  useEvent,
-  useEventWorkflow,
-  useCreateEvent,
-  useUpdateEvent,
-  useDeleteEvent,
-} from '@/hooks/useEvents';
-import { useNotifications } from '@/hooks/useNotifications';
-import { taskService } from '@/services/taskService';
-import type { EventListResponse } from '@/types/event.types';
-import type { Notification } from '@/types/notification';
 
-// Mock the hooks
-vi.mock('@/hooks/useEvents', () => ({
-  useEvents: vi.fn(),
-  useEvent: vi.fn(),
-  useEventWorkflow: vi.fn(),
-  useCreateEvent: vi.fn(),
-  useUpdateEvent: vi.fn(),
-  useDeleteEvent: vi.fn(),
+// --- Boundary: the third-party STOMP/SockJS packages -------------------------------------------
+
+interface FakeStompConfig {
+  onConnect?: () => void;
+  webSocketFactory?: () => unknown;
+}
+
+const stomp = vi.hoisted(() => ({
+  configs: [] as FakeStompConfig[],
+  subscriptions: [] as Array<{ topic: string; callback: (message: { body: string }) => void }>,
+  activations: 0,
 }));
 
-// Mock useNotifications
-vi.mock('@/hooks/useNotifications', () => ({
-  useNotifications: vi.fn(),
-  useMarkAsRead: vi.fn(() => ({
-    mutateAsync: vi.fn(),
-    isPending: false,
-  })),
-}));
-
-// Mock useAuth
-vi.mock('@/hooks/useAuth', () => ({
-  useAuth: vi.fn(() => ({
-    user: { username: 'test-organizer', role: 'organizer' },
-    isAuthenticated: true,
-  })),
-}));
-
-// Mock useEventStore
-vi.mock('@/stores/eventStore', () => ({
-  useEventStore: vi.fn(() => ({
-    filters: {},
-    setFilters: vi.fn(),
-    pagination: { page: 1, limit: 20 },
-    setPage: vi.fn(),
-    setLimit: vi.fn(),
-    isCreateModalOpen: false,
-    openCreateModal: vi.fn(),
-    closeCreateModal: vi.fn(),
-    isEditModalOpen: false,
-    selectedEventCode: null,
-    openEditModal: vi.fn(),
-    closeEditModal: vi.fn(),
-  })),
-}));
-
-// Mock useNotificationWebSocket - create stable function references to prevent infinite loops
-const mockUnsubscribe = vi.fn();
-const mockOnNotification = vi.fn(() => mockUnsubscribe);
-
-vi.mock('@/hooks/useNotificationWebSocket', () => ({
-  useNotificationWebSocket: vi.fn(() => ({
-    onNotification: mockOnNotification,
-    isConnected: false,
-  })),
-}));
-
-// Mock taskService for TaskWidget
-vi.mock('@/services/taskService', () => ({
-  taskService: {
-    getMyTasks: vi.fn(() => Promise.resolve([])),
-    completeTask: vi.fn(() => Promise.resolve()),
+vi.mock('@stomp/stompjs', () => ({
+  Client: class {
+    constructor(config: FakeStompConfig) {
+      stomp.configs.push(config);
+    }
+    activate() {
+      stomp.activations += 1;
+    }
+    deactivate() {}
+    subscribe(topic: string, callback: (message: { body: string }) => void) {
+      stomp.subscriptions.push({ topic, callback });
+      return { unsubscribe: () => {} };
+    }
   },
 }));
 
-// Mock child components to prevent rendering issues
-vi.mock('../EventForm', () => ({
-  EventForm: () => null,
-}));
+vi.mock('sockjs-client', () => ({ default: vi.fn() }));
 
-vi.mock('../EventList', () => ({
-  EventList: ({ events }: any) => (
-    <div>
-      {events?.map((event: any) => (
-        <div key={event.eventCode}>{event.title}</div>
-      ))}
-      {events?.length === 0 && <div>No events found</div>}
-    </div>
-  ),
-}));
+// --- Data ----------------------------------------------------------------------------------------
 
-vi.mock('../EventSearch', () => ({
-  EventSearch: () => null,
-}));
+type EventList = ResponseBody<'listEvents', 200>;
+type Notifications = ResponseBody<'listNotifications', 200>;
+type MyTasks = ResponseBody<'getMyTasks', 200>;
+type Task = MyTasks[number];
+type NotificationRow = NonNullable<Notifications['data']>[number];
 
-vi.mock('../EventPagination', () => ({
-  EventPagination: () => null,
-}));
+const ORGANIZER = 'anna.keller'; // the username of signedInAs('organizer')
 
-vi.mock('../QuickActions', () => ({
-  QuickActions: ({ onNewEvent }: any) => (
-    <div>
-      <button onClick={onNewEvent}>New Event</button>
-    </div>
-  ),
-}));
+const bb61 = futureEvent(40);
+const bb62 = futureEvent(200, {
+  eventCode: 'BATbern62',
+  eventNumber: 62,
+  title: 'Datensouveränität: Cloud in der Schweiz',
+  workflowState: 'CREATED',
+});
 
-vi.mock('../Tasks/TaskWidget', () => ({
-  TaskWidget: () => <div>Critical Tasks</div>,
-}));
+const eventPage = (data: Event[]): EventList => ({
+  data,
+  pagination: {
+    page: 1,
+    limit: 20,
+    totalItems: data.length,
+    totalPages: data.length === 0 ? 0 : 1,
+    hasNext: false,
+    hasPrev: false,
+  },
+});
 
-vi.mock('../TeamActivityFeed', () => ({
-  TeamActivityFeed: ({ notifications }: any) => (
-    <div>
-      <div>Team Activity</div>
-      {notifications?.length > 0 && (
-        <div>
-          <div>John Doe</div>
-          <div>assigned speaker</div>
-        </div>
-      )}
-    </div>
-  ),
-}));
+const aTask = (overrides: Partial<Task> = {}): Task => ({
+  id: 'b7a1c2d3-0000-4000-8000-000000000001',
+  eventId: 'e1a2b3c4-0000-4000-8000-000000000061',
+  eventCode: 'BATbern61',
+  taskName: 'Overdue speaker materials',
+  triggerState: 'SPEAKER_CONFIRMATION',
+  dueDate: daysFromNow(-2),
+  assignedOrganizerUsername: ORGANIZER,
+  status: 'todo',
+  notes: '3 speakers have not submitted materials',
+  createdAt: daysFromNow(-30),
+  updatedAt: daysFromNow(-30),
+  ...overrides,
+});
 
-vi.mock('@/components/shared/Event/EventBatchImportModal', () => ({
-  EventBatchImportModal: () => null,
-}));
+const aNotification = (overrides: Partial<NotificationRow> = {}): NotificationRow => ({
+  id: 'c1d2e3f4-0000-4000-8000-000000000001',
+  recipientUsername: ORGANIZER,
+  eventCode: 'BATbern61',
+  notificationType: 'TASK_ASSIGNED',
+  channel: 'IN_APP',
+  priority: 'NORMAL',
+  subject: 'Lukas Meier assigned you a task',
+  body: 'Assigned speaker outreach for BATbern61',
+  status: 'UNREAD',
+  createdAt: daysFromNow(-1),
+  updatedAt: daysFromNow(-1),
+  ...overrides,
+});
 
-vi.mock('@/components/shared/Session/SessionBatchImportModal', () => ({
-  SessionBatchImportModal: () => null,
-}));
+const notificationPage = (data: NotificationRow[]): Notifications => ({
+  data,
+  pagination: { page: 1, limit: 10, totalItems: data.length, totalPages: 1 },
+});
+
+const renderDashboard = () =>
+  renderWithAuth(<EventManagementDashboard />, { auth: signedInAs('organizer') });
+
+/** The dashboard has rendered past the loader and the event list has its data. */
+const findLoadedDashboard = async () => {
+  const container = await screen.findByTestId('dashboard-container');
+  await waitFor(() => expect(screen.queryByTestId('skeleton-card-1')).not.toBeInTheDocument());
+  return container;
+};
 
 describe('EventManagementDashboard Component', () => {
-  let queryClient: QueryClient;
-
-  const createWrapper = () => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false, gcTime: 0 },
-      },
-    });
-
-    return ({ children }: { children: React.ReactNode }) => (
-      <QueryClientProvider client={queryClient}>
-        <BrowserRouter>{children}</BrowserRouter>
-      </QueryClientProvider>
-    );
-  };
-
-  const mockEventsData = {
-    data: [
-      {
-        eventCode: 'BATbern56',
-        eventNumber: 56,
-        title: 'Cloud Computing 2025',
-        description: 'Annual cloud computing event',
-        eventDate: '2025-03-15T18:00:00Z',
-        eventType: 'full_day',
-        status: 'active',
-        workflowState: 'speaker_research',
-        registrationDeadline: '2025-03-08T23:59:59Z',
-        capacity: 200,
-        currentAttendeeCount: 0,
-        createdAt: '2025-01-01T10:00:00Z',
-        updatedAt: '2025-01-10T15:00:00Z',
-        createdBy: 'john.doe',
-        version: 1,
-      },
-      {
-        eventCode: 'BATbern57',
-        eventNumber: 57,
-        title: 'DevOps Mastery',
-        description: 'DevOps best practices',
-        eventDate: '2025-04-20T18:00:00Z',
-        eventType: 'afternoon',
-        status: 'active',
-        workflowState: 'topic_selection',
-        registrationDeadline: '2025-04-13T23:59:59Z',
-        capacity: 150,
-        currentAttendeeCount: 0,
-        createdAt: '2025-01-15T10:00:00Z',
-        updatedAt: '2025-01-20T15:00:00Z',
-        createdBy: 'jane.smith',
-        version: 1,
-      },
-    ],
-    pagination: {
-      page: 1,
-      limit: 20,
-      totalItems: 2,
-      totalPages: 1,
-      hasNext: false,
-      hasPrev: false,
-    },
-  };
-
-  const mockCriticalTasksData = [
-    {
-      id: 'task-1',
-      eventId: 'event-1',
-      eventCode: 'BATbern56',
-      templateId: null,
-      taskName: 'Overdue speaker materials',
-      triggerState: 'overdue_materials',
-      dueDate: '2025-03-01T23:59:59Z',
-      assignedOrganizerUsername: 'john.doe',
-      status: 'todo' as const,
-      notes: '3 speakers have not submitted materials',
-      completedDate: null,
-      completedByUsername: null,
-      createdAt: '2025-01-15T10:00:00Z',
-      updatedAt: '2025-01-15T10:00:00Z',
-    },
-  ];
-
-  const mockNotificationsData: Notification[] = [
-    {
-      id: 'notification-1',
-      eventCode: 'BATbern56',
-      notificationType: 'TASK_ASSIGNED',
-      subject: 'New task assigned',
-      body: 'You have been assigned a new task',
-      recipientUsername: 'test-organizer',
-      priority: 'NORMAL',
-      isRead: false,
-      createdAt: '2025-01-15T10:00:00Z',
-      readAt: null,
-      metadata: {},
-    },
-  ];
-
   beforeEach(() => {
-    vi.clearAllMocks();
+    localStorage.clear();
+    useEventStore.setState({
+      filters: { includeArchived: false },
+      pagination: { page: 1, limit: 20 },
+      selectedEventCode: undefined,
+      isCreateModalOpen: false,
+      isEditModalOpen: false,
+    });
+    stomp.configs.length = 0;
+    stomp.subscriptions.length = 0;
+    stomp.activations = 0;
 
-    // Provide default mocks for mutation hooks
-    vi.mocked(useCreateEvent).mockReturnValue({
-      mutate: vi.fn(),
-      mutateAsync: vi.fn(),
-      isPending: false,
-      isSuccess: false,
-      isError: false,
-      data: undefined,
-      error: null,
-    } as any);
-
-    vi.mocked(useUpdateEvent).mockReturnValue({
-      mutate: vi.fn(),
-      mutateAsync: vi.fn(),
-      isPending: false,
-      isSuccess: false,
-      isError: false,
-      data: undefined,
-      error: null,
-    } as any);
-
-    vi.mocked(useDeleteEvent).mockReturnValue({
-      mutate: vi.fn(),
-      mutateAsync: vi.fn(),
-      isPending: false,
-      isSuccess: false,
-      isError: false,
-      data: undefined,
-      error: null,
-    } as any);
-
-    // Provide default mocks for query hooks
-    vi.mocked(useEvent).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isSuccess: false,
-      isError: false,
-      error: null,
-    } as any);
-
-    vi.mocked(useEventWorkflow).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isSuccess: false,
-      isError: false,
-      error: null,
-    } as any);
+    api.on('listEvents', () => eventPage([bb61, bb62]));
+    api.on('listNotifications', () => notificationPage([aNotification()]));
+    api.on('getMyTasks', () => [aTask()]);
   });
 
   describe('Initial Render', () => {
-    it('should_renderDashboardTitle_when_componentMounts', () => {
-      vi.mocked(useEvents).mockReturnValue({
-        data: mockEventsData,
-        isLoading: false,
-        isSuccess: true,
-        isError: false,
-      } as any);
-      vi.mocked(useNotifications).mockReturnValue({
-        data: { data: mockNotificationsData },
-        isLoading: false,
-        isSuccess: true,
-        refetch: vi.fn(),
-      } as any);
+    it('should_renderDashboardTitle_when_componentMounts', async () => {
+      renderDashboard();
 
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/event management/i)).toBeInTheDocument();
+      expect(
+        await screen.findByRole('heading', { level: 1, name: 'Event Management' })
+      ).toBeInTheDocument();
     });
 
-    it('should_displayLoadingState_when_dataFetching', () => {
-      vi.mocked(useEvents).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-        isSuccess: false,
-        isError: false,
-      } as any);
-      vi.mocked(useNotifications).mockReturnValue({
-        data: undefined,
-        isLoading: true,
-        isSuccess: false,
-        refetch: vi.fn(),
-      } as any);
+    it('should_displayLoadingState_when_dataFetching', async () => {
+      api.on('listEvents', async () => {
+        await delay('infinite');
+        return eventPage([]);
+      });
+      api.on('listNotifications', async () => {
+        await delay('infinite');
+        return notificationPage([]);
+      });
 
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
+      renderDashboard();
 
       expect(screen.getByRole('progressbar')).toBeInTheDocument();
+      expect(screen.queryByTestId('dashboard-container')).not.toBeInTheDocument();
+      // Both requests are in flight: the loader waits for them, not for nothing.
+      await waitFor(() => expect(api.calls('listEvents')).toHaveLength(1));
+      await waitFor(() => expect(api.calls('listNotifications')).toHaveLength(1));
     });
 
-    it('should_displayErrorMessage_when_eventsLoadFails', () => {
-      vi.mocked(useEvents).mockReturnValue({
-        data: undefined,
-        isLoading: false,
-        isSuccess: false,
-        isError: true,
-        error: new Error('Failed to load events'),
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
+    it('should_displayErrorMessage_when_eventsLoadFails', async () => {
+      api.on('listEvents', () =>
+        HttpResponse.json(
+          { status: 500, error: 'Internal Server Error', message: 'Database unavailable' },
+          { status: 500 }
+        )
+      );
 
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
+      renderDashboard();
 
-      expect(screen.getByText(/failed to load events/i)).toBeInTheDocument();
+      const alert = await screen.findByRole('alert');
+      expect(alert).toHaveTextContent(
+        'Failed to load events: Server Error: Please try again later'
+      );
+      expect(screen.queryByTestId('dashboard-container')).not.toBeInTheDocument();
     });
   });
 
   describe('Active Events Pipeline (AC1)', () => {
-    beforeEach(() => {
-      vi.mocked(useEvents).mockReturnValue({
-        data: mockEventsData,
-        isLoading: false,
-        isSuccess: true,
-        isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
+    it('should_displayActiveEventsSection_when_eventsLoaded', async () => {
+      renderDashboard();
+      await findLoadedDashboard();
+
+      expect(screen.getByRole('heading', { name: 'Active Events' })).toBeInTheDocument();
+      expect(screen.getByText('2/2 events')).toBeInTheDocument();
     });
 
-    it('should_displayActiveEventsSection_when_eventsLoaded', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
+    it('should_displayEventCards_when_eventsExist', async () => {
+      renderDashboard();
 
-      expect(screen.getByText(/active events/i)).toBeInTheDocument();
+      expect(await screen.findByText(bb61.title)).toBeInTheDocument();
+      expect(screen.getByText(bb62.title)).toBeInTheDocument();
+      expect(screen.getAllByTestId('event-title').map((title) => title.textContent)).toEqual([
+        bb61.title,
+        bb62.title,
+      ]);
+
+      // The dashboard asks for page 1 of 20, without archived events, with registration counts.
+      const query = api.calls('listEvents')[0].query;
+      expect(query.get('page')).toBe('1');
+      expect(query.get('limit')).toBe('20');
+      expect(query.get('includeArchived')).toBe('false');
+      expect(query.get('include')).toBe('registrations');
     });
 
-    it('should_displayEventCards_when_eventsExist', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
+    it('should_displayEmptyState_when_noEvents', async () => {
+      api.on('listEvents', () => eventPage([]));
 
-      expect(screen.getByText('Cloud Computing 2025')).toBeInTheDocument();
-      expect(screen.getByText('DevOps Mastery')).toBeInTheDocument();
-    });
+      renderDashboard();
 
-    it('should_displayEmptyState_when_noEvents', () => {
-      vi.mocked(useEvents).mockReturnValue({
-        data: {
-          data: [],
-          pagination: {
-            page: 1,
-            limit: 20,
-            totalItems: 0,
-            totalPages: 0,
-            hasNext: false,
-            hasPrev: false,
-          },
-        },
-        isLoading: false,
-        isSuccess: true,
-        isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/no events found/i)).toBeInTheDocument();
+      expect(await screen.findByText('No events found')).toBeInTheDocument();
+      expect(screen.getByTestId('event-list-empty')).toBeInTheDocument();
+      expect(screen.queryByTestId('event-list-container')).not.toBeInTheDocument();
+      // Positive control: the rest of the dashboard rendered.
+      expect(screen.getByRole('heading', { name: 'Active Events' })).toBeInTheDocument();
     });
   });
 
   describe('Critical Tasks Section (AC1)', () => {
-    beforeEach(() => {
-      vi.mocked(useEvents).mockReturnValue({
-        data: mockEventsData,
-        isLoading: false,
-        isSuccess: true,
-        isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
+    it('should_displayCriticalTasksSection_when_tasksExist', async () => {
+      renderDashboard();
 
-      // Mock taskService for TaskWidget
-      vi.mocked(taskService.getMyTasks).mockResolvedValue(mockCriticalTasksData);
-    });
-
-    it('should_displayCriticalTasksSection_when_tasksExist', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/my open tasks/i)).toBeInTheDocument();
+      const section = await screen.findByTestId('critical-tasks-section');
+      expect(within(section).getByText('My open tasks')).toBeInTheDocument();
+      await waitFor(() => expect(api.calls('getMyTasks')).toHaveLength(1));
     });
 
     it('should_displayTaskCount_when_tasksLoaded', async () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
+      // Only the open task counts: completed, cancelled and not-yet-due pending tasks are hidden.
+      api.on('getMyTasks', () => [
+        aTask(),
+        aTask({
+          id: 'b7a1c2d3-0000-4000-8000-000000000002',
+          taskName: 'Book the venue',
+          status: 'completed',
+        }),
+        aTask({
+          id: 'b7a1c2d3-0000-4000-8000-000000000003',
+          taskName: 'Order the wine',
+          status: 'cancelled',
+        }),
+        aTask({
+          id: 'b7a1c2d3-0000-4000-8000-000000000004',
+          taskName: 'Send the final newsletter',
+          status: 'pending',
+          dueDate: daysFromNow(20),
+        }),
+      ]);
 
-      await waitFor(() => {
-        expect(screen.getByText(/1.*task/i)).toBeInTheDocument();
-      });
+      renderDashboard();
+
+      const section = await screen.findByTestId('critical-tasks-section');
+      expect(await within(section).findByText('1 task')).toBeInTheDocument();
+      expect(within(section).getByText('Overdue speaker materials')).toBeInTheDocument();
+      expect(within(section).queryByText('Book the venue')).not.toBeInTheDocument();
+      expect(within(section).queryByText('Order the wine')).not.toBeInTheDocument();
+      expect(within(section).queryByText('Send the final newsletter')).not.toBeInTheDocument();
     });
 
     it('should_displayTaskPriority_when_criticalTask', async () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
+      renderDashboard();
 
-      await waitFor(() => {
-        expect(screen.getByText('Overdue speaker materials')).toBeInTheDocument();
-      });
+      const section = await screen.findByTestId('critical-tasks-section');
+      expect(await within(section).findByText('Overdue speaker materials')).toBeInTheDocument();
+      expect(within(section).getByTestId('critical-tasks-list')).toBeInTheDocument();
     });
   });
 
   describe('Team Activity Feed (AC1)', () => {
-    beforeEach(() => {
-      vi.mocked(useEvents).mockReturnValue({
-        data: mockEventsData,
-        isLoading: false,
-        isSuccess: true,
-        isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
+    it('should_displayTeamActivitySection_when_activityExists', async () => {
+      renderDashboard();
 
-      vi.mocked(useNotifications).mockReturnValue({
-        data: { data: mockNotificationsData },
-        isLoading: false,
-        isSuccess: true,
-        refetch: vi.fn(),
-      } as any);
+      const section = await screen.findByTestId('team-activity-section');
+      expect(await within(section).findByText('Notifications')).toBeInTheDocument();
+      expect(within(section).getByTestId('team-activity-feed')).toBeInTheDocument();
     });
 
-    it('should_displayTeamActivitySection_when_activityExists', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
+    it('should_displayActivityFeed_when_activitiesLoaded', async () => {
+      renderDashboard();
 
-      expect(screen.getByText(/team activity/i)).toBeInTheDocument();
+      const section = await screen.findByTestId('team-activity-section');
+      expect(
+        await within(section).findByText('Lukas Meier assigned you a task')
+      ).toBeInTheDocument();
+      expect(
+        within(section).getByText('Assigned speaker outreach for BATbern61')
+      ).toBeInTheDocument();
+
+      // The signed-in organizer's first ten unread notifications.
+      const query = api.calls('listNotifications')[0].query;
+      expect(query.get('username')).toBe(ORGANIZER);
+      expect(query.get('status')).toBe('UNREAD');
+      expect(query.get('page')).toBe('1');
+      expect(query.get('limit')).toBe('10');
     });
 
-    it('should_displayActivityFeed_when_activitiesLoaded', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
+    it('should_refetchNotifications_when_realTimeNotificationArrives', async () => {
+      renderDashboard();
+      const section = await screen.findByTestId('team-activity-section');
+      await within(section).findByText('Lukas Meier assigned you a task');
+      expect(api.calls('listNotifications')).toHaveLength(1);
 
-      expect(screen.getByText('John Doe')).toBeInTheDocument();
-      expect(screen.getByText(/assigned speaker/i)).toBeInTheDocument();
+      // Our client connected for the signed-in organizer through the STOMP package.
+      await waitFor(() => expect(stomp.activations).toBe(1));
+      api.on('listNotifications', () =>
+        notificationPage([
+          aNotification({
+            id: 'c1d2e3f4-0000-4000-8000-000000000002',
+            subject: 'Sara Brunner accepted the invitation',
+            body: 'Speaker accepted for BATbern61',
+            notificationType: 'SPEAKER_ACCEPTED',
+          }),
+          aNotification(),
+        ])
+      );
+
+      // The server confirms the connection, then pushes a notification on the user's topic.
+      act(() => stomp.configs[0].onConnect?.());
+      await waitFor(() => expect(stomp.subscriptions).toHaveLength(1));
+      expect(stomp.subscriptions[0].topic).toBe(`/topic/notifications/${ORGANIZER}`);
+      act(() =>
+        stomp.subscriptions[0].callback({ body: JSON.stringify(aNotification({ id: 'x' })) })
+      );
+
+      expect(
+        await within(section).findByText('Sara Brunner accepted the invitation')
+      ).toBeInTheDocument();
+      expect(api.calls('listNotifications')).toHaveLength(2);
     });
   });
 
   describe('Quick Actions Sidebar (AC1)', () => {
-    beforeEach(() => {
-      vi.mocked(useEvents).mockReturnValue({
-        data: mockEventsData,
-        isLoading: false,
-        isSuccess: true,
-        isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-    });
+    it('should_displayNewEventButton_when_dashboardLoaded', async () => {
+      const user = userEvent.setup();
+      renderDashboard();
+      await findLoadedDashboard();
 
-    it('should_displayNewEventButton_when_dashboardLoaded', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
+      const newEventButton = screen.getByRole('button', { name: 'New Event' });
+      expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
 
-      const newEventButtons = screen.getAllByRole('button', { name: /new event/i });
-      expect(newEventButtons.length).toBeGreaterThan(0);
+      await user.click(newEventButton);
+
+      expect(useEventStore.getState().isCreateModalOpen).toBe(true);
+      expect(await screen.findByRole('dialog')).toBeInTheDocument();
     });
   });
 
   describe('Responsive Layout', () => {
-    beforeEach(() => {
-      vi.mocked(useEvents).mockReturnValue({
-        data: mockEventsData,
-        isLoading: false,
-        isSuccess: true,
-        isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
+    it('should_useGridLayout_when_desktopView', async () => {
+      renderDashboard();
+
+      const container = await findLoadedDashboard();
+      expect(container.querySelector('.MuiGrid-root')).toBeInTheDocument();
     });
 
-    it('should_useGridLayout_when_desktopView', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
+    it('should_displayAllSections_when_rendered', async () => {
+      renderDashboard();
+      await findLoadedDashboard();
 
-      const container = screen.getByTestId('dashboard-container');
-      // Grid container is inside the dashboard container
-      const gridContainer = container.querySelector('.MuiGrid-root');
-      expect(gridContainer).toBeInTheDocument();
-    });
-
-    it('should_displayAllSections_when_rendered', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
-
-      expect(screen.getByText(/active events/i)).toBeInTheDocument();
-      expect(screen.getByText(/my open tasks/i)).toBeInTheDocument();
-      expect(screen.getByText(/team activity/i)).toBeInTheDocument();
+      expect(screen.getByRole('heading', { name: 'Active Events' })).toBeInTheDocument();
+      expect(screen.getByTestId('quick-actions')).toBeInTheDocument();
+      expect(
+        await within(screen.getByTestId('critical-tasks-section')).findByText('My open tasks')
+      ).toBeInTheDocument();
+      expect(
+        await within(screen.getByTestId('team-activity-section')).findByText('Notifications')
+      ).toBeInTheDocument();
     });
   });
 
   describe('Internationalization (AC22)', () => {
-    beforeEach(() => {
-      vi.mocked(useEvents).mockReturnValue({
-        data: mockEventsData,
-        isLoading: false,
-        isSuccess: true,
-        isError: false,
-      } as Partial<UseQueryResult<EventListResponse, Error>>);
-    });
+    it('should_useTranslationKeys_when_renderingText', async () => {
+      renderDashboard();
+      await findLoadedDashboard();
 
-    it('should_useTranslationKeys_when_renderingText', () => {
-      render(<EventManagementDashboard />, { wrapper: createWrapper() });
-
-      // All text should come from translation keys (t('events.dashboard.title'), etc.)
-      // This verifies no hardcoded strings
-      expect(screen.getByText(/event management/i)).toBeInTheDocument();
+      // en values of events:dashboard.*; a missing key would render the raw key instead.
+      expect(
+        screen.getByRole('heading', { level: 1, name: 'Event Management' })
+      ).toBeInTheDocument();
+      expect(screen.getByText('Quick Actions')).toBeInTheDocument();
+      expect(screen.queryByText(/dashboard\.\w+/)).not.toBeInTheDocument();
     });
   });
 });

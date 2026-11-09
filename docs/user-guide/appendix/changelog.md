@@ -47,6 +47,19 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ No-shows do not count as attendance: the analytics count confirmed and attended registrations only, so after an event the people who came are set to *Attended* and the others to *No-show*.
 - ✅ Mail Center: own text to the registrants can go to chosen statuses, for example the no-shows only. A template still goes to registered, confirmed and attended.
 
+**Improvement — Every company has a short ID (17.0)**:
+- ✅ A company created in the company list gets the same kind of short ID as a company named during a registration: at most 12 letters and digits, from its name ("Gamma Innovations" → "gammainnovat"). The name as typed stays the display name. Before, the ID was the name exactly as typed, spaces and all, and such a company could not become a partner or be the company of a user.
+- ✅ Existing companies with a longer or spaced ID got a short one, and everything that pointed to them (logos, logo requests, partners, registrations) points to the new ID. A company created a second time with the same name is refused, as before.
+
+**Bug Fix — Topic heat map shows real attendance (17.0)**:
+- ✅ The topic heat maps (topic backlog and topic selection) show for each use of a topic the attendance of its event: the confirmed and attended registrations, counted as on the analytics page, once the event has taken place. Before, the value was never filled in, so the tooltip read "null attendees" or 0. An event still to come shows no attendance. The "Avg Engagement" line is gone: the platform never measured engagement (older entries showed an estimate derived from the event's state), so it could show nothing true.
+
+**Bug Fix — "Sort by" in the partner directory works (17.0)**:
+- ✅ The organizers' partner directory sorts by **Company Name** (A to Z) or **Partnership Tier** (Strategic first, then Platinum, Gold, Silver, Bronze; equal tiers by name), across all pages. The control never had an effect: the list always came sorted by company name. The options "Engagement Score" and "Last Event" are gone: the platform records neither for a partner, so they could not sort anything.
+
+**Bug Fix — Partner meeting invites show the event's real times (17.0)**:
+- ✅ The BATbern event entry in a partner meeting invite now has the same start and end as the registration confirmation and the event page. Before the agenda was published it used fixed times of its own (18:00–22:00 for an evening event) instead of the times set for the event.
+
 **Improvement — Search finds what you mean, everywhere (Story 17.17)**:
 - ✅ Every search box (users, participants, newsletter subscribers, companies, partners, topics, events and the archive) searches all records, not only the ones on the current page. The partner list and the topic picker used to search only the rows already loaded.
 - ✅ Spelling variants find each other: "Müller", "Mueller" and "Muller", "Zürich" and "Zurich", "Strasse" and "Straße". Capital letters and accents do not matter.
@@ -54,6 +67,15 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ Users are also found by an additional e-mail address; participants by their company; newsletter subscribers by their last name; events by the speakers' names and the talks' titles.
 - ✅ In the company pickers the exact company is always at the top (it could be missing among many similar names). The company list shows real page numbers when searching.
 - ✅ Characters like `(`, `%` or `'` no longer cause an error in the event search.
+
+**Bug Fixes — Registration confirmation page and waitlist order (Story 17.0c2)**:
+- ✅ The page a participant sees after registering showed an empty name and e-mail under "Details". It now shows the name, the masked address the confirmation went to, and the name of the participant's company.
+- ✅ The confirmation page (`/registration-confirmation/<code>`) finds the registration from its code for every event. It used to look in one fixed event (BATbern25) for every code, so it showed "Registration not found" for all others.
+- ✅ The confirmation page shows the event's title and date, and its calendar button exports the event's date. The lookup never sent either, so the event line was empty and the calendar entry was created for the moment of the click.
+- ✅ The organizer's waitlist view numbers and orders people by their place on the waitlist. The position was never sent to the page, so the list was ordered by name and numbered by row.
+
+**Bug Fix — Requesting a revision of a talk without an abstract (Story 17.0b3)**:
+- ✅ Asking a speaker to revise a talk whose content the organizers had entered themselves, with a title and no abstract yet, failed with an error and was not saved. It is now stored, with an empty abstract.
 
 **Bug Fixes — Mail notices and name badges (#1235, #1236)**:
 - ✅ (#1235) The Mail Center notice for a mail that belongs to no event showed raw tags in subject and text ("Neue Mail{{#eventCode}} für …"). It now reads "Neue Mail von …". Every automatic mail to one person now drops a section whose value is missing instead of printing its tags, and the log names the missing value.

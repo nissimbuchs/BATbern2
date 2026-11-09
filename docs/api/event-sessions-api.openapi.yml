@@ -90,6 +90,18 @@ paths:
                       $ref: '#/components/schemas/CompanySessionResponse'
                   pagination:
                     $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    data: []
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 0
+                      totalPages: 0
+                      hasNext: false
+                      hasPrev: false
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -133,6 +145,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QnaWindowResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    status: OPEN
+                    opensAt: "2026-05-14T16:00:00Z"
+                    closesAt: "2026-05-14T16:00:00Z"
+                    posts:
+                      - id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                        parentPostId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                        postedByUsername: anna.muster
+                        postedByFirstName: Anna
+                        postedByLastName: Muster
+                        postedByCompanyName: Sample name
+                        postedByCompanyLogoUrl: https://www.batbern.ch/
+                        body: Sample text for the API example.
+                        removed: true
+                        createdAt: "2026-05-14T16:00:00Z"
         '404':
           description: No Q&A window for this session (event not completed, or unknown session).
           content:
@@ -182,6 +212,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QnaWindowResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    status: OPEN
+                    opensAt: "2026-05-14T16:00:00Z"
+                    closesAt: "2026-05-14T16:00:00Z"
+                    posts:
+                      - id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                        parentPostId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                        postedByUsername: anna.muster
+                        postedByFirstName: Anna
+                        postedByLastName: Muster
+                        postedByCompanyName: Sample name
+                        postedByCompanyLogoUrl: https://www.batbern.ch/
+                        body: Sample text for the API example.
+                        removed: true
+                        createdAt: "2026-05-14T16:00:00Z"
         '400':
           description: Neither closesAt nor close provided.
           content:
@@ -243,6 +291,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QnaPostResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    parentPostId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    postedByUsername: anna.muster
+                    postedByFirstName: Anna
+                    postedByLastName: Muster
+                    postedByCompanyName: Sample name
+                    postedByCompanyLogoUrl: https://www.batbern.ch/
+                    body: Sample text for the API example.
+                    removed: true
+                    createdAt: "2026-05-14T16:00:00Z"
         '400':
           description: Validation error (empty/too-long body or unknown field).
           content:
@@ -391,6 +453,18 @@ paths:
                       $ref: '#/components/schemas/SessionResponse'
                   pagination:
                     $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    data: []
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 0
+                      totalPages: 0
+                      hasNext: false
+                      hasPrev: false
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -434,6 +508,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    sessionSlug: moderation-start-4
+                    eventCode: BATbern66
+                    title: Moderation Start
+                    sessionType: moderation
+                    startTime: "2026-11-06T15:00:00Z"
+                    endTime: "2026-11-06T15:05:00Z"
+                    language: de
+                    createdAt: "2026-10-24T15:46:13.440741Z"
+                    updatedAt: "2026-10-24T15:46:13.440741Z"
+                    speakers:
+                      - username: anna.beispiel
+                        firstName: Anna
+                        lastName: Beispiel
+                        company: galenica
+                        companyDisplayName: Galenica
+                        profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                        speakerRole: MODERATOR
+                        isConfirmed: true
+                    materialsStatus: NONE
+                    materials: []
+                    materialsCount: 0
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -481,6 +580,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TimetableResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    slots:
+                      - type: MODERATION
+                        slotKey: MODERATION-1
+                        startTime: "2028-11-03T15:00:00Z"
+                        endTime: "2028-11-03T15:05:00Z"
+                        title: Moderation Start
+                        slotIndex: null
+                        sessionSlug: null
+                        assignedSessionSlug: null
+                      - type: SPEAKER_SLOT
+                        slotKey: SPEAKER_SLOT-1
+                        startTime: "2028-11-03T15:05:00Z"
+                        endTime: "2028-11-03T15:50:00Z"
+                        title: null
+                        slotIndex: 1
+                        sessionSlug: null
+                        assignedSessionSlug: null
+                    unassignedSessions: []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -522,6 +643,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TimetableResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    slots:
+                      - type: MODERATION
+                        slotKey: MODERATION-1
+                        startTime: "2028-11-03T15:00:00Z"
+                        endTime: "2028-11-03T15:05:00Z"
+                        title: Moderation Start
+                        slotIndex: null
+                        sessionSlug: null
+                        assignedSessionSlug: null
+                      - type: SPEAKER_SLOT
+                        slotKey: SPEAKER_SLOT-1
+                        startTime: "2028-11-03T15:05:00Z"
+                        endTime: "2028-11-03T15:50:00Z"
+                        title: null
+                        slotIndex: 1
+                        sessionSlug: null
+                        assignedSessionSlug: null
+                    unassignedSessions: []
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -561,6 +704,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SessionResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -601,6 +749,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    sessionSlug: moderation-start-4
+                    eventCode: BATbern66
+                    title: Moderation Start
+                    sessionType: moderation
+                    startTime: "2026-11-06T15:00:00Z"
+                    endTime: "2026-11-06T15:05:00Z"
+                    language: de
+                    createdAt: "2026-10-24T15:46:13.440741Z"
+                    updatedAt: "2026-10-24T15:46:13.440741Z"
+                    speakers:
+                      - username: anna.beispiel
+                        firstName: Anna
+                        lastName: Beispiel
+                        company: galenica
+                        companyDisplayName: Galenica
+                        profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                        speakerRole: MODERATOR
+                        isConfirmed: true
+                    materialsStatus: NONE
+                    materials: []
+                    materialsCount: 0
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -641,6 +814,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    sessionSlug: moderation-start-4
+                    eventCode: BATbern66
+                    title: Moderation Start
+                    sessionType: moderation
+                    startTime: "2026-11-06T15:00:00Z"
+                    endTime: "2026-11-06T15:05:00Z"
+                    language: de
+                    createdAt: "2026-10-24T15:46:13.440741Z"
+                    updatedAt: "2026-10-24T15:46:13.440741Z"
+                    speakers:
+                      - username: anna.beispiel
+                        firstName: Anna
+                        lastName: Beispiel
+                        company: galenica
+                        companyDisplayName: Galenica
+                        profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                        speakerRole: MODERATOR
+                        isConfirmed: true
+                    materialsStatus: NONE
+                    materials: []
+                    materialsCount: 0
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -676,6 +874,33 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/BulkTimingResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    assignedCount: 1
+                    sessions:
+                      - sessionSlug: moderation-start-4
+                        eventCode: BATbern60
+                        title: Moderation Start
+                        sessionType: moderation
+                        startTime: "2026-11-06T15:00:00Z"
+                        endTime: "2026-11-06T15:05:00Z"
+                        language: de
+                        createdAt: "2026-10-24T15:46:13.440741Z"
+                        updatedAt: "2026-10-24T15:46:13.440741Z"
+                        speakers:
+                          - username: anna.beispiel
+                            firstName: Carla
+                            lastName: Vorlage
+                            company: galenica
+                            companyDisplayName: Galenica
+                            profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                            speakerRole: MODERATOR
+                            isConfirmed: true
+                        materialsStatus: NONE
+                        materials: []
+                        materialsCount: 0
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -713,6 +938,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ConflictAnalysisResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    hasConflicts: false
+                    conflictCount: 0
+                    conflicts: []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -742,6 +974,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ClearTimingsResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
+                    clearedCount: 1
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -771,6 +1009,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AutoAssignResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
+                    assignedCount: 1
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -810,6 +1054,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventAgendaConfigResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    source: EVENT_OVERRIDE
+                    minSlots: 3
+                    maxSlots: 4
+                    slotDuration: 45
+                    theoreticalSlotsAM: false
+                    breakSlots: 1
+                    lunchSlots: 0
+                    defaultCapacity: 200
+                    moderationStartDuration: 5
+                    moderationEndDuration: 5
+                    breakDuration: 20
+                    lunchDuration: 60
+                    aperitifSlots: 1
+                    aperitifDuration: 90
+                    aperitifPosition: end
+                    typicalStartTime: null
+                    typicalEndTime: "14:00"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -853,6 +1118,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventAgendaConfigResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    source: EVENT_OVERRIDE
+                    minSlots: 3
+                    maxSlots: 4
+                    slotDuration: 45
+                    theoreticalSlotsAM: false
+                    breakSlots: 1
+                    lunchSlots: 0
+                    defaultCapacity: 200
+                    moderationStartDuration: 5
+                    moderationEndDuration: 5
+                    breakDuration: 20
+                    lunchDuration: 60
+                    aperitifSlots: 1
+                    aperitifDuration: 90
+                    aperitifPosition: end
+                    typicalStartTime: null
+                    typicalEndTime: "14:00"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -912,6 +1198,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SessionResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    []
         '409':
           description: Structural sessions already exist (use overwrite=true to replace)
           content:
@@ -983,11 +1274,11 @@ paths:
               abstract: Discussion on modern UI patterns
               pdf: BAT142_UI_Design.pdf
               referenten:
-              - name: Thomas Goetz, Die Mobiliar
+              - name: Anna Muster, Die Mobiliar
                 bio: Expert in UI design
                 company: mobiliar
-                portrait: thomas.goetz.jpg
-                speakerId: thomas.goetz
+                portrait: anna.muster.jpg
+                speakerId: anna.muster
       responses:
         '403':
           description: Forbidden (ORGANIZER role required)
@@ -1000,6 +1291,7 @@ paths:
               example:
                 totalProcessed: 3
                 successfullyCreated: 2
+                updated: 0
                 skipped: 1
                 failed: 0
                 details:
@@ -1083,6 +1375,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    sessionSlug: moderation-start-4
+                    eventCode: BATbern66
+                    title: Moderation Start
+                    sessionType: moderation
+                    startTime: "2026-11-06T15:00:00Z"
+                    endTime: "2026-11-06T15:05:00Z"
+                    language: de
+                    createdAt: "2026-10-24T15:46:13.440741Z"
+                    updatedAt: "2026-10-24T15:46:13.440741Z"
+                    speakers:
+                      - username: anna.beispiel
+                        firstName: Anna
+                        lastName: Beispiel
+                        company: galenica
+                        companyDisplayName: Galenica
+                        profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                        speakerRole: MODERATOR
+                        isConfirmed: true
+                    materialsStatus: NONE
+                    materials: []
+                    materialsCount: 0
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1139,6 +1456,31 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    sessionSlug: moderation-start-4
+                    eventCode: BATbern66
+                    title: Moderation Start
+                    sessionType: moderation
+                    startTime: "2026-11-06T15:00:00Z"
+                    endTime: "2026-11-06T15:05:00Z"
+                    language: de
+                    createdAt: "2026-10-24T15:46:13.440741Z"
+                    updatedAt: "2026-10-24T15:46:13.440741Z"
+                    speakers:
+                      - username: anna.beispiel
+                        firstName: Anna
+                        lastName: Beispiel
+                        company: galenica
+                        companyDisplayName: Galenica
+                        profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                        speakerRole: MODERATOR
+                        isConfirmed: true
+                    materialsStatus: NONE
+                    materials: []
+                    materialsCount: 0
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -1231,6 +1573,18 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SessionSpeaker'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - username: anna.beispiel
+                      firstName: Anna
+                      lastName: Beispiel
+                      company: galenica
+                      companyDisplayName: Galenica
+                      profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                      speakerRole: MODERATOR
+                      isConfirmed: true
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1285,6 +1639,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionSpeaker'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    username: anna.beispiel
+                    firstName: Carla
+                    lastName: Vorlage
+                    company: galenica
+                    companyDisplayName: Galenica
+                    profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                    speakerRole: MODERATOR
+                    isConfirmed: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -1373,6 +1739,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionSpeaker'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    username: anna.beispiel
+                    firstName: Carla
+                    lastName: Vorlage
+                    company: galenica
+                    companyDisplayName: Galenica
+                    profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                    speakerRole: MODERATOR
+                    isConfirmed: true
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1421,6 +1799,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionSpeaker'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    username: anna.beispiel
+                    firstName: Carla
+                    lastName: Vorlage
+                    company: galenica
+                    companyDisplayName: Galenica
+                    profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                    speakerRole: MODERATOR
+                    isConfirmed: true
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1463,6 +1853,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionMaterialsResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    materials: []
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -1501,6 +1896,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SessionMaterialsResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    materials: []
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1581,6 +1981,11 @@ paths:
             application/json:
               schema:
                 $ref: ./_shared.openapi.yml#/components/schemas/DownloadUrlResponse
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    downloadUrl: https://batbern-inbound-emails-staging.s3.eu-central-1.amazonaws.com/...&X-Amz-Signature=...
         '404':
           $ref: '#/components/responses/NotFound'
         '500':

@@ -7,7 +7,7 @@
 
 import { useQuery, useQueryClient, keepPreviousData } from '@tanstack/react-query';
 import type { UserFilters, UserPagination } from '@/types/user.types';
-import { listUsers } from '@/services/api/userManagementApi';
+import { listAllUsers, listUsers } from '@/services/api/userManagementApi';
 
 interface UseUserListOptions {
   filters: UserFilters;
@@ -15,6 +15,8 @@ interface UseUserListOptions {
   sortBy?: string;
   sortDir?: 'asc' | 'desc';
   enabled?: boolean;
+  /** Every page instead of `pagination` (page by page at the spec maximum of 100). */
+  allPages?: boolean;
 }
 
 export const useUserList = ({
@@ -23,6 +25,7 @@ export const useUserList = ({
   sortBy,
   sortDir,
   enabled = true,
+  allPages = false,
 }: UseUserListOptions) => {
   const queryClient = useQueryClient();
 
@@ -30,8 +33,11 @@ export const useUserList = ({
   const { page, limit } = pagination;
 
   const query = useQuery({
-    queryKey: ['users', 'list', { filters, page, limit, sortBy, sortDir }],
-    queryFn: () => listUsers(filters, pagination, undefined, sortBy, sortDir),
+    queryKey: allPages
+      ? ['users', 'list', 'all', { filters }]
+      : ['users', 'list', { filters, page, limit, sortBy, sortDir }],
+    queryFn: () =>
+      allPages ? listAllUsers(filters) : listUsers(filters, pagination, undefined, sortBy, sortDir),
     staleTime: 5 * 60 * 1000, // 5 minutes
     gcTime: 30 * 60 * 1000, // 30 minutes (formerly cacheTime)
     placeholderData: keepPreviousData, // Keep previous data during refetch (prevents "page reload" effect)

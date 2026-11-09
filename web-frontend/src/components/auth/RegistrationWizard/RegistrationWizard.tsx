@@ -23,7 +23,8 @@ export const RegistrationWizard: React.FC = () => {
     defaultValues: {
       firstName: '',
       lastName: '',
-      email: '',
+      // Prefilled from the registration confirmation mail's link (/auth/register?email=…)
+      email: searchParams.get('email') ?? '',
       password: '',
       confirmPassword: '',
       agreedToTerms: false,

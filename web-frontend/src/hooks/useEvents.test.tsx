@@ -7,7 +7,6 @@
  * Tests for React Query hooks for Event Management:
  * - useEvents: List query with filters, sort, pagination (cache 5min)
  * - useEvent: Detail query with resource expansion (cache 15min)
- * - useEventWorkflow: Workflow state query (cache 10min)
  * - useCreateEvent: Create mutation
  * - useUpdateEvent: Update mutation with optimistic updates
  * - useDeleteEvent: Delete mutation
@@ -20,7 +19,6 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import {
   useEvents,
   useEvent,
-  useEventWorkflow,
   useCreateEvent,
   useUpdateEvent,
   useDeleteEvent,
@@ -33,7 +31,6 @@ vi.mock('@/services/eventApiClient', () => ({
   eventApiClient: {
     getEvents: vi.fn(),
     getEvent: vi.fn(),
-    getEventWorkflow: vi.fn(),
     getTeamActivity: vi.fn(),
     createEvent: vi.fn(),
     updateEvent: vi.fn(),
@@ -295,54 +292,6 @@ describe('Event Management React Query Hooks', () => {
       });
 
       expect(eventApiClient.getEvent).toHaveBeenCalledTimes(1);
-    });
-  });
-
-  describe('useEventWorkflow Hook', () => {
-    const mockWorkflow = {
-      currentStep: 2,
-      totalSteps: 16,
-      completionPercentage: 12.5,
-      steps: [],
-      blockers: [],
-    };
-
-    it('should_fetchEventWorkflow_when_eventCodeProvided', async () => {
-      vi.mocked(eventApiClient.getEventWorkflow).mockResolvedValue(mockWorkflow);
-
-      const { result } = renderHook(() => useEventWorkflow('BATbern56'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(eventApiClient.getEventWorkflow).toHaveBeenCalledWith('BATbern56');
-      expect(result.current.data).toEqual(mockWorkflow);
-    });
-
-    it('should_notFetchWorkflow_when_eventCodeUndefined', () => {
-      const { result } = renderHook(() => useEventWorkflow(undefined as unknown as string), {
-        wrapper: createWrapper(),
-      });
-
-      expect(result.current.isLoading).toBe(false);
-      expect(eventApiClient.getEventWorkflow).not.toHaveBeenCalled();
-    });
-
-    it('should_cacheResultsFor10Minutes_when_staleTimeSet', async () => {
-      vi.mocked(eventApiClient.getEventWorkflow).mockResolvedValue(mockWorkflow);
-
-      const { result } = renderHook(() => useEventWorkflow('BATbern56'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => {
-        expect(result.current.isSuccess).toBe(true);
-      });
-
-      expect(eventApiClient.getEventWorkflow).toHaveBeenCalledTimes(1);
     });
   });
 

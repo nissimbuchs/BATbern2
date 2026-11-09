@@ -1,22 +1,18 @@
 package ch.batbern.events.controller;
 
-import ch.batbern.events.dto.generated.users.UserResponse;
-import ch.batbern.events.dto.generated.users.AdditionalEmail;
-import java.time.OffsetDateTime;
-import java.util.List;
-import ch.batbern.events.client.UserApiClient;
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -24,7 +20,6 @@ import java.time.Instant;
 import java.time.temporal.ChronoUnit;
 
 import static org.hamcrest.Matchers.is;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
@@ -48,14 +43,21 @@ class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private RegistrationRepository registrationRepository;
 
-    @MockitoBean
-    private UserApiClient userApiClient;
+    /** CUMS behind the real UserApiClient (Story 17.0b2). */
+    @Autowired
+    private CumsContractHarness cums;
 
     private static final String ATTENDEE = "jane.attendee";
     private static final String OTHER = "bob.other";
 
+    @AfterEach
+    void resetCums() {
+        cums.reset();
+    }
+
     @BeforeEach
     void setUp() {
+        cums.reset();
         registrationRepository.deleteAll();
         eventRepository.deleteAll();
     }
@@ -110,19 +112,17 @@ class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("AC7: anonymous caller is rejected (401 at gateway / 403 in isolation)")
+    @DisplayName("AC7: anonymous caller is rejected with 401")
     void should_reject_anonymous() throws Exception {
         mockMvc.perform(get("/api/v1/attendee-portal/dashboard"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
     @WithMockUser(username = ATTENDEE, roles = {"ATTENDEE"})
     @DisplayName("Greets with the CUMS profile first name, not the login username")
     void should_greetWithProfileFirstName() throws Exception {
-        when(userApiClient.getUserByUsername(ATTENDEE)).thenReturn(
-                new UserResponse()
-                        .firstName("Jane").lastName("Müller"));
+        cums.user(ATTENDEE, "Jane", "Müller", "jane.attendee@example.com");
         Event e = saveEvent("BATbern974", Instant.now().plus(20, ChronoUnit.DAYS),
                 EventWorkflowState.AGENDA_PUBLISHED);
         saveRegistration(ATTENDEE, e, "confirmed");
@@ -135,24 +135,24 @@ class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
     // ==================== #1183: all of a person's verified addresses ====================
 
     private void addresses(String verified, String unverified) {
-        when(userApiClient.getUserByUsername(ATTENDEE)).thenReturn(
-                new UserResponse()
-                        .firstName("Jane").email("jane@private.example")
-                        .additionalEmails(List.of(
-                                new AdditionalEmail().email(verified)
-                                        .verifiedAt(OffsetDateTime.now()),
-                                new AdditionalEmail().email(unverified))));
+        cums.user(ATTENDEE, """
+                {"id": "%s", "email": "jane@private.example.com", "firstName": "Jane", "lastName": "Müller",
+                 "roles": ["ATTENDEE"], "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z",
+                 "additionalEmails": [
+                   {"email": "%s", "createdAt": "2025-01-15T10:00:00Z", "verifiedAt": "2025-01-16T10:00:00Z"},
+                   {"email": "%s", "createdAt": "2025-01-15T10:00:00Z", "verifiedAt": null}]}"""
+                .formatted(ATTENDEE, verified, unverified));
     }
 
     @Test
     @WithMockUser(username = ATTENDEE, roles = {"ATTENDEE"})
     @DisplayName("#1183: history on an imported profile under a verified address shows; unverified does not")
     void should_includeRegistrations_underVerifiedAddressesOnly() throws Exception {
-        addresses("jane@work.example", "not-mine@example.org");
+        addresses("jane@work.example.com", "not-mine@example.org");
         Event attended = saveEvent("BATbern975", Instant.now().minus(400, ChronoUnit.DAYS), EventWorkflowState.ARCHIVED);
         Event foreign = saveEvent("BATbern976", Instant.now().minus(300, ChronoUnit.DAYS), EventWorkflowState.ARCHIVED);
         Registration imported = saveRegistration("jane.imported", attended, "attended");
-        imported.setAttendeeEmail("JANE@work.example");
+        imported.setAttendeeEmail("JANE@work.example.com");
         registrationRepository.save(imported);
         Registration notMine = saveRegistration("someone.else", foreign, "attended");
         notMine.setAttendeeEmail("not-mine@example.org");
@@ -168,11 +168,11 @@ class AttendeeDashboardIntegrationTest extends AbstractIntegrationTest {
     @WithMockUser(username = ATTENDEE, roles = {"ATTENDEE"})
     @DisplayName("#1183: one card per event when both profiles registered for it")
     void should_showEventOnce_when_registeredOnTwoProfiles() throws Exception {
-        addresses("jane@work.example", "x@example.org");
+        addresses("jane@work.example.com", "x@example.org");
         Event e = saveEvent("BATbern977", Instant.now().plus(10, ChronoUnit.DAYS), EventWorkflowState.AGENDA_PUBLISHED);
         saveRegistration(ATTENDEE, e, "confirmed");
         Registration second = saveRegistration("jane.guest", e, "waitlist");
-        second.setAttendeeEmail("jane@work.example");
+        second.setAttendeeEmail("jane@work.example.com");
         registrationRepository.save(second);
 
         mockMvc.perform(get("/api/v1/attendee-portal/dashboard"))

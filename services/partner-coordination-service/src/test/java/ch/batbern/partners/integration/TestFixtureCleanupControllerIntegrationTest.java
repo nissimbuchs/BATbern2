@@ -18,7 +18,6 @@ import ch.batbern.partners.repository.TopicVoteRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.junit.jupiter.api.BeforeEach;
-import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
 import org.junit.jupiter.api.Test;
@@ -46,7 +45,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * <p>Covers:
  * <ul>
- *   <li>Authorization: 403 (non-organizer roles), 200 (organizer)</li>
+ *   <li>Authorization: 401 (anonymous), 403 (non-organizer roles), 200 (organizer)</li>
  *   <li>Prefix validation: invalid prefix rejected with 400 (defense against {@code prefix=br}
  *       which would otherwise match the real {@code brtest*} entries — also intentionally
  *       defends against {@code prefix=B} matching nothing real but indicating loose intent)</li>
@@ -56,11 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *   <li>Successful deletion: only the matching test rows deleted; real-shaped rows survive</li>
  * </ul>
  *
- * <p>The 401-unauthenticated case is NOT testable here because PCS's
- * {@code SecurityConfig.testFilterChain} sets {@code .anyRequest().permitAll()} at the HTTP
- * layer (production auth is at the API Gateway layer per Story 1.2); method-level
- * {@code @PreAuthorize} returns 403 even without authentication, so 401 only manifests in
- * production. Same precedent as the EMS cleanup test class.
+ * <p>The 401-unauthenticated case runs against the production chain (17.0b3).
  *
  * <p>Defensive assertion: every successful-cleanup test seeds real-looking partners (ELCA,
  * Swisscom) and verifies they survive. This is the production-safety guarantee that
@@ -121,12 +116,17 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
     class Authorization {
 
         @Test
-        @DisplayName("returns 401 when caller is unauthenticated (HTTP-level disabled in test config)")
-        @Disabled("HTTP-level auth disabled in SecurityConfig.testFilterChain — method-level "
-                + "@PreAuthorize returns 403 without auth. 401 only manifests behind the API "
-                + "Gateway in prod. Mirrors EMS/SlotAssignmentControllerIntegrationTest precedent.")
+        @DisplayName("returns 401 when caller is unauthenticated")
         void returns401_whenUnauthenticated() throws Exception {
-            // Documented expectation; not exercisable in test config — see class javadoc.
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("partners")
+                    .prefix("brtest")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isUnauthorized());
         }
 
         @Test

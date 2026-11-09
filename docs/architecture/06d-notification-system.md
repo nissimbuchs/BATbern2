@@ -495,8 +495,10 @@ public class EmailService {
                               String htmlBody, String replyTo) {
         sendHtmlEmailSync(context, to, cc, subject, htmlBody, configurationSetName, replyTo);
     }
-    // sendSyncTo: no SES client -> capture or log, then record; else assertNotTestMarked,
-    // SES SendEmail with configuration set and mail_group tag, record message id or error code
+    // sendSyncTo: every To:/Cc address to its SES delivery form first (one address per entry,
+    // with or without an SES client, #1176); no SES client -> capture or log, then record; else
+    // assertNotTestMarked, SES SendEmail with configuration set and mail_group tag, record
+    // message id or error code. Tests: the SesRecorder is the SES client (17.0b3).
 }
 ```
 

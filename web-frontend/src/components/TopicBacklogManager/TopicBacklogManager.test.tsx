@@ -1,6 +1,14 @@
 /**
  * TopicBacklogManager Component Tests (Story 5.2 - Frontend Tests)
  *
+ * The real tree runs against the MSW harness (17.0c2): useTopics/topicService (`GET /topics`),
+ * useEvent (`GET /events/{eventCode}`), useTopic (`GET /topics/{topicCode}`), useUserList
+ * (`GET /users`, fixtures), useEvents (`GET /events`, fixtures), the real TopicFilterPanel,
+ * TopicList, TopicDetailsPanel (`/similar`, `/usage-history`, `POST /events/{code}/topics`),
+ * MultiTopicHeatMap, CreateTopicModal and SpeakerBrainstormingPanel (`GET .../speaker-pool`),
+ * and real English i18n. Every request is checked against the OpenAPI specs; the tests read
+ * what went over the wire with `api.calls`.
+ *
  * Tests main topic selection interface:
  * - Rendering with loading/error states
  * - Filter panel integration
@@ -9,484 +17,411 @@
  * - Event topic selection callback
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
+import { screen, waitFor, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { MemoryRouter } from 'react-router-dom';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import type { ResponseBody } from '@/test/msw/api';
+import { futureEvent } from '@/test/fixtures';
+import { renderWithProviders } from '@/test/test-utils';
 import { TopicBacklogManager } from './TopicBacklogManager';
-import * as useTopicsHook from '@/hooks/useTopics';
-import type { Topic, TopicListResponse } from '@/types/topic.types';
+import type { TopicBacklogManagerProps } from './TopicBacklogManager';
 
-// Mock the useTopics hooks
-vi.mock('@/hooks/useTopics', () => ({
-  useTopics: vi.fn(),
-  useTopic: vi.fn(),
-}));
+type TopicList = ResponseBody<'topics-api/listTopics', 200>;
+type Topic = TopicList['data'][number];
 
-// Mock react-i18next
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, defaultValue?: string) => defaultValue || key,
+const bestand: Topic = {
+  topicCode: 'bauen-im-bestand-zuerich',
+  title: 'Bauen im Bestand – Zürich',
+  description: 'Umbau statt Neubau: Erfahrungen aus Zürich und Genève.',
+  category: 'technical',
+  createdDate: '2025-12-18T19:13:20.082653+01:00',
+  lastUsedDate: '2013-03-15T16:00:00+01:00',
+  usageCount: 2,
+  stalenessScore: 100,
+  colorZone: 'green',
+  status: 'AVAILABLE',
+  similarityScores: [],
+  active: true,
+};
+
+const fuehrung: Topic = {
+  topicCode: 'fuehrung-in-agilen-teams',
+  title: 'Führung in agilen Teams',
+  description: 'Management-Praktiken für selbstorganisierte Teams.',
+  category: 'management',
+  createdDate: '2026-03-06T14:42:40.504045+01:00',
+  lastUsedDate: '2025-06-01T18:00:00+02:00',
+  usageCount: 5,
+  stalenessScore: 50,
+  colorZone: 'yellow',
+  status: 'CAUTION',
+  similarityScores: [],
+  active: true,
+};
+
+const topicList = (
+  data: Topic[] = [bestand, fuehrung],
+  pagination: Partial<TopicList['pagination']> = {}
+): TopicList => ({
+  data,
+  pagination: {
+    page: 1,
+    limit: 20,
+    totalItems: data.length,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false,
+    ...pagination,
+  },
+});
+
+type EventDetail = ResponseBody<'getEvent', 200>;
+
+/** An event in topic selection, without a topic yet: no topic is preselected. */
+const eventWithoutTopic = (overrides: Partial<EventDetail> = {}): EventDetail => ({
+  ...futureEvent(40, {
+    eventCode: 'BATbern56',
+    eventNumber: 56,
+    workflowState: 'TOPIC_SELECTION',
+    topicCode: null,
   }),
-}));
+  sessions: [],
+  ...overrides,
+});
 
-// Mock hooks for event/user data
-vi.mock('@/hooks/useEvents', () => ({
-  useEvent: vi.fn().mockReturnValue({ data: undefined }),
-  useEvents: vi.fn().mockReturnValue({ data: undefined }),
-}));
+const renderComponent = (props: TopicBacklogManagerProps = {}) =>
+  renderWithProviders(<TopicBacklogManager {...props} />);
 
-vi.mock('@/hooks/useUserManagement/useUserList', () => ({
-  useUserList: vi.fn().mockReturnValue({ data: undefined }),
-}));
+/** The details panel: the Paper that holds the always-present "Edit Topic" action. */
+const detailsPanel = async () => {
+  const edit = await screen.findByRole('button', { name: 'Edit Topic' });
+  const panel = edit.closest('.MuiPaper-root');
+  if (!(panel instanceof HTMLElement)) throw new Error('details panel not found');
+  return panel;
+};
 
-// Mock child components for isolated testing
-vi.mock('./CreateTopicModal', () => ({
-  CreateTopicModal: ({ open, onClose }: { open: boolean; onClose: () => void }) =>
-    open ? (
-      <div data-testid="create-topic-modal">
-        <button onClick={onClose}>Close Modal</button>
-      </div>
-    ) : null,
-}));
-
-vi.mock('@/components/SpeakerBrainstormingPanel/SpeakerBrainstormingPanel', () => ({
-  SpeakerBrainstormingPanel: ({ onContinue }: { onContinue: () => void }) => (
-    <div data-testid="speaker-brainstorming-panel">
-      <button onClick={onContinue}>Continue to Speakers</button>
-    </div>
-  ),
-}));
-
-vi.mock('@/components/TopicHeatMap', () => ({
-  MultiTopicHeatMap: ({ onTopicSelect }: { onTopicSelect: (t: unknown) => void }) => (
-    <div data-testid="multi-topic-heatmap" onClick={() => onTopicSelect({})} />
-  ),
-}));
-
-vi.mock('./TopicFilterPanel', () => ({
-  TopicFilterPanel: ({ onFilterChange }: { onFilterChange: (filters: unknown) => void }) => (
-    <div data-testid="topic-filter-panel">
-      <button onClick={() => onFilterChange({ category: 'technical' })}>Apply Filter</button>
-    </div>
-  ),
-}));
-
-vi.mock('./TopicList', () => ({
-  TopicList: ({
-    topics,
-    onTopicSelect,
-    selectedTopicId,
-  }: {
-    topics: Topic[];
-    onTopicSelect: (topic: Topic) => void;
-    selectedTopicId?: string;
-  }) => (
-    <div data-testid="topic-list">
-      {topics.map((topic) => (
-        <div
-          key={topic.id}
-          data-testid={`topic-${topic.id}`}
-          data-selected={topic.id === selectedTopicId}
-          onClick={() => onTopicSelect(topic)}
-        >
-          {topic.title}
-        </div>
-      ))}
-    </div>
-  ),
-}));
-
-vi.mock('./TopicDetailsPanel', () => ({
-  TopicDetailsPanel: ({
-    topic,
-    eventCode,
-    onTopicConfirm,
-  }: {
-    topic: Topic;
-    eventCode?: string;
-    onTopicConfirm: (id: string) => void;
-  }) => (
-    <div data-testid="topic-details-panel">
-      <div>{topic.title}</div>
-      {eventCode && <button onClick={() => onTopicConfirm(topic.id)}>Select for Event</button>}
-    </div>
-  ),
-}));
+const lastTopicsQuery = () => {
+  const calls = api.calls('topics-api/listTopics');
+  return calls[calls.length - 1].query;
+};
 
 describe('TopicBacklogManager', () => {
-  let queryClient: QueryClient;
-  const mockTopics: Topic[] = [
-    {
-      id: 'topic-123',
-      title: 'Cloud Native Architecture',
-      description: 'Modern cloud patterns',
-      category: 'technical',
-      stalenessScore: 85,
-      usageCount: 3,
-      lastUsedDate: '2024-01-15',
-      isActive: true,
-      createdDate: '2023-01-01',
-    },
-    {
-      id: 'topic-456',
-      title: 'Leadership Skills',
-      description: 'Management best practices',
-      category: 'management',
-      stalenessScore: 50,
-      usageCount: 5,
-      lastUsedDate: '2024-06-01',
-      isActive: true,
-      createdDate: '2023-02-01',
-    },
-  ];
-
-  const mockTopicListResponse: TopicListResponse = {
-    data: mockTopics,
-    pagination: { page: 1, limit: 20, total: 2 },
-  };
-
   beforeEach(() => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: { retry: false, gcTime: 0 },
-      },
-    });
-    vi.clearAllMocks();
-
-    // Setup default mock for useTopic (returns undefined when no topic is preassigned)
-    vi.mocked(useTopicsHook.useTopic).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopic>);
+    api.on('topics-api/listTopics', () => topicList());
+    api.on('getEvent', () => eventWithoutTopic());
+    api.on('getSimilarTopics', () => []);
+    api.on('getTopicUsageHistory', () => []);
+    api.on('getSpeakerPool', () => []);
   });
 
-  const renderComponent = (props = {}) => {
-    return render(
-      <MemoryRouter>
-        <QueryClientProvider client={queryClient}>
-          <TopicBacklogManager {...props} />
-        </QueryClientProvider>
-      </MemoryRouter>
-    );
-  };
-
-  it('should render with title', () => {
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
+  it('should render with title', async () => {
     renderComponent();
 
-    expect(screen.getByText('Topic Backlog Manager')).toBeInTheDocument();
-    // Note: Subtitle is only shown when eventCode is provided (event selection mode)
+    expect(screen.getByRole('heading', { level: 1 })).toHaveTextContent('Topic Backlog Manager');
+    // The subtitle is only shown in event selection mode
+    expect(
+      screen.queryByText(
+        'Select topics from the backlog with intelligent suggestions and staleness detection'
+      )
+    ).not.toBeInTheDocument();
+    expect(await screen.findByText('Bauen im Bestand – Zürich')).toBeInTheDocument();
   });
 
-  it('should display loading state', () => {
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: undefined,
-      isLoading: true,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
+  it('should show the topic selection title and subtitle when an event is loaded', async () => {
+    renderComponent({ eventCode: 'BATbern56' });
+
+    expect(
+      await screen.findByRole('heading', { level: 1, name: 'Topic Selection' })
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText(
+        'Select topics from the backlog with intelligent suggestions and staleness detection'
+      )
+    ).toBeInTheDocument();
+    expect(api.calls('getEvent')[0].params.eventCode).toBe('BATbern56');
+  });
+
+  it('should display loading state', async () => {
+    let release: () => void = () => {};
+    const pending = new Promise<void>((resolve) => {
+      release = resolve;
+    });
+    api.on('topics-api/listTopics', async () => {
+      await pending;
+      return topicList();
+    });
 
     renderComponent();
 
     expect(screen.getByRole('progressbar')).toBeInTheDocument();
+    expect(screen.queryByTestId('topic-list')).not.toBeInTheDocument();
+
+    release();
+    expect(await screen.findByTestId('topic-list')).toBeInTheDocument();
+    expect(screen.queryByRole('progressbar')).not.toBeInTheDocument();
   });
 
-  it('should display error state', () => {
-    const error = new Error('Failed to load topics');
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: undefined,
-      isLoading: false,
-      isError: true,
-      error,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
-    renderComponent();
-
-    expect(screen.getByText(/Failed to load topics/)).toBeInTheDocument();
-    expect(screen.getByText(/Failed to load topics/)).toHaveAttribute(
-      'class',
-      expect.stringContaining('MuiAlert')
+  it('should display error state', async () => {
+    api.on('topics-api/listTopics', () =>
+      HttpResponse.json(
+        { status: 500, title: 'Internal Server Error', detail: 'Topic query failed' },
+        { status: 500 }
+      )
     );
-  });
-
-  it('should render filter panel, topic list, and details placeholder', () => {
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
 
     renderComponent();
 
-    expect(screen.getByTestId('topic-filter-panel')).toBeInTheDocument();
-    expect(screen.getByTestId('topic-list')).toBeInTheDocument();
+    const message = await screen.findByText(/Failed to load topics/);
+    expect(message.closest('.MuiAlert-root')).toHaveClass('MuiAlert-standardError');
+    expect(screen.queryByTestId('topic-list')).not.toBeInTheDocument();
+  });
+
+  it('should render filter panel, topic list, and details placeholder', async () => {
+    renderComponent();
+
+    expect(screen.getByRole('heading', { name: 'Filters' })).toBeInTheDocument();
+    expect(screen.getByRole('combobox', { name: 'Category' })).toBeInTheDocument();
+    expect(await screen.findByTestId('topic-list')).toBeInTheDocument();
     expect(screen.getByText('Select a topic to view details')).toBeInTheDocument();
   });
 
-  it('should display topics in the list', () => {
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
+  it('should display topics in the list', async () => {
     renderComponent();
 
-    expect(screen.getByText('Cloud Native Architecture')).toBeInTheDocument();
-    expect(screen.getByText('Leadership Skills')).toBeInTheDocument();
+    const first = await screen.findByTestId('topic-card-bauen-im-bestand-zuerich');
+    expect(first).toHaveTextContent('Bauen im Bestand – Zürich');
+    expect(first).toHaveTextContent('100%');
+    expect(first).toHaveTextContent('Technical');
+    expect(screen.getByTestId('topic-card-fuehrung-in-agilen-teams')).toHaveTextContent(
+      'Führung in agilen Teams'
+    );
   });
 
   it('should show topic details when topic is selected', async () => {
     const user = userEvent.setup();
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
     renderComponent();
 
-    const topicElement = screen.getByTestId('topic-topic-123');
-    await user.click(topicElement);
+    await user.click(
+      within(await screen.findByTestId('topic-card-bauen-im-bestand-zuerich')).getByRole('button')
+    );
 
+    const panel = await detailsPanel();
+    expect(
+      within(panel).getByRole('heading', { name: 'Bauen im Bestand – Zürich' })
+    ).toBeInTheDocument();
+    expect(
+      within(panel).getByText('Umbau statt Neubau: Erfahrungen aus Zürich und Genève.')
+    ).toBeInTheDocument();
+    expect(
+      within(panel).getByText('Safe to reuse - last used over 20 months ago')
+    ).toBeInTheDocument();
+    expect(screen.queryByText('Select a topic to view details')).not.toBeInTheDocument();
     await waitFor(() => {
-      expect(screen.getByTestId('topic-details-panel')).toBeInTheDocument();
-      expect(screen.queryByText('Select a topic to view details')).not.toBeInTheDocument();
+      expect(api.calls('getSimilarTopics')[0]?.params.topicCode).toBe('bauen-im-bestand-zuerich');
+      expect(api.calls('getTopicUsageHistory')[0]?.params.topicCode).toBe(
+        'bauen-im-bestand-zuerich'
+      );
     });
   });
 
   it('should call onTopicSelected callback when topic is confirmed', async () => {
     const user = userEvent.setup();
     const onTopicSelected = vi.fn();
-
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
     renderComponent({ eventCode: 'BATbern56', onTopicSelected });
 
-    // Select topic
-    const topicElement = screen.getByTestId('topic-topic-123');
-    await user.click(topicElement);
+    await user.click(
+      within(await screen.findByTestId('topic-card-bauen-im-bestand-zuerich')).getByRole('button')
+    );
+    await user.click(await screen.findByTestId('confirm-topic-selection-button'));
 
-    // Confirm selection
-    const confirmButton = await screen.findByText('Select for Event');
-    await user.click(confirmButton);
+    await waitFor(() => expect(onTopicSelected).toHaveBeenCalledWith('bauen-im-bestand-zuerich'));
+    const [select] = api.calls('selectTopicForEvent');
+    expect(select.params.eventCode).toBe('BATbern56');
+    expect(select.body).toEqual({ topicCode: 'bauen-im-bestand-zuerich' });
+  });
 
-    expect(onTopicSelected).toHaveBeenCalledWith('topic-123');
+  it('should not call onTopicSelected when selecting the topic fails', async () => {
+    const user = userEvent.setup();
+    const onTopicSelected = vi.fn();
+    api.on('selectTopicForEvent', () =>
+      HttpResponse.json(
+        { status: 409, title: 'Conflict', detail: 'Event is not in TOPIC_SELECTION' },
+        { status: 409 }
+      )
+    );
+    renderComponent({ eventCode: 'BATbern56', onTopicSelected });
+
+    await user.click(
+      within(await screen.findByTestId('topic-card-bauen-im-bestand-zuerich')).getByRole('button')
+    );
+    await user.click(await screen.findByTestId('confirm-topic-selection-button'));
+
+    await waitFor(() => expect(api.calls('selectTopicForEvent')).toHaveLength(1));
+    await waitFor(() =>
+      expect(screen.getByTestId('confirm-topic-selection-button')).not.toBeDisabled()
+    );
+    expect(onTopicSelected).not.toHaveBeenCalled();
+    expect(screen.queryByText('Speaker Brainstorming')).not.toBeInTheDocument();
   });
 
   it('should update filters when filter panel changes', async () => {
     const user = userEvent.setup();
-    const useTopicsSpy = vi.mocked(useTopicsHook.useTopics);
-
-    useTopicsSpy.mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
-    renderComponent();
-
-    const filterButton = screen.getByText('Apply Filter');
-    await user.click(filterButton);
-
-    // Verify useTopics was called with updated filters
-    await waitFor(() => {
-      expect(useTopicsSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          category: 'technical',
-          page: 1, // Reset to page 1 on filter change
-        })
-      );
-    });
-  });
-
-  it('should initialize with default filters (sort by staleness descending)', () => {
-    const useTopicsSpy = vi.mocked(useTopicsHook.useTopics);
-
-    useTopicsSpy.mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
-    renderComponent();
-
-    expect(useTopicsSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        page: 1,
-        limit: 20,
-        sort: '-stalenessScore',
+    api.on('topics-api/listTopics', ({ query }) =>
+      topicList([bestand, fuehrung], {
+        page: Number(query.get('page') ?? 1),
+        totalItems: 45,
+        totalPages: 3,
+        hasNext: true,
       })
     );
+    renderComponent();
+
+    // Go to page 2 first, so the reset to page 1 on a filter change is visible on the wire
+    const pagination = await screen.findByTestId('topic-pagination');
+    await user.click(within(pagination).getByRole('button', { name: /page 2/i }));
+    await waitFor(() => expect(lastTopicsQuery().get('page')).toBe('2'));
+    expect(lastTopicsQuery().get('filter')).toBeNull();
+
+    await user.click(screen.getByRole('combobox', { name: 'Category' }));
+    await user.click(await screen.findByRole('option', { name: 'Technical' }));
+
+    await waitFor(() => expect(lastTopicsQuery().get('filter')).not.toBeNull());
+    const query = lastTopicsQuery();
+    expect(JSON.parse(query.get('filter') ?? '{}')).toEqual({ category: 'technical' });
+    expect(query.get('page')).toBe('1'); // Reset to page 1 on filter change
+    expect(query.get('sort')).toBe('-stalenessScore');
+    expect(query.get('limit')).toBe('20');
+  });
+
+  it('should initialize with default filters (sort by staleness descending)', async () => {
+    renderComponent();
+
+    await waitFor(() => expect(api.calls('topics-api/listTopics')).toHaveLength(1));
+    const { query } = api.calls('topics-api/listTopics')[0];
+    expect(query.get('page')).toBe('1');
+    expect(query.get('limit')).toBe('20');
+    expect(query.get('sort')).toBe('-stalenessScore');
+    expect(query.get('include')).toBe('history');
+    expect(query.get('filter')).toBeNull();
   });
 
   it('should not show topic selection button when eventCode is not provided', async () => {
     const user = userEvent.setup();
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
     renderComponent(); // No eventCode
 
-    const topicElement = screen.getByTestId('topic-topic-123');
-    await user.click(topicElement);
+    await user.click(
+      within(await screen.findByTestId('topic-card-bauen-im-bestand-zuerich')).getByRole('button')
+    );
 
-    await waitFor(() => {
-      expect(screen.queryByText('Select for Event')).not.toBeInTheDocument();
-    });
+    // Positive control: the details panel is open with its always-present actions
+    expect(await screen.findByRole('button', { name: 'Edit Topic' })).toBeInTheDocument();
+    expect(screen.queryByTestId('confirm-topic-selection-button')).not.toBeInTheDocument();
+    expect(screen.queryByRole('button', { name: 'Select for Event' })).not.toBeInTheDocument();
+    expect(api.calls('getEvent')).toHaveLength(0);
   });
 
-  it('should handle empty topic list', () => {
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: { data: [], pagination: { page: 1, limit: 20, total: 0 } },
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
+  it('should handle empty topic list', async () => {
+    api.on('topics-api/listTopics', () => topicList([]));
     renderComponent();
 
-    expect(screen.getByTestId('topic-list')).toBeInTheDocument();
-    expect(screen.queryByText(/Cloud Native/i)).not.toBeInTheDocument();
+    expect(await screen.findByText('No topics found matching your filters')).toBeInTheDocument();
+    expect(screen.queryByTestId(/^topic-card-/)).not.toBeInTheDocument();
+    expect(screen.queryByText('Bauen im Bestand – Zürich')).not.toBeInTheDocument();
   });
 
-  it('should show blob selector button when eventCode is provided', () => {
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
+  it('should show blob selector button when eventCode is provided', async () => {
     renderComponent({ eventCode: 'BATbern56' });
 
-    expect(screen.getByTestId('blob-selector-button')).toBeInTheDocument();
+    expect(screen.getByTestId('blob-selector-button')).toHaveTextContent('Blob Selector');
+    await screen.findByTestId('topic-list');
   });
 
-  it('should not show blob selector button when eventCode is not provided', () => {
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
-    renderComponent();
-
-    expect(screen.queryByTestId('blob-selector-button')).not.toBeInTheDocument();
-  });
-
-  it('should show new topic button', () => {
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
+  it('should not show blob selector button when eventCode is not provided', async () => {
     renderComponent();
 
     expect(screen.getByTestId('new-topic-button')).toBeInTheDocument();
+    expect(screen.queryByTestId('blob-selector-button')).not.toBeInTheDocument();
+    await screen.findByTestId('topic-list');
+  });
+
+  it('should show new topic button', async () => {
+    renderComponent();
+
+    expect(screen.getByTestId('new-topic-button')).toHaveTextContent('Create New Topic');
+    await screen.findByTestId('topic-list');
   });
 
   it('should open create topic modal when new topic button is clicked', async () => {
     const user = userEvent.setup();
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
     renderComponent();
+    await screen.findByTestId('topic-list');
 
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     await user.click(screen.getByTestId('new-topic-button'));
 
-    expect(screen.getByTestId('create-topic-modal')).toBeInTheDocument();
+    const dialog = await screen.findByRole('dialog');
+    expect(within(dialog).getByText('Create New Topic')).toBeInTheDocument();
+    expect(within(dialog).getByRole('button', { name: 'Create Topic' })).toBeInTheDocument();
   });
 
   it('should switch to heatmap view when heatmap toggle is clicked', async () => {
     const user = userEvent.setup();
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
     renderComponent();
 
     // Default is list view
-    expect(screen.getByTestId('topic-list')).toBeInTheDocument();
+    expect(await screen.findByTestId('topic-list')).toBeInTheDocument();
+    expect(screen.queryByText('Topic Usage Heat Map')).not.toBeInTheDocument();
 
     await user.click(screen.getByTestId('view-mode-heatmap'));
 
-    expect(screen.getByTestId('multi-topic-heatmap')).toBeInTheDocument();
+    expect(await screen.findByText('Topic Usage Heat Map')).toBeInTheDocument();
     expect(screen.queryByTestId('topic-list')).not.toBeInTheDocument();
   });
 
   it('should switch back to list view from heatmap', async () => {
     const user = userEvent.setup();
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
     renderComponent();
+    await screen.findByTestId('topic-list');
 
     await user.click(screen.getByTestId('view-mode-heatmap'));
+    expect(await screen.findByText('Topic Usage Heat Map')).toBeInTheDocument();
     await user.click(screen.getByTestId('view-mode-list'));
 
     expect(screen.getByTestId('topic-list')).toBeInTheDocument();
-    expect(screen.queryByTestId('multi-topic-heatmap')).not.toBeInTheDocument();
+    expect(screen.queryByText('Topic Usage Heat Map')).not.toBeInTheDocument();
   });
 
   it('should show speaker brainstorming panel after topic confirmed with eventCode', async () => {
     const user = userEvent.setup();
-    vi.mocked(useTopicsHook.useTopics).mockReturnValue({
-      data: mockTopicListResponse,
-      isLoading: false,
-      isError: false,
-      error: null,
-    } as ReturnType<typeof useTopicsHook.useTopics>);
-
     renderComponent({ eventCode: 'BATbern56' });
 
-    // Select a topic
-    await user.click(screen.getByTestId('topic-topic-123'));
+    await user.click(
+      within(await screen.findByTestId('topic-card-bauen-im-bestand-zuerich')).getByRole('button')
+    );
+    expect(screen.queryByText('Speaker Brainstorming')).not.toBeInTheDocument();
 
-    // Confirm the topic selection
-    const confirmButton = await screen.findByText('Select for Event');
-    await user.click(confirmButton);
+    await user.click(await screen.findByTestId('confirm-topic-selection-button'));
 
-    await waitFor(() => {
-      expect(screen.getByTestId('speaker-brainstorming-panel')).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Speaker Brainstorming')).toBeInTheDocument();
+    expect(screen.getByTestId('add-to-pool-button')).toBeInTheDocument();
+    await waitFor(() => expect(api.calls('getSpeakerPool')[0]?.params.eventCode).toBe('BATbern56'));
+  });
+
+  it('should preselect the topic of an event that already has one', async () => {
+    api.on('getEvent', () => eventWithoutTopic({ topicCode: 'fuehrung-in-agilen-teams' }));
+    api.on('getTopicByCode', () => fuehrung);
+    renderComponent({ eventCode: 'BATbern56' });
+
+    const panel = await detailsPanel();
+    expect(
+      within(panel).getByRole('heading', { name: 'Führung in agilen Teams' })
+    ).toBeInTheDocument();
+    expect(await screen.findByText('Speaker Brainstorming')).toBeInTheDocument();
+    const [byCode] = api.calls('getTopicByCode');
+    expect(byCode.params.topicCode).toBe('fuehrung-in-agilen-teams');
+    expect(byCode.query.get('include')).toBe('history');
+    expect(api.calls('selectTopicForEvent')).toHaveLength(0);
   });
 });

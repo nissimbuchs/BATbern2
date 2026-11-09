@@ -11,12 +11,11 @@ import org.springframework.security.oauth2.jwt.NimbusJwtDecoder;
 import software.amazon.awssdk.auth.credentials.DefaultCredentialsProvider;
 import software.amazon.awssdk.regions.Region;
 import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
-import software.amazon.awssdk.services.ses.SesClient;
 
 /**
  * AWS Services Configuration
  *
- * Provides beans for Cognito JWT validation, Cognito Identity Provider, and SES
+ * Provides beans for Cognito JWT validation and the Cognito Identity Provider
  */
 @Configuration
 public class CognitoConfig {
@@ -61,17 +60,6 @@ public class CognitoConfig {
     @Bean
     public CognitoIdentityProviderClient cognitoIdentityProviderClient() {
         return CognitoIdentityProviderClient.builder()
-            .region(Region.of(region))
-            .credentialsProvider(DefaultCredentialsProvider.builder().build())
-            .build();
-    }
-
-    /**
-     * SES Client for sending templated emails
-     */
-    @Bean
-    public SesClient sesClient() {
-        return SesClient.builder()
             .region(Region.of(region))
             .credentialsProvider(DefaultCredentialsProvider.builder().build())
             .build();

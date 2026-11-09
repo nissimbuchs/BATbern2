@@ -722,7 +722,7 @@ erDiagram
         uuid topic_id FK
         uuid event_id FK
         timestamptz used_date
-        int attendee_count
+        float feedback_score
     }
     event_photos {
         uuid id PK
@@ -1327,7 +1327,19 @@ Dropped: `publishing_versions` (V28 to V89), `speakers` (V37 to V94), `speaker_i
 
 **CUMS** (9 tables): `companies` V3, `user_profiles` V4, `role_assignments` V5,
 `activity_history` V6, `logos` V10, `shedlock` V12, `watch_pairings` V13,
-`presentation_settings` V14, `user_additional_emails` V16.
+`presentation_settings` V14, `user_additional_emails` V16, `company_key_changes` V28 (shared: CUMS
+V28, EMS V150 and PCS V11 create it with the same canonical block, see below).
+
+**Company keys** (owner decision 2026-11-09): `companies.name`, the company's meaningful ID, is
+`^[a-zA-Z0-9]{1,12}$`, the slug that `SlugGenerationService.generateCompanyName` makes from the typed
+name (`POST /companies` and get-or-create), made unique by `ensureUniqueCompanyName` (a digit appended
+within 12 characters). Keys stored before that rule were re-keyed by CUMS V28, EMS V150 and PCS V11:
+each contains shared-kernel `db/company/company_key_changes.sql` byte for byte
+(`CompanyKeyChangesContract`), which records old key → new key once in `company_key_changes` from
+`companies` (whichever service migrates first, under an advisory lock); each service then rewrites
+only its own references: CUMS `companies`, `logos` (COMPANY rows), `company_logo_requests`,
+`activity_history` (COMPANY rows), `user_profiles.company_id`; EMS `registrations.attendee_company_id`;
+PCS `partners`, `topic_suggestions`, `topic_votes`. The table stays as the audit of what changed.
 
 **PCS** (7 tables): `partners` V2, `partner_meetings` V2, `partner_meeting_attendance` V2 (no
 entity, unused), `topic_suggestions` V4 (V2 version dropped and recreated), `topic_votes` V4 (same),

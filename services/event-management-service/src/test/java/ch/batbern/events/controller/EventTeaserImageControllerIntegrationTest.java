@@ -122,12 +122,12 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
     }
 
     @Test
-    @DisplayName("POST upload-url as anonymous returns 403 - AC2")
-    void generateUploadUrl_asAnonymous_returns403() throws Exception {
+    @DisplayName("POST upload-url as anonymous returns 401 - AC2")
+    void generateUploadUrl_asAnonymous_returns401() throws Exception {
         mockMvc.perform(post("/api/v1/events/{code}/teaser-images/upload-url", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"contentType\":\"image/jpeg\",\"fileName\":\"teaser.jpg\"}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ── confirm ──────────────────────────────────────────────────────────────────
@@ -176,10 +176,10 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
     }
 
     @Test
-    @DisplayName("DELETE as anonymous returns 403 - AC2")
-    void deleteTeaserImage_asAnonymous_returns403() throws Exception {
+    @DisplayName("DELETE as anonymous returns 401 - AC2")
+    void deleteTeaserImage_asAnonymous_returns401() throws Exception {
         mockMvc.perform(delete("/api/v1/events/{code}/teaser-images/{id}", EVENT_CODE, UUID.randomUUID()))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ── GET event with teaserImages (M2) ─────────────────────────────────────────
@@ -241,12 +241,12 @@ class EventTeaserImageControllerIntegrationTest extends AbstractIntegrationTest 
     }
 
     @Test
-    @DisplayName("PATCH as anonymous returns 403")
-    void patchTeaserImage_asAnonymous_returns403() throws Exception {
+    @DisplayName("PATCH as anonymous returns 401")
+    void patchTeaserImage_asAnonymous_returns401() throws Exception {
         mockMvc.perform(patch("/api/v1/events/{code}/teaser-images/{id}", EVENT_CODE, UUID.randomUUID())
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"presentationPosition\":\"AFTER_WELCOME\"}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ── helpers ──────────────────────────────────────────────────────────────────

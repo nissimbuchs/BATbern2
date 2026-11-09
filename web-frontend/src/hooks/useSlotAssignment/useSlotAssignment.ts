@@ -10,7 +10,7 @@
  * - Optimistic updates with rollback
  */
 
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { AxiosError } from 'axios';
 import {
   slotAssignmentService,
@@ -59,6 +59,11 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
   const [conflict, setConflict] = useState<TimingConflictError | null>(null);
   const [conflictAnalysis, setConflictAnalysis] = useState<ConflictAnalysisResponse | null>(null);
   const [totalSessions, setTotalSessions] = useState<number>(0);
+  // The latest tray, for rollback snapshots. Capturing the snapshot inside a setState updater
+  // only works when React runs the updater eagerly; with a pending update on the fiber it runs
+  // at render time, after a fast failure has already "rolled back" to an empty tray.
+  const unassignedRef = useRef<Session[]>(unassignedSessions);
+  unassignedRef.current = unassignedSessions;
 
   /**
    * Fetch unassigned sessions
@@ -70,10 +75,10 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
     try {
       const sessions = await slotAssignmentService.getUnassignedSessions(eventCode);
       setUnassignedSessions(sessions);
-      // If this is first load, set total sessions
-      if (totalSessions === 0) {
-        setTotalSessions(sessions.length);
-      }
+      // If this is first load, set total sessions. Functional update: reading `totalSessions`
+      // here made it a dependency, so the first load changed this callback and the mount
+      // effect fetched a second time (skeleton flash, duplicate request).
+      setTotalSessions((prev) => (prev === 0 ? sessions.length : prev));
     } catch (err) {
       const errorMessage =
         err instanceof Error ? err.message : 'Failed to fetch unassigned sessions';
@@ -83,7 +88,7 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
     } finally {
       setIsLoading(false);
     }
-  }, [eventCode, totalSessions]);
+  }, [eventCode]);
 
   /**
    * Assign timing to a session
@@ -95,12 +100,8 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
       setError(null);
 
       // Optimistic update - remove from unassigned list and save snapshot for rollback
-      let rollbackSessions: Session[] = [];
-      setUnassignedSessions((prev) => {
-        rollbackSessions = [...prev]; // Capture current state for rollback
-        const filtered = prev.filter((s) => s.sessionSlug !== sessionSlug);
-        return filtered;
-      });
+      const rollbackSessions = unassignedRef.current;
+      setUnassignedSessions((prev) => prev.filter((s) => s.sessionSlug !== sessionSlug));
 
       try {
         await slotAssignmentService.assignSessionTiming(eventCode, sessionSlug, timing);
@@ -133,11 +134,8 @@ export const useSlotAssignment = (eventCode: string): UseSlotAssignmentReturn =>
       setConflict(null);
       setError(null);
 
-      let rollbackSessions: Session[] = [];
-      setUnassignedSessions((prev) => {
-        rollbackSessions = [...prev];
-        return prev.filter((s) => s.sessionSlug !== sessionSlug);
-      });
+      const rollbackSessions = unassignedRef.current;
+      setUnassignedSessions((prev) => prev.filter((s) => s.sessionSlug !== sessionSlug));
 
       try {
         await slotAssignmentService.assignSessionToSlot(eventCode, sessionSlug, request);

@@ -1,6 +1,8 @@
 import '@testing-library/jest-dom';
-import { configure } from '@testing-library/react';
-import { vi } from 'vitest';
+import { cleanup, configure } from '@testing-library/react';
+import { afterAll, afterEach, beforeAll, vi } from 'vitest';
+import { harnessState } from './msw/api';
+import { server } from './msw/server';
 
 // Testing Library's waitFor/findBy* default to a 1000 ms budget, and that default is
 // NOT covered by vitest's testTimeout (30 s) — they are separate clocks. On slower
@@ -76,16 +78,30 @@ i18n.changeLanguage('en');
 // This tells React that we're in a testing environment that supports act() wrapping
 globalThis.IS_REACT_ACT_ENVIRONMENT = true;
 
-// Mock AWS Amplify for tests (keeping existing global fetch as fallback for non-MSW requests)
-global.fetch =
-  global.fetch ||
-  (() =>
-    Promise.resolve({
-      json: () => Promise.resolve({}),
-      ok: true,
-      status: 200,
-      statusText: 'OK',
-    } as Response));
+// The network: every request goes to the MSW harness (Story 17.0c1). It answers each operation
+// of docs/api/*.openapi.yml with its spec example, or with a test's `api.on(...)` override, and
+// fails the test after a request no spec defines (wrong path, method or query). How to use it:
+// docs/architecture/coding-standards.md, "Test fidelity rules" -> "Frontend: the MSW harness".
+beforeAll(() => server.listen({ onUnhandledRequest: 'error' }));
+afterEach(() => {
+  // Unmount first: a thrown violation below must not skip Testing Library's own cleanup and leave
+  // this test's DOM in the next test.
+  cleanup();
+  server.resetHandlers();
+  try {
+    harnessState.assertNoViolations();
+  } finally {
+    harnessState.reset();
+  }
+});
+afterAll(() => {
+  // A request answered after the last afterEach (a late refetch) must still fail the file.
+  try {
+    harnessState.assertNoViolations();
+  } finally {
+    server.close();
+  }
+});
 
 // Mock IntersectionObserver
 global.IntersectionObserver = class IntersectionObserver {
@@ -162,6 +178,7 @@ vi.mock('aws-amplify/auth', () => ({
   fetchAuthSession: vi.fn(),
   resetPassword: vi.fn(),
   confirmResetPassword: vi.fn(),
+  resendSignUpCode: vi.fn(),
 }));
 
 vi.mock('@aws-amplify/ui-react', () => ({

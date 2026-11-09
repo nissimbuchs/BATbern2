@@ -34,6 +34,7 @@ import java.time.Instant;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
+import static org.hamcrest.Matchers.nullValue;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
@@ -381,13 +382,12 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
     @Test
     @DisplayName("should_denyAccess_when_anonymousListsRegistrations")
     void should_denyAccess_when_anonymousListsRegistrations() throws Exception {
-        // Test profile permits every request at HTTP level, so @PreAuthorize is what refuses the
-        // anonymous caller here (403). In production the EMS chain and the gateway answer 401 first.
+        // The production chain answers 401 before the controller (17.0b3).
         createTestRegistration("john.doe", "confirmed");
 
         mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -637,6 +637,9 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.registrationCode").value(registration.getRegistrationCode()))
                 .andExpect(jsonPath("$.eventCode").value("BATbern142"))
+                // The confirmation page shows the event and exports it to the calendar
+                .andExpect(jsonPath("$.eventTitle").value("BATbern 2025 Test"))
+                .andExpect(jsonPath("$.eventDate").value("2027-06-15T09:00:00Z"))
                 .andExpect(jsonPath("$.status").value("CONFIRMED")) // API returns uppercase
                 .andExpect(jsonPath("$.attendeeUsername").value("john.doe"))
                 .andExpect(jsonPath("$.attendeeFirstName").value("John"))
@@ -982,6 +985,26 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(1)))
                 .andExpect(jsonPath("$.pagination.totalItems").value(3));
+    }
+
+    @Test
+    @WithMockUser(roles = "ORGANIZER")
+    @DisplayName("A waitlisted registration carries its queue position in the list, others null")
+    void should_returnWaitlistPosition_when_listingRegistrations() throws Exception {
+        // The organizer's waitlist view numbers and orders rows by this position (Epic 14 FR28).
+        Registration waiting = createTestRegistration("anna.wartend", "waitlist");
+        waiting.setWaitlistPosition(3);
+        registrationRepository.save(waiting);
+        createTestRegistration("ben.dabei", "confirmed");
+
+        mockMvc.perform(get("/api/v1/events/BATbern142/registrations").param("status", "WAITLIST"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].waitlistPosition").value(3));
+        mockMvc.perform(get("/api/v1/events/BATbern142/registrations").param("status", "CONFIRMED"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].waitlistPosition").value(nullValue()));
     }
 
     @ParameterizedTest

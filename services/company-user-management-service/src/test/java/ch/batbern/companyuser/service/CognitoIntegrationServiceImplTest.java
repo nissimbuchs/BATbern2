@@ -1,8 +1,5 @@
 package ch.batbern.companyuser.service;
 
-import ch.batbern.shared.types.Role;
-import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.exception.CognitoOperationException;
 import ch.batbern.companyuser.exception.EmailHasOtherLoginException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
@@ -30,15 +27,12 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.MessageActi
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UsernameExistsException;
 
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.assertj.core.api.Assertions.tuple;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
@@ -75,59 +69,6 @@ class CognitoIntegrationServiceImplTest {
     @BeforeEach
     void setUp() {
         cognitoService = new CognitoIntegrationServiceImpl(cognitoClient, userPoolId);
-    }
-
-    // --- Story 1.14-2 legacy NO-OP behaviour (kept) ----------------------------------------
-
-    @Test
-    @DisplayName("should_syncAllAttributes_when_syncUserAttributesCalled")
-    void should_syncAllAttributes_when_syncUserAttributesCalled() {
-        User user = User.builder()
-                .username("john.doe")
-                .email("john.doe@example.com")
-                .firstName("John")
-                .lastName("Doe")
-                .cognitoUserId("cognito-123")
-                .companyId("GoogleZH")
-                .roles(new HashSet<>(Set.of(Role.ORGANIZER, Role.ATTENDEE)))
-                .build();
-
-        cognitoService.syncUserAttributes(user);
-
-        verify(cognitoClient, never()).adminUpdateUserAttributes(any(AdminUpdateUserAttributesRequest.class));
-    }
-
-    @Test
-    @DisplayName("should_handleNullCompanyId_when_syncingUserAttributes")
-    void should_handleNullCompanyId_when_syncingUserAttributes() {
-        User user = User.builder()
-                .username("john.doe")
-                .email("john.doe@example.com")
-                .firstName("John")
-                .lastName("Doe")
-                .cognitoUserId("cognito-123")
-                .companyId(null)
-                .roles(new HashSet<>(Set.of(Role.ATTENDEE)))
-                .build();
-
-        cognitoService.syncUserAttributes(user);
-
-        verify(cognitoClient, never()).adminUpdateUserAttributes(any(AdminUpdateUserAttributesRequest.class));
-    }
-
-    @Test
-    @DisplayName("should_returnNull_when_createCognitoUserCalledOnLegacyNoOpPath")
-    void should_returnNull_when_createCognitoUserCalledOnLegacyNoOpPath() {
-        GetOrCreateUserRequest request = new GetOrCreateUserRequest()
-                .email("jane.smith@example.com")
-                .firstName("Jane")
-                .lastName("Smith")
-                .companyId("MicrosoftZH");
-
-        String cognitoUserId = cognitoService.createCognitoUser(request);
-
-        assertThat(cognitoUserId).isNull();
-        verify(cognitoClient, never()).adminCreateUser(any(AdminCreateUserRequest.class));
     }
 
     // --- Story 11.E.2 adminCreateUserSilently --------------------------------------------------

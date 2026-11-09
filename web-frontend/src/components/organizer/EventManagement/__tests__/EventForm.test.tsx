@@ -16,7 +16,7 @@
 
 import React from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
-import { render, screen, fireEvent, waitFor } from '@testing-library/react';
+import { act, render, screen, fireEvent, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { BrowserRouter } from 'react-router-dom';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -42,11 +42,6 @@ const mockUseAuth = vi.fn(() => ({
 
 vi.mock('@/hooks/useAuth', () => ({
   useAuth: () => mockUseAuth(),
-}));
-
-// Mock debounce hook
-vi.mock('@/hooks/useDebounce', () => ({
-  useDebounce: <T,>(value: T) => value, // Return value immediately for tests
 }));
 
 describe('EventForm Component', () => {
@@ -487,17 +482,27 @@ describe('EventForm Component', () => {
     });
   });
 
-  describe.skip('Auto-Save Functionality (AC4, AC20) - NOT IMPLEMENTED (Task 16a/16b pending)', () => {
-    // SKIPPED: Auto-save feature not implemented yet
-    // Story 2.5.3 shows Task 16a/16b (Auto-Save Implementation) with unchecked [ ] boxes
-    // These are TDD RED phase tests waiting for GREEN phase implementation
+  describe('Auto-Save Functionality (AC4, AC20)', () => {
+    // The real useDebounce on fake timers that also move with real time (`shouldAdvanceTime`),
+    // so userEvent's own delays and waitFor's polling keep running; userEvent advances the fake
+    // clock as it types.
+    let user: ReturnType<typeof userEvent.setup>;
+
     beforeEach(() => {
-      vi.useFakeTimers();
+      vi.useFakeTimers({ shouldAdvanceTime: true });
+      user = userEvent.setup({ advanceTimers: vi.advanceTimersByTime });
     });
 
     afterEach(() => {
+      vi.useRealTimers();
       vi.restoreAllMocks();
     });
+
+    const editTitle = async () => {
+      const titleInput = screen.getByLabelText(/title/i);
+      await user.clear(titleInput);
+      await user.type(titleInput, 'Updated Title');
+    };
 
     it('should_enableAutoSave_when_editMode', () => {
       render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
@@ -527,13 +532,10 @@ describe('EventForm Component', () => {
       render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
         wrapper: createWrapper(),
       });
-
-      const titleInput = screen.getByLabelText(/title/i);
-      await userEvent.clear(titleInput);
-      await userEvent.type(titleInput, 'Updated Title');
+      await editTitle();
 
       // Wait 5 seconds (auto-save debounce time)
-      vi.advanceTimersByTime(5000);
+      await act(() => vi.advanceTimersByTimeAsync(5000));
 
       await waitFor(() => {
         expect(eventApiClient.patchEvent).toHaveBeenCalledWith(
@@ -543,6 +545,7 @@ describe('EventForm Component', () => {
           })
         );
       });
+      expect(eventApiClient.patchEvent).toHaveBeenCalledTimes(1);
     });
 
     it('should_notTriggerAutoSave_when_before5Seconds', async () => {
@@ -552,38 +555,41 @@ describe('EventForm Component', () => {
       render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
         wrapper: createWrapper(),
       });
-
-      const titleInput = screen.getByLabelText(/title/i);
-      await userEvent.clear(titleInput);
-      await userEvent.type(titleInput, 'Updated Title');
+      await editTitle();
 
       // Wait only 3 seconds (before 5-second debounce)
-      vi.advanceTimersByTime(3000);
+      await act(() => vi.advanceTimersByTimeAsync(3000));
 
-      await waitFor(() => {
-        expect(eventApiClient.patchEvent).not.toHaveBeenCalled();
-      });
+      expect(eventApiClient.patchEvent).not.toHaveBeenCalled();
     });
 
     it('should_displaySavingIndicator_when_autoSaveTriggered', async () => {
+      // The test settles the save itself: a timer that resolved it after the test had ended let
+      // the form set state after the jsdom teardown (see the RegistrationWizard fix, 978198a7).
+      let finishSave: (event: Event) => void = () => {};
       const { eventApiClient } = await import('@/services/eventApiClient');
       (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(mockEvent), 1000))
+        () =>
+          new Promise<Event>((resolve) => {
+            finishSave = resolve;
+          })
       );
 
       render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
         wrapper: createWrapper(),
       });
-
-      const titleInput = screen.getByLabelText(/title/i);
-      await userEvent.clear(titleInput);
-      await userEvent.type(titleInput, 'Updated Title');
+      await editTitle();
 
       // Trigger auto-save
-      vi.advanceTimersByTime(5000);
+      await act(() => vi.advanceTimersByTimeAsync(5000));
 
       await waitFor(() => {
         expect(screen.getByText(/saving/i)).toBeInTheDocument();
+      });
+
+      await act(async () => finishSave(mockEvent));
+      await waitFor(() => {
+        expect(screen.getByText(/last.*saved/i)).toBeInTheDocument();
       });
     });
 
@@ -594,13 +600,10 @@ describe('EventForm Component', () => {
       render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
         wrapper: createWrapper(),
       });
-
-      const titleInput = screen.getByLabelText(/title/i);
-      await userEvent.clear(titleInput);
-      await userEvent.type(titleInput, 'Updated Title');
+      await editTitle();
 
       // Trigger auto-save
-      vi.advanceTimersByTime(5000);
+      await act(() => vi.advanceTimersByTimeAsync(5000));
 
       await waitFor(() => {
         expect(screen.getByText(/last.*saved/i)).toBeInTheDocument();
@@ -616,17 +619,34 @@ describe('EventForm Component', () => {
       render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
         wrapper: createWrapper(),
       });
-
-      const titleInput = screen.getByLabelText(/title/i);
-      await userEvent.clear(titleInput);
-      await userEvent.type(titleInput, 'Updated Title');
+      await editTitle();
 
       // Trigger auto-save
-      vi.advanceTimersByTime(5000);
+      await act(() => vi.advanceTimersByTimeAsync(5000));
 
       await waitFor(() => {
-        expect(screen.getByText(/auto.*save.*failed/i)).toBeInTheDocument();
+        expect(screen.getAllByText(/auto.*save.*failed/i).length).toBeGreaterThan(0);
       });
+    });
+
+    it('should_notRetryAutoSave_when_nothingChangedAfterAFailure', async () => {
+      // The form keeps the failed change; it saves again on the next edit, not every 5 s while
+      // the dialog stays open (a failed save was re-sent with nothing edited).
+      const { eventApiClient } = await import('@/services/eventApiClient');
+      (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockRejectedValue({
+        response: { status: 409, data: { message: 'Version conflict' } },
+      });
+
+      render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
+        wrapper: createWrapper(),
+      });
+      await editTitle();
+
+      await act(() => vi.advanceTimersByTimeAsync(5000));
+      await waitFor(() => expect(eventApiClient.patchEvent).toHaveBeenCalledTimes(1));
+
+      await act(() => vi.advanceTimersByTimeAsync(30000));
+      expect(eventApiClient.patchEvent).toHaveBeenCalledTimes(1);
     });
 
     it('should_detectConflict_when_concurrentEdit', async () => {
@@ -641,13 +661,10 @@ describe('EventForm Component', () => {
       render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
         wrapper: createWrapper(),
       });
-
-      const titleInput = screen.getByLabelText(/title/i);
-      await userEvent.clear(titleInput);
-      await userEvent.type(titleInput, 'Updated Title');
+      await editTitle();
 
       // Trigger auto-save
-      vi.advanceTimersByTime(5000);
+      await act(() => vi.advanceTimersByTimeAsync(5000));
 
       await waitFor(() => {
         expect(screen.getByText(/concurrent.*edit.*detected/i)).toBeInTheDocument();

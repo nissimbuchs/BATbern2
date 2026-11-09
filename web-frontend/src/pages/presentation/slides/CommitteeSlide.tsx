@@ -78,7 +78,7 @@ export function CommitteeSlide({ organizers }: CommitteeSlideProps): JSX.Element
 
 /** vw-scaled organizer card for the presentation canvas. */
 function OrganizerCard({ organizer }: { organizer: User }): JSX.Element {
-  const { data: company } = useCompany(organizer.companyId || '', { expand: ['logo'] });
+  const { data: company } = useCompany(organizer.companyId || '');
   const logoUrl = company?.logo?.url;
   const companyName = company?.displayName || company?.name;
   const initials = `${organizer.firstName?.[0] ?? ''}${organizer.lastName?.[0] ?? ''}`;

@@ -47,7 +47,7 @@ tests {
     if (testCompanyName) {
       const foundCompany = body.find(c => c.name === testCompanyName);
       if (foundCompany) {
-        expect(foundCompany.name).to.include('BRUNOTESTCO');
+        expect(foundCompany.name).to.match(/^brunotestco[0-9]*$/);
       } else {
         // Test company might have been deleted already, that's acceptable
         console.log('Test company not found in search results (may have been deleted)');

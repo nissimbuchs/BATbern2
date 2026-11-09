@@ -305,13 +305,12 @@ class ParticipantsControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("Anonymous GET /distribution-list → denied, no email list leaves the service")
     void should_denyAccess_when_anonymousGetsDistributionList() throws Exception {
-        // Test profile permits every request at HTTP level, so @PreAuthorize is what refuses the
-        // anonymous caller here (403). In production the EMS chain and the gateway answer 401 first.
+        // The production chain answers 401 before the controller (17.0b3).
         seedRegistrationWithEmail("anna.active", "anna@example.com", "registered");
 
         mockMvc.perform(get("/api/v1/events/{eventCode}/distribution-list/{kind}",
                         EVENT_CODE, "participants"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

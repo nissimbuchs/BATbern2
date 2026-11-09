@@ -414,16 +414,11 @@ export interface components {
        */
       usedDate: string;
       /**
-       * @description Attendance count for this topic's session
+       * @description Confirmed and attended registrations of the event (as the analytics page counts them),
+       *     once the event has taken place; null before.
        * @example 120
        */
-      attendance: number;
-      /**
-       * Format: float
-       * @description Engagement score (0-1)
-       * @example 0.78
-       */
-      engagementScore: number;
+      attendance: number | null;
     };
     TopicListResponse: {
       data: components['schemas']['Topic'][];

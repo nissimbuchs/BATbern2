@@ -12,6 +12,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
 
+import java.net.URI;
 import java.util.Optional;
 
 /**
@@ -21,9 +22,11 @@ import java.util.Optional;
  *
  * <p>The api-gateway had no user client before this story (verified 2026-06-01: no
  * {@code UserServiceClient} under {@code api-gateway/src/main/java}). This is the minimal
- * addition — it reuses the shared {@link RestTemplate} bean ({@code WebClientConfig}) and the
- * same {@code services.company-user-management.url} property {@code DomainRouter} routes with,
- * and forwards the caller's JWT so CUMS authorises the {@code /users/{username}} read.
+ * addition — it uses the short-timeout {@code cumsStatusRestTemplate} bean ({@code WebClientConfig})
+ * and the same {@code services.company-user-management.url} property {@code DomainRouter} routes
+ * with. It sends <b>no</b> JWT: it reads the CUMS internal API {@code /internal/users/{username}}
+ * (VPC-only, specified in {@code docs/api/internal/cums-internal.openapi.yml}), whose answer does
+ * not depend on the caller. The public {@code /api/v1/users/{username}} is organizer-only.
  *
  * <p>Failure contract (the gate fails open — see {@link GatewayUserStatusException}):
  * <ul>
@@ -58,10 +61,12 @@ public class GatewayUserStatusClient {
      * @throws GatewayUserStatusException on a transient/unexpected failure (fail-open at caller)
      */
     public Optional<Boolean> getActiveStatus(String username) {
-        String url = UriComponentsBuilder
+        // Strictly encoded path segment (17.0b2): a '/', '?' or '#' in the username cannot change the path.
+        URI url = UriComponentsBuilder
                 .fromUriString(companyUserManagementUrl + "/internal/users/{username}")
+                .encode()
                 .buildAndExpand(username)
-                .toUriString();
+                .toUri();
 
         try {
             HttpEntity<Void> request = new HttpEntity<>(new HttpHeaders());

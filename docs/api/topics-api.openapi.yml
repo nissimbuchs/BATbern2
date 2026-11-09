@@ -116,6 +116,45 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicListResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    data:
+                      - topicCode: digital-sovereignty
+                        title: Digital Sovereignty
+                        category: technical
+                        createdDate: "2026-03-06T14:42:40.504045+01:00"
+                        lastUsedDate: "2026-11-06T01:00:00+01:00"
+                        usageCount: 1
+                        stalenessScore: 0
+                        colorZone: red
+                        status: UNAVAILABLE
+                        similarityScores: []
+                        active: true
+                        createdAt: "2026-03-06T14:42:40.505045+01:00"
+                        updatedAt: "2026-11-07T18:13:18.040396+01:00"
+                      - topicCode: tools-platforms
+                        title: Tools & Platforms
+                        description: Sample description for the API example.
+                        category: tools_platforms
+                        createdDate: "2025-12-18T19:13:20.082653+01:00"
+                        lastUsedDate: "2013-03-15T16:00:00+01:00"
+                        usageCount: 2
+                        stalenessScore: 100
+                        colorZone: green
+                        status: AVAILABLE
+                        similarityScores: []
+                        active: true
+                        createdAt: "2025-12-18T19:13:20.082946+01:00"
+                        updatedAt: "2026-02-27T15:33:06.511028+01:00"
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 19
+                      totalPages: 10
+                      hasNext: true
+                      hasPrev: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -149,6 +188,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Topic'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    topicCode: digital-sovereignty
+                    title: Digital Sovereignty
+                    category: technical
+                    createdDate: "2026-03-06T14:42:40.504045+01:00"
+                    lastUsedDate: "2026-11-06T01:00:00+01:00"
+                    usageCount: 1
+                    stalenessScore: 0
+                    colorZone: red
+                    status: UNAVAILABLE
+                    similarityScores: []
+                    active: true
+                    createdAt: "2026-03-06T14:42:40.505045+01:00"
+                    updatedAt: "2026-11-07T18:13:18.040396+01:00"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -186,6 +242,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Topic'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    topicCode: digital-sovereignty
+                    title: Digital Sovereignty
+                    category: technical
+                    createdDate: "2026-03-06T14:42:40.504045+01:00"
+                    lastUsedDate: "2026-11-06T01:00:00+01:00"
+                    usageCount: 1
+                    stalenessScore: 0
+                    colorZone: red
+                    status: UNAVAILABLE
+                    similarityScores: []
+                    active: true
+                    createdAt: "2026-03-06T14:42:40.505045+01:00"
+                    updatedAt: "2026-11-07T18:13:18.040396+01:00"
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -222,6 +295,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Topic'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    topicCode: digital-sovereignty
+                    title: Digital Sovereignty
+                    category: technical
+                    createdDate: "2026-03-06T14:42:40.504045+01:00"
+                    lastUsedDate: "2026-11-06T01:00:00+01:00"
+                    usageCount: 1
+                    stalenessScore: 0
+                    colorZone: red
+                    status: UNAVAILABLE
+                    similarityScores: []
+                    active: true
+                    createdAt: "2026-03-06T14:42:40.505045+01:00"
+                    updatedAt: "2026-11-07T18:13:18.040396+01:00"
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -289,6 +379,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/Topic'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -322,6 +417,15 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TopicUsageHistory'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    - eventNumber: 56
+                      eventCode: BATbern56
+                      eventDate: "2025-03-15"
+                      usedDate: "2026-05-14T16:00:00Z"
+                      attendance: 120
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -351,6 +455,11 @@ paths:
                   message:
                     type: string
                     example: 'Similarity scores calculated for 42 topics'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -389,6 +498,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicSelectionResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    eventCode: BATbern56
+                    topicCode: cloud-native-security-2024
+                    workflowState: SPEAKER_BRAINSTORMING
+                    message: Sample text for the API example.
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -433,6 +550,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicSimilarityResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    cluster: AI_ML
+                    similarityScore: 0.85
+                    relatedPastEventNumbers:
+                      - 40
+                      - 44
+                      - 49
+                      - 56
+                      - 58
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -470,6 +599,50 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicSessionDataResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    partnerTopics:
+                      - companyName: aity
+                        logoUrl: https://cdn.batbern.ch/logos/2025/companies/aity/logo-8bb778ae-b829-4d85-be30-de4f36c2f44a.svg
+                        topics:
+                          - title: Cloud-Readiness
+                            cluster: CLOUD_INFRA
+                            voteCount: 0
+                            createdAt: "2025-11-07T13:00:00Z"
+                          - title: RZ-Strategie
+                            cluster: BUSINESS_OTHER
+                            voteCount: 0
+                            createdAt: "2025-11-07T13:00:00Z"
+                      - companyName: sbb
+                        logoUrl: https://cdn.batbern.ch/logos/2026/companies/sbb/logo-cd57008b-9bc9-413a-af56-1286708f717b.svg
+                        topics:
+                          - title: "Security: Zerotrust"
+                            cluster: SECURITY
+                            voteCount: 0
+                            createdAt: "2025-11-07T13:00:00Z"
+                          - title: Impact AI für SW Engineers
+                            cluster: AI_ML
+                            voteCount: 0
+                            createdAt: "2025-11-07T13:00:00Z"
+                    pastEvents:
+                      - eventNumber: 1
+                        topicName: GUI Frameworks
+                        cluster: BUSINESS_OTHER
+                      - eventNumber: 2
+                        topicName: Enterprise Architektur
+                        cluster: ARCHITECTURE
+                    organizerBacklog:
+                      - title: Return of the Monolith
+                        topicCode: return-of-the-monolith
+                        stalenessScore: 100
+                      - title: Fails
+                        topicCode: fails
+                        stalenessScore: 100
+                    trendingTopics:
+                      - AI Agents
+                      - Platform Engineering
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -727,7 +900,6 @@ components:
         - eventNumber
         - usedDate
         - attendance
-        - engagementScore
       properties:
         eventNumber:
           type: integer
@@ -747,16 +919,11 @@ components:
           format: date-time
           description: When the topic was used
         attendance:
-          type: integer
-          description: Attendance count for this topic's session
+          type: [integer, 'null']
+          description: |
+            Confirmed and attended registrations of the event (as the analytics page counts them),
+            once the event has taken place; null before.
           example: 120
-        engagementScore:
-          type: number
-          format: float
-          minimum: 0
-          maximum: 1
-          description: Engagement score (0-1)
-          example: 0.78
 
     TopicListResponse:
       type: object

@@ -13,7 +13,12 @@ CUMS (identity) is upstream of all. EMS (event) is upstream of PCS (partners).
 - Downstream must react to an upstream change? It pulls an `/internal` feed (`?since=cursor`,
   ShedLock job). No event bus.
 - Only allowed upstream→downstream call: the CUMS profile merge (`/internal/users/merge*`).
+  Existing exceptions, CUMS→EMS, owned by Story 17.7 (request pull), which replaces them:
+  `/internal/users/primary-email` and `/internal/mail-center/{merge,logo}-requests[/{id}/done]`.
   Do not add another.
+- Every `/internal` operation is specified in `docs/api/internal/<provider>-internal.openapi.yml`
+  (17.0b2) and contract-tested on both sides (`ContractServer`, provider
+  `S2sProviderContractIntegrationTest`). A new `/internal` endpoint or call extends that spec first.
 
 ## EMS modules: dependencies point down only, never sideways
 

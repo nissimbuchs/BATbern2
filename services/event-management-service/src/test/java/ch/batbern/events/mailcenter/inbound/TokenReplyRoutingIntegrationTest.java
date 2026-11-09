@@ -1,12 +1,13 @@
 package ch.batbern.events.mailcenter.inbound;
 
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.forwarding.AliasMailProcessor;
 import ch.batbern.events.forwarding.EmailForwardingService;
-import ch.batbern.events.forwarding.ForwardingDirectory;
-import ch.batbern.events.forwarding.InboundEmailRouter;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.mail.SesRecorder;
+import ch.batbern.shared.test.mail.SesRecorder.RecordedMail;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -14,28 +15,24 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.Instant;
-import java.util.Set;
+import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.doReturn;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Story 16.6 AC4: a reply to an organizer's answer ({@code replies+{token}@}) lands in its
- * conversation on both SES paths, and never triggers a keyword action, even when its first line is
- * "accept". An unknown token is treated like a plain {@code replies@} mail. Nothing is sent: the
- * forward to the organizers is stubbed.
+ * conversation on both SES paths, is forwarded to the organizers, and never triggers a keyword
+ * action. An unknown token is treated like a plain {@code replies@} mail: the router runs first.
+ *
+ * <p>Everything in the process runs for real (router, forwarding, Mail Center); SES is the
+ * {@link SesRecorder} and CUMS the {@link CumsContractHarness}. The keyword is "Abmelden" because its
+ * action is observable: the router sends the sender an unsubscribe confirmation. The unknown-token
+ * test is the positive control: the same keyword there does produce that confirmation.
  *
  * <p>Not {@code @Transactional}: the store commits in its own transaction; this class cleans up.
  */
@@ -46,6 +43,9 @@ class TokenReplyRoutingIntegrationTest extends AbstractIntegrationTest {
     private static final String EVENT = "BATbern919";
     private static final String SPEAKER = "success+speaker@simulator.amazonses.com";
     private static final String TOKEN = "qrstuvwxyzabcdef";
+    private static final String ORGANIZER_USERNAME = "orga.token";
+    private static final String ORGANIZER = "success+organizer@simulator.amazonses.com";
+    private static final String KEYWORD = "Abmelden";
 
     @Autowired
     private AliasMailProcessor aliasProcessor;
@@ -53,20 +53,18 @@ class TokenReplyRoutingIntegrationTest extends AbstractIntegrationTest {
     private InboundReplyProcessor replyProcessor;
     @Autowired
     private JdbcTemplate jdbc;
-    @MockitoBean
-    private ForwardingDirectory directory;
-    @MockitoSpyBean
-    private InboundEmailRouter router;
-    @MockitoSpyBean
-    private EmailForwardingService forwardingService;
+    @Autowired
+    private CumsContractHarness cums;
+    @Autowired
+    private SesRecorder sesRecorder;
 
     private UUID conversation;
 
     @BeforeEach
     void setUp() {
-        when(directory.organizerEmails()).thenReturn(Set.of("organizer-mail@example.com"));
-        doReturn(EmailForwardingService.Result.FORWARDED).when(forwardingService)
-                .forwardUnrecognizedReply(anyString(), any());
+        sesRecorder.reset();
+        cums.usersWithRole("ORGANIZER", ORGANIZER_USERNAME);
+        cums.user(ORGANIZER_USERNAME, "Orga", "Token", ORGANIZER);
         conversation = UUID.randomUUID();
         jdbc.update("INSERT INTO mail_conversation (id, conversation_key, event_code, audience, subject, "
                 + "counterpart_address, status, reply_token, last_message_at) "
@@ -76,46 +74,65 @@ class TokenReplyRoutingIntegrationTest extends AbstractIntegrationTest {
 
     @AfterEach
     void tearDown() {
+        cums.reset();
         jdbc.update("DELETE FROM mail_message WHERE direction = 'IN'");
         jdbc.update("DELETE FROM mail_conversation");
         jdbc.update("DELETE FROM mail_automatic_event");
+        jdbc.update("DELETE FROM email_forwarding_log WHERE s3_key LIKE 'emails/it-token-%' "
+                + "OR s3_key LIKE 'forwarding/it-token-%'");
     }
 
     @Test
-    @DisplayName("replies path: 'accept' to replies+{token}@ runs no router action and joins the conversation")
+    @DisplayName("replies path: a keyword to replies+{token}@ runs no router action, is forwarded and joins the conversation")
     void should_joinConversation_when_tokenReplyOnRepliesPath() {
-        replyProcessor.process("emails/" + UUID.randomUUID(),
-                mail("replies+" + TOKEN + "@batbern.ch", "Re: BATbern919 Slides", "Accept"));
+        replyProcessor.process("emails/it-token-" + UUID.randomUUID(),
+                mail(SPEAKER, "replies+" + TOKEN + "@batbern.ch", "Re: BATbern919 Slides"));
 
-        verify(router, never()).route(any());
-        verify(forwardingService).forwardUnrecognizedReply(anyString(), any());
+        assertNoRouterActionAndForwarded(SPEAKER);
         assertJoined();
     }
 
     @Test
-    @DisplayName("alias path: replies+{token}@ is not dropped as unresolved; it joins the conversation")
+    @DisplayName("alias path: replies+{token}@ is not dropped as unresolved; it is forwarded and joins the conversation")
     void should_joinConversation_when_tokenReplyOnAliasPath() {
-        EmailForwardingService.Result result = aliasProcessor.process("forwarding/" + UUID.randomUUID(),
-                mail("replies+" + TOKEN + "@batbern.ch", "Re: BATbern919 Slides", "Accept"));
+        EmailForwardingService.Result result = aliasProcessor.process("forwarding/it-token-" + UUID.randomUUID(),
+                mail(SPEAKER, "replies+" + TOKEN + "@batbern.ch", "Re: BATbern919 Slides"));
 
         assertThat(result).isEqualTo(EmailForwardingService.Result.CONVERSATION_REPLY);
-        verify(router, never()).route(any());
-        verify(forwardingService).forwardUnrecognizedReply(anyString(), any());
+        assertNoRouterActionAndForwarded(SPEAKER);
         assertJoined();
     }
 
     @Test
-    @DisplayName("unknown token: handled like a plain replies@ mail (router first)")
+    @DisplayName("unknown token: handled like a plain replies@ mail (router first), on both paths")
     void should_routeLikeReplies_when_tokenUnknown() {
-        replyProcessor.process("emails/" + UUID.randomUUID(),
-                mail("replies+aaaaaaaaaaaaaaaa@batbern.ch", "Frage", "Wie komme ich hin?"));
-        verify(router).route(any());
+        // A sender of its own: the router's rate limiter counts per sender for the whole context.
+        String sender = "success+unknown-token-" + UUID.randomUUID() + "@simulator.amazonses.com";
 
-        aliasProcessor.process("forwarding/" + UUID.randomUUID(),
-                mail("replies+bbbbbbbbbbbbbbbb@batbern.ch", "Frage 2", "Und parken?"));
-        verify(router, org.mockito.Mockito.times(2)).route(any());
+        replyProcessor.process("emails/it-token-" + UUID.randomUUID(),
+                mail(sender, "replies+aaaaaaaaaaaaaaaa@batbern.ch", "Frage"));
+        sesRecorder.awaitAsyncSends(); // the confirmation goes out on the @Async EmailService path
+        assertThat(sesRecorder.mailsTo(sender)).as("router acted on the replies path").hasSize(1);
+
+        aliasProcessor.process("forwarding/it-token-" + UUID.randomUUID(),
+                mail(sender, "replies+bbbbbbbbbbbbbbbb@batbern.ch", "Frage 2"));
+        sesRecorder.awaitAsyncSends();
+        assertThat(sesRecorder.mailsTo(sender)).as("router acted on the alias path").hasSize(2);
+
+        assertThat(forwardedToOrganizers()).as("an acted-on keyword is not forwarded").isEmpty();
         assertThat(jdbc.queryForObject("SELECT count(*) FROM mail_message WHERE conversation_id = ?",
                 Integer.class, conversation)).isZero();
+    }
+
+    private void assertNoRouterActionAndForwarded(String sender) {
+        sesRecorder.awaitAsyncSends(); // an absent async confirmation must have had its chance
+        assertThat(sesRecorder.mailsTo(sender)).as("no unsubscribe confirmation: the router did not run").isEmpty();
+        assertThat(forwardedToOrganizers()).singleElement()
+                .satisfies(copy -> assertThat(copy.subject()).isEqualTo("Re: BATbern919 Slides"));
+    }
+
+    private List<RecordedMail> forwardedToOrganizers() {
+        return sesRecorder.mails().stream().filter(m -> m.envelope().contains(ORGANIZER)).toList();
     }
 
     private void assertJoined() {
@@ -126,12 +143,12 @@ class TokenReplyRoutingIntegrationTest extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM mail_automatic_event", Integer.class)).isZero();
     }
 
-    private static byte[] mail(String to, String subject, String body) {
-        String m = "From: \"A Speaker\" <" + SPEAKER + ">\r\n"
+    private static byte[] mail(String from, String to, String subject) {
+        String m = "From: \"A Speaker\" <" + from + ">\r\n"
                 + "To: " + to + "\r\n"
                 + "Subject: " + subject + "\r\n"
                 + "Message-ID: <" + UUID.randomUUID() + "@mail.batbern-test.ch>\r\n"
-                + "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" + body + "\r\n";
+                + "MIME-Version: 1.0\r\nContent-Type: text/plain; charset=UTF-8\r\n\r\n" + KEYWORD + "\r\n";
         return m.getBytes(StandardCharsets.UTF_8);
     }
 }

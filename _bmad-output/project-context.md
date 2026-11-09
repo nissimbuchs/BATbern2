@@ -186,9 +186,17 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
   PostgreSQL 16 via Testcontainers with `.withReuse(true)` for performance.
 - **NEVER use H2 or `@DataJpaTest` without PostgreSQL** — hides JSONB, function,
   and constraint issues that only surface in production.
-- No class-level `@Transactional` on a write IT: the rollback skips the flush, so DB constraints and
-  triggers never run (#1104). Clean up in `@AfterEach`, or `flush()` before asserting. The CI ratchet
-  counts class-level `@Transactional` ITs (`coding-standards.md` → "Test fidelity rules").
+- No class-level `@Transactional` on a new write IT: clean up in `@AfterEach`. Existing ones are
+  covered by `FlushBeforeRollback` (on `AbstractIntegrationTest`, 17.0b3): it flushes before the
+  rollback, so constraints, triggers and flush-time validation run (#1104). A test that catches a
+  Hibernate exception and continues calls `entityManager.clear()`. The CI ratchet counts class-level
+  `@Transactional` ITs (`coding-standards.md` → "Test fidelity rules").
+- Every IT runs the service's **production security chain** (17.0b3): anonymous answers 401, a wrong
+  role 403. No permit-all test chain; authenticate with `@WithMockUser`, `user(...)` or `jwt()`.
+- Mail: the real `EmailService` runs against the `SesRecorder` (shared-kernel test fixtures), the
+  context's only `SesClient`. Assert what SES received (`sesRecorder.single().to()`, `.html()`),
+  never `verify(emailService)`, never a mocked or spied `EmailService`. Recipients that must get mail:
+  `success+<name>@simulator.amazonses.com`; `@example.com` only for data that never gets mail.
 - `application-test.properties`: `spring.flyway.enabled=true` — always run real migrations.
 
 ### Test Naming Convention
@@ -201,6 +209,9 @@ Entity      →  JPA annotations, UUID PK + meaningful ID alternate key (ADR-003
 - Prefer `userEvent` over `fireEvent` for realistic interaction simulation.
 - Use `waitFor()` for any assertion that depends on async state or CSS transitions.
 - What a test may mock: only the process boundary (MSW for the network, Amplify), never our services, hooks or child components. Binding rules and the CI ratchet: `docs/architecture/coding-standards.md` → "Test fidelity rules".
+- The network is the MSW harness, active in every test (`src/test/msw/`, 17.0c1): each request is checked against `docs/api/*.openapi.yml` (a path, method or query no spec defines fails the test), answered with the spec example, or with a typed override `api.on('<operationId>', () => body)`; read what was sent with `api.calls('<operationId>')`. Never a per-file `setupServer`. Usage: coding-standards → "Frontend: the MSW harness".
+- i18n is the real i18next with `en` (set up in `src/test/setup.ts`); no new `vi.mock('react-i18next')` (ratchet category `fe-mock-i18n`).
+- Auth state comes from `src/test/auth.tsx` (`renderWithAuth(ui, { auth: signedInAs('organizer') })`, `AuthTestProvider`, `signedOut()`), through the real `AuthContext`, with the provider's own `canAccess`/`hasRole` rules; never `vi.mock('@/hooks/useAuth')`. Zustand stores run for real (`useXStore.setState` in `beforeEach`; persisted stores: `localStorage.clear()`).
 
 ### E2E Testing (Playwright)
 - Three projects: `chromium` (organizer — always active), `speaker` (activated by

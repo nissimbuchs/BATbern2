@@ -50,3 +50,6 @@ scripts/__fixtures__/test-ratchet
 # Story 17.4: fixture specs for scripts/api-lint.test.ts, read by Spectral. A path like
 # `speakerSlots` or a `#` comment between paths is part of what the tests check.
 scripts/__fixtures__/api-lint
+
+# Epic 17 i18n key gate: fixture sources for scripts/check-i18n-keys.test.ts, read as text.
+scripts/__fixtures__/i18n-keys

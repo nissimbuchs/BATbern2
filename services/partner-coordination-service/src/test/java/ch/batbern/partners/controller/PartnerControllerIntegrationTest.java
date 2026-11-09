@@ -1,16 +1,16 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.CompanyServiceClient;
 import ch.batbern.partners.client.UserServiceClient;
 import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
-import ch.batbern.partners.client.company.dto.CompanyResponse;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -18,23 +18,25 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.context.annotation.Import;
+import org.springframework.cache.CacheManager;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.test.web.client.ExpectedCount;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.util.HashMap;
-import java.util.List;
 import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.never;
 import static org.hamcrest.Matchers.contains;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
@@ -64,24 +66,35 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     private ObjectMapper objectMapper;
 
     @MockitoBean
-    private CompanyServiceClient companyServiceClient;
-
-    @MockitoBean
     private UserServiceClient userServiceClient;
 
-    private CompanyResponse mockCompanyResponse;
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Autowired
+    private CacheManager cacheManager;
+
+    /** CUMS behind the real CompanyServiceClient, per companies-api and cums-internal (17.0b1, 17.17). */
+    private ContractServer cums;
 
     @BeforeEach
     void setUp() {
         partnerRepository.deleteAll();
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
 
-        // Mock Company Service HTTP response
-        mockCompanyResponse = new CompanyResponse();
-        mockCompanyResponse.setName("GoogleZH");  // Generated DTO uses setName()
-        mockCompanyResponse.setDisplayName("Google Zurich");
-        // Note: Logo is CompanyLogo object in generated DTO, skip for this test
+        // @WithMockUser callers carry no JWT to forward, hence ignoringMissingAuthorization.
+        cums = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml",
+                        "docs/api/internal/cums-internal.openapi.yml")
+                .ignoringMissingAuthorization();
+        cums.expect(HttpMethod.GET, "/api/v1/companies/{name}").times(ExpectedCount.manyTimes())
+                .respondWith(HttpStatus.OK, """
+                        {"name": "GoogleZH", "displayName": "Google Zurich", "isVerified": true,
+                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}""");
+    }
 
-        when(companyServiceClient.getCompany(anyString())).thenReturn(mockCompanyResponse);
+    @AfterEach
+    void releaseCums() {
+        cums.close();
     }
 
     @Test
@@ -138,13 +151,84 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data[0].isActive").value(true));
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Partner directory "Sort by" (17.0 deferred work): sort=name|-name|tier|-tier
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void should_sortByTierHighestFirst_when_sortIsMinusTier() throws Exception {
+        createTestPartner("alpha", PartnershipLevel.BRONZE);
+        createTestPartner("bravo", PartnershipLevel.STRATEGIC);
+        createTestPartner("charlie", PartnershipLevel.GOLD);
+        createTestPartner("delta", PartnershipLevel.GOLD);
+        createTestPartner("echo", PartnershipLevel.PLATINUM);
+        createTestPartner("foxtrot", PartnershipLevel.SILVER);
+
+        // Tier rank, not the alphabet of the stored enum name; equal tiers by slug.
+        mockMvc.perform(get("/api/v1/partners").param("sort", "-tier"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].companyName",
+                        contains("bravo", "echo", "charlie", "delta", "foxtrot", "alpha")));
+    }
+
+    @Test
+    void should_sortByTierLowestFirst_when_sortIsTier() throws Exception {
+        createTestPartner("alpha", PartnershipLevel.STRATEGIC);
+        createTestPartner("bravo", PartnershipLevel.BRONZE);
+        createTestPartner("charlie", PartnershipLevel.SILVER);
+
+        mockMvc.perform(get("/api/v1/partners").param("sort", "tier"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].companyName", contains("bravo", "charlie", "alpha")));
+    }
+
+    @Test
+    void should_pageInTierOrder_when_sortIsMinusTierAndPaged() throws Exception {
+        createTestPartner("alpha", PartnershipLevel.BRONZE);
+        createTestPartner("bravo", PartnershipLevel.STRATEGIC);
+        createTestPartner("charlie", PartnershipLevel.GOLD);
+
+        // The order holds across pages and the count ignores it.
+        mockMvc.perform(get("/api/v1/partners").param("sort", "-tier").param("page", "1").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].companyName", contains("alpha")))
+                .andExpect(jsonPath("$.metadata.totalItems").value(3));
+    }
+
+    @Test
+    void should_sortBySlugDescending_when_sortIsMinusName() throws Exception {
+        createTestPartner("alpha", PartnershipLevel.GOLD);
+        createTestPartner("charlie", PartnershipLevel.GOLD);
+        createTestPartner("bravo", PartnershipLevel.GOLD);
+
+        mockMvc.perform(get("/api/v1/partners").param("sort", "-name"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].companyName", contains("charlie", "bravo", "alpha")));
+        mockMvc.perform(get("/api/v1/partners").param("sort", "name"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].companyName", contains("alpha", "bravo", "charlie")));
+    }
+
+    @Test
+    void should_return400_when_sortFieldUnknown() throws Exception {
+        mockMvc.perform(get("/api/v1/partners").param("sort", "engagement"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("sort")));
+    }
+
     @Test
     void should_returnPartnerByCompanyName_when_validCompanyNameProvided() throws Exception {
         // Given
         createTestPartner("GoogleZH", PartnershipLevel.GOLD);
 
+        // Anonymous: production (and its chain, run here since 17.0b3) and the gateway answer 401.
+        mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+
         // When/Then
         mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .with(user("some.attendee").roles("ATTENDEE"))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.companyName").value("GoogleZH"))
@@ -154,8 +238,14 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void should_return404_when_companyNameNotFound() throws Exception {
+        // Anonymous: production (and its chain, run here since 17.0b3) and the gateway answer 401.
+        mockMvc.perform(get("/api/v1/partners/NotFoundCo")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+
         // When/Then - Use valid company name length (≤12 chars per VARCHAR(12) schema)
         mockMvc.perform(get("/api/v1/partners/NotFoundCo")
+                        .with(user("some.attendee").roles("ATTENDEE"))
                         .contentType(MediaType.APPLICATION_JSON))
                 .andDo(print())
                 .andExpect(status().isNotFound())
@@ -168,8 +258,15 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         // Given
         createTestPartner("GoogleZH", PartnershipLevel.GOLD);
 
+        // Anonymous: production (and its chain, run here since 17.0b3) and the gateway answer 401.
+        mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .param("include", "company")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+
         // When/Then
         mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .with(user("some.attendee").roles("ATTENDEE"))
                         .param("include", "company")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -462,11 +559,9 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     // tab is organizer-only in the UI, which is exactly the protection that looks sufficient
     // until someone calls the API directly.
     //
-    // The assertions live on @PreAuthorize rather than on the filter chain deliberately: the
-    // `test` profile chain is permitAll, so a matcher-only rule cannot be tested here at all,
-    // while @EnableMethodSecurity is active in every profile. The matchers are still added in
-    // SecurityConfig for defence in depth (and to reject earlier, before the controller), but
-    // method security is what makes this stick.
+    // Since 17.0b3 these tests run the production chain, so both layers are under test: the
+    // SecurityConfig matchers reject earlier, @PreAuthorize on the controller methods is the
+    // second wall.
 
     @Test
     @WithMockUser(username = "some.attendee", roles = "ATTENDEE")
@@ -586,11 +681,18 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
 
     // Same leak on the detail endpoint, which takes the same `include`.
     @Test
-    void should_omitContacts_when_anonymousCallerRequestsDetailWithContacts() throws Exception {
+    void should_omitContacts_when_attendeeRequestsDetailWithContacts() throws Exception {
         createTestPartner("GoogleZH", PartnershipLevel.GOLD);
         stubOneContactFor("GoogleZH");
 
+        // Anonymous: production (and its chain, run here since 17.0b3) and the gateway answer 401.
         mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .param("include", "contacts")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isUnauthorized());
+
+        mockMvc.perform(get("/api/v1/partners/GoogleZH")
+                        .with(user("some.attendee").roles("ATTENDEE"))
                         .param("include", "contacts")
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
@@ -641,7 +743,8 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     void should_findPartnerBeyondFirstPage_when_searchMatchesItsDisplayName() throws Exception {
         createPartners(25);
         // CUMS resolves the display name typed by the organizer to the slug (#23 of 25)
-        when(companyServiceClient.findCompanyNames("Die Mobiliar")).thenReturn(List.of("partner32", "notapartner"));
+        cums.expect(HttpMethod.GET, "/internal/companies").withQueryParam("search", "Die Mobiliar")
+                .respondWith(HttpStatus.OK, "[\"partner32\", \"notapartner\"]");
 
         mockMvc.perform(get("/api/v1/partners").param("search", " Die Mobiliar ").param("size", "20"))
                 .andExpect(status().isOk())
@@ -657,8 +760,8 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         ended.setPartnershipStartDate(LocalDate.now().minusYears(3));
         ended.setPartnershipEndDate(LocalDate.now().minusYears(1));
         partnerRepository.save(ended);
-        when(companyServiceClient.findCompanyNames("ag"))
-                .thenReturn(List.of("partner10", "partner11", "partner12", "partner99"));
+        cums.expect(HttpMethod.GET, "/internal/companies").withQueryParam("search", "ag")
+                .respondWith(HttpStatus.OK, "[\"partner10\", \"partner11\", \"partner12\", \"partner99\"]");
 
         mockMvc.perform(get("/api/v1/partners").param("search", "ag")
                         .param("filter", "partnershipLevel:gold,isActive:true"))
@@ -670,7 +773,8 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     void should_returnNothing_when_cumsMatchesNoCompany() throws Exception {
         createPartners(3);
-        when(companyServiceClient.findCompanyNames("(test")).thenReturn(List.of());
+        cums.expect(HttpMethod.GET, "/internal/companies").withQueryParam("search", "(test")
+                .respondWith(HttpStatus.OK, "[]");
 
         mockMvc.perform(get("/api/v1/partners").param("search", "(test"))
                 .andExpect(status().isOk())
@@ -685,6 +789,7 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/partners").param("search", "   "))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.metadata.totalItems").value(3));
-        verify(companyServiceClient, never()).findCompanyNames(anyString());
+        // No /internal/companies expectation is registered: a call to CUMS would fail the request
+        // on the contract server. The search tests above show the same server answering it.
     }
 }

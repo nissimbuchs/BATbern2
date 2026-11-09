@@ -113,7 +113,9 @@ export const SpeakerBatchImportModal: React.FC<SpeakerBatchImportModalProps> = (
   // Only fetch when modal is open to avoid unnecessary API calls
   const { data: existingUsersData, isLoading: isLoadingUsers } = useUserList({
     filters: { role: ['SPEAKER'] },
-    pagination: { page: 1, limit: 1000 },
+    // Every speaker, page by page: GET /users caps limit at 100.
+    pagination: { page: 1, limit: 100 },
+    allPages: true,
     enabled: open,
   });
 

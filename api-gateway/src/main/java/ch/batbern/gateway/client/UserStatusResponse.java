@@ -3,7 +3,7 @@ package ch.batbern.gateway.client;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 
 /**
- * Minimal projection of the CUMS {@code GET /api/v1/users/{username}} response — only the
+ * Minimal projection of the CUMS {@code GET /internal/users/{username}} response — only the
  * {@code active} flag the {@link ch.batbern.gateway.security.AccountActiveFilter} is_active
  * gate needs (Story 12.2). The full {@code UserResponse} contract is large and owned by
  * company-user-management-service; deserialising only {@code active} (ignoring everything

@@ -14,13 +14,12 @@ import { FormProvider, useForm } from 'react-hook-form';
 import i18n from '@/i18n/config';
 import { ConfigProvider } from '@/contexts/ConfigContext';
 import type { AppConfig } from '@/config/runtime-config';
+import { emails, nonAsciiNames } from '@/test/fixtures';
 
-// Mock authService (the Google SSO button calls authService.signInWithFederated).
-// vi.hoisted is required because the mock factory references the fn eagerly.
-const mockSignInWithFederated = vi.hoisted(() => vi.fn());
-vi.mock('@/services/auth/authService', () => ({
-  authService: { signInWithFederated: mockSignInWithFederated },
-}));
+// Amplify is the process boundary (Cognito): the real authService runs, the Google SSO button
+// ends in Amplify's signInWithRedirect. vi.hoisted: the mock factory references the fn eagerly.
+const mockSignInWithRedirect = vi.hoisted(() => vi.fn(() => Promise.resolve()));
+vi.mock('aws-amplify/auth', () => ({ signInWithRedirect: mockSignInWithRedirect }));
 
 // Create theme for MUI components
 const theme = createTheme();
@@ -129,7 +128,8 @@ describe('RegistrationStep1 Component', () => {
     });
   });
 
-  it.each(['王', 'O’Neill', 'Hông Ân', 'Mary (Molly)', 'देवनागरी'])(
+  // The production-shaped people (17.0d: Hông Ân, O’Neill, 王, umlauts), plus further shapes.
+  it.each([...nonAsciiNames, 'Mary (Molly)', 'देवनागरी'])(
     'should_acceptGivenName_when_nameIs_%s',
     async (name) => {
       const user = userEvent.setup();
@@ -215,6 +215,39 @@ describe('RegistrationStep1 Component', () => {
       expect(screen.queryByText(/name contains invalid characters/i)).not.toBeInTheDocument();
     });
   });
+
+  // eslint-disable-next-line no-control-regex
+  it.each(emails.filter((e) => e !== e.toLowerCase() || /[^\x00-\x7F]/.test(e)))(
+    'should_acceptEmail_when_addressIsMixedCaseOrInternationalised: %s',
+    async (email) => {
+      const user = userEvent.setup();
+
+      await act(async () => {
+        render(
+          <FormWrapper>
+            <RegistrationStep1 onContinue={mockOnContinue} />
+          </FormWrapper>
+        );
+      });
+
+      // Positive control: the validator runs on this field and rejects a non-address.
+      await act(async () => {
+        await user.type(screen.getByLabelText(/^email/i), 'not-an-address');
+        await user.tab();
+      });
+      expect(await screen.findByText(/please enter a valid email/i)).toBeInTheDocument();
+
+      await act(async () => {
+        await user.clear(screen.getByLabelText(/^email/i));
+        await user.type(screen.getByLabelText(/^email/i), email);
+        await user.tab();
+      });
+
+      await waitFor(() => {
+        expect(screen.queryByText(/please enter a valid email/i)).not.toBeInTheDocument();
+      });
+    }
+  );
 
   // Test 1.3: should_validateEmail_when_invalidFormat
   it('should_showError_when_emailInvalidFormat', async () => {
@@ -567,8 +600,8 @@ describe('RegistrationStep1 Component', () => {
       const googleButton = await screen.findByTestId('register-with-google');
       await user.click(googleButton);
 
-      expect(mockSignInWithFederated).toHaveBeenCalledTimes(1);
-      expect(mockSignInWithFederated).toHaveBeenCalledWith('Google');
+      await waitFor(() => expect(mockSignInWithRedirect).toHaveBeenCalledTimes(1));
+      expect(mockSignInWithRedirect).toHaveBeenCalledWith({ provider: 'Google' });
     });
   });
 });

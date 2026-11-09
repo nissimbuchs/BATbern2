@@ -48,19 +48,20 @@ export interface PartnerPagination {
 }
 
 /**
- * Sort parameters
+ * Sort parameters: `name` is the company slug, `tier` the partnership rank
+ * (BRONZE lowest). Sent as `sort=[-]name|tier` (ADR-013).
  */
 export interface PartnerSort {
-  sortBy: 'engagement' | 'name' | 'tier' | 'lastEvent';
+  sortBy: 'name' | 'tier';
   sortOrder: 'asc' | 'desc';
 }
 
 /**
- * List partners with filters, sorting, and pagination
+ * List partners with filters and pagination
  * Includes HTTP enrichment via ?include=company,contacts (ADR-004)
  *
  * @param filters - Tier and status filters
- * @param sort - Sort configuration
+ * @param sort - Sort field and direction
  * @param pagination - Page and size parameters
  * @param search - Free text, matched by the backend over every partner's company slug and
  *   display name before paging; blank sends no search
@@ -76,6 +77,7 @@ export const listPartners = async (
     page: pagination.page,
     size: pagination.size,
     include: 'company,contacts', // ADR-004 HTTP enrichment
+    sort: `${sort.sortOrder === 'desc' ? '-' : ''}${sort.sortBy}`,
   };
 
   if (search && search.trim()) {
@@ -99,11 +101,8 @@ export const listPartners = async (
     params.filter = filterParts.join(',');
   }
 
-  // Build sort query parameter
-  params.sort = `${sort.sortBy}:${sort.sortOrder}`;
-
   const response = await apiClient.get<PartnerListResponse>(PARTNER_API_PATH, { params });
-  // ✅ Resolves to: http://localhost:8080/api/v1/partners?page=0&size=20&include=company,contacts&filter=...&sort=...
+  // Resolves to: <api>/partners?page=0&size=20&include=company,contacts&sort=...&filter=...&search=...
   return response.data;
 };
 

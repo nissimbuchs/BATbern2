@@ -155,12 +155,14 @@ public class QualityReviewService {
                 sessionContentHistoryRepository.save(submission);
             } else {
                 sessionRepository.findById(sessionId).ifPresent(session -> {
+                    // The abstract column is NOT NULL; organizer-path content may have a title
+                    // and no abstract yet (17.0b3: this used to fail the reject with a 500).
+                    String sessionAbstract = session.getDescription() != null ? session.getDescription() : "";
                     SessionContentVersion submission = SessionContentVersion.builder()
                             .session(session)
                             .title(session.getTitle())
-                            .contentAbstract(session.getDescription())
-                            .abstractCharCount(session.getDescription() != null
-                                    ? session.getDescription().length() : 0)
+                            .contentAbstract(sessionAbstract)
+                            .abstractCharCount(sessionAbstract.length())
                             .submissionVersion(1)
                             .submittedByUsername(primarySpeakerResolver.resolve(speaker)
                                     .map(PrimarySpeakerResolver.PrimarySpeakerProfile::username)

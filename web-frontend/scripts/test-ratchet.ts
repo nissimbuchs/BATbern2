@@ -19,16 +19,28 @@
  *       `src/`: under `src/services` -> services; under `src/hooks` or basename `use[A-Z]...` ->
  *       hooks; under `src/components` / `src/pages` or a PascalCase basename -> components;
  *       anything else (packages, stores, utils, types) is not counted.
+ *   fe-mock-i18n
+ *       `vi.mock('react-i18next')` / `vi.doMock('react-i18next')`: a per-file i18n stub instead of
+ *       the real i18next with `en` that `src/test/setup.ts` provides (Story 17.0c1). The stub
+ *       drops interpolation and hides missing keys (#959, #1150).
  *   be-mock-s2s-client
- *       `@MockitoBean` whose type ends in `Client` and is not a boundary type (UserApiClient, ...).
+ *       `@MockitoBean` (also `@MockitoSpyBean`, and the older `@MockBean` / `@SpyBean`, everywhere
+ *       below) whose type ends in `Client` and is not a boundary type (UserApiClient, ...),
+ *       and `mock(XClient.class)` / `Mockito.mock(XClient.class)` / a `@Mock XClient` field of such a type in test
+ *       sources, so a shared `@Primary` mock config (EMS TestUserApiClientConfig, retired in 17.0b1) counts too
+ *       (Story 17.0b1). Retire these onto the S2S contract harness (`ContractServer`).
  *   be-mock-in-process
- *       any other `@MockitoBean` that is not a boundary type.
+ *       any other `@MockitoBean` that is not a boundary type, and `mock(X.class)` of such a type
+ *       inside a test `@Configuration` / `@TestConfiguration` class: a shared `@Primary` mock bean
+ *       replaces the real one in every test that imports the config (Story 17.0b3; how the
+ *       `EmailService` mocks in the services' `TestAwsConfig` escaped the count).
  *   be-transactional-it
  *       class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is
  *       named `*IntegrationTest` / `*IT`.
  * Boundary types (not counted): BOUNDARY_TYPES below, and any type imported from
- * `software.amazon.awssdk.*`. Comments and Javadoc are never counted; in Java, string and
- * text-block literals are skipped too (the frontend scan masks comments only).
+ * `software.amazon.awssdk.*` (for `mock(...)` calls also from `java.*`). Comments and Javadoc
+ * are never counted; in Java, string and text-block literals are skipped too (the frontend scan
+ * masks comments only).
  *
  * Deterministic and dependency-free: plain TypeScript for Node >= 22.18 type stripping, no npm
  * packages, so CI can run it without `npm ci`.
@@ -44,6 +56,7 @@ export const CATEGORIES = [
   'be-transactional-it',
   'fe-mock-components',
   'fe-mock-hooks',
+  'fe-mock-i18n',
   'fe-mock-services',
 ] as const;
 export type Category = (typeof CATEGORIES)[number];
@@ -101,6 +114,7 @@ export function resolveSpecifier(specifier: string, testFile: string): string | 
 
 /** The ratchet category of a `vi.mock` specifier in `testFile`, or null when not counted. */
 export function classifySpecifier(specifier: string, testFile: string): Category | null {
+  if (specifier === 'react-i18next') return 'fe-mock-i18n';
   const resolved = resolveSpecifier(specifier, testFile);
   if (!resolved || !resolved.startsWith(FRONTEND_SRC)) return null;
   const segments = resolved.slice(FRONTEND_SRC.length).split('/').filter(Boolean);
@@ -236,10 +250,22 @@ const MODIFIERS = new Set([
 ]);
 const TYPE_KEYWORDS = new Set(['class', 'interface', 'record', 'enum']);
 
-/** Simple type names of every `@MockitoBean` in a masked Java source (field or class level). */
+/**
+ * Simple type names of every `@MockitoBean` in a masked Java source (field or class level), and of
+ * every `@MockitoSpyBean`: a spy stubs (`doReturn`) and verifies own code just like a mock. The
+ * pre-Boot-4 `@MockBean` / `@SpyBean` count the same.
+ */
 export function mockitoBeanTypes(masked: string): string[] {
+  return annotatedTypes(masked, /@(?:[\w.]+\.)?(?:MockitoBean|MockitoSpyBean|MockBean|SpyBean)\b/g);
+}
+
+/** Simple type names of every Mockito `@Mock` field in a masked Java source. */
+export function mockFieldTypes(masked: string): string[] {
+  return annotatedTypes(masked, /@(?:[\w.]+\.)?Mock\b/g);
+}
+
+function annotatedTypes(masked: string, re: RegExp): string[] {
   const types: string[] = [];
-  const re = /@(?:[\w.]+\.)?MockitoBean\b/g;
   for (const m of masked.matchAll(re)) {
     let i = skipSpace(masked, m.index + m[0].length);
     let args = '';
@@ -315,6 +341,55 @@ export function isTransactionalIt(masked: string): boolean {
   return /@(?:[\w.]+\.)?Transactional\b/.test(annotations);
 }
 
+const MOCK_CALL = /\b(?:Mockito\s*\.\s*)?mock\s*\(\s*([\w.]+)\s*\.\s*class\b/g;
+
+/** Simple type names of every `mock(X.class)` / `Mockito.mock(X.class)` in a masked Java source. */
+export function mockCallTypes(masked: string): string[] {
+  return [...masked.matchAll(MOCK_CALL)].map((m) => simpleName(m[1]));
+}
+
+const CONFIGURATION = /@(?:[\w.]+\.)?(?:Test)?Configuration\b/g;
+
+/**
+ * Body ranges `[start, end)` of every class annotated `@Configuration` or `@TestConfiguration`
+ * (top level or nested) in a masked Java source.
+ */
+export function configurationClassBodies(masked: string): Array<[number, number]> {
+  const bodies: Array<[number, number]> = [];
+  for (const m of masked.matchAll(CONFIGURATION)) {
+    let start = skipSpace(masked, m.index + m[0].length);
+    if (masked[start] === '(') start = skipBalanced(masked, start, '(', ')');
+    const rest = masked.slice(start);
+    const decl = /\b(class|interface|record|enum)\s+\w+/.exec(rest);
+    if (!decl || decl[1] !== 'class') continue;
+    // Only annotations and modifiers may stand between the annotation and its class.
+    const between = rest.slice(0, decl.index).replace(/@[\w.]+(\s*\([^)]*\))?/g, '');
+    if (!/^[\s\w]*$/.test(between)) continue;
+    const open = masked.indexOf('{', start + decl.index);
+    if (open < 0) continue;
+    bodies.push([open, skipBalanced(masked, open, '{', '}')]);
+  }
+  return bodies;
+}
+
+/**
+ * Simple type names of every `mock(X.class)` inside a test configuration class body: the mocks
+ * a config hands to every test that imports it.
+ */
+export function configurationMockTypes(masked: string): string[] {
+  const bodies = configurationClassBodies(masked);
+  return [...masked.matchAll(MOCK_CALL)]
+    .filter((m) => bodies.some(([from, to]) => m.index >= from && m.index < to))
+    .map((m) => simpleName(m[1]));
+}
+
+/** True for a type that leaves the process (a boundary type, the AWS SDK, or the JDK). */
+function isBoundary(type: string, fqn: string): boolean {
+  return (
+    BOUNDARY_TYPES.has(type) || fqn.startsWith('software.amazon.awssdk.') || fqn.startsWith('java.')
+  );
+}
+
 /** Counts of one Java test file, by category. */
 export function scanJavaTest(source: string): Map<Category, number> {
   const counts = new Map<Category, number>();
@@ -325,6 +400,16 @@ export function scanJavaTest(source: string): Map<Category, number> {
     const fqn = imports.get(type) ?? '';
     if (BOUNDARY_TYPES.has(type) || fqn.startsWith('software.amazon.awssdk.')) continue;
     add(type.endsWith('Client') ? 'be-mock-s2s-client' : 'be-mock-in-process');
+  }
+  for (const type of [...mockCallTypes(masked), ...mockFieldTypes(masked)]) {
+    // JDK types (java.net.http.HttpClient) leave the process: boundary, like the AWS SDK.
+    if (isBoundary(type, imports.get(type) ?? '')) continue;
+    if (type.endsWith('Client')) add('be-mock-s2s-client');
+  }
+  for (const type of configurationMockTypes(masked)) {
+    // S2S clients are counted above; own in-process types mocked for every importing test here.
+    if (isBoundary(type, imports.get(type) ?? '') || type.endsWith('Client')) continue;
+    add('be-mock-in-process');
   }
   if (isTransactionalIt(masked)) add('be-transactional-it');
   return counts;

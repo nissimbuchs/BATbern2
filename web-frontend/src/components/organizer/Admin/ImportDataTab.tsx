@@ -17,7 +17,7 @@ import SpeakerBatchImportModal from '@/components/organizer/UserManagement/Speak
 import { ParticipantBatchImportModal } from '@/components/organizer/UserManagement/ParticipantBatchImportModal';
 
 export const ImportDataTab: React.FC = () => {
-  const { t } = useTranslation();
+  const { t } = useTranslation('admin');
 
   const [eventsOpen, setEventsOpen] = useState(false);
   const [sessionsOpen, setSessionsOpen] = useState(false);
@@ -27,37 +27,37 @@ export const ImportDataTab: React.FC = () => {
 
   const importCards = [
     {
-      title: t('import.events.title', 'Events'),
-      description: t('import.events.description', 'Import historical event data from CSV or JSON.'),
-      buttonLabel: t('import.events.button', 'Import Events'),
+      title: t('importData.events.title'),
+      description: t('importData.events.description'),
+      buttonLabel: t('importData.events.button'),
       testId: 'import-events-btn',
       onClick: () => setEventsOpen(true),
     },
     {
-      title: t('import.sessions.title', 'Sessions'),
-      description: t('import.sessions.description', 'Import session data for existing events.'),
-      buttonLabel: t('import.sessions.button', 'Import Sessions'),
+      title: t('importData.sessions.title'),
+      description: t('importData.sessions.description'),
+      buttonLabel: t('importData.sessions.button'),
       testId: 'import-sessions-btn',
       onClick: () => setSessionsOpen(true),
     },
     {
-      title: t('import.companies.title', 'Companies'),
-      description: t('import.companies.description', 'Import company / partner data.'),
-      buttonLabel: t('import.companies.button', 'Import Companies'),
+      title: t('importData.companies.title'),
+      description: t('importData.companies.description'),
+      buttonLabel: t('importData.companies.button'),
       testId: 'import-companies-btn',
       onClick: () => setCompaniesOpen(true),
     },
     {
-      title: t('import.speakers.title', 'Speakers'),
-      description: t('import.speakers.description', 'Import speaker profiles from legacy data.'),
-      buttonLabel: t('import.speakers.button', 'Import Speakers'),
+      title: t('importData.speakers.title'),
+      description: t('importData.speakers.description'),
+      buttonLabel: t('importData.speakers.button'),
       testId: 'import-speakers-btn',
       onClick: () => setSpeakersOpen(true),
     },
     {
-      title: t('import.participants.title', 'Participants'),
-      description: t('import.participants.description', 'Import attendee / participant records.'),
-      buttonLabel: t('import.participants.button', 'Import Participants'),
+      title: t('importData.participants.title'),
+      description: t('importData.participants.description'),
+      buttonLabel: t('importData.participants.button'),
       testId: 'import-participants-btn',
       onClick: () => setParticipantsOpen(true),
     },

@@ -7,36 +7,21 @@
  *   1. the `role` filter ran CLIENT-side, on the already-truncated page of results, so a
  *      SPEAKER filter filtered whatever arbitrary rows the server happened to return rather
  *      than the best matches. It now goes to the backend.
- *   2. `getOptionLabel` returned `option.id` (the username), so selecting "Matthias Stürmer"
- *      put `matthias.stuermer` in the text field. It now shows the person's real name.
+ *   2. `getOptionLabel` returned `option.id` (the username), so selecting a person put their
+ *      username in the text field. It now shows the person's real name.
  */
 import React from 'react';
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect, vi } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { UserAutocomplete } from '../UserAutocomplete';
-import type { UserSearchResponse } from '@/types/user.types';
+import { api } from '@/test/msw/api';
+import { shapes, toSearchResult } from '@/test/fixtures';
 
-const searchUsersMock = vi.fn();
-
-vi.mock('@/services/api/userManagementApi', () => ({
-  searchUsers: (query: string, limit?: number, role?: string) =>
-    searchUsersMock(query, limit, role),
-}));
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
-
-const stuermer: UserSearchResponse = {
-  id: 'matthias.stuermer',
-  email: 'matthias.stuermer@bfh.ch',
-  firstName: 'Matthias',
-  lastName: 'Stürmer',
-  roles: ['SPEAKER'],
-  companyId: 'bfh',
-};
+// Story 17.0d: real userManagementApi and i18next; the MSW harness answers GET /users/search from
+// the production-shaped people (umlauts, >20 "Matthias"). No vi.mock of own code.
+const bruennimann = toSearchResult(shapes.bruennimann);
 
 const renderComponent = (props: Partial<React.ComponentProps<typeof UserAutocomplete>> = {}) => {
   const queryClient = new QueryClient({
@@ -57,22 +42,21 @@ const renderComponent = (props: Partial<React.ComponentProps<typeof UserAutocomp
 };
 
 describe('UserAutocomplete', () => {
-  beforeEach(() => {
-    searchUsersMock.mockReset();
-    searchUsersMock.mockResolvedValue([stuermer]);
-  });
-
   it('should_passRoleToTheBackend_when_roleFilterProvided', async () => {
     renderComponent({ role: 'SPEAKER' });
 
-    await userEvent.type(screen.getByTestId('user-search-field'), 'Stürmer');
+    await userEvent.type(screen.getByTestId('user-search-field'), 'Brünnimann');
 
     await waitFor(
       () => {
-        expect(searchUsersMock).toHaveBeenCalledWith('Stürmer', expect.any(Number), 'SPEAKER');
+        expect(api.calls('searchUsers').map((c) => c.query.get('query'))).toContain('Brünnimann');
       },
       { timeout: 2000 }
     );
+    const call = api.calls('searchUsers').find((c) => c.query.get('query') === 'Brünnimann');
+    expect(call?.query.get('role')).toBe('SPEAKER');
+    expect(call?.query.get('limit')).toBe('20');
+    expect(await screen.findByTestId('user-option-matthias.bruennimann')).toBeInTheDocument();
   });
 
   it('should_notFilterOptionsClientSide_when_roleFilterProvided', async () => {
@@ -80,32 +64,55 @@ describe('UserAutocomplete', () => {
     // if its `roles` array does not literally contain the filter (e.g. the server matched on
     // a role granted after the projection was cached) — client-side re-filtering is what used
     // to silently empty the dropdown.
-    searchUsersMock.mockResolvedValue([{ ...stuermer, roles: [] }]);
+    api.on('searchUsers', () => [{ ...bruennimann, roles: [] }]);
     renderComponent({ role: 'SPEAKER' });
 
-    await userEvent.type(screen.getByTestId('user-search-field'), 'Stürmer');
+    await userEvent.type(screen.getByTestId('user-search-field'), 'Brünnimann');
 
     await waitFor(
       () => {
-        expect(screen.getByTestId('user-option-matthias.stuermer')).toBeInTheDocument();
+        expect(screen.getByTestId('user-option-matthias.bruennimann')).toBeInTheDocument();
       },
       { timeout: 2000 }
     );
   });
 
+  it('should_showEveryNamesakeTheServerReturns_when_twoPeopleShareTheFullName', async () => {
+    renderComponent();
+
+    await userEvent.type(screen.getByTestId('user-search-field'), 'Matthias Keller');
+
+    expect(await screen.findByTestId('user-option-matthias.keller')).toBeInTheDocument();
+    expect(screen.getByTestId('user-option-matthias.keller.2')).toBeInTheDocument();
+  });
+
   it('should_showTheRealName_when_userIsSelected', async () => {
-    renderComponent({ value: stuermer });
+    renderComponent({ value: bruennimann });
 
     await waitFor(() => {
-      expect(screen.getByTestId('user-search-field')).toHaveValue('Matthias Stürmer');
+      expect(screen.getByTestId('user-search-field')).toHaveValue('Matthias Brünnimann');
+    });
+  });
+
+  it('should_showTheUnicodeName_when_aCjkUserIsSelected', async () => {
+    renderComponent({ value: toSearchResult(shapes.cjk) });
+
+    await waitFor(() => {
+      expect(screen.getByTestId('user-search-field')).toHaveValue('芳 王');
     });
   });
 
   it('should_fallBackToUsername_when_userHasNoName', async () => {
-    renderComponent({ value: { ...stuermer, firstName: undefined, lastName: undefined } });
+    renderComponent({
+      value: {
+        ...bruennimann,
+        firstName: undefined,
+        lastName: undefined,
+      } as unknown as typeof bruennimann,
+    });
 
     await waitFor(() => {
-      expect(screen.getByTestId('user-search-field')).toHaveValue('matthias.stuermer');
+      expect(screen.getByTestId('user-search-field')).toHaveValue('matthias.bruennimann');
     });
   });
 
@@ -113,13 +120,18 @@ describe('UserAutocomplete', () => {
     // `isValueSelected` suppresses the query once the field holds the selection's label.
     // It used to compare against the username; with a name label it must compare against
     // the name, otherwise every selection fires a pointless extra search.
-    renderComponent({ value: stuermer });
+    renderComponent({ value: bruennimann });
 
     await waitFor(() => {
-      expect(screen.getByTestId('user-search-field')).toHaveValue('Matthias Stürmer');
+      expect(screen.getByTestId('user-search-field')).toHaveValue('Matthias Brünnimann');
     });
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    expect(searchUsersMock).not.toHaveBeenCalled();
+    expect(api.calls('searchUsers')).toHaveLength(0);
+
+    // Positive control: once the text differs from the selection, it searches.
+    await userEvent.clear(screen.getByTestId('user-search-field'));
+    await userEvent.type(screen.getByTestId('user-search-field'), 'Keller');
+    await waitFor(() => expect(api.calls('searchUsers')).toHaveLength(1), { timeout: 2000 });
   });
 });

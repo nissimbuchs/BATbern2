@@ -1,171 +1,179 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
-import apiClient from '@/services/api/apiClient';
+/**
+ * publishingService against the MSW harness (17.0c2): the real apiClient sends each call, the
+ * harness checks it against events-core-api and answers with the spec example or a typed
+ * override. The bodies are the generated types EMS sends (PublishingEngineController).
+ */
+import { afterAll, beforeAll, describe, expect, it, vi } from 'vitest';
+import { HttpResponse } from 'msw';
+import { setNavigationCallback } from '@/services/api/apiClient';
+import { api } from '@/test/msw/api';
+import type { AutoPublishScheduleRequest, PublishValidationError } from '@/types/event.types';
 import { publishingService } from './publishingService';
 
-// Mock apiClient
-vi.mock('@/services/api/apiClient', () => ({
-  default: {
-    get: vi.fn(),
-    post: vi.fn(),
-    delete: vi.fn(),
-  },
-}));
+const navigate = vi.fn();
+beforeAll(() => setNavigationCallback(navigate));
+afterAll(() => setNavigationCallback(() => undefined));
+
+/** What a rejected axios call carries, for the assertions on errors. */
+const rejection = (promise: Promise<unknown>) =>
+  promise.then(
+    () => {
+      throw new Error('expected the call to reject');
+    },
+    (e: { response?: { status: number; data: unknown } }) => e
+  );
 
 describe('publishingService', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe('publishPhase', () => {
-    it('should publish phase successfully', async () => {
-      const mockData = {
-        id: '123e4567-e89b-12d3-a456-426614174000',
-        eventCode: 'BATbern142',
-        versionNumber: 1,
-        publishedPhase: 'TOPIC',
-        publishedAt: '2025-01-15T10:00:00Z',
-        publishedBy: 'john.doe',
-        cdnInvalidationId: 'INV123',
-        cdnInvalidationStatus: 'PENDING',
-        contentSnapshot: {},
-        isCurrent: true,
-      };
+    it('posts to /events/{code}/publish/{phase} and returns what EMS answers', async () => {
+      api.on('publishPhase', ({ params }) => ({
+        phase: params.phase,
+        published: true,
+        publishedAt: '2026-11-08T10:00:00Z',
+        cdnInvalidated: true,
+      }));
 
-      const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: mockData });
+      const result = await publishingService.publishPhase('BATbern61', 'topic');
 
-      const result = await publishingService.publishPhase('BATbern142', 'topic');
-
-      expect(postSpy).toHaveBeenCalledWith('/events/BATbern142/publish/topic');
-      expect(result).toEqual(mockData);
+      const [call] = api.calls('publishPhase');
+      expect(call.method).toBe('POST');
+      expect(call.params).toEqual({ eventCode: 'BATbern61', phase: 'topic' });
+      expect(call.body).toBeUndefined();
+      expect(result).toEqual({
+        phase: 'topic',
+        published: true,
+        publishedAt: '2026-11-08T10:00:00Z',
+        cdnInvalidated: true,
+      });
     });
 
-    it('should handle 422 validation error when content not ready', async () => {
-      const mockError = {
-        response: {
-          status: 422,
-          data: {
-            error: 'PUBLISH_VALIDATION_FAILED',
-            message: 'Content not ready for this publishing phase',
-            phase: 'AGENDA',
-            validationErrors: [
-              {
-                field: 'sessions.timing',
-                message: 'Not all sessions have timing assigned',
-                requirement: 'All sessions must have startTime and endTime for agenda phase',
-              },
-            ],
+    it('rejects with the 422 validation body when the content is not ready', async () => {
+      const notReady: PublishValidationError = {
+        error: 'VALIDATION_ERROR',
+        message: 'Content not ready for this publishing phase',
+        validationErrors: [
+          {
+            sessionSlug: 'untimed-session',
+            field: 'startTime',
+            message: 'Not all sessions have timing assigned',
           },
-        },
+        ],
       };
+      api.on('publishPhase', () => HttpResponse.json(notReady, { status: 422 }));
 
-      vi.spyOn(apiClient, 'post').mockRejectedValue(mockError);
+      const error = await rejection(publishingService.publishPhase('BATbern61', 'agenda'));
 
-      await expect(publishingService.publishPhase('BATbern142', 'agenda')).rejects.toEqual(
-        mockError
-      );
+      expect(error.response?.status).toBe(422);
+      expect(error.response?.data).toEqual(notReady);
     });
 
-    it('should preserve 401 authentication error', async () => {
-      const mockError = {
-        response: {
-          status: 401,
-          data: { message: 'Unauthorized' },
-        },
-      };
-
-      vi.spyOn(apiClient, 'post').mockRejectedValue(mockError);
-
-      await expect(publishingService.publishPhase('BATbern142', 'topic')).rejects.toEqual(
-        mockError
+    it('rejects a 401 and sends the user to the login page', async () => {
+      api.on('publishPhase', () =>
+        HttpResponse.json({ error: 'UNAUTHORIZED', message: 'Unauthorized' }, { status: 401 })
       );
+
+      const error = await rejection(publishingService.publishPhase('BATbern61', 'topic'));
+
+      expect(error.response?.status).toBe(401);
+      expect(navigate).toHaveBeenCalledWith('/login');
     });
 
-    it('should preserve 403 forbidden error', async () => {
-      const mockError = {
-        response: {
-          status: 403,
-          data: { message: 'Insufficient permissions' },
-        },
-      };
-
-      vi.spyOn(apiClient, 'post').mockRejectedValue(mockError);
-
-      await expect(publishingService.publishPhase('BATbern142', 'topic')).rejects.toEqual(
-        mockError
+    it('rejects a 403 with its body', async () => {
+      api.on('publishPhase', () =>
+        HttpResponse.json(
+          { error: 'FORBIDDEN', message: 'Insufficient permissions' },
+          { status: 403 }
+        )
       );
+
+      const error = await rejection(publishingService.publishPhase('BATbern61', 'topic'));
+
+      expect(error.response?.status).toBe(403);
+      expect(error.response?.data).toMatchObject({ message: 'Insufficient permissions' });
     });
   });
 
   describe('unpublishPhase', () => {
-    it('should unpublish phase successfully', async () => {
-      const mockData = {
-        eventCode: 'BATbern142',
-        unpublishedPhase: 'SPEAKERS',
-        newCurrentPhase: 'TOPIC',
-        unpublishedAt: '2025-01-15T11:00:00Z',
-        unpublishedBy: 'john.doe',
-      };
+    it('posts to /events/{code}/unpublish/{phase} and returns what EMS answers', async () => {
+      api.on('unpublishPhase', ({ params }) => ({
+        phase: params.phase,
+        published: false,
+        unpublishedAt: '2026-11-08T11:00:00Z',
+        cdnInvalidated: true,
+      }));
 
-      const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: mockData });
+      const result = await publishingService.unpublishPhase('BATbern61', 'speakers');
 
-      const result = await publishingService.unpublishPhase('BATbern142', 'speakers');
-
-      expect(postSpy).toHaveBeenCalledWith('/events/BATbern142/unpublish/speakers');
-      expect(result).toEqual(mockData);
+      expect(api.calls('unpublishPhase')[0].params).toEqual({
+        eventCode: 'BATbern61',
+        phase: 'speakers',
+      });
+      expect(result).toMatchObject({ phase: 'speakers', published: false });
     });
   });
 
   describe('getPublishingStatus', () => {
-    it('should get publishing status successfully', async () => {
-      const mockData = {
-        eventCode: 'BATbern142',
-        currentPhase: 'TOPIC',
-        phases: {
-          topic: { isPublished: true, isValid: true, errors: [] },
-          speakers: { isPublished: false, isValid: false, errors: ['Missing speakers'] },
-          agenda: { isPublished: false, isValid: false, errors: ['No agenda items'] },
+    it('reads the status with the validation of every phase', async () => {
+      api.on('getPublishingStatus', () => ({
+        currentPhase: 'topic',
+        publishedPhases: ['topic'],
+        topic: { isValid: true, errors: [] },
+        speakers: { isValid: false, errors: ['At least 3 sessions required'] },
+        sessions: {
+          isValid: false,
+          errors: ['1 session without a time'],
+          assignedCount: 2,
+          totalCount: 3,
+          unassignedSessions: [{ sessionSlug: 'keynote-bruennimann', title: 'Keynote' }],
         },
-      };
+      }));
 
-      const getSpy = vi.spyOn(apiClient, 'get').mockResolvedValue({ data: mockData });
+      const status = await publishingService.getPublishingStatus('BATbern61');
 
-      const result = await publishingService.getPublishingStatus('BATbern142');
-
-      expect(getSpy).toHaveBeenCalledWith('/events/BATbern142/publish/status');
-      expect(result).toEqual(mockData);
+      expect(api.calls('getPublishingStatus')[0].params.eventCode).toBe('BATbern61');
+      expect(status.currentPhase).toBe('topic');
+      expect(status.speakers.errors).toEqual(['At least 3 sessions required']);
+      expect(status.sessions.unassignedSessions).toHaveLength(1);
     });
 
-    it('should propagate error when getPublishingStatus fails', async () => {
-      const mockError = new Error('Service unavailable');
-      vi.spyOn(apiClient, 'get').mockRejectedValue(mockError);
+    it('answers the spec example by default (no phase published yet)', async () => {
+      const status = await publishingService.getPublishingStatus('BATbern61');
 
-      await expect(publishingService.getPublishingStatus('BATbern142')).rejects.toThrow(
-        'Service unavailable'
-      );
+      expect(status.publishedPhases).toEqual([]);
+      expect(status.topic.isValid).toBe(false);
+    });
+
+    it('rejects when the service is unavailable', async () => {
+      api.on('getPublishingStatus', () => HttpResponse.error());
+
+      await expect(publishingService.getPublishingStatus('BATbern61')).rejects.toMatchObject({
+        code: 'ERR_NETWORK',
+      });
     });
   });
 
   describe('scheduleAutoPublish', () => {
-    it('should schedule auto-publish for phase', async () => {
-      const mockData = {
-        eventCode: 'BATbern142',
-        phase: 'SPEAKERS',
-        scheduledDate: '2025-04-15T08:00:00Z',
-        isEnabled: true,
-        ruleArn:
-          'arn:aws:events:eu-central-1:123456789012:rule/batbern-auto-publish-BATbern142-speakers',
+    it('sends the schedule body EMS reads (configureAutoPublish), not a date', async () => {
+      const request: AutoPublishScheduleRequest = {
+        phase2Enabled: true,
+        phase2DaysBeforeEvent: 30,
+        phase3Enabled: true,
+        phase3DaysBeforeEvent: 14,
       };
+      api.on('configureAutoPublish', ({ body }) => ({
+        scheduled: true,
+        ...body,
+        phase2TriggerDate: '2027-02-12T08:00:00Z',
+        phase3TriggerDate: '2027-02-28T08:00:00Z',
+      }));
 
-      const postSpy = vi.spyOn(apiClient, 'post').mockResolvedValue({ data: mockData });
+      const result = await publishingService.scheduleAutoPublish('BATbern61', request);
 
-      const result = await publishingService.scheduleAutoPublish('BATbern142', 'speakers', {
-        scheduledDate: '2025-04-15T08:00:00Z',
-      });
-
-      expect(postSpy).toHaveBeenCalledWith('/events/BATbern142/publish/schedule', {
-        scheduledDate: '2025-04-15T08:00:00Z',
-      });
-      expect(result).toEqual(mockData);
+      const [call] = api.calls('configureAutoPublish');
+      expect(call.method).toBe('POST');
+      expect(call.params.eventCode).toBe('BATbern61');
+      expect(call.body).toEqual(request);
+      expect(result).toMatchObject({ scheduled: true, phase2DaysBeforeEvent: 30 });
     });
   });
 });

@@ -64,5 +64,32 @@
       },
       "alwaysForwarded": "Sempre inoltrate: ciò che gli organizzatori inviano alle liste -speaker@, -participants@, batbern{N}@ e partner@, le mail a ok@ e le mail automatiche come risposte di assenza e mancati recapiti."
     }
+  },
+  "importData": {
+    "events": {
+      "title": "Eventi",
+      "description": "Importa dati storici degli eventi da CSV o JSON.",
+      "button": "Importa eventi"
+    },
+    "sessions": {
+      "title": "Sessioni",
+      "description": "Importa sessioni per eventi esistenti.",
+      "button": "Importa sessioni"
+    },
+    "companies": {
+      "title": "Aziende",
+      "description": "Importa dati di aziende e partner.",
+      "button": "Importa aziende"
+    },
+    "speakers": {
+      "title": "Relatori",
+      "description": "Importa profili dei relatori dai dati storici.",
+      "button": "Importa relatori"
+    },
+    "participants": {
+      "title": "Partecipanti",
+      "description": "Importa partecipanti e iscrizioni.",
+      "button": "Importa partecipanti"
+    }
   }
 }

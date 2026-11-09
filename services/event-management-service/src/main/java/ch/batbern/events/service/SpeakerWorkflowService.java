@@ -20,7 +20,6 @@ import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.events.service.workflow.SpeakerProvisioningHook;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.events.service.workflow.TransitionResult;
 import ch.batbern.shared.events.DomainEventPublisher;
@@ -123,7 +122,6 @@ public class SpeakerWorkflowService {
     private final SessionContentHistoryRepository sessionContentHistoryRepository;
     private final AgendaConfigResolver agendaConfigResolver;
     private final UserApiClient userApiClient;
-    private final SpeakerProvisioningHook speakerProvisioningHook;
     private final SpeakerInvitationEmailService invitationEmailService;
     private final SpeakerAcceptanceEmailService acceptanceEmailService;
     private final OrganizerNotificationService organizerNotificationService;

@@ -6,14 +6,15 @@ import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.domain.UserSettings;
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import jakarta.persistence.EntityManager;
+import ch.batbern.shared.test.fixtures.ProductionShapedPeople;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -25,8 +26,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Story 1.14-2, AC: 1, 3, 4, 5 (User CRUD and Queries)
  * Story 1.16.2: Username-based lookups (CRITICAL)
  * Uses Testcontainers PostgreSQL for production parity
+ *
+ * <p>Every repository call commits, as in production (no class-level {@code @Transactional},
+ * Epic 17 test fidelity). {@code @AfterEach} removes the users the test wrote (child rows
+ * cascade), so nothing leaks into the next class in the shared container.
  */
-@Transactional
 @Import(TestAwsConfig.class)
 @DisplayName("User Repository Tests")
 class UserRepositoryTest extends AbstractIntegrationTest {
@@ -35,11 +39,22 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
-    private EntityManager entityManager;
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
-        userRepository.deleteAll();
+        deleteAllUsers();
+    }
+
+    @AfterEach
+    void tearDown() {
+        deleteAllUsers();
+    }
+
+    /** Users and their child rows (role assignments, addresses, history cascade with the user). */
+    private void deleteAllUsers() {
+        jdbcTemplate.update("DELETE FROM watch_pairings");
+        jdbcTemplate.update("DELETE FROM user_profiles");
     }
 
     // AC1 Tests: User CRUD Operations
@@ -52,8 +67,6 @@ class UserRepositoryTest extends AbstractIntegrationTest {
 
         // When
         User saved = userRepository.save(user);
-        entityManager.flush();
-
         // Then
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getUsername()).isEqualTo("john.doe");
@@ -85,8 +98,6 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         user.setBio("New bio");
         user.onUpdate();
         User updated = userRepository.save(user);
-        entityManager.flush();
-
         // Then
         User retrieved = userRepository.findById(updated.getId()).orElseThrow();
         assertThat(retrieved.getFirstName()).isEqualTo("Updated");
@@ -102,8 +113,6 @@ class UserRepositoryTest extends AbstractIntegrationTest {
 
         // When
         userRepository.delete(user);
-        entityManager.flush();
-
         // Then
         Optional<User> deleted = userRepository.findById(user.getId());
         assertThat(deleted).isEmpty();
@@ -234,14 +243,12 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         attendee.addRole(Role.ATTENDEE);
         userRepository.save(attendee);
 
-        entityManager.flush();
-
         // When
         List<User> speakers = userRepository.findByRolesContaining(Role.SPEAKER);
 
         // Then
-        assertThat(speakers).hasSize(2);
-        assertThat(speakers).allMatch(u -> u.hasRole(Role.SPEAKER));
+        // The roles are a lazy collection and the query committed: assert who was found
+        assertThat(speakers).extracting(User::getUsername).containsExactlyInAnyOrder("speaker.one", "speaker.two");
     }
 
     // AC8 Tests: Name-based search
@@ -272,8 +279,6 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         User inactiveUser = createAndSaveUser("inactive.user", "inactive@example.com");
         inactiveUser.setActive(false);
         userRepository.save(inactiveUser);
-
-        entityManager.flush();
 
         // When
         List<User> activeUsers = userRepository.findByIsActive(true);
@@ -341,106 +346,137 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     // The previous derived query
     //   findByFirstNameContainingIgnoreCaseOrLastNameContainingIgnoreCase(q, q)
     // had NO ORDER BY, and the service truncated the result in memory at a hard 20. On
-    // production 32 users matched "Matthias" and `matthias.stuermer` sat at position 29 of an
+    // production 32 users matched "Matthias" and `matthias.bruennimann` sat at position 29 of an
     // arbitrary plan-dependent order, so he could never be picked in the promote dropdown.
     // ------------------------------------------------------------------------
+
+    // The production-shaped people (17.0d) carry the shape: more than 20 "Matthias", two identical
+    // "Matthias Keller", "Brünnimann" with an umlaut, Hông Ân, O’Neill, 王.
 
     @Test
     @DisplayName("should_rankExactSurnameFirst_when_manyNamesakesMatch")
     void should_rankExactSurnameFirst_when_manyNamesakesMatch() {
-        // Given: 30 "Matthias" namesakes saved BEFORE the target, so an unordered query would
-        // push the target past any sane limit (this is the production shape).
-        for (int i = 0; i < 30; i++) {
-            createAndSaveUser("matthias.filler." + i, "matthias.filler" + i + "@example.com",
-                    "Matthias", "Filler" + i);
-        }
-        createAndSaveUser("matthias.stuermer", "matthias.stuermer@bfh.ch", "Matthias", "Stuermer");
+        // Given: every other "Matthias" saved BEFORE the target, so an unordered query would push
+        // the target past any sane limit (this is the production shape).
+        saveAll(PEOPLE.stream().filter(p -> p != ProductionShapedPeople.BRUENNIMANN).toList());
+        saveAll(List.of(ProductionShapedPeople.BRUENNIMANN));
+        assertThat(ProductionShapedPeople.NAMESAKES).hasSizeGreaterThan(20);
 
         // When: searching the surname, limited to 5
-        List<User> results = userRepository.searchRanked("Stuermer", null, PageRequest.of(0, 5));
+        List<User> results = userRepository.searchRanked("Bruennimann", null, PageRequest.of(0, 5));
 
         // Then: the exact surname match is first, not lost in the namesakes
         assertThat(results).isNotEmpty();
-        assertThat(results.get(0).getUsername()).isEqualTo("matthias.stuermer");
+        assertThat(results.get(0).getUsername()).isEqualTo("matthias.bruennimann");
+    }
+
+    @Test
+    @DisplayName("should_findTheUmlautSurname_when_queriedWithOrWithoutTheUmlaut")
+    void should_findTheUmlautSurname_when_queriedWithOrWithoutTheUmlaut() {
+        saveAll(PEOPLE);
+
+        // #1034: "Brünnimann" returned 0 results in production. ü = ue = u, both directions.
+        for (String query : List.of("Brünnimann", "Bruennimann", "BRÜNNIMANN", "Matthias Brünnimann")) {
+            assertThat(userRepository.searchRanked(query, null, PageRequest.of(0, 20)))
+                    .as(query)
+                    .extracting(User::getUsername)
+                    .containsExactly("matthias.bruennimann");
+        }
+    }
+
+    @Test
+    @DisplayName("should_findUnicodeNames_when_queriedAsTyped")
+    void should_findUnicodeNames_when_queriedAsTyped() {
+        saveAll(PEOPLE);
+
+        assertThat(userRepository.searchRanked("Hông Ân", null, PageRequest.of(0, 20)))
+                .extracting(User::getUsername).containsExactly(ProductionShapedPeople.VIETNAMESE.username());
+        assertThat(userRepository.searchRanked("王", null, PageRequest.of(0, 20)))
+                .extracting(User::getUsername).containsExactly(ProductionShapedPeople.CJK.username());
+        assertThat(userRepository.searchRanked("anna.keller@example.com", null, PageRequest.of(0, 20)))
+                .extracting(User::getUsername).containsExactly(ProductionShapedPeople.MIXED_CASE_EMAIL.username());
     }
 
     @Test
     @DisplayName("should_honourTheRequestedLimit_when_moreRowsMatch")
     void should_honourTheRequestedLimit_when_moreRowsMatch() {
-        for (int i = 0; i < 30; i++) {
-            createAndSaveUser("matthias.filler." + i, "matthias.filler" + i + "@example.com",
-                    "Matthias", "Filler" + i);
-        }
+        saveAll(PEOPLE);
 
         List<User> capped = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 7));
         List<User> wide = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 25));
+        List<User> all = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 100));
 
         assertThat(capped).hasSize(7);
         assertThat(wide).hasSize(25);
+        assertThat(all).hasSize(ProductionShapedPeople.NAMESAKES.size());
     }
 
     @Test
     @DisplayName("should_returnAStableOrder_when_theSameQueryRunsTwice")
     void should_returnAStableOrder_when_theSameQueryRunsTwice() {
-        for (int i = 0; i < 12; i++) {
-            createAndSaveUser("matthias.filler." + i, "matthias.filler" + i + "@example.com",
-                    "Matthias", "Filler" + i);
-        }
+        // Two identical "Matthias Keller" tie on every name column; the username breaks the tie.
+        saveAll(PEOPLE);
 
         var first = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 10))
                 .stream().map(User::getUsername).toList();
         var second = userRepository.searchRanked("Matthias", null, PageRequest.of(0, 10))
                 .stream().map(User::getUsername).toList();
+        var kellers = userRepository.searchRanked("Matthias Keller", null, PageRequest.of(0, 10))
+                .stream().map(User::getUsername).toList();
 
         assertThat(first).isEqualTo(second);
+        assertThat(kellers).containsExactly("matthias.keller", "matthias.keller.2");
     }
 
     @Test
     @DisplayName("should_matchTheFullName_when_firstAndLastNameAreQueriedTogether")
     void should_matchTheFullName_when_firstAndLastNameAreQueriedTogether() {
-        createAndSaveUser("matthias.stuermer", "matthias.stuermer@bfh.ch", "Matthias", "Stuermer");
-        createAndSaveUser("matthias.germann", "matthias.germann@dvbern.ch", "Matthias", "Germann");
+        saveAll(PEOPLE);
 
         // The old query matched firstName OR lastName separately, so a full name — exactly what
         // `speaker_pool.speaker_name` holds — could never match anybody.
-        List<User> results = userRepository.searchRanked("Matthias Stuermer", null, PageRequest.of(0, 20));
+        List<User> results = userRepository.searchRanked("Matthias Bruennimann", null, PageRequest.of(0, 20));
 
-        assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
+        assertThat(results).extracting(User::getUsername).containsExactly("matthias.bruennimann");
     }
 
     @Test
     @DisplayName("should_matchTheEmail_when_theQueryIsAnEmailFragment")
     void should_matchTheEmail_when_theQueryIsAnEmailFragment() {
-        createAndSaveUser("matthias.stuermer", "matthias.stuermer@bfh.ch", "Matthias", "Stuermer");
-        createAndSaveUser("matthias.germann", "matthias.germann@dvbern.ch", "Matthias", "Germann");
+        saveAll(PEOPLE);
 
         // users-api.openapi.yml documents "Search users by name or email"; only name was implemented.
-        List<User> results = userRepository.searchRanked("bfh.ch", null, PageRequest.of(0, 20));
+        // The IDN domain is the only one of its kind in the set.
+        List<User> results = userRepository.searchRanked("bücherstube.example", null, PageRequest.of(0, 20));
 
-        assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
+        assertThat(results).extracting(User::getUsername)
+                .containsExactly(ProductionShapedPeople.IDN_EMAIL.username());
     }
 
     @Test
     @DisplayName("should_filterByRoleInTheDatabase_when_roleProvided")
     void should_filterByRoleInTheDatabase_when_roleProvided() {
-        // Given: 30 ATTENDEE namesakes and one SPEAKER, the SPEAKER saved last.
-        for (int i = 0; i < 30; i++) {
-            User filler = createTestUser("matthias.filler." + i,
-                    "matthias.filler" + i + "@example.com", "Matthias", "Filler" + i);
-            filler.addRole(Role.ATTENDEE);
-            userRepository.saveAndFlush(filler);
-        }
-        User speaker = createTestUser("matthias.stuermer", "matthias.stuermer@bfh.ch",
-                "Matthias", "Stuermer");
-        speaker.addRole(Role.SPEAKER);
-        userRepository.saveAndFlush(speaker);
+        // Given: more than 20 "Matthias", only some of them SPEAKER.
+        saveAll(PEOPLE);
+        List<String> speakers = ProductionShapedPeople.NAMESAKES.stream()
+                .filter(p -> p.roles().contains(Role.SPEAKER)).map(ProductionShapedPeople.Person::username).toList();
+        assertThat(speakers).hasSizeBetween(2, ProductionShapedPeople.NAMESAKES.size() - 1);
 
         // When: role filtering happens in SQL, before the limit. Filtering in Java after a
-        // 20-row truncation (the old behaviour) would return nothing here.
+        // 20-row truncation (the old behaviour) would miss speakers ranked after row 20.
         List<User> results = userRepository.searchRanked(
                 "Matthias", Role.SPEAKER, PageRequest.of(0, 20));
 
-        assertThat(results).extracting(User::getUsername).containsExactly("matthias.stuermer");
+        assertThat(results).extracting(User::getUsername).containsExactlyInAnyOrderElementsOf(speakers);
+    }
+
+    private void saveAll(List<ProductionShapedPeople.Person> people) {
+        for (ProductionShapedPeople.Person p : people) {
+            User user = createTestUser(p.username(), p.email(), p.firstName(), p.lastName());
+            user.setCompanyId(p.companyId());
+            p.roles().forEach(user::addRole);
+            userRepository.saveAndFlush(user);
+        }
     }
 
     private User createTestUser(String username, String email, String firstName, String lastName) {

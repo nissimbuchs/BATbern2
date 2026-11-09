@@ -1,7 +1,9 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.client.UserApiClient;
-import ch.batbern.events.config.TestUserApiClientConfig;
+import ch.batbern.events.config.CumsContractHarness;
+import ch.batbern.shared.test.contract.ContractServer.Reply;
+import com.fasterxml.jackson.databind.JsonNode;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Session;
 import ch.batbern.events.domain.SessionUser;
@@ -9,8 +11,6 @@ import ch.batbern.events.domain.SpeakerPool;
 import ch.batbern.events.domain.SpeakerStatusHistory;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.dto.generated.users.InvitationCredentialsResponse;
-import ch.batbern.events.dto.generated.users.ProvisionUserRequest;
-import ch.batbern.events.dto.generated.users.ProvisionUserResponse;
 import ch.batbern.events.entity.EventAgendaConfig;
 import ch.batbern.events.exception.SlotCapacityReachedException;
 import ch.batbern.events.repository.EventAgendaConfigRepository;
@@ -19,7 +19,6 @@ import ch.batbern.events.repository.EventTypeRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.repository.SpeakerStatusHistoryRepository;
-import ch.batbern.events.service.workflow.SpeakerProvisioningHook;
 import ch.batbern.events.service.workflow.TransitionPayload;
 import ch.batbern.shared.exception.InvalidStateTransitionException;
 import ch.batbern.shared.exception.NotFoundException;
@@ -27,6 +26,7 @@ import ch.batbern.shared.exception.ValidationException;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Nested;
@@ -36,8 +36,6 @@ import org.junit.jupiter.params.provider.Arguments;
 import org.junit.jupiter.params.provider.MethodSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
-import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -45,16 +43,16 @@ import java.time.temporal.ChronoUnit;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.stream.Stream;
 
+import static org.springframework.http.HttpMethod.POST;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Integration tests for {@link SpeakerWorkflowService#transition} — ADR-009 single-writer model.
@@ -64,7 +62,6 @@ import static org.mockito.Mockito.when;
  * side-effect hooks, and the {@code SpeakerWorkflowStateChangeEvent} contract.
  */
 @Transactional
-@Import(TestUserApiClientConfig.class)
 class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
@@ -80,7 +77,7 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private SpeakerStatusHistoryRepository statusHistoryRepository;
     @Autowired
-    private UserApiClient userApiClient;
+    private CumsContractHarness cums;
     @Autowired
     private EventTypeRepository eventTypeRepository;
     @Autowired
@@ -92,20 +89,24 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
     private SpeakerAcceptanceEmailService acceptanceEmailService;
     @MockitoBean
     private OrganizerNotificationService organizerNotificationService;
-    @MockitoSpyBean
-    private SpeakerProvisioningHook speakerProvisioningHook;
 
     private Event testEvent;
     private UUID testEventId;
     private static final String TEST_EVENT_CODE = "BAT-WF-INT-TEST";
     private static final String ORGANIZER = "test-organizer";
+    private static final String PROVISION = "/api/v1/users/provision";
+    private static final String CREDENTIALS = "/api/v1/users/{username}/issue-invitation-credentials";
+
+    @AfterEach
+    void resetCums() {
+        cums.reset();
+    }
 
     @BeforeEach
     void setUp() {
-        // userApiClient is provided via TestUserApiClientConfig (plain Mockito mock — not
-        // @MockBean/@MockitoBean). Spring's per-test reset does NOT apply, so we explicitly
-        // clear interactions between tests to avoid verification counts bleeding across.
-        org.mockito.Mockito.clearInvocations(userApiClient);
+        // CUMS behind the real UserApiClient (Story 17.0b2): back to the defaults and no
+        // recorded calls, so counts never bleed between tests.
+        cums.reset();
 
         testEvent = Event.builder()
                 .eventCode(TEST_EVENT_CODE)
@@ -123,15 +124,13 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         testEvent = eventRepository.save(testEvent);
         testEventId = testEvent.getId();
 
-        when(userApiClient.provisionUserWithRole(any())).thenAnswer(inv ->
-                new ProvisionUserResponse("speaker.user", true));
+        cums.answer(POST, PROVISION,
+                call -> Reply.ok("{\"username\": \"speaker.user\", \"created\": true}"));
 
         // Story 11.E.2: default the new issueInvitationCredentials stub to return a fresh
         // temp password. Tests that care about the action discriminator override below.
-        when(userApiClient.issueInvitationCredentials(any())).thenAnswer(inv ->
-                new InvitationCredentialsResponse(
-                        InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
-                        .temporaryPassword("Test1234!@#abcde9"));
+        cums.answer(POST, CREDENTIALS, call -> Reply.ok(
+                "{\"action\": \"FRESH_TEMP_PASSWORD\", \"temporaryPassword\": \"Test1234!@#abcde9\"}"));
     }
 
     // ---- AC10 #1: legal forward transitions ----
@@ -283,7 +282,6 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         assertThat(history.get(0).getNewStatus()).isEqualTo(state);
         assertThat(history.get(0).getChangeReason()).isEqualTo("re-affirmed");
 
-        verify(speakerProvisioningHook, never()).grantSpeakerRole(anyString(), anyString());
         verify(invitationEmailService, never()).sendInvitationEmail(any(), any(), any(), any(), any());
         verify(organizerNotificationService, never()).notifyOrganizerOfResponse(any(), any(), any());
     }
@@ -319,19 +317,14 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         workflowService.transition(speaker.getId(), SpeakerWorkflowState.READY, ORGANIZER, payload);
 
         // Story 11.D.1: provisionUserWithRole is the canonical single call (replaces the
-        // legacy getOrCreateUser + speakerProvisioningHook.grantSpeakerRole pair).
-        org.mockito.ArgumentCaptor<ProvisionUserRequest> captor =
-                org.mockito.ArgumentCaptor.forClass(ProvisionUserRequest.class);
-        verify(userApiClient, times(1)).provisionUserWithRole(captor.capture());
-        ProvisionUserRequest captured = captor.getValue();
-        assertThat(captured.getEmail()).isEqualTo("speaker@example.com");
-        assertThat(captured.getFirstName()).isEqualTo("Test");
-        assertThat(captured.getLastName()).isEqualTo("Speaker");
-        assertThat(captured.getRole()).isEqualTo(ProvisionUserRequest.RoleEnum.SPEAKER);
-
-        // The legacy SpeakerProvisioningHook is no longer called from the READY hook —
-        // provisioning is now a single call to UserApiClient.provisionUserWithRole.
-        verify(speakerProvisioningHook, never()).grantSpeakerRole(anyString(), anyString());
+        // legacy getOrCreateUser + role-grant pair).
+        assertThat(cums.calls(POST, PROVISION)).singleElement().satisfies(call -> {
+            JsonNode sent = new ObjectMapper().readTree(call.body());
+            assertThat(sent.path("email").asText()).isEqualTo("speaker@example.com");
+            assertThat(sent.path("firstName").asText()).isEqualTo("Test");
+            assertThat(sent.path("lastName").asText()).isEqualTo("Speaker");
+            assertThat(sent.path("role").asText()).isEqualTo("SPEAKER");
+        });
 
         SpeakerPool persisted = speakerPoolRepository.findById(speaker.getId()).orElseThrow();
         assertThat(persisted.getStatus()).isEqualTo(SpeakerWorkflowState.READY);
@@ -426,24 +419,24 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
                 candidate.getSessionId(), SessionUser.SpeakerRole.PRIMARY_SPEAKER)
                 .orElseThrow().getUsername();
 
-        // Override the default stub with a fresh-temp-password response for assertions.
-        InvitationCredentialsResponse stubbedResponse = new InvitationCredentialsResponse(
-                InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD)
-                .temporaryPassword("Test1234!@#abcde");
-        when(userApiClient.issueInvitationCredentials(candidateUsername))
-                .thenReturn(stubbedResponse);
+        // Override the default answer with a fresh-temp-password response for assertions.
+        cums.answer(POST, CREDENTIALS, call -> Reply.ok(
+                "{\"action\": \"FRESH_TEMP_PASSWORD\", \"temporaryPassword\": \"Test1234!@#abcde\"}"));
 
         workflowService.transition(candidate.getId(), SpeakerWorkflowState.INVITED, ORGANIZER, payload);
 
-        // Exactly one call to issueInvitationCredentials with the speaker's username.
-        verify(userApiClient, times(1)).issueInvitationCredentials(candidateUsername);
+        // Exactly one call to issue-invitation-credentials with the speaker's username.
+        assertThat(cums.calls(POST, CREDENTIALS)).singleElement()
+                .satisfies(call -> assertThat(call.pathVariables()).containsEntry("username", candidateUsername));
 
         // The email service was invoked once with the captured InvitationCredentialsResponse.
         org.mockito.ArgumentCaptor<InvitationCredentialsResponse> credentialsCaptor =
                 org.mockito.ArgumentCaptor.forClass(InvitationCredentialsResponse.class);
         verify(invitationEmailService).sendInvitationEmail(
                 any(), any(), any(String.class), credentialsCaptor.capture(), any());
-        assertThat(credentialsCaptor.getValue()).isSameAs(stubbedResponse);
+        assertThat(credentialsCaptor.getValue().getAction())
+                .isEqualTo(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
+        assertThat(credentialsCaptor.getValue().getTemporaryPassword()).isEqualTo("Test1234!@#abcde");
 
         // Speaker transitioned and invitedAt stamped.
         SpeakerPool persisted = speakerPoolRepository.findById(candidate.getId()).orElseThrow();
@@ -528,7 +521,7 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         // (IDENTIFIED/CONTACTED) leave session_users empty so the runReadyHook
         // identity-rebind guard doesn't fire on transition.
         if (statusIsAtOrAfter(status, SpeakerWorkflowState.READY)) {
-            seedPrimarySessionUser(speaker, "speaker." + UUID.randomUUID().toString().substring(0, 8));
+            seedPrimarySessionUser(speaker, randomSpeakerUsername());
         }
         return speaker;
     }
@@ -544,11 +537,11 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
                 .build();
         session = sessionRepository.save(session);
         SessionUser su = SessionUser.builder()
-                .session(session)
                 .username(username)
                 .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
                 .isConfirmed(false)
                 .build();
+        session.addSpeaker(su); // both sides, so deleting the session (DECLINED) cascades (17.0b3)
         sessionUserRepository.save(su);
         speaker.setSessionId(session.getId());
         speakerPoolRepository.save(speaker);
@@ -586,11 +579,13 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
         // READY+ so PrimarySpeakerResolver finds a canonical identity.
         if (statusIsAtOrAfter(status, SpeakerWorkflowState.READY)) {
             SessionUser su = SessionUser.builder()
-                    .session(session)
-                    .username("speaker." + UUID.randomUUID().toString().substring(0, 8))
+                    .username(randomSpeakerUsername())
                     .speakerRole(SessionUser.SpeakerRole.PRIMARY_SPEAKER)
                     .isConfirmed(false)
                     .build();
+            // Both sides of the association, as a loaded Session has them: deleting the session
+            // (DECLINED) cascades to its speakers instead of leaving a row pointing at it (17.0b3).
+            session.addSpeaker(su);
             sessionUserRepository.save(su);
         }
         return speaker;
@@ -605,5 +600,15 @@ class SpeakerWorkflowServiceIntegrationTest extends AbstractIntegrationTest {
             builder.reason("Test decline reason");
         }
         return builder.build();
+    }
+
+    /** A unique CUMS-shaped username (letters only after the dot: CUMS rejects anything else). */
+    private static String randomSpeakerUsername() {
+        StringBuilder username = new StringBuilder("speaker.");
+        ThreadLocalRandom random = ThreadLocalRandom.current();
+        for (int i = 0; i < 10; i++) {
+            username.append((char) ('a' + random.nextInt(26)));
+        }
+        return username.toString();
     }
 }

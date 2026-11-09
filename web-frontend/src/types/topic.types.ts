@@ -68,7 +68,6 @@ export interface PartnerVote {
 
 export interface TopicMetrics {
   averageAttendance: number;
-  averageEngagement: number;
   totalUsageCount: number;
   lastEventDate?: string;
 }

@@ -1,7 +1,5 @@
 package ch.batbern.companyuser.service;
 
-import ch.batbern.companyuser.domain.User;
-import ch.batbern.companyuser.dto.generated.GetOrCreateUserRequest;
 import ch.batbern.companyuser.exception.CognitoOperationException;
 import ch.batbern.companyuser.exception.UserNotFoundException;
 import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusType;
@@ -9,28 +7,15 @@ import software.amazon.awssdk.services.cognitoidentityprovider.model.UserStatusT
 /**
  * Service for integrating with AWS Cognito.
  *
- * <p>Story 1.14-2 (AC2): legacy Cognito sync seam (currently a NO-OP — DB is source of truth).
+ * <p>The database is the source of truth for user attributes; Cognito only authenticates. A login
+ * comes from the sign-up page or from the provisioning flow below, never from
+ * {@code POST /users/get-or-create} (its {@code cognitoSync} flag has no effect).
  *
- * <p>Story 11.E.2: extended with the three Admin SDK calls used by the Cognito-provisioning
+ * <p>Story 11.E.2: the Admin SDK calls used by the Cognito-provisioning
  * flow ({@code adminCreateUserSilently} at READY; {@code getUserStatus} +
  * {@code adminSetTemporaryPassword} at INVITED).
  */
 public interface CognitoIntegrationService {
-
-    /**
-     * Sync user attributes to Cognito.
-     *
-     * @param user User to sync
-     */
-    void syncUserAttributes(User user);
-
-    /**
-     * Create user in Cognito.
-     *
-     * @param request User creation request
-     * @return Cognito user ID
-     */
-    String createCognitoUser(GetOrCreateUserRequest request);
 
     /**
      * Create a Cognito user shell with a throwaway temporary password and

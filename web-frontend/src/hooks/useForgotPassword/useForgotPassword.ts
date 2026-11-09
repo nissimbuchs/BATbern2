@@ -59,6 +59,13 @@ export const useForgotPassword = (options?: UseForgotPasswordOptions) => {
               type: 'invalidParameter' as const,
               statusCode: 400,
             });
+          case 'NetworkError':
+            // Amplify v6 (AmplifyErrorCode.NetworkError): Cognito was not reachable.
+            // The form offers a retry for this type only.
+            throw Object.assign(new Error('Network connection failed'), {
+              type: 'networkError' as const,
+              statusCode: 0,
+            });
           default:
             throw Object.assign(
               new Error((error as { message?: string }).message || 'Password reset failed'),

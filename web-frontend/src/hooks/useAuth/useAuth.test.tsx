@@ -95,6 +95,7 @@ describe('useAuth Hook', () => {
       email: 'test@batbern.ch',
       emailVerified: true,
       role: 'organizer' as const,
+      roles: ['organizer' as const],
       companyId: 'company-123',
       preferences: {
         language: 'en' as const,
@@ -245,6 +246,7 @@ describe('useAuth Hook', () => {
         email: 'organizer@batbern.ch',
         emailVerified: true,
         role: 'organizer' as const,
+        roles: ['organizer' as const],
         companyId: 'company-123',
         preferences: {
           language: 'en' as const,
@@ -280,6 +282,7 @@ describe('useAuth Hook', () => {
         email: 'speaker@batbern.ch',
         emailVerified: true,
         role: 'speaker' as const,
+        roles: ['speaker' as const],
         companyId: 'company-456',
         preferences: {
           language: 'en' as const,
@@ -314,6 +317,7 @@ describe('useAuth Hook', () => {
         email: 'partner@batbern.ch',
         emailVerified: true,
         role: 'partner' as const,
+        roles: ['partner' as const],
         companyId: 'company-789',
         preferences: {
           language: 'en' as const,
@@ -348,6 +352,7 @@ describe('useAuth Hook', () => {
         email: 'attendee@batbern.ch',
         emailVerified: true,
         role: 'attendee' as const,
+        roles: ['attendee' as const],
         companyId: 'company-999',
         preferences: {
           language: 'en' as const,
@@ -382,6 +387,7 @@ describe('useAuth Hook', () => {
         email: 'organizer@batbern.ch',
         emailVerified: true,
         role: 'organizer' as const,
+        roles: ['organizer' as const],
         companyId: 'company-123',
         preferences: {
           language: 'en' as const,
@@ -451,6 +457,7 @@ describe('useAuth Hook', () => {
         email: 'organizer@batbern.ch',
         emailVerified: true,
         role: 'organizer' as const,
+        roles: ['organizer' as const],
         companyId: 'company-123',
         preferences: {
           language: 'en' as const,
@@ -486,6 +493,7 @@ describe('useAuth Hook', () => {
         email: 'speaker@batbern.ch',
         emailVerified: true,
         role: 'speaker' as const,
+        roles: ['speaker' as const],
         companyId: 'company-456',
         preferences: {
           language: 'en' as const,
@@ -607,6 +615,7 @@ describe('useAuth Hook', () => {
         email: 'partner@batbern.ch',
         emailVerified: true,
         role: 'partner' as const,
+        roles: ['partner' as const],
         companyId: 'company-partner',
         preferences: {
           language: 'en' as const,
@@ -657,6 +666,7 @@ describe('useAuth Hook', () => {
         email: 'partner-init@batbern.ch',
         emailVerified: true,
         role: 'partner' as const,
+        roles: ['partner' as const],
         companyId: 'company-partner',
         preferences: {
           language: 'en' as const,
@@ -698,6 +708,7 @@ describe('useAuth Hook', () => {
         email: 'partner-fail@batbern.ch',
         emailVerified: true,
         role: 'partner' as const,
+        roles: ['partner' as const],
         companyId: 'company-partner',
         preferences: {
           language: 'en' as const,
@@ -843,6 +854,7 @@ describe('useAuth Hook', () => {
         email: 'test@batbern.ch',
         emailVerified: true,
         role: 'organizer' as const,
+        roles: ['organizer' as const],
         companyId: 'company-123',
         preferences: {
           language: 'en' as const,

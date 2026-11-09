@@ -23,12 +23,12 @@ import {
 } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
 import { usePublishing } from '@/hooks/usePublishing/usePublishing';
-import { PublishingPhase } from '@/types/event.types';
+import type { PublishingPhase, PublishValidationDetail } from '@/types/event.types';
 
 export interface PublishingControlsProps {
   eventCode: string;
   currentPhase: PublishingPhase;
-  validationErrors?: Array<{ field: string; message: string; requirement: string }>;
+  validationErrors?: PublishValidationDetail[];
 }
 
 export const PublishingControls: React.FC<PublishingControlsProps> = ({

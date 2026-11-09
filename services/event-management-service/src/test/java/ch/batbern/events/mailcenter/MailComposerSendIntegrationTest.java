@@ -16,8 +16,9 @@ import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.SpeakerPoolRepository;
 import ch.batbern.events.service.AdminSettingsService;
 import ch.batbern.events.service.PrimarySpeakerResolver;
-import ch.batbern.shared.mail.OutboundMailRecorder;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.test.mail.SesRecorder;
+import ch.batbern.shared.test.mail.SesRecorder.RecordedMail;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import ch.batbern.shared.types.SpeakerWorkflowState;
@@ -27,15 +28,12 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Answers;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.util.ReflectionTestUtils;
 import org.springframework.test.web.servlet.MockMvc;
 
 import java.time.Duration;
@@ -49,20 +47,15 @@ import java.util.UUID;
 import java.util.function.BooleanSupplier;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.atLeastOnce;
 import static org.mockito.Mockito.lenient;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Story 16.8a AC3, AC5, AC6 against real PostgreSQL and the real {@link EmailService} (no SES client
- * in tests: every send is recorded, nothing leaves the process, AC17).
+ * Story 16.8a AC3, AC5, AC6 against real PostgreSQL and the real {@link EmailService} (SES is the
+ * {@link SesRecorder}: every send is recorded, nothing leaves the process, AC17).
  *
  * <p>AC3: for every audience, the preview of recipient i is byte-equal to what was recorded for
  * recipient i after the real send. AC5: a test send reaches every organizer and no recipient.
@@ -102,23 +95,15 @@ class MailComposerSendIntegrationTest extends AbstractIntegrationTest {
     private UserApiClient userApiClient;
     @MockitoBean
     private PrimarySpeakerResolver primarySpeakerResolver;
-    /**
-     * {@code TestAwsConfig} replaces {@link EmailService} with a bare mock. This test needs the real
-     * render and record code (no SES client: the local branch records and sends nothing), so the
-     * mock calls the real methods and gets the real recorder.
-     */
-    @MockitoBean(answers = Answers.CALLS_REAL_METHODS)
-    private EmailService emailService;
     @Autowired
-    private OutboundMailRecorder recorder;
+    private SesRecorder sesRecorder;
 
     private Event event;
 
     @BeforeEach
     void setUp() {
         cleanUp();
-        ReflectionTestUtils.setField(emailService, "outboundMailRecorder", recorder);
-        ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
+        sesRecorder.reset();
         Instant now = Instant.now().truncatedTo(ChronoUnit.SECONDS);
         event = eventRepository.saveAndFlush(Event.builder()
                 .eventCode(EVENT_CODE).title("BATbern Test Event #922").eventNumber(922)
@@ -261,10 +246,9 @@ class MailComposerSendIntegrationTest extends AbstractIntegrationTest {
         assertThat(recipientCount(mailKey)).isEqualTo(2);
         assertThat(jdbc.queryForObject("SELECT audience FROM mail_message WHERE mail_key = ?", String.class,
                 mailKey)).isEqualTo("PARTNERS");
-        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
-        verify(emailService, atLeastOnce()).sendHtmlEmailSync(any(), to.capture(), any(), anyString(), anyString(),
-                any(), any());
-        assertThat(to.getAllValues()).containsExactly(PARTNER_A, PARTNER_B);
+        // One mail per partner, each with exactly one address in To:
+        assertThat(sesRecorder.mails()).extracting(RecordedMail::to)
+                .containsExactly(List.of(PARTNER_A), List.of(PARTNER_B));
     }
 
     @Test
@@ -279,10 +263,8 @@ class MailComposerSendIntegrationTest extends AbstractIntegrationTest {
         String mailKey = sent.get("mailKeys").get(0).asText();
         assertThat(jdbc.queryForObject("SELECT is_test FROM mail_message WHERE mail_key = ?", Boolean.class,
                 mailKey)).isTrue();
-        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
-        verify(emailService, atLeastOnce()).sendHtmlEmailSync(any(), to.capture(), any(), anyString(), anyString(),
-                any(), any());
-        assertThat(to.getAllValues()).containsExactlyInAnyOrder(ORG1, ORG2);
+        assertThat(sesRecorder.mails()).flatExtracting(RecordedMail::to).containsExactlyInAnyOrder(ORG1, ORG2);
+        assertThat(sesRecorder.mails()).extracting(RecordedMail::subject).allMatch(s -> s.startsWith("[TEST] "));
     }
 
     // ── AC5: test send ───────────────────────────────────────────────────────
@@ -307,14 +289,10 @@ class MailComposerSendIntegrationTest extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM newsletter_sends WHERE event_id = ?",
                 Integer.class, event.getId())).isZero();
 
-        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService, atLeastOnce()).sendHtmlEmailSyncWithAttachments(any(), to.capture(), anyString(),
-                body.capture(), any(), any());
-        assertThat(to.getAllValues()).containsExactlyInAnyOrder(ORG1, ORG2);
-        assertThat(body.getAllValues()).allSatisfy(b -> assertThat(b).doesNotContain("tok-922-"));
-        verify(emailService, never()).sendHtmlEmailSync(any(), eq("success+sub922a" + SIM), any(), anyString(),
-                anyString(), any(), any());
+        assertThat(sesRecorder.mails()).flatExtracting(RecordedMail::to).containsExactlyInAnyOrder(ORG1, ORG2);
+        assertThat(sesRecorder.mails()).extracting(RecordedMail::html)
+                .allSatisfy(b -> assertThat(b).doesNotContain("tok-922-"));
+        assertThat(sesRecorder.mailsTo("success+sub922a" + SIM)).isEmpty();
     }
 
     @Test
@@ -328,10 +306,9 @@ class MailComposerSendIntegrationTest extends AbstractIntegrationTest {
         assertThat(jdbc.queryForObject("SELECT count(*) FROM newsletter_sends WHERE event_id = ?",
                 Integer.class, event.getId())).isZero();
 
-        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService, atLeastOnce()).sendHtmlEmailSync(any(), eq(ORG1), any(), anyString(), body.capture(),
-                any(), any());
-        assertThat(body.getValue()).doesNotContain("REG-922-");
+        List<RecordedMail> toOrganizer = sesRecorder.mailsTo(ORG1);
+        assertThat(toOrganizer).isNotEmpty();
+        assertThat(toOrganizer.get(toOrganizer.size() - 1).html()).doesNotContain("REG-922-");
 
         send(request, "RECIPIENTS");
         awaitUntil(() -> "COMPLETED".equals(newsletterStatus()));

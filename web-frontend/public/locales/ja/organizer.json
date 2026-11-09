@@ -113,7 +113,6 @@
       "autumn": "秋",
       "usageCount": "使用回数",
       "totalAttendance": "総参加者数",
-      "avgEngagement": "平均エンゲージメント",
       "events": "イベント",
       "noData": "このトピックの使用履歴はありません。",
       "noTopics": "表示できるトピックがありません。",
@@ -407,7 +406,8 @@
     "assignedTo": "担当者",
     "completedOn": "完了日",
     "completedBy": "完了者",
-    "noTasks": "タスクなし"
+    "noTasks": "タスクなし",
+    "completionNotesPlaceholder": "タスク完了についてのメモを追加..."
   },
   "analytics": {
     "title": "分析",

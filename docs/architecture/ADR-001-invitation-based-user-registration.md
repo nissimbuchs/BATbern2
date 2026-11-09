@@ -180,8 +180,9 @@ We have decided to implement a **database-centric user management architecture**
    - No AWS SDK calls for user management
 
 2. **Cognito Integration Service** (`CognitoIntegrationServiceImpl.java`):
-   - `syncUserAttributes()`: No-op (logs debug message)
-   - `createCognitoUser()`: No-op (logs debug message)
+   - The former no-op seams `syncUserAttributes()` and `createCognitoUser()` were removed in
+     Epic 17 (the `cognitoSync` flag of get-or-create has no effect). The service only holds the
+     Admin SDK calls of the provisioning flow (Story 11.E.2) and the login moves of #1244.
 
 3. **PreTokenGeneration Lambda** (Enhancement):
    ```javascript

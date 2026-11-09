@@ -1,0 +1,425 @@
+package ch.batbern.shared.test.contract;
+
+import org.junit.jupiter.api.AfterEach;
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.DisplayName;
+import org.junit.jupiter.api.Test;
+import org.junit.jupiter.params.ParameterizedTest;
+import org.junit.jupiter.params.provider.ValueSource;
+import org.springframework.http.HttpEntity;
+import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
+import org.springframework.http.client.ClientHttpRequestFactory;
+import org.springframework.http.client.SimpleClientHttpRequestFactory;
+import org.springframework.mock.http.client.MockClientHttpRequest;
+import org.springframework.mock.http.client.MockClientHttpResponse;
+import org.springframework.web.client.HttpClientErrorException;
+import org.springframework.web.client.RestTemplate;
+
+import java.net.URI;
+import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Map;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static org.springframework.http.HttpMethod.GET;
+import static org.springframework.http.HttpMethod.PATCH;
+import static org.springframework.http.HttpMethod.POST;
+
+/**
+ * Self-test of the S2S contract harness (Story 17.0b1) against the real CUMS specs: the #1072
+ * request ({@code limit=1000}) must fail, as must an unknown path, a body the schema rejects and
+ * a call without the JWT the spec requires.
+ */
+@DisplayName("ContractServer")
+class ContractServerTest {
+
+    private static final String COMPANIES = "docs/api/companies-api.openapi.yml";
+    private static final String USERS = "docs/api/users-api.openapi.yml";
+    private static final String BASE = "http://cums";
+
+    private final SimpleClientHttpRequestFactory realFactory = new SimpleClientHttpRequestFactory();
+    private RestTemplate restTemplate;
+    private ContractServer server;
+
+    @BeforeEach
+    void setUp() {
+        restTemplate = new RestTemplate(realFactory);
+        server = ContractServer.bindTo(restTemplate, COMPANIES);
+    }
+
+    @AfterEach
+    void tearDown() {
+        server.close();
+    }
+
+    private static HttpEntity<Void> withJwt() {
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth("test-token");
+        return new HttpEntity<>(headers);
+    }
+
+    private String getCompanies(String query) {
+        return restTemplate.exchange(BASE + "/api/v1/companies?" + query, GET, withJwt(), String.class).getBody();
+    }
+
+    @Test
+    void should_answerWithSpecExample_when_requestIsValid() {
+        server.expect(GET, "/api/v1/companies").respondWithExample();
+
+        String body = getCompanies("page=1&limit=100");
+
+        assertThat(body).contains("\"data\"").contains("\"pagination\"");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("#1072: limit=1000 fails with the validator's message naming limit and its maximum")
+    void should_fail_when_limitExceedsSpecMaximum() {
+        server.expect(GET, "/api/v1/companies").respondWithExample();
+
+        assertThatThrownBy(() -> getCompanies("page=1&limit=1000"))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining(COMPANIES)
+                .satisfies(e -> {
+                    // Only the validator's own lines, never the URI header that carries "limit=1000".
+                    String verdict = e.getMessage().substring(e.getMessage().indexOf("\n"));
+                    assertThat(verdict).contains("[validation.request.parameter.schema.maximum]")
+                            .contains("(parameter 'limit')").contains("maximum value of 1E+2");
+                });
+    }
+
+    @Test
+    void should_fail_when_expectingPathTheSpecLacks() {
+        assertThatThrownBy(() -> server.expect(GET, "/api/v1/companies/x/branches"))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("GET /api/v1/companies/x/branches")
+                .hasMessageContaining("no such path");
+    }
+
+    @Test
+    void should_fail_when_methodNotInSpec() {
+        assertThatThrownBy(() -> server.expect(PATCH, "/api/v1/companies"))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("PATCH /api/v1/companies")
+                .hasMessageContaining("the method does not");
+    }
+
+    @Test
+    void should_fail_withSpecVerdict_when_clientCallsUnknownPath() {
+        server.expect(GET, "/api/v1/companies").respondWithExample();
+
+        assertThatThrownBy(() -> restTemplate.exchange(BASE + "/api/v1/companies-typo", GET, withJwt(), String.class))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("GET")
+                .hasMessageContaining("/api/v1/companies-typo")
+                .hasMessageContaining("is not an operation of " + COMPANIES);
+    }
+
+    @Test
+    void should_fail_when_customBodyViolatesResponseSchema() {
+        assertThatThrownBy(() -> server.expect(GET, "/api/v1/companies/{name}")
+                .respondWith(HttpStatus.OK, """
+                        {"name": 42, "isVerified": true,
+                         "createdAt": "2025-01-15T10:00:00Z", "updatedAt": "2025-01-15T10:00:00Z"}"""))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Test body for GET /api/v1/companies/{name} 200")
+                .hasMessageContaining("[validation.response.body.schema.type]")
+                .hasMessageContaining("at /name")
+                .hasMessageNotContaining("required");
+    }
+
+    @Test
+    void should_answerWithCustomBody_when_itMatchesResponseSchema() {
+        server.expect(GET, "/api/v1/companies/{name}").respondWith(HttpStatus.OK, """
+                {"name": "GoogleZH", "displayName": "Google Schweiz GmbH", "isVerified": true,
+                 "createdAt": "2025-01-01T00:00:00Z", "updatedAt": "2025-01-01T00:00:00Z"}""");
+
+        String body = restTemplate.exchange(BASE + "/api/v1/companies/GoogleZH", GET, withJwt(), String.class)
+                .getBody();
+
+        assertThat(body).contains("Google Schweiz GmbH");
+        server.verify();
+    }
+
+    @Test
+    void should_fail_when_jwtMissingButSpecRequiresIt() {
+        server.expect(GET, "/api/v1/companies").respondWithExample();
+
+        assertThatThrownBy(() -> restTemplate.getForObject(BASE + "/api/v1/companies?limit=100", String.class))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("security");
+    }
+
+    @Test
+    void should_acceptMissingJwt_when_ignoringMissingAuthorization() {
+        server.ignoringMissingAuthorization().expect(GET, "/api/v1/companies").respondWithExample();
+
+        assertThat(restTemplate.getForObject(BASE + "/api/v1/companies?limit=100", String.class)).contains("data");
+    }
+
+    @Test
+    void should_answerDeclaredErrorStatus_when_requested() {
+        server.expect(GET, "/api/v1/companies/{name}").respondWithStatus(HttpStatus.NOT_FOUND);
+
+        assertThatThrownBy(() -> restTemplate.exchange(BASE + "/api/v1/companies/Ghost", GET, withJwt(), String.class))
+                .isInstanceOf(HttpClientErrorException.NotFound.class);
+    }
+
+    @Test
+    void should_refuseUndeclaredStatus() {
+        assertThatThrownBy(() -> server.expect(GET, "/api/v1/companies/{name}")
+                .respondWithStatus(HttpStatus.I_AM_A_TEAPOT))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("does not declare status 418");
+    }
+
+    @Test
+    void should_matchOnQueryParam_when_pagesAnswerDifferently() {
+        server.expect(GET, "/api/v1/companies").withQueryParam("page", "2").respondWith(HttpStatus.OK, """
+                {"data": [], "pagination": {"page": 2, "limit": 100, "totalItems": 100, "totalPages": 2,
+                 "hasNext": false, "hasPrev": true}}""");
+        server.expect(GET, "/api/v1/companies").withQueryParam("page", "1").respondWithExample();
+
+        assertThat(getCompanies("page=1&limit=100")).contains("\"data\"");
+        assertThat(getCompanies("page=2&limit=100")).contains("\"page\": 2");
+        server.verify();
+    }
+
+    @Test
+    void should_matchDecodedQueryValue_when_valueHasSpace() {
+        server.expect(GET, "/api/v1/companies").withQueryParam("sort", "-createdAt name").respondWithExample();
+
+        assertThat(getCompanies("limit=100&sort=-createdAt name")).contains("\"data\"");
+        server.verify();
+    }
+
+    @Test
+    void should_restoreRealRequestFactory_when_closed() {
+        server.close();
+
+        assertThat(org.springframework.test.util.ReflectionTestUtils.getField(restTemplate, "requestFactory"))
+                .isSameAs(realFactory);
+    }
+
+    @Test
+    void should_validateRequestBody_againstUsersSpec() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, USERS);
+        server.expect(PATCH, "/api/v1/users/{username}/profile").respondWith(HttpStatus.OK, """
+                {"id": "jane.smith", "email": "jane.smith@example.com", "firstName": "Jane", "lastName": "Smith",
+                 "bio": "x", "roles": ["SPEAKER"], "active": true,
+                 "createdAt": "2025-01-01T00:00:00Z", "updatedAt": "2025-01-01T00:00:00Z"}""");
+        HttpHeaders headers = new HttpHeaders();
+        headers.setBearerAuth("t");
+        headers.set("Content-Type", "application/json");
+
+        assertThatThrownBy(() -> restTemplate.exchange(BASE + "/api/v1/users/jane.smith/profile", PATCH,
+                new HttpEntity<>(Map.of("bio", 7), headers), String.class))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("bio");
+    }
+
+    @Test
+    void should_findExamplesValid_forCompaniesList() {
+        ProviderContract.assertExamplesMatchSchema(COMPANIES, "GET", "/api/v1/companies");
+    }
+
+    // ---------------------------------------------------------------- internal specs (17.0b2)
+
+    private static final String CUMS_INTERNAL = "docs/api/internal/cums-internal.openapi.yml";
+
+    @Test
+    @DisplayName("an internal spec (server /, full paths) routes /internal paths and answers its example")
+    void should_routeInternalSpec_withFullPaths() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(GET, "/internal/users/{username}").respondWithExample();
+
+        String body = restTemplate.getForObject(BASE + "/internal/users/anna.meier", String.class);
+
+        assertThat(body).contains("\"id\":\"anna.meier\"");
+        assertThat(OpenApiContract.load(CUMS_INTERNAL).basePath()).isEmpty();
+        assertThat(OpenApiContract.load(COMPANIES).basePath()).isEqualTo("/api/v1");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("an /internal path the spec lacks fails, naming method, path and spec")
+    void should_fail_when_internalPathNotInSpec() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(GET, "/internal/users/{username}").respondWithExample();
+
+        assertThatThrownBy(() -> restTemplate.getForObject(BASE + "/internal/users/anna.meier/roles", String.class))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("GET /internal/users/anna.meier/roles is not an operation of " + CUMS_INTERNAL);
+        assertThatThrownBy(() -> server.expect(GET, "/internal/users/{username}/roles"))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("GET /internal/users/{username}/roles")
+                .hasMessageContaining(CUMS_INTERNAL);
+    }
+
+    @Test
+    @DisplayName("an unknown query parameter on an internal operation fails")
+    void should_fail_when_internalQueryParamNotInSpec() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(GET, "/internal/users").respondWithExample();
+
+        String url = BASE + "/internal/users?role=PARTNER&size=500";
+        assertThatThrownBy(() -> restTemplate.getForObject(url, String.class))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("(parameter 'size')");
+    }
+
+    @Test
+    @DisplayName("one RestTemplate, two specs: each request is checked against the spec that has its path")
+    void should_routeEachRequest_toTheSpecThatHasItsPath() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, COMPANIES, CUMS_INTERNAL);
+        server.expect(GET, "/api/v1/companies").respondWithExample();
+        server.expect(GET, "/internal/email-owners").respondWithExample();
+
+        assertThat(getCompanies("page=1&limit=100")).contains("\"data\"");
+        assertThat(restTemplate.getForObject(BASE + "/internal/email-owners?email=a@example.com", String.class))
+                .contains("anna.meier");
+        server.verify();
+        assertThatThrownBy(() -> restTemplate.getForObject(BASE + "/internal/nothing", String.class))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining(COMPANIES + ", " + CUMS_INTERNAL);
+    }
+
+    @Test
+    @DisplayName("respondPerRequest builds each body from the decoded path variables and checks it")
+    void should_answerPerRequest_fromPathVariables() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(GET, "/internal/users/{username}").times(org.springframework.test.web.client.ExpectedCount
+                .manyTimes()).respondPerRequest(HttpStatus.OK, call -> """
+                        {"id": "%s", "email": "x@example.com", "firstName": "F", "lastName": "L", "roles": [],
+                         "createdAt": "2025-01-01T00:00:00Z", "updatedAt": "2025-01-01T00:00:00Z"}"""
+                .formatted(call.pathVariables().get("username")));
+
+        assertThat(restTemplate.getForObject(BASE + "/internal/users/jane.smith", String.class))
+                .contains("\"jane.smith\"");
+        // The id pattern of UserResponse rejects a body built for an invalid username.
+        assertThatThrownBy(() -> restTemplate.getForObject(BASE + "/internal/users/Not Valid", String.class))
+                .isInstanceOf(AssertionError.class)
+                .hasMessageContaining("Test body for GET /internal/users/{username} 200")
+                .hasMessageContaining("/id");
+    }
+
+    @Test
+    @DisplayName("onlyFor: routed requests reach the harness, all others the real request factory")
+    void should_routeOnlySelectedRequests_toTheHarness() {
+        // A stub stands in for the real request factory: the non-routed request must reach it,
+        // never the network.
+        List<URI> reachedStub = new ArrayList<>();
+        ClientHttpRequestFactory stub = (uri, method) -> {
+            reachedStub.add(uri);
+            MockClientHttpRequest request = new MockClientHttpRequest(method, uri);
+            request.setResponse(new MockClientHttpResponse("\"from the stub\"".getBytes(StandardCharsets.UTF_8),
+                    HttpStatus.OK));
+            return request;
+        };
+        server.close();
+        restTemplate = new RestTemplate(stub);
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL).onlyFor(uri -> uri.getHost().equals("cums"));
+        server.expect(GET, "/internal/email-owners").respondPerRequest(call ->
+                ContractServer.Reply.ok("[\"" + call.queryParam("email").split("@")[0] + "\"]"));
+
+        assertThat(restTemplate.getForObject(BASE + "/internal/email-owners?email=anna.meier@example.com",
+                String.class)).isEqualTo("[\"anna.meier\"]");
+        assertThat(reachedStub).isEmpty();
+        assertThat(restTemplate.getForObject("http://other.test/internal/email-owners", String.class))
+                .isEqualTo("\"from the stub\"");
+        assertThat(reachedStub).containsExactly(URI.create("http://other.test/internal/email-owners"));
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("an encoded '/' in a path parameter stays inside its segment")
+    void should_keepEncodedSlash_insideOneSegment() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(GET, "/internal/users/{username}").respondWithExample();
+
+        String body = restTemplate.getForObject(URI.create(BASE + "/internal/users/a%2Fb%3Fc"), String.class);
+
+        assertThat(body).contains("anna.meier");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("a declared error example answers with its status and body")
+    void should_answerDeclaredErrorExample() {
+        server.close();
+        server = ContractServer.bindTo(restTemplate, CUMS_INTERNAL);
+        server.expect(POST, "/internal/users/get-or-create").respondWithExample(HttpStatus.CONFLICT);
+        HttpHeaders headers = new HttpHeaders();
+        headers.set("Content-Type", "application/json");
+
+        assertThatThrownBy(() -> restTemplate.postForObject(BASE + "/internal/users/get-or-create",
+                new HttpEntity<>(Map.of("email", "a@example.com", "firstName", "A", "lastName", "B"), headers),
+                String.class))
+                .isInstanceOf(HttpClientErrorException.Conflict.class)
+                .hasMessageContaining("EMAIL_LINKED_TO_ACCOUNT");
+    }
+
+    @ParameterizedTest
+    @ValueSource(strings = {
+        "docs/api/internal/cums-internal.openapi.yml",
+        "docs/api/internal/ems-internal.openapi.yml",
+        "docs/api/internal/pcs-internal.openapi.yml"
+    })
+    @DisplayName("every response example of every internal operation matches its schema")
+    void should_haveValidExamples_inEveryInternalSpec(String spec) {
+        OpenApiContract contract = OpenApiContract.load(spec);
+        contract.operations().forEach((method, paths) -> paths.forEach(path ->
+                ProviderContract.assertExamplesMatchSchema(spec, method, path)));
+    }
+
+    // ---------------------------------------------------------------- GeneratedCodeSemantics
+
+    private static final String COMPANY_DATES = "\"createdAt\": \"2025-01-15T10:00:00Z\", "
+            + "\"updatedAt\": \"2025-01-15T10:00:00Z\"";
+
+    @Test
+    @DisplayName("an optional property may be null (Jackson's default), a required one may not")
+    void should_acceptNullOnlyForOptionalProperties() {
+        OpenApiContract companies = OpenApiContract.load(COMPANIES);
+
+        assertThat(companies.validateResponse("GET", "/api/v1/companies/x", 200,
+                "{\"name\": \"Acme\", \"isVerified\": true, \"displayName\": null, " + COMPANY_DATES + "}"))
+                .isEmpty();
+        assertThat(companies.validateResponse("GET", "/api/v1/companies/x", 200,
+                "{\"name\": null, \"isVerified\": true, " + COMPANY_DATES + "}"))
+                .singleElement().asString().contains("/name");
+    }
+
+    @Test
+    @DisplayName("nullable: true in a 3.1 spec admits null")
+    void should_honourNullableKeyword_in31Spec() {
+        OpenApiContract users = OpenApiContract.load(USERS);
+
+        assertThat(users.validateResponse("POST", "/api/v1/users/x/issue-invitation-credentials", 200,
+                "{\"temporaryPassword\": null, \"action\": \"USE_EXISTING_PASSWORD\"}")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("format: time means HH:mm[:ss], as EMS sends it")
+    void should_readFormatTimeAsLocalWallClock() {
+        OpenApiContract events = OpenApiContract.load("docs/api/events-core-api.openapi.yml");
+        String event = """
+                {"eventCode": "BATbern1", "title": "T", "eventNumber": 1, "date": "2026-06-11T16:00:00Z",
+                 "registrationDeadline": "2026-06-04T16:00:00Z", "venueName": "V", "venueAddress": "A",
+                 "venueCapacity": 1, "typicalStartTime": "%s"}""";
+
+        assertThat(events.validateResponse("GET", "/api/v1/events/BATbern1", 200, event.formatted("18:00"))).isEmpty();
+        assertThat(events.validateResponse("GET", "/api/v1/events/BATbern1", 200, event.formatted("6pm")))
+                .singleElement().asString().contains("/typicalStartTime");
+    }
+}

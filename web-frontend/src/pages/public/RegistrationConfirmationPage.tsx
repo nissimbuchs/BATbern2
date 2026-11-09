@@ -23,6 +23,8 @@ import { Card } from '@/components/public/ui/card';
 import { CheckCircle2, Calendar, Share2, Mail, Copy, ArrowLeft, UserPlus } from 'lucide-react';
 import { eventApiClient } from '@/services/eventApiClient';
 import { useAuth } from '@/hooks/useAuth/useAuth';
+import { useCompany } from '@/hooks/useCompany/useCompany';
+import { eventCodeOfRegistrationCode } from '@/utils/registrationCode';
 
 const RegistrationConfirmationPage = () => {
   const { t } = useTranslation('registration');
@@ -31,29 +33,10 @@ const RegistrationConfirmationPage = () => {
   const [qrCodeUrl, setQrCodeUrl] = useState<string | null>(null);
   const { isAuthenticated } = useAuth();
 
-  // Extract eventCode from params or from confirmationCode pattern
-  // URL can be either:
-  // - /registration-confirmation/:eventCode/:confirmationCode (explicit)
-  // - /registration-confirmation/:confirmationCode (extract from registration)
-  const eventCodeFromUrl = params.eventCode;
-
-  // For MVP, parse eventCode from confirmation code pattern or use from URL
-  // Confirmation codes contain the year: BAT-YYYY-NNNNNN
-  // We can construct eventCode as BATbernYY from the year
-  const extractEventCodeFromConfirmationCode = (code: string): string => {
-    // Extract year from BAT-YYYY-NNNNNN format
-    const match = code.match(/^BAT-(\d{4})-\d{6}$/);
-    if (match) {
-      const year = match[1];
-      const shortYear = year.slice(2); // Get last 2 digits (e.g., "2025" -> "25")
-      return `BATbern${shortYear}`;
-    }
-    return 'BATbern25'; // Default fallback
-  };
-
+  // URL: /registration-confirmation/:confirmationCode. Every registration code starts with
+  // its event, so the code alone finds the registration (an explicit :eventCode wins).
   const eventCode =
-    eventCodeFromUrl ||
-    (confirmationCode ? extractEventCodeFromConfirmationCode(confirmationCode) : '');
+    params.eventCode || (confirmationCode ? eventCodeOfRegistrationCode(confirmationCode) : null);
 
   const {
     data: registration,
@@ -67,6 +50,13 @@ const RegistrationConfirmationPage = () => {
     },
     enabled: !!confirmationCode && !!eventCode,
   });
+
+  // attendeeCompany is the company key (user_profiles.company_id); the name shown is the
+  // company's display name, read from the public GET /companies/{name}. Nothing is shown
+  // while it loads or when the company cannot be read: the key is not a name.
+  const { data: company } = useCompany(registration?.attendeeCompany ?? '');
+  const companyDisplayName = registration?.attendeeCompany ? company?.displayName : undefined;
+  const notFound = !!error || !eventCode;
 
   // QR code feature removed - users now confirm via email
   // This page is deprecated and kept for backwards compatibility only
@@ -175,8 +165,8 @@ const RegistrationConfirmationPage = () => {
           </div>
         )}
 
-        {/* Error State */}
-        {error && (
+        {/* Error State: lookup failed, or a code of no known shape */}
+        {notFound && (
           <div className="text-center py-24">
             <h2 className="text-2xl font-light text-zinc-300 mb-4">
               {t('confirmationPage.notFound.title')}
@@ -192,7 +182,7 @@ const RegistrationConfirmationPage = () => {
         )}
 
         {/* Success Content */}
-        {!isLoading && !error && registration && (
+        {!isLoading && !notFound && registration && (
           <>
             {/* Success Header */}
             <div className="text-center mb-8">
@@ -236,17 +226,17 @@ const RegistrationConfirmationPage = () => {
                 <div className="flex justify-between">
                   <span className="text-zinc-400">{t('common:labels.name')}:</span>
                   <span className="text-zinc-100">
-                    {registration.firstName} {registration.lastName}
+                    {registration.attendeeFirstName} {registration.attendeeLastName}
                   </span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-zinc-400">{t('common:labels.email')}:</span>
-                  <span className="text-zinc-100">{registration.email}</span>
+                  <span className="text-zinc-100">{registration.attendeeEmail}</span>
                 </div>
-                {registration.company && (
+                {companyDisplayName && (
                   <div className="flex justify-between">
                     <span className="text-zinc-400">{t('common:labels.company')}:</span>
-                    <span className="text-zinc-100">{registration.company}</span>
+                    <span className="text-zinc-100">{companyDisplayName}</span>
                   </div>
                 )}
                 <div className="flex justify-between">
@@ -283,7 +273,7 @@ const RegistrationConfirmationPage = () => {
                     </h3>
                     <p className="text-sm text-zinc-400 mb-4">
                       Your registration will be automatically linked when you create an account with{' '}
-                      {registration.email}
+                      {registration.attendeeEmail}
                     </p>
                     <Button asChild variant="outline" size="sm">
                       {/* The lookup returns the address masked (GHSA-qhqv), so it cannot prefill */}
@@ -338,7 +328,7 @@ const RegistrationConfirmationPage = () => {
 
             {/* Email Confirmation Notice */}
             <p className="text-center text-sm text-zinc-400">
-              A confirmation email has been sent to {registration.email}
+              A confirmation email has been sent to {registration.attendeeEmail}
             </p>
           </>
         )}

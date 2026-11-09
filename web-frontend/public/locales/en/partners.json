@@ -22,10 +22,8 @@
   },
   "sort": {
     "label": "Sort By",
-    "engagement": "Engagement Score",
     "name": "Company Name",
-    "tier": "Partnership Tier",
-    "lastEvent": "Last Event"
+    "tier": "Partnership Tier"
   },
   "card": {
     "comingSoon": "Coming Soon - Epic 8"

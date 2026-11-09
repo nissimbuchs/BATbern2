@@ -3,7 +3,7 @@
  * fixture sources under `scripts/__fixtures__/src`.
  */
 import { describe, expect, it } from 'vitest';
-import { readFileSync } from 'node:fs';
+import { readdirSync, readFileSync } from 'node:fs';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { loadSpecIndex } from '../src/test/contract/specMatcher.ts';
@@ -145,5 +145,47 @@ describe('listSourceFiles', () => {
       'src/services/driftService.ts',
       'src/services/eventService.ts',
     ]);
+  });
+});
+
+describe('internal specs (Story 17.0b2)', () => {
+  // The gateway denies /internal/**, so the frontend may never call it: the specs in
+  // docs/api/internal/ describe service-to-service operations and must stay out of the index the
+  // path check matches frontend calls against.
+  const apiDir = join(here, '..', '..', 'docs', 'api');
+  const internalDir = join(apiDir, 'internal');
+
+  it('exist, so this test is not vacuous', () => {
+    const specs = readdirSync(internalDir).filter((f) => f.endsWith('.openapi.yml'));
+    expect(specs).toEqual([
+      'cums-internal.openapi.yml',
+      'ems-internal.openapi.yml',
+      'pcs-internal.openapi.yml',
+    ]);
+  });
+
+  it('are not loaded by the frontend path check', () => {
+    const real = loadSpecIndex(apiDir);
+    expect(real.operations.length).toBeGreaterThan(0);
+    expect(real.operations.filter((op) => op.file.includes('internal'))).toEqual([]);
+    expect(real.operations.filter((op) => op.path.startsWith('/internal'))).toEqual([]);
+  });
+
+  it('make a frontend call to an /internal path fail the check against the real specs', () => {
+    const r = runCheck({
+      sources: [
+        {
+          file: 'src/services/sneakyService.ts',
+          source:
+            "import apiClient from './api/apiClient';\n" +
+            "export const x = () => apiClient.get('/internal/users/anna.meier');\n",
+        },
+      ],
+      index: loadSpecIndex(apiDir),
+      allowListText: '',
+      baselineText: '',
+    });
+    expect(r.exitCode).toBe(1);
+    expect(r.problems.join('\n')).toContain('/internal/users/anna.meier');
   });
 });

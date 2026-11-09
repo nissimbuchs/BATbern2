@@ -1,0 +1,7 @@
+{
+  "actions": { "save": "Save", "cancel": "Cancel" },
+  "items_one": "{{count}} item",
+  "items_other": "{{count}} items",
+  "flat.key.with.dots": "Flat",
+  "greeting_male": "Welcome, sir"
+}

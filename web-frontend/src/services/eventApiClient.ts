@@ -18,7 +18,6 @@ import type {
   CreateEventRequest,
   UpdateEventRequest,
   PatchEventRequest,
-  WorkflowState,
   CreateRegistrationRequest,
   Registration,
 } from '@/types/event.types';
@@ -215,20 +214,6 @@ class EventApiClient {
   }
 
   /**
-   * Get workflow state for an event
-   */
-  async getEventWorkflow(eventCode: string): Promise<WorkflowState> {
-    try {
-      const response = await apiClient.get<WorkflowState>(
-        `${EVENT_API_PATH}/${eventCode}/workflow`
-      );
-      return response.data;
-    } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  /**
    * Current event for the public homepage (Public Events read model, 2026-10-07).
    *
    * GET /public/events/current. Sessions and speakers are already shaped by the publishing
@@ -389,37 +374,6 @@ class EventApiClient {
     try {
       await apiClient.post(`${EVENT_API_PATH}/${eventCode}/topics`, { topicCode });
     } catch (error) {
-      throw this.transformError(error);
-    }
-  }
-
-  /**
-   * Check if event exists by event number (Story 5.2a - Event Batch Import)
-   *
-   * Queries the API to check if an event with the given number exists.
-   * Used during batch import to determine create vs update mode.
-   *
-   * @param eventNumber Event number (e.g., 56 for "BATbern56")
-   * @returns true if event exists, false otherwise
-   * @throws Error if network failure or unauthorized
-   */
-  async checkEventExists(eventNumber: number): Promise<boolean> {
-    try {
-      // Query by event number using filter parameter
-      const response = await this.getEvents({ page: 1, limit: 1 }, {
-        eventNumber: eventNumber,
-      } as unknown as {
-        workflowState?: string[];
-        year?: number;
-        search?: string;
-      });
-
-      return response.data.length > 0;
-    } catch (error) {
-      // If 404 or other error, assume doesn't exist
-      if (this.isAxiosError(error) && error.response?.status === 404) {
-        return false;
-      }
       throw this.transformError(error);
     }
   }

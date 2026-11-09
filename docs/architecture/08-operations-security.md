@@ -194,7 +194,7 @@ that knows the policy.
 
 `scripts/ci/access-control-check.py` is that check. It reads every operation in
 `docs/api/*.openapi.yml` and calls each one **anonymously** against production after every deploy
-(`deploy-staging.yml`, before `staging-current` is promoted). Every operation not listed in
+(`deploy-staging.yml`, job `post-deploy-checks`, before `staging-current` is promoted). Every operation not listed in
 `scripts/ci/access-control-public.txt` must answer `401` or `403`; anything else fails the deploy.
 A new operation is protected by default: it fails until someone adds it to the allowlist, with a
 reason. The build runs its regression test and an offline `--check-allowlist`, so a renamed path
@@ -215,7 +215,8 @@ flowchart LR
         D4 --> D5["Bruno, then Playwright @smoke"]
         D5 -- "green" --> D6["promote to staging-stable"]
         D5 -- "red" --> D7["auto-rollback job"]
-        D3 -- "any other status" --> DF["deploy job fails,<br/>staging-current not advanced"]
+        D3 -- "any other status" --> DF["post-deploy-checks fails,<br/>staging-current not advanced"]
+        DF --> D7
     end
     subgraph Weekly["security-scan.yml, Mondays"]
         W1["ZAP API scan per spec"]
@@ -223,9 +224,11 @@ flowchart LR
     Build --> Deploy
 ```
 
-A failed access-control check stops the job before `staging-current` is promoted, so Bruno, Playwright
-and the auto-rollback job (which depend on the deploy job) do not run; the new tasks stay in service
-until someone acts. (Read from `deploy-staging.yml` job dependencies, not observed in a real failure.)
+A failed access-control check fails the `post-deploy-checks` job before `staging-current` is promoted:
+Bruno and Playwright do not run, and the auto-rollback job restores `staging-stable`. Until
+2026-11-08 the check was a step of the deploy job, and its failure skipped the rollback too: on PR
+#1258 the new tasks stayed in service, neither promoted nor rolled back. (The new topology is read
+from `deploy-staging.yml`, not yet observed in a real failure.)
 
 It is safe against production by construction: path ids that do not exist, `text/plain` bodies
 that every JSON endpoint refuses with `415` before the controller runs, required query and header
@@ -278,12 +281,12 @@ client cannot set, which in turn needs the ALB to be unreachable directly (#1152
 
 `ProductionSecurityFilterChainTest` exists for the gateway and CUMS, `EmsProductionSecurityFilterChainTest` for EMS (#1136). The EMS one lives in `ch.batbern.securitychain` because EMS component-scans its test packages, and a probe controller there would hijack every other EMS test. Each loads only
 the service's `SecurityConfig` and a probe controller under a non-test profile, so the `permitAll`
-list and the VPC rule are tested as production runs them. The CUMS test includes the spoofed-hop
+list and the VPC rule are tested in isolation (the integration tests run the same chain since 17.0b3). The CUMS test includes the spoofed-hop
 case and fails on the old first-hop code.
 
 ## Monitoring & Alerting
 
-### Authorization is two layers, and only one of them is testable (#961)
+### Authorization is two layers, and both are tested (#961, 17.0b3)
 
 The rule in `CLAUDE.md` — *"Role checks must happen server-side (Spring Security) AND client-side (UI
 hiding)"* — has a trap in how it is implemented here.
@@ -296,12 +299,15 @@ different company — could deactivate a sponsor or read another sponsor's conta
 Settings tab, which is exactly the protection that looks sufficient until someone calls the API
 directly.
 
-**Put the rule in `@PreAuthorize`, not only in the filter chain.** The `test` profile replaces the
-whole chain with `permitAll`, so a matcher-only rule cannot be covered by an integration test at all
-— an authorization regression is invisible to the suite. `@EnableMethodSecurity` is active in every
-profile, so `@PreAuthorize` is enforced in tests and in production alike. Add matchers too, for
-defence in depth and to reject before the controller runs, but treat method security as the layer
-that holds.
+**Put the rule in `@PreAuthorize`, not only in the filter chain.** `@EnableMethodSecurity` is active
+in every profile, and `EndpointAuthorizationGuardTest` fails the build for a write endpoint without
+it. Add matchers too, for defence in depth and to reject before the controller runs. Until 17.0b3
+the `test` profile replaced the whole chain with `permitAll`, so a matcher-only rule could not be
+covered by an integration test and anonymous callers reached controllers in tests while production
+answered 401 (#1012, #1134, #1145). Since then every integration test runs the production chain
+(EMS in every profile, PCS and CUMS in every profile but `local`), and `ProductionChainIntegrationTest`
+in each service pins, for the same complete request body: anonymous 401, attendee 403 (roles from
+`custom:role` through the real converter), organizer 201 (chain and method security both pass).
 
 Matcher ordering matters: broader patterns must sit **after** specific ones. Spring's `*` matches one
 path segment, so `/api/v1/partners/*` does not shadow `/api/v1/partners/topics/{id}`, but a careless

@@ -113,7 +113,6 @@
       "autumn": "Otoño",
       "usageCount": "Número de usos",
       "totalAttendance": "Asistencia total",
-      "avgEngagement": "Participación media",
       "events": "Eventos",
       "noData": "No hay historial de uso disponible para este tema.",
       "noTopics": "No hay temas disponibles para mostrar.",
@@ -407,7 +406,8 @@
     "assignedTo": "Asignado a",
     "completedOn": "Completado el",
     "completedBy": "Completado por",
-    "noTasks": "Sin tareas"
+    "noTasks": "Sin tareas",
+    "completionNotesPlaceholder": "Añade notas sobre la finalización de la tarea..."
   },
   "analytics": {
     "title": "Análisis",

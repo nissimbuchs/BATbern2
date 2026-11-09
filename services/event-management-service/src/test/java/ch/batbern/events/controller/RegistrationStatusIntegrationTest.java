@@ -55,8 +55,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * - T5.4: 200 WAITLIST status, registered=true
  * - T5.5: 200 CANCELLED status, registered=true
  * - T5.6: 200 registered=false when user has no registration (no 404)
- * - T5.7: 403/401 for unauthenticated (TestSecurityConfig uses permitAll at HTTP level;
- *          @PreAuthorize("isAuthenticated()") returns 403 in tests, 401 in production)
+ * - T5.7: 401 for unauthenticated (the production chain runs in tests, 17.0b3)
  * - T4.6.2: POST registrations allows re-registration when existing status is CANCELLED
  */
 @Transactional
@@ -246,13 +245,11 @@ class RegistrationStatusIntegrationTest extends AbstractIntegrationTest {
     // ── T5.7: unauthenticated ─────────────────────────────────────────────────
 
     @Test
-    @DisplayName("should return 403 for unauthenticated request (401 in production via URL-level security)")
-    void should_return403_when_unauthenticated() throws Exception {
-        // In tests: TestSecurityConfig uses permitAll() at HTTP level.
-        // @PreAuthorize("isAuthenticated()") returns 403 for anonymous users in test environment.
-        // In production: SecurityConfig's anyRequest().authenticated() returns 401 first.
+    @DisplayName("should return 401 for unauthenticated request")
+    void should_return401_when_unauthenticated() throws Exception {
+        // The production chain answers 401 before the controller (17.0b3).
         mockMvc.perform(get("/api/v1/events/{eventCode}/my-registration", EVENT_CODE))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ── T4.6.2: POST /registrations succeeds (201) when existing status is CANCELLED ──

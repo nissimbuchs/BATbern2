@@ -18,7 +18,7 @@ import {
   useRemoveProfilePicture,
 } from '@/hooks/useUserAccount/useUserAccount';
 
-type Company = components['schemas']['CompanyResponse'];
+type Company = components['schemas']['CompanySearchResponse'];
 
 interface UserProfileTabProps {
   user: User;
@@ -42,8 +42,6 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
           name: user.company.name,
           displayName: user.company.name,
           isVerified: false,
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
         }
       : null,
   });
@@ -59,8 +57,6 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
             name: user.company.name,
             displayName: user.company.displayName || user.company.name,
             isVerified: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
           }
         : null,
     });
@@ -112,8 +108,6 @@ const UserProfileTab: React.FC<UserProfileTabProps> = ({ user, activity }) => {
             name: user.company.name,
             displayName: user.company.displayName || user.company.name,
             isVerified: false,
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
           }
         : null,
     });

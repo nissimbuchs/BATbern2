@@ -33,9 +33,7 @@ export function SpeakerCard({ speaker, count = 1 }: SpeakerCardProps): JSX.Eleme
     [speaker.firstName, speaker.lastName].filter(Boolean).join(' ') || speaker.username || '';
 
   // Use pre-loaded logo when available; fall back to useCompany fetch by company name.
-  const { data: company } = useCompany(speaker.companyLogoUrl ? '' : (speaker.company ?? ''), {
-    expand: ['logo'],
-  });
+  const { data: company } = useCompany(speaker.companyLogoUrl ? '' : (speaker.company ?? ''));
   const logoUrl = speaker.companyLogoUrl ?? company?.logo?.url;
 
   return (

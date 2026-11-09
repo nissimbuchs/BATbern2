@@ -45,6 +45,8 @@ dependencies {
     testImplementation 'org.awaitility:awaitility:4.3.0'
     // Epic 13 (SB4): @RestClientTest moved to the spring-boot-restclient-test module.
     testImplementation 'org.springframework.boot:spring-boot-restclient-test'
+    // Story 17.0b3: TestAwsConfig registers the SesRecorder's SesClient (EmailService runs for real).
+    testImplementation 'software.amazon.awssdk:ses'
 
     // Service-specific: OpenAPI nullable (if needed for this service)
     implementation 'org.openapitools:jackson-databind-nullable:0.2.6'

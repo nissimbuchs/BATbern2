@@ -297,7 +297,12 @@ Until then: **work one PR to `develop` at a time.**
 3. **Deploy**
    - Deploys with AWS CDK (layer-based for infrastructure changes)
    - Waits for ECS services to stabilize
-   - Runs full E2E test suite (smoke, CORS, Bruno, Playwright)
+   - Then, as separate jobs in this order: `post-deploy-checks` (smoke, CORS, the anonymous
+     access-control probe; on green it moves `staging-current` to this release), `bruno-tests`,
+     `playwright-tests`. All green: `tag-stable-on-success` moves `staging-stable`. Any of the
+     three failed: `rollback-on-test-failure` restores `staging-stable`. Until 2026-11-08 the
+     post-deploy checks were steps of the deploy job, and their failure skipped both promotion
+     and rollback (PR #1258)
    - Duration: 2-30 minutes depending on deployment tier
 
 **Environment:** https://www.batbern.ch
@@ -419,8 +424,11 @@ Solution: Check service logs, rollback if necessary
 ### Rollback Procedures
 
 **Automatic Rollback:**
-- Production deployments automatically roll back on smoke test failures
-- Previous task definitions are restored
+- A failed post-deploy check (smoke, CORS, access control), Bruno or Playwright run rolls the
+  ECS services back to the `staging-stable` images and the frontend to its stable S3 snapshot
+  (`rollback-on-test-failure`, `scripts/ci/rollback-deployment.sh`)
+- A failure inside the deploy job itself (CDK, ECS stabilisation) is handled by the stack
+  recovery steps of that job, not by this rollback
 - Team is notified via workflow output
 
 **Manual Rollback:**

@@ -64,5 +64,32 @@
       },
       "alwaysForwarded": "Immer weitergeleitet: was Organisatoren an die Listen -speaker@, -participants@, batbern{N}@ und partner@ schicken, Mails an ok@ sowie automatische Mails wie Abwesenheitsnotizen und Unzustellbarkeitsmeldungen."
     }
+  },
+  "importData": {
+    "events": {
+      "title": "Veranstaltungen",
+      "description": "Historische Veranstaltungsdaten aus CSV oder JSON importieren.",
+      "button": "Veranstaltungen importieren"
+    },
+    "sessions": {
+      "title": "Sessions",
+      "description": "Sessions zu bestehenden Veranstaltungen importieren.",
+      "button": "Sessions importieren"
+    },
+    "companies": {
+      "title": "Unternehmen",
+      "description": "Unternehmens- und Partnerdaten importieren.",
+      "button": "Unternehmen importieren"
+    },
+    "speakers": {
+      "title": "Referenten",
+      "description": "Referentenprofile aus den Altdaten importieren.",
+      "button": "Referenten importieren"
+    },
+    "participants": {
+      "title": "Teilnehmende",
+      "description": "Teilnehmende und ihre Anmeldungen importieren.",
+      "button": "Teilnehmende importieren"
+    }
   }
 }

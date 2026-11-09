@@ -1,7 +1,6 @@
 package ch.batbern.events.notification;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.notifications.dto.generated.BatchOperationRequest;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
@@ -12,7 +11,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -51,9 +49,6 @@ public class NotificationControllerIntegrationTest extends AbstractIntegrationTe
 
     @Autowired
     private MockMvc mockMvc;
-
-    @MockitoBean
-    private UserApiClient userApiClient;
 
     @Autowired
     private ObjectMapper objectMapper;

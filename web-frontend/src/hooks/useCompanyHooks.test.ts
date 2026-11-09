@@ -137,20 +137,21 @@ describe('useCompany', () => {
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockGetCompany).toHaveBeenCalledWith('GoogleZH', undefined);
+    expect(mockGetCompany).toHaveBeenCalledWith('GoogleZH');
     expect(result.current.data).toEqual(MOCK_COMPANY);
   });
 
-  it('should fetch with expand options', async () => {
+  it('should fetch the same request when a caller wants the logo', async () => {
     mockGetCompany.mockResolvedValue(MOCK_COMPANY as never);
 
-    const { result } = renderHook(() => useCompany('GoogleZH', { expand: ['logo'] }), {
+    const { result } = renderHook(() => useCompany('GoogleZH'), {
       wrapper: wrapper(qc),
     });
 
     await waitFor(() => expect(result.current.isLoading).toBe(false));
 
-    expect(mockGetCompany).toHaveBeenCalledWith('GoogleZH', { expand: ['logo'] });
+    // GET /companies/{name} always includes the logo; nothing about it is sent (17.0c1).
+    expect(mockGetCompany).toHaveBeenCalledWith('GoogleZH');
   });
 
   it('should not fetch when name is empty string', () => {

@@ -22,10 +22,8 @@
   },
   "sort": {
     "label": "Ordina per",
-    "engagement": "Punteggio di coinvolgimento",
     "name": "Nome dell'azienda",
-    "tier": "Livello di partnership",
-    "lastEvent": "Ultimo evento"
+    "tier": "Livello di partnership"
   },
   "card": {
     "comingSoon": "Prossimamente - Epic 8"

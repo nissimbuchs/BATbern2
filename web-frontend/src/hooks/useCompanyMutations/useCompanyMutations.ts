@@ -61,11 +61,11 @@ export const useUpdateCompany = () => {
       await queryClient.cancelQueries({ queryKey: ['company', name] });
 
       // Snapshot the previous value for rollback
-      const previousCompany = queryClient.getQueryData(['company', name, undefined]);
+      const previousCompany = queryClient.getQueryData(['company', name]);
 
       // Optimistically update to the new value
       if (previousCompany) {
-        queryClient.setQueryData(['company', name, undefined], (old: Company) => ({
+        queryClient.setQueryData(['company', name], (old: Company) => ({
           ...old,
           ...data,
         }));
@@ -84,7 +84,7 @@ export const useUpdateCompany = () => {
     // Rollback on error (AC 14 - Error handling with rollback)
     onError: (_error, { name }, context) => {
       if (context?.previousCompany) {
-        queryClient.setQueryData(['company', name, undefined], context.previousCompany);
+        queryClient.setQueryData(['company', name], context.previousCompany);
       }
     },
   });

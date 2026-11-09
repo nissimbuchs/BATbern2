@@ -1,40 +1,36 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.EventManagementClient;
-import ch.batbern.partners.client.dto.AttendanceSummaryDTO;
+import ch.batbern.partners.config.CumsInternalUsers;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
-import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
+import org.springframework.cache.CacheManager;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
+import org.springframework.web.client.RestTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
-import java.time.Instant;
 import java.time.LocalDate;
-import java.util.List;
 
 import static org.hamcrest.Matchers.closeTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.nullValue;
-import static org.mockito.ArgumentMatchers.anyInt;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultHandlers.print;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
@@ -60,11 +56,15 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @Autowired
     private PartnerRepository partnerRepository;
 
-    @MockitoBean
-    private EventManagementClient eventManagementClient;
+    @Autowired
+    private RestTemplate restTemplate;
 
-    @MockitoBean
-    private UserServiceClient userServiceClient;
+    @Autowired
+    private CacheManager cacheManager;
+
+    /** EMS behind the real EventManagementClient, answering per event-analytics-api (Story 17.0b1). */
+    private ContractServer ems;
+
 
     private Partner googlePartner;
     private Partner microsoftPartner;
@@ -72,14 +72,33 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @BeforeEach
     void setUp() {
         partnerRepository.deleteAll();
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+        // @WithMockUser callers carry no JWT to forward, hence ignoringMissingAuthorization.
+        // One RestTemplate, two providers: EMS analytics and the CUMS user lookup (Story 17.0b2).
+        ems = ContractServer.bindTo(restTemplate, "docs/api/event-analytics-api.openapi.yml",
+                CumsInternalUsers.CUMS_INTERNAL).ignoringMissingAuthorization();
 
         googlePartner = createPartner("GoogleZH", PartnershipLevel.GOLD, new BigDecimal("10000.00"));
         microsoftPartner = createPartner("MicrosoftZH", PartnershipLevel.PLATINUM, new BigDecimal("20000.00"));
 
-        // Associate "partner.google" with GoogleZH via User Service
-        UserResponse googleUser = new UserResponse();
-        googleUser.setCompanyId("GoogleZH");
-        when(userServiceClient.getUserByUsername("partner.google")).thenReturn(googleUser);
+        // Associate "partner.google" with GoogleZH via CUMS
+        CumsInternalUsers.answerOn(ems).put("partner.google", "partner.google", "GoogleZH");
+    }
+
+    @AfterEach
+    void releaseEms() {
+        ems.close();
+    }
+
+    /** EMS answers the attendance summary for {@code company} with {@code json} (checked against the spec). */
+    private void emsAnswers(String company, String json) {
+        ems.expect(HttpMethod.GET, "/api/v1/events/attendance-summary").withQueryParam("companyName", company)
+                .respondWith(HttpStatus.OK, json);
+    }
+
+    private static String summary(String code, String title, String date, int total, int company) {
+        return "{\"eventCode\": \"" + code + "\", \"eventTitle\": \"" + title + "\", \"eventDate\": \""
+                + date + "\", \"totalAttendees\": " + total + ", \"companyAttendees\": " + company + "}";
     }
 
     // ─── AC1/AC2: Dashboard returns per-event attendance data ────────────────
@@ -87,12 +106,8 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @Test
     @WithMockUser(username = "partner.google", roles = "PARTNER")
     void should_returnDashboard_when_partnerRequestsOwnCompany() throws Exception {
-        List<AttendanceSummaryDTO> summaries = List.of(
-            new AttendanceSummaryDTO("BATbern57", "BATbern 57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10),
-            new AttendanceSummaryDTO("BATbern56", "BATbern 56", Instant.parse("2023-06-01T00:00:00Z"), 80, 8)
-        );
-        when(eventManagementClient.getAttendanceSummary(eq("GoogleZH"), anyInt()))
-            .thenReturn(summaries);
+        emsAnswers("GoogleZH", "[" + summary("BATbern57", "BATbern 57", "2024-06-01T00:00:00Z", 100, 10)
+                + ", " + summary("BATbern56", "BATbern 56", "2023-06-01T00:00:00Z", 80, 8) + "]");
 
         mockMvc.perform(get("/api/v1/partners/GoogleZH/analytics/dashboard")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -115,11 +130,7 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @Test
     @WithMockUser(username = "organizer.user", roles = "ORGANIZER")
     void should_returnDashboard_when_organizerRequestsAnyCompany() throws Exception {
-        List<AttendanceSummaryDTO> summaries = List.of(
-            new AttendanceSummaryDTO("BATbern57", "BATbern 57", Instant.parse("2024-06-01T00:00:00Z"), 100, 5)
-        );
-        when(eventManagementClient.getAttendanceSummary(eq("MicrosoftZH"), anyInt()))
-            .thenReturn(summaries);
+        emsAnswers("MicrosoftZH", "[" + summary("BATbern57", "BATbern 57", "2024-06-01T00:00:00Z", 100, 5) + "]");
 
         mockMvc.perform(get("/api/v1/partners/MicrosoftZH/analytics/dashboard")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -132,11 +143,9 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @Test
     @WithMockUser(username = "organizer.user", roles = "ORGANIZER")
     void should_passFromYearToClient_when_fromYearParamProvided() throws Exception {
-        List<AttendanceSummaryDTO> recent = List.of(
-            new AttendanceSummaryDTO("BATbern57", "BATbern 57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10)
-        );
-        when(eventManagementClient.getAttendanceSummary(eq("GoogleZH"), eq(2020)))
-            .thenReturn(recent);
+        ems.expect(HttpMethod.GET, "/api/v1/events/attendance-summary").withQueryParam("companyName", "GoogleZH")
+                .withQueryParam("fromYear", "2020")
+                .respondWith(HttpStatus.OK, "[" + summary("BATbern57", "BATbern 57", "2024-06-01T00:00:00Z", 100, 10) + "]");
 
         mockMvc.perform(get("/api/v1/partners/GoogleZH/analytics/dashboard")
                         .param("fromYear", "2020")
@@ -152,12 +161,8 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     void should_computeCostPerAttendee_when_attendeesExist() throws Exception {
         // partnership_cost = 10000, total company attendees = 10+8 = 18
         // cost per attendee = 10000 / 18 ≈ 555.56
-        List<AttendanceSummaryDTO> summaries = List.of(
-            new AttendanceSummaryDTO("BATbern57", "BATbern 57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10),
-            new AttendanceSummaryDTO("BATbern56", "BATbern 56", Instant.parse("2023-06-01T00:00:00Z"), 80, 8)
-        );
-        when(eventManagementClient.getAttendanceSummary(eq("GoogleZH"), anyInt()))
-            .thenReturn(summaries);
+        emsAnswers("GoogleZH", "[" + summary("BATbern57", "BATbern 57", "2024-06-01T00:00:00Z", 100, 10)
+                + ", " + summary("BATbern56", "BATbern 56", "2023-06-01T00:00:00Z", 80, 8) + "]");
 
         mockMvc.perform(get("/api/v1/partners/GoogleZH/analytics/dashboard")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -168,8 +173,7 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @Test
     @WithMockUser(username = "partner.google", roles = "PARTNER")
     void should_returnNullCostPerAttendee_when_noAttendees() throws Exception {
-        when(eventManagementClient.getAttendanceSummary(anyString(), anyInt()))
-            .thenReturn(List.of());
+        emsAnswers("GoogleZH", "[]");
 
         mockMvc.perform(get("/api/v1/partners/GoogleZH/analytics/dashboard")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -182,11 +186,7 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     @Test
     @WithMockUser(username = "partner.google", roles = "PARTNER")
     void should_returnXlsx_when_exportRequested() throws Exception {
-        List<AttendanceSummaryDTO> summaries = List.of(
-            new AttendanceSummaryDTO("BATbern57", "BATbern 57", Instant.parse("2024-06-01T00:00:00Z"), 100, 10)
-        );
-        when(eventManagementClient.getAttendanceSummary(anyString(), anyInt()))
-            .thenReturn(summaries);
+        emsAnswers("GoogleZH", "[" + summary("BATbern57", "BATbern 57", "2024-06-01T00:00:00Z", 100, 10) + "]");
 
         mockMvc.perform(get("/api/v1/partners/GoogleZH/analytics/export")
                         .contentType(MediaType.APPLICATION_JSON))
@@ -207,13 +207,11 @@ class PartnerAnalyticsControllerIntegrationTest extends AbstractIntegrationTest 
     // ─── AC6: Unauthenticated access ─────────────────────────────────────────
 
     @Test
-    void should_return403_when_notAuthenticated() throws Exception {
-        // Test filter chain uses permitAll (test profile), so anonymous user passes the filter.
-        // @PreAuthorize method security evaluates → no required role → AccessDeniedException → 403.
-        // Production behavior (API Gateway strips unauthenticated requests before reaching this service).
+    void should_return401_when_notAuthenticated() throws Exception {
+        // The production chain answers 401 before the controller (17.0b3).
         mockMvc.perform(get("/api/v1/partners/GoogleZH/analytics/dashboard")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     // ─── Helper methods ──────────────────────────────────────────────────────

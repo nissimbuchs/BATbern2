@@ -46,6 +46,22 @@ describe('specMatcher', () => {
     expect(matchOperation(index, 'GET', 'http://localhost/api/v1/users/me').ok).toBe(true);
   });
 
+  it('strips a bare /api only with bareApiPrefix (the MSW harness, 17.0c1)', () => {
+    const bare = { bareApiPrefix: true };
+    expect(matchOperation(index, 'GET', '/api/users/me')).toMatchObject({
+      ok: false,
+      kind: 'path',
+    });
+    expect(matchOperation(index, 'GET', '/api/users/me', bare)).toMatchObject({
+      ok: true,
+      operationId: 'getUser',
+    });
+    expect(matchOperation(index, 'GET', 'http://localhost:3000/api/users/me', bare).ok).toBe(true);
+    expect(matchOperation(index, 'GET', '/api/v1/users/me', bare).ok).toBe(true);
+    // Only a whole segment: `/apiary` is not `/api`.
+    expect(matchOperation(index, 'GET', '/apiary/users/me', bare).ok).toBe(false);
+  });
+
   it('treats {*} as an unresolved value', () => {
     expect(matchOperation(index, 'GET', '/events/{*}/registrations')).toMatchObject({ ok: true });
     expect(matchOperation(index, 'GET', '/events/BAT{*}/registrations')).toMatchObject({

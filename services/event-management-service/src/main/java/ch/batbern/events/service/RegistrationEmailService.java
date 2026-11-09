@@ -16,6 +16,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.scheduling.annotation.Async;
 import org.springframework.stereotype.Service;
 
+import java.net.URLEncoder;
+import java.nio.charset.StandardCharsets;
 import java.time.ZonedDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.List;
@@ -280,7 +282,10 @@ public class RegistrationEmailService {
                 .put(MailVariable.CONFIRMATION_URL, baseUrl + "/events/" + event.getEventCode()
                         + "/confirm-registration?token=" + tokens.confirmationToken())
                 .put(MailVariable.DEREGISTRATION_URL, tokens.deregistrationUrl())
-                .put(MailVariable.CREATE_ACCOUNT_URL, baseUrl + "/auth/signup?email=" + userProfile.getEmail())
+                // The SPA's sign-up page is /auth/register (there is no /auth/signup route); it prefills
+                // the email. Encoded: a plus address would otherwise arrive with a space.
+                .put(MailVariable.CREATE_ACCOUNT_URL, baseUrl + "/auth/register?email="
+                        + URLEncoder.encode(userProfile.getEmail(), StandardCharsets.UTF_8))
                 .asMap();
 
         RenderedMail mail = mailPipeline.renderNotice(mailPipeline.template("registration-confirmation", localeStr),

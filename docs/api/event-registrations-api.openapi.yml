@@ -46,11 +46,8 @@ paths:
         **Auth**: ORGANIZER role.
 
 
-        **Filter Examples**:
-
-        - By status: `{"status":"confirmed"}`
-
-        - By date: `{"registrationDate":{"$gte":"2025-01-01"}}`
+        Sorted by attendee last name, then first name. Filters: `status` (repeatable), `search`,
+        `companyId`.
 
         '
       operationId: listRegistrations
@@ -63,20 +60,45 @@ paths:
           type: string
           pattern: ^BATbern[0-9]+$
           example: BATbern142
-      - name: filter
+      - name: status
         in: query
+        description: Only registrations with one of these statuses (repeatable, `status=CONFIRMED&status=WAITLIST`; case-insensitive).
+        style: form
+        explode: true
+        schema:
+          type: array
+          items:
+            type: string
+            enum:
+            - REGISTERED
+            - WAITLIST
+            - CONFIRMED
+            - CANCELLED
+            - ATTENDED
+      - name: search
+        in: query
+        description: Words searched in the attendee's first name, last name and e-mail.
+        schema:
+          type: string
+      - name: companyId
+        in: query
+        description: Only attendees of this company.
         schema:
           type: string
       - name: page
         in: query
+        description: Page number, 1-indexed.
         schema:
           type: integer
-          default: 0
+          minimum: 1
+          default: 1
       - name: limit
         in: query
+        description: Items per page.
         schema:
           type: integer
-          default: 20
+          minimum: 1
+          default: 25
           maximum: 100
       responses:
         '200':
@@ -85,6 +107,9 @@ paths:
             application/json:
               schema:
                 type: object
+                required:
+                - data
+                - pagination
                 properties:
                   data:
                     type: array
@@ -92,6 +117,32 @@ paths:
                       $ref: '#/components/schemas/Registration'
                   pagination:
                     $ref: ./_shared.openapi.yml#/components/schemas/PaginationMetadata
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    data:
+                      - registrationCode: BATbern142-reg-A3X9K2
+                        eventCode: BATbern25
+                        eventTitle: Sample title
+                        eventDate: "2026-05-14T16:00:00Z"
+                        attendeeUsername: john.doe
+                        attendeeFirstName: Ines
+                        attendeeLastName: Probe
+                        attendeeEmail: ines.probe@example.com
+                        attendeeCompany: sample
+                        status: REGISTERED
+                        waitlistPosition: null
+                        registrationDate: "2026-05-14T16:00:00Z"
+                        createdAt: "2026-05-14T16:00:00Z"
+                        updatedAt: "2026-05-14T16:00:00Z"
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 31
+                      totalPages: 16
+                      hasNext: true
+                      hasPrev: false
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -118,7 +169,7 @@ paths:
 
         - Email serves as identifier
 
-        - Registration code generated ({eventCode}-reg-{suffix})
+        - Registration code generated ({eventCode}-reg-{6 of A-Z0-9})
 
         - Confirmation email sent automatically
 
@@ -189,6 +240,13 @@ paths:
                   User must click email link to confirm registration.
 
                   '
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
+                    email: anna.vorlage@example.com
+                    companyUpdated: false
         '400':
           description: Invalid request (validation errors)
           content:
@@ -239,6 +297,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DistributionListResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    eventCode: BATbern57
+                    kind: speakers
+                    emails:
+                      - ben.vorlage@example.com
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -278,13 +344,20 @@ paths:
                 properties:
                   registrationCode:
                     type: string
-                    example: BATbern57-A1B2C3
+                    example: BATbern57-reg-A1B2C3
                   status:
                     type: string
                     example: confirmed
                   attendeeUsername:
                     type: string
                     example: jane.doe
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    registrationCode: BATbern57-reg-A1B2C3
+                    status: confirmed
+                    attendeeUsername: jane.doe
         '400':
           $ref: '#/components/responses/BadRequest'
         '403':
@@ -475,6 +548,12 @@ paths:
                     pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
                     maxLength: 254
                     example: john.doe@example.com
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
+                    email: anna.vorlage@example.com
         '401':
           $ref: '#/components/responses/Unauthorized'
         '409':
@@ -554,11 +633,15 @@ paths:
           example: BATbern25
       - name: registrationCode
         in: path
-        description: Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY)
+        description: |
+          Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
+          (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
+          backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
         required: true
         schema:
           type: string
-          example: BATbern60-reg-R9UKZY
+          pattern: '^(BATbern[0-9]+-reg-[A-Za-z0-9]+|BAT[0-9]+-(EXIST|NEW)-[0-9]+)$'
+          example: BATbern142-reg-A3X9K2
       responses:
         '200':
           description: Registration found
@@ -566,6 +649,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Registration'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    registrationCode: BATbern142-reg-A3X9K2
+                    eventCode: BATbern25
+                    eventTitle: Sample title
+                    eventDate: "2026-05-14T16:00:00Z"
+                    attendeeUsername: john.doe
+                    attendeeFirstName: Ines
+                    attendeeLastName: Probe
+                    attendeeEmail: ines.probe@example.com
+                    attendeeCompany: sample
+                    status: REGISTERED
+                    waitlistPosition: null
+                    registrationDate: "2026-05-14T16:00:00Z"
+                    createdAt: "2026-05-14T16:00:00Z"
+                    updatedAt: "2026-05-14T16:00:00Z"
         '404':
           description: Registration not found (invalid confirmation code)
         '500':
@@ -595,11 +696,15 @@ paths:
           example: BATbern25
       - name: registrationCode
         in: path
-        description: Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY)
+        description: |
+          Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
+          (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
+          backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
         required: true
         schema:
           type: string
-          example: BATbern60-reg-R9UKZY
+          pattern: '^(BATbern[0-9]+-reg-[A-Za-z0-9]+|BAT[0-9]+-(EXIST|NEW)-[0-9]+)$'
+          example: BATbern142-reg-A3X9K2
       requestBody:
         required: true
         content:
@@ -613,6 +718,24 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Registration'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    registrationCode: BATbern142-reg-A3X9K2
+                    eventCode: BATbern25
+                    eventTitle: Sample title
+                    eventDate: "2026-05-14T16:00:00Z"
+                    attendeeUsername: john.doe
+                    attendeeFirstName: Ines
+                    attendeeLastName: Probe
+                    attendeeEmail: ines.probe@example.com
+                    attendeeCompany: sample
+                    status: REGISTERED
+                    waitlistPosition: null
+                    registrationDate: "2026-05-14T16:00:00Z"
+                    createdAt: "2026-05-14T16:00:00Z"
+                    updatedAt: "2026-05-14T16:00:00Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -647,11 +770,15 @@ paths:
           example: BATbern25
       - name: registrationCode
         in: path
-        description: Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY)
+        description: |
+          Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
+          (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
+          backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
         required: true
         schema:
           type: string
-          example: BATbern60-reg-R9UKZY
+          pattern: '^(BATbern[0-9]+-reg-[A-Za-z0-9]+|BAT[0-9]+-(EXIST|NEW)-[0-9]+)$'
+          example: BATbern142-reg-A3X9K2
       responses:
         '204':
           description: Registration deleted successfully
@@ -744,6 +871,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ResendConfirmationResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
         '409':
           description: Registration is not pending (cannot resend)
           content:
@@ -780,6 +912,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EnrollStakeholdersResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    enrolled: 1
+                    skipped: 1
         '403':
           $ref: '#/components/responses/Forbidden'
         '404':
@@ -850,6 +988,12 @@ paths:
                     enum:
                     - CONFIRMED
                     example: CONFIRMED
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
+                    status: CONFIRMED
         '400':
           description: Invalid or expired token
           content:
@@ -917,6 +1061,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/DeregistrationVerifyResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    registrationCode: BATbern142-reg-A3X9K2
+                    eventCode: BATbern142
+                    eventTitle: BATbern — Berner Architekten Treffen
+                    eventDate: "2026-06-15T18:00:00Z"
+                    attendeeFirstName: Anna
         '404':
           description: Token not found or registration already cancelled
           content:
@@ -962,6 +1115,11 @@ paths:
                   message:
                     type: string
                     example: Registration cancelled successfully
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
         '404':
           description: Token not found
           content:
@@ -1018,6 +1176,11 @@ paths:
                   message:
                     type: string
                     example: If you are registered for this event, you'll receive a cancellation link by email.
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
   /events/batch_registrations:
     post:
       tags:
@@ -1193,17 +1356,19 @@ paths:
                 items:
                   $ref: '#/components/schemas/Registration'
               example:
-              - registrationCode: BATbern34-reg-A3X9K2
+              - registrationCode: BATbern142-reg-K7M2Q9
                 eventCode: BATbern34
+                attendeeUsername: anna.muster
                 eventTitle: Cloud Native Architecture
                 eventDate: '2023-03-15T18:00:00Z'
-                status: attended
+                status: ATTENDED
                 registrationDate: '2023-02-01T10:30:00Z'
-              - registrationCode: BATbern36-reg-B7Y1M4
+              - registrationCode: BATbern142-reg-P4T8W1
                 eventCode: BATbern36
+                attendeeUsername: anna.muster
                 eventTitle: Microservices Patterns
                 eventDate: '2023-05-20T18:00:00Z'
-                status: attended
+                status: ATTENDED
                 registrationDate: '2023-04-10T14:20:00Z'
         '401':
           $ref: '#/components/responses/Unauthorized'
@@ -1310,9 +1475,12 @@ components:
             example: alice@example.com
     Registration:
       type: object
-      description: 'Story 4.1.5a: Unified user profile approach for anonymous and authenticated registrations (ADR-006)
+      description: 'A registration as EMS returns it (`RegistrationResponse`): the registration, its
+        event, and the attendee from user_profiles (ADR-004, ADR-006). The organizer endpoints return
+        it in full; the public lookup (`getRegistration`) returns it with `attendeeEmail` masked,
+        which is why that field has no e-mail format.
 
-        All users (anonymous + authenticated) are in user_profiles table. Anonymous users have cognito_user_id = NULL.
+        Anonymous users are in user_profiles too (cognito_user_id = NULL).
 
         '
       required:
@@ -1323,8 +1491,11 @@ components:
       properties:
         registrationCode:
           type: string
-          description: Unique registration code ({eventCode}-reg-{suffix}), acts as access token
-          example: BATbern60-reg-R9UKZY
+          description: |
+            Unique registration code, acts as access token: `{eventCode}-reg-{6 of A-Z0-9}`;
+            older stored codes `{eventCode}-reg-{8 hex}` and `BAT{n}-EXIST|NEW-{n}`.
+          pattern: '^(BATbern[0-9]+-reg-[A-Za-z0-9]+|BAT[0-9]+-(EXIST|NEW)-[0-9]+)$'
+          example: BATbern142-reg-A3X9K2
         eventCode:
           type: string
           description: Event code this registration belongs to
@@ -1332,11 +1503,13 @@ components:
           example: BATbern25
         eventTitle:
           type: string
-          description: Event title (included for convenience)
+          nullable: true
+          description: Event title. Set by the single lookup (`getRegistration`); null in lists.
         eventDate:
           type: string
           format: date-time
-          description: Event date (included for convenience)
+          nullable: true
+          description: Event date. Set by the single lookup (`getRegistration`); null in lists.
         attendeeUsername:
           type: string
           pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
@@ -1344,25 +1517,24 @@ components:
 
             Format: firstname.lastname or firstname.lastname.2 for duplicates.
 
-            Always present - anonymous users are in user_profiles with cognito_user_id = NULL.
-
-            ADR-006: Unified table eliminates need for separate anonymous_* fields.
-
             '
           example: john.doe
-        firstName:
+        attendeeFirstName:
           type: string
+          nullable: true
           description: First name from user_profiles
-        lastName:
+        attendeeLastName:
           type: string
+          nullable: true
           description: Last name from user_profiles
-        email:
+        attendeeEmail:
           type: string
-          format: email
-          description: Email from user_profiles
-        company:
+          nullable: true
+          description: E-mail from user_profiles
+        attendeeCompany:
           type: string
-          description: Company name from user_profiles.company_id (FK to companies table)
+          nullable: true
+          description: Company ID from user_profiles.company_id; null for attendees without a company
         status:
           type: string
           enum:
@@ -1376,35 +1548,20 @@ components:
         waitlistPosition:
           type: integer
           nullable: true
-          description: Story 10.11 — Position on the waitlist (1-based). Null when status is not WAITLIST.
+          description: Position on the waitlist (1-based, Story 10.11). Null when status is not WAITLIST.
           example: 2
         registrationDate:
           type: string
           format: date-time
-        sessionPreferences:
-          type: array
-          items:
-            type: string
-          description: Event-level registration - sessions are preferences only, not commitments
-        specialRequests:
-          type: string
           nullable: true
-          description: Dietary preferences, accessibility needs, etc.
-        communicationPreferences:
-          type: object
-          properties:
-            newsletterSubscribed:
-              type: boolean
-              default: false
-            eventReminders:
-              type: boolean
-              default: true
         createdAt:
           type: string
           format: date-time
+          nullable: true
         updatedAt:
           type: string
           format: date-time
+          nullable: true
     CreateRegistrationRequest:
       type: object
       description: 'Story 4.1.5a: Event registration request (ADR-006)

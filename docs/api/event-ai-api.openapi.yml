@@ -47,6 +47,44 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/AiPromptResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - promptKey: event_description
+                      displayName: Event Description
+                      promptText: |-
+                        Write a German event description for BATbern#{{EVENT_NR}}, the Berner Architekten Treffen – a community evening event in Bern where local IT professionals and companies share hands-on experience with current hot topics in software architecture and engineering.
+                    
+                        Event: {{EVENT_TITLE}}
+                        Topic: {{TOPIC_TITLE}} (category: {{TOPIC_CATEGORY}})
+                        Topic description: {{TOPIC_DESCRIPTION}}
+                        Event date: {{EVENT_
+                      defaultText: |-
+                        Write a German event description for BATbern#{{EVENT_NR}}, the Berner Architekten Treffen – a community evening event in Bern where local IT professionals and companies share hands-on experience with current hot topics in software architecture and engineering.
+                    
+                        Event: {{EVENT_TITLE}}
+                        Topic: {{TOPIC_TITLE}} (category: {{TOPIC_CATEGORY}})
+                        Topic description: {{TOPIC_DESCRIPTION}}
+                        Event date: {{EVENT_
+                      updatedAt: "2026-03-09T10:02:15.752067Z"
+                    - promptKey: theme_image
+                      displayName: Theme Image (DALL-E)
+                      promptText: |-
+                        digital artwork that visually represents the IT topic: "{{TOPIC_TITLE}}" (category: {{TOPIC_CATEGORY}}).
+                        Event title: {{EVENT_TITLE}}
+                        Topic description: {{TOPIC_DESCRIPTION}}
+                        Event description for context: {{EVENT_DESCRIPTION}}
+                    
+                        Use visual metaphors, symbols, and imagery that are directly related to this specific topic and category — The image fills the entire 16:9 rectangle edge-to-edge. No logos
+                      defaultText: |-
+                        Abstract digital artwork that visually represents the IT topic: "{{TOPIC_TITLE}}" (category: {{TOPIC_CATEGORY}}).
+                        Event title: {{EVENT_TITLE}}
+                        Topic description: {{TOPIC_DESCRIPTION}}
+                        Event description for context: {{EVENT_DESCRIPTION}}
+                    
+                        Use abstract visual metaphors, symbols, and imagery that are directly related to this specific topic and category — not generic circuit boards. Style: dark midnig
+                      updatedAt: "2026-05-07T06:05:46.728044Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -78,6 +116,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AiPromptResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    promptKey: event_description
+                    displayName: Event Description
+                    promptText: |-
+                      Write a German event description for BATbern#{{EVENT_NR}}, the Berner Architekten Treffen – a community evening event in Bern where local IT professionals and companies share hands-on experience with current hot topics in software architecture and engineering.
+                    
+                      Event: {{EVENT_TITLE}}
+                      Topic: {{TOPIC_TITLE}} (category: {{TOPIC_CATEGORY}})
+                      Topic description: {{TOPIC_DESCRIPTION}}
+                      Event date: {{EVENT_
+                    defaultText: |-
+                      Write a German event description for BATbern#{{EVENT_NR}}, the Berner Architekten Treffen – a community evening event in Bern where local IT professionals and companies share hands-on experience with current hot topics in software architecture and engineering.
+                    
+                      Event: {{EVENT_TITLE}}
+                      Topic: {{TOPIC_TITLE}} (category: {{TOPIC_CATEGORY}})
+                      Topic description: {{TOPIC_DESCRIPTION}}
+                      Event date: {{EVENT_
+                    updatedAt: "2026-03-09T10:02:15.752067Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -116,6 +175,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AiPromptResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    promptKey: event_description
+                    displayName: Event Description
+                    promptText: |-
+                      Write a German event description for BATbern#{{EVENT_NR}}, the Berner Architekten Treffen – a community evening event in Bern where local IT professionals and companies share hands-on experience with current hot topics in software architecture and engineering.
+                    
+                      Event: {{EVENT_TITLE}}
+                      Topic: {{TOPIC_TITLE}} (category: {{TOPIC_CATEGORY}})
+                      Topic description: {{TOPIC_DESCRIPTION}}
+                      Event date: {{EVENT_
+                    defaultText: |-
+                      Write a German event description for BATbern#{{EVENT_NR}}, the Berner Architekten Treffen – a community evening event in Bern where local IT professionals and companies share hands-on experience with current hot topics in software architecture and engineering.
+                    
+                      Event: {{EVENT_TITLE}}
+                      Topic: {{TOPIC_TITLE}} (category: {{TOPIC_CATEGORY}})
+                      Topic description: {{TOPIC_DESCRIPTION}}
+                      Event date: {{EVENT_
+                    updatedAt: "2026-03-09T10:02:15.752067Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -149,6 +229,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AiPromptResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    promptKey: event_description
+                    displayName: Event Description
+                    promptText: |-
+                      Write a German event description for BATbern#{{EVENT_NR}}, the Berner Architekten Treffen – a community evening event in Bern where local IT professionals and companies share hands-on experience with current hot topics in software architecture and engineering.
+                    
+                      Event: {{EVENT_TITLE}}
+                      Topic: {{TOPIC_TITLE}} (category: {{TOPIC_CATEGORY}})
+                      Topic description: {{TOPIC_DESCRIPTION}}
+                      Event date: {{EVENT_
+                    defaultText: |-
+                      Write a German event description for BATbern#{{EVENT_NR}}, the Berner Architekten Treffen – a community evening event in Bern where local IT professionals and companies share hands-on experience with current hot topics in software architecture and engineering.
+                    
+                      Event: {{EVENT_TITLE}}
+                      Topic: {{TOPIC_TITLE}} (category: {{TOPIC_CATEGORY}})
+                      Topic description: {{TOPIC_DESCRIPTION}}
+                      Event date: {{EVENT_
+                    updatedAt: "2026-03-09T10:02:15.752067Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -179,6 +280,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AiDescriptionResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    description: Sample description for the API example.
         '503':
           description: AI service disabled or unavailable
           content:
@@ -221,6 +327,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AiThemeImageJob'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    jobId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: PENDING
+                    imageUrl: https://www.batbern.ch/
+                    s3Key: uploads/2026/sample/file.png
         '503':
           description: AI service disabled or unavailable
           content:
@@ -258,6 +372,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AiThemeImageJob'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    jobId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    status: PENDING
+                    imageUrl: https://www.batbern.ch/
+                    s3Key: uploads/2026/sample/file.png
         '404':
           description: Unknown job (expired after one hour, or the service restarted)
         '401':
@@ -320,6 +442,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AbstractAnalysisResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    noPromotionScore: 1
+                    noPromotionFeedback: sample
+                    lessonsLearnedScore: 1
+                    lessonsLearnedFeedback: sample
+                    wordCount: 1
+                    shortenedAbstract: sample
         '503':
           description: AI service disabled or unavailable
           content:

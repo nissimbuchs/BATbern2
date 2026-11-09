@@ -793,6 +793,7 @@ sequenceDiagram
     participant B as build.yml
     participant D as deploy-to-staging job
     participant AWS as AWS 188701360969
+    participant PC as post-deploy-checks
     participant BR as bruno-tests
     participant PW as playwright-tests
     participant OK as tag-stable-on-success
@@ -803,20 +804,17 @@ sequenceDiagram
     D->>AWS: RDS snapshot if infra or migration changed
     D->>AWS: fast path, selective or layered deploy
     D->>AWS: wait for ECS stability
-    D->>AWS: SES IAM simulation, smoke, CORS
-    D->>AWS: access-control check, anonymous
-    D->>AWS: promote images to staging-current
-    D->>AWS: header propagation tests
-    par
-        D->>BR: Bruno contract tests
-    and
-        D->>PW: Playwright @smoke
-    end
-    alt both green
-        BR->>OK: success
+    D->>AWS: SES IAM simulation
+    D->>PC: job done
+    PC->>AWS: smoke, CORS, access-control check (anonymous)
+    PC->>AWS: promote images to staging-current
+    PC->>AWS: header propagation tests (non-blocking)
+    PC->>BR: Bruno contract tests
+    BR->>PW: Playwright @smoke
+    alt all three green
         PW->>OK: success
         OK->>AWS: staging-current → staging-stable, snapshot frontend
-    else either red
+    else any of the three red
         RB->>AWS: rollback-deployment.sh to staging-stable
         RB->>AWS: restore frontend from stable bucket
     end

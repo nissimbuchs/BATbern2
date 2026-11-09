@@ -26,6 +26,7 @@ import {
   ChevronRight as ChevronRightIcon,
 } from '@mui/icons-material';
 import type { Topic, TopicUsageHistory } from '@/types/topic.types';
+import { knownSum } from './usageTotals';
 
 export interface TopicWithHistory extends Topic {
   usageHistory?: TopicUsageHistory[];
@@ -51,7 +52,7 @@ interface TopicUsageCell {
   usageCount: number;
   intensity: number; // 0-100
   eventNumbers: number[]; // GitHub Issue #379: Event numbers instead of UUIDs
-  totalAttendance: number;
+  totalAttendance: number | null; // null while no event of the cell has a known attendance
 }
 
 interface TopicHeatMapRow {
@@ -176,14 +177,14 @@ export const MultiTopicHeatMap: React.FC<MultiTopicHeatMapProps> = ({
             if (existing) {
               existing.usageCount += 1;
               existing.eventNumbers.push(usage.eventNumber);
-              existing.totalAttendance += usage.attendance;
+              existing.totalAttendance = knownSum([existing.totalAttendance, usage.attendance]);
             } else {
               cells.set(periodKey, {
                 period,
                 usageCount: 1,
                 intensity: 0, // Will calculate below
                 eventNumbers: [usage.eventNumber],
-                totalAttendance: usage.attendance,
+                totalAttendance: knownSum([usage.attendance]),
               });
             }
           }
@@ -416,10 +417,15 @@ export const MultiTopicHeatMap: React.FC<MultiTopicHeatMapProps> = ({
               const displayText = hasUsage ? cell.eventNumbers.join(', ') : '';
 
               // Tooltip content
+              // Attendance only when known (null until an event has taken place)
+              const attendees =
+                hasUsage && cell.totalAttendance !== null
+                  ? `${cell.totalAttendance} attendees`
+                  : '';
               const tooltipContent = hasUsage
                 ? eventTitles.length > 0
-                  ? `${period.label}\n${eventTitles.join('\n')}\n${cell.totalAttendance} attendees`
-                  : `${period.label}: ${cell.usageCount} event(s), ${cell.totalAttendance} attendees\nEvent numbers: ${cell.eventNumbers.join(', ')}`
+                  ? [period.label, ...eventTitles, attendees].filter(Boolean).join('\n')
+                  : `${period.label}: ${cell.usageCount} event(s)${attendees ? `, ${attendees}` : ''}\nEvent numbers: ${cell.eventNumbers.join(', ')}`
                 : `${period.label}: No usage`;
 
               return (

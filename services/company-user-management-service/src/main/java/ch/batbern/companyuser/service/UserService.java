@@ -641,12 +641,7 @@ public class UserService {
             // (the speaker's JWT comes through with no `custom:role` claim, blank
             // dashboard). `newCognitoSub` is null when the Cognito user already existed
             // (idempotent no-op) — we leave the DB alone in that case.
-            if (newCognitoSub != null && !newCognitoSub.equals(user.getCognitoUserId())) {
-                user.setCognitoUserId(newCognitoSub);
-                userRepository.save(user);
-                log.info("Re-linked user {} to fresh Cognito sub {} (existing-user branch)",
-                        user.getUsername(), newCognitoSub);
-            }
+            linkToNewLogin(user, newCognitoSub, "existing-user branch");
             return new ProvisionUserResponse()
                     .username(user.getUsername())
                     .created(false);
@@ -716,17 +711,34 @@ public class UserService {
         // Any failure here aborts the surrounding @Transactional, rolling back createNewUser
         // + addRole (per AC5 item 1).
         String throwawayTempPassword = passwordGenerator.generate();
-        cognitoService.adminCreateUserSilently(
+        String newCognitoSub = cognitoService.adminCreateUserSilently(
                 normalizedEmail, throwawayTempPassword, created.getUsername());
         // Discard the throwaway from this scope by reassigning. The local variable goes
         // out of scope on method return; the value is never logged or persisted.
         throwawayTempPassword = null;
+        // Link the profile to the new login's sub, as the existing-user branch does, so the
+        // PreTokenGeneration Lambda finds it by its primary key on the first sign-in.
+        linkToNewLogin(created, newCognitoSub, "new-user branch");
         log.info("Cognito user provisioned for {} (status=FORCE_CHANGE_PASSWORD)",
                 LoggingUtils.maskEmail(normalizedEmail));
 
         return new ProvisionUserResponse()
                 .username(created.getUsername())
                 .created(true);
+    }
+
+    /**
+     * Stores the sub of a login {@code adminCreateUserSilently} just created in
+     * {@code user_profiles.cognito_user_id}, so the PreTokenGeneration Lambda finds the profile by
+     * its primary key. {@code newCognitoSub} is null when Cognito already had a login for the
+     * address (idempotent no-op): the profile is left as it is.
+     */
+    private void linkToNewLogin(User user, String newCognitoSub, String where) {
+        if (newCognitoSub != null && !newCognitoSub.equals(user.getCognitoUserId())) {
+            user.setCognitoUserId(newCognitoSub);
+            userRepository.save(user);
+            log.info("Linked user {} to Cognito sub {} ({})", user.getUsername(), newCognitoSub, where);
+        }
     }
 
     /**
@@ -807,12 +819,7 @@ public class UserService {
             // Cognito user; without this re-link the PreTokenGeneration Lambda's
             // primary-key lookup misses on the next sign-in and the speaker's JWT
             // ends up with no `custom:role` claim (= blank dashboard).
-            if (newCognitoSub != null && !newCognitoSub.equals(user.getCognitoUserId())) {
-                user.setCognitoUserId(newCognitoSub);
-                userRepository.save(user);
-                log.info("Re-linked user {} to fresh Cognito sub {} (issueInvitationCredentials self-heal)",
-                        user.getUsername(), newCognitoSub);
-            }
+            linkToNewLogin(user, newCognitoSub, "issueInvitationCredentials self-heal");
             // Newly-created Cognito users land in FORCE_CHANGE_PASSWORD; fall through
             // to the corresponding switch branch which issues a fresh known temp.
             status = UserStatusType.FORCE_CHANGE_PASSWORD;
@@ -1015,11 +1022,8 @@ public class UserService {
      * Story 1.16.2: Generate username using SlugGenerationService
      */
     private User createNewUser(GetOrCreateUserRequest request) {
-        // Create user in Cognito if needed (AC2)
-        String cognitoUserId = (request.getCognitoSync() != null && request.getCognitoSync())
-                ? cognitoService.createCognitoUser(request)
-                : null;
-
+        // No Cognito login here: request.cognitoSync has no effect. A login comes from the sign-up page
+        // (the PreTokenGeneration Lambda then fills cognitoUserId) or from issue-credentials.
         // Story 1.16.2: Generate username from first/last name
         String baseUsername = slugService.generateUsername(
                 request.getFirstName(), request.getLastName(), request.getEmail());
@@ -1035,7 +1039,6 @@ public class UserService {
         }
 
         User user = User.builder()
-                .cognitoUserId(cognitoUserId)
                 .email(request.getEmail())
                 .username(username)  // Story 1.16.2: Generated username
                 .firstName(request.getFirstName())

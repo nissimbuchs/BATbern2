@@ -1,6 +1,5 @@
 package ch.batbern.events.service;
 
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
@@ -12,7 +11,6 @@ import ch.batbern.events.repository.NewsletterRecipientRepository;
 import ch.batbern.events.repository.NewsletterSendRepository;
 import ch.batbern.events.repository.NewsletterSubscriberRepository;
 import ch.batbern.events.repository.RegistrationRepository;
-import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import com.fasterxml.jackson.databind.ObjectMapper;
@@ -22,7 +20,6 @@ import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.dao.DataIntegrityViolationException;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
@@ -56,11 +53,6 @@ class EmailCaseInsensitiveMatchingIntegrationTest extends AbstractIntegrationTes
     private RegistrationRepository registrationRepository;
     @Autowired
     private EventRepository eventRepository;
-
-    @MockitoBean
-    private UserApiClient userApiClient;
-    @MockitoBean
-    private EmailService emailService;
 
     @BeforeEach
     void setUp() {

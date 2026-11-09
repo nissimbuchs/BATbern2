@@ -2025,10 +2025,9 @@ export interface components {
        */
       createIfMissing: boolean;
       /**
-       * @description ADR-005: Controls whether to sync with AWS Cognito.
-       *     - true (default): Creates/syncs with Cognito account (authenticated user)
-       *     - false: Creates anonymous user with cognito_id=NULL (for event registration without account)
-       *     When false, user profile is created without Cognito account and can be linked later via post-authentication trigger.
+       * @description Has no effect; kept for compatibility. This operation never creates a Cognito login: the
+       *     profile is created with cognito_id=NULL either way. A login comes from the sign-up page
+       *     (linked on first sign-in by the PreTokenGeneration trigger) or from issue-credentials.
        * @default true
        * @example false
        */

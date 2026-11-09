@@ -289,7 +289,7 @@ describe('useCompanyMutations Hooks', () => {
       // The seeded entry has no observer; with the suite's gcTime: 0 it could be collected
       // before onMutate reads it, which made this test flaky. Keep company entries alive here.
       queryClient.setQueryDefaults(['company'], { gcTime: Infinity });
-      queryClient.setQueryData(['company', 'company-123', undefined], existingCompany);
+      queryClient.setQueryData(['company', 'company-123'], existingCompany);
 
       // Now create the hook
       const { result } = renderHook(() => useUpdateCompany(), {
@@ -303,11 +303,7 @@ describe('useCompanyMutations Hooks', () => {
 
       // Assert - Check optimistic update applied immediately (synchronously after onMutate runs)
       await waitFor(() => {
-        const cachedData = queryClient.getQueryData([
-          'company',
-          'company-123',
-          undefined,
-        ]) as Company;
+        const cachedData = queryClient.getQueryData(['company', 'company-123']) as Company;
         expect(cachedData).toBeDefined();
         expect(cachedData.name).toBe('Optimistic Name');
       });
@@ -341,15 +337,11 @@ describe('useCompanyMutations Hooks', () => {
 
       // Pre-populate cache AFTER wrapper created
       act(() => {
-        queryClient.setQueryData(['company', 'company-123', undefined], existingCompany);
+        queryClient.setQueryData(['company', 'company-123'], existingCompany);
       });
 
       // Verify cache was set correctly
-      const verifyCache = queryClient.getQueryData([
-        'company',
-        'company-123',
-        undefined,
-      ]) as Company;
+      const verifyCache = queryClient.getQueryData(['company', 'company-123']) as Company;
       expect(verifyCache).toBeDefined();
       expect(verifyCache.name).toBe('Original Name');
 
@@ -511,7 +503,7 @@ describe('useCompanyMutations Hooks', () => {
       };
 
       // Pre-populate cache
-      queryClient.setQueryData(['company', 'company-delete-123', undefined], companyToDelete);
+      queryClient.setQueryData(['company', 'company-delete-123'], companyToDelete);
 
       vi.mocked(companyApiClient.deleteCompany).mockResolvedValue();
 

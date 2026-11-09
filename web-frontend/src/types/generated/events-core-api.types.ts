@@ -827,26 +827,38 @@ export interface components {
       cdnInvalidated?: boolean;
     };
     ValidationStatus: {
-      isValid?: boolean;
-      errors?: string[];
+      isValid: boolean;
+      errors: string[];
     };
     UnassignedSession: {
       sessionSlug?: string;
       title?: string;
     };
     SessionValidationStatus: {
-      isValid?: boolean;
-      errors?: string[];
-      assignedCount?: number;
-      totalCount?: number;
-      unassignedSessions?: components['schemas']['UnassignedSession'][];
+      isValid: boolean;
+      errors: string[];
+      assignedCount: number;
+      totalCount: number;
+      unassignedSessions: components['schemas']['UnassignedSession'][];
     };
     PublishingStatusResponse: {
-      currentPhase?: string;
-      publishedPhases?: string[];
-      topic?: components['schemas']['ValidationStatus'];
-      speakers?: components['schemas']['ValidationStatus'];
-      sessions?: components['schemas']['SessionValidationStatus'];
+      /** @description The phase published last (topic, speakers, agenda); null before the first. */
+      currentPhase?: string | null;
+      publishedPhases: string[];
+      topic: components['schemas']['ValidationStatus'];
+      speakers: components['schemas']['ValidationStatus'];
+      sessions: components['schemas']['SessionValidationStatus'];
+    };
+    /** @description 422 of publishPhase, the reasons the phase cannot be published yet. */
+    PublishValidationError: {
+      /** @example VALIDATION_ERROR */
+      error?: string;
+      message?: string;
+      validationErrors?: {
+        sessionSlug?: string | null;
+        field?: string;
+        message?: string;
+      }[];
     };
     AutoPublishScheduleRequest: {
       phase2Enabled?: boolean;
@@ -1055,7 +1067,7 @@ export interface components {
        */
       realAttendeeCount?: number;
       /**
-       * @description Organizers only (omitted for other callers, GHSA-qhqv). Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+       * @description Organizers only (omitted for other callers, GHSA-qhqv). Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions; historical events may carry an imported name outside that format (e.g. with an umlaut).
        *     Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
        * @example john.doe
        */
@@ -1153,10 +1165,10 @@ export interface components {
        */
       venue?: components['schemas']['Venue'];
       /**
-       * @description Expanded session list with speakers (only included when ?include=sessions or ?include=speakers).
+       * @description Expanded session list with speakers (only included when ?include=sessions or ?include=speakers). Absent otherwise, never null: the class carries JsonInclude NON_NULL.
        *     Story BAT-109: Archive browsing with session expansion
        */
-      sessions?: components['schemas']['Session'][] | null;
+      sessions?: components['schemas']['Session'][];
       /** @description Public read model only (GET /public/events/*): the speakers the website may show for the published phase. SPEAKERS phase: accepted-or-later speakers without talk title; AGENDA and later: with talk title. Never set by the organizer endpoints. */
       speakers?: components['schemas']['PublicSpeaker'][] | null;
       /** @description Organizer's free-text note on topic selection (Story 5.2). */
@@ -2250,7 +2262,7 @@ export interface operations {
            *       "eventCode": "BATbern57",
            *       "title": "Cloud-Native Architecture in Practice",
            *       "eventNumber": 57,
-           *       "workflowState": "PUBLISHED",
+           *       "workflowState": "AGENDA_PUBLISHED",
            *       "description": "Join us for an evening exploring modern cloud-native architecture patterns and best practices.",
            *       "date": "2025-03-15T18:00:00Z",
            *       "registrationDeadline": "2025-03-10T23:59:59Z",
@@ -3178,6 +3190,15 @@ export interface operations {
       400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
+      /** @description The event's content is not ready for this phase (PublishingEngineController). */
+      422: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['PublishValidationError'];
+        };
+      };
     };
   };
   unpublishPhase: {

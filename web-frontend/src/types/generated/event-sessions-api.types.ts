@@ -2308,11 +2308,11 @@ export interface operations {
          *         "pdf": "BAT142_UI_Design.pdf",
          *         "referenten": [
          *           {
-         *             "name": "Thomas Goetz, Die Mobiliar",
+         *             "name": "Anna Muster, Die Mobiliar",
          *             "bio": "Expert in UI design",
          *             "company": "mobiliar",
-         *             "portrait": "thomas.goetz.jpg",
-         *             "speakerId": "thomas.goetz"
+         *             "portrait": "anna.muster.jpg",
+         *             "speakerId": "anna.muster"
          *           }
          *         ]
          *       }
@@ -2332,6 +2332,7 @@ export interface operations {
            * @example {
            *       "totalProcessed": 3,
            *       "successfullyCreated": 2,
+           *       "updated": 0,
            *       "skipped": 1,
            *       "failed": 0,
            *       "details": [

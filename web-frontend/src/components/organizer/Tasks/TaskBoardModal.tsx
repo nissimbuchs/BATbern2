@@ -67,7 +67,7 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
   onClose,
   organizerUsername,
 }) => {
-  const { t, i18n } = useTranslation('events');
+  const { t, i18n } = useTranslation('organizer');
   const queryClient = useQueryClient();
   const theme = useTheme();
   const isFullScreen = useMediaQuery(theme.breakpoints.down('md'));
@@ -281,7 +281,7 @@ export const TaskBoardModal: React.FC<TaskBoardModalProps> = ({
         </DialogContent>
 
         <DialogActions>
-          <Button onClick={onClose}>{t('common.close', 'Close')}</Button>
+          <Button onClick={onClose}>{t('common:actions.close')}</Button>
         </DialogActions>
       </Dialog>
 

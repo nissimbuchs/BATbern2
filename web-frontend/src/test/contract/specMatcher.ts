@@ -7,7 +7,10 @@
  * TS-only runtime syntax (Node 22 runs it with type stripping).
  *
  * URL conventions:
- * - A leading `/api/v1` and an origin (`http://host`) are stripped; a trailing `/` too.
+ * - A leading `/api/v1` and an origin (`http://host`) are stripped; a trailing `/` too. With
+ *   `{ bareApiPrefix: true }` (the MSW harness, 17.0c1) a bare `/api` is stripped as well: in tests
+ *   `apiClient` keeps its initial baseURL `/api`, while the runtime base is `<host>/api/v1`. The CI
+ *   path check leaves it off, so a literal `/api/...` in code is still reported there.
  * - `{*}` stands for a value the caller could not resolve (a `${...}` in a template literal).
  *   A segment that is only `{*}` matches any spec segment; `{*}` inside a segment matches any
  *   characters there. In the query, a `{*}` name or value is not checked.
@@ -52,6 +55,11 @@ export interface SpecOperation {
 
 export interface SpecIndex {
   operations: SpecOperation[];
+}
+
+export interface MatchOptions {
+  /** Also strip a bare leading `/api` (the test baseURL of `apiClient`). */
+  bareApiPrefix?: boolean;
 }
 
 export type MatchResult =
@@ -139,9 +147,10 @@ export function buildSpecIndex(documents: SpecDocument[]): SpecIndex {
   return { operations };
 }
 
-function normalizePath(path: string): string {
+function normalizePath(path: string, options: MatchOptions = {}): string {
   let p = path.replace(/^https?:\/\/[^/]+/, '');
   p = p.replace(/^\/api\/v1(?=\/|$)/, '');
+  if (options.bareApiPrefix) p = p.replace(/^\/api(?=\/|$)/, '');
   if (p.length > 1) p = p.replace(/\/+$/, '');
   if (!p.startsWith('/')) p = `/${p}`;
   return p;
@@ -234,12 +243,17 @@ function checkQuery(query: string, op: SpecOperation): string | undefined {
 }
 
 /** Is `method` + `url` defined by a spec? */
-export function matchOperation(index: SpecIndex, method: string, url: string): MatchResult {
+export function matchOperation(
+  index: SpecIndex,
+  method: string,
+  url: string,
+  options: MatchOptions = {}
+): MatchResult {
   const upper = method.toUpperCase();
   const q = url.indexOf('?');
   const rawPath = q < 0 ? url : url.slice(0, q);
   const query = q < 0 ? '' : url.slice(q + 1).replace(/#.*$/, '');
-  const path = normalizePath(rawPath);
+  const path = normalizePath(rawPath, options);
   const codeSegments = splitSegments(path);
 
   const candidates = index.operations

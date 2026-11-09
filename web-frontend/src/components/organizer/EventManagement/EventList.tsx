@@ -79,7 +79,7 @@ export const EventList: React.FC<EventListProps> = ({
       >
         {events.map((event) => (
           <Grid size={{ xs: 12, sm: 6, md: 4 }} key={event.eventCode}>
-            <Box data-testid={`event-card-${event.eventCode}`}>
+            <Box data-testid={`event-list-item-${event.eventCode}`}>
               <EventCard event={event} onEdit={onEventEdit} onCardClick={onEventClick} />
             </Box>
           </Grid>

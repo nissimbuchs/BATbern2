@@ -16,6 +16,7 @@ import ch.batbern.events.repository.SessionQnaWindowRepository;
 import ch.batbern.events.repository.SessionRepository;
 import ch.batbern.events.repository.SessionUserRepository;
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
 import net.javacrumbs.shedlock.core.LockProvider;
@@ -24,25 +25,20 @@ import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.test.context.bean.override.mockito.MockitoBean;
-import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 
 import java.time.Instant;
 import java.time.temporal.ChronoUnit;
+import java.util.List;
 import java.util.Optional;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.lenient;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 
 /**
@@ -52,9 +48,8 @@ import static org.mockito.Mockito.when;
  * {@code @MockitoBean LockProvider}</b> grants a no-op lock so the committed lock row never leaks
  * across rolled-back test transactions (NOT a {@code @TestConfiguration @Primary} bean).
  *
- * <p>{@link EmailService} is a {@code @MockitoSpyBean} — its real rendering runs (so the count is
- * substituted into the body), but the actual SES send is the test-profile no-op; we verify the
- * send call + capture its arguments. {@link UserApiClient} is a {@code @MockitoBean} stubbed
+ * <p>The real {@link EmailService} renders and sends to the {@link SesRecorder} (17.0b3): the tests
+ * assert what SES received, recipient and body. {@link UserApiClient} is a {@code @MockitoBean} stubbed
  * per-recipient (cadence preference, email, locale).
  *
  * <p><b>Not {@code @Transactional}.</b> The service under test is intentionally non-transactional
@@ -83,8 +78,8 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
     @MockitoBean
     private LockProvider lockProvider;
 
-    @MockitoSpyBean
-    private EmailService emailService;
+    @Autowired
+    private SesRecorder sesRecorder;
 
     @MockitoBean
     private UserApiClient userApiClient;
@@ -102,6 +97,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
     void setUp() {
         // Committed cleanup (this test class is not @Transactional — see class javadoc).
         cleanDb();
+        sesRecorder.reset();
 
         when(lockProvider.lock(any())).thenReturn(Optional.of(mock(SimpleLock.class)));
 
@@ -109,13 +105,13 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         lenient().when(userApiClient.getQnaNotificationFrequency(anyString())).thenReturn("live");
         lenient().when(userApiClient.getPreferredLanguage(anyString())).thenReturn("en");
         lenient().when(userApiClient.getUserByUsername(SPEAKER))
-                .thenReturn(new UserResponse().email("primary.speaker@batbern.ch"));
+                .thenReturn(new UserResponse().email("success+primary.speaker@simulator.amazonses.com"));
         lenient().when(userApiClient.getUserByUsername(CO_SPEAKER))
-                .thenReturn(new UserResponse().email("co.speaker@batbern.ch"));
+                .thenReturn(new UserResponse().email("success+co.speaker@simulator.amazonses.com"));
         lenient().when(userApiClient.getUserByUsername(MODERATOR))
-                .thenReturn(new UserResponse().email("the.moderator@batbern.ch"));
+                .thenReturn(new UserResponse().email("success+the.moderator@simulator.amazonses.com"));
         lenient().when(userApiClient.getUserByUsername(PANELIST))
-                .thenReturn(new UserResponse().email("the.panelist@batbern.ch"));
+                .thenReturn(new UserResponse().email("success+the.panelist@simulator.amazonses.com"));
     }
 
     @AfterEach
@@ -152,12 +148,11 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(3)).sendHtmlEmailSync(any(), to.capture(), any(), anyString(), anyString(), any(), any());
-        assertThat(to.getAllValues()).containsExactlyInAnyOrder(
-                "primary.speaker@batbern.ch", "co.speaker@batbern.ch", "the.moderator@batbern.ch");
+        assertThat(sesRecorder.mails()).hasSize(3);
+        assertThat(sesRecorder.mails()).flatExtracting(SesRecorder.RecordedMail::to).containsExactlyInAnyOrder(
+                "success+primary.speaker@simulator.amazonses.com", "success+co.speaker@simulator.amazonses.com", "success+the.moderator@simulator.amazonses.com");
         // Panelist never emailed.
-        verify(emailService, never()).sendHtmlEmailSync(any(), eq("the.panelist@batbern.ch"), any(), anyString(), anyString(), any(), any());
+        assertThat(sesRecorder.mailsTo("success+the.panelist@simulator.amazonses.com")).isEmpty();
 
         assertThat(notificationRepository.count()).isEqualTo(3);
     }
@@ -188,10 +183,9 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(2)).sendHtmlEmailSync(any(), to.capture(), any(), anyString(), anyString(), any(), any());
-        assertThat(to.getAllValues()).containsExactlyInAnyOrder(
-                "primary.speaker@batbern.ch", "the.moderator@batbern.ch");
+        assertThat(sesRecorder.mails()).hasSize(2);
+        assertThat(sesRecorder.mails()).flatExtracting(SesRecorder.RecordedMail::to).containsExactlyInAnyOrder(
+                "success+primary.speaker@simulator.amazonses.com", "success+the.moderator@simulator.amazonses.com");
     }
 
     // ==================== AC5 (live): digest windowing ====================
@@ -208,9 +202,9 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), body.capture(), any(), any());
-        assertThat(body.getValue()).contains("5");
+        List<SesRecorder.RecordedMail> sent = sesRecorder.mailsTo("success+primary.speaker@simulator.amazonses.com");
+        assertThat(sent).hasSize(1);
+        assertThat(sent.get(sent.size() - 1).html()).contains("5");
     }
 
     @Test
@@ -224,7 +218,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         qnaNotificationService.flushPending();
         qnaNotificationService.flushPending(); // immediately again — within the 15-min window
 
-        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), anyString(), any(), any());
+        assertThat(sesRecorder.mailsTo("success+primary.speaker@simulator.amazonses.com")).hasSize(1);
     }
 
     @Test
@@ -249,9 +243,9 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending(); // should send "2" (only the new ones)
 
-        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(2)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), body.capture(), any(), any());
-        assertThat(body.getAllValues().get(1)).contains("2");
+        List<SesRecorder.RecordedMail> sent = sesRecorder.mailsTo("success+primary.speaker@simulator.amazonses.com");
+        assertThat(sent).hasSize(2);
+        assertThat(sent.get(1).html()).contains("2");
     }
 
     // ==================== AC6 (daily) ====================
@@ -276,7 +270,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), anyString(), any(), any());
+        assertThat(sesRecorder.mailsTo("success+primary.speaker@simulator.amazonses.com")).hasSize(1);
     }
 
     // ==================== AC7 (off) ====================
@@ -292,7 +286,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        verify(emailService, never()).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), anyString(), any(), any());
+        assertThat(sesRecorder.mailsTo("success+primary.speaker@simulator.amazonses.com")).isEmpty();
         assertThat(notificationRepository.count()).isZero();
     }
 
@@ -308,7 +302,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        verify(emailService, never()).sendHtmlEmailSync(any(), anyString(), any(), anyString(), anyString(), any(), any());
+        assertThat(sesRecorder.mails()).isEmpty();
     }
 
     // ==================== AC9 (exclusions) ====================
@@ -338,7 +332,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
         qnaNotificationService.flushPending();
 
         // Exactly one email overall (for the original question) — the replies didn't add any.
-        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), anyString(), any(), any());
+        assertThat(sesRecorder.mailsTo("success+primary.speaker@simulator.amazonses.com")).hasSize(1);
     }
 
     @Test
@@ -353,8 +347,8 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        verify(emailService, never()).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), anyString(), any(), any());
-        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("the.moderator@batbern.ch"), any(), anyString(), anyString(), any(), any());
+        assertThat(sesRecorder.mailsTo("success+primary.speaker@simulator.amazonses.com")).isEmpty();
+        assertThat(sesRecorder.mailsTo("success+the.moderator@simulator.amazonses.com")).hasSize(1);
     }
 
     // ==================== AC10 (enrichment: missing email skipped; non-DE/EN → EN) ====================
@@ -370,7 +364,7 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        verify(emailService, never()).sendHtmlEmailSync(any(), anyString(), any(), anyString(), anyString(), any(), any());
+        assertThat(sesRecorder.mails()).isEmpty();
         assertThat(notificationRepository.count()).isZero();
     }
 
@@ -385,10 +379,10 @@ class QnaNotificationServiceIntegrationTest extends AbstractIntegrationTest {
 
         qnaNotificationService.flushPending();
 
-        ArgumentCaptor<String> body = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(1)).sendHtmlEmailSync(any(), eq("primary.speaker@batbern.ch"), any(), anyString(), body.capture(), any(), any());
-        assertThat(body.getValue()).contains("question"); // EN copy
-        assertThat(body.getValue()).doesNotContain("Frage"); // not the DE template
+        List<SesRecorder.RecordedMail> sent = sesRecorder.mailsTo("success+primary.speaker@simulator.amazonses.com");
+        assertThat(sent).hasSize(1);
+        assertThat(sent.get(sent.size() - 1).html()).contains("question"); // EN copy
+        assertThat(sent.get(sent.size() - 1).html()).doesNotContain("Frage"); // not the DE template
     }
 
     // ==================== helpers ====================

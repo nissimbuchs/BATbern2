@@ -345,9 +345,9 @@ void shouldCreateEventSuccessfully() {
     assertThat(event.getTitle()).isEqualTo("BATbern 2024");
 }
 
-// Integration tests - MUST extend AbstractIntegrationTest. No class-level @Transactional on a
-// write IT: the rollback skips the flush, so DB constraints and triggers never run (see
-// "Test fidelity rules"). Clean up in @AfterEach, or flush() before asserting.
+// Integration tests - MUST extend AbstractIntegrationTest. Prefer no class-level @Transactional on
+// a write IT (clean up in @AfterEach); where one exists, FlushBeforeRollback flushes before the
+// rollback so DB constraints and triggers run (see "Test fidelity rules").
 class EventControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private MockMvc mockMvc;
@@ -441,8 +441,191 @@ security filter chain, our hooks and our service modules.
 
 Unit tests of pure functions stay as they are. The rule targets tests that claim to test
 behaviour while the behaviour is mocked. Until the shared harnesses exist (17.0b: S2S contract
-harness, 17.0c: MSW harness), a new test that cannot avoid an own-code mock says why in a comment,
-and the ratchet below makes that visible in review.
+harness, in place for public `/api/v1` calls since 17.0b1 and for `/internal/**` since 17.0b2;
+17.0c: MSW harness, in place since 17.0c1), a new test that cannot avoid an own-code mock says why
+in a comment, and the ratchet below makes that visible in review.
+
+#### S2S contract harness (backend)
+
+Stories 17.0b1 and 17.0b2. A service-to-service client is tested as itself, on its real
+`RestTemplate`, against the provider's spec: `docs/api/` for the public `/api/v1` API,
+`docs/api/internal/{cums,ems,pcs}-internal.openapi.yml` for `/internal/**`. `ContractServer` (shared-kernel test fixtures,
+`ch.batbern.shared.test.contract`) binds `MockRestServiceServer` to the client's `RestTemplate`,
+validates every request against the spec (path and method exist, parameters within their limits,
+body against its schema, `Authorization` where the spec requires it) and answers with the spec's
+example, or with a test body that is first checked against the response schema. A request the
+provider would reject fails the test with the validator's message, as an `AssertionError` that a
+client's `catch (Exception e)` cannot swallow:
+
+```java
+var server = ContractServer.bindTo(restTemplate, "docs/api/companies-api.openapi.yml");
+server.expect(GET, "/api/v1/companies").respondWithExample();   // or .respondWith(OK, json)
+var companies = client.getAllCompanies();                       // request validated, example returned
+server.verify();
+```
+
+Client contract tests live next to the client (`UserApiClientImplContractTest`,
+`CompanyServiceClientContractTest`, ...). An IT whose code calls a peer service binds the harness to
+the context's `RestTemplate` bean in `@BeforeEach` instead of a `@MockitoBean` of the client, and
+calls `close()` in `@AfterEach` (the bean is shared by the cached context);
+`.ignoringMissingAuthorization()` is allowed there only because a `@WithMockUser` caller has no JWT
+to forward. Each provider proves its side in `S2sProviderContractIntegrationTest` (CUMS, EMS, PCS):
+every consumed operation runs through the real controller and `ProviderContract` checks the
+response, and the examples, against the same spec. A spec without a usable example for a consumed
+operation gets one. How the harness reads `null` and `format: time` (as the generated code does) is
+documented in `GeneratedCodeSemantics`.
+
+`/internal/**` (17.0b2): every internal operation is specified in `docs/api/internal/` (one spec per
+provider, server `/`, full paths; schemas `$ref` the public components where the DTO is generated
+from them). There is no unvalidated way to answer a call: a path no bound spec has fails, naming
+method, path and spec. A client whose one `RestTemplate` reaches several specs binds them all
+(`bindTo(restTemplate, USERS, CUMS_INTERNAL)`). In EMS, `CumsContractHarness` (test
+`ch.batbern.events.config`, picked up by the application's component scan like `TestAwsConfig`)
+is CUMS for every integration test context: the real `UserApiClientImpl` runs, defaults answer the
+user, user-list and email-owner reads, and a test registers other answers (`cums.user(...)`,
+`cums.answer(POST, "/api/v1/users/provision", ...)`) and reads what was sent (`cums.calls(...)`),
+then calls `cums.reset()`. A test that binds its own `ContractServer` to that `RestTemplate` (for
+PCS) displaces the CUMS harness for its duration, and CUMS calls then fail as "not an operation of
+..."; to keep CUMS, bind with `.onlyFor(uri -> !uri.toString().startsWith(cumsBaseUrl))` so CUMS
+requests fall through to the harness, or bind both specs (`bindTo(restTemplate, PARTNERS,
+CUMS_INTERNAL)`) and expect the CUMS calls there; `close()` in `@AfterEach` restores the harness. In PCS, `CumsInternalUsers` registers the user lookup on the test's
+`ContractServer`. The public tooling (frontend path check, type generation, API similarity, ZAP
+coverage, access-control probe, `lint:api`) does not read `docs/api/internal/`; it is linted by
+`npm run lint:api-internal` with its own reduced ruleset (`docs/api/internal/.spectral.yaml`).
+
+#### Frontend: the MSW harness (17.0c1)
+
+Every Vitest test runs against one MSW server (`web-frontend/src/test/msw/`, started in
+`src/test/setup.ts`). It is the frontend twin of `ContractServer`:
+
+- **Every request is checked against `docs/api/*.openapi.yml`** with the 17.3 `specMatcher`: the
+  path exists, the method exists for it, every query parameter is declared and within its enum,
+  minimum and maximum. `/api/...` (the test baseURL of `apiClient`) and `/api/v1/...` are the same
+  operation. A request outside the specs fails as a network error **and** fails the test afterwards
+  with the matcher's reason (`SpecViolationError`), so code that swallows the error cannot hide it.
+  `docs/api/internal/` is not frontend-callable and not served.
+- **Default answer:** for `listUsers`, `searchUsers`, `listEvents` and `listRegistrations`, the
+  production-shaped fixture set with real paging (17.0d, below); for every other operation the spec
+  example of its lowest 2xx response (an empty body for a 204 or a binary download). Every JSON
+  2xx response in the specs has one; `examples.test.ts` guards that it exists, validates against
+  the schema and carries no personal data.
+- **Overrides by `operationId`**, typed from `src/types/generated/`: a missing required field or a
+  wrong shape fails `npm run type-check` (`tsconfig.test-harness.json` covers the harness and the
+  tests listed there). An operationId two specs share is qualified by its spec
+  (`topics-api/listTopics`, `partners-api/listTopics`).
+
+```ts
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+
+api.on('listCompanies', ({ query }) => ({ data: [company], pagination }));   // typed body
+api.on('getCompany', () => HttpResponse.json(problem, { status: 404 }));      // any Response
+api.on('createCompany', ({ body }) => created, { status: 201 });
+render(<CompanyPage />);                                                      // real hooks, services
+expect(api.calls('listCompanies')[0].query.get('search')).toBe('Müller');     // what was sent
+```
+
+Overrides and recorded calls are reset after every test. Render the real screen with its real
+hooks and services; do not `vi.mock` them. A test that talks to another host (an S3 presigned URL)
+adds its own handler with `server.use(...)` from `@/test/msw/server`, never for an `/api` URL.
+i18n stays the real i18next with `en` from `setup.ts`; a per-file `vi.mock('react-i18next')` is
+counted by the ratchet (`fe-mock-i18n`).
+
+**Auth, stores, WebSockets (17.0c2).** A screen that calls `useAuth` gets its state from
+`src/test/auth.tsx`: `renderWithAuth(ui, { auth: signedInAs('organizer') })` (or
+`AuthTestProvider` around a custom tree; `signedOut()`, `anAuthState(user, overrides)`) puts a
+signed-in or signed-out state into the real `AuthContext`, so `useAuth` and every consumer run for
+real, and `hasRole`, `hasPermission` and `canAccess` are the provider's own rules
+(`src/contexts/authRules.ts`). Never `vi.mock('@/hooks/useAuth')`. Zustand stores run for real: set
+the state a test needs with `useXStore.setState(...)` and reset it in `beforeEach` (a persisted
+store also needs `localStorage.clear()`). A STOMP/SockJS connection is a network boundary: mock
+the third-party packages (`@stomp/stompjs`, `sockjs-client`) or rely on the condition the client
+already uses to stay off, never our own WebSocket hook or client.
+
+New examples come from the local anonymized database:
+`cd web-frontend && node ../scripts/dev/capture-spec-examples.ts` against `make dev-native-up`
+(refuses any non-localhost URL; scrubs e-mail addresses, names, usernames and free text and checks
+the result by value against the database). A spec change that adds a JSON 2xx response adds its
+example in the same PR.
+
+#### Production setup in tests (17.0b3)
+
+Integration tests run what production runs; the base class and the shared test config set it up,
+a test does not opt in.
+
+- **Security chain.** Every IT runs the service's production `SecurityFilterChain` and
+  `JwtDecoder` (EMS: one chain in every profile; PCS and CUMS: the production chain in every profile
+  but `local`). There is no permit-all test chain. An anonymous call answers **401** as in
+  production, a wrong role **403**. Authenticate with `@WithMockUser`, `.with(user(...))` or
+  `.with(jwt()...)`; to exercise the real role mapping, pass the service's
+  `JwtAuthenticationConverter` (`jwt().jwt(t -> t.claim("custom:role", "ATTENDEE"))
+  .authorities(...)`), as `ProductionChainIntegrationTest` (one per service) does. The test
+  properties point the JWK set at `https://jwks.example.invalid/keys`: no test uses a real token.
+- **Mail.** The real `EmailService` runs in every IT. The only `SesClient` in a test context is the
+  `SesRecorder` (shared-kernel test fixtures, `ch.batbern.shared.test.mail`), registered by each
+  service's `TestAwsConfig`: it sends nothing and records what SES received, parsed (To, Cc,
+  Reply-To, From, subject, HTML, text, attachment names, MIME headers, tags). Autowire it,
+  `reset()` it in `@BeforeEach`, assert on `mails()` / `mailsTo(address)` / `single()`; simulate a
+  refusal with `failWith(...)` or `failFor(address, ...)` and `SesRecorder.sesError(...)`.
+  `EmailService` sends on the `@Async` executor: `reset()` first waits until that executor has no
+  task left (`AsyncTaskTracker`, `ch.batbern.shared.test.async`, registered by `TestAwsConfig` in
+  EMS and PCS), so a late send of the previous test cannot reach the next one. A test that asserts
+  a mail sent on the async path, or its absence, calls `sesRecorder.awaitAsyncSends()` first
+  instead of polling or sleeping. Never
+  `@MockitoBean`, `@MockitoSpyBean` or `mock(EmailService.class)`, never `verify(emailService)`.
+  Because SES is "live" to the `EmailService`, every wall runs: address validation (one address
+  per To:/Cc entry, checked before the SES branch since #1176), reserved domains and the
+  test-marker wall. A recipient that must receive mail uses `success+<name>@simulator.amazonses.com`
+  (AWS mailbox simulator); `@example.com` stays for data that must never receive mail.
+- **Cognito (CUMS).** The real `CognitoIntegrationServiceImpl` runs in every CUMS IT on
+  `InMemoryCognito` (CUMS test `config`), the context's only `CognitoIdentityProviderClient`,
+  registered by `TestAwsConfig`. It behaves like the BATbern pool for what CUMS calls (e-mail as
+  sign-in alias, the sub as username, the password policy, `UsernameExistsException`,
+  `UserNotFoundException`, `AliasExistsException`). Autowire it, `reset()` it in `@BeforeEach`,
+  seed logins with `givenLogin(email, status)`, make a call fail with `failNext(operation,
+  exception)` and assert the login (`login(email)`: enabled, attributes, password state), never
+  `verify` a call on `CognitoIntegrationService`.
+- **Flush before rollback.** `AbstractIntegrationTest` registers `FlushBeforeRollback`: after the
+  test body, before `@AfterEach` and the rollback, the test transaction's persistence context is
+  flushed, so a `@Transactional` IT that leaves data production would refuse (NOT NULL, unique,
+  bean validation, a transient reference) fails with the database error (#1104). It is skipped when
+  the test already failed and when the transaction is aborted (SQLState `25P02`, a test that
+  provoked and asserted a violation itself). A test that catches a Hibernate exception and goes on
+  calls `entityManager.clear()`: a session that threw must not be flushed again.
+
+#### Production-shaped fixtures (17.0d)
+
+Test data that is ASCII, lower case, unique and small hid 12 of the 57 bugs: the umlaut search and
+the 32 "Matthias" of #1034, "Hông Ân" → 500 in #1104, mixed-case e-mails in #1107, sort ties in
+#1131. One shared set per side carries those shapes, and it is the default. **An ASCII-only, unique,
+small builder is the exception**; a test that needs one says why.
+
+- **Shapes:** `Hông Ân` (NFC), `O’Neill` (typographic apostrophe), `王`, an umlaut surname
+  (`Brünnimann`), a mixed-case e-mail, an IDN e-mail domain (ASCII local part: SES has no SMTPUTF8),
+  two people with the identical full name (usernames `matthias.keller`, `matthias.keller.2`), more
+  than 20 "Matthias" (more than one default page), ties in the sort key (last name), past and future
+  events, every registration status. The frontend set also has a tie in `createdAt` (the backend
+  set has no `createdAt`). Invented names, `example.com` / `*.example` only. A guard test per side
+  fails by name when one of its shapes disappears.
+- **Frontend:** `web-frontend/src/test/fixtures/` (`people`, `shapes`, `namesakes`, `nonAsciiNames`,
+  `emails`, `aUser()`, `toSearchResult()`, `events()`, `pastEvent()`, `futureEvent()`,
+  `registrations()`), typed from `src/types/generated/`, guard `fixtures.test.ts`. **Harness default:**
+  without an `api.on` override, `listUsers`, `searchUsers`, `listEvents` and `listRegistrations`
+  answer from this set with real paging from `page`/`limit` (`src/test/msw/fixtureDefaults.ts`);
+  the search approximates `batbern_fold` (accents, ß/ø/æ/œ/đ/ł/þ, ü = ue = u) and requires every
+  word; `listRegistrations` pages 25 by default and applies `status` like EMS. It is a stand-in, not the backend's ranking: a test that depends on ranking, a filter the
+  stand-in ignores or a specific body sets `api.on`. Every other operation answers with its spec example.
+- **Backend:** shared-kernel test fixtures `ch.batbern.shared.test.fixtures.ProductionShapedPeople`
+  (named shapes `VIETNAMESE`, `APOSTROPHE`, `CJK`, `MIXED_CASE_EMAIL`, `IDN_EMAIL`, `BRUENNIMANN`,
+  `IDENTICAL_NAMES`, `NAMESAKES`, `ALL`), exposed by `AbstractIntegrationTest` as `PEOPLE`. Each
+  person's `username` is what `SlugGenerationService` generates in list order (guard
+  `ProductionShapedPeopleTest`). The set is **exposed, not seeded**: an IT persists the people it
+  needs, so existing row counts do not change. EMS adds `ch.batbern.events.fixtures.ProductionShapedEvents`
+  (past and future event, one registration per status); `ProductionShapedEventsIntegrationTest`
+  checks the statuses against `registrations_status_check`, read from the database.
+- **Dates are relative to the clock**, never a calendar date (`daysFromNow(40)`,
+  `futureEvent(clock)`). A fixed date that is "in the future" today becomes a past one later and
+  turns a test red for no code change (#1069, #1241).
 
 #### Assertion rules
 
@@ -473,13 +656,15 @@ baseline `web-frontend/scripts/test-ratchet-baseline.txt`:
 | Category | Counts |
 |---|---|
 | `fe-mock-services` / `fe-mock-hooks` / `fe-mock-components` | `vi.mock(` / `vi.doMock(` of own code in `web-frontend/src/**/*.{test,spec}.ts(x)`, and `vi.spyOn(x, …)` where `x` is imported from own code, by resolved path: `src/services`; `src/hooks` or a `use[A-Z]...` module; `src/components`, `src/pages` or a PascalCase module |
-| `be-mock-s2s-client` | `@MockitoBean` of a type ending in `Client` that is not a boundary type (`UserApiClient`, `UserServiceClient`, ...) |
-| `be-mock-in-process` | any other `@MockitoBean` that is not a boundary type |
+| `fe-mock-i18n` | `vi.mock('react-i18next')` / `vi.doMock('react-i18next')`: a per-file i18n stub instead of the real i18next with `en` (17.0c1; the stub dropped interpolation in #959 and hides missing keys) |
+| `be-mock-s2s-client` | `@MockitoBean` (and `@MockitoSpyBean`: a spy stubs and verifies own code like a mock) of a type ending in `Client` that is not a boundary type (`UserApiClient`, `UserServiceClient`, ...), and `mock(XClient.class)` / `Mockito.mock(XClient.class)` / a `@Mock XClient` field of such a type anywhere in test sources (a shared `@Primary` mock such as the EMS `TestUserApiClientConfig` that 17.0b1 retired) |
+| `be-mock-in-process` | any other `@MockitoBean` / `@MockitoSpyBean` that is not a boundary type, and `mock(X.class)` of such a type inside a test `@Configuration` / `@TestConfiguration` class (a shared mock bean, such as the `EmailService` mocks the services' `TestAwsConfig` held until 17.0b3) |
 | `be-transactional-it` | class-level `@Transactional` on a test class that extends `AbstractIntegrationTest` or is named `*IntegrationTest` / `*IT` |
 
 Boundary types, never counted: `SesClient`, `SesV2Client`, `S3Client`, `S3Presigner`,
 `CognitoIdentityProviderClient`, `SqsClient`, `Clock`, `JwtDecoder`, and any
-type imported from `software.amazon.awssdk`. Mentions in comments and Javadoc are not counted;
+type imported from `software.amazon.awssdk` (for `mock(...)` calls also from `java.*`, e.g.
+`java.net.http.HttpClient`). Mentions in comments and Javadoc are not counted;
 in Java, mentions in string and text-block literals are not counted either (the frontend scan
 skips comments only).
 
@@ -494,6 +679,33 @@ skips comments only).
   PR says so.
 
 Locally: `make check-test-ratchet`.
+
+#### Frontend: i18n keys
+
+The tests run on the real `en` bundles, and the app falls back to `de` (`fallbackLng`), so a
+`t('key')` whose key is missing in `en` shows an English visitor German text or the inline default,
+and no test notices. `web-frontend/scripts/check-i18n-keys.ts` (CI step "Frontend i18n key check" in
+`build-frontend`, locally `make check-i18n-keys`) reads every `t()` call in `web-frontend/src`
+(tests and `src/test/` excluded) and looks its key up in `public/locales/en/<namespace>.json`:
+
+- the namespace comes from the binding (`useTranslation('ns')`, an array: each in order, none:
+  `common`; `{ t: tX }` renames, `{ keyPrefix }`), from a `ns:key` prefix or a `{ ns: 'x' }`
+  option; `i18n.t` / `i18next.t` use `common`; a `t` that is a parameter of the enclosing
+  function (`(t: TFunction) => ...`, `function f(t, n)`, `({ t }) => ...`), or has no binding in
+  the file, counts as found when any `en` namespace has the key;
+- the key must hold a string; an object counts only for a call with `returnObjects: true`
+  (i18next otherwise renders "returned an object instead of string");
+- plural forms count only for a call that passes `count` (`t('items', { count })` is found as
+  `items_one` / `items_other`), context forms only for one that passes `context` (a literal
+  context names the one form `greeting_male`);
+- a key built at run time (variable, template with `${}`, concatenation) is skipped.
+
+The keys missing when the gate came in (166 calls in 51 files) are frozen per file in
+`web-frontend/scripts/i18n-keys-baseline.txt`. A file that gains a missing key fails (RAISED, with
+file, line, key and namespace); add the key to `en` and the other 9 locales. A file that loses one
+fails until the gain is locked in (STALE): `cd web-frontend && npm run check:i18n-keys -- --update`,
+commit the baseline in the same PR. Filling the frozen keys is touch-rule work: a story that
+changes a screen fills that screen's keys.
 
 ### Lambda Handler Testing (Infrastructure)
 

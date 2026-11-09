@@ -148,6 +148,10 @@ Success message: "Partner 'Sustainable Materials AG' created successfully"
 
 The partner directory showcases all active partners, sorted by tier.
 
+In the organizers' directory (**Partners**), **Sort by** orders the list by **Company Name** (A to Z,
+the default) or **Partnership Tier** (Strategic first, equal tiers by name). The sort applies to all
+pages, not only to the one shown.
+
 ### Directory Display
 
 ```

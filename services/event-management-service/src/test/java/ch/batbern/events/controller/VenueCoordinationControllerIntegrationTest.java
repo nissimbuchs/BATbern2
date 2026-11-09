@@ -1,23 +1,21 @@
 package ch.batbern.events.controller;
 
+import ch.batbern.events.config.CumsContractHarness;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
-import ch.batbern.events.config.TestUserApiClientConfig;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.shared.types.EventWorkflowState;
-import ch.batbern.events.dto.generated.users.UserResponse;
 import ch.batbern.events.entity.AppSettingEntity;
 import ch.batbern.events.repository.AppSettingRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.client.UserApiClient;
-import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.test.mail.SesRecorder;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
@@ -30,27 +28,22 @@ import java.util.Map;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 @Transactional
-@Import({TestSecurityConfig.class, TestAwsConfig.class, TestUserApiClientConfig.class})
+@Import({TestSecurityConfig.class, TestAwsConfig.class})
 class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest {
 
     private static final String EVENT_CODE = "BATtest-venue-coord";
     private static final String CONFIG_KEY = "venue.coordination.config";
     private static final String CONFIG_JSON = """
             {
-              "venue": { "salutation": "Frau", "name": "Gabriela Senn", "email": "venue@test.invalid" },
-              "catering": { "salutation": "Herr", "name": "Stefan Oppliger", "email": "catering@test.invalid" },
-              "coordinatorUsername": "nissim.buchs"
+              "venue": { "salutation": "Frau", "name": "Gabriela Senn", "email": "success+venue@simulator.amazonses.com" },
+              "catering": { "salutation": "Herr", "name": "Stefan Oppliger", "email": "success+catering@simulator.amazonses.com" },
+              "coordinatorUsername": "anna.coordinator"
             }
             """;
 
@@ -66,11 +59,12 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private EventRepository eventRepository;
 
+    /** CUMS behind the real UserApiClient (Story 17.0b2). */
     @Autowired
-    private UserApiClient userApiClient;
+    private CumsContractHarness cums;
 
     @Autowired
-    private EmailService emailService;
+    private SesRecorder sesRecorder;
 
     @BeforeEach
     void setUp() {
@@ -95,58 +89,20 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
         event.setVenueCapacity(150);
         event.setDate(eventDate);
         event.setRegistrationDeadline(eventDate.minusSeconds(14L * 24L * 3600L));
-        event.setOrganizerUsername("nissim.buchs");
+        event.setOrganizerUsername("anna.coordinator");
         event.setEventType(EventType.FULL_DAY);
         event.setWorkflowState(EventWorkflowState.SLOT_ASSIGNMENT);
         eventRepository.save(event);
 
-        // Coordinator user — override mock returns to provide a real email
-        UserResponse coordinator = new UserResponse()
-                .id("nissim.buchs")
-                .email("nissim.buchs@elca.ch")
-                .firstName("Nissim")
-                .lastName("Buchs")
-                .active(true);
-        when(userApiClient.getUserByUsername("nissim.buchs")).thenReturn(coordinator);
+        // Coordinator user: CUMS answers with a real email
+        cums.user("anna.coordinator", "Anna", "Coordinator", "anna.coordinator@example.com");
 
-        // TestAwsConfig provides a @Primary Mockito mock for EmailService; pure-logic
-        // methods like replaceVariables therefore return null by default and crash the
-        // preview flow. Re-implement the real substitution algorithm here so the rendered
-        // output is real HTML that we can assert on.
-        when(emailService.replaceVariables(anyString(), any())).thenAnswer(invocation -> {
-            String template = invocation.getArgument(0);
-            @SuppressWarnings("unchecked")
-            java.util.Map<String, String> vars = invocation.getArgument(1);
-            return realReplace(template, vars);
-        });
-
-        // sendHtmlEmailSync is void on a Mockito mock → doNothing by default. No stub needed.
+        sesRecorder.reset();
     }
 
-    private static String realReplace(String template, java.util.Map<String, String> vars) {
-        if (template == null) {
-            return null;
-        }
-        if (vars == null) {
-            return template;
-        }
-        String result = template;
-        // Conditional blocks first
-        for (var e : vars.entrySet()) {
-            String value = e.getValue();
-            boolean isEmpty = value == null || value.trim().isEmpty();
-            String open = "\\{\\{#" + java.util.regex.Pattern.quote(e.getKey()) + "\\}\\}";
-            String close = "\\{\\{/" + java.util.regex.Pattern.quote(e.getKey()) + "\\}\\}";
-            var pattern = java.util.regex.Pattern.compile(open + "(.*?)" + close,
-                    java.util.regex.Pattern.DOTALL);
-            var matcher = pattern.matcher(result);
-            result = isEmpty ? matcher.replaceAll("") : matcher.replaceAll("$1");
-        }
-        // Then simple placeholders
-        for (var e : vars.entrySet()) {
-            result = result.replace("{{" + e.getKey() + "}}", e.getValue() == null ? "" : e.getValue());
-        }
-        return result;
+    @AfterEach
+    void resetCums() {
+        cums.reset();
     }
 
     @Test
@@ -164,15 +120,15 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.toEmail", is("venue@test.invalid")))
+                .andExpect(jsonPath("$.toEmail", is("success+venue@simulator.amazonses.com")))
                 .andExpect(jsonPath("$.ccEmails").isArray())
                 .andExpect(jsonPath("$.ccEmails", org.hamcrest.Matchers.empty()))
-                .andExpect(jsonPath("$.replyToEmail", is("nissim.buchs@elca.ch")))
+                .andExpect(jsonPath("$.replyToEmail", is("anna.coordinator@example.com")))
                 .andExpect(jsonPath("$.subject", containsString("Samstag, 15. August 2026")))
                 .andExpect(content().string(containsString("Frau Senn")))
                 // Notes preserve their newlines as <br>
                 .andExpect(content().string(containsString("Drei Headsets reichen wieder.<br>")))
-                .andExpect(content().string(containsString("Nissim Buchs")));
+                .andExpect(content().string(containsString("Anna Coordinator")));
     }
 
     @Test
@@ -189,16 +145,16 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(body)))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.toEmail", is("venue@test.invalid")))
-                .andExpect(jsonPath("$.ccEmails[0]", is("catering@test.invalid")))
+                .andExpect(jsonPath("$.toEmail", is("success+venue@simulator.amazonses.com")))
+                .andExpect(jsonPath("$.ccEmails[0]", is("success+catering@simulator.amazonses.com")))
                 // German "und" connector when two recipients are selected
                 .andExpect(content().string(containsString("Frau Senn und Herr Oppliger")));
     }
 
     @Test
-    @DisplayName("send_whenBothRecipients_invokesEmailServiceOnceWithToAndCc")
+    @DisplayName("send_whenBothRecipients_sendsOneMailWithToAndCc")
     @WithMockUser(username = "organizer", roles = "ORGANIZER")
-    void send_whenBothRecipients_invokesEmailServiceOnceWithToAndCc() throws Exception {
+    void send_whenBothRecipients_sendsOneMailWithToAndCc() throws Exception {
         Map<String, Object> body = Map.of(
                 "templateKey", "catering-offerte-request",
                 "locale", "de",
@@ -213,14 +169,11 @@ class VenueCoordinationControllerIntegrationTest extends AbstractIntegrationTest
                 .andExpect(jsonPath("$.sentTo[0]").exists())
                 .andExpect(jsonPath("$.sentTo[1]").exists());
 
-        ArgumentCaptor<String> toCaptor = ArgumentCaptor.forClass(String.class);
-        @SuppressWarnings("unchecked")
-        ArgumentCaptor<java.util.List<String>> ccCaptor = ArgumentCaptor.forClass(java.util.List.class);
-        ArgumentCaptor<String> replyToCaptor = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(1)).sendHtmlEmailSync(any(), toCaptor.capture(), ccCaptor.capture(), anyString(), anyString(), any(), replyToCaptor.capture());
-        org.assertj.core.api.Assertions.assertThat(toCaptor.getValue()).isEqualTo("venue@test.invalid");
-        org.assertj.core.api.Assertions.assertThat(ccCaptor.getValue()).containsExactly("catering@test.invalid");
-        org.assertj.core.api.Assertions.assertThat(replyToCaptor.getValue()).isEqualTo("nissim.buchs@elca.ch");
+        // One mail as SES received it: venue in To:, catering in Cc:, the coordinator in Reply-To:
+        SesRecorder.RecordedMail mail = sesRecorder.single();
+        org.assertj.core.api.Assertions.assertThat(mail.to()).containsExactly("success+venue@simulator.amazonses.com");
+        org.assertj.core.api.Assertions.assertThat(mail.cc()).containsExactly("success+catering@simulator.amazonses.com");
+        org.assertj.core.api.Assertions.assertThat(mail.replyTo()).containsExactly("anna.coordinator@example.com");
     }
 
     @Test

@@ -13,8 +13,8 @@ export interface paths {
     };
     /**
      * List all partners
-     * @description Get a page of partner companies with optional filtering and search, sorted by company
-     *     slug. Filter, search and paging all run in the database, so
+     * @description Get a page of partner companies with optional filtering, search and sort (default:
+     *     company slug ascending). Filter, search, sort and paging all run in the database, so
      *     `metadata.totalItems` counts every match and `page` 1 holds the next matches.
      */
     get: operations['listPartners'];
@@ -730,6 +730,14 @@ export interface operations {
          * @example mobiliar
          */
         search?: string;
+        /**
+         * @description Sort field, prefix `-` for descending (ADR-013). `name` is the company slug; `tier`
+         *     is the partnership rank BRONZE < SILVER < GOLD < PLATINUM < STRATEGIC, so `-tier`
+         *     lists the highest tier first. Ties are ordered by company slug. Any other value
+         *     answers 400.
+         * @example -tier
+         */
+        sort?: 'name' | '-name' | 'tier' | '-tier';
       };
       header?: never;
       path?: never;

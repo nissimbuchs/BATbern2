@@ -377,6 +377,14 @@ make setup-test-users ENV=development     # development
 
 **CI/CD:** `deploy-staging.yml` gets tokens for all roles from GitHub secrets (`STAGING_ORGANIZER_*`, `STAGING_SPEAKER_*`, `STAGING_PARTNER_*`). Falls back to `STAGING_TEST_USER_*` for organizer.
 
+**Java integration tests use no tokens** (17.0b3): every IT runs the service's production security
+chain (no permit-all test chain; anonymous answers 401, a wrong role 403) and authenticates through
+MockMvc (`@WithMockUser`, `user(...)`, or `jwt()` with `custom:role` through the real
+`JwtAuthenticationConverter`). Mail runs through the real `EmailService` into the `SesRecorder`,
+the only `SesClient` in a test context; assert what SES received, never `verify(emailService)`.
+`FlushBeforeRollback` flushes every `@Transactional` IT before its rollback. Details:
+`docs/architecture/coding-standards.md` → "Test fidelity rules" → "Production setup in tests".
+
 ### Bruno `.bru` File Syntax — Comments Go in `docs { }`, NOT `#`
 
 **CRITICAL — common Claude mistake.** Bruno's `.bru` grammar does NOT support free-floating `#` comments at the top level (between blocks). When the parser sees a `#` line outside a recognised block, it prints `Warning: Skipping invalid file ...` and **silently skips the entire file** — the request never runs, but `bru run` exits 0 if every other file passed. This makes the failure invisible in CI: a "PASS" summary can hide cleanup hooks that never executed.

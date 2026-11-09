@@ -1,7 +1,6 @@
 package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
@@ -22,7 +21,6 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -80,9 +78,6 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
 
     @Autowired
     private SpeakerPoolRepository speakerPoolRepository;
-
-    @MockitoBean
-    private UserApiClient userApiClient;
 
     @Autowired
     private ObjectMapper objectMapper;
@@ -520,13 +515,9 @@ public class SlotAssignmentControllerIntegrationTest extends AbstractIntegration
     }
 
     /**
-     * Test: Unauthorized access returns 401
-     * NOTE: Disabled in test mode because TestSecurityConfig uses .permitAll() at HTTP level
-     * to allow testing method-level @PreAuthorize security. In production, SecurityConfig
-     * requires authentication at HTTP level.
+     * Test: Unauthorized access returns 401 (the production chain runs in tests since 17.0b3)
      */
     @Test
-    @org.junit.jupiter.api.Disabled("HTTP-level auth disabled in TestSecurityConfig - method-level @PreAuthorize tested separately")
     void should_return401_when_notAuthenticated() throws Exception {
         mockMvc.perform(get("/api/v1/events/{eventCode}/sessions/unassigned", eventCode))
                 .andExpect(status().isUnauthorized());

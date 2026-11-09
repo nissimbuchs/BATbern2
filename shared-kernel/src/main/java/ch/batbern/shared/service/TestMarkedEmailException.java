@@ -11,9 +11,10 @@ import ch.batbern.shared.util.EmailContentTestMarker;
  * a test bypasses the Playwright tag/env guards and drives a real send on staging (= production),
  * the marked subject/body is caught at the SES boundary and the send is refused.
  *
- * <p>It fires ONLY on the real-send path (a live {@code SesClient}); local dev, where
+ * <p>It fires ONLY on the SES path (a non-null {@code SesClient}); local dev, where
  * {@code LocalEmailCapture} intercepts, is unaffected so dev-only send specs still exercise the
- * pipeline end-to-end. Runtime exception by design — async send paths wrap outbound calls in a
+ * pipeline end-to-end. Integration tests run with the {@code SesRecorder} as their client, so
+ * the wall applies there as in production. Runtime exception by design — async send paths wrap outbound calls in a
  * broad try/catch, so this stops the SES call without surfacing an error to any end user.
  */
 public class TestMarkedEmailException extends RuntimeException {

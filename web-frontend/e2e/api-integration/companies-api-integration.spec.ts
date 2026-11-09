@@ -142,8 +142,8 @@ test.describe('Companies API Integration', { tag: '@gate' }, () => {
       expect([201, 403, 409]).toContain(response.status());
 
       if (response.status() === 201) {
-        createdNames.push(name); // ensure teardown deletes the real row we just created
         const body = await response.json();
+        createdNames.push(body.name); // ensure teardown deletes the real row we just created
 
         expect(body).toHaveProperty('name');
         expect(body).toHaveProperty('isVerified');
@@ -151,7 +151,8 @@ test.describe('Companies API Integration', { tag: '@gate' }, () => {
         expect(body).toHaveProperty('updatedAt');
         expect(body).toHaveProperty('createdBy');
 
-        expect(body.name).toBe(testCompany.name);
+        // The key is the slug of the typed name (owner 2026-11-09): 12 letters/digits, lower case
+        expect(body.name).toMatch(/^brunotestco[0-9]*$/);
         expect(body.displayName).toBe(testCompany.displayName);
         expect(body.industry).toBe(testCompany.industry);
       }

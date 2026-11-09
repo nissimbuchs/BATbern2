@@ -64,5 +64,32 @@
       },
       "alwaysForwarded": "Altijd doorgestuurd: wat organisatoren naar de lijsten -speaker@, -participants@, batbern{N}@ en partner@ sturen, mail aan ok@ en automatische mail zoals afwezigheidsberichten en bounces."
     }
+  },
+  "importData": {
+    "events": {
+      "title": "Evenementen",
+      "description": "Historische evenementgegevens importeren uit CSV of JSON.",
+      "button": "Evenementen importeren"
+    },
+    "sessions": {
+      "title": "Sessies",
+      "description": "Sessies voor bestaande evenementen importeren.",
+      "button": "Sessies importeren"
+    },
+    "companies": {
+      "title": "Bedrijven",
+      "description": "Bedrijfs- en partnergegevens importeren.",
+      "button": "Bedrijven importeren"
+    },
+    "speakers": {
+      "title": "Sprekers",
+      "description": "Sprekersprofielen uit oude gegevens importeren.",
+      "button": "Sprekers importeren"
+    },
+    "participants": {
+      "title": "Deelnemers",
+      "description": "Deelnemers en hun inschrijvingen importeren.",
+      "button": "Deelnemers importeren"
+    }
   }
 }

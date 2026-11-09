@@ -7,13 +7,11 @@ import ch.batbern.companyuser.domain.UserAdditionalEmail;
 import ch.batbern.companyuser.repository.UserAdditionalEmailRepository;
 import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.companyuser.service.AdditionalEmailVerificationTokenService;
-import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.test.mail.SesRecorder;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -29,11 +27,6 @@ import java.util.Set;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -66,7 +59,13 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     private UserAdditionalEmailRepository additionalEmailRepository;
 
     @Autowired
-    private EmailService emailService; // Mockito mock from TestAwsConfig
+    private SesRecorder sesRecorder;
+
+    /** Addresses that receive the verification mail: SES mailbox simulator, never delivered. */
+    private static final String BOX = "success+box@simulator.amazonses.com";
+    private static final String BOX_DE = "success+box-de@simulator.amazonses.com";
+    private static final String BOX_EN = "success+box-en@simulator.amazonses.com";
+    private static final String SHARED = "success+shared@simulator.amazonses.com";
 
     @Autowired
     private AdditionalEmailVerificationTokenService tokenService;
@@ -79,9 +78,7 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(emailService);
-        // Real template rendering so the captured HTML carries the token link.
-        Mockito.when(emailService.replaceVariables(anyString(), any())).thenCallRealMethod();
+        sesRecorder.reset();
 
         caller = userRepository.save(User.builder()
                 .username("john.doe")
@@ -110,34 +107,29 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     void should_sendVerificationEmailWithTokenLink_when_additionalEmailAdded() throws Exception {
         mockMvc.perform(post("/api/v1/users/me/additional-emails")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"email\": \"box@example.com\" }"))
+                        .content("{ \"email\": \"" + BOX + "\" }"))
                 .andExpect(status().isCreated());
 
-        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
-        ArgumentCaptor<String> html = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(1)).sendHtmlEmail(to.capture(), subject.capture(), html.capture());
-
-        assertThat(to.getValue()).isEqualTo("box@example.com");
-        assertThat(html.getValue()).contains("/verify-email?token=");
+        SesRecorder.RecordedMail mail = sesRecorder.single();
+        assertThat(mail.to()).containsExactly(BOX);
+        assertThat(mail.html()).contains("/verify-email?token=");
         // The rendered link must carry a non-empty token.
-        assertThat(html.getValue()).doesNotContain("token={{token}}");
+        assertThat(mail.html()).doesNotContain("token={{token}}");
     }
 
     @Test
     @WithMockUser(username = "john.doe")
     @DisplayName("should_still201AndWarn_when_emailServiceThrowsOnAdd")
     void should_still201AndWarn_when_emailServiceThrowsOnAdd() throws Exception {
-        Mockito.doThrow(new RuntimeException("SES down"))
-                .when(emailService).sendHtmlEmail(anyString(), anyString(), anyString());
+        sesRecorder.failWith(() -> SesRecorder.sesError("ServiceUnavailable", "SES down"));
 
         mockMvc.perform(post("/api/v1/users/me/additional-emails")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"email\": \"box@example.com\" }"))
+                        .content("{ \"email\": \"" + BOX + "\" }"))
                 .andExpect(status().isCreated());
 
         // The row was still persisted despite the send failure.
-        assertThat(additionalEmailRepository.existsByEmailIgnoreCase("box@example.com")).isTrue();
+        assertThat(additionalEmailRepository.existsByEmailIgnoreCase(BOX)).isTrue();
     }
 
     @Test
@@ -158,12 +150,10 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
 
         mockMvc.perform(post("/api/v1/users/me/additional-emails")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"email\": \"box-de@example.com\" }"))
+                        .content("{ \"email\": \"" + BOX_DE + "\" }"))
                 .andExpect(status().isCreated());
 
-        ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(1)).sendHtmlEmail(anyString(), subject.capture(), anyString());
-        assertThat(subject.getValue()).isEqualTo("Bestätigen Sie Ihre BATbern E-Mail-Adresse");
+        assertThat(sesRecorder.single().subject()).isEqualTo("Bestätigen Sie Ihre BATbern E-Mail-Adresse");
     }
 
     @Test
@@ -188,12 +178,10 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
 
         mockMvc.perform(post("/api/v1/users/me/additional-emails")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{ \"email\": \"box-en@example.com\" }"))
+                        .content("{ \"email\": \"" + BOX_EN + "\" }"))
                 .andExpect(status().isCreated());
 
-        ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(1)).sendHtmlEmail(anyString(), subject.capture(), anyString());
-        assertThat(subject.getValue()).isEqualTo("Confirm your BATbern email address");
+        assertThat(sesRecorder.single().subject()).isEqualTo("Confirm your BATbern email address");
     }
 
     // ---------------------- GET verify (check) ----------------------
@@ -201,7 +189,7 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     @Test
     @DisplayName("should_returnMaskedEmailAndStatus_when_checkValidToken")
     void should_returnMaskedEmailAndStatus_when_checkValidToken() throws Exception {
-        UserAdditionalEmail row = persistAdditional(caller, "box@example.com", null);
+        UserAdditionalEmail row = persistAdditional(caller, BOX, null);
         String token = tokenService.generateToken(row.getId(), row.getEmail());
 
         mockMvc.perform(get("/api/v1/users/additional-emails/verify").param("token", token))
@@ -235,7 +223,7 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     @Test
     @DisplayName("should_setVerifiedAt_when_confirmValidToken")
     void should_setVerifiedAt_when_confirmValidToken() throws Exception {
-        UserAdditionalEmail row = persistAdditional(caller, "box@example.com", null);
+        UserAdditionalEmail row = persistAdditional(caller, BOX, null);
         String token = tokenService.generateToken(row.getId(), row.getEmail());
 
         mockMvc.perform(post("/api/v1/users/additional-emails/verify")
@@ -252,7 +240,7 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     @Test
     @DisplayName("should_returnAlreadyVerified_when_confirmAlreadyVerifiedRow")
     void should_returnAlreadyVerified_when_confirmAlreadyVerifiedRow() throws Exception {
-        UserAdditionalEmail row = persistAdditional(caller, "box@example.com", Instant.now());
+        UserAdditionalEmail row = persistAdditional(caller, BOX, Instant.now());
         String token = tokenService.generateToken(row.getId(), row.getEmail());
 
         mockMvc.perform(post("/api/v1/users/additional-emails/verify")
@@ -266,7 +254,7 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     @Test
     @DisplayName("should_return404_when_confirmTokenForDeletedRow")
     void should_return404_when_confirmTokenForDeletedRow() throws Exception {
-        UserAdditionalEmail row = persistAdditional(caller, "box@example.com", null);
+        UserAdditionalEmail row = persistAdditional(caller, BOX, null);
         // Sibling row on the same profile that must remain untouched by the 404.
         UserAdditionalEmail sibling = persistAdditional(caller, "sibling@example.com", null);
         UUID siblingId = sibling.getId();
@@ -294,7 +282,7 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     @Test
     @DisplayName("should_return404_when_confirmStaleTokenAfterReAdd")
     void should_return404_when_confirmStaleTokenAfterReAdd() throws Exception {
-        UserAdditionalEmail original = persistAdditional(caller, "box@example.com", null);
+        UserAdditionalEmail original = persistAdditional(caller, BOX, null);
         String staleToken = tokenService.generateToken(original.getId(), original.getEmail());
         UUID originalId = original.getId();
 
@@ -307,7 +295,7 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
         entityManager.clear();
 
         caller = userRepository.findByUsername("john.doe").orElseThrow();
-        UserAdditionalEmail readded = persistAdditional(caller, "box@example.com", null);
+        UserAdditionalEmail readded = persistAdditional(caller, BOX, null);
         assertThat(readded.getId()).isNotEqualTo(originalId);
 
         // The stale token (old UUID) must 404 — row-UUID binding invalidation.
@@ -333,13 +321,13 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     @WithMockUser(username = "john.doe")
     @DisplayName("should_return204AndSendEmail_when_resendForUnverifiedOwnEmail")
     void should_return204AndSendEmail_when_resendForUnverifiedOwnEmail() throws Exception {
-        persistAdditional(caller, "box@example.com", null);
+        persistAdditional(caller, BOX, null);
 
         mockMvc.perform(post("/api/v1/users/me/additional-emails/{email}/resend-verification",
-                        "box@example.com"))
+                        BOX))
                 .andExpect(status().isNoContent());
 
-        verify(emailService, times(1)).sendHtmlEmail(anyString(), anyString(), anyString());
+        assertThat(sesRecorder.single().to()).containsExactly(BOX);
     }
 
     @Test
@@ -347,34 +335,34 @@ class AdditionalEmailVerificationIntegrationTest extends AbstractIntegrationTest
     @DisplayName("should_return404_when_resendForEmailNotOwned")
     void should_return404_when_resendForEmailNotOwned() throws Exception {
         // belongs to mary.smith, not john.doe
-        persistAdditional(other, "shared@example.com", null);
+        persistAdditional(other, SHARED, null);
 
         mockMvc.perform(post("/api/v1/users/me/additional-emails/{email}/resend-verification",
-                        "shared@example.com"))
+                        SHARED))
                 .andExpect(status().isNotFound());
 
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        assertThat(sesRecorder.mails()).isEmpty();
     }
 
     @Test
     @WithMockUser(username = "john.doe")
     @DisplayName("should_return409AlreadyVerified_when_resendForVerifiedEmail")
     void should_return409AlreadyVerified_when_resendForVerifiedEmail() throws Exception {
-        persistAdditional(caller, "box@example.com", Instant.now());
+        persistAdditional(caller, BOX, Instant.now());
 
         mockMvc.perform(post("/api/v1/users/me/additional-emails/{email}/resend-verification",
-                        "box@example.com"))
+                        BOX))
                 .andExpect(status().isConflict())
                 .andExpect(jsonPath("$.errorCode").value("ALREADY_VERIFIED"));
 
-        verify(emailService, never()).sendHtmlEmail(anyString(), anyString(), anyString());
+        assertThat(sesRecorder.mails()).isEmpty();
     }
 
     @Test
     @DisplayName("should_return401_when_resendNotAuthenticated")
     void should_return401_when_resendNotAuthenticated() throws Exception {
         mockMvc.perform(post("/api/v1/users/me/additional-emails/{email}/resend-verification",
-                        "box@example.com"))
+                        BOX))
                 .andExpect(status().isUnauthorized());
     }
 

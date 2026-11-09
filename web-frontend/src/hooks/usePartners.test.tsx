@@ -94,7 +94,7 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
       vi.mocked(partnerApi.listPartners).mockResolvedValue(mockPartnerResponse);
 
       const filters: PartnerFilters = { tier: 'gold', status: 'active' };
-      const sort: PartnerSort = { sortBy: 'engagement', sortOrder: 'desc' };
+      const sort: PartnerSort = { sortBy: 'tier', sortOrder: 'desc' };
       const pagination: PartnerPagination = { page: 0, size: 20 };
 
       const { result } = renderHook(() => usePartners(filters, sort, pagination), {

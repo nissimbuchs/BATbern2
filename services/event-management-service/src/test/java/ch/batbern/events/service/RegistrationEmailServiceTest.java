@@ -566,7 +566,7 @@ class RegistrationEmailServiceTest {
                 .registrationCode("BATbern142-reg-cc1")
                 .eventId(UUID.randomUUID())
                 .eventCode("BATbern142")
-                .attendeeUsername("nissim.buchs")
+                .attendeeUsername("anna.coordinator")
                 .build();
 
         ch.batbern.events.dto.generated.users.AdditionalEmail hostpoint =
@@ -578,10 +578,10 @@ class RegistrationEmailServiceTest {
                         .receiveEventMail(true);
 
         UserResponse userProfile = new UserResponse()
-                .id("nissim.buchs")
-                .firstName("Nissim")
-                .lastName("Buchs")
-                .email("nissim.buchs@elca.ch")
+                .id("anna.coordinator")
+                .firstName("Anna")
+                .lastName("Coordinator")
+                .email("anna.coordinator@example.com")
                 .additionalEmails(List.of(hostpoint));
 
         Event event = Event.builder()
@@ -609,7 +609,7 @@ class RegistrationEmailServiceTest {
         Thread.sleep(100);
 
         // Then
-        verify(emailService, times(1)).sendHtmlEmail(any(), eq("nissim.buchs@elca.ch"), ccCaptor.capture(), anyString(), anyString(), any());
+        verify(emailService, times(1)).sendHtmlEmail(any(), eq("anna.coordinator@example.com"), ccCaptor.capture(), anyString(), anyString(), any());
         assertThat(ccCaptor.getValue()).containsExactly("info@batbern.ch");
     }
 

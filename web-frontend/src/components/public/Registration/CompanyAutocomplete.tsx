@@ -37,7 +37,7 @@ import { searchCompanies, getCompany } from '@/services/api/companyApi';
 import type { components } from '@/types/generated/company-api.types';
 import { Loader2 } from 'lucide-react';
 
-type Company = components['schemas']['CompanyResponse'];
+type Company = components['schemas']['CompanySearchResponse'];
 
 /** A resolved company selection. `name` is the ADR-003 slug; '' means a brand-new,
  * not-yet-materialised company that the parent will create from `displayName`. */
@@ -120,7 +120,7 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
   // the profile page; registration holds a display name, so it is skipped there.
   const { data: chipCompany } = useQuery({
     queryKey: ['company', 'detail', value],
-    queryFn: () => getCompany(value, { expand: ['logo'] }),
+    queryFn: () => getCompany(value),
     enabled: !!selected && valueIsSlug && value.length > 0,
   });
   const chipLogoUrl = chipCompany?.logo?.url ?? null;

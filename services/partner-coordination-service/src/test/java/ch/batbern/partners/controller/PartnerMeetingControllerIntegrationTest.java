@@ -1,8 +1,6 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.EventManagementClient;
 import ch.batbern.partners.client.UserServiceClient;
-import ch.batbern.partners.client.dto.EventSummaryDTO;
 import ch.batbern.partners.client.user.dto.UserResponse;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
@@ -11,14 +9,21 @@ import ch.batbern.partners.domain.PartnerMeeting;
 import ch.batbern.partners.domain.PartnershipLevel;
 import ch.batbern.partners.repository.PartnerMeetingRepository;
 import ch.batbern.partners.repository.PartnerRepository;
-import ch.batbern.shared.mail.MailContext;
-import ch.batbern.shared.service.EmailService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
+import ch.batbern.shared.test.contract.ContractServer;
+import ch.batbern.shared.test.mail.SesRecorder;
+import ch.batbern.partners.mail.HttpOutboundMailRecorder;
+import org.springframework.cache.CacheManager;
+import org.springframework.http.HttpMethod;
+import org.springframework.http.HttpStatus;
+import org.springframework.test.web.client.ExpectedCount;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.test.util.ReflectionTestUtils;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
-import org.mockito.ArgumentCaptor;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
@@ -30,21 +35,16 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
-import java.time.LocalTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.Matchers.notNullValue;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyList;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.timeout;
-import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -78,38 +78,64 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     PartnerRepository partnerRepository;
 
-    @MockitoBean
-    EventManagementClient eventManagementClient;
+    @Autowired
+    RestTemplate restTemplate;
+    @Autowired
+    CacheManager cacheManager;
+    /** EMS behind the real EventManagementClient, answering per ems-internal (Story 17.0b1, 17.0 deferred work). */
+    ContractServer ems;
     @MockitoBean
     UserServiceClient userServiceClient;
-    /** Mock from TestAwsConfig: no mail leaves the test; Story 16.9 asserts the context it gets. */
+    /** SES: the real EmailService sends here, nothing leaves the test (17.0b3). */
     @Autowired
-    EmailService emailService;
+    SesRecorder sesRecorder;
+    /** The real mail recorder; its POST /internal/mails goes to an EMS stand-in per ems-internal. */
+    @Autowired
+    HttpOutboundMailRecorder mailRecorder;
+    ContractServer emsInternal;
+    final List<String> recordedMails = new CopyOnWriteArrayList<>();
 
     @BeforeEach
     void setUp() {
         meetingRepository.deleteAll();
         partnerRepository.deleteAll();
+        sesRecorder.reset();
+        recordedMails.clear();
+        emsInternal = ContractServer.bindTo(
+                (RestTemplate) ReflectionTestUtils.getField(mailRecorder, "restTemplate"),
+                "docs/api/internal/ems-internal.openapi.yml");
+        emsInternal.expect(HttpMethod.POST, "/internal/mails").times(ExpectedCount.manyTimes())
+                .respondPerRequest(call -> {
+                    recordedMails.add(call.body());
+                    return new ContractServer.Reply(HttpStatus.ACCEPTED, null);
+                });
 
-        // Default stub: any event code → a known event summary
-        when(eventManagementClient.getEventSummary(anyString()))
-                .thenReturn(new EventSummaryDTO(
-                        "BATbern57",
-                        "BATbern Spring 2026",
-                        LocalDate.of(2026, 5, 14),
-                        LocalTime.of(18, 0),
-                        LocalTime.of(22, 0),
-                        "Bern Congress Centre"
-                ));
+        // EMS answers any event code with a known event.
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+        // EMS's internal schedule read (ems-internal spec); it needs no JWT (17.0 deferred work).
+        ems = ContractServer.bindTo(restTemplate, "docs/api/internal/ems-internal.openapi.yml");
+        ems.expect(HttpMethod.GET, "/internal/events/{eventCode}/schedule").times(ExpectedCount.manyTimes())
+                .respondWith(HttpStatus.OK, """
+                        {"eventCode": "BATbern57", "title": "BATbern Spring 2026", "date": "2026-05-14T16:00:00Z",
+                         "venueName": "Bern Congress Centre", "venueAddress": "Bern", "eventType": "EVENING",
+                         "startTime": "2026-05-14T16:00:00Z", "endTime": "2026-05-14T20:00:00Z"}""");
 
         // Stub getUsersByRole so sendInvite can collect partner emails
         UserResponse mockPartner = new UserResponse();
-        mockPartner.setEmail("contact@partner.com");
+        mockPartner.setEmail(PARTNER_CONTACT);
         when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(mockPartner));
 
         // Stub organizer role — empty by default; individual tests override when needed
         when(userServiceClient.getUsersByRole("ORGANIZER")).thenReturn(List.of());
     }
+
+    @AfterEach
+    void releaseEms() {
+        ems.close();
+        emsInternal.close();
+    }
+
+    private static final String PARTNER_CONTACT = "success+contact@simulator.amazonses.com";
 
     // ─── AC1: Create meeting record ───────────────────────────────────────────
 
@@ -206,7 +232,6 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Test
     void should_recordInvite_withClickingOrganizerAndMeetingReference() throws Exception {
-        org.mockito.Mockito.clearInvocations(emailService);
         UserResponse organizer = new UserResponse();
         organizer.setEmail("success+org@simulator.amazonses.com");
         when(userServiceClient.getUsersByRole("ORGANIZER")).thenReturn(List.of(organizer));
@@ -216,41 +241,44 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
                         .with(user("anna.organizer").roles("ORGANIZER")))
                 .andExpect(status().isAccepted());
 
-        ArgumentCaptor<MailContext> context = ArgumentCaptor.forClass(MailContext.class);
-        ArgumentCaptor<String> to = ArgumentCaptor.forClass(String.class);
-        verify(emailService, timeout(5000).times(2)).sendHtmlEmailWithAttachments(context.capture(), to.capture(),
-                anyList(), anyString(), anyString(), anyList());
-        assertThat(context.getValue().audience()).isEqualTo(MailContext.Audience.PARTNERS);
-        assertThat(context.getValue().templateKey()).isEqualTo("partner-meeting-invite");
-        assertThat(context.getValue().eventCode()).isEqualTo("BATbern57");
-        assertThat(context.getValue().senderUsername()).isEqualTo("anna.organizer");
-        assertThat(context.getValue().reference()).isEqualTo("partner-meeting:" + meetingId);
         // Owner decision 2026-11-02: one mail per address, nobody sees the others; one record (same group).
-        assertThat(to.getAllValues()).containsExactly("contact@partner.com", "success+org@simulator.amazonses.com");
-        assertThat(context.getAllValues().get(0).sendGroupId()).isEqualTo(context.getAllValues().get(1).sendGroupId());
+        awaitRecords(2);
+        assertThat(sesRecorder.mails()).extracting(SesRecorder.RecordedMail::to)
+                .containsExactly(List.of(PARTNER_CONTACT), List.of("success+org@simulator.amazonses.com"));
+        assertThat(sesRecorder.mails()).allSatisfy(mail ->
+                assertThat(mail.attachmentNames()).containsExactly("partner-meeting-and-batbern57-event.ics"));
+        assertThat(sesRecorder.mails()).extracting(mail -> mail.tags().get("mail_group")).doesNotContainNull()
+                .containsOnly(sesRecorder.mails().get(0).tags().get("mail_group"));
+        JsonNode record = objectMapper.readTree(recordedMails.get(0));
+        assertThat(record.get("audience").asText()).isEqualTo("PARTNERS");
+        assertThat(record.get("templateKey").asText()).isEqualTo("partner-meeting-invite");
+        assertThat(record.get("eventCode").asText()).isEqualTo("BATbern57");
+        assertThat(record.get("senderUsername").asText()).isEqualTo("anna.organizer");
+        assertThat(record.get("reference").asText()).isEqualTo("partner-meeting:" + meetingId);
+        assertThat(objectMapper.readTree(recordedMails.get(1)).get("sendGroupId").asText())
+                .isEqualTo(record.get("sendGroupId").asText());
     }
 
     @Test
     void should_recordCancellation_when_meetingWithSentInviteDeleted() throws Exception {
-        org.mockito.Mockito.clearInvocations(emailService);
         String meetingId = createMeeting("BATbern57");
         mockMvc.perform(post(BASE + "/" + meetingId + "/send-invite")
                         .with(user("anna.organizer").roles("ORGANIZER")))
                 .andExpect(status().isAccepted());
-        verify(emailService, timeout(5000).atLeastOnce()).sendHtmlEmailWithAttachments(any(MailContext.class),
-                anyString(), anyList(), anyString(), anyString(), anyList());
-        org.mockito.Mockito.clearInvocations(emailService);
+        awaitRecords(1);
+        sesRecorder.reset();
+        recordedMails.clear();
 
         mockMvc.perform(delete(BASE + "/" + meetingId).with(user("ben.organizer").roles("ORGANIZER")))
                 .andExpect(status().isNoContent());
 
-        ArgumentCaptor<MailContext> context = ArgumentCaptor.forClass(MailContext.class);
-        verify(emailService, timeout(5000).atLeastOnce()).sendHtmlEmailWithAttachments(context.capture(),
-                anyString(), anyList(), anyString(), anyString(), anyList());
-        MailContext cancellation = context.getValue();
-        assertThat(cancellation.templateKey()).isEqualTo("partner-meeting-cancellation");
-        assertThat(cancellation.senderUsername()).isEqualTo("ben.organizer");
-        assertThat(cancellation.reference()).isEqualTo("partner-meeting:" + meetingId);
+        awaitRecords(1);
+        assertThat(sesRecorder.mailsTo(PARTNER_CONTACT)).singleElement()
+                .satisfies(mail -> assertThat(mail.attachmentNames()).hasSize(1));
+        JsonNode cancellation = objectMapper.readTree(recordedMails.get(0));
+        assertThat(cancellation.get("templateKey").asText()).isEqualTo("partner-meeting-cancellation");
+        assertThat(cancellation.get("senderUsername").asText()).isEqualTo("ben.organizer");
+        assertThat(cancellation.get("reference").asText()).isEqualTo("partner-meeting:" + meetingId);
     }
 
     // ─── AC4: Meeting notes ───────────────────────────────────────────────────
@@ -521,5 +549,14 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
                 .partnershipStartDate(LocalDate.now().minusYears(1))
                 .partnershipEndDate(LocalDate.now().plusYears(1))
                 .build());
+    }
+
+    /** Waits until EMS was asked to record {@code count} mails (sends may run asynchronously). */
+    private void awaitRecords(int count) throws InterruptedException {
+        long deadline = System.nanoTime() + 5_000_000_000L;
+        while (recordedMails.size() < count && System.nanoTime() < deadline) {
+            Thread.sleep(50);
+        }
+        assertThat(recordedMails).as("mail records posted to EMS").hasSizeGreaterThanOrEqualTo(count);
     }
 }

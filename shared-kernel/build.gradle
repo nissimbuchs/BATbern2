@@ -38,6 +38,8 @@ dependencies {
     // Spring Boot dependencies
     implementation 'org.springframework.boot:spring-boot-starter'
     implementation 'org.springframework.boot:spring-boot-starter-validation'
+    // 17.0 deferred work: SpringDomainEventPublisher counts swallowed listener failures (Micrometer).
+    implementation 'io.micrometer:micrometer-core'
     implementation 'org.springframework.boot:spring-boot-starter-web'
     // Epic 13 (SB4): spring-boot-starter-aop was removed in SB4. Spring AOP proxy infra comes
     // transitively via spring-boot-starter (spring-context); AuditLoggingAspect's @Aspect/@Around
@@ -115,6 +117,21 @@ dependencies {
     testFixturesImplementation 'org.testcontainers:testcontainers'
     testFixturesImplementation 'org.testcontainers:testcontainers-postgresql'
     testFixturesImplementation 'org.testcontainers:testcontainers-junit-jupiter'
+    // Story 17.0b1: S2S contract harness (ContractServer) validates every client request and every
+    // response body against the provider's OpenAPI spec in docs/api/. Test scope only. 3.0.0 is the
+    // renamed swagger-request-validator-core (relocated by Atlassian); it is built on Jackson 2
+    // (2.21) and swagger-parser 2.1, matching the Jackson 2 line the services still run on.
+    testFixturesApi 'com.atlassian.oai:openapi-request-validator-core:3.0.0'
+    // swagger-core (non-jakarta, pulled by the validator) reads javax.xml.bind annotations while
+    // parsing 3.1 specs; Boot manages jakarta.xml.bind-api to 4.x, which no longer has them.
+    testFixturesRuntimeOnly 'javax.xml.bind:jaxb-api:2.3.1'
+    // Story 17.0b3: SesRecorder (the only SesClient a test context holds) parses what SES received,
+    // and FlushBeforeRollback flushes the test's EntityManager before the rollback.
+    testFixturesApi platform('software.amazon.awssdk:bom:2.57.6')
+    testFixturesApi 'software.amazon.awssdk:ses'
+    testFixturesImplementation 'jakarta.mail:jakarta.mail-api:2.1.3'
+    testFixturesRuntimeOnly 'org.eclipse.angus:angus-mail:2.0.3'
+    testFixturesImplementation 'org.springframework.boot:spring-boot-starter-data-jpa'
 }
 
 // Apply Trivy security scanning

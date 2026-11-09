@@ -1,13 +1,11 @@
 package ch.batbern.events.mapper;
 
 import ch.batbern.events.domain.Topic;
-import ch.batbern.events.domain.TopicUsageHistory;
 import ch.batbern.events.dto.generated.topics.CreateTopicRequest;
 import ch.batbern.events.dto.generated.topics.SimilarityScore;
 import ch.batbern.events.service.TopicService;
 import org.springframework.stereotype.Component;
 
-import java.time.LocalDate;
 import java.time.ZoneId;
 import java.util.List;
 
@@ -140,36 +138,6 @@ public class TopicMapper {
         // topicCode is auto-generated in @PrePersist
 
         return entity;
-    }
-
-    /**
-     * Map usage history entity to generated DTO.
-     *
-     * @param entity the TopicUsageHistory entity
-     * @param eventNumber the event number
-     * @param eventCode the event code
-     * @param eventDate the event date
-     * @return the generated TopicUsageHistory DTO
-     */
-    public ch.batbern.events.dto.generated.topics.TopicUsageHistory mapUsageHistoryToDto(
-            TopicUsageHistory entity,
-            Integer eventNumber,
-            String eventCode,
-            java.time.Instant eventDate) {
-        if (entity == null) {
-            return null;
-        }
-
-        ch.batbern.events.dto.generated.topics.TopicUsageHistory dto =
-                new ch.batbern.events.dto.generated.topics.TopicUsageHistory();
-        dto.setEventNumber(eventNumber);
-        dto.setEventCode(eventCode);
-        dto.setEventDate(eventDate != null ? LocalDate.ofInstant(eventDate, ZoneId.systemDefault()) : null);
-        dto.setUsedDate(toOffsetDateTime(entity.getUsedDate()));
-        dto.setAttendance(entity.getAttendeeCount());
-        dto.setEngagementScore(entity.getEngagementScore() != null ? entity.getEngagementScore().floatValue() : null);
-
-        return dto;
     }
 
     // ==================== Private Helper Methods ====================

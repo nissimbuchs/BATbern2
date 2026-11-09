@@ -40,7 +40,7 @@ test data leaks and accumulates.
 
 | Entity | Identifier | DB constraint | Canonical pattern | Example | Filled length |
 |--------|-----------|---------------|-------------------|---------|---------------|
-| company | `companies.name` | VARCHAR(255), no enforced regex (OpenAPI says alphanumeric but production code accepts spaces — pattern below is safe regardless) | `BRUNOTESTCO<13-digit-ts>` | `BRUNOTESTCO1779647142000` | 24 |
+| company | `companies.name` | The key is the slug of the POSTed name since 2026-11-09 (`^[a-zA-Z0-9]{1,12}$`, lower case): send `BRUNOTESTCO<13-digit-ts>`, the key becomes `brunotestco1` (`brunotestco2` if taken) | `BRUNOTESTCO<13-digit-ts>` | `brunotestco1` | 12 |
 | user | `user_profiles.username` | VARCHAR(100), **DB regex `^[a-z]+\.[a-z]+(\.[0-9]+)?$`** (dots required, NO underscores, NO hyphens) | `bruno.test.<13-digit-ts>` | `bruno.test.1779647142000` | 24 |
 | user email | `user_profiles.email` | VARCHAR(255), RFC 5321 | `bruno-test-<ts>@e2e.batbern.invalid` (reserved domain) | `bruno-test-1779647142000@e2e.batbern.invalid` | 44 |
 | event | `events.event_code` | VARCHAR(50) | `BRUNO-TEST-<13-digit-ts>` | `BRUNO-TEST-1779647142000` | 24 |
@@ -68,7 +68,7 @@ ones above.
 
 | Entity type | Send `prefix=` | Regex (request validation) | Server LIKE | Sweeps data shaped like |
 |-------------|----------------|----------------------------|-------------|--------------------------|
-| `companies` | `BRUNOTESTCO` | `^BRUNOTESTCO$` | `BRUNOTESTCO%` | `BRUNOTESTCO1779647142000` |
+| `companies` | `BRUNOTESTCO` | `^BRUNOTESTCO$` | `BRUNOTESTCO%`, ignoring case | `brunotestco1` |
 | `users` | `bruno.test.` | `^bruno\.test\.$` | `bruno.test.%` | `bruno.test.1779647142000` |
 | `events` | `BRUNO-TEST-` | `^BRUNO-TEST-$` | `BRUNO-TEST-%` | `BRUNO-TEST-1779647142000` |
 | `sessions` | `bruno-test-session-` | `^bruno-test-session-$` | `bruno-test-session-%` | `bruno-test-session-1779647142000` |

@@ -46,7 +46,7 @@ export const PartnerCreateEditModal: React.FC = () => {
 
   // Track selected company for autocomplete (company object vs form stores just name string)
   const [selectedCompany, setSelectedCompany] = useState<
-    components['schemas']['CompanyResponse'] | null
+    components['schemas']['CompanySearchResponse'] | null
   >(null);
 
   const {

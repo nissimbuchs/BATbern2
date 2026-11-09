@@ -289,6 +289,52 @@ describe('CompanyForm Component - AC3 Create Company Form', () => {
   });
 });
 
+describe('CompanyForm Component - company name and key (owner decision 2026-11-09)', () => {
+  it('should_acceptNameWithSpaces_when_creating', async () => {
+    // The service derives the key from the typed name; the name itself may have spaces
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+
+    render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={onSubmit} />);
+
+    await user.type(screen.getByLabelText(/company name/i), 'Müller Architekten AG');
+    await user.click(screen.getByRole('button', { name: /save & create/i }));
+
+    await waitFor(() => {
+      expect(onSubmit).toHaveBeenCalledWith(
+        expect.objectContaining({ name: 'Müller Architekten AG' }),
+        { isDraft: false }
+      );
+    });
+  });
+
+  it('should_rejectKeyWithSpaces_when_editing', async () => {
+    // In edit mode the name is the company's key, which other services hold
+    const user = userEvent.setup();
+    const onSubmit = vi.fn();
+
+    render(
+      <CompanyForm
+        open={true}
+        mode="edit"
+        initialData={{ ...mockCompany, name: 'acmecorp' }}
+        onClose={vi.fn()}
+        onSubmit={onSubmit}
+      />
+    );
+
+    const nameField = screen.getByLabelText(/company name/i);
+    await user.clear(nameField);
+    await user.type(nameField, 'Acme Corp AG');
+    await user.click(screen.getByRole('button', { name: /save changes/i }));
+
+    await waitFor(() => {
+      expect(screen.getByText(/1 to 12 letters or digits/i)).toBeInTheDocument();
+    });
+    expect(onSubmit).not.toHaveBeenCalled();
+  });
+});
+
 describe('CompanyForm Component - AC4 Edit Company Form', () => {
   describe('Edit Mode Display', () => {
     it('should_prefillForm_when_editButtonClicked', () => {
@@ -351,7 +397,7 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
       // Change only the company name
       const nameField = screen.getByLabelText(/company name/i);
       await user.clear(nameField);
-      await user.type(nameField, 'UpdatedAcmeCorporation');
+      await user.type(nameField, 'updatedacme');
 
       // Submit form
       await user.click(screen.getByRole('button', { name: /save changes/i }));
@@ -360,7 +406,7 @@ describe('CompanyForm Component - AC4 Edit Company Form', () => {
       await waitFor(() => {
         expect(onSubmit).toHaveBeenCalledWith(
           expect.objectContaining({
-            name: 'UpdatedAcmeCorporation',
+            name: 'updatedacme',
           }),
           { isPartialUpdate: true, changedFields: ['name'] }
         );
@@ -677,13 +723,13 @@ describe('CompanyForm Component - Website Validation', () => {
 
 describe('CompanyForm Component - Character Limits', () => {
   it('should_enforceMaxLength_when_nameExceedsLimit', async () => {
-    // Test max length for company name (200 characters)
+    // Test max length for company name (255 characters, as CreateCompanyRequest.name)
     const user = userEvent.setup();
 
     render(<CompanyForm open={true} mode="create" onClose={vi.fn()} onSubmit={vi.fn()} />);
 
     const nameField = screen.getByLabelText(/company name/i);
-    const longName = 'A'.repeat(201);
+    const longName = 'A'.repeat(256);
 
     // Use paste for large input (typing 201 chars one-by-one is too slow under load
     // and hits testTimeout when the full suite contends for CPU).
@@ -692,7 +738,7 @@ describe('CompanyForm Component - Character Limits', () => {
     await user.tab();
 
     await waitFor(() => {
-      expect(screen.getByText(/name must be at most 200 characters/i)).toBeInTheDocument();
+      expect(screen.getByText(/name must be at most 255 characters/i)).toBeInTheDocument();
     });
   });
 
@@ -815,12 +861,12 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
     it('should_sendEmptyLogoUploadId_when_removingExistingLogo', async () => {
       const user = userEvent.setup();
       const onSubmit = vi.fn().mockResolvedValue(undefined);
-      // mockCompany.name has a space (fails alphanumeric regex). Use an
-      // already-valid name so the form passes validation when we submit
+      // mockCompany.name has a space (not a company key). Use an
+      // already-valid key so the form passes validation when we submit
       // without touching any text fields.
       const companyWithLogo: Company = {
         ...mockCompany,
-        name: 'AcmeCorporation',
+        name: 'acmecorp',
         logo: {
           url: 'https://example.com/logo.png',
           s3Key: 'logos/company-123.png',
@@ -869,7 +915,7 @@ describe('CompanyForm Component - AC5 Logo Upload', () => {
       const onSubmit = vi.fn().mockResolvedValue(undefined);
       const companyWithLogo: Company = {
         ...mockCompany,
-        name: 'AcmeCorporation', // alphanumeric to satisfy companySchema regex
+        name: 'acmecorp', // a company key (1-12 letters/digits) to satisfy the edit schema
         logo: {
           url: 'https://example.com/logo.png',
           s3Key: 'logos/company-123.png',

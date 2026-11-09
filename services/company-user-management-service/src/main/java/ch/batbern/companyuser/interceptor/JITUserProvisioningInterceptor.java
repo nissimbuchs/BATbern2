@@ -313,7 +313,7 @@ public class JITUserProvisioningInterceptor implements HandlerInterceptor {
      * Format: firstname.lastname (lowercase, required by chk_username_format constraint)
      * Example: John Doe -> john.doe
      * Example: John Doe (duplicate) -> john.doe.2
-     * Example: nissim@buchs.be (no names) -> user.nissim
+     * Example: anna@example.com (no names) -> user.anna
      * Example: Hông Ân Meier -> hongan.meier; 太郎 山田 + taro.yamada@… -> taro.yamada
      * Rules: {@link SlugGenerationService#generateUsername(String, String, String)} (#1102)
      *

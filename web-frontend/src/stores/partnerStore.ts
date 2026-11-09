@@ -17,7 +17,7 @@
 
 import { create } from 'zustand';
 import { persist } from 'zustand/middleware';
-import type { PartnershipLevel } from '@/services/api/partnerApi';
+import type { PartnershipLevel, PartnerSort } from '@/services/api/partnerApi';
 
 /**
  * Filter state interface
@@ -35,8 +35,8 @@ export interface PartnerStore {
   filters: PartnerFilters;
   viewMode: 'grid' | 'list';
   searchQuery: string;
-  sortBy: 'engagement' | 'name' | 'tier' | 'lastEvent';
-  sortOrder: 'asc' | 'desc';
+  sortBy: PartnerSort['sortBy'];
+  sortOrder: PartnerSort['sortOrder'];
   page: number;
 
   // Actions
@@ -62,8 +62,8 @@ export const usePartnerStore = create<PartnerStore>()(
       filters: { tier: 'all', status: 'all' },
       viewMode: 'grid',
       searchQuery: '',
-      sortBy: 'engagement',
-      sortOrder: 'desc',
+      sortBy: 'name',
+      sortOrder: 'asc',
       page: 0,
 
       // Filter management (resets page to 0)
@@ -79,8 +79,10 @@ export const usePartnerStore = create<PartnerStore>()(
       // Search query management (resets page to 0)
       setSearchQuery: (query: string) => set({ searchQuery: query, page: 0 }),
 
-      // Sort management (resets page to 0)
-      setSortBy: (sortBy: PartnerStore['sortBy']) => set({ sortBy, page: 0 }),
+      // Sort management (resets page to 0). Each field starts in its natural order: names
+      // A to Z, tiers highest first.
+      setSortBy: (sortBy: PartnerStore['sortBy']) =>
+        set({ sortBy, sortOrder: sortBy === 'tier' ? 'desc' : 'asc', page: 0 }),
       setSortOrder: (order: 'asc' | 'desc') => set({ sortOrder: order }),
 
       // Page management

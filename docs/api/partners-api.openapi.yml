@@ -62,8 +62,8 @@ paths:
       operationId: listPartners
       summary: List all partners
       description: |
-        Get a page of partner companies with optional filtering and search, sorted by company
-        slug. Filter, search and paging all run in the database, so
+        Get a page of partner companies with optional filtering, search and sort (default:
+        company slug ascending). Filter, search, sort and paging all run in the database, so
         `metadata.totalItems` counts every match and `page` 1 holds the next matches.
       parameters:
         - name: filter
@@ -97,6 +97,19 @@ paths:
             company display name, in any order, ignoring case, accents and umlaut spelling
             (ü = ue = u). Combines with `filter`. Blank means no search.
           example: 'mobiliar'
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [name, -name, tier, -tier]
+            default: name
+          description: |
+            Sort field, prefix `-` for descending (ADR-013). `name` is the company slug; `tier`
+            is the partnership rank BRONZE < SILVER < GOLD < PLATINUM < STRATEGIC, so `-tier`
+            lists the highest tier first. Ties are ordered by company slug. Any other value
+            answers 400.
+          example: '-tier'
       responses:
         '200':
           description: List of partners
@@ -104,6 +117,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerListResponse'
+              examples:
+                withCompany:
+                  summary: Partners with include=company
+                  value:
+                    data:
+                      - companyName: mobiliar
+                        partnershipLevel: GOLD
+                        partnershipStartDate: 2020-01-01
+                        isActive: true
+                        company:
+                          companyName: mobiliar
+                          name: mobiliar
+                          displayName: Die Mobiliar
+                          logoUrl: https://cdn.batbern.ch/logos/mobiliar/logo.png
+                          industry: Insurance
+                    metadata:
+                      page: 0
+                      limit: 200
+                      totalItems: 1
+                      totalPages: 1
+                      hasNext: false
+                      hasPrev: false
         '400':
           description: Bad request
           content:
@@ -129,6 +164,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    companyName: aity
+                    partnershipLevel: PLATINUM
+                    partnershipStartDate: "2005-01-06"
+                    isActive: true
         '400':
           description: Validation error
           content:
@@ -169,6 +212,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    companyName: aity
+                    partnershipLevel: PLATINUM
+                    partnershipStartDate: "2005-01-06"
+                    isActive: true
         '404':
           description: Partner not found
           content:
@@ -193,6 +244,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    companyName: aity
+                    partnershipLevel: PLATINUM
+                    partnershipStartDate: "2005-01-06"
+                    isActive: true
         '400':
           description: Validation error
           content:
@@ -251,6 +310,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    companyName: aity
+                    partnershipLevel: PLATINUM
+                    partnershipStartDate: "2005-01-06"
+                    isActive: true
         '404':
           description: Partner not found
           content:
@@ -285,6 +352,14 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PartnerContactResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - username: jonas.beispiel
+                      email: jonas.beispiel@example.com
+                      firstName: Jonas
+                      lastName: Beispiel
         '404':
           description: Partner not found
           content:
@@ -314,6 +389,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerStatistics'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    totalPartners: 9
+                    activePartners: 9
+                    tierCounts:
+                      BRONZE: 0
+                      SILVER: 0
+                      GOLD: 2
+                      PLATINUM: 3
+                      STRATEGIC: 4
 
   /partners/me:
     get:
@@ -333,6 +420,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/MyPartnerCompanyResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    companyName: sbb
 
   /partners/{companyName}/notes:
     parameters:
@@ -359,6 +451,16 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/PartnerNoteDTO'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - id: 7bfe35fe-de8d-4f32-a7c2-d94231f4adba
+                      title: Rechnungskontakt
+                      content: Sample text for the API example.
+                      authorUsername: carla.muster
+                      createdAt: "2026-02-24T18:05:28.377146Z"
+                      updatedAt: "2026-11-04T20:49:19.89827Z"
         '403':
           description: Forbidden — ORGANIZER role required
           content:
@@ -393,6 +495,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerNoteDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 7bfe35fe-de8d-4f32-a7c2-d94231f4adba
+                    title: Rechnungskontakt
+                    content: Sample text for the API example.
+                    authorUsername: carla.muster
+                    createdAt: "2026-02-24T18:05:28.377146Z"
+                    updatedAt: "2026-11-04T20:49:19.89827Z"
         '400':
           description: Invalid request
           content:
@@ -447,6 +559,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerNoteDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 7bfe35fe-de8d-4f32-a7c2-d94231f4adba
+                    title: Rechnungskontakt
+                    content: Sample text for the API example.
+                    authorUsername: carla.muster
+                    createdAt: "2026-02-24T18:05:28.377146Z"
+                    updatedAt: "2026-11-04T20:49:19.89827Z"
         '400':
           description: Invalid request
           content:
@@ -521,6 +643,22 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PartnerDashboardResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    attendanceSummary:
+                      - eventCode: BATbern66
+                        eventTitle: TBD Herbst 28
+                        eventDate: "2028-11-03T00:00:00Z"
+                        totalAttendees: 7
+                        companyAttendees: 0
+                      - eventCode: BATbern65
+                        eventTitle: TBD Sommer 28
+                        eventDate: "2028-06-16T00:00:00Z"
+                        totalAttendees: 7
+                        companyAttendees: 0
+                    costPerAttendee: null
         '403':
           description: Forbidden — PARTNER may only access their own company's analytics
           content:
@@ -604,6 +742,26 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TopicDTO'
+              examples:
+                topics:
+                  summary: One partner suggestion and one attendee suggestion
+                  value:
+                    - id: 3f1c2a9e-8b4d-4c6e-9a7f-1d2e3f4a5b6c
+                      title: Platform Engineering in regulated industries
+                      description: How internal developer platforms pass an audit
+                      suggestedByCompany: mobiliar
+                      voteCount: 4
+                      currentPartnerHasVoted: false
+                      status: PROPOSED
+                      createdAt: 2026-03-02T09:15:00Z
+                      source: PARTNER
+                    - id: 7a8b9c0d-1e2f-4a3b-8c4d-5e6f7a8b9c0d
+                      title: Event sourcing ten years later
+                      voteCount: 1
+                      currentPartnerHasVoted: false
+                      status: PROPOSED
+                      createdAt: 2026-04-11T18:40:00Z
+                      source: COMMUNITY
         '401':
           description: Unauthorized
           content:
@@ -636,6 +794,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: bc916d9d-7b12-4b04-a8aa-1a6a6b474968
+                    title: Föderation
+                    description: null
+                    suggestedByCompany: iscejpd
+                    voteCount: 1
+                    currentPartnerHasVoted: false
+                    status: PROPOSED
+                    plannedEvent: null
+                    createdAt: "2025-11-07T13:00:00Z"
+                    source: PARTNER
         '400':
           description: Validation error or missing companyName (organizer path)
           content:
@@ -672,6 +844,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: bc916d9d-7b12-4b04-a8aa-1a6a6b474968
+                    title: Föderation
+                    description: null
+                    suggestedByCompany: iscejpd
+                    voteCount: 1
+                    currentPartnerHasVoted: false
+                    status: PROPOSED
+                    plannedEvent: null
+                    createdAt: "2025-11-07T13:00:00Z"
+                    source: PARTNER
         '400':
           description: Validation error
           content:
@@ -790,6 +976,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: bc916d9d-7b12-4b04-a8aa-1a6a6b474968
+                    title: Föderation
+                    description: null
+                    suggestedByCompany: iscejpd
+                    voteCount: 1
+                    currentPartnerHasVoted: false
+                    status: PROPOSED
+                    plannedEvent: null
+                    createdAt: "2025-11-07T13:00:00Z"
+                    source: PARTNER
         '400':
           description: Invalid status value
           content:
@@ -834,6 +1034,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TopicDTO'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: bc916d9d-7b12-4b04-a8aa-1a6a6b474968
+                    title: Föderation
+                    description: null
+                    suggestedByCompany: iscejpd
+                    voteCount: 1
+                    currentPartnerHasVoted: false
+                    status: PROPOSED
+                    plannedEvent: null
+                    createdAt: "2025-11-07T13:00:00Z"
+                    source: PARTNER
         '400':
           description: Validation error (title 5–255 chars, description ≤ 500 chars)
           content:

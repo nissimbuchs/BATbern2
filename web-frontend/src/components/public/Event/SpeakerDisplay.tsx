@@ -59,9 +59,7 @@ export const SpeakerDisplay = ({
   // Use the logo URL pre-loaded by the backend cross-service join when available.
   // Fall back to useCompany for contexts where companyLogoUrl is not provided (e.g. detail page).
   // Passing '' disables useCompany's internal query (it guards on !!name).
-  const { data: company } = useCompany(speaker.companyLogoUrl ? '' : speaker.company || '', {
-    expand: ['logo'],
-  });
+  const { data: company } = useCompany(speaker.companyLogoUrl ? '' : speaker.company || '');
 
   const logoUrl = speaker.companyLogoUrl ?? company?.logo?.url;
 

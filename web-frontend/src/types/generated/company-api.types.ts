@@ -494,8 +494,10 @@ export interface components {
      */
     CompanyResponse: {
       /**
-       * @description Company name (unique identifier, alphanumeric only) - Story 1.16.2
-       * @example SwissITSolutionsAG
+       * @description The company's key, its unique meaningful ID (Story 1.16.2, ADR-003): 1 to 12 letters or
+       *     digits. POST /companies and get-or-create derive it from the typed name; the name as people
+       *     see it is `displayName`.
+       * @example swissitsolut
        */
       name: string;
       /** @example Swiss IT Solutions AG */
@@ -519,7 +521,9 @@ export interface components {
        */
       updatedAt: string;
       /**
-       * @description Username of the user who created this company (Story 1.16.2)
+       * @description Who created this company (Story 1.16.2): the creator's username; `anonymous` for a
+       *     company named during an anonymous event registration; the Cognito subject (UUID) when
+       *     the creator's token carried no `custom:username` claim.
        * @example john.doe
        */
       createdBy?: string;
@@ -550,8 +554,8 @@ export interface components {
      */
     CompanySearchResponse: {
       /**
-       * @description Company name (unique identifier, alphanumeric only) - Story 1.16.2
-       * @example SwissITSolutionsAG
+       * @description The company's key, its unique meaningful ID (Story 1.16.2), 1 to 12 letters or digits
+       * @example swissitsolut
        */
       name: string;
       /** @example Swiss IT Solutions AG */
@@ -564,7 +568,13 @@ export interface components {
     };
     CreateCompanyRequest: {
       /**
-       * @description Company name (unique identifier; 2-255 chars)
+       * @description The company's name as typed (2-255 characters, spaces allowed). The service derives the
+       *     key from it (`CompanyResponse.name`, 1 to 12 letters or digits) by the rule of get-or-create:
+       *     umlauts spelled out (ä as ae), accents dropped, lower case, letters and digits only, the first
+       *     12 kept; when another company has that key, a digit is appended within 12 characters
+       *     (`testco2`). The typed name becomes the display name unless `displayName` is given.
+       *     409 when a company with the same display name (ignoring case) exists; 400 when the name
+       *     has no letter or digit.
        * @example Swisscom AG
        */
       name: string;
@@ -584,8 +594,9 @@ export interface components {
     };
     UpdateCompanyRequest: {
       /**
-       * @description Company name (unique identifier; 2-255 chars)
-       * @example Swisscom AG
+       * @description A new key for the company (1 to 12 letters or digits). Other services hold the key, so it
+       *     keeps the shape POST /companies gives it; 400 otherwise.
+       * @example swisscom
        */
       name?: string;
       /** @example Swiss IT Solutions AG */

@@ -18,8 +18,9 @@ import java.util.UUID;
  * Stores historical usage data including:
  * - Event where topic was used
  * - Date of usage
- * - Attendee count
- * - Engagement score
+ *
+ * Attendance is not stored here: it is the event's registrations (see
+ * TopicUsageHistoryRepository). Engagement was never measured and was removed (owner, 2026-11-09).
  *
  * Used for:
  * - Heat map visualization (AC2)
@@ -45,14 +46,8 @@ public class TopicUsageHistory {
     @Column(name = "used_date", nullable = false)
     private LocalDateTime usedDate;
 
-    @Column(name = "attendee_count")
-    private Integer attendeeCount;
-
     @Column(name = "feedback_score")
     private Double feedbackScore;
-
-    @Column(name = "engagement_score")
-    private Double engagementScore;
 
     @Column(name = "created_at", updatable = false)
     private LocalDateTime createdAt;
@@ -105,28 +100,12 @@ public class TopicUsageHistory {
         this.usedDate = usedDate;
     }
 
-    public Integer getAttendeeCount() {
-        return attendeeCount;
-    }
-
-    public void setAttendeeCount(Integer attendeeCount) {
-        this.attendeeCount = attendeeCount;
-    }
-
     public Double getFeedbackScore() {
         return feedbackScore;
     }
 
     public void setFeedbackScore(Double feedbackScore) {
         this.feedbackScore = feedbackScore;
-    }
-
-    public Double getEngagementScore() {
-        return engagementScore;
-    }
-
-    public void setEngagementScore(Double engagementScore) {
-        this.engagementScore = engagementScore;
     }
 
     public LocalDateTime getCreatedAt() {

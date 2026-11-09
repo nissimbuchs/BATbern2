@@ -46,7 +46,7 @@ import { formatErrorForDisplay } from '@/utils/errorHandling/errorMessages';
 import type { Role, User } from '../../../types/user.types';
 import type { components } from '@/types/generated/company-api.types';
 
-type Company = components['schemas']['CompanyResponse'];
+type Company = components['schemas']['CompanySearchResponse'];
 
 interface UserCreateEditModalProps {
   open: boolean;
@@ -116,11 +116,7 @@ const UserCreateEditModal: React.FC<UserCreateEditModalProps> = ({
                 name: user.company?.name || user.companyId,
                 displayName: user.company?.displayName || user.company?.name || user.companyId,
                 industry: user.company?.industry || undefined,
-                website: user.company?.website || undefined,
                 isVerified: false, // User.company doesn't include this, default to false
-                createdAt: new Date().toISOString(), // Required field, use current time as placeholder
-                updatedAt: new Date().toISOString(), // Required field, use current time as placeholder
-                logo: undefined, // User.company type doesn't include logo
               }
             : null,
           initialRoles: (user.roles as Role[]) || [],

@@ -191,7 +191,17 @@ the VPC through Service Connect. Callers send **no** JWT.
 | `POST /internal/mails` | Event Management | PCS records its partner meeting invites and cancellations in "What went out" (Story 16.9) |
 | `POST /internal/users/get-or-create` | Company-User Management | EMS anonymous registration and speaker provisioning (ADR-005) |
 | `GET /internal/email-owners?email=` | Company-User Management | EMS by-email deregistration across a person's profiles (#1183) |
-| `GET /internal/users/merge-preview`, `POST /internal/users/merge` | Event Management | CUMS profile merge (#1183 C/D, below) |
+| `GET /internal/users/merge-preview`, `POST /internal/users/merge`, `POST /internal/users/primary-email` | Event Management | CUMS profile merge (#1183 C/D, below) and primary-address change (#1244) |
+| `POST /internal/mail-center/{merge,logo}-requests[/{requestId}/done]` | Event Management | CUMS opens and closes the Mail Center conversation of a merge or logo request (#1237, #1246) |
+
+The CUMS→EMS calls other than the merge itself (`primary-email`, `mail-center/*`) are upstream→downstream
+exceptions to the module map, owned by Story 17.7 (request pull); no new one is added.
+
+Every operation above is specified in `docs/api/internal/` (`cums-`, `ems-`, `pcs-internal.openapi.yml`,
+Story 17.0b2) and contract-tested on both sides; the public tooling does not read that folder.
+Callers read list endpoints page by page (`pagination.hasNext`; PCS read only the first 100 users
+before 17.0b2) and percent-encode every username, company name and address they put in a path or
+query.
 
 Why a separate API rather than forwarding the user's JWT: the public user directory
 (`GET /api/v1/users`, `/users/search`, `/users/{username}`) is ORGANIZER/ADMIN only, while EMS and
@@ -429,7 +439,11 @@ flowchart LR
   `SpringDomainEventPublisher` implements it by validating the event and handing it to Spring's
   `ApplicationEventPublisher`. A synchronous listener that throws is logged at ERROR with the event
   type and does not fail the caller (the behaviour before the bus was removed; whether it should
-  fail the caller is story 17.12).
+  fail the caller is story 17.12). Each such failure also increments the Micrometer counter
+  `domain.events.listener.failures`, tagged `event_type` and `listener` (`Class.method`, or
+  `unknown`), readable at `/actuator/metrics/domain.events.listener.failures` and in the Prometheus
+  scrape. No service exports Micrometer metrics to CloudWatch today (`CLOUDWATCH_METRICS_ENABLED`
+  is not set in the CDK), so no alarm watches the counter yet.
 - There is no message bus. The EventBridge bus, the EventBridge publisher with its Resilience4j
   wrapping, the `EVENT_BUS_NAME` settings and the `events:PutEvents` grants were removed in
   Story 17.2 part B (2026-11): the bus had no rules and EMS published to a bus name that did not
@@ -472,6 +486,21 @@ rejected as a whole, and every partner invite failed that way from 2026-10-24 un
 is recorded once, with the To: addresses comma-joined. The partner meeting invite (`POST /partner-meetings/{id}/send-invite`) sends
 synchronously and sets `invite_sent_at` only after SES accepted the mail; a failure answers 502 and
 rolls back. Never mark something as sent before the send has returned.
+
+#### Spec patterns describe what the services produce
+
+A `pattern:` in `docs/api/` must accept every value the producing code writes and every value still
+stored, or a consumer validating against the spec (the S2S and MSW contract harnesses) rejects real
+data. `SpecPatternsAcceptProducedValuesIntegrationTest` (EMS, CUMS) runs produced and stored values
+through the real controllers and checks the responses against the spec:
+
+- `registrationCode`: produced only by `RegistrationCodes.newUnique`, `{eventCode}-reg-{6 of A-Z0-9}`;
+  still stored are `{eventCode}-reg-{8 hex}` (V4 backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}`
+  (a 2026-03 data load). The spec said `BAT-YYYY-NNNNNN`, which no code ever had.
+- `CompanyResponse.createdBy`: a username, `anonymous` (company named in an anonymous registration),
+  or the Cognito subject when the token has no `custom:username`.
+- `CompanyResponse.name`: no pattern, because `POST /companies` accepts any 2 to 255 characters.
+- `Event.organizerUsername` (response only): historical events carry imported names with an umlaut.
 
 #### Conflict Detection Severities
 

@@ -1,21 +1,15 @@
 package ch.batbern.companyuser.service;
 
 import ch.batbern.shared.service.EmailService;
+import ch.batbern.shared.test.mail.SesRecorder;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.ArgumentCaptor;
 import org.springframework.test.util.ReflectionTestUtils;
 
 import static org.assertj.core.api.Assertions.assertThat;
-import static org.mockito.ArgumentMatchers.any;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
 
 /**
  * Unit tests for {@link AdditionalEmailVerificationEmailService}'s locale →
@@ -29,14 +23,20 @@ class AdditionalEmailVerificationEmailServiceTest {
 
     private static final String EN_SUBJECT = "Confirm your BATbern email address";
 
-    private EmailService emailService;
+    private static final String BOX = "success+box@simulator.amazonses.com";
+
+    private SesRecorder sesRecorder;
     private AdditionalEmailVerificationEmailService service;
 
     @BeforeEach
     void setUp() {
-        emailService = mock(EmailService.class);
-        // Real variable substitution so the rendered body carries the token link.
-        when(emailService.replaceVariables(anyString(), any())).thenCallRealMethod();
+        // The real EmailService against the recording SES client (17.0b3): assert what SES got.
+        sesRecorder = new SesRecorder();
+        EmailService emailService = new EmailService();
+        ReflectionTestUtils.setField(emailService, "sesClient", sesRecorder.client());
+        ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
+        ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
+        ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
         service = new AdditionalEmailVerificationEmailService(emailService);
         ReflectionTestUtils.setField(service, "baseUrl", "https://www.batbern.ch");
     }
@@ -53,20 +53,17 @@ class AdditionalEmailVerificationEmailServiceTest {
     })
     @DisplayName("should_selectSubjectByLocalePrefix")
     void should_selectSubjectByLocalePrefix(String locale, String expectedSubject) {
-        service.sendVerificationEmail("box@example.com", "tok123", locale);
+        service.sendVerificationEmail(BOX, "tok123", locale);
 
-        ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(1)).sendHtmlEmail(anyString(), subject.capture(), anyString());
-        assertThat(subject.getValue()).isEqualTo(expectedSubject);
+        assertThat(sesRecorder.single().subject()).isEqualTo(expectedSubject);
     }
 
     @Test
     @DisplayName("should_fallBackToEnglish_when_localeIsNull")
     void should_fallBackToEnglish_when_localeIsNull() {
-        service.sendVerificationEmail("box@example.com", "tok123", null);
+        service.sendVerificationEmail(BOX, "tok123", null);
 
-        ArgumentCaptor<String> subject = ArgumentCaptor.forClass(String.class);
-        verify(emailService, times(1)).sendHtmlEmail(anyString(), subject.capture(), anyString());
-        assertThat(subject.getValue()).isEqualTo(EN_SUBJECT);
+        assertThat(sesRecorder.single().subject()).isEqualTo(EN_SUBJECT);
+        assertThat(sesRecorder.single().html()).contains("/verify-email?token=tok123");
     }
 }

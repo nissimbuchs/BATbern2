@@ -72,6 +72,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LogoPresignedUploadUrl'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    uploadUrl: https://www.batbern.ch/
+                    fileId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    s3Key: uploads/2026/sample/file.png
+                    fileExtension: png
+                    expiresInMinutes: 1
+                    requiredHeaders:
+                      key: uploads/2026/sample/file.png
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -148,6 +159,15 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/LogoCleanupStatistics'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    pendingCount: 0
+                    confirmedCount: 0
+                    associatedCount: 157
+                    expiredPendingCount: 0
+                    expiredConfirmedCount: 0
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -194,6 +214,11 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UploadImageFromUrlResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    uploadId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
         '400':
           $ref: '#/components/responses/BadRequest'
         '413':
@@ -311,7 +336,7 @@ paths:
                   summary: Basic company list
                   value:
                     data:
-                      - name: SwissITSolutionsAG
+                      - name: swissitsolut
                         displayName: Swiss IT Solutions AG
                         industry: Technology
                         isVerified: true
@@ -328,7 +353,7 @@ paths:
                   summary: Company list with logo
                   value:
                     data:
-                      - name: SwissITSolutionsAG
+                      - name: swissitsolut
                         displayName: Swiss IT Solutions AG
                         industry: Technology
                         isVerified: true
@@ -380,7 +405,7 @@ paths:
               basicCompany:
                 summary: Basic company creation
                 value:
-                  name: SwissITSolutionsAG
+                  name: swissitsolut
                   displayName: Swiss IT Solutions AG
                   industry: Technology
                   website: https://swiss-it.ch
@@ -392,6 +417,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    name: 44aiag
+                    displayName: 44ai AG
+                    website: https://44ai.ch/
+                    isVerified: false
+                    createdAt: "2026-10-04T07:24:12.697691Z"
+                    updatedAt: "2026-10-13T13:05:09.486695Z"
+                    createdBy: ben.muster
+                    logo:
+                      url: https://cdn.batbern.ch/logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      s3Key: logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      fileId: d4884d93-e5c1-4ed1-acc0-02e796bb60b5
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -427,7 +467,7 @@ paths:
           required: true
           schema:
             type: string
-            example: SwissITSolutionsAG
+            example: swissitsolut
       responses:
         '200':
           description: Company details retrieved successfully
@@ -439,7 +479,7 @@ paths:
                 basicCompany:
                   summary: Basic company details
                   value:
-                    name: SwissITSolutionsAG
+                    name: swissitsolut
                     displayName: Swiss IT Solutions AG
                     industry: Technology
                     website: https://swiss-it.ch
@@ -453,8 +493,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
+      # Public (scripts/ci/access-control-public.txt): company name and logo next to a speaker or attendee.
+      security: []
 
     patch:
       tags:
@@ -482,7 +522,7 @@ paths:
           required: true
           schema:
             type: string
-            example: SwissITSolutionsAG
+            example: swissitsolut
       requestBody:
         required: true
         content:
@@ -496,6 +536,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    name: 44aiag
+                    displayName: 44ai AG
+                    website: https://44ai.ch/
+                    isVerified: false
+                    createdAt: "2026-10-04T07:24:12.697691Z"
+                    updatedAt: "2026-10-13T13:05:09.486695Z"
+                    createdBy: ben.muster
+                    logo:
+                      url: https://cdn.batbern.ch/logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      s3Key: logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      fileId: d4884d93-e5c1-4ed1-acc0-02e796bb60b5
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -534,7 +589,7 @@ paths:
           required: true
           schema:
             type: string
-            example: SwissITSolutionsAG
+            example: swissitsolut
       responses:
         '204':
           description: Company deleted successfully
@@ -623,11 +678,11 @@ paths:
                 searchResults:
                   summary: Search results for "Swiss"
                   value:
-                    - name: SwissITSolutionsAG
+                    - name: swissitsolut
                       displayName: Swiss IT Solutions AG
                       industry: Technology
                       isVerified: true
-                    - name: Swiss Bank Corp
+                    - name: swissbankcor
                       displayName: Swiss Bank
                       industry: Finance
                       isVerified: true
@@ -637,8 +692,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
+      # Public (scripts/ci/access-control-public.txt): company typeahead in the registration wizard.
+      security: []
 
   /companies/{name}/verify:
     post:
@@ -666,7 +721,7 @@ paths:
           required: true
           schema:
             type: string
-            example: SwissITSolutionsAG
+            example: swissitsolut
       responses:
         '200':
           description: Company verified successfully
@@ -674,6 +729,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    name: 44aiag
+                    displayName: 44ai AG
+                    website: https://44ai.ch/
+                    isVerified: false
+                    createdAt: "2026-10-04T07:24:12.697691Z"
+                    updatedAt: "2026-10-13T13:05:09.486695Z"
+                    createdBy: ben.muster
+                    logo:
+                      url: https://cdn.batbern.ch/logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      s3Key: logos/2026/companies/44aiag/logo-d4884d93-e5c1-4ed1-acc0-02e796bb60b5.svg
+                      fileId: d4884d93-e5c1-4ed1-acc0-02e796bb60b5
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -752,7 +822,6 @@ paths:
                     isVerified: false
                     createdAt: 2025-01-15T10:00:00Z
                     updatedAt: 2025-01-15T10:00:00Z
-                    createdBy: anonymous
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -829,6 +898,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PresentationSettingsResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    aboutText: |-
+                      BATbern ist seit 2005 eine unabhängige Plattform zum Technologie Austausch zwischen IT-Experten.
+                      Sie bietet Fachvorträge aus der Praxis.
+                      Eine hervorragende Plattform zum Gedanken- und Erfahrungsaustausch.
+                      Platz für Networking während dem Apéro oder Lunch.
+                    partnerCount: 9
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -983,10 +1062,13 @@ components:
       properties:
         name:
           type: string
-          description: Company name (unique identifier, alphanumeric only) - Story 1.16.2
-          pattern: '^[A-Za-z0-9]+$'
-          maxLength: 255
-          example: SwissITSolutionsAG
+          description: |
+            The company's key, its unique meaningful ID (Story 1.16.2, ADR-003): 1 to 12 letters or
+            digits. POST /companies and get-or-create derive it from the typed name; the name as people
+            see it is `displayName`.
+          pattern: '^[a-zA-Z0-9]{1,12}$'
+          maxLength: 12
+          example: swissitsolut
         displayName:
           type: string
           maxLength: 255
@@ -1020,9 +1102,12 @@ components:
           example: 2025-01-15T10:00:00Z
         createdBy:
           type: string
-          description: Username of the user who created this company (Story 1.16.2)
+          description: |
+            Who created this company (Story 1.16.2): the creator's username; `anonymous` for a
+            company named during an anonymous event registration; the Cognito subject (UUID) when
+            the creator's token carried no `custom:username` claim.
           example: john.doe
-          pattern: '^[a-z]+\.[a-z]+(\.[0-9]+)?$'
+          pattern: '^([a-z]+\.[a-z]+(\.[0-9]+)?|anonymous|[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})$'
         logo:
           $ref: '#/components/schemas/CompanyLogo'
 
@@ -1058,9 +1143,10 @@ components:
       properties:
         name:
           type: string
-          description: Company name (unique identifier, alphanumeric only) - Story 1.16.2
-          pattern: '^[A-Za-z0-9]+$'
-          example: SwissITSolutionsAG
+          description: The company's key, its unique meaningful ID (Story 1.16.2), 1 to 12 letters or digits
+          pattern: '^[a-zA-Z0-9]{1,12}$'
+          maxLength: 12
+          example: swissitsolut
         displayName:
           type: string
           example: Swiss IT Solutions AG
@@ -1080,11 +1166,14 @@ components:
       properties:
         name:
           type: string
-          # No `^[A-Za-z0-9]+$` pattern: the deployed CompanyController has always validated name
-          # as @Size(2..255) only (spaces allowed, e.g. "Swisscom AG"). The alphanumeric pattern was
-          # contract drift never enforced by the hand-rolled controller — applying it now (Phase 7
-          # contract-first wiring) would 400 real requests. Relaxed to match production behaviour.
-          description: Company name (unique identifier; 2-255 chars)
+          description: |
+            The company's name as typed (2-255 characters, spaces allowed). The service derives the
+            key from it (`CompanyResponse.name`, 1 to 12 letters or digits) by the rule of get-or-create:
+            umlauts spelled out (ä as ae), accents dropped, lower case, letters and digits only, the first
+            12 kept; when another company has that key, a digit is appended within 12 characters
+            (`testco2`). The typed name becomes the display name unless `displayName` is given.
+            409 when a company with the same display name (ignoring case) exists; 400 when the name
+            has no letter or digit.
           minLength: 2
           maxLength: 255
           example: Swisscom AG
@@ -1118,12 +1207,12 @@ components:
       properties:
         name:
           type: string
-          # See CreateCompanyRequest.name: the alphanumeric pattern was never enforced by the
-          # deployed controller (@Size only); relaxed to match production behaviour (Phase 7).
-          description: Company name (unique identifier; 2-255 chars)
-          minLength: 2
-          maxLength: 255
-          example: Swisscom AG
+          description: |
+            A new key for the company (1 to 12 letters or digits). Other services hold the key, so it
+            keeps the shape POST /companies gives it; 400 otherwise.
+          pattern: '^[a-zA-Z0-9]{1,12}$'
+          maxLength: 12
+          example: swisscom
         displayName:
           type: string
           maxLength: 255
@@ -1235,7 +1324,7 @@ components:
               value:
                 error: RESOURCE_NOT_FOUND
                 errorCode: NOT_FOUND
-                message: Company not found with name 'SwissITSolutionsAG'
+                message: Company not found with name 'swissitsolut'
                 timestamp: 2025-01-15T10:30:00Z
 
     Conflict:
@@ -1249,7 +1338,7 @@ components:
               value:
                 error: CONFLICT
                 errorCode: CONFLICT
-                message: Company with name 'SwissITSolutionsAG' already exists
+                message: Company with name 'swissitsolut' already exists
                 timestamp: 2025-01-15T10:30:00Z
 
     InternalServerError:

@@ -1,7 +1,5 @@
 package ch.batbern.partners.controller;
 
-import ch.batbern.partners.client.EventManagementClient;
-import ch.batbern.partners.client.UserServiceClient;
 import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.MeetingType;
@@ -17,7 +15,6 @@ import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
-import org.springframework.test.context.bean.override.mockito.MockitoBean;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
@@ -57,10 +54,6 @@ class PartnerMeetingRsvpControllerIntegrationTest extends AbstractIntegrationTes
     @Autowired
     PartnerMeetingRepository meetingRepository;
 
-    @MockitoBean
-    EventManagementClient eventManagementClient;
-    @MockitoBean
-    UserServiceClient userServiceClient;
 
     private UUID savedMeetingId;
 

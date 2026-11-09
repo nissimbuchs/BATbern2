@@ -56,10 +56,10 @@ class GlobalSessionControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("should return 403 when unauthenticated")
-    void should_return403_when_unauthenticated() throws Exception {
+    @DisplayName("should return 401 when unauthenticated")
+    void should_return401_when_unauthenticated() throws Exception {
         mockMvc.perform(get("/api/v1/sessions").param("companyName", "GoogleZH"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

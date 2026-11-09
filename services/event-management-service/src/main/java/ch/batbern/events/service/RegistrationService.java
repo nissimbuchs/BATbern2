@@ -26,7 +26,6 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
-import java.security.SecureRandom;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -56,10 +55,6 @@ import java.util.stream.Collectors;
 public class RegistrationService {
 
     private static final DateTimeFormatter ISO_FORMATTER = DateTimeFormatter.ISO_INSTANT;
-    private static final String REGISTRATION_CODE_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789";
-    private static final int REGISTRATION_CODE_SUFFIX_LENGTH = 6;
-    private static final int MAX_COLLISION_RETRIES = 5;
-    private static final SecureRandom RANDOM = new SecureRandom();
 
     private final RegistrationRepository registrationRepository;
     private final EventRepository eventRepository;
@@ -269,6 +264,7 @@ public class RegistrationService {
                             ? ISO_FORMATTER.format(registration.getCreatedAt()) : null)
                     .updatedAt(registration.getUpdatedAt() != null
                             ? ISO_FORMATTER.format(registration.getUpdatedAt()) : null)
+                    .waitlistPosition(registration.getWaitlistPosition())
                     // Enriched user fields (ADR-004)
                     .attendeeUsername(userProfile.getId())
                     .attendeeFirstName(userProfile.getFirstName())
@@ -294,6 +290,7 @@ public class RegistrationService {
                             ? ISO_FORMATTER.format(registration.getCreatedAt()) : null)
                     .updatedAt(registration.getUpdatedAt() != null
                             ? ISO_FORMATTER.format(registration.getUpdatedAt()) : null)
+                    .waitlistPosition(registration.getWaitlistPosition())
                     // Placeholder user fields (data integrity issue)
                     .attendeeUsername(registration.getAttendeeUsername())
                     .attendeeFirstName("[User Not Found]")
@@ -874,44 +871,7 @@ public class RegistrationService {
      */
     public record EnrollmentSummary(int enrolled, int skipped) {}
 
-    /**
-     * Generate a unique registration code with format: {eventCode}-reg-{random}
-     * Example: BATbern142-reg-A3X9K2
-     * <p>
-     * Retries up to MAX_COLLISION_RETRIES times if code already exists.
-     *
-     * @param eventCode Event code prefix
-     * @return Unique registration code
-     * @throws IllegalStateException if unable to generate unique code after retries
-     */
     private String generateUniqueRegistrationCode(String eventCode) {
-        for (int attempt = 0; attempt < MAX_COLLISION_RETRIES; attempt++) {
-            String code = eventCode + "-reg-" + generateRandomSuffix();
-
-            if (!registrationRepository.existsByRegistrationCode(code)) {
-                return code;
-            }
-
-            log.warn("Registration code collision on attempt {}: {}", attempt + 1, code);
-        }
-
-        throw new IllegalStateException(
-                "Failed to generate unique registration code after " + MAX_COLLISION_RETRIES + " attempts"
-        );
-    }
-
-    /**
-     * Generate random alphanumeric suffix for registration code.
-     * Uses SecureRandom for cryptographic randomness.
-     *
-     * @return Random suffix (e.g., "A3X9K2")
-     */
-    private String generateRandomSuffix() {
-        StringBuilder suffix = new StringBuilder(REGISTRATION_CODE_SUFFIX_LENGTH);
-        for (int i = 0; i < REGISTRATION_CODE_SUFFIX_LENGTH; i++) {
-            int index = RANDOM.nextInt(REGISTRATION_CODE_CHARS.length());
-            suffix.append(REGISTRATION_CODE_CHARS.charAt(index));
-        }
-        return suffix.toString();
+        return RegistrationCodes.newUnique(eventCode, registrationRepository::existsByRegistrationCode);
     }
 }

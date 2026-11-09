@@ -31,6 +31,9 @@ import static org.assertj.core.api.Assertions.assertThat;
 @Transactional
 public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractIntegrationTest {
 
+    @jakarta.persistence.PersistenceContext
+    private jakarta.persistence.EntityManager entityManager;
+
     @Autowired
     private SpeakerStatusHistoryRepository repository;
 
@@ -215,19 +218,16 @@ public class SpeakerStatusHistoryRepositoryIntegrationTest extends AbstractInteg
             longReason
         );
 
-        // When/Then: Should throw validation exception or truncate
-        // (Behavior depends on database constraint - PostgreSQL will throw error)
-        try {
+        // When/Then: bean validation or the database refuses it
+        org.assertj.core.api.Assertions.assertThatThrownBy(() -> {
             repository.save(history);
             repository.flush(); // Force immediate database write
-            assertThat(true).as("Expected validation error for reason > 2000 chars").isFalse();
-        } catch (Exception e) {
-            // Expected: validation or database constraint violation
-            assertThat(e).isInstanceOfAny(
+        }).isInstanceOfAny(
                 org.springframework.dao.DataIntegrityViolationException.class,
-                jakarta.validation.ConstraintViolationException.class
-            );
-        }
+                jakarta.validation.ConstraintViolationException.class);
+        // A session that threw on flush must not be flushed again (Hibernate's rule); drop it
+        // so the flush before rollback (17.0b3) has nothing half-written left to send.
+        entityManager.clear();
     }
 
     /**

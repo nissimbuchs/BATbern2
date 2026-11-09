@@ -1,718 +1,284 @@
 /**
- * Event API Client Tests (RED Phase - Story 2.5.3, Task 5a)
+ * Event API client against the MSW harness (Story 17.0c1; first written in Story 2.5.3).
  *
- * TDD RED Phase: Write failing tests before implementation
- * Tests verify:
- * - API client structure and methods
- * - Request/response interceptors
- * - Error handling (401, 403, 404, 500)
- * - Auth token injection
- * - Resource expansion (?include= parameter)
- * - Partial update (PATCH) support
+ * This file used to expect a network error from every call ("no backend in tests"), so it proved
+ * nothing about the requests. The harness now answers every call with the spec example, checks it
+ * against docs/api, and records it: these tests assert what is sent (method, path, query, body)
+ * and how answers and errors come back. The client-side validations are unchanged.
  */
-
-import { describe, it, expect, beforeAll, afterAll } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
 import { eventApiClient } from '@/services/eventApiClient';
 import type {
   CreateEventRequest,
   UpdateEventRequest,
   PatchEventRequest,
 } from '@/types/event.types';
-import apiClient from '@/services/api/apiClient';
 
-describe('Event API Client (RED Phase)', () => {
-  // Store original timeout to restore after tests
-  let originalTimeout: number;
+const inDays = (days: number) => {
+  const d = new Date();
+  d.setDate(d.getDate() + days);
+  return d.toISOString();
+};
 
-  beforeAll(() => {
-    // Save original timeout
-    originalTimeout = apiClient.defaults.timeout || 30000;
-    // Set short timeout for these tests to fail fast when backend unavailable
-    apiClient.defaults.timeout = 100;
-  });
+const validEvent = (overrides: Partial<CreateEventRequest> = {}): CreateEventRequest => ({
+  title: 'Test Event',
+  eventNumber: 56,
+  date: inDays(60),
+  registrationDeadline: inDays(50),
+  venueName: 'Test Venue',
+  venueAddress: 'Test Address',
+  venueCapacity: 100,
+  organizerUsername: 'test.organizer',
+  eventType: 'EVENING',
+  currentAttendeeCount: 0,
+  ...overrides,
+});
 
-  afterAll(() => {
-    // Restore original timeout
-    apiClient.defaults.timeout = originalTimeout;
-  });
+/** The query of the only listEvents call, as a plain object. */
+const listQuery = () => {
+  const calls = api.calls('listEvents');
+  expect(calls).toHaveLength(1);
+  return Object.fromEntries(calls[0].query);
+};
 
-  describe('API Structure', () => {
-    it('should have all required methods', () => {
-      expect(eventApiClient).toHaveProperty('getEvents');
-      expect(eventApiClient).toHaveProperty('getEvent');
-      expect(eventApiClient).toHaveProperty('createEvent');
-      expect(eventApiClient).toHaveProperty('updateEvent');
-      expect(eventApiClient).toHaveProperty('patchEvent');
-      expect(eventApiClient).toHaveProperty('deleteEvent');
-      expect(eventApiClient).toHaveProperty('getEventWorkflow');
-    });
-
-    it('should have methods that return promises', () => {
-      // All methods should be async functions - catch errors to prevent unhandled rejections
-      const promise1 = eventApiClient.getEvents().catch(() => {});
-      const promise2 = eventApiClient.getEvent('BATbern56').catch(() => {});
-      const promise3 = eventApiClient.getEventWorkflow('BATbern56').catch(() => {});
-
-      expect(promise1).toBeInstanceOf(Promise);
-      expect(promise2).toBeInstanceOf(Promise);
-      expect(promise3).toBeInstanceOf(Promise);
-    });
-  });
-
-  describe('Client-side Validation', () => {
-    describe('createEvent', () => {
-      it('should_rejectInvalidEventDate_when_dateIsInThePast', async () => {
-        const invalidEvent: CreateEventRequest = {
-          title: 'Test Event',
-          eventNumber: 56,
-          date: '2020-01-01T10:00:00Z', // Past date
-          registrationDeadline: '2019-12-15T23:59:59Z',
-          venueName: 'Test Venue',
-          venueAddress: 'Test Address',
-          venueCapacity: 100,
-          organizerUsername: 'test.organizer',
-          eventType: 'EVENING',
-          currentAttendeeCount: 0,
-        };
-
-        await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
-          /Event date must be in the future/
-        );
-      });
-
-      it('should_rejectInvalidDeadline_when_deadlineIsAfterEventDate', async () => {
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + 60);
-        const invalidDeadline = new Date(futureDate);
-        invalidDeadline.setDate(invalidDeadline.getDate() + 10); // After event date
-
-        const invalidEvent: CreateEventRequest = {
-          title: 'Test Event',
-          eventNumber: 56,
-          date: futureDate.toISOString(),
-          registrationDeadline: invalidDeadline.toISOString(),
-          venueName: 'Test Venue',
-          venueAddress: 'Test Address',
-          venueCapacity: 100,
-          organizerUsername: 'test.organizer',
-          eventType: 'EVENING',
-          currentAttendeeCount: 0,
-        };
-
-        await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
-          /Registration deadline must be before event date/
-        );
-      });
-
-      it('should_rejectInvalidCapacity_when_capacityIsNegative', async () => {
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + 60);
-        const deadline = new Date(futureDate);
-        deadline.setDate(deadline.getDate() - 10);
-
-        const invalidEvent: CreateEventRequest = {
-          title: 'Test Event',
-          eventNumber: 56,
-          date: futureDate.toISOString(),
-          registrationDeadline: deadline.toISOString(),
-          venueName: 'Test Venue',
-          venueAddress: 'Test Address',
-          venueCapacity: -100, // Negative capacity
-          organizerUsername: 'test.organizer',
-          eventType: 'EVENING',
-          currentAttendeeCount: 0,
-        };
-
-        await expect(eventApiClient.createEvent(invalidEvent)).rejects.toThrow(
-          /Venue capacity must be positive/
-        );
-      });
-
-      it('should_acceptValidEventData_when_allValidationsPassed', async () => {
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + 60);
-        const deadline = new Date(futureDate);
-        deadline.setDate(deadline.getDate() - 10);
-
-        const validEvent: CreateEventRequest = {
-          title: 'Test Event',
-          eventNumber: 56,
-          date: futureDate.toISOString(),
-          registrationDeadline: deadline.toISOString(),
-          venueName: 'Test Venue',
-          venueAddress: 'Test Address',
-          venueCapacity: 100,
-          organizerUsername: 'test.organizer',
-          eventType: 'EVENING',
-          currentAttendeeCount: 0,
-        };
-
-        // If validation passes, the function should attempt to make the API call
-        // In test environment without backend, this will fail with network/timeout error or 500
-        // We expect network/server error (not validation error)
-        // Error is transformed to user-friendly message by transformError()
-        await expect(eventApiClient.createEvent(validEvent)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-    });
-
-    describe('updateEvent', () => {
-      it('should_rejectInvalidDeadline_when_updatingWithInvalidDate', async () => {
-        const futureDate = new Date();
-        futureDate.setDate(futureDate.getDate() + 60);
-        const invalidDeadline = new Date(futureDate);
-        invalidDeadline.setDate(invalidDeadline.getDate() + 10); // After event date
-
-        const updates: UpdateEventRequest = {
-          registrationDeadline: invalidDeadline.toISOString(),
-          date: futureDate.toISOString(),
-        };
-
-        await expect(eventApiClient.updateEvent('BATbern56', updates)).rejects.toThrow(
-          /Registration deadline must be before event date/
-        );
-      });
-    });
-  });
-
-  describe('Resource Expansion', () => {
-    it('should_buildIncludeParameter_when_expandOptionsProvided', async () => {
-      // Test that ?include= parameter is properly constructed
-      // We can't fully test without backend, but we can verify the call is made
-      const options = { expand: ['workflow', 'speakers', 'sessions', 'venue'] };
-
-      // Expect network/server error (not parameter building error)
-      // Error is transformed to user-friendly message by transformError()
-      await expect(eventApiClient.getEvent('BATbern56', options)).rejects.toThrow(
-        /(Network Error|Not Found|Server Error|timeout)/
-      );
-    });
-
-    it('should_getEventList_when_includeParameterProvided', async () => {
-      const options = { expand: ['workflow'] };
-
-      // Expect network/server error (not parameter building error)
-      // Error is transformed to user-friendly message by transformError()
+describe('Event API client', () => {
+  describe('client-side validation (nothing is sent)', () => {
+    it('rejects an event date in the past', async () => {
       await expect(
-        eventApiClient.getEvents({ page: 1, limit: 20 }, undefined, options)
-      ).rejects.toThrow(/(Network Error|Not Found|Server Error|timeout)/);
+        eventApiClient.createEvent(
+          validEvent({ date: '2020-01-01T10:00:00Z', registrationDeadline: '2019-12-15T23:59:59Z' })
+        )
+      ).rejects.toThrow(/Event date must be in the future/);
+      expect(api.allCalls()).toEqual([]);
     });
 
-    it('should_omitIncludeParameter_when_noExpandOptionsProvided', async () => {
-      // Without expand options, should not add ?include= parameter
-      // Expect network/server error (not parameter building error)
-      // Error is transformed to user-friendly message by transformError()
-      await expect(eventApiClient.getEvent('BATbern56')).rejects.toThrow(
-        /(Network Error|Not Found|Server Error|timeout)/
+    it('rejects a registration deadline after the event date', async () => {
+      await expect(
+        eventApiClient.createEvent(validEvent({ registrationDeadline: inDays(70) }))
+      ).rejects.toThrow(/Registration deadline must be before event date/);
+      expect(api.allCalls()).toEqual([]);
+    });
+
+    it('rejects a negative capacity', async () => {
+      await expect(eventApiClient.createEvent(validEvent({ venueCapacity: -100 }))).rejects.toThrow(
+        /Venue capacity must be positive/
       );
+      expect(api.allCalls()).toEqual([]);
     });
-  });
 
-  describe('Partial Update (PATCH)', () => {
-    it('should_usePatchMethod_when_partialUpdateRequested', async () => {
-      const partialUpdate: PatchEventRequest = {
-        title: 'Updated Title',
-        // Only updating title, not other fields
+    it('rejects an invalid deadline on update', async () => {
+      const updates: UpdateEventRequest = {
+        title: 'Test Event',
+        date: inDays(60),
+        registrationDeadline: inDays(70),
       };
-
-      // Should use PATCH method, not PUT
-      // Expect network/server error (not method error)
-      // Error is transformed to user-friendly message by transformError()
-      await expect(eventApiClient.patchEvent('BATbern56', partialUpdate)).rejects.toThrow(
-        /(Network Error|Not Found|Server Error|timeout)/
+      await expect(eventApiClient.updateEvent('BATbern56', updates)).rejects.toThrow(
+        /Registration deadline must be before event date/
       );
-    });
-
-    it('should_sendOnlyChangedFields_when_patchingEvent', async () => {
-      const partialUpdate: PatchEventRequest = {
-        description: 'Updated description only',
-      };
-
-      // Should only send changed fields in request body
-      // Expect network/server error (not validation error)
-      // Error is transformed to user-friendly message by transformError()
-      await expect(eventApiClient.patchEvent('BATbern56', partialUpdate)).rejects.toThrow(
-        /(Network Error|Not Found|Server Error|timeout)/
-      );
+      expect(api.allCalls()).toEqual([]);
     });
   });
 
-  describe('Error Handling', () => {
-    it('should_transformError_when_401Unauthorized', async () => {
-      // This test will pass when error handling is implemented
-      // For now, we just verify the method exists and returns a promise
-      const promise = eventApiClient.getEvents().catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
+  describe('create, update, patch, delete', () => {
+    it('POSTs a valid event as it is and returns the created event', async () => {
+      const event = validEvent();
+
+      const created = await eventApiClient.createEvent(event);
+
+      const [call] = api.calls('createEvent');
+      expect(call.body).toEqual(event);
+      expect(created.eventCode).toBeTruthy();
     });
 
-    it('should_transformError_when_403Forbidden', async () => {
-      // This test will pass when error handling is implemented
-      const promise = eventApiClient.deleteEvent('BATbern56').catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
-    });
-
-    it('should_transformError_when_404NotFound', async () => {
-      // This test will pass when error handling is implemented
-      const promise = eventApiClient.getEvent('nonexistent').catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
-    });
-
-    it('should_transformError_when_500ServerError', async () => {
-      // This test will pass when error handling is implemented
-      const futureDate = new Date();
-      futureDate.setDate(futureDate.getDate() + 60);
-
-      const event: CreateEventRequest = {
-        title: 'Test',
-        description: 'Test',
-        eventDate: futureDate.toISOString(),
-        registrationDeadline: new Date(
-          futureDate.getTime() - 10 * 24 * 60 * 60 * 1000
-        ).toISOString(),
-        eventNumber: 56,
-        venueName: 'Test Venue',
-        venueAddress: 'Test Address',
-        venueCapacity: 100,
-        organizerId: 'john.doe',
-      };
-
-      const promise = eventApiClient.createEvent(event).catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
-    });
-  });
-
-  describe('Pagination and Filtering', () => {
-    it('should_supportPagination_when_getEventsWithPageParams', async () => {
-      const pagination = { page: 2, limit: 10 };
-
-      // Should add ?page=2&limit=10 to query
-      // Expect network/server error (not parameter error)
-      // Error is transformed to user-friendly message by transformError()
-      await expect(eventApiClient.getEvents(pagination)).rejects.toThrow(
-        /(Network Error|Server Error)/
-      );
-    });
-
-    it('should_supportFiltering_when_getEventsWithFilters', async () => {
-      const filters = { status: ['published'], year: 2024 };
-
-      // Should add filter parameter with JSON filter syntax
-      // Expect network/server error (not filter error)
-      // Error is transformed to user-friendly message by transformError()
-      await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-        /(Network Error|Not Found|Server Error|timeout)/
-      );
-    });
-  });
-
-  describe('Workflow and Tasks APIs', () => {
-    it('should_getWorkflowState_when_eventCodeProvided', async () => {
-      // Expect network/server error (not API structure error)
-      // Error is transformed to user-friendly message by transformError()
-      await expect(eventApiClient.getEventWorkflow('BATbern56')).rejects.toThrow(
-        /(Network Error|Not Found|Server Error|timeout)/
-      );
-    });
-  });
-
-  describe('Topic Assignment (Story 5.2a)', () => {
-    it('should_assignTopicToEvent_when_topicIdProvided', async () => {
-      const topicId = '123e4567-e89b-12d3-a456-426614174000';
-
-      // Expect network/server error (not API structure error)
-      await expect(eventApiClient.assignTopicToEvent('BATbern56', topicId)).rejects.toThrow(
-        /(Network Error|Not Found|Server Error|timeout)/
-      );
-    });
-
-    it('should_haveCorrectMethodSignature_when_assigningTopic', () => {
-      expect(eventApiClient).toHaveProperty('assignTopicToEvent');
-      expect(typeof eventApiClient.assignTopicToEvent).toBe('function');
-    });
-  });
-
-  describe('Event Existence Check (Story 5.2a)', () => {
-    it('should_checkEventExists_when_eventNumberProvided', async () => {
-      // Expect network/server error (not API structure error)
-      await expect(eventApiClient.checkEventExists(56)).rejects.toThrow(
-        /(Network Error|Not Found|Server Error|timeout)/
-      );
-    });
-
-    it('should_haveCorrectMethodSignature_when_checkingExistence', () => {
-      expect(eventApiClient).toHaveProperty('checkEventExists');
-      expect(typeof eventApiClient.checkEventExists).toBe('function');
-    });
-  });
-
-  describe('Auth Token Injection', () => {
-    it('should_includeAuthHeader_when_makingApiCalls', async () => {
-      // This test verifies that the API client uses the shared apiClient
-      // which has auth interceptors configured in Story 1.17
-      // We can't fully test without backend, but we verify the method exists
-      const promise = eventApiClient.getEvents().catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
-    });
-  });
-
-  describe('Archived Event Validation', () => {
-    it('should_allowPastDate_when_statusIsArchived', async () => {
-      const pastDate = new Date('2020-01-01T10:00:00Z');
-      const archivedEvent: CreateEventRequest = {
-        title: 'Historical Event',
-        eventNumber: 42,
-        date: pastDate.toISOString(),
-        registrationDeadline: '2019-12-15T23:59:59Z',
-        venueName: 'Historical Venue',
-        venueAddress: 'Historical Address',
-        venueCapacity: 100,
-        workflowState: 'ARCHIVED', // Archived workflow state bypasses date validation
-      };
-
-      // Should not throw validation error for past date when archived
-      // Will fail with network error instead (expected)
-      await expect(eventApiClient.createEvent(archivedEvent)).rejects.toThrow(
-        /(Network Error|Server Error)/
-      );
-    });
-  });
-
-  describe('Error Transformation with Status Codes', () => {
-    it('should_includeCorrelationId_when_errorOccurs', async () => {
-      // Test that correlation ID is included in error messages
-      // This will be tested with real backend errors
-      const promise = eventApiClient.getEvent('nonexistent').catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
-    });
-
-    it('should_handleConflictError_when_409Returned', async () => {
-      // Conflict errors (409) should be transformed properly
-      // Used for duplicate registration, etc.
-      const promise = eventApiClient
-        .createRegistration('BATbern56', {
-          firstName: 'John',
-          lastName: 'Doe',
-          email: 'john.doe@example.com',
-          companyName: 'ACME Corp',
+    it('accepts a past date for an ARCHIVED event', async () => {
+      await eventApiClient.createEvent(
+        validEvent({
+          date: '2020-01-01T10:00:00Z',
+          registrationDeadline: '2019-12-15T23:59:59Z',
+          workflowState: 'ARCHIVED',
         })
-        .catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
+      );
+
+      expect(api.calls('createEvent')).toHaveLength(1);
+    });
+
+    it('PUTs a full update to /events/{eventCode}', async () => {
+      const update: UpdateEventRequest = { title: 'New title', date: inDays(60) };
+
+      await eventApiClient.updateEvent('BATbern56', update);
+
+      const [call] = api.calls('updateEvent');
+      expect(call.params).toEqual({ eventCode: 'BATbern56' });
+      expect(call.body).toEqual(update);
+    });
+
+    it('PATCHes only the changed fields', async () => {
+      const partial: PatchEventRequest = { description: 'Updated description only' };
+
+      await eventApiClient.patchEvent('BATbern56', partial);
+
+      const [call] = api.calls('patchEvent');
+      expect(call.method).toBe('PATCH');
+      expect(call.body).toEqual({ description: 'Updated description only' });
+    });
+
+    it('DELETEs /events/{eventCode}', async () => {
+      await eventApiClient.deleteEvent('BATbern56');
+
+      expect(api.calls('deleteEvent')[0].params).toEqual({ eventCode: 'BATbern56' });
     });
   });
 
-  describe('Public API Methods', () => {
-    it('should_returnPromise_when_getPublicCurrentEventCalled', async () => {
-      const promise = eventApiClient.getPublicCurrentEvent().catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
+  describe('getEvent', () => {
+    it('sends include for the expansions and returns the event', async () => {
+      const event = await eventApiClient.getEvent('BATbern56', {
+        expand: ['speakers', 'sessions', 'venue'],
+      });
+
+      const [call] = api.calls('getEvent');
+      expect(call.params).toEqual({ eventCode: 'BATbern56' });
+      expect(call.query.get('include')).toBe('speakers,sessions,venue');
+      expect(event.eventCode).toBeTruthy();
     });
 
-    it('should_confirmRegistration_when_tokenProvided', async () => {
-      const promise = eventApiClient
-        .confirmRegistration('BATbern56', 'test-jwt-token')
-        .catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
-    });
+    it('sends no include without expansions', async () => {
+      await eventApiClient.getEvent('BATbern56');
 
-    it('should_getRegistration_when_confirmationCodeProvided', async () => {
-      const promise = eventApiClient.getRegistration('BATbern56', 'ABC123').catch(() => {});
-      expect(promise).toBeInstanceOf(Promise);
+      expect(api.calls('getEvent')[0].url.search).toBe('');
     });
   });
 
-  describe('Filter Parameter Building', () => {
-    it('should_addFilterParameter_when_multipleFiltersProvided', async () => {
-      const filters = {
-        status: ['published', 'planning'],
+  describe('getEvents', () => {
+    it('sends page and limit, and nothing else by default', async () => {
+      // The harness answers from the production-shaped events with real paging (17.0d).
+      const result = await eventApiClient.getEvents({ page: 2, limit: 1 });
+
+      expect(listQuery()).toEqual({ page: '2', limit: '1' });
+      expect(result.data).toHaveLength(1);
+      expect(result.pagination).toMatchObject({ page: 2, limit: 1, hasPrev: true });
+    });
+
+    it('builds the JSON filter from workflow states, year, search and topic codes', async () => {
+      await eventApiClient.getEvents(
+        { page: 1, limit: 20 },
+        {
+          workflowState: ['ARCHIVED', 'EVENT_COMPLETED'],
+          year: 2024,
+          search: 'C++ & Java (Advanced)',
+          topicCode: ['cloud', 'devops'],
+        }
+      );
+
+      expect(JSON.parse(listQuery().filter)).toEqual({
+        workflowState: { $in: ['ARCHIVED', 'EVENT_COMPLETED'] },
         year: 2024,
-        search: 'Architecture',
-      };
-
-      // Should build JSON filter with all provided filters
-      await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-        /(Network Error|Server Error)/
-      );
+        title: { $contains: 'C++ & Java (Advanced)' },
+        topicCode: { $in: ['cloud', 'devops'] },
+      });
     });
 
-    it('should_omitFilterParameter_when_noFiltersProvided', async () => {
-      // Should not add filter parameter when no filters
-      await expect(eventApiClient.getEvents({ page: 1, limit: 20 })).rejects.toThrow(
-        /(Network Error|Server Error)/
-      );
+    it('sends no filter for empty filters', async () => {
+      await eventApiClient.getEvents({ page: 1, limit: 20 }, { search: '', topicCode: [] });
+
+      expect(listQuery()).not.toHaveProperty('filter');
     });
 
-    it('should_handleSearchFilter_when_searchTextProvided', async () => {
-      const filters = { search: 'Innovation' };
-
-      // Search should use $contains operator
-      await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-        /(Network Error|Server Error)/
+    it('sends include and sort', async () => {
+      await eventApiClient.getEvents(
+        { page: 1, limit: 20 },
+        {},
+        { expand: ['topics', 'sessions', 'speakers'], sort: '-date' }
       );
+
+      expect(listQuery()).toMatchObject({ include: 'topics,sessions,speakers', sort: '-date' });
+    });
+
+    it('sends no include for an empty expansion list', async () => {
+      await eventApiClient.getEvents({ page: 1, limit: 20 }, {}, { expand: [] });
+
+      expect(listQuery()).not.toHaveProperty('include');
+    });
+
+    it('sends includeArchived only when it is set', async () => {
+      await eventApiClient.getEvents({ page: 1, limit: 20 }, { includeArchived: true });
+      await eventApiClient.getEvents({ page: 1, limit: 20 }, { includeArchived: false });
+      await eventApiClient.getEvents({ page: 1, limit: 20 });
+
+      expect(api.calls('listEvents').map((c) => c.query.get('includeArchived'))).toEqual([
+        'true',
+        'false',
+        null,
+      ]);
     });
   });
 
-  describe('Archive Browsing (Story 4.2 - Task 2a)', () => {
-    describe('AC8: Topic Filters with Counts', () => {
-      it('should_filterBySingleTopic_when_topicProvided', async () => {
-        const filters = { topics: ['cloud'] };
-
-        // Should filter by single topic
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
+  describe('registrations and topics', () => {
+    it('POSTs a registration to /events/{eventCode}/registrations', async () => {
+      await eventApiClient.createRegistration('BATbern56', {
+        firstName: 'Anna',
+        lastName: 'Muster',
+        email: 'anna.muster@example.com',
+        company: 'ACME Corp',
+        termsAccepted: true,
       });
 
-      it('should_filterByMultipleTopics_when_multipleTopicsProvided', async () => {
-        const filters = { topics: ['cloud', 'devops', 'security'] };
+      const [call] = api.calls('createRegistration');
+      expect(call.params).toEqual({ eventCode: 'BATbern56' });
+      expect(call.body).toMatchObject({ email: 'anna.muster@example.com' });
+    });
 
-        // Should filter by multiple topics (OR logic)
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
+    it('confirms a registration with the token as query parameter', async () => {
+      await eventApiClient.confirmRegistration('BATbern56', 'test-jwt-token');
 
-      it('should_NOT_filterByTopic_when_topicsArrayEmpty', async () => {
-        const filters = { topics: [] };
+      expect(api.calls('confirmRegistration')[0].query.get('token')).toBe('test-jwt-token');
+    });
 
-        // Should not add topic filter when empty array
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
+    it('reads a registration by its code', async () => {
+      await eventApiClient.getRegistration('BATbern56', 'BATbern56-reg-ABC123');
+
+      expect(api.calls('getRegistration')[0].params).toEqual({
+        eventCode: 'BATbern56',
+        registrationCode: 'BATbern56-reg-ABC123',
       });
     });
 
-    describe('AC9: Search with Debouncing (API Integration)', () => {
-      it('should_searchEventsByTitle_when_searchTextProvided', async () => {
-        const filters = { search: 'Cloud Architecture' };
+    it('assigns a topic with its code in the body', async () => {
+      await eventApiClient.assignTopicToEvent('BATbern56', 'cloud-native');
 
-        // Should use $contains operator on title field
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_handleEmptySearch_when_searchTextEmpty', async () => {
-        const filters = { search: '' };
-
-        // Should not add search filter when empty
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_handleSpecialCharacters_when_searchTextHasSpecialChars', async () => {
-        const filters = { search: 'C++ & Java (Advanced)' };
-
-        // Should properly encode special characters
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
+      expect(api.calls('selectTopicForEvent')[0].body).toEqual({ topicCode: 'cloud-native' });
     });
 
-    describe('AC12: Sort Parameters', () => {
-      it('should_sortByNewest_when_sortIsMinusDate', async () => {
-        const options = { sort: '-date' };
+    it('returns null when no current event is featured (404)', async () => {
+      api.on('getPublicCurrentEvent', () => new HttpResponse(null, { status: 404 }));
 
-        // Should sort by date descending (newest first)
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
+      expect(await eventApiClient.getPublicCurrentEvent()).toBeNull();
+    });
+  });
 
-      it('should_sortByOldest_when_sortIsDate', async () => {
-        const options = { sort: 'date' };
+  describe('error transformation', () => {
+    const failWith = (status: number, body: Record<string, unknown> = {}, headers = {}) =>
+      api.on('getEvent', () => HttpResponse.json(body, { status, headers }));
 
-        // Should sort by date ascending (oldest first)
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
+    it.each([
+      [401, {}, 'Unauthorized: Please log in'],
+      [403, { error: 'turnstile_required' }, 'turnstile_required'],
+      [404, {}, 'Not Found: The requested event was not found'],
+      [409, { message: 'Already registered' }, 'Already registered'],
+      [500, {}, 'Server Error: Please try again later'],
+    ])('maps %i to a readable message', async (status, body, message) => {
+      failWith(status, body);
 
-      it('should_sortByMostAttended_when_sortIsMinusAttendance', async () => {
-        const options = { sort: '-attendance' };
-
-        // Should sort by attendance descending
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_useDefaultSort_when_sortNotProvided', async () => {
-        // Should use default sort (newest first: -date)
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 })).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
+      await expect(eventApiClient.getEvent('BATbern56')).rejects.toThrow(message);
     });
 
-    describe('AC23: Resource Expansion for Archive', () => {
-      it('should_expandTopics_when_includeTopics', async () => {
-        const options = { expand: ['topics'] };
+    it('appends the correlation id and keeps the status', async () => {
+      failWith(500, {}, { 'X-Correlation-ID': 'corr-123' });
 
-        // Should add ?include=topics parameter
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_expandSessions_when_includeSessions', async () => {
-        const options = { expand: ['sessions'] };
-
-        // Should add ?include=sessions parameter
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_expandSpeakers_when_includeSpeakers', async () => {
-        const options = { expand: ['speakers'] };
-
-        // Should add ?include=speakers parameter
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_expandMultipleResources_when_includeTopicsSessionsSpeakers', async () => {
-        const options = { expand: ['topics', 'sessions', 'speakers'] };
-
-        // Should add ?include=topics,sessions,speakers parameter
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_NOT_addInclude_when_expandArrayEmpty', async () => {
-        const options = { expand: [] };
-
-        // Should not add include parameter when empty
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-    });
-
-    describe('Combined Filters, Sort, and Expansion', () => {
-      it('should_combineAllParameters_when_filtersAndSortAndExpansionProvided', async () => {
-        const filters = {
-          topics: ['cloud', 'devops'],
-          search: 'Architecture',
-        };
-        const options = {
-          expand: ['topics', 'sessions', 'speakers'],
-          sort: '-date',
-        };
-
-        // Should build URL with pagination, filters, sort, and resource expansion
-        // Example: ?page=1&limit=20&filter={...}&include=topics,sessions,speakers&sort=-date
-        await expect(
-          eventApiClient.getEvents({ page: 1, limit: 20 }, filters, options)
-        ).rejects.toThrow(/(Network Error|Server Error)/);
-      });
-
-      it('should_handleComplexFilterCombinations_when_allFiltersProvided', async () => {
-        const filters = {
-          topics: ['microservices', 'ai-ml'],
-          search: 'Innovation',
-          workflowState: ['ARCHIVED', 'COMPLETED'],
-        };
-        const options = {
-          expand: ['topics', 'sessions', 'speakers'],
-          sort: '-attendance',
-        };
-
-        // Should handle complex filter combinations
-        await expect(
-          eventApiClient.getEvents({ page: 2, limit: 50 }, filters, options)
-        ).rejects.toThrow(/(Network Error|Server Error)/);
-      });
-    });
-
-    describe('includeArchived Parameter', () => {
-      it('should_includeArchived_when_includeArchivedTrue', async () => {
-        const filters = { includeArchived: true };
-
-        // Should add ?includeArchived=true parameter
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_excludeArchived_when_includeArchivedFalse', async () => {
-        const filters = { includeArchived: false };
-
-        // Should add ?includeArchived=false or omit (backend default: false)
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_excludeArchivedByDefault_when_includeArchivedNotProvided', async () => {
-        // Should not include archived events by default (backend behavior)
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 })).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-    });
-
-    describe('Pagination for Archive', () => {
-      it('should_fetch20PerPage_when_defaultPaginationUsed', async () => {
-        // Default limit should be 20 events per page
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 })).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_fetchPage2_when_page2Requested', async () => {
-        const pagination = { page: 2, limit: 20 };
-
-        // Should fetch page 2
-        await expect(eventApiClient.getEvents(pagination)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_fetchWithCustomLimit_when_limitProvided', async () => {
-        const pagination = { page: 1, limit: 50 };
-
-        // Should use custom limit
-        await expect(eventApiClient.getEvents(pagination)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-    });
-
-    describe('URL Parameter Encoding', () => {
-      it('should_encodeFilterJSON_when_filtersProvided', async () => {
-        const filters = {
-          workflowState: ['ARCHIVED', 'COMPLETED'],
-          topics: ['cloud'],
-        };
-
-        // Should properly encode JSON filter object
-        // Example: filter={"workflowState":{"$in":["ARCHIVED","COMPLETED"]},"topics":{"$in":["cloud"]}}
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_encodeCommasSeparated_when_multipleResourceExpansions', async () => {
-        const options = { expand: ['topics', 'sessions', 'speakers', 'venue'] };
-
-        // Should join with commas: ?include=topics,sessions,speakers,venue
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, {}, options)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
-      });
-
-      it('should_handleSpacesInSearch_when_searchTextHasSpaces', async () => {
-        const filters = { search: 'Cloud Architecture Summit 2024' };
-
-        // Should properly encode spaces
-        await expect(eventApiClient.getEvents({ page: 1, limit: 20 }, filters)).rejects.toThrow(
-          /(Network Error|Server Error)/
-        );
+      await expect(eventApiClient.getEvent('BATbern56')).rejects.toMatchObject({
+        message: 'Server Error: Please try again later (ID: corr-123)',
+        status: 500,
       });
     });
   });

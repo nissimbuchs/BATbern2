@@ -38,6 +38,23 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/FrontendConfig'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    environment: development
+                    apiBaseUrl: http://localhost:8000/api/v1
+                    cognito:
+                      userPoolId: eu-central-1_FtgfxgQRF
+                      clientId: 1b53lci6qpqsmdn0u3e8s4knvv
+                      region: eu-central-1
+                    features:
+                      notifications: true
+                      analytics: false
+                      pwa: false
+                      turnstile: false
+                      sso: false
+                    turnstile: null
 components:
   schemas:
     FrontendConfig:

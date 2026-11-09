@@ -4,10 +4,10 @@
  *
  * API client for progressive publishing operations:
  * - Publish/unpublish phases (topic → speakers → agenda)
- * - Version control and rollback
- * - Publishing preview
+ * - Publishing status with the validation of every phase
  * - Auto-publish scheduling
- * - Change log tracking
+ *
+ * Request and response types are the generated ones of events-core-api (17.0c2).
  */
 
 import apiClient from '@/services/api/apiClient';
@@ -25,8 +25,8 @@ import type {
  *
  * @param eventCode - Event code (e.g., "BATbern142")
  * @param phase - Publishing phase ('topic' | 'speakers' | 'agenda')
- * @returns Publishing version with CDN invalidation status
- * @throws 422 if content validation fails
+ * @returns The published phase and whether the CDN was invalidated
+ * @throws 422 if content validation fails (`PublishValidationError`)
  * @throws 401 if not authenticated
  * @throws 403 if insufficient permissions
  */
@@ -34,7 +34,9 @@ async function publishPhase(
   eventCode: string,
   phase: PublishingPhase
 ): Promise<PublishPhaseResponse> {
-  const response = await apiClient.post(`/events/${eventCode}/publish/${phase}`);
+  const response = await apiClient.post<PublishPhaseResponse>(
+    `/events/${eventCode}/publish/${phase}`
+  );
   return response.data;
 }
 
@@ -43,13 +45,15 @@ async function publishPhase(
  *
  * @param eventCode - Event code
  * @param phase - Phase to unpublish
- * @returns Unpublish response with new current phase
+ * @returns The unpublished phase and whether the CDN was invalidated
  */
 async function unpublishPhase(
   eventCode: string,
   phase: PublishingPhase
 ): Promise<UnpublishPhaseResponse> {
-  const response = await apiClient.post(`/events/${eventCode}/unpublish/${phase}`);
+  const response = await apiClient.post<UnpublishPhaseResponse>(
+    `/events/${eventCode}/unpublish/${phase}`
+  );
   return response.data;
 }
 
@@ -61,24 +65,29 @@ async function unpublishPhase(
  * @returns Publishing status with validation for all phases
  */
 async function getPublishingStatus(eventCode: string): Promise<PublishingStatusResponse> {
-  const response = await apiClient.get(`/events/${eventCode}/publish/status`);
+  const response = await apiClient.get<PublishingStatusResponse>(
+    `/events/${eventCode}/publish/status`
+  );
   return response.data;
 }
 
 /**
- * Schedule auto-publish for a phase
+ * Configure the auto-publish schedule of an event: whether and how many days before the event
+ * the speakers (phase 2) and agenda (phase 3) are published. It used to send
+ * `{ scheduledDate }`, a body EMS does not read (found by the MSW harness, 17.0c2).
  *
  * @param eventCode - Event code
- * @param _phase - Phase to auto-publish (reserved for future use)
- * @param options - Schedule options (scheduledDate, notifySubscribers)
- * @returns Auto-publish schedule details with AWS EventBridge rule ARN
+ * @param request - `{ phase2Enabled, phase2DaysBeforeEvent, phase3Enabled, phase3DaysBeforeEvent }`
+ * @returns The configured schedule with its trigger dates
  */
 async function scheduleAutoPublish(
   eventCode: string,
-  _phase: PublishingPhase,
-  options: AutoPublishScheduleRequest
+  request: AutoPublishScheduleRequest
 ): Promise<AutoPublishScheduleResponse> {
-  const response = await apiClient.post(`/events/${eventCode}/publish/schedule`, options);
+  const response = await apiClient.post<AutoPublishScheduleResponse>(
+    `/events/${eventCode}/publish/schedule`,
+    request
+  );
   return response.data;
 }
 
@@ -93,5 +102,4 @@ export const publishingService = {
   scheduleAutoPublish,
 };
 
-// Also export individual functions for easier testing/mocking
 export { publishPhase, unpublishPhase, getPublishingStatus, scheduleAutoPublish };

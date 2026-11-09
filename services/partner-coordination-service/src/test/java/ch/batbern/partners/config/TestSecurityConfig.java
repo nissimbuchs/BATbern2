@@ -4,18 +4,13 @@ import org.springframework.boot.test.context.TestConfiguration;
 import org.springframework.security.config.annotation.method.configuration.EnableMethodSecurity;
 
 /**
- * Test Security Configuration
- * Enables method-level security (@PreAuthorize) for integration tests.
+ * Method-level security (@PreAuthorize) for the tests that import it.
  *
- * Key configuration:
- * - Method-level security: @EnableMethodSecurity to enforce @PreAuthorize
- * - HTTP-level security is handled by SecurityConfig.testFilterChain()
- *
- * Note: In production, authentication is handled at API Gateway level (Story 1.2)
- * Services receive pre-authenticated requests with user context headers.
+ * The HTTP chain is the production one, {@code SecurityConfig.productionFilterChain}, in every
+ * profile but {@code local} (17.0b3). The permit-all {@code testFilterChain} it used to rely on
+ * was deleted.
  */
 @TestConfiguration
-@EnableMethodSecurity(prePostEnabled = true) // Enable @PreAuthorize support
+@EnableMethodSecurity(prePostEnabled = true)
 public class TestSecurityConfig {
-    // No SecurityFilterChain bean needed - SecurityConfig.testFilterChain() handles this
 }

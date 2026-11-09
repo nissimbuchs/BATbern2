@@ -42,9 +42,7 @@ class V127SessionTypeAndMaterialsStatusMigrationIntegrationTest {
     void startContainer() {
         @SuppressWarnings("resource")  // Container lifecycle managed in @AfterAll.
         PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:16-alpine")
-                .withDatabaseName("v127testdb")
-                .withUsername("v127test")
-                .withPassword("v127test");
+                .withDatabaseName("v127testdb");
         container.start();
         this.postgres = container;
         this.dataSource = new DriverManagerDataSource(

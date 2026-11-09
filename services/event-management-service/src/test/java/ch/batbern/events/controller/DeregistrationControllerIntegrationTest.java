@@ -2,7 +2,6 @@ package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.EventWorkflowState;
-import ch.batbern.events.client.UserApiClient;
 import ch.batbern.events.config.TestAwsConfig;
 import ch.batbern.events.config.TestSecurityConfig;
 import ch.batbern.events.domain.Event;
@@ -75,9 +74,6 @@ class DeregistrationControllerIntegrationTest extends AbstractIntegrationTest {
 
     @Autowired
     private RegistrationRepository registrationRepository;
-
-    @MockitoBean
-    private UserApiClient userApiClient;
 
     @MockitoBean
     private DeregistrationEmailService deregistrationEmailService;

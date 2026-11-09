@@ -59,6 +59,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerPoolResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 123e4567-e89b-12d3-a456-426614174000
+                    eventId: 789e4567-e89b-12d3-a456-426614174111
+                    speakerName: David Vorlage
+                    company: TechCorpAG
+                    companyDisplayName: Tech Corp AG
+                    expertise: Cloud Architecture, Kubernetes, DevOps
+                    assignedOrganizerId: alice.mueller
+                    status: IDENTIFIED
+                    notes: Sample text for the API example.
+                    source: self_nomination
+                    proposedByUsername: jane.attendee
+                    proposedSessionTitle: Event-driven architecture in practice
+                    proposedAbstract: A field report on migrating a monolith to an event-driven core.
+                    createdAt: "2025-12-13 10:00:00+00:00"
+                    updatedAt: "2025-12-13 10:15:00+00:00"
+                    sessionId: 456e4567-e89b-12d3-a456-426614174222
+                    sessionSlug: event-driven-architecture
+                    username: jane.smith
+                    email: elena.vorlage@example.com
+                    invitedAt: "2025-12-14 09:00:00+00:00"
+                    responseDeadline: "2025-12-21"
+                    contentDeadline: "2026-01-15"
+                    acceptedAt: "2025-12-16 11:30:00+00:00"
+                    declinedAt: "2025-12-16 11:30:00+00:00"
+                    declineReason: Scheduling conflict with another conference.
+                    preferredTimeSlot: Morning
+                    travelRequirements: Needs hotel booking for the night before.
+                    technicalRequirements: HDMI adapter for MacBook; clicker.
+                    initialPresentationTitle: Scaling event-driven systems
+                    preferenceComments: Happy to do a workshop instead of a talk if useful.
+                    contentSubmittedAt: "2026-01-10 14:00:00+00:00"
+                    submittedTitle: Event-driven architecture in practice
+                    submittedAbstract: A field report on migrating a monolith to an event-driven core.
+                    isSlotAssigned: true
         '400':
           description: 'Validation error. Two paths to this status:
 
@@ -146,6 +184,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SpeakerPoolResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '404':
           description: Event not found
           content:
@@ -187,6 +230,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerPoolResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 123e4567-e89b-12d3-a456-426614174000
+                    eventId: 789e4567-e89b-12d3-a456-426614174111
+                    speakerName: David Vorlage
+                    company: TechCorpAG
+                    companyDisplayName: Tech Corp AG
+                    expertise: Cloud Architecture, Kubernetes, DevOps
+                    assignedOrganizerId: alice.mueller
+                    status: IDENTIFIED
+                    notes: Sample text for the API example.
+                    source: self_nomination
+                    proposedByUsername: jane.attendee
+                    proposedSessionTitle: Event-driven architecture in practice
+                    proposedAbstract: A field report on migrating a monolith to an event-driven core.
+                    createdAt: "2025-12-13 10:00:00+00:00"
+                    updatedAt: "2025-12-13 10:15:00+00:00"
+                    sessionId: 456e4567-e89b-12d3-a456-426614174222
+                    sessionSlug: event-driven-architecture
+                    username: jane.smith
+                    email: elena.vorlage@example.com
+                    invitedAt: "2025-12-14 09:00:00+00:00"
+                    responseDeadline: "2025-12-21"
+                    contentDeadline: "2026-01-15"
+                    acceptedAt: "2025-12-16 11:30:00+00:00"
+                    declinedAt: "2025-12-16 11:30:00+00:00"
+                    declineReason: Scheduling conflict with another conference.
+                    preferredTimeSlot: Morning
+                    travelRequirements: Needs hotel booking for the night before.
+                    technicalRequirements: HDMI adapter for MacBook; clicker.
+                    initialPresentationTitle: Scaling event-driven systems
+                    preferenceComments: Happy to do a workshop instead of a talk if useful.
+                    contentSubmittedAt: "2026-01-10 14:00:00+00:00"
+                    submittedTitle: Event-driven architecture in practice
+                    submittedAbstract: A field report on migrating a monolith to an event-driven core.
+                    isSlotAssigned: true
         '400':
           description: Validation error (missing sessionTitle/abstract, or an unknown field)
           content:
@@ -292,6 +373,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerPoolResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 123e4567-e89b-12d3-a456-426614174000
+                    eventId: 789e4567-e89b-12d3-a456-426614174111
+                    speakerName: David Vorlage
+                    company: TechCorpAG
+                    companyDisplayName: Tech Corp AG
+                    expertise: Cloud Architecture, Kubernetes, DevOps
+                    assignedOrganizerId: alice.mueller
+                    status: IDENTIFIED
+                    notes: Sample text for the API example.
+                    source: self_nomination
+                    proposedByUsername: jane.attendee
+                    proposedSessionTitle: Event-driven architecture in practice
+                    proposedAbstract: A field report on migrating a monolith to an event-driven core.
+                    createdAt: "2025-12-13 10:00:00+00:00"
+                    updatedAt: "2025-12-13 10:15:00+00:00"
+                    sessionId: 456e4567-e89b-12d3-a456-426614174222
+                    sessionSlug: event-driven-architecture
+                    username: jane.smith
+                    email: elena.vorlage@example.com
+                    invitedAt: "2025-12-14 09:00:00+00:00"
+                    responseDeadline: "2025-12-21"
+                    contentDeadline: "2026-01-15"
+                    acceptedAt: "2025-12-16 11:30:00+00:00"
+                    declinedAt: "2025-12-16 11:30:00+00:00"
+                    declineReason: Scheduling conflict with another conference.
+                    preferredTimeSlot: Morning
+                    travelRequirements: Needs hotel booking for the night before.
+                    technicalRequirements: HDMI adapter for MacBook; clicker.
+                    initialPresentationTitle: Scaling event-driven systems
+                    preferenceComments: Happy to do a workshop instead of a talk if useful.
+                    contentSubmittedAt: "2026-01-10 14:00:00+00:00"
+                    submittedTitle: Event-driven architecture in practice
+                    submittedAbstract: A field report on migrating a monolith to an event-driven core.
+                    isSlotAssigned: true
         '400':
           description: 'Validation error — typically because the request body contains a
 
@@ -423,6 +542,44 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerPoolResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 123e4567-e89b-12d3-a456-426614174000
+                    eventId: 789e4567-e89b-12d3-a456-426614174111
+                    speakerName: David Vorlage
+                    company: TechCorpAG
+                    companyDisplayName: Tech Corp AG
+                    expertise: Cloud Architecture, Kubernetes, DevOps
+                    assignedOrganizerId: alice.mueller
+                    status: IDENTIFIED
+                    notes: Sample text for the API example.
+                    source: self_nomination
+                    proposedByUsername: jane.attendee
+                    proposedSessionTitle: Event-driven architecture in practice
+                    proposedAbstract: A field report on migrating a monolith to an event-driven core.
+                    createdAt: "2025-12-13 10:00:00+00:00"
+                    updatedAt: "2025-12-13 10:15:00+00:00"
+                    sessionId: 456e4567-e89b-12d3-a456-426614174222
+                    sessionSlug: event-driven-architecture
+                    username: jane.smith
+                    email: elena.vorlage@example.com
+                    invitedAt: "2025-12-14 09:00:00+00:00"
+                    responseDeadline: "2025-12-21"
+                    contentDeadline: "2026-01-15"
+                    acceptedAt: "2025-12-16 11:30:00+00:00"
+                    declinedAt: "2025-12-16 11:30:00+00:00"
+                    declineReason: Scheduling conflict with another conference.
+                    preferredTimeSlot: Morning
+                    travelRequirements: Needs hotel booking for the night before.
+                    technicalRequirements: HDMI adapter for MacBook; clicker.
+                    initialPresentationTitle: Scaling event-driven systems
+                    preferenceComments: Happy to do a workshop instead of a talk if useful.
+                    contentSubmittedAt: "2026-01-10 14:00:00+00:00"
+                    submittedTitle: Event-driven architecture in practice
+                    submittedAbstract: A field report on migrating a monolith to an event-driven core.
+                    isSlotAssigned: true
         '400':
           description: 'Validation error. Triggered by: missing/blank/malformed email, body fields
 
@@ -555,6 +712,19 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerStatusResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    speakerId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    eventCode: BATbern56
+                    currentStatus: IDENTIFIED
+                    previousStatus: IDENTIFIED
+                    changedByUsername: john.doe
+                    changeReason: sample
+                    changedAt: "2026-05-14T16:00:00Z"
+                    isSlotAssigned: true
+                    isPublishable: true
         '400':
           description: Invalid status (removed legacy value or READY) or reason too long
           content:
@@ -609,6 +779,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/StatusHistoryItem'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '401':
           description: No authentication token
         '403':
@@ -642,6 +817,21 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/StatusSummaryResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    eventCode: BATbern66
+                    statusCounts: {}
+                    totalSpeakers: 0
+                    acceptedCount: 0
+                    declinedCount: 0
+                    pendingCount: 0
+                    acceptanceRate: 0
+                    minSlotsRequired: 3
+                    maxSlotsAllowed: 4
+                    thresholdMet: false
+                    overflowDetected: false
         '401':
           description: No authentication token
         '403':
@@ -682,6 +872,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerContentResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    speakerPoolId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    eventId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    sessionId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    presentationTitle: Sample title
+                    presentationAbstract: sample
+                    username: john.doe
+                    speakerName: Felix Vorlage
+                    company: sample
+                    status: IDENTIFIED
+                    hasContent: true
+                    warning: sample
+                    submittedAt: "2026-05-14T16:00:00Z"
+                    hasMaterial: true
+                    materialUrl: https://cdn.batbern.ch/materials/presentation.pdf
+                    materialFileName: zero-trust-presentation.pdf
         '401':
           description: No authentication token
         '403':
@@ -729,6 +938,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContentSubmitResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    submissionId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    version: 1
+                    status: SUBMITTED
+                    sessionTitle: Zero Trust Security in Enterprise Environments
         '400':
           description: Validation error (e.g. unknown field, title/abstract too long)
           content:
@@ -778,6 +995,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/SpeakerPoolResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '401':
           description: No authentication token
         '403':
@@ -897,12 +1119,36 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/InviteSpeakerResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    speakerPoolId: 123e4567-e89b-12d3-a456-426614174000
+                    username: jane.smith
+                    email: elena.vorlage@example.com
+                    speakerName: David Vorlage
+                    status: IDENTIFIED
+                    created: true
+                    userCreated: true
+                    createdAt: "2026-01-15 10:00:00+00:00"
         '200':
           description: Speaker already exists in pool (idempotent return)
           content:
             application/json:
               schema:
                 $ref: '#/components/schemas/InviteSpeakerResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    speakerPoolId: 123e4567-e89b-12d3-a456-426614174000
+                    username: jane.smith
+                    email: elena.vorlage@example.com
+                    speakerName: David Vorlage
+                    status: IDENTIFIED
+                    created: true
+                    userCreated: true
+                    createdAt: "2026-01-15 10:00:00+00:00"
         '400':
           description: Validation error
           content:
@@ -954,6 +1200,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SendInvitationResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    speakerPoolId: 123e4567-e89b-12d3-a456-426614174000
+                    username: jane.smith
+                    email: elena.vorlage@example.com
+                    status: INVITED
+                    invitedAt: "2026-01-15 10:00:00+00:00"
+                    responseDeadline: "2026-02-28"
+                    contentDeadline: "2026-03-10"
         '400':
           description: Validation error (e.g., missing email, invalid deadlines)
           content:
@@ -1045,6 +1302,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/OutreachHistoryResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 550e8400-e29b-41d4-a716-446655440000
+                    speakerPoolId: 123e4567-e89b-12d3-a456-426614174000
+                    contactDate: "2025-12-14 14:30:00+00:00"
+                    contactMethod: email
+                    notes: Sample text for the API example.
+                    organizerUsername: alice.mueller
+                    createdAt: "2025-12-14 14:35:00+00:00"
+                    updatedAt: "2025-12-14 14:35:00+00:00"
         '400':
           description: Validation error (e.g., invalid contact method)
           content:
@@ -1142,6 +1411,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/OutreachHistoryResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '404':
           description: Speaker or event not found
           content:
@@ -1179,6 +1453,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerDashboardDto'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    speakerName: Anna Muster
+                    profileCompleteness: 60
+                    upcomingEvents: []
+                    pastEvents: []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1218,6 +1500,20 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerResponseResult'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    success: true
+                    speakerName: Anna Muster
+                    eventName: Sample name
+                    eventDate: sample
+                    sessionTitle: Sample title
+                    nextSteps:
+                      - sample
+                    contentDeadline: "2026-05-14"
+                    dashboardUrl: https://www.batbern.ch/
+                    errorMessage: Sample text for the API example.
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1247,6 +1543,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerContentInfo'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    speakerName: Anna Muster
+                    eventCode: BATbern57
+                    eventTitle: Sample title
+                    hasSessionAssigned: true
+                    sessionTitle: Sample title
+                    canSubmitContent: true
+                    hasDraft: true
+                    draftTitle: Sample title
+                    draftAbstract: sample
+                    draftVersion: 1
+                    lastSavedAt: "2026-05-14T16:00:00Z"
+                    needsRevision: true
+                    reviewerFeedback: sample
+                    reviewedAt: "2026-05-14T16:00:00Z"
+                    reviewedBy: anna.muster
+                    hasMaterial: true
+                    materialUrl: https://www.batbern.ch/
+                    materialFileName: Sample name
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1278,6 +1596,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ContentSubmitResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    submissionId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    version: 1
+                    status: SUBMITTED
+                    sessionTitle: Zero Trust Security in Enterprise Environments
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1311,6 +1637,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerMaterialUploadResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    uploadUrl: https://www.batbern.ch/
+                    uploadId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    s3Key: uploads/2026/sample/file.png
+                    fileExtension: png
+                    expiresInMinutes: 1
+                    requiredHeaders:
+                      key: uploads/2026/sample/file.png
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1344,6 +1681,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SpeakerMaterialConfirmResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    materialId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    uploadId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    fileName: Sample name
+                    cloudFrontUrl: https://www.batbern.ch/
+                    materialType: sample
+                    uploadedAt: "2026-05-14T16:00:00Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1387,6 +1734,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/SendReminderResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    message: Sample text for the API example.
+                    tier: sample
+                    emailAddress: ines.probe@example.com
+                    error: sample
         '400':
           description: Invalid reminder type or speaker state
           content:
@@ -1438,6 +1793,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/RemindersDisabledResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    speakerPoolId: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    remindersDisabled: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':

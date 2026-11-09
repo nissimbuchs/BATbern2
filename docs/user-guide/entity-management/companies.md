@@ -42,7 +42,7 @@ Click the **+ Create New Company** button (top-right).
 Complete the company creation form:
 
 **Basic Information**:
-- **Name*** - Legal name (e.g., "Müller Architekten AG") - used as internal identifier
+- **Name*** - Legal name (e.g., "Müller Architekten AG"). The platform derives the company's short ID from it: at most 12 letters and digits, umlauts spelled out, in lower case ("muellerarchi"). When another company already has that ID, a digit is added ("muellerarch2"). A company with the same name (ignoring case) cannot be created twice.
 - **Display Name** - Optional public-facing name (defaults to Name if not provided)
 - **Country*** - Switzerland or international
 - **Canton** - For Swiss companies (ZH, BE, VD, etc.)

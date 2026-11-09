@@ -113,7 +113,6 @@
       "autumn": "Syksy",
       "usageCount": "Käyttömäärä",
       "totalAttendance": "Osallistujia yhteensä",
-      "avgEngagement": "Keskimääräinen sitoutuminen",
       "events": "Tapahtumat",
       "noData": "Tälle aiheelle ei ole käyttöhistoriaa saatavilla.",
       "noTopics": "Ei aiheita näytettäväksi.",
@@ -407,7 +406,8 @@
     "assignedTo": "Osoitettu",
     "completedOn": "Valmistui",
     "completedBy": "Suorittanut",
-    "noTasks": "Ei tehtäviä"
+    "noTasks": "Ei tehtäviä",
+    "completionNotesPlaceholder": "Lisää huomioita tehtävän suorittamisesta..."
   },
   "analytics": {
     "title": "Analytiikka",

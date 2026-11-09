@@ -32,6 +32,7 @@ public class RegistrationResponse {
     private String registrationDate; // ISO-8601 format
     private String createdAt; // ISO-8601 format
     private String updatedAt; // ISO-8601 format
+    private Integer waitlistPosition; // 1-based queue position; null unless status is WAITLIST
 
     // From Event entity (enriched from Event - Story BAT-15)
     private String eventTitle;

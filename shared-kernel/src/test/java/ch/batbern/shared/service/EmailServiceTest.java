@@ -59,6 +59,151 @@ class EmailServiceTest {
         emailService = new EmailService();
     }
 
+    /**
+     * #1176 / 17.0b3: a To: entry holding several addresses is not an address. The check used to
+     * run only on the SES branch, so a joined To: line passed every test and local dev and failed
+     * only in production. It now runs before the branch, with or without an SES client.
+     */
+    @Nested
+    @DisplayName("Recipient addresses are checked before the SES branch (#1176)")
+    class RecipientValidation {
+
+        private static final String JOINED = "partner@batbern.ch,organizer@batbern.ch";
+        private static final MailContext CONTEXT =
+                MailContext.individual("BATbern60", MailContext.Audience.PARTNERS, "partner-meeting-invite");
+
+        private SesClient sesClient;
+        private OutboundMailRecorder recorder;
+        private LocalEmailCapture capture;
+
+        @BeforeEach
+        void wire() {
+            sesClient = mock(SesClient.class);
+            recorder = mock(OutboundMailRecorder.class);
+            capture = mock(LocalEmailCapture.class);
+            ReflectionTestUtils.setField(emailService, "outboundMailRecorder", recorder);
+            ReflectionTestUtils.setField(emailService, "fromEmail", "noreply@batbern.ch");
+            ReflectionTestUtils.setField(emailService, "fromName", "BATbern");
+            ReflectionTestUtils.setField(emailService, "replyToEmail", "replies@batbern.ch");
+        }
+
+        @Test
+        @DisplayName("joined To: throws without an SES client, nothing captured or recorded")
+        void should_rejectJoinedTo_when_noSesClient() {
+            ReflectionTestUtils.setField(emailService, "localEmailCapture", capture);
+
+            assertThatThrownBy(() -> emailService.sendHtmlEmailSync(CONTEXT, JOINED, List.of(), "Einladung",
+                    "<p>Hallo</p>", null, null))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            org.mockito.Mockito.verifyNoInteractions(capture, recorder);
+        }
+
+        @Test
+        @DisplayName("joined To: throws with an SES client, nothing sent or recorded")
+        void should_rejectJoinedTo_when_sesClientConfigured() {
+            ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
+
+            assertThatThrownBy(() -> emailService.sendHtmlEmailSync(CONTEXT, JOINED, List.of(), "Einladung",
+                    "<p>Hallo</p>", null, null))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            org.mockito.Mockito.verifyNoInteractions(sesClient, recorder);
+        }
+
+        @Test
+        @DisplayName("joined To: throws on the attachment, newsletter, composed and raw paths too")
+        void should_rejectJoinedTo_onEveryPath_when_noSesClient() {
+            List<EmailService.EmailAttachment> ics = List.of(
+                    new EmailService.EmailAttachment("invite.ics", new byte[] {1}, "text/calendar"));
+
+            assertThatThrownBy(() -> emailService.sendHtmlEmailWithAttachments(CONTEXT, JOINED, List.of(),
+                    "Einladung", "<p>Hallo</p>", ics)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> emailService.sendHtmlEmailSyncWithAttachments(CONTEXT, JOINED, "Newsletter",
+                    "<p>Hallo</p>", ics, null)).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> emailService.sendComposed(CONTEXT, new ch.batbern.shared.mail.ComposedMail(
+                    "BATbern", "events@batbern.ch", JOINED, "Antwort", "<p>Hallo</p>", "Hallo",
+                    null, "<id@batbern.ch>", null, List.of()))).isInstanceOf(IllegalArgumentException.class);
+            assertThatThrownBy(() -> emailService.sendRawMessage("Subject: x\r\n\r\nx".getBytes(
+                    java.nio.charset.StandardCharsets.UTF_8), List.of(JOINED), null))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            org.mockito.Mockito.verifyNoInteractions(recorder);
+        }
+
+        @Test
+        @DisplayName("a CC entry holding several addresses is dropped, the To: recipient still gets the mail")
+        void should_dropJoinedCc_when_sesClientConfigured() {
+            ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
+            when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                    .thenReturn(SendEmailResponse.builder().messageId("m-1").build());
+
+            emailService.sendHtmlEmailSync(CONTEXT, "partner@batbern.ch", List.of(JOINED), "Einladung",
+                    "<p>Hallo</p>", null, null);
+
+            ArgumentCaptor<SendEmailRequest> sent = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(sent.capture());
+            assertThat(sent.getValue().destination().toAddresses()).containsExactly("partner@batbern.ch");
+            assertThat(sent.getValue().destination().ccAddresses()).isEmpty();
+            // The record lists only the Cc SES got: the deliverable one, not the joined entry.
+            ArgumentCaptor<OutboundMail> recorded = ArgumentCaptor.forClass(OutboundMail.class);
+            verify(recorder).record(any(), recorded.capture());
+            assertThat(recorded.getValue().cc()).isEmpty();
+        }
+
+        @Test
+        @DisplayName("the record and the capture list only the Cc entries SES delivers to")
+        void should_recordDeliveredCcOnly_when_oneCcIsUndeliverable() {
+            ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
+            when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                    .thenReturn(SendEmailResponse.builder().messageId("m-1").build());
+
+            emailService.sendHtmlEmailSync(CONTEXT, "partner@batbern.ch",
+                    List.of("Office@BATbern.ch", "jürg@batbern.ch"), "Einladung", "<p>Hallo</p>", null, null);
+
+            ArgumentCaptor<SendEmailRequest> sent = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient).sendEmail(sent.capture());
+            assertThat(sent.getValue().destination().ccAddresses()).containsExactly("Office@BATbern.ch");
+            ArgumentCaptor<OutboundMail> recorded = ArgumentCaptor.forClass(OutboundMail.class);
+            verify(recorder).record(any(), recorded.capture());
+            assertThat(recorded.getValue().cc()).containsExactly("Office@BATbern.ch");
+        }
+
+        @Test
+        @DisplayName("a raw broadcast refused for an undeliverable address is recorded with InvalidParameterValue")
+        void should_recordRefusal_when_rawBroadcastHasUndeliverableAddress() {
+            ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
+            byte[] mime = "Subject: Info\r\n\r\nHallo".getBytes(java.nio.charset.StandardCharsets.UTF_8);
+
+            assertThatThrownBy(() -> emailService.sendRawMessage(CONTEXT, mime, List.of("jürg@batbern.ch"),
+                    List.of(), "Info", "<p>Hallo</p>", null))
+                    .isInstanceOf(IllegalArgumentException.class);
+
+            org.mockito.Mockito.verifyNoInteractions(sesClient);
+            ArgumentCaptor<OutboundMail> recorded = ArgumentCaptor.forClass(OutboundMail.class);
+            verify(recorder).record(any(), recorded.capture());
+            assertThat(recorded.getValue().to()).isEqualTo("jürg@batbern.ch");
+            assertThat(recorded.getValue().failureReason()).isEqualTo("InvalidParameterValue");
+            assertThat(recorded.getValue().sesMessageId()).isNull();
+        }
+
+        @Test
+        @DisplayName("group mail: one request with every recipient in To:")
+        void should_sendOneRequestToEveryRecipient_when_groupMail() {
+            ReflectionTestUtils.setField(emailService, "sesClient", sesClient);
+            when(sesClient.sendEmail(any(SendEmailRequest.class)))
+                    .thenReturn(SendEmailResponse.builder().messageId("m-1").build());
+
+            emailService.sendGroupHtmlEmailSync(CONTEXT, List.of("partner@batbern.ch", "organizer@batbern.ch"),
+                    List.of(), "Einladung", "<p>Hallo</p>", null);
+
+            ArgumentCaptor<SendEmailRequest> sent = ArgumentCaptor.forClass(SendEmailRequest.class);
+            verify(sesClient, org.mockito.Mockito.times(1)).sendEmail(sent.capture());
+            assertThat(sent.getValue().destination().toAddresses())
+                    .containsExactly("partner@batbern.ch", "organizer@batbern.ch");
+        }
+    }
+
     @Nested
     @DisplayName("Live delivery (#1071)")
     class LiveDelivery {

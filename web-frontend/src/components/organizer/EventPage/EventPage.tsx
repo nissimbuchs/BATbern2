@@ -234,8 +234,12 @@ export const EventPage: React.FC = () => {
     );
   }
 
+  // A 404 is "this event does not exist": the not-found state, not a load failure
+  // (eventApiClient.transformError keeps the HTTP status on the error).
+  const notFound = (error as (Error & { status?: number }) | null)?.status === 404;
+
   // Error state
-  if (error) {
+  if (error && !notFound) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="error" sx={{ mb: 2 }}>
@@ -248,8 +252,8 @@ export const EventPage: React.FC = () => {
     );
   }
 
-  // Not found state
-  if (!event) {
+  // Not found state: unknown event code, or none in the URL
+  if (notFound || !event) {
     return (
       <Container maxWidth="lg" sx={{ py: 4 }}>
         <Alert severity="warning">{t('errors.notFound', 'Event not found')}</Alert>

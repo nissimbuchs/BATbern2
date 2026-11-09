@@ -67,6 +67,12 @@ public interface CompanyRepository extends JpaRepository<Company, UUID>, JpaSpec
     boolean existsByName(String name);
 
     /**
+     * Whether a company with this display name exists, ignoring case: the duplicate check of
+     * {@code POST /companies}, whose key is derived from the name (owner 2026-11-09).
+     */
+    boolean existsByDisplayNameIgnoreCase(String displayName);
+
+    /**
      * Find companies by verified status
      * AC6: Company verification filtering
      *

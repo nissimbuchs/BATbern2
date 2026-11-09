@@ -30,6 +30,7 @@ const DEMO_IT = 'services/demo-service/src/test/java/ch/demo/DemoIntegrationTest
 const READ_ONLY_IT = 'services/demo-service/src/test/java/ch/demo/ReadOnlyIT.java';
 const SLUG_CONFIG = 'shared-kernel/src/testFixtures/java/ch/shared/TestSlugConfig.java';
 const UNIT = 'services/demo-service/src/test/java/ch/demo/SomeUnitTest.java';
+const AWS_CONFIG = 'services/demo-service/src/test/java/ch/demo/config/TestAwsConfig.java';
 
 const asObject = (m: Map<string, number>) => Object.fromEntries([...m].sort());
 
@@ -40,6 +41,7 @@ describe('listTestFiles', () => {
       'services/demo-service/src/test/java/ch/demo/MethodLevelIntegrationTest.java',
       'services/demo-service/src/test/java/ch/demo/ReadOnlyIT.java',
       'services/demo-service/src/test/java/ch/demo/SomeUnitTest.java',
+      AWS_CONFIG,
       SLUG_CONFIG,
       EVENT_PAGE,
       'web-frontend/src/hooks/clean.test.ts',
@@ -61,7 +63,7 @@ describe('classifySpecifier', () => {
     ['@/contexts/useConfig', 'fe-mock-hooks'],
     ['@/stores/uiStore', null],
     ['@/utils/date/dateFormat', null],
-    ['react-i18next', null],
+    ['react-i18next', 'fe-mock-i18n'],
     ['aws-amplify/auth', null],
     ['@tanstack/react-query', null],
     ['@mui/material', null],
@@ -91,6 +93,7 @@ describe('scanFrontendTest', () => {
     expect(asObject(scanFrontendTest(EVENT_PAGE, read(EVENT_PAGE)))).toEqual({
       'fe-mock-components': 4,
       'fe-mock-hooks': 2,
+      'fe-mock-i18n': 1,
       'fe-mock-services': 3,
     });
   });
@@ -115,7 +118,19 @@ describe('scanFrontendTest', () => {
 
   it('counts vi.doMock like vi.mock', () => {
     const src = "vi.doMock('@/hooks/useSpeakerPool', () => ({}));\nvi.doMock('react-i18next');";
-    expect(asObject(scanFrontendTest(EVENT_PAGE, src))).toEqual({ 'fe-mock-hooks': 1 });
+    expect(asObject(scanFrontendTest(EVENT_PAGE, src))).toEqual({
+      'fe-mock-hooks': 1,
+      'fe-mock-i18n': 1,
+    });
+  });
+
+  it('counts a per-file react-i18next stub as fe-mock-i18n, other packages not', () => {
+    const src = [
+      "vi.mock('react-i18next', () => ({ useTranslation: () => ({ t: (k: string) => k }) }));",
+      "vi.mock('i18next');",
+      "vi.mock('react-i18next-extra');",
+    ].join('\n');
+    expect(asObject(scanFrontendTest(EVENT_PAGE, src))).toEqual({ 'fe-mock-i18n': 1 });
   });
 
   it('does not count boundary mocks', () => {
@@ -190,6 +205,87 @@ describe('scanJavaTest', () => {
     });
   });
 
+  it('counts mock(XClient.class) of an own S2S client, not of the boundary or other types', () => {
+    const source = [
+      'import software.amazon.awssdk.services.s3.S3Client;',
+      'import java.net.http.HttpClient;',
+      'class TestUserApiClientConfig {',
+      '  UserApiClient a() { return Mockito.mock(UserApiClient.class); }',
+      '  PartnerApiClient b() { return mock(ch.batbern.events.client.PartnerApiClient.class); }',
+      '  S3Client c() { return mock(S3Client.class); }',
+      '  SesClient d() { return Mockito.mock(SesClient.class); }',
+      '  RestTemplate e() { return mock(RestTemplate.class); }',
+      '  HttpClient h() { return Mockito.mock(HttpClient.class); }',
+      '  // UserApiClient f = mock(UserApiClient.class);',
+      '  String g = "mock(UserApiClient.class)";',
+      '}',
+    ].join('\n');
+    expect(asObject(scanJavaTest(source))).toEqual({ 'be-mock-s2s-client': 2 });
+  });
+
+  it('counts @Mock fields of own S2S clients, not of the boundary, JDK or other types', () => {
+    const source = [
+      'import java.net.http.HttpClient;',
+      'import org.mockito.Mock;',
+      'class EmailForwardingServiceTest {',
+      '  @Mock private UserApiClient userApiClient;',
+      '  @Mock(answer = Answers.RETURNS_DEEP_STUBS)',
+      '  PartnerMeetingRsvpClient rsvpClient;',
+      '  @org.mockito.Mock SesClient sesClient;',
+      '  @Mock HttpClient httpClient;',
+      '  @Mock RestTemplate restTemplate;',
+      '  @MockitoBean UserServiceClient userServiceClient;',
+      '  // @Mock UserApiClient commented;',
+      '}',
+    ].join('\n');
+    expect(asObject(scanJavaTest(source))).toEqual({ 'be-mock-s2s-client': 3 });
+  });
+
+  it('counts mock(OwnType.class) inside a test configuration class, not outside or of the boundary', () => {
+    // Story 17.0b3: the services' TestAwsConfig handed a mocked EmailService to every test.
+    expect(asObject(scanJavaTest(read(AWS_CONFIG)))).toEqual({
+      'be-mock-in-process': 3,
+      'be-mock-s2s-client': 1,
+    });
+  });
+
+  it('counts config mocks only in a class the annotation belongs to', () => {
+    const source = [
+      '@Configuration',
+      'class RealConfig { Repo r() { return mock(Repo.class); } }',
+      'class Other {',
+      '  @Configuration(proxyBeanMethods = false)',
+      '  static final class Inner { Service s() { return Mockito.mock(Service.class); } }',
+      '  Helper h = mock(Helper.class);',
+      '  String text = "@TestConfiguration class X { mock(Y.class) }";',
+      '}',
+    ].join('\n');
+    expect(asObject(scanJavaTest(source))).toEqual({ 'be-mock-in-process': 2 });
+  });
+
+  it('counts @MockitoSpyBean and @SpyBean of own types like @MockitoBean, not of the boundary', () => {
+    // A spy stubs (doReturn) and verifies own code exactly like a mock; it escaped the count
+    // until the 17.0 deferred-work fix (TokenReplyRoutingIntegrationTest spied two own services).
+    const source = [
+      'import software.amazon.awssdk.services.ses.SesClient;',
+      'class SpyIntegrationTest {',
+      '  @MockitoSpyBean private InboundEmailRouter router;',
+      '  @MockitoSpyBean',
+      '  EmailForwardingService forwardingService;',
+      '  @org.springframework.test.context.bean.override.mockito.MockitoSpyBean PartnerApiClient partners;',
+      '  @SpyBean UserApiClient legacy;',
+      '  @MockitoSpyBean SesClient sesClient;',
+      '  @MockitoSpyBean Clock clock;',
+      '  // @MockitoSpyBean Commented commented;',
+      '  String s = "@MockitoSpyBean InString x;";',
+      '}',
+    ].join('\n');
+    expect(asObject(scanJavaTest(source))).toEqual({
+      'be-mock-in-process': 2,
+      'be-mock-s2s-client': 2,
+    });
+  });
+
   it('reads testFixtures source sets too', () => {
     expect(asObject(scanJavaTest(read(SLUG_CONFIG)))).toEqual({ 'be-mock-in-process': 1 });
   });
@@ -233,9 +329,9 @@ describe('compare (I/O matrix)', () => {
     expect(result.exitCode).toBe(0);
     expect(result.problems).toEqual([]);
     expect(result.summary).toBe(
-      'Test ratchet: be-mock-in-process 3 files/3, be-mock-s2s-client 2 files/3, ' +
+      'Test ratchet: be-mock-in-process 4 files/6, be-mock-s2s-client 3 files/4, ' +
         'be-transactional-it 2 files/2, fe-mock-components 2 files/5, fe-mock-hooks 3 files/6, ' +
-        'fe-mock-services 2 files/4.'
+        'fe-mock-i18n 1 files/1, fe-mock-services 2 files/4.'
     );
   });
 

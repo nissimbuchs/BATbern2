@@ -283,14 +283,10 @@ class SelfNominationIntegrationTest extends AbstractIntegrationTest {
     void should_reject_anonymous() throws Exception {
         saveEvent(EVENT_CODE, "cloud-native", true, "topic");
 
-        // AC5: the endpoint is login-gated. In this service in isolation, method security
-        // rejects the unauthenticated/anonymous principal with 403 (TestSecurityConfig has no
-        // JWT resource-server, so there is no 401 entry point). The 401 from AC5 is produced
-        // at the api-gateway, the real public entry point, where a request with no JWT never
-        // reaches this service. Either way the call is rejected and no row is created.
+        // The production chain answers 401 before the controller (17.0b3).
         mockMvc.perform(post("/api/v1/events/{eventCode}/speakers/self-nominate", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON).content(BODY))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
 
         assertThat(speakerPoolRepository.findAll()).isEmpty();
     }

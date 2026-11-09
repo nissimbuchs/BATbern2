@@ -183,5 +183,8 @@
     },
     "declinedStrip": "▸ Abgseit ({{count}})",
     "waitingOnSpeakerDivider": "Wart uf Referänt"
+  },
+  "tasks": {
+    "completionNotesPlaceholder": "Notize zur Erledigung vo dr Ufgab hinzuefüege..."
   }
 }

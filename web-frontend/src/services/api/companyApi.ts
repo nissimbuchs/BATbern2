@@ -15,6 +15,7 @@ import type { FileUploadPresignedUrl, FileUploadTarget } from '@/types/fileUploa
 // Type aliases for cleaner code
 type Company = components['schemas']['CompanyResponse'];
 type CompanyListResponse = components['schemas']['PaginatedCompanyResponse'];
+type CompanySearchResult = components['schemas']['CompanySearchResponse'];
 type CreateCompanyRequest = components['schemas']['CreateCompanyRequest'];
 type UpdateCompanyRequest = components['schemas']['UpdateCompanyRequest'];
 // Note: Logo upload types removed in Story 1.16.3 - use generic file upload API instead
@@ -87,21 +88,45 @@ class CompanyApiClient {
   }
 
   /**
-   * Get single company by name with optional resource expansion
-   * Story 1.16.2: Uses company name as identifier instead of UUID
+   * Every company matching `filters`, read page by page at the spec maximum of 100. For the batch
+   * import duplicate check, which used to ask for `limit=1000` in one call (#1072 class; found by
+   * the MSW harness, 17.0c1).
    */
-  async getCompany(name: string, options?: { expand?: string[] }): Promise<Company> {
+  async getAllCompanies(
+    filters?: CompanyFilters,
+    options?: { expand?: string[] }
+  ): Promise<CompanyListResponse> {
+    const first = await this.getCompanies({ page: 1, limit: 100 }, filters, options);
+    const data = [...first.data];
+    let current = first;
+    // Our own page counter, never the response's (a server repeating `page: 1, hasNext: true`
+    // would loop forever). Bounded: 100 pages of 100 cover 10,000 companies.
+    for (let page = 2; current.pagination.hasNext && page <= 100; page++) {
+      current = await this.getCompanies({ page, limit: 100 }, filters, options);
+      data.push(...current.data);
+    }
+    return {
+      data,
+      pagination: {
+        ...current.pagination,
+        page: 1,
+        limit: data.length,
+        totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
+      },
+    };
+  }
+
+  /**
+   * Get single company by name. Story 1.16.2: the name is the identifier.
+   *
+   * GET /companies/{name} declares no query parameter and always returns the logo. The
+   * `?expand=logo` this used to add was ignored by CUMS (found by the MSW harness, 17.0c1).
+   */
+  async getCompany(name: string): Promise<Company> {
     try {
-      const params = new URLSearchParams();
-      if (options?.expand && options.expand.length > 0) {
-        params.append('expand', options.expand.join(','));
-      }
-
-      const url = params.toString()
-        ? `${COMPANY_API_PATH}/${name}?${params.toString()}`
-        : `${COMPANY_API_PATH}/${name}`;
-
-      const response = await apiClient.get<Company>(url);
+      const response = await apiClient.get<Company>(`${COMPANY_API_PATH}/${name}`);
       return response.data;
     } catch (error) {
       throw this.transformError(error);
@@ -115,7 +140,7 @@ class CompanyApiClient {
     query: string,
     limit: number = 20,
     options?: { expand?: string[] }
-  ): Promise<Company[]> {
+  ): Promise<CompanySearchResult[]> {
     try {
       const params = new URLSearchParams();
       params.append('query', query);
@@ -126,7 +151,7 @@ class CompanyApiClient {
         params.append('include', options.expand.join(','));
       }
 
-      const response = await apiClient.get<Company[]>(
+      const response = await apiClient.get<CompanySearchResult[]>(
         `${COMPANY_API_PATH}/search?${params.toString()}`
       );
 
@@ -274,16 +299,12 @@ export const uploadLogoFromUrl = async (url: string, filename: string): Promise<
   return response.data.uploadId;
 };
 
-// Export convenience methods for direct use
-export const {
-  getCompanies,
-  getCompany,
-  searchCompanies,
-  createCompany,
-  updateCompany,
-  deleteCompany,
-} = companyApiClient;
-
-// Bound separately so the profile "create new company" flow keeps `this` when the
-// method's catch path calls this.transformError (destructured methods lose binding).
+// Exported for direct use. Bound: every method's catch path calls this.transformError, and a
+// destructured method has no `this` (it rejected with a TypeError instead, found in 17.0c2).
+export const getCompanies = companyApiClient.getCompanies.bind(companyApiClient);
+export const getCompany = companyApiClient.getCompany.bind(companyApiClient);
+export const searchCompanies = companyApiClient.searchCompanies.bind(companyApiClient);
+export const createCompany = companyApiClient.createCompany.bind(companyApiClient);
+export const updateCompany = companyApiClient.updateCompany.bind(companyApiClient);
+export const deleteCompany = companyApiClient.deleteCompany.bind(companyApiClient);
 export const getOrCreateCompany = companyApiClient.getOrCreateCompany.bind(companyApiClient);

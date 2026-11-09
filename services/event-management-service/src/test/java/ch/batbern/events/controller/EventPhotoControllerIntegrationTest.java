@@ -102,14 +102,14 @@ class EventPhotoControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void confirmUpload_asAnonymous_returns403() throws Exception {
+    void confirmUpload_asAnonymous_returns401() throws Exception {
         UUID photoId = UUID.randomUUID();
         String s3Key = "events/" + EVENT_CODE + "/photos/" + photoId + ".jpg";
 
         mockMvc.perform(post("/api/v1/events/{eventCode}/photos/confirm", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"photoId\":\"" + photoId + "\",\"s3Key\":\"" + s3Key + "\"}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test
@@ -145,11 +145,11 @@ class EventPhotoControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    void requestUploadUrl_asAnonymous_returns403() throws Exception {
+    void requestUploadUrl_asAnonymous_returns401() throws Exception {
         mockMvc.perform(post("/api/v1/events/{eventCode}/photos/upload-url", EVENT_CODE)
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"filename\":\"photo.jpg\",\"contentType\":\"image/jpeg\",\"fileSize\":1048576}"))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

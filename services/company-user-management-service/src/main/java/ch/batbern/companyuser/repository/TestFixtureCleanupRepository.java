@@ -52,13 +52,15 @@ public interface TestFixtureCleanupRepository extends JpaRepository<Company, UUI
      */
     @Modifying
     @Query(
-            value = "DELETE FROM logos WHERE associated_entity_id LIKE :entityIdPattern",
+            value = "DELETE FROM logos WHERE associated_entity_id ILIKE :entityIdPattern",
             nativeQuery = true
     )
     int deleteLogosByAssociatedEntityIdLike(@Param("entityIdPattern") String entityIdPattern);
 
     /**
-     * Delete companies whose {@code name} starts with the prefix.
+     * Delete companies whose {@code name} starts with the prefix, ignoring case: since 2026-11-09
+     * {@code POST /companies} stores the lower-case slug ({@code BRUNOTESTCO<ts>} becomes
+     * {@code brunotestco1}), so the canonical prefix must match both spellings.
      * Caller must have already wiped soft-FK references in {@code logos.associated_entity_id}
      * (handled by {@link #deleteLogosByAssociatedEntityIdLike(String)}).
      *
@@ -67,7 +69,7 @@ public interface TestFixtureCleanupRepository extends JpaRepository<Company, UUI
      */
     @Modifying
     @Query(
-            value = "DELETE FROM companies WHERE name LIKE :namePattern",
+            value = "DELETE FROM companies WHERE name ILIKE :namePattern",
             nativeQuery = true
     )
     int deleteCompaniesByNameLike(@Param("namePattern") String namePattern);

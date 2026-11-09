@@ -168,11 +168,11 @@ class EventAttendanceSummaryIntegrationTest extends AbstractIntegrationTest {
     // ── AC6: Authorization ───────────────────────────────────────────────────
 
     @Test
-    @DisplayName("should return 403 when unauthenticated")
-    void should_return403_when_unauthenticated() throws Exception {
+    @DisplayName("should return 401 when unauthenticated")
+    void should_return401_when_unauthenticated() throws Exception {
         mockMvc.perform(get("/api/v1/events/attendance-summary")
                         .param("companyName", COMPANY_GOOGLE))
-                .andExpect(status().isForbidden());
+                .andExpect(status().isUnauthorized());
     }
 
     @Test

@@ -1,331 +1,226 @@
 /**
- * CompanyAutocomplete Component Tests (TDD - Story 2.8.3)
+ * CompanyAutocomplete Component Tests (Story 2.8.3, AC3: company search)
  *
- * RED Phase Tests for Company Autocomplete
- * Test AC3: Company Autocomplete provides company search
+ * The real companyApi, useCompany and React Query run against the MSW harness (17.0c2):
+ * `GET /companies/search` and `POST /companies:get-or-create` are checked against
+ * companies-api, answered with typed bodies, and the test reads what was sent.
  */
 
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import { render, screen, waitFor, act } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
-import { CompanyAutocomplete } from './CompanyAutocomplete';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
-import { I18nextProvider } from 'react-i18next';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import i18n from '@/i18n/config';
-import * as companyApi from '@/services/api/companyApi';
+import { HttpResponse, delay } from 'msw';
+import { api } from '@/test/msw/api';
+import type { ResponseBody } from '@/test/msw/api';
+import { CompanyAutocomplete } from './CompanyAutocomplete';
 
-// Create theme for MUI components
 const theme = createTheme();
 
-// Create a new QueryClient for each test
-const createTestQueryClient = () =>
-  new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
-  });
+type SearchResult = ResponseBody<'searchCompanies', 200>[number];
 
-// Wrapper component with providers
-const TestWrapper: React.FC<{ children: React.ReactNode }> = ({ children }) => {
-  const queryClient = createTestQueryClient();
-
-  return (
-    <I18nextProvider i18n={i18n}>
-      <ThemeProvider theme={theme}>
-        <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-      </ThemeProvider>
-    </I18nextProvider>
+const renderAutocomplete = (props: Partial<Parameters<typeof CompanyAutocomplete>[0]> = {}) => {
+  const queryClient = new QueryClient({ defaultOptions: { queries: { retry: false } } });
+  const onChange = vi.fn();
+  render(
+    <ThemeProvider theme={theme}>
+      <QueryClientProvider client={queryClient}>
+        <CompanyAutocomplete value={null} onChange={onChange} {...props} />
+      </QueryClientProvider>
+    </ThemeProvider>
   );
+  return { onChange, input: screen.getByRole('combobox') as HTMLInputElement };
 };
 
 describe('CompanyAutocomplete Component - Story 2.8.3 AC3', () => {
-  const mockOnChange = vi.fn();
-  const mockCompanies = [
+  const companies: SearchResult[] = [
     {
-      name: 'acme-corp',
-      displayName: 'Acme Corporation',
+      name: 'bruennimann',
+      displayName: 'Brünnimann Architektur AG',
       industry: 'Technology',
-      logoUrl: 'https://cdn.batbern.ch/logos/acme-corp.png',
+      isVerified: true,
+      logo: { url: 'https://cdn.batbern.ch/logos/bruennimann.png' },
     },
     {
-      name: 'tech-solutions',
-      displayName: 'Tech Solutions AG',
+      name: 'bruennbau',
+      displayName: 'Brünn Bau GmbH',
       industry: 'Technology',
-      logoUrl: 'https://cdn.batbern.ch/logos/tech-solutions.png',
+      isVerified: false,
     },
   ];
 
-  beforeEach(async () => {
-    vi.clearAllMocks();
-    await i18n.changeLanguage('en');
+  beforeEach(() => {
+    api.on('searchCompanies', () => companies);
   });
 
-  // Test 3.1: should_searchCompanies_when_inputChanged
   it('should_searchCompanies_when_inputChanged', async () => {
     const user = userEvent.setup();
-    const searchSpy = vi.spyOn(companyApi, 'searchCompanies').mockResolvedValue(mockCompanies);
+    const { input } = renderAutocomplete();
 
-    await act(async () => {
-      render(
-        <TestWrapper>
-          <CompanyAutocomplete value={null} onChange={mockOnChange} />
-        </TestWrapper>
-      );
-    });
+    await user.type(input, 'brünn');
 
-    const input = screen.getByRole('combobox');
-    await user.type(input, 'acme');
-
-    await waitFor(() => {
-      expect(searchSpy).toHaveBeenCalledWith(
-        'acme',
-        expect.any(Number),
-        expect.objectContaining({ expand: ['logo'] })
-      );
-    });
+    await waitFor(() => expect(api.calls('searchCompanies')).toHaveLength(1));
+    const { query } = api.calls('searchCompanies')[0];
+    expect(query.get('query')).toBe('brünn');
+    expect(query.get('limit')).toBe('20');
+    expect(query.get('include')).toBe('logo');
   });
 
-  // Test 3.2: should_debounceSearch_when_userTyping
   it('should_debounceSearch_when_userTyping', async () => {
     const user = userEvent.setup();
-    const searchSpy = vi.spyOn(companyApi, 'searchCompanies').mockResolvedValue(mockCompanies);
+    const { input } = renderAutocomplete();
 
-    await act(async () => {
-      render(
-        <TestWrapper>
-          <CompanyAutocomplete value={null} onChange={mockOnChange} />
-        </TestWrapper>
-      );
-    });
+    // Type several characters quickly: one search after the 300 ms debounce, for the full term.
+    await user.type(input, 'b');
+    await user.type(input, 'r');
+    await user.type(input, 'ü');
+    await user.type(input, 'n');
 
-    const input = screen.getByRole('combobox');
-
-    // Type multiple characters quickly
-    await user.type(input, 'a');
-    await user.type(input, 'c');
-    await user.type(input, 'm');
-    await user.type(input, 'e');
-
-    // Wait for debounce (300ms)
-    await waitFor(
-      () => {
-        // Should only call once after debounce
-        expect(searchSpy).toHaveBeenCalledTimes(1);
-      },
-      { timeout: 500 }
-    );
+    await waitFor(() => expect(api.calls('searchCompanies')).toHaveLength(1));
+    await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(api.calls('searchCompanies').map((c) => c.query.get('query'))).toEqual(['brün']);
   });
 
-  // Test 3.3: should_displayCompanyOptions_when_searchCompletes
   it('should_displayCompanyOptions_when_searchCompletes', async () => {
     const user = userEvent.setup();
-    vi.spyOn(companyApi, 'searchCompanies').mockResolvedValue(mockCompanies);
+    const { input } = renderAutocomplete();
 
-    await act(async () => {
-      render(
-        <TestWrapper>
-          <CompanyAutocomplete value={null} onChange={mockOnChange} />
-        </TestWrapper>
-      );
-    });
+    await user.type(input, 'brünn');
 
-    const input = screen.getByRole('combobox');
-    await user.type(input, 'acme');
-
-    await waitFor(() => {
-      expect(screen.getByText('Acme Corporation')).toBeInTheDocument();
-      expect(screen.getByText('Tech Solutions AG')).toBeInTheDocument();
-    });
-
-    // Check that industry is displayed
-    expect(screen.getAllByText(/Technology/).length).toBeGreaterThan(0);
+    expect(await screen.findByText('Brünnimann Architektur AG')).toBeInTheDocument();
+    expect(screen.getByText('Brünn Bau GmbH')).toBeInTheDocument();
+    // Industry is displayed under the name
+    expect(screen.getAllByText('Technology')).toHaveLength(2);
   });
 
-  // Test 3.4: should_selectCompany_when_optionClicked
   it('should_selectCompany_when_optionClicked', async () => {
     const user = userEvent.setup();
-    vi.spyOn(companyApi, 'searchCompanies').mockResolvedValue(mockCompanies);
+    const { input, onChange } = renderAutocomplete();
 
-    await act(async () => {
-      render(
-        <TestWrapper>
-          <CompanyAutocomplete value={null} onChange={mockOnChange} />
-        </TestWrapper>
-      );
-    });
+    await user.type(input, 'brünn');
+    await user.click(await screen.findByText('Brünnimann Architektur AG'));
 
-    const input = screen.getByRole('combobox');
-    await user.type(input, 'acme');
-
-    await waitFor(() => {
-      expect(screen.getByText('Acme Corporation')).toBeInTheDocument();
-    });
-
-    await user.click(screen.getByText('Acme Corporation'));
-
-    await waitFor(() => {
-      expect(mockOnChange).toHaveBeenCalledWith(mockCompanies[0]);
-    });
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(companies[0]));
   });
 
-  // Test 3.5: should_displayError_when_searchFails
   it('should_displayError_when_searchFails', async () => {
+    api.on('searchCompanies', () =>
+      HttpResponse.json({ error: 'INTERNAL_ERROR', message: 'down' }, { status: 500 })
+    );
     const user = userEvent.setup();
-    vi.spyOn(companyApi, 'searchCompanies').mockRejectedValue(new Error('Network error'));
+    const { input } = renderAutocomplete();
 
-    await act(async () => {
-      render(
-        <TestWrapper>
-          <CompanyAutocomplete value={null} onChange={mockOnChange} />
-        </TestWrapper>
-      );
-    });
+    await user.type(input, 'brünn');
 
-    const input = screen.getByRole('combobox');
-    await user.type(input, 'acme');
-
-    await waitFor(() => {
-      expect(screen.getByText(/error/i)).toBeInTheDocument();
-    });
+    expect(await screen.findByText('Error loading companies')).toBeInTheDocument();
+    // An error never offers "create": it would hide that the search failed.
+    expect(screen.queryByTestId('company-create-option')).not.toBeInTheDocument();
   });
 
-  // Additional AC3 tests: Min 2 characters to trigger search
   it('should_notSearch_when_inputLessThan2Characters', async () => {
     const user = userEvent.setup();
-    const searchSpy = vi.spyOn(companyApi, 'searchCompanies').mockResolvedValue(mockCompanies);
+    const { input } = renderAutocomplete();
 
-    await act(async () => {
-      render(
-        <TestWrapper>
-          <CompanyAutocomplete value={null} onChange={mockOnChange} />
-        </TestWrapper>
-      );
-    });
-
-    const input = screen.getByRole('combobox');
-    await user.type(input, 'a');
-
-    // Wait a bit to ensure no call is made
+    await user.type(input, 'b');
     await new Promise((resolve) => setTimeout(resolve, 400));
+    expect(api.calls('searchCompanies')).toHaveLength(0);
 
-    expect(searchSpy).not.toHaveBeenCalled();
+    // Positive control: the second character starts the search.
+    await user.type(input, 'r');
+    await waitFor(() => expect(api.calls('searchCompanies')).toHaveLength(1));
   });
 
-  // Additional AC3 tests: Loading indicator
   it('should_showLoadingIndicator_when_searching', async () => {
+    api.on('searchCompanies', async () => {
+      await delay(1000);
+      return companies;
+    });
     const user = userEvent.setup();
-    vi.spyOn(companyApi, 'searchCompanies').mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve(mockCompanies), 1000))
-    );
+    const { input } = renderAutocomplete();
 
-    await act(async () => {
-      render(
-        <TestWrapper>
-          <CompanyAutocomplete value={null} onChange={mockOnChange} />
-        </TestWrapper>
-      );
-    });
+    await user.type(input, 'brünn');
 
-    const input = screen.getByRole('combobox');
-    await user.type(input, 'acme');
-
-    await waitFor(() => {
-      expect(screen.getByRole('progressbar')).toBeInTheDocument();
-    });
+    expect(await screen.findByRole('progressbar')).toBeInTheDocument();
   });
 
-  // Additional AC3 tests: Empty state (create disabled → falls back to "no companies found")
   it('should_showEmptyState_when_noCompaniesFound', async () => {
+    api.on('searchCompanies', () => []);
     const user = userEvent.setup();
-    vi.spyOn(companyApi, 'searchCompanies').mockResolvedValue([]);
+    const { input } = renderAutocomplete({ allowCreate: false });
 
-    await act(async () => {
-      render(
-        <TestWrapper>
-          <CompanyAutocomplete value={null} onChange={mockOnChange} allowCreate={false} />
-        </TestWrapper>
-      );
-    });
+    await user.type(input, 'nirgendwo');
 
-    const input = screen.getByRole('combobox');
-    await user.type(input, 'nonexistent');
-
-    await waitFor(() => {
-      expect(screen.getByText(/no companies found/i)).toBeInTheDocument();
-    });
+    expect(await screen.findByText(/no companies found/i)).toBeInTheDocument();
   });
 
   // Selection-locked combobox: the input shows the DISPLAY NAME, never the slug.
   it('should_showDisplayName_when_companySelected', async () => {
-    await act(async () => {
-      render(
-        <TestWrapper>
-          <CompanyAutocomplete value={mockCompanies[0] as never} onChange={mockOnChange} />
-        </TestWrapper>
-      );
-    });
+    const { input } = renderAutocomplete({ value: companies[0] });
 
-    const input = screen.getByRole('combobox') as HTMLInputElement;
-    expect(input.value).toBe('Acme Corporation'); // displayName, not 'acme-corp'
+    expect(input.value).toBe('Brünnimann Architektur AG'); // displayName, not 'bruennimann'
+    // The selected company's logo is resolved by its slug.
+    await waitFor(() => expect(api.calls('getCompany')).toHaveLength(1));
+    expect(api.calls('getCompany')[0].params.name).toBe('bruennimann');
   });
 
   // Create flow: when no existing company matches, an explicit "Create" row appears
   // and selecting it materialises the company via get-or-create.
   it('should_offerCreateOption_when_noExactMatch', async () => {
+    api.on('searchCompanies', () => []);
     const user = userEvent.setup();
-    vi.spyOn(companyApi, 'searchCompanies').mockResolvedValue([]);
+    const { input } = renderAutocomplete();
 
-    await act(async () => {
-      render(
-        <TestWrapper>
-          <CompanyAutocomplete value={null} onChange={mockOnChange} />
-        </TestWrapper>
-      );
-    });
+    await user.type(input, 'Hông Ân Studio');
 
-    const input = screen.getByRole('combobox');
-    await user.type(input, 'Brand New Co');
+    expect(await screen.findByTestId('company-create-option')).toBeInTheDocument();
+    expect(screen.getByText('Create new company "Hông Ân Studio"')).toBeInTheDocument();
+  });
 
-    await waitFor(() => {
-      expect(screen.getByTestId('company-create-option')).toBeInTheDocument();
-    });
-    expect(screen.getByText(/Create new company "Brand New Co"/i)).toBeInTheDocument();
+  it('should_notOfferCreate_when_aResultMatchesExactly', async () => {
+    const user = userEvent.setup();
+    const { input } = renderAutocomplete();
+
+    await user.type(input, 'brünn bau gmbh');
+
+    expect(await screen.findByText('Brünn Bau GmbH')).toBeInTheDocument();
+    expect(screen.queryByTestId('company-create-option')).not.toBeInTheDocument();
   });
 
   it('should_materialiseCompany_when_createOptionSelected', async () => {
-    const user = userEvent.setup();
-    vi.spyOn(companyApi, 'searchCompanies').mockResolvedValue([]);
+    api.on('searchCompanies', () => []);
     const created = {
-      name: 'brandnewco',
-      displayName: 'Brand New Co',
+      name: 'honganstudio',
+      displayName: 'Hông Ân Studio',
       isVerified: false,
       createdAt: '2026-01-01T00:00:00Z',
       updatedAt: '2026-01-01T00:00:00Z',
     };
-    const getOrCreateSpy = vi
-      .spyOn(companyApi, 'getOrCreateCompany')
-      .mockResolvedValue(created as never);
+    api.on('getOrCreateCompany', () => created);
+    const user = userEvent.setup();
+    const { input, onChange } = renderAutocomplete();
 
-    await act(async () => {
-      render(
-        <TestWrapper>
-          <CompanyAutocomplete value={null} onChange={mockOnChange} />
-        </TestWrapper>
-      );
-    });
+    await user.type(input, 'Hông Ân Studio');
+    await user.click(await screen.findByTestId('company-create-option'));
 
-    const input = screen.getByRole('combobox');
-    await user.type(input, 'Brand New Co');
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(created));
+    const [call] = api.calls('getOrCreateCompany');
+    expect(call.method).toBe('POST');
+    expect(call.body).toEqual({ displayName: 'Hông Ân Studio' });
+  });
 
-    const createOption = await screen.findByTestId('company-create-option');
-    await user.click(createOption);
+  it('should_reportNull_when_getOrCreateFails', async () => {
+    api.on('searchCompanies', () => []);
+    api.on('getOrCreateCompany', () =>
+      HttpResponse.json({ error: 'INTERNAL_ERROR', message: 'down' }, { status: 500 })
+    );
+    const user = userEvent.setup();
+    const { input, onChange } = renderAutocomplete();
 
-    await waitFor(() => {
-      expect(getOrCreateSpy).toHaveBeenCalledWith('Brand New Co');
-      expect(mockOnChange).toHaveBeenCalledWith(created);
-    });
+    await user.type(input, 'Hông Ân Studio');
+    await user.click(await screen.findByTestId('company-create-option'));
+
+    await waitFor(() => expect(onChange).toHaveBeenCalledWith(null));
+    expect(api.calls('getOrCreateCompany')).toHaveLength(1);
   });
 });

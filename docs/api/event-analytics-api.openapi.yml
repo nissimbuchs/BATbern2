@@ -70,6 +70,20 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/AttendanceSummaryDTO'
+              examples:
+                twoEvents:
+                  summary: Two events, newest first
+                  value:
+                  - eventCode: BATbern142
+                    eventTitle: BATbern 142 - Cloud Native
+                    eventDate: '2026-06-11T16:00:00Z'
+                    totalAttendees: 180
+                    companyAttendees: 6
+                  - eventCode: BATbern141
+                    eventTitle: BATbern 141 - Security
+                    eventDate: '2025-11-13T16:00:00Z'
+                    totalAttendees: 160
+                    companyAttendees: 4
         '401':
           description: Unauthorized
         '403':
@@ -133,6 +147,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventAnalytics'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    eventCode: BATbern66
+                    metrics:
+                      registrations:
+                        total: 7
+                        byStatus:
+                          confirmed: 7
+                          pending: 0
+                          cancelled: 0
+                      attendance:
+                        expected: 7
+                        actual: 7
+                        rate: 100
+                      engagement:
+                        totalSessions: 0
+                        totalParticipants: 7
+                        averageSessionsPerParticipant: 0
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -165,6 +199,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AnalyticsOverviewResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    totalEvents: 66
+                    totalAttendees: 8037
+                    companiesRepresented: 473
+                    totalSessions: 369
+                    totalSpeakers: 264
+                    timeline:
+                      - eventCode: BATbern1
+                        eventNumber: 1
+                        title: GUI Frameworks
+                        eventDate: "2005-06-24T16:00:00+02:00"
+                        category: soft_skills
+                        attendeeCount: 67
+                      - eventCode: BATbern2
+                        eventNumber: 2
+                        title: Enterprise Architektur
+                        eventDate: "2005-11-11T16:00:00+01:00"
+                        category: technical
+                        attendeeCount: 65
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -204,6 +260,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AnalyticsAttendanceResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    events:
+                      - eventCode: BATbern1
+                        eventNumber: 1
+                        title: GUI Frameworks
+                        eventDate: "2005-06-24T16:00:00+02:00"
+                        category: soft_skills
+                        totalAttendees: 67
+                        returningAttendees: 0
+                        newAttendees: 67
+                      - eventCode: BATbern2
+                        eventNumber: 2
+                        title: Enterprise Architektur
+                        eventDate: "2005-11-11T16:00:00+01:00"
+                        category: technical
+                        totalAttendees: 65
+                        returningAttendees: 28
+                        newAttendees: 37
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -243,6 +320,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AnalyticsTopicsResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    eventsPerCategory:
+                      - category: industry_trends
+                        eventCount: 24
+                      - category: technical
+                        eventCount: 13
+                    topicScatter:
+                      - topicCode: architecture
+                        topicTitle: Architecture
+                        category: technical
+                        eventCount: 9
+                        avgAttendees: 126.22222222222223
+                      - topicCode: data-analytics
+                        topicTitle: Data & Analytics
+                        category: industry_trends
+                        eventCount: 7
+                        avgAttendees: 124.57142857142857
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -286,6 +383,35 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AnalyticsCompaniesResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    attendanceOverTime:
+                      - year: 2005
+                        companyName: postfinance
+                        displayName: PostFinance
+                        attendeeCount: 15
+                      - year: 2005
+                        companyName: swisscom
+                        displayName: Swisscom
+                        attendeeCount: 7
+                    sessionsPerCompany:
+                      - companyName: postfinance
+                        displayName: PostFinance
+                        sessionCount: 70
+                        uniqueSpeakers: 20
+                      - companyName: sbb
+                        displayName: SBB CFF FFS
+                        sessionCount: 33
+                        uniqueSpeakers: 26
+                    distribution:
+                      - companyName: sbb
+                        displayName: SBB CFF FFS
+                        attendeeCount: 482
+                      - companyName: postfinance
+                        displayName: PostFinance
+                        attendeeCount: 434
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -324,6 +450,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/CompanyDistributionResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    eventCode: BATbern57
+                    distribution:
+                      - companyName: sbb
+                        displayName: SBB CFF FFS
+                        attendeeCount: 15
+                      - companyName: swisscom
+                        displayName: Swisscom
+                        attendeeCount: 8
         '400':
           description: Missing or invalid eventCode parameter
         '401':

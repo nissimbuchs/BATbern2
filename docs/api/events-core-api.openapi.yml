@@ -169,7 +169,7 @@ paths:
                       venueName: Kursaal Bern
                       venueAddress: Kornhausstrasse 3, 3013 Bern
                       venueCapacity: 200
-                      workflowState: PUBLISHED
+                      workflowState: AGENDA_PUBLISHED
                       organizerUsername: john.doe
                       currentAttendeeCount: 187
                       description: Cloud Native Architecture
@@ -178,6 +178,8 @@ paths:
                       limit: 20
                       totalItems: 1
                       totalPages: 1
+                      hasNext: false
+                      hasPrev: false
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -228,6 +230,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    eventCode: BATbern66
+                    title: TBD Herbst 28
+                    eventNumber: 66
+                    date: "2028-11-03T00:00:00Z"
+                    registrationDeadline: "2028-11-02T00:00:00Z"
+                    venueName: Zentrum Paul Klee
+                    venueAddress: Monument im Fruchtland 3, 3006 Bern
+                    venueCapacity: 220
+                    qnaEnabled: true
+                    qnaOpenTrigger: EVENT_COMPLETED
+                    qnaWindowDays: 14
+                    organizerUsername: carla.muster
+                    currentAttendeeCount: 0
+                    description: TBD
+                    createdAt: "2026-09-10T15:28:35.293481Z"
+                    updatedAt: "2026-09-10T15:28:35.293481Z"
+                    eventType: EVENING
+                    workflowState: CREATED
         '400':
           $ref: '#/components/responses/BadRequest'
         '500':
@@ -248,6 +272,34 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventDetail'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    eventCode: BATbern66
+                    title: TBD Herbst 28
+                    eventNumber: 66
+                    date: "2028-11-03T00:00:00Z"
+                    registrationDeadline: "2028-11-02T00:00:00Z"
+                    venueName: Zentrum Paul Klee
+                    venueAddress: Monument im Fruchtland 3, 3006 Bern
+                    venueCapacity: 220
+                    qnaEnabled: true
+                    qnaOpenTrigger: EVENT_COMPLETED
+                    qnaWindowDays: 14
+                    confirmedCount: 7
+                    waitlistCount: 0
+                    realAttendeeCount: 0
+                    organizerUsername: carla.muster
+                    currentAttendeeCount: 0
+                    description: TBD
+                    createdAt: "2026-09-10T15:28:35.293481Z"
+                    updatedAt: "2026-09-10T15:28:35.293481Z"
+                    teaserImages: []
+                    eventType: EVENING
+                    typicalStartTime: "16:00"
+                    typicalEndTime: "19:00"
+                    workflowState: CREATED
         '404':
           $ref: '#/components/responses/NotFound'
   /public/events/{eventCode}:
@@ -274,6 +326,114 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventDetail'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    eventCode: BATbern60
+                    title: Digitale Souveränität
+                    eventNumber: 60
+                    date: "2026-11-06T00:00:00Z"
+                    registrationDeadline: "2026-11-05T00:00:00Z"
+                    venueName: Zentrum Paul Klee
+                    venueAddress: Monument im Fruchtland 3, 3006 Bern, Switzerland
+                    venueCapacity: 200
+                    registrationCapacity: 250
+                    qnaEnabled: true
+                    qnaOpenTrigger: SPEAKERS_PUBLISHED
+                    qnaWindowDays: 14
+                    confirmedCount: 250
+                    waitlistCount: 10
+                    spotsRemaining: 0
+                    currentAttendeeCount: 260
+                    description: Sample description for the API example.
+                    createdAt: "2026-02-26T06:22:03.968837Z"
+                    updatedAt: "2026-11-04T20:49:19.89827Z"
+                    themeImageUrl: https://cdn.batbern.ch/ai-themes/img_CO-fPYWNewMadevg.png
+                    teaserImages: []
+                    topicCode: digital-sovereignty
+                    eventType: EVENING
+                    typicalStartTime: "16:00"
+                    typicalEndTime: "20:20"
+                    workflowState: AGENDA_PUBLISHED
+                    topic:
+                      code: digital-sovereignty
+                      name: Digital Sovereignty
+                      category: technical
+                    venue:
+                      id: BATbern60
+                      name: Zentrum Paul Klee
+                      address: Monument im Fruchtland 3, 3006 Bern, Switzerland
+                      capacity: 200
+                    sessions:
+                      - sessionSlug: moderation-start-4
+                        eventCode: BATbern60
+                        title: Moderation Start
+                        sessionType: moderation
+                        startTime: "2026-11-06T15:00:00Z"
+                        endTime: "2026-11-06T15:05:00Z"
+                        language: de
+                        createdAt: "2026-10-24T15:46:13.440741Z"
+                        updatedAt: "2026-10-24T15:46:13.440741Z"
+                        speakers:
+                          - username: anna.beispiel
+                            firstName: Anna
+                            lastName: Beispiel
+                            company: galenica
+                            companyDisplayName: Galenica
+                            profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2025/anna.beispiel/profile-a0ed134f-8619-44b1-be2b-6480b092196c.jpeg
+                            speakerRole: MODERATOR
+                            isConfirmed: true
+                        materialsStatus: NONE
+                        materials: []
+                        materialsCount: 0
+                      - sessionSlug: batbern60-anna-muster
+                        eventCode: BATbern60
+                        title: "Weniger Cloud, mehr Klarheit: Digitale Souveränität bei Software, Daten, IT-Infrastruktur und KI"
+                        description: Sample description for the API example.
+                        sessionType: presentation
+                        startTime: "2026-11-06T15:05:00Z"
+                        endTime: "2026-11-06T15:40:00Z"
+                        room: Main Hall
+                        language: de
+                        createdAt: "2026-09-09T17:49:40.756177Z"
+                        updatedAt: "2026-10-12T19:05:17.468031Z"
+                        speakers:
+                          - username: gina.beispiel
+                            firstName: Gina
+                            lastName: Beispiel
+                            company: bfh
+                            companyDisplayName: BFH
+                            profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2026/gina.beispiel/profile-204ff4b2-2a91-491f-8985-944ad39e4733.jpg
+                            speakerRole: PRIMARY_SPEAKER
+                            isConfirmed: true
+                        materialsStatus: NONE
+                        materials: []
+                        materialsCount: 0
+                    speakers:
+                      - username: gina.beispiel
+                        firstName: Gina
+                        lastName: Beispiel
+                        company: bfh
+                        companyDisplayName: BFH
+                        companyLogoUrl: null
+                        profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2026/gina.beispiel/profile-204ff4b2-2a91-491f-8985-944ad39e4733.jpg
+                        bio: null
+                        speakerRole: PRIMARY_SPEAKER
+                        talkTitle: "Weniger Cloud, mehr Klarheit: Digitale Souveränität bei Software, Daten, IT-Infrastruktur und KI"
+                        sessionSlug: batbern60-anna-muster
+                      - username: hugo.beispiel
+                        firstName: Hugo
+                        lastName: Beispiel
+                        company: universitaet
+                        companyDisplayName: Universitäts-Kinderspital Zürich
+                        companyLogoUrl: null
+                        profilePictureUrl: https://cdn.batbern.ch/profile-pictures/2026/hugo.beispiel/profile-d405238a-f4cc-4147-b914-f947345a0357.png
+                        bio: null
+                        speakerRole: CO_SPEAKER
+                        talkTitle: Souveräne KI im Spital-Alltag
+                        sessionSlug: batbern60-anna-muster
+                    currentPublishedPhase: AGENDA
         '404':
           $ref: '#/components/responses/NotFound'
   /public/events:
@@ -348,6 +508,18 @@ paths:
                       $ref: '#/components/schemas/Event'
                   pagination:
                     $ref: './_shared.openapi.yml#/components/schemas/PaginationMetadata'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    data: []
+                    pagination:
+                      page: 1
+                      limit: 2
+                      totalItems: 0
+                      totalPages: 0
+                      hasNext: false
+                      hasPrev: false
         '400':
           $ref: '#/components/responses/BadRequest'
   /events/current:
@@ -384,7 +556,7 @@ paths:
                 eventCode: BATbern57
                 title: Cloud-Native Architecture in Practice
                 eventNumber: 57
-                workflowState: PUBLISHED
+                workflowState: AGENDA_PUBLISHED
                 description: Join us for an evening exploring modern cloud-native architecture patterns and best practices.
                 date: '2025-03-15T18:00:00Z'
                 registrationDeadline: '2025-03-10T23:59:59Z'
@@ -513,12 +685,12 @@ paths:
                     eventCode: BATbern142
                     title: Spring Conference 2025
                     eventNumber: 142
-                    date: 2025-05-15 09:00:00+00:00
-                    registrationDeadline: 2025-05-01 23:59:59+00:00
+                    date: '2025-05-15T09:00:00Z'
+                    registrationDeadline: '2025-05-01T23:59:59Z'
                     venueName: Kursaal Bern
                     venueAddress: Kornhausstrasse 3, 3013 Bern
                     venueCapacity: 500
-                    workflowState: PUBLISHED
+                    workflowState: AGENDA_PUBLISHED
                     organizerUsername: john.doe
                     currentAttendeeCount: 187
                     description: Cloud Native Architecture
@@ -528,12 +700,12 @@ paths:
                     eventCode: BATbern142
                     title: Spring Conference 2025
                     eventNumber: 142
-                    date: 2025-05-15 09:00:00+00:00
-                    registrationDeadline: 2025-05-01 23:59:59+00:00
+                    date: '2025-05-15T09:00:00Z'
+                    registrationDeadline: '2025-05-01T23:59:59Z'
                     venueName: Kursaal Bern
                     venueAddress: Kornhausstrasse 3, 3013 Bern
                     venueCapacity: 500
-                    workflowState: PUBLISHED
+                    workflowState: AGENDA_PUBLISHED
                     organizerUsername: john.doe
                     currentAttendeeCount: 187
                     description: Cloud Native Architecture
@@ -588,6 +760,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    eventCode: BATbern66
+                    title: TBD Herbst 28
+                    eventNumber: 66
+                    date: "2028-11-03T00:00:00Z"
+                    registrationDeadline: "2028-11-02T00:00:00Z"
+                    venueName: Zentrum Paul Klee
+                    venueAddress: Monument im Fruchtland 3, 3006 Bern
+                    venueCapacity: 220
+                    qnaEnabled: true
+                    qnaOpenTrigger: EVENT_COMPLETED
+                    qnaWindowDays: 14
+                    organizerUsername: carla.muster
+                    currentAttendeeCount: 0
+                    description: TBD
+                    createdAt: "2026-09-10T15:28:35.293481Z"
+                    updatedAt: "2026-09-10T15:28:35.293481Z"
+                    eventType: EVENING
+                    workflowState: CREATED
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -641,6 +835,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    eventCode: BATbern66
+                    title: TBD Herbst 28
+                    eventNumber: 66
+                    date: "2028-11-03T00:00:00Z"
+                    registrationDeadline: "2028-11-02T00:00:00Z"
+                    venueName: Zentrum Paul Klee
+                    venueAddress: Monument im Fruchtland 3, 3006 Bern
+                    venueCapacity: 220
+                    qnaEnabled: true
+                    qnaOpenTrigger: EVENT_COMPLETED
+                    qnaWindowDays: 14
+                    organizerUsername: carla.muster
+                    currentAttendeeCount: 0
+                    description: TBD
+                    createdAt: "2026-09-10T15:28:35.293481Z"
+                    updatedAt: "2026-09-10T15:28:35.293481Z"
+                    eventType: EVENING
+                    workflowState: CREATED
         '400':
           $ref: '#/components/responses/BadRequest'
         '404':
@@ -731,6 +947,28 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/Event'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    eventCode: BATbern66
+                    title: TBD Herbst 28
+                    eventNumber: 66
+                    date: "2028-11-03T00:00:00Z"
+                    registrationDeadline: "2028-11-02T00:00:00Z"
+                    venueName: Zentrum Paul Klee
+                    venueAddress: Monument im Fruchtland 3, 3006 Bern
+                    venueCapacity: 220
+                    qnaEnabled: true
+                    qnaOpenTrigger: EVENT_COMPLETED
+                    qnaWindowDays: 14
+                    organizerUsername: carla.muster
+                    currentAttendeeCount: 0
+                    description: TBD
+                    createdAt: "2026-09-10T15:28:35.293481Z"
+                    updatedAt: "2026-09-10T15:28:35.293481Z"
+                    eventType: EVENING
+                    workflowState: CREATED
         '404':
           $ref: '#/components/responses/NotFound'
         '422':
@@ -831,6 +1069,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/WorkflowTransitionResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    eventCode: BATbern142
+                    workflowState: TOPIC_SELECTION
+                    updatedAt: "2026-05-14T16:00:00Z"
         '400':
           description: Invalid state transition
           content:
@@ -982,6 +1227,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ThanksCountResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    count: 0
+                    notes: []
         '400':
           description: Validation error (note too long, or an unknown body field)
           content:
@@ -1064,6 +1315,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ThanksCountResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    count: 0
+                    notes: []
         '404':
           description: Event not found
           content:
@@ -1119,6 +1376,18 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/ThanksNoteResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    note: Sample text for the API example.
+                    thankedByUsername: anna.muster
+                    thankedByFirstName: Anna
+                    thankedByLastName: Muster
+                    thankedByCompanyName: Sample name
+                    featured: true
+                    createdAt: "2026-05-14T16:00:00Z"
         '400':
           description: Validation error (missing featured flag)
           content:
@@ -1185,6 +1454,22 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/FeaturedThanksResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    - note: Sample text for the API example.
+                      eventCode: BATbern59
+                      thankedByFirstName: Anna
+                      thankedByLastName: Muster
+                      thankedByCompanyName: ELCA Informatique SA
+                      thankedByCompanyLogoUrl: https://cdn.batbern.ch/logos/2025/e9ef63ac-326c-455f-a0d4-c98b351e5400/logo-cb50bd1d-14d3-4bb4-8eab-b7fd113d19ba.jpg
+                    - note: null
+                      eventCode: BATbern59
+                      thankedByFirstName: Anna
+                      thankedByLastName: Muster
+                      thankedByCompanyName: null
+                      thankedByCompanyLogoUrl: null
         '500':
           $ref: '#/components/responses/InternalServerError'
       security: []
@@ -1208,6 +1493,25 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AttendeeDashboardResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    attendeeName: Anna Muster
+                    upcomingEvents:
+                      - eventCode: BATbern61
+                        eventTitle: TBD Frühling 27
+                        eventDate: "2027-03-05T00:00:00Z"
+                        eventLocation: Zentrum Paul Klee
+                        workflowState: CREATED
+                        registrationStatus: confirmed
+                      - eventCode: BATbern62
+                        eventTitle: Tbd Sommer 27
+                        eventDate: "2027-06-25T00:00:00Z"
+                        eventLocation: Zentrum Paul Klee
+                        workflowState: CREATED
+                        registrationStatus: confirmed
+                    pastEvents: []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '500':
@@ -1317,6 +1621,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventSlotConfigurationResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    type: AFTERNOON
+                    minSlots: 5
+                    maxSlots: 6
+                    slotDuration: 40
+                    theoreticalSlotsAM: false
+                    breakSlots: 1
+                    lunchSlots: 0
+                    defaultCapacity: 250
+                    typicalStartTime: "13:00"
+                    typicalEndTime: "19:00"
+                    moderationStartDuration: 5
+                    moderationEndDuration: 5
+                    breakDuration: 30
+                    lunchDuration: 60
+                    aperitifSlots: 1
+                    aperitifDuration: 90
+                    aperitifPosition: end
         '404':
           $ref: '#/components/responses/NotFound'
         '500':
@@ -1386,6 +1711,27 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/EventSlotConfigurationResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database (same schema as a GET)
+                  value:
+                    type: AFTERNOON
+                    minSlots: 5
+                    maxSlots: 6
+                    slotDuration: 40
+                    theoreticalSlotsAM: false
+                    breakSlots: 1
+                    lunchSlots: 0
+                    defaultCapacity: 250
+                    typicalStartTime: "13:00"
+                    typicalEndTime: "19:00"
+                    moderationStartDuration: 5
+                    moderationEndDuration: 5
+                    breakDuration: 30
+                    lunchDuration: 60
+                    aperitifSlots: 1
+                    aperitifDuration: 90
+                    aperitifPosition: end
         '400':
           description: Validation error (e.g., minSlots > maxSlots)
           content:
@@ -1430,6 +1776,11 @@ paths:
                 type: array
                 items:
                   $ref: '#/components/schemas/TeaserImageItem'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1462,6 +1813,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TeaserImageUploadUrlResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    uploadUrl: https://www.batbern.ch/
+                    s3Key: events/BATbern57/teaser/abc123-def456.jpg
+                    expiresIn: 900
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1494,6 +1852,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TeaserImageItem'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    imageUrl: https://cdn.batbern.ch/events/BATbern57/teaser/abc123.jpg
+                    displayOrder: 0
+                    presentationPosition: AFTER_WELCOME
         '422':
           description: Max image limit reached
           content:
@@ -1538,6 +1904,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/TeaserImageItem'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    id: 3f2b8c1e-5d4a-4e6b-9a7c-1b2d3e4f5a6b
+                    imageUrl: https://cdn.batbern.ch/events/BATbern57/teaser/abc123.jpg
+                    displayOrder: 0
+                    presentationPosition: AFTER_WELCOME
         '404':
           description: Teaser image not found
         '401':
@@ -1600,6 +1974,16 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VenueCoordinationPreviewResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    subject: Sample title
+                    htmlBody: <p>Sample text for the API example.</p>
+                    toEmail: ines.probe@example.com
+                    ccEmails:
+                      - ines.probe@example.com
+                    replyToEmail: ines.probe@example.com
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1635,6 +2019,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/VenueCoordinationSendResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    sentTo:
+                      - VENUE
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1669,12 +2059,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublishPhaseResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    phase: sample
+                    published: true
+                    publishedAt: "2026-05-14T16:00:00Z"
+                    cdnInvalidated: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
+        '422':
+          description: The event's content is not ready for this phase (PublishingEngineController).
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/PublishValidationError'
       security:
         - BearerAuth: []
 
@@ -1703,6 +2107,14 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/UnpublishPhaseResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    phase: sample
+                    published: true
+                    unpublishedAt: "2026-05-14T16:00:00Z"
+                    cdnInvalidated: true
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1732,6 +2144,26 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/PublishingStatusResponse'
+              examples:
+                default:
+                  summary: captured from the local anonymized database
+                  value:
+                    publishedPhases: []
+                    topic:
+                      isValid: false
+                      errors:
+                        - Event topic must be defined
+                    speakers:
+                      isValid: false
+                      errors:
+                        - "At least 3 sessions required for EVENING event type (currently: 0)"
+                    sessions:
+                      isValid: false
+                      errors:
+                        - No sessions found for this event
+                      assignedCount: 0
+                      totalCount: 0
+                      unassignedSessions: []
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1765,6 +2197,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AutoPublishScheduleResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    scheduled: true
+                    phase2Enabled: true
+                    phase2DaysBeforeEvent: 1
+                    phase2TriggerDate: "2026-05-14T16:00:00Z"
+                    phase3Enabled: true
+                    phase3DaysBeforeEvent: 1
+                    phase3TriggerDate: "2026-05-14T16:00:00Z"
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1792,6 +2235,17 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AutoPublishScheduleResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    scheduled: true
+                    phase2Enabled: true
+                    phase2DaysBeforeEvent: 1
+                    phase2TriggerDate: "2026-05-14T16:00:00Z"
+                    phase3Enabled: true
+                    phase3DaysBeforeEvent: 1
+                    phase3TriggerDate: "2026-05-14T16:00:00Z"
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1819,6 +2273,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminSettingResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    key: uploads/2026/sample/file.png
+                    value: sample
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1848,6 +2308,12 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/AdminSettingResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    key: uploads/2026/sample/file.png
+                    value: sample
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':
@@ -1881,6 +2347,13 @@ paths:
             application/json:
               schema:
                 $ref: '#/components/schemas/QnaWindowAdjustResponse'
+              examples:
+                default:
+                  summary: generated from the schema and captured sub-values
+                  value:
+                    eventCode: BATbern57
+                    windowsAdjusted: 1
+                    status: sample
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -1951,6 +2424,9 @@ components:
           type: boolean
     ValidationStatus:
       type: object
+      required:
+        - isValid
+        - errors
       properties:
         isValid:
           type: boolean
@@ -1967,6 +2443,12 @@ components:
           type: string
     SessionValidationStatus:
       type: object
+      required:
+        - isValid
+        - errors
+        - assignedCount
+        - totalCount
+        - unassignedSessions
       properties:
         isValid:
           type: boolean
@@ -1984,9 +2466,16 @@ components:
             $ref: '#/components/schemas/UnassignedSession'
     PublishingStatusResponse:
       type: object
+      required:
+        - publishedPhases
+        - topic
+        - speakers
+        - sessions
       properties:
         currentPhase:
           type: string
+          nullable: true
+          description: The phase published last (topic, speakers, agenda); null before the first.
         publishedPhases:
           type: array
           items:
@@ -1997,6 +2486,27 @@ components:
           $ref: '#/components/schemas/ValidationStatus'
         sessions:
           $ref: '#/components/schemas/SessionValidationStatus'
+    PublishValidationError:
+      type: object
+      description: 422 of publishPhase, the reasons the phase cannot be published yet.
+      properties:
+        error:
+          type: string
+          example: VALIDATION_ERROR
+        message:
+          type: string
+        validationErrors:
+          type: array
+          items:
+            type: object
+            properties:
+              sessionSlug:
+                type: string
+                nullable: true
+              field:
+                type: string
+              message:
+                type: string
     AutoPublishScheduleRequest:
       type: object
       properties:
@@ -2319,9 +2829,11 @@ components:
           example: 0
         organizerUsername:
           type: string
-          pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
+          # No pattern in the response: historical events (BATbern 2 to 54) carry imported
+          # organizer usernames with an umlaut that no CUMS username has. Requests keep the pattern.
           example: john.doe
-          description: 'Organizers only (omitted for other callers, GHSA-qhqv). Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions.
+          description: 'Organizers only (omitted for other callers, GHSA-qhqv). Username of the event organizer in format "firstname.lastname" or "firstname.lastname.2" for collisions;
+            historical events may carry an imported name outside that format (e.g. with an umlaut).
 
             Story 1.16.2: Public API uses meaningful IDs (usernames), not UUIDs.
 
@@ -2463,8 +2975,8 @@ components:
             '
         sessions:
           type: array
-          nullable: true
           description: 'Expanded session list with speakers (only included when ?include=sessions or ?include=speakers).
+            Absent otherwise, never null: the class carries JsonInclude NON_NULL.
 
             Story BAT-109: Archive browsing with session expansion
 
