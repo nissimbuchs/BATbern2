@@ -10,10 +10,10 @@ import { buildCdnImageUrl } from '@/utils/cdnImage';
 
 interface PartnerShowcaseCardProps {
   companyName: string;
-  logoUrl?: string;
+  logoUrl?: string | null;
   partnershipLevel: 'STRATEGIC' | 'PLATINUM' | 'GOLD' | 'SILVER' | 'BRONZE';
   partnershipStartDate: string;
-  website?: string;
+  website?: string | null;
 }
 
 export const PartnerShowcaseCard = ({
