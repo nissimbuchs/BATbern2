@@ -656,14 +656,16 @@
       "htmlBodyRequired": "Il corpo HTML è obbligatorio.",
       "subjectRequired": "L'oggetto è obbligatorio per i modelli di contenuto.",
       "templateNameRequired": "Il nome del modello è obbligatorio.",
-      "templateNameInvalid": "Inserisci almeno una lettera o una cifra."
+      "templateNameInvalid": "Inserisci almeno una lettera o una cifra.",
+      "duplicateKey": "Esiste già un modello con questa chiave per questa lingua. Scegli una chiave diversa."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Nome del modello",
     "templateNameHelp": "Ad esempio: Cambio sala",
-    "keyPreview": "Salvato come"
+    "keyPreview": "Salvato come",
+    "loadFailed": "Impossibile caricare i modelli."
   },
   "presentation": {
     "errorTitle": "Impossibile caricare l'evento",
@@ -725,7 +727,13 @@
       "noDefaults": "Nessun modello predefinito.",
       "noCustom": "Nessun modello personalizzato ancora.",
       "confirmDelete": "Eliminare il modello?",
-      "deleteFailed": "Eliminazione del modello non riuscita. Riprova."
+      "deleteFailed": "Eliminazione del modello non riuscita. Riprova.",
+      "loadFailed": "Impossibile caricare i modelli.",
+      "editTitle": "Modifica modello di attività",
+      "name": "Nome",
+      "triggerState": "Stato di attivazione",
+      "dueDateType": "Tipo di scadenza",
+      "dueDateOffsetDays": "Giorni di scostamento"
     },
     "aiPrompts": {
       "description": "Questi prompt vengono inviati a OpenAI per generare descrizioni di eventi, immagini tematiche e valutazioni della qualità degli abstract. Utilizzare variabili {{VARIABLE_NAME}} — le variabili disponibili sono elencate sotto ogni prompt.",

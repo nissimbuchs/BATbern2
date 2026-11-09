@@ -660,14 +660,16 @@
       "htmlBodyRequired": "HTML-Inhalt ist erforderlich.",
       "subjectRequired": "Betreff ist für Inhaltsvorlagen erforderlich.",
       "templateNameRequired": "Der Name der Vorlage ist erforderlich.",
-      "templateNameInvalid": "Bitte mindestens einen Buchstaben oder eine Ziffer eingeben."
+      "templateNameInvalid": "Bitte mindestens einen Buchstaben oder eine Ziffer eingeben.",
+      "duplicateKey": "Für diese Sprache gibt es bereits eine Vorlage mit diesem Schlüssel. Bitte wählen Sie einen anderen."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Name der Vorlage",
     "templateNameHelp": "Zum Beispiel: Raumwechsel",
-    "keyPreview": "Wird gespeichert als"
+    "keyPreview": "Wird gespeichert als",
+    "loadFailed": "Vorlagen konnten nicht geladen werden."
   },
   "presentation": {
     "errorTitle": "Event konnte nicht geladen werden",
@@ -729,7 +731,13 @@
       "noDefaults": "Keine Standard-Vorlagen.",
       "noCustom": "Noch keine benutzerdefinierten Vorlagen.",
       "confirmDelete": "Vorlage löschen?",
-      "deleteFailed": "Löschen fehlgeschlagen. Bitte versuchen Sie es erneut."
+      "deleteFailed": "Löschen fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "loadFailed": "Vorlagen konnten nicht geladen werden.",
+      "editTitle": "Aufgabenvorlage bearbeiten",
+      "name": "Name",
+      "triggerState": "Auslösender Status",
+      "dueDateType": "Art des Fälligkeitsdatums",
+      "dueDateOffsetDays": "Verschiebung in Tagen"
     },
     "aiPrompts": {
       "description": "Diese Prompts werden an OpenAI gesendet, wenn Veranstaltungsbeschreibungen, Titelbilder oder Qualitätsbewertungen von Abstracts generiert werden. Verwenden Sie {{VARIABLE_NAME}}-Platzhalter — die verfügbaren Variablen sind unter jedem Prompt aufgeführt.",

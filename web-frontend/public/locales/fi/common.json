@@ -656,14 +656,16 @@
       "htmlBodyRequired": "HTML-runko on pakollinen.",
       "subjectRequired": "Aihe on pakollinen sisältöpohjille.",
       "templateNameRequired": "Pohjan nimi on pakollinen.",
-      "templateNameInvalid": "Kirjoita vähintään yksi kirjain tai numero."
+      "templateNameInvalid": "Kirjoita vähintään yksi kirjain tai numero.",
+      "duplicateKey": "Tälle kielelle on jo pohja tällä avaimella. Valitse toinen avain."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Pohjan nimi",
     "templateNameHelp": "Esimerkiksi: Salin vaihto",
-    "keyPreview": "Tallennetaan nimellä"
+    "keyPreview": "Tallennetaan nimellä",
+    "loadFailed": "Pohjien lataus epäonnistui."
   },
   "presentation": {
     "errorTitle": "Tapahtumaa ei voitu ladata",
@@ -725,7 +727,13 @@
       "noDefaults": "Ei oletuspohjia.",
       "noCustom": "Ei vielä mukautettuja pohjia.",
       "confirmDelete": "Poistetaanko pohja?",
-      "deleteFailed": "Pohjan poistaminen epäonnistui. Yritä uudelleen."
+      "deleteFailed": "Pohjan poistaminen epäonnistui. Yritä uudelleen.",
+      "loadFailed": "Pohjien lataus epäonnistui.",
+      "editTitle": "Muokkaa tehtäväpohjaa",
+      "name": "Nimi",
+      "triggerState": "Käynnistävä tila",
+      "dueDateType": "Määräpäivän tyyppi",
+      "dueDateOffsetDays": "Siirtymä päivinä"
     },
     "aiPrompts": {
       "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",

@@ -695,14 +695,16 @@
       "htmlBodyRequired": "HTML body is required.",
       "subjectRequired": "Subject is required for content templates.",
       "templateNameRequired": "Template name is required.",
-      "templateNameInvalid": "Enter at least one letter or digit."
+      "templateNameInvalid": "Enter at least one letter or digit.",
+      "duplicateKey": "A template with this key already exists for this locale. Please choose a different key."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Template name",
     "templateNameHelp": "For example: Room change",
-    "keyPreview": "Saved as"
+    "keyPreview": "Saved as",
+    "loadFailed": "Failed to load templates."
   },
   "presentation": {
     "errorTitle": "Event could not be loaded",
@@ -789,7 +791,13 @@
       "noDefaults": "No default templates.",
       "noCustom": "No custom templates yet.",
       "confirmDelete": "Delete template?",
-      "deleteFailed": "Failed to delete template. Please try again."
+      "deleteFailed": "Failed to delete template. Please try again.",
+      "loadFailed": "Failed to load templates.",
+      "editTitle": "Edit Task Template",
+      "name": "Name",
+      "triggerState": "Trigger State",
+      "dueDateType": "Due Date Type",
+      "dueDateOffsetDays": "Offset Days"
     },
     "aiPrompts": {
       "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",

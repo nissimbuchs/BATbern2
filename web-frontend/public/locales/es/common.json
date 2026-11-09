@@ -656,14 +656,16 @@
       "htmlBodyRequired": "El cuerpo HTML es obligatorio.",
       "subjectRequired": "El asunto es obligatorio para las plantillas de contenido.",
       "templateNameRequired": "El nombre de la plantilla es obligatorio.",
-      "templateNameInvalid": "Introduce al menos una letra o una cifra."
+      "templateNameInvalid": "Introduce al menos una letra o una cifra.",
+      "duplicateKey": "Ya existe una plantilla con esta clave para este idioma. Elija otra clave."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Nombre de la plantilla",
     "templateNameHelp": "Por ejemplo: Cambio de sala",
-    "keyPreview": "Se guarda como"
+    "keyPreview": "Se guarda como",
+    "loadFailed": "No se pudieron cargar las plantillas."
   },
   "presentation": {
     "errorTitle": "No se pudo cargar el evento",
@@ -725,7 +727,13 @@
       "noDefaults": "No hay plantillas predeterminadas.",
       "noCustom": "Aún no hay plantillas personalizadas.",
       "confirmDelete": "¿Eliminar plantilla?",
-      "deleteFailed": "Error al eliminar la plantilla. Por favor, inténtalo de nuevo."
+      "deleteFailed": "Error al eliminar la plantilla. Por favor, inténtalo de nuevo.",
+      "loadFailed": "No se pudieron cargar las plantillas.",
+      "editTitle": "Editar plantilla de tarea",
+      "name": "Nombre",
+      "triggerState": "Estado desencadenante",
+      "dueDateType": "Tipo de fecha de vencimiento",
+      "dueDateOffsetDays": "Días de desfase"
     },
     "aiPrompts": {
       "description": "Estos prompts se envían a OpenAI para generar descripciones de eventos, imágenes temáticas y evaluaciones de calidad de resúmenes. Use variables {{VARIABLE_NAME}} — las variables disponibles se listan bajo cada prompt.",

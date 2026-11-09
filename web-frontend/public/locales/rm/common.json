@@ -656,14 +656,16 @@
       "htmlBodyRequired": "Il corp HTML è obligatori.",
       "subjectRequired": "L'object è obligatori per moduls da cuntegn.",
       "templateNameRequired": "Il num dal model è obligatoric.",
-      "templateNameInvalid": "Endatescha almain in bustab u ina cifra."
+      "templateNameInvalid": "Endatescha almain in bustab u ina cifra.",
+      "duplicateKey": "Per questa lingua exista gia in model cun questa clav. Tscherni ina autra clav."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Num dal model",
     "templateNameHelp": "Per exempel: Midada da local",
-    "keyPreview": "Vegn memorisà sco"
+    "keyPreview": "Vegn memorisà sco",
+    "loadFailed": "Ils models n'han betg pudì vegnir chargiads."
   },
   "presentation": {
     "errorTitle": "L'event n'ha betg pudì vegnir chargià",
@@ -725,7 +727,13 @@
       "noDefaults": "Nagins moduls da standard.",
       "noCustom": "Nagins moduls persunalisads fin uss.",
       "confirmDelete": "Stizzar il modul?",
-      "deleteFailed": "Stizzar il modul n'è betg reussì. Empruvai danovamain."
+      "deleteFailed": "Stizzar il modul n'è betg reussì. Empruvai danovamain.",
+      "loadFailed": "Ils models n'han betg pudì vegnir chargiads.",
+      "editTitle": "Modifitgar il model da lezza",
+      "name": "Num",
+      "triggerState": "Status che declenscha",
+      "dueDateType": "Tip da termin",
+      "dueDateOffsetDays": "Spustament en dis"
     },
     "aiPrompts": {
       "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",
