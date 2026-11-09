@@ -1015,11 +1015,8 @@ public class UserService {
      * Story 1.16.2: Generate username using SlugGenerationService
      */
     private User createNewUser(GetOrCreateUserRequest request) {
-        // Create user in Cognito if needed (AC2)
-        String cognitoUserId = (request.getCognitoSync() != null && request.getCognitoSync())
-                ? cognitoService.createCognitoUser(request)
-                : null;
-
+        // No Cognito login here: request.cognitoSync has no effect. A login comes from the sign-up page
+        // (the PreTokenGeneration Lambda then fills cognitoUserId) or from issue-credentials.
         // Story 1.16.2: Generate username from first/last name
         String baseUsername = slugService.generateUsername(
                 request.getFirstName(), request.getLastName(), request.getEmail());
@@ -1035,7 +1032,6 @@ public class UserService {
         }
 
         User user = User.builder()
-                .cognitoUserId(cognitoUserId)
                 .email(request.getEmail())
                 .username(username)  // Story 1.16.2: Generated username
                 .firstName(request.getFirstName())

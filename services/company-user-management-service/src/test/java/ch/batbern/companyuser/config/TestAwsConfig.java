@@ -98,15 +98,6 @@ public class TestAwsConfig {
     public CognitoIntegrationService cognitoIntegrationService() {
         CognitoIntegrationService mockService = Mockito.mock(CognitoIntegrationService.class);
 
-        // createCognitoUser returns null, as CognitoIntegrationServiceImpl does in production
-        // (invitation flow: the PreTokenGeneration Lambda sets cognito_user_id at first login).
-        // It used to return a constant "cognito-test-user-id", so a test that created two users
-        // through get-or-create hit the unique constraint on cognito_user_id, which production
-        // never does (found with the production-shaped namesakes, 17.0d).
-        when(mockService.createCognitoUser(any())).thenReturn(null);
-
-        // syncUserAttributes is void, no need to configure
-
         return mockService;
     }
 

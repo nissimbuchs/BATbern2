@@ -37,6 +37,7 @@ import static org.mockito.ArgumentMatchers.anyString;
 import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoInteractions;
 import static org.mockito.Mockito.when;
 
 /**
@@ -144,7 +145,7 @@ class UserServiceTest {
         assertThat(response.getBio()).isEqualTo("Updated bio");
 
         verify(userRepository).save(any(User.class));
-        verify(cognitoService, never()).syncUserAttributes(any(User.class));  // NO-OP: DB is source of truth
+        verifyNoInteractions(cognitoService);  // DB is source of truth, Cognito is not synced
         verify(searchService).invalidateCache();
     }
 
@@ -172,8 +173,8 @@ class UserServiceTest {
         // When
         userService.updateCurrentUser(request);
 
-        // Then - NO-OP: DB is source of truth, Cognito not synced
-        verify(cognitoService, never()).syncUserAttributes(any(User.class));
+        // Then - DB is source of truth, Cognito not synced
+        verifyNoInteractions(cognitoService);
     }
 
     // Test 5.3: should_return404_when_userNotFound
@@ -201,9 +202,9 @@ class UserServiceTest {
         request.setLastName("User");
         request.setCompanyId("TechCorp");
         request.setCreateIfMissing(true);
+        request.setCognitoSync(true);  // has no effect: a login comes from sign-up or issue-credentials
 
         when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.empty());
-        when(cognitoService.createCognitoUser(request)).thenReturn("cognito-123");
         when(slugService.generateUsername(eq("New"), eq("User"), anyString())).thenReturn("new.user");
         when(slugService.ensureUniqueUsername(eq("new.user"), any())).thenReturn("new.user");
 
@@ -220,7 +221,6 @@ class UserServiceTest {
                 .firstName("New")
                 .lastName("User")
                 .companyId("TechCorp")
-                .cognitoUserId("cognito-123")
                 .roles(Set.of(Role.ATTENDEE))
                 .build();
 
@@ -242,11 +242,14 @@ class UserServiceTest {
         assertThat(response).isNotNull();
         assertThat(response.getUsername()).isEqualTo("new.user");  // Story 1.16.2: username
         assertThat(response.getCreated()).isTrue();
-        assertThat(response.getCognitoUserId()).isEqualTo("cognito-123");
+        assertThat(response.getCognitoUserId()).isNull();
         assertThat(response.getUser().getId()).isEqualTo("new.user");
         assertThat(response.getUser().getCompanyId()).isEqualTo("TechCorp");
 
-        verify(cognitoService).createCognitoUser(request);
+        ArgumentCaptor<User> savedCaptor = ArgumentCaptor.forClass(User.class);
+        verify(userRepository).save(savedCaptor.capture());
+        assertThat(savedCaptor.getValue().getCognitoUserId()).isNull();
+        verifyNoInteractions(cognitoService);
         verify(slugService).generateUsername(eq("New"), eq("User"), anyString());
         verify(slugService).ensureUniqueUsername(eq("new.user"), any());
         verify(userRepository).save(any(User.class));
@@ -281,7 +284,6 @@ class UserServiceTest {
                 .createIfMissing(true);
 
         when(userRepository.findByEmailIgnoreCase("daniel.berger@mobi.ch")).thenReturn(Optional.empty());
-        when(cognitoService.createCognitoUser(request)).thenReturn("cognito-mobi");
         when(slugService.generateUsername(eq("Daniel"), eq("Berger"), anyString())).thenReturn("daniel.berger");
         when(slugService.ensureUniqueUsername(eq("daniel.berger"), any())).thenReturn("daniel.berger.2");
 
@@ -296,7 +298,6 @@ class UserServiceTest {
                 .firstName("Daniel")
                 .lastName("Berger")
                 .companyId("mobiliar")
-                .cognitoUserId("cognito-mobi")
                 .roles(Set.of(Role.ATTENDEE))
                 .build();
         when(userRepository.save(any(User.class))).thenReturn(newDaniel);
@@ -320,7 +321,6 @@ class UserServiceTest {
         // Critical: the existing (insel.ch) account must NOT have been touched
         verify(userRepository, never()).findByFirstNameIgnoreCaseAndLastNameIgnoreCase(any(), any());
         verify(userRepository).save(any(User.class));
-        verify(cognitoService).createCognitoUser(request);
         verify(slugService).ensureUniqueUsername(eq("daniel.berger"), any());
     }
 
@@ -382,7 +382,7 @@ class UserServiceTest {
         assertThat(response.getUser().getId()).isEqualTo("existing.user");
 
         verify(userRepository, never()).save(any());
-        verify(cognitoService, never()).createCognitoUser(any());
+        verifyNoInteractions(cognitoService);
         verify(eventPublisher, never()).publish(any());
     }
 
@@ -432,7 +432,7 @@ class UserServiceTest {
 
         verify(searchService).invalidateCache();
         verify(eventPublisher).publish(any(UserUpdatedEvent.class));
-        verify(cognitoService, never()).createCognitoUser(any());
+        verifyNoInteractions(cognitoService);
     }
 
     @Test
@@ -519,7 +519,6 @@ class UserServiceTest {
                 .createIfMissing(true);
 
         when(userRepository.findByEmailIgnoreCase(request.getEmail())).thenReturn(Optional.empty());
-        when(cognitoService.createCognitoUser(request)).thenReturn("cognito-123");
         when(slugService.generateUsername(eq("New"), eq("User"), anyString())).thenReturn("new.user");
         when(slugService.ensureUniqueUsername(eq("new.user"), any())).thenReturn("new.user");
 
@@ -536,7 +535,6 @@ class UserServiceTest {
                 .firstName("New")
                 .lastName("User")
                 .companyId("companyx")
-                .cognitoUserId("cognito-123")
                 .roles(Set.of(Role.ATTENDEE))
                 .build();
 
@@ -555,7 +553,7 @@ class UserServiceTest {
         assertThat(event.getUsername()).isEqualTo("new.user");  // Story 1.16.2: username
         assertThat(event.getCompanyId()).isEqualTo("companyx");  // Story 1.16.2: company name (slug)
         assertThat(event.getEmail()).isEqualTo("new@example.com");
-        assertThat(event.getCognitoUserId()).isEqualTo("cognito-123");
+        assertThat(event.getCognitoUserId()).isNull();  // the login comes later, from sign-up
     }
 
     // Test: should_deleteUser_and_publishEvent
