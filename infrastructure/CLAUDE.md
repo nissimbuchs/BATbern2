@@ -188,7 +188,7 @@ git push origin develop
 
 (No EventBus stack: domain events stay in process since Story 17.2 part B, 2026-11.)
 
-**Application Layer (staging/prod only):** 10. **Cluster Stack** - Shared ECS Fargate cluster 11. **Microservices Stacks** - Event Management, Partner Coordination, Company Management 12. **API Gateway Service Stack** - Spring Boot API Gateway on ECS with Service Connect 13. **API Gateway Stack** - AWS API Gateway proxy to Spring Boot (depends on Cognito) 14. **Frontend Stack** - React app on S3 + CloudFront (depends on DNS) 15. **AutoShutdown Stack** - Development cost optimization (scales ECS to 0 outside business hours)
+**Application Layer (staging/prod only):** 9. **Cluster Stack** - Shared ECS Fargate cluster 10. **Microservices Stacks** - Event Management, Partner Coordination, Company Management 11. **API Gateway Service Stack** - Spring Boot API Gateway on ECS with Service Connect 12. **API Gateway Stack** - AWS API Gateway proxy to Spring Boot (depends on Cognito) 13. **Frontend Stack** - React app on S3 + CloudFront (depends on DNS) 14. **AutoShutdown Stack** - Development cost optimization (scales ECS to 0 outside business hours)
 
 **Note**: CDK automatically handles dependencies when using `--all` flag.
 
