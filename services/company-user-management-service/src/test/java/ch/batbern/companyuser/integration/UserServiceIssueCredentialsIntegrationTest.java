@@ -1,18 +1,17 @@
 package ch.batbern.companyuser.integration;
 
+import ch.batbern.companyuser.config.InMemoryCognito;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.shared.types.Role;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.dto.generated.InvitationCredentialsResponse;
 import ch.batbern.companyuser.exception.UnprocessableInvitationStateException;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.companyuser.service.CognitoIntegrationService;
 import ch.batbern.companyuser.service.UserService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.transaction.annotation.Transactional;
@@ -23,16 +22,15 @@ import java.util.Set;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.argThat;
-import static org.mockito.ArgumentMatchers.eq;
 
 /**
  * Integration tests for Story 11.E.2 AC11 #5-#8 — {@code UserService.issueInvitationCredentials}.
  *
  * <p>Covers the four Cognito-status branches from AC2: FORCE_CHANGE_PASSWORD,
  * CONFIRMED, UNCONFIRMED, and the operator-intervention statuses
- * (ARCHIVED/COMPROMISED/UNKNOWN).
+ * (ARCHIVED/COMPROMISED/UNKNOWN), plus the self-heal when the login is missing. The real
+ * {@code CognitoIntegrationServiceImpl} runs on the in-memory Cognito; the tests assert the
+ * login's state there.
  */
 @Transactional
 @Import(TestAwsConfig.class)
@@ -44,11 +42,11 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
     @Autowired
     private UserRepository userRepository;
     @Autowired
-    private CognitoIntegrationService cognitoIntegrationService;
+    private InMemoryCognito cognito;
 
     @BeforeEach
-    void resetCognitoMock() {
-        Mockito.reset(cognitoIntegrationService);
+    void resetCognito() {
+        cognito.reset();
     }
 
     private User seedSpeaker(String username, String email) {
@@ -66,8 +64,7 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
     void should_returnFreshTempPassword_when_userInForceChangePassword() {
         User u = seedSpeaker("speaker.fcp", "speaker.fcp@example.com");
 
-        Mockito.when(cognitoIntegrationService.getUserStatus(u.getEmail()))
-                .thenReturn(UserStatusType.FORCE_CHANGE_PASSWORD);
+        cognito.givenLogin(u.getEmail(), UserStatusType.FORCE_CHANGE_PASSWORD);
 
         InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername());
 
@@ -75,12 +72,11 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
                 .isEqualTo(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
         assertThat(response.getTemporaryPassword()).isNotNull().hasSize(16);
 
-        // adminSetTemporaryPassword called exactly once with a 16-char password that matches
-        // the response value.
-        Mockito.verify(cognitoIntegrationService).adminSetTemporaryPassword(
-                eq(u.getEmail()),
-                argThat(pw -> pw != null && pw.length() == 16
-                        && pw.equals(response.getTemporaryPassword())));
+        // The login now has exactly that password, temporary (the speaker must change it).
+        InMemoryCognito.Login login = cognito.login(u.getEmail()).orElseThrow();
+        assertThat(login.password()).isEqualTo(response.getTemporaryPassword());
+        assertThat(login.passwordPermanent()).isFalse();
+        assertThat(login.status()).isEqualTo(UserStatusType.FORCE_CHANGE_PASSWORD);
     }
 
     @Test
@@ -88,8 +84,7 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
     void should_returnNullPassword_when_userInConfirmed() {
         User u = seedSpeaker("speaker.cnf", "speaker.cnf@example.com");
 
-        Mockito.when(cognitoIntegrationService.getUserStatus(u.getEmail()))
-                .thenReturn(UserStatusType.CONFIRMED);
+        cognito.givenLogin(u.getEmail(), UserStatusType.CONFIRMED);
 
         InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername());
 
@@ -97,9 +92,10 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
                 .isEqualTo(InvitationCredentialsResponse.ActionEnum.USE_EXISTING_PASSWORD);
         assertThat(response.getTemporaryPassword()).isNull();
 
-        // No password mutation.
-        Mockito.verify(cognitoIntegrationService, Mockito.never())
-                .adminSetTemporaryPassword(anyString(), anyString());
+        // No password mutation: the speaker keeps the password they chose.
+        InMemoryCognito.Login login = cognito.login(u.getEmail()).orElseThrow();
+        assertThat(login.password()).isNull();
+        assertThat(login.status()).isEqualTo(UserStatusType.CONFIRMED);
     }
 
     @Test
@@ -107,8 +103,7 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
     void should_treatUnconfirmedAsForceChangePassword() {
         User u = seedSpeaker("speaker.unc", "speaker.unc@example.com");
 
-        Mockito.when(cognitoIntegrationService.getUserStatus(u.getEmail()))
-                .thenReturn(UserStatusType.UNCONFIRMED);
+        cognito.givenLogin(u.getEmail(), UserStatusType.UNCONFIRMED);
 
         InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername());
 
@@ -116,8 +111,7 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
                 .isEqualTo(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
         assertThat(response.getTemporaryPassword()).isNotNull().hasSize(16);
 
-        Mockito.verify(cognitoIntegrationService).adminSetTemporaryPassword(
-                eq(u.getEmail()), anyString());
+        assertThat(cognito.login(u.getEmail()).orElseThrow().password()).isEqualTo(response.getTemporaryPassword());
     }
 
     @Test
@@ -125,8 +119,7 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
     void should_throw422_when_userInArchivedOrCompromised() {
         User u = seedSpeaker("speaker.arc", "speaker.arc@example.com");
 
-        Mockito.when(cognitoIntegrationService.getUserStatus(u.getEmail()))
-                .thenReturn(UserStatusType.ARCHIVED);
+        cognito.givenLogin(u.getEmail(), UserStatusType.ARCHIVED);
 
         assertThatThrownBy(() -> userService.issueInvitationCredentials(u.getUsername()))
                 .isInstanceOf(UnprocessableInvitationStateException.class)
@@ -134,7 +127,26 @@ class UserServiceIssueCredentialsIntegrationTest extends AbstractIntegrationTest
                 .hasMessageContaining("operator intervention");
 
         // No Cognito mutation on the 422 path.
-        Mockito.verify(cognitoIntegrationService, Mockito.never())
-                .adminSetTemporaryPassword(anyString(), anyString());
+        InMemoryCognito.Login login = cognito.login(u.getEmail()).orElseThrow();
+        assertThat(login.password()).isNull();
+        assertThat(login.status()).isEqualTo(UserStatusType.ARCHIVED);
+    }
+
+    @Test
+    @DisplayName("no login in Cognito → the shell is created, linked to the profile, and a temp password issued")
+    void should_createAndLinkLogin_when_cognitoHasNone() {
+        User u = seedSpeaker("speaker.missing", "speaker.missing@example.com");
+        assertThat(cognito.login(u.getEmail())).isEmpty();
+
+        InvitationCredentialsResponse response = userService.issueInvitationCredentials(u.getUsername());
+
+        assertThat(response.getAction())
+                .isEqualTo(InvitationCredentialsResponse.ActionEnum.FRESH_TEMP_PASSWORD);
+        InMemoryCognito.Login login = cognito.login(u.getEmail()).orElseThrow();
+        assertThat(login.password()).isEqualTo(response.getTemporaryPassword());
+        assertThat(login.attribute("preferred_username")).isEqualTo("speaker.missing");
+        assertThat(login.attribute("custom:role")).isEqualTo("UNUSED");
+        assertThat(userRepository.findByUsername("speaker.missing").orElseThrow().getCognitoUserId())
+                .isEqualTo(login.sub());
     }
 }

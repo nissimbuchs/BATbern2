@@ -46,6 +46,11 @@ public class HttpEventManagementUserMergeClient implements EventManagementUserMe
         this.baseUrl = baseUrl;
     }
 
+    /** For the S2S contract harness in tests ({@code EventManagementContract}); the client owns it. */
+    RestTemplate restTemplate() {
+        return restTemplate;
+    }
+
     @Override
     public Preview preview(String sourceUsername, String targetUsername) {
         // Strictly encoded (17.0b2): built without encode() before, so a '+' arrived as a space and

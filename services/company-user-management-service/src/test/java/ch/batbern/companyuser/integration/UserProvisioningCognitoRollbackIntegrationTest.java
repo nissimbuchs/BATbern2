@@ -1,24 +1,22 @@
 package ch.batbern.companyuser.integration;
 
+import ch.batbern.companyuser.config.InMemoryCognito;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.dto.generated.ProvisionUserRequest;
 import ch.batbern.companyuser.exception.CognitoOperationException;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.companyuser.service.CognitoIntegrationService;
 import ch.batbern.companyuser.service.UserService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.security.test.context.support.WithMockUser;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
-import static org.mockito.ArgumentMatchers.anyString;
 
 /**
  * Integration test for Story 11.E.2 AC11 #3 — verifies the {@code @Transactional}
@@ -40,11 +38,11 @@ class UserProvisioningCognitoRollbackIntegrationTest extends AbstractIntegration
     private UserRepository userRepository;
 
     @Autowired
-    private CognitoIntegrationService cognitoIntegrationService;
+    private InMemoryCognito cognito;
 
     @BeforeEach
     void setUp() {
-        Mockito.reset(cognitoIntegrationService);
+        cognito.reset();
         // Defensive: ensure no leftover row from a previous run by this test class.
         userRepository.findByEmailIgnoreCase("rollback.victim@example.com").ifPresent(userRepository::delete);
     }
@@ -58,11 +56,9 @@ class UserProvisioningCognitoRollbackIntegrationTest extends AbstractIntegration
     @WithMockUser(username = "organizer.alice", roles = {"ORGANIZER"})
     @DisplayName("provision rolls back the User row when AdminCreateUser fails")
     void should_rollbackUserRow_when_cognitoCreateFails() {
-        // Stub Cognito to fail with a non-idempotent error (NOT UsernameExistsException).
-        Mockito.doThrow(new CognitoOperationException("adminCreateUser", "r***@example.com",
-                new RuntimeException("transient AWS error")))
-                .when(cognitoIntegrationService)
-                .adminCreateUserSilently(anyString(), anyString(), anyString());
+        // Cognito fails with a non-idempotent error (NOT UsernameExistsException).
+        cognito.failNext(InMemoryCognito.Operation.ADMIN_CREATE_USER,
+                InMemoryCognito.internalError("transient AWS error"));
 
         ProvisionUserRequest request = new ProvisionUserRequest(
                 "rollback.victim@example.com",
@@ -73,9 +69,9 @@ class UserProvisioningCognitoRollbackIntegrationTest extends AbstractIntegration
         assertThatThrownBy(() -> userService.provisionUserWithRole(request))
                 .isInstanceOf(CognitoOperationException.class);
 
-        // After the exception propagates, the @Transactional rolls back: no User row persists.
+        // After the exception propagates, the @Transactional rolls back: no User row persists,
+        // and Cognito holds no login for the address either.
         assertThat(userRepository.findByEmailIgnoreCase("rollback.victim@example.com")).isEmpty();
-        // Confirm the surrounding state is clean: only roles in the repo are seeded data, if any.
-        Mockito.verify(cognitoIntegrationService).adminCreateUserSilently(anyString(), anyString(), anyString());
+        assertThat(cognito.login("rollback.victim@example.com")).isEmpty();
     }
 }

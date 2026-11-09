@@ -1,11 +1,11 @@
 package ch.batbern.companyuser.contract;
 
+import ch.batbern.companyuser.config.InMemoryCognito;
 import ch.batbern.companyuser.config.TestAwsConfig;
 import ch.batbern.companyuser.domain.Company;
 import ch.batbern.companyuser.domain.User;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.repository.UserRepository;
-import ch.batbern.companyuser.service.CognitoIntegrationService;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.types.Role;
 import org.junit.jupiter.api.AfterEach;
@@ -14,7 +14,6 @@ import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.CsvSource;
-import org.mockito.Mockito;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.http.MediaType;
@@ -70,11 +69,12 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private CompanyRepository companyRepository;
     @Autowired
-    private CognitoIntegrationService cognitoIntegrationService;
+    private InMemoryCognito cognito;
 
     @BeforeEach
     void seed() {
         cleanUp();
+        cognito.reset();
         companyRepository.save(Company.builder()
                 .name(COMPANY).displayName("Contract Co AG").isVerified(true)
                 .createdAt(Instant.now()).updatedAt(Instant.now()).createdBy("organizer.alice")
@@ -91,10 +91,6 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         userRepository.findByUsername(SPEAKER).ifPresent(userRepository::delete);
         userRepository.findByEmailIgnoreCase("contract.new@example.com").ifPresent(userRepository::delete);
         companyRepository.findByName(COMPANY).ifPresent(companyRepository::delete);
-        // The mock is shared by the cached context and carries TestAwsConfig's default stubs:
-        // undo only this test's stub (back to Mockito's default) and its recorded calls.
-        Mockito.when(cognitoIntegrationService.getUserStatus(SPEAKER_EMAIL)).thenReturn(null);
-        Mockito.clearInvocations(cognitoIntegrationService);
     }
 
     @ParameterizedTest(name = "{0} {1}")
@@ -139,8 +135,7 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     @CsvSource({"FORCE_CHANGE_PASSWORD", "CONFIRMED"})
     @WithMockUser(username = "organizer.alice", roles = "ORGANIZER")
     void issueInvitationCredentials_matchesSpec(UserStatusType cognitoStatus) throws Exception {
-        Mockito.when(cognitoIntegrationService.getUserStatus(SPEAKER_EMAIL))
-                .thenReturn(cognitoStatus);
+        cognito.givenLogin(SPEAKER_EMAIL, cognitoStatus);
 
         MvcResult result = mockMvc.perform(post("/api/v1/users/" + SPEAKER + "/issue-invitation-credentials"))
                 .andExpect(status().isOk())

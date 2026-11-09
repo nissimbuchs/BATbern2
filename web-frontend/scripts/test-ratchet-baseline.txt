@@ -3,10 +3,7 @@
 # Rules: docs/architecture/coding-standards.md, section "Test fidelity rules".
 # Per test file: own-code mocks and class-level @Transactional ITs. Counts may only fall.
 # Format: <category> TAB <path> TAB <count>, sorted, zero counts omitted.
-be-mock-in-process	services/company-user-management-service/src/test/java/ch/batbern/companyuser/config/TestAwsConfig.java	1
-be-mock-in-process	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/AccountMergeIntegrationTest.java	1
 be-mock-in-process	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/LogoControllerTest.java	2
-be-mock-in-process	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PrimaryEmailIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/AiAssistControllerIntegrationTest.java	5
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/DeregistrationControllerIntegrationTest.java	3
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/EventControllerIntegrationTest.java	1
@@ -38,9 +35,7 @@ be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/ev
 be-mock-in-process	services/partner-coordination-service/src/test/java/ch/batbern/partners/controller/PartnerContactControllerIntegrationTest.java	1
 be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/integration/AccountActiveGateIntegrationTest.java	1
 be-mock-s2s-client	api-gateway/src/test/java/ch/batbern/gateway/security/AccountActiveFilterTest.java	1
-be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/AccountMergeIntegrationTest.java	1
 be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/CompanyLogoRequestIntegrationTest.java	1
-be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PrimaryEmailIntegrationTest.java	1
 be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/ProfileMergeRequestIntegrationTest.java	2
 be-mock-s2s-client	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserMergeIntegrationTest.java	1
 be-mock-s2s-client	services/event-management-service/src/test/java/ch/batbern/events/controller/AnonymousRegistrationE2EIntegrationTest.java	1

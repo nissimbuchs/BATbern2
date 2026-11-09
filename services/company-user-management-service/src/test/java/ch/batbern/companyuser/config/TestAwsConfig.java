@@ -1,6 +1,5 @@
 package ch.batbern.companyuser.config;
 
-import ch.batbern.companyuser.service.CognitoIntegrationService;
 import ch.batbern.shared.test.mail.SesRecorder;
 import org.mockito.Mockito;
 import org.springframework.boot.test.context.TestConfiguration;
@@ -8,7 +7,6 @@ import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Primary;
 import org.springframework.context.annotation.Profile;
 import software.amazon.awssdk.services.ses.SesClient;
-import software.amazon.awssdk.services.cognitoidentityprovider.CognitoIdentityProviderClient;
 import software.amazon.awssdk.services.s3.S3Client;
 import software.amazon.awssdk.services.s3.presigner.S3Presigner;
 import software.amazon.awssdk.services.s3.presigner.model.PresignedPutObjectRequest;
@@ -86,19 +84,15 @@ public class TestAwsConfig {
         return mockPresigner;
     }
 
+    /**
+     * The context's Cognito user pool: an in-memory one (the boundary). The real
+     * {@code CognitoIntegrationServiceImpl} runs on it in every integration test; tests autowire
+     * {@link InMemoryCognito}, {@code reset()} it in {@code @BeforeEach} and assert on its logins.
+     */
     @Bean
     @Primary
-    public CognitoIdentityProviderClient cognitoIdentityProviderClient() {
-        // Mock Cognito client for tests (Story 1.14-2 Task 12)
-        return Mockito.mock(CognitoIdentityProviderClient.class);
-    }
-
-    @Bean
-    @Primary
-    public CognitoIntegrationService cognitoIntegrationService() {
-        CognitoIntegrationService mockService = Mockito.mock(CognitoIntegrationService.class);
-
-        return mockService;
+    public InMemoryCognito cognitoIdentityProviderClient() {
+        return new InMemoryCognito();
     }
 
     // Note: UserSearchService should NOT be mocked - it needs to perform actual searches

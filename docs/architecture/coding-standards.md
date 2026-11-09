@@ -577,6 +577,14 @@ a test does not opt in.
   per To:/Cc entry, checked before the SES branch since #1176), reserved domains and the
   test-marker wall. A recipient that must receive mail uses `success+<name>@simulator.amazonses.com`
   (AWS mailbox simulator); `@example.com` stays for data that must never receive mail.
+- **Cognito (CUMS).** The real `CognitoIntegrationServiceImpl` runs in every CUMS IT on
+  `InMemoryCognito` (CUMS test `config`), the context's only `CognitoIdentityProviderClient`,
+  registered by `TestAwsConfig`. It behaves like the BATbern pool for what CUMS calls (e-mail as
+  sign-in alias, the sub as username, the password policy, `UsernameExistsException`,
+  `UserNotFoundException`, `AliasExistsException`). Autowire it, `reset()` it in `@BeforeEach`,
+  seed logins with `givenLogin(email, status)`, make a call fail with `failNext(operation,
+  exception)` and assert the login (`login(email)`: enabled, attributes, password state), never
+  `verify` a call on `CognitoIntegrationService`.
 - **Flush before rollback.** `AbstractIntegrationTest` registers `FlushBeforeRollback`: after the
   test body, before `@AfterEach` and the rollback, the test transaction's persistence context is
   flushed, so a `@Transactional` IT that leaves data production would refuse (NOT NULL, unique,
