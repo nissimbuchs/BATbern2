@@ -571,7 +571,5 @@ export default defineConfig({
         resources: 'usable',
       },
     },
-    // Don't fail on console errors - these are expected from API error handlers
-    dangerouslyIgnoreUnhandledErrors: true,
   },
 });
