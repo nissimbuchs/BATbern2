@@ -473,7 +473,11 @@ to forward. Each provider proves its side in `S2sProviderContractIntegrationTest
 every consumed operation runs through the real controller and `ProviderContract` checks the
 response, and the examples, against the same spec. A spec without a usable example for a consumed
 operation gets one. How the harness reads `null` and `format: time` (as the generated code does) is
-documented in `GeneratedCodeSemantics`.
+documented in `GeneratedCodeSemantics`. `null` is valid only where the spec says `nullable`
+(owner decision 2026-11-09): the services write an unset field as `null`, so a response property
+they can leave unset is marked `nullable: true` (3.1: a nullable reference is
+`oneOf: [$ref, {type: 'null'}]`), and a `null` the spec does not allow fails the test, in the S2S
+harness and in the MSW harness's schema validator alike.
 
 `/internal/**` (17.0b2): every internal operation is specified in `docs/api/internal/` (one spec per
 provider, server `/`, full paths; schemas `$ref` the public components where the DTO is generated

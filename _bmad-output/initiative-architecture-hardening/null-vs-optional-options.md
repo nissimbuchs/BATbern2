@@ -3,6 +3,13 @@
 2026-11-09, 17.0 deferred work. Owner decides. Nothing in API behaviour or generator config was
 changed for this memo.
 
+**Decided 2026-11-09: option (A).** Done the same day: the specs mark nullable what the services
+send as null (users-api 3f6e5400, EMS specs 91fc77b3, partners-api 3cacd549), and the S2S harness no
+longer lets an optional property be null (see deferred-work.md). The set came from validating every
+CUMS, EMS and PCS integration response against the specs plus reading the producing code per
+schema: 141 properties (123 in responses, 18 in S2S request bodies), not the 499 of the count below (most optional properties are always set,
+or their class omits nulls).
+
 ## The question
 
 The services send an unset optional field as `"field": null`. The specs mostly declare such

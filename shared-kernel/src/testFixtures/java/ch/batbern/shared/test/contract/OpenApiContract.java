@@ -68,7 +68,12 @@ public final class OpenApiContract {
         }
         this.openApi = parsed.getOpenAPI();
         this.basePath = basePathOf(openApi, specPath);
-        GeneratedCodeSemantics.apply(openApi);
+        // The spec as written (references and allOf kept): full resolution merges a 3.0
+        // `allOf: [$ref]` into the referenced schema and drops the `nullable` next to it.
+        ParseOptions asWritten = new ParseOptions();
+        asWritten.setResolve(false);
+        GeneratedCodeSemantics.apply(openApi,
+                new OpenAPIV3Parser().readLocation(file.toUri().toString(), null, asWritten).getOpenAPI());
         this.validator = OpenApiInteractionValidator
                 .createFor(openApi)
                 .withBasePathOverride(basePath.isEmpty() ? "/" : basePath)

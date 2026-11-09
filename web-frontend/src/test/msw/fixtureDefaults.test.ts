@@ -140,6 +140,21 @@ describe('fixture-backed default bodies', () => {
     expect(validateAgainstSchema(files, op.file, response.media.schema, fixture!.body)).toEqual([]);
   });
 
+  it('the validator rejects null where the spec does not say nullable (owner decision 2026-11-09)', () => {
+    const op = [...harness().byId.values()].find((o) => o.key === 'listUsers')!;
+    const body = structuredClone(fixtureDefault('listUsers', new URLSearchParams(), {})!.body) as {
+      data: Array<Record<string, unknown>>;
+    };
+    const schema = op.success[0].media.schema;
+
+    body.data[0].bio = null; // nullable: CUMS sends an unset bio as null
+    expect(validateAgainstSchema(files, op.file, schema, body)).toEqual([]);
+    body.data[0].additionalEmails = null; // optional, not nullable: absent is fine, null is not
+    expect(validateAgainstSchema(files, op.file, schema, body)).toEqual([
+      '$.data[0].additionalEmails: expected array, got null',
+    ]);
+  });
+
   it('the validator rejects a broken fixture body (positive control)', () => {
     const op = [...harness().byId.values()].find((o) => o.key === 'listUsers')!;
     // A copy: the body holds the shared fixture objects.
