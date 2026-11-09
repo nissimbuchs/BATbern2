@@ -17,7 +17,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * V151 (owner decision 2026-11-09): historical events whose organizer username carries an umlaut
- * point at the account of that person, when exactly one account has the name.
+ * point at the account of that person, when exactly one organizer account has the name.
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
 class V151HistoricalOrganizersPointAtTheirAccountsMigrationIntegrationTest {
@@ -53,6 +53,9 @@ class V151HistoricalOrganizersPointAtTheirAccountsMigrationIntegrationTest {
         jdbc.execute("DROP SCHEMA public CASCADE");
         jdbc.execute("CREATE SCHEMA public");
         migrate("150");
+        // role_assignments belongs to company-user-management (shared database); no EMS stub has it
+        jdbc.execute("CREATE TABLE role_assignments (user_id UUID NOT NULL REFERENCES user_profiles(id), "
+                + "role VARCHAR(50) NOT NULL, PRIMARY KEY (user_id, role))");
         insertEvent(2, "daniel.kühni");
         insertEvent(54, "daniel.kühni");
         insertEvent(49, "andreas.grütter");
@@ -60,9 +63,10 @@ class V151HistoricalOrganizersPointAtTheirAccountsMigrationIntegrationTest {
     }
 
     @Test
-    void should_pointAtTheAccount_when_exactlyOneAccountHasTheName() {
-        insertUser("daniel.kuehni", "Daniel", "Kühni");
-        insertUser("andreas.gruetter", "Andreas", "Gruetter");
+    void should_pointAtTheOrganizerAccount_when_exactlyOneOrganizerHasTheName() {
+        insertUser("daniel.kuehni", "Daniel", "Kühni", "ORGANIZER");
+        insertUser("daniel.kuehni.2", "Daniel", "Kuehni", "ATTENDEE");
+        insertUser("andreas.gruetter", "Andreas", "Gruetter", "ORGANIZER");
 
         migrate("151");
 
@@ -71,8 +75,9 @@ class V151HistoricalOrganizersPointAtTheirAccountsMigrationIntegrationTest {
 
     @Test
     void should_keepTheOldValue_when_noOrSeveralAccountsMatch() {
-        insertUser("andreas.gruetter", "Andreas", "Grütter");
-        insertUser("andreas.gruetter.2", "Andreas", "Grutter");
+        insertUser("andreas.gruetter", "Andreas", "Grütter", "ORGANIZER");
+        insertUser("andreas.gruetter.2", "Andreas", "Grutter", "ORGANIZER");
+        insertUser("daniel.kuehni", "Daniel", "Kühni", "SPEAKER");
 
         migrate("151");
 
@@ -90,9 +95,11 @@ class V151HistoricalOrganizersPointAtTheirAccountsMigrationIntegrationTest {
                 UUID.randomUUID(), "BATbern" + number, number, organizer);
     }
 
-    private void insertUser(String username, String firstName, String lastName) {
-        jdbc.update("INSERT INTO user_profiles (username, first_name, last_name) VALUES (?, ?, ?)",
-                username, firstName, lastName);
+    private void insertUser(String username, String firstName, String lastName, String role) {
+        UUID id = UUID.randomUUID();
+        jdbc.update("INSERT INTO user_profiles (id, username, first_name, last_name) VALUES (?, ?, ?, ?)",
+                id, username, firstName, lastName);
+        jdbc.update("INSERT INTO role_assignments (user_id, role) VALUES (?, ?)", id, role);
     }
 
     private void migrate(String target) {
