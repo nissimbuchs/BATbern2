@@ -4,7 +4,6 @@
  * Displays unassigned speakers list with filter controls
  * AC12: Show unassigned speakers list with real-time updates
  * AC5: Draggable speaker cards with grab handle
- * AC7: View preferences button per speaker
  */
 
 import React, { useEffect, useRef } from 'react';
@@ -17,20 +16,16 @@ import {
   LinearProgress,
   Button,
   ButtonGroup,
-  IconButton,
-  Tooltip,
   Stack,
   Skeleton,
 } from '@mui/material';
-import { DragIndicator, Visibility } from '@mui/icons-material';
+import { DragIndicator } from '@mui/icons-material';
 import { useTranslation } from 'react-i18next';
-import { useBreakpoints } from '@/hooks/useBreakpoints';
 import type { Session } from '@/types/event.types';
 
 export interface UnassignedSpeakersListProps {
   sessions: Session[];
   totalSessions: number;
-  onViewPreferences: (username: string) => void;
   onDragStart?: (session: Session) => (e: React.DragEvent) => void;
   activeFilter?: 'all' | 'assigned' | 'unassigned';
   onFilterChange?: (filter: 'all' | 'assigned' | 'unassigned') => void;
@@ -52,7 +47,6 @@ export interface UnassignedSpeakersListProps {
 export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
   sessions,
   totalSessions,
-  onViewPreferences,
   onDragStart,
   activeFilter = 'unassigned',
   onFilterChange,
@@ -71,7 +65,6 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
   }, [focusSessionSlug, sessions]);
 
   const { t } = useTranslation('events');
-  const { isMobile } = useBreakpoints();
   const assignedCount = totalSessions - sessions.length;
   const progressPercent = totalSessions > 0 ? Math.round((assignedCount / totalSessions) * 100) : 0;
 
@@ -180,7 +173,6 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
           <Stack spacing={2}>
             {sessions.map((session) => {
               const speaker = session.speakers?.[0];
-              const username = speaker?.username || '';
               const displayName = speaker
                 ? `${speaker.firstName} ${speaker.lastName}`
                 : 'Unknown Speaker';
@@ -258,40 +250,6 @@ export const UnassignedSpeakersList: React.FC<UnassignedSpeakersListProps> = ({
                         {displayName}
                       </Typography>
                     </Box>
-
-                    {/* View Preferences — icon-only on mobile so the title + speaker stay
-                        legible (mirrors the assigned-slot card); labelled button on desktop. */}
-                    {isMobile ? (
-                      <Tooltip title={t('slotAssignment.speakerPool.viewPreferences')}>
-                        <IconButton
-                          size="small"
-                          edge="end"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            onViewPreferences(username);
-                          }}
-                          data-testid={`view-preferences-${username}`}
-                          aria-label={t('slotAssignment.speakerPool.viewPreferences')}
-                          sx={{ flexShrink: 0, color: 'text.secondary' }}
-                        >
-                          <Visibility fontSize="small" />
-                        </IconButton>
-                      </Tooltip>
-                    ) : (
-                      <Button
-                        size="small"
-                        startIcon={<Visibility />}
-                        onClick={(e) => {
-                          e.stopPropagation();
-                          onViewPreferences(username);
-                        }}
-                        data-testid={`view-preferences-${username}`}
-                        aria-label={t('slotAssignment.speakerPool.viewPreferences')}
-                        sx={{ flexShrink: 0 }}
-                      >
-                        {t('slotAssignment.speakerPool.viewPreferences')}
-                      </Button>
-                    )}
                   </CardContent>
                 </Card>
               );

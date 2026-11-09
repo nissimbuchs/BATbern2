@@ -1279,8 +1279,7 @@
       "emptyState": {
         "title": "Alle Sitzungen zugewiesen!",
         "message": "Großartige Arbeit! Alle Referenten wurden Zeitfenstern zugewiesen."
-      },
-      "viewPreferences": "Präferenzen"
+      }
     },
     "quickActions": {
       "title": "Schnellzugriff",
@@ -1330,26 +1329,6 @@
       "resolutionOptions": "Lösungsoptionen",
       "resolutionMessage": "Wählen Sie ein anderes Zeitfenster oder einen anderen Raum, um diesen Konflikt zu lösen.",
       "chooseDifferentSlot": "Anderes Zeitfenster wählen"
-    },
-    "preferences": {
-      "title": "Referenten-Präferenzen",
-      "timePreferences": "Zeit-Präferenzen",
-      "unavailableTimes": "Nicht verfügbare Zeiten",
-      "avRequirements": "AV-Anforderungen",
-      "setupNotes": "Raum-Setup-Notizen",
-      "slotMatchScore": "Zeitfenster-Übereinstimmung",
-      "matchPercent": "{{percent}}% Übereinstimmung",
-      "times": {
-        "morning": "Morgen",
-        "afternoon": "Nachmittag",
-        "evening": "Abend",
-        "any": "Beliebig"
-      },
-      "equipment": {
-        "microphone": "Mikrofon",
-        "projector": "Projektor",
-        "recording": "Aufzeichnung"
-      }
     },
     "actionBar": {
       "label": "Zeitfenster-Aktionen"

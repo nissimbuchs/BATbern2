@@ -1255,8 +1255,7 @@
       "emptyState": {
         "title": "Alle sessies toegewezen!",
         "message": "Goed gedaan! Alle sprekers zijn toegewezen aan tijdslots."
-      },
-      "viewPreferences": "Voorkeuren"
+      }
     },
     "quickActions": {
       "title": "Snelle acties",
@@ -1306,26 +1305,6 @@
       "resolutionOptions": "Oplossingsopties",
       "resolutionMessage": "Kies een ander tijdslot of zaal om dit conflict op te lossen.",
       "chooseDifferentSlot": "Ander slot kiezen"
-    },
-    "preferences": {
-      "title": "Sprekersvoorkeuren",
-      "timePreferences": "Tijdvoorkeuren",
-      "unavailableTimes": "Niet-beschikbare tijden",
-      "avRequirements": "A/V-vereisten",
-      "setupNotes": "Zaalopstellingsnotities",
-      "slotMatchScore": "Slotmatch-score",
-      "matchPercent": "{{percent}}% match",
-      "times": {
-        "morning": "Ochtend",
-        "afternoon": "Middag",
-        "evening": "Avond",
-        "any": "Elk moment"
-      },
-      "equipment": {
-        "microphone": "Microfoon",
-        "projector": "Projector",
-        "recording": "Opname"
-      }
     },
     "actionBar": {
       "label": "Acties voor tijdvaktoewijzing"

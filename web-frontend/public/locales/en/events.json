@@ -1279,8 +1279,7 @@
       "emptyState": {
         "title": "All sessions assigned!",
         "message": "Great work! All speakers have been assigned to time slots."
-      },
-      "viewPreferences": "Preferences"
+      }
     },
     "quickActions": {
       "title": "Quick Actions",
@@ -1330,26 +1329,6 @@
       "resolutionOptions": "Resolution Options",
       "resolutionMessage": "Choose a different time slot or room to resolve this conflict.",
       "chooseDifferentSlot": "Choose Different Slot"
-    },
-    "preferences": {
-      "title": "Speaker Preferences",
-      "timePreferences": "Time Preferences",
-      "unavailableTimes": "Unavailable Times",
-      "avRequirements": "A/V Requirements",
-      "setupNotes": "Room Setup Notes",
-      "slotMatchScore": "Slot Match Score",
-      "matchPercent": "{{percent}}% Match",
-      "times": {
-        "morning": "Morning",
-        "afternoon": "Afternoon",
-        "evening": "Evening",
-        "any": "Any"
-      },
-      "equipment": {
-        "microphone": "Microphone",
-        "projector": "Projector",
-        "recording": "Recording"
-      }
     },
     "actionBar": {
       "label": "Slot assignment actions"

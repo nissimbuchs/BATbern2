@@ -1258,8 +1258,7 @@
       "emptyState": {
         "title": "Alli Sessione zuegwiise!",
         "message": "Gueti Arbet! Alli Redneri si Zytslots zuegwiise worde."
-      },
-      "viewPreferences": "Präferenzen"
+      }
     },
     "quickActions": {
       "title": "Schnällaktione",
@@ -1309,26 +1308,6 @@
       "resolutionOptions": "Lösigsmöglighkeite",
       "resolutionMessage": "En andere Zytslot oder Raum uswähle zum Konflikt löse.",
       "chooseDifferentSlot": "Andere Slot uswähle"
-    },
-    "preferences": {
-      "title": "Rednerpräferenzen",
-      "timePreferences": "Zytpräferenzen",
-      "unavailableTimes": "Nid verfügbari Zyte",
-      "avRequirements": "AV-Afordrige",
-      "setupNotes": "Raumufbaunotize",
-      "slotMatchScore": "Slot-Übereinstimmigspunktezau",
-      "matchPercent": "{{percent}}% Übereinstimmig",
-      "times": {
-        "morning": "Morge",
-        "afternoon": "Namittag",
-        "evening": "Abig",
-        "any": "Beliebig"
-      },
-      "equipment": {
-        "microphone": "Mikrofon",
-        "projector": "Beamer",
-        "recording": "Ufnahm"
-      }
     },
     "actionBar": {
       "label": "Zytfänschter-Aktione"

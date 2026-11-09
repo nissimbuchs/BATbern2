@@ -7,7 +7,6 @@
  * Coverage:
  * - AC12: Show unassigned speakers list with real-time updates
  * - AC5: Draggable speaker cards with grab handle
- * - AC7: View preferences button per speaker
  */
 
 import { render, screen, fireEvent, within } from '@testing-library/react';
@@ -96,11 +95,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       // AC12: Show unassigned speakers list
       // Given: 3 unassigned sessions exist
       renderWithProviders(
-        <UnassignedSpeakersList
-          sessions={mockUnassignedSessions}
-          totalSessions={10}
-          onViewPreferences={() => {}}
-        />
+        <UnassignedSpeakersList sessions={mockUnassignedSessions} totalSessions={10} />
       );
 
       // Then: Displays all 3 unassigned speakers
@@ -113,11 +108,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       // AC12: Progress indicator - "X of Y assigned (Z%)"
       // Given: 3 unassigned out of 10 total (7 assigned)
       renderWithProviders(
-        <UnassignedSpeakersList
-          sessions={mockUnassignedSessions}
-          totalSessions={10}
-          onViewPreferences={() => {}}
-        />
+        <UnassignedSpeakersList sessions={mockUnassignedSessions} totalSessions={10} />
       );
 
       // Then: Shows progress "7 of 10 assigned (70%)"
@@ -129,11 +120,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       // Unassigned badge: "🔶 N Remaining"
       // Given: 3 unassigned sessions
       renderWithProviders(
-        <UnassignedSpeakersList
-          sessions={mockUnassignedSessions}
-          totalSessions={10}
-          onViewPreferences={() => {}}
-        />
+        <UnassignedSpeakersList sessions={mockUnassignedSessions} totalSessions={10} />
       );
 
       // Then: Shows unassigned badge
@@ -143,9 +130,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
 
     it('should_showEmptyState_when_noUnassignedSessions', () => {
       // Given: All sessions are assigned (empty list)
-      renderWithProviders(
-        <UnassignedSpeakersList sessions={[]} totalSessions={10} onViewPreferences={() => {}} />
-      );
+      renderWithProviders(<UnassignedSpeakersList sessions={[]} totalSessions={10} />);
 
       // Then: Shows success message
       expect(screen.getByText(/all sessions assigned/i)).toBeInTheDocument();
@@ -158,11 +143,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       // Filters: [All] [Assigned] [Unassigned]
       // Given: Component is rendered
       renderWithProviders(
-        <UnassignedSpeakersList
-          sessions={mockUnassignedSessions}
-          totalSessions={10}
-          onViewPreferences={() => {}}
-        />
+        <UnassignedSpeakersList sessions={mockUnassignedSessions} totalSessions={10} />
       );
 
       // Then: Shows filter buttons (use testids for multiple buttons with same text)
@@ -177,7 +158,6 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
         <UnassignedSpeakersList
           sessions={mockUnassignedSessions}
           totalSessions={10}
-          onViewPreferences={() => {}}
           activeFilter="unassigned"
         />
       );
@@ -195,7 +175,6 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
         <UnassignedSpeakersList
           sessions={mockUnassignedSessions}
           totalSessions={10}
-          onViewPreferences={() => {}}
           onFilterChange={onFilterChange}
         />
       );
@@ -215,11 +194,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       // AC5: Draggable speaker cards with grab handle
       // Given: Unassigned sessions exist
       renderWithProviders(
-        <UnassignedSpeakersList
-          sessions={mockUnassignedSessions}
-          totalSessions={10}
-          onViewPreferences={() => {}}
-        />
+        <UnassignedSpeakersList sessions={mockUnassignedSessions} totalSessions={10} />
       );
 
       // Then: Cards are draggable
@@ -232,11 +207,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
     it('should_showGrabHandle_when_hovering', () => {
       // Given: User hovers over speaker card
       renderWithProviders(
-        <UnassignedSpeakersList
-          sessions={mockUnassignedSessions}
-          totalSessions={10}
-          onViewPreferences={() => {}}
-        />
+        <UnassignedSpeakersList sessions={mockUnassignedSessions} totalSessions={10} />
       );
 
       const firstCard = screen.getAllByRole('article')[0];
@@ -251,43 +222,16 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
     });
   });
 
-  describe('View Preferences Button', () => {
-    it('should_displayViewPreferencesButton_when_rendered', () => {
-      // AC7: [Preferences] button per speaker
-      // Given: Speaker cards are displayed
+  describe('No preferences action', () => {
+    it('should_offerNoViewPreferencesAction_when_rendered', () => {
+      // The action opened a drawer of made-up preferences (owner decision 2026-11-09: removed);
+      // the speaker pool has no preferences to show.
       renderWithProviders(
-        <UnassignedSpeakersList
-          sessions={mockUnassignedSessions}
-          totalSessions={10}
-          onViewPreferences={() => {}}
-        />
+        <UnassignedSpeakersList sessions={mockUnassignedSessions} totalSessions={10} />
       );
 
-      // Then: Each card has [Preferences] button (actual button text)
-      const preferenceButtons = screen.getAllByRole('button', { name: /preferences/i });
-      expect(preferenceButtons).toHaveLength(3);
-    });
-
-    it('should_openPreferencesPanel_when_buttonClicked', () => {
-      // Given: [Preferences] button exists
-      const onViewPreferences = vi.fn();
-
-      renderWithProviders(
-        <UnassignedSpeakersList
-          sessions={mockUnassignedSessions}
-          totalSessions={10}
-          onViewPreferences={onViewPreferences}
-        />
-      );
-
-      const firstCard = screen.getAllByRole('article')[0];
-      const preferenceButton = within(firstCard).getByRole('button', { name: /preferences/i });
-
-      // When: Button is clicked
-      fireEvent.click(preferenceButton);
-
-      // Then: Callback is triggered with speaker username
-      expect(onViewPreferences).toHaveBeenCalledWith('john.doe');
+      expect(screen.queryByRole('button', { name: /preferences/i })).not.toBeInTheDocument();
+      expect(screen.queryByTestId(/^view-preferences-/)).not.toBeInTheDocument();
     });
   });
 
@@ -296,11 +240,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       // AC12: Real-time updates as sessions are assigned
       // Given: Initially 3 unassigned sessions
       const { rerender } = renderWithProviders(
-        <UnassignedSpeakersList
-          sessions={mockUnassignedSessions}
-          totalSessions={10}
-          onViewPreferences={() => {}}
-        />
+        <UnassignedSpeakersList sessions={mockUnassignedSessions} totalSessions={10} />
       );
 
       expect(screen.getByText(/3.*remaining/i)).toBeInTheDocument();
@@ -311,11 +251,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       rerender(
         <BrowserRouter>
           <I18nextProvider i18n={i18n}>
-            <UnassignedSpeakersList
-              sessions={updatedSessions}
-              totalSessions={10}
-              onViewPreferences={() => {}}
-            />
+            <UnassignedSpeakersList sessions={updatedSessions} totalSessions={10} />
           </I18nextProvider>
         </BrowserRouter>
       );
@@ -328,11 +264,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
     it('should_removeSessionFromList_when_assigned', () => {
       // Given: Session is assigned
       const { rerender } = renderWithProviders(
-        <UnassignedSpeakersList
-          sessions={mockUnassignedSessions}
-          totalSessions={10}
-          onViewPreferences={() => {}}
-        />
+        <UnassignedSpeakersList sessions={mockUnassignedSessions} totalSessions={10} />
       );
 
       expect(screen.getByText('John Doe - Acme Corp')).toBeInTheDocument();
@@ -343,11 +275,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
       rerender(
         <BrowserRouter>
           <I18nextProvider i18n={i18n}>
-            <UnassignedSpeakersList
-              sessions={updatedSessions}
-              totalSessions={10}
-              onViewPreferences={() => {}}
-            />
+            <UnassignedSpeakersList sessions={updatedSessions} totalSessions={10} />
           </I18nextProvider>
         </BrowserRouter>
       );
@@ -362,12 +290,7 @@ describe('UnassignedSpeakersList Component (Story 5.7 - Task 4a RED Phase)', () 
     it('should_showSkeletonLoader_when_loading', () => {
       // Given: Sessions are loading
       renderWithProviders(
-        <UnassignedSpeakersList
-          sessions={[]}
-          totalSessions={0}
-          onViewPreferences={() => {}}
-          isLoading={true}
-        />
+        <UnassignedSpeakersList sessions={[]} totalSessions={0} isLoading={true} />
       );
 
       // Then: Shows skeleton loader

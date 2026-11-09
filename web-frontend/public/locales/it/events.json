@@ -1255,8 +1255,7 @@
       "emptyState": {
         "title": "Tutte le sessioni assegnate!",
         "message": "Ottimo lavoro! Tutti i relatori sono stati assegnati agli slot temporali."
-      },
-      "viewPreferences": "Preferenze"
+      }
     },
     "quickActions": {
       "title": "Azioni rapide",
@@ -1306,26 +1305,6 @@
       "resolutionOptions": "Opzioni di risoluzione",
       "resolutionMessage": "Scegli uno slot temporale o una sala diversa per risolvere questo conflitto.",
       "chooseDifferentSlot": "Scegli uno slot diverso"
-    },
-    "preferences": {
-      "title": "Preferenze relatori",
-      "timePreferences": "Preferenze orarie",
-      "unavailableTimes": "Orari non disponibili",
-      "avRequirements": "Requisiti A/V",
-      "setupNotes": "Note configurazione sala",
-      "slotMatchScore": "Punteggio corrispondenza slot",
-      "matchPercent": "{{percent}}% corrispondenza",
-      "times": {
-        "morning": "Mattina",
-        "afternoon": "Pomeriggio",
-        "evening": "Sera",
-        "any": "Qualsiasi"
-      },
-      "equipment": {
-        "microphone": "Microfono",
-        "projector": "Proiettore",
-        "recording": "Registrazione"
-      }
     },
     "actionBar": {
       "label": "Azioni di assegnazione slot"

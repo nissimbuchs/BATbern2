@@ -1255,8 +1255,7 @@
       "emptyState": {
         "title": "Kaikki istunnot osoitettu!",
         "message": "Hyvää työtä! Kaikki puhujat on osoitettu aikapaikkoihin."
-      },
-      "viewPreferences": "Preferenssit"
+      }
     },
     "quickActions": {
       "title": "Pikavalikko",
@@ -1306,26 +1305,6 @@
       "resolutionOptions": "Ratkaisuvaihtoehdot",
       "resolutionMessage": "Valitse eri aikapaikka tai huone konfliktin ratkaisemiseksi.",
       "chooseDifferentSlot": "Valitse eri paikka"
-    },
-    "preferences": {
-      "title": "Puhujien preferenssit",
-      "timePreferences": "Aikapreferenssit",
-      "unavailableTimes": "Ei-saatavilla olevat ajat",
-      "avRequirements": "A/V-vaatimukset",
-      "setupNotes": "Huoneen asetusmuistiinpanot",
-      "slotMatchScore": "Paikan vastaavuuspisteet",
-      "matchPercent": "{{percent}}% vastaavuus",
-      "times": {
-        "morning": "Aamu",
-        "afternoon": "Iltapäivä",
-        "evening": "Ilta",
-        "any": "Milloin tahansa"
-      },
-      "equipment": {
-        "microphone": "Mikrofoni",
-        "projector": "Projektori",
-        "recording": "Nauhoitus"
-      }
     },
     "actionBar": {
       "label": "Aikavälien määritystoiminnot"

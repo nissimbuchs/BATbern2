@@ -1255,8 +1255,7 @@
       "emptyState": {
         "title": "¡Todas las sesiones asignadas!",
         "message": "¡Buen trabajo! Todos los ponentes han sido asignados a espacios horarios."
-      },
-      "viewPreferences": "Preferencias"
+      }
     },
     "quickActions": {
       "title": "Acciones rápidas",
@@ -1306,26 +1305,6 @@
       "resolutionOptions": "Opciones de resolución",
       "resolutionMessage": "Elija un espacio horario o sala diferente para resolver este conflicto.",
       "chooseDifferentSlot": "Elegir espacio diferente"
-    },
-    "preferences": {
-      "title": "Preferencias de ponentes",
-      "timePreferences": "Preferencias horarias",
-      "unavailableTimes": "Horas no disponibles",
-      "avRequirements": "Requisitos A/V",
-      "setupNotes": "Notas de configuración de sala",
-      "slotMatchScore": "Puntuación de coincidencia del espacio",
-      "matchPercent": "{{percent}}% de coincidencia",
-      "times": {
-        "morning": "Mañana",
-        "afternoon": "Tarde",
-        "evening": "Noche",
-        "any": "Cualquier hora"
-      },
-      "equipment": {
-        "microphone": "Micrófono",
-        "projector": "Proyector",
-        "recording": "Grabación"
-      }
     },
     "actionBar": {
       "label": "Acciones de asignación de franjas"

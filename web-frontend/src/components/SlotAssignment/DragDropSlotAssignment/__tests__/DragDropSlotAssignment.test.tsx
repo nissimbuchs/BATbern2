@@ -8,7 +8,6 @@
  * Coverage:
  * - AC5: Drag-and-drop UI to drag speaker cards to time slots
  * - AC6: Visual timeline showing all slots and assignments
- * - AC7: Display speaker time preferences
  * - AC11: Highlight when slot matches speaker preference
  * - AC12: Show unassigned speakers list with real-time updates
  * - 14.C.5: 2-column layout, top action bar, no 100vh lock, focusSpeakerId

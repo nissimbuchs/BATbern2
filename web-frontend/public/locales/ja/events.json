@@ -1255,8 +1255,7 @@
       "emptyState": {
         "title": "すべてのセッションが割り当てられました！",
         "message": "素晴らしい！すべてのスピーカーが時間スロットに割り当てられました。"
-      },
-      "viewPreferences": "プリファレンス"
+      }
     },
     "quickActions": {
       "title": "クイックアクション",
@@ -1306,26 +1305,6 @@
       "resolutionOptions": "解決オプション",
       "resolutionMessage": "このコンフリクトを解決するために別の時間スロットまたは部屋を選択してください。",
       "chooseDifferentSlot": "別のスロットを選択"
-    },
-    "preferences": {
-      "title": "スピーカーのプリファレンス",
-      "timePreferences": "時間のプリファレンス",
-      "unavailableTimes": "利用不可な時間",
-      "avRequirements": "A/V要件",
-      "setupNotes": "部屋の設定メモ",
-      "slotMatchScore": "スロットマッチスコア",
-      "matchPercent": "{{percent}}%マッチ",
-      "times": {
-        "morning": "午前",
-        "afternoon": "午後",
-        "evening": "夜",
-        "any": "いつでも"
-      },
-      "equipment": {
-        "microphone": "マイク",
-        "projector": "プロジェクター",
-        "recording": "録音"
-      }
     },
     "actionBar": {
       "label": "スロット割り当てのアクション"

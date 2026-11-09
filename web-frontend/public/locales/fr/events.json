@@ -1255,8 +1255,7 @@
       "emptyState": {
         "title": "Toutes les sessions sont assignées !",
         "message": "Excellent travail ! Tous les intervenants ont été assignés à des créneaux horaires."
-      },
-      "viewPreferences": "Préférences"
+      }
     },
     "quickActions": {
       "title": "Actions rapides",
@@ -1306,26 +1305,6 @@
       "resolutionOptions": "Options de résolution",
       "resolutionMessage": "Choisissez un autre créneau horaire ou une autre salle pour résoudre ce conflit.",
       "chooseDifferentSlot": "Choisir un autre créneau"
-    },
-    "preferences": {
-      "title": "Préférences des intervenants",
-      "timePreferences": "Préférences horaires",
-      "unavailableTimes": "Heures indisponibles",
-      "avRequirements": "Besoins audiovisuels",
-      "setupNotes": "Notes de configuration de la salle",
-      "slotMatchScore": "Score de correspondance du créneau",
-      "matchPercent": "{{percent}}% de correspondance",
-      "times": {
-        "morning": "Matin",
-        "afternoon": "Après-midi",
-        "evening": "Soirée",
-        "any": "N'importe quand"
-      },
-      "equipment": {
-        "microphone": "Microphone",
-        "projector": "Projecteur",
-        "recording": "Enregistrement"
-      }
     },
     "actionBar": {
       "label": "Actions d'attribution des créneaux"

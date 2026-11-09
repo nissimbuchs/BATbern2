@@ -4,7 +4,6 @@
  * Main slot assignment interface with drag-and-drop
  * AC5: Drag-and-drop UI to drag speaker cards to time slots
  * AC6: Visual timeline showing all slots and assignments
- * AC7: Display speaker time preferences
  * AC11: Highlight when slot matches speaker preference
  * AC12: Show unassigned speakers list with real-time updates
  */
@@ -48,7 +47,6 @@ import type { TimetableSlot } from '@/services/timetableService/timetableService
 import { EventTypeConfigurationForm } from '@/components/organizer/EventTypeConfigurationForm/EventTypeConfigurationForm';
 import { useUpdateAgendaConfig } from '@/hooks/useAgendaConfig/useAgendaConfig';
 import { UnassignedSpeakersList } from '../UnassignedSpeakersList/UnassignedSpeakersList';
-import { SpeakerPreferencePanel } from '../SpeakerPreferencePanel/SpeakerPreferencePanel';
 import { ConflictDetectionAlert } from '../ConflictDetectionAlert/ConflictDetectionAlert';
 import type { Session } from '@/types/event.types';
 import { isStructuralSession, type StructuralSessionType } from '@/utils/sessionTypes';
@@ -143,7 +141,6 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
     timetable?.slots.some((s) => s.type === 'SPEAKER_SLOT' && !!s.assignedSessionSlug) ?? false;
 
   // State must be declared before useMemo that depends on it
-  const [selectedSpeaker, setSelectedSpeaker] = useState<string | null>(null);
   const [autoAssignModalOpen, setAutoAssignModalOpen] = useState(false);
   const [clearAllModalOpen, setClearAllModalOpen] = useState(false);
   const [generateStructuralOpen, setGenerateStructuralOpen] = useState(false);
@@ -299,28 +296,6 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
   }, [draggedSession, hoveredSlot, timetable, speakerSlotByTime]);
 
   const isLoading = sessionsLoading || eventLoading || timetableLoading;
-
-  // Mock speaker data for preferences panel
-  const getSpeakerData = (username: string) => {
-    return {
-      username,
-      displayName: username
-        .split('.')
-        .map((n) => n.charAt(0).toUpperCase() + n.slice(1))
-        .join(' '),
-      companyName: 'Mock Company',
-      preferences: {
-        preferredTimeOfDay: 'morning' as const,
-        avRequirements: {
-          microphone: true,
-          projector: true,
-          recording: false,
-          whiteboard: true,
-        },
-        roomSetupNotes: 'Prefer standing desk and natural light',
-      },
-    };
-  };
 
   const handleGenerateStructural = async (overwrite: boolean) => {
     setGenerateStructuralError(null);
@@ -639,7 +614,6 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
               <UnassignedSpeakersList
                 sessions={filteredSessions}
                 totalSessions={totalSessions}
-                onViewPreferences={(username) => setSelectedSpeaker(username)}
                 onDragStart={handleDragStart}
                 activeFilter={speakerFilter}
                 onFilterChange={setSpeakerFilter}
@@ -930,14 +904,6 @@ export const DragDropSlotAssignment: React.FC<DragDropSlotAssignmentProps> = ({
           </Grid>
         </Grid>
       )}
-
-      {/* Speaker Preferences Drawer */}
-      <SpeakerPreferencePanel
-        speaker={selectedSpeaker ? getSpeakerData(selectedSpeaker) : null}
-        isOpen={!!selectedSpeaker}
-        onClose={() => setSelectedSpeaker(null)}
-        hoveredSlot={hoveredSlot || undefined}
-      />
 
       {/* Conflict Alert Modal */}
       <ConflictDetectionAlert

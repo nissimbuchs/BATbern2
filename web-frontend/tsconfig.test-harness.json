@@ -8,7 +8,6 @@
     "src/App.routing.test.tsx",
     "src/components/Publishing/PublishingControls/PublishingControls.test.tsx",
     "src/components/Publishing/ValidationDashboard/ValidationDashboard.test.tsx",
-    "src/components/SlotAssignment/SpeakerPreferencePanel/__tests__/SpeakerPreferencePanel.test.tsx",
     "src/components/TopicBacklogManager/TopicFilterPanel.test.tsx",
     "src/components/TopicBacklogManager/TopicList.test.tsx",
     "src/components/auth/ForgotPasswordConfirmation/ForgotPasswordConfirmation.test.tsx",

@@ -1255,8 +1255,7 @@
       "emptyState": {
         "title": "Tut las sessiuns attribuidas!",
         "message": "Bravo lavur! Tuts ils referents èn vegnids attribuids a slots temporals."
-      },
-      "viewPreferences": "Preferenzas"
+      }
     },
     "quickActions": {
       "title": "Acziuns rumadas",
@@ -1306,26 +1305,6 @@
       "resolutionOptions": "Opziuns da soluziun",
       "resolutionMessage": "Tscherna in auter slot temporal u chombra per resolver quest conflict.",
       "chooseDifferentSlot": "Tscherner auter slot"
-    },
-    "preferences": {
-      "title": "Preferenzas da referents",
-      "timePreferences": "Preferenzas temporalas",
-      "unavailableTimes": "Temps betg disponibels",
-      "avRequirements": "Pretensiuns A/V",
-      "setupNotes": "Notas da configuraziun da chombra",
-      "slotMatchScore": "Punteggi da concordanza dal slot",
-      "matchPercent": "{{percent}}% concordanza",
-      "times": {
-        "morning": "Matin",
-        "afternoon": "Suentermezdi",
-        "evening": "Saira",
-        "any": "En mintga mument"
-      },
-      "equipment": {
-        "microphone": "Microfon",
-        "projector": "Proiector",
-        "recording": "Registraziun"
-      }
     },
     "actionBar": {
       "label": "Acziuns d'assegnaziun da fanestras"
