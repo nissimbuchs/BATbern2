@@ -47,6 +47,9 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ No-shows do not count as attendance: the analytics count confirmed and attended registrations only, so after an event the people who came are set to *Attended* and the others to *No-show*.
 - ✅ Mail Center: own text to the registrants can go to chosen statuses, for example the no-shows only. A template still goes to registered, confirmed and attended.
 
+**Bug Fix — "Sort by" in the partner directory works (17.0)**:
+- ✅ The organizers' partner directory sorts by **Company Name** (A to Z) or **Partnership Tier** (Strategic first, then Platinum, Gold, Silver, Bronze; equal tiers by name), across all pages. The control never had an effect: the list always came sorted by company name. The options "Engagement Score" and "Last Event" are gone: the platform records neither for a partner, so they could not sort anything.
+
 **Bug Fix — Partner meeting invites show the event's real times (17.0)**:
 - ✅ The BATbern event entry in a partner meeting invite now has the same start and end as the registration confirmation and the event page. Before the agenda was published it used fixed times of its own (18:00–22:00 for an evening event) instead of the times set for the event.
 

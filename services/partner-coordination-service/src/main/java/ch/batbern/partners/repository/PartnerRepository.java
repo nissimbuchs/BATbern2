@@ -2,6 +2,8 @@ package ch.batbern.partners.repository;
 
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
+import jakarta.persistence.criteria.CriteriaBuilder;
+import jakarta.persistence.criteria.Expression;
 import org.springframework.data.jpa.domain.Specification;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.JpaSpecificationExecutor;
@@ -68,5 +70,27 @@ public interface PartnerRepository extends JpaRepository<Partner, UUID>, JpaSpec
             return (root, query, cb) -> cb.disjunction();
         }
         return (root, query, cb) -> root.get("companyName").in(companyNames);
+    }
+
+    /**
+     * Restricts nothing; orders the rows by tier rank (the declaration order of
+     * {@link PartnershipLevel}, BRONZE lowest), then company slug, then id, so offset paging sees a
+     * total order (#1131). The stored level is the enum name, whose alphabet is not the rank, hence
+     * the CASE. Use it with an unsorted {@code Pageable}; the count query drops the order.
+     */
+    static Specification<Partner> orderedByTier(boolean descending) {
+        return (root, query, cb) -> {
+            CriteriaBuilder.SimpleCase<PartnershipLevel, Integer> rankCase =
+                    cb.selectCase(root.get("partnershipLevel"));
+            for (PartnershipLevel level : PartnershipLevel.values()) {
+                rankCase = rankCase.when(level, level.ordinal());
+            }
+            Expression<Integer> rank = rankCase.otherwise(-1);
+            query.orderBy(
+                    descending ? cb.desc(rank) : cb.asc(rank),
+                    cb.asc(root.get("companyName")),
+                    cb.asc(root.get("id")));
+            return cb.conjunction();
+        };
     }
 }

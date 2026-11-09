@@ -22,10 +22,8 @@
   },
   "sort": {
     "label": "Zavrar tenor",
-    "engagement": "Scor d'engaschi",
     "name": "Num da l'interpresa",
-    "tier": "Nivel da partnerada",
-    "lastEvent": "Ultima occurrenza"
+    "tier": "Nivel da partnerada"
   },
   "card": {
     "comingSoon": "Preschent bainpreschent - Epic 8"

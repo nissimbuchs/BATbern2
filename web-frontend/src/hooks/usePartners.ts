@@ -26,7 +26,7 @@ import {
  * Cache: 2 minutes (partner list is moderately volatile)
  *
  * @param filters - Tier and status filters
- * @param sort - Sort configuration (by engagement, name, tier, lastEvent)
+ * @param sort - Sort configuration (by name or tier)
  * @param pagination - Page and size parameters (zero-based indexing)
  * @param search - Free-text search, evaluated by the backend over all partners
  * @returns UseQueryResult with PartnerListResponse

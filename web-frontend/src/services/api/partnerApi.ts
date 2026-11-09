@@ -48,10 +48,11 @@ export interface PartnerPagination {
 }
 
 /**
- * Sort parameters
+ * Sort parameters: `name` is the company slug, `tier` the partnership rank
+ * (BRONZE lowest). Sent as `sort=[-]name|tier` (ADR-013).
  */
 export interface PartnerSort {
-  sortBy: 'engagement' | 'name' | 'tier' | 'lastEvent';
+  sortBy: 'name' | 'tier';
   sortOrder: 'asc' | 'desc';
 }
 
@@ -60,7 +61,7 @@ export interface PartnerSort {
  * Includes HTTP enrichment via ?include=company,contacts (ADR-004)
  *
  * @param filters - Tier and status filters
- * @param _sort - Ignored, see the parameter comment
+ * @param sort - Sort field and direction
  * @param pagination - Page and size parameters
  * @param search - Free text, matched by the backend over every partner's company slug and
  *   display name before paging; blank sends no search
@@ -68,10 +69,7 @@ export interface PartnerSort {
  */
 export const listPartners = async (
   filters: PartnerFilters,
-  // Not sent: GET /partners declares no sort parameter and PCS always sorts by company slug, so
-  // the `sort=` this used to send was ignored (found by the MSW harness, 17.0c1). Whether the
-  // directory's sort control gets a backend sort or goes away is an open owner decision.
-  _sort: PartnerSort,
+  sort: PartnerSort,
   pagination: PartnerPagination,
   search?: string
 ): Promise<PartnerListResponse> => {
@@ -79,6 +77,7 @@ export const listPartners = async (
     page: pagination.page,
     size: pagination.size,
     include: 'company,contacts', // ADR-004 HTTP enrichment
+    sort: `${sort.sortOrder === 'desc' ? '-' : ''}${sort.sortBy}`,
   };
 
   if (search && search.trim()) {
@@ -103,7 +102,7 @@ export const listPartners = async (
   }
 
   const response = await apiClient.get<PartnerListResponse>(PARTNER_API_PATH, { params });
-  // Resolves to: <api>/partners?page=0&size=20&include=company,contacts&filter=...&search=...
+  // Resolves to: <api>/partners?page=0&size=20&include=company,contacts&sort=...&filter=...&search=...
   return response.data;
 };
 

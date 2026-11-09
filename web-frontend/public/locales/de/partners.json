@@ -22,10 +22,8 @@
   },
   "sort": {
     "label": "Sortieren nach",
-    "engagement": "Engagement-Bewertung",
     "name": "Firmenname",
-    "tier": "Partnerschaftsstufe",
-    "lastEvent": "Letzte Veranstaltung"
+    "tier": "Partnerschaftsstufe"
   },
   "card": {
     "comingSoon": "Demnächst verfügbar - Epic 8"

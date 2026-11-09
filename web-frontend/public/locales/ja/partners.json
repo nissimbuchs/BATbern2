@@ -22,10 +22,8 @@
   },
   "sort": {
     "label": "並び替え",
-    "engagement": "エンゲージメントスコア",
     "name": "会社名",
-    "tier": "パートナーシップ段階",
-    "lastEvent": "最終イベント"
+    "tier": "パートナーシップ段階"
   },
   "card": {
     "comingSoon": "近日公開 - Epic 8"

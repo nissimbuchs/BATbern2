@@ -22,10 +22,8 @@
   },
   "sort": {
     "label": "Lajittele",
-    "engagement": "Sitoutumispisteet",
     "name": "Yrityksen nimi",
-    "tier": "Kumppanuustaso",
-    "lastEvent": "Viimeisin tapahtuma"
+    "tier": "Kumppanuustaso"
   },
   "card": {
     "comingSoon": "Tulossa pian - Epic 8"

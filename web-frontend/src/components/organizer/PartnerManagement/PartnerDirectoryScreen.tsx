@@ -25,6 +25,7 @@ import { useTranslation } from 'react-i18next';
 import { usePartners } from '@/hooks/usePartners';
 import { usePartnerStore } from '@/stores/partnerStore';
 import { usePartnerModalStore } from '@/stores/partnerModalStore';
+import type { PartnerSort } from '@/services/api/partnerApi';
 import { PartnerOverviewStats } from './PartnerOverviewStats';
 import { PartnerSearch } from './PartnerSearch';
 import { PartnerFilters } from './PartnerFilters';
@@ -71,8 +72,7 @@ export const PartnerDirectoryScreen: React.FC = () => {
   };
 
   const handleSortChange = (event: SelectChangeEvent<string>) => {
-    const value = event.target.value as 'engagement' | 'name' | 'tier' | 'lastEvent';
-    setSortBy(value);
+    setSortBy(event.target.value as PartnerSort['sortBy']);
   };
 
   const handleAddPartner = () => {
@@ -150,17 +150,11 @@ export const PartnerDirectoryScreen: React.FC = () => {
                     onChange={handleSortChange}
                     data-testid="partner-sort-select"
                   >
-                    <MenuItem value="engagement" data-testid="sort-option-engagement">
-                      {t('sort.engagement')}
-                    </MenuItem>
                     <MenuItem value="name" data-testid="sort-option-name">
                       {t('sort.name')}
                     </MenuItem>
                     <MenuItem value="tier" data-testid="sort-option-tier">
                       {t('sort.tier')}
-                    </MenuItem>
-                    <MenuItem value="lastEvent" data-testid="sort-option-lastEvent">
-                      {t('sort.lastEvent')}
                     </MenuItem>
                   </Select>
                 </FormControl>

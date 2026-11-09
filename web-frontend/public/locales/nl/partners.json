@@ -22,10 +22,8 @@
   },
   "sort": {
     "label": "Sorteren op",
-    "engagement": "Betrokkenheidsscore",
     "name": "Bedrijfsnaam",
-    "tier": "Partnerschapsniveau",
-    "lastEvent": "Laatste evenement"
+    "tier": "Partnerschapsniveau"
   },
   "card": {
     "comingSoon": "Binnenkort beschikbaar - Epic 8"

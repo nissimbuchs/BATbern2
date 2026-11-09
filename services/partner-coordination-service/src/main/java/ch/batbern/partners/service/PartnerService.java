@@ -60,8 +60,8 @@ public class PartnerService {
     private final PartnerContactService partnerContactService;
 
     /**
-     * One page of partners, filtered, searched and paged in SQL, sorted by company slug
-     * with the id as tie-breaker, then HTTP-enriched (ADR-004).
+     * One page of partners, filtered, searched, sorted and paged in SQL with the id as last
+     * tie-breaker, then HTTP-enriched (ADR-004).
      *
      * <p>The list used to load the whole table, sort it in Java and return every row whatever the
      * page, while the frontend searched only the rows it had; a filter on tier AND status applied
@@ -71,17 +71,20 @@ public class PartnerService {
      * @param search Free text: every word in the company slug or display name, resolved to slugs by
      *     CUMS {@code GET /internal/companies} because {@code partners.company_name} holds only the
      *     slug; blank means no search
+     * @param sort {@code name} (company slug) or {@code tier} (rank BRONZE &lt; ... &lt; STRATEGIC, ties
+     *     by slug), {@code -} prefix for descending; null or blank is {@code name}
      * @param page Page number (0-indexed)
      * @param size Page size
      * @param includes Set of resources to include (e.g., "company", "contacts")
      * @return The page of partner responses; {@code getTotalElements()} counts every match
+     * @throws IllegalArgumentException for any other sort value (400)
      */
     @Timed(value = "partner.list", description = "Time taken to list partners")
     @Transactional(readOnly = true)
-    public Page<PartnerResponse> listPartners(String filter, String search, int page, int size,
+    public Page<PartnerResponse> listPartners(String filter, String search, String sort, int page, int size,
             Set<String> includes) {
-        log.debug("Listing partners with filter: {}, search: {}, page: {}, size: {}, includes: {}",
-                filter, search, page, size, includes);
+        log.debug("Listing partners with filter: {}, search: {}, sort: {}, page: {}, size: {}, includes: {}",
+                filter, search, sort, page, size, includes);
 
         Specification<Partner> spec = Specification.allOf(
                 PartnerRepository.hasLevel(levelFilter(filter)),
@@ -90,8 +93,21 @@ public class PartnerService {
             spec = spec.and(PartnerRepository.companyNameIn(companyServiceClient.findCompanyNames(search.strip())));
         }
 
-        Pageable pageable = DeterministicPaging.pageRequest(Math.max(0, page), Math.max(1, size),
-                Sort.by(Sort.Direction.ASC, "companyName"));
+        String sortValue = sort == null || sort.isBlank() ? "name" : sort.strip();
+        boolean descending = sortValue.startsWith("-");
+        String sortField = descending ? sortValue.substring(1) : sortValue;
+        Pageable pageable;
+        switch (sortField) {
+            case "name" -> pageable = DeterministicPaging.pageRequest(Math.max(0, page), Math.max(1, size),
+                    Sort.by(descending ? Sort.Direction.DESC : Sort.Direction.ASC, "companyName"));
+            case "tier" -> {
+                // The CASE rank lives in the query (PartnerRepository.orderedByTier), so no Sort here.
+                spec = spec.and(PartnerRepository.orderedByTier(descending));
+                pageable = DeterministicPaging.orderedByQuery(Math.max(0, page), Math.max(1, size));
+            }
+            default -> throw new IllegalArgumentException(
+                    "Invalid sort '" + sortValue + "': use name, -name, tier or -tier");
+        }
         return partnerRepository.findAll(spec, pageable).map(partner -> {
             PartnerResponse response = mapToResponse(partner);
 

@@ -46,15 +46,16 @@ public class PartnerController implements PartnersApi {
             String include,
             Integer page,
             Integer size,
-            String search) {
+            String search,
+            String sort) {
 
-        log.debug("GET /partners - filter: {}, include: {}, page: {}, size: {}, search: {}",
-                filter, include, page, size, search);
+        log.debug("GET /partners - filter: {}, include: {}, page: {}, size: {}, search: {}, sort: {}",
+                filter, include, page, size, search, sort);
 
         // #961: the LIST spans companies, so only an organizer may expand contacts here.
         Set<String> includes = withContactsAuthorized(parseIncludes(include), null);
-        // Filter, search and paging in SQL, so the metadata describes every match
-        Page<PartnerResponse> partnerPage = partnerService.listPartners(filter, search, page, size, includes);
+        // Filter, search, sort and paging in SQL, so the metadata describes every match
+        Page<PartnerResponse> partnerPage = partnerService.listPartners(filter, search, sort, page, size, includes);
         List<PartnerResponse> partners = partnerPage.getContent();
         // GHSA-qhqv: the public About page shows "partner since"; when a contract ends is
         // commercial data for organizers only.

@@ -61,8 +61,8 @@ describe('PartnerDirectoryScreen - Main Screen Component', () => {
       filters: { tier: 'all', status: 'all' },
       viewMode: 'grid',
       searchQuery: '',
-      sortBy: 'engagement',
-      sortOrder: 'desc',
+      sortBy: 'name',
+      sortOrder: 'asc',
       page: 0,
     });
     usePartnerModalStore.getState().closeModal();
@@ -184,9 +184,24 @@ describe('PartnerDirectoryScreen - Main Screen Component', () => {
       renderScreen();
 
       expect(screen.getByTestId('partner-sort-select')).toBeInTheDocument();
-      expect(screen.getByRole('combobox', { name: 'Sort by' })).toHaveTextContent(
-        'Engagement Score'
-      );
+      expect(screen.getByRole('combobox', { name: 'Sort by' })).toHaveTextContent('Company Name');
+    });
+
+    it('should_listHighestTierFirst_when_tierSortChosen', async () => {
+      const user = userEvent.setup();
+      renderScreen();
+      await screen.findByText(gold.companyName);
+      expect(lastListQuery().get('sort')).toBe('name');
+
+      await user.click(screen.getByRole('combobox', { name: 'Sort by' }));
+      // Only the sorts the backend implements are offered.
+      expect(screen.getAllByRole('option').map((o) => o.textContent)).toEqual([
+        'Company Name',
+        'Partnership Tier',
+      ]);
+      await user.click(screen.getByRole('option', { name: 'Partnership Tier' }));
+
+      await waitFor(() => expect(lastListQuery().get('sort')).toBe('-tier'));
     });
   });
 

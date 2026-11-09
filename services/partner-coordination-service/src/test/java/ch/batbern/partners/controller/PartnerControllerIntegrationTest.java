@@ -151,6 +151,71 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data[0].isActive").value(true));
     }
 
+    // ═══════════════════════════════════════════════════════════════════════════
+    // Partner directory "Sort by" (17.0 deferred work): sort=name|-name|tier|-tier
+    // ═══════════════════════════════════════════════════════════════════════════
+
+    @Test
+    void should_sortByTierHighestFirst_when_sortIsMinusTier() throws Exception {
+        createTestPartner("alpha", PartnershipLevel.BRONZE);
+        createTestPartner("bravo", PartnershipLevel.STRATEGIC);
+        createTestPartner("charlie", PartnershipLevel.GOLD);
+        createTestPartner("delta", PartnershipLevel.GOLD);
+        createTestPartner("echo", PartnershipLevel.PLATINUM);
+        createTestPartner("foxtrot", PartnershipLevel.SILVER);
+
+        // Tier rank, not the alphabet of the stored enum name; equal tiers by slug.
+        mockMvc.perform(get("/api/v1/partners").param("sort", "-tier"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].companyName",
+                        contains("bravo", "echo", "charlie", "delta", "foxtrot", "alpha")));
+    }
+
+    @Test
+    void should_sortByTierLowestFirst_when_sortIsTier() throws Exception {
+        createTestPartner("alpha", PartnershipLevel.STRATEGIC);
+        createTestPartner("bravo", PartnershipLevel.BRONZE);
+        createTestPartner("charlie", PartnershipLevel.SILVER);
+
+        mockMvc.perform(get("/api/v1/partners").param("sort", "tier"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].companyName", contains("bravo", "charlie", "alpha")));
+    }
+
+    @Test
+    void should_pageInTierOrder_when_sortIsMinusTierAndPaged() throws Exception {
+        createTestPartner("alpha", PartnershipLevel.BRONZE);
+        createTestPartner("bravo", PartnershipLevel.STRATEGIC);
+        createTestPartner("charlie", PartnershipLevel.GOLD);
+
+        // The order holds across pages and the count ignores it.
+        mockMvc.perform(get("/api/v1/partners").param("sort", "-tier").param("page", "1").param("size", "2"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].companyName", contains("alpha")))
+                .andExpect(jsonPath("$.metadata.totalItems").value(3));
+    }
+
+    @Test
+    void should_sortBySlugDescending_when_sortIsMinusName() throws Exception {
+        createTestPartner("alpha", PartnershipLevel.GOLD);
+        createTestPartner("charlie", PartnershipLevel.GOLD);
+        createTestPartner("bravo", PartnershipLevel.GOLD);
+
+        mockMvc.perform(get("/api/v1/partners").param("sort", "-name"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].companyName", contains("charlie", "bravo", "alpha")));
+        mockMvc.perform(get("/api/v1/partners").param("sort", "name"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.data[*].companyName", contains("alpha", "bravo", "charlie")));
+    }
+
+    @Test
+    void should_return400_when_sortFieldUnknown() throws Exception {
+        mockMvc.perform(get("/api/v1/partners").param("sort", "engagement"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.message").value(containsString("sort")));
+    }
+
     @Test
     void should_returnPartnerByCompanyName_when_validCompanyNameProvided() throws Exception {
         // Given

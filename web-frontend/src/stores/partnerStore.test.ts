@@ -30,8 +30,7 @@ describe('partnerStore (RED Phase - Task 3a)', () => {
       result.current.resetFilters();
       result.current.setViewMode('grid');
       result.current.setSearchQuery('');
-      result.current.setSortBy('engagement');
-      result.current.setSortOrder('desc');
+      result.current.setSortBy('name');
       result.current.setPage(0);
     });
   });
@@ -66,8 +65,8 @@ describe('partnerStore (RED Phase - Task 3a)', () => {
     it('should_haveDefaultSort_when_storeInitialized', () => {
       const { result } = renderHook(() => usePartnerStore());
 
-      expect(result.current.sortBy).toBe('engagement');
-      expect(result.current.sortOrder).toBe('desc');
+      expect(result.current.sortBy).toBe('name');
+      expect(result.current.sortOrder).toBe('asc');
     });
 
     it('should_havePageZero_when_storeInitialized', () => {
@@ -245,14 +244,20 @@ describe('partnerStore (RED Phase - Task 3a)', () => {
       expect(result.current.sortBy).toBe('tier');
     });
 
-    it('should update sortBy to lastEvent', () => {
+    it('should list the highest tier first when sortBy changes to tier', () => {
       const { result } = renderHook(() => usePartnerStore());
 
       act(() => {
-        result.current.setSortBy('lastEvent');
+        result.current.setSortBy('tier');
       });
 
-      expect(result.current.sortBy).toBe('lastEvent');
+      expect(result.current.sortOrder).toBe('desc');
+
+      act(() => {
+        result.current.setSortBy('name');
+      });
+
+      expect(result.current.sortOrder).toBe('asc');
     });
 
     it('should reset page to 0 when sortBy changes', () => {

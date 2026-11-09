@@ -43,7 +43,7 @@ const problem = (status: number, message: string) =>
   HttpResponse.json({ error: 'ERROR', message, status }, { status });
 
 const all: PartnerFilters = { tier: 'all', status: 'all' };
-const byEngagement = { sortBy: 'engagement', sortOrder: 'desc' } as const;
+const byName = { sortBy: 'name', sortOrder: 'asc' } as const;
 const firstPage = { page: 0, size: 20 };
 
 /** The `filter` query of the only listPartners call of the test. */
@@ -58,7 +58,7 @@ describe('Partner API Client - Story 2.8.1 (Partner Directory)', () => {
     it('should call GET /partners and return the page the backend sends', async () => {
       api.on('listPartners', () => page([gold]));
 
-      const result = await partnerApi.listPartners(all, byEngagement, firstPage);
+      const result = await partnerApi.listPartners(all, byName, firstPage);
 
       const calls = api.calls('listPartners');
       expect(calls).toHaveLength(1);
@@ -70,7 +70,7 @@ describe('Partner API Client - Story 2.8.1 (Partner Directory)', () => {
     it('should reject with ERR_NETWORK when the partner service is unreachable', async () => {
       api.on('listPartners', () => HttpResponse.error());
 
-      await expect(partnerApi.listPartners(all, byEngagement, firstPage)).rejects.toMatchObject({
+      await expect(partnerApi.listPartners(all, byName, firstPage)).rejects.toMatchObject({
         code: 'ERR_NETWORK',
       });
     });
@@ -78,19 +78,19 @@ describe('Partner API Client - Story 2.8.1 (Partner Directory)', () => {
 
   describe('AC10: Test 10.2 - should_buildCorrectQueryParams_when_filtersApplied', () => {
     it('should build filter query parameter for tier filter', async () => {
-      await partnerApi.listPartners({ tier: 'GOLD', status: 'all' }, byEngagement, firstPage);
+      await partnerApi.listPartners({ tier: 'GOLD', status: 'all' }, byName, firstPage);
 
       expect(sentFilter()).toBe('partnershipLevel:GOLD');
     });
 
     it('should build filter query parameter for status filter (active)', async () => {
-      await partnerApi.listPartners({ tier: 'all', status: 'active' }, byEngagement, firstPage);
+      await partnerApi.listPartners({ tier: 'all', status: 'active' }, byName, firstPage);
 
       expect(sentFilter()).toBe('isActive:true');
     });
 
     it('should build filter query parameter for status filter (inactive)', async () => {
-      await partnerApi.listPartners({ tier: 'all', status: 'inactive' }, byEngagement, firstPage);
+      await partnerApi.listPartners({ tier: 'all', status: 'inactive' }, byName, firstPage);
 
       expect(sentFilter()).toBe('isActive:false');
     });
@@ -106,7 +106,7 @@ describe('Partner API Client - Story 2.8.1 (Partner Directory)', () => {
     });
 
     it('should not include filter parameter when filters are all', async () => {
-      await partnerApi.listPartners(all, byEngagement, firstPage);
+      await partnerApi.listPartners(all, byName, firstPage);
 
       const { query } = api.calls('listPartners')[0];
       expect(query.has('filter')).toBe(false);
@@ -116,7 +116,7 @@ describe('Partner API Client - Story 2.8.1 (Partner Directory)', () => {
 
   describe('AC10: Test 10.3 - should_includePaginationParams_when_listPartnersInvoked', () => {
     it('should include page and size parameters', async () => {
-      await partnerApi.listPartners(all, byEngagement, { page: 2, size: 50 });
+      await partnerApi.listPartners(all, byName, { page: 2, size: 50 });
 
       const { query } = api.calls('listPartners')[0];
       expect(query.get('page')).toBe('2');
@@ -124,26 +124,26 @@ describe('Partner API Client - Story 2.8.1 (Partner Directory)', () => {
     });
   });
 
-  describe('AC10: Test 10.4 - sort is not sent', () => {
-    // GET /partners declares no sort parameter and PCS always sorts by company slug: the
-    // `sort=name:asc` this test used to pin was ignored by the backend (found by the MSW harness,
-    // 17.0c1). Whether the directory gets a backend sort is an open owner decision.
-    it('sends no sort parameter, whatever the sort configuration', async () => {
-      await partnerApi.listPartners(all, { sortBy: 'name', sortOrder: 'asc' }, firstPage);
-      await partnerApi.listPartners(all, byEngagement, firstPage);
+  describe('AC10: Test 10.4 - should_sendSort_when_listPartnersInvoked', () => {
+    // GET /partners sorts by `sort` (name|-name|tier|-tier, ADR-013). Before, the directory's
+    // "Sort by" sent an undeclared `sort=name:asc` that PCS ignored (17.0c1 found it).
+    it.each([
+      [{ sortBy: 'name', sortOrder: 'asc' } as const, 'name'],
+      [{ sortBy: 'name', sortOrder: 'desc' } as const, '-name'],
+      [{ sortBy: 'tier', sortOrder: 'desc' } as const, '-tier'],
+      [{ sortBy: 'tier', sortOrder: 'asc' } as const, 'tier'],
+    ])('sends %o as sort=%s', async (sort, expected) => {
+      await partnerApi.listPartners(all, sort, firstPage);
 
-      const calls = api.calls('listPartners');
-      expect(calls).toHaveLength(2);
-      for (const { query } of calls) {
-        expect(query.has('sort')).toBe(false);
-        expect(query.get('include')).toBe('company,contacts');
-      }
+      const { query } = api.calls('listPartners')[0];
+      expect(query.get('sort')).toBe(expected);
+      expect(query.get('include')).toBe('company,contacts');
     });
   });
 
   describe('AC10: Test 10.5 - should_includeHTTPEnrichment_when_listPartnersInvoked', () => {
     it('should include ?include=company,contacts parameter for HTTP enrichment (ADR-004)', async () => {
-      await partnerApi.listPartners(all, byEngagement, firstPage);
+      await partnerApi.listPartners(all, byName, firstPage);
 
       expect(api.calls('listPartners')[0].query.get('include')).toBe('company,contacts');
     });

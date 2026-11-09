@@ -62,8 +62,8 @@ paths:
       operationId: listPartners
       summary: List all partners
       description: |
-        Get a page of partner companies with optional filtering and search, sorted by company
-        slug. Filter, search and paging all run in the database, so
+        Get a page of partner companies with optional filtering, search and sort (default:
+        company slug ascending). Filter, search, sort and paging all run in the database, so
         `metadata.totalItems` counts every match and `page` 1 holds the next matches.
       parameters:
         - name: filter
@@ -97,6 +97,19 @@ paths:
             company display name, in any order, ignoring case, accents and umlaut spelling
             (ü = ue = u). Combines with `filter`. Blank means no search.
           example: 'mobiliar'
+        - name: sort
+          in: query
+          required: false
+          schema:
+            type: string
+            enum: [name, -name, tier, -tier]
+            default: name
+          description: |
+            Sort field, prefix `-` for descending (ADR-013). `name` is the company slug; `tier`
+            is the partnership rank BRONZE < SILVER < GOLD < PLATINUM < STRATEGIC, so `-tier`
+            lists the highest tier first. Ties are ordered by company slug. Any other value
+            answers 400.
+          example: '-tier'
       responses:
         '200':
           description: List of partners
