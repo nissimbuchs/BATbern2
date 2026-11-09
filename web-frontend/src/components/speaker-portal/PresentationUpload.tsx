@@ -133,12 +133,16 @@ const PresentationUpload = ({
           setUploadProgress(progress)
         );
 
+        if (!response.cloudFrontUrl) {
+          throw new Error('Upload failed: the server returned no file URL');
+        }
+
         // Notify success
         setIsUploading(false);
         setUploadProgress(0);
         setSelectedFileName(null);
         setShowDropzone(false);
-        onMaterialUploaded(response.cloudFrontUrl, response.fileName);
+        onMaterialUploaded(response.cloudFrontUrl, response.fileName ?? file.name);
       } catch (err) {
         // Handle error
         setIsUploading(false);

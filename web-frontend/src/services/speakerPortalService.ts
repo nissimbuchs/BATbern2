@@ -113,32 +113,9 @@ export type ContentSubmitRequest = components['schemas']['ContentSubmitRequest']
 export type ContentSubmitResponse = components['schemas']['ContentSubmitResponse'];
 export type SpeakerMaterialUploadRequest = components['schemas']['SpeakerMaterialUploadRequest'];
 
-export interface MaterialUploadResponse {
-  uploadUrl: string;
-  uploadId: string;
-  s3Key: string;
-  fileExtension: string;
-  expiresInMinutes: number;
-  requiredHeaders: Record<string, string>;
-}
-
-export interface MaterialConfirmRequest {
-  uploadId: string;
-  fileName: string;
-  fileExtension: string;
-  fileSize: number;
-  mimeType: string;
-  materialType: string;
-}
-
-export interface MaterialConfirmResponse {
-  materialId: string;
-  uploadId: string;
-  fileName: string;
-  cloudFrontUrl: string;
-  materialType: string;
-  uploadedAt: string;
-}
+export type MaterialUploadResponse = components['schemas']['SpeakerMaterialUploadResponse'];
+export type MaterialConfirmRequest = components['schemas']['SpeakerMaterialConfirmRequest'];
+export type MaterialConfirmResponse = components['schemas']['SpeakerMaterialConfirmResponse'];
 
 /**
  * Speaker Portal Service Class — Story 11.E.3.
@@ -266,11 +243,14 @@ class SpeakerPortalService {
     file: File,
     onProgress?: (progress: number) => void
   ): Promise<MaterialConfirmResponse> {
-    const presignedResponse = await this.getMaterialPresignedUrl(eventCode, {
+    const { uploadUrl, uploadId, requiredHeaders } = await this.getMaterialPresignedUrl(eventCode, {
       fileName: file.name,
       fileSize: file.size,
       mimeType: file.type,
     });
+    if (!uploadUrl || !uploadId) {
+      throw new Error('Upload failed: the server returned no upload URL');
+    }
 
     await new Promise<void>((resolve, reject) => {
       const xhr = new XMLHttpRequest();
@@ -288,8 +268,8 @@ class SpeakerPortalService {
         }
       });
       xhr.addEventListener('error', () => reject(new Error('S3 upload failed')));
-      xhr.open('PUT', presignedResponse.uploadUrl);
-      Object.entries(presignedResponse.requiredHeaders).forEach(([key, value]) => {
+      xhr.open('PUT', uploadUrl);
+      Object.entries(requiredHeaders ?? {}).forEach(([key, value]) => {
         xhr.setRequestHeader(key, value);
       });
       xhr.send(file);
@@ -297,7 +277,7 @@ class SpeakerPortalService {
 
     const fileExtension = file.name.split('.').pop()?.toLowerCase() || '';
     return this.confirmMaterialUpload(eventCode, {
-      uploadId: presignedResponse.uploadId,
+      uploadId,
       fileName: file.name,
       fileExtension,
       fileSize: file.size,
