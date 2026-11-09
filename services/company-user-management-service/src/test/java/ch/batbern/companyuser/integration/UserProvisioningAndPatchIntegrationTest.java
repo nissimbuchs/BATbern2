@@ -507,6 +507,10 @@ class UserProvisioningAndPatchIntegrationTest extends AbstractIntegrationTest {
                         .FORCE_CHANGE_PASSWORD);
         org.assertj.core.api.Assertions.assertThat(login.password()).isNotNull().hasSizeGreaterThanOrEqualTo(8);
         org.assertj.core.api.Assertions.assertThat(cognito.logins()).hasSize(1);
+        // The profile is linked to the new login's sub, as the existing-user branch and the
+        // issue-credentials self-heal already do, so the PreTokenGeneration Lambda finds it by its
+        // primary key on the first sign-in instead of relying on the e-mail fallback.
+        org.assertj.core.api.Assertions.assertThat(created.getCognitoUserId()).isEqualTo(login.sub());
     }
 
     @Test

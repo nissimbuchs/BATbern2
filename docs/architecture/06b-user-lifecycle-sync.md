@@ -256,6 +256,7 @@ sequenceDiagram
     else new user
         CUMS->>DB: INSERT user_profiles + ATTENDEE, then addRole SPEAKER
         CUMS->>Cognito: AdminCreateUser SUPPRESS, throwaway password<br/>status FORCE_CHANGE_PASSWORD
+        CUMS->>DB: link cognito_user_id to the new sub
     end
     CUMS-->>EMS: username, created flag
     EMS->>DB: UPDATE speaker_pool SET username, status READY
@@ -283,7 +284,9 @@ sequenceDiagram
    missing shell and re-links the new `sub` into `user_profiles`. Returns `created=false`.
 3. **Otherwise create** the `user_profiles` row (default role ATTENDEE), grant `SPEAKER`, then
    **`cognito-idp:AdminCreateUser`** with `MessageAction=SUPPRESS` and a **throwaway** password that
-   is discarded immediately; the user lands in `FORCE_CHANGE_PASSWORD`. Returns `created=true`.
+   is discarded immediately; the user lands in `FORCE_CHANGE_PASSWORD`. The new login's `sub` is
+   stored in `user_profiles.cognito_user_id` (until Epic 17 only the existing-user branch did this,
+   so a new speaker's first sign-in depended on the Lambda's e-mail fallback). Returns `created=true`.
 4. The response carries `{ username, created }` only. **No temporary password is returned at
    READY.** The real temporary password is issued at `READY → INVITED` by
    `issueInvitationCredentials` (`AdminSetUserPassword Permanent=false`) and goes straight into the
