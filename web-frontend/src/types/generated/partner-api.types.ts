@@ -122,8 +122,6 @@ export interface paths {
      *     side of the house, distinct from attendance `Partner Analytics`:
      *     - Total / active partner counts
      *     - Partners by tier breakdown
-     *     - Recently added partners (last 30 days)
-     *     - Expiring partnerships (next 90 days)
      *
      *     For per-event *attendance* metrics of a single partner, see
      *     `GET /partners/{companyName}/analytics/dashboard` (Partner Analytics).
@@ -484,24 +482,6 @@ export interface components {
         PLATINUM?: number;
         STRATEGIC?: number;
       };
-      /** @description Recently added partners (last 30 days) */
-      recentPartners?:
-        | {
-            companyName?: string;
-            partnershipLevel?: components['schemas']['PartnershipLevel'];
-            /** Format: date */
-            partnershipStartDate?: string;
-          }[]
-        | null;
-      /** @description Partnerships expiring in next 90 days */
-      expiringPartnerships?:
-        | {
-            companyName?: string;
-            partnershipLevel?: components['schemas']['PartnershipLevel'];
-            /** Format: date */
-            partnershipEndDate?: string;
-          }[]
-        | null;
     };
     /** @description Partner note (Story 8.4) */
     PartnerNoteDTO: {

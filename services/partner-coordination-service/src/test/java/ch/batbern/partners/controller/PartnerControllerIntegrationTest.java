@@ -35,6 +35,8 @@ import java.util.Map;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 import static org.mockito.Mockito.when;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -623,9 +625,18 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @WithMockUser(username = "organizer.user", roles = "ORGANIZER")
     void should_allowStatistics_when_callerIsOrganizer() throws Exception {
+        createTestPartner("GoogleZH", PartnershipLevel.GOLD);
+
+        // recentPartners and expiringPartnerships were declared but never computed, so always
+        // null; removed 2026-11-09 (owner decision).
         mockMvc.perform(get("/api/v1/partners/statistics")
                         .contentType(MediaType.APPLICATION_JSON))
-                .andExpect(status().isOk());
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.totalPartners").value(1))
+                .andExpect(jsonPath("$.activePartners").value(1))
+                .andExpect(jsonPath("$.tierCounts.GOLD").value(1))
+                .andExpect(jsonPath("$", not(hasKey("recentPartners"))))
+                .andExpect(jsonPath("$", not(hasKey("expiringPartnerships"))));
     }
 
     // ── the unauthenticated contacts exposure ──────────────────────────────────
