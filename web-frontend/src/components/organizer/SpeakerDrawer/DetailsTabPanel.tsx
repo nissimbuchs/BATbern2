@@ -240,7 +240,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
               disabled={patchMutation.isPending}
               data-testid="details-edit-cancel"
             >
-              {t('common.cancel', 'Cancel')}
+              {t('common:actions.cancel', 'Cancel')}
             </Button>
             <Button
               variant="contained"
@@ -249,7 +249,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
               startIcon={patchMutation.isPending ? <CircularProgress size={16} /> : null}
               data-testid="details-edit-save"
             >
-              {t('common.save', 'Save')}
+              {t('common:actions.save', 'Save')}
             </Button>
           </Stack>
         </Stack>
@@ -315,7 +315,7 @@ export const DetailsTabPanel: React.FC<DetailsTabPanelProps> = ({
           {t('speakerBrainstorm.form.assignOrganizer', 'Assigned organizer')}
         </Typography>
         <Typography variant="body1" sx={{ mb: 1 }}>
-          {speaker.assignedOrganizerId || t('common.unassigned', 'Unassigned')}
+          {speaker.assignedOrganizerId || t('speakers.unassigned', 'Unassigned')}
         </Typography>
         {speaker.notes && (
           <>

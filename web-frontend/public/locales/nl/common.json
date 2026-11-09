@@ -772,7 +772,8 @@
     "sessions": "Sessies",
     "topics": "Onderwerpen",
     "firstName": "Voornaam",
-    "lastName": "Achternaam"
+    "lastName": "Achternaam",
+    "unknown": "onbekend"
   },
   "filters": {
     "status": {
@@ -805,7 +806,8 @@
     "unexpectedError": "Onze excuses. Er is een onverwachte fout opgetreden.",
     "devDetails": "Foutdetails (alleen voor ontwikkelaars):",
     "refreshPage": "Pagina vernieuwen",
-    "goHome": "Naar startpagina"
+    "goHome": "Naar startpagina",
+    "loadFailed": "Gegevens laden mislukt."
   },
   "bootstrap": {
     "loading": "BATbern laden...",

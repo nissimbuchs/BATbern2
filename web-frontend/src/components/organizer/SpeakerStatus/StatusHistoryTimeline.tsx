@@ -63,7 +63,7 @@ export const StatusHistoryTimeline: React.FC<StatusHistoryTimelineProps> = ({
   if (isLoading) {
     return (
       <Box sx={{ p: 2 }}>
-        <Typography>{t('common:loading')}</Typography>
+        <Typography>{t('common:actions.loading')}</Typography>
       </Box>
     );
   }

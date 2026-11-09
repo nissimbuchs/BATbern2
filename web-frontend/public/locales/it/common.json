@@ -772,7 +772,8 @@
     "sessions": "Sessioni",
     "topics": "Argomenti",
     "firstName": "Nome",
-    "lastName": "Cognome"
+    "lastName": "Cognome",
+    "unknown": "sconosciuto"
   },
   "filters": {
     "status": {
@@ -805,7 +806,8 @@
     "unexpectedError": "Ci scusiamo per il disagio. Si è verificato un errore imprevisto.",
     "devDetails": "Dettagli errore (solo sviluppatori):",
     "refreshPage": "Aggiorna pagina",
-    "goHome": "Vai alla home"
+    "goHome": "Vai alla home",
+    "loadFailed": "Impossibile caricare i dati."
   },
   "bootstrap": {
     "loading": "Caricamento BATbern...",

@@ -19,7 +19,7 @@ vi.mock('react-i18next', () => ({
   useTranslation: () => ({
     t: (key: string, fallback?: string) => {
       const translations: Record<string, string> = {
-        'common:loading': 'Loading...',
+        'common:actions.loading': 'Loading...',
         'common:errors.loadFailed': 'Failed to load',
         'organizer:speakerStatus.noHistory': 'No status history available',
         'organizer:speakerStatus.historyTitle': 'Status History',

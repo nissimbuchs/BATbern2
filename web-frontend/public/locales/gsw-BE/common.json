@@ -142,7 +142,8 @@
     "sessions": "Sessions",
     "topics": "Theme",
     "firstName": "Vorname",
-    "lastName": "Nachname"
+    "lastName": "Nachname",
+    "unknown": "unbekannt"
   },
   "filters": {
     "status": {
@@ -746,5 +747,8 @@
   },
   "companySearch": {
     "createOption": "Nöii Firma „{{value}}\" erstelle"
+  },
+  "errors": {
+    "loadFailed": "D Date hei nid chönne glade wärde."
   }
 }

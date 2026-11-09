@@ -772,7 +772,8 @@
     "sessions": "Sesiones",
     "topics": "Temas",
     "firstName": "Nombre",
-    "lastName": "Apellido"
+    "lastName": "Apellido",
+    "unknown": "desconocido"
   },
   "filters": {
     "status": {
@@ -805,7 +806,8 @@
     "unexpectedError": "Lo sentimos. Se produjo un error inesperado.",
     "devDetails": "Detalles del error (solo desarrolladores):",
     "refreshPage": "Actualizar página",
-    "goHome": "Ir al inicio"
+    "goHome": "Ir al inicio",
+    "loadFailed": "No se pudieron cargar los datos."
   },
   "bootstrap": {
     "loading": "Cargando BATbern...",

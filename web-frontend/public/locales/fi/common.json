@@ -772,7 +772,8 @@
     "sessions": "Istunnot",
     "topics": "Aiheet",
     "firstName": "Etunimi",
-    "lastName": "Sukunimi"
+    "lastName": "Sukunimi",
+    "unknown": "tuntematon"
   },
   "filters": {
     "status": {
@@ -805,7 +806,8 @@
     "unexpectedError": "Pahoittelut. Odottamaton virhe tapahtui.",
     "devDetails": "Virheen tiedot (vain kehittäjille):",
     "refreshPage": "Päivitä sivu",
-    "goHome": "Siirry etusivulle"
+    "goHome": "Siirry etusivulle",
+    "loadFailed": "Tietojen lataus epäonnistui."
   },
   "bootstrap": {
     "loading": "Ladataan BATbernia...",

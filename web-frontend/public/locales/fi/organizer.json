@@ -218,6 +218,9 @@
       "DECLINED": "Kieltäytynyt",
       "CONTENT_SUBMITTED": "Sisältö lähetetty",
       "QUALITY_REVIEWED": "Laatu tarkistettu"
+    },
+    "promoteSubView": {
+      "incompleteUser": "Valitulta käyttäjältä puuttuu pakollisia tietoja (sähköposti / etunimi / sukunimi). Täydennä profiili ennen ylennystä."
     }
   },
   "speakerOutreach": {
@@ -297,7 +300,8 @@
       "username": "Hae puhujaa",
       "presentationTitle": "Esityksen otsikko",
       "presentationAbstract": "Esityksen tiivistelmä",
-      "charactersRemaining": "merkkiä jäljellä"
+      "charactersRemaining": "merkkiä jäljellä",
+      "roleLabel": "Rooli"
     },
     "errors": {
       "usernameRequired": "Puhuja on pakollinen",
@@ -305,13 +309,16 @@
       "abstractRequired": "Esityksen tiivistelmä on pakollinen",
       "abstractTooLong": "Tiivistelmässä saa olla enintään {{max}} merkkiä",
       "submitFailed": "Sisällön lähettäminen epäonnistui. Yritä uudelleen.",
-      "bioTooLong": "Bio must be {{max}} characters or less"
+      "bioTooLong": "Bio must be {{max}} characters or less",
+      "saveDraftFailed": "Luonnoksen tallennus epäonnistui."
     },
     "bioLabel": "Short CV / bio (optional)",
     "portraitLabel": "Speaker portrait (optional)",
     "portraitUploadInProgress": "Uploading portrait…",
     "portraitUploadError": "Portrait upload failed. Please try again.",
-    "presentationUploadLabel": "Presentation upload (optional)"
+    "presentationUploadLabel": "Presentation upload (optional)",
+    "readyStateDraftBanner": "Puhuja ei ole vielä hyväksynyt. Tallennus kirjoittaa otsikon ja tiivistelmän istuntoon luonnoksena; lähetystä ei kirjata, ja puhuja voi vielä muuttaa niitä hyväksyttyään.",
+    "saveDraft": "Tallenna luonnos"
   },
   "qualityReview": {
     "title": "Laaduntarkistus",
@@ -341,7 +348,12 @@
     "errors": {
       "feedbackRequired": "Palaute on pakollinen",
       "unknown": "Tapahtui tuntematon virhe"
-    }
+    },
+    "noTitle": "Nimetön",
+    "noAbstract": "Tiivistelmää ei ole annettu",
+    "material": "Esitysmateriaali",
+    "downloadMaterial": "Lataa materiaali",
+    "noMaterial": "Materiaalia ei ole vielä ladattu"
   },
   "speakers": {
     "invite": "Kutsu",
@@ -384,7 +396,12 @@
     "revisionRequested": "Revision Requested",
     "submittedContent": "Submitted Content",
     "submittedAt": "Submitted",
-    "noDetails": "Ei tietoja saatavilla"
+    "noDetails": "Ei tietoja saatavilla",
+    "speakerName": "Puhujan nimi",
+    "company": "Yritys",
+    "expertise": "Asiantuntemus",
+    "internalNotes": "Sisäiset muistiinpanot",
+    "unassigned": "Ei määritetty"
   },
   "tasks": {
     "taskBoard": "Tehtävätaulu",
@@ -578,7 +595,11 @@
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
     },
-    "invalidColumnTooltip": "Ei kelvollinen eteenpäin siirtyminen tähän sarakkeeseen."
+    "invalidColumnTooltip": "Ei kelvollinen eteenpäin siirtyminen tähän sarakkeeseen.",
+    "acceptOnBehalfDialog": {
+      "title": "Hyväksy henkilön {{speakerName}} puolesta",
+      "reasonHint": "Kirjaa, miksi hyväksyt puhujan puolesta (esim. \"vahvistettu sähköpostilla 18.5.2026\"). Tallentuu tarkastuslokiin."
+    }
   },
   "speakerDrawer": {
     "secondaryActions": {
@@ -586,11 +607,13 @@
       "acceptOnBehalf": "Hyväksy puhujan puolesta (ilman kutsua)",
       "reassignOrganizer": "Reassign organizer",
       "editDetails": "Edit details",
-      "overrideState": "Override state"
+      "overrideState": "Override state",
+      "addContactEntry": "Lisää yhteydenottomerkintä"
     },
     "tabs": {
       "details": "Details",
-      "history": "History"
+      "history": "History",
+      "content": "Sisältö"
     },
     "subTabs": {
       "content": "Content"

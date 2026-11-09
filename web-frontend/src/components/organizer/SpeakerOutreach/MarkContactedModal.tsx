@@ -247,7 +247,7 @@ const MarkContactedModal: React.FC<MarkContactedModalProps> = ({
           data-testid="save-button"
         >
           {recordOutreachMutation.isPending
-            ? t('common.saving')
+            ? t('common:actions.saving')
             : t('speakerOutreach.markContacted')}
         </Button>
       </DialogActions>

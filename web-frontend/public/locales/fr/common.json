@@ -772,7 +772,8 @@
     "sessions": "Sessions",
     "topics": "Sujets",
     "firstName": "Prénom",
-    "lastName": "Nom de famille"
+    "lastName": "Nom de famille",
+    "unknown": "inconnu"
   },
   "filters": {
     "status": {
@@ -805,7 +806,8 @@
     "unexpectedError": "Nous sommes désolés. Une erreur inattendue s'est produite.",
     "devDetails": "Détails de l'erreur (développeurs uniquement) :",
     "refreshPage": "Actualiser la page",
-    "goHome": "Aller à l'accueil"
+    "goHome": "Aller à l'accueil",
+    "loadFailed": "Impossible de charger les données."
   },
   "bootstrap": {
     "loading": "Chargement de BATbern...",

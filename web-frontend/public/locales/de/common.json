@@ -776,7 +776,8 @@
     "sessions": "Sessions",
     "topics": "Themen",
     "firstName": "Vorname",
-    "lastName": "Nachname"
+    "lastName": "Nachname",
+    "unknown": "unbekannt"
   },
   "filters": {
     "status": {
@@ -809,7 +810,8 @@
     "unexpectedError": "Es tut uns leid. Ein unerwarteter Fehler ist aufgetreten.",
     "devDetails": "Fehlerdetails (nur für Entwickler):",
     "refreshPage": "Seite aktualisieren",
-    "goHome": "Zur Startseite"
+    "goHome": "Zur Startseite",
+    "loadFailed": "Daten konnten nicht geladen werden."
   },
   "bootstrap": {
     "loading": "BATbern wird geladen...",

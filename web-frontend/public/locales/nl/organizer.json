@@ -218,6 +218,9 @@
       "DECLINED": "Geweigerd",
       "CONTENT_SUBMITTED": "Inhoud ingediend",
       "QUALITY_REVIEWED": "Kwaliteit beoordeeld"
+    },
+    "promoteSubView": {
+      "incompleteUser": "De geselecteerde gebruiker mist verplichte velden (e-mail / voornaam / achternaam). Vul het profiel aan voordat u promoveert."
     }
   },
   "speakerOutreach": {
@@ -297,7 +300,8 @@
       "username": "Spreker zoeken",
       "presentationTitle": "Presentatietitel",
       "presentationAbstract": "Presentatiesamenvatting",
-      "charactersRemaining": "tekens resterend"
+      "charactersRemaining": "tekens resterend",
+      "roleLabel": "Rol"
     },
     "errors": {
       "usernameRequired": "Spreker is verplicht",
@@ -305,13 +309,16 @@
       "abstractRequired": "Presentatiesamenvatting is verplicht",
       "abstractTooLong": "De samenvatting mag maximaal {{max}} tekens bevatten",
       "submitFailed": "Indienen van inhoud mislukt. Probeer het opnieuw.",
-      "bioTooLong": "Bio must be {{max}} characters or less"
+      "bioTooLong": "Bio must be {{max}} characters or less",
+      "saveDraftFailed": "Het concept kon niet worden opgeslagen."
     },
     "bioLabel": "Short CV / bio (optional)",
     "portraitLabel": "Speaker portrait (optional)",
     "portraitUploadInProgress": "Uploading portrait…",
     "portraitUploadError": "Portrait upload failed. Please try again.",
-    "presentationUploadLabel": "Presentation upload (optional)"
+    "presentationUploadLabel": "Presentation upload (optional)",
+    "readyStateDraftBanner": "De spreker heeft nog niet geaccepteerd. Opslaan schrijft titel en abstract als concept in de sessie; er wordt geen inzending vastgelegd en de spreker kan ze na acceptatie nog wijzigen.",
+    "saveDraft": "Concept opslaan"
   },
   "qualityReview": {
     "title": "Kwaliteitsbeoordeling",
@@ -341,7 +348,12 @@
     "errors": {
       "feedbackRequired": "Feedback is verplicht",
       "unknown": "Er is een onbekende fout opgetreden"
-    }
+    },
+    "noTitle": "Zonder titel",
+    "noAbstract": "Geen abstract opgegeven",
+    "material": "Presentatiemateriaal",
+    "downloadMaterial": "Materiaal downloaden",
+    "noMaterial": "Nog geen materiaal geüpload"
   },
   "speakers": {
     "invite": "Uitnodigen",
@@ -384,7 +396,12 @@
     "revisionRequested": "Revision Requested",
     "submittedContent": "Submitted Content",
     "submittedAt": "Submitted",
-    "noDetails": "Geen details beschikbaar"
+    "noDetails": "Geen details beschikbaar",
+    "speakerName": "Naam van de spreker",
+    "company": "Bedrijf",
+    "expertise": "Expertise",
+    "internalNotes": "Interne notities",
+    "unassigned": "Niet toegewezen"
   },
   "tasks": {
     "taskBoard": "Takenbord",
@@ -578,7 +595,11 @@
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
     },
-    "invalidColumnTooltip": "Geen geldige stap vooruit naar deze kolom."
+    "invalidColumnTooltip": "Geen geldige stap vooruit naar deze kolom.",
+    "acceptOnBehalfDialog": {
+      "title": "Namens {{speakerName}} accepteren",
+      "reasonHint": "Noteer waarom u namens de spreker accepteert (bijv. \"per e-mail bevestigd op 18-05-2026\"). Komt in het auditlog."
+    }
   },
   "speakerDrawer": {
     "secondaryActions": {
@@ -586,11 +607,13 @@
       "acceptOnBehalf": "Accepteren namens de spreker (zonder uitnodiging)",
       "reassignOrganizer": "Reassign organizer",
       "editDetails": "Edit details",
-      "overrideState": "Override state"
+      "overrideState": "Override state",
+      "addContactEntry": "Contactmoment toevoegen"
     },
     "tabs": {
       "details": "Details",
-      "history": "History"
+      "history": "History",
+      "content": "Inhoud"
     },
     "subTabs": {
       "content": "Content"

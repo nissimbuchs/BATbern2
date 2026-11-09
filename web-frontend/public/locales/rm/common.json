@@ -772,7 +772,8 @@
     "sessions": "Sessiuns",
     "topics": "Temas",
     "firstName": "Prenum",
-    "lastName": "Num"
+    "lastName": "Num",
+    "unknown": "nunenconuschent"
   },
   "filters": {
     "status": {
@@ -805,7 +806,8 @@
     "unexpectedError": "Nus s'excusan per l'engraziaivel. Igl è sa producì in-a errur imprevista.",
     "devDetails": "Detagls da l'errur (mo per sviluppaders):",
     "refreshPage": "Actualisar la pagina",
-    "goHome": "A la pagina principala"
+    "goHome": "A la pagina principala",
+    "loadFailed": "Las datas n'han betg pudì vegnir chargiadas."
   },
   "bootstrap": {
     "loading": "Cargament da BATbern...",

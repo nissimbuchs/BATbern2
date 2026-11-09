@@ -772,7 +772,8 @@
     "sessions": "セッション",
     "topics": "トピック",
     "firstName": "名",
-    "lastName": "姓"
+    "lastName": "姓",
+    "unknown": "不明"
   },
   "filters": {
     "status": {
@@ -805,7 +806,8 @@
     "unexpectedError": "申し訳ありません。予期しないエラーが発生しました。",
     "devDetails": "エラー詳細（開発者のみ）：",
     "refreshPage": "ページを更新",
-    "goHome": "ホームに戻る"
+    "goHome": "ホームに戻る",
+    "loadFailed": "データを読み込めませんでした。"
   },
   "bootstrap": {
     "loading": "BATbernを読み込み中...",
