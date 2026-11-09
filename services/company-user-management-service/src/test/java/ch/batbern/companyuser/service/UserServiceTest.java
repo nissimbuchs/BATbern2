@@ -123,7 +123,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(any(User.class))).thenReturn(existingUser);
+        when(userRepository.saveAndFlush(any(User.class))).thenReturn(existingUser);
 
         UserResponse mockResponse = new UserResponse();
         mockResponse.setId(username);
@@ -144,7 +144,7 @@ class UserServiceTest {
         assertThat(response.getFirstName()).isEqualTo("Johnny");
         assertThat(response.getBio()).isEqualTo("Updated bio");
 
-        verify(userRepository).save(any(User.class));
+        verify(userRepository).saveAndFlush(any(User.class));
         verifyNoInteractions(cognitoService);  // DB is source of truth, Cognito is not synced
         verify(searchService).invalidateCache();
     }
@@ -165,7 +165,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(user));
-        when(userRepository.save(any(User.class))).thenReturn(user);
+        when(userRepository.saveAndFlush(any(User.class))).thenReturn(user);
 
         UpdateUserRequest request = new UpdateUserRequest();
         request.setFirstName("Johnny");
@@ -381,7 +381,7 @@ class UserServiceTest {
         assertThat(response.getCreated()).isFalse();
         assertThat(response.getUser().getId()).isEqualTo("existing.user");
 
-        verify(userRepository, never()).save(any());
+        verify(userRepository, never()).saveAndFlush(any());
         verifyNoInteractions(cognitoService);
         verify(eventPublisher, never()).publish(any());
     }
@@ -412,7 +412,7 @@ class UserServiceTest {
                 .displayName("New Company")
                 .build();
         when(companyService.getOrCreateCompany("New Company")).thenReturn(newCompany);
-        when(userRepository.save(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
+        when(userRepository.saveAndFlush(any(User.class))).thenAnswer(inv -> inv.getArgument(0));
 
         UserResponse userResponse = new UserResponse();
         userResponse.setId("existing.user");
@@ -427,7 +427,7 @@ class UserServiceTest {
         assertThat(response.getCompanyUpdated()).isTrue();
 
         ArgumentCaptor<User> savedCaptor = ArgumentCaptor.forClass(User.class);
-        verify(userRepository).save(savedCaptor.capture());
+        verify(userRepository).saveAndFlush(savedCaptor.capture());
         assertThat(savedCaptor.getValue().getCompanyId()).isEqualTo("newco");
 
         verify(searchService).invalidateCache();
@@ -470,7 +470,7 @@ class UserServiceTest {
 
         // Then
         assertThat(response.getCompanyUpdated()).isFalse();
-        verify(userRepository, never()).save(any());
+        verify(userRepository, never()).saveAndFlush(any());
         verify(eventPublisher, never()).publish(any());
     }
 
@@ -503,7 +503,7 @@ class UserServiceTest {
         // Then
         assertThat(response.getCompanyUpdated()).isFalse();
         verify(companyService, never()).getOrCreateCompany(any());
-        verify(userRepository, never()).save(any());
+        verify(userRepository, never()).saveAndFlush(any());
         verify(eventPublisher, never()).publish(any());
     }
 
@@ -606,7 +606,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(any(User.class))).thenReturn(existingUser);
+        when(userRepository.saveAndFlush(any(User.class))).thenReturn(existingUser);
         when(securityContext.getCurrentUserId()).thenReturn(adminUsername);
 
         UserResponse mockResponse = new UserResponse();
@@ -637,7 +637,7 @@ class UserServiceTest {
         assertThat(response.getBio()).isEqualTo("New bio");
         assertThat(response.getCompanyId()).isEqualTo("NewCompany");
 
-        verify(userRepository).save(any(User.class));
+        verify(userRepository).saveAndFlush(any(User.class));
         verify(searchService).invalidateCache();
 
         ArgumentCaptor<UserUpdatedEvent> eventCaptor = ArgumentCaptor.forClass(UserUpdatedEvent.class);
@@ -666,7 +666,7 @@ class UserServiceTest {
                 .build();
 
         when(userRepository.findByUsername(username)).thenReturn(Optional.of(existingUser));
-        when(userRepository.save(any(User.class))).thenReturn(existingUser);
+        when(userRepository.saveAndFlush(any(User.class))).thenReturn(existingUser);
         when(securityContext.getCurrentUserId()).thenReturn("admin.user");
 
         UserResponse mockResponse = new UserResponse();
@@ -705,7 +705,7 @@ class UserServiceTest {
                 .isInstanceOf(UserNotFoundException.class)
                 .hasMessageContaining("User with ID 'nonexistent.user' not found");
 
-        verify(userRepository, never()).save(any());
+        verify(userRepository, never()).saveAndFlush(any());
         verify(eventPublisher, never()).publish(any());
     }
 

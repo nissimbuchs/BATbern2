@@ -163,7 +163,8 @@ public class UserService {
             user.setTermsAcceptedAt(java.time.Instant.now());
         }
 
-        User updatedUser = userRepository.save(user);
+        // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction.
+        User updatedUser = userRepository.saveAndFlush(user);
 
         // NOTE: Cognito sync removed - DB is source of truth for user data
         // Cognito is only used for authentication (JWT tokens)
@@ -232,7 +233,8 @@ public class UserService {
             user.setCompanyId(request.getCompanyId());
         }
 
-        User updatedUser = userRepository.save(user);
+        // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction.
+        User updatedUser = userRepository.saveAndFlush(user);
 
         // Invalidate search cache
         searchService.invalidateCache();
@@ -528,7 +530,8 @@ public class UserService {
         }
         String previousSlug = existingUser.getCompanyId();
         existingUser.setCompanyId(newSlug);
-        User saved = userRepository.save(existingUser);
+        // Flush: the get-or-create response carries this user's new updatedAt (@PreUpdate).
+        User saved = userRepository.saveAndFlush(existingUser);
         searchService.invalidateCache();
 
         java.util.Map<String, Object> updatedFields = new java.util.HashMap<>();
@@ -931,7 +934,8 @@ public class UserService {
             user.setProfilePictureUrl(request.getProfilePictureUrl());
         }
 
-        User saved = userRepository.save(user);
+        // Flush so that @PreUpdate has set updatedAt before the response is built in this transaction.
+        User saved = userRepository.saveAndFlush(user);
 
         // Invalidate user-search caches (matches updateUserByUsername behaviour).
         searchService.invalidateCache();

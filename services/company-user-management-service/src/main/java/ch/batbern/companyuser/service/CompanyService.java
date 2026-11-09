@@ -114,7 +114,9 @@ public class CompanyService {
                 savedCompany.setLogoUrl(logoUrl);
                 savedCompany.setLogoS3Key(finalS3Key);
                 savedCompany.setLogoFileId(request.getLogoUploadId());
-                companyRepository.save(savedCompany);
+                // Flush: setting the logo updates the new row, and its @PreUpdate moves updatedAt,
+                // which the response must show.
+                companyRepository.saveAndFlush(savedCompany);
 
                 log.info("Logo associated with company: {}, logoUrl: {}", savedCompany.getName(), logoUrl);
             } catch (Exception e) {
@@ -294,7 +296,9 @@ public class CompanyService {
         }
 
         company.setUpdatedAt(Instant.now());
-        Company updatedCompany = companyRepository.save(company);
+        // Flush so that @PreUpdate has set the updatedAt the row gets before the response and the
+        // CompanyUpdatedEvent read it (both are built inside this transaction).
+        Company updatedCompany = companyRepository.saveAndFlush(company);
 
         // Handle logo changes (Story 1.16.3: Generic File Upload)
         // Check if logoUploadId was provided in the request (including empty string to clear it)
@@ -312,7 +316,7 @@ public class CompanyService {
                     updatedCompany.setLogoUrl(logoUrl);
                     updatedCompany.setLogoS3Key(finalS3Key);
                     updatedCompany.setLogoFileId(request.getLogoUploadId());
-                    updatedCompany = companyRepository.save(updatedCompany);
+                    updatedCompany = companyRepository.saveAndFlush(updatedCompany);
                     log.info("Logo updated for company: {}, logoUrl: {}", updatedCompany.getName(), logoUrl);
                 } catch (Exception e) {
                     log.error("Failed to associate logo with company: {}", updatedCompany.getName(), e);
@@ -324,7 +328,7 @@ public class CompanyService {
                 updatedCompany.setLogoUrl(null);
                 updatedCompany.setLogoS3Key(null);
                 updatedCompany.setLogoFileId(null);
-                updatedCompany = companyRepository.save(updatedCompany);
+                updatedCompany = companyRepository.saveAndFlush(updatedCompany);
             }
         }
 
@@ -393,7 +397,8 @@ public class CompanyService {
                 .orElseThrow(() -> new CompanyNotFoundException(name));
 
         company.markAsVerified();
-        Company verifiedCompany = companyRepository.save(company);
+        // Flush: @PreUpdate sets the stored updatedAt, which the response and the event carry.
+        Company verifiedCompany = companyRepository.saveAndFlush(company);
 
         // Publish domain event (AC7) using shared-kernel DomainEventPublisher
         // Story 1.16.2: Use company.name as aggregate ID, username as String
