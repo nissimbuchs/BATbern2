@@ -3,7 +3,7 @@ title: 'S2S contract harness on the public-API clients (17.0b1)'
 type: 'feature'
 ticket: '0b1'
 created: '2026-11-08'
-status: 'built'
+status: done
 baseline_revision: '8671ced678e8ebfa56f8e9180ba717bbc93ae67a'
 route: 'full'
 route_source: 'auto'

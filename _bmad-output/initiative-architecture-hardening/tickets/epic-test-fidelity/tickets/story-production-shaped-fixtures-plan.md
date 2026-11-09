@@ -3,7 +3,7 @@ title: 'Production-shaped fixtures (17.0d)'
 type: 'feature'
 ticket: '0d'
 created: '2026-11-08'
-status: 'built'
+status: done
 baseline_revision: '77071b06057989de23e43dc908196f77537171bd'
 route: 'full'
 route_source: 'auto'

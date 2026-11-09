@@ -3,7 +3,7 @@ title: 'Production setup in tests (17.0b3)'
 type: 'refactor'
 ticket: '0b3'
 created: '2026-11-08'
-status: 'built'
+status: done
 baseline_revision: '5e7d04c11de57423a71eec5c30c37728db0d6808'
 route: 'full'
 route_source: 'auto'

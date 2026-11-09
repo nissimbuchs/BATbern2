@@ -3,7 +3,7 @@ title: 'Ten worst mock-heavy frontend tests converted (17.0c2)'
 type: 'refactor'
 ticket: '0c2'
 created: '2026-11-08'
-status: 'built'
+status: done
 baseline_revision: 'fa880af6192b1291149491b772d9c1971b2b6690'
 route: 'full'
 route_source: 'auto'
