@@ -54,13 +54,15 @@ export function anAuthState(
   user: UserContext | null = anAuthUser(),
   overrides: Partial<UseAuthReturn> = {}
 ): UseAuthReturn {
-  const isAuthenticated = overrides.isAuthenticated ?? user !== null;
+  // An overridden `user` is the user the rules below are bound to.
+  const subject = 'user' in overrides ? (overrides.user ?? null) : user;
+  const isAuthenticated = overrides.isAuthenticated ?? subject !== null;
   return {
     isAuthenticated,
     isLoading: false,
-    user,
+    user: subject,
     error: null,
-    accessToken: user ? 'test-access-token' : null,
+    accessToken: subject ? 'test-access-token' : null,
     refreshToken: vi.fn().mockResolvedValue(true),
     signIn: vi.fn().mockResolvedValue({ kind: 'success' }),
     confirmNewPassword: vi.fn().mockResolvedValue(true),
@@ -69,9 +71,9 @@ export function anAuthState(
     signUp: vi.fn().mockResolvedValue(true),
     refreshUser: vi.fn().mockResolvedValue(undefined),
     clearError: vi.fn(),
-    hasRole: (role) => userHasRole(user, role),
-    hasPermission: (resource, action) => userHasPermission(user, resource, action),
-    canAccess: (path) => canAccessPath(isAuthenticated, user, path),
+    hasRole: (role) => userHasRole(subject, role),
+    hasPermission: (resource, action) => userHasPermission(subject, resource, action),
+    canAccess: (path) => canAccessPath(isAuthenticated, subject, path),
     isTokenExpired: () => false,
     ...overrides,
   };

@@ -3,14 +3,14 @@ title: 'Ten worst mock-heavy frontend tests converted (17.0c2)'
 type: 'refactor'
 ticket: '0c2'
 created: '2026-11-08'
-status: 'done'
+status: 'built'
 baseline_revision: 'fa880af6192b1291149491b772d9c1971b2b6690'
 route: 'full'
 route_source: 'auto'
 risk: 'medium'
-review: ''
-review_source: ''
-lenses_ran: []
+review: 'quick'
+review_source: 'pinned'
+lenses_ran: ['quick']
 review_loop_iteration: 0
 followup_review_recommended: false
 context:
@@ -123,6 +123,16 @@ The only `vi.mock` left in the 11 files: `@stomp/stompjs` and `sockjs-client` in
 - `useSlotAssignment.test.ts`, `DragDropSlotAssignment.test.tsx`, `RegistrationConfirmationPage.test.tsx`, `usePublishing.test.ts(x)` still mock own code (outside the 11; only adapted where a type change forced it).
 
 ## Review Triage Log
+
+| # | Finding | Verdict | Route | Evidence |
+|---|---------|---------|-------|----------|
+| 1 | Confirmation page shows `attendeeCompany`, which is the company key | medium | patch | Checked: EMS `RegistrationService.java:278` sets it from `userProfile.getCompanyId()`. Before 0c2 the page read `registration.company`, which was never sent, so no company was shown. Patch: the company line was removed, the changelog no longer claims the company, and a test checks that the key is not shown. |
+| 2 | `expectAccessDenied` asserts no calls synchronously, so it cannot fail | medium | patch | Checked: calls are recorded inside the MSW resolver, after the async auth interceptor. Patch: the helper is async and waits 100 ms inside `act` before asserting. |
+| 3 | `Registration` schema description names only the organizer endpoints | low | patch | Checked: the public `getRegistration` returns the same schema with the e-mail masked. Patch: the description now covers both endpoints. |
+| 4a | Plan golden pattern uses `anAuthUser`/`user:`, which the helper does not have | low | rejected | The fix would edit this build's plan. The helper's own docblock shows the correct use. |
+| 4b | `anAuthState` overrides of `user` keep the rules bound to the old user | low | patch | Checked: the rules close over the `user` argument. Patch: the rules, the token and `isAuthenticated` now follow an overridden `user`. |
+| 5a | `partnerApi.test` calls `mockReset` on the global Amplify mock | low | rejected | The global mock has no default implementation, so reset and clear behave the same. No test is affected. |
+| 5b | `partnerApi.test` contacts are hand-written, not from the fixtures | low | rejected | Cosmetic: the names are synthetic and the test is correct either way. |
 
 ## Design Notes
 

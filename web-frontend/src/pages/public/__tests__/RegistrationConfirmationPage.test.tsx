@@ -157,6 +157,8 @@ describe('RegistrationConfirmationPage Component', () => {
       await waitFor(() => {
         expect(screen.getByText(/John Doe/)).toBeInTheDocument();
       });
+      // attendeeCompany is the company key from user_profiles, not a name to show.
+      expect(screen.queryByText('acmecorp')).not.toBeInTheDocument();
     });
 
     test('should_displayEventTitle_when_registrationLoaded', async () => {

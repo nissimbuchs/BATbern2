@@ -243,12 +243,6 @@ const RegistrationConfirmationPage = () => {
                   <span className="text-zinc-400">{t('common:labels.email')}:</span>
                   <span className="text-zinc-100">{registration.attendeeEmail}</span>
                 </div>
-                {registration.attendeeCompany && (
-                  <div className="flex justify-between">
-                    <span className="text-zinc-400">{t('common:labels.company')}:</span>
-                    <span className="text-zinc-100">{registration.attendeeCompany}</span>
-                  </div>
-                )}
                 <div className="flex justify-between">
                   <span className="text-zinc-400">{t('common:labels.event')}:</span>
                   <span className="text-zinc-100">{registration.eventTitle}</span>

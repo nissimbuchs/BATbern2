@@ -12,7 +12,7 @@
  * - Mobile: bottom navigation instead of the tab strip, same URL behaviour
  */
 
-import { screen, within } from '@testing-library/react';
+import { act, screen, within } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
 import { Route, Routes, useLocation } from 'react-router-dom';
 import { vi, describe, it, expect, afterEach } from 'vitest';
@@ -253,7 +253,11 @@ describe('EventManagementAdminPage', () => {
   });
 
   describe('AC1 — role guard', () => {
-    const expectAccessDenied = () => {
+    const expectAccessDenied = async () => {
+      // Let anything the page started reach the harness (auth interceptor, then MSW) first.
+      await act(async () => {
+        await new Promise((resolve) => setTimeout(resolve, 100));
+      });
       expect(screen.getByText('Access Denied')).toBeInTheDocument();
       expect(screen.getByText('This page is for organizers only.')).toBeInTheDocument();
       expect(screen.queryByRole('tab', { name: /event types/i })).not.toBeInTheDocument();
@@ -262,19 +266,19 @@ describe('EventManagementAdminPage', () => {
       expect(api.allCalls()).toHaveLength(0);
     };
 
-    it('shows access denied for non-organizer (speaker)', () => {
+    it('shows access denied for non-organizer (speaker)', async () => {
       renderPage('/organizer/admin', signedInAs('speaker'));
-      expectAccessDenied();
+      await expectAccessDenied();
     });
 
-    it('shows access denied for partner role', () => {
+    it('shows access denied for partner role', async () => {
       renderPage('/organizer/admin', signedInAs('partner'));
-      expectAccessDenied();
+      await expectAccessDenied();
     });
 
-    it('shows access denied for attendee role and when signed out', () => {
+    it('shows access denied for attendee role and when signed out', async () => {
       const { rerenderWithAuth } = renderPage('/organizer/admin', signedInAs('attendee'));
-      expectAccessDenied();
+      await expectAccessDenied();
 
       rerenderWithAuth(
         <Routes>
@@ -282,7 +286,7 @@ describe('EventManagementAdminPage', () => {
         </Routes>,
         signedOut()
       );
-      expectAccessDenied();
+      await expectAccessDenied();
     });
 
     it('renders page for organizer role', async () => {
