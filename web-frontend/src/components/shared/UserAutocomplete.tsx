@@ -107,17 +107,17 @@ export const UserAutocomplete: React.FC<UserAutocompleteProps> = ({
       filterOptions={(x) => x} // Server-side filtering
       noOptionsText={
         isError
-          ? t('Error loading users')
+          ? t('autocomplete.usersLoadFailed')
           : inputValue.length < 2
-            ? t('Type at least 2 characters')
+            ? t('autocomplete.typeMore')
             : role
-              ? t(`No users found with role ${role}`)
-              : t('No users found')
+              ? t('autocomplete.noUsersWithRole', { role })
+              : t('autocomplete.noUsers')
       }
       renderInput={(params) => (
         <TextField
           {...params}
-          label={label || t('User')}
+          label={label || t('labels.user')}
           error={!!error}
           helperText={error}
           inputRef={inputRef}

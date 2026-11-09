@@ -429,7 +429,9 @@
     "completedOn": "Terminé le",
     "completedBy": "Terminé par",
     "noTasks": "Aucune tâche",
-    "completionNotesPlaceholder": "Ajoutez des remarques sur la réalisation de la tâche..."
+    "completionNotesPlaceholder": "Ajoutez des remarques sur la réalisation de la tâche...",
+    "deleteTask": "Supprimer la tâche",
+    "deleteTaskConfirm": "Voulez-vous vraiment supprimer « {{name}} » ?"
   },
   "analytics": {
     "title": "Analytique",

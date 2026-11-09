@@ -44,7 +44,8 @@
     "userDetail": {
       "title": "Dettagli utente",
       "createdAt": "Creato il",
-      "updatedAt": "Ultimo aggiornamento"
+      "updatedAt": "Ultimo aggiornamento",
+      "bio": "Biografia"
     },
     "createUser": {
       "title": "Crea nuovo utente",
@@ -54,7 +55,9 @@
       "company": "Azienda (opzionale)",
       "roles": "Ruoli",
       "selectRoles": "Seleziona almeno un ruolo",
-      "creating": "Creazione in corso..."
+      "creating": "Creazione in corso...",
+      "bio": "Biografia",
+      "bioHelper": "Massimo 5000 caratteri"
     },
     "editRoles": {
       "title": "Modifica ruoli",
@@ -70,7 +73,11 @@
     },
     "editUser": {
       "uploadPhotoAria": "Carica foto profilo",
-      "removePhotoAria": "Rimuovi foto profilo"
+      "removePhotoAria": "Rimuovi foto profilo",
+      "title": "Modifica utente",
+      "uploadPhoto": "Carica foto",
+      "removePhoto": "Rimuovi foto",
+      "saving": "Salvataggio..."
     }
   },
   "pagination": {
@@ -93,7 +100,8 @@
     "createFailed": "Impossibile creare l'utente",
     "updateFailed": "Impossibile aggiornare l'utente",
     "deleteFailed": "Impossibile eliminare l'utente",
-    "notFound": "Utente non trovato"
+    "notFound": "Utente non trovato",
+    "bioTooLong": "La biografia deve avere meno di {{max}} caratteri"
   },
   "batchImport": {
     "title": "Importazione in blocco dei relatori",

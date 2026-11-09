@@ -103,7 +103,9 @@
       "analytics": "Análisis",
       "settings": "Configuración",
       "partnerDetailTabs": "Pestañas de detalles del socio",
-      "mail": "Correo"
+      "mail": "Correo",
+      "notes": "Notas",
+      "topics": "Temas"
     },
     "overviewTab": {
       "title": "Detalles de la asociación",

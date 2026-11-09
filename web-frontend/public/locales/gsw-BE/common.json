@@ -143,7 +143,8 @@
     "topics": "Theme",
     "firstName": "Vorname",
     "lastName": "Nachname",
-    "unknown": "unbekannt"
+    "unknown": "unbekannt",
+    "user": "Benutzer"
   },
   "filters": {
     "status": {
@@ -750,5 +751,13 @@
   },
   "errors": {
     "loadFailed": "D Date hei nid chönne glade wärde."
+  },
+  "autocomplete": {
+    "typeMore": "Mindestens 2 Zeiche iigä",
+    "companiesLoadFailed": "Fähler bim Lade vo de Firme",
+    "noCompanies": "Kei Firme gfunde",
+    "usersLoadFailed": "Fähler bim Lade vo de Benutzer",
+    "noUsers": "Kei Benutzer gfunde",
+    "noUsersWithRole": "Kei Benutzer mit dr Rolle {{role}} gfunde"
   }
 }

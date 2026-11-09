@@ -203,7 +203,10 @@ export const PartnerDetailScreen: React.FC<PartnerDetailScreenProps> = (props) =
         label: t('common:navigation.partners'),
         path: currentUser.role === 'PARTNER' ? '/partners' : '/organizer/partners',
       },
-      { label: partner?.companyName || resolvedCompanyName || t('common.loading', 'Loading...') },
+      {
+        label:
+          partner?.companyName || resolvedCompanyName || t('common:actions.loading', 'Loading...'),
+      },
     ],
     [partner?.companyName, resolvedCompanyName, t, currentUser.role]
   );

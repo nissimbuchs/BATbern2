@@ -80,7 +80,7 @@ export const OrganizerSelect: React.FC<OrganizerSelectProps> = ({
       return [
         <MenuItem key="loading" disabled>
           <CircularProgress size={20} sx={{ mr: 1 }} />
-          {t('loading', 'Loading...')}
+          {t('actions.loading', 'Loading...')}
         </MenuItem>,
       ];
     }

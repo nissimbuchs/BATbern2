@@ -44,7 +44,8 @@
     "userDetail": {
       "title": "Gebruikersdetails",
       "createdAt": "Aangemaakt op",
-      "updatedAt": "Laatst bijgewerkt"
+      "updatedAt": "Laatst bijgewerkt",
+      "bio": "Bio"
     },
     "createUser": {
       "title": "Nieuwe gebruiker aanmaken",
@@ -54,7 +55,9 @@
       "company": "Bedrijf (optioneel)",
       "roles": "Rollen",
       "selectRoles": "Selecteer minimaal één rol",
-      "creating": "Aanmaken..."
+      "creating": "Aanmaken...",
+      "bio": "Bio",
+      "bioHelper": "Maximaal 5000 tekens"
     },
     "editRoles": {
       "title": "Rollen bewerken",
@@ -70,7 +73,11 @@
     },
     "editUser": {
       "uploadPhotoAria": "Profielfoto uploaden",
-      "removePhotoAria": "Profielfoto verwijderen"
+      "removePhotoAria": "Profielfoto verwijderen",
+      "title": "Gebruiker bewerken",
+      "uploadPhoto": "Foto uploaden",
+      "removePhoto": "Foto verwijderen",
+      "saving": "Opslaan..."
     }
   },
   "pagination": {
@@ -93,7 +100,8 @@
     "createFailed": "Aanmaken van gebruiker mislukt",
     "updateFailed": "Bijwerken van gebruiker mislukt",
     "deleteFailed": "Verwijderen van gebruiker mislukt",
-    "notFound": "Gebruiker niet gevonden"
+    "notFound": "Gebruiker niet gevonden",
+    "bioTooLong": "De bio moet korter zijn dan {{max}} tekens"
   },
   "batchImport": {
     "title": "Sprekers bulkimport",

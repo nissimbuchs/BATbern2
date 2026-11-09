@@ -773,7 +773,8 @@
     "topics": "Temas",
     "firstName": "Nombre",
     "lastName": "Apellido",
-    "unknown": "desconocido"
+    "unknown": "desconocido",
+    "user": "Usuario"
   },
   "filters": {
     "status": {
@@ -901,5 +902,13 @@
       "errorNoCompany": "Guarda primero una empresa en tu perfil.",
       "errorGeneric": "No se pudo enviar la solicitud. Inténtalo de nuevo."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Escriba al menos 2 caracteres",
+    "companiesLoadFailed": "Error al cargar las empresas",
+    "noCompanies": "No se encontraron empresas",
+    "usersLoadFailed": "Error al cargar los usuarios",
+    "noUsers": "No se encontraron usuarios",
+    "noUsersWithRole": "No se encontraron usuarios con el rol {{role}}"
   }
 }

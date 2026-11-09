@@ -429,7 +429,9 @@
     "completedOn": "Completado el",
     "completedBy": "Completado por",
     "noTasks": "Sin tareas",
-    "completionNotesPlaceholder": "Añade notas sobre la finalización de la tarea..."
+    "completionNotesPlaceholder": "Añade notas sobre la finalización de la tarea...",
+    "deleteTask": "Eliminar tarea",
+    "deleteTaskConfirm": "¿Seguro que desea eliminar «{{name}}»?"
   },
   "analytics": {
     "title": "Análisis",

@@ -773,7 +773,8 @@
     "topics": "Onderwerpen",
     "firstName": "Voornaam",
     "lastName": "Achternaam",
-    "unknown": "onbekend"
+    "unknown": "onbekend",
+    "user": "Gebruiker"
   },
   "filters": {
     "status": {
@@ -901,5 +902,13 @@
       "errorNoCompany": "Sla eerst een bedrijf op in je profiel.",
       "errorGeneric": "De aanvraag kon niet worden verstuurd. Probeer het opnieuw."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Typ minstens 2 tekens",
+    "companiesLoadFailed": "Fout bij het laden van bedrijven",
+    "noCompanies": "Geen bedrijven gevonden",
+    "usersLoadFailed": "Fout bij het laden van gebruikers",
+    "noUsers": "Geen gebruikers gevonden",
+    "noUsersWithRole": "Geen gebruikers gevonden met rol {{role}}"
   }
 }

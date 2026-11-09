@@ -5,7 +5,9 @@
       "autoRenewal": "Auto-Renewal"
     },
     "tabs": {
-      "mail": "Mail"
+      "mail": "Mail",
+      "notes": "Notize",
+      "topics": "Theme"
     }
   },
   "portal": {

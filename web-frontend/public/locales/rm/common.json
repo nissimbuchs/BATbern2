@@ -773,7 +773,8 @@
     "topics": "Temas",
     "firstName": "Prenum",
     "lastName": "Num",
-    "unknown": "nunenconuschent"
+    "unknown": "nunenconuschent",
+    "user": "Utilisader"
   },
   "filters": {
     "status": {
@@ -901,5 +902,13 @@
       "errorNoCompany": "Memorisescha p.pl. l'emprim ina firma en tes profil.",
       "errorGeneric": "La dumonda n'ha betg pudì vegnir tramessa. Emprova anc ina giada."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Endatai almain 2 caracters",
+    "companiesLoadFailed": "Errur cun chargiar las firmas",
+    "noCompanies": "Chattà naginas firmas",
+    "usersLoadFailed": "Errur cun chargiar ils utilisaders",
+    "noUsers": "Chattà nagins utilisaders",
+    "noUsersWithRole": "Chattà nagins utilisaders cun la rolla {{role}}"
   }
 }

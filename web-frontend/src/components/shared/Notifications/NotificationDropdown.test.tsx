@@ -376,7 +376,9 @@ describe('NotificationDropdown', () => {
       await user.click(deleteButton);
 
       // Confirm deletion in dialog
-      const confirmButton = await screen.findByRole('button', { name: /delete/i });
+      const confirmButton = await screen.findByRole('button', {
+        name: i18n.t('common:actions.delete'),
+      });
       await user.click(confirmButton);
 
       expect(onDelete).toHaveBeenCalledWith('notif-delete-123');

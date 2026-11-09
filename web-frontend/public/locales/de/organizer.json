@@ -497,7 +497,9 @@
     "completedOn": "Abgeschlossen am",
     "completedBy": "Abgeschlossen von",
     "noTasks": "Keine Aufgaben",
-    "completionNotesPlaceholder": "Notizen zur Erledigung der Aufgabe hinzufügen..."
+    "completionNotesPlaceholder": "Notizen zur Erledigung der Aufgabe hinzufügen...",
+    "deleteTask": "Aufgabe löschen",
+    "deleteTaskConfirm": "Möchten Sie «{{name}}» wirklich löschen?"
   },
   "analytics": {
     "title": "Analysen",

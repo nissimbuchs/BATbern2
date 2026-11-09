@@ -103,7 +103,9 @@
       "analytics": "Analytics",
       "settings": "Settings",
       "partnerDetailTabs": "Partner detail tabs",
-      "mail": "Mail"
+      "mail": "Mail",
+      "notes": "Notes",
+      "topics": "Topics"
     },
     "overviewTab": {
       "title": "Partnership Details",

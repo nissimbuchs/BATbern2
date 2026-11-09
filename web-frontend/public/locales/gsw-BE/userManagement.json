@@ -170,5 +170,23 @@
       "SWAPPED_NAME": "Vor- und Nachname vertuuschet",
       "SAME_ADDRESS_NAME": "Glyche Adrässname, angeri Domain"
     }
+  },
+  "error": {
+    "bioTooLong": "D Biografie mues chürzer aus {{max}} Zeiche sy"
+  },
+  "modal": {
+    "editUser": {
+      "title": "Benutzer bearbeite",
+      "uploadPhoto": "Foto ufelade",
+      "removePhoto": "Foto entfärne",
+      "saving": "Wird gspicheret..."
+    },
+    "createUser": {
+      "bio": "Biografie",
+      "bioHelper": "Höchschtens 5000 Zeiche"
+    },
+    "userDetail": {
+      "bio": "Biografie"
+    }
   }
 }

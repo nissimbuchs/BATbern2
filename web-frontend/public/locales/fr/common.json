@@ -773,7 +773,8 @@
     "topics": "Sujets",
     "firstName": "Prénom",
     "lastName": "Nom de famille",
-    "unknown": "inconnu"
+    "unknown": "inconnu",
+    "user": "Utilisateur"
   },
   "filters": {
     "status": {
@@ -901,5 +902,13 @@
       "errorNoCompany": "Veuillez d'abord enregistrer une entreprise dans votre profil.",
       "errorGeneric": "La demande n'a pas pu être envoyée. Veuillez réessayer."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Saisissez au moins 2 caractères",
+    "companiesLoadFailed": "Erreur lors du chargement des entreprises",
+    "noCompanies": "Aucune entreprise trouvée",
+    "usersLoadFailed": "Erreur lors du chargement des utilisateurs",
+    "noUsers": "Aucun utilisateur trouvé",
+    "noUsersWithRole": "Aucun utilisateur trouvé avec le rôle {{role}}"
   }
 }

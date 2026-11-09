@@ -284,7 +284,9 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeletingTopicId(null)}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={() => setDeletingTopicId(null)}>
+            {t('common:actions.cancel', 'Cancel')}
+          </Button>
           <Button
             onClick={() => void handleDeleteConfirm()}
             color="error"

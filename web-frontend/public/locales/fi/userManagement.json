@@ -44,7 +44,8 @@
     "userDetail": {
       "title": "Käyttäjän tiedot",
       "createdAt": "Luotu",
-      "updatedAt": "Viimeksi päivitetty"
+      "updatedAt": "Viimeksi päivitetty",
+      "bio": "Esittely"
     },
     "createUser": {
       "title": "Luo uusi käyttäjä",
@@ -54,7 +55,9 @@
       "company": "Yritys (valinnainen)",
       "roles": "Roolit",
       "selectRoles": "Valitse vähintään yksi rooli",
-      "creating": "Luodaan..."
+      "creating": "Luodaan...",
+      "bio": "Esittely",
+      "bioHelper": "Enintään 5000 merkkiä"
     },
     "editRoles": {
       "title": "Muokkaa rooleja",
@@ -70,7 +73,11 @@
     },
     "editUser": {
       "uploadPhotoAria": "Lataa profiilikuva",
-      "removePhotoAria": "Poista profiilikuva"
+      "removePhotoAria": "Poista profiilikuva",
+      "title": "Muokkaa käyttäjää",
+      "uploadPhoto": "Lataa kuva",
+      "removePhoto": "Poista kuva",
+      "saving": "Tallennetaan..."
     }
   },
   "pagination": {
@@ -93,7 +100,8 @@
     "createFailed": "Käyttäjän luominen epäonnistui",
     "updateFailed": "Käyttäjän päivittäminen epäonnistui",
     "deleteFailed": "Käyttäjän poistaminen epäonnistui",
-    "notFound": "Käyttäjää ei löydy"
+    "notFound": "Käyttäjää ei löydy",
+    "bioTooLong": "Esittelyn on oltava alle {{max}} merkkiä"
   },
   "batchImport": {
     "title": "Puhujien erätuonti",

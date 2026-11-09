@@ -44,7 +44,8 @@
     "userDetail": {
       "title": "Detagls dal utilisader",
       "createdAt": "Creà ils",
-      "updatedAt": "Ultima actualisaziun"
+      "updatedAt": "Ultima actualisaziun",
+      "bio": "Biografia"
     },
     "createUser": {
       "title": "Crear nov utilisader",
@@ -54,7 +55,9 @@
       "company": "Interpresa (opziunal)",
       "roles": "Rollas",
       "selectRoles": "Tscherner almain ina rolla",
-      "creating": "Creaziun..."
+      "creating": "Creaziun...",
+      "bio": "Biografia",
+      "bioHelper": "Maximalmain 5000 caracters"
     },
     "editRoles": {
       "title": "Modifitgar rollas",
@@ -70,7 +73,11 @@
     },
     "editUser": {
       "uploadPhotoAria": "Chargiar la foto da profil",
-      "removePhotoAria": "Stizzar la foto da profil"
+      "removePhotoAria": "Stizzar la foto da profil",
+      "title": "Modifitgar l'utilisader",
+      "uploadPhoto": "Chargiar si ina foto",
+      "removePhoto": "Allontanar la foto",
+      "saving": "Memorisar..."
     }
   },
   "pagination": {
@@ -93,7 +100,8 @@
     "createFailed": "Crear l'utilisader ha fallì",
     "updateFailed": "Actualisar l'utilisader ha fallì",
     "deleteFailed": "Stritgar l'utilisader ha fallì",
-    "notFound": "Utilisader betg chattà"
+    "notFound": "Utilisader betg chattà",
+    "bioTooLong": "La biografia sto avair main che {{max}} caracters"
   },
   "batchImport": {
     "title": "Import en bloc da referents",

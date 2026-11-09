@@ -262,7 +262,7 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
                 onClick={onReload}
                 aria-label={t('actions.retry')}
               >
-                {t('notifications.retry', 'Retry')}
+                {t('actions.retry', 'Retry')}
               </Button>
             </Box>
           )}
@@ -303,10 +303,10 @@ export const NotificationDropdown = React.memo<NotificationDropdownProps>(
           </DialogContent>
           <DialogActions>
             <Button onClick={handleDeleteCancel} aria-label={t('actions.cancel')}>
-              {t('common.cancel', 'Cancel')}
+              {t('actions.cancel', 'Cancel')}
             </Button>
             <Button onClick={handleDeleteConfirm} color="error" autoFocus>
-              {t('common.delete', 'Delete')}
+              {t('actions.delete', 'Delete')}
             </Button>
           </DialogActions>
         </Dialog>

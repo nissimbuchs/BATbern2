@@ -773,7 +773,8 @@
     "topics": "トピック",
     "firstName": "名",
     "lastName": "姓",
-    "unknown": "不明"
+    "unknown": "不明",
+    "user": "ユーザー"
   },
   "filters": {
     "status": {
@@ -901,5 +902,13 @@
       "errorNoCompany": "先にプロフィールに会社を保存してください。",
       "errorGeneric": "依頼を送信できませんでした。もう一度お試しください。"
     }
+  },
+  "autocomplete": {
+    "typeMore": "2文字以上入力してください",
+    "companiesLoadFailed": "会社の読み込み中にエラーが発生しました",
+    "noCompanies": "会社が見つかりません",
+    "usersLoadFailed": "ユーザーの読み込み中にエラーが発生しました",
+    "noUsers": "ユーザーが見つかりません",
+    "noUsersWithRole": "ロール {{role}} のユーザーが見つかりません"
   }
 }

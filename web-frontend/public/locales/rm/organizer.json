@@ -429,7 +429,9 @@
     "completedOn": "Terminà ils",
     "completedBy": "Terminà da",
     "noTasks": "Naginas activitads",
-    "completionNotesPlaceholder": "Agiuntai notizias davart l'adempliment da la lavur..."
+    "completionNotesPlaceholder": "Agiuntai notizias davart l'adempliment da la lavur...",
+    "deleteTask": "Stizzar la lezza",
+    "deleteTaskConfirm": "Vulais Vus propi stizzar «{{name}}»?"
   },
   "analytics": {
     "title": "Analisas",

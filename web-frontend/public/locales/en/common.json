@@ -144,7 +144,8 @@
     "topics": "Topics",
     "firstName": "First Name",
     "lastName": "Last Name",
-    "unknown": "unknown"
+    "unknown": "unknown",
+    "user": "User"
   },
   "filters": {
     "status": {
@@ -904,5 +905,13 @@
       "errorNoCompany": "Please save a company in your profile first.",
       "errorGeneric": "The request could not be sent. Please try again."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Type at least 2 characters",
+    "companiesLoadFailed": "Error loading companies",
+    "noCompanies": "No companies found",
+    "usersLoadFailed": "Error loading users",
+    "noUsers": "No users found",
+    "noUsersWithRole": "No users found with role {{role}}"
   }
 }

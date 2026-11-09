@@ -429,7 +429,9 @@
     "completedOn": "Valmistui",
     "completedBy": "Suorittanut",
     "noTasks": "Ei tehtäviä",
-    "completionNotesPlaceholder": "Lisää huomioita tehtävän suorittamisesta..."
+    "completionNotesPlaceholder": "Lisää huomioita tehtävän suorittamisesta...",
+    "deleteTask": "Poista tehtävä",
+    "deleteTaskConfirm": "Haluatko varmasti poistaa tehtävän \"{{name}}\"?"
   },
   "analytics": {
     "title": "Analytiikka",

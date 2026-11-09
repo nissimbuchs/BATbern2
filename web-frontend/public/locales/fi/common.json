@@ -773,7 +773,8 @@
     "topics": "Aiheet",
     "firstName": "Etunimi",
     "lastName": "Sukunimi",
-    "unknown": "tuntematon"
+    "unknown": "tuntematon",
+    "user": "Käyttäjä"
   },
   "filters": {
     "status": {
@@ -901,5 +902,13 @@
       "errorNoCompany": "Tallenna ensin yritys profiiliisi.",
       "errorGeneric": "Pyyntöä ei voitu lähettää. Yritä uudelleen."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Kirjoita vähintään 2 merkkiä",
+    "companiesLoadFailed": "Virhe yritysten latauksessa",
+    "noCompanies": "Yrityksiä ei löytynyt",
+    "usersLoadFailed": "Virhe käyttäjien latauksessa",
+    "noUsers": "Käyttäjiä ei löytynyt",
+    "noUsersWithRole": "Käyttäjiä roolilla {{role}} ei löytynyt"
   }
 }

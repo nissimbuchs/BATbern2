@@ -429,7 +429,9 @@
     "completedOn": "完了日",
     "completedBy": "完了者",
     "noTasks": "タスクなし",
-    "completionNotesPlaceholder": "タスク完了についてのメモを追加..."
+    "completionNotesPlaceholder": "タスク完了についてのメモを追加...",
+    "deleteTask": "タスクを削除",
+    "deleteTaskConfirm": "「{{name}}」を削除してもよろしいですか?"
   },
   "analytics": {
     "title": "分析",

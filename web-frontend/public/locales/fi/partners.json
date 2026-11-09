@@ -103,7 +103,9 @@
       "analytics": "Analytiikka",
       "settings": "Asetukset",
       "partnerDetailTabs": "Kumppanin tietovälilehdet",
-      "mail": "Posti"
+      "mail": "Posti",
+      "notes": "Muistiinpanot",
+      "topics": "Aiheet"
     },
     "overviewTab": {
       "title": "Kumppanuuden tiedot",

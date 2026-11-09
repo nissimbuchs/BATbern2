@@ -777,7 +777,8 @@
     "topics": "Themen",
     "firstName": "Vorname",
     "lastName": "Nachname",
-    "unknown": "unbekannt"
+    "unknown": "unbekannt",
+    "user": "Benutzer"
   },
   "filters": {
     "status": {
@@ -905,5 +906,13 @@
       "errorNoCompany": "Bitte speichern Sie zuerst eine Firma in Ihrem Profil.",
       "errorGeneric": "Der Antrag konnte nicht gesendet werden. Bitte versuchen Sie es noch einmal."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Mindestens 2 Zeichen eingeben",
+    "companiesLoadFailed": "Fehler beim Laden der Firmen",
+    "noCompanies": "Keine Firmen gefunden",
+    "usersLoadFailed": "Fehler beim Laden der Benutzer",
+    "noUsers": "Keine Benutzer gefunden",
+    "noUsersWithRole": "Keine Benutzer mit der Rolle {{role}} gefunden"
   }
 }

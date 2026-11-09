@@ -429,7 +429,9 @@
     "completedOn": "Completato il",
     "completedBy": "Completato da",
     "noTasks": "Nessuna attività",
-    "completionNotesPlaceholder": "Aggiungi note sul completamento del compito..."
+    "completionNotesPlaceholder": "Aggiungi note sul completamento del compito...",
+    "deleteTask": "Elimina attività",
+    "deleteTaskConfirm": "Vuoi davvero eliminare «{{name}}»?"
   },
   "analytics": {
     "title": "Analisi",

@@ -497,7 +497,9 @@
     "completedOn": "Completed on",
     "completedBy": "Completed by",
     "noTasks": "No tasks",
-    "completionNotesPlaceholder": "Add any notes about task completion..."
+    "completionNotesPlaceholder": "Add any notes about task completion...",
+    "deleteTask": "Delete Task",
+    "deleteTaskConfirm": "Are you sure you want to delete \"{{name}}\"?"
   },
   "analytics": {
     "title": "Analytics",

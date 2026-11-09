@@ -80,7 +80,7 @@ const UnsuppressDialog: React.FC<UnsuppressDialogProps> = ({
         </Typography>
         {mutation.isError && (
           <Alert severity="error" sx={{ mt: 2 }}>
-            {tCommon('errors.unexpected')}
+            {tCommon('errors.unexpectedError')}
           </Alert>
         )}
       </DialogContent>

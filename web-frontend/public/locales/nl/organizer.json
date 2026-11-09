@@ -429,7 +429,9 @@
     "completedOn": "Voltooid op",
     "completedBy": "Voltooid door",
     "noTasks": "Geen taken",
-    "completionNotesPlaceholder": "Voeg notities toe over het afronden van de taak..."
+    "completionNotesPlaceholder": "Voeg notities toe over het afronden van de taak...",
+    "deleteTask": "Taak verwijderen",
+    "deleteTaskConfirm": "Weet u zeker dat u \"{{name}}\" wilt verwijderen?"
   },
   "analytics": {
     "title": "Analyse",
