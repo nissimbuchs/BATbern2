@@ -8,12 +8,6 @@ import userEvent from '@testing-library/user-event';
 import { ThemeProvider, createTheme } from '@mui/material/styles';
 import { MultiTopicHeatMap, type TopicWithHistory } from './MultiTopicHeatMap';
 
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({
-    t: (key: string, defaultValue?: string) => defaultValue || key,
-  }),
-}));
-
 const year = new Date().getFullYear();
 
 const topic = (title: string, history: TopicWithHistory['usageHistory']): TopicWithHistory =>
