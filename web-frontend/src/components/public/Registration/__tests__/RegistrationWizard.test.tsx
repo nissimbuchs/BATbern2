@@ -696,9 +696,15 @@ describe('RegistrationWizard Component', () => {
     });
 
     test('should_showLoadingState_when_submitting', async () => {
+      // The test settles the submission itself: a timer that resolved it after the test had
+      // ended let the wizard set state after the jsdom teardown ("window is not defined",
+      // an unhandled rejection once Vitest stopped ignoring them).
+      let finishSubmission: (value: { registrationCode: string; email: string }) => void = () => {};
       vi.mocked(eventApiClient.createRegistration).mockImplementation(
         () =>
-          new Promise((resolve) => setTimeout(() => resolve({ registrationCode: 'ABC123' }), 100))
+          new Promise((resolve) => {
+            finishSubmission = resolve as typeof finishSubmission;
+          })
       );
 
       renderWithProviders(<RegistrationWizard eventCode="BAT2025" />);
@@ -727,6 +733,13 @@ describe('RegistrationWizard Component', () => {
         expect(screen.getByTestId('registration-wizard-submit-btn')).toHaveTextContent(
           /Submitting/i
         );
+      });
+
+      finishSubmission({ registrationCode: 'ABC123', email: 'john@example.com' });
+      await waitFor(() => {
+        expect(
+          screen.getByText(/check your email to confirm your registration/i)
+        ).toBeInTheDocument();
       });
     });
   });
