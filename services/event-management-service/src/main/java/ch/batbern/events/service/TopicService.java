@@ -200,25 +200,8 @@ public class TopicService {
         List<TopicUsageHistoryWithEventDetails> history =
                 topicUsageHistoryRepository.findUsageHistoryWithEventDetailsByTopicIds(List.of(topicId));
 
-        // Convert to generated DTOs
         return history.stream()
-                .map(h -> {
-                    ch.batbern.events.dto.generated.topics.TopicUsageHistory dto =
-                            new ch.batbern.events.dto.generated.topics.TopicUsageHistory();
-                    dto.setEventNumber(h.getEventNumber());
-                    dto.setEventCode(h.getEventCode());
-                    dto.setEventDate(h.getEventDate() != null
-                            ? java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault())
-                            : null);
-                    dto.setUsedDate(h.getUsedDate() != null
-                            ? h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime()
-                            : null);
-                    dto.setAttendance(h.getAttendeeCount());
-                    dto.setEngagementScore(h.getEngagementScore() != null
-                            ? h.getEngagementScore().floatValue()
-                            : null);
-                    return dto;
-                })
+                .map(TopicService::toUsageHistoryDto)
                 .collect(Collectors.toList());
     }
 
@@ -239,25 +222,8 @@ public class TopicService {
         List<TopicUsageHistoryWithEventDetails> history =
                 topicUsageHistoryRepository.findUsageHistoryWithEventDetailsByTopicIds(List.of(topic.getId()));
 
-        // Convert to generated DTOs
         return history.stream()
-                .map(h -> {
-                    ch.batbern.events.dto.generated.topics.TopicUsageHistory dto =
-                            new ch.batbern.events.dto.generated.topics.TopicUsageHistory();
-                    dto.setEventNumber(h.getEventNumber());
-                    dto.setEventCode(h.getEventCode());
-                    dto.setEventDate(h.getEventDate() != null
-                            ? java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault())
-                            : null);
-                    dto.setUsedDate(h.getUsedDate() != null
-                            ? h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime()
-                            : null);
-                    dto.setAttendance(h.getAttendeeCount());
-                    dto.setEngagementScore(h.getEngagementScore() != null
-                            ? h.getEngagementScore().floatValue()
-                            : null);
-                    return dto;
-                })
+                .map(TopicService::toUsageHistoryDto)
                 .collect(Collectors.toList());
     }
 
@@ -578,6 +544,27 @@ public class TopicService {
     }
 
     /**
+     * One usage record as the API returns it. {@code attendance} is null until the event has
+     * taken place, {@code engagementScore} whenever none is stored (nothing measures it).
+     */
+    private static ch.batbern.events.dto.generated.topics.TopicUsageHistory toUsageHistoryDto(
+            TopicUsageHistoryWithEventDetails h) {
+        ch.batbern.events.dto.generated.topics.TopicUsageHistory dto =
+                new ch.batbern.events.dto.generated.topics.TopicUsageHistory();
+        dto.setEventNumber(h.getEventNumber());
+        dto.setEventCode(h.getEventCode());
+        dto.setEventDate(h.getEventDate() != null
+                ? java.time.LocalDate.ofInstant(h.getEventDate(), java.time.ZoneId.systemDefault())
+                : null);
+        dto.setUsedDate(h.getUsedDate() != null
+                ? h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime()
+                : null);
+        dto.setAttendance(h.getAttendeeCount());
+        dto.setEngagementScore(h.getEngagementScore() != null ? h.getEngagementScore().floatValue() : null);
+        return dto;
+    }
+
+    /**
      * Enrich topic entities with usage history and convert to responses (GitHub Issue #379).
      * Uses a single JOIN query to fetch all usage history with event details efficiently.
      *
@@ -612,25 +599,7 @@ public class TopicService {
                         .collect(Collectors.groupingBy(
                                 ch.batbern.events.dto.TopicUsageHistoryWithEventDetails::getTopicId,
                                 Collectors.mapping(
-                                        h -> {
-                                            ch.batbern.events.dto.generated.topics.TopicUsageHistory dto =
-                                                    new ch.batbern.events.dto.generated.topics.TopicUsageHistory();
-                                            dto.setEventNumber(h.getEventNumber());
-                                            dto.setEventCode(h.getEventCode());
-                                            dto.setEventDate(h.getEventDate() != null
-                                                    ? java.time.LocalDate.ofInstant(
-                                                            h.getEventDate(), java.time.ZoneId.systemDefault())
-                                                    : null);
-                                            dto.setUsedDate(h.getUsedDate() != null
-                                                    ? h.getUsedDate().atZone(
-                                                            java.time.ZoneId.systemDefault()).toOffsetDateTime()
-                                                    : null);
-                                            dto.setAttendance(h.getAttendeeCount());
-                                            dto.setEngagementScore(h.getEngagementScore() != null
-                                                    ? h.getEngagementScore().floatValue()
-                                                    : null);
-                                            return dto;
-                                        },
+                                        TopicService::toUsageHistoryDto,
                                         Collectors.toList()
                                 )
                         ));

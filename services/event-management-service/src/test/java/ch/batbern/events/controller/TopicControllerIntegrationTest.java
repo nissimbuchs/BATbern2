@@ -2,10 +2,12 @@ package ch.batbern.events.controller;
 
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.events.domain.Event;
+import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Topic;
 import ch.batbern.events.domain.TopicUsageHistory;
 import ch.batbern.events.dto.generated.topics.SelectTopicForEventRequest;
 import ch.batbern.events.repository.EventRepository;
+import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.TopicRepository;
 import ch.batbern.events.repository.TopicUsageHistoryRepository;
 import ch.batbern.shared.types.EventWorkflowState;
@@ -19,13 +21,16 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.Instant;
 import java.time.LocalDateTime;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
+import static ch.batbern.shared.test.contract.ProviderContract.assertResponseMatchesSpec;
 import static org.hamcrest.Matchers.containsInAnyOrder;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
@@ -33,6 +38,7 @@ import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -62,10 +68,14 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private TopicUsageHistoryRepository topicUsageHistoryRepository;
 
+    @Autowired
+    private RegistrationRepository registrationRepository;
+
     @BeforeEach
     void setUp() {
         topicUsageHistoryRepository.deleteAll();
         topicRepository.deleteAll();
+        registrationRepository.deleteAll();
         eventRepository.deleteAll();
     }
 
@@ -375,11 +385,65 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$[0].eventCode").exists())
                 .andExpect(jsonPath("$[0].eventDate").exists())
                 .andExpect(jsonPath("$[0].usedDate").exists())
-                .andExpect(jsonPath("$[0].attendance").exists())
-                .andExpect(jsonPath("$[0].engagementScore").exists())
-                // Most recent first: 6 months ago (attendance=150) before 12 months ago
-                .andExpect(jsonPath("$[0].attendance").value(150))
-                .andExpect(jsonPath("$[1].attendance").value(200));
+                // Most recent first: 6 months ago before 12 months ago
+                .andExpect(jsonPath("$[0].eventCode").value("BATbern100"))
+                .andExpect(jsonPath("$[1].eventCode").value("BATbern101"));
+    }
+
+    /**
+     * 17.0 deferred work: attendance was read from topic_usage_history.attendee_count, which no
+     * code writes, so every real record answered null for a field the spec required and the heat
+     * map summed NaN. It is the event's confirmed and attended registrations, as in the analytics
+     * page, once the event has taken place.
+     */
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_countConfirmedAndAttended_asAttendance_when_eventIsPast() throws Exception {
+        Topic topic = createTestTopic("Cloud Architecture", "technical");
+        Event past = createTestEvent("BATbern102", EventWorkflowState.ARCHIVED);
+        past.setDate(Instant.now().minusSeconds(30L * 24 * 3600));
+        eventRepository.save(past);
+        createTopicUsageHistory(topic.getId(), past.getId(), LocalDateTime.now().minusMonths(1), null, null);
+        List<String> statuses = List.of("confirmed", "confirmed", "attended", "cancelled", "registered", "waitlist");
+        statuses.forEach(status -> createRegistration(past, status));
+
+        MvcResult result = mockMvc.perform(get("/api/v1/topics/{topicCode}/usage-history", topic.getTopicCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].attendance").value(3))
+                // Nothing measures engagement: null, not a made-up number
+                .andExpect(jsonPath("$[0].engagementScore").value(nullValue()))
+                .andReturn();
+
+        assertResponseMatchesSpec("docs/api/topics-api.openapi.yml", result);
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    void should_returnNullAttendance_when_eventIsUpcoming() throws Exception {
+        Topic topic = createTestTopic("Cloud Architecture", "technical");
+        Event upcoming = createTestEvent("BATbern103", EventWorkflowState.CREATED);
+        createTopicUsageHistory(topic.getId(), upcoming.getId(), LocalDateTime.now().plusMonths(3), null, null);
+        createRegistration(upcoming, "confirmed");
+
+        MvcResult result = mockMvc.perform(get("/api/v1/topics/{topicCode}/usage-history", topic.getTopicCode()))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$[0].attendance").value(nullValue()))
+                .andReturn();
+
+        assertResponseMatchesSpec("docs/api/topics-api.openapi.yml", result);
+    }
+
+    private int registrationSeq;
+
+    private void createRegistration(Event event, String status) {
+        registrationSeq++;
+        registrationRepository.save(Registration.builder()
+                .registrationCode(event.getEventCode() + "-reg-T" + registrationSeq)
+                .eventId(event.getId())
+                .attendeeUsername("topic.attendee" + (char) ('a' + registrationSeq))
+                .status(status)
+                .registrationDate(Instant.now().minusSeconds(60L * 24 * 3600))
+                .build());
     }
 
     @Test
@@ -428,8 +492,6 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.data[?(@.title == 'Cloud Architecture')].usageHistory", hasSize(1)))
                 .andExpect(jsonPath("$.data[?(@.title == 'Cloud Architecture')].usageHistory[0].eventCode")
                         .value("BATbern56"))
-                .andExpect(jsonPath("$.data[?(@.title == 'Cloud Architecture')].usageHistory[0].attendance")
-                        .value(150))
                 .andExpect(jsonPath("$.data[?(@.title == 'Leadership Skills')].usageHistory[0].eventCode")
                         .value("BATbern57"));
     }

@@ -414,16 +414,18 @@ export interface components {
        */
       usedDate: string;
       /**
-       * @description Attendance count for this topic's session
+       * @description Confirmed and attended registrations of the event (as the analytics page counts them),
+       *     once the event has taken place; null before.
        * @example 120
        */
-      attendance: number;
+      attendance: number | null;
       /**
        * Format: float
-       * @description Engagement score (0-1)
+       * @description Engagement score (0-1), null when none is stored. Nothing measures engagement today;
+       *     rows from the V18 backfill carry an estimate derived from the event's workflow state.
        * @example 0.78
        */
-      engagementScore: number;
+      engagementScore: number | null;
     };
     TopicListResponse: {
       data: components['schemas']['Topic'][];

@@ -921,15 +921,19 @@ components:
           format: date-time
           description: When the topic was used
         attendance:
-          type: integer
-          description: Attendance count for this topic's session
+          type: [integer, 'null']
+          description: |
+            Confirmed and attended registrations of the event (as the analytics page counts them),
+            once the event has taken place; null before.
           example: 120
         engagementScore:
-          type: number
+          type: [number, 'null']
           format: float
           minimum: 0
           maximum: 1
-          description: Engagement score (0-1)
+          description: |
+            Engagement score (0-1), null when none is stored. Nothing measures engagement today;
+            rows from the V18 backfill carry an estimate derived from the event's workflow state.
           example: 0.78
 
     TopicListResponse:

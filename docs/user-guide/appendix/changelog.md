@@ -47,6 +47,9 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ No-shows do not count as attendance: the analytics count confirmed and attended registrations only, so after an event the people who came are set to *Attended* and the others to *No-show*.
 - ✅ Mail Center: own text to the registrants can go to chosen statuses, for example the no-shows only. A template still goes to registered, confirmed and attended.
 
+**Bug Fix — Topic heat map shows real attendance (17.0)**:
+- ✅ The topic heat maps (topic backlog and topic selection) show for each use of a topic the attendance of its event: the confirmed and attended registrations, counted as on the analytics page, once the event has taken place. Before, the value was never filled in, so the tooltip read "null attendees" or 0. An event still to come shows no attendance, and the engagement shows "–" where none is recorded.
+
 **Bug Fix — "Sort by" in the partner directory works (17.0)**:
 - ✅ The organizers' partner directory sorts by **Company Name** (A to Z) or **Partnership Tier** (Strategic first, then Platinum, Gold, Silver, Bronze; equal tiers by name), across all pages. The control never had an effect: the list always came sorted by company name. The options "Engagement Score" and "Last Event" are gone: the platform records neither for a partner, so they could not sort anything.
 

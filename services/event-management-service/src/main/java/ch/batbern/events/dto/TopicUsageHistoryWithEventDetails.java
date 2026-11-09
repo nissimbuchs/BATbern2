@@ -29,14 +29,15 @@ public class TopicUsageHistoryWithEventDetails {
             String eventCode,
             Instant eventDate,
             LocalDateTime usedDate,
-            Integer attendeeCount,
+            Long attendeeCount,
             Double engagementScore) {
         this.topicId = topicId;
         this.eventNumber = eventNumber;
         this.eventCode = eventCode;
         this.eventDate = eventDate;
         this.usedDate = usedDate;
-        this.attendeeCount = attendeeCount;
+        // null until the event has taken place (computed in the query)
+        this.attendeeCount = attendeeCount != null ? attendeeCount.intValue() : null;
         this.engagementScore = engagementScore;
     }
 

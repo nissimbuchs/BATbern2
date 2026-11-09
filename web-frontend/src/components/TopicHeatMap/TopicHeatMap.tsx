@@ -20,22 +20,14 @@ import {
   Legend,
 } from 'recharts';
 import type { TopicUsageHistory } from '@/types/topic.types';
+import { quarterlyUsage, type QuarterlyUsage } from './usageTotals';
 
 export interface TopicHeatMapProps {
   topicId: string;
   usageHistory: TopicUsageHistory[];
 }
 
-interface HeatMapDataPoint {
-  quarter: string; // e.g., "Q1 2024"
-  year: number;
-  quarterNum: number;
-  usageCount: number;
-  totalAttendance: number;
-  avgEngagement: number;
-  events: number[]; // Event numbers for tooltip (GitHub Issue #379: no UUIDs in API)
-  intensity: number; // 0-100 for color mapping
-}
+type HeatMapDataPoint = QuarterlyUsage;
 
 const TopicHeatMap: React.FC<TopicHeatMapProps> = ({
   topicId: _topicId, // eslint-disable-line @typescript-eslint/no-unused-vars
@@ -44,53 +36,11 @@ const TopicHeatMap: React.FC<TopicHeatMapProps> = ({
   const { t } = useTranslation('organizer');
   const theme = useTheme();
 
-  // Process usage history into quarterly buckets
-  const heatMapData = useMemo(() => {
-    if (!usageHistory || usageHistory.length === 0) {
-      return [];
-    }
-
-    // Group by quarter
-    const quarterlyData = new Map<string, HeatMapDataPoint>();
-
-    usageHistory.forEach((usage) => {
-      const date = new Date(usage.usedDate);
-      const year = date.getFullYear();
-      const month = date.getMonth();
-      const quarterNum = Math.floor(month / 3) + 1;
-      const quarterKey = `Q${quarterNum} ${year}`;
-
-      const existing = quarterlyData.get(quarterKey);
-      if (existing) {
-        existing.usageCount += 1;
-        existing.totalAttendance += usage.attendance;
-        existing.avgEngagement =
-          (existing.avgEngagement * (existing.usageCount - 1) + usage.engagementScore) /
-          existing.usageCount;
-        existing.events.push(usage.eventNumber);
-      } else {
-        quarterlyData.set(quarterKey, {
-          quarter: quarterKey,
-          year,
-          quarterNum,
-          usageCount: 1,
-          totalAttendance: usage.attendance,
-          avgEngagement: usage.engagementScore,
-          events: [usage.eventNumber],
-          intensity: 0, // Will calculate below
-        });
-      }
-    });
-
-    // Convert to array and calculate intensity (0-100) based on usage count
-    const dataArray = Array.from(quarterlyData.values());
-    const maxUsage = Math.max(...dataArray.map((d) => d.usageCount));
-
-    return dataArray.map((point) => ({
-      ...point,
-      intensity: maxUsage > 0 ? (point.usageCount / maxUsage) * 100 : 0,
-    }));
-  }, [usageHistory]);
+  // Quarterly buckets; attendance and engagement count only where known
+  const heatMapData = useMemo(
+    () => (usageHistory && usageHistory.length > 0 ? quarterlyUsage(usageHistory) : []),
+    [usageHistory]
+  );
 
   // Get color based on intensity
   const getHeatColor = (intensity: number): string => {
@@ -121,11 +71,12 @@ const TopicHeatMap: React.FC<TopicHeatMapProps> = ({
             {t('topicBacklog.heatMap.usageCount', 'Usage Count')}: {data.usageCount}
           </Typography>
           <Typography variant="body2">
-            {t('topicBacklog.heatMap.totalAttendance', 'Total Attendance')}: {data.totalAttendance}
+            {t('topicBacklog.heatMap.totalAttendance', 'Total Attendance')}:{' '}
+            {data.totalAttendance ?? '–'}
           </Typography>
           <Typography variant="body2">
             {t('topicBacklog.heatMap.avgEngagement', 'Avg Engagement')}:{' '}
-            {(data.avgEngagement * 100).toFixed(1)}%
+            {data.avgEngagement === null ? '–' : `${(data.avgEngagement * 100).toFixed(1)}%`}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
             {t('common:navigation.events')}: {data.events.length}
