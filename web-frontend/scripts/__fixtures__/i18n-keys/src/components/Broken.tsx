@@ -7,5 +7,5 @@ export function Broken() {
 
 export function Second() {
   const { t } = useTranslation('common');
-  return t('title');
+  return [t('title'), t('items'), t('greeting'), t('actions')];
 }

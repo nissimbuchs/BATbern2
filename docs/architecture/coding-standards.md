@@ -690,9 +690,14 @@ and no test notices. `web-frontend/scripts/check-i18n-keys.ts` (CI step "Fronten
 
 - the namespace comes from the binding (`useTranslation('ns')`, an array: each in order, none:
   `common`; `{ t: tX }` renames, `{ keyPrefix }`), from a `ns:key` prefix or a `{ ns: 'x' }`
-  option; `i18n.t` / `i18next.t` use `common`; a `t` passed in as a parameter counts as found when
-  any `en` namespace has the key;
-- plural and context forms count (`items` is found as `items_one` / `items_other`);
+  option; `i18n.t` / `i18next.t` use `common`; a `t` that is a parameter of the enclosing
+  function (`(t: TFunction) => ...`, `function f(t, n)`, `({ t }) => ...`), or has no binding in
+  the file, counts as found when any `en` namespace has the key;
+- the key must hold a string; an object counts only for a call with `returnObjects: true`
+  (i18next otherwise renders "returned an object instead of string");
+- plural forms count only for a call that passes `count` (`t('items', { count })` is found as
+  `items_one` / `items_other`), context forms only for one that passes `context` (a literal
+  context names the one form `greeting_male`);
 - a key built at run time (variable, template with `${}`, concatenation) is skipped.
 
 The keys missing when the gate came in (166 calls in 51 files) are frozen per file in

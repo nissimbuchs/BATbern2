@@ -11,6 +11,7 @@ import {
   countsOf,
   formatBaseline,
   hasKey,
+  type KeyOptions,
   listSources,
   loadBundles,
   parseBaseline,
@@ -26,17 +27,25 @@ const read = (file: string) => readFileSync(join(fixture, file), 'utf8');
 describe('hasKey', () => {
   const common = bundles.get('common')!;
 
-  it.each([
-    ['actions.save', true],
-    ['actions', true],
-    ['actions.delete', false],
-    ['items', true], // plural forms items_one / items_other
-    ['greeting', true], // context form greeting_male
-    ['flat.key.with.dots', true], // a JSON key that contains dots
-    ['flat.key', false],
-    ['item', false],
-  ])('%s -> %s', (key, expected) => {
-    expect(hasKey(common, key)).toBe(expected);
+  it.each<[string, KeyOptions, boolean]>([
+    ['actions.save', {}, true],
+    // An object: i18next renders "key 'actions' returned an object instead of string".
+    ['actions', {}, false],
+    ['actions', { returnObjects: true }, true],
+    ['actions.delete', {}, false],
+    // Plural forms count only for a call that passes `count`.
+    ['items', {}, false],
+    ['items', { count: true }, true],
+    ['item', { count: true }, false],
+    // Context forms count only for a call that passes `context`; a literal one names the form.
+    ['greeting', {}, false],
+    ['greeting', { context: 'male' }, true],
+    ['greeting', { context: 'female' }, false],
+    ['greeting', { context: true }, true],
+    ['flat.key.with.dots', {}, true], // a JSON key that contains dots
+    ['flat.key', {}, false],
+  ])('%s %o -> %s', (key, options, expected) => {
+    expect(hasKey(common, key, options)).toBe(expected);
   });
 });
 
@@ -46,6 +55,7 @@ describe('listSources', () => {
       'src/components/Broken.tsx',
       'src/components/Clean.tsx',
       'src/components/helpers.ts',
+      'src/components/mixed.ts',
     ]);
   });
 });
@@ -65,6 +75,10 @@ describe('scanSource', () => {
       { file: 'src/components/Broken.tsx', line: 5, key: 'form.missing', namespaces: ['events'] },
       // A second binding of `t` in the same file holds from its position on.
       { file: 'src/components/Broken.tsx', line: 10, key: 'title', namespaces: ['common'] },
+      // Plural and context forms need `count` / `context`; an object needs `returnObjects`.
+      { file: 'src/components/Broken.tsx', line: 10, key: 'items', namespaces: ['common'] },
+      { file: 'src/components/Broken.tsx', line: 10, key: 'greeting', namespaces: ['common'] },
+      { file: 'src/components/Broken.tsx', line: 10, key: 'actions', namespaces: ['common'] },
     ]);
   });
 
@@ -74,6 +88,21 @@ describe('scanSource', () => {
     ).toEqual([
       { file: 'src/components/helpers.ts', line: 4, key: 'nowhere.at.all', namespaces: [] },
     ]);
+  });
+
+  it('uses the any-namespace rule for a t that is a parameter of the enclosing function', () => {
+    expect(scanSource('src/components/mixed.ts', read('src/components/mixed.ts'), bundles)).toEqual(
+      [
+        { file: 'src/components/mixed.ts', line: 13, key: 'nowhere.either', namespaces: [] },
+        // Outside the helpers the next binding holds again.
+        {
+          file: 'src/components/mixed.ts',
+          line: 18,
+          key: 'actions.cancel',
+          namespaces: ['events'],
+        },
+      ]
+    );
   });
 
   it('does not count a call in a comment', () => {
@@ -90,7 +119,7 @@ describe('compare', () => {
 
     expect(result.exitCode).toBe(1);
     expect(result.problems).toContain(
-      'RAISED  src/components/Broken.tsx  baseline 2, actual 3; its missing keys:'
+      'RAISED  src/components/Broken.tsx  baseline 2, actual 6; its missing keys:'
     );
     expect(result.problems.join('\n')).toContain(
       "src/components/Broken.tsx:5  'does.not.exist' not in en/events.json"
@@ -104,20 +133,21 @@ describe('compare', () => {
   it('reports STALE when a count fell', () => {
     const result = compare(
       missing,
-      'src/components/Broken.tsx\t4\nsrc/components/helpers.ts\t1\n',
+      'src/components/Broken.tsx\t7\nsrc/components/helpers.ts\t1\nsrc/components/mixed.ts\t2\n',
       files
     );
 
     expect(result.exitCode).toBe(1);
-    expect(result.problems[0]).toBe('STALE   src/components/Broken.tsx  baseline 4, actual 3');
+    expect(result.problems[0]).toBe('STALE   src/components/Broken.tsx  baseline 7, actual 6');
   });
 
   it('passes on the baseline --update writes', () => {
     const written = formatBaseline(countsOf(missing));
 
     expect(parseBaseline(written).counts).toEqual([
-      { file: 'src/components/Broken.tsx', count: 3 },
+      { file: 'src/components/Broken.tsx', count: 6 },
       { file: 'src/components/helpers.ts', count: 1 },
+      { file: 'src/components/mixed.ts', count: 2 },
     ]);
     expect(compare(missing, written, files)).toMatchObject({ exitCode: 0, problems: [] });
   });

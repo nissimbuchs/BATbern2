@@ -18,6 +18,8 @@ export function Clean({ count, field }: { count: number; field: string }) {
     tCommon('items', { count }),
     tCommon('greeting', { context: 'male' }),
     tCommon('flat.key.with.dots'),
+    tCommon('actions', { returnObjects: true }),
+    tCommon('greeting', { context: field }),
     tForm('help'),
     tBoth('actions.save'),
     i18n.t('actions.save'),

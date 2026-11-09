@@ -20,12 +20,16 @@
  *     position to the next binding of the same name;
  *   - calls `t('key')`, `tX("key")`, `i18n.t('key')` / `i18next.t('key')` (namespace `common`);
  *     a `ns:key` prefix or a `{ ns: 'x' }` option picks the namespace;
- *   - a call whose function has no binding before it in the file (a `t` passed in as a
- *     parameter) counts as found when the key exists in any `en` namespace;
+ *   - a call whose function has no binding before it in the file, or whose function is a
+ *     parameter of an enclosing function (`(t: TFunction) => ...`, `function f(t, n) {...}`,
+ *     `({ t }) => ...`), counts as found when the key exists in any `en` namespace;
  *   - a key built at run time (a variable, a template with `${}`, a conditional) is skipped, not
  *     counted.
- * A key is found when its dotted path exists in the namespace, or a plural or context form
- * `<last segment>_<suffix>` does (`items_one`, `items_other`, `role_male`).
+ * A key is found when its dotted path holds a string in the namespace (an object only when the
+ * call passes `returnObjects: true`: i18next otherwise renders "returned an object instead of
+ * string"). A plural form `<last segment>_one|_other|...` counts only when the call passes
+ * `count`; a context form `<last segment>_<context>` only when it passes `context` (a literal
+ * context names the one form, a run-time one accepts any `<last segment>_<x>`).
  *
  * Deterministic and dependency-free: plain TypeScript for Node >= 22.18 type stripping, no npm
  * packages, like `test-ratchet.ts`.
@@ -73,18 +77,72 @@ export function loadBundles(localesDir: string): Bundles {
 const isObject = (v: Json | undefined): v is { [key: string]: Json } =>
   typeof v === 'object' && v !== null && !Array.isArray(v);
 
-/** True when `key` (dotted path, i18next keySeparator `.`) resolves in `node`. */
-export function hasKey(node: Json, key: string): boolean {
+/** What a `t()` call passes in its options, as far as the key lookup cares. */
+export interface KeyOptions {
+  /** `count` is passed: the plural forms `<key>_one`, `<key>_other`, ... count. */
+  count?: boolean;
+  /** `context` is passed: a literal names the form `<key>_<context>`; `true` = not literal. */
+  context?: string | true;
+  /** `returnObjects: true`: an object (or array) value is what the call wants. */
+  returnObjects?: boolean;
+}
+
+const PLURAL_SUFFIXES = ['zero', 'one', 'two', 'few', 'many', 'other'];
+
+const own = (node: { [key: string]: Json }, key: string) => Object.hasOwn(node, key);
+
+/** A value `t()` renders: a string, or an object/array when the call asks for objects. */
+const isLeaf = (node: { [key: string]: Json }, key: string, options: KeyOptions) =>
+  own(node, key) &&
+  (typeof node[key] === 'string' ||
+    (!!options.returnObjects && typeof node[key] === 'object' && node[key] !== null));
+
+/** The last segment `key` in `node`, or a plural/context form the call's options allow. */
+function hasLeaf(node: { [key: string]: Json }, key: string, options: KeyOptions): boolean {
+  if (isLeaf(node, key, options)) return true;
+  const bases = [key];
+  if (options.context === true) {
+    // A context known only at run time: any `<key>_<something>` may be the form it picks.
+    if (Object.keys(node).some((k) => k.startsWith(`${key}_`) && isLeaf(node, k, options)))
+      return true;
+  } else if (options.context) {
+    bases.unshift(`${key}_${options.context}`);
+    if (isLeaf(node, bases[0], options)) return true;
+  }
+  if (!options.count) return false;
+  return bases.some((base) =>
+    PLURAL_SUFFIXES.some(
+      (p) => isLeaf(node, `${base}_${p}`, options) || isLeaf(node, `${base}_ordinal_${p}`, options)
+    )
+  );
+}
+
+/**
+ * True when `key` (dotted path, i18next keySeparator `.`) resolves in `node` to a value the call
+ * renders: a string (an object only with `returnObjects`), or a plural form when the call passes
+ * `count`, a context form when it passes `context`.
+ */
+export function hasKey(node: Json, key: string, options: KeyOptions = {}): boolean {
   if (!isObject(node)) return false;
-  if (key in node) return true;
-  // A plural or context form of the last segment: `items` -> `items_one`, `items_other`.
-  if (!key.includes('.') && Object.keys(node).some((k) => k.startsWith(`${key}_`))) return true;
+  if (hasLeaf(node, key, options)) return true;
   // Try every split, so a JSON key that itself contains a dot is found too.
   for (let i = key.indexOf('.'); i > 0; i = key.indexOf('.', i + 1)) {
     const head = key.slice(0, i);
-    if (head in node && hasKey(node[head], key.slice(i + 1))) return true;
+    if (own(node, head) && hasKey(node[head], key.slice(i + 1), options)) return true;
   }
   return false;
+}
+
+/** The lookup-relevant options of a call, from the text after its key (`, 'default', {...}`). */
+export function keyOptionsOf(afterKey: string): KeyOptions {
+  const options: KeyOptions = {};
+  if (/[{,]\s*count\s*[:,}]/.test(afterKey)) options.count = true;
+  const context = /[{,]\s*context\s*(?=[:,}])(?::\s*(?:'([^'\n]*)'|"([^"\n]*)")(?=\s*[,}]))?/.exec(
+    afterKey
+  );
+  if (context) options.context = context[1] ?? context[2] ?? true;
+  if (/[{,]\s*returnObjects\s*:\s*true\b/.test(afterKey)) options.returnObjects = true;
+  return options;
 }
 
 // ---------------------------------------------------------------------------------------------
@@ -158,6 +216,100 @@ function bindingsOf(src: string): Binding[] {
   return bindings;
 }
 
+interface ParameterScope {
+  name: string;
+  /** The `(` of the parameter list (or the parameter itself for `t => ...`). */
+  start: number;
+  /** The end of the function body. */
+  end: number;
+}
+
+/** End of an arrow's expression body starting at `from`: the first `,` `;` or unmatched closer. */
+function expressionEnd(src: string, from: number): number {
+  let depth = 0;
+  for (let i = from; i < src.length; i++) {
+    const c = src[i];
+    if (c === "'" || c === '"' || c === '`') {
+      const quote = c;
+      for (i++; i < src.length && src[i] !== quote; i++) if (src[i] === '\\') i++;
+      continue;
+    }
+    if (c === '(' || c === '{' || c === '[') depth++;
+    else if (c === ')' || c === '}' || c === ']') {
+      if (depth === 0) return i;
+      depth--;
+    } else if (depth === 0 && (c === ',' || c === ';')) return i;
+  }
+  return src.length;
+}
+
+/** End of the body that starts at or after `from` (a `{ ... }` block or an arrow expression). */
+function bodyEnd(src: string, from: number, arrow: boolean): number {
+  const brace = /\S/.exec(src.slice(from));
+  const start = brace ? from + brace.index : src.length;
+  if (src[start] === '{') return closingParen(src, start);
+  return arrow ? expressionEnd(src, start) : -1;
+}
+
+/** The `(` of the parameter list the token at `at` sits in; -1 when it is in none. */
+function enclosingOpen(src: string, at: number): number {
+  let depth = 0;
+  for (let i = at - 1; i >= 0 && i > at - 2000; i--) {
+    const c = src[i];
+    if (c === ')' || c === '}' || c === ']') depth++;
+    else if (c === '(' || c === '{' || c === '[') {
+      if (depth > 0) {
+        depth--;
+        continue;
+      }
+      if (c === '(') return i;
+      // An unmatched `{`/`[` is a destructuring pattern only right after `(` or `,`.
+      if (!/[(,]\s*$/.test(src.slice(Math.max(0, i - 50), i))) return -1;
+    }
+  }
+  return -1;
+}
+
+const NOT_A_METHOD = /(?:^|[^\w$])(?:if|for|while|switch|catch|with|return|await|typeof)\s*$/;
+
+/**
+ * Functions that take a translation function as a parameter (`(t: TFunction) => ...`,
+ * `function f(t, n) {...}`, `({ t }: Props) => ...`, `t => ...`): inside them `t` is whatever the
+ * caller passed, not the `useTranslation` binding written earlier in the file.
+ */
+function parameterScopes(src: string, names: Set<string>): ParameterScope[] {
+  const scopes: ParameterScope[] = [];
+  const alternatives = [...names].map((n) => n.replace(/[$]/g, '\\$')).join('|');
+  const single = new RegExp(String.raw`(?<![\w$.])(${alternatives})\s*=>`, 'g');
+  for (const m of src.matchAll(single)) {
+    const end = bodyEnd(src, m.index + m[0].length, true);
+    if (end > 0) scopes.push({ name: m[1], start: m.index, end });
+  }
+  const param = new RegExp(String.raw`(?<![\w$.])(${alternatives})\s*(?=[:,)}=?])(?!=>|==)`, 'g');
+  for (const m of src.matchAll(param)) {
+    const open = enclosingOpen(src, m.index);
+    if (open < 0) continue;
+    const close = closingParen(src, open);
+    if (close < 0) continue;
+    const after = src.slice(close + 1, close + 300);
+    const before = src.slice(Math.max(0, open - 200), open);
+    const arrow = /^\s*(?::[^;{}=]*)?=>/.exec(after);
+    let end = -1;
+    if (arrow) {
+      end = bodyEnd(src, close + 1 + arrow[0].length, true);
+    } else if (
+      /function\s*\*?\s*[\w$]*\s*(?:<[^>]*>)?\s*$/.test(before) ||
+      (/[\w$]\s*(?:<[^>]*>)?\s*$/.test(before) &&
+        !NOT_A_METHOD.test(before) &&
+        /^\s*(?::[^;{}=]*)?\{/.test(after))
+    ) {
+      end = bodyEnd(src, close + 1 + (/^[^{]*/.exec(after) as RegExpExecArray)[0].length, false);
+    }
+    if (end > 0) scopes.push({ name: m[1], start: open, end });
+  }
+  return scopes;
+}
+
 const lineOf = (src: string, index: number) => src.slice(0, index).split('\n').length;
 
 /** The missing keys of one source file. */
@@ -167,6 +319,7 @@ export function scanSource(file: string, source: string, bundles: Bundles): Miss
   const names = new Set(['t', ...bindings.map((b) => b.name)]);
   const missing: Missing[] = [];
   const allNamespaces = [...bundles.keys()];
+  const scopes = parameterScopes(src, names);
   const callee = [...names].map((n) => n.replace(/[$]/g, '\\$')).join('|');
   const call = new RegExp(
     String.raw`(?<![\w$.])(?:(i18n|i18next)\.t|(${callee}))\(\s*${STRING}`,
@@ -187,8 +340,16 @@ export function scanSource(file: string, source: string, bundles: Bundles): Miss
       namespaces = [DEFAULT_NS];
     } else {
       const binding = bindings.filter((b) => b.name === m[2] && b.at < m.index).pop();
-      namespaces = binding ? binding.namespaces : [];
-      if (binding?.keyPrefix) key = `${binding.keyPrefix}.${key}`;
+      // A `t` that is a parameter of an enclosing function shadows the earlier binding.
+      const shadowed = scopes.some(
+        (p) =>
+          p.name === m[2] &&
+          p.start < m.index &&
+          m.index <= p.end &&
+          (!binding || p.start > binding.at)
+      );
+      namespaces = binding && !shadowed ? binding.namespaces : [];
+      if (binding?.keyPrefix && !shadowed) key = `${binding.keyPrefix}.${key}`;
     }
     const colon = key.indexOf(':');
     if (colon > 0 && bundles.has(key.slice(0, colon))) {
@@ -198,7 +359,8 @@ export function scanSource(file: string, source: string, bundles: Bundles): Miss
       namespaces = [nsOption[1] ?? nsOption[2]];
     }
     const lookIn = namespaces.length ? namespaces : allNamespaces;
-    if (!lookIn.some((ns) => bundles.has(ns) && hasKey(bundles.get(ns) as Json, key))) {
+    const options = keyOptionsOf(afterKey);
+    if (!lookIn.some((ns) => bundles.has(ns) && hasKey(bundles.get(ns) as Json, key, options))) {
       missing.push({ file, line: lineOf(src, m.index), key, namespaces });
     }
   }
