@@ -44,8 +44,6 @@ tags:
     description: Company search and autocomplete with caching
   - name: Company Verification
     description: Company verification
-  - name: Presentation Settings
-    description: Moderator presentation page settings (Story 10.8a)
   - name: Logos
     description: Generic logo/image upload (presigned-URL flow, URL proxy/import, admin cleanup) — LogoController, Story 1.16.3
 
@@ -837,88 +835,6 @@ paths:
   # The logo upload operations are documented inline under the `Logos` tag in this spec
   # (served by LogoController -> generated LogosApi).
 
-  /public/settings/presentation:
-    get:
-      tags:
-        - Presentation Settings
-      summary: Get presentation settings (public)
-      description: |
-        Returns the moderator presentation page settings.
-
-        **Story 10.8a**: Moderator Presentation Page — Functional
-
-        **Security**: No authentication required — public endpoint.
-
-      operationId: getPresentationSettings
-      responses:
-        '200':
-          description: Presentation settings returned successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PresentationSettingsResponse'
-              examples:
-                defaults:
-                  summary: Default settings
-                  value:
-                    aboutText: BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
-                    partnerCount: 9
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-
-  /settings/presentation:
-    put:
-      tags:
-        - Presentation Settings
-      summary: Update presentation settings
-      description: |
-        Updates the moderator presentation page settings.
-
-        **Story 10.8a**: Moderator Presentation Page — Functional
-
-        **Authorization**: ORGANIZER role required.
-
-      operationId: updatePresentationSettings
-      requestBody:
-        required: true
-        content:
-          application/json:
-            schema:
-              $ref: '#/components/schemas/PresentationSettingsRequest'
-            examples:
-              update:
-                summary: Update settings
-                value:
-                  aboutText: BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
-                  partnerCount: 12
-      responses:
-        '200':
-          description: Presentation settings updated successfully
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/PresentationSettingsResponse'
-              examples:
-                default:
-                  summary: captured from the local anonymized database (same schema as a GET)
-                  value:
-                    aboutText: |-
-                      BATbern ist seit 2005 eine unabhängige Plattform zum Technologie Austausch zwischen IT-Experten.
-                      Sie bietet Fachvorträge aus der Praxis.
-                      Eine hervorragende Plattform zum Gedanken- und Erfahrungsaustausch.
-                      Platz für Networking während dem Apéro oder Lunch.
-                    partnerCount: 9
-        '400':
-          $ref: '#/components/responses/BadRequest'
-        '401':
-          $ref: '#/components/responses/Unauthorized'
-        '403':
-          $ref: '#/components/responses/Forbidden'
-        '500':
-          $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
-
 components:
   schemas:
     LogoUploadRequest:
@@ -1014,41 +930,6 @@ components:
         uploadId:
           type: string
           description: Upload ID for use in subsequent company creation
-    PresentationSettingsResponse:
-      type: object
-      description: Moderator presentation page settings (Story 10.8a)
-      required:
-        - aboutText
-        - partnerCount
-      properties:
-        aboutText:
-          type: string
-          description: Verein purpose text displayed on the About slide
-          example: BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
-        partnerCount:
-          type: integer
-          description: Number of active partner companies shown on About slide
-          minimum: 0
-          example: 9
-
-    PresentationSettingsRequest:
-      type: object
-      description: Request body for updating moderator presentation page settings (Story 10.8a)
-      required:
-        - aboutText
-        - partnerCount
-      properties:
-        aboutText:
-          type: string
-          description: Verein purpose text displayed on the About slide
-          minLength: 1
-          example: BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.
-        partnerCount:
-          type: integer
-          description: Number of active partner companies shown on About slide
-          minimum: 0
-          example: 9
-
     CompanyResponse:
       type: object
       description: |

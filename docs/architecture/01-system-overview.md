@@ -121,8 +121,8 @@ flowchart TB
   single user profile ([ADR-007](./ADR-007-unified-user-profile.md)); SPEAKER is a role, not an
   entity ([ADR-009](./ADR-009-unified-speaker-workflow.md)).
 - **Presenter screen:** a fullscreen page in the SPA (`PresentationPage`, Story 10.8a), public and
-  without login. It reads presentation settings from CUMS, teaser images and the live-timing
-  snapshot from EMS.
+  without login. It reads presentation settings (app settings, Story 4.9), teaser images and
+  the live-timing snapshot from EMS.
 - **Apple Watch app:** pairs with an organizer account by code (CUMS `watch_pairings`), then reads
   the programme and drives live timing through `/api/v1/watch/**` and the live-timing endpoints
   in EMS. See [10-watch-app-development-patterns.md](./10-watch-app-development-patterns.md).
@@ -492,12 +492,10 @@ ShedLock, Spring WebSocket/STOMP (legacy endpoints), AWS SDK v2.
 [ADR-007](./ADR-007-unified-user-profile.md)), role assignments, additional email addresses,
 Cognito user provisioning and JIT provisioning on first login, Google avatar import, profile
 merge (#1183, orchestrated here, data moved by EMS), the generic logo upload
-([ADR-002](./ADR-002-generic-file-upload-service.md)), presentation settings for the presenter
-screen, Watch pairing, and the VPC-only `/internal/users` reads for other services.
+([ADR-002](./ADR-002-generic-file-upload-service.md)), Watch pairing, and the VPC-only `/internal/users` reads for other services.
 
 **Key interfaces:** `/api/v1/companies`, `/api/v1/logos`, `/api/v1/users`,
-`/api/v1/users/me`, `/api/v1/public/organizers`, `/api/v1/public/users`, `/api/v1/public/settings`,
-`/api/v1/settings/presentation`, `/api/v1/watch/pair`, `/api/v1/watch/authenticate`,
+`/api/v1/users/me`, `/api/v1/public/organizers`, `/api/v1/public/users`, `/api/v1/watch/pair`, `/api/v1/watch/authenticate`,
 `/internal/users`. See [04-api-company-management.md](./04-api-company-management.md) and
 [04-api-user-management.md](./04-api-user-management.md).
 

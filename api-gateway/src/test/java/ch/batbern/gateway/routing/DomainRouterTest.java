@@ -188,6 +188,26 @@ class DomainRouterTest {
         assertThat(targetService).isEqualTo("company-user-management-service");
     }
 
+    // Story 4.9: the presentation settings moved from CUMS to the EMS app settings store. The
+    // public read goes to EMS, ahead of the /api/v1/public prefix that CUMS owns; the former CUMS
+    // write path /api/v1/settings/* is no longer routed (the write is PUT /admin/settings/presentation).
+    @Test
+    @DisplayName("should_routeToEventService_when_publicPresentationSettingsCalled")
+    void should_routeToEventService_when_publicPresentationSettingsCalled() {
+        assertThat(domainRouter.determineTargetService("/api/v1/public/settings/presentation"))
+                .isEqualTo("event-management-service");
+        assertThat(domainRouter.determineTargetService("/api/v1/admin/settings/presentation"))
+                .isEqualTo("event-management-service");
+    }
+
+    @Test
+    @DisplayName("should_throwRoutingException_when_formerCumsSettingsPathCalled")
+    void should_throwRoutingException_when_formerCumsSettingsPathCalled() {
+        assertThatThrownBy(() -> domainRouter.determineTargetService("/api/v1/settings/presentation"))
+                .isInstanceOf(RoutingException.class)
+                .hasMessageContaining("/api/v1/settings/presentation");
+    }
+
     // Story 16.2a: conversations (Mail Center) live in event-management-service; keys are global,
     // so the path is not under /events.
     @Test

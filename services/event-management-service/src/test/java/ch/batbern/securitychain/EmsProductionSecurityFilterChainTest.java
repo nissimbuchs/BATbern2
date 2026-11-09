@@ -109,7 +109,8 @@ class EmsProductionSecurityFilterChainTest {
         "GET,  /api/v1/registrations/deregister/verify",
         "POST, /api/v1/registrations/deregister",
         "POST, /api/v1/registrations/deregister/by-email",
-        "GET,  /api/v1/public/settings/features"
+        "GET,  /api/v1/public/settings/features",
+        "GET,  /api/v1/public/settings/presentation"
     })
     @DisplayName("should_reachService_when_anonymousRequestsPublicPath")
     void should_reachService_when_anonymousRequestsPublicPath(String method, String path) throws Exception {
@@ -127,6 +128,7 @@ class EmsProductionSecurityFilterChainTest {
         "GET,    /api/v1/newsletter/subscribers",
         "GET,    /api/v1/newsletter/my-subscription",
         "GET,    /api/v1/admin/settings/email-forwarding.support-contacts",
+        "PUT,    /api/v1/admin/settings/presentation",
         "GET,    /api/v1/speaker-portal/profile",
         "GET,    /api/v1/events/BATbern60/speakers/pool",
         "POST,   /api/v1/events",

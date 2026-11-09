@@ -30,7 +30,7 @@ GET    /public/organizers                        # About page; no email addresse
 GET    /partners                                 # About page partner showcase; no contract end dates
 GET    /companies/{name}                         # company name and logo next to a speaker
 GET    /companies/search                         # company typeahead in the registration wizard
-GET    /public/settings/presentation             # presentation mode settings
+GET    /public/settings/presentation             # presentation mode settings (EMS app settings since 4.9)
 GET    /public/settings/features                 # feature flags the website reads before login
 
 # --- Thank the organizers (Epic 7) ---------------------------------------------------------------

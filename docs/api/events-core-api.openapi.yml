@@ -2287,7 +2287,12 @@ paths:
       tags:
         - Admin Settings
       summary: Set an admin setting by key
-      description: 'ORGANIZER role.'
+      description: >-
+        The one store for application settings (app_settings). ORGANIZER role. Structured
+        settings carry JSON in `value` and are validated before they are stored: `presentation`
+        (moderator presentation page, Story 4.9) must be an object with a non-blank `aboutText`
+        and an integer `partnerCount` >= 0, otherwise 400; it is read anonymously through
+        `GET /public/settings/presentation` (event-app-settings-api).
       operationId: setAdminSetting
       parameters:
         - name: key
@@ -2295,12 +2300,22 @@ paths:
           required: true
           schema:
             type: string
+          example: presentation
       requestBody:
         required: true
         content:
           application/json:
             schema:
               $ref: '#/components/schemas/SetAdminSettingRequest'
+            examples:
+              presentation:
+                summary: Presentation settings, stored as JSON under the key presentation
+                value:
+                  value: '{"aboutText":"BATbern ist eine unabhängige Plattform für Berner Architekten Treffen.","partnerCount":12}'
+              forwarding:
+                summary: A plain text setting
+                value:
+                  value: 'organizer@example.com'
       responses:
         '200':
           description: The updated setting
@@ -2314,6 +2329,8 @@ paths:
                   value:
                     key: uploads/2026/sample/file.png
                     value: sample
+        '400':
+          $ref: '#/components/responses/BadRequest'
         '401':
           $ref: '#/components/responses/Unauthorized'
         '403':

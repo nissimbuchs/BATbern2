@@ -760,7 +760,7 @@ export interface paths {
     get: operations['getAdminSetting'];
     /**
      * Set an admin setting by key
-     * @description ORGANIZER role.
+     * @description The one store for application settings (app_settings). ORGANIZER role. Structured settings carry JSON in `value` and are validated before they are stored: `presentation` (moderator presentation page, Story 4.9) must be an object with a non-blank `aboutText` and an integer `partnerCount` >= 0, otherwise 400; it is read anonymously through `GET /public/settings/presentation` (event-app-settings-api).
      */
     put: operations['setAdminSetting'];
     post?: never;
@@ -3334,6 +3334,7 @@ export interface operations {
       query?: never;
       header?: never;
       path: {
+        /** @example presentation */
         key: string;
       };
       cookie?: never;
@@ -3353,6 +3354,7 @@ export interface operations {
           'application/json': components['schemas']['AdminSettingResponse'];
         };
       };
+      400: components['responses']['BadRequest'];
       401: components['responses']['Unauthorized'];
       403: components['responses']['Forbidden'];
     };

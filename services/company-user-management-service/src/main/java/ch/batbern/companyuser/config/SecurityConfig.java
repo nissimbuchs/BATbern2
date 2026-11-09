@@ -89,8 +89,6 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
                 // Story 11.C.1: Public user-portrait endpoint (replaces deleted /api/v1/speakers/{username})
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/users/*").permitAll()
-                // Story 10.8a: Public presentation settings (moderator page)
-                .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
                 // Additional-email verification (v2): public token-credentialed verify endpoints
                 .requestMatchers(HttpMethod.GET, "/api/v1/users/additional-emails/verify").permitAll()
                 .requestMatchers(HttpMethod.POST, "/api/v1/users/additional-emails/verify").permitAll()
@@ -138,8 +136,6 @@ public class SecurityConfig {
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/organizers").permitAll()
                 // Story 11.C.1: Public user-portrait endpoint (replaces deleted /api/v1/speakers/{username})
                 .requestMatchers(org.springframework.http.HttpMethod.GET, "/api/v1/public/users/*").permitAll()
-                // Story 10.8a: Public presentation settings (moderator page)
-                .requestMatchers(HttpMethod.GET, "/api/v1/public/settings/presentation").permitAll()
                 // Additional-email verification (v2): public token-credentialed verify endpoints.
                 // MUST precede both the /api/v1/users/me authenticated rule and the
                 // /api/v1/users/* VPC rule (the path has two segments after /users/, so it

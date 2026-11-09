@@ -1,180 +1,137 @@
 /**
- * Presentation Service Tests (Story 10.8a)
+ * presentationService against the MSW harness (Story 10.8a; moved off the apiClient mock in
+ * Story 4.9, when the presentation settings moved from CUMS to the EMS app settings store).
  *
- * Tests for all presentation service functions:
- * - getPresentationData, getPublicOrganizers, getUpcomingEvents
- * - getPresentationSettings, updatePresentationSettings
+ * The real apiClient sends each call; the harness checks it against docs/api and answers with
+ * the spec example or a typed override.
  */
-
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+import { describe, it, expect } from 'vitest';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import { futureEvent, pastEvent } from '@/test/fixtures';
 import {
   getPresentationData,
   getPublicOrganizers,
   getUpcomingEvents,
   getPresentationSettings,
   updatePresentationSettings,
+  getGlobalTeaserImages,
   presentationService,
+  PRESENTATION_SETTING_KEY,
 } from './presentationService';
-import apiClient from './api/apiClient';
 
-vi.mock('./api/apiClient', () => ({
-  default: {
-    get: vi.fn(),
-    put: vi.fn(),
+const page = <T>(data: T[]) => ({
+  data,
+  pagination: {
+    page: 1,
+    limit: 10,
+    totalItems: data.length,
+    totalPages: 1,
+    hasNext: false,
+    hasPrev: false,
   },
-}));
-
-const mockApiClient = vi.mocked(apiClient);
+});
 
 describe('presentationService', () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-  });
-
   describe('getPresentationData', () => {
     // #1112: the organizer endpoint /events/{code} returns no sessions to anonymous callers
     // (since #1072), which left the agenda slide empty. The public read model carries them.
-    it('should fetch event data from the public read model so sessions are included', async () => {
-      const mockEvent = { eventCode: 'BATbern142', title: 'BATbern #142' };
-      mockApiClient.get.mockResolvedValue({ data: mockEvent });
+    it('reads the event from the public read model', async () => {
+      await getPresentationData('BATbern60');
 
-      const result = await getPresentationData('BATbern142');
-
-      expect(mockApiClient.get).toHaveBeenCalledWith('/public/events/BATbern142', {
-        headers: { 'Skip-Auth': 'true' },
-      });
-      expect(result).toEqual(mockEvent);
+      const [call] = api.calls('getPublicEvent');
+      expect(call.params).toEqual({ eventCode: 'BATbern60' });
     });
   });
 
   describe('getPublicOrganizers', () => {
-    it('should fetch public organizers list', async () => {
-      const mockOrganizers = [{ username: 'admin', firstName: 'Admin' }];
-      mockApiClient.get.mockResolvedValue({ data: mockOrganizers });
+    it('reads the public organizer list', async () => {
+      await getPublicOrganizers();
 
-      const result = await getPublicOrganizers();
-
-      expect(mockApiClient.get).toHaveBeenCalledWith('/public/organizers', {
-        headers: { 'Skip-Auth': 'true' },
-      });
-      expect(result).toEqual(mockOrganizers);
+      expect(api.calls('getAllOrganizers')).toHaveLength(1);
     });
   });
 
   describe('getUpcomingEvents', () => {
-    it('should return strictly future events sorted by date, limited to 3', async () => {
-      const now = new Date();
-      const future1 = new Date(now.getTime() + 10 * 86400_000).toISOString(); // +10 days
-      const future2 = new Date(now.getTime() + 5 * 86400_000).toISOString(); // +5 days
-      const future3 = new Date(now.getTime() + 20 * 86400_000).toISOString(); // +20 days
-      const future4 = new Date(now.getTime() + 30 * 86400_000).toISOString(); // +30 days
-      const past = new Date(now.getTime() - 86400_000).toISOString(); // -1 day
+    it('returns strictly future events sorted by date, limited to 3, without the current one', async () => {
+      api.on('listPublicEvents', () =>
+        page([
+          futureEvent(30, { eventCode: 'BATbern64' }),
+          futureEvent(10, { eventCode: 'BATbern62' }),
+          futureEvent(5, { eventCode: 'BATbern61' }),
+          futureEvent(20, { eventCode: 'BATbern63' }),
+          futureEvent(2, { eventCode: 'BATbern60' }),
+          pastEvent(1, { eventCode: 'BATbern59' }),
+        ])
+      );
 
-      const mockEvents = [
-        { eventCode: 'EVT1', date: future1 },
-        { eventCode: 'EVT2', date: future2 },
-        { eventCode: 'EVT3', date: future3 },
-        { eventCode: 'EVT4', date: future4 },
-        { eventCode: 'PAST', date: past },
-      ];
-      mockApiClient.get.mockResolvedValue({ data: { data: mockEvents } });
+      const result = await getUpcomingEvents('BATbern60');
 
-      const result = await getUpcomingEvents();
-
-      // Should exclude PAST, sort by date asc, limit to 3
-      expect(result).toHaveLength(3);
-      expect(result.map((e) => e.eventCode)).toEqual(['EVT2', 'EVT1', 'EVT3']);
+      expect(result.map((e) => e.eventCode)).toEqual(['BATbern61', 'BATbern62', 'BATbern63']);
+      // the public read model, not the organizer list (whose `status` parameter EMS ignored)
+      const [call] = api.calls('listPublicEvents');
+      expect(call.query.get('scope')).toBe('upcoming');
+      expect(call.query.get('limit')).toBe('10');
+      expect(api.calls('listEvents')).toHaveLength(0);
     });
 
-    it('should exclude the currently-presented event', async () => {
-      const now = new Date();
-      const future1 = new Date(now.getTime() + 5 * 86400_000).toISOString(); // +5 days
-      const future2 = new Date(now.getTime() + 10 * 86400_000).toISOString(); // +10 days
+    it('returns nothing when every event is past', async () => {
+      api.on('listPublicEvents', () => page([pastEvent(3, { eventCode: 'BATbern59' })]));
 
-      const mockEvents = [
-        { eventCode: 'CURRENT', date: future1 },
-        { eventCode: 'NEXT', date: future2 },
-      ];
-      mockApiClient.get.mockResolvedValue({ data: { data: mockEvents } });
-
-      const result = await getUpcomingEvents('CURRENT');
-
-      // CURRENT is in the future but is the event on screen → excluded
-      expect(result.map((e) => e.eventCode)).toEqual(['NEXT']);
-    });
-
-    it('should handle API returning flat array (no pagination wrapper)', async () => {
-      const now = new Date();
-      const future = new Date(now.getTime() + 86400_000).toISOString();
-      const mockEvents = [{ eventCode: 'EVT1', date: future }];
-      // API returns flat array instead of { data: [...] }
-      mockApiClient.get.mockResolvedValue({ data: mockEvents });
-
-      const result = await getUpcomingEvents();
-
-      expect(result).toHaveLength(1);
-      expect(result[0].eventCode).toBe('EVT1');
-    });
-
-    it('should pass correct query params', async () => {
-      mockApiClient.get.mockResolvedValue({ data: { data: [] } });
-
-      await getUpcomingEvents();
-
-      expect(mockApiClient.get).toHaveBeenCalledWith('/events', {
-        params: {
-          status: 'AGENDA_PUBLISHED,TOPIC_SELECTION_DONE,TOPIC_SELECTION,CREATED',
-          limit: 10,
-          sort: 'date',
-        },
-        headers: { 'Skip-Auth': 'true' },
-      });
-    });
-
-    it('should return empty array when all events are in the past', async () => {
-      const past = new Date(Date.now() - 86400_000).toISOString();
-      mockApiClient.get.mockResolvedValue({ data: { data: [{ date: past }] } });
-
-      const result = await getUpcomingEvents();
-      expect(result).toHaveLength(0);
+      expect(await getUpcomingEvents()).toEqual([]);
     });
   });
 
-  describe('getPresentationSettings', () => {
-    it('should fetch presentation settings via public endpoint', async () => {
-      const mockSettings = { logoUrl: null, primaryColor: '#000' };
-      mockApiClient.get.mockResolvedValue({ data: mockSettings });
+  describe('presentation settings (EMS app settings since 4.9)', () => {
+    it('reads them anonymously from GET /public/settings/presentation', async () => {
+      api.on('getPresentationSettings', () => ({ aboutText: 'Über BATbern', partnerCount: 11 }));
 
       const result = await getPresentationSettings();
 
-      expect(mockApiClient.get).toHaveBeenCalledWith('/public/settings/presentation', {
-        headers: { 'Skip-Auth': 'true' },
+      expect(result).toEqual({ aboutText: 'Über BATbern', partnerCount: 11 });
+      expect(api.calls('getPresentationSettings')[0].url.pathname).toMatch(
+        /\/public\/settings\/presentation$/
+      );
+    });
+
+    it('saves them as JSON under the app setting key presentation', async () => {
+      const result = await updatePresentationSettings({
+        aboutText: 'Plattform für O’Neill & Brünnimann',
+        partnerCount: 12,
       });
-      expect(result).toEqual(mockSettings);
+
+      const [call] = api.calls('setAdminSetting');
+      expect(call.method).toBe('PUT');
+      expect(call.params).toEqual({ key: PRESENTATION_SETTING_KEY });
+      expect(JSON.parse(call.body?.value ?? '')).toEqual({
+        aboutText: 'Plattform für O’Neill & Brünnimann',
+        partnerCount: 12,
+      });
+      expect(result).toEqual({ aboutText: 'Plattform für O’Neill & Brünnimann', partnerCount: 12 });
+    });
+
+    it('rejects with the 400 EMS answers for an invalid value', async () => {
+      api.on('setAdminSetting', () =>
+        HttpResponse.json({ status: 400, message: 'Invalid value' }, { status: 400 })
+      );
+
+      await expect(
+        updatePresentationSettings({ aboutText: ' ', partnerCount: -1 })
+      ).rejects.toMatchObject({ response: { status: 400 } });
     });
   });
 
-  describe('updatePresentationSettings', () => {
-    it('should PUT updated settings and return result', async () => {
-      const mockSettings = { logoUrl: 'https://cdn.example.com/logo.png', primaryColor: '#f00' };
-      mockApiClient.put.mockResolvedValue({ data: mockSettings });
+  describe('getGlobalTeaserImages', () => {
+    it('reads the global teaser images under the reserved event code _global', async () => {
+      await getGlobalTeaserImages();
 
-      const result = await updatePresentationSettings({ primaryColor: '#f00' });
-
-      expect(mockApiClient.put).toHaveBeenCalledWith('/settings/presentation', {
-        primaryColor: '#f00',
-      });
-      expect(result).toEqual(mockSettings);
+      const call = api.allCalls().find((c) => c.url.pathname.endsWith('/_global/teaser-images'));
+      expect(call?.method).toBe('GET');
     });
   });
 
-  describe('presentationService object export', () => {
-    it('should expose all functions', () => {
-      expect(presentationService.getPresentationData).toBe(getPresentationData);
-      expect(presentationService.getPublicOrganizers).toBe(getPublicOrganizers);
-      expect(presentationService.getUpcomingEvents).toBe(getUpcomingEvents);
-      expect(presentationService.getPresentationSettings).toBe(getPresentationSettings);
-      expect(presentationService.updatePresentationSettings).toBe(updatePresentationSettings);
-    });
+  it('exposes all functions on the service object', () => {
+    expect(presentationService.getPresentationSettings).toBe(getPresentationSettings);
+    expect(presentationService.updatePresentationSettings).toBe(updatePresentationSettings);
   });
 });

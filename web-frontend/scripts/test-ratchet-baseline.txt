@@ -98,7 +98,6 @@ be-transactional-it	services/company-user-management-service/src/test/java/ch/ba
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/HealthControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/InternalUserControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/LogoControllerTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PresentationSettingsControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PrimaryEmailIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/ProfileMergeRequestIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PublicOrganizerControllerIntegrationTest.java	1
@@ -662,7 +661,6 @@ fe-mock-services	web-frontend/src/services/eventApiClient.mocked.test.ts	1
 fe-mock-services	web-frontend/src/services/eventTypeService.test.ts	1
 fe-mock-services	web-frontend/src/services/newsletterService.test.ts	1
 fe-mock-services	web-frontend/src/services/notificationApiClient.test.ts	1
-fe-mock-services	web-frontend/src/services/presentationService.test.ts	1
 fe-mock-services	web-frontend/src/services/publicOrganizerService.test.ts	1
 fe-mock-services	web-frontend/src/services/registrationService.test.ts	1
 fe-mock-services	web-frontend/src/services/sessionService.test.ts	1
