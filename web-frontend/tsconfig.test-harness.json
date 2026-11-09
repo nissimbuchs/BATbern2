@@ -37,7 +37,10 @@
     "src/components/organizer/EventPage/__tests__/EventPage.test.tsx",
     "src/pages/organizer/EventManagementAdminPage.test.tsx",
     "src/components/TopicBacklogManager/TopicBacklogManager.test.tsx",
-    "src/components/organizer/EventPage/__tests__/EventSpeakersTab.test.tsx"
+    "src/components/organizer/EventPage/__tests__/EventSpeakersTab.test.tsx",
+    "src/pages/public/__tests__/RegistrationConfirmationPage.test.tsx",
+    "src/utils/registrationCode.test.ts",
+    "src/components/auth/ForgotPasswordForm/ForgotPasswordForm.test.tsx"
   ],
   "exclude": []
 }

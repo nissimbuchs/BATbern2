@@ -493,8 +493,8 @@ paths:
           $ref: '#/components/responses/NotFound'
         '500':
           $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
+      # Public (scripts/ci/access-control-public.txt): company name and logo next to a speaker or attendee.
+      security: []
 
     patch:
       tags:
@@ -692,8 +692,8 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '500':
           $ref: '#/components/responses/InternalServerError'
-      security:
-        - BearerAuth: []
+      # Public (scripts/ci/access-control-public.txt): company typeahead in the registration wizard.
+      security: []
 
   /companies/{name}/verify:
     post:

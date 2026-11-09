@@ -290,7 +290,6 @@ fe-mock-components	web-frontend/src/pages/profile/__tests__/ProfilePage.test.tsx
 fe-mock-components	web-frontend/src/pages/public/ClaimProfilePage.test.tsx	1
 fe-mock-components	web-frontend/src/pages/public/__tests__/ArchivePage.test.tsx	2
 fe-mock-components	web-frontend/src/pages/public/__tests__/DeregistrationPage.test.tsx	1
-fe-mock-components	web-frontend/src/pages/public/__tests__/RegistrationConfirmationPage.test.tsx	1
 fe-mock-components	web-frontend/src/pages/public/__tests__/RegistrationPage.test.tsx	2
 fe-mock-components	web-frontend/src/pages/public/__tests__/UnsubscribePage.test.tsx	1
 fe-mock-components	web-frontend/src/pages/public/__tests__/VerifyAdditionalEmailPage.test.tsx	1
@@ -401,7 +400,6 @@ fe-mock-hooks	web-frontend/src/pages/attendee/__tests__/AttendeeDashboardPage.te
 fe-mock-hooks	web-frontend/src/pages/profile/__tests__/ProfilePage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/public/__tests__/ArchivePage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/public/__tests__/DeregistrationPage.test.tsx	1
-fe-mock-hooks	web-frontend/src/pages/public/__tests__/RegistrationConfirmationPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/public/__tests__/UnsubscribePage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/public/__tests__/VerifyAdditionalEmailPage.test.tsx	1
 fe-mock-hooks	web-frontend/src/pages/speaker-portal/__tests__/ContentSubmissionPage.test.tsx	1
@@ -658,7 +656,6 @@ fe-mock-services	web-frontend/src/pages/dev/DevEmailInboxPage.test.tsx	1
 fe-mock-services	web-frontend/src/pages/profile/__tests__/ProfilePage.test.tsx	3
 fe-mock-services	web-frontend/src/pages/public/ClaimProfilePage.test.tsx	1
 fe-mock-services	web-frontend/src/pages/public/__tests__/ArchivePage.test.tsx	2
-fe-mock-services	web-frontend/src/pages/public/__tests__/RegistrationConfirmationPage.test.tsx	1
 fe-mock-services	web-frontend/src/pages/public/__tests__/RegistrationPage.test.tsx	1
 fe-mock-services	web-frontend/src/pages/speaker-portal/__tests__/ContentSubmissionPage.test.tsx	1
 fe-mock-services	web-frontend/src/pages/speaker-portal/__tests__/InvitationResponsePage.test.tsx	1

@@ -65,7 +65,8 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ Characters like `(`, `%` or `'` no longer cause an error in the event search.
 
 **Bug Fixes — Registration confirmation page and waitlist order (Story 17.0c2)**:
-- ✅ The page a participant sees after registering showed an empty name and e-mail under "Details". It now shows the name and the masked address the confirmation went to.
+- ✅ The page a participant sees after registering showed an empty name and e-mail under "Details". It now shows the name, the masked address the confirmation went to, and the name of the participant's company.
+- ✅ The confirmation page (`/registration-confirmation/<code>`) finds the registration from its code for every event. It used to look in one fixed event (BATbern25) for every code, so it showed "Registration not found" for all others.
 - ✅ The organizer's waitlist view numbers and orders people by their place on the waitlist. The position was never sent to the page, so the list was ordered by name and numbered by row.
 
 **Bug Fix — Requesting a revision of a talk without an abstract (Story 17.0b3)**:

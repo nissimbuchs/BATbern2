@@ -1,419 +1,226 @@
 /**
- * RegistrationConfirmationPage Component Tests (Story 4.1.6 - Task 12)
+ * RegistrationConfirmationPage Component Tests (Story 4.1.6)
  *
- * Tests for the registration confirmation page
- * Covers QR code display, calendar export, confetti, and social sharing
+ * The real page, eventApiClient, companyApiClient and useAuth run against the MSW harness
+ * (docs/api specs); the visitor's sign-in state comes from src/test/auth.tsx. Only
+ * canvas-confetti (a canvas animation jsdom cannot draw) is replaced.
  */
 
-import { describe, test, expect, beforeEach, vi } from 'vitest';
-import { render, screen, waitFor } from '@testing-library/react';
-import { MemoryRouter, Route, Routes } from 'react-router-dom';
-import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import { describe, test, expect, vi } from 'vitest';
+import { screen, waitFor } from '@testing-library/react';
+import { HttpResponse } from 'msw';
+import { Route, Routes } from 'react-router-dom';
+import confetti from 'canvas-confetti';
 import RegistrationConfirmationPage from '../RegistrationConfirmationPage';
-import { eventApiClient } from '@/services/eventApiClient';
-import { useAuth } from '@/hooks/useAuth/useAuth';
+import { api } from '@/test/msw/api';
+import { renderWithAuth, signedInAs, signedOut } from '@/test/auth';
+import type { UseAuthReturn } from '@/contexts/AuthContext';
 import type { Registration } from '@/types/event.types';
 
-// Mock eventApiClient
-vi.mock('@/services/eventApiClient', () => ({
-  eventApiClient: {
-    getRegistration: vi.fn(),
-    getRegistrationQR: vi.fn(),
-  },
-}));
+vi.mock('canvas-confetti', () => ({ default: vi.fn() }));
 
-// Mock confetti
-vi.mock('canvas-confetti', () => ({
-  default: vi.fn(),
-}));
+const CODE = 'BATbern142-reg-A3X9K2';
 
-// Mock PublicLayout
-vi.mock('@/components/public/PublicLayout', () => ({
-  PublicLayout: ({ children }: { children: React.ReactNode }) => (
-    <div data-testid="public-layout">{children}</div>
-  ),
-}));
+/** What the public lookup returns: the attendee's address masked (GHSA-qhqv). */
+const registration: Registration = {
+  registrationCode: CODE,
+  eventCode: 'BATbern142',
+  eventTitle: 'BATbern 142 Architektur im Wandel',
+  eventDate: '2026-06-15T16:00:00Z',
+  attendeeUsername: 'hong.an.nguyen',
+  attendeeFirstName: 'Hông Ân',
+  attendeeLastName: 'Nguyễn',
+  attendeeEmail: 'h***@example.com',
+  attendeeCompany: 'bruennimann',
+  status: 'CONFIRMED',
+  registrationDate: '2026-05-14T16:00:00Z',
+  createdAt: '2026-05-14T16:00:00Z',
+  updatedAt: '2026-05-14T16:00:00Z',
+};
 
-// Mock useAuth
-vi.mock('@/hooks/useAuth/useAuth', () => ({
-  useAuth: vi.fn(),
-}));
+const renderPage = (code: string = CODE, auth: UseAuthReturn = signedOut()) =>
+  renderWithAuth(
+    <Routes>
+      <Route
+        path="/registration-confirmation/:confirmationCode"
+        element={<RegistrationConfirmationPage />}
+      />
+      <Route path="/" element={<div>Home Page</div>} />
+    </Routes>,
+    { auth, initialEntries: [`/registration-confirmation/${code}`] }
+  );
 
-describe('RegistrationConfirmationPage Component', () => {
-  const queryClient = new QueryClient({
-    defaultOptions: {
-      queries: {
-        retry: false,
-      },
-    },
-  });
+const answerWith = (body: Registration = registration) => api.on('getRegistration', () => body);
 
-  const mockRegistration: Registration = {
-    registrationCode: 'BAT-2025-000123',
-    eventCode: 'BATbern25',
-    eventTitle: 'BATbern 2025',
-    eventDate: '2025-06-15T18:00:00Z',
-    // The field names EMS RegistrationResponse sends; an anonymous caller gets the address
-    // masked (GHSA-qhqv).
-    attendeeFirstName: 'John',
-    attendeeLastName: 'Doe',
-    attendeeEmail: 'j***@example.com',
-    attendeeCompany: 'acmecorp',
-    attendeeUsername: 'john.doe',
-    status: 'CONFIRMED',
-    createdAt: '2025-01-09T10:00:00Z',
-  };
+describe('RegistrationConfirmationPage', () => {
+  describe('Data fetching', () => {
+    test('should_lookUpTheRegistrationInItsEvent_when_codeIsWhatEmsCreates', async () => {
+      answerWith();
 
-  const renderWithProviders = (initialRoute = '/registration-confirmation/BAT-2025-000123') => {
-    return render(
-      <QueryClientProvider client={queryClient}>
-        <MemoryRouter initialEntries={[initialRoute]}>
-          <Routes>
-            <Route
-              path="/registration-confirmation/:confirmationCode"
-              element={<RegistrationConfirmationPage />}
-            />
-            <Route path="/" element={<div>Home Page</div>} />
-          </Routes>
-        </MemoryRouter>
-      </QueryClientProvider>
-    );
-  };
+      renderPage();
 
-  beforeEach(() => {
-    vi.clearAllMocks();
-    queryClient.clear();
-
-    // Default: user is not authenticated (anonymous registration)
-    vi.mocked(useAuth).mockReturnValue({
-      isAuthenticated: false,
-      isLoading: false,
-      user: null,
-      error: null,
-      accessToken: null,
-      refreshToken: vi.fn(),
-      signIn: vi.fn(),
-      signOut: vi.fn(),
-      signUp: vi.fn(),
-      clearError: vi.fn(),
-      hasRole: vi.fn(),
-      hasPermission: vi.fn(),
-      canAccess: vi.fn(),
-      isTokenExpired: vi.fn(),
-    });
-  });
-
-  describe('Data Fetching', () => {
-    test('should_fetchRegistrationData_when_confirmationCodeProvided', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(eventApiClient.getRegistration).toHaveBeenCalledWith('BATbern25', 'BAT-2025-000123');
+      await screen.findByText(CODE);
+      expect(api.calls('getRegistration')[0].params).toMatchObject({
+        eventCode: 'BATbern142',
+        registrationCode: CODE,
       });
     });
 
-    test('should_renderLoadingState_when_fetchingData', () => {
-      vi.mocked(eventApiClient.getRegistration).mockImplementation(
-        () => new Promise(() => {}) // Never resolves
-      );
+    test('should_lookUpTheEventOfTheDataLoad_when_codeIsAnExistCode', async () => {
+      answerWith({ ...registration, registrationCode: 'BAT60-EXIST-17', eventCode: 'BATbern60' });
 
-      renderWithProviders();
+      renderPage('BAT60-EXIST-17');
+
+      await screen.findByText('BAT60-EXIST-17');
+      expect(api.calls('getRegistration')[0].params.eventCode).toBe('BATbern60');
+    });
+
+    test('should_showNotFoundWithoutARequest_when_codeHasNoKnownShape', async () => {
+      // The page used to guess `BATbern{YY}` from a `BAT-YYYY-NNNNNN` code no registration has.
+      renderPage('BAT-2025-000123');
+
+      expect(await screen.findByText(/registration not found/i)).toBeInTheDocument();
+      expect(api.calls('getRegistration')).toHaveLength(0);
+    });
+
+    test('should_renderLoadingState_when_fetchingData', () => {
+      api.on('getRegistration', () => new Promise<Response>(() => {}));
+
+      renderPage();
 
       expect(screen.getByText(/loading/i)).toBeInTheDocument();
     });
 
-    test('should_renderErrorState_when_fetchFails', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockRejectedValue(new Error('Network error'));
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText(/not found|error/i)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Registration Summary', () => {
-    test('should_displayConfirmationCode_when_registrationLoaded', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText(/BAT-2025-000123/)).toBeInTheDocument();
-      });
-    });
-
-    test('should_displayAttendeeName_when_registrationLoaded', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText(/John Doe/)).toBeInTheDocument();
-      });
-      // attendeeCompany is the company key from user_profiles, not a name to show.
-      expect(screen.queryByText('acmecorp')).not.toBeInTheDocument();
-    });
-
-    test('should_displayEventTitle_when_registrationLoaded', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText(/BATbern 2025/)).toBeInTheDocument();
-      });
-    });
-
-    test('should_displaySuccessMessage_when_registrationConfirmed', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText(/confirmed|success/i)).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('QR Code Display', () => {
-    test('should_notFetchQRCode_when_featureRemoved', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText(/confirmed|success/i)).toBeInTheDocument();
-      });
-
-      // QR code feature has been removed - verify it's not called
-      expect(eventApiClient.getRegistrationQR).not.toHaveBeenCalled();
-    });
-
-    test('should_notDisplayQRCode_when_featureRemoved', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText(/confirmed|success/i)).toBeInTheDocument();
-      });
-
-      // QR code should not be displayed
-      expect(screen.queryByAltText(/qr code/i)).not.toBeInTheDocument();
-    });
-
-    test('should_notDisplayQRCodeInstructions_when_featureRemoved', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText(/confirmed|success/i)).toBeInTheDocument();
-      });
-
-      // QR instructions should not be displayed
-      expect(screen.queryByText(/present this qr code.*check-in/i)).not.toBeInTheDocument();
-    });
-  });
-
-  describe('Calendar Export', () => {
-    test('should_displayCalendarButton_when_registrationLoaded', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(
-          screen.getByRole('button', { name: /calendar|add to calendar/i })
-        ).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Navigation Links', () => {
-    test('should_displayRegisterAnotherLink_when_pageLoaded', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        const registerLink = screen.getByRole('link', { name: /register another/i });
-        expect(registerLink).toBeInTheDocument();
-        expect(registerLink).toHaveAttribute('href', '/register/BATbern25');
-      });
-    });
-
-    test('should_displayViewEventLink_when_pageLoaded', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        const eventLink = screen.getByRole('link', { name: /view event|event details/i });
-        expect(eventLink).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Social Sharing', () => {
-    test('should_displaySocialShareButtons_when_registrationLoaded', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        // Should have social sharing section or buttons
-        expect(screen.getByTestId('social-sharing')).toBeInTheDocument();
-      });
-    });
-  });
-
-  describe('Confetti Animation', () => {
-    test('should_triggerConfetti_when_registrationLoaded', async () => {
-      const confettiMock = (await import('canvas-confetti')).default;
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(confettiMock).toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('Route Parameters', () => {
-    test('should_extractEventCodeFromConfirmationCode_when_routeHasConfirmationCode', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders('/registration-confirmation/BAT-2025-000456');
-
-      await waitFor(() => {
-        // Should parse eventCode from registration data
-        expect(eventApiClient.getRegistration).toHaveBeenCalled();
-      });
-    });
-  });
-
-  describe('Account Linking CTA (AC #11)', () => {
-    test('should_displayAccountLinkingCTA_when_userNotAuthenticated', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-      vi.mocked(useAuth).mockReturnValue({
-        isAuthenticated: false,
-        isLoading: false,
-        user: null,
-        error: null,
-        accessToken: null,
-        refreshToken: vi.fn(),
-        signIn: vi.fn(),
-        signOut: vi.fn(),
-        signUp: vi.fn(),
-        clearError: vi.fn(),
-        hasRole: vi.fn(),
-        hasPermission: vi.fn(),
-        canAccess: vi.fn(),
-        isTokenExpired: vi.fn(),
-      });
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByTestId('account-linking-cta')).toBeInTheDocument();
-      });
-    });
-
-    test('should_hideAccountLinkingCTA_when_userAuthenticated', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-      vi.mocked(useAuth).mockReturnValue({
-        isAuthenticated: true,
-        isLoading: false,
-        user: {
-          userId: 'user-123',
-          email: 'john.doe@example.com',
-          role: 'attendee',
-        },
-        error: null,
-        accessToken: 'mock-token',
-        refreshToken: vi.fn(),
-        signIn: vi.fn(),
-        signOut: vi.fn(),
-        signUp: vi.fn(),
-        clearError: vi.fn(),
-        hasRole: vi.fn(),
-        hasPermission: vi.fn(),
-        canAccess: vi.fn(),
-        isTokenExpired: vi.fn(),
-      });
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText(/BATbern 2025/)).toBeInTheDocument();
-      });
-
-      expect(screen.queryByTestId('account-linking-cta')).not.toBeInTheDocument();
-    });
-
-    test('should_includePrefillEmailInRegistrationLink_when_ctaDisplayed', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        const createAccountLink = screen.getByRole('link', { name: /create account/i });
-        expect(createAccountLink).toBeInTheDocument();
-        // The lookup returns the address masked (GHSA-qhqv), so the link no longer prefills it
-        expect(createAccountLink).toHaveAttribute('href', '/auth/register');
-      });
-    });
-
-    test('should_displayAutoLinkingMessage_when_ctaShown', async () => {
-      vi.mocked(eventApiClient.getRegistration).mockResolvedValue(mockRegistration);
-      vi.mocked(eventApiClient.getRegistrationQR).mockResolvedValue('blob:mock-qr-url');
-
-      renderWithProviders();
-
-      await waitFor(() => {
-        expect(screen.getByText(/automatically linked/i)).toBeInTheDocument();
-      });
-
-      // Verify the CTA contains the account linking message
-      const cta = screen.getByTestId('account-linking-cta');
-      expect(cta).toHaveTextContent('j***@example.com');
-      expect(cta).toHaveTextContent(/Create an account to manage your registrations/);
-    });
-  });
-
-  describe('Edge Cases', () => {
-    test('should_handleMissingConfirmationCode_when_noCodeInURL', () => {
-      render(
-        <QueryClientProvider client={queryClient}>
-          <MemoryRouter initialEntries={['/']}>
-            <Routes>
-              <Route path="/" element={<div>Home Page</div>} />
-            </Routes>
-          </MemoryRouter>
-        </QueryClientProvider>
+    test('should_renderNotFound_when_codeIsUnknown', async () => {
+      api.on('getRegistration', () =>
+        HttpResponse.json(
+          { status: 404, error: 'Not Found', message: 'Registration not found' },
+          { status: 404 }
+        )
       );
 
-      expect(screen.getByText('Home Page')).toBeInTheDocument();
+      renderPage();
+
+      expect(await screen.findByText(/registration not found/i)).toBeInTheDocument();
+    });
+  });
+
+  describe('Registration summary', () => {
+    test('should_showNameEventAndMaskedAddress_when_registrationLoaded', async () => {
+      answerWith();
+
+      renderPage();
+
+      expect(await screen.findByText(/Hông Ân Nguyễn/)).toBeInTheDocument();
+      expect(screen.getAllByText('BATbern 142 Architektur im Wandel').length).toBeGreaterThan(0);
+      expect(screen.getAllByText(/h\*\*\*@example\.com/).length).toBeGreaterThan(0);
+    });
+
+    test('should_showTheCompanysDisplayName_when_attendeeHasACompany', async () => {
+      answerWith();
+      api.on('getCompany', ({ params }) => ({
+        name: params.name,
+        displayName: 'Brünnimann & Söhne AG',
+        isVerified: true,
+        createdAt: '2026-01-15T09:00:00Z',
+        updatedAt: '2026-01-15T09:00:00Z',
+      }));
+
+      renderPage();
+
+      expect(await screen.findByText('Brünnimann & Söhne AG')).toBeInTheDocument();
+      expect(api.calls('getCompany')[0].params.name).toBe('bruennimann');
+      // attendeeCompany is the company key, never shown itself.
+      expect(screen.queryByText('bruennimann')).not.toBeInTheDocument();
+    });
+
+    test('should_showNoCompanyLine_when_attendeeHasNoCompany', async () => {
+      answerWith({ ...registration, attendeeCompany: null });
+
+      renderPage();
+
+      // Positive control: the details are there, only the company line is not.
+      expect(await screen.findByText(/Hông Ân Nguyễn/)).toBeInTheDocument();
+      expect(screen.queryByText(/company:/i)).not.toBeInTheDocument();
+      expect(api.calls('getCompany')).toHaveLength(0);
+    });
+
+    test('should_showNoCompanyKey_when_companyIsGone', async () => {
+      answerWith();
+      api.on('getCompany', () =>
+        HttpResponse.json({ status: 404, error: 'Not Found', message: 'gone' }, { status: 404 })
+      );
+
+      renderPage();
+
+      expect(await screen.findByText(/Hông Ân Nguyễn/)).toBeInTheDocument();
+      await waitFor(() => expect(api.calls('getCompany')).toHaveLength(1));
+      expect(screen.queryByText('bruennimann')).not.toBeInTheDocument();
+      expect(screen.queryByText(/company:/i)).not.toBeInTheDocument();
+    });
+
+    test('should_neitherFetchNorShowAQrCode_when_registrationLoaded', async () => {
+      answerWith();
+
+      renderPage();
+
+      await screen.findByText(CODE);
+      expect(screen.queryByAltText(/qr code/i)).not.toBeInTheDocument();
+      expect(screen.queryByText(/present this qr code.*check-in/i)).not.toBeInTheDocument();
+      expect(api.allCalls().map((call) => call.key)).not.toContain('getRegistrationQR');
+    });
+  });
+
+  describe('Actions and links', () => {
+    test('should_offerCalendarSharingAndEventLinks_when_registrationLoaded', async () => {
+      answerWith();
+
+      renderPage();
+
+      expect(
+        await screen.findByRole('button', { name: /calendar|add to calendar/i })
+      ).toBeInTheDocument();
+      expect(screen.getByTestId('social-sharing')).toBeInTheDocument();
+      expect(screen.getByRole('link', { name: /register another/i })).toHaveAttribute(
+        'href',
+        '/register/BATbern142'
+      );
+      expect(screen.getByRole('link', { name: /view event|event details/i })).toBeInTheDocument();
+    });
+
+    test('should_triggerConfetti_when_registrationLoaded', async () => {
+      answerWith();
+
+      renderPage();
+
+      await waitFor(() => expect(confetti).toHaveBeenCalled());
+    });
+  });
+
+  describe('Account linking CTA (AC #11)', () => {
+    test('should_offerAnAccount_when_visitorIsSignedOut', async () => {
+      answerWith();
+
+      renderPage();
+
+      const cta = await screen.findByTestId('account-linking-cta');
+      expect(cta).toHaveTextContent('h***@example.com');
+      expect(cta).toHaveTextContent(/Create an account to manage your registrations/);
+      expect(screen.getByText(/automatically linked/i)).toBeInTheDocument();
+      // The lookup returns the address masked (GHSA-qhqv), so the link does not prefill it.
+      expect(screen.getByRole('link', { name: /create account/i })).toHaveAttribute(
+        'href',
+        '/auth/register'
+      );
+    });
+
+    test('should_hideTheAccountOffer_when_visitorIsSignedIn', async () => {
+      answerWith();
+
+      renderPage(CODE, signedInAs('attendee'));
+
+      expect(await screen.findByText(/Hông Ân Nguyễn/)).toBeInTheDocument();
+      expect(screen.queryByTestId('account-linking-cta')).not.toBeInTheDocument();
     });
   });
 });
