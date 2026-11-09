@@ -2333,6 +2333,10 @@ public class EventController implements EventsApi, EventActionsApi, EventReporti
         // Set transient field and enrich
         registration.setEventCode(eventCode);
         RegistrationResponse response = registrationService.enrichRegistrationWithUserData(registration);
+        // The confirmation page shows the event and exports it to the calendar; the lookup
+        // already holds the event, so it answers with its title and date (the spec's fields).
+        response.setEventTitle(event.getTitle());
+        response.setEventDate(event.getDate() != null ? event.getDate().toString() : null);
 
         // GHSA-qhqv: anonymous callers hold only the registration code, so they see the address
         // masked. The confirmation page needs to show which mailbox to check, not the address.

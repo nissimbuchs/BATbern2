@@ -1504,12 +1504,12 @@ components:
         eventTitle:
           type: string
           nullable: true
-          description: Event title (included for convenience)
+          description: Event title. Set by the single lookup (`getRegistration`); null in lists.
         eventDate:
           type: string
           format: date-time
           nullable: true
-          description: Event date (included for convenience)
+          description: Event date. Set by the single lookup (`getRegistration`); null in lists.
         attendeeUsername:
           type: string
           pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$

@@ -637,6 +637,9 @@ public class RegistrationControllerIntegrationTest extends AbstractIntegrationTe
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.registrationCode").value(registration.getRegistrationCode()))
                 .andExpect(jsonPath("$.eventCode").value("BATbern142"))
+                // The confirmation page shows the event and exports it to the calendar
+                .andExpect(jsonPath("$.eventTitle").value("BATbern 2025 Test"))
+                .andExpect(jsonPath("$.eventDate").value("2027-06-15T09:00:00Z"))
                 .andExpect(jsonPath("$.status").value("CONFIRMED")) // API returns uppercase
                 .andExpect(jsonPath("$.attendeeUsername").value("john.doe"))
                 .andExpect(jsonPath("$.attendeeFirstName").value("John"))

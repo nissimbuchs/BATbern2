@@ -591,11 +591,11 @@ export interface components {
        * @example BATbern25
        */
       eventCode: string;
-      /** @description Event title (included for convenience) */
+      /** @description Event title. Set by the single lookup (`getRegistration`); null in lists. */
       eventTitle?: string | null;
       /**
        * Format: date-time
-       * @description Event date (included for convenience)
+       * @description Event date. Set by the single lookup (`getRegistration`); null in lists.
        */
       eventDate?: string | null;
       /**
