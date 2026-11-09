@@ -154,9 +154,9 @@ export async function createRegistrationEvent(token: string): Promise<Registrati
  * Replicate CUMS `SlugGenerationService.generateCompanyName`: lowercase, strip to
  * alphanumeric, truncate to 12 chars. A public registration creates a CUMS `companies`
  * row out-of-band via `getOrCreateCompany`, which is CROSS-SERVICE (the event-delete
- * cascade does NOT remove it) and stored as a LOWERCASED slug — so the global uppercase
- * `BRUNOTESTCO%` sweep misses it (the same gap that leaks Bruno's `testco`). The spec
- * therefore explicit-deletes it by slug. Because `getOrCreateCompany` REUSES a company by
+ * cascade does NOT remove it) and stored as a LOWERCASED slug (as `POST /companies` also
+ * does since 2026-11-09). The spec explicit-deletes it by slug; the companies sweep ignores
+ * case since 2026-11-09 and is the backstop. Because `getOrCreateCompany` REUSES a company by
  * this exact slug (findByName hit → no collision suffix), computing it client-side from the
  * known display name yields the actually-stored slug, which `DELETE /api/v1/companies/{slug}`
  * accepts. (404-tolerant if a future suffix ever diverges.)

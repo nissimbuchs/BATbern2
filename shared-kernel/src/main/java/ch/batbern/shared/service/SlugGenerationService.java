@@ -27,6 +27,16 @@ public class SlugGenerationService {
      */
     public static final String USERNAME_PATTERN = "^[a-z]+\\.[a-z]+(\\.[0-9]+)?$";
 
+    /**
+     * The only shape a company key (the company's meaningful ID, {@code companies.name}) may have.
+     * Identical to {@code chk_company_id_format} on {@code user_profiles.company_id} (CUMS V4) and
+     * the company name pattern in the OpenAPI specs.
+     */
+    public static final String COMPANY_NAME_PATTERN = "^[a-zA-Z0-9]{1,12}$";
+
+    /** Longest company key. */
+    public static final int MAX_COMPANY_NAME_LENGTH = 12;
+
     /** Longest name part kept in a username; two parts plus the dot is the longest base username. */
     public static final int MAX_USERNAME_PART_LENGTH = 40;
     public static final int MAX_BASE_USERNAME_LENGTH = 2 * MAX_USERNAME_PART_LENGTH + 1;
@@ -193,6 +203,38 @@ public class SlugGenerationService {
     }
 
     /**
+     * Makes a company key from {@link #generateCompanyName} unique without leaving
+     * {@link #COMPANY_NAME_PATTERN}: the first free of {@code base}, then {@code base} with
+     * {@code 2}, {@code 3}, ... appended, the base shortened so the result stays within
+     * {@value #MAX_COMPANY_NAME_LENGTH} characters ({@code abcdefghijkl} → {@code abcdefghijk2}).
+     * {@link #ensureUniqueSlug}'s {@code -2} would leave the pattern.
+     *
+     * <p>The company re-key migrations apply the same rule in SQL (shared-kernel
+     * {@code db/company/company_key_changes.sql}); change both together.
+     *
+     * @param baseCompanyName a key from {@link #generateCompanyName}
+     * @param existsChecker returns true if a company key is taken
+     * @return a free key matching {@link #COMPANY_NAME_PATTERN}
+     */
+    public String ensureUniqueCompanyName(String baseCompanyName, Function<String, Boolean> existsChecker) {
+        if (baseCompanyName == null || !baseCompanyName.matches(COMPANY_NAME_PATTERN)) {
+            throw new IllegalArgumentException("Base company name must match " + COMPANY_NAME_PATTERN);
+        }
+        if (existsChecker == null) {
+            throw new IllegalArgumentException("Exists checker function cannot be null");
+        }
+        String candidate = baseCompanyName;
+        int suffix = 1;
+        while (existsChecker.apply(candidate)) {
+            suffix++;
+            String digits = Integer.toString(suffix);
+            int keep = Math.min(baseCompanyName.length(), MAX_COMPANY_NAME_LENGTH - digits.length());
+            candidate = baseCompanyName.substring(0, keep) + digits;
+        }
+        return candidate;
+    }
+
+    /**
      * Generates a URL-friendly slug from a session title.
      *
      * Rules:
@@ -290,7 +332,10 @@ public class SlugGenerationService {
      * - Converts German characters
      * - Truncates to 12 characters max
      *
-     * Example: "Test Co" → "testco", "Müller & Partners AG" → "muellerpart"
+     * Example: "Test Co" → "testco", "Müller & Partners AG" → "muellerpartn"
+     *
+     * <p>The company re-key migrations apply the same rule in SQL (shared-kernel
+     * {@code db/company/company_key_changes.sql}); change both together.
      *
      * @param displayName The full company display name
      * @return A short alphanumeric slug (1-12 chars)
@@ -315,8 +360,8 @@ public class SlugGenerationService {
         slug = slug.replaceAll("[^a-z0-9]", "");
 
         // Truncate to 12 characters (database constraint)
-        if (slug.length() > 12) {
-            slug = slug.substring(0, 12);
+        if (slug.length() > MAX_COMPANY_NAME_LENGTH) {
+            slug = slug.substring(0, MAX_COMPANY_NAME_LENGTH);
         }
 
         if (slug.isEmpty()) {

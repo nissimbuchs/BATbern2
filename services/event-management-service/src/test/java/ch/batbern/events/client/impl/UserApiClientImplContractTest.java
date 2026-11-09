@@ -187,7 +187,7 @@ class UserApiClientImplContractTest {
         List<CompanyBasicDto> companies = client.getAllCompanies();
 
         assertThat(companies).extracting(CompanyBasicDto::getName)
-                .containsExactly("AcmeZH", "GoogleZH", "SwissITSolutionsAG");
+                .containsExactly("AcmeZH", "GoogleZH", "swissitsolut");
         cums.verify();
     }
 
@@ -197,7 +197,7 @@ class UserApiClientImplContractTest {
                 .andExpect(UserApiClientImplContractTest::forwardsJwt)
                 .respondWithExample();
 
-        assertThat(client.getCompanyDisplayName("SwissITSolutionsAG")).isEqualTo("Swiss IT Solutions AG");
+        assertThat(client.getCompanyDisplayName("swissitsolut")).isEqualTo("Swiss IT Solutions AG");
         server.verify();
     }
 

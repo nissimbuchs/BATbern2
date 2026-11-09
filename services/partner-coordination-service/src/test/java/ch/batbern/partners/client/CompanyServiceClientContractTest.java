@@ -74,9 +74,9 @@ class CompanyServiceClientContractTest {
     void should_returnCompany_when_cumsAnswersWithSpecExample() {
         server.expect(GET, COMPANY).respondWithExample();
 
-        CompanyResponse company = companyServiceClient.getCompanyByName("SwissITSolutionsAG");
+        CompanyResponse company = companyServiceClient.getCompanyByName("swissitsolut");
 
-        assertThat(company.getName()).isEqualTo("SwissITSolutionsAG");
+        assertThat(company.getName()).isEqualTo("swissitsolut");
         assertThat(company.getDisplayName()).isEqualTo("Swiss IT Solutions AG");
         server.verify();
     }

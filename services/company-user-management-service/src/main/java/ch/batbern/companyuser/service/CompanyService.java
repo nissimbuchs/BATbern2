@@ -16,6 +16,8 @@ import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.repository.LogoRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.exception.ValidationException;
+import ch.batbern.shared.service.SlugGenerationService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
@@ -48,29 +50,47 @@ public class CompanyService {
     private final CompanySearchService searchService;
     private final SecurityContextHelper securityContextHelper;
     private final GenericLogoService genericLogoService;
-    private final ch.batbern.shared.service.SlugGenerationService slugService;
+    private final SlugGenerationService slugService;
 
     /**
      * Creates a new company with validation
      * AC4: Company creation
      * AC7: Publishes CompanyCreatedEvent
      * AC8: Invalidates search cache
+     *
+     * <p>Owner decision 2026-11-09 (option A): the key ({@code name}, the meaningful ID) is the slug
+     * of the typed name by the rule get-or-create uses ({@link
+     * ch.batbern.shared.service.SlugGenerationService#generateCompanyName}), made unique within 12
+     * characters; the typed name is the display name unless one is given. A company with the same
+     * display name (ignoring case) is a duplicate (409); a different company whose name slugs alike
+     * gets the next free key.
      */
     public CompanyResponse createCompany(CreateCompanyRequest request) {
         log.info("Creating company: {}", request.getName());
 
-        // Check for duplicate company name (AC3)
-        if (companyRepository.existsByName(request.getName())) {
-            throw new CompanyValidationException("Company with name '" + request.getName() + "' already exists");
+        String displayName = request.getDisplayName() != null && !request.getDisplayName().isBlank()
+                ? request.getDisplayName().strip()
+                : request.getName().strip();
+        String baseKey;
+        try {
+            baseKey = slugService.generateCompanyName(request.getName());
+        } catch (IllegalArgumentException e) {
+            throw new ValidationException("name", "Company name must contain at least one letter or digit");
         }
+
+        // Duplicate company (AC3): the same name as people see it
+        if (companyRepository.existsByDisplayNameIgnoreCase(displayName)) {
+            throw new CompanyValidationException("Company with name '" + displayName + "' already exists");
+        }
+        String companyKey = slugService.ensureUniqueCompanyName(baseKey, companyRepository::existsByName);
 
         // Build company entity (AC10: Get username from security context)
         // Story 1.16.2: Use username instead of UUID for createdBy field
         String currentUsername = securityContextHelper.getCurrentUsername();
 
         Company company = Company.builder()
-                .name(request.getName())
-                .displayName(request.getDisplayName() != null ? request.getDisplayName() : request.getName())
+                .name(companyKey)
+                .displayName(displayName)
                 .website(request.getWebsite())
                 .industry(request.getIndustry())
                 .description(request.getDescription())
@@ -162,8 +182,8 @@ public class CompanyService {
             return existing.get();
         }
 
-        // Ensure unique name with numeric suffix if needed
-        companyName = slugService.ensureUniqueSlug(companyName, companyRepository::existsByName);
+        // Ensure unique name with a numeric suffix within 12 characters if needed
+        companyName = slugService.ensureUniqueCompanyName(companyName, companyRepository::existsByName);
 
         // Create new company
         log.info("Creating new company: {} (display: {})", companyName, displayName);
@@ -246,6 +266,12 @@ public class CompanyService {
                 .orElseThrow(() -> new CompanyNotFoundException(name));
 
         // Update only provided fields
+        if (request.getName() != null && !request.getName().equals(company.getName())
+                && !request.getName().matches(SlugGenerationService.COMPANY_NAME_PATTERN)) {
+            // The key is the meaningful ID other services hold: it keeps the slug shape (owner 2026-11-09)
+            throw new ValidationException("name",
+                    "Company name (key) must be 1 to 12 letters or digits: " + request.getName());
+        }
         if (request.getName() != null) {
             // Check for duplicate company name if name is being changed (AC3)
             if (!request.getName().equals(company.getName())

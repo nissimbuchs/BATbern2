@@ -41,14 +41,23 @@ type Company = components['schemas']['CompanyResponse'];
 type CreateCompanyRequest = components['schemas']['CreateCompanyRequest'];
 type UpdateCompanyRequest = components['schemas']['UpdateCompanyRequest'];
 
-// Validation schema with Zod (matches backend CreateCompanyRequest)
+// Create: the name as typed (CreateCompanyRequest.name, 2-255 characters); the service derives the
+// company's key from it. Edit: the name field is the key (UpdateCompanyRequest.name), which other
+// services hold, so it keeps the key shape. Owner decision 2026-11-09.
+const createNameSchema = z
+  .string()
+  .min(1, 'Company name is required')
+  .min(2, 'Name must be at least 2 characters')
+  .max(255, 'Name must be at most 255 characters');
+
+const editNameSchema = z
+  .string()
+  .min(1, 'Company name is required')
+  .regex(/^[a-zA-Z0-9]{1,12}$/, 'The company ID must be 1 to 12 letters or digits');
+
+// Validation schema with Zod (matches backend CreateCompanyRequest / UpdateCompanyRequest)
 const companySchema = z.object({
-  name: z
-    .string()
-    .min(1, 'Company name is required')
-    .min(2, 'Name must be at least 2 characters')
-    .max(200, 'Name must be at most 200 characters')
-    .regex(/^[A-Za-z0-9]+$/, 'Company name must be alphanumeric (no spaces or special characters)'),
+  name: createNameSchema,
   displayName: z
     .string()
     .max(255, 'Display name must be at most 255 characters')
@@ -74,6 +83,8 @@ const companySchema = z.object({
 });
 
 // Draft schema (relaxed validation)
+
+const editCompanySchema = companySchema.extend({ name: editNameSchema });
 
 type CompanyFormData = z.infer<typeof companySchema>;
 
@@ -130,7 +141,7 @@ export const CompanyForm: React.FC<CompanyFormProps> = ({
     watch,
     reset,
   } = useForm<CompanyFormData>({
-    resolver: zodResolver(companySchema),
+    resolver: zodResolver(mode === 'edit' ? editCompanySchema : companySchema),
     mode: 'onBlur', // Validate on blur for immediate feedback
     defaultValues: initialData
       ? {

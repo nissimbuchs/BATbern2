@@ -300,6 +300,31 @@ class TestFixtureCleanupControllerIntegrationTest extends AbstractIntegrationTes
         }
 
         @Test
+        @DisplayName("deletes the slug keys Bruno companies get since 2026-11-09 (brunotestco1) with the same prefix")
+        @WithMockUser(roles = {"ORGANIZER"})
+        void deletesSluggedTestCompanies_withCanonicalPrefix() throws Exception {
+            // POST /companies stores the slug of "BRUNOTESTCO<timestamp>": lower case, 12 characters
+            companyRepository.save(buildCompany("brunotestco1"));
+            companyRepository.save(buildCompany("brunotestco2"));
+            companyRepository.save(buildCompany("Swisscom"));
+
+            TestFixtureCleanupRequest req = TestFixtureCleanupRequest.builder()
+                    .entityType("companies")
+                    .prefix("BRUNOTESTCO")
+                    .build();
+
+            mockMvc.perform(post(ENDPOINT)
+                            .contentType(MediaType.APPLICATION_JSON)
+                            .content(objectMapper.writeValueAsString(req)))
+                    .andExpect(status().isOk())
+                    .andExpect(jsonPath("$.deletionCounts.companies").value(2));
+
+            assertThat(companyRepository.findByName("brunotestco1")).isEmpty();
+            assertThat(companyRepository.findByName("brunotestco2")).isEmpty();
+            assertThat(companyRepository.findByName("Swisscom")).isPresent();
+        }
+
+        @Test
         @DisplayName("deletes bruno.test.* users but leaves real Bruno users alone")
         @WithMockUser(roles = {"ORGANIZER"})
         void deletesTestUsers_preservesRealBrunos() throws Exception {

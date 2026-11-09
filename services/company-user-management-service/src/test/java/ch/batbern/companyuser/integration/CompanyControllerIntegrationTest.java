@@ -63,7 +63,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
         companyRepository.deleteAll();
 
         testCompany = Company.builder()
-                .name("Test Company")
+                .name("testcompany")
                 .displayName("Test Co")
                 .website("https://test.example.com")
                 .industry("Technology")
@@ -96,8 +96,8 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isCreated())
-                // Story 1.16.2: use company name instead of UUID - removed id field
-                .andExpect(jsonPath("$.name").value("New Company"))
+                // Owner 2026-11-09 (option A): the key is the slug of the typed name, as get-or-create stores it
+                .andExpect(jsonPath("$.name").value("newcompany"))
                 .andExpect(jsonPath("$.displayName").value("New Co"))
                 .andExpect(jsonPath("$.website").value("https://new.example.com"))
                 .andExpect(jsonPath("$.industry").value("Finance"))
@@ -107,7 +107,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.updatedAt").exists());
 
         // Verify company was persisted
-        assertThat(companyRepository.findByName("New Company")).isPresent();
+        assertThat(companyRepository.findByName("newcompany")).isPresent();
     }
 
     // ── POST /companies:get-or-create (colon custom method, AIP-136) ──────────
@@ -257,12 +257,12 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("POST /companies - should return 409 when company name already exists")
+    @DisplayName("POST /companies - should return 409 when a company with that name already exists")
     @WithMockUser(roles = {"ORGANIZER"})
     void shouldReturn409_whenCompanyNameAlreadyExists() throws Exception {
-        // Given - Use existing company name
+        // Given - the existing company's name as a person types it (any case)
         CreateCompanyRequest request = CreateCompanyRequest.builder()
-                .name(testCompany.getName())
+                .name("TEST CO")
                 .build();
 
         // When & Then
@@ -270,6 +270,70 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON)
                         .content(objectMapper.writeValueAsString(request)))
                 .andExpect(status().isConflict());
+    }
+
+    @Test
+    @DisplayName("POST /companies - stores the slug as key and the typed name as display name")
+    @WithMockUser(roles = {"ORGANIZER"})
+    void shouldStoreSlugKeyAndTypedDisplayName_whenNameHasSpaces() throws Exception {
+        CreateCompanyRequest request = CreateCompanyRequest.builder()
+                .name("Gamma Innovations 1769018790753")
+                .build();
+
+        mockMvc.perform(post("/api/v1/companies")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("gammainnovat"))
+                .andExpect(jsonPath("$.displayName").value("Gamma Innovations 1769018790753"));
+    }
+
+    @Test
+    @DisplayName("POST /companies - appends a digit within 12 characters when another company has the slug")
+    @WithMockUser(roles = {"ORGANIZER"})
+    void shouldAppendDigit_whenSlugBelongsToAnotherCompany() throws Exception {
+        // "testcompany" is taken by "Test Co"; this is another company whose name slugs alike
+        CreateCompanyRequest request = CreateCompanyRequest.builder()
+                .name("TestCompany")
+                .displayName("Test Company Holding")
+                .build();
+
+        mockMvc.perform(post("/api/v1/companies")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isCreated())
+                .andExpect(jsonPath("$.name").value("testcompany2"))
+                .andExpect(jsonPath("$.displayName").value("Test Company Holding"));
+    }
+
+    @Test
+    @DisplayName("POST /companies - should return 400 when the name has no letter or digit")
+    @WithMockUser(roles = {"ORGANIZER"})
+    void shouldReturn400_whenNameHasNoLetterOrDigit() throws Exception {
+        CreateCompanyRequest request = CreateCompanyRequest.builder()
+                .name("&&")
+                .build();
+
+        mockMvc.perform(post("/api/v1/companies")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+    }
+
+    @Test
+    @DisplayName("PATCH /companies/{name} - should return 400 when the new key leaves the slug rule")
+    @WithMockUser(roles = {"ORGANIZER"})
+    void shouldReturn400_whenUpdatedKeyIsNotASlug() throws Exception {
+        UpdateCompanyRequest request = UpdateCompanyRequest.builder()
+                .name("Test Company AG")
+                .build();
+
+        mockMvc.perform(patch("/api/v1/companies/{name}", testCompany.getName())
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(request)))
+                .andExpect(status().isBadRequest());
+
+        assertThat(companyRepository.findByName("testcompany")).isPresent();
     }
 
     // GET COMPANY BY ID TESTS (AC4)
@@ -317,7 +381,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
     void shouldReturnAllCompanies_whenAuthenticated() throws Exception {
         // Given - Create additional company
         Company company2 = Company.builder()
-                .name("Another Company")
+                .name("anothercomp")
                 .displayName("Another Co")
                 .isVerified(true)
                 .createdAt(Instant.now())
@@ -330,7 +394,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
         mockMvc.perform(get("/api/v1/companies"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.data", hasSize(2)))
-                .andExpect(jsonPath("$.data[*].name", containsInAnyOrder("Test Company", "Another Company")))
+                .andExpect(jsonPath("$.data[*].name", containsInAnyOrder("testcompany", "anothercomp")))
                 .andExpect(jsonPath("$.pagination.totalItems").value(2));
     }
 
@@ -353,7 +417,7 @@ class CompanyControllerIntegrationTest extends AbstractIntegrationTest {
                         .param("query", "test"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].name").value("Test Company"));
+                .andExpect(jsonPath("$[0].name").value("testcompany"));
     }
 
     // Test removed: GET /companies/search is now public (Story 4.1: Partner Showcase)

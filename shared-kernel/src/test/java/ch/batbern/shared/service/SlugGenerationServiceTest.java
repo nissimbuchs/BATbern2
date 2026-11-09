@@ -287,4 +287,44 @@ class SlugGenerationServiceTest {
             .isInstanceOf(IllegalArgumentException.class)
             .hasMessageContaining("Exists checker function cannot be null");
     }
+    // ==================== Company key (ADR-003: ^[a-zA-Z0-9]{1,12}$) ====================
+
+    @ParameterizedTest(name = "{0} -> {1}")
+    @MethodSource("companyNames")
+    @DisplayName("should_slugCompanyName_toTwelveAlphanumerics")
+    void should_slugCompanyName_toTwelveAlphanumerics(String displayName, String expected) {
+        assertThat(slugService.generateCompanyName(displayName))
+            .isEqualTo(expected)
+            .matches(SlugGenerationService.COMPANY_NAME_PATTERN);
+    }
+
+    static Stream<Arguments> companyNames() {
+        return Stream.of(
+            Arguments.of("Test Co", "testco"),
+            Arguments.of("Müller & Partners AG", "muellerpartn"),
+            Arguments.of("Gamma Innovations 1769018790753", "gammainnovat"),
+            Arguments.of("Café Crème", "cafecreme"),
+            Arguments.of("BRUNOTESTCO1779647142000", "brunotestco1"));
+    }
+
+    @Test
+    @DisplayName("should_appendDigitWithinTwelveChars_when_companyKeyTaken")
+    void should_appendDigitWithinTwelveChars_when_companyKeyTaken() {
+        java.util.Set<String> taken = java.util.Set.of("testco", "testco2", "abcdefghijkl", "abcdefghijk2");
+
+        assertThat(slugService.ensureUniqueCompanyName("newco", taken::contains)).isEqualTo("newco");
+        assertThat(slugService.ensureUniqueCompanyName("testco", taken::contains)).isEqualTo("testco3");
+        // A 12-character key makes room for the suffix instead of growing past 12 or using "-2"
+        assertThat(slugService.ensureUniqueCompanyName("abcdefghijkl", taken::contains))
+            .isEqualTo("abcdefghijk3")
+            .matches(SlugGenerationService.COMPANY_NAME_PATTERN);
+    }
+
+    @Test
+    @DisplayName("should_keepTwelveChars_when_suffixHasTwoDigits")
+    void should_keepTwelveChars_when_suffixHasTwoDigits() {
+        Function<String, Boolean> firstTenTaken = candidate -> !candidate.equals("abcdefghij10");
+
+        assertThat(slugService.ensureUniqueCompanyName("abcdefghijkl", firstTenTaken)).isEqualTo("abcdefghij10");
+    }
 }

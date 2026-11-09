@@ -47,6 +47,10 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ No-shows do not count as attendance: the analytics count confirmed and attended registrations only, so after an event the people who came are set to *Attended* and the others to *No-show*.
 - ✅ Mail Center: own text to the registrants can go to chosen statuses, for example the no-shows only. A template still goes to registered, confirmed and attended.
 
+**Improvement — Every company has a short ID (17.0)**:
+- ✅ A company created in the company list gets the same kind of short ID as a company named during a registration: at most 12 letters and digits, from its name ("Gamma Innovations" → "gammainnovat"). The name as typed stays the display name. Before, the ID was the name exactly as typed, spaces and all, and such a company could not become a partner or be the company of a user.
+- ✅ Existing companies with a longer or spaced ID got a short one, and everything that pointed to them (logos, logo requests, partners, registrations) points to the new ID. A company created a second time with the same name is refused, as before.
+
 **Bug Fix — Topic heat map shows real attendance (17.0)**:
 - ✅ The topic heat maps (topic backlog and topic selection) show for each use of a topic the attendance of its event: the confirmed and attended registrations, counted as on the analytics page, once the event has taken place. Before, the value was never filled in, so the tooltip read "null attendees" or 0. An event still to come shows no attendance. The "Avg Engagement" line is gone: the platform never measured engagement (older entries showed an estimate derived from the event's state), so it could show nothing true.
 

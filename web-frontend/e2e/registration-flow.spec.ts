@@ -19,9 +19,9 @@
  * "current" event (un-deletable). Each run creates a throwaway CREATED event via the API,
  * registers against IT, asserts the inline success view, then in afterAll: DELETE the event
  * (FK cascade removes the registration) + delete the cross-service CUMS user & company.
- * The `bruno.test*` username is also caught by the global-teardown sweep; the company
- * (lowercased slug vs. the uppercase `BRUNOTESTCO%` case-sensitive sweep) is NOT, so it is
- * explicit-deleted by slug. See e2e/helpers/event-fixture.ts.
+ * The `bruno.test*` username is also caught by the global-teardown sweep; the company is
+ * explicit-deleted by slug (the companies sweep ignores case since 2026-11-09 and is the
+ * backstop). See e2e/helpers/event-fixture.ts.
  *
  * Anonymous context: the chromium project is authenticated (organizer); the public funnel
  * shows a one-click panel for logged-in users, so we force a fresh anonymous storageState
@@ -45,8 +45,8 @@ const ATTENDEE = { firstName: 'bruno', lastName: 'test' };
 
 // The company the @smoke submits — generated once per worker so afterAll can delete its
 // CUMS row by slug. Only the @smoke submits, so this is the only company ever persisted.
-// (The company's lowercased slug is NOT reachable by the uppercase `BRUNOTESTCO%` sweep,
-// so it must be explicit-deleted; the `bruno.test*` user IS swept and needs no explicit
+// (The company's lowercased slug is explicit-deleted; the companies sweep ignores case
+// since 2026-11-09 and backs it up. The `bruno.test*` user IS swept and needs no explicit
 // delete.)
 const SMOKE_COMPANY = factory.companyName();
 

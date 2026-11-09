@@ -55,7 +55,9 @@ tests {
     expect(body).to.be.an('object');
     expect(body.name).to.exist;
     expect(body.name).to.be.a('string');
-    expect(body.name).to.include('BRUNOTESTCO');
+    // Since 2026-11-09 the key is the slug of the typed name (12 letters/digits, lower case);
+    // the canonical cleanup prefix BRUNOTESTCO matches it ignoring case
+    expect(body.name).to.match(/^brunotestco[0-9]*$/);
   });
 
   test("should NOT have id field (Story 1.16.2: removed redundant id)", function() {

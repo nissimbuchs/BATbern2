@@ -33,8 +33,9 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  * work). The MSW harness found in 17.0c1 that {@code CompanyResponse.createdBy}
  * ({@code ^[a-z]+\.[a-z]+(\.[0-9]+)?$}) rejects real companies: 74 of 712 in the anonymized database
  * were created by {@code anonymous} (a company named during an anonymous registration) and 10 by a
- * Cognito subject (a JWT without {@code custom:username}). One company name there has spaces, which
- * {@code POST /companies} accepts and the response pattern {@code ^[A-Za-z0-9]+$} rejected.
+ * Cognito subject (a JWT without {@code custom:username}). One company name there had spaces, which
+ * {@code POST /companies} stored unchanged; since the owner decision of 2026-11-09 it stores the slug
+ * ({@code ^[a-zA-Z0-9]{1,12}$}, the response pattern again) and keeps the typed name as display name.
  *
  * <p>Each company is created through the real flow, then read back through the real controller and
  * checked against the spec.
@@ -64,8 +65,7 @@ class SpecPatternsAcceptProducedValuesIntegrationTest extends AbstractIntegratio
     void cleanUp() {
         userRepository.findByEmailIgnoreCase(REGISTRANT_EMAIL).ifPresent(userRepository::delete);
         companyRepository.findAll().stream()
-                .filter(c -> COMPANY_DISPLAY.equals(c.getDisplayName()) || SPACED_NAME.equals(c.getName())
-                        || SUB_NAME.equals(c.getName()))
+                .filter(c -> List.of(COMPANY_DISPLAY, SPACED_NAME, SUB_NAME).contains(c.getDisplayName()))
                 .forEach(companyRepository::delete);
     }
 
@@ -97,21 +97,22 @@ class SpecPatternsAcceptProducedValuesIntegrationTest extends AbstractIntegratio
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\": \"" + SUB_NAME + "\"}"))
                 .andExpect(status().isCreated());
-        assertThat(companyRepository.findByName(SUB_NAME)).map(Company::getCreatedBy).contains(COGNITO_SUB);
+        assertThat(companyRepository.findByName("patternsubco")).map(Company::getCreatedBy).contains(COGNITO_SUB);
 
-        assertCompanyMatchesSpec(SUB_NAME);
+        assertCompanyMatchesSpec("patternsubco");
     }
 
     @Test
     @WithMockUser(username = "organizer.alice", roles = "ORGANIZER")
-    @DisplayName("a company POSTed with spaces in its name (accepted by the spec) reads back valid")
+    @DisplayName("a company POSTed with spaces in its name gets the slug as key and reads back valid")
     void companyNameWithSpaces_matchesSpec() throws Exception {
         mockMvc.perform(post("/api/v1/companies")
                         .contentType(MediaType.APPLICATION_JSON)
                         .content("{\"name\": \"" + SPACED_NAME + "\"}"))
                 .andExpect(status().isCreated());
+        assertThat(companyRepository.findByName("patternprobe")).map(Company::getDisplayName).contains(SPACED_NAME);
 
-        assertCompanyMatchesSpec(SPACED_NAME);
+        assertCompanyMatchesSpec("patternprobe");
     }
 
     private void assertCompanyMatchesSpec(String name) throws Exception {

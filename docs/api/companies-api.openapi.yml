@@ -336,7 +336,7 @@ paths:
                   summary: Basic company list
                   value:
                     data:
-                      - name: SwissITSolutionsAG
+                      - name: swissitsolut
                         displayName: Swiss IT Solutions AG
                         industry: Technology
                         isVerified: true
@@ -353,7 +353,7 @@ paths:
                   summary: Company list with logo
                   value:
                     data:
-                      - name: SwissITSolutionsAG
+                      - name: swissitsolut
                         displayName: Swiss IT Solutions AG
                         industry: Technology
                         isVerified: true
@@ -405,7 +405,7 @@ paths:
               basicCompany:
                 summary: Basic company creation
                 value:
-                  name: SwissITSolutionsAG
+                  name: swissitsolut
                   displayName: Swiss IT Solutions AG
                   industry: Technology
                   website: https://swiss-it.ch
@@ -467,7 +467,7 @@ paths:
           required: true
           schema:
             type: string
-            example: SwissITSolutionsAG
+            example: swissitsolut
       responses:
         '200':
           description: Company details retrieved successfully
@@ -479,7 +479,7 @@ paths:
                 basicCompany:
                   summary: Basic company details
                   value:
-                    name: SwissITSolutionsAG
+                    name: swissitsolut
                     displayName: Swiss IT Solutions AG
                     industry: Technology
                     website: https://swiss-it.ch
@@ -522,7 +522,7 @@ paths:
           required: true
           schema:
             type: string
-            example: SwissITSolutionsAG
+            example: swissitsolut
       requestBody:
         required: true
         content:
@@ -589,7 +589,7 @@ paths:
           required: true
           schema:
             type: string
-            example: SwissITSolutionsAG
+            example: swissitsolut
       responses:
         '204':
           description: Company deleted successfully
@@ -678,11 +678,11 @@ paths:
                 searchResults:
                   summary: Search results for "Swiss"
                   value:
-                    - name: SwissITSolutionsAG
+                    - name: swissitsolut
                       displayName: Swiss IT Solutions AG
                       industry: Technology
                       isVerified: true
-                    - name: SwissBankCorp
+                    - name: swissbankcor
                       displayName: Swiss Bank
                       industry: Finance
                       isVerified: true
@@ -721,7 +721,7 @@ paths:
           required: true
           schema:
             type: string
-            example: SwissITSolutionsAG
+            example: swissitsolut
       responses:
         '200':
           description: Company verified successfully
@@ -1062,11 +1062,13 @@ components:
       properties:
         name:
           type: string
-          # No `^[A-Za-z0-9]+$` pattern: POST /companies accepts any 2-255 characters (see
-          # CreateCompanyRequest), so stored names can contain spaces; get-or-create stores a slug.
-          description: Company name (unique identifier; a slug, or as given to POST /companies) - Story 1.16.2
-          maxLength: 255
-          example: SwissITSolutionsAG
+          description: |
+            The company's key, its unique meaningful ID (Story 1.16.2, ADR-003): 1 to 12 letters or
+            digits. POST /companies and get-or-create derive it from the typed name; the name as people
+            see it is `displayName`.
+          pattern: '^[a-zA-Z0-9]{1,12}$'
+          maxLength: 12
+          example: swissitsolut
         displayName:
           type: string
           maxLength: 255
@@ -1141,10 +1143,10 @@ components:
       properties:
         name:
           type: string
-          # No `^[A-Za-z0-9]+$` pattern: POST /companies accepts any 2-255 characters (see
-          # CreateCompanyRequest), so stored names can contain spaces; get-or-create stores a slug.
-          description: Company name (unique identifier; a slug, or as given to POST /companies) - Story 1.16.2
-          example: SwissITSolutionsAG
+          description: The company's key, its unique meaningful ID (Story 1.16.2), 1 to 12 letters or digits
+          pattern: '^[a-zA-Z0-9]{1,12}$'
+          maxLength: 12
+          example: swissitsolut
         displayName:
           type: string
           example: Swiss IT Solutions AG
@@ -1164,11 +1166,14 @@ components:
       properties:
         name:
           type: string
-          # No `^[A-Za-z0-9]+$` pattern: the deployed CompanyController has always validated name
-          # as @Size(2..255) only (spaces allowed, e.g. "Swisscom AG"). The alphanumeric pattern was
-          # contract drift never enforced by the hand-rolled controller — applying it now (Phase 7
-          # contract-first wiring) would 400 real requests. Relaxed to match production behaviour.
-          description: Company name (unique identifier; 2-255 chars)
+          description: |
+            The company's name as typed (2-255 characters, spaces allowed). The service derives the
+            key from it (`CompanyResponse.name`, 1 to 12 letters or digits) by the rule of get-or-create:
+            umlauts spelled out (ä as ae), accents dropped, lower case, letters and digits only, the first
+            12 kept; when another company has that key, a digit is appended within 12 characters
+            (`testco2`). The typed name becomes the display name unless `displayName` is given.
+            409 when a company with the same display name (ignoring case) exists; 400 when the name
+            has no letter or digit.
           minLength: 2
           maxLength: 255
           example: Swisscom AG
@@ -1202,12 +1207,12 @@ components:
       properties:
         name:
           type: string
-          # See CreateCompanyRequest.name: the alphanumeric pattern was never enforced by the
-          # deployed controller (@Size only); relaxed to match production behaviour (Phase 7).
-          description: Company name (unique identifier; 2-255 chars)
-          minLength: 2
-          maxLength: 255
-          example: Swisscom AG
+          description: |
+            A new key for the company (1 to 12 letters or digits). Other services hold the key, so it
+            keeps the shape POST /companies gives it; 400 otherwise.
+          pattern: '^[a-zA-Z0-9]{1,12}$'
+          maxLength: 12
+          example: swisscom
         displayName:
           type: string
           maxLength: 255
@@ -1319,7 +1324,7 @@ components:
               value:
                 error: RESOURCE_NOT_FOUND
                 errorCode: NOT_FOUND
-                message: Company not found with name 'SwissITSolutionsAG'
+                message: Company not found with name 'swissitsolut'
                 timestamp: 2025-01-15T10:30:00Z
 
     Conflict:
@@ -1333,7 +1338,7 @@ components:
               value:
                 error: CONFLICT
                 errorCode: CONFLICT
-                message: Company with name 'SwissITSolutionsAG' already exists
+                message: Company with name 'swissitsolut' already exists
                 timestamp: 2025-01-15T10:30:00Z
 
     InternalServerError:

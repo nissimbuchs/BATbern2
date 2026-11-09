@@ -9,12 +9,12 @@ import ch.batbern.companyuser.exception.CompanyValidationException;
 import ch.batbern.companyuser.repository.CompanyRepository;
 import ch.batbern.companyuser.security.SecurityContextHelper;
 import ch.batbern.shared.events.DomainEventPublisher;
+import ch.batbern.shared.service.SlugGenerationService;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.Disabled;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -29,7 +29,6 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.ArgumentMatchers.argThat;
 import static org.mockito.ArgumentMatchers.anyString;
-import static org.mockito.ArgumentMatchers.eq;
 import static org.mockito.Mockito.doNothing;
 import static org.mockito.Mockito.never;
 import static org.mockito.Mockito.verify;
@@ -58,15 +57,14 @@ class CompanyServiceTest {
     private SecurityContextHelper securityContextHelper;
 
     @Mock
-    private ch.batbern.shared.service.SlugGenerationService slugService;
-
-    @Mock
     private GenericLogoService genericLogoService;
 
     @Mock
     private ch.batbern.companyuser.repository.LogoRepository logoRepository;
 
-    @InjectMocks
+    // The real slug rule (own code, no mock): the key a company gets is what these tests check
+    private final SlugGenerationService slugService = new SlugGenerationService();
+
     private CompanyService companyService;
 
     private CreateCompanyRequest createRequest;
@@ -77,8 +75,11 @@ class CompanyServiceTest {
 
     @BeforeEach
     void setUp() {
-        // Story 1.16.2: use company name instead of UUID
-        companyName = "Test Company AG";
+        companyService = new CompanyService(companyRepository, logoRepository, eventPublisher, searchService,
+                securityContextHelper, genericLogoService, slugService);
+
+        // Story 1.16.2: the company name (key) is the identifier, a slug since 2026-11-09
+        companyName = "testcompany";
 
         createRequest = CreateCompanyRequest.builder()
                 .name("Test Company AG")
@@ -89,7 +90,7 @@ class CompanyServiceTest {
                 .build();
 
         updateRequest = UpdateCompanyRequest.builder()
-                .name("Updated Company AG")
+                .name("updatedco")
                 .displayName("Updated Company")
                 .website("https://updated.ch")
                 .industry("Finance")
@@ -98,7 +99,7 @@ class CompanyServiceTest {
 
         existingCompany = Company.builder()
                 .id(UUID.randomUUID())  // Internal DB uses UUID
-                .name("Test Company AG")
+                .name("testcompany")
                 .displayName("Test Company")
                 .website("https://testcompany.ch")
                 .industry("Technology")
@@ -118,15 +119,15 @@ class CompanyServiceTest {
         // Given
         // Story 1.16.2: Use getCurrentUsername() instead of getCurrentUserId()
         when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
-        when(companyRepository.existsByName(createRequest.getName())).thenReturn(false);
-        when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
+        when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         CompanyResponse response = companyService.createCompany(createRequest);
 
-        // Then
+        // Then: the key is the slug of the typed name, the display name as given
         assertThat(response).isNotNull();
-        assertThat(response.getName()).isEqualTo("Test Company AG");
+        assertThat(response.getName()).isEqualTo("testcompanya");
+        assertThat(response.getDisplayName()).isEqualTo("Test Company");
         assertThat(response.getIsVerified()).isFalse();
 
         verify(securityContextHelper).getCurrentUsername();
@@ -138,8 +139,8 @@ class CompanyServiceTest {
     @Test
     @DisplayName("Test 4.3: should_throwCompanyValidationException_when_duplicateNameExists")
     void should_throwCompanyValidationException_when_duplicateNameExists() {
-        // Given
-        when(companyRepository.existsByName(createRequest.getName())).thenReturn(true);
+        // Given: a company with the same display name exists
+        when(companyRepository.existsByDisplayNameIgnoreCase("Test Company")).thenReturn(true);
 
         // When / Then
         assertThatThrownBy(() -> companyService.createCompany(createRequest))
@@ -159,27 +160,16 @@ class CompanyServiceTest {
                 .displayName("Test Company")
                 .build();
 
-        Company companyWithoutUID = Company.builder()
-                .id(UUID.randomUUID())  // Internal DB uses UUID
-                .name("Test Company AG")
-                .displayName("Test Company")
-                .isVerified(false)
-                .createdBy("test.user")  // Story 1.16.2: Use username format
-                .createdAt(Instant.now())
-                .updatedAt(Instant.now())
-                .build();
-
         // Story 1.16.2: Use getCurrentUsername() instead of getCurrentUserId()
         when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
-        when(companyRepository.existsByName(requestWithoutUID.getName())).thenReturn(false);
-        when(companyRepository.save(any(Company.class))).thenReturn(companyWithoutUID);
+        when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> invocation.getArgument(0));
 
         // When
         CompanyResponse response = companyService.createCompany(requestWithoutUID);
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.getName()).isEqualTo("Test Company AG");
+        assertThat(response.getName()).isEqualTo("testcompanya");
 
         verify(companyRepository).save(any(Company.class));
     }
@@ -194,7 +184,6 @@ class CompanyServiceTest {
 
         // Story 1.16.2: Use getCurrentUsername() instead of getCurrentUserId()
         when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
-        when(companyRepository.existsByName(requestWithoutDisplay.getName())).thenReturn(false);
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
             Company company = invocation.getArgument(0);
             assertThat(company.getDisplayName()).isEqualTo("Test Company AG");
@@ -224,7 +213,7 @@ class CompanyServiceTest {
 
         // Then
         assertThat(response).isNotNull();
-        assertThat(response.getName()).isEqualTo("Test Company AG");
+        assertThat(response.getName()).isEqualTo("testcompany");
 
         verify(companyRepository).findByName(companyName);
     }
@@ -268,7 +257,7 @@ class CompanyServiceTest {
 
         // Then
         assertThat(responses).hasSize(2);
-        assertThat(responses.get(0).getName()).isEqualTo("Test Company AG");
+        assertThat(responses.get(0).getName()).isEqualTo("testcompany");
         assertThat(responses.get(1).getName()).isEqualTo("Another Company AG");
 
         verify(companyRepository).findAll();
@@ -333,7 +322,7 @@ class CompanyServiceTest {
     void should_updateOnlyProvidedFields_when_partialUpdateRequest() {
         // Given
         UpdateCompanyRequest partialUpdate = UpdateCompanyRequest.builder()
-                .name("New Name Only")
+                .name("newnameonly")
                 .build();
 
         // Story 1.16.2: use company name instead of UUID
@@ -346,7 +335,7 @@ class CompanyServiceTest {
 
         // Then
         verify(companyRepository).save(argThat(company ->
-            company.getName().equals("New Name Only")
+            company.getName().equals("newnameonly")
             && company.getWebsite().equals("https://testcompany.ch") // Original value preserved
         ));
     }
@@ -527,12 +516,12 @@ class CompanyServiceTest {
     void should_throwCompanyValidationException_when_updateWithDuplicateName() {
         // Given
         UpdateCompanyRequest updateWithNewName = UpdateCompanyRequest.builder()
-                .name("Another Company Name")
+                .name("anotherco")
                 .build();
 
         // Story 1.16.2: use company name instead of UUID
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.existsByName("Another Company Name")).thenReturn(true);
+        when(companyRepository.existsByName("anotherco")).thenReturn(true);
 
         // When / Then
         assertThatThrownBy(() -> companyService.updateCompany(companyName, updateWithNewName))
@@ -548,7 +537,7 @@ class CompanyServiceTest {
     void should_allowSameName_when_updateWithoutChangingName() {
         // Given
         UpdateCompanyRequest updateWithSameName = UpdateCompanyRequest.builder()
-                .name("Test Company AG") // Same as existing
+                .name("testcompany") // Same as existing
                 .displayName("Updated Display")
                 .build();
 
@@ -576,9 +565,6 @@ class CompanyServiceTest {
         // Given
         String displayName = "Test Co";
         String expectedSlug = "testco";
-
-        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
-        when(slugService.ensureUniqueSlug(anyString(), any())).thenReturn(expectedSlug);
         when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
         when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
@@ -602,8 +588,6 @@ class CompanyServiceTest {
         assertThat(result.getName()).isEqualTo(expectedSlug);
         assertThat(result.getDisplayName()).isEqualTo(displayName);
         assertThat(result.getCreatedBy()).isEqualTo("test.user");
-
-        verify(slugService).generateCompanyName(displayName);
         verify(companyRepository).findByName(expectedSlug);
         verify(companyRepository).save(any(Company.class));
         verify(eventPublisher).publish(any());
@@ -625,8 +609,6 @@ class CompanyServiceTest {
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
                 .build();
-
-        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
         when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.of(existingTestCo));
 
         // When
@@ -637,8 +619,6 @@ class CompanyServiceTest {
         assertThat(result.getName()).isEqualTo(expectedSlug);
         assertThat(result.getDisplayName()).isEqualTo("Test Co");
         assertThat(result.getCreatedBy()).isEqualTo("another.user");
-
-        verify(slugService).generateCompanyName(displayName);
         verify(companyRepository).findByName(expectedSlug);
         verify(companyRepository, never()).save(any(Company.class));
         verify(eventPublisher, never()).publish(any());
@@ -650,9 +630,6 @@ class CompanyServiceTest {
         // Given
         String displayName = "Müller & Söhne AG";
         String expectedSlug = "muellersoehn"; // 12 chars max, German chars converted
-
-        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
-        when(slugService.ensureUniqueSlug(anyString(), any())).thenReturn(expectedSlug);
         when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
         when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
@@ -675,8 +652,6 @@ class CompanyServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getName()).isEqualTo(expectedSlug);
         assertThat(result.getDisplayName()).isEqualTo(displayName);
-
-        verify(slugService).generateCompanyName(displayName);
         verify(companyRepository).save(argThat(company ->
             company.getName().equals(expectedSlug)
                 && company.getDisplayName().equals(displayName)
@@ -689,12 +664,10 @@ class CompanyServiceTest {
         // Given
         String displayName = "Test Co";
         String expectedSlug = "testco";
-        String collisionSlug = "testco-2";
-
-        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
-        when(slugService.ensureUniqueSlug(eq(expectedSlug), any())).thenReturn(collisionSlug);
+        String collisionSlug = "testco2"; // within 12 letters/digits, not "testco-2"
         when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
         when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
+        when(companyRepository.existsByName(expectedSlug)).thenReturn(true);
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
             Company company = invocation.getArgument(0);
             return Company.builder()
@@ -715,8 +688,6 @@ class CompanyServiceTest {
         assertThat(result).isNotNull();
         assertThat(result.getName()).isEqualTo(collisionSlug);
         assertThat(result.getDisplayName()).isEqualTo(displayName);
-
-        verify(slugService).ensureUniqueSlug(eq(expectedSlug), any());
         verify(companyRepository).save(argThat(company ->
             company.getName().equals(collisionSlug)
         ));
@@ -728,9 +699,6 @@ class CompanyServiceTest {
         // Given
         String displayName = "Test Co";
         String expectedSlug = "testco";
-
-        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
-        when(slugService.ensureUniqueSlug(anyString(), any())).thenReturn(expectedSlug);
         when(securityContextHelper.getCurrentUsername()).thenReturn(null);
         when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
@@ -752,8 +720,6 @@ class CompanyServiceTest {
         // Then
         assertThat(result).isNotNull();
         assertThat(result.getCreatedBy()).isEqualTo("anonymous");
-
-        verify(slugService).generateCompanyName(displayName);
         verify(companyRepository).save(argThat(company ->
             company.getCreatedBy().equals("anonymous")
         ));
@@ -765,9 +731,6 @@ class CompanyServiceTest {
         // Given
         String displayName = "Test Co";
         String expectedSlug = "testco";
-
-        when(slugService.generateCompanyName(displayName)).thenReturn(expectedSlug);
-        when(slugService.ensureUniqueSlug(anyString(), any())).thenReturn(expectedSlug);
         when(securityContextHelper.getCurrentUsername()).thenReturn("test.user");
         when(companyRepository.findByName(expectedSlug)).thenReturn(Optional.empty());
         when(companyRepository.save(any(Company.class))).thenAnswer(invocation -> {
@@ -787,7 +750,6 @@ class CompanyServiceTest {
         companyService.getOrCreateCompany(displayName);
 
         // Then
-        verify(slugService).generateCompanyName(displayName);
         verify(eventPublisher).publish(argThat(event ->
             event.getEventType().equals("CompanyCreated")
         ));
