@@ -9,7 +9,6 @@
  * - Disables select while mutation is pending
  */
 
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -71,6 +70,7 @@ function makeSpeaker(overrides: Partial<SpeakerPoolEntry> = {}): SpeakerPoolEntr
     speakerName: 'Jane Doe',
     status: 'IDENTIFIED',
     createdAt: '2026-01-01T00:00:00Z',
+    updatedAt: '2026-01-01T00:00:00Z',
     assignedOrganizerId: 'alice',
     ...overrides,
   };

@@ -63,14 +63,14 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
                 .isVerified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build();
     }
 
     // EVENT PUBLISHING TESTS (AC7)
 
     @Test
-    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("should publish CompanyCreated event when company is created")
     void shouldPublishCompanyCreatedEvent_whenCompanyCreated() {
         // Given
@@ -99,7 +99,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("should publish CompanyUpdated event when company is updated")
     void shouldPublishCompanyUpdatedEvent_whenCompanyUpdated() {
         // Given
@@ -127,7 +127,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("should publish CompanyDeleted event when company is deleted")
     void shouldPublishCompanyDeletedEvent_whenCompanyDeleted() {
         // Given
@@ -147,7 +147,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     // EVENT CONTENT VERIFICATION TESTS
 
     @Test
-    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("CompanyCreated event should contain all required fields")
     void companyCreatedEvent_shouldContainAllRequiredFields() {
         // Given
@@ -177,7 +177,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("CompanyUpdated event should reflect changes")
     void companyUpdatedEvent_shouldReflectChanges() {
         // Given
@@ -202,7 +202,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     // IDEMPOTENCY TESTS
 
     @Test
-    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("should handle multiple create operations without duplicate events")
     void shouldHandleMultipleCreateOperations() {
         // Given
@@ -224,7 +224,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("should handle multiple update operations on same company")
     void shouldHandleMultipleUpdateOperations() {
         // Given
@@ -252,7 +252,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     // ERROR HANDLING TESTS
 
     @Test
-    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("should not publish event when company creation fails")
     void shouldNotPublishEvent_whenCreationFails() {
         // Given - Try to create company with existing name
@@ -276,7 +276,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @WithMockUser(username = "test-user", roles = {"ORGANIZER"})
+    @WithMockUser(username = "test.user", roles = {"ORGANIZER"})
     @DisplayName("should not publish event when company update fails")
     void shouldNotPublishEvent_whenUpdateFails() {
         // Given
@@ -288,7 +288,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
                 .isVerified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build();
         company2 = companyRepository.save(company2);
 

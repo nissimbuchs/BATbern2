@@ -34,20 +34,6 @@
       }
     }
   },
-  "confirmationPage": {
-    "loading": "Loading confirmation...",
-    "notFound": {
-      "title": "Registration not found",
-      "message": "Please check your confirmation code and try again."
-    },
-    "copyCode": "Copy confirmation code",
-    "qrCodeAlt": "Registration QR Code",
-    "qrCodeTitle": "Your Check-In QR Code",
-    "detailsTitle": "Registration Details",
-    "shareLabel": "Share with your network:",
-    "registerAnother": "Register Another Person",
-    "viewEventDetails": "View Event Details"
-  },
   "successPage": {
     "pendingTitle": "Registration Pending",
     "pendingMessage": "If you submitted a registration, please check your email for the confirmation link.",

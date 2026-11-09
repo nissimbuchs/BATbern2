@@ -4,6 +4,7 @@
  */
 
 import type * as d3 from 'd3';
+import type { components } from '@/types/generated/topics-api.types';
 
 export type BlobType =
   'blue' | 'green' | 'ghost-backlog' | 'ghost-partner' | 'ghost-trend' | 'red-star';
@@ -23,22 +24,10 @@ export interface PartnerTopicEntry {
   topics: PartnerTopicItem[];
 }
 
-export interface PastEventEntry {
-  eventNumber: number;
-  topicName: string;
-  cluster: string;
-}
+export type PastEventEntry = components['schemas']['PastEventEntry'];
 
-export interface BacklogItem {
-  title: string;
-  /** Stable slug identifier — present for all backlog topics from the organizer's topic table. */
-  topicCode: string;
-  /**
-   * Staleness score 0–100 (all backlog items >= 83).
-   * Used to size ghost blobs: higher = more overdue = bigger.
-   */
-  stalenessScore: number;
-}
+/** `stalenessScore` 0–100 (all backlog items >= 83) sizes the ghost blobs: higher = more overdue = bigger. */
+export type BacklogItem = components['schemas']['BacklogItem'];
 
 export interface TopicSessionData {
   partnerTopics: PartnerTopicEntry[];
@@ -47,11 +36,7 @@ export interface TopicSessionData {
   trendingTopics: string[];
 }
 
-export interface TopicSimilarityResponse {
-  cluster: string;
-  similarityScore: number;
-  relatedPastEventNumbers: number[];
-}
+export type TopicSimilarityResponse = components['schemas']['TopicSimilarityResponse'];
 
 export interface AbsorbedLogo {
   companyName: string;

@@ -38,7 +38,9 @@
     },
     "mail": "Correo",
     "mailOpenCount_one": "{{count}} conversación abierta",
-    "mailOpenCount_other": "{{count}} conversaciones abiertas"
+    "mailOpenCount_other": "{{count}} conversaciones abiertas",
+    "mySessions": "Mis sesiones",
+    "myProfile": "Mi perfil"
   },
   "public": {
     "login": "Iniciar sesión",
@@ -597,7 +599,8 @@
     "photos": {
       "viewPhoto": "Ver foto"
     },
-    "eventsProgress": "{{shown}} de {{total}} eventos"
+    "eventsProgress": "{{shown}} de {{total}} eventos",
+    "scrollForMore": "Desplácese para ver más eventos"
   },
   "notifications": {
     "title": "Notificaciones",
@@ -656,14 +659,16 @@
       "htmlBodyRequired": "El cuerpo HTML es obligatorio.",
       "subjectRequired": "El asunto es obligatorio para las plantillas de contenido.",
       "templateNameRequired": "El nombre de la plantilla es obligatorio.",
-      "templateNameInvalid": "Introduce al menos una letra o una cifra."
+      "templateNameInvalid": "Introduce al menos una letra o una cifra.",
+      "duplicateKey": "Ya existe una plantilla con esta clave para este idioma. Elija otra clave."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Nombre de la plantilla",
     "templateNameHelp": "Por ejemplo: Cambio de sala",
-    "keyPreview": "Se guarda como"
+    "keyPreview": "Se guarda como",
+    "loadFailed": "No se pudieron cargar las plantillas."
   },
   "presentation": {
     "errorTitle": "No se pudo cargar el evento",
@@ -725,7 +730,13 @@
       "noDefaults": "No hay plantillas predeterminadas.",
       "noCustom": "Aún no hay plantillas personalizadas.",
       "confirmDelete": "¿Eliminar plantilla?",
-      "deleteFailed": "Error al eliminar la plantilla. Por favor, inténtalo de nuevo."
+      "deleteFailed": "Error al eliminar la plantilla. Por favor, inténtalo de nuevo.",
+      "loadFailed": "No se pudieron cargar las plantillas.",
+      "editTitle": "Editar plantilla de tarea",
+      "name": "Nombre",
+      "triggerState": "Estado desencadenante",
+      "dueDateType": "Tipo de fecha de vencimiento",
+      "dueDateOffsetDays": "Días de desfase"
     },
     "aiPrompts": {
       "description": "Estos prompts se envían a OpenAI para generar descripciones de eventos, imágenes temáticas y evaluaciones de calidad de resúmenes. Use variables {{VARIABLE_NAME}} — las variables disponibles se listan bajo cada prompt.",
@@ -764,7 +775,9 @@
     "sessions": "Sesiones",
     "topics": "Temas",
     "firstName": "Nombre",
-    "lastName": "Apellido"
+    "lastName": "Apellido",
+    "unknown": "desconocido",
+    "user": "Usuario"
   },
   "filters": {
     "status": {
@@ -797,7 +810,8 @@
     "unexpectedError": "Lo sentimos. Se produjo un error inesperado.",
     "devDetails": "Detalles del error (solo desarrolladores):",
     "refreshPage": "Actualizar página",
-    "goHome": "Ir al inicio"
+    "goHome": "Ir al inicio",
+    "loadFailed": "No se pudieron cargar los datos."
   },
   "bootstrap": {
     "loading": "Cargando BATbern...",
@@ -891,5 +905,13 @@
       "errorNoCompany": "Guarda primero una empresa en tu perfil.",
       "errorGeneric": "No se pudo enviar la solicitud. Inténtalo de nuevo."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Escriba al menos 2 caracteres",
+    "companiesLoadFailed": "Error al cargar las empresas",
+    "noCompanies": "No se encontraron empresas",
+    "usersLoadFailed": "Error al cargar los usuarios",
+    "noUsers": "No se encontraron usuarios",
+    "noUsersWithRole": "No se encontraron usuarios con el rol {{role}}"
   }
 }

@@ -103,7 +103,9 @@
       "analytics": "Analiticas",
       "settings": "Parametras",
       "partnerDetailTabs": "Tabs da detagls dal partner",
-      "mail": "Mail"
+      "mail": "Mail",
+      "notes": "Notizias",
+      "topics": "Temas"
     },
     "overviewTab": {
       "title": "Detagls da la partnerada",

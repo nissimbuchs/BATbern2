@@ -122,8 +122,6 @@ export interface paths {
      *     side of the house, distinct from attendance `Partner Analytics`:
      *     - Total / active partner counts
      *     - Partners by tier breakdown
-     *     - Recently added partners (last 30 days)
-     *     - Expiring partnerships (next 90 days)
      *
      *     For per-event *attendance* metrics of a single partner, see
      *     `GET /partners/{companyName}/analytics/dashboard` (Partner Analytics).
@@ -414,12 +412,12 @@ export interface components {
        * Format: date
        * @description In the list, organizers only (omitted for other callers, GHSA-qhqv).
        */
-      partnershipEndDate?: string;
+      partnershipEndDate?: string | null;
       isActive: boolean;
       /** @description Enriched via HTTP call (when include=company) */
-      company?: components['schemas']['CompanyInfo'];
+      company?: components['schemas']['CompanyInfo'] | null;
       /** @description Enriched partner contacts (when include=contacts) */
-      contacts?: components['schemas']['PartnerContactResponse'][];
+      contacts?: components['schemas']['PartnerContactResponse'][] | null;
     };
     CreatePartnerRequest: {
       companyName: string;
@@ -447,13 +445,13 @@ export interface components {
       /** @description Meaningful ID per ADR-003 */
       username: string;
       /** @description From User Service */
-      email?: string;
+      email?: string | null;
       /** @description From User Service */
-      firstName?: string;
+      firstName?: string | null;
       /** @description From User Service */
-      lastName?: string;
+      lastName?: string | null;
       /** @description From User Service */
-      profilePictureUrl?: string;
+      profilePictureUrl?: string | null;
     };
     /** @enum {string} */
     PartnershipLevel: 'BRONZE' | 'SILVER' | 'GOLD' | 'PLATINUM' | 'STRATEGIC';
@@ -462,14 +460,12 @@ export interface components {
       companyName?: string;
       /** @description Same as companyName (backwards compatibility) */
       name?: string;
-      displayName?: string;
-      logoUrl?: string;
+      displayName?: string | null;
+      logoUrl?: string | null;
       /** @description Industry sector */
-      industry?: string;
+      industry?: string | null;
       /** @description Company website URL */
-      website?: string;
-      /** @description Company headquarters location */
-      location?: string;
+      website?: string | null;
     };
     PartnerStatistics: {
       /** @description Total number of partners */
@@ -484,20 +480,6 @@ export interface components {
         PLATINUM?: number;
         STRATEGIC?: number;
       };
-      /** @description Recently added partners (last 30 days) */
-      recentPartners?: {
-        companyName?: string;
-        partnershipLevel?: components['schemas']['PartnershipLevel'];
-        /** Format: date */
-        partnershipStartDate?: string;
-      }[];
-      /** @description Partnerships expiring in next 90 days */
-      expiringPartnerships?: {
-        companyName?: string;
-        partnershipLevel?: components['schemas']['PartnershipLevel'];
-        /** Format: date */
-        partnershipEndDate?: string;
-      }[];
     };
     /** @description Partner note (Story 8.4) */
     PartnerNoteDTO: {
@@ -596,7 +578,7 @@ export interface components {
       /** @description Event code when topic is selected (e.g. BATbern58) */
       plannedEvent?: string | null;
       /** Format: date-time */
-      createdAt: string;
+      createdAt: string | null;
       /**
        * @description Origin of the suggestion: PARTNER (Story 8.2) or COMMUNITY/attendee (Story 7.1)
        * @enum {string}

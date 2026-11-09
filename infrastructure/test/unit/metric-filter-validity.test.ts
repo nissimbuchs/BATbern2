@@ -76,6 +76,10 @@ describe('AWS::Logs::MetricFilter validity (regression guard)', () => {
         serviceDisplayName: 'EventManagement',
         alarmTopic: new sns.Topic(stack, 'Topic'),
         containerInsightsEnabled: true,
+        // The domain-event listener-failure filter (2026-11-09) is a literal-term filter too.
+        serviceLogGroup: new logs.LogGroup(stack, 'EmsLogGroup', {
+          logGroupName: '/aws/ecs/BATbern-staging/event-management',
+        }),
       });
       results.push({ name: 'EcsServiceAlarms', template: Template.fromStack(stack) });
     }

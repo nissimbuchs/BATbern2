@@ -208,38 +208,26 @@ paths:
             schema:
               $ref: '#/components/schemas/CreateRegistrationRequest'
       responses:
+        '200':
+          description: |
+            The attendee is already on the waitlist (Story 10.11): nothing is created, the waitlist
+            confirmation mail is sent again.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/CreateRegistrationResponse'
+              examples:
+                default:
+                  summary: already on the waitlist
+                  value:
+                    message: You are already on the waitlist for this event. A new confirmation email has been sent.
+                    email: anna.vorlage@example.com
         '201':
           description: Registration created successfully - confirmation email sent
           content:
             application/json:
               schema:
-                type: object
-                required:
-                - message
-                - email
-                properties:
-                  message:
-                    type: string
-                    example: Registration successful. Please check your email to confirm.
-                  email:
-                    type: string
-                    format: email
-                    # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
-                    # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
-                    pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
-                    maxLength: 254
-                    example: john.doe@example.com
-                  companyUpdated:
-                    type: boolean
-                    description: True when the attendee was an existing user and the company they entered differed from the one on file, so their profile company was refreshed. The UI shows a notice when true.
-                    example: false
-                description: '**Story 4.1.5c**: Minimal response with no sensitive data.
-
-                  Confirmation token sent via email (not in response).
-
-                  User must click email link to confirm registration.
-
-                  '
+                $ref: '#/components/schemas/CreateRegistrationResponse'
               examples:
                 default:
                   summary: generated from the schema and captured sub-values
@@ -608,69 +596,6 @@ paths:
         '500':
           $ref: '#/components/responses/InternalServerError'
   /events/{eventCode}/registrations/{registrationCode}:
-    get:
-      tags:
-      - Registrations
-      summary: Get registration by confirmation code
-      description: 'Retrieve registration details by confirmation code.
-
-
-        **Story**: 4.1.6 - Registration Confirmation
-
-        **Security**: Public endpoint - confirmation code acts as access token
-
-        '
-      operationId: getRegistration
-      security: []
-      parameters:
-      - name: eventCode
-        in: path
-        description: Event code in format BATbernXXX
-        required: true
-        schema:
-          type: string
-          pattern: ^BATbern[0-9]+$
-          example: BATbern25
-      - name: registrationCode
-        in: path
-        description: |
-          Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
-          (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
-          backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
-        required: true
-        schema:
-          type: string
-          pattern: '^(BATbern[0-9]+-reg-[A-Za-z0-9]+|BAT[0-9]+-(EXIST|NEW)-[0-9]+)$'
-          example: BATbern142-reg-A3X9K2
-      responses:
-        '200':
-          description: Registration found
-          content:
-            application/json:
-              schema:
-                $ref: '#/components/schemas/Registration'
-              examples:
-                default:
-                  summary: generated from the schema and captured sub-values
-                  value:
-                    registrationCode: BATbern142-reg-A3X9K2
-                    eventCode: BATbern25
-                    eventTitle: Sample title
-                    eventDate: "2026-05-14T16:00:00Z"
-                    attendeeUsername: john.doe
-                    attendeeFirstName: Ines
-                    attendeeLastName: Probe
-                    attendeeEmail: ines.probe@example.com
-                    attendeeCompany: sample
-                    status: REGISTERED
-                    waitlistPosition: null
-                    registrationDate: "2026-05-14T16:00:00Z"
-                    createdAt: "2026-05-14T16:00:00Z"
-                    updatedAt: "2026-05-14T16:00:00Z"
-        '404':
-          description: Registration not found (invalid confirmation code)
-        '500':
-          $ref: '#/components/responses/InternalServerError'
     patch:
       tags:
       - Registrations
@@ -1413,15 +1338,18 @@ components:
           description: Whether the authenticated user has a registration record for this event.
           example: true
         registrationCode:
+          nullable: true
           type: string
           description: Unique registration code (public identifier). Present when registered=true.
           example: BATbern142-reg-ABC123
         eventCode:
+          nullable: true
           type: string
           description: Event code this registration belongs to. Present when registered=true.
           pattern: ^BATbern[0-9]+$
           example: BATbern142
         status:
+          nullable: true
           type: string
           description: Registration status (uppercase). Present when registered=true.
           enum:
@@ -1433,6 +1361,7 @@ components:
           - NO_SHOW
           example: CONFIRMED
         registrationDate:
+          nullable: true
           type: string
           format: date-time
           description: ISO-8601 timestamp when registration was created. Present when registered=true.
@@ -1476,9 +1405,8 @@ components:
     Registration:
       type: object
       description: 'A registration as EMS returns it (`RegistrationResponse`): the registration, its
-        event, and the attendee from user_profiles (ADR-004, ADR-006). The organizer endpoints return
-        it in full; the public lookup (`getRegistration`) returns it with `attendeeEmail` masked,
-        which is why that field has no e-mail format.
+        event, and the attendee from user_profiles (ADR-004, ADR-006). No endpoint returns it to an
+        anonymous caller (the public lookup by code was removed 2026-11-09).
 
         Anonymous users are in user_profiles too (cognito_user_id = NULL).
 
@@ -1504,12 +1432,12 @@ components:
         eventTitle:
           type: string
           nullable: true
-          description: Event title. Set by the single lookup (`getRegistration`); null in lists.
+          description: Event title. Set by `listUserRegistrations`; null elsewhere.
         eventDate:
           type: string
           format: date-time
           nullable: true
-          description: Event date. Set by the single lookup (`getRegistration`); null in lists.
+          description: Event date. Set by `listUserRegistrations`; null elsewhere.
         attendeeUsername:
           type: string
           pattern: ^[a-z]+\.[a-z]+(\.[0-9]+)?$
@@ -1562,6 +1490,35 @@ components:
           type: string
           format: date-time
           nullable: true
+    CreateRegistrationResponse:
+      type: object
+      required:
+      - message
+      - email
+      properties:
+        message:
+          type: string
+          example: Registration successful. Please check your email to confirm.
+        email:
+          type: string
+          format: email
+          # One email rule everywhere (#1102): ASCII local part (SES has no SMTPUTF8), any domain.
+          # Source of truth: shared-kernel EmailAddresses.OPENAPI_PATTERN.
+          pattern: '^[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+(\.[A-Za-z0-9!#$%&''*+/=?^_`{|}~-]+)*@[^\s@.]+(\.[^\s@.]+)+$'
+          maxLength: 254
+          example: john.doe@example.com
+        companyUpdated:
+          type: boolean
+          description: True when the attendee was an existing user and the company they entered differed from the one on file, so their profile company was refreshed. The UI shows a notice when true.
+          example: false
+      description: '**Story 4.1.5c**: Minimal response with no sensitive data.
+
+        Confirmation token sent via email (not in response).
+
+        User must click email link to confirm registration.
+
+        '
+
     CreateRegistrationRequest:
       type: object
       description: 'Story 4.1.5a: Event registration request (ADR-006)

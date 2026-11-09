@@ -39,7 +39,9 @@
     },
     "mail": "Mail",
     "mailOpenCount_one": "{{count}} open conversation",
-    "mailOpenCount_other": "{{count}} open conversations"
+    "mailOpenCount_other": "{{count}} open conversations",
+    "mySessions": "My Sessions",
+    "myProfile": "My Profile"
   },
   "public": {
     "login": "Login",
@@ -143,7 +145,9 @@
     "sessions": "Sessions",
     "topics": "Topics",
     "firstName": "First Name",
-    "lastName": "Last Name"
+    "lastName": "Last Name",
+    "unknown": "unknown",
+    "user": "User"
   },
   "filters": {
     "status": {
@@ -634,7 +638,8 @@
     "photos": {
       "viewPhoto": "View photo"
     },
-    "eventsProgress": "{{shown}} of {{total}} events"
+    "eventsProgress": "{{shown}} of {{total}} events",
+    "scrollForMore": "Scroll for more events"
   },
   "notifications": {
     "title": "Notifications",
@@ -695,14 +700,16 @@
       "htmlBodyRequired": "HTML body is required.",
       "subjectRequired": "Subject is required for content templates.",
       "templateNameRequired": "Template name is required.",
-      "templateNameInvalid": "Enter at least one letter or digit."
+      "templateNameInvalid": "Enter at least one letter or digit.",
+      "duplicateKey": "A template with this key already exists for this locale. Please choose a different key."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Template name",
     "templateNameHelp": "For example: Room change",
-    "keyPreview": "Saved as"
+    "keyPreview": "Saved as",
+    "loadFailed": "Failed to load templates."
   },
   "presentation": {
     "errorTitle": "Event could not be loaded",
@@ -729,7 +736,8 @@
     "unexpectedError": "We're sorry for the inconvenience. An unexpected error occurred.",
     "devDetails": "Error details (dev only):",
     "refreshPage": "Refresh Page",
-    "goHome": "Go to Home"
+    "goHome": "Go to Home",
+    "loadFailed": "Failed to load data."
   },
   "bootstrap": {
     "loading": "Loading BATbern...",
@@ -789,7 +797,13 @@
       "noDefaults": "No default templates.",
       "noCustom": "No custom templates yet.",
       "confirmDelete": "Delete template?",
-      "deleteFailed": "Failed to delete template. Please try again."
+      "deleteFailed": "Failed to delete template. Please try again.",
+      "loadFailed": "Failed to load templates.",
+      "editTitle": "Edit Task Template",
+      "name": "Name",
+      "triggerState": "Trigger State",
+      "dueDateType": "Due Date Type",
+      "dueDateOffsetDays": "Offset Days"
     },
     "aiPrompts": {
       "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",
@@ -894,5 +908,13 @@
       "errorNoCompany": "Please save a company in your profile first.",
       "errorGeneric": "The request could not be sent. Please try again."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Type at least 2 characters",
+    "companiesLoadFailed": "Error loading companies",
+    "noCompanies": "No companies found",
+    "usersLoadFailed": "Error loading users",
+    "noUsers": "No users found",
+    "noUsersWithRole": "No users found with role {{role}}"
   }
 }

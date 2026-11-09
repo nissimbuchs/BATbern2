@@ -38,7 +38,9 @@
     },
     "mail": "Mail",
     "mailOpenCount_one": "{{count}} conversation ouverte",
-    "mailOpenCount_other": "{{count}} conversations ouvertes"
+    "mailOpenCount_other": "{{count}} conversations ouvertes",
+    "mySessions": "Mes sessions",
+    "myProfile": "Mon profil"
   },
   "public": {
     "login": "Connexion",
@@ -597,7 +599,8 @@
     "photos": {
       "viewPhoto": "Voir la photo"
     },
-    "eventsProgress": "{{shown}} sur {{total}} événements"
+    "eventsProgress": "{{shown}} sur {{total}} événements",
+    "scrollForMore": "Faites défiler pour plus d'événements"
   },
   "notifications": {
     "title": "Notifications",
@@ -656,14 +659,16 @@
       "htmlBodyRequired": "Le corps HTML est obligatoire.",
       "subjectRequired": "L'objet est obligatoire pour les modèles de contenu.",
       "templateNameRequired": "Le nom du modèle est obligatoire.",
-      "templateNameInvalid": "Saisissez au moins une lettre ou un chiffre."
+      "templateNameInvalid": "Saisissez au moins une lettre ou un chiffre.",
+      "duplicateKey": "Un modèle avec cette clé existe déjà pour cette langue. Veuillez choisir une autre clé."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Nom du modèle",
     "templateNameHelp": "Par exemple : Changement de salle",
-    "keyPreview": "Enregistré sous"
+    "keyPreview": "Enregistré sous",
+    "loadFailed": "Impossible de charger les modèles."
   },
   "presentation": {
     "errorTitle": "L'événement n'a pas pu être chargé",
@@ -725,7 +730,13 @@
       "noDefaults": "Aucun modèle par défaut.",
       "noCustom": "Aucun modèle personnalisé pour le moment.",
       "confirmDelete": "Supprimer le modèle ?",
-      "deleteFailed": "Échec de la suppression du modèle. Veuillez réessayer."
+      "deleteFailed": "Échec de la suppression du modèle. Veuillez réessayer.",
+      "loadFailed": "Impossible de charger les modèles.",
+      "editTitle": "Modifier le modèle de tâche",
+      "name": "Nom",
+      "triggerState": "État déclencheur",
+      "dueDateType": "Type d'échéance",
+      "dueDateOffsetDays": "Décalage en jours"
     },
     "aiPrompts": {
       "description": "Ces prompts sont envoyés à OpenAI lors de la génération des descriptions d'événements, des images thématiques et des évaluations de la qualité des résumés. Utilisez des variables {{VARIABLE_NAME}} — les variables disponibles sont listées sous chaque prompt.",
@@ -764,7 +775,9 @@
     "sessions": "Sessions",
     "topics": "Sujets",
     "firstName": "Prénom",
-    "lastName": "Nom de famille"
+    "lastName": "Nom de famille",
+    "unknown": "inconnu",
+    "user": "Utilisateur"
   },
   "filters": {
     "status": {
@@ -797,7 +810,8 @@
     "unexpectedError": "Nous sommes désolés. Une erreur inattendue s'est produite.",
     "devDetails": "Détails de l'erreur (développeurs uniquement) :",
     "refreshPage": "Actualiser la page",
-    "goHome": "Aller à l'accueil"
+    "goHome": "Aller à l'accueil",
+    "loadFailed": "Impossible de charger les données."
   },
   "bootstrap": {
     "loading": "Chargement de BATbern...",
@@ -891,5 +905,13 @@
       "errorNoCompany": "Veuillez d'abord enregistrer une entreprise dans votre profil.",
       "errorGeneric": "La demande n'a pas pu être envoyée. Veuillez réessayer."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Saisissez au moins 2 caractères",
+    "companiesLoadFailed": "Erreur lors du chargement des entreprises",
+    "noCompanies": "Aucune entreprise trouvée",
+    "usersLoadFailed": "Erreur lors du chargement des utilisateurs",
+    "noUsers": "Aucun utilisateur trouvé",
+    "noUsersWithRole": "Aucun utilisateur trouvé avec le rôle {{role}}"
   }
 }

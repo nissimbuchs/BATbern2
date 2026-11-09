@@ -7,7 +7,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { EventProgram } from './EventProgram';
-import type { Session } from '@/types/event.types';
+import type { SessionUI } from '@/types/event.types';
 
 // Mock API clients
 vi.mock('@/services/companyApiClient', () => ({
@@ -36,7 +36,7 @@ describe('EventProgram', () => {
     queryClient.clear();
   });
 
-  const mockSessions: Session[] = [
+  const mockSessions: SessionUI[] = [
     {
       sessionSlug: 'keynote-morning',
       eventCode: 'BATbern142',
@@ -99,7 +99,7 @@ describe('EventProgram', () => {
       eventCode: 'BATbern142',
       title: 'Open Discussion',
       description: 'Community open discussion.',
-      sessionType: 'talk',
+      sessionType: 'presentation',
       startTime: '2025-05-15T09:00:00Z', // same time group as keynote/workshop — keeps 2 time slots
       endTime: '2025-05-15T10:00:00Z',
       room: 'Room B',
@@ -110,7 +110,7 @@ describe('EventProgram', () => {
   ];
 
   it('should_displayEventProgram_when_sessionsProvided', () => {
-    renderWithProviders(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} eventCode="BATbern142" />);
 
     expect(screen.getByText('Event Program')).toBeInTheDocument();
     expect(screen.getByText('Opening Keynote')).toBeInTheDocument();
@@ -119,7 +119,7 @@ describe('EventProgram', () => {
   });
 
   it('should_groupSessionsByTime_when_multipleSessions', () => {
-    renderWithProviders(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} eventCode="BATbern142" />);
 
     // Should have 2 time slots (09:00 and 12:00)
     const timeIndicators = screen.getAllByText(/^\d{2}:\d{2}$/);
@@ -127,7 +127,7 @@ describe('EventProgram', () => {
   });
 
   it('should_displaySessionDetails_when_rendered', () => {
-    renderWithProviders(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} eventCode="BATbern142" />);
 
     // Check descriptions
     expect(screen.getByText(/Welcome and introduction to the conference/i)).toBeInTheDocument();
@@ -141,30 +141,32 @@ describe('EventProgram', () => {
   });
 
   it('should_displaySpeakerNames_when_speakersAssigned', () => {
-    renderWithProviders(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} eventCode="BATbern142" />);
 
     expect(screen.getByText(/John Doe/i)).toBeInTheDocument();
     expect(screen.getByText(/Jane Smith/i)).toBeInTheDocument();
   });
 
   it('should_displaySpeakerTBA_when_noSpeakersAssigned', () => {
-    renderWithProviders(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} eventCode="BATbern142" />);
 
     expect(screen.getByText(/Speaker TBA/i)).toBeInTheDocument();
   });
 
   it('should_displaySessionTypes_when_rendered', () => {
-    renderWithProviders(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} eventCode="BATbern142" />);
 
     // Structural sessions (lunch/break/moderation) render as compact icon strips — no type badge.
     // Only non-structural sessions show the type badge.
     expect(screen.getByText('keynote')).toBeInTheDocument();
     expect(screen.getByText('workshop')).toBeInTheDocument();
-    expect(screen.getByText('talk')).toBeInTheDocument();
+    expect(screen.getByText('presentation')).toBeInTheDocument();
   });
 
   it('should_sortTimeSlots_when_rendered', () => {
-    const { container } = renderWithProviders(<EventProgram sessions={mockSessions} />);
+    const { container } = renderWithProviders(
+      <EventProgram sessions={mockSessions} eventCode="BATbern142" />
+    );
 
     // Find time indicators in the timeline circles
     const timeIndicators = container.querySelectorAll('.rounded-full .text-sm');
@@ -177,7 +179,9 @@ describe('EventProgram', () => {
   });
 
   it('should_displayTimelineLine_when_rendered', () => {
-    const { container } = renderWithProviders(<EventProgram sessions={mockSessions} />);
+    const { container } = renderWithProviders(
+      <EventProgram sessions={mockSessions} eventCode="BATbern142" />
+    );
 
     // Check for timeline vertical line
     const timeline = container.querySelector('.absolute.w-px.bg-zinc-800');
@@ -185,13 +189,15 @@ describe('EventProgram', () => {
   });
 
   it('should_renderNull_when_noSessionsProvided', () => {
-    const { container } = renderWithProviders(<EventProgram sessions={[]} />);
+    const { container } = renderWithProviders(
+      <EventProgram sessions={[]} eventCode="BATbern142" />
+    );
 
     expect(container.firstChild).toBeNull();
   });
 
   it('should_formatSessionDuration_when_rendered', () => {
-    renderWithProviders(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} eventCode="BATbern142" />);
 
     // Check for formatted time ranges
     const timeRanges = screen.getAllByText(/\d{2}:\d{2}\s*-\s*\d{2}:\d{2}/);
@@ -199,7 +205,7 @@ describe('EventProgram', () => {
   });
 
   it('should_handleParallelSessions_when_sameStartTime', () => {
-    renderWithProviders(<EventProgram sessions={mockSessions} />);
+    renderWithProviders(<EventProgram sessions={mockSessions} eventCode="BATbern142" />);
 
     // Both morning sessions start at 09:00
     // They should both appear under the same time slot
@@ -211,7 +217,7 @@ describe('EventProgram', () => {
   });
 
   describe('Session Materials Display (Story 5.9 - Task 8a)', () => {
-    const mockSessionsWithMaterials: Session[] = [
+    const mockSessionsWithMaterials: SessionUI[] = [
       {
         sessionSlug: 'keynote-morning',
         eventCode: 'BATbern142',
@@ -342,7 +348,7 @@ describe('EventProgram', () => {
 
     it('should_displayMaterialTypeIcons_when_materialsRendered', () => {
       const { container } = renderWithProviders(
-        <EventProgram sessions={mockSessionsWithMaterials} isArchived={true} />
+        <EventProgram sessions={mockSessionsWithMaterials} isArchived={true} eventCode="BAT142" />
       );
 
       // Should have icons for different material types (using data-testid or checking for SVG presence)
@@ -352,7 +358,7 @@ describe('EventProgram', () => {
     });
 
     it('should_notDisplayMaterials_when_sessionHasNoMaterials', () => {
-      const sessionsWithoutMaterials: Session[] = [
+      const sessionsWithoutMaterials: SessionUI[] = [
         {
           sessionSlug: 'workshop-morning',
           eventCode: 'BATbern142',

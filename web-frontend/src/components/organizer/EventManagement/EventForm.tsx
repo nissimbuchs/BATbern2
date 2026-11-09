@@ -64,6 +64,7 @@ import type { EventTaskResponse } from '@/services/taskService';
 import { taskService } from '@/services/taskService';
 import {
   createEventSchema,
+  SERVER_REQUIRED_FIELDS,
   normalizeEventType,
   transformDatesForApi,
   getChangedFields as diffEventFields,
@@ -226,6 +227,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     getValues,
     reset,
     setValue,
+    trigger,
   } = form;
 
   // AI description generation (Story 10.16)
@@ -370,14 +372,12 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
         title: data.title,
         eventNumber: data.eventNumber,
         date: new Date(data.date).toISOString(),
-        registrationDeadline: data.registrationDeadline
-          ? new Date(data.registrationDeadline).toISOString()
-          : '',
+        registrationDeadline: new Date(data.registrationDeadline).toISOString(),
         venueName: data.venueName,
         venueAddress: data.venueAddress,
         venueCapacity: data.venueCapacity,
         workflowState: isDraft ? 'CREATED' : data.workflowState,
-        eventType: data.eventType || 'FULL_DAY', // Required field with default
+        eventType: data.eventType,
         organizerUsername: user.username, // Use username (e.g., "john.doe")
         currentAttendeeCount: 0,
         description: data.description || undefined,
@@ -536,9 +536,10 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
     }
   });
 
-  const handleSaveDraftClick = () => {
-    const data = getValues();
-    handleCreate(data, true);
+  // A draft skips the form-only rules but not the fields the server needs to store it.
+  const handleSaveDraftClick = async () => {
+    if (!(await trigger([...SERVER_REQUIRED_FIELDS]))) return;
+    handleCreate(getValues(), true);
   };
 
   const handleCloseClick = () => {
@@ -740,6 +741,7 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                       label={t('form.registrationDeadline')}
                       type="date"
                       fullWidth
+                      required
                       error={!!errors.registrationDeadline}
                       helperText={errors.registrationDeadline?.message}
                       margin="normal"
@@ -880,6 +882,9 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     {...field}
                     label={t('form.venue')}
                     fullWidth
+                    required
+                    error={!!errors.venueName}
+                    helperText={errors.venueName?.message}
                     margin="normal"
                     placeholder={t('eventForm.venue.namePlaceholder')}
                     data-testid="venue-name-field"
@@ -895,6 +900,9 @@ export const EventForm: React.FC<EventFormProps> = ({ open, mode, event, onClose
                     {...field}
                     label={t('form.venueAddress')}
                     fullWidth
+                    required
+                    error={!!errors.venueAddress}
+                    helperText={errors.venueAddress?.message}
                     margin="normal"
                     placeholder={t('eventForm.venue.addressPlaceholder')}
                     data-testid="venue-address-field"

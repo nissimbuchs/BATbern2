@@ -298,7 +298,8 @@
       "testMode": "Testmodus (nur Organisatoren)",
       "testModeWarning": "Testmodus aktiviert — Newsletter wird nur an Organisatoren-Abonnenten gesendet.",
       "confirmSendBodyTestMode": "{{type}} mit Vorlage '{{templateKey}}' nur an Organisatoren-Abonnenten (Testmodus) für Veranstaltung «{{eventTitle}}» senden?",
-      "retryHint": "Der Versand vom {{date}} hat {{count}} Empfänger:innen nicht erreicht."
+      "retryHint": "Der Versand vom {{date}} hat {{count}} Empfänger:innen nicht erreicht.",
+      "previewPlaceholder": "Die Vorschau erscheint hier"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -328,7 +329,8 @@
       "confirmBody": "Es wird eine echte E-Mail an {{recipients}} gesendet. Antwortadresse ist die hinterlegte Veranstaltungsort-Koordinator:in.",
       "confirmSend": "Ja, senden",
       "sentSuccess": "An {{count}} Empfänger gesendet.",
-      "sentFailed": "Versand fehlgeschlagen: {{message}}"
+      "sentFailed": "Versand fehlgeschlagen: {{message}}",
+      "previewPlaceholder": "Die Vorschau erscheint hier"
     },
     "registrantNotices": {
       "title": "Teilnehmer-Infos",
@@ -911,7 +913,9 @@
     "slotDurationMinimum": "Slot-Dauer muss mindestens 15 Minuten betragen",
     "minSlotsLessThanMax": "Minimale Slot-Anzahl muss kleiner oder gleich der maximalen Slot-Anzahl sein",
     "defaultCapacityPositive": "Standardkapazität muss eine positive Zahl sein",
-    "typicalStartTimeRequired": "Startzeit ist erforderlich."
+    "typicalStartTimeRequired": "Startzeit ist erforderlich.",
+    "registrationDeadlineRequired": "Anmeldefrist ist erforderlich",
+    "eventTypeRequired": "Veranstaltungstyp ist erforderlich"
   },
   "errors": {
     "loadFailed": "Fehler beim Laden der Veranstaltungen",
@@ -929,7 +933,8 @@
     "imageInvalidType": "Ungültiger Bildtyp (verwenden Sie PNG, JPEG oder SVG)",
     "MULTIPLE_FILES": "Bitte laden Sie nur eine Datei gleichzeitig hoch",
     "FILE_TOO_LARGE": "Dateigröße überschreitet das 5MB-Limit",
-    "INVALID_FILE_TYPE": "Ungültiger Dateityp. Bitte laden Sie nur PNG-, JPEG- oder SVG-Bilder hoch"
+    "INVALID_FILE_TYPE": "Ungültiger Dateityp. Bitte laden Sie nur PNG-, JPEG- oder SVG-Bilder hoch",
+    "materialDownloadFailed": "Das Material konnte nicht heruntergeladen werden. Bitte versuchen Sie es erneut."
   },
   "confirmations": {
     "unsavedChanges": "Ungespeicherte Änderungen",
@@ -951,7 +956,12 @@
       "event_live": "Veranstaltung läuft",
       "event_completed": "Veranstaltung abgeschlossen",
       "archived": "Archiviert"
-    }
+    },
+    "loading": "Workflow-Status wird geladen...",
+    "error": "Workflow-Status konnte nicht geladen werden",
+    "noData": "Kein Workflow-Status verfügbar",
+    "currentState": "Aktueller Status",
+    "blockedTransitions": "Blockiert:"
   },
   "autoSave": {
     "saving": "Speichern...",
@@ -1022,7 +1032,10 @@
       "revertPhase": "Veröffentlichung {{phase}} zurücknehmen",
       "revertConfirmTitle": "Veröffentlichung {{phase}} zurücknehmen?",
       "revertConfirmText": "Die öffentliche Website fällt auf die vorherige Phase zurück. Was mit {{phase}} sichtbar war, sehen Besucher nicht mehr.",
-      "revertConfirmButton": "Zurücknehmen"
+      "revertConfirmButton": "Zurücknehmen",
+      "topicNotReady": "Das Thema ist noch nicht bereit zur Veröffentlichung",
+      "speakersNotReady": "Die Referierenden sind noch nicht bereit zur Veröffentlichung",
+      "agendaNotReady": "{{assigned}} von {{total}} Slots zugewiesen. Weisen Sie alle Slots zu, bevor Sie das Programm veröffentlichen"
     },
     "validation": {
       "readyToPublish": "Bereit zur Veröffentlichung",
@@ -1118,7 +1131,8 @@
       "date": "Datum",
       "time": "Zeit",
       "location": "Ort",
-      "capacity": "Anmeldungen"
+      "capacity": "Anmeldungen",
+      "topic": "Thema"
     },
     "errors": {
       "loadFailed": "Veranstaltung konnte nicht geladen werden",
@@ -1138,7 +1152,13 @@
     "program": {
       "title": "Programm",
       "speaker": "Referent",
-      "materials": "Materialien"
+      "materials": "Materialien",
+      "materialTypes": {
+        "presentation": "Präsentation",
+        "document": "Dokument",
+        "video": "Video",
+        "other": "Andere"
+      }
     },
     "venue": {
       "title": "Veranstaltungsort",
@@ -1212,8 +1232,16 @@
       "titleRequired": "Titel ist erforderlich",
       "abstractTooLong": "Zusammenfassung darf maximal {{max}} Zeichen lang sein",
       "invalidDuration": "Dauer muss zwischen 1 und 480 Minuten liegen",
-      "saveFailed": "Session konnte nicht gespeichert werden"
-    }
+      "saveFailed": "Session konnte nicht gespeichert werden",
+      "endTimeBeforeStart": "Die Endzeit muss nach der Startzeit liegen",
+      "durationTooShort": "Die Session muss mindestens {{min}} Minuten dauern",
+      "durationTooLong": "Die Session darf höchstens {{max}} Minuten dauern",
+      "speakerConflict": "Referent/in {{speaker}} ist bereits für «{{session}}» um {{time}} eingeplant",
+      "roomConflict": "Raum {{room}} ist bereits für «{{session}}» um {{time}} belegt",
+      "timingConflict": "Zeitkonflikt erkannt"
+    },
+    "startTimeLabel": "Startzeit",
+    "endTimeLabel": "Endzeit"
   },
   "slotAssignment": {
     "title": "Slot-Zuweisung",
@@ -1251,8 +1279,7 @@
       "emptyState": {
         "title": "Alle Sitzungen zugewiesen!",
         "message": "Großartige Arbeit! Alle Referenten wurden Zeitfenstern zugewiesen."
-      },
-      "viewPreferences": "Präferenzen"
+      }
     },
     "quickActions": {
       "title": "Schnellzugriff",
@@ -1298,33 +1325,10 @@
         "error": "FEHLER",
         "warning": "WARNUNG"
       },
-      "timeRange": "Konflikt-Zeitbereich",
-      "start": "Start",
-      "end": "Ende",
       "conflictingSession": "Konflikt-Sitzung",
       "resolutionOptions": "Lösungsoptionen",
       "resolutionMessage": "Wählen Sie ein anderes Zeitfenster oder einen anderen Raum, um diesen Konflikt zu lösen.",
       "chooseDifferentSlot": "Anderes Zeitfenster wählen"
-    },
-    "preferences": {
-      "title": "Referenten-Präferenzen",
-      "timePreferences": "Zeit-Präferenzen",
-      "unavailableTimes": "Nicht verfügbare Zeiten",
-      "avRequirements": "AV-Anforderungen",
-      "setupNotes": "Raum-Setup-Notizen",
-      "slotMatchScore": "Zeitfenster-Übereinstimmung",
-      "matchPercent": "{{percent}}% Übereinstimmung",
-      "times": {
-        "morning": "Morgen",
-        "afternoon": "Nachmittag",
-        "evening": "Abend",
-        "any": "Beliebig"
-      },
-      "equipment": {
-        "microphone": "Mikrofon",
-        "projector": "Projektor",
-        "recording": "Aufzeichnung"
-      }
     },
     "actionBar": {
       "label": "Zeitfenster-Aktionen"
@@ -1404,7 +1408,8 @@
     "emptyState": "Noch keine Fotos. Laden Sie das erste hoch!",
     "uploading": "Wird hochgeladen...",
     "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
-    "uploadErrorPartial": "{{failed}} von {{total}} Uploads fehlgeschlagen. Bitte erneut versuchen."
+    "uploadErrorPartial": "{{failed}} von {{total}} Uploads fehlgeschlagen. Bitte erneut versuchen.",
+    "uploadingProgress": "{{done}}/{{total}} wird hochgeladen..."
   },
   "teaserImage": {
     "title": "Teaser-Bilder",
@@ -1517,5 +1522,19 @@
       "limits": "Jede Mail an diese Person und jede Mail von ihr, über alle Events. Nicht aufgeführt: Newsletter, Mails aus der Zeit, bevor das Mail Center sie erfasste, und Mails an Adressen, die nicht mehr hinterlegt sind.",
       "empty": "Noch keine Mails an oder von dieser Person."
     }
+  },
+  "venue": {
+    "errors": {
+      "nameRequired": "Name des Veranstaltungsorts ist erforderlich",
+      "addressRequired": "Adresse des Veranstaltungsorts ist erforderlich",
+      "capacityPositive": "Kapazität muss eine positive Zahl sein",
+      "capacityMax": "Kapazität darf 5000 nicht überschreiten",
+      "updateFailed": "Veranstaltungsort konnte nicht aktualisiert werden"
+    },
+    "sectionTitle": "Veranstaltungsort und Logistik",
+    "title": "Veranstaltungsort & Logistik",
+    "nameLabel": "Name des Veranstaltungsorts",
+    "capacityLabel": "Kapazität des Veranstaltungsorts",
+    "addressLabel": "Adresse des Veranstaltungsorts"
   }
 }

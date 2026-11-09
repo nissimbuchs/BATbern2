@@ -38,7 +38,9 @@
     },
     "mail": "Mail",
     "mailOpenCount_one": "{{count}} conversazione aperta",
-    "mailOpenCount_other": "{{count}} conversazioni aperte"
+    "mailOpenCount_other": "{{count}} conversazioni aperte",
+    "mySessions": "Le mie sessioni",
+    "myProfile": "Il mio profilo"
   },
   "public": {
     "login": "Accedi",
@@ -597,7 +599,8 @@
     "photos": {
       "viewPhoto": "Vedi foto"
     },
-    "eventsProgress": "{{shown}} di {{total}} eventi"
+    "eventsProgress": "{{shown}} di {{total}} eventi",
+    "scrollForMore": "Scorri per altri eventi"
   },
   "notifications": {
     "title": "Notifiche",
@@ -656,14 +659,16 @@
       "htmlBodyRequired": "Il corpo HTML è obbligatorio.",
       "subjectRequired": "L'oggetto è obbligatorio per i modelli di contenuto.",
       "templateNameRequired": "Il nome del modello è obbligatorio.",
-      "templateNameInvalid": "Inserisci almeno una lettera o una cifra."
+      "templateNameInvalid": "Inserisci almeno una lettera o una cifra.",
+      "duplicateKey": "Esiste già un modello con questa chiave per questa lingua. Scegli una chiave diversa."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Nome del modello",
     "templateNameHelp": "Ad esempio: Cambio sala",
-    "keyPreview": "Salvato come"
+    "keyPreview": "Salvato come",
+    "loadFailed": "Impossibile caricare i modelli."
   },
   "presentation": {
     "errorTitle": "Impossibile caricare l'evento",
@@ -725,7 +730,13 @@
       "noDefaults": "Nessun modello predefinito.",
       "noCustom": "Nessun modello personalizzato ancora.",
       "confirmDelete": "Eliminare il modello?",
-      "deleteFailed": "Eliminazione del modello non riuscita. Riprova."
+      "deleteFailed": "Eliminazione del modello non riuscita. Riprova.",
+      "loadFailed": "Impossibile caricare i modelli.",
+      "editTitle": "Modifica modello di attività",
+      "name": "Nome",
+      "triggerState": "Stato di attivazione",
+      "dueDateType": "Tipo di scadenza",
+      "dueDateOffsetDays": "Giorni di scostamento"
     },
     "aiPrompts": {
       "description": "Questi prompt vengono inviati a OpenAI per generare descrizioni di eventi, immagini tematiche e valutazioni della qualità degli abstract. Utilizzare variabili {{VARIABLE_NAME}} — le variabili disponibili sono elencate sotto ogni prompt.",
@@ -764,7 +775,9 @@
     "sessions": "Sessioni",
     "topics": "Argomenti",
     "firstName": "Nome",
-    "lastName": "Cognome"
+    "lastName": "Cognome",
+    "unknown": "sconosciuto",
+    "user": "Utente"
   },
   "filters": {
     "status": {
@@ -797,7 +810,8 @@
     "unexpectedError": "Ci scusiamo per il disagio. Si è verificato un errore imprevisto.",
     "devDetails": "Dettagli errore (solo sviluppatori):",
     "refreshPage": "Aggiorna pagina",
-    "goHome": "Vai alla home"
+    "goHome": "Vai alla home",
+    "loadFailed": "Impossibile caricare i dati."
   },
   "bootstrap": {
     "loading": "Caricamento BATbern...",
@@ -891,5 +905,13 @@
       "errorNoCompany": "Salva prima un'azienda nel tuo profilo.",
       "errorGeneric": "Non è stato possibile inviare la richiesta. Riprova."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Digita almeno 2 caratteri",
+    "companiesLoadFailed": "Errore durante il caricamento delle aziende",
+    "noCompanies": "Nessuna azienda trovata",
+    "usersLoadFailed": "Errore durante il caricamento degli utenti",
+    "noUsers": "Nessun utente trovato",
+    "noUsersWithRole": "Nessun utente trovato con il ruolo {{role}}"
   }
 }

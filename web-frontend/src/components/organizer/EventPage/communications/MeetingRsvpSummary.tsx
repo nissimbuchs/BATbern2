@@ -33,7 +33,7 @@ export const MeetingRsvpSummary: React.FC<MeetingRsvpSummaryProps> = ({
   });
   // A deleted meeting (404) or a failed load shows nothing: the mail itself is still listed.
   if (!data) return null;
-  const { accepted, declined, tentative } = data.summary;
+  const { accepted = 0, declined = 0, tentative = 0 } = data.summary ?? {};
   const noAnswer = Math.max(0, recipientCount - accepted - declined - tentative);
   return (
     <Typography

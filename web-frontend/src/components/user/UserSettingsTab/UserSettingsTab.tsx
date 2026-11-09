@@ -39,7 +39,11 @@ import NotificationsIcon from '@mui/icons-material/Notifications';
 import LockIcon from '@mui/icons-material/Lock';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
 import { isAxiosError } from 'axios';
-import type { AdditionalEmail, UserPreferences, UserSettings } from '@/types/userAccount.types';
+import type {
+  AdditionalEmail,
+  UserPreferencesView,
+  UserSettingsView,
+} from '@/types/userAccount.types';
 import {
   useAddAdditionalEmail,
   useDeleteAdditionalEmail,
@@ -57,8 +61,8 @@ const TOAST_AUTO_DISMISS_MS = 5000;
 
 interface UserSettingsTabProps {
   email?: string;
-  preferences?: UserPreferences;
-  settings?: UserSettings;
+  preferences?: UserPreferencesView;
+  settings?: UserSettingsView;
   /**
    * Story 10.32 — additional email addresses registered on the user's profile.
    * Optional; falls back to an empty list when the parent hasn't loaded it yet
@@ -582,7 +586,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
             onChange={(e) =>
               setPreferencesForm({
                 ...preferencesForm,
-                theme: e.target.value as UserPreferences['theme'],
+                theme: e.target.value as UserPreferencesView['theme'],
               })
             }
           >
@@ -711,7 +715,8 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
             onChange={(e) =>
               setPreferencesForm({
                 ...preferencesForm,
-                notificationFrequency: e.target.value as UserPreferences['notificationFrequency'],
+                notificationFrequency: e.target
+                  .value as UserPreferencesView['notificationFrequency'],
               })
             }
           >
@@ -745,7 +750,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
               setPreferencesForm({
                 ...preferencesForm,
                 qnaNotificationFrequency: e.target
-                  .value as UserPreferences['qnaNotificationFrequency'],
+                  .value as UserPreferencesView['qnaNotificationFrequency'],
               })
             }
           >
@@ -798,7 +803,7 @@ const UserSettingsTab: React.FC<UserSettingsTabProps> = ({
             onChange={(e) =>
               setSettingsForm({
                 ...settingsForm,
-                profileVisibility: e.target.value as UserSettings['profileVisibility'],
+                profileVisibility: e.target.value as UserSettingsView['profileVisibility'],
               })
             }
           >

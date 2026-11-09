@@ -1,7 +1,6 @@
 /**
  * SpeakerBrainstormingPanel Tests - Focused component tests for speaker brainstorming
  */
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -131,7 +130,7 @@ describe('SpeakerBrainstormingPanel', () => {
     vi.mocked(useSpeakerPool).mockReturnValueOnce({
       data: [],
       isLoading: false,
-    });
+    } as unknown as ReturnType<typeof useSpeakerPool>);
 
     renderComponent();
     expect(screen.getByText(/No speakers in pool yet/i)).toBeInTheDocument();

@@ -136,7 +136,7 @@ describe('ContentSubmissionSubView — AC10 cases 41 + 44 (post Epic 11 bio/port
     vi.mocked(searchUsers).mockResolvedValue([]);
     vi.mocked(updateUserRoles).mockResolvedValue({} as never);
     vi.mocked(speakerContentService.submitContent).mockResolvedValue({
-      poolId: 'speaker-pool-1',
+      speakerPoolId: 'speaker-pool-1',
       status: 'CONTENT_SUBMITTED',
     });
   });

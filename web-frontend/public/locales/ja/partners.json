@@ -103,7 +103,9 @@
       "analytics": "分析",
       "settings": "設定",
       "partnerDetailTabs": "パートナー詳細タブ",
-      "mail": "メール"
+      "mail": "メール",
+      "notes": "メモ",
+      "topics": "トピック"
     },
     "overviewTab": {
       "title": "パートナーシップの詳細",

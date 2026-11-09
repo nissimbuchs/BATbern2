@@ -798,7 +798,7 @@ export interface components {
        */
       changedByUsername?: string;
       /** @description Reason for the change */
-      changeReason?: string;
+      changeReason?: string | null;
       /**
        * Format: date-time
        * @description When the change occurred
@@ -822,11 +822,11 @@ export interface components {
        * @enum {string}
        */
       kind: 'STATUS_CHANGE' | 'CONTENT_REJECTED';
-      previousStatus?: components['schemas']['SpeakerWorkflowState'];
-      newStatus?: components['schemas']['SpeakerWorkflowState'];
+      previousStatus?: components['schemas']['SpeakerWorkflowState'] | null;
+      newStatus?: components['schemas']['SpeakerWorkflowState'] | null;
       /** @example john.doe */
-      changedByUsername?: string;
-      changeReason?: string;
+      changedByUsername?: string | null;
+      changeReason?: string | null;
       /** Format: date-time */
       changedAt?: string;
     };
@@ -892,29 +892,29 @@ export interface components {
       /** Format: uuid */
       eventId?: string;
       /** Format: uuid */
-      sessionId?: string;
-      presentationTitle?: string;
-      presentationAbstract?: string;
+      sessionId?: string | null;
+      presentationTitle?: string | null;
+      presentationAbstract?: string | null;
       /** @example john.doe */
-      username?: string;
+      username?: string | null;
       /** @example John Doe */
       speakerName?: string;
-      company?: string;
+      company?: string | null;
       status?: components['schemas']['SpeakerWorkflowState'];
       /** @description False if the session was deleted (AC34). */
       hasContent?: boolean;
       /** @description Warning message if issues detected (AC34). */
-      warning?: string;
+      warning?: string | null;
       /** Format: date-time */
-      submittedAt?: string;
-      hasMaterial?: boolean;
+      submittedAt?: string | null;
+      hasMaterial?: boolean | null;
       /**
        * @description Material download URL (CloudFront CDN).
        * @example https://cdn.batbern.ch/materials/presentation.pdf
        */
-      materialUrl?: string;
+      materialUrl?: string | null;
       /** @example zero-trust-presentation.pdf */
-      materialFileName?: string;
+      materialFileName?: string | null;
     };
     /**
      * @description Quality-review action: APPROVE → QUALITY_REVIEWED; REJECT → requires feedback.
@@ -1389,7 +1389,7 @@ export interface components {
     /** @description Speaker portal dashboard summary across all of the speaker's events (Story 6.4) */
     SpeakerDashboardDto: {
       speakerName?: string;
-      profilePictureUrl?: string;
+      profilePictureUrl?: string | null;
       /** @description Profile completeness percentage (0–100) */
       profileCompleteness?: number;
       upcomingEvents?: components['schemas']['DashboardUpcomingEventDto'][];
@@ -1407,14 +1407,14 @@ export interface components {
       hasTitle?: boolean;
       hasAbstract?: boolean;
       hasMaterial?: boolean;
-      materialFileName?: string;
-      responseDeadline?: string;
-      contentDeadline?: string;
-      reviewerFeedback?: string;
-      organizerName?: string;
-      organizerEmail?: string;
-      respondUrl?: string;
-      contentUrl?: string;
+      materialFileName?: string | null;
+      responseDeadline?: string | null;
+      contentDeadline?: string | null;
+      reviewerFeedback?: string | null;
+      organizerName?: string | null;
+      organizerEmail?: string | null;
+      respondUrl?: string | null;
+      contentUrl?: string | null;
     };
     /** @description A past event the speaker presented at */
     DashboardPastEventDto: {
@@ -1423,7 +1423,7 @@ export interface components {
       eventDate?: string;
       sessionTitle?: string;
       hasMaterial?: boolean;
-      materialFileName?: string;
+      materialFileName?: string | null;
     };
     /**
      * @description Speaker's response to an invitation
@@ -1457,18 +1457,13 @@ export interface components {
       success?: boolean;
       speakerName?: string;
       eventName?: string;
-      /** @description Formatted event date (e.g. "20. November 2025") */
-      eventDate?: string;
-      sessionTitle?: string;
       /** @description Next steps for the speaker after responding */
       nextSteps?: string[];
       /**
        * Format: date
        * @description Content submission deadline (if accepted)
        */
-      contentDeadline?: string;
-      dashboardUrl?: string;
-      errorMessage?: string;
+      contentDeadline?: string | null;
     };
     /** @description The speaker portal's content-submission state for one event (Story 6.3) */
     SpeakerContentInfo: {
@@ -1476,22 +1471,22 @@ export interface components {
       eventCode?: string;
       eventTitle?: string;
       hasSessionAssigned?: boolean;
-      sessionTitle?: string;
+      sessionTitle?: string | null;
       canSubmitContent?: boolean;
       hasDraft?: boolean;
-      draftTitle?: string;
-      draftAbstract?: string;
-      draftVersion?: number;
+      draftTitle?: string | null;
+      draftAbstract?: string | null;
+      draftVersion?: number | null;
       /** Format: date-time */
-      lastSavedAt?: string;
+      lastSavedAt?: string | null;
       needsRevision?: boolean;
-      reviewerFeedback?: string;
+      reviewerFeedback?: string | null;
       /** Format: date-time */
-      reviewedAt?: string;
-      reviewedBy?: string;
+      reviewedAt?: string | null;
+      reviewedBy?: string | null;
       hasMaterial?: boolean;
-      materialUrl?: string;
-      materialFileName?: string;
+      materialUrl?: string | null;
+      materialFileName?: string | null;
     };
     /** @description Speaker content submission (title/abstract/bio + optional presentation upload) */
     ContentSubmitRequest: {

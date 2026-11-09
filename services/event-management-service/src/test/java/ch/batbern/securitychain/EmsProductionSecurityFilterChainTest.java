@@ -99,7 +99,6 @@ class EmsProductionSecurityFilterChainTest {
         "GET,  /api/v1/events/_global/teaser-images",
         "GET,  /api/v1/topics",
         "POST, /api/v1/events/BATbern60/registrations",
-        "GET,  /api/v1/events/BATbern60/registrations/ABC123",
         "POST, /api/v1/events/BATbern60/registrations/confirm",
         "POST, /api/v1/newsletter/subscribe",
         "GET,  /api/v1/newsletter/unsubscribe/verify",
@@ -121,6 +120,7 @@ class EmsProductionSecurityFilterChainTest {
     @ParameterizedTest(name = "{0} {1}")
     @CsvSource({
         "GET,    /api/v1/events/BATbern60/registrations",
+        "GET,    /api/v1/events/BATbern60/registrations/BATbern60-reg-ABC123",
         "DELETE, /api/v1/events/BATbern60/registrations/ABC123",
         "GET,    /api/v1/events/BATbern60/distribution-list/participants",
         "GET,    /api/v1/events/BATbern60/participants/export",

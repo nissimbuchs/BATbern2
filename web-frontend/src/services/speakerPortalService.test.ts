@@ -168,6 +168,25 @@ describe('speakerPortalService — Cognito contract (Story 11.E.3 + 11.F.1)', ()
     });
   });
 
+  describe('uploadMaterial()', () => {
+    // The wire type SpeakerMaterialUploadResponse marks every field optional: without an
+    // upload URL or upload id there is nothing to PUT to or confirm, so the upload fails
+    // before any S3 request instead of PUTting to "undefined".
+    it('should_rejectWithoutS3Request_when_presignedResponseHasNoUploadUrl', async () => {
+      mockedPost.mockResolvedValueOnce({ data: { uploadId: 'upload-1' } } as never);
+      const open = vi.spyOn(XMLHttpRequest.prototype, 'open');
+      const file = new File(['x'], 'talk.pdf', { type: 'application/pdf' });
+
+      await expect(speakerPortalService.uploadMaterial('BATbern99', file)).rejects.toThrow(
+        /upload url/i
+      );
+
+      expect(open).not.toHaveBeenCalled();
+      expect(mockedPost).toHaveBeenCalledTimes(1);
+      open.mockRestore();
+    });
+  });
+
   describe('correlation ID propagation', () => {
     it('should_appendCorrelationIdToErrorMessage_when_headerPresent', async () => {
       mockedPost.mockRejectedValueOnce({

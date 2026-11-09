@@ -21,8 +21,8 @@
  *
  * Plain TypeScript for Node 22 type stripping: `.ts` import extensions, no enums/namespaces.
  */
-import { existsSync, readdirSync, readFileSync, statSync } from 'node:fs';
-import { dirname, join, relative, sep } from 'node:path';
+import { existsSync, readFileSync } from 'node:fs';
+import { dirname, join } from 'node:path';
 import { fileURLToPath, pathToFileURL } from 'node:url';
 import {
   WILDCARD,
@@ -31,8 +31,9 @@ import {
   type SpecIndex,
 } from '../src/test/contract/specMatcher.ts';
 import { maskComments, skipQuoted } from './lib/mask-comments.ts';
+import { EXCLUDED, listSourceFiles } from './lib/source-files.ts';
 
-export { maskComments };
+export { EXCLUDED, listSourceFiles, maskComments };
 
 export interface ScannedCall {
   file: string;
@@ -425,37 +426,6 @@ export function scanSource(file: string, source: string): ScannedCall[] {
     calls.push(call);
   }
   return calls;
-}
-
-const EXCLUDED = [
-  /\.test\.[jt]sx?$/,
-  /\.spec\.[jt]sx?$/,
-  /\.stories\.[jt]sx?$/,
-  /\.d\.ts$/,
-  /(^|\/)__tests__\//,
-  /(^|\/)__mocks__\//,
-  /(^|\/)__fixtures__\//,
-  /^src\/mocks\//,
-  /^src\/test\//,
-  /^src\/types\/generated\//,
-];
-
-/** Lists the source files to scan, as paths relative to `root` with `/` separators. */
-export function listSourceFiles(root: string, dir = 'src'): string[] {
-  const files: string[] = [];
-  const walk = (abs: string) => {
-    for (const name of readdirSync(abs)) {
-      const full = join(abs, name);
-      if (statSync(full).isDirectory()) {
-        if (name !== 'node_modules') walk(full);
-      } else if (/\.(ts|tsx)$/.test(name)) {
-        const rel = relative(root, full).split(sep).join('/');
-        if (!EXCLUDED.some((re) => re.test(rel))) files.push(rel);
-      }
-    }
-  };
-  walk(join(root, dir));
-  return files.sort();
 }
 
 // ---------------------------------------------------------------------------------------------

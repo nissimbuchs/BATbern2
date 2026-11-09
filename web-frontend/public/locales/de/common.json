@@ -39,7 +39,9 @@
     },
     "mail": "Mail",
     "mailOpenCount_one": "{{count}} offene Unterhaltung",
-    "mailOpenCount_other": "{{count}} offene Unterhaltungen"
+    "mailOpenCount_other": "{{count}} offene Unterhaltungen",
+    "mySessions": "Meine Sessions",
+    "myProfile": "Mein Profil"
   },
   "public": {
     "login": "Anmelden",
@@ -599,7 +601,8 @@
     "photos": {
       "viewPhoto": "Foto ansehen"
     },
-    "eventsProgress": "{{shown}} von {{total}} Veranstaltungen"
+    "eventsProgress": "{{shown}} von {{total}} Veranstaltungen",
+    "scrollForMore": "Für weitere Veranstaltungen scrollen"
   },
   "notifications": {
     "title": "Benachrichtigungen",
@@ -660,14 +663,16 @@
       "htmlBodyRequired": "HTML-Inhalt ist erforderlich.",
       "subjectRequired": "Betreff ist für Inhaltsvorlagen erforderlich.",
       "templateNameRequired": "Der Name der Vorlage ist erforderlich.",
-      "templateNameInvalid": "Bitte mindestens einen Buchstaben oder eine Ziffer eingeben."
+      "templateNameInvalid": "Bitte mindestens einen Buchstaben oder eine Ziffer eingeben.",
+      "duplicateKey": "Für diese Sprache gibt es bereits eine Vorlage mit diesem Schlüssel. Bitte wählen Sie einen anderen."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Name der Vorlage",
     "templateNameHelp": "Zum Beispiel: Raumwechsel",
-    "keyPreview": "Wird gespeichert als"
+    "keyPreview": "Wird gespeichert als",
+    "loadFailed": "Vorlagen konnten nicht geladen werden."
   },
   "presentation": {
     "errorTitle": "Event konnte nicht geladen werden",
@@ -729,7 +734,13 @@
       "noDefaults": "Keine Standard-Vorlagen.",
       "noCustom": "Noch keine benutzerdefinierten Vorlagen.",
       "confirmDelete": "Vorlage löschen?",
-      "deleteFailed": "Löschen fehlgeschlagen. Bitte versuchen Sie es erneut."
+      "deleteFailed": "Löschen fehlgeschlagen. Bitte versuchen Sie es erneut.",
+      "loadFailed": "Vorlagen konnten nicht geladen werden.",
+      "editTitle": "Aufgabenvorlage bearbeiten",
+      "name": "Name",
+      "triggerState": "Auslösender Status",
+      "dueDateType": "Art des Fälligkeitsdatums",
+      "dueDateOffsetDays": "Verschiebung in Tagen"
     },
     "aiPrompts": {
       "description": "Diese Prompts werden an OpenAI gesendet, wenn Veranstaltungsbeschreibungen, Titelbilder oder Qualitätsbewertungen von Abstracts generiert werden. Verwenden Sie {{VARIABLE_NAME}}-Platzhalter — die verfügbaren Variablen sind unter jedem Prompt aufgeführt.",
@@ -768,7 +779,9 @@
     "sessions": "Sessions",
     "topics": "Themen",
     "firstName": "Vorname",
-    "lastName": "Nachname"
+    "lastName": "Nachname",
+    "unknown": "unbekannt",
+    "user": "Benutzer"
   },
   "filters": {
     "status": {
@@ -801,7 +814,8 @@
     "unexpectedError": "Es tut uns leid. Ein unerwarteter Fehler ist aufgetreten.",
     "devDetails": "Fehlerdetails (nur für Entwickler):",
     "refreshPage": "Seite aktualisieren",
-    "goHome": "Zur Startseite"
+    "goHome": "Zur Startseite",
+    "loadFailed": "Daten konnten nicht geladen werden."
   },
   "bootstrap": {
     "loading": "BATbern wird geladen...",
@@ -895,5 +909,13 @@
       "errorNoCompany": "Bitte speichern Sie zuerst eine Firma in Ihrem Profil.",
       "errorGeneric": "Der Antrag konnte nicht gesendet werden. Bitte versuchen Sie es noch einmal."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Mindestens 2 Zeichen eingeben",
+    "companiesLoadFailed": "Fehler beim Laden der Firmen",
+    "noCompanies": "Keine Firmen gefunden",
+    "usersLoadFailed": "Fehler beim Laden der Benutzer",
+    "noUsers": "Keine Benutzer gefunden",
+    "noUsersWithRole": "Keine Benutzer mit der Rolle {{role}} gefunden"
   }
 }

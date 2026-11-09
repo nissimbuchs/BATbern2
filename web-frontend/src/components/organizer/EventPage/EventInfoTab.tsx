@@ -316,7 +316,7 @@ export const EventInfoTab: React.FC<EventInfoTabProps> = ({ event, eventCode }) 
                 render={({ field }) => (
                   <TextField
                     {...field}
-                    label={t('form.description', 'Description')}
+                    label={t('common:labels.description', 'Description')}
                     fullWidth
                     multiline
                     minRows={4}

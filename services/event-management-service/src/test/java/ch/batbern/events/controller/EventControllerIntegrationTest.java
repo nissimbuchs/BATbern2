@@ -25,6 +25,7 @@ import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import com.fasterxml.jackson.databind.node.ObjectNode;
 import jakarta.persistence.EntityManager;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
@@ -879,6 +880,35 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(status().isBadRequest());
     }
 
+    @ParameterizedTest(name = "{0}")
+    @ValueSource(strings = {"title", "date", "eventType", "venueName", "venueAddress", "venueCapacity",
+        "registrationDeadline", "organizerUsername"})
+    @DisplayName("should_return400NamingTheField_when_requiredCreateFieldMissing")
+    @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
+    void should_return400NamingTheField_when_requiredCreateFieldMissing(String field) throws Exception {
+        // events-core-api CreateEventRequest.required lists the eight fields the Event row needs
+        // (owner decision 2026-11-09); a create without one answers 400 and names it.
+        ObjectNode body = (ObjectNode) objectMapper.readTree("""
+                {
+                    "title": "BATbern Required Fields",
+                    "date": "2027-08-15T09:00:00Z",
+                    "registrationDeadline": "2027-08-01T09:00:00Z",
+                    "venueName": "Kornhausforum",
+                    "venueAddress": "Kornhausplatz 18, 3011 Bern",
+                    "venueCapacity": 200,
+                    "organizerUsername": "test.organizer",
+                    "eventType": "EVENING"
+                }
+                """);
+        body.remove(field);
+
+        mockMvc.perform(post("/api/v1/events")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(body.toString()))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.details." + field).exists());
+    }
+
     // ============================================================================
     // AC4: Update Event (Full Replacement)
     // ============================================================================
@@ -1568,6 +1598,29 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
+    @DisplayName("should_returnAnalytics_when_callerIsAnyAuthenticatedUser")
+    @WithMockUser(username = "some.attendee", roles = "ATTENDEE")
+    void should_returnAnalytics_when_callerIsAnyAuthenticatedUser() throws Exception {
+        // Owner decision 2026-11-09: aggregate counts, open to every signed-in account.
+        Event savedEvent = createTestEvent("BATbern AnalyticsOpen", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
+
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/analytics")
+                        .param("metrics", "registrations"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.eventCode").value(savedEvent.getEventCode()));
+    }
+
+    @Test
+    @DisplayName("should_return401_when_analyticsRequestedAnonymously")
+    void should_return401_when_analyticsRequestedAnonymously() throws Exception {
+        Event savedEvent = createTestEvent("BATbern AnalyticsAnon", "2027-06-15T09:00:00Z", "AGENDA_PUBLISHED");
+
+        mockMvc.perform(get("/api/v1/events/" + savedEvent.getEventCode() + "/analytics")
+                        .param("metrics", "registrations"))
+                .andExpect(status().isUnauthorized());
+    }
+
+    @Test
     @DisplayName("should_filterByTimeframe_when_timeframeProvided")
     @WithMockUser(username = "test.organizer", roles = "ORGANIZER")
     void should_filterByTimeframe_when_timeframeProvided() throws Exception {
@@ -1976,6 +2029,7 @@ public class EventControllerIntegrationTest extends AbstractIntegrationTest {
                     "title": "Duplicate Event",
                     "eventNumber": 1000,
                     "date": "2025-09-15T09:00:00Z",
+                    "registrationDeadline": "2025-09-01T09:00:00Z",
                     "venueName": "Test Venue",
                     "venueAddress": "Test Address",
                     "venueCapacity": 100,

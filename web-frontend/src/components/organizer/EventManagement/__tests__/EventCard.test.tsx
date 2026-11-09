@@ -19,6 +19,7 @@ import { render, screen, fireEvent } from '@testing-library/react';
 import { BrowserRouter } from 'react-router-dom';
 import { EventCard } from '../EventCard';
 import type { Event } from '@/types/event.types';
+import { anEvent } from '@/test/fixtures';
 
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
@@ -29,9 +30,9 @@ vi.mock('react-i18next', () => ({
         'status.published': 'status.published',
         'status.draft': 'status.draft',
         'status.completed': 'status.completed',
-        'dashboard.eventType.full_day': 'Full Day',
-        'dashboard.eventType.half_day': 'Half Day',
-        'dashboard.eventType.evening': 'Evening',
+        'dashboard.eventType.FULL_DAY': 'Full Day',
+        'dashboard.eventType.AFTERNOON': 'Afternoon',
+        'dashboard.eventType.EVENING': 'Evening',
         'dashboard.workflowProgress': 'Workflow Progress',
         'workflow.states.created': 'Created',
         'workflow.states.topic_selection': 'Topic Selection',
@@ -63,23 +64,21 @@ vi.mock('react-i18next', () => ({
 }));
 
 describe('EventCard Component', () => {
-  const mockEvent: Event = {
+  const mockEvent: Event = anEvent({
     eventCode: 'BATbern56',
     eventNumber: 56,
     title: 'Cloud Computing 2025',
     description: 'Annual cloud computing event',
-    eventDate: '2025-03-15T18:00:00Z',
-    eventType: 'full_day',
-    status: 'active',
+    date: '2025-03-15T18:00:00Z',
+    eventType: 'FULL_DAY',
     workflowState: 'SLOT_ASSIGNMENT', // Step 4 of 8 = 50% progress
     registrationDeadline: '2025-03-08T23:59:59Z',
-    capacity: 200,
+    venueCapacity: 200,
     currentAttendeeCount: 50,
     createdAt: '2025-01-01T10:00:00Z',
     updatedAt: '2025-01-10T15:00:00Z',
     createdBy: 'john.doe',
-    version: 1,
-  };
+  });
 
   const createWrapper = () => {
     return ({ children }: { children: React.ReactNode }) => (

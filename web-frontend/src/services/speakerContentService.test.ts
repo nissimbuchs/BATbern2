@@ -40,14 +40,13 @@ describe('speakerContentService', () => {
   describe('submitContent (AC6-10)', () => {
     it('should submit speaker content with all fields', async () => {
       const request: SubmitContentRequest = {
-        username: 'jane.smith',
         presentationTitle: 'Modern Cloud Architecture Patterns',
         presentationAbstract:
           'An in-depth exploration of cloud-native patterns using Kubernetes and microservices.',
       };
 
       const mockResponse: SpeakerContentResponse = {
-        poolId: 'pool-123',
+        speakerPoolId: 'pool-123',
         sessionId: 'session-456',
         status: 'CONTENT_SUBMITTED',
         presentationTitle: 'Modern Cloud Architecture Patterns',
@@ -71,13 +70,12 @@ describe('speakerContentService', () => {
 
     it('should create session and update speaker_pool status on submission', async () => {
       const request: SubmitContentRequest = {
-        username: 'john.doe',
         presentationTitle: 'DevOps Best Practices',
         presentationAbstract: 'A comprehensive guide to modern DevOps methodologies.',
       };
 
       const mockResponse: SpeakerContentResponse = {
-        poolId: 'pool-789',
+        speakerPoolId: 'pool-789',
         sessionId: 'session-new-123',
         status: 'CONTENT_SUBMITTED',
         presentationTitle: 'DevOps Best Practices',
@@ -95,7 +93,6 @@ describe('speakerContentService', () => {
 
     it('should propagate validation errors for missing title', async () => {
       const request: SubmitContentRequest = {
-        username: 'jane.smith',
         presentationTitle: '',
         presentationAbstract: 'Some abstract',
       };
@@ -110,7 +107,6 @@ describe('speakerContentService', () => {
 
     it('should propagate validation errors for missing abstract', async () => {
       const request: SubmitContentRequest = {
-        username: 'jane.smith',
         presentationTitle: 'Test Title',
         presentationAbstract: '',
       };
@@ -125,7 +121,6 @@ describe('speakerContentService', () => {
 
     it('should propagate 404 errors for non-existent speaker', async () => {
       const request: SubmitContentRequest = {
-        username: 'jane.smith',
         presentationTitle: 'Test Title',
         presentationAbstract: 'Test Abstract',
       };
@@ -140,7 +135,6 @@ describe('speakerContentService', () => {
 
     it('should propagate 422 errors for invalid speaker state', async () => {
       const request: SubmitContentRequest = {
-        username: 'jane.smith',
         presentationTitle: 'Test Title',
         presentationAbstract: 'Test Abstract',
       };
@@ -157,7 +151,6 @@ describe('speakerContentService', () => {
 
     it('should propagate authorization errors for non-organizers', async () => {
       const request: SubmitContentRequest = {
-        username: 'jane.smith',
         presentationTitle: 'Test Title',
         presentationAbstract: 'Test Abstract',
       };
@@ -172,7 +165,6 @@ describe('speakerContentService', () => {
 
     it('should handle network failures gracefully', async () => {
       const request: SubmitContentRequest = {
-        username: 'jane.smith',
         presentationTitle: 'Test Title',
         presentationAbstract: 'Test Abstract',
       };
@@ -189,7 +181,7 @@ describe('speakerContentService', () => {
   describe('getSpeakerContent (AC34)', () => {
     it('should fetch speaker content with session data', async () => {
       const mockResponse: SpeakerContentResponse = {
-        poolId: 'pool-123',
+        speakerPoolId: 'pool-123',
         sessionId: 'session-456',
         status: 'CONTENT_SUBMITTED',
         presentationTitle: 'Cloud Architecture',
@@ -209,7 +201,7 @@ describe('speakerContentService', () => {
 
     it('should handle orphaned session FK with warning', async () => {
       const mockResponse: SpeakerContentResponse = {
-        poolId: 'pool-123',
+        speakerPoolId: 'pool-123',
         sessionId: '',
         status: 'INVITED',
         presentationTitle: '',
@@ -434,7 +426,6 @@ describe('speakerContentService', () => {
     describe('AC28: Users-Service Unavailability', () => {
       it('should propagate service unavailable errors', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -449,7 +440,6 @@ describe('speakerContentService', () => {
 
       it('should handle timeout errors gracefully', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -466,13 +456,12 @@ describe('speakerContentService', () => {
     describe('AC30: Duplicate User Creation Prevention', () => {
       it('should handle existing user with same email', async () => {
         const request: SubmitContentRequest = {
-          username: 'existing.user',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
 
         const mockResponse: SpeakerContentResponse = {
-          poolId: 'pool-123',
+          speakerPoolId: 'pool-123',
           sessionId: 'session-456',
           status: 'CONTENT_SUBMITTED',
           presentationTitle: 'Test Title',
@@ -492,7 +481,6 @@ describe('speakerContentService', () => {
     describe('AC31: Portrait Upload URL Generation Failure', () => {
       it('should handle S3 presigned URL generation failure', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -507,7 +495,6 @@ describe('speakerContentService', () => {
 
       it('should handle AWS S3 service errors', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -524,13 +511,12 @@ describe('speakerContentService', () => {
     describe('AC32: Portrait Upload Partial Failure Recovery', () => {
       it('should handle portrait upload success with profile update failure', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
 
         const mockResponse: SpeakerContentResponse = {
-          poolId: 'pool-123',
+          speakerPoolId: 'pool-123',
           sessionId: 'session-456',
           status: 'CONTENT_SUBMITTED',
           presentationTitle: 'Test Title',
@@ -550,7 +536,6 @@ describe('speakerContentService', () => {
     describe('AC33: Content Submission Transaction Integrity', () => {
       it('should handle transaction rollback on database failure', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -565,7 +550,6 @@ describe('speakerContentService', () => {
 
       it('should handle database constraint violations', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -584,7 +568,6 @@ describe('speakerContentService', () => {
     describe('AC37: Content Submission State Validation', () => {
       it('should reject submission when speaker not in accepted state', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -601,7 +584,6 @@ describe('speakerContentService', () => {
 
       it('should reject submission when speaker is declined', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -616,7 +598,6 @@ describe('speakerContentService', () => {
 
       it('should reject submission when speaker is already confirmed', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -633,7 +614,6 @@ describe('speakerContentService', () => {
     describe('Additional Error Scenarios', () => {
       it('should handle malformed response data', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -647,7 +627,6 @@ describe('speakerContentService', () => {
 
       it('should handle server errors (500)', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -662,7 +641,6 @@ describe('speakerContentService', () => {
 
       it('should handle rate limiting errors (429)', async () => {
         const request: SubmitContentRequest = {
-          username: 'jane.smith',
           presentationTitle: 'Test Title',
           presentationAbstract: 'Test Abstract',
         };
@@ -689,13 +667,12 @@ describe('speakerContentService', () => {
 
     it('should maintain state across multiple calls', async () => {
       const request: SubmitContentRequest = {
-        username: 'test.user',
         presentationTitle: 'Test Title',
         presentationAbstract: 'Test Abstract',
       };
 
       const mockResponse: SpeakerContentResponse = {
-        poolId: 'pool-123',
+        speakerPoolId: 'pool-123',
         sessionId: 'session-456',
         status: 'CONTENT_SUBMITTED',
         presentationTitle: 'Test Title',

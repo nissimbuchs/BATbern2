@@ -1,4 +1,3 @@
-import React from 'react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { render, screen, waitFor } from '@testing-library/react';
 import userEvent from '@testing-library/user-event';
@@ -28,6 +27,7 @@ const alphaTopics: TopicDTO[] = [
     status: 'PROPOSED',
     plannedEvent: null,
     createdAt: '2026-01-01T10:00:00Z',
+    source: 'PARTNER',
   },
   {
     id: 'topic-2',
@@ -39,6 +39,7 @@ const alphaTopics: TopicDTO[] = [
     status: 'SELECTED',
     plannedEvent: 'BATbern58',
     createdAt: '2026-01-02T10:00:00Z',
+    source: 'PARTNER',
   },
 ];
 
@@ -52,6 +53,7 @@ const betaTopic: TopicDTO = {
   status: 'PROPOSED',
   plannedEvent: null,
   createdAt: '2026-01-03T10:00:00Z',
+  source: 'PARTNER',
 };
 
 function makeQueryClient() {

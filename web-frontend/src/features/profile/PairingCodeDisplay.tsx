@@ -12,7 +12,8 @@ interface PairingCodeDisplayProps {
   pendingCode: PendingPairingCode;
 }
 
-function formatCountdown(expiresAt: string): string {
+function formatCountdown(expiresAt: string | undefined): string {
+  if (!expiresAt) return '';
   const now = new Date();
   const expiry = new Date(expiresAt);
   const diffMs = expiry.getTime() - now.getTime();

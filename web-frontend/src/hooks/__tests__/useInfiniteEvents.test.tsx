@@ -11,6 +11,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useInfiniteEvents } from '../useInfiniteEvents';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventListResponse, ArchiveFilters } from '@/types/event.types';
+import { pastEvent } from '@/test/fixtures';
 
 // Mock eventApiClient
 vi.mock('@/services/eventApiClient', () => ({
@@ -24,77 +25,76 @@ describe('useInfiniteEvents Hook', () => {
 
   const mockPage1: EventListResponse = {
     data: [
-      {
-        eventId: '1',
+      pastEvent(0, {
         eventCode: 'BAT2024',
+        eventNumber: 2024,
         title: 'BATbern 2024',
         date: '2024-12-15T00:00:00Z',
-        topic: 'Cloud Architecture',
-        workflowState: 'COMPLETED',
+        registrationDeadline: '2024-12-15T00:00:00Z',
         venueName: 'Kornhausforum',
-        sessions: [],
-      },
-      {
-        eventId: '2',
+        workflowState: 'EVENT_COMPLETED',
+      }),
+      pastEvent(0, {
         eventCode: 'BAT2023',
+        eventNumber: 2023,
         title: 'BATbern 2023',
         date: '2023-11-20T00:00:00Z',
-        topic: 'DevOps',
-        workflowState: 'ARCHIVED',
+        registrationDeadline: '2023-11-20T00:00:00Z',
         venueName: 'Bern Congress',
-        sessions: [],
-      },
+        workflowState: 'ARCHIVED',
+      }),
     ],
     pagination: {
       page: 1,
-      pages: 3,
       limit: 20,
-      total: 54,
+      totalPages: 3,
+      totalItems: 54,
       hasNext: true,
+      hasPrev: false,
     },
   };
 
   const mockPage2: EventListResponse = {
     data: [
-      {
-        eventId: '3',
+      pastEvent(0, {
         eventCode: 'BAT2022',
+        eventNumber: 2022,
         title: 'BATbern 2022',
         date: '2022-10-10T00:00:00Z',
-        topic: 'Security',
-        workflowState: 'ARCHIVED',
+        registrationDeadline: '2022-10-10T00:00:00Z',
         venueName: 'Bern Tech Hub',
-        sessions: [],
-      },
+        workflowState: 'ARCHIVED',
+      }),
     ],
     pagination: {
       page: 2,
-      pages: 3,
       limit: 20,
-      total: 54,
+      totalPages: 3,
+      totalItems: 54,
       hasNext: true,
+      hasPrev: true,
     },
   };
 
   const mockPage3: EventListResponse = {
     data: [
-      {
-        eventId: '4',
+      pastEvent(0, {
         eventCode: 'BAT2021',
+        eventNumber: 2021,
         title: 'BATbern 2021',
         date: '2021-09-15T00:00:00Z',
-        topic: 'Microservices',
-        workflowState: 'ARCHIVED',
+        registrationDeadline: '2021-09-15T00:00:00Z',
         venueName: 'Virtual',
-        sessions: [],
-      },
+        workflowState: 'ARCHIVED',
+      }),
     ],
     pagination: {
       page: 3,
-      pages: 3,
       limit: 20,
-      total: 54,
+      totalPages: 3,
+      totalItems: 54,
       hasNext: false,
+      hasPrev: true,
     },
   };
 
@@ -153,7 +153,7 @@ describe('useInfiniteEvents Hook', () => {
       });
 
       // Total from pagination
-      expect(result.current.data?.pages[0].pagination.total).toBe(54);
+      expect(result.current.data?.pages[0].pagination.totalItems).toBe(54);
     });
 
     test('should_calculateLoadedCount_when_loaded', async () => {
@@ -280,9 +280,10 @@ describe('useInfiniteEvents Hook', () => {
         { timeout: 100, interval: 10 }
       );
 
-      if (resolveSecondPage) {
+      const resolve = resolveSecondPage;
+      if (resolve) {
         act(() => {
-          resolveSecondPage(mockPage2);
+          resolve(mockPage2);
         });
       }
 
@@ -614,9 +615,11 @@ describe('useInfiniteEvents Hook', () => {
         data: [],
         pagination: {
           page: 1,
-          pages: 0,
           limit: 20,
-          total: 0,
+          totalPages: 0,
+          totalItems: 0,
+          hasNext: false,
+          hasPrev: false,
         },
       };
 
@@ -637,9 +640,11 @@ describe('useInfiniteEvents Hook', () => {
         ...mockPage1,
         pagination: {
           page: 1,
-          pages: 1,
           limit: 20,
-          total: 2,
+          totalPages: 1,
+          totalItems: 2,
+          hasNext: false,
+          hasPrev: false,
         },
       };
 
@@ -664,8 +669,8 @@ describe('useInfiniteEvents Hook', () => {
       });
 
       // 54 events / 20 per page = 3 pages
-      expect(result.current.data?.pages[0].pagination.pages).toBe(3);
-      expect(result.current.data?.pages[0].pagination.total).toBe(54);
+      expect(result.current.data?.pages[0].pagination.totalPages).toBe(3);
+      expect(result.current.data?.pages[0].pagination.totalItems).toBe(54);
     });
   });
 });

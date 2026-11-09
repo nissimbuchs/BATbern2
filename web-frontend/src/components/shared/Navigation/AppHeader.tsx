@@ -22,12 +22,12 @@ import { useNavigate } from 'react-router-dom';
 import { useTranslation } from 'react-i18next';
 import { getRolesWithNavEntries } from '@/config/navigationConfig';
 import type { UserProfile } from '@/types/user';
-import type { NotificationsResponse } from '@/types/notification';
+import type { NotificationPage } from '@/types/notification';
 import type { UserContext, UserRole } from '@/types/auth';
 
 interface AppHeaderProps {
   user?: UserProfile;
-  notifications?: NotificationsResponse;
+  notifications?: NotificationPage;
 }
 
 const AppHeader = React.memo(function AppHeader({

@@ -15,7 +15,8 @@ import org.springframework.stereotype.Component;
  * ({@code @EventListener}, {@code @TransactionalEventListener}, {@code @Async} listeners).
  *
  * <p>A listener that throws does not fail the caller: the exception is logged at ERROR with the
- * event type and swallowed. That keeps the behaviour the services had before Story 17.2 part B,
+ * event type, behind the fixed marker {@value #LOG_MARKER} that the CloudWatch alarm matches, and
+ * swallowed. That keeps the behaviour the services had before Story 17.2 part B,
  * when the local publish was swallowed the same way. Whether a listener failure should fail the caller is open
  * (Epic 17, story 17.12). So that the failure is not silent, each one also increments the counter
  * {@value #LISTENER_FAILURES}, tagged {@code event_type} and {@code listener}
@@ -28,6 +29,15 @@ public class SpringDomainEventPublisher implements DomainEventPublisher {
 
     /** Counter of listener failures swallowed by {@link #publish}. */
     public static final String LISTENER_FAILURES = "domain.events.listener.failures";
+
+    /**
+     * Fixed first token of the ERROR line written for each swallowed listener failure. No service
+     * exports Micrometer metrics to CloudWatch, so the alarm is log based: a CloudWatch metric
+     * filter on each service log group matches this literal term and feeds the
+     * {@code {Service}-Event-Listener-Failures} alarm ({@code infrastructure/lib/constructs/
+     * ecs-service-alarms.ts}). Changing it silences that alarm; the CDK test reads it from here.
+     */
+    public static final String LOG_MARKER = "DOMAIN_EVENT_LISTENER_FAILED";
 
     private static final Logger LOGGER = LoggerFactory.getLogger(SpringDomainEventPublisher.class);
     private static final String MULTICASTER = SimpleApplicationEventMulticaster.class.getName();
@@ -54,7 +64,7 @@ public class SpringDomainEventPublisher implements DomainEventPublisher {
                     event.getEventType(), event.getAggregateType(), event.getAggregateId());
         } catch (RuntimeException e) {
             String listener = listenerOf(e);
-            LOGGER.error("Listener {} failed for domain event {} ({} {}); the caller continues",
+            LOGGER.error(LOG_MARKER + " listener={} event_type={} aggregate={} {}: the caller continues",
                     listener, event.getEventType(), event.getAggregateType(), event.getAggregateId(), e);
             Counter.builder(LISTENER_FAILURES)
                     .description("Domain event listener failures swallowed by the publisher")

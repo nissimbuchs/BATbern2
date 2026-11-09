@@ -34,20 +34,6 @@
       }
     }
   },
-  "confirmationPage": {
-    "loading": "Caricamento conferma...",
-    "notFound": {
-      "title": "Iscrizione non trovata",
-      "message": "Verifica il codice di conferma e riprova."
-    },
-    "copyCode": "Copia codice di conferma",
-    "qrCodeAlt": "QR Code iscrizione",
-    "qrCodeTitle": "Il tuo QR Code di check-in",
-    "detailsTitle": "Dettagli iscrizione",
-    "shareLabel": "Condividi con la tua rete:",
-    "registerAnother": "Iscrivere un'altra persona",
-    "viewEventDetails": "Visualizza dettagli evento"
-  },
   "successPage": {
     "pendingTitle": "Iscrizione in attesa",
     "pendingMessage": "Se hai inviato un'iscrizione, controlla l'email per il link di conferma.",

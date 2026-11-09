@@ -35,6 +35,9 @@
       "DECLINED": "Abglehnt",
       "CONTENT_SUBMITTED": "Inhalt iigriicht",
       "QUALITY_REVIEWED": "Qualität prüeft"
+    },
+    "promoteSubView": {
+      "incompleteUser": "Em usgwäute Benutzer fähle Pflichtfäuder (E-Mail / Vorname / Nachname). Ergänzet ds Profil vor em Übernäh."
     }
   },
   "speakerOutreach": {
@@ -62,7 +65,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "Kopiert!",
+    "copy": "I d Zwüscheablag kopiere"
   },
   "speakers": {
     "tabs": {
@@ -78,7 +83,12 @@
     "revisionRequested": "Revision Requested",
     "submittedContent": "Submitted Content",
     "submittedAt": "Submitted",
-    "noDetails": "Kei Details verfüegbar"
+    "noDetails": "Kei Details verfüegbar",
+    "speakerName": "Name vor Referäntin / vom Referänt",
+    "company": "Firma",
+    "expertise": "Fachgebiet",
+    "internalNotes": "Interni Notize",
+    "unassigned": "Nid zuegwise"
   },
   "speakerCard": {
     "primaryAction": {
@@ -124,7 +134,13 @@
     "portraitUploadError": "Portrait upload failed. Please try again.",
     "presentationUploadLabel": "Presentation upload (optional)",
     "errors": {
-      "bioTooLong": "Bio must be {{max}} characters or less"
+      "bioTooLong": "Bio must be {{max}} characters or less",
+      "saveDraftFailed": "Dr Entwurf het nid chönne gspicheret wärde."
+    },
+    "readyStateDraftBanner": "D Referäntin oder dr Referänt het no nid zuegseit. Spichere schribt Titu und Abstract aus Entwurf i d Session. Es wird kei Iireichig erfasst, und d Person cha se nach dr Zuesag no ändere.",
+    "saveDraft": "Entwurf spichere",
+    "form": {
+      "roleLabel": "Rolle"
     }
   },
   "kanbanDrag": {
@@ -141,7 +157,11 @@
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
     },
-    "invalidColumnTooltip": "Kei gültige Vorwärtsschritt i die Spalte."
+    "invalidColumnTooltip": "Kei gültige Vorwärtsschritt i die Spalte.",
+    "acceptOnBehalfDialog": {
+      "title": "{{speakerName}} stöuvertretend zuesäge",
+      "reasonHint": "Häbet fescht, werum dir stöuvertretend zuesäget (z. B. «per E-Mail bestätiget am 18.05.2026»). Chunnt is Protokoll."
+    }
   },
   "speakerDrawer": {
     "secondaryActions": {
@@ -149,11 +169,13 @@
       "acceptOnBehalf": "Zuesag im Name vom Referänt erfasse (ohni Yladig)",
       "reassignOrganizer": "Reassign organizer",
       "editDetails": "Edit details",
-      "overrideState": "Override state"
+      "overrideState": "Override state",
+      "addContactEntry": "Kontaktiitrag drzuefüege"
     },
     "tabs": {
       "details": "Details",
-      "history": "History"
+      "history": "History",
+      "content": "Inhaut"
     },
     "subTabs": {
       "content": "Content"
@@ -185,6 +207,30 @@
     "waitingOnSpeakerDivider": "Wart uf Referänt"
   },
   "tasks": {
-    "completionNotesPlaceholder": "Notize zur Erledigung vo dr Ufgab hinzuefüege..."
+    "completionNotesPlaceholder": "Notize zur Erledigung vo dr Ufgab hinzuefüege...",
+    "deleteTask": "Ufgab lösche",
+    "deleteTaskConfirm": "Wettet dir «{{name}}» würklech lösche?"
+  },
+  "navigation": {
+    "blobSelector": "Blob-Uswau"
+  },
+  "topicBacklog": {
+    "filters": {
+      "sortOptions": {
+        "newestFirst": "Nöischti zersch (zletscht drzuecho)"
+      }
+    },
+    "heatMap": {
+      "low": "Weni bruucht",
+      "medium": "Mittu bruucht",
+      "high": "Viu bruucht"
+    }
+  },
+  "qualityReview": {
+    "noTitle": "Ohni Titu",
+    "noAbstract": "Kes Abstract vorhande",
+    "material": "Präsentationsmaterial",
+    "downloadMaterial": "Material abelade",
+    "noMaterial": "No kes Material ufeglade"
   }
 }

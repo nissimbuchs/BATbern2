@@ -1153,6 +1153,7 @@ components:
         subscribed:
           type: boolean
         email:
+          nullable: true
           type: string
     NewsletterSendRequest:
       type: object
@@ -1223,9 +1224,11 @@ components:
         failedCount:
           type: integer
         startedAt:
+          nullable: true
           type: string
           format: date-time
         completedAt:
+          nullable: true
           type: string
           format: date-time
     SlidesOnlineSendResponse:
@@ -1325,9 +1328,11 @@ components:
           minimum: 0
           maximum: 100
         startedAt:
+          nullable: true
           type: string
           format: date-time
         completedAt:
+          nullable: true
           type: string
           format: date-time
     NewsletterPreviewResponse:
@@ -1356,12 +1361,14 @@ components:
         email:
           type: string
         firstName:
+          nullable: true
           type: string
         language:
           type: string
         source:
           type: string
         username:
+          nullable: true
           type: string
         subscribedAt:
           type: string

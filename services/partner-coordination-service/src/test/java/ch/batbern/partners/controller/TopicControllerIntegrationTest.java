@@ -5,6 +5,7 @@ import ch.batbern.partners.config.TestAwsConfig;
 import ch.batbern.partners.config.TestSecurityConfig;
 import ch.batbern.partners.domain.Partner;
 import ch.batbern.partners.domain.PartnershipLevel;
+import ch.batbern.partners.domain.TopicSuggestion;
 import ch.batbern.partners.repository.PartnerRepository;
 import ch.batbern.partners.repository.TopicRepository;
 import ch.batbern.partners.repository.TopicVoteRepository;
@@ -28,10 +29,12 @@ import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.UUID;
 
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.is;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.delete;
@@ -228,6 +231,23 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.title", is("Kotlin for Architects")))
                 .andExpect(jsonPath("$.status", is("PROPOSED")))
                 .andExpect(jsonPath("$.suggestedByCompany", is("AlphaCo")));
+    }
+
+    @Test
+    @WithMockUser(username = "alice", roles = {"PARTNER"})
+    void should_returnStoredCreatedAt_when_topicSuggested() throws Exception {
+        // partners-api: TopicDTO.createdAt is required. It is a @CreationTimestamp, set by
+        // Hibernate at insert, so the 201 must carry the value the row got.
+        MvcResult result = mockMvc.perform(post(BASE)
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("title", "Kotlin for Architects"))))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(body.hasNonNull("createdAt")).as("createdAt in %s", body).isTrue();
+        TopicSuggestion stored = topicRepository.findById(UUID.fromString(body.get("id").asText())).orElseThrow();
+        assertThat(OffsetDateTime.parse(body.get("createdAt").asText()).toInstant()).isEqualTo(stored.getCreatedAt());
     }
 
     @Test

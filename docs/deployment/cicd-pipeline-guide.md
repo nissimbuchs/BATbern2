@@ -85,7 +85,15 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
      an unresolvable call not in `web-frontend/scripts/api-paths-allowlist.txt` (UNRESOLVED), a
      new file outside `src/services/` with an HTTP call (OUT OF LAYER, baseline
      `web-frontend/scripts/api-layer-baseline.txt`) and a stale entry in either list. Locally:
-     `make check-frontend-api-paths`. Then the OpenAPI convention lint (Story 17.4: its Vitest
+     `make check-frontend-api-paths`. Then the generated type copy check (Story 17.3c: its Vitest
+     file, then `npm run check:api-type-copies`): an `export interface` or object-literal
+     `export type` in `web-frontend/src` named like a schema in `src/types/generated/` fails
+     (NEW), as does a baselined copy that is gone (STALE); baseline
+     `web-frontend/scripts/api-type-copies-baseline.txt` (`--update` only removes lines, adding
+     one needs `--allow-growth`), every line owned in
+     `scripts/api-type-copies-owners.txt`. Policy: `docs/architecture/coding-standards.md`,
+     "Frontend: generated API type copies". Locally: `make check-api-type-copies`. Then the
+     OpenAPI convention lint (Story 17.4: its Vitest
      files, then `npm run lint:api`): Spectral with `docs/api/.spectral.yaml` (five rules:
      kebab-case segments, no verb as last segment, no `/internal` path, no literal directly under
      `/events/`, UUID path parameters) over the public specs, compared with

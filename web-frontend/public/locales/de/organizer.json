@@ -7,7 +7,8 @@
   },
   "navigation": {
     "partners": "Partner",
-    "topicManagement": "Themenverwaltung"
+    "topicManagement": "Themenverwaltung",
+    "blobSelector": "Blob-Auswahl"
   },
   "topicBacklog": {
     "pageTitle": "Themenverwaltung",
@@ -85,7 +86,8 @@
         "safestFirst": "Sicherste zuerst (Veraltet ↓)",
         "recentFirst": "Aktuellste zuerst (Veraltet ↑)",
         "titleAZ": "Titel (A-Z)",
-        "mostUsed": "Meist verwendet"
+        "mostUsed": "Meist verwendet",
+        "newestFirst": "Neueste zuerst (zuletzt hinzugefügt)"
       }
     },
     "details": {
@@ -138,7 +140,10 @@
         "previous": "Vorherige Jahre",
         "next": "Nächste Jahre",
         "atCurrent": "Beim aktuellen Jahr"
-      }
+      },
+      "low": "Geringe Nutzung",
+      "medium": "Mittlere Nutzung",
+      "high": "Hohe Nutzung"
     },
     "dialogs": {
       "similar": {
@@ -219,6 +224,9 @@
       "DECLINED": "Abgelehnt",
       "CONTENT_SUBMITTED": "Inhalt eingereicht",
       "QUALITY_REVIEWED": "Qualität geprüft"
+    },
+    "promoteSubView": {
+      "incompleteUser": "Dem ausgewählten Benutzer fehlen Pflichtfelder (E-Mail / Vorname / Nachname). Ergänzen Sie das Profil vor dem Übernehmen."
     }
   },
   "speakerOutreach": {
@@ -305,7 +313,8 @@
       "presentationTitle": "Präsentationstitel",
       "presentationAbstract": "Präsentationszusammenfassung",
       "charactersRemaining": "Zeichen verbleibend",
-      "bioHelperText": "Leer lassen, um die bestehende Biografie beizubehalten. {{remaining}} / {{max}} Zeichen verbleibend."
+      "bioHelperText": "Leer lassen, um die bestehende Biografie beizubehalten. {{remaining}} / {{max}} Zeichen verbleibend.",
+      "roleLabel": "Rolle"
     },
     "errors": {
       "usernameRequired": "Bitte wählen Sie einen Sprecher aus",
@@ -313,8 +322,11 @@
       "abstractRequired": "Präsentationszusammenfassung ist erforderlich",
       "abstractTooLong": "Zusammenfassung darf maximal {{max}} Zeichen lang sein",
       "bioTooLong": "Biografie darf maximal {{max}} Zeichen lang sein",
-      "submitFailed": "Inhalt konnte nicht eingereicht werden. Bitte versuchen Sie es erneut."
-    }
+      "submitFailed": "Inhalt konnte nicht eingereicht werden. Bitte versuchen Sie es erneut.",
+      "saveDraftFailed": "Der Entwurf konnte nicht gespeichert werden."
+    },
+    "readyStateDraftBanner": "Die Referentin oder der Referent hat noch nicht zugesagt. Speichern schreibt Titel und Abstract als Entwurf in die Session. Es wird keine Einreichung erfasst, und die Person kann sie nach der Zusage noch ändern.",
+    "saveDraft": "Entwurf speichern"
   },
   "kanbanDrag": {
     "invalidDestinationTooltip": "{{from}} → {{to}} ist kein gültiger Übergang. Siehe ADR-009 §0.2.",
@@ -330,7 +342,11 @@
       "title": "{{speakerName}} absagen?",
       "reasonHint": "Ein Grund ist erforderlich für abgesagte Sprecher. Der Grund erscheint in der Statushistorie und in jeder Absage-Benachrichtigung."
     },
-    "invalidColumnTooltip": "Kein gültiger Vorwärtsschritt in diese Spalte."
+    "invalidColumnTooltip": "Kein gültiger Vorwärtsschritt in diese Spalte.",
+    "acceptOnBehalfDialog": {
+      "title": "{{speakerName}} stellvertretend zusagen",
+      "reasonHint": "Halten Sie fest, warum Sie stellvertretend zusagen (z. B. «per E-Mail bestätigt am 18.05.2026»). Wird im Protokoll gespeichert."
+    }
   },
   "speakerDrawer": {
     "secondaryActions": {
@@ -338,7 +354,8 @@
       "acceptOnBehalf": "Zusage im Namen erfassen (ohne Einladung)",
       "reassignOrganizer": "Organisator neu zuweisen",
       "editDetails": "Details bearbeiten",
-      "overrideState": "Status überschreiben"
+      "overrideState": "Status überschreiben",
+      "addContactEntry": "Kontakteintrag hinzufügen"
     },
     "editDetails": {
       "speakerNameLockedHint": "Der Name stammt aus dem verknüpften Benutzerprofil. Verwenden Sie im Tab \"Inhalt\" die Schaltfläche \"Sprecherprofil bearbeiten\", um ihn zu ändern.",
@@ -353,7 +370,8 @@
     "brainstormNameLabel": "Brainstorming-Name",
     "tabs": {
       "details": "Details",
-      "history": "Verlauf"
+      "history": "Verlauf",
+      "content": "Inhalt"
     },
     "subTabs": {
       "content": "Inhalt"
@@ -398,7 +416,12 @@
     "errors": {
       "feedbackRequired": "Feedback ist erforderlich",
       "unknown": "Ein unbekannter Fehler ist aufgetreten"
-    }
+    },
+    "noTitle": "Ohne Titel",
+    "noAbstract": "Kein Abstract vorhanden",
+    "material": "Präsentationsmaterial",
+    "downloadMaterial": "Material herunterladen",
+    "noMaterial": "Noch kein Material hochgeladen"
   },
   "speakers": {
     "invite": "Einladen",
@@ -441,7 +464,12 @@
     "revisionRequested": "Überarbeitung angefordert",
     "submittedContent": "Eingereichte Inhalte",
     "submittedAt": "Eingereicht",
-    "noDetails": "Keine Details verfügbar"
+    "noDetails": "Keine Details verfügbar",
+    "speakerName": "Name der Referentin / des Referenten",
+    "company": "Firma",
+    "expertise": "Fachgebiet",
+    "internalNotes": "Interne Notizen",
+    "unassigned": "Nicht zugewiesen"
   },
   "tasks": {
     "taskBoard": "Aufgabenverwaltung",
@@ -469,7 +497,9 @@
     "completedOn": "Abgeschlossen am",
     "completedBy": "Abgeschlossen von",
     "noTasks": "Keine Aufgaben",
-    "completionNotesPlaceholder": "Notizen zur Erledigung der Aufgabe hinzufügen..."
+    "completionNotesPlaceholder": "Notizen zur Erledigung der Aufgabe hinzufügen...",
+    "deleteTask": "Aufgabe löschen",
+    "deleteTaskConfirm": "Möchten Sie «{{name}}» wirklich löschen?"
   },
   "analytics": {
     "title": "Analysen",
@@ -575,7 +605,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "Kopiert!",
+    "copy": "In die Zwischenablage kopieren"
   },
   "speakerCard": {
     "primaryAction": {

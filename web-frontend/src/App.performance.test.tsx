@@ -65,7 +65,7 @@ describe('Performance Optimization - Code Splitting', () => {
       // Mock a lazy-loaded component
       const LazyComponent = React.lazy(
         () =>
-          new Promise((resolve) =>
+          new Promise<{ default: React.ComponentType }>((resolve) =>
             setTimeout(() => resolve({ default: () => <div>Loaded</div> }), 100)
           )
       );

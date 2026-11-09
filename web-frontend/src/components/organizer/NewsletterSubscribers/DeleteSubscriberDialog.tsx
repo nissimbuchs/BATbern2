@@ -76,7 +76,7 @@ const DeleteSubscriberDialog: React.FC<DeleteSubscriberDialogProps> = ({
         <Typography>{t('dialogs.delete.message', { email: subscriber?.email })}</Typography>
         {mutation.isError && (
           <Alert severity="error" sx={{ mt: 2 }}>
-            {tCommon('errors.unexpected')}
+            {tCommon('errors.unexpectedError')}
           </Alert>
         )}
       </DialogContent>

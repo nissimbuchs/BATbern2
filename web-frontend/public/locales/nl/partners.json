@@ -103,7 +103,9 @@
       "analytics": "Analyses",
       "settings": "Instellingen",
       "partnerDetailTabs": "Partnerdetailtabbladen",
-      "mail": "Mail"
+      "mail": "Mail",
+      "notes": "Notities",
+      "topics": "Onderwerpen"
     },
     "overviewTab": {
       "title": "Partnerschapsdetails",

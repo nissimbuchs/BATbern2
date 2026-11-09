@@ -298,7 +298,8 @@
       "testMode": "Test Mode (organizers only)",
       "testModeWarning": "Test mode enabled — newsletter will only be sent to organizer subscribers.",
       "confirmSendBodyTestMode": "Send {{type}} using '{{templateKey}}' to organizer subscribers only (test mode) for event «{{eventTitle}}»?",
-      "retryHint": "The send of {{date}} left {{count}} recipient(s) out."
+      "retryHint": "The send of {{date}} left {{count}} recipient(s) out.",
+      "previewPlaceholder": "Preview will appear here"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -328,7 +329,8 @@
       "confirmBody": "This will send a real email to {{recipients}}. Reply-To is the configured venue coordinator.",
       "confirmSend": "Yes, send",
       "sentSuccess": "Sent to {{count}} recipient(s).",
-      "sentFailed": "Send failed: {{message}}"
+      "sentFailed": "Send failed: {{message}}",
+      "previewPlaceholder": "Preview will appear here"
     },
     "registrantNotices": {
       "title": "Registrant Notices",
@@ -911,7 +913,9 @@
     "slotDurationMinimum": "Slot duration must be at least 15 minutes",
     "minSlotsLessThanMax": "Minimum slots must be less than or equal to maximum slots",
     "defaultCapacityPositive": "Default capacity must be a positive number",
-    "typicalStartTimeRequired": "Start time is required."
+    "typicalStartTimeRequired": "Start time is required.",
+    "registrationDeadlineRequired": "Registration deadline is required",
+    "eventTypeRequired": "Event type is required"
   },
   "errors": {
     "loadFailed": "Failed to load events",
@@ -929,7 +933,8 @@
     "imageInvalidType": "Invalid image type (use PNG, JPEG, or SVG)",
     "MULTIPLE_FILES": "Please upload only one file at a time",
     "FILE_TOO_LARGE": "File size exceeds 5MB limit",
-    "INVALID_FILE_TYPE": "Invalid file type. Please upload PNG, JPEG, or SVG images only"
+    "INVALID_FILE_TYPE": "Invalid file type. Please upload PNG, JPEG, or SVG images only",
+    "materialDownloadFailed": "Failed to download material. Please try again."
   },
   "confirmations": {
     "unsavedChanges": "Unsaved Changes",
@@ -951,7 +956,12 @@
       "event_live": "Event Live",
       "event_completed": "Event Completed",
       "archived": "Archived"
-    }
+    },
+    "loading": "Loading workflow status...",
+    "error": "Failed to load the workflow status",
+    "noData": "No workflow status available",
+    "currentState": "Current State",
+    "blockedTransitions": "Blocked:"
   },
   "autoSave": {
     "saving": "Saving...",
@@ -1022,7 +1032,10 @@
       "revertPhase": "Revert {{phase}} publication",
       "revertConfirmTitle": "Revert the {{phase}} publication?",
       "revertConfirmText": "The public website goes back to the previous phase. What {{phase}} showed is no longer visible to visitors.",
-      "revertConfirmButton": "Revert"
+      "revertConfirmButton": "Revert",
+      "topicNotReady": "The topic is not ready to publish",
+      "speakersNotReady": "The speakers are not ready to publish",
+      "agendaNotReady": "{{assigned}} of {{total}} slots assigned. Assign every slot before publishing the agenda"
     },
     "validation": {
       "readyToPublish": "Ready to Publish",
@@ -1118,7 +1131,8 @@
       "date": "Date",
       "time": "Time",
       "location": "Location",
-      "capacity": "Registrations"
+      "capacity": "Registrations",
+      "topic": "Topic"
     },
     "errors": {
       "loadFailed": "Failed to load event",
@@ -1138,7 +1152,13 @@
     "program": {
       "title": "Event Program",
       "speaker": "Speaker",
-      "materials": "Materials"
+      "materials": "Materials",
+      "materialTypes": {
+        "presentation": "Presentation",
+        "document": "Document",
+        "video": "Video",
+        "other": "Other"
+      }
     },
     "venue": {
       "title": "Venue",
@@ -1212,8 +1232,16 @@
       "titleRequired": "Title is required",
       "abstractTooLong": "Abstract must be {{max}} characters or less",
       "invalidDuration": "Duration must be between 1 and 480 minutes",
-      "saveFailed": "Failed to save session"
-    }
+      "saveFailed": "Failed to save session",
+      "endTimeBeforeStart": "End time must be after start time",
+      "durationTooShort": "Session duration must be at least {{min}} minutes",
+      "durationTooLong": "Session duration must be at most {{max}} minutes",
+      "speakerConflict": "Speaker {{speaker}} is already scheduled for \"{{session}}\" at {{time}}",
+      "roomConflict": "Room {{room}} is already booked for \"{{session}}\" at {{time}}",
+      "timingConflict": "Timing conflict detected"
+    },
+    "startTimeLabel": "Start Time",
+    "endTimeLabel": "End Time"
   },
   "slotAssignment": {
     "title": "Slot Assignment",
@@ -1251,8 +1279,7 @@
       "emptyState": {
         "title": "All sessions assigned!",
         "message": "Great work! All speakers have been assigned to time slots."
-      },
-      "viewPreferences": "Preferences"
+      }
     },
     "quickActions": {
       "title": "Quick Actions",
@@ -1298,33 +1325,10 @@
         "error": "ERROR",
         "warning": "WARNING"
       },
-      "timeRange": "Conflict Time Range",
-      "start": "Start",
-      "end": "End",
       "conflictingSession": "Conflicting Session",
       "resolutionOptions": "Resolution Options",
       "resolutionMessage": "Choose a different time slot or room to resolve this conflict.",
       "chooseDifferentSlot": "Choose Different Slot"
-    },
-    "preferences": {
-      "title": "Speaker Preferences",
-      "timePreferences": "Time Preferences",
-      "unavailableTimes": "Unavailable Times",
-      "avRequirements": "A/V Requirements",
-      "setupNotes": "Room Setup Notes",
-      "slotMatchScore": "Slot Match Score",
-      "matchPercent": "{{percent}}% Match",
-      "times": {
-        "morning": "Morning",
-        "afternoon": "Afternoon",
-        "evening": "Evening",
-        "any": "Any"
-      },
-      "equipment": {
-        "microphone": "Microphone",
-        "projector": "Projector",
-        "recording": "Recording"
-      }
     },
     "actionBar": {
       "label": "Slot assignment actions"
@@ -1404,7 +1408,8 @@
     "emptyState": "No photos yet. Upload the first one!",
     "uploading": "Uploading...",
     "uploadError": "Upload failed. Please try again.",
-    "uploadErrorPartial": "{{failed}} of {{total}} uploads failed. Please retry."
+    "uploadErrorPartial": "{{failed}} of {{total}} uploads failed. Please retry.",
+    "uploadingProgress": "Uploading {{done}}/{{total}}..."
   },
   "teaserImage": {
     "title": "Teaser Images",
@@ -1517,5 +1522,19 @@
       "limits": "Every mail we sent to them and every mail they sent us, across events. Not listed: newsletters, mail from before the Mail Center recorded it, and mail to an address they no longer have.",
       "empty": "No mail to or from this person yet."
     }
+  },
+  "venue": {
+    "errors": {
+      "nameRequired": "Venue name is required",
+      "addressRequired": "Venue address is required",
+      "capacityPositive": "Capacity must be a positive number",
+      "capacityMax": "Capacity cannot exceed 5000",
+      "updateFailed": "Failed to update venue"
+    },
+    "sectionTitle": "Venue and Logistics",
+    "title": "Venue & Logistics",
+    "nameLabel": "Venue Name",
+    "capacityLabel": "Venue Capacity",
+    "addressLabel": "Venue Address"
   }
 }

@@ -1,0 +1,5 @@
+{
+  "compilerOptions": { "strict": true, "noEmit": true, "types": [], "lib": ["ES2022"], "skipLibCheck": true },
+  "include": ["src"],
+  "exclude": ["src/broken.test.ts", "src/fixed.test.ts"]
+}

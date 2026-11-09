@@ -7,10 +7,10 @@
  * Coverage:
  * - AC9: Warn if speaker has conflicting commitment at same time
  * - Conflict types: room_overlap, speaker_double_booked, speaker_unavailable
- * - Resolution options with visual timeline
+ * - Fixtures carry what EMS sends (TimingConflictError: type + conflictingSessionSlug)
  */
 
-import { render, screen, fireEvent } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { BrowserRouter } from 'react-router-dom';
 import { I18nextProvider } from 'react-i18next';
@@ -34,11 +34,6 @@ describe('ConflictDetectionAlert Component (Story 5.7 - Task 4a RED Phase)', () 
       {
         type: 'room_overlap',
         conflictingSessionSlug: 'existing-session-1',
-        conflictingTimeRange: {
-          start: '2025-05-15T09:00:00Z',
-          end: '2025-05-15T10:00:00Z',
-        },
-        details: 'Main Hall is already booked during this time',
       },
     ],
   };
@@ -50,11 +45,6 @@ describe('ConflictDetectionAlert Component (Story 5.7 - Task 4a RED Phase)', () 
       {
         type: 'speaker_double_booked',
         conflictingSessionSlug: 'john-doe-other-session',
-        conflictingTimeRange: {
-          start: '2025-05-15T09:00:00Z',
-          end: '2025-05-15T10:00:00Z',
-        },
-        details: 'Speaker john.doe is already scheduled in another session',
       },
     ],
   };
@@ -65,12 +55,6 @@ describe('ConflictDetectionAlert Component (Story 5.7 - Task 4a RED Phase)', () 
     conflicts: [
       {
         type: 'speaker_unavailable',
-        conflictingSessionSlug: null,
-        conflictingTimeRange: {
-          start: '2025-05-15T12:00:00Z',
-          end: '2025-05-15T13:00:00Z',
-        },
-        details: 'Speaker marked this time as unavailable in preferences',
       },
     ],
   };
@@ -113,6 +97,29 @@ describe('ConflictDetectionAlert Component (Story 5.7 - Task 4a RED Phase)', () 
       // Then: Modal is not visible
       expect(screen.queryByRole('dialog')).not.toBeInTheDocument();
     });
+
+    it('should_showMessage_when_409BodyHasNoConflictList', () => {
+      // Given: the agenda-full 409 of the slot endpoint. EMS answers it with its generic error
+      // body (AgendaFullException), which has a message but no `conflicts` list; the hook passes
+      // that body on as the conflict.
+      const agendaFull: TimingConflictError = {
+        error: 'ERR_CONFLICT',
+        message: "Agenda is full for event 'BATbern99'",
+      };
+
+      renderWithProviders(
+        <ConflictDetectionAlert
+          conflict={agendaFull}
+          isOpen={true}
+          onClose={() => {}}
+          onResolve={() => {}}
+        />
+      );
+
+      // Then: the dialog shows the server's message instead of crashing the page
+      expect(screen.getByText(/agenda is full/i)).toBeInTheDocument();
+      expect(screen.queryByTestId('conflict-type-badge')).not.toBeInTheDocument();
+    });
   });
 
   describe('Conflict Type Display', () => {
@@ -128,8 +135,8 @@ describe('ConflictDetectionAlert Component (Story 5.7 - Task 4a RED Phase)', () 
         />
       );
 
-      // Then: Shows room overlap message
-      expect(screen.getByText(/main hall is already booked/i)).toBeInTheDocument();
+      // Then: Shows the server's message and the room overlap badge
+      expect(screen.getByText(/session timing conflicts/i)).toBeInTheDocument();
       expect(screen.getByTestId('conflict-type-badge')).toHaveTextContent('Room Overlap');
       expect(screen.getByTestId('conflict-severity')).toHaveClass('severity-error');
     });
@@ -165,33 +172,14 @@ describe('ConflictDetectionAlert Component (Story 5.7 - Task 4a RED Phase)', () 
         />
       );
 
-      // Then: Shows speaker unavailable message
-      expect(screen.getByText(/speaker marked this time as unavailable/i)).toBeInTheDocument();
+      // Then: Shows the server's message and the speaker unavailable badge
+      expect(screen.getByText(/speaker unavailable during requested time/i)).toBeInTheDocument();
       expect(screen.getByTestId('conflict-type-badge')).toHaveTextContent('Speaker Unavailable');
       expect(screen.getByTestId('conflict-severity')).toHaveClass('severity-warning');
     });
   });
 
-  describe('Visual Timeline', () => {
-    it('should_displayConflictTimeline_when_conflictShown', () => {
-      // Visual timeline of conflicts (wireframe story-5.7-conflict-resolution-modal.md lines 426-470)
-      // Given: Conflict has time range information
-      renderWithProviders(
-        <ConflictDetectionAlert
-          conflict={mockRoomOverlapConflict}
-          isOpen={true}
-          onClose={() => {}}
-          onResolve={() => {}}
-        />
-      );
-
-      // Then: Timeline visualization is displayed
-      expect(screen.getByTestId('conflict-timeline')).toBeInTheDocument();
-      // Times are formatted with toLocaleTimeString, check for timeline existence
-      const timeline = screen.getByTestId('conflict-timeline');
-      expect(timeline).toBeInTheDocument();
-    });
-
+  describe('Conflicting Slot', () => {
     it('should_highlightConflictingSlot_when_displayed', () => {
       // Given: Conflicting session exists
       renderWithProviders(

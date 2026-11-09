@@ -10,7 +10,7 @@
  * AC: 1 (Partner Directory Screen), 2 (Overview Statistics), 10 (Integration)
  */
 
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -61,9 +61,8 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
     const mockPartnerResponse: PartnerListResponse = {
       data: [
         {
-          id: '123e4567-e89b-12d3-a456-426614174000',
           companyName: 'TechCorp',
-          partnershipLevel: 'gold',
+          partnershipLevel: 'GOLD',
           partnershipStartDate: '2024-01-01',
           isActive: true,
           company: {
@@ -84,16 +83,18 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
       ],
       metadata: {
         page: 0,
-        size: 20,
+        limit: 20,
         totalItems: 1,
         totalPages: 1,
+        hasNext: false,
+        hasPrev: false,
       },
     };
 
     it('should fetch partners with filters, sort, and pagination', async () => {
       vi.mocked(partnerApi.listPartners).mockResolvedValue(mockPartnerResponse);
 
-      const filters: PartnerFilters = { tier: 'gold', status: 'active' };
+      const filters: PartnerFilters = { tier: 'GOLD', status: 'active' };
       const sort: PartnerSort = { sortBy: 'tier', sortOrder: 'desc' };
       const pagination: PartnerPagination = { page: 0, size: 20 };
 
@@ -150,11 +151,18 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
     it('should use correct query key with filters, sort, and pagination', async () => {
       const mockResponse: PartnerListResponse = {
         data: [],
-        metadata: { page: 0, size: 20, totalItems: 0, totalPages: 0 },
+        metadata: {
+          page: 0,
+          limit: 20,
+          totalItems: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
       };
       vi.mocked(partnerApi.listPartners).mockResolvedValue(mockResponse);
 
-      const filters: PartnerFilters = { tier: 'platinum', status: 'active' };
+      const filters: PartnerFilters = { tier: 'PLATINUM', status: 'active' };
       const sort: PartnerSort = { sortBy: 'tier', sortOrder: 'desc' };
       const pagination: PartnerPagination = { page: 1, size: 50 };
 
@@ -176,7 +184,14 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
       // The actual staleTime validation happens in the implementation
       const mockResponse: PartnerListResponse = {
         data: [],
-        metadata: { page: 0, size: 20, totalItems: 0, totalPages: 0 },
+        metadata: {
+          page: 0,
+          limit: 20,
+          totalItems: 0,
+          totalPages: 0,
+          hasNext: false,
+          hasPrev: false,
+        },
       };
       vi.mocked(partnerApi.listPartners).mockResolvedValue(mockResponse);
 
@@ -201,35 +216,47 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
       const mockResponse1: PartnerListResponse = {
         data: [
           {
-            id: '1',
             companyName: 'Company1',
-            partnershipLevel: 'gold',
+            partnershipLevel: 'GOLD',
             partnershipStartDate: '2024-01-01',
             isActive: true,
           },
         ],
-        metadata: { page: 0, size: 20, totalItems: 1, totalPages: 1 },
+        metadata: {
+          page: 0,
+          limit: 20,
+          totalItems: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        },
       };
 
       const mockResponse2: PartnerListResponse = {
         data: [
           {
-            id: '2',
             companyName: 'Company2',
-            partnershipLevel: 'silver',
+            partnershipLevel: 'SILVER',
             partnershipStartDate: '2024-01-01',
             isActive: true,
           },
         ],
-        metadata: { page: 0, size: 20, totalItems: 1, totalPages: 1 },
+        metadata: {
+          page: 0,
+          limit: 20,
+          totalItems: 1,
+          totalPages: 1,
+          hasNext: false,
+          hasPrev: false,
+        },
       };
 
       vi.mocked(partnerApi.listPartners)
         .mockResolvedValueOnce(mockResponse1)
         .mockResolvedValueOnce(mockResponse2);
 
-      const filters1: PartnerFilters = { tier: 'gold', status: 'all' };
-      const filters2: PartnerFilters = { tier: 'silver', status: 'all' };
+      const filters1: PartnerFilters = { tier: 'GOLD', status: 'all' };
+      const filters2: PartnerFilters = { tier: 'SILVER', status: 'all' };
       const sort: PartnerSort = { sortBy: 'name', sortOrder: 'asc' };
       const pagination: PartnerPagination = { page: 0, size: 20 };
 
@@ -261,12 +288,12 @@ describe('Partner React Query Hooks (RED Phase - Task 2a)', () => {
     const mockStatistics: PartnerStatistics = {
       totalPartners: 25,
       activePartners: 20,
-      tierDistribution: {
-        strategic: 2,
-        platinum: 3,
-        gold: 5,
-        silver: 8,
-        bronze: 7,
+      tierCounts: {
+        STRATEGIC: 2,
+        PLATINUM: 3,
+        GOLD: 5,
+        SILVER: 8,
+        BRONZE: 7,
       },
     };
 

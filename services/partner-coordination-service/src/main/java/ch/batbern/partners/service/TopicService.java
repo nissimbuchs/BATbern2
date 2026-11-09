@@ -89,7 +89,9 @@ public class TopicService {
                 .status(TopicStatus.PROPOSED)
                 .build();
 
-        TopicSuggestion saved = topicRepository.save(suggestion);
+        // Flush so that Hibernate fills the @CreationTimestamp before the DTO is built: createdAt is
+        // generated at insert, and partners-api requires it in the 201.
+        TopicSuggestion saved = topicRepository.saveAndFlush(suggestion);
         log.info("Topic suggested: id={} company={} title={} suggestedBy={}",
                 saved.getId(), companyName, request.getTitle(), username);
         return toDTO(saved, 0L, 0L);
@@ -117,7 +119,8 @@ public class TopicService {
                 .source(TopicSource.COMMUNITY)
                 .build();
 
-        TopicSuggestion saved = topicRepository.save(suggestion);
+        // Flush for the same reason as in suggestTopic: createdAt is filled at insert.
+        TopicSuggestion saved = topicRepository.saveAndFlush(suggestion);
         log.info("Community topic suggested: id={} title={} suggestedBy={}",
                 saved.getId(), request.getTitle(), username);
         return toDTO(saved, 0L, 0L);

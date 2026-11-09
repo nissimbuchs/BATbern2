@@ -70,7 +70,11 @@ const UserDetailModal: React.FC<UserDetailModalProps> = ({ user, open, onClose, 
           {/* Profile Section */}
           <Grid size={12}>
             <Box display="flex" alignItems="center" gap={2}>
-              <Avatar src={user.profilePictureUrl} alt={fullName} sx={{ width: 80, height: 80 }}>
+              <Avatar
+                src={user.profilePictureUrl ?? undefined}
+                alt={fullName}
+                sx={{ width: 80, height: 80 }}
+              >
                 {user.firstName[0]}
                 {user.lastName[0]}
               </Avatar>

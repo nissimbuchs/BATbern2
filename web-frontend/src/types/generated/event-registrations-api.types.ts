@@ -238,14 +238,7 @@ export interface paths {
       path?: never;
       cookie?: never;
     };
-    /**
-     * Get registration by confirmation code
-     * @description Retrieve registration details by confirmation code.
-     *
-     *     **Story**: 4.1.6 - Registration Confirmation
-     *     **Security**: Public endpoint - confirmation code acts as access token
-     */
-    get: operations['getRegistration'];
+    get?: never;
     put?: never;
     post?: never;
     /**
@@ -538,24 +531,25 @@ export interface components {
        * @description Unique registration code (public identifier). Present when registered=true.
        * @example BATbern142-reg-ABC123
        */
-      registrationCode?: string;
+      registrationCode?: string | null;
       /**
        * @description Event code this registration belongs to. Present when registered=true.
        * @example BATbern142
        */
-      eventCode?: string;
+      eventCode?: string | null;
       /**
        * @description Registration status (uppercase). Present when registered=true.
        * @example CONFIRMED
-       * @enum {string}
+       * @enum {string|null}
        */
-      status?: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW';
+      status?:
+        'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW' | null;
       /**
        * Format: date-time
        * @description ISO-8601 timestamp when registration was created. Present when registered=true.
        * @example 2025-11-01T10:30:00Z
        */
-      registrationDate?: string;
+      registrationDate?: string | null;
       /**
        * @description Story 10.11 (AC13): Position on the waitlist (1-based). Null when status is not WAITLIST.
        *     Backward-compatible addition — null for non-waitlist registrations.
@@ -576,7 +570,7 @@ export interface components {
       emails: string[];
     };
     /**
-     * @description A registration as EMS returns it (`RegistrationResponse`): the registration, its event, and the attendee from user_profiles (ADR-004, ADR-006). The organizer endpoints return it in full; the public lookup (`getRegistration`) returns it with `attendeeEmail` masked, which is why that field has no e-mail format.
+     * @description A registration as EMS returns it (`RegistrationResponse`): the registration, its event, and the attendee from user_profiles (ADR-004, ADR-006). No endpoint returns it to an anonymous caller (the public lookup by code was removed 2026-11-09).
      *     Anonymous users are in user_profiles too (cognito_user_id = NULL).
      */
     Registration: {
@@ -591,11 +585,11 @@ export interface components {
        * @example BATbern25
        */
       eventCode: string;
-      /** @description Event title. Set by the single lookup (`getRegistration`); null in lists. */
+      /** @description Event title. Set by `listUserRegistrations`; null elsewhere. */
       eventTitle?: string | null;
       /**
        * Format: date-time
-       * @description Event date. Set by the single lookup (`getRegistration`); null in lists.
+       * @description Event date. Set by `listUserRegistrations`; null elsewhere.
        */
       eventDate?: string | null;
       /**
@@ -628,6 +622,25 @@ export interface components {
       createdAt?: string | null;
       /** Format: date-time */
       updatedAt?: string | null;
+    };
+    /**
+     * @description **Story 4.1.5c**: Minimal response with no sensitive data.
+     *     Confirmation token sent via email (not in response).
+     *     User must click email link to confirm registration.
+     */
+    CreateRegistrationResponse: {
+      /** @example Registration successful. Please check your email to confirm. */
+      message: string;
+      /**
+       * Format: email
+       * @example john.doe@example.com
+       */
+      email: string;
+      /**
+       * @description True when the attendee was an existing user and the company they entered differed from the one on file, so their profile company was refreshed. The UI shows a notice when true.
+       * @example false
+       */
+      companyUpdated?: boolean;
     };
     /**
      * @description Story 4.1.5a: Event registration request (ADR-006)
@@ -1063,26 +1076,25 @@ export interface operations {
       };
     };
     responses: {
+      /**
+       * @description The attendee is already on the waitlist (Story 10.11): nothing is created, the waitlist
+       *     confirmation mail is sent again.
+       */
+      200: {
+        headers: {
+          [name: string]: unknown;
+        };
+        content: {
+          'application/json': components['schemas']['CreateRegistrationResponse'];
+        };
+      };
       /** @description Registration created successfully - confirmation email sent */
       201: {
         headers: {
           [name: string]: unknown;
         };
         content: {
-          'application/json': {
-            /** @example Registration successful. Please check your email to confirm. */
-            message: string;
-            /**
-             * Format: email
-             * @example john.doe@example.com
-             */
-            email: string;
-            /**
-             * @description True when the attendee was an existing user and the company they entered differed from the one on file, so their profile company was refreshed. The UI shows a notice when true.
-             * @example false
-             */
-            companyUpdated?: boolean;
-          };
+          'application/json': components['schemas']['CreateRegistrationResponse'];
         };
       };
       /** @description Invalid request (validation errors) */
@@ -1337,43 +1349,6 @@ export interface operations {
         content: {
           'application/json': components['schemas']['ErrorResponse'];
         };
-      };
-      500: components['responses']['InternalServerError'];
-    };
-  };
-  getRegistration: {
-    parameters: {
-      query?: never;
-      header?: never;
-      path: {
-        /** @description Event code in format BATbernXXX */
-        eventCode: string;
-        /**
-         * @description Registration code: `{eventCode}-reg-{6 of A-Z0-9}` for every code EMS creates
-         *     (e.g. `BATbern142-reg-A3X9K2`). Older stored codes: `{eventCode}-reg-{8 hex}` (V4
-         *     backfill) and `BAT{n}-EXIST-{n}` / `BAT{n}-NEW-{n}` (2026-03 data load).
-         */
-        registrationCode: string;
-      };
-      cookie?: never;
-    };
-    requestBody?: never;
-    responses: {
-      /** @description Registration found */
-      200: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content: {
-          'application/json': components['schemas']['Registration'];
-        };
-      };
-      /** @description Registration not found (invalid confirmation code) */
-      404: {
-        headers: {
-          [name: string]: unknown;
-        };
-        content?: never;
       };
       500: components['responses']['InternalServerError'];
     };

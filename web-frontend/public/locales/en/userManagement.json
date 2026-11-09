@@ -44,7 +44,8 @@
     "userDetail": {
       "title": "User Details",
       "createdAt": "Created At",
-      "updatedAt": "Last Updated"
+      "updatedAt": "Last Updated",
+      "bio": "Bio"
     },
     "createUser": {
       "title": "Create New User",
@@ -54,7 +55,9 @@
       "company": "Company (optional)",
       "roles": "Roles",
       "selectRoles": "Select at least one role",
-      "creating": "Creating..."
+      "creating": "Creating...",
+      "bio": "Bio",
+      "bioHelper": "Max 5000 characters"
     },
     "editRoles": {
       "title": "Edit Roles",
@@ -70,7 +73,11 @@
     },
     "editUser": {
       "uploadPhotoAria": "Upload profile photo",
-      "removePhotoAria": "Remove profile photo"
+      "removePhotoAria": "Remove profile photo",
+      "title": "Edit User",
+      "uploadPhoto": "Upload Photo",
+      "removePhoto": "Remove Photo",
+      "saving": "Saving..."
     }
   },
   "pagination": {
@@ -93,7 +100,8 @@
     "createFailed": "Failed to create user",
     "updateFailed": "Failed to update user",
     "deleteFailed": "Failed to delete user",
-    "notFound": "User not found"
+    "notFound": "User not found",
+    "bioTooLong": "Bio must be less than {{max}} characters"
   },
   "batchImport": {
     "title": "Batch Import Speakers",

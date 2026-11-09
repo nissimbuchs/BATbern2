@@ -44,7 +44,8 @@
     "userDetail": {
       "title": "Détails de l'utilisateur",
       "createdAt": "Créé le",
-      "updatedAt": "Dernière mise à jour"
+      "updatedAt": "Dernière mise à jour",
+      "bio": "Biographie"
     },
     "createUser": {
       "title": "Créer un nouvel utilisateur",
@@ -54,7 +55,9 @@
       "company": "Entreprise (optionnel)",
       "roles": "Rôles",
       "selectRoles": "Sélectionnez au moins un rôle",
-      "creating": "Création en cours..."
+      "creating": "Création en cours...",
+      "bio": "Biographie",
+      "bioHelper": "5000 caractères au maximum"
     },
     "editRoles": {
       "title": "Modifier les rôles",
@@ -70,7 +73,11 @@
     },
     "editUser": {
       "uploadPhotoAria": "Télécharger la photo de profil",
-      "removePhotoAria": "Supprimer la photo de profil"
+      "removePhotoAria": "Supprimer la photo de profil",
+      "title": "Modifier l'utilisateur",
+      "uploadPhoto": "Téléverser une photo",
+      "removePhoto": "Supprimer la photo",
+      "saving": "Enregistrement..."
     }
   },
   "pagination": {
@@ -93,7 +100,8 @@
     "createFailed": "Échec de la création de l'utilisateur",
     "updateFailed": "Échec de la mise à jour de l'utilisateur",
     "deleteFailed": "Échec de la suppression de l'utilisateur",
-    "notFound": "Utilisateur introuvable"
+    "notFound": "Utilisateur introuvable",
+    "bioTooLong": "La biographie doit comporter moins de {{max}} caractères"
   },
   "batchImport": {
     "title": "Importation groupée d'intervenants",

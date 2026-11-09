@@ -44,7 +44,8 @@
     "userDetail": {
       "title": "ユーザー詳細",
       "createdAt": "作成日時",
-      "updatedAt": "最終更新日時"
+      "updatedAt": "最終更新日時",
+      "bio": "自己紹介"
     },
     "createUser": {
       "title": "新しいユーザーを作成",
@@ -54,7 +55,9 @@
       "company": "会社（任意）",
       "roles": "役割",
       "selectRoles": "少なくとも1つの役割を選択してください",
-      "creating": "作成中..."
+      "creating": "作成中...",
+      "bio": "自己紹介",
+      "bioHelper": "最大5000文字"
     },
     "editRoles": {
       "title": "役割を編集",
@@ -70,7 +73,11 @@
     },
     "editUser": {
       "uploadPhotoAria": "プロフィール写真をアップロード",
-      "removePhotoAria": "プロフィール写真を削除"
+      "removePhotoAria": "プロフィール写真を削除",
+      "title": "ユーザーを編集",
+      "uploadPhoto": "写真をアップロード",
+      "removePhoto": "写真を削除",
+      "saving": "保存中..."
     }
   },
   "pagination": {
@@ -93,7 +100,8 @@
     "createFailed": "ユーザーの作成に失敗しました",
     "updateFailed": "ユーザーの更新に失敗しました",
     "deleteFailed": "ユーザーの削除に失敗しました",
-    "notFound": "ユーザーが見つかりません"
+    "notFound": "ユーザーが見つかりません",
+    "bioTooLong": "自己紹介は{{max}}文字未満にしてください"
   },
   "batchImport": {
     "title": "スピーカーの一括インポート",

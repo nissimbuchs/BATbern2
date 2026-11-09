@@ -397,7 +397,10 @@ describe('AuthService', () => {
       mockAuth.signUp.mockResolvedValue({
         isSignUpComplete: false,
         userId: 'withcompany-id',
-        nextStep: { signUpStep: 'CONFIRM_SIGN_UP' },
+        nextStep: {
+          signUpStep: 'CONFIRM_SIGN_UP',
+          codeDeliveryDetails: { deliveryMedium: 'EMAIL', destination: 'w***@c***.com' },
+        },
       });
 
       await authService.signUp(signUpData);
@@ -571,7 +574,7 @@ describe('AuthService', () => {
       // preferences NOT read from the token claim — extraction returns the COMPLETE
       // default object (language 'en', theme 'light'), NOT the token's 'fr'/'dark'.
       // Asserting the default value (rather than undefined) proves the token claim was
-      // not sourced AND that the UserPreferences type contract holds before hydration.
+      // not sourced AND that the UserContextPreferences type contract holds before hydration.
       expect(user?.preferences?.language).toBe('en');
       expect(user?.preferences?.theme).toBe('light');
       // identity + authorization preserved
@@ -738,7 +741,7 @@ describe('AuthService', () => {
     it('should_returnError_when_noTokenAvailable', async () => {
       // Test line 288: no token case
       const mockSession = {
-        tokens: null,
+        tokens: undefined,
       };
 
       mockAuth.fetchAuthSession.mockResolvedValue(mockSession);

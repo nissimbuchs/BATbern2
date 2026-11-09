@@ -25,7 +25,7 @@ interface EventCardProps {
   viewMode: 'grid' | 'list';
   linkPrefix?: string;
   /** Optional registration status for this event (Story 10.10, AC5) */
-  myRegistrationStatus?: RegistrationStatus;
+  myRegistrationStatus?: RegistrationStatus | null;
   /**
    * Story 7.2 "I Could Speak on That": show the attendee speaker self-nomination button on
    * upcoming-event cards. The button is login-gated internally; the card additionally only

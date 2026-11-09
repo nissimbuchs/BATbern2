@@ -35,10 +35,10 @@ import { Add as AddIcon, Visibility as ViewIcon, Delete as DeleteIcon } from '@m
 import { useTranslation } from 'react-i18next';
 import { useNavigate } from 'react-router-dom';
 import { useBreakpoints } from '@/hooks/useBreakpoints';
-import type { Topic } from '@/types/event.types';
+import type { TopicListItem } from '@/types/event.types';
 
 export interface TopicsListProps {
-  topics?: Topic[];
+  topics?: TopicListItem[];
   eventCode: string;
   onRemoveTopic: (eventCode: string, topicId: string) => void;
   onViewTopic: (topicId: string) => void;
@@ -83,7 +83,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
     navigate(`/organizer/topics?eventCode=${eventCode}`);
   };
 
-  const formatLastUsed = (topic: Topic): string => {
+  const formatLastUsed = (topic: TopicListItem): string => {
     if (!topic.lastUsedEvent || !topic.lastUsedDate) {
       return t('topics.neverUsed', 'Never');
     }
@@ -118,7 +118,7 @@ export const TopicsList: React.FC<TopicsListProps> = ({
         <Alert severity="error" sx={{ mb: 2 }}>
           {error.message || t('topics.loadError', 'Failed to load topics')}
           <Button size="small" sx={{ ml: 2 }} onClick={() => window.location.reload()}>
-            {t('common.retry', 'Retry')}
+            {t('common:actions.retry', 'Retry')}
           </Button>
         </Alert>
       </Box>

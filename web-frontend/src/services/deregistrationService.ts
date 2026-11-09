@@ -5,23 +5,11 @@
  */
 
 import apiClient from '@/services/api/apiClient';
+import type { components } from '@/types/generated/event-registrations-api.types';
 
-export interface DeregistrationVerifyResponse {
-  registrationCode: string;
-  eventCode: string;
-  eventTitle: string;
-  eventDate: string;
-  attendeeFirstName: string;
-}
-
-export interface DeregistrationRequest {
-  token: string;
-}
-
-export interface DeregistrationByEmailRequest {
-  email: string;
-  eventCode: string;
-}
+export type DeregistrationVerifyResponse = components['schemas']['DeregistrationVerifyResponse'];
+export type DeregistrationRequest = components['schemas']['DeregistrationRequest'];
+export type DeregistrationByEmailRequest = components['schemas']['DeregistrationByEmailRequest'];
 
 /** Verify a deregistration token — returns registration details if valid. Throws 404 if invalid or already cancelled. */
 export async function verifyDeregistrationToken(

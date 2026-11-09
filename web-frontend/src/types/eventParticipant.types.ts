@@ -5,6 +5,8 @@
  * can view and manage event registrations.
  */
 
+import type { components } from '@/types/generated/event-registrations-api.types';
+
 /**
  * Registration status values
  */
@@ -63,14 +65,7 @@ export interface ParticipantPagination {
 /**
  * Pagination metadata from backend
  */
-export interface PaginationMetadata {
-  page: number; // 1-indexed
-  limit: number;
-  totalItems: number;
-  totalPages: number;
-  hasNext: boolean;
-  hasPrev: boolean;
-}
+export type PaginationMetadata = components['schemas']['PaginationMetadata'];
 
 /**
  * API response for event registrations endpoint (paginated)

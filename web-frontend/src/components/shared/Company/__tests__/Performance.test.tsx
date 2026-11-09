@@ -12,7 +12,7 @@ import { CompanyCard } from '../CompanyCard';
 import { BaseLayout } from '@/components/shared/Layout/BaseLayout';
 import type { components } from '@/types/generated/company-api.types';
 
-type CompanyListItem = components['schemas']['CompanyListItem'];
+type CompanyListItem = components['schemas']['CompanyResponse'];
 
 // Mock useAuth hook for BaseLayout
 vi.mock('@/hooks/useAuth', () => ({
@@ -91,8 +91,7 @@ describe('Performance Tests (AC 10)', () => {
         name: 'google',
         displayName: 'Google LLC',
         logo: { url: 'https://example.com/logo.png' },
-        sector: 'Private',
-        location: { city: 'Zurich', canton: 'ZH', country: 'Switzerland' },
+        isVerified: true,
         createdAt: '2025-01-01T00:00:00Z',
         updatedAt: '2025-01-01T00:00:00Z',
       };

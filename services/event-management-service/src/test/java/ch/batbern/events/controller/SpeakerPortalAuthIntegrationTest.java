@@ -2,6 +2,8 @@ package ch.batbern.events.controller;
 
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.not;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -217,6 +219,32 @@ class SpeakerPortalAuthIntegrationTest extends AbstractIntegrationTest {
     }
 
     // ---------- 200 path (speaker own event) ----------
+
+    /**
+     * The respond result carries what it fills and nothing else: eventDate, sessionTitle,
+     * dashboardUrl and errorMessage were declared but never set, so always null (removed
+     * 2026-11-09, owner decision).
+     */
+    @Test
+    @WithMockUser(username = SPEAKER_USERNAME, roles = {"SPEAKER"})
+    @DisplayName("should_answerOnlyFilledFields_when_speakerAcceptsOwnInvitation")
+    void shouldAnswerOnlyFilledFields_whenSpeakerAcceptsOwnInvitation() throws Exception {
+        SpeakerResponseRequest body = SpeakerResponseRequest.builder()
+                .response(SpeakerResponseType.ACCEPT)
+                .build();
+
+        mockMvc.perform(post("/api/v1/speaker-portal/events/" + EVENT_CODE + "/respond")
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(body)))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.success").value(true))
+                .andExpect(jsonPath("$.speakerName").value("Alice Speaker"))
+                .andExpect(jsonPath("$.eventName").value("Auth Matrix Event"))
+                .andExpect(jsonPath("$", not(hasKey("eventDate"))))
+                .andExpect(jsonPath("$", not(hasKey("sessionTitle"))))
+                .andExpect(jsonPath("$", not(hasKey("dashboardUrl"))))
+                .andExpect(jsonPath("$", not(hasKey("errorMessage"))));
+    }
 
     @Test
     @WithMockUser(username = SPEAKER_USERNAME, roles = {"SPEAKER"})

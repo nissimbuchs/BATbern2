@@ -1507,13 +1507,9 @@ paths:
                     success: true
                     speakerName: Anna Muster
                     eventName: Sample name
-                    eventDate: sample
-                    sessionTitle: Sample title
                     nextSteps:
                       - sample
                     contentDeadline: "2026-05-14"
-                    dashboardUrl: https://www.batbern.ch/
-                    errorMessage: Sample text for the API example.
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2097,6 +2093,7 @@ components:
           description: Organizer who made the change
           example: john.doe
         changeReason:
+          nullable: true
           type: string
           description: Reason for the change
         changedAt:
@@ -2127,13 +2124,19 @@ components:
           description: 'STATUS_CHANGE = speaker_status_history row; CONTENT_REJECTED = a
             content-rejection event (not a state transition, surfaced for the History tab).'
         previousStatus:
-          $ref: '#/components/schemas/SpeakerWorkflowState'
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/SpeakerWorkflowState'
         newStatus:
-          $ref: '#/components/schemas/SpeakerWorkflowState'
+          nullable: true
+          allOf:
+          - $ref: '#/components/schemas/SpeakerWorkflowState'
         changedByUsername:
+          nullable: true
           type: string
           example: john.doe
         changeReason:
+          nullable: true
           type: string
         changedAt:
           type: string
@@ -2222,19 +2225,24 @@ components:
           type: string
           format: uuid
         sessionId:
+          nullable: true
           type: string
           format: uuid
         presentationTitle:
+          nullable: true
           type: string
         presentationAbstract:
+          nullable: true
           type: string
         username:
+          nullable: true
           type: string
           example: john.doe
         speakerName:
           type: string
           example: John Doe
         company:
+          nullable: true
           type: string
         status:
           $ref: '#/components/schemas/SpeakerWorkflowState'
@@ -2242,18 +2250,23 @@ components:
           type: boolean
           description: False if the session was deleted (AC34).
         warning:
+          nullable: true
           type: string
           description: Warning message if issues detected (AC34).
         submittedAt:
+          nullable: true
           type: string
           format: date-time
         hasMaterial:
+          nullable: true
           type: boolean
         materialUrl:
+          nullable: true
           type: string
           description: Material download URL (CloudFront CDN).
           example: https://cdn.batbern.ch/materials/presentation.pdf
         materialFileName:
+          nullable: true
           type: string
           example: zero-trust-presentation.pdf
     ReviewAction:
@@ -2805,6 +2818,7 @@ components:
         speakerName:
           type: string
         profilePictureUrl:
+          nullable: true
           type: string
         profileCompleteness:
           type: integer
@@ -2842,20 +2856,28 @@ components:
         hasMaterial:
           type: boolean
         materialFileName:
+          nullable: true
           type: string
         responseDeadline:
+          nullable: true
           type: string
         contentDeadline:
+          nullable: true
           type: string
         reviewerFeedback:
+          nullable: true
           type: string
         organizerName:
+          nullable: true
           type: string
         organizerEmail:
+          nullable: true
           type: string
         respondUrl:
+          nullable: true
           type: string
         contentUrl:
+          nullable: true
           type: string
     DashboardPastEventDto:
       type: object
@@ -2872,6 +2894,7 @@ components:
         hasMaterial:
           type: boolean
         materialFileName:
+          nullable: true
           type: string
     SpeakerResponseType:
       type: string
@@ -2926,24 +2949,16 @@ components:
           type: string
         eventName:
           type: string
-        eventDate:
-          type: string
-          description: Formatted event date (e.g. "20. November 2025")
-        sessionTitle:
-          type: string
         nextSteps:
           type: array
           items:
             type: string
           description: Next steps for the speaker after responding
         contentDeadline:
+          nullable: true
           type: string
           format: date
           description: Content submission deadline (if accepted)
-        dashboardUrl:
-          type: string
-        errorMessage:
-          type: string
     SpeakerContentInfo:
       type: object
       description: The speaker portal's content-submission state for one event (Story 6.3)
@@ -2957,34 +2972,44 @@ components:
         hasSessionAssigned:
           type: boolean
         sessionTitle:
+          nullable: true
           type: string
         canSubmitContent:
           type: boolean
         hasDraft:
           type: boolean
         draftTitle:
+          nullable: true
           type: string
         draftAbstract:
+          nullable: true
           type: string
         draftVersion:
+          nullable: true
           type: integer
         lastSavedAt:
+          nullable: true
           type: string
           format: date-time
         needsRevision:
           type: boolean
         reviewerFeedback:
+          nullable: true
           type: string
         reviewedAt:
+          nullable: true
           type: string
           format: date-time
         reviewedBy:
+          nullable: true
           type: string
         hasMaterial:
           type: boolean
         materialUrl:
+          nullable: true
           type: string
         materialFileName:
+          nullable: true
           type: string
     ContentSubmitRequest:
       type: object

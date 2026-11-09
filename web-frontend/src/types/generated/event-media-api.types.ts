@@ -162,8 +162,8 @@ export interface components {
       id: string;
       eventCode: string;
       displayUrl: string;
-      filename?: string;
-      uploadedBy?: string;
+      filename?: string | null;
+      uploadedBy?: string | null;
       /** Format: date-time */
       uploadedAt: string;
       sortOrder?: number;

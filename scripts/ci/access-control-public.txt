@@ -40,7 +40,6 @@ POST   /events/{eventCode}/thanks                # anonymous thank-you; Turnstil
 
 # --- Registration without an account (ADR-005) -------------------------------------------------
 POST   /events/{eventCode}/registrations         # registration wizard; Turnstile-protected
-GET    /events/{eventCode}/registrations/{registrationCode}  # confirmation page; code is the secret, email masked
 POST   /events/{eventCode}/registrations/confirm # confirmation link; signed token
 GET    /registrations/deregister/verify          # deregistration link; signed token
 POST   /registrations/deregister                 # deregistration link; signed token

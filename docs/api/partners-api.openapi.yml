@@ -377,8 +377,6 @@ paths:
         side of the house, distinct from attendance `Partner Analytics`:
         - Total / active partner counts
         - Partners by tier breakdown
-        - Recently added partners (last 30 days)
-        - Expiring partnerships (next 90 days)
 
         For per-event *attendance* metrics of a single partner, see
         `GET /partners/{companyName}/analytics/dashboard` (Partner Analytics).
@@ -1111,15 +1109,19 @@ components:
           type: string
           format: date
         partnershipEndDate:
+          nullable: true
           type: string
           format: date
           description: In the list, organizers only (omitted for other callers, GHSA-qhqv).
         isActive:
           type: boolean
         company:
-          $ref: '#/components/schemas/CompanyInfo'
+          oneOf:
+            - $ref: '#/components/schemas/CompanyInfo'
+            - type: 'null'
           description: Enriched via HTTP call (when include=company)
         contacts:
+          nullable: true
           type: array
           items:
             $ref: '#/components/schemas/PartnerContactResponse'
@@ -1179,15 +1181,19 @@ components:
           type: string
           description: Meaningful ID per ADR-003
         email:
+          nullable: true
           type: string
           description: From User Service
         firstName:
+          nullable: true
           type: string
           description: From User Service
         lastName:
+          nullable: true
           type: string
           description: From User Service
         profilePictureUrl:
+          nullable: true
           type: string
           description: From User Service
 
@@ -1210,18 +1216,19 @@ components:
           type: string
           description: Same as companyName (backwards compatibility)
         displayName:
+          nullable: true
           type: string
         logoUrl:
+          nullable: true
           type: string
         industry:
+          nullable: true
           type: string
           description: Industry sector
         website:
+          nullable: true
           type: string
           description: Company website URL
-        location:
-          type: string
-          description: Company headquarters location
 
     PartnerStatistics:
       type: object
@@ -1250,32 +1257,6 @@ components:
               type: integer
             STRATEGIC:
               type: integer
-        recentPartners:
-          type: array
-          description: Recently added partners (last 30 days)
-          items:
-            type: object
-            properties:
-              companyName:
-                type: string
-              partnershipLevel:
-                $ref: '#/components/schemas/PartnershipLevel'
-              partnershipStartDate:
-                type: string
-                format: date
-        expiringPartnerships:
-          type: array
-          description: Partnerships expiring in next 90 days
-          items:
-            type: object
-            properties:
-              companyName:
-                type: string
-              partnershipLevel:
-                $ref: '#/components/schemas/PartnershipLevel'
-              partnershipEndDate:
-                type: string
-                format: date
 
     PartnerNoteDTO:
       type: object
@@ -1412,6 +1393,7 @@ components:
           nullable: true
           description: Event code when topic is selected (e.g. BATbern58)
         createdAt:
+          nullable: true
           type: string
           format: date-time
         source:

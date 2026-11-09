@@ -38,7 +38,9 @@
     },
     "mail": "Mail",
     "mailOpenCount_one": "{{count}} open gesprek",
-    "mailOpenCount_other": "{{count}} open gesprekken"
+    "mailOpenCount_other": "{{count}} open gesprekken",
+    "mySessions": "Mijn sessies",
+    "myProfile": "Mijn profiel"
   },
   "public": {
     "login": "Inloggen",
@@ -597,7 +599,8 @@
     "photos": {
       "viewPhoto": "Foto bekijken"
     },
-    "eventsProgress": "{{shown}} van {{total}} evenementen"
+    "eventsProgress": "{{shown}} van {{total}} evenementen",
+    "scrollForMore": "Scroll voor meer evenementen"
   },
   "notifications": {
     "title": "Meldingen",
@@ -656,14 +659,16 @@
       "htmlBodyRequired": "HTML-tekst is verplicht.",
       "subjectRequired": "Onderwerp is verplicht voor inhoudssjablonen.",
       "templateNameRequired": "De naam van het sjabloon is verplicht.",
-      "templateNameInvalid": "Voer ten minste één letter of cijfer in."
+      "templateNameInvalid": "Voer ten minste één letter of cijfer in.",
+      "duplicateKey": "Er bestaat al een sjabloon met deze sleutel voor deze taal. Kies een andere sleutel."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Naam van het sjabloon",
     "templateNameHelp": "Bijvoorbeeld: Zaalwissel",
-    "keyPreview": "Opgeslagen als"
+    "keyPreview": "Opgeslagen als",
+    "loadFailed": "Sjablonen laden mislukt."
   },
   "presentation": {
     "errorTitle": "Evenement kon niet worden geladen",
@@ -725,7 +730,13 @@
       "noDefaults": "Geen standaardsjablonen.",
       "noCustom": "Nog geen aangepaste sjablonen.",
       "confirmDelete": "Sjabloon verwijderen?",
-      "deleteFailed": "Verwijderen van sjabloon mislukt. Probeer het opnieuw."
+      "deleteFailed": "Verwijderen van sjabloon mislukt. Probeer het opnieuw.",
+      "loadFailed": "Sjablonen laden mislukt.",
+      "editTitle": "Taaksjabloon bewerken",
+      "name": "Naam",
+      "triggerState": "Activerende status",
+      "dueDateType": "Type vervaldatum",
+      "dueDateOffsetDays": "Verschuiving in dagen"
     },
     "aiPrompts": {
       "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",
@@ -764,7 +775,9 @@
     "sessions": "Sessies",
     "topics": "Onderwerpen",
     "firstName": "Voornaam",
-    "lastName": "Achternaam"
+    "lastName": "Achternaam",
+    "unknown": "onbekend",
+    "user": "Gebruiker"
   },
   "filters": {
     "status": {
@@ -797,7 +810,8 @@
     "unexpectedError": "Onze excuses. Er is een onverwachte fout opgetreden.",
     "devDetails": "Foutdetails (alleen voor ontwikkelaars):",
     "refreshPage": "Pagina vernieuwen",
-    "goHome": "Naar startpagina"
+    "goHome": "Naar startpagina",
+    "loadFailed": "Gegevens laden mislukt."
   },
   "bootstrap": {
     "loading": "BATbern laden...",
@@ -891,5 +905,13 @@
       "errorNoCompany": "Sla eerst een bedrijf op in je profiel.",
       "errorGeneric": "De aanvraag kon niet worden verstuurd. Probeer het opnieuw."
     }
+  },
+  "autocomplete": {
+    "typeMore": "Typ minstens 2 tekens",
+    "companiesLoadFailed": "Fout bij het laden van bedrijven",
+    "noCompanies": "Geen bedrijven gevonden",
+    "usersLoadFailed": "Fout bij het laden van gebruikers",
+    "noUsers": "Geen gebruikers gevonden",
+    "noUsersWithRole": "Geen gebruikers gevonden met rol {{role}}"
   }
 }

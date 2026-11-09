@@ -201,8 +201,8 @@ export default function ContentSubmissionPage() {
 
     // Initialize material state
     if (contentInfo.hasMaterial) {
-      setMaterialUrl(contentInfo.materialUrl);
-      setMaterialFileName(contentInfo.materialFileName);
+      setMaterialUrl(contentInfo.materialUrl ?? null);
+      setMaterialFileName(contentInfo.materialFileName ?? null);
     }
   }, [contentInfo, eventCode]);
 

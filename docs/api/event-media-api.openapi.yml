@@ -342,8 +342,10 @@ components:
         displayUrl:
           type: string
         filename:
+          nullable: true
           type: string
         uploadedBy:
+          nullable: true
           type: string
         uploadedAt:
           type: string

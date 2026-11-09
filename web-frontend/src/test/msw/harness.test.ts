@@ -185,9 +185,11 @@ describe('tsconfig.test-harness.json', () => {
   }
 
   it('type-checks every file that uses the harness API (typed overrides only count when checked)', () => {
-    const include: string[] = JSON.parse(
+    // All of src is type-checked, minus a shrinking list of tests that do not compile yet
+    // (scripts/check-test-typecheck.ts); a harness user may not be on that list.
+    const config: { include: string[]; exclude: string[] } = JSON.parse(
       readFileSync(join(root, 'tsconfig.test-harness.json'), 'utf8')
-    ).include;
+    );
     const users = sourceFiles(join(root, 'src'))
       .map((f) => relative(root, f).split('\\').join('/'))
       .filter((f) => !f.startsWith('src/test/msw/'))
@@ -196,7 +198,7 @@ describe('tsconfig.test-harness.json', () => {
       );
 
     expect(users.length).toBeGreaterThan(5); // positive control: the scan finds the users
-    expect(users.filter((f) => !include.includes(f))).toEqual([]);
-    expect(include).toContain('src/test/msw/**/*.ts');
+    expect(config.include).toEqual(['src']);
+    expect(users.filter((f) => config.exclude.includes(f))).toEqual([]);
   });
 });

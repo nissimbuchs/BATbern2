@@ -338,19 +338,6 @@ describe('EventApiClient — mocked', () => {
     });
   });
 
-  // ── getRegistration ───────────────────────────────────────────────────────────
-
-  describe('getRegistration', () => {
-    it('should return registration data', async () => {
-      const mockReg = { confirmationCode: 'ABC123', status: 'CONFIRMED' };
-      mockApiClient.get.mockResolvedValue({ data: mockReg });
-
-      const result = await eventApiClient.getRegistration('BATbern142', 'ABC123');
-
-      expect(result.confirmationCode).toBe('ABC123');
-    });
-  });
-
   // ── assignTopicToEvent ────────────────────────────────────────────────────────
 
   describe('assignTopicToEvent', () => {

@@ -3329,10 +3329,13 @@ components:
         lastName:
           type: string
         bio:
+          nullable: true
           type: string
         profilePictureUrl:
+          nullable: true
           type: string
         companyId:
+          nullable: true
           type: string
     UserSyncStatus:
       type: object
@@ -3469,9 +3472,11 @@ components:
           type: string
           example: Doe
         bio:
+          nullable: true
           type: string
           example: Software engineer passionate about cloud architecture
         companyId:
+          nullable: true
           type: string
           description: Company name (unique identifier) - Story 1.16.2
           example: Swiss IT Solutions AG
@@ -3481,6 +3486,7 @@ components:
             type: string
             enum: [ORGANIZER, SPEAKER, PARTNER, ATTENDEE]
         profilePictureUrl:
+          nullable: true
           type: string
           format: uri
           example: https://cdn.batbern.ch/profile-pictures/550e8400.jpg
@@ -3496,6 +3502,7 @@ components:
           format: date-time
           example: 2025-01-15T10:00:00Z
         lastLoginAt:
+          nullable: true
           type: string
           format: date-time
           example: 2025-01-20T14:30:00Z
@@ -3511,11 +3518,17 @@ components:
             (write-once via UpdateUserRequest.termsAccepted).
           example: 2026-06-04T16:00:00Z
         company:
-          $ref: '#/components/schemas/Company'
+          oneOf:
+            - $ref: '#/components/schemas/Company'
+            - type: 'null'
         preferences:
-          $ref: '#/components/schemas/UserPreferences'
+          oneOf:
+            - $ref: '#/components/schemas/UserPreferences'
+            - type: 'null'
         settings:
-          $ref: '#/components/schemas/UserSettings'
+          oneOf:
+            - $ref: '#/components/schemas/UserSettings'
+            - type: 'null'
         additionalEmails:
           type: array
           description: |
@@ -4010,10 +4023,12 @@ components:
           enum: ["live", "daily", "off"]
           default: "live"
         quietHoursStart:
+          nullable: true
           type: string
           pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
           example: '22:00'
         quietHoursEnd:
+          nullable: true
           type: string
           pattern: '^([0-1]?[0-9]|2[0-3]):[0-5][0-9]$'
           example: '07:00'
@@ -4041,6 +4056,7 @@ components:
           type: boolean
           default: false
         timezone:
+          nullable: true
           type: string
           example: Europe/Zurich
         twoFactorEnabled:
@@ -4108,6 +4124,7 @@ components:
         lastName:
           type: string
         companyId:
+          nullable: true
           type: string
           description: Company name (unique identifier) - Story 1.16.2
           example: Swiss IT Solutions AG
@@ -4116,6 +4133,7 @@ components:
           items:
             type: string
         profilePictureUrl:
+          nullable: true
           type: string
           format: uri
 
@@ -4185,6 +4203,7 @@ components:
           description: Required. Lookup key for the existing-user path (case-insensitive).
           example: jane.smith@example.com
         firstName:
+          nullable: true
           type: string
           minLength: 1
           maxLength: 100
@@ -4193,6 +4212,7 @@ components:
             (e.g., `jane.smith@x.com` → firstName=`Jane`, lastName=`Smith`).
           example: Jane
         lastName:
+          nullable: true
           type: string
           minLength: 1
           maxLength: 100
@@ -4269,11 +4289,13 @@ components:
       additionalProperties: false
       properties:
         bio:
+          nullable: true
           type: string
           maxLength: 5000
           description: Updated user biography. Overwrites the global value per ADR-009 §6.7.
           example: "Experienced security architect with 15 years in the industry."
         profilePictureUrl:
+          nullable: true
           type: string
           maxLength: 2048
           description: |
@@ -4350,6 +4372,7 @@ components:
             result. Always false for newly-created users. Lets a registration
             flow tell the attendee their company on file was refreshed.
         cognitoUserId:
+          nullable: true
           type: string
           description: Cognito user ID (only if created)
         user:
@@ -4370,12 +4393,17 @@ components:
           description: Company name (same as id)
           example: Swiss IT Solutions AG
         displayName:
+          nullable: true
           type: string
         industry:
+          nullable: true
           type: string
         website:
+          nullable: true
+          # A plain string, as CompanyResponse.website in companies-api: the same stored value,
+          # which that API never checked as a URI.
           type: string
-          format: uri
+          maxLength: 500
 
     PaginatedUserResponse:
       type: object

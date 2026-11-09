@@ -290,7 +290,8 @@
       "typeNewsletter": "Newsletter",
       "typeReminder": "Erinnerig",
       "previewTitle": "E-Mail-Vorschau",
-      "retryHint": "Dr Versand vom {{date}} het {{count}} Empfänger:inne nid erreicht."
+      "retryHint": "Dr Versand vom {{date}} het {{count}} Empfänger:inne nid erreicht.",
+      "previewPlaceholder": "D Vorschou erschiint da"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -320,7 +321,8 @@
       "confirmBody": "Es wird e richtigi Mail a {{recipients}} gschickt. D Antwortadrässe isch di igstellti Lokau-Koordinatorin.",
       "confirmSend": "Jo, schicke",
       "sentSuccess": "A {{count}} Empfänger gschickt.",
-      "sentFailed": "S Schicke het nid klappt: {{message}}"
+      "sentFailed": "S Schicke het nid klappt: {{message}}",
+      "previewPlaceholder": "D Vorschou erschiint da"
     },
     "registrantNotices": {
       "title": "Teilnähmer-Infos",
@@ -901,7 +903,9 @@
     "slotDurationMinimum": "Slotdauer mues mindestens 15 Minute si",
     "minSlotsLessThanMax": "Mindestslots mues chliiner oder gliich wie Maximalslots si",
     "defaultCapacityPositive": "Standardkapazität mues e positivi Zahl si",
-    "typicalStartTimeRequired": "D Startzyt bruucht's."
+    "typicalStartTimeRequired": "D Startzyt bruucht's.",
+    "registrationDeadlineRequired": "Amäldigsfrist isch Pflicht",
+    "eventTypeRequired": "Veranstautigstyp isch Pflicht"
   },
   "errors": {
     "loadFailed": "Veranstaltigen chöne nid gglade werde",
@@ -919,7 +923,8 @@
     "imageInvalidType": "Ungültige Bildtyp (PNG, JPEG oder SVG verwände)",
     "MULTIPLE_FILES": "Bitte nur es Datei gleichzytig ufelade",
     "FILE_TOO_LARGE": "Dateigrösse übersteigt d'5MB-Limite",
-    "INVALID_FILE_TYPE": "Ungültige Dateityp. Bitte nur PNG, JPEG oder SVG-Bilder ufelade"
+    "INVALID_FILE_TYPE": "Ungültige Dateityp. Bitte nur PNG, JPEG oder SVG-Bilder ufelade",
+    "materialDownloadFailed": "S Material het nid chönne abeglade wärde. Bitte nomau probiere."
   },
   "confirmations": {
     "unsavedChanges": "Ungspycherte Änderige",
@@ -941,7 +946,12 @@
       "event_live": "Veranstatig läuft",
       "event_completed": "Veranstatig abgschlosse",
       "archived": "Archiviert"
-    }
+    },
+    "loading": "Workflow-Status wird glade...",
+    "error": "Workflow-Status het nid chönne glade wärde",
+    "noData": "Kei Workflow-Status verfüegbar",
+    "currentState": "Aktuelle Status",
+    "blockedTransitions": "Blockiert:"
   },
   "autoSave": {
     "saving": "Wird gspycheret...",
@@ -1012,7 +1022,10 @@
       "revertPhase": "Veröffentlechig {{phase}} zrüggnä",
       "revertConfirmTitle": "Veröffentlechig {{phase}} zrüggnä?",
       "revertConfirmText": "D'öffentlechi Websyte geit uf di vorderi Phase zrügg. Was mit {{phase}} sichtbar isch gsi, gseh d'Bsuecher nümm.",
-      "revertConfirmButton": "Zrüggnä"
+      "revertConfirmButton": "Zrüggnä",
+      "topicNotReady": "S'Thema isch no nid parat zum Veröffentleche",
+      "speakersNotReady": "D Referänte sy no nid parat zum Veröffentleche",
+      "agendaNotReady": "{{assigned}} vo {{total}} Slots zuegwise. Zersch aui Slots zuewiise, när s'Programm veröffentleche"
     },
     "validation": {
       "readyToPublish": "Beriit zum Veröffentliche",
@@ -1096,7 +1109,8 @@
       "date": "Datum",
       "time": "Zyt",
       "location": "Ort",
-      "capacity": "Amäldige"
+      "capacity": "Amäldige",
+      "topic": "Thema"
     },
     "errors": {
       "loadFailed": "Veranstatig chöne nid gglade werde",
@@ -1119,7 +1133,13 @@
     "program": {
       "title": "Veranstautigsprogramm",
       "speaker": "Redner",
-      "materials": "Materialien"
+      "materials": "Materialien",
+      "materialTypes": {
+        "presentation": "Präsentation",
+        "document": "Dokumänt",
+        "video": "Video",
+        "other": "Anders"
+      }
     },
     "venue": {
       "title": "Veranstautigsort",
@@ -1191,8 +1211,16 @@
       "titleRequired": "Titel isch Pflicht",
       "abstractTooLong": "Abstract darf höchstens {{max}} Zeiche lang si",
       "invalidDuration": "Dauer mues zwüsche 1 und 480 Minute si",
-      "saveFailed": "Session chöne nid gspycheret werde"
-    }
+      "saveFailed": "Session chöne nid gspycheret werde",
+      "endTimeBeforeStart": "D Ändzyt mues nach dr Startzyt sy",
+      "durationTooShort": "D Session mues mindestens {{min}} Minute duure",
+      "durationTooLong": "D Session darf höchschtens {{max}} Minute duure",
+      "speakerConflict": "Referänt/in {{speaker}} isch scho für «{{session}}» am {{time}} iigplant",
+      "roomConflict": "Ruum {{room}} isch scho für «{{session}}» am {{time}} bsetzt",
+      "timingConflict": "Zytkonflikt erkannt"
+    },
+    "startTimeLabel": "Startzyt",
+    "endTimeLabel": "Ändzyt"
   },
   "slotAssignment": {
     "title": "Slot-Zuwiisig",
@@ -1230,8 +1258,7 @@
       "emptyState": {
         "title": "Alli Sessione zuegwiise!",
         "message": "Gueti Arbet! Alli Redneri si Zytslots zuegwiise worde."
-      },
-      "viewPreferences": "Präferenzen"
+      }
     },
     "quickActions": {
       "title": "Schnällaktione",
@@ -1277,33 +1304,10 @@
         "error": "FÄHLER",
         "warning": "WARNIG"
       },
-      "timeRange": "Konfliktzytberiich",
-      "start": "Start",
-      "end": "End",
       "conflictingSession": "Konfliktierende Session",
       "resolutionOptions": "Lösigsmöglighkeite",
       "resolutionMessage": "En andere Zytslot oder Raum uswähle zum Konflikt löse.",
       "chooseDifferentSlot": "Andere Slot uswähle"
-    },
-    "preferences": {
-      "title": "Rednerpräferenzen",
-      "timePreferences": "Zytpräferenzen",
-      "unavailableTimes": "Nid verfügbari Zyte",
-      "avRequirements": "AV-Afordrige",
-      "setupNotes": "Raumufbaunotize",
-      "slotMatchScore": "Slot-Übereinstimmigspunktezau",
-      "matchPercent": "{{percent}}% Übereinstimmig",
-      "times": {
-        "morning": "Morge",
-        "afternoon": "Namittag",
-        "evening": "Abig",
-        "any": "Beliebig"
-      },
-      "equipment": {
-        "microphone": "Mikrofon",
-        "projector": "Beamer",
-        "recording": "Ufnahm"
-      }
     },
     "actionBar": {
       "label": "Zytfänschter-Aktione"
@@ -1383,7 +1387,8 @@
     "emptyState": "Noch keine Fotos. Laden Sie das erste hoch!",
     "uploading": "Wird hochgeladen...",
     "uploadError": "Upload fehlgeschlagen. Bitte versuchen Sie es erneut.",
-    "uploadErrorPartial": "{{failed}} vo {{total}} Uploads fehlgschlage. Bitte nomol versuche."
+    "uploadErrorPartial": "{{failed}} vo {{total}} Uploads fehlgschlage. Bitte nomol versuche.",
+    "uploadingProgress": "{{done}}/{{total}} wird ufeglade..."
   },
   "teaserImage": {
     "title": "Teaser-Bilder",
@@ -1496,5 +1501,19 @@
       "limits": "Jedi Mail a die Person und jedi Mail vo ihre, über aui Events. Nid ufgfüehrt: Newsletter, Mails vo bevor ds Mail Center se erfasst het, und Mails a Adresse, wo nümm hinterleit si.",
       "empty": "No keni Mails a oder vo dere Person."
     }
+  },
+  "venue": {
+    "errors": {
+      "nameRequired": "Veranstautigsortname isch Pflicht",
+      "addressRequired": "Veranstautigsortadress isch Pflicht",
+      "capacityPositive": "Kapazität mues e positivi Zahl si",
+      "capacityMax": "Kapazität darf nid über 5000 sy",
+      "updateFailed": "Veranstautigsort het nid chönne aktualisiert wärde"
+    },
+    "sectionTitle": "Veranstautigsort und Logistik",
+    "title": "Veranstautigsort & Logistik",
+    "nameLabel": "Name vom Veranstautigsort",
+    "capacityLabel": "Kapazität vom Veranstautigsort",
+    "addressLabel": "Adress vom Veranstautigsort"
   }
 }

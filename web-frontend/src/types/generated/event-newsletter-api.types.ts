@@ -429,7 +429,7 @@ export interface components {
     };
     NewsletterSubscriptionStatusResponse: {
       subscribed: boolean;
-      email?: string;
+      email?: string | null;
     };
     NewsletterSendRequest: {
       isReminder: boolean;
@@ -462,9 +462,9 @@ export interface components {
       sentCount?: number;
       failedCount?: number;
       /** Format: date-time */
-      startedAt?: string;
+      startedAt?: string | null;
       /** Format: date-time */
-      completedAt?: string;
+      completedAt?: string | null;
     };
     /** @description Story 7.3 — response for a dedicated "slides are online" send (runs async). */
     SlidesOnlineSendResponse: {
@@ -515,9 +515,9 @@ export interface components {
       totalCount: number;
       percentComplete: number;
       /** Format: date-time */
-      startedAt?: string;
+      startedAt?: string | null;
       /** Format: date-time */
-      completedAt?: string;
+      completedAt?: string | null;
     };
     NewsletterPreviewResponse: {
       subject: string;
@@ -528,10 +528,10 @@ export interface components {
       /** Format: uuid */
       id: string;
       email: string;
-      firstName?: string;
+      firstName?: string | null;
       language?: string;
       source?: string;
-      username?: string;
+      username?: string | null;
       /** Format: date-time */
       subscribedAt: string;
       /** Format: date-time */

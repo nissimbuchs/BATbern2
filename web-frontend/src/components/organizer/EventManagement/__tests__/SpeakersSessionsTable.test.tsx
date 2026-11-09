@@ -28,26 +28,26 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import { BrowserRouter } from 'react-router-dom';
 import i18n from '@/i18n/config';
-import type { Session } from '@/types/event.types';
+import type { SessionUI } from '@/types/event.types';
 
 // Mock data - Based on wireframe lines 83-101
-const mockSessions: Session[] = [
+const mockSessions: SessionUI[] = [
   {
     id: 'session-1',
     sessionSlug: 'session-1',
     eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 1,
     startTime: '09:00',
     endTime: '10:00',
     speaker: {
-      id: 'speaker-1',
+      speakerSlug: 'speaker-1',
       name: 'Dr. Sarah Miller',
       company: 'Accenture',
       email: 'sarah.miller@accenture.com',
-      bio: 'Expert in microservices architecture',
     },
     title: 'Microservices: From Theory to Practice',
-    abstract: 'Comprehensive guide to implementing microservices in production',
+    description: 'Comprehensive guide to implementing microservices in production',
     materialsStatus: 'COMPLETE',
     materialsCount: 3, // Story 5.9: Has multiple materials including presentation
     hasPresentation: true, // Story 5.9: Complete (✓)
@@ -56,18 +56,18 @@ const mockSessions: Session[] = [
     id: 'session-2',
     sessionSlug: 'session-2',
     eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 2,
     startTime: '10:15',
     endTime: '11:15',
     speaker: {
-      id: 'speaker-2',
+      speakerSlug: 'speaker-2',
       name: 'Prof. James Wilson',
       company: 'University of Bern',
       email: 'james.wilson@unibe.ch',
-      bio: 'Professor of Computer Security',
     },
     title: 'Cloud Security Architecture',
-    abstract: 'Best practices for securing cloud-native applications',
+    description: 'Best practices for securing cloud-native applications',
     materialsStatus: 'COMPLETE',
     materialsCount: 2, // Materials but no PRESENTATION file: still COMPLETE (#1123, no partial)
     hasPresentation: false,
@@ -76,18 +76,18 @@ const mockSessions: Session[] = [
     id: 'session-3',
     sessionSlug: 'session-3',
     eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 3,
     startTime: '11:30',
     endTime: '12:30',
     speaker: {
-      id: 'speaker-3',
+      speakerSlug: 'speaker-3',
       name: 'Anna Schmidt',
       company: 'SwissRe',
       email: 'anna.schmidt@swissre.com',
-      bio: 'DevOps Lead',
     },
     title: 'Kubernetes in Production: Real-World Experience',
-    abstract: 'Lessons learned from running Kubernetes in enterprise production',
+    description: 'Lessons learned from running Kubernetes in enterprise production',
     materialsStatus: 'NONE',
     materialsCount: 0, // Story 5.9: No materials uploaded
     hasPresentation: false, // Story 5.9: Missing (❌)
@@ -96,100 +96,109 @@ const mockSessions: Session[] = [
   {
     id: 'session-4',
     sessionSlug: 'session-4',
+    eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 4,
     startTime: '13:30',
     endTime: '14:30',
     speaker: undefined,
-    title: undefined,
-    abstract: undefined,
+    title: 'Open slot 4',
     materialsStatus: 'NONE',
   },
   {
     id: 'session-5',
     sessionSlug: 'session-5',
+    eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 5,
     startTime: '14:45',
     endTime: '15:45',
     speaker: undefined,
-    title: undefined,
-    abstract: undefined,
+    title: 'Open slot 5',
     materialsStatus: 'NONE',
   },
   {
     id: 'session-6',
     sessionSlug: 'session-6',
+    eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 6,
     startTime: '16:00',
     endTime: '17:00',
     speaker: undefined,
-    title: undefined,
-    abstract: undefined,
+    title: 'Open slot 6',
     materialsStatus: 'NONE',
   },
   {
     id: 'session-7',
     sessionSlug: 'session-7',
+    eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 7,
     startTime: '09:00',
     endTime: '10:00',
     speaker: undefined,
-    title: undefined,
-    abstract: undefined,
+    title: 'Open slot 7',
     materialsStatus: 'NONE',
   },
   {
     id: 'session-8',
     sessionSlug: 'session-8',
+    eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 8,
     startTime: '10:15',
     endTime: '11:15',
     speaker: undefined,
-    title: undefined,
-    abstract: undefined,
+    title: 'Open slot 8',
     materialsStatus: 'NONE',
   },
   {
     id: 'session-9',
     sessionSlug: 'session-9',
+    eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 9,
     startTime: '11:30',
     endTime: '12:30',
     speaker: undefined,
-    title: undefined,
-    abstract: undefined,
+    title: 'Open slot 9',
     materialsStatus: 'NONE',
   },
   {
     id: 'session-10',
     sessionSlug: 'session-10',
+    eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 10,
     startTime: '13:30',
     endTime: '14:30',
     speaker: undefined,
-    title: undefined,
-    abstract: undefined,
+    title: 'Open slot 10',
     materialsStatus: 'NONE',
   },
   {
     id: 'session-11',
     sessionSlug: 'session-11',
+    eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 11,
     startTime: '14:45',
     endTime: '15:45',
     speaker: undefined,
-    title: undefined,
-    abstract: undefined,
+    title: 'Open slot 11',
     materialsStatus: 'NONE',
   },
   {
     id: 'session-12',
     sessionSlug: 'session-12',
+    eventCode: 'BAT54',
+    language: 'de',
     slotNumber: 12,
     startTime: '16:00',
     endTime: '17:00',
     speaker: undefined,
-    title: undefined,
-    abstract: undefined,
+    title: 'Open slot 12',
     materialsStatus: 'NONE',
   },
 ];
@@ -213,12 +222,7 @@ const renderWithProviders = (ui: React.ReactElement) => {
 };
 
 describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', () => {
-  const mockOnViewDetails = vi.fn();
-  const mockOnEditSlot = vi.fn();
   const mockOnViewMaterials = vi.fn();
-  const mockOnViewFullAgenda = vi.fn();
-  const mockOnManageSpeakerAssignments = vi.fn();
-  const mockOnAutoAssignSpeakers = vi.fn();
 
   beforeEach(() => {
     vi.clearAllMocks();
@@ -337,10 +341,14 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
       const slot1Row = screen
         .getByText('Microservices: From Theory to Practice')
         .closest('[data-testid^="session-row"]');
-      expect(within(slot1Row!).getByTestId('materials-status-complete')).toBeInTheDocument();
+      expect(
+        within(slot1Row as HTMLElement).getByTestId('materials-status-complete')
+      ).toBeInTheDocument();
 
       // Should display status text ("Vollständig" in German or "Complete" in English)
-      expect(within(slot1Row!).getByText(/vollständig|complete/i)).toBeInTheDocument();
+      expect(
+        within(slot1Row as HTMLElement).getByText(/vollständig|complete/i)
+      ).toBeInTheDocument();
     });
 
     it('should_displayCompleteStatus_when_onlyNonPresentationMaterials', () => {
@@ -358,7 +366,9 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
       const slot2Row = screen
         .getByText('Cloud Security Architecture')
         .closest('[data-testid^="session-row"]');
-      expect(within(slot2Row!).getByTestId('materials-status-complete')).toBeInTheDocument();
+      expect(
+        within(slot2Row as HTMLElement).getByTestId('materials-status-complete')
+      ).toBeInTheDocument();
       expect(screen.queryByTestId('materials-status-pending')).not.toBeInTheDocument();
     });
 
@@ -377,7 +387,9 @@ describe('SpeakersSessionsTable Component (AC8: Speakers & Sessions Display)', (
       const slot3Row = screen
         .getByText('Kubernetes in Production: Real-World Experience')
         .closest('[data-testid^="session-row"]');
-      expect(within(slot3Row!).getByTestId('materials-status-missing')).toBeInTheDocument();
+      expect(
+        within(slot3Row as HTMLElement).getByTestId('materials-status-missing')
+      ).toBeInTheDocument();
 
       // Should display status text ("Fehlend" in German or "Missing" in English) for session 3 and unassigned slots
       const missingElements = screen.getAllByText(/fehlend|missing/i);
@@ -685,9 +697,10 @@ describe('SpeakersSessionsTable - Materials Status (Story 5.9 - AC2)', () => {
   };
 
   it('should_showMissingIcon_when_noMaterialsUploaded', () => {
-    const sessionWithNoMaterials: Session = {
+    const sessionWithNoMaterials: SessionUI = {
       sessionSlug: 'test-session',
       eventCode: 'BAT54',
+      language: 'de',
       title: 'Test Session',
       materialsCount: 0,
       hasPresentation: false,
@@ -710,9 +723,10 @@ describe('SpeakersSessionsTable - Materials Status (Story 5.9 - AC2)', () => {
   });
 
   it('should_showCompleteIcon_when_presentationExists', () => {
-    const sessionWithPresentation: Session = {
+    const sessionWithPresentation: SessionUI = {
       sessionSlug: 'test-session',
       eventCode: 'BAT54',
+      language: 'de',
       title: 'Test Session',
       materialsCount: 3,
       hasPresentation: true,
@@ -737,20 +751,20 @@ describe('SpeakersSessionsTable - Materials Status (Story 5.9 - AC2)', () => {
 
   it('should_openMaterialsTab_when_materialsButtonClicked', async () => {
     const user = userEvent.setup();
-    const testSession: Session = {
+    const testSession: SessionUI = {
       sessionSlug: 'test-session',
       eventCode: 'BAT54',
+      language: 'de',
       title: 'Test Session',
       materialsCount: 0,
       hasPresentation: false,
       startTime: '2024-12-15T09:00:00Z',
       endTime: '2024-12-15T10:00:00Z',
       speaker: {
-        id: 'speaker-test',
+        speakerSlug: 'speaker-test',
         name: 'Test Speaker',
         company: 'Test Company',
         email: 'test@test.com',
-        bio: 'Test bio',
       },
     };
 

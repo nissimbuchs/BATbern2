@@ -63,7 +63,7 @@ const mockParticipants: EventParticipant[] = [
     firstName: 'Bob',
     lastName: 'Wilson',
     email: 'bob.wilson@example.com',
-    status: 'WAITLISTED',
+    status: 'WAITLIST',
     registrationDate: '2024-01-17T09:00:00Z',
   },
 ];

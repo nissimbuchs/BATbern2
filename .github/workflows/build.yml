@@ -560,6 +560,19 @@ jobs:
         working-directory: ./web-frontend
         run: npm run check:api-paths
 
+      # Story 17.3c (ADR-006): no hand-written `export interface` / object `export type` in src/
+      # named like a schema in src/types/generated/ (use the generated type). The copies left are
+      # frozen in web-frontend/scripts/api-type-copies-baseline.txt, each with an owner; the
+      # baseline may only shrink (--update refuses to add a line without --allow-growth).
+      # Needs Node 22 (type stripping).
+      - name: Generated type copy check tests
+        working-directory: ./web-frontend
+        run: npx vitest run scripts/check-api-type-copies.test.ts
+
+      - name: Generated type copy check
+        working-directory: ./web-frontend
+        run: npm run check:api-type-copies
+
       # Epic 17: every t('key') in src/ must name a key in public/locales/en (fallbackLng is de, so
       # a key missing in en shows English visitors German text). The keys missing today are frozen
       # in web-frontend/scripts/i18n-keys-baseline.txt; a file may only lose missing keys.
@@ -623,6 +636,14 @@ jobs:
       - name: Prettier format check
         working-directory: ./web-frontend
         run: npm run format:check
+
+      # The build's `tsc` checks the app only. `type-check` also compiles the tests
+      # (tsconfig.test-harness.json, all of src minus a shrinking exclude list) and the scripts;
+      # until 2026-11-09 nothing in CI ran it, so the MSW-harness typing and the wire-shape
+      # fixtures held only where someone ran it by hand.
+      - name: Type-check (app, scripts, tests)
+        working-directory: ./web-frontend
+        run: npm run type-check
 
       - name: Build frontend
         working-directory: ./web-frontend

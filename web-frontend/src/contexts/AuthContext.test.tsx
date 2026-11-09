@@ -11,6 +11,7 @@ import React from 'react';
 import { AuthProvider } from './AuthContext';
 import { ConfigContext } from './createConfigContext';
 import type { AppConfig } from '@/config/runtime-config';
+import type { UserRole } from '@/types/auth';
 import { useAuth } from '@/hooks/useAuth';
 import MockAdapter from 'axios-mock-adapter';
 import apiClient from '@/services/api/apiClient';
@@ -22,7 +23,7 @@ const TEST_CONFIG: AppConfig = {
   environment: 'staging',
   apiBaseUrl: 'https://api.batbern.ch/api/v1',
   cognito: { userPoolId: 'eu-central-1_TEST', clientId: 'client', region: 'eu-central-1' },
-  features: { notifications: true, analytics: false, pwa: false, turnstile: false },
+  features: { notifications: true, analytics: false, pwa: false, turnstile: false, sso: false },
 };
 
 // Mock authService
@@ -54,8 +55,8 @@ const wrapper = ({ children }: { children: React.ReactNode }) => (
   </ConfigContext.Provider>
 );
 
-function mockMultiRoleUser(roles: readonly string[]) {
-  const primaryRole = roles[0] || 'attendee';
+function mockMultiRoleUser(roles: readonly UserRole[]) {
+  const primaryRole: UserRole = roles[0] || 'attendee';
   const mockUser = {
     userId: 'test-user',
     username: 'test.user',
@@ -245,8 +246,8 @@ describe('AuthContext — Multi-Role Support (Story 9.5)', () => {
   });
 
   describe('Story 12.1 — hydrate company + preferences from /users/me', () => {
-    function mockTokenUserWithoutCompanyOrPrefs(roles: readonly string[]) {
-      const primaryRole = roles[0] || 'attendee';
+    function mockTokenUserWithoutCompanyOrPrefs(roles: readonly UserRole[]) {
+      const primaryRole: UserRole = roles[0] || 'attendee';
       // Simulates the post-Story-12.1 extractUserContextFromToken output: identity +
       // authorization only, companyId undefined and preferences empty (no language).
       const mockUser = {

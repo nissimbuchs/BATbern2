@@ -15,7 +15,14 @@ import { Construct } from 'constructs';
  * - High memory utilization (80% threshold)
  * - OOM kill detection (exit code 137)
  * - Task failure rate (abnormal restarts)
+ * - Domain event listener failures swallowed by the publisher (log based, with serviceLogGroup)
  */
+/** Namespace of the log-based domain-event metrics. */
+export const DOMAIN_EVENTS_NAMESPACE = 'BATbern/DomainEvents';
+
+/** SpringDomainEventPublisher.LOG_MARKER (shared-kernel): first token of its listener-failure line. */
+export const DOMAIN_EVENT_LISTENER_FAILURE_MARKER = 'DOMAIN_EVENT_LISTENER_FAILED';
+
 export interface EcsServiceAlarmsProps {
   /**
    * Environment name (development, staging, production)
@@ -49,6 +56,14 @@ export interface EcsServiceAlarmsProps {
    * SNS topic for alarm notifications
    */
   readonly alarmTopic: sns.ITopic;
+
+  /**
+   * The service's own application log group (`/aws/ecs/BATbern-{env}/{service}`). When given,
+   * the `{Service}-Event-Listener-Failures` alarm is created: a metric filter matches the fixed
+   * marker `SpringDomainEventPublisher` (shared-kernel) writes when it swallows a failing domain
+   * event listener. Pass it only for services that run that publisher (EMS, CUMS, PCS).
+   */
+  readonly serviceLogGroup?: logs.ILogGroup;
 
   /**
    * Override production detection (defaults to environment === 'production')
@@ -223,11 +238,61 @@ export class EcsServiceAlarms extends Construct {
     taskFailureAlarm.addAlarmAction(alarmAction);
     taskFailureAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
 
+    // Alarm 4: swallowed domain-event listener failures (owner go 2026-11-09).
+    //
+    // SpringDomainEventPublisher catches an exception from a synchronous listener, logs it at
+    // ERROR and lets the caller continue (whether it should fail the caller is story 17.12).
+    // It also counts it in Micrometer, but no service exports metrics to CloudWatch, so the
+    // alarm reads the log instead: a literal-term filter on the marker, which matches both the
+    // LogstashEncoder JSON (CUMS) and the plain-text pattern layout (EMS, PCS). The marker is
+    // SpringDomainEventPublisher.LOG_MARKER; domain-event-listener-alarm.test.ts reads it from
+    // the Java source, so renaming it there fails the CDK build instead of silencing this alarm.
+    // Like the OOM filter above, the metric is named per service because a literal-term
+    // pattern cannot carry dimensions.
+    let listenerFailureAlarm: cloudwatch.Alarm | undefined;
+
+    if (props.serviceLogGroup) {
+      const listenerFailureMetricName = `ListenerFailures-${serviceDisplayName}`;
+
+      const listenerFailureFilter = new logs.MetricFilter(
+        this,
+        'EventListenerFailureMetricFilter',
+        {
+          logGroup: props.serviceLogGroup,
+          metricNamespace: DOMAIN_EVENTS_NAMESPACE,
+          metricName: listenerFailureMetricName,
+          filterPattern: logs.FilterPattern.literal(`"${DOMAIN_EVENT_LISTENER_FAILURE_MARKER}"`),
+          metricValue: '1',
+          defaultValue: 0,
+        }
+      );
+
+      listenerFailureAlarm = new cloudwatch.Alarm(this, 'EventListenerFailures', {
+        alarmName: `batbern-${props.environment}-${serviceDisplayName}-Event-Listener-Failures`,
+        alarmDescription: `${serviceDisplayName}: a domain event listener threw and the publisher swallowed it (log marker ${DOMAIN_EVENT_LISTENER_FAILURE_MARKER}); the side effect it should have had did not happen`,
+        metric: new cloudwatch.Metric({
+          namespace: DOMAIN_EVENTS_NAMESPACE,
+          metricName: listenerFailureMetricName,
+          // No dimensionsMap: it must match the filter above, which cannot have one.
+          statistic: 'Sum',
+          period: cdk.Duration.minutes(5),
+        }),
+        threshold: 0,
+        evaluationPeriods: 1,
+        comparisonOperator: cloudwatch.ComparisonOperator.GREATER_THAN_THRESHOLD,
+        treatMissingData: cloudwatch.TreatMissingData.NOT_BREACHING,
+      });
+      listenerFailureAlarm.addAlarmAction(alarmAction);
+      listenerFailureAlarm.addOkAction(alarmAction); // #956: close the issue on recovery
+      listenerFailureAlarm.node.addDependency(listenerFailureFilter);
+    }
+
     // Output alarm names for reference
     const alarmNames = [
       memoryUtilizationAlarm.alarmName,
       ...(oomKillAlarm ? [oomKillAlarm.alarmName] : []),
       taskFailureAlarm.alarmName,
+      ...(listenerFailureAlarm ? [listenerFailureAlarm.alarmName] : []),
     ];
 
     new cdk.CfnOutput(this, 'AlarmNames', {

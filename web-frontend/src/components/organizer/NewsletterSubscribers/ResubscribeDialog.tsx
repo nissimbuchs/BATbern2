@@ -74,7 +74,7 @@ const ResubscribeDialog: React.FC<ResubscribeDialogProps> = ({
         <Typography>{t('dialogs.resubscribe.message', { email: subscriber?.email })}</Typography>
         {mutation.isError && (
           <Alert severity="error" sx={{ mt: 2 }}>
-            {tCommon('errors.unexpected')}
+            {tCommon('errors.unexpectedError')}
           </Alert>
         )}
       </DialogContent>

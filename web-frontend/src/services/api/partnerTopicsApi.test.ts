@@ -47,6 +47,7 @@ describe('Partner Topics API Client - Story 8.2', () => {
     status: 'PROPOSED',
     plannedEvent: null,
     createdAt: '2026-01-15T10:00:00Z',
+    source: 'PARTNER',
   };
 
   describe('getTopics', () => {

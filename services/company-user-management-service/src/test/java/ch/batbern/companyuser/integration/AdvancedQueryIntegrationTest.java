@@ -49,15 +49,17 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         createCompany("Epsilon LLC", "Technology", true, 150);
     }
 
-    private void createCompany(String name, String industry, boolean verified, int employeeCount) {
+    /** The key as production derives it (1 to 12 letters or digits), the typed name as display name. */
+    private void createCompany(String displayName, String industry, boolean verified, int employeeCount) {
+        String name = displayName.replace(" ", "");
         Company company = Company.builder()
                 .name(name)
-                .displayName(name)
+                .displayName(displayName)
                 .industry(industry)
                 .isVerified(verified)
                 .website("https://" + name.toLowerCase().replace(" ", "") + ".ch")
                 .description("Description for " + name)
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build();
         companyRepository.save(company);
     }
@@ -166,8 +168,8 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(data).isNotNull();
         assertThat(data.size()).isEqualTo(5);
-        assertThat(data.get(0).get("name").asText()).isEqualTo("Acme Corp");
-        assertThat(data.get(1).get("name").asText()).isEqualTo("Beta AG");
+        assertThat(data.get(0).get("name").asText()).isEqualTo("AcmeCorp");
+        assertThat(data.get(1).get("name").asText()).isEqualTo("BetaAG");
     }
 
     @Test
@@ -183,8 +185,8 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(data).isNotNull();
         assertThat(data.size()).isEqualTo(5);
-        assertThat(data.get(0).get("name").asText()).isEqualTo("Gamma GmbH");
-        assertThat(data.get(1).get("name").asText()).isEqualTo("Epsilon LLC");
+        assertThat(data.get(0).get("name").asText()).isEqualTo("GammaGmbH");
+        assertThat(data.get(1).get("name").asText()).isEqualTo("EpsilonLLC");
     }
 
     @Test
@@ -202,7 +204,7 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
         assertThat(data.size()).isEqualTo(5);
         // First by industry DESC, then by name ASC
         assertThat(data.get(0).get("industry").asText()).isEqualTo("Technology");
-        assertThat(data.get(0).get("name").asText()).isEqualTo("Acme Corp");
+        assertThat(data.get(0).get("name").asText()).isEqualTo("AcmeCorp");
     }
 
     // ========== AC14: Pagination Tests ==========
@@ -336,8 +338,8 @@ class AdvancedQueryIntegrationTest extends AbstractIntegrationTest {
 
         assertThat(data).isNotNull();
         assertThat(data.size()).isEqualTo(2);
-        assertThat(data.get(0).get("name").asText()).isEqualTo("Gamma GmbH");
-        assertThat(data.get(1).get("name").asText()).isEqualTo("Epsilon LLC");
+        assertThat(data.get(0).get("name").asText()).isEqualTo("GammaGmbH");
+        assertThat(data.get(1).get("name").asText()).isEqualTo("EpsilonLLC");
         assertThat(pagination.get("totalItems").asLong()).isEqualTo(3); // 3 Technology companies
     }
 

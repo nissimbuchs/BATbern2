@@ -12,7 +12,7 @@
  * - useDeleteEvent: Delete mutation
  */
 
-import React, { ReactNode } from 'react';
+import type { ReactNode } from 'react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
@@ -77,17 +77,17 @@ describe('Event Management React Query Hooks', () => {
           eventNumber: 56,
           title: 'Cloud Computing 2025',
           description: 'Annual cloud computing event',
-          eventDate: '2025-03-15T18:00:00Z',
-          eventType: 'full_day',
-          status: 'active',
-          workflowState: 'speaker_research',
+          date: '2025-03-15T18:00:00Z',
+          eventType: 'FULL_DAY',
+          workflowState: 'SPEAKER_IDENTIFICATION',
           registrationDeadline: '2025-03-08T23:59:59Z',
-          capacity: 200,
+          venueName: 'Kornhausforum',
+          venueAddress: 'Kornhausplatz 18, 3011 Bern',
+          venueCapacity: 200,
           currentAttendeeCount: 0,
           createdAt: '2025-01-01T10:00:00Z',
           updatedAt: '2025-01-10T15:00:00Z',
           createdBy: 'john.doe',
-          version: 1,
         },
       ],
       pagination: {
@@ -151,7 +151,7 @@ describe('Event Management React Query Hooks', () => {
       vi.mocked(eventApiClient.getEvents).mockResolvedValue(mockEventsResponse);
 
       const filters: EventFilters = {
-        status: ['active', 'published'],
+        workflowState: ['SPEAKER_IDENTIFICATION', 'AGENDA_PUBLISHED'],
         year: 2025,
         search: 'Cloud',
       };
@@ -186,7 +186,7 @@ describe('Event Management React Query Hooks', () => {
       expect(eventApiClient.getEvents).toHaveBeenCalledTimes(1);
 
       // Change filters
-      rerender({ status: ['active'] });
+      rerender({ workflowState: ['SPEAKER_IDENTIFICATION'] });
 
       await waitFor(() => {
         expect(eventApiClient.getEvents).toHaveBeenCalledTimes(2);
@@ -194,7 +194,7 @@ describe('Event Management React Query Hooks', () => {
 
       expect(eventApiClient.getEvents).toHaveBeenLastCalledWith(
         { page: 1, limit: 20 },
-        { status: ['active'] },
+        { workflowState: ['SPEAKER_IDENTIFICATION'] },
         undefined
       );
     });
@@ -222,36 +222,23 @@ describe('Event Management React Query Hooks', () => {
       eventNumber: 56,
       title: 'Cloud Computing 2025',
       description: 'Annual cloud computing event',
-      eventDate: '2025-03-15T18:00:00Z',
-      eventType: 'full_day',
-      status: 'active',
-      workflowState: 'speaker_research',
+      date: '2025-03-15T18:00:00Z',
+      eventType: 'FULL_DAY',
+      workflowState: 'SPEAKER_IDENTIFICATION',
       registrationDeadline: '2025-03-08T23:59:59Z',
-      capacity: 200,
+      venueName: 'Kornhausforum',
+      venueAddress: 'Kornhausplatz 18, 3011 Bern',
+      venueCapacity: 200,
       currentAttendeeCount: 0,
       createdAt: '2025-01-01T10:00:00Z',
       updatedAt: '2025-01-10T15:00:00Z',
       createdBy: 'john.doe',
-      version: 1,
-      workflow: {
-        currentStep: 2,
-        totalSteps: 16,
-        completionPercentage: 12.5,
-        steps: [],
-        blockers: [],
-      },
       venue: {
         name: 'Kornhausforum',
         address: 'Kornhausplatz 18, 3011 Bern',
         capacity: 250,
       },
       sessions: [],
-      team: {
-        leadOrganizer: 'john.doe',
-        coOrganizers: ['jane.smith'],
-        moderator: undefined,
-        contentReviewer: undefined,
-      },
     };
 
     it('should_fetchEventWithIncludes_when_includesProvided', async () => {
@@ -301,17 +288,17 @@ describe('Event Management React Query Hooks', () => {
       eventNumber: 57,
       title: 'New Event',
       description: 'Test event',
-      eventDate: '2025-04-15T18:00:00Z',
-      eventType: 'full_day' as const,
-      status: 'draft' as const,
-      workflowState: 'topic_selection' as const,
+      date: '2025-04-15T18:00:00Z',
+      eventType: 'FULL_DAY' as const,
+      workflowState: 'TOPIC_SELECTION' as const,
       registrationDeadline: '2025-04-08T23:59:59Z',
-      capacity: 200,
+      venueName: 'Kornhausforum',
+      venueAddress: 'Kornhausplatz 18, 3011 Bern',
+      venueCapacity: 200,
       currentAttendeeCount: 0,
       createdAt: '2025-01-20T10:00:00Z',
       updatedAt: '2025-01-20T10:00:00Z',
       createdBy: 'john.doe',
-      version: 1,
     };
 
     it('should_createEvent_when_mutationCalled', async () => {
@@ -325,12 +312,15 @@ describe('Event Management React Query Hooks', () => {
         await result.current.mutateAsync({
           title: 'New Event',
           description: 'Test event',
-          eventDate: '2025-04-15T18:00:00Z',
+          date: '2025-04-15T18:00:00Z',
           eventNumber: 57,
           registrationDeadline: '2025-04-08T23:59:59Z',
           venueName: 'Kornhausforum',
           venueAddress: 'Kornhausplatz 18, 3011 Bern',
           venueCapacity: 250,
+          eventType: 'EVENING',
+          organizerUsername: 'john.doe',
+          currentAttendeeCount: 0,
         });
       });
 
@@ -353,12 +343,15 @@ describe('Event Management React Query Hooks', () => {
         await result.current.mutateAsync({
           title: 'New Event',
           description: 'Test event',
-          eventDate: '2025-04-15T18:00:00Z',
+          date: '2025-04-15T18:00:00Z',
           eventNumber: 57,
           registrationDeadline: '2025-04-08T23:59:59Z',
           venueName: 'Kornhausforum',
           venueAddress: 'Kornhausplatz 18, 3011 Bern',
           venueCapacity: 250,
+          eventType: 'EVENING',
+          organizerUsername: 'john.doe',
+          currentAttendeeCount: 0,
         });
       });
 
@@ -374,17 +367,17 @@ describe('Event Management React Query Hooks', () => {
       eventNumber: 56,
       title: 'Updated Event',
       description: 'Updated description',
-      eventDate: '2025-03-15T18:00:00Z',
-      eventType: 'full_day' as const,
-      status: 'active' as const,
-      workflowState: 'speaker_research' as const,
+      date: '2025-03-15T18:00:00Z',
+      eventType: 'FULL_DAY' as const,
+      workflowState: 'SPEAKER_IDENTIFICATION' as const,
       registrationDeadline: '2025-03-08T23:59:59Z',
-      capacity: 200,
+      venueName: 'Kornhausforum',
+      venueAddress: 'Kornhausplatz 18, 3011 Bern',
+      venueCapacity: 200,
       currentAttendeeCount: 0,
       createdAt: '2025-01-01T10:00:00Z',
       updatedAt: '2025-01-20T10:00:00Z',
       createdBy: 'john.doe',
-      version: 2,
     };
 
     it('should_updateEvent_when_mutationCalled', async () => {
@@ -399,7 +392,6 @@ describe('Event Management React Query Hooks', () => {
           eventCode: 'BATbern56',
           data: {
             title: 'Updated Event',
-            version: 1,
           },
         });
       });
@@ -407,7 +399,6 @@ describe('Event Management React Query Hooks', () => {
       await waitFor(() => {
         expect(eventApiClient.patchEvent).toHaveBeenCalledWith('BATbern56', {
           title: 'Updated Event',
-          version: 1,
         });
         expect(result.current.isSuccess).toBe(true);
       });
@@ -426,7 +417,6 @@ describe('Event Management React Query Hooks', () => {
           eventCode: 'BATbern56',
           data: {
             title: 'Updated Event',
-            version: 1,
           },
         });
       });
@@ -468,7 +458,6 @@ describe('Event Management React Query Hooks', () => {
       queryClient.setQueryData(['event', 'BATbern56'], {
         eventCode: 'BATbern56',
         title: 'Original Title',
-        version: 1,
       });
 
       const { result } = renderHook(() => useUpdateEvent(), {
@@ -480,7 +469,6 @@ describe('Event Management React Query Hooks', () => {
           eventCode: 'BATbern56',
           data: {
             title: 'Optimistically Updated',
-            version: 1,
           },
         });
       });
@@ -504,7 +492,6 @@ describe('Event Management React Query Hooks', () => {
       const originalEvent = {
         eventCode: 'BATbern56',
         title: 'Original Title',
-        version: 1,
       };
       queryClient.setQueryData(['event', 'BATbern56'], originalEvent);
 
@@ -518,7 +505,6 @@ describe('Event Management React Query Hooks', () => {
             eventCode: 'BATbern56',
             data: {
               title: 'Failed Update',
-              version: 1,
             },
           });
         } catch {

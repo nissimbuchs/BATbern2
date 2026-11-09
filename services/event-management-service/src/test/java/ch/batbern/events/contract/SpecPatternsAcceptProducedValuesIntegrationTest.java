@@ -19,6 +19,7 @@ import org.junit.jupiter.params.ParameterizedTest;
 import org.junit.jupiter.params.provider.ValueSource;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
+import org.springframework.http.MediaType;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
@@ -31,6 +32,7 @@ import java.util.Map;
 import static ch.batbern.shared.test.contract.ProviderContract.assertResponseMatchesSpec;
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.patch;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
@@ -120,12 +122,17 @@ class SpecPatternsAcceptProducedValuesIntegrationTest extends AbstractIntegratio
                 .status("confirmed").registrationDate(DATE.minus(30, ChronoUnit.DAYS))
                 .build());
         String path = "/api/v1/events/" + CODE + "/registrations/" + registrationCode;
+        String body = "{\"status\": \"confirmed\"}";
 
-        List<String> pathErrors = OpenApiContract.load(REGISTRATIONS).validateRequest("GET", path, Map.of(),
-                Map.of("Authorization", List.of("Bearer contract")), null);
-        assertThat(pathErrors).as("GET %s against %s", path, REGISTRATIONS).isEmpty();
+        // The code is a path parameter of the organizer's PATCH (the public GET by code was
+        // removed 2026-11-09); the PATCH answers with the registration.
+        List<String> pathErrors = OpenApiContract.load(REGISTRATIONS).validateRequest("PATCH", path, Map.of(),
+                Map.of("Authorization", List.of("Bearer contract"), "Content-Type", List.of("application/json")),
+                body);
+        assertThat(pathErrors).as("PATCH %s against %s", path, REGISTRATIONS).isEmpty();
 
-        MvcResult result = mockMvc.perform(get(path)).andExpect(status().isOk()).andReturn();
+        MvcResult result = mockMvc.perform(patch(path).contentType(MediaType.APPLICATION_JSON).content(body))
+                .andExpect(status().isOk()).andReturn();
         assertThat(result.getResponse().getContentAsString()).contains(registrationCode);
         assertResponseMatchesSpec(REGISTRATIONS, result);
     }

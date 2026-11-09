@@ -92,7 +92,9 @@ public class PartnerMeetingService {
                 .createdBy(organizerUsername)
                 .build();
 
-        PartnerMeeting saved = meetingRepository.save(meeting);
+        // Flush so that Hibernate fills @CreationTimestamp/@UpdateTimestamp before the DTO is built:
+        // both are generated at insert, and the response must carry them (required in partners-api).
+        PartnerMeeting saved = meetingRepository.saveAndFlush(meeting);
         log.info("Partner meeting created: id={}, eventCode={}", saved.getId(), saved.getEventCode());
         return toDTO(saved);
     }
@@ -121,7 +123,8 @@ public class PartnerMeetingService {
             meeting.setEndTime(LocalTime.parse(request.getEndTime()));
         }
 
-        return toDTO(meetingRepository.save(meeting));
+        // Flush so that @UpdateTimestamp reflects this change in the response, not the previous one.
+        return toDTO(meetingRepository.saveAndFlush(meeting));
     }
 
     /**

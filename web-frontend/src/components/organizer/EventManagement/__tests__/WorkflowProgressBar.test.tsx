@@ -28,7 +28,7 @@ vi.mock('react-router-dom', async () => {
 // Mock react-i18next
 vi.mock('react-i18next', () => ({
   useTranslation: () => ({
-    t: (key: string, params?: Record<string, unknown>, fallback?: string) => {
+    t: (key: string, params: Record<string, number> = {}, fallback?: string) => {
       if (key === 'workflow.stepIndicator') {
         return `Step ${params.current}/${params.total}`;
       }

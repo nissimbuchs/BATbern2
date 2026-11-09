@@ -9,13 +9,15 @@
  * - Form validation
  */
 
-import { describe, it, expect, vi, beforeEach, afterEach, type MockInstance } from 'vitest';
+import { describe, it, expect, vi, beforeEach, afterEach, type Mock } from 'vitest';
 import { screen, waitFor, fireEvent } from '@testing-library/react';
 import MockAdapter from 'axios-mock-adapter';
 import apiClient from '@/services/api/apiClient';
 import { renderWithProviders as render } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { SessionEditModal, type SessionUpdateData } from '../SessionEditModal';
+
+type SaveFn = (sessionSlug: string, updates: SessionUpdateData) => Promise<void>;
 import type { SessionUI } from '@/types/event.types';
 import { AxiosError } from 'axios';
 
@@ -57,13 +59,14 @@ describe('SessionEditModal - Helper Functions', () => {
       // We'll verify this by checking if times are correctly displayed
       const mockSession: SessionUI = {
         sessionSlug: 'test-session',
+        eventCode: 'BATbern57',
+        language: 'de',
         title: 'Test Session',
         description: 'Test description',
         startTime: '2024-12-15T14:30:00Z',
         endTime: '2024-12-15T15:30:00Z',
-        durationMinutes: 60,
         slotNumber: 1,
-        materialsStatus: 'pending',
+        materialsStatus: 'NONE',
       };
 
       render(
@@ -72,7 +75,7 @@ describe('SessionEditModal - Helper Functions', () => {
           onClose={vi.fn()}
           session={mockSession}
           eventDate="2024-12-15"
-          onSave={vi.fn()}
+          onSave={vi.fn().mockResolvedValue(undefined)}
         />
       );
 
@@ -88,13 +91,14 @@ describe('SessionEditModal - Helper Functions', () => {
     it('should_returnEmptyString_when_invalidISOString', () => {
       const mockSession: SessionUI = {
         sessionSlug: 'test-session',
+        eventCode: 'BATbern57',
+        language: 'de',
         title: 'Test Session',
         description: '',
         startTime: null,
         endTime: null,
-        durationMinutes: 60,
         slotNumber: 1,
-        materialsStatus: 'pending',
+        materialsStatus: 'NONE',
       };
 
       render(
@@ -103,7 +107,7 @@ describe('SessionEditModal - Helper Functions', () => {
           onClose={vi.fn()}
           session={mockSession}
           eventDate="2024-12-15"
-          onSave={vi.fn()}
+          onSave={vi.fn().mockResolvedValue(undefined)}
         />
       );
 
@@ -117,16 +121,17 @@ describe('SessionEditModal - Helper Functions', () => {
 
   describe('combineEventDateAndTime', () => {
     it('should_createISOTimestamp_when_validEventDateAndTime', async () => {
-      const mockOnSave = vi.fn().mockResolvedValue(undefined);
+      const mockOnSave = vi.fn<SaveFn>().mockResolvedValue(undefined);
       const mockSession: SessionUI = {
         sessionSlug: 'test-session',
+        eventCode: 'BATbern57',
+        language: 'de',
         title: 'Test Session',
         description: '',
         startTime: '2024-12-15T14:00:00Z',
         endTime: '2024-12-15T15:00:00Z',
-        durationMinutes: 60,
         slotNumber: 1,
-        materialsStatus: 'pending',
+        materialsStatus: 'NONE',
       };
 
       const user = userEvent.setup();
@@ -162,20 +167,21 @@ describe('SessionEditModal - Helper Functions', () => {
 
 describe('SessionEditModal - Time Validation', () => {
   let mockSession: SessionUI;
-  let mockOnSave: ReturnType<typeof vi.fn>;
+  let mockOnSave: Mock<SaveFn>;
 
   beforeEach(() => {
     mockSession = {
       sessionSlug: 'test-session',
+      eventCode: 'BATbern57',
+      language: 'de',
       title: 'Test Session',
       description: 'Test description',
       startTime: '2024-12-15T14:00:00Z',
       endTime: '2024-12-15T15:00:00Z',
-      durationMinutes: 60,
       slotNumber: 1,
-      materialsStatus: 'pending',
+      materialsStatus: 'NONE',
     };
-    mockOnSave = vi.fn().mockResolvedValue(undefined);
+    mockOnSave = vi.fn<SaveFn>().mockResolvedValue(undefined);
   });
 
   it('should_showError_when_endTimeBeforeStartTime', async () => {
@@ -314,13 +320,14 @@ describe('SessionEditModal - Auto-Calculation Logic', () => {
   beforeEach(() => {
     mockSession = {
       sessionSlug: 'test-session',
+      eventCode: 'BATbern57',
+      language: 'de',
       title: 'Test Session',
       description: '',
       startTime: '2024-12-15T14:00:00Z',
       endTime: '2024-12-15T15:00:00Z',
-      durationMinutes: 60,
       slotNumber: 1,
-      materialsStatus: 'pending',
+      materialsStatus: 'NONE',
     };
   });
 
@@ -332,7 +339,7 @@ describe('SessionEditModal - Auto-Calculation Logic', () => {
         onClose={vi.fn()}
         session={mockSession}
         eventDate="2024-12-15"
-        onSave={vi.fn()}
+        onSave={vi.fn().mockResolvedValue(undefined)}
       />
     );
 
@@ -356,7 +363,7 @@ describe('SessionEditModal - Auto-Calculation Logic', () => {
         onClose={vi.fn()}
         session={mockSession}
         eventDate="2024-12-15"
-        onSave={vi.fn()}
+        onSave={vi.fn().mockResolvedValue(undefined)}
       />
     );
 
@@ -385,7 +392,7 @@ describe('SessionEditModal - Auto-Calculation Logic', () => {
         onClose={vi.fn()}
         session={mockSession}
         eventDate="2024-12-15"
-        onSave={vi.fn()}
+        onSave={vi.fn().mockResolvedValue(undefined)}
       />
     );
 
@@ -423,18 +430,19 @@ describe('SessionEditModal - Conflict Error Handling', () => {
       config: {} as any,
     };
 
-    const mockOnSave = vi.fn().mockRejectedValue(conflictError);
+    const mockOnSave = vi.fn<SaveFn>().mockRejectedValue(conflictError);
     const user = userEvent.setup();
 
     const mockSession: SessionUI = {
       sessionSlug: 'test-session',
+      eventCode: 'BATbern57',
+      language: 'de',
       title: 'Test Session',
       description: '',
       startTime: '2024-12-15T14:00:00Z',
       endTime: '2024-12-15T15:00:00Z',
-      durationMinutes: 60,
       slotNumber: 1,
-      materialsStatus: 'pending',
+      materialsStatus: 'NONE',
     };
 
     render(
@@ -476,18 +484,19 @@ describe('SessionEditModal - Conflict Error Handling', () => {
       config: {} as any,
     };
 
-    const mockOnSave = vi.fn().mockRejectedValue(conflictError);
+    const mockOnSave = vi.fn<SaveFn>().mockRejectedValue(conflictError);
     const user = userEvent.setup();
 
     const mockSession: SessionUI = {
       sessionSlug: 'test-session',
+      eventCode: 'BATbern57',
+      language: 'de',
       title: 'Test Session',
       description: '',
       startTime: '2024-12-15T14:00:00Z',
       endTime: '2024-12-15T15:00:00Z',
-      durationMinutes: 60,
       slotNumber: 1,
-      materialsStatus: 'pending',
+      materialsStatus: 'NONE',
     };
 
     render(
@@ -520,18 +529,19 @@ describe('SessionEditModal - Conflict Error Handling', () => {
       config: {} as any,
     };
 
-    const mockOnSave = vi.fn().mockRejectedValue(conflictError);
+    const mockOnSave = vi.fn<SaveFn>().mockRejectedValue(conflictError);
     const user = userEvent.setup();
 
     const mockSession: SessionUI = {
       sessionSlug: 'test-session',
+      eventCode: 'BATbern57',
+      language: 'de',
       title: 'Test Session',
       description: '',
       startTime: '2024-12-15T14:00:00Z',
       endTime: '2024-12-15T15:00:00Z',
-      durationMinutes: 60,
       slotNumber: 1,
-      materialsStatus: 'pending',
+      materialsStatus: 'NONE',
     };
 
     render(
@@ -557,18 +567,19 @@ describe('SessionEditModal - Conflict Error Handling', () => {
 
 describe('SessionEditModal - Form Validation', () => {
   it('should_showError_when_titleIsEmpty', async () => {
-    const mockOnSave = vi.fn();
+    const mockOnSave = vi.fn<SaveFn>();
     const user = userEvent.setup();
 
     const mockSession: SessionUI = {
       sessionSlug: 'test-session',
+      eventCode: 'BATbern57',
+      language: 'de',
       title: 'Test Session',
       description: '',
       startTime: null,
       endTime: null,
-      durationMinutes: 60,
       slotNumber: 1,
-      materialsStatus: 'pending',
+      materialsStatus: 'NONE',
     };
 
     render(
@@ -598,18 +609,19 @@ describe('SessionEditModal - Form Validation', () => {
   });
 
   it('should_showError_when_abstractExceedsMaxLength', async () => {
-    const mockOnSave = vi.fn();
+    const mockOnSave = vi.fn<SaveFn>();
     const user = userEvent.setup();
 
     const mockSession: SessionUI = {
       sessionSlug: 'test-session',
+      eventCode: 'BATbern57',
+      language: 'de',
       title: 'Test Session',
       description: '',
       startTime: null,
       endTime: null,
-      durationMinutes: 60,
       slotNumber: 1,
-      materialsStatus: 'pending',
+      materialsStatus: 'NONE',
     };
 
     render(
@@ -647,7 +659,7 @@ describe('SessionEditModal - Form Validation', () => {
   // blocked client-side while a direct API caller could store any length, because the backend
   // had no validation at all.
   it('should_acceptAbstract_when_lengthBetweenOldAndNewLimit', async () => {
-    const mockOnSave = vi.fn().mockResolvedValue(undefined);
+    const mockOnSave = vi.fn<SaveFn>().mockResolvedValue(undefined);
     const user = userEvent.setup();
 
     render(
@@ -656,13 +668,14 @@ describe('SessionEditModal - Form Validation', () => {
         onClose={vi.fn()}
         session={{
           sessionSlug: 'test-session',
+          eventCode: 'BATbern57',
+          language: 'de',
           title: 'Test Session',
           description: '',
           startTime: null,
           endTime: null,
-          durationMinutes: 60,
           slotNumber: 1,
-          materialsStatus: 'pending',
+          materialsStatus: 'NONE',
         }}
         eventDate="2024-12-15"
         onSave={mockOnSave}
@@ -684,21 +697,22 @@ describe('SessionEditModal - Form Validation', () => {
 
 describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
   let mockSession: SessionUI;
-  let mockOnSave: ReturnType<typeof vi.fn>;
+  let mockOnSave: Mock<SaveFn>;
 
   beforeEach(() => {
     mockSession = {
       sessionSlug: 'test-session',
+      eventCode: 'BATbern57',
+      language: 'de',
       title: 'Test Session',
       description: 'Test description',
       startTime: '2024-12-15T14:00:00Z',
       endTime: '2024-12-15T15:00:00Z',
-      durationMinutes: 60,
       slotNumber: 1,
-      materialsStatus: 'pending',
+      materialsStatus: 'NONE',
       materials: [],
     };
-    mockOnSave = vi.fn().mockResolvedValue(undefined);
+    mockOnSave = vi.fn<SaveFn>().mockResolvedValue(undefined);
   });
 
   it('should_showMaterialsTab_when_sessionEditModalOpens', () => {
@@ -815,14 +829,14 @@ describe('SessionEditModal - Materials Tab (Story 5.9 - AC1)', () => {
 describe('SessionEditModal - Delete Material', () => {
   const mockSessionWithMaterials: SessionUI = {
     sessionSlug: 'test-session',
+    language: 'de',
     eventCode: 'BATbern99',
     title: 'Test Session',
     description: '',
     startTime: null,
     endTime: null,
-    durationMinutes: 60,
     slotNumber: 1,
-    materialsStatus: 'uploaded',
+    materialsStatus: 'COMPLETE',
     materials: [
       {
         id: 'mat-1',
@@ -849,7 +863,7 @@ describe('SessionEditModal - Delete Material', () => {
         onClose={vi.fn()}
         session={mockSessionWithMaterials}
         eventDate="2024-12-15"
-        onSave={vi.fn()}
+        onSave={vi.fn().mockResolvedValue(undefined)}
       />
     );
 
@@ -867,7 +881,7 @@ describe('SessionEditModal - Delete Material', () => {
         onClose={vi.fn()}
         session={mockSessionWithMaterials}
         eventDate="2024-12-15"
-        onSave={vi.fn()}
+        onSave={vi.fn().mockResolvedValue(undefined)}
       />
     );
 
@@ -897,7 +911,7 @@ describe('SessionEditModal - Delete Material', () => {
         onClose={vi.fn()}
         session={mockSessionWithMaterials}
         eventDate="2024-12-15"
-        onSave={vi.fn()}
+        onSave={vi.fn().mockResolvedValue(undefined)}
       />
     );
 
@@ -932,7 +946,7 @@ describe('SessionEditModal - Speakers Tab', () => {
         onClose={vi.fn()}
         session={mockSession}
         eventDate="2024-12-15"
-        onSave={vi.fn()}
+        onSave={vi.fn().mockResolvedValue(undefined)}
       />
     );
 
@@ -946,7 +960,7 @@ describe('SessionEditModal - Speakers Tab', () => {
         onClose={vi.fn()}
         session={mockSession}
         eventDate="2024-12-15"
-        onSave={vi.fn()}
+        onSave={vi.fn().mockResolvedValue(undefined)}
         initialTab={2}
       />
     );

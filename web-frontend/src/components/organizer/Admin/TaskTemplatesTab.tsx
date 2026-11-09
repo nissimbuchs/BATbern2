@@ -82,7 +82,11 @@ export const TaskTemplatesTab: React.FC = () => {
   }
 
   if (error) {
-    return <Alert severity="error">{t('errors.loadFailed', 'Failed to load templates.')}</Alert>;
+    return (
+      <Alert severity="error">
+        {t('admin.taskTemplates.loadFailed', 'Failed to load templates.')}
+      </Alert>
+    );
   }
 
   return (

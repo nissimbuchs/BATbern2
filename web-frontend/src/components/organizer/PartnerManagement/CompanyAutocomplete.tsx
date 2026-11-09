@@ -177,15 +177,15 @@ export const CompanyAutocomplete: React.FC<CompanyAutocompleteProps> = ({
       filterOptions={(x) => x} // Disable client-side filtering (we do server-side filtering)
       noOptionsText={
         isSearchError
-          ? t('Error loading companies')
+          ? t('autocomplete.companiesLoadFailed')
           : inputValue.length < 2
-            ? t('Type at least 2 characters')
-            : t('No companies found')
+            ? t('autocomplete.typeMore')
+            : t('autocomplete.noCompanies')
       }
       renderInput={(params) => (
         <TextField
           {...params}
-          label={label || t('Company')}
+          label={label || t('labels.company')}
           error={!!error}
           helperText={error || undefined}
           inputRef={inputRef}

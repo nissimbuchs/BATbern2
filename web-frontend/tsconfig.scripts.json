@@ -14,10 +14,12 @@
   },
   "include": [
     "scripts/check-api-paths*.ts",
+    "scripts/check-api-type-copies*.ts",
     "scripts/test-ratchet*.ts",
     "scripts/api-lint*.ts",
     "scripts/api-similarity*.ts",
     "scripts/check-i18n-keys*.ts",
+    "scripts/check-test-typecheck*.ts",
     "scripts/lib/*.ts",
     "src/test/contract/*.ts",
     "src/test/msw/openapi.ts",

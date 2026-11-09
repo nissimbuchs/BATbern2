@@ -284,7 +284,8 @@
       "typeNewsletter": "Nieuwsbrief",
       "typeReminder": "Herinnering",
       "previewTitle": "E-mailvoorbeeld",
-      "retryHint": "De verzending van {{date}} heeft {{count}} ontvanger(s) niet bereikt."
+      "retryHint": "De verzending van {{date}} heeft {{count}} ontvanger(s) niet bereikt.",
+      "previewPlaceholder": "Het voorbeeld verschijnt hier"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -314,7 +315,8 @@
       "confirmBody": "Er wordt een echte e-mail verstuurd naar {{recipients}}. Het antwoordadres is dat van de geconfigureerde locatiecoördinator.",
       "confirmSend": "Ja, versturen",
       "sentSuccess": "Verzonden naar {{count}} ontvanger(s).",
-      "sentFailed": "Verzenden mislukt: {{message}}"
+      "sentFailed": "Verzenden mislukt: {{message}}",
+      "previewPlaceholder": "Het voorbeeld verschijnt hier"
     },
     "registrantNotices": {
       "title": "Deelnemersberichten",
@@ -897,7 +899,9 @@
     "slotDurationMinimum": "Slotduur moet minimaal 15 minuten zijn",
     "minSlotsLessThanMax": "Minimum slots moet kleiner of gelijk zijn aan maximum slots",
     "defaultCapacityPositive": "Standaardcapaciteit moet een positief getal zijn",
-    "typicalStartTimeRequired": "Begintijd is verplicht."
+    "typicalStartTimeRequired": "Begintijd is verplicht.",
+    "registrationDeadlineRequired": "Inschrijvingsdeadline is verplicht",
+    "eventTypeRequired": "Evenementtype is verplicht"
   },
   "errors": {
     "loadFailed": "Laden van evenementen mislukt",
@@ -915,7 +919,8 @@
     "imageInvalidType": "Ongeldig afbeeldingstype (gebruik PNG, JPEG of SVG)",
     "MULTIPLE_FILES": "Upload slechts één bestand tegelijk",
     "FILE_TOO_LARGE": "Bestandsgrootte overschrijdt de limiet van 5 MB",
-    "INVALID_FILE_TYPE": "Ongeldig bestandstype. Upload alleen PNG-, JPEG- of SVG-afbeeldingen"
+    "INVALID_FILE_TYPE": "Ongeldig bestandstype. Upload alleen PNG-, JPEG- of SVG-afbeeldingen",
+    "materialDownloadFailed": "Materiaal downloaden mislukt. Probeer het opnieuw."
   },
   "confirmations": {
     "unsavedChanges": "Niet-opgeslagen wijzigingen",
@@ -937,7 +942,12 @@
       "event_live": "Evenement live",
       "event_completed": "Evenement voltooid",
       "archived": "Gearchiveerd"
-    }
+    },
+    "loading": "Workflowstatus laden...",
+    "error": "Workflowstatus laden mislukt",
+    "noData": "Geen workflowstatus beschikbaar",
+    "currentState": "Huidige status",
+    "blockedTransitions": "Geblokkeerd:"
   },
   "autoSave": {
     "saving": "Opslaan...",
@@ -1008,7 +1018,10 @@
       "revertPhase": "Publicatie {{phase}} terugdraaien",
       "revertConfirmTitle": "Publicatie {{phase}} terugdraaien?",
       "revertConfirmText": "De openbare website gaat terug naar de vorige fase. Wat {{phase}} toonde, is niet meer zichtbaar voor bezoekers.",
-      "revertConfirmButton": "Terugdraaien"
+      "revertConfirmButton": "Terugdraaien",
+      "topicNotReady": "Het onderwerp is nog niet klaar om te publiceren",
+      "speakersNotReady": "De sprekers zijn nog niet klaar om te publiceren",
+      "agendaNotReady": "{{assigned}} van {{total}} slots toegewezen. Wijs alle slots toe voordat u het programma publiceert"
     },
     "validation": {
       "readyToPublish": "Klaar om te publiceren",
@@ -1096,7 +1109,8 @@
       "date": "Datum",
       "time": "Tijd",
       "location": "Locatie",
-      "capacity": "Aanmeldingen"
+      "capacity": "Aanmeldingen",
+      "topic": "Onderwerp"
     },
     "errors": {
       "loadFailed": "Laden van evenement mislukt",
@@ -1116,7 +1130,13 @@
     "program": {
       "title": "Evenementprogramma",
       "speaker": "Spreker",
-      "materials": "Materialen"
+      "materials": "Materialen",
+      "materialTypes": {
+        "presentation": "Presentatie",
+        "document": "Document",
+        "video": "Video",
+        "other": "Overig"
+      }
     },
     "venue": {
       "title": "Locatie",
@@ -1188,8 +1208,16 @@
       "titleRequired": "Titel is verplicht",
       "abstractTooLong": "Abstract mag maximaal {{max}} tekens bevatten",
       "invalidDuration": "Duur moet tussen 1 en 480 minuten zijn",
-      "saveFailed": "Opslaan van sessie mislukt"
-    }
+      "saveFailed": "Opslaan van sessie mislukt",
+      "endTimeBeforeStart": "De eindtijd moet na de begintijd liggen",
+      "durationTooShort": "De sessie moet minstens {{min}} minuten duren",
+      "durationTooLong": "De sessie mag hoogstens {{max}} minuten duren",
+      "speakerConflict": "Spreker {{speaker}} is al ingepland voor \"{{session}}\" om {{time}}",
+      "roomConflict": "Zaal {{room}} is al geboekt voor \"{{session}}\" om {{time}}",
+      "timingConflict": "Tijdconflict gedetecteerd"
+    },
+    "startTimeLabel": "Begintijd",
+    "endTimeLabel": "Eindtijd"
   },
   "slotAssignment": {
     "title": "Slottoewijzing",
@@ -1227,8 +1255,7 @@
       "emptyState": {
         "title": "Alle sessies toegewezen!",
         "message": "Goed gedaan! Alle sprekers zijn toegewezen aan tijdslots."
-      },
-      "viewPreferences": "Voorkeuren"
+      }
     },
     "quickActions": {
       "title": "Snelle acties",
@@ -1274,33 +1301,10 @@
         "error": "FOUT",
         "warning": "WAARSCHUWING"
       },
-      "timeRange": "Conflicttijdbereik",
-      "start": "Begin",
-      "end": "Einde",
       "conflictingSession": "Conflicterende sessie",
       "resolutionOptions": "Oplossingsopties",
       "resolutionMessage": "Kies een ander tijdslot of zaal om dit conflict op te lossen.",
       "chooseDifferentSlot": "Ander slot kiezen"
-    },
-    "preferences": {
-      "title": "Sprekersvoorkeuren",
-      "timePreferences": "Tijdvoorkeuren",
-      "unavailableTimes": "Niet-beschikbare tijden",
-      "avRequirements": "A/V-vereisten",
-      "setupNotes": "Zaalopstellingsnotities",
-      "slotMatchScore": "Slotmatch-score",
-      "matchPercent": "{{percent}}% match",
-      "times": {
-        "morning": "Ochtend",
-        "afternoon": "Middag",
-        "evening": "Avond",
-        "any": "Elk moment"
-      },
-      "equipment": {
-        "microphone": "Microfoon",
-        "projector": "Projector",
-        "recording": "Opname"
-      }
     },
     "actionBar": {
       "label": "Acties voor tijdvaktoewijzing"
@@ -1380,7 +1384,8 @@
     "emptyState": "Nog geen foto's. Upload de eerste!",
     "uploading": "Uploaden...",
     "uploadError": "Upload mislukt. Probeer opnieuw.",
-    "uploadErrorPartial": "{{failed}} van {{total}} uploads mislukt. Probeer opnieuw."
+    "uploadErrorPartial": "{{failed}} van {{total}} uploads mislukt. Probeer opnieuw.",
+    "uploadingProgress": "Uploaden {{done}}/{{total}}..."
   },
   "teaserImage": {
     "title": "Teaserafbeeldingen",
@@ -1493,5 +1498,19 @@
       "limits": "Elke mail die we hun stuurden en elke mail die zij ons stuurden, over alle evenementen. Niet vermeld: nieuwsbrieven, mails van voordat het Mail Center ze vastlegde en mails aan een adres dat ze niet meer hebben.",
       "empty": "Nog geen mails aan of van deze persoon."
     }
+  },
+  "venue": {
+    "errors": {
+      "nameRequired": "Naam van de locatie is verplicht",
+      "addressRequired": "Adres van de locatie is verplicht",
+      "capacityPositive": "Capaciteit moet een positief getal zijn",
+      "capacityMax": "Capaciteit mag niet hoger zijn dan 5000",
+      "updateFailed": "Locatie bijwerken mislukt"
+    },
+    "sectionTitle": "Locatie en logistiek",
+    "title": "Locatie & logistiek",
+    "nameLabel": "Naam van de locatie",
+    "capacityLabel": "Capaciteit van de locatie",
+    "addressLabel": "Adres van de locatie"
   }
 }

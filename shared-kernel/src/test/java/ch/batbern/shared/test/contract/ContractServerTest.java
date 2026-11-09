@@ -388,16 +388,43 @@ class ContractServerTest {
             + "\"updatedAt\": \"2025-01-15T10:00:00Z\"";
 
     @Test
-    @DisplayName("an optional property may be null (Jackson's default), a required one may not")
-    void should_acceptNullOnlyForOptionalProperties() {
+    @DisplayName("null is valid only where the spec says nullable, optional or not (owner decision 2026-11-09)")
+    void should_rejectNull_when_propertyIsNotNullable() {
         OpenApiContract companies = OpenApiContract.load(COMPANIES);
 
+        // displayName is optional and not nullable: absent is fine, null is not
+        assertThat(companies.validateResponse("GET", "/api/v1/companies/x", 200,
+                "{\"name\": \"Acme\", \"isVerified\": true, " + COMPANY_DATES + "}"))
+                .isEmpty();
         assertThat(companies.validateResponse("GET", "/api/v1/companies/x", 200,
                 "{\"name\": \"Acme\", \"isVerified\": true, \"displayName\": null, " + COMPANY_DATES + "}"))
-                .isEmpty();
+                .singleElement().asString().contains("/displayName");
         assertThat(companies.validateResponse("GET", "/api/v1/companies/x", 200,
                 "{\"name\": null, \"isVerified\": true, " + COMPANY_DATES + "}"))
                 .singleElement().asString().contains("/name");
+    }
+
+    @Test
+    @DisplayName("nullable: true in a 3.0 spec admits null, also on an enum")
+    void should_honourNullableKeyword_in30Spec() {
+        OpenApiContract registrations = OpenApiContract.load("docs/api/event-registrations-api.openapi.yml");
+        String registration = """
+                {"registrationCode": "BATbern1-reg-ABC123", "eventCode": "BATbern1", "status": "REGISTERED",
+                 "attendeeUsername": "anna.muster", "eventTitle": null, "waitlistPosition": null}""";
+
+        assertThat(registrations.validateResponse("GET", "/api/v1/events/registrations", 200,
+                "[" + registration + "]")).isEmpty();
+
+        // MailMessageSummary.participantStatus: nullable enum without null in its list; the
+        // spec example of the page carries it as null
+        OpenApiContract mail = OpenApiContract.load("docs/api/event-mail-api.openapi.yml");
+        String page = """
+                {"data": [{"mailKey": "BATbern1-1", "sentAt": "2026-05-14T16:00:00Z", "audience": "REGISTRANTS",
+                  "contentSource": "TEMPLATE", "recipientCount": 1, "deliveredCount": 1, "failedCount": 0,
+                  "messageCount": 1, "test": false, "participantStatus": null}],
+                 "pagination": {"page": 1, "limit": 20, "totalItems": 1, "totalPages": 1,
+                  "hasNext": false, "hasPrev": false}}""";
+        assertThat(mail.validateResponse("GET", "/api/v1/events/BATbern1/mails", 200, page)).isEmpty();
     }
 
     @Test
@@ -407,6 +434,35 @@ class ContractServerTest {
 
         assertThat(users.validateResponse("POST", "/api/v1/users/x/issue-invitation-credentials", 200,
                 "{\"temporaryPassword\": null, \"action\": \"USE_EXISTING_PASSWORD\"}")).isEmpty();
+    }
+
+    @Test
+    @DisplayName("a nullable $ref (allOf or oneOf with type null) admits null, 3.0 and 3.1")
+    void should_admitNull_when_referencedSchemaIsNullable() {
+        // 3.1, nullable: true next to allOf
+        assertThat(OpenApiContract.load(USERS).validateResponse("POST",
+                "/api/v1/users/merge-requests/0b9f8e2a-1c3d-4e5f-8a7b-9c0d1e2f3a4b/decline", 200, """
+                {"requestId": "0b9f8e2a-1c3d-4e5f-8a7b-9c0d1e2f3a4b", "status": "DECLINED", "requesterUsername": "anna.muster",
+                 "sourceUsername": "anna.muster.2", "createdAt": "2026-05-14T16:00:00Z", "preview": null}"""))
+                .isEmpty();
+        // 3.1, oneOf [$ref, type: 'null']
+        assertThat(OpenApiContract.load(USERS).validateResponse("GET",
+                "/api/v1/users/anna.muster/watch-pairing", 200,
+                "{\"pairedWatches\": [], \"pendingCode\": null}"))
+                .isEmpty();
+        // 3.0, nullable: true next to allOf
+        assertThat(OpenApiContract.load("docs/api/event-mail-api.openapi.yml").validateResponse("POST",
+                "/api/v1/events/BATbern1/mails/preview", 200, """
+                {"subject": "S", "html": "<p>H</p>", "recipientIndex": 0, "recipientCount": 1,
+                 "sampleRecipients": [], "personalized": false, "locale": "de", "organizerCount": 0,
+                 "skipped": [], "unknownPlaceholders": [], "alreadySent": null}"""))
+                .isEmpty();
+        // 3.0, nullable allOf of an enum, inherited through SessionResponse = allOf [Session, ...]
+        OpenApiContract sessions = OpenApiContract.load("docs/api/event-sessions-api.openapi.yml");
+        String session = sessions.example("GET", "/api/v1/events/BATbern1/sessions/s1", 200, null);
+        assertThat(session).contains("\"materialsStatus\":\"NONE\"");
+        assertThat(sessions.validateResponse("GET", "/api/v1/events/BATbern1/sessions/s1", 200,
+                session.replace("\"materialsStatus\":\"NONE\"", "\"materialsStatus\":null"))).isEmpty();
     }
 
     @Test

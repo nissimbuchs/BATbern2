@@ -25,10 +25,10 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
 import { BrowserRouter } from 'react-router-dom';
 import i18n from '@/i18n/config';
-import type { Topic } from '@/types/event.types';
+import type { TopicListItem } from '@/types/event.types';
 
 // Mock data - Based on wireframe lines 68-81
-const mockTopics: Topic[] = [
+const mockTopics: TopicListItem[] = [
   {
     id: 'topic-1',
     title: 'Microservices Architecture Patterns',
@@ -127,7 +127,7 @@ describe('TopicsList Component (AC7: Topic Management)', () => {
 
       // Check "Last used" information (text split across elements)
       // Use getAllByText with function matcher since "Last used" appears multiple times
-      const lastUsedElements = screen.getAllByText((content, element) => {
+      const lastUsedElements = screen.getAllByText((_content, element) => {
         return element?.textContent?.includes('Last used') || false;
       });
       expect(lastUsedElements.length).toBeGreaterThanOrEqual(1);
@@ -163,7 +163,7 @@ describe('TopicsList Component (AC7: Topic Management)', () => {
 
       // Check partner votes for all topics (text split across elements)
       // Use function matcher to find text across nested elements
-      const partnerVotesElements = screen.getAllByText((content, element) => {
+      const partnerVotesElements = screen.getAllByText((_content, element) => {
         return element?.textContent?.includes('Partner votes') || false;
       });
       expect(partnerVotesElements.length).toBeGreaterThanOrEqual(1);

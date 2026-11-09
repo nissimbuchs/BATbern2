@@ -422,6 +422,7 @@ line 422 for `ApiGatewayServiceStack`).
 | ALB (platform ingress) | `alb-5xx`, `alb-latency-p95`, `alb-availability`, `alb-unhealthy-targets` | `AlbAlarms`, instantiated by `ApiGatewayServiceStack` |
 | Gateway API surface | `api-4xx-ratio` | `AlbAlarms`, fed by MetricFilters over the api-gateway log group |
 | ECS, per service ×6 | `{Service}-High-CPU`, `-High-Memory`, `-Task-Failures`, `-OOM-Kills` | `EcsServiceAlarms`, instantiated by each service stack |
+| Swallowed domain-event listener failures, EMS, CUMS, PCS | `{Service}-Event-Listener-Failures`: any line with the marker `DOMAIN_EVENT_LISTENER_FAILED` in 5 minutes. Log based (MetricFilter on the service log group, metric `BATbern/DomainEvents ListenerFailures-{Service}`), because no service exports Micrometer metrics to CloudWatch | `EcsServiceAlarms` with `serviceLogGroup`, instantiated by each of the three service stacks |
 | RDS | `database-connections`, `database-storage-low`, `database-cpu` | `AlarmConstruct`, in `MonitoringStack` |
 | SES reputation | `bounce-rate-critical` (`Reputation.BounceRate` > 5%), `complaint-rate-critical` | `MonitoringStack` |
 | SES bounce volume | `bounce-rate-warning` — `Bounce` count > 5/hour, NOT the rolling rate (#984) | `MonitoringStack` |

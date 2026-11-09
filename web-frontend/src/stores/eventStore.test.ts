@@ -136,7 +136,7 @@ describe('eventStore', () => {
       const { result } = renderHook(() => useEventStore());
 
       const newFilters: EventFilters = {
-        status: ['active', 'published'],
+        workflowState: ['TOPIC_SELECTION', 'AGENDA_PUBLISHED'],
         year: 2025,
         search: 'BATbern',
       };
@@ -152,10 +152,10 @@ describe('eventStore', () => {
       const { result } = renderHook(() => useEventStore());
 
       act(() => {
-        result.current.setFilters({ status: ['active'] });
+        result.current.setFilters({ workflowState: ['TOPIC_SELECTION'] });
       });
 
-      expect(result.current.filters).toEqual({ status: ['active'] });
+      expect(result.current.filters).toEqual({ workflowState: ['TOPIC_SELECTION'] });
 
       act(() => {
         result.current.setFilters({ year: 2025 });
@@ -168,7 +168,7 @@ describe('eventStore', () => {
       const { result } = renderHook(() => useEventStore());
 
       act(() => {
-        result.current.setFilters({ status: ['active'], year: 2025 });
+        result.current.setFilters({ workflowState: ['TOPIC_SELECTION'], year: 2025 });
       });
 
       act(() => {
@@ -182,7 +182,7 @@ describe('eventStore', () => {
       const { result } = renderHook(() => useEventStore());
 
       const filters: EventFilters = {
-        status: ['active', 'published', 'completed'],
+        workflowState: ['TOPIC_SELECTION', 'AGENDA_PUBLISHED', 'EVENT_COMPLETED'],
         year: 2025,
         search: 'DevOps',
       };
@@ -198,14 +198,18 @@ describe('eventStore', () => {
       const { result } = renderHook(() => useEventStore());
 
       const filters: EventFilters = {
-        status: ['active', 'published', 'archived'],
+        workflowState: ['TOPIC_SELECTION', 'AGENDA_PUBLISHED', 'ARCHIVED'],
       };
 
       act(() => {
         result.current.setFilters(filters);
       });
 
-      expect(result.current.filters.status).toEqual(['active', 'published', 'archived']);
+      expect(result.current.filters.workflowState).toEqual([
+        'TOPIC_SELECTION',
+        'AGENDA_PUBLISHED',
+        'ARCHIVED',
+      ]);
     });
 
     it('should_handleSearchQuery_when_searchProvided', () => {
@@ -317,7 +321,7 @@ describe('eventStore', () => {
       const { result } = renderHook(() => useEventStore());
 
       act(() => {
-        result.current.setFilters({ status: ['active'] });
+        result.current.setFilters({ workflowState: ['TOPIC_SELECTION'] });
         result.current.setSelectedEventCode('BATbern56');
       });
 
@@ -325,7 +329,7 @@ describe('eventStore', () => {
         result.current.openCreateModal();
       });
 
-      expect(result.current.filters).toEqual({ status: ['active'] });
+      expect(result.current.filters).toEqual({ workflowState: ['TOPIC_SELECTION'] });
       expect(result.current.selectedEventCode).toBe('BATbern56');
     });
   });
@@ -426,7 +430,7 @@ describe('eventStore', () => {
       const { result } = renderHook(() => useEventStore());
 
       const filters: EventFilters = {
-        status: ['active', 'published'],
+        workflowState: ['TOPIC_SELECTION', 'AGENDA_PUBLISHED'],
         year: 2025,
       };
 
@@ -445,7 +449,7 @@ describe('eventStore', () => {
       const { result } = renderHook(() => useEventStore());
 
       const filters: EventFilters = {
-        status: ['active', 'published', 'completed'],
+        workflowState: ['TOPIC_SELECTION', 'AGENDA_PUBLISHED', 'EVENT_COMPLETED'],
         year: 2025,
         search: 'Cloud',
       };
@@ -496,7 +500,7 @@ describe('eventStore', () => {
       const { result: firstRender, unmount } = renderHook(() => useEventStore());
 
       const filters: EventFilters = {
-        status: ['active'],
+        workflowState: ['TOPIC_SELECTION'],
         year: 2025,
         search: 'BATbern',
       };
@@ -519,7 +523,7 @@ describe('eventStore', () => {
       const { result: firstRender } = renderHook(() => useEventStore());
 
       act(() => {
-        firstRender.current.setFilters({ status: ['active'] });
+        firstRender.current.setFilters({ workflowState: ['TOPIC_SELECTION'] });
         firstRender.current.setSelectedEventCode('BATbern56');
         firstRender.current.openCreateModal();
         firstRender.current.openEditModal('BATbern57');
@@ -529,7 +533,7 @@ describe('eventStore', () => {
       const stored = localStorage.getItem('event-store');
       expect(stored).toBeTruthy();
       const parsedState = JSON.parse(stored!);
-      expect(parsedState.state.filters).toEqual({ status: ['active'] });
+      expect(parsedState.state.filters).toEqual({ workflowState: ['TOPIC_SELECTION'] });
       expect(parsedState.state.selectedEventCode).toBeUndefined();
       expect(parsedState.state.isCreateModalOpen).toBeUndefined();
       expect(parsedState.state.isEditModalOpen).toBeUndefined();
@@ -548,7 +552,7 @@ describe('eventStore', () => {
 
       // Set filters
       act(() => {
-        result.current.setFilters({ status: ['active'], year: 2025 });
+        result.current.setFilters({ workflowState: ['TOPIC_SELECTION'], year: 2025 });
       });
 
       // Select event and open edit modal
@@ -556,7 +560,7 @@ describe('eventStore', () => {
         result.current.openEditModal('BATbern56');
       });
 
-      expect(result.current.filters).toEqual({ status: ['active'], year: 2025 });
+      expect(result.current.filters).toEqual({ workflowState: ['TOPIC_SELECTION'], year: 2025 });
       expect(result.current.isEditModalOpen).toBe(true);
       expect(result.current.selectedEventCode).toBe('BATbern56');
 
@@ -572,14 +576,14 @@ describe('eventStore', () => {
       expect(result.current.isEditModalOpen).toBe(false);
       expect(result.current.isCreateModalOpen).toBe(true);
       expect(result.current.selectedEventCode).toBeUndefined();
-      expect(result.current.filters).toEqual({ status: ['active'], year: 2025 });
+      expect(result.current.filters).toEqual({ workflowState: ['TOPIC_SELECTION'], year: 2025 });
     });
 
     it('should_maintainStateIntegrity_when_rapidUpdates', () => {
       const { result } = renderHook(() => useEventStore());
 
       act(() => {
-        result.current.setFilters({ status: ['active'] });
+        result.current.setFilters({ workflowState: ['TOPIC_SELECTION'] });
         result.current.setSelectedEventCode('BATbern56');
         result.current.openCreateModal();
         result.current.setFilters({ year: 2025 });
@@ -629,9 +633,9 @@ describe('eventStore', () => {
 
       // Filters should still be intact
       act(() => {
-        result.current.setFilters({ status: ['active'] });
+        result.current.setFilters({ workflowState: ['TOPIC_SELECTION'] });
       });
-      expect(result.current.filters).toEqual({ status: ['active'] });
+      expect(result.current.filters).toEqual({ workflowState: ['TOPIC_SELECTION'] });
     });
   });
 });

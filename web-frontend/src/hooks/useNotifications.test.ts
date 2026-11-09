@@ -30,6 +30,7 @@ vi.mock('@/services/notificationApiClient', () => ({
 }));
 
 import { notificationApiClient } from '@/services/notificationApiClient';
+import type { NotificationPage } from '@/types/notification';
 
 const mockClient = vi.mocked(notificationApiClient);
 
@@ -53,9 +54,23 @@ describe('useNotifications', () => {
 
   describe('useNotifications', () => {
     it('should fetch notifications when username is provided', async () => {
-      const mockResponse = {
-        notifications: [{ id: 'n-1', message: 'Hello', read: false }],
-        total: 1,
+      const mockResponse: NotificationPage = {
+        data: [
+          {
+            id: 'n-1',
+            recipientUsername: 'alice',
+            notificationType: 'NEW_MESSAGE',
+            channel: 'IN_APP',
+            priority: 'NORMAL',
+            subject: 'Hallo',
+            body: 'Hello',
+            status: 'SENT',
+            createdAt: '2025-03-01T09:00:00Z',
+            updatedAt: '2025-03-01T09:00:00Z',
+            isRead: false,
+          },
+        ],
+        pagination: { page: 1, limit: 20, totalItems: 1, totalPages: 1 },
       };
       mockClient.getNotifications.mockResolvedValue(mockResponse);
 
@@ -118,7 +133,7 @@ describe('useNotifications', () => {
     });
 
     it('should not fetch when enabled=false', () => {
-      const { result } = renderHook(() => useUnreadCount('alice', { enabled: false }), {
+      renderHook(() => useUnreadCount('alice', { enabled: false }), {
         wrapper: createWrapper(qc),
       });
 
@@ -128,7 +143,7 @@ describe('useNotifications', () => {
 
   describe('useMarkAsRead', () => {
     it('should call markAsRead and invalidate queries on success', async () => {
-      mockClient.markAsRead.mockResolvedValue({ id: 'n-1', read: true });
+      mockClient.markAsRead.mockResolvedValue({ success: true, markedCount: 1 });
       const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
       const { result } = renderHook(() => useMarkAsRead(), { wrapper: createWrapper(qc) });
@@ -144,7 +159,7 @@ describe('useNotifications', () => {
 
   describe('useBatchMarkAsRead', () => {
     it('should call batchMarkAsRead and invalidate queries', async () => {
-      mockClient.batchMarkAsRead.mockResolvedValue({ id: 'batch', read: true });
+      mockClient.batchMarkAsRead.mockResolvedValue({ success: true, markedCount: 2 });
       const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
       const { result } = renderHook(() => useBatchMarkAsRead(), { wrapper: createWrapper(qc) });
@@ -160,7 +175,7 @@ describe('useNotifications', () => {
 
   describe('useDeleteNotification', () => {
     it('should call deleteNotification and invalidate queries', async () => {
-      mockClient.deleteNotification.mockResolvedValue({ id: 'n-1', deleted: true });
+      mockClient.deleteNotification.mockResolvedValue({ success: true });
       const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
       const { result } = renderHook(() => useDeleteNotification(), { wrapper: createWrapper(qc) });
@@ -176,7 +191,7 @@ describe('useNotifications', () => {
 
   describe('useBatchDeleteNotifications', () => {
     it('should call batchDelete and invalidate queries', async () => {
-      mockClient.batchDelete.mockResolvedValue({ id: 'batch', deleted: true });
+      mockClient.batchDelete.mockResolvedValue({ success: true });
       const invalidateSpy = vi.spyOn(qc, 'invalidateQueries');
 
       const { result } = renderHook(() => useBatchDeleteNotifications(), {

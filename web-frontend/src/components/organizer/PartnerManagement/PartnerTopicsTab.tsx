@@ -221,7 +221,7 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
                   </TableCell>
                   <TableCell>
                     <Typography variant="body2" color="text.secondary" noWrap>
-                      {format(parseISO(topic.createdAt), 'd MMM yyyy')}
+                      {topic.createdAt ? format(parseISO(topic.createdAt), 'd MMM yyyy') : '–'}
                     </Typography>
                   </TableCell>
                   <TableCell align="right">
@@ -284,7 +284,9 @@ export const PartnerTopicsTab: React.FC<Props> = ({ companyName }) => {
           </DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={() => setDeletingTopicId(null)}>{t('common.cancel', 'Cancel')}</Button>
+          <Button onClick={() => setDeletingTopicId(null)}>
+            {t('common:actions.cancel', 'Cancel')}
+          </Button>
           <Button
             onClick={() => void handleDeleteConfirm()}
             color="error"

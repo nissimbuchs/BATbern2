@@ -45,14 +45,16 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
     return null;
   }
 
-  const firstConflict = conflict.conflicts[0];
-  const conflictTypeLabels = {
+  // The agenda-full 409 of the slot endpoint is EMS's generic error body: a message, no list.
+  const conflicts = conflict.conflicts ?? [];
+  const firstConflict = conflicts[0];
+  const conflictTypeLabels: Record<string, string> = {
     room_overlap: t('slotAssignment.conflicts.types.room_overlap'),
     speaker_double_booked: t('slotAssignment.conflicts.types.speaker_double_booked'),
     speaker_unavailable: t('slotAssignment.conflicts.types.speaker_unavailable'),
   };
 
-  const conflictSeverity = firstConflict.type === 'speaker_unavailable' ? 'warning' : 'error';
+  const conflictSeverity = firstConflict?.type === 'speaker_unavailable' ? 'warning' : 'error';
 
   const getConflictIcon = () => {
     if (conflictSeverity === 'error') {
@@ -87,12 +89,12 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
           </Alert>
 
           {/* Conflict Details */}
-          {conflict.conflicts.map((conf, index) => (
+          {conflicts.map((conf, index) => (
             <Paper key={index} sx={{ p: 2, bgcolor: 'background.default' }}>
               <Box sx={{ mb: 2 }}>
                 <Chip
                   data-testid="conflict-type-badge"
-                  label={conflictTypeLabels[conf.type]}
+                  label={conf.type ? conflictTypeLabels[conf.type] : undefined}
                   color={conflictSeverity === 'error' ? 'error' : 'warning'}
                   size="small"
                   sx={{ mb: 1 }}
@@ -105,53 +107,6 @@ export const ConflictDetectionAlert: React.FC<ConflictDetectionAlertProps> = ({
                   sx={{ ml: 1 }}
                 />
               </Box>
-
-              <Typography variant="body2" color="text.secondary" gutterBottom>
-                {conf.details}
-              </Typography>
-
-              {/* Visual Timeline */}
-              {conf.conflictingTimeRange && (
-                <Box
-                  data-testid="conflict-timeline"
-                  sx={{
-                    mt: 2,
-                    p: 2,
-                    bgcolor: 'background.paper',
-                    borderRadius: 1,
-                    border: 1,
-                    borderColor: conflictSeverity === 'error' ? 'error.light' : 'warning.light',
-                  }}
-                >
-                  <Typography variant="caption" color="text.secondary" gutterBottom>
-                    {t('slotAssignment.conflicts.timeRange')}
-                  </Typography>
-                  <Box sx={{ display: 'flex', gap: 2, mt: 1 }}>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('slotAssignment.conflicts.start')}
-                      </Typography>
-                      <Typography variant="body2" fontWeight="medium">
-                        {new Date(conf.conflictingTimeRange.start).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Typography>
-                    </Box>
-                    <Box>
-                      <Typography variant="caption" color="text.secondary">
-                        {t('slotAssignment.conflicts.end')}
-                      </Typography>
-                      <Typography variant="body2" fontWeight="medium">
-                        {new Date(conf.conflictingTimeRange.end).toLocaleTimeString('en-US', {
-                          hour: '2-digit',
-                          minute: '2-digit',
-                        })}
-                      </Typography>
-                    </Box>
-                  </Box>
-                </Box>
-              )}
 
               {/* Conflicting Session Info */}
               {conf.conflictingSessionSlug && (

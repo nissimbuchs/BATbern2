@@ -600,10 +600,6 @@ const InvitationResponsePage = () => {
                   </p>
                 </div>
               )}
-
-              {responseResult.message && (
-                <p className="mt-4 text-zinc-400">{responseResult.message}</p>
-              )}
             </Card>
 
             <div className="flex justify-center gap-4">

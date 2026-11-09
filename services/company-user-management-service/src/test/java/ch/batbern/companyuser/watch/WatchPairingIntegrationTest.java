@@ -19,7 +19,12 @@ import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
+import java.time.Instant;
 import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
+import java.time.ZoneId;
+import java.time.temporal.ChronoUnit;
 import java.util.HashSet;
 import java.util.Set;
 import java.util.UUID;
@@ -97,6 +102,47 @@ class WatchPairingIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.pairingCode").value(matchesPattern("\\d{6}")))
                 .andExpect(jsonPath("$.expiresAt").value(notNullValue()))
                 .andExpect(jsonPath("$.hoursUntilExpiry").value(24));
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    @DisplayName("shouldSendExpiryWithZone_whenPairingCodeGenerated")
+    void shouldSendExpiryWithZone_whenPairingCodeGenerated() throws Exception {
+        // users-api: expiresAt is format date-time, which requires an offset. Without one the
+        // profile page's new Date(expiresAt) reads the server's clock as the browser's local time.
+        MvcResult result = mockMvc.perform(post("/api/v1/users/{username}/watch-pairing", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        String expiresAt = objectMapper.readTree(result.getResponse().getContentAsString())
+                .get("expiresAt").asText();
+        Instant expiry = OffsetDateTime.parse(expiresAt).toInstant();
+        Duration untilExpiry = Duration.between(Instant.now(), expiry);
+        assertThat("expiry is 24 hours ahead, not shifted by a zone: " + expiresAt,
+                Math.abs(untilExpiry.minusHours(24).toMinutes()) <= 1, is(true));
+    }
+
+    @Test
+    @WithMockUser(username = "john.doe", roles = {"ORGANIZER"})
+    @DisplayName("shouldSendPairedAtAndExpiryWithZone_whenStatusRead")
+    void shouldSendPairedAtAndExpiryWithZone_whenStatusRead() throws Exception {
+        LocalDateTime pairedAt = LocalDateTime.now().minusDays(5).truncatedTo(ChronoUnit.SECONDS);
+        LocalDateTime expiresAt = LocalDateTime.now().plusHours(20).truncatedTo(ChronoUnit.SECONDS);
+        createPairedWatch("my-watch", pairedAt);
+        createPendingCode("123456", expiresAt);
+
+        MvcResult result = mockMvc.perform(get("/api/v1/users/{username}/watch-pairing", "john.doe")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        var body = objectMapper.readTree(result.getResponse().getContentAsString());
+        // The service writes these with LocalDateTime.now(), i.e. in the JVM zone.
+        assertThat(OffsetDateTime.parse(body.at("/pairedWatches/0/pairedAt").asText()).toInstant(),
+                is(pairedAt.atZone(ZoneId.systemDefault()).toInstant()));
+        assertThat(OffsetDateTime.parse(body.at("/pendingCode/expiresAt").asText()).toInstant(),
+                is(expiresAt.atZone(ZoneId.systemDefault()).toInstant()));
     }
 
     @Test

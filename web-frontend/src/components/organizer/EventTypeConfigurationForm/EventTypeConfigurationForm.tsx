@@ -211,7 +211,7 @@ export const EventTypeConfigurationForm: React.FC<EventTypeConfigurationFormProp
   if (isLoading) {
     return (
       <Stack spacing={3}>
-        <Alert severity="info">{t('common:loading')}</Alert>
+        <Alert severity="info">{t('common:actions.loading')}</Alert>
       </Stack>
     );
   }

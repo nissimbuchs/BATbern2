@@ -622,6 +622,7 @@ components:
           type: string
           description: 'Due date type: immediate, relative_to_event, or absolute'
         dueDateOffsetDays:
+          nullable: true
           type: integer
           description: Offset days for relative due dates (negative = before event, positive = after)
         activationLeadDays:
@@ -636,6 +637,7 @@ components:
           type: boolean
           description: Whether this is a default (non-editable) template
         createdByUsername:
+          nullable: true
           type: string
           description: Canonical username of the organizer who created the template (null for defaults)
         createdAt:
@@ -730,6 +732,7 @@ components:
           type: string
           description: Event code (null for tasks without an event)
         templateId:
+          nullable: true
           type: string
           format: uuid
           description: Source template ID (null for ad-hoc tasks)
@@ -738,9 +741,11 @@ components:
         triggerState:
           type: string
         dueDate:
+          nullable: true
           type: string
           format: date-time
         assignedOrganizerUsername:
+          nullable: true
           type: string
         status:
           type: string
@@ -748,11 +753,14 @@ components:
             Task status: pending (trigger not reached yet), todo, in_progress, completed, or
             cancelled (event archived, or the newsletter was superseded by a later one)
         notes:
+          nullable: true
           type: string
         completedDate:
+          nullable: true
           type: string
           format: date-time
         completedByUsername:
+          nullable: true
           type: string
         createdAt:
           type: string

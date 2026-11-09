@@ -11,6 +11,7 @@
 
 import apiClient from '@/services/api/apiClient';
 import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
+import type { components } from '@/types/generated/event-speakers-api.types';
 
 // API base path
 const EVENTS_API_PATH = '/events';
@@ -27,38 +28,17 @@ const EVENTS_API_PATH = '/events';
  * with bio + portrait + presentation upload entry points. The backend patches `User.bio`
  * and `User.profile_picture_url` via `UserApiClient.patchUserProfile` (Story 11.C.2 AR14).
  */
-export interface SubmitContentRequest {
-  presentationTitle: string;
-  presentationAbstract: string;
-  bio?: string;
-  profilePictureUrl?: string;
-  presentationUploadId?: string;
-}
+export type SubmitContentRequest = components['schemas']['SubmitContentRequest'];
 
 /**
- * Speaker Content Response DTO
+ * Speaker Content Response DTO. `hasMaterial`, `materialUrl`, `materialFileName`: AC7.
  */
-export interface SpeakerContentResponse {
-  poolId: string;
-  sessionId?: string;
-  status: string;
-  presentationTitle?: string;
-  presentationAbstract?: string;
-  username?: string;
-  warning?: string;
-  // Material fields (AC7)
-  hasMaterial?: boolean;
-  materialUrl?: string;
-  materialFileName?: string;
-}
+export type SpeakerContentResponse = components['schemas']['SpeakerContentResponse'];
 
 /**
  * Quality Review Request DTO
  */
-export interface ReviewRequest {
-  action: 'APPROVE' | 'REJECT';
-  feedback?: string;
-}
+export type ReviewRequest = components['schemas']['ReviewRequest'];
 
 /**
  * Speaker Content Service

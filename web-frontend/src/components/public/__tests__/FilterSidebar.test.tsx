@@ -6,7 +6,7 @@
  */
 
 import { describe, test, expect, vi, beforeEach } from 'vitest';
-import { screen, within } from '@testing-library/react';
+import { screen } from '@testing-library/react';
 import { render } from '@/test/test-utils';
 import userEvent from '@testing-library/user-event';
 import { FilterSidebar } from '../FilterSidebar';
@@ -51,6 +51,7 @@ describe('FilterSidebar Component', () => {
       description: '',
       category: 'technical',
       usageCount: 23,
+      active: true,
     },
     {
       topicCode: 'devops',
@@ -58,6 +59,7 @@ describe('FilterSidebar Component', () => {
       description: '',
       category: 'technical',
       usageCount: 18,
+      active: true,
     },
     {
       topicCode: 'security',
@@ -65,6 +67,7 @@ describe('FilterSidebar Component', () => {
       description: '',
       category: 'technical',
       usageCount: 15,
+      active: true,
     },
     {
       topicCode: 'microservices',
@@ -72,8 +75,16 @@ describe('FilterSidebar Component', () => {
       description: '',
       category: 'technical',
       usageCount: 12,
+      active: true,
     },
-    { topicCode: 'ai-ml', title: 'AI/ML', description: '', category: 'technical', usageCount: 8 },
+    {
+      topicCode: 'ai-ml',
+      title: 'AI/ML',
+      description: '',
+      category: 'technical',
+      usageCount: 8,
+      active: true,
+    },
   ];
 
   const defaultFilters: ArchiveFilters = {
@@ -496,6 +507,7 @@ describe('FilterSidebar Component', () => {
           description: '',
           category: 'technical',
           usageCount: 5,
+          active: true,
         },
       ];
 
@@ -512,6 +524,7 @@ describe('FilterSidebar Component', () => {
         description: '',
         category: 'technical',
         usageCount: Math.floor(Math.random() * 50),
+        active: true,
       }));
 
       render(<FilterSidebar {...defaultProps} topics={manyTopics} />);

@@ -12,6 +12,7 @@ import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { useCurrentEvent } from '../useCurrentEvent';
 import { eventApiClient } from '@/services/eventApiClient';
 import type { EventDetail } from '@/types/event.types';
+import { futureEvent } from '@/test/fixtures';
 
 // Mock the eventApiClient
 vi.mock('@/services/eventApiClient', () => ({
@@ -39,22 +40,13 @@ describe('useCurrentEvent Hook', () => {
   };
 
   test('should_returnEventData_when_apiCallSucceeds', async () => {
-    const mockEvent: EventDetail = {
-      id: 'evt-123',
-      code: 'BAT25',
+    const mockEvent: EventDetail = futureEvent(40, {
+      eventCode: 'BATbern61',
       title: 'BATbern 2025',
       description: 'Annual architecture conference',
-      startDate: '2025-06-15T00:00:00Z',
-      endDate: '2025-06-16T00:00:00Z',
-      status: 'published',
-      eventFormat: 'hybrid',
-      registrationDeadline: '2025-06-01T00:00:00Z',
-      maxAttendees: 200,
-      currentAttendees: 150,
-      topics: [],
-      createdAt: '2024-01-01T00:00:00Z',
-      updatedAt: '2024-01-01T00:00:00Z',
-    };
+      currentAttendeeCount: 150,
+      sessions: [],
+    });
 
     vi.mocked(eventApiClient.getPublicCurrentEvent).mockResolvedValue(mockEvent);
 
@@ -117,6 +109,6 @@ describe('useCurrentEvent Hook', () => {
 
     // Verify staleTime is configured (data doesn't refetch immediately)
     const query = queryClient.getQueryCache().find({ queryKey: ['events', 'public', 'current'] });
-    expect(query?.options.staleTime).toBe(5 * 60 * 1000); // 5 minutes
+    expect((query?.options as { staleTime?: number } | undefined)?.staleTime).toBe(5 * 60 * 1000); // 5 minutes
   });
 });

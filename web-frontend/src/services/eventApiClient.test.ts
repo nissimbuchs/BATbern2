@@ -235,15 +235,6 @@ describe('Event API client', () => {
       expect(api.calls('confirmRegistration')[0].query.get('token')).toBe('test-jwt-token');
     });
 
-    it('reads a registration by its code', async () => {
-      await eventApiClient.getRegistration('BATbern56', 'BATbern56-reg-ABC123');
-
-      expect(api.calls('getRegistration')[0].params).toEqual({
-        eventCode: 'BATbern56',
-        registrationCode: 'BATbern56-reg-ABC123',
-      });
-    });
-
     it('assigns a topic with its code in the body', async () => {
       await eventApiClient.assignTopicToEvent('BATbern56', 'cloud-native');
 

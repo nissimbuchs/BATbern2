@@ -34,20 +34,6 @@
       }
     }
   },
-  "confirmationPage": {
-    "loading": "Bestätigung wird geladen...",
-    "notFound": {
-      "title": "Anmeldung nicht gefunden",
-      "message": "Bitte überprüfen Sie Ihren Bestätigungscode und versuchen Sie es erneut."
-    },
-    "copyCode": "Bestätigungscode kopieren",
-    "qrCodeAlt": "Anmeldungs-QR-Code",
-    "qrCodeTitle": "Ihr Check-In-QR-Code",
-    "detailsTitle": "Anmeldungsdetails",
-    "shareLabel": "Mit Ihrem Netzwerk teilen:",
-    "registerAnother": "Weitere Person anmelden",
-    "viewEventDetails": "Veranstaltungsdetails anzeigen"
-  },
   "successPage": {
     "pendingTitle": "Anmeldung ausstehend",
     "pendingMessage": "Falls Sie eine Anmeldung eingereicht haben, prüfen Sie Ihre E-Mail für den Bestätigungslink.",

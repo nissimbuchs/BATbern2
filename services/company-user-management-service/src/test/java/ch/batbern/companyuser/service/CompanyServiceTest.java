@@ -286,7 +286,7 @@ class CompanyServiceTest {
         // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
+        when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
 
         // When
         CompanyResponse response = companyService.updateCompany(companyName, updateRequest);
@@ -294,7 +294,7 @@ class CompanyServiceTest {
         // Then
         assertThat(response).isNotNull();
         verify(companyRepository).findByName(companyName);
-        verify(companyRepository).save(any(Company.class));
+        verify(companyRepository).saveAndFlush(any(Company.class));
         verify(searchService).invalidateCache();
     }
 
@@ -313,7 +313,7 @@ class CompanyServiceTest {
                 .isInstanceOf(CompanyNotFoundException.class)
                 .hasMessageContaining(companyName);
 
-        verify(companyRepository, never()).save(any(Company.class));
+        verify(companyRepository, never()).saveAndFlush(any(Company.class));
         verify(searchService, never()).invalidateCache();
     }
 
@@ -328,13 +328,13 @@ class CompanyServiceTest {
         // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
+        when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
 
         // When
         companyService.updateCompany(companyName, partialUpdate);
 
         // Then
-        verify(companyRepository).save(argThat(company ->
+        verify(companyRepository).saveAndFlush(argThat(company ->
             company.getName().equals("newnameonly")
             && company.getWebsite().equals("https://testcompany.ch") // Original value preserved
         ));
@@ -388,14 +388,14 @@ class CompanyServiceTest {
         // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
+        when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
 
         // When
         CompanyResponse response = companyService.markAsVerified(companyName);
 
         // Then
         assertThat(response).isNotNull();
-        verify(companyRepository).save(argThat(company -> company.isVerified()));
+        verify(companyRepository).saveAndFlush(argThat(company -> company.isVerified()));
         verify(eventPublisher).publish(any());
     }
 
@@ -406,7 +406,7 @@ class CompanyServiceTest {
         // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
+        when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
 
         // When
         companyService.updateCompany(companyName, updateRequest);
@@ -422,14 +422,14 @@ class CompanyServiceTest {
         // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
+        when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
 
         // When
         CompanyResponse response = companyService.verifyCompany(companyName);
 
         // Then
         assertThat(response).isNotNull();
-        verify(companyRepository).save(argThat(company -> company.isVerified()));
+        verify(companyRepository).saveAndFlush(argThat(company -> company.isVerified()));
         verify(eventPublisher).publish(any());
     }
 
@@ -448,7 +448,7 @@ class CompanyServiceTest {
                 .isInstanceOf(CompanyNotFoundException.class)
                 .hasMessageContaining(companyName);
 
-        verify(companyRepository, never()).save(any(Company.class));
+        verify(companyRepository, never()).saveAndFlush(any(Company.class));
         verify(eventPublisher, never()).publish(any());
     }
 
@@ -528,7 +528,7 @@ class CompanyServiceTest {
                 .isInstanceOf(CompanyValidationException.class)
                 .hasMessageContaining("already exists");
 
-        verify(companyRepository, never()).save(any(Company.class));
+        verify(companyRepository, never()).saveAndFlush(any(Company.class));
         verify(searchService, never()).invalidateCache();
     }
 
@@ -544,14 +544,14 @@ class CompanyServiceTest {
         // Story 1.16.2: use company name instead of UUID
         when(securityContextHelper.getCurrentUserId()).thenReturn("test-user");
         when(companyRepository.findByName(companyName)).thenReturn(Optional.of(existingCompany));
-        when(companyRepository.save(any(Company.class))).thenReturn(existingCompany);
+        when(companyRepository.saveAndFlush(any(Company.class))).thenReturn(existingCompany);
 
         // When
         CompanyResponse response = companyService.updateCompany(companyName, updateWithSameName);
 
         // Then
         assertThat(response).isNotNull();
-        verify(companyRepository).save(any(Company.class));
+        verify(companyRepository).saveAndFlush(any(Company.class));
         verify(searchService).invalidateCache();
         // Should NOT check existsByName when name hasn't changed
         verify(companyRepository, never()).existsByName(anyString());

@@ -96,6 +96,7 @@ export class PartnerCoordinationStack extends cdk.Stack {
         serviceName: this.service.serviceName,
         serviceDisplayName: 'PartnerCoordination',
         alarmTopic: props.alarmTopic,
+        serviceLogGroup: domainService.logGroup,
         thresholds: {
           memoryUtilization: 85, // JVM heap capped via MaxRAMPercentage; 85% gives headroom for non-heap
           oomKillCount: envName === 'production' ? 1 : 3,

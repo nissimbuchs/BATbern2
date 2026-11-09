@@ -115,7 +115,7 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
       onSent?.();
       setSnackbar({
         message: t('eventPage.venueCoordination.sentSuccess', {
-          count: data.sentTo.length,
+          count: data.sentTo?.length ?? 0,
           defaultValue: 'Sent to {{count}} recipient(s).',
         }),
         error: false,
@@ -274,7 +274,7 @@ export const VenueCoordinationComposer: React.FC<VenueCoordinationComposerProps>
               <Typography variant="caption" color="text.secondary">
                 {t('eventPage.venueCoordination.to', 'To')}: {previewMutation.data.toEmail}
               </Typography>
-              {previewMutation.data.ccEmails.length > 0 && (
+              {!!previewMutation.data.ccEmails?.length && (
                 <Typography variant="caption" color="text.secondary">
                   {t('eventPage.venueCoordination.cc', 'Cc')}:{' '}
                   {previewMutation.data.ccEmails.join(', ')}

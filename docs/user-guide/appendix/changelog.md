@@ -47,6 +47,10 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ No-shows do not count as attendance: the analytics count confirmed and attended registrations only, so after an event the people who came are set to *Attended* and the others to *No-show*.
 - ✅ Mail Center: own text to the registrants can go to chosen statuses, for example the no-shows only. A template still goes to registered, confirmed and attended.
 
+**Bug Fix — Creating an event says what is missing (17.0)**:
+- ✅ The "Create event" form marks venue name, venue address and registration deadline as required and shows an error under each one left empty. Before, a missing venue blocked the save without any message, and a missing deadline was sent empty and refused by the server.
+- ✅ "Save as draft" checks the fields an event cannot be stored without (title, date, type, venue name, address and capacity, registration deadline) instead of sending a draft the server would refuse.
+
 **Improvement — Every company has a short ID (17.0)**:
 - ✅ A company created in the company list gets the same kind of short ID as a company named during a registration: at most 12 letters and digits, from its name ("Gamma Innovations" → "gammainnovat"). The name as typed stays the display name. Before, the ID was the name exactly as typed, spaces and all, and such a company could not become a partner or be the company of a user.
 - ✅ Existing companies with a longer or spaced ID got a short one, and everything that pointed to them (logos, logo requests, partners, registrations) points to the new ID. A company created a second time with the same name is refused, as before.
@@ -68,10 +72,9 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ In the company pickers the exact company is always at the top (it could be missing among many similar names). The company list shows real page numbers when searching.
 - ✅ Characters like `(`, `%` or `'` no longer cause an error in the event search.
 
-**Bug Fixes — Registration confirmation page and waitlist order (Story 17.0c2)**:
+**Bug Fixes — Registration pages and waitlist order (Story 17.0c2)**:
 - ✅ The page a participant sees after registering showed an empty name and e-mail under "Details". It now shows the name, the masked address the confirmation went to, and the name of the participant's company.
-- ✅ The confirmation page (`/registration-confirmation/<code>`) finds the registration from its code for every event. It used to look in one fixed event (BATbern25) for every code, so it showed "Registration not found" for all others.
-- ✅ The confirmation page shows the event's title and date, and its calendar button exports the event's date. The lookup never sent either, so the event line was empty and the calendar entry was created for the moment of the click.
+- ✅ The old confirmation page (`/registration-confirmation/<code>`) is gone, and with it the public lookup of a registration by its code (`GET /events/{eventCode}/registrations/{registrationCode}`). No page, link or mail pointed to it; registering and confirming run through `/registration-success` and the confirmation link in the mail (owner decision 2026-11-09).
 - ✅ The organizer's waitlist view numbers and orders people by their place on the waitlist. The position was never sent to the page, so the list was ordered by name and numbered by row.
 
 **Bug Fix — Requesting a revision of a talk without an abstract (Story 17.0b3)**:

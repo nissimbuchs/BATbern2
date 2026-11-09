@@ -1,7 +1,8 @@
 {
   "navigation": {
     "partners": "パートナー",
-    "topicManagement": "トピック管理"
+    "topicManagement": "トピック管理",
+    "blobSelector": "ブロブセレクター"
   },
   "topicBacklog": {
     "pageTitle": "トピック管理",
@@ -79,7 +80,8 @@
         "safestFirst": "最も安全なものから（陳腐化 ↓）",
         "recentFirst": "最新のものから（陳腐化 ↑）",
         "titleAZ": "タイトル（A-Z）",
-        "mostUsed": "最も使用されたもの"
+        "mostUsed": "最も使用されたもの",
+        "newestFirst": "新しい順(最近追加)"
       }
     },
     "details": {
@@ -132,7 +134,10 @@
         "previous": "前の年",
         "next": "次の年",
         "atCurrent": "現在の年"
-      }
+      },
+      "low": "使用頻度:低",
+      "medium": "使用頻度:中",
+      "high": "使用頻度:高"
     },
     "dialogs": {
       "similar": {
@@ -213,6 +218,9 @@
       "DECLINED": "辞退",
       "CONTENT_SUBMITTED": "コンテンツ送信済み",
       "QUALITY_REVIEWED": "品質確認済み"
+    },
+    "promoteSubView": {
+      "incompleteUser": "選択したユーザーに必須項目(メール/名/姓)がありません。昇格する前にプロフィールを補完してください。"
     }
   },
   "speakerOutreach": {
@@ -292,7 +300,8 @@
       "username": "登壇者を検索",
       "presentationTitle": "プレゼンテーションタイトル",
       "presentationAbstract": "プレゼンテーション概要",
-      "charactersRemaining": "文字残り"
+      "charactersRemaining": "文字残り",
+      "roleLabel": "役割"
     },
     "errors": {
       "usernameRequired": "登壇者は必須です",
@@ -300,13 +309,16 @@
       "abstractRequired": "プレゼンテーション概要は必須です",
       "abstractTooLong": "概要は{{max}}文字以内にしてください",
       "submitFailed": "コンテンツの提出に失敗しました。もう一度お試しください。",
-      "bioTooLong": "Bio must be {{max}} characters or less"
+      "bioTooLong": "Bio must be {{max}} characters or less",
+      "saveDraftFailed": "下書きを保存できませんでした。"
     },
     "bioLabel": "Short CV / bio (optional)",
     "portraitLabel": "Speaker portrait (optional)",
     "portraitUploadInProgress": "Uploading portrait…",
     "portraitUploadError": "Portrait upload failed. Please try again.",
-    "presentationUploadLabel": "Presentation upload (optional)"
+    "presentationUploadLabel": "Presentation upload (optional)",
+    "readyStateDraftBanner": "登壇者はまだ承諾していません。ここで保存すると、タイトルと概要がセッションに下書きとして書き込まれます。提出は記録されず、登壇者は承諾後も変更できます。",
+    "saveDraft": "下書きを保存"
   },
   "qualityReview": {
     "title": "品質レビュー",
@@ -336,7 +348,12 @@
     "errors": {
       "feedbackRequired": "フィードバックは必須です",
       "unknown": "不明なエラーが発生しました"
-    }
+    },
+    "noTitle": "無題",
+    "noAbstract": "概要がありません",
+    "material": "プレゼンテーション資料",
+    "downloadMaterial": "資料をダウンロード",
+    "noMaterial": "まだ資料はアップロードされていません"
   },
   "speakers": {
     "invite": "招待",
@@ -379,7 +396,12 @@
     "revisionRequested": "Revision Requested",
     "submittedContent": "Submitted Content",
     "submittedAt": "Submitted",
-    "noDetails": "詳細はありません"
+    "noDetails": "詳細はありません",
+    "speakerName": "登壇者名",
+    "company": "会社",
+    "expertise": "専門分野",
+    "internalNotes": "社内メモ",
+    "unassigned": "未割り当て"
   },
   "tasks": {
     "taskBoard": "タスクボード",
@@ -407,7 +429,9 @@
     "completedOn": "完了日",
     "completedBy": "完了者",
     "noTasks": "タスクなし",
-    "completionNotesPlaceholder": "タスク完了についてのメモを追加..."
+    "completionNotesPlaceholder": "タスク完了についてのメモを追加...",
+    "deleteTask": "タスクを削除",
+    "deleteTaskConfirm": "「{{name}}」を削除してもよろしいですか?"
   },
   "analytics": {
     "title": "分析",
@@ -518,7 +542,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "コピーしました!",
+    "copy": "クリップボードにコピー"
   },
   "speakerCard": {
     "primaryAction": {
@@ -571,7 +597,11 @@
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
     },
-    "invalidColumnTooltip": "この列への有効な前進ステップではありません。"
+    "invalidColumnTooltip": "この列への有効な前進ステップではありません。",
+    "acceptOnBehalfDialog": {
+      "title": "{{speakerName}} の代理で承諾",
+      "reasonHint": "代理で承諾する理由を記録してください(例:「2026-05-18 にメールで確認」)。監査ログに残ります。"
+    }
   },
   "speakerDrawer": {
     "secondaryActions": {
@@ -579,11 +609,13 @@
       "acceptOnBehalf": "登壇者に代わって承諾（招待をスキップ）",
       "reassignOrganizer": "Reassign organizer",
       "editDetails": "Edit details",
-      "overrideState": "Override state"
+      "overrideState": "Override state",
+      "addContactEntry": "連絡記録を追加"
     },
     "tabs": {
       "details": "Details",
-      "history": "History"
+      "history": "History",
+      "content": "コンテンツ"
     },
     "subTabs": {
       "content": "Content"

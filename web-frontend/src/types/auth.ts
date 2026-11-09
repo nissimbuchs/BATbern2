@@ -6,7 +6,8 @@
 
 export type UserRole = 'organizer' | 'speaker' | 'partner' | 'attendee';
 
-export interface UserPreferences {
+/** Preferences held in the auth context (not the wire `UserPreferences` of user-api). */
+export interface UserContextPreferences {
   language: 'en' | 'de' | 'fr' | 'it';
   theme: 'light' | 'dark';
   notifications: {
@@ -37,7 +38,7 @@ export interface UserContext {
    * transient /users/me failure).
    */
   termsAcceptedAt?: string | null;
-  preferences: UserPreferences;
+  preferences: UserContextPreferences;
   issuedAt: number;
   expiresAt: number;
   tokenId: string;

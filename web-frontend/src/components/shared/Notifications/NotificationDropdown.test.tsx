@@ -41,15 +41,25 @@ const renderWithProviders = (props: NotificationDropdownProps) => {
 };
 
 // Mock data builders
+// A notification as notificationApiClient hands it to the UI: the wire fields plus the computed
+// isRead/actionUrl and the title/message/timestamp aliases.
 const createMockNotification = (overrides?: Partial<Notification>): Notification => ({
   id: 'notif-1',
-  type: 'EVENT_STATUS_CHANGED',
+  recipientUsername: 'test.user',
+  eventCode: 'BATbern57',
+  notificationType: 'EVENT_STATUS_CHANGED',
+  channel: 'IN_APP',
+  priority: 'NORMAL',
+  subject: 'Event status changed',
+  body: "Event 'BATbern 2025' is now Published",
+  status: 'SENT',
+  createdAt: '2024-03-15T14:30:00Z',
+  updatedAt: '2024-03-15T14:30:00Z',
   title: 'Event status changed',
   message: "Event 'BATbern 2025' is now Published",
   timestamp: '2024-03-15T14:30:00Z',
   isRead: false,
   actionUrl: '/events/uuid-123',
-  priority: 'NORMAL',
   ...overrides,
 });
 
@@ -376,7 +386,9 @@ describe('NotificationDropdown', () => {
       await user.click(deleteButton);
 
       // Confirm deletion in dialog
-      const confirmButton = await screen.findByRole('button', { name: /delete/i });
+      const confirmButton = await screen.findByRole('button', {
+        name: i18n.t('common:actions.delete'),
+      });
       await user.click(confirmButton);
 
       expect(onDelete).toHaveBeenCalledWith('notif-delete-123');

@@ -1,7 +1,8 @@
 {
   "navigation": {
     "partners": "Socios",
-    "topicManagement": "Gestión de temas"
+    "topicManagement": "Gestión de temas",
+    "blobSelector": "Selector de blobs"
   },
   "topicBacklog": {
     "pageTitle": "Gestión de temas",
@@ -79,7 +80,8 @@
         "safestFirst": "Más seguro primero (obsolescencia ↓)",
         "recentFirst": "Más reciente primero (obsolescencia ↑)",
         "titleAZ": "Título (A-Z)",
-        "mostUsed": "Más utilizado"
+        "mostUsed": "Más utilizado",
+        "newestFirst": "Más recientes primero (añadidos recientemente)"
       }
     },
     "details": {
@@ -132,7 +134,10 @@
         "previous": "Años anteriores",
         "next": "Años siguientes",
         "atCurrent": "En el año actual"
-      }
+      },
+      "low": "Uso bajo",
+      "medium": "Uso medio",
+      "high": "Uso alto"
     },
     "dialogs": {
       "similar": {
@@ -213,6 +218,9 @@
       "DECLINED": "Rechazado",
       "CONTENT_SUBMITTED": "Contenido enviado",
       "QUALITY_REVIEWED": "Calidad revisada"
+    },
+    "promoteSubView": {
+      "incompleteUser": "Al usuario seleccionado le faltan campos obligatorios (correo / nombre / apellido). Complete el perfil antes de promoverlo."
     }
   },
   "speakerOutreach": {
@@ -292,7 +300,8 @@
       "username": "Buscar ponente",
       "presentationTitle": "Título de la presentación",
       "presentationAbstract": "Resumen de la presentación",
-      "charactersRemaining": "caracteres restantes"
+      "charactersRemaining": "caracteres restantes",
+      "roleLabel": "Rol"
     },
     "errors": {
       "usernameRequired": "El ponente es obligatorio",
@@ -300,13 +309,16 @@
       "abstractRequired": "El resumen de la presentación es obligatorio",
       "abstractTooLong": "El resumen debe tener {{max}} caracteres o menos",
       "submitFailed": "Error al enviar el contenido. Por favor, inténtalo de nuevo.",
-      "bioTooLong": "Bio must be {{max}} characters or less"
+      "bioTooLong": "Bio must be {{max}} characters or less",
+      "saveDraftFailed": "No se pudo guardar el borrador."
     },
     "bioLabel": "Short CV / bio (optional)",
     "portraitLabel": "Speaker portrait (optional)",
     "portraitUploadInProgress": "Uploading portrait…",
     "portraitUploadError": "Portrait upload failed. Please try again.",
-    "presentationUploadLabel": "Presentation upload (optional)"
+    "presentationUploadLabel": "Presentation upload (optional)",
+    "readyStateDraftBanner": "El ponente aún no ha aceptado. Al guardar aquí, el título y el resumen se escriben como borrador en la sesión; no se registra ningún envío y el ponente aún puede modificarlos tras aceptar.",
+    "saveDraft": "Guardar borrador"
   },
   "qualityReview": {
     "title": "Revisión de calidad",
@@ -336,7 +348,12 @@
     "errors": {
       "feedbackRequired": "Los comentarios son obligatorios",
       "unknown": "Se produjo un error desconocido"
-    }
+    },
+    "noTitle": "Sin título",
+    "noAbstract": "No se ha proporcionado ningún resumen",
+    "material": "Material de la presentación",
+    "downloadMaterial": "Descargar material",
+    "noMaterial": "Aún no se ha subido material"
   },
   "speakers": {
     "invite": "Invitar",
@@ -379,7 +396,12 @@
     "revisionRequested": "Revision Requested",
     "submittedContent": "Submitted Content",
     "submittedAt": "Submitted",
-    "noDetails": "No hay detalles disponibles"
+    "noDetails": "No hay detalles disponibles",
+    "speakerName": "Nombre del ponente",
+    "company": "Empresa",
+    "expertise": "Especialidad",
+    "internalNotes": "Notas internas",
+    "unassigned": "Sin asignar"
   },
   "tasks": {
     "taskBoard": "Tablero de tareas",
@@ -407,7 +429,9 @@
     "completedOn": "Completado el",
     "completedBy": "Completado por",
     "noTasks": "Sin tareas",
-    "completionNotesPlaceholder": "Añade notas sobre la finalización de la tarea..."
+    "completionNotesPlaceholder": "Añade notas sobre la finalización de la tarea...",
+    "deleteTask": "Eliminar tarea",
+    "deleteTaskConfirm": "¿Seguro que desea eliminar «{{name}}»?"
   },
   "analytics": {
     "title": "Análisis",
@@ -518,7 +542,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "¡Copiado!",
+    "copy": "Copiar al portapapeles"
   },
   "speakerCard": {
     "primaryAction": {
@@ -583,7 +609,11 @@
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
     },
-    "invalidColumnTooltip": "No es un paso hacia adelante válido a esta columna."
+    "invalidColumnTooltip": "No es un paso hacia adelante válido a esta columna.",
+    "acceptOnBehalfDialog": {
+      "title": "Aceptar en nombre de {{speakerName}}",
+      "reasonHint": "Indique por qué acepta en nombre del ponente (p. ej. «confirmado por correo el 18-05-2026»). Se guarda en el registro de auditoría."
+    }
   },
   "speakerDrawer": {
     "secondaryActions": {
@@ -591,11 +621,13 @@
       "acceptOnBehalf": "Aceptar en nombre del ponente (sin invitación)",
       "reassignOrganizer": "Reassign organizer",
       "editDetails": "Edit details",
-      "overrideState": "Override state"
+      "overrideState": "Override state",
+      "addContactEntry": "Añadir entrada de contacto"
     },
     "tabs": {
       "details": "Details",
-      "history": "History"
+      "history": "History",
+      "content": "Contenido"
     },
     "subTabs": {
       "content": "Content"

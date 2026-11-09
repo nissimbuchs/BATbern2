@@ -473,7 +473,11 @@ to forward. Each provider proves its side in `S2sProviderContractIntegrationTest
 every consumed operation runs through the real controller and `ProviderContract` checks the
 response, and the examples, against the same spec. A spec without a usable example for a consumed
 operation gets one. How the harness reads `null` and `format: time` (as the generated code does) is
-documented in `GeneratedCodeSemantics`.
+documented in `GeneratedCodeSemantics`. `null` is valid only where the spec says `nullable`
+(owner decision 2026-11-09): the services write an unset field as `null`, so a response property
+they can leave unset is marked `nullable: true` (3.1: a nullable reference is
+`oneOf: [$ref, {type: 'null'}]`), and a `null` the spec does not allow fails the test, in the S2S
+harness and in the MSW harness's schema validator alike.
 
 `/internal/**` (17.0b2): every internal operation is specified in `docs/api/internal/` (one spec per
 provider, server `/`, full paths; schemas `$ref` the public components where the DTO is generated
@@ -493,6 +497,31 @@ CUMS_INTERNAL)`) and expect the CUMS calls there; `close()` in `@AfterEach` rest
 coverage, access-control probe, `lint:api`) does not read `docs/api/internal/`; it is linted by
 `npm run lint:api-internal` with its own reduced ruleset (`docs/api/internal/.spectral.yaml`).
 
+#### Response conformance gate (backend)
+
+Owner decision 2026-11-09. Every 2xx JSON response an integration test receives through `MockMvc`
+must be valid against the response schema of its operation in the service's own specs (CUMS:
+companies, users, cums-internal; EMS: events-core, `event-*`, topics, ems-internal; PCS: partners,
+partner-meetings, pcs-internal). `AbstractIntegrationTest` imports `ResponseConformanceSetup`,
+which registers `ResponseConformance` (shared-kernel test fixtures, `ch.batbern.shared.test.contract`)
+as an `alwaysDo` handler on the auto-configured `MockMvc`; the validator is the S2S harness's
+(`OpenApiContract` with `GeneratedCodeSemantics`), there is no second one. A request of a path no
+own spec has (actuator, dev endpoints), a non-2xx answer, an empty body and non-JSON bodies (CSV,
+ICS, XLSX) are not checked. Where several specs match, the most specific template wins
+(`/events/attendance-summary` over `/events/{eventCode}`).
+
+A violation fails the request that produced it, inside its test, with the validator's message and
+the body: fix the response (production code), the spec, or the test data that the spec rejects. A
+violation that needs an owner decision may go into the service's committed baseline
+`src/test/resources/response-conformance-baseline.txt`, one line per `operationId pointer kind`
+with array indices as `*` (`listCompanies /data/*/createdBy pattern`,
+`getCompany / required:updatedAt`). Adding a line is review matter; the file only shrinks.
+`gradle/response-conformance.gradle` (applied by each service's `build.gradle`, which lists the
+specs) passes the configuration to the test JVM and, after a full run (no `--tests`, no
+`-PskipIntegration`), fails on a STALE line that no response produces any more. Remove it, or rewrite
+the file from a full run: `./gradlew :services:<svc>:test -PupdateResponseConformanceBaseline`
+(refused on a partial run). Outside Gradle (no system properties) the gate is off.
+
 #### Frontend: the MSW harness (17.0c1)
 
 Every Vitest test runs against one MSW server (`web-frontend/src/test/msw/`, started in
@@ -510,8 +539,8 @@ Every Vitest test runs against one MSW server (`web-frontend/src/test/msw/`, sta
   2xx response in the specs has one; `examples.test.ts` guards that it exists, validates against
   the schema and carries no personal data.
 - **Overrides by `operationId`**, typed from `src/types/generated/`: a missing required field or a
-  wrong shape fails `npm run type-check` (`tsconfig.test-harness.json` covers the harness and the
-  tests listed there). An operationId two specs share is qualified by its spec
+  wrong shape fails `npm run type-check` (`tsconfig.test-harness.json` covers all of `src`, tests
+  included, see "Frontend: tests are type-checked" below). An operationId two specs share is qualified by its spec
   (`topics-api/listTopics`, `partners-api/listTopics`).
 
 ```ts
@@ -680,6 +709,19 @@ skips comments only).
 
 Locally: `make check-test-ratchet`.
 
+#### Frontend: tests are type-checked
+
+`npm run type-check` (CI `build-frontend`) compiles all of `web-frontend/src`, tests included, with
+`tsconfig.test-harness.json` (since 2026-11-09; before, only the tests listed there). Its `exclude`
+list holds the test files that did not compile at the switch (115). The list only shrinks:
+`scripts/check-test-typecheck.ts`, the last step of `type-check`, compiles every file of `src` with
+nothing excluded and fails STALE for an excluded file that compiles now (remove the line) and NOT
+TEST for an entry that is not a test file. A test that is not excluded and does not compile fails
+`tsc` itself, so a new test can only be excluded by editing the list, which is review matter: fix
+the test instead, with fixtures in the wire shape (`src/test/fixtures`, the generated types). A test
+whose basename equals a `.ts` twin (`x.test.ts` and `x.test.tsx`) is invisible to `tsc`: name the
+second one `x.hooks.test.tsx` (or similar).
+
 #### Frontend: i18n keys
 
 The tests run on the real `en` bundles, and the app falls back to `de` (`fallbackLng`), so a
@@ -706,6 +748,42 @@ file, line, key and namespace); add the key to `en` and the other 9 locales. A f
 fails until the gain is locked in (STALE): `cd web-frontend && npm run check:i18n-keys -- --update`,
 commit the baseline in the same PR. Filling the frozen keys is touch-rule work: a story that
 changes a screen fills that screen's keys.
+
+#### Frontend: generated API type copies
+
+The wire types come from `web-frontend/src/types/generated/` (generated from `docs/api/`, ADR-006).
+A hand-written copy drifts silently: when the spec changes (e.g. a field becomes optional or
+`| null`), the copy still compiles and the UI reads a field the server no longer sends. Alias the
+generated type and keep the export name, so imports stay unchanged:
+
+```ts
+import type { components } from '@/types/generated/event-speakers-api.types';
+export type SendReminderRequest = components['schemas']['SendReminderRequest'];
+```
+
+When the alias widens a field (optional, `| null`), fix each caller properly: a real default, a
+guard, or a visible empty state, never `!` or `as`. A frontend model that is not the wire shape
+(mapped, enriched or a file format) gets its own name (`UserPreferencesView`, `NotificationPage`,
+`LegacySpeakerRecord`), not the schema's.
+
+`web-frontend/scripts/check-api-type-copies.ts` (CI step "Generated type copy check" in
+`frontend-static`, part of `build-frontend`; locally `make check-api-type-copies`) reads the schema
+names of every `src/types/generated/*.types.ts` (the members of `components.schemas`) and fails an
+`export interface X` or object-literal `export type X = { ... }` (also generic) in `src/` whose
+name is one of them. An alias, union, intersection or `Omit<...>` passes (anything after `=` that
+does not start with `{`), and so do other names, non-exported declarations and commented code;
+tests, mocks, fixtures and the generated dir are not scanned. The gate is name-based on purpose: a
+copy under another name is a review matter.
+
+The copies left are frozen in `web-frontend/scripts/api-type-copies-baseline.txt` (file + type
+name, never a line number), and each line has exactly one owner group in
+`scripts/api-type-copies-owners.txt` (the story or issue that removes it, or
+`exception: <reason>`). A new copy fails NEW; a removed one fails STALE until the gain is locked
+in: `cd web-frontend && npm run check:api-type-copies -- --update`, commit the baseline in the same
+PR. `--update` only removes lines: it refuses (exit 1, baseline untouched) to write a copy the
+committed baseline does not list. `--update --allow-growth` adds one, for an owner-accepted
+exception only, with its owner group. UNOWNED, AMBIGUOUS, STALE OWNER and BAD OWNER work as in the
+API conventions lint.
 
 ### Lambda Handler Testing (Infrastructure)
 

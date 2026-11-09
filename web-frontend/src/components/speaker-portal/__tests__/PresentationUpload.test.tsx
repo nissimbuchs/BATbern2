@@ -20,6 +20,7 @@ vi.mock('@/services/speakerPortalService', () => ({
 
 describe('PresentationUpload', () => {
   const defaultProps = {
+    eventCode: 'BATbern99',
     token: 'valid-token',
     currentMaterialUrl: null,
     currentMaterialName: null,
@@ -334,6 +335,35 @@ describe('PresentationUpload', () => {
   });
 
   describe('Error handling', () => {
+    it('should report a failed upload when the confirmation has no file URL', async () => {
+      // SpeakerMaterialConfirmResponse marks cloudFrontUrl optional; without it there is no
+      // material to show, so the upload counts as failed instead of passing an empty URL on.
+      const onError = vi.fn();
+      const onMaterialUploaded = vi.fn();
+      const mockResponse: MaterialConfirmResponse = { materialId: 'mat-1', uploadId: 'up-1' };
+      mockUploadMaterial.mockResolvedValue(mockResponse);
+
+      render(
+        <PresentationUpload
+          {...defaultProps}
+          onError={onError}
+          onMaterialUploaded={onMaterialUploaded}
+        />
+      );
+
+      const file = new File(['content'], 'presentation.pdf', { type: 'application/pdf' });
+      await act(async () => {
+        fireEvent.change(screen.getByLabelText(/upload presentation/i), {
+          target: { files: [file] },
+        });
+      });
+
+      await waitFor(() => {
+        expect(onError).toHaveBeenCalledWith(expect.objectContaining({ type: 'UPLOAD_FAILED' }));
+      });
+      expect(onMaterialUploaded).not.toHaveBeenCalled();
+    });
+
     it('should display error message on upload failure', async () => {
       const onError = vi.fn();
       mockUploadMaterial.mockRejectedValue(new Error('Upload failed'));

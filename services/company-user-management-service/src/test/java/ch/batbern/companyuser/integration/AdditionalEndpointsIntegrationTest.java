@@ -112,7 +112,7 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
                         .contentType(MediaType.APPLICATION_JSON))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$", hasSize(1)))
-                .andExpect(jsonPath("$[0].name", is("Swisscom AG")));
+                .andExpect(jsonPath("$[0].name", is("SwisscomAG")));
     }
 
     @Test
@@ -263,14 +263,15 @@ class AdditionalEndpointsIntegrationTest extends AbstractIntegrationTest {
 
     // ==================== Helper Methods ====================
 
-    private Company createTestCompany(String name) {
+    /** The key as production derives it (1 to 12 letters or digits), the typed name as display name. */
+    private Company createTestCompany(String displayName) {
         Company company = Company.builder()
-                .name(name)
-                .displayName(name)
+                .name(displayName.replace(" ", ""))
+                .displayName(displayName)
                 .isVerified(false)
                 .createdAt(Instant.now())
                 .updatedAt(Instant.now())
-                .createdBy("test-user")
+                .createdBy("test.user")
                 .build();
         return companyRepository.save(company);
     }

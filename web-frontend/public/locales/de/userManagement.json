@@ -44,7 +44,8 @@
     "userDetail": {
       "title": "Benutzerdetails",
       "createdAt": "Erstellt am",
-      "updatedAt": "Zuletzt aktualisiert"
+      "updatedAt": "Zuletzt aktualisiert",
+      "bio": "Biografie"
     },
     "createUser": {
       "title": "Neuen Benutzer erstellen",
@@ -54,7 +55,9 @@
       "company": "Firma (optional)",
       "roles": "Rollen",
       "selectRoles": "Wählen Sie mindestens eine Rolle",
-      "creating": "Wird erstellt..."
+      "creating": "Wird erstellt...",
+      "bio": "Biografie",
+      "bioHelper": "Höchstens 5000 Zeichen"
     },
     "editRoles": {
       "title": "Rollen bearbeiten",
@@ -70,7 +73,11 @@
     },
     "editUser": {
       "uploadPhotoAria": "Profilfoto hochladen",
-      "removePhotoAria": "Profilfoto entfernen"
+      "removePhotoAria": "Profilfoto entfernen",
+      "title": "Benutzer bearbeiten",
+      "uploadPhoto": "Foto hochladen",
+      "removePhoto": "Foto entfernen",
+      "saving": "Wird gespeichert..."
     }
   },
   "pagination": {
@@ -93,7 +100,8 @@
     "createFailed": "Fehler beim Erstellen des Benutzers",
     "updateFailed": "Fehler beim Aktualisieren des Benutzers",
     "deleteFailed": "Fehler beim Löschen des Benutzers",
-    "notFound": "Benutzer nicht gefunden"
+    "notFound": "Benutzer nicht gefunden",
+    "bioTooLong": "Die Biografie muss kürzer als {{max}} Zeichen sein"
   },
   "batchImport": {
     "title": "Referenten Massenimport",

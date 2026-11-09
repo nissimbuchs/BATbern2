@@ -43,7 +43,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
      * Test 10.1: should_createCompany_when_authenticatedAsOrganizer
      */
     @Test
-    @WithMockUser(username = "organizer@example.com", roles = {"ORGANIZER"})
+    @WithMockUser(username = "auth.organizer", roles = {"ORGANIZER"})
     void should_createCompany_when_authenticatedAsOrganizer() throws Exception {
         // Given
         CreateCompanyRequest request = CreateCompanyRequest.builder()
@@ -75,7 +75,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
      * Test 10.2: should_createCompany_when_authenticatedAsSpeaker
      */
     @Test
-    @WithMockUser(username = "speaker@example.com", roles = {"SPEAKER"})
+    @WithMockUser(username = "auth.speaker", roles = {"SPEAKER"})
     void should_createCompany_when_authenticatedAsSpeaker() throws Exception {
         // Given
         CreateCompanyRequest request = CreateCompanyRequest.builder()
@@ -111,7 +111,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
      * Test 10.4: should_allowGet_when_authenticatedAsAttendee
      */
     @Test
-    @WithMockUser(username = "attendee@example.com", roles = {"ATTENDEE"})
+    @WithMockUser(username = "auth.attendee", roles = {"ATTENDEE"})
     void should_allowGet_when_authenticatedAsAttendee() throws Exception {
         // When/Then
         mockMvc.perform(get("/api/v1/companies"))
@@ -122,7 +122,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
      * Test 10.5: should_denyUpdate_when_notOrganizer
      */
     @Test
-    @WithMockUser(username = "speaker@example.com", roles = {"SPEAKER"})
+    @WithMockUser(username = "auth.speaker", roles = {"SPEAKER"})
     void should_denyUpdate_when_notOrganizer() throws Exception {
         // Given
         // Story 1.16.2: use company name instead of UUID
@@ -139,7 +139,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
      * Test 10.6: should_allowUpdate_when_authenticatedAsOrganizer
      */
     @Test
-    @WithMockUser(username = "organizer@example.com", roles = {"ORGANIZER"})
+    @WithMockUser(username = "auth.organizer", roles = {"ORGANIZER"})
     void should_allowUpdate_when_authenticatedAsOrganizer() throws Exception {
         // First create a company
         CreateCompanyRequest createRequest = CreateCompanyRequest.builder()
@@ -169,7 +169,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
      * Test 10.7: should_denyDelete_when_notOrganizer
      */
     @Test
-    @WithMockUser(username = "partner@example.com", roles = {"PARTNER"})
+    @WithMockUser(username = "auth.partner", roles = {"PARTNER"})
     void should_denyDelete_when_notOrganizer() throws Exception {
         // Given
         // Story 1.16.2: use company name instead of UUID
@@ -184,7 +184,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
      * Test 10.8: should_allowSearch_when_authenticated
      */
     @Test
-    @WithMockUser(username = "user@example.com", roles = {"ATTENDEE"})
+    @WithMockUser(username = "auth.user", roles = {"ATTENDEE"})
     void should_allowSearch_when_authenticated() throws Exception {
         // When/Then
         mockMvc.perform(get("/api/v1/companies/search")

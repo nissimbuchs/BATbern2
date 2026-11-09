@@ -34,7 +34,9 @@ import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.MvcResult;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Instant;
 import java.time.LocalDate;
+import java.time.OffsetDateTime;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -154,6 +156,43 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.startTime", is("12:00:00")))
                 .andExpect(jsonPath("$.endTime", is("14:00:00")))
                 .andExpect(jsonPath("$.location", is("Lunch Hall")));
+    }
+
+    @Test
+    void should_returnCreatedAtAndUpdatedAt_when_meetingCreated() throws Exception {
+        // partners-api: createdAt and updatedAt are required on PartnerMeetingDTO. Both are
+        // database timestamps set at insert, so the create response must carry them.
+        Map<String, Object> req = createMeetingRequest("BATbern57", "SPRING", "12:00", "14:00", "Lunch Hall", null);
+
+        MvcResult result = mockMvc.perform(post(BASE).with(user("organizer").roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(req)))
+                .andExpect(status().isCreated())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(body.hasNonNull("createdAt")).as("createdAt in %s", body).isTrue();
+        assertThat(body.hasNonNull("updatedAt")).as("updatedAt in %s", body).isTrue();
+        PartnerMeeting stored = meetingRepository.findById(UUID.fromString(body.get("id").asText())).orElseThrow();
+        assertThat(OffsetDateTime.parse(body.get("createdAt").asText()).toInstant())
+                .isEqualTo(stored.getCreatedAt());
+    }
+
+    @Test
+    void should_returnNewUpdatedAt_when_meetingPatched() throws Exception {
+        String meetingId = createMeeting("BATbern57");
+        Instant createdAt = meetingRepository.findById(UUID.fromString(meetingId)).orElseThrow().getCreatedAt();
+
+        MvcResult result = mockMvc.perform(patch(BASE + "/" + meetingId).with(user("organizer").roles("ORGANIZER"))
+                        .contentType(MediaType.APPLICATION_JSON)
+                        .content(objectMapper.writeValueAsString(Map.of("agenda", "1. Review"))))
+                .andExpect(status().isOk())
+                .andReturn();
+
+        JsonNode body = objectMapper.readTree(result.getResponse().getContentAsString());
+        assertThat(OffsetDateTime.parse(body.get("updatedAt").asText()).toInstant())
+                .as("updatedAt reflects the patch, not the insert")
+                .isAfter(createdAt);
     }
 
     @Test

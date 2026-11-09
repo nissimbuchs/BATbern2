@@ -172,7 +172,9 @@ export const EmailTemplatesTab: React.FC = () => {
   }
 
   if (contentError) {
-    return <Alert severity="error">{t('errors.loadFailed', 'Failed to load templates.')}</Alert>;
+    return (
+      <Alert severity="error">{t('emailTemplates.loadFailed', 'Failed to load templates.')}</Alert>
+    );
   }
 
   return (

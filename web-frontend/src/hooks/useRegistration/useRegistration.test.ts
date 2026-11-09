@@ -6,7 +6,7 @@
 import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
-import { useRegistration } from './useRegistration';
+import { useRegistration, type RegistrationResult } from './useRegistration';
 import { authService } from '@/services/auth/authService';
 import { subscribe as subscribeToNewsletter } from '@/services/newsletterService';
 import React from 'react';
@@ -281,7 +281,7 @@ describe('useRegistration', () => {
       newsletterOptIn: false,
     };
 
-    let registrationResult;
+    let registrationResult: RegistrationResult | undefined;
     result.current.mutate(testData, {
       onSuccess: (data) => {
         registrationResult = data;

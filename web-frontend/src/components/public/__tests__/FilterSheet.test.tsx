@@ -50,22 +50,24 @@ vi.mock('react-i18next', () => ({
 describe('FilterSheet Component', () => {
   const mockTopics: Topic[] = [
     {
-      topicId: 'topic1',
-      name: 'Cloud Architecture',
-      color: '#3B82F6',
+      topicCode: 'topic1',
+      title: 'Cloud Architecture',
+      category: 'technical',
       description: 'Cloud topics',
+      active: true,
     },
     {
-      topicId: 'topic2',
-      name: 'Security',
-      color: '#EF4444',
+      topicCode: 'topic2',
+      title: 'Security',
+      category: 'technical',
       description: 'Security topics',
+      active: true,
     },
   ];
 
   const mockFilters: ArchiveFilters = {
     topics: [],
-    searchQuery: '',
+    search: '',
   };
 
   const defaultProps = {

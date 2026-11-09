@@ -401,7 +401,7 @@ export const SessionSpeakersTab: React.FC<SessionSpeakersTabProps> = ({ session 
             startIcon={assignMutation.isPending ? <CircularProgress size={20} /> : undefined}
           >
             {assignMutation.isPending
-              ? t('common.saving', 'Saving...')
+              ? t('common:actions.saving', 'Saving...')
               : t('sessionEdit.speakers.addSpeaker', 'Add Speaker')}
           </Button>
         </Box>

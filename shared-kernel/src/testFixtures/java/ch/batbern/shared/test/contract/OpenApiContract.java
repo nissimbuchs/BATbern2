@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Optional;
+import java.util.OptionalInt;
 import java.util.TreeMap;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Pattern;
@@ -68,7 +69,12 @@ public final class OpenApiContract {
         }
         this.openApi = parsed.getOpenAPI();
         this.basePath = basePathOf(openApi, specPath);
-        GeneratedCodeSemantics.apply(openApi);
+        // The spec as written (references and allOf kept): full resolution merges a 3.0
+        // `allOf: [$ref]` into the referenced schema and drops the `nullable` next to it.
+        ParseOptions asWritten = new ParseOptions();
+        asWritten.setResolve(false);
+        GeneratedCodeSemantics.apply(openApi,
+                new OpenAPIV3Parser().readLocation(file.toUri().toString(), null, asWritten).getOpenAPI());
         this.validator = OpenApiInteractionValidator
                 .createFor(openApi)
                 .withBasePathOverride(basePath.isEmpty() ? "/" : basePath)
@@ -143,6 +149,19 @@ public final class OpenApiContract {
     public Optional<Operation> operation(String method, String path) {
         return route(path).map(r -> r.item.readOperationsMap()
                 .get(PathItem.HttpMethod.valueOf(method.toUpperCase(Locale.ROOT))));
+    }
+
+    /**
+     * The number of path variables of the template that serves {@code method path}, or empty
+     * when the spec has no such operation. Lets a caller holding several specs pick the most
+     * specific match ({@code /events/attendance-summary} over {@code /events/{eventCode}}).
+     */
+    OptionalInt operationVariables(String method, String path) {
+        return route(path)
+                .filter(r -> r.item.readOperationsMap()
+                        .get(PathItem.HttpMethod.valueOf(method.toUpperCase(Locale.ROOT))) != null)
+                .map(r -> OptionalInt.of(r.variables))
+                .orElse(OptionalInt.empty());
     }
 
     /** Every operation of the spec: HTTP method to full path templates (base path included). */
@@ -309,12 +328,48 @@ public final class OpenApiContract {
 
     /** Validation errors of a JSON response body; empty when the response is valid. */
     public List<String> validateResponse(String method, String path, int status, String body) {
+        return messages(responseReport(method, path, status, body));
+    }
+
+    /**
+     * The same validation as {@link #validateResponse}, one {@link Violation} per error: its
+     * message key, the JSON pointer into the body (empty for the whole body) and the message.
+     * Used by {@link ResponseConformance}.
+     */
+    List<Violation> responseViolations(String method, String path, int status, String body) {
+        List<Violation> out = new ArrayList<>();
+        for (ValidationReport.Message m : responseReport(method, path, status, body).getMessages()) {
+            if (m.getLevel() == ValidationReport.Level.IGNORE || m.getLevel() == ValidationReport.Level.INFO) {
+                continue;
+            }
+            String pointer = m.getContext().flatMap(ValidationReport.MessageContext::getPointers)
+                    .map(ValidationReport.MessageContext.Pointers::getInstance)
+                    .orElse("");
+            out.add(new Violation(m.getKey(), pointer, m.getMessage()));
+        }
+        return out;
+    }
+
+    /** One response validation error: message key, JSON pointer, message. */
+    record Violation(String key, String pointer, String message) {
+    }
+
+    /** The operationId of the operation, or {@code METHOD template} when it declares none. */
+    String operationId(String method, String path) {
+        Operation op = requireOperation(method, path);
+        if (op.getOperationId() != null && !op.getOperationId().isBlank()) {
+            return op.getOperationId();
+        }
+        return method.toUpperCase(Locale.ROOT) + "_" + route(path).map(Route::template).orElse(path);
+    }
+
+    private ValidationReport responseReport(String method, String path, int status, String body) {
         SimpleResponse.Builder builder = SimpleResponse.Builder.status(status);
         if (body != null && !body.isEmpty()) {
             builder.withContentType("application/json").withBody(body);
         }
-        return messages(validator.validateResponse(path,
-                Request.Method.valueOf(method.toUpperCase(Locale.ROOT)), builder.build()));
+        return validator.validateResponse(path, Request.Method.valueOf(method.toUpperCase(Locale.ROOT)),
+                builder.build());
     }
 
     private static List<String> messages(ValidationReport report) {

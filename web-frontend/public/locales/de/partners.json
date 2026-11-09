@@ -103,7 +103,9 @@
       "analytics": "Analysen",
       "settings": "Einstellungen",
       "partnerDetailTabs": "Partner-Detailregisterkarten",
-      "mail": "Mail"
+      "mail": "Mail",
+      "notes": "Notizen",
+      "topics": "Themen"
     },
     "overviewTab": {
       "title": "Partnerschaftsdetails",

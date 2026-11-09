@@ -952,3 +952,24 @@ clean {
     delete "$buildDir/generated-tasks"
     delete "$buildDir/generated-mail"
 }
+
+// Response conformance gate: every 2xx JSON response of an IT matches the spec of the operation
+// (the specs this service serves). Baseline: src/test/resources/response-conformance-baseline.txt.
+ext.responseConformanceSpecs = [
+    'docs/api/events-core-api.openapi.yml',
+    'docs/api/event-ai-api.openapi.yml',
+    'docs/api/event-analytics-api.openapi.yml',
+    'docs/api/event-app-settings-api.openapi.yml',
+    'docs/api/event-mail-api.openapi.yml',
+    'docs/api/event-media-api.openapi.yml',
+    'docs/api/event-newsletter-api.openapi.yml',
+    'docs/api/event-notifications-api.openapi.yml',
+    'docs/api/event-registrations-api.openapi.yml',
+    'docs/api/event-sessions-api.openapi.yml',
+    'docs/api/event-speakers-api.openapi.yml',
+    'docs/api/event-tasks-api.openapi.yml',
+    'docs/api/event-watch-api.openapi.yml',
+    'docs/api/topics-api.openapi.yml',
+    'docs/api/internal/ems-internal.openapi.yml'
+]
+apply from: "${rootProject.projectDir}/gradle/response-conformance.gradle"

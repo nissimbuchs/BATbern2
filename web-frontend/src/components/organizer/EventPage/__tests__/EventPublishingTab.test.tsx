@@ -5,7 +5,7 @@
  * Validates that the component correctly fetches and displays publishing status.
  */
 
-import { render, screen, waitFor } from '@testing-library/react';
+import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import { I18nextProvider } from 'react-i18next';
@@ -74,7 +74,6 @@ vi.mock('@/hooks/useSlotAssignment/useSlotAssignment', () => ({
 
 // Mock event data
 const mockEvent: Event = {
-  eventId: '123e4567-e89b-12d3-a456-426614174000',
   eventCode: 'BAT2025-FULL-DAY',
   eventNumber: 2025,
   title: 'BATbern 2025 Full Day Conference',
@@ -84,7 +83,6 @@ const mockEvent: Event = {
   venueName: 'Kursaal Bern',
   venueAddress: 'Kornhausstrasse 3, 3013 Bern',
   venueCapacity: 300,
-  status: 'published',
   workflowState: 'SLOT_ASSIGNMENT',
   organizerUsername: 'test.organizer',
   currentAttendeeCount: 0,
@@ -321,7 +319,10 @@ describe('EventPublishingTab Component (Story 5.7 - Task 7)', () => {
       });
 
       renderWithProviders(
-        <EventPublishingTab event={eventWithoutDate as Event} eventCode="BAT2025-FULL-DAY" />
+        <EventPublishingTab
+          event={eventWithoutDate as unknown as Event}
+          eventCode="BAT2025-FULL-DAY"
+        />
       );
 
       // Should render without crashing

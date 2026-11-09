@@ -38,7 +38,9 @@
     },
     "mail": "メール",
     "mailOpenCount_one": "未対応の会話 {{count}} 件",
-    "mailOpenCount_other": "未対応の会話 {{count}} 件"
+    "mailOpenCount_other": "未対応の会話 {{count}} 件",
+    "mySessions": "マイセッション",
+    "myProfile": "マイプロフィール"
   },
   "public": {
     "login": "ログイン",
@@ -597,7 +599,8 @@
     "photos": {
       "viewPhoto": "写真を見る"
     },
-    "eventsProgress": "{{total}}件中{{shown}}件のイベント"
+    "eventsProgress": "{{total}}件中{{shown}}件のイベント",
+    "scrollForMore": "スクロールしてさらにイベントを表示"
   },
   "notifications": {
     "title": "通知",
@@ -656,14 +659,16 @@
       "htmlBodyRequired": "HTML本文は必須です。",
       "subjectRequired": "コンテンツテンプレートには件名が必須です。",
       "templateNameRequired": "テンプレート名は必須です。",
-      "templateNameInvalid": "文字または数字を1つ以上入力してください。"
+      "templateNameInvalid": "文字または数字を1つ以上入力してください。",
+      "duplicateKey": "この言語にはこのキーのテンプレートが既にあります。別のキーを選んでください。"
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "テンプレート名",
     "templateNameHelp": "例: 会場変更",
-    "keyPreview": "保存名"
+    "keyPreview": "保存名",
+    "loadFailed": "テンプレートを読み込めませんでした。"
   },
   "presentation": {
     "errorTitle": "イベントを読み込めませんでした",
@@ -725,7 +730,13 @@
       "noDefaults": "デフォルトテンプレートはありません。",
       "noCustom": "カスタムテンプレートはまだありません。",
       "confirmDelete": "テンプレートを削除しますか？",
-      "deleteFailed": "テンプレートの削除に失敗しました。再試行してください。"
+      "deleteFailed": "テンプレートの削除に失敗しました。再試行してください。",
+      "loadFailed": "テンプレートを読み込めませんでした。",
+      "editTitle": "タスクテンプレートを編集",
+      "name": "名前",
+      "triggerState": "トリガー状態",
+      "dueDateType": "期日の種類",
+      "dueDateOffsetDays": "オフセット日数"
     },
     "aiPrompts": {
       "description": "These prompts are sent to OpenAI when generating event descriptions, theme images, and abstract quality reviews. Use {{VARIABLE_NAME}} placeholders — available variables are listed below each prompt.",
@@ -764,7 +775,9 @@
     "sessions": "セッション",
     "topics": "トピック",
     "firstName": "名",
-    "lastName": "姓"
+    "lastName": "姓",
+    "unknown": "不明",
+    "user": "ユーザー"
   },
   "filters": {
     "status": {
@@ -797,7 +810,8 @@
     "unexpectedError": "申し訳ありません。予期しないエラーが発生しました。",
     "devDetails": "エラー詳細（開発者のみ）：",
     "refreshPage": "ページを更新",
-    "goHome": "ホームに戻る"
+    "goHome": "ホームに戻る",
+    "loadFailed": "データを読み込めませんでした。"
   },
   "bootstrap": {
     "loading": "BATbernを読み込み中...",
@@ -891,5 +905,13 @@
       "errorNoCompany": "先にプロフィールに会社を保存してください。",
       "errorGeneric": "依頼を送信できませんでした。もう一度お試しください。"
     }
+  },
+  "autocomplete": {
+    "typeMore": "2文字以上入力してください",
+    "companiesLoadFailed": "会社の読み込み中にエラーが発生しました",
+    "noCompanies": "会社が見つかりません",
+    "usersLoadFailed": "ユーザーの読み込み中にエラーが発生しました",
+    "noUsers": "ユーザーが見つかりません",
+    "noUsersWithRole": "ロール {{role}} のユーザーが見つかりません"
   }
 }

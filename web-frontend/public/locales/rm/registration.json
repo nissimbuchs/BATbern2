@@ -34,20 +34,6 @@
       }
     }
   },
-  "confirmationPage": {
-    "loading": "Cargament da la confirmaziun...",
-    "notFound": {
-      "title": "Annunziaziun betg chattada",
-      "message": "Controllai voss code da confirmaziun e pruvai anc ina giada."
-    },
-    "copyCode": "Copiar il code da confirmaziun",
-    "qrCodeAlt": "Code QR da l'annunziaziun",
-    "qrCodeTitle": "Voss code QR da check-in",
-    "detailsTitle": "Detagls da l'annunziaziun",
-    "shareLabel": "Partegidar cun voss retschel:",
-    "registerAnother": "Annunziar in'autra persuna",
-    "viewEventDetails": "Vesair ils detagls da l'eveniment"
-  },
   "successPage": {
     "pendingTitle": "Annunziaziun en spetga",
     "pendingMessage": "Sch'avais tramess in'annunziaziun, controllai vostra e-mail per il link da confirmaziun.",

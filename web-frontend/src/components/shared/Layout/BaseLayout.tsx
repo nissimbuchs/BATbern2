@@ -11,13 +11,13 @@
 import { Box, Container, Link, CssBaseline } from '@mui/material';
 import AppHeader from '../Navigation/AppHeader';
 import type { UserProfile } from '@/types/user';
-import type { NotificationsResponse } from '@/types/notification';
+import type { NotificationPage } from '@/types/notification';
 
 interface BaseLayoutProps {
   children: React.ReactNode;
   maxWidth?: 'xs' | 'sm' | 'md' | 'lg' | 'xl' | false;
   user?: UserProfile;
-  notifications?: NotificationsResponse;
+  notifications?: NotificationPage;
 }
 
 export function BaseLayout({ children, maxWidth = false, user, notifications }: BaseLayoutProps) {

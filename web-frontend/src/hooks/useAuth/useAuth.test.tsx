@@ -36,7 +36,7 @@ const TEST_CONFIG: AppConfig = {
   environment: 'staging',
   apiBaseUrl: 'https://api.batbern.ch/api/v1',
   cognito: { userPoolId: 'eu-central-1_TEST', clientId: 'client', region: 'eu-central-1' },
-  features: { notifications: true, analytics: false, pwa: false, turnstile: false },
+  features: { notifications: true, analytics: false, pwa: false, turnstile: false, sso: false },
 };
 
 // Wrapper component for tests
@@ -92,6 +92,7 @@ describe('useAuth Hook', () => {
 
     const mockUser = {
       userId: 'user-123',
+      username: 'test.user',
       email: 'test@batbern.ch',
       emailVerified: true,
       role: 'organizer' as const,
@@ -113,7 +114,6 @@ describe('useAuth Hook', () => {
       success: true,
       user: mockUser,
       accessToken: 'access-token',
-      refreshToken: 'refresh-token',
     });
 
     await act(async () => {
@@ -194,7 +194,6 @@ describe('useAuth Hook', () => {
     mockAuthService.refreshToken.mockResolvedValue({
       success: true,
       accessToken: 'new-access-token',
-      refreshToken: 'new-refresh-token',
       expiresIn: 3600,
     });
 
@@ -243,6 +242,7 @@ describe('useAuth Hook', () => {
     it('should_checkOrganizerPermissions_when_organizerLoggedIn', async () => {
       const mockUser = {
         userId: 'user-123',
+        username: 'test.user',
         email: 'organizer@batbern.ch',
         emailVerified: true,
         role: 'organizer' as const,
@@ -263,6 +263,7 @@ describe('useAuth Hook', () => {
       mockAuthService.refreshToken.mockResolvedValue({
         success: true,
         accessToken: 'token',
+        expiresIn: 3600,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -279,6 +280,7 @@ describe('useAuth Hook', () => {
     it('should_checkSpeakerPermissions_when_speakerLoggedIn', async () => {
       const mockUser = {
         userId: 'user-456',
+        username: 'test.user',
         email: 'speaker@batbern.ch',
         emailVerified: true,
         role: 'speaker' as const,
@@ -299,6 +301,7 @@ describe('useAuth Hook', () => {
       mockAuthService.refreshToken.mockResolvedValue({
         success: true,
         accessToken: 'token',
+        expiresIn: 3600,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -314,6 +317,7 @@ describe('useAuth Hook', () => {
     it('should_checkPartnerPermissions_when_partnerLoggedIn', async () => {
       const mockUser = {
         userId: 'user-789',
+        username: 'test.user',
         email: 'partner@batbern.ch',
         emailVerified: true,
         role: 'partner' as const,
@@ -334,6 +338,7 @@ describe('useAuth Hook', () => {
       mockAuthService.refreshToken.mockResolvedValue({
         success: true,
         accessToken: 'token',
+        expiresIn: 3600,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -349,6 +354,7 @@ describe('useAuth Hook', () => {
     it('should_checkAttendeePermissions_when_attendeeLoggedIn', async () => {
       const mockUser = {
         userId: 'user-999',
+        username: 'test.user',
         email: 'attendee@batbern.ch',
         emailVerified: true,
         role: 'attendee' as const,
@@ -369,6 +375,7 @@ describe('useAuth Hook', () => {
       mockAuthService.refreshToken.mockResolvedValue({
         success: true,
         accessToken: 'token',
+        expiresIn: 3600,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -384,6 +391,7 @@ describe('useAuth Hook', () => {
     it('should_returnFalse_when_invalidResource', async () => {
       const mockUser = {
         userId: 'user-123',
+        username: 'test.user',
         email: 'organizer@batbern.ch',
         emailVerified: true,
         role: 'organizer' as const,
@@ -404,6 +412,7 @@ describe('useAuth Hook', () => {
       mockAuthService.refreshToken.mockResolvedValue({
         success: true,
         accessToken: 'token',
+        expiresIn: 3600,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -454,6 +463,7 @@ describe('useAuth Hook', () => {
     it('should_allowOrganizerPaths_when_organizerAuthenticated', async () => {
       const mockUser = {
         userId: 'user-123',
+        username: 'test.user',
         email: 'organizer@batbern.ch',
         emailVerified: true,
         role: 'organizer' as const,
@@ -474,6 +484,7 @@ describe('useAuth Hook', () => {
       mockAuthService.refreshToken.mockResolvedValue({
         success: true,
         accessToken: 'token',
+        expiresIn: 3600,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -490,6 +501,7 @@ describe('useAuth Hook', () => {
     it('should_allowSpeakerPaths_when_speakerAuthenticated', async () => {
       const mockUser = {
         userId: 'user-456',
+        username: 'test.user',
         email: 'speaker@batbern.ch',
         emailVerified: true,
         role: 'speaker' as const,
@@ -510,6 +522,7 @@ describe('useAuth Hook', () => {
       mockAuthService.refreshToken.mockResolvedValue({
         success: true,
         accessToken: 'token',
+        expiresIn: 3600,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -550,6 +563,7 @@ describe('useAuth Hook', () => {
     it('should_signUpSuccessfully_when_validDataProvided', async () => {
       mockAuthService.signUp.mockResolvedValue({
         success: true,
+        requiresConfirmation: true,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -561,7 +575,11 @@ describe('useAuth Hook', () => {
         signUpResult = await result.current.signUp({
           email: 'newuser@example.com',
           password: 'password123',
-          name: 'New User',
+          confirmPassword: 'password123',
+          role: 'attendee',
+          firstName: 'New',
+          lastName: 'User',
+          acceptTerms: true,
         });
       });
 
@@ -580,7 +598,11 @@ describe('useAuth Hook', () => {
         signUpResult = await result.current.signUp({
           email: 'newuser@example.com',
           password: 'password123',
-          name: 'New User',
+          confirmPassword: 'password123',
+          role: 'attendee',
+          firstName: 'New',
+          lastName: 'User',
+          acceptTerms: true,
         });
       });
 
@@ -612,6 +634,7 @@ describe('useAuth Hook', () => {
 
       const mockPartnerUser = {
         userId: 'user-partner',
+        username: 'test.user',
         email: 'partner@batbern.ch',
         emailVerified: true,
         role: 'partner' as const,
@@ -633,7 +656,6 @@ describe('useAuth Hook', () => {
         success: true,
         user: mockPartnerUser,
         accessToken: 'partner-token',
-        refreshToken: 'partner-refresh',
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -663,6 +685,7 @@ describe('useAuth Hook', () => {
 
       const mockPartnerUser = {
         userId: 'user-partner-init',
+        username: 'test.user',
         email: 'partner-init@batbern.ch',
         emailVerified: true,
         role: 'partner' as const,
@@ -684,6 +707,7 @@ describe('useAuth Hook', () => {
       mockAuthService.refreshToken.mockResolvedValue({
         success: true,
         accessToken: 'token',
+        expiresIn: 3600,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -705,6 +729,7 @@ describe('useAuth Hook', () => {
 
       const mockPartnerUser = {
         userId: 'user-partner-fail',
+        username: 'test.user',
         email: 'partner-fail@batbern.ch',
         emailVerified: true,
         role: 'partner' as const,
@@ -725,6 +750,7 @@ describe('useAuth Hook', () => {
       mockAuthService.refreshToken.mockResolvedValue({
         success: true,
         accessToken: 'token',
+        expiresIn: 3600,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -745,10 +771,11 @@ describe('useAuth Hook', () => {
     it('should_checkRolesArray_when_userHasMultipleRoles', async () => {
       const mockUser = {
         userId: 'user-multi',
+        username: 'test.user',
         email: 'multi@batbern.ch',
         emailVerified: true,
         role: 'organizer' as const,
-        roles: ['organizer', 'speaker'] as const,
+        roles: ['organizer' as const, 'speaker' as const],
         companyId: 'company-multi',
         preferences: {
           language: 'en' as const,
@@ -765,6 +792,7 @@ describe('useAuth Hook', () => {
       mockAuthService.refreshToken.mockResolvedValue({
         success: true,
         accessToken: 'token',
+        expiresIn: 3600,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -814,6 +842,8 @@ describe('useAuth Hook', () => {
       mockAuthService.getCurrentUser.mockResolvedValue(null);
       mockAuthService.refreshToken.mockResolvedValue({
         success: false,
+        accessToken: '',
+        expiresIn: 0,
       });
 
       const { result } = renderHook(() => useAuth(), { wrapper });
@@ -851,6 +881,7 @@ describe('useAuth Hook', () => {
     it('should_handleSignOutException_when_signOutFails', async () => {
       const mockUser = {
         userId: 'user-123',
+        username: 'test.user',
         email: 'test@batbern.ch',
         emailVerified: true,
         role: 'organizer' as const,
@@ -871,6 +902,7 @@ describe('useAuth Hook', () => {
       mockAuthService.refreshToken.mockResolvedValue({
         success: true,
         accessToken: 'token',
+        expiresIn: 3600,
       });
       mockAuthService.signOut.mockRejectedValue(new Error('Sign out failed'));
 

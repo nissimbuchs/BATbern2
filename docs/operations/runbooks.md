@@ -110,6 +110,26 @@ alarms went with the event bus, Story 17.2 part B.)
 4. **Do not restart to make the alarm go away** before capturing the log window. The task's logs
    are the only evidence and a replacement discards the running state.
 
+### Domain event listener failures
+
+**Alarms:** `{Service}-Event-Listener-Failures` for EventManagement, CompanyManagement,
+PartnerCoordination. Fires on the first swallowed failure in a 5-minute window.
+
+`SpringDomainEventPublisher` delivers domain events to in-process listeners. When a synchronous
+listener throws, the publisher logs it and **the request that published the event still
+succeeds**, so the user sees no error while the listener's side effect (a mail, a workflow
+transition, a notification) did not happen. The alarm is a CloudWatch metric filter on the marker
+`DOMAIN_EVENT_LISTENER_FAILED` in the service log group (metric
+`BATbern/DomainEvents ListenerFailures-{Service}`).
+
+1. Find the line and its stack trace (the line names the listener, the event type and the
+   aggregate):
+   `aws logs filter-log-events --log-group-name /aws/ecs/BATbern-staging/<service> --start-time <ms> --filter-pattern '"DOMAIN_EVENT_LISTENER_FAILED"'`
+2. Decide from the listener what was lost and for whom (the aggregate id says which event,
+   speaker or user), and repair that by hand if it matters before the code fix lands.
+3. Fix the listener test first. Whether a listener failure should fail the caller instead is
+   story 17.12, not something to change during an incident.
+
 ---
 
 ## Database

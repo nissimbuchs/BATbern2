@@ -8,7 +8,6 @@
  * Coverage:
  * - AC5: Drag-and-drop UI to drag speaker cards to time slots
  * - AC6: Visual timeline showing all slots and assignments
- * - AC7: Display speaker time preferences
  * - AC11: Highlight when slot matches speaker preference
  * - AC12: Show unassigned speakers list with real-time updates
  * - 14.C.5: 2-column layout, top action bar, no 100vh lock, focusSpeakerId
@@ -88,20 +87,40 @@ const mockUnassignedSessions: Session[] = [
   {
     sessionSlug: 'session-1',
     eventCode: 'BATbern142',
+    language: 'de',
     title: 'John Doe - Acme Corp',
     startTime: null,
     endTime: null,
     room: null,
-    speakers: [{ username: 'john.doe', displayName: 'John Doe', companyName: 'Acme Corp' }],
+    speakers: [
+      {
+        username: 'john.doe',
+        firstName: 'John',
+        lastName: 'Doe',
+        company: 'Acme Corp',
+        speakerRole: 'PRIMARY_SPEAKER',
+        isConfirmed: true,
+      },
+    ],
   },
   {
     sessionSlug: 'session-2',
     eventCode: 'BATbern142',
+    language: 'de',
     title: 'Jane Smith - Tech Inc',
     startTime: null,
     endTime: null,
     room: null,
-    speakers: [{ username: 'jane.smith', displayName: 'Jane Smith', companyName: 'Tech Inc' }],
+    speakers: [
+      {
+        username: 'jane.smith',
+        firstName: 'Jane',
+        lastName: 'Smith',
+        company: 'Tech Inc',
+        speakerRole: 'PRIMARY_SPEAKER',
+        isConfirmed: true,
+      },
+    ],
   },
 ];
 
@@ -142,6 +161,8 @@ describe('DragDropSlotAssignment Component', () => {
     detectConflicts: vi.fn().mockResolvedValue(undefined),
     clearConflict: vi.fn(),
     refreshSessions: vi.fn().mockResolvedValue(undefined),
+    clearAllTimings: vi.fn().mockResolvedValue(undefined),
+    autoAssignTimings: vi.fn().mockResolvedValue(undefined),
   };
 
   beforeEach(async () => {
@@ -459,6 +480,7 @@ describe('DragDropSlotAssignment Component', () => {
       const occupant: Session = {
         sessionSlug: 'occupant-session',
         eventCode: mockEventCode,
+        language: 'de',
         title: 'Occupant Talk',
         startTime: '2025-12-15T09:00:00',
         endTime: '2025-12-15T10:00:00',
@@ -510,6 +532,7 @@ describe('DragDropSlotAssignment Component', () => {
       const occupant: Session = {
         sessionSlug: 'occupant-session',
         eventCode: mockEventCode,
+        language: 'de',
         title: 'Occupant Talk',
         startTime: '2025-12-15T09:00:00',
         endTime: '2025-12-15T10:00:00',
@@ -561,6 +584,7 @@ describe('DragDropSlotAssignment Component', () => {
       const occupant: Session = {
         sessionSlug: 'occupant-session',
         eventCode: mockEventCode,
+        language: 'de',
         title: 'Occupant Talk',
         startTime: '2025-12-15T09:00:00',
         endTime: '2025-12-15T10:00:00',
@@ -606,6 +630,7 @@ describe('DragDropSlotAssignment Component', () => {
       const a: Session = {
         sessionSlug: 'sess-a',
         eventCode: mockEventCode,
+        language: 'de',
         title: 'A',
         startTime: '2025-12-15T09:00:00',
         endTime: '2025-12-15T10:00:00',
@@ -615,6 +640,7 @@ describe('DragDropSlotAssignment Component', () => {
       const b: Session = {
         sessionSlug: 'sess-b',
         eventCode: mockEventCode,
+        language: 'de',
         title: 'B',
         startTime: '2025-12-15T10:00:00',
         endTime: '2025-12-15T11:00:00',
@@ -768,11 +794,21 @@ describe('DragDropSlotAssignment Component', () => {
       const assignedSession: Session = {
         sessionSlug: 'assigned-session',
         eventCode: mockEventCode,
+        language: 'de',
         title: 'A Very Long Session Title That Must Wrap On Phones',
         startTime: '2025-12-15T09:00:00',
         endTime: '2025-12-15T10:00:00',
         room: 'Main Hall',
-        speakers: [{ username: 'john.doe', displayName: 'John Doe', companyName: 'Acme Corp' }],
+        speakers: [
+          {
+            username: 'john.doe',
+            firstName: 'John',
+            lastName: 'Doe',
+            company: 'Acme Corp',
+            speakerRole: 'PRIMARY_SPEAKER',
+            isConfirmed: true,
+          },
+        ],
       };
       const { useEvent } = await import('@/hooks/useEvents');
       vi.mocked(useEvent).mockReturnValue({
@@ -823,7 +859,9 @@ describe('DragDropSlotAssignment Component', () => {
       // Given: Component supports keyboard navigation
       renderWithProviders(<DragDropSlotAssignment eventCode={mockEventCode} />);
 
-      const speakerCard = screen.getByText('John Doe - Acme Corp').closest('[role="article"]');
+      const speakerCard = screen
+        .getByText('John Doe - Acme Corp')
+        .closest<HTMLElement>('[role="article"]');
 
       // When: User tabs to speaker card
       speakerCard?.focus();

@@ -48,7 +48,9 @@ import java.util.List;
 // Epic 13 (SB4): re-apply springSecurity() to the auto-configured MockMvc — SB4 dropped the
 // auto-config that used to do this, which otherwise drops the @WithMockUser SecurityContext and
 // makes every @PreAuthorize request return 403. Inherited by all integration tests.
-@Import(MockMvcSecuritySetup.class)
+// Every 2xx JSON response must match the service's specs (response conformance gate, see
+// ResponseConformance and docs/architecture/coding-standards.md "Test fidelity rules").
+@Import({MockMvcSecuritySetup.class, ResponseConformanceSetup.class})
 // 17.0b3: send the pending SQL before every rollback, so a constraint violation fails the test.
 @TestExecutionListeners(listeners = FlushBeforeRollback.class,
         mergeMode = TestExecutionListeners.MergeMode.MERGE_WITH_DEFAULTS)

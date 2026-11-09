@@ -34,6 +34,7 @@ import static org.mockito.Mockito.reset;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
@@ -174,25 +175,20 @@ public class AnonymousRegistrationE2EIntegrationTest extends AbstractIntegration
         verify(userApiClient, times(1)).getUserByUsername("alice.wonderland");
 
         // ========================================================================
-        // STEP 3: Get Registration by Code (Public Access - No Auth)
+        // STEP 3: The organizer's list shows the registration, enriched with the user (ADR-004)
         // ========================================================================
 
-        mockMvc.perform(get("/api/v1/events/BATbern142/registrations/" + registrationCode)
-                        .contentType(MediaType.APPLICATION_JSON))
+        mockMvc.perform(get("/api/v1/events/BATbern142/registrations")
+                        .with(user("test.organizer").roles("ORGANIZER")))
                 .andExpect(status().isOk())
-                .andExpect(jsonPath("$.registrationCode").value(registrationCode))
-                .andExpect(jsonPath("$.eventCode").value("BATbern142"))
-                .andExpect(jsonPath("$.attendeeUsername").value("alice.wonderland"))
-                .andExpect(jsonPath("$.attendeeFirstName").value("Alice"))
-                .andExpect(jsonPath("$.attendeeLastName").value("Wonderland"))
-                .andExpect(jsonPath("$.attendeeEmail").value("a***@example.com")) // masked, GHSA-qhqv
-                .andExpect(jsonPath("$.status").value("REGISTERED")) // Story 4.1.5c: starts as 'registered'
-                .andExpect(jsonPath("$.registrationDate").exists())
-                .andExpect(jsonPath("$.createdAt").exists())
-                .andExpect(jsonPath("$.updatedAt").exists());
-
-        // Verify user enrichment was called again (from cache)
-        verify(userApiClient, times(2)).getUserByUsername("alice.wonderland");
+                .andExpect(jsonPath("$.data", hasSize(1)))
+                .andExpect(jsonPath("$.data[0].registrationCode").value(registrationCode))
+                .andExpect(jsonPath("$.data[0].eventCode").value("BATbern142"))
+                .andExpect(jsonPath("$.data[0].attendeeUsername").value("alice.wonderland"))
+                .andExpect(jsonPath("$.data[0].attendeeFirstName").value("Alice"))
+                .andExpect(jsonPath("$.data[0].attendeeLastName").value("Wonderland"))
+                .andExpect(jsonPath("$.data[0].attendeeEmail").value("alice.wonderland@example.com"))
+                .andExpect(jsonPath("$.data[0].status").value("REGISTERED")); // Story 4.1.5c
 
         // ========================================================================
         // STEP 4: Verify Enriched Response Includes User Details (ADR-004)
@@ -212,7 +208,6 @@ public class AnonymousRegistrationE2EIntegrationTest extends AbstractIntegration
         // ✅ Registration starts in 'registered' status (unconfirmed)
         // ✅ Response contains minimal data {message, email} (no sensitive info)
         // ✅ Enriched response includes user details (ADR-004)
-        // ✅ Public access to registration details (no auth)
     }
 
     @Test

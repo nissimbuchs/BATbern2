@@ -138,9 +138,6 @@ const AboutPage = React.lazy(() => import('@pages/AboutPage'));
 const PublicRegistrationPage = React.lazy(() => import('@pages/public/RegistrationPage'));
 const RegistrationSuccessPage = React.lazy(() => import('@pages/public/RegistrationSuccessPage'));
 const ConfirmRegistrationPage = React.lazy(() => import('@pages/public/ConfirmRegistrationPage'));
-const RegistrationConfirmationPage = React.lazy(
-  () => import('@pages/public/RegistrationConfirmationPage')
-);
 const AttendeeDashboardPage = React.lazy(() => import('@pages/attendee/AttendeeDashboardPage'));
 // Story 4.2: Archive browsing pages
 const ArchivePage = React.lazy(() => import('@pages/public/ArchivePage'));
@@ -302,10 +299,6 @@ function App() {
                     <Route
                       path="/events/:eventCode/confirm-registration"
                       element={<ConfirmRegistrationPage />}
-                    />
-                    <Route
-                      path="/registration-confirmation/:confirmationCode"
-                      element={<RegistrationConfirmationPage />}
                     />
                     {/* Story 11.E.3: Speaker Portal routes — Cognito-authenticated.
                         Wrapped in <SpeakerRoute> so unauthenticated callers redirect to /login.

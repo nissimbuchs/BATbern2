@@ -169,7 +169,7 @@ export const TaskTemplateEditModal: React.FC<TaskTemplateEditModalProps> = ({
           disabled={saving || !name.trim()}
           data-testid="template-edit-save"
         >
-          {t('common.save', 'Save')}
+          {t('actions.save')}
         </Button>
       </DialogActions>
     </Dialog>

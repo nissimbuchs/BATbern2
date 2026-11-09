@@ -290,7 +290,7 @@ export const TopicSelectionOverlay: React.FC<TopicSelectionOverlayProps> = ({
     <Box>
       {renderTopBar()}
       {isLoading && (
-        <Typography color="text.secondary">{t('common:status.loading', 'Loading…')}</Typography>
+        <Typography color="text.secondary">{t('common:actions.loading', 'Loading…')}</Typography>
       )}
       {isError && (
         <Alert severity="error">

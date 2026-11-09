@@ -1,7 +1,8 @@
 {
   "navigation": {
     "partners": "Partners",
-    "topicManagement": "Gestiun da temas"
+    "topicManagement": "Gestiun da temas",
+    "blobSelector": "Tscherna da blobs"
   },
   "topicBacklog": {
     "pageTitle": "Gestiun da temas",
@@ -79,7 +80,8 @@
         "safestFirst": "Il pli segir il emprim (obsolescenza ↓)",
         "recentFirst": "Il pli recent il emprim (obsolescenza ↑)",
         "titleAZ": "Titel (A-Z)",
-        "mostUsed": "Il pli utilisà"
+        "mostUsed": "Il pli utilisà",
+        "newestFirst": "Ils pli novs l'emprim (agiuntads da curt)"
       }
     },
     "details": {
@@ -132,7 +134,10 @@
         "previous": "Onns precedents",
         "next": "Onns suandants",
         "atCurrent": "A l'onn actual"
-      }
+      },
+      "low": "Pauca utilisaziun",
+      "medium": "Utilisaziun mesauna",
+      "high": "Gronda utilisaziun"
     },
     "dialogs": {
       "similar": {
@@ -213,6 +218,9 @@
       "DECLINED": "Refusà",
       "CONTENT_SUBMITTED": "Cuntegn tramess",
       "QUALITY_REVIEWED": "Qualitad verifitgada"
+    },
+    "promoteSubView": {
+      "incompleteUser": "A l'utilisader tschernì mancan champs obligatorics (e-mail / prenum / num). Cumplettai il profil avant che al promover."
     }
   },
   "speakerOutreach": {
@@ -292,7 +300,8 @@
       "username": "Tschertgar referent",
       "presentationTitle": "Titel da presentaziun",
       "presentationAbstract": "Abstract da presentaziun",
-      "charactersRemaining": "caracters restants"
+      "charactersRemaining": "caracters restants",
+      "roleLabel": "Rolla"
     },
     "errors": {
       "usernameRequired": "Il referent è necessari",
@@ -300,13 +309,16 @@
       "abstractRequired": "L'abstract da presentaziun è necessari",
       "abstractTooLong": "L'abstract sto avair maximalmain {{max}} caracters",
       "submitFailed": "Trametter cuntegn ha fallì. Emprova anc ina giada.",
-      "bioTooLong": "Bio must be {{max}} characters or less"
+      "bioTooLong": "Bio must be {{max}} characters or less",
+      "saveDraftFailed": "Il sboz n'ha betg pudì vegnir memorisà."
     },
     "bioLabel": "Short CV / bio (optional)",
     "portraitLabel": "Speaker portrait (optional)",
     "portraitUploadInProgress": "Uploading portrait…",
     "portraitUploadError": "Portrait upload failed. Please try again.",
-    "presentationUploadLabel": "Presentation upload (optional)"
+    "presentationUploadLabel": "Presentation upload (optional)",
+    "readyStateDraftBanner": "Il referent n'ha anc betg acceptà. Memorisar scriva il titel e l'abstract sco sboz en la sessiun; i na vegn registrada nagina inoltraziun ed il referent po anc als midar suenter l'acceptanza.",
+    "saveDraft": "Memorisar il sboz"
   },
   "qualityReview": {
     "title": "Revisiun da qualità",
@@ -336,7 +348,12 @@
     "errors": {
       "feedbackRequired": "Il feedback è necessari",
       "unknown": "In errur nunenconuschent è cumpareglià"
-    }
+    },
+    "noTitle": "Senza titel",
+    "noAbstract": "Nagin abstract avant maun",
+    "material": "Material da preschentaziun",
+    "downloadMaterial": "Telechargiar il material",
+    "noMaterial": "Anc nagin material chargià si"
   },
   "speakers": {
     "invite": "Invitar",
@@ -379,7 +396,12 @@
     "revisionRequested": "Revision Requested",
     "submittedContent": "Submitted Content",
     "submittedAt": "Submitted",
-    "noDetails": "Nagins detagls disponibels"
+    "noDetails": "Nagins detagls disponibels",
+    "speakerName": "Num dal referent",
+    "company": "Firma",
+    "expertise": "Cumpetenza",
+    "internalNotes": "Notizias internas",
+    "unassigned": "Betg attribuì"
   },
   "tasks": {
     "taskBoard": "Tabla d'activitads",
@@ -407,7 +429,9 @@
     "completedOn": "Terminà ils",
     "completedBy": "Terminà da",
     "noTasks": "Naginas activitads",
-    "completionNotesPlaceholder": "Agiuntai notizias davart l'adempliment da la lavur..."
+    "completionNotesPlaceholder": "Agiuntai notizias davart l'adempliment da la lavur...",
+    "deleteTask": "Stizzar la lezza",
+    "deleteTaskConfirm": "Vulais Vus propi stizzar «{{name}}»?"
   },
   "analytics": {
     "title": "Analisas",
@@ -518,7 +542,9 @@
     "lessonsLearned": "Enthält Lessons Learned aus der Praxis",
     "shortenedAbstract": "Gekürzter Abstract",
     "words": "Wörter",
-    "copyShortened": "Gekürzten Abstract kopieren"
+    "copyShortened": "Gekürzten Abstract kopieren",
+    "copied": "Copià!",
+    "copy": "Copiar en la memoria intermediara"
   },
   "speakerCard": {
     "primaryAction": {
@@ -571,7 +597,11 @@
       "title": "Decline {{speakerName}}?",
       "reasonHint": "A reason is required for declined speakers. The reason appears in the status history and any decline notification."
     },
-    "invalidColumnTooltip": "Nagin pass valid enavant en questa colonna."
+    "invalidColumnTooltip": "Nagin pass valid enavant en questa colonna.",
+    "acceptOnBehalfDialog": {
+      "title": "Acceptar en num da {{speakerName}}",
+      "reasonHint": "Notai pertge che Vus acceptais en num dal referent (p.ex. «confermà per e-mail ils 18-05-2026»). Vegn memorisà en il protocol."
+    }
   },
   "speakerDrawer": {
     "secondaryActions": {
@@ -579,11 +609,13 @@
       "acceptOnBehalf": "Acceptar en num dal referent (senza invitaziun)",
       "reassignOrganizer": "Reassign organizer",
       "editDetails": "Edit details",
-      "overrideState": "Override state"
+      "overrideState": "Override state",
+      "addContactEntry": "Agiuntar ina endataziun da contact"
     },
     "tabs": {
       "details": "Details",
-      "history": "History"
+      "history": "History",
+      "content": "Cuntegn"
     },
     "subTabs": {
       "content": "Content"

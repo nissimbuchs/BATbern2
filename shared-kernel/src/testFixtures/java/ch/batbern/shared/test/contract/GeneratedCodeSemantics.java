@@ -7,8 +7,8 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.parameters.Parameter;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 
-import java.util.ArrayList;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.IdentityHashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
@@ -23,12 +23,12 @@ import java.util.Set;
  *       {@code type: [string, 'null']}, so a strict validator ignores it (the parser keeps it as an
  *       extension) and rejects {@code null}. The 3.1 specs in {@code docs/api/} (users, companies,
  *       partners) still use it, and openapi-generator and openapi-typescript both honour it.</li>
- *   <li><b>An optional property may be {@code null}.</b> The services serialise an absent
- *       optional as {@code null} (Jackson's default inclusion; CUMS {@code UserResponse} sends
- *       {@code "bio": null}, checked 2026-11-08 by the CUMS provider contract test), and every
- *       generated Java model reads an optional field as {@code @Nullable}. For the S2S contract,
- *       {@code null} in a non-required property therefore means "absent". A required property
- *       still has to be present and non-null unless the spec says it is nullable.</li>
+ * *   <li><b>A nullable reference admits {@code null}.</b> The specs write a nullable object
+ *       property as {@code nullable: true} next to {@code allOf: [$ref]} (3.0 and 3.1) or as
+ *       {@code oneOf: [$ref, {type: 'null'}]} (3.1). The validator merges the {@code allOf} into the
+ *       referenced schema and drops the {@code nullable}, and does not take the {@code null}
+ *       branch of the {@code oneOf}, so both rejected {@code null}. The property becomes a
+ *       nullable copy of the referenced schema.</li>
  *   <li><b>{@code format: time} means {@code HH:mm}.</b> The specs use it for local wall-clock
  *       times ({@code typicalStartTime: '16:00'}, every example), EMS sends {@code "18:00"}, and
  *       openapi-generator maps it to a plain {@code String}. JSON Schema's {@code time} is RFC 3339
@@ -36,9 +36,12 @@ import java.util.Set;
  *       {@code HH:mm[:ss]} instead.</li>
  * </ol>
  *
- * <p>Rule 2 is lenient on purpose and on record: the generated frontend types declare such
- * fields as {@code bio?: string}, without {@code null}. That mismatch belongs to the frontend
- * harness, not to this one.
+ * <p>{@code null} is valid only where the spec says {@code nullable} (owner decision 2026-11-09,
+ * option A of {@code null-vs-optional-options.md}): the services write an unset field as
+ * {@code null} (the shared {@code ObjectMapper} keeps Jackson's default inclusion), so every
+ * response property they can leave unset is marked {@code nullable} in the spec, and a {@code null}
+ * the spec does not allow fails the test. Until 2026-11-09 this class let any optional property be
+ * {@code null}.
  */
 final class GeneratedCodeSemantics {
 
@@ -47,9 +50,9 @@ final class GeneratedCodeSemantics {
     private GeneratedCodeSemantics() {
     }
 
-    static void apply(OpenAPI api) {
+    static void apply(OpenAPI api, OpenAPI asWritten) {
         boolean openapi31 = api.getOpenapi() != null && api.getOpenapi().startsWith("3.1");
-        Visitor visitor = new Visitor(openapi31);
+        Visitor visitor = new Visitor(openapi31, nullableReferences(api, asWritten));
         if (api.getComponents() != null) {
             if (api.getComponents().getSchemas() != null) {
                 api.getComponents().getSchemas().values().forEach(visitor::visit);
@@ -81,13 +84,45 @@ final class GeneratedCodeSemantics {
         }
     }
 
+    /**
+     * Properties written {@code nullable: true} next to {@code allOf: [$ref]}: full resolution (3.0)
+     * replaces them by the referenced schema itself, without the {@code nullable}, and copies that
+     * instance into every schema merged from the component (an {@code allOf} of it). Returns the
+     * resolved instances with the property names under which they are nullable.
+     */
+    @SuppressWarnings({"rawtypes", "unchecked"})
+    private static Map<Schema, Set<String>> nullableReferences(OpenAPI api, OpenAPI asWritten) {
+        Map<Schema, Set<String>> out = new IdentityHashMap<>();
+        if (asWritten == null || asWritten.getComponents() == null || asWritten.getComponents().getSchemas() == null
+                || api.getComponents() == null || api.getComponents().getSchemas() == null) {
+            return out;
+        }
+        asWritten.getComponents().getSchemas().forEach((name, written) -> {
+            Schema resolved = api.getComponents().getSchemas().get(name);
+            if (written.getProperties() == null || resolved == null || resolved.getProperties() == null) {
+                return;
+            }
+            ((Map<String, Schema>) written.getProperties()).forEach((prop, w) -> {
+                boolean nullable = Boolean.TRUE.equals(w.getNullable())
+                        || (w.getExtensions() != null && Boolean.TRUE.equals(w.getExtensions().get("nullable")));
+                Schema r = (Schema) resolved.getProperties().get(prop);
+                if (nullable && w.getAllOf() != null && w.getAllOf().size() == 1 && r != null && r.getAllOf() == null) {
+                    out.computeIfAbsent(r, k -> new HashSet<>()).add(prop);
+                }
+            });
+        });
+        return out;
+    }
+
     @SuppressWarnings({"rawtypes", "unchecked"})
     private static final class Visitor {
         private final boolean openapi31;
+        private final Map<Schema, Set<String>> nullableReferences;
         private final Set<Object> seen = Collections.newSetFromMap(new IdentityHashMap<>());
 
-        Visitor(boolean openapi31) {
+        Visitor(boolean openapi31, Map<Schema, Set<String>> nullableReferences) {
             this.openapi31 = openapi31;
+            this.nullableReferences = nullableReferences;
         }
 
         void visit(ApiResponse response) {
@@ -124,18 +159,19 @@ final class GeneratedCodeSemantics {
             }
             Map<String, Schema> properties = schema.getProperties();
             if (properties != null) {
-                List<String> required = schema.getRequired() == null ? List.of() : schema.getRequired();
-                for (String name : new ArrayList<>(properties.keySet())) {
-                    Schema property = properties.get(name);
-                    if (property != null && !required.contains(name) && !allowsNull(property)) {
-                        // A copy: after full resolution one schema instance can sit in several
-                        // places, some of them required.
-                        Schema copy = AnnotationsUtils.clone(property, openapi31);
+                for (Map.Entry<String, Schema> entry : properties.entrySet()) {
+                    Set<String> names = nullableReferences.get(entry.getValue());
+                    Schema target = names != null && names.contains(entry.getKey())
+                            ? entry.getValue()
+                            : nullableReferenceTarget(entry.getValue());
+                    if (target != null) {
+                        // A copy: after full resolution the referenced schema sits elsewhere too,
+                        // not nullable there.
+                        Schema copy = AnnotationsUtils.clone(target, openapi31);
                         allowNull(copy);
-                        properties.put(name, copy);
-                        property = copy;
+                        entry.setValue(copy);
                     }
-                    visit(property);
+                    visit(entry.getValue());
                 }
             }
             visit(schema.getItems());
@@ -149,9 +185,36 @@ final class GeneratedCodeSemantics {
             }
         }
 
-        private boolean allowsNull(Schema schema) {
-            return Boolean.TRUE.equals(schema.getNullable())
-                    || (schema.getTypes() != null && schema.getTypes().contains("null"));
+        /**
+         * The referenced schema of a property written as a nullable reference ({@code nullable}
+         * next to a one-element {@code allOf}, or a {@code oneOf}/{@code anyOf} of one schema and
+         * {@code type: 'null'}); null for any other property.
+         */
+        private Schema nullableReferenceTarget(Schema property) {
+            if (property == null || property.getProperties() != null) {
+                return null;
+            }
+            boolean nullable = Boolean.TRUE.equals(property.getNullable())
+                    || (property.getExtensions() != null
+                        && Boolean.TRUE.equals(property.getExtensions().get("nullable")));
+            List<Schema> allOf = property.getAllOf();
+            if (nullable && allOf != null && allOf.size() == 1) {
+                return allOf.get(0);
+            }
+            for (List<Schema> branches : List.of(
+                    property.getOneOf() == null ? List.<Schema>of() : property.getOneOf(),
+                    property.getAnyOf() == null ? List.<Schema>of() : property.getAnyOf())) {
+                List<Schema> others = branches.stream().filter(b -> !isNullType(b)).toList();
+                if (branches.size() == 2 && others.size() == 1) {
+                    return others.get(0);
+                }
+            }
+            return null;
+        }
+
+        private boolean isNullType(Schema schema) {
+            return "null".equals(schema.getType())
+                    || (schema.getTypes() != null && schema.getTypes().equals(Set.of("null")));
         }
 
         private void allowNull(Schema schema) {

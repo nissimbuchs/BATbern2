@@ -38,7 +38,9 @@
     },
     "mail": "Mail",
     "mailOpenCount_one": "{{count}} offeni Underhaltig",
-    "mailOpenCount_other": "{{count}} offeni Underhaltige"
+    "mailOpenCount_other": "{{count}} offeni Underhaltige",
+    "mySessions": "Myni Sessions",
+    "myProfile": "Mys Profil"
   },
   "public": {
     "login": "Ämälde",
@@ -142,7 +144,9 @@
     "sessions": "Sessions",
     "topics": "Theme",
     "firstName": "Vorname",
-    "lastName": "Nachname"
+    "lastName": "Nachname",
+    "unknown": "unbekannt",
+    "user": "Benutzer"
   },
   "filters": {
     "status": {
@@ -503,7 +507,8 @@
     "photos": {
       "viewPhoto": "Foti aaluege"
     },
-    "eventsProgress": "{{shown}} vo {{total}} Veranstaltige"
+    "eventsProgress": "{{shown}} vo {{total}} Veranstaltige",
+    "scrollForMore": "Für meh Veranstautige scrolle"
   },
   "notifications": {
     "title": "Benarichtigige",
@@ -561,14 +566,16 @@
       "htmlBodyRequired": "HTML-Inhaut isch Pflicht.",
       "subjectRequired": "Betreff isch Pflicht für Inhautvorlagen.",
       "templateNameRequired": "Dr Name vor Vorlag isch Pflicht.",
-      "templateNameInvalid": "Bitte mindestens e Buechstabe oder e Ziffere iigä."
+      "templateNameInvalid": "Bitte mindestens e Buechstabe oder e Ziffere iigä.",
+      "duplicateKey": "Für die Sprach gits scho e Vorlag mit däm Schlüssu. Bitte e angere wähle."
     },
     "templateKey": "Template Key",
     "locale": "Locale",
     "previewTitle": "Email Preview",
     "templateName": "Name vor Vorlag",
     "templateNameHelp": "Zum Bispiu: Ruumwächsu",
-    "keyPreview": "Wird gspicheret als"
+    "keyPreview": "Wird gspicheret als",
+    "loadFailed": "D Vorlage hei nid chönne glade wärde."
   },
   "presentation": {
     "errorTitle": "Veranstatig chöne nid gglade werde",
@@ -630,7 +637,13 @@
       "noDefaults": "Kei Standard-Vorlagen.",
       "noCustom": "No kei eigeni Vorlagen.",
       "confirmDelete": "Vorlage lösche?",
-      "deleteFailed": "Vorlage chöne nid glöscht werde. Bitte nomol versuche."
+      "deleteFailed": "Vorlage chöne nid glöscht werde. Bitte nomol versuche.",
+      "loadFailed": "D Vorlage hei nid chönne glade wärde.",
+      "editTitle": "Ufgabevorlag bearbeite",
+      "name": "Name",
+      "triggerState": "Uslösende Status",
+      "dueDateType": "Art vom Fäuigkeitsdatum",
+      "dueDateOffsetDays": "Verschiebig i Täg"
     },
     "aiPrompts": {
       "description": "Die Prompts wärde a OpenAI gschickt, wenn Veröutigsbeschriebige, Titelbilder oder Qualitätsbewertunge vo Abstracts generiert wärde. Verwänded {{VARIABLE_NAME}}-Platzhalter — d verfügbare Variablen sind under jedem Prompt ufgliistet.",
@@ -738,5 +751,16 @@
   },
   "companySearch": {
     "createOption": "Nöii Firma „{{value}}\" erstelle"
+  },
+  "errors": {
+    "loadFailed": "D Date hei nid chönne glade wärde."
+  },
+  "autocomplete": {
+    "typeMore": "Mindestens 2 Zeiche iigä",
+    "companiesLoadFailed": "Fähler bim Lade vo de Firme",
+    "noCompanies": "Kei Firme gfunde",
+    "usersLoadFailed": "Fähler bim Lade vo de Benutzer",
+    "noUsers": "Kei Benutzer gfunde",
+    "noUsersWithRole": "Kei Benutzer mit dr Rolle {{role}} gfunde"
   }
 }

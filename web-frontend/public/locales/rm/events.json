@@ -284,7 +284,8 @@
       "typeNewsletter": "Newsletter",
       "typeReminder": "Memorativ",
       "previewTitle": "Prevista e-mail",
-      "retryHint": "La spediziun dals {{date}} n'ha betg cuntanschì {{count}} destinaturs."
+      "retryHint": "La spediziun dals {{date}} n'ha betg cuntanschì {{count}} destinaturs.",
+      "previewPlaceholder": "La prevista cumpara qua"
     },
     "venue": {
       "vegetarianCount": "{{count}} Vegetarian",
@@ -314,7 +315,8 @@
       "confirmBody": "In e-mail real vegn tramess a {{recipients}}. L'adressa da resposta è quella dal coordinatur dal lieu configurà.",
       "confirmSend": "Gea, trametter",
       "sentSuccess": "Tramess a {{count}} destinatur(s).",
-      "sentFailed": "Trametter n'è betg reussì: {{message}}"
+      "sentFailed": "Trametter n'è betg reussì: {{message}}",
+      "previewPlaceholder": "La prevista cumpara qua"
     },
     "registrantNotices": {
       "title": "Infos participants",
@@ -897,7 +899,9 @@
     "slotDurationMinimum": "La durada dal slot sto esser almain 15 minutas",
     "minSlotsLessThanMax": "Il numer minim da slots sto esser minor u egual al maximal",
     "defaultCapacityPositive": "La capacitad standard sto esser in numer positiv",
-    "typicalStartTimeRequired": "L'ura da cumenzament è obligatorica."
+    "typicalStartTimeRequired": "L'ura da cumenzament è obligatorica.",
+    "registrationDeadlineRequired": "Il termin d'annunzia è obligatoric",
+    "eventTypeRequired": "Il tip d'eveniment è obligatoric"
   },
   "errors": {
     "loadFailed": "Chargiar eveniments fallì",
@@ -915,7 +919,8 @@
     "imageInvalidType": "Tip d'maletg invalid (utilisar PNG, JPEG u SVG)",
     "MULTIPLE_FILES": "Chargia mo in fichier per giada",
     "FILE_TOO_LARGE": "La grondezza dal fichier surpassa il limit da 5MB",
-    "INVALID_FILE_TYPE": "Tip da fichier invalid. Chargia mo maletgs PNG, JPEG u SVG"
+    "INVALID_FILE_TYPE": "Tip da fichier invalid. Chargia mo maletgs PNG, JPEG u SVG",
+    "materialDownloadFailed": "Il material n'ha betg pudì vegnir telechargià. Empruvai anc ina giada."
   },
   "confirmations": {
     "unsavedChanges": "Midadas betg salvadas",
@@ -937,7 +942,12 @@
       "event_live": "Eveniment en direct",
       "event_completed": "Eveniment cumplì",
       "archived": "Archivà"
-    }
+    },
+    "loading": "Chargiar il status dal workflow...",
+    "error": "Il status dal workflow n'ha betg pudì vegnir chargià",
+    "noData": "Nagin status dal workflow disponibel",
+    "currentState": "Status actual",
+    "blockedTransitions": "Bloccà:"
   },
   "autoSave": {
     "saving": "Salvar...",
@@ -1008,7 +1018,10 @@
       "revertPhase": "Revocar la publicaziun {{phase}}",
       "revertConfirmTitle": "Revocar la publicaziun {{phase}}?",
       "revertConfirmText": "La website publica turna a la fasa precedenta. Quai che {{phase}} mussava n'è betg pli visibel per ils visitaders.",
-      "revertConfirmButton": "Revocar"
+      "revertConfirmButton": "Revocar",
+      "topicNotReady": "Il tema n'è anc betg pront per la publicaziun",
+      "speakersNotReady": "Ils referents n'èn anc betg pronts per la publicaziun",
+      "agendaNotReady": "{{assigned}} da {{total}} slots attribuids. Attribuescha tut ils slots avant che publitgar il program"
     },
     "validation": {
       "readyToPublish": "Pronto per la publicaziun",
@@ -1096,7 +1109,8 @@
       "date": "Data",
       "time": "Temp",
       "location": "Lieu",
-      "capacity": "Registraziuns"
+      "capacity": "Registraziuns",
+      "topic": "Tema"
     },
     "errors": {
       "loadFailed": "Chargiar eveniment fallì",
@@ -1116,7 +1130,13 @@
     "program": {
       "title": "Program dal eveniment",
       "speaker": "Referent",
-      "materials": "Materialas"
+      "materials": "Materialas",
+      "materialTypes": {
+        "presentation": "Preschentaziun",
+        "document": "Document",
+        "video": "Video",
+        "other": "Auter"
+      }
     },
     "venue": {
       "title": "Lieu",
@@ -1188,8 +1208,16 @@
       "titleRequired": "Il titel è obligatori",
       "abstractTooLong": "L'abstract sto avair {{max}} caracters u main",
       "invalidDuration": "La durada sto esser tranter 1 e 480 minutas",
-      "saveFailed": "Salvar sessiun fallì"
-    }
+      "saveFailed": "Salvar sessiun fallì",
+      "endTimeBeforeStart": "L'ura da fin sto esser suenter l'ura da cumenzament",
+      "durationTooShort": "La sessiun sto durar almain {{min}} minutas",
+      "durationTooLong": "La sessiun dastga durar maximalmain {{max}} minutas",
+      "speakerConflict": "Il referent {{speaker}} è gia planisà per «{{session}}» a las {{time}}",
+      "roomConflict": "La stanza {{room}} è gia reservada per «{{session}}» a las {{time}}",
+      "timingConflict": "Conflict d'urari constatà"
+    },
+    "startTimeLabel": "Ura da cumenzament",
+    "endTimeLabel": "Ura da fin"
   },
   "slotAssignment": {
     "title": "Attribuziun da slots",
@@ -1227,8 +1255,7 @@
       "emptyState": {
         "title": "Tut las sessiuns attribuidas!",
         "message": "Bravo lavur! Tuts ils referents èn vegnids attribuids a slots temporals."
-      },
-      "viewPreferences": "Preferenzas"
+      }
     },
     "quickActions": {
       "title": "Acziuns rumadas",
@@ -1274,33 +1301,10 @@
         "error": "SBAGL",
         "warning": "AVIS"
       },
-      "timeRange": "Rango temporal dal conflict",
-      "start": "Entschatta",
-      "end": "Fin",
       "conflictingSession": "Sessiun en conflict",
       "resolutionOptions": "Opziuns da soluziun",
       "resolutionMessage": "Tscherna in auter slot temporal u chombra per resolver quest conflict.",
       "chooseDifferentSlot": "Tscherner auter slot"
-    },
-    "preferences": {
-      "title": "Preferenzas da referents",
-      "timePreferences": "Preferenzas temporalas",
-      "unavailableTimes": "Temps betg disponibels",
-      "avRequirements": "Pretensiuns A/V",
-      "setupNotes": "Notas da configuraziun da chombra",
-      "slotMatchScore": "Punteggi da concordanza dal slot",
-      "matchPercent": "{{percent}}% concordanza",
-      "times": {
-        "morning": "Matin",
-        "afternoon": "Suentermezdi",
-        "evening": "Saira",
-        "any": "En mintga mument"
-      },
-      "equipment": {
-        "microphone": "Microfon",
-        "projector": "Proiector",
-        "recording": "Registraziun"
-      }
     },
     "actionBar": {
       "label": "Acziuns d'assegnaziun da fanestras"
@@ -1380,7 +1384,8 @@
     "emptyState": "Naginas fotografias anc. Chargiar la primara!",
     "uploading": "Chargiar...",
     "uploadError": "Chargiar falliu. Empruva danovamain.",
-    "uploadErrorPartial": "{{failed}} da {{total}} chargiads fallids. Empruva danovamain."
+    "uploadErrorPartial": "{{failed}} da {{total}} chargiads fallids. Empruva danovamain.",
+    "uploadingProgress": "Chargiar si {{done}}/{{total}}..."
   },
   "teaserImage": {
     "title": "Imagens teaser",
@@ -1493,5 +1498,19 @@
       "limits": "Mintga mail che nus avain tramess e mintga mail retschavì, sur tut ils eveniments. Betg enumerads: newsletters, mails avant che il Mail Center als ha registrads e mails ad ina adressa che na vala betg pli.",
       "empty": "Anc nagins mails a u da questa persuna."
     }
+  },
+  "venue": {
+    "errors": {
+      "nameRequired": "Il num dal lieu è obligatoric",
+      "addressRequired": "L'adressa dal lieu è obligatorica",
+      "capacityPositive": "La capacitad sto esser in dumber positiv",
+      "capacityMax": "La capacitad na dastga betg surpassar 5000",
+      "updateFailed": "Il lieu n'ha betg pudì vegnir actualisà"
+    },
+    "sectionTitle": "Lieu e logistica",
+    "title": "Lieu & logistica",
+    "nameLabel": "Num dal lieu",
+    "capacityLabel": "Capacitad dal lieu",
+    "addressLabel": "Adressa dal lieu"
   }
 }

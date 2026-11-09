@@ -32,7 +32,13 @@ const status = (over: Partial<PublishingStatusResponse>): PublishingStatusRespon
   publishedPhases: [],
   topic: { isValid: false, errors: [] },
   speakers: { isValid: false, errors: [] },
-  sessions: { isValid: false, errors: [] } as PublishingStatusResponse['sessions'],
+  sessions: {
+    isValid: false,
+    errors: [],
+    assignedCount: 0,
+    totalCount: 0,
+    unassignedSessions: [],
+  },
   ...over,
 });
 

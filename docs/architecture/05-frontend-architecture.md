@@ -1480,7 +1480,6 @@ Guards: **P** = `ProtectedRoute` (any authenticated role, then the path-prefix c
 /register/:eventCode                      # Registration wizard
 /registration-success
 /events/:eventCode/confirm-registration
-/registration-confirmation/:confirmationCode
 /unsubscribe                              # Newsletter unsubscribe
 /verify-email                             # Additional-email verification (token)
 /deregister                               # Self-service deregistration (token)

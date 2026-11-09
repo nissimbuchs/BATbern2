@@ -16,50 +16,50 @@ describe('useActiveRole', () => {
   });
 
   it('should return primary role when user has only one role', () => {
-    const { result } = renderHook(() => useActiveRole(['ORGANIZER']));
+    const { result } = renderHook(() => useActiveRole(['organizer']));
 
     const [activeRole] = result.current;
-    expect(activeRole).toBe('ORGANIZER');
+    expect(activeRole).toBe('organizer');
   });
 
   it('should return primary role as default for multi-role users when no stored preference', () => {
-    const { result } = renderHook(() => useActiveRole(['ORGANIZER', 'SPEAKER', 'PARTNER']));
+    const { result } = renderHook(() => useActiveRole(['organizer', 'speaker', 'partner']));
 
     const [activeRole] = result.current;
-    expect(activeRole).toBe('ORGANIZER');
+    expect(activeRole).toBe('organizer');
   });
 
   it('should restore stored role from localStorage for multi-role users', () => {
-    localStorage.setItem('batbern:active-role', 'SPEAKER');
+    localStorage.setItem('batbern:active-role', 'speaker');
 
-    const { result } = renderHook(() => useActiveRole(['ORGANIZER', 'SPEAKER', 'PARTNER']));
+    const { result } = renderHook(() => useActiveRole(['organizer', 'speaker', 'partner']));
 
     const [activeRole] = result.current;
-    expect(activeRole).toBe('SPEAKER');
+    expect(activeRole).toBe('speaker');
   });
 
   it('should fall back to primary role when stored role not in user roles', () => {
-    localStorage.setItem('batbern:active-role', 'PARTNER');
+    localStorage.setItem('batbern:active-role', 'partner');
 
     const { result } = renderHook(
-      () => useActiveRole(['ORGANIZER', 'SPEAKER']) // PARTNER not in roles
+      () => useActiveRole(['organizer', 'speaker']) // PARTNER not in roles
     );
 
     const [activeRole] = result.current;
-    expect(activeRole).toBe('ORGANIZER');
+    expect(activeRole).toBe('organizer');
   });
 
   it('should update active role and persist to localStorage', () => {
-    const { result } = renderHook(() => useActiveRole(['ORGANIZER', 'SPEAKER', 'PARTNER']));
+    const { result } = renderHook(() => useActiveRole(['organizer', 'speaker', 'partner']));
 
     act(() => {
       const [, setActiveRole] = result.current;
-      setActiveRole('PARTNER' as UserRole);
+      setActiveRole('partner' as UserRole);
     });
 
     const [activeRole] = result.current;
-    expect(activeRole).toBe('PARTNER');
-    expect(localStorage.getItem('batbern:active-role')).toBe('PARTNER');
+    expect(activeRole).toBe('partner');
+    expect(localStorage.getItem('batbern:active-role')).toBe('partner');
   });
 
   it('should handle localStorage errors gracefully on read', () => {
@@ -67,11 +67,11 @@ describe('useActiveRole', () => {
       throw new Error('localStorage unavailable');
     });
 
-    const { result } = renderHook(() => useActiveRole(['ORGANIZER', 'SPEAKER']));
+    const { result } = renderHook(() => useActiveRole(['organizer', 'speaker']));
 
     const [activeRole] = result.current;
     // Falls back to primary role
-    expect(activeRole).toBe('ORGANIZER');
+    expect(activeRole).toBe('organizer');
   });
 
   it('should handle localStorage errors gracefully on write', () => {
@@ -79,17 +79,17 @@ describe('useActiveRole', () => {
       throw new Error('localStorage full');
     });
 
-    const { result } = renderHook(() => useActiveRole(['ORGANIZER', 'SPEAKER']));
+    const { result } = renderHook(() => useActiveRole(['organizer', 'speaker']));
 
     // Should not throw when setting role with broken localStorage
     expect(() => {
       act(() => {
         const [, setActiveRole] = result.current;
-        setActiveRole('SPEAKER' as UserRole);
+        setActiveRole('speaker' as UserRole);
       });
     }).not.toThrow();
 
     const [activeRole] = result.current;
-    expect(activeRole).toBe('SPEAKER');
+    expect(activeRole).toBe('speaker');
   });
 });

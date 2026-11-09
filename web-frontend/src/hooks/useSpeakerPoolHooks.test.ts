@@ -13,6 +13,7 @@ import { describe, it, expect, vi, beforeEach } from 'vitest';
 import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
+import type { SendInvitationResponse } from '@/types/speakerPool.types';
 
 vi.mock('@/services/speakerPoolService', () => ({
   speakerPoolService: {
@@ -360,7 +361,7 @@ describe('usePromoteSpeakerToReady', () => {
         .mutateAsync({
           eventCode: 'BAT142',
           speakerId: 'sp-1',
-          request: { email: 'alice@example.com' },
+          request: { email: 'alice@example.com', firstName: 'Alice', lastName: 'Example' },
         })
         .catch(() => {});
     });
@@ -381,13 +382,16 @@ describe('useSendInvitation', () => {
   });
 
   it('should call sendInvitation with eventCode, username, and options', async () => {
-    const mockResponse = {
-      token: 'magic-link-token',
-      workflowState: 'INVITED',
-      invitedAt: '2025-12-15T10:00:00Z',
+    const mockResponse: SendInvitationResponse = {
+      speakerPoolId: 'pool-entry-uuid',
+      username: 'speaker-uuid',
       email: 'speaker@example.com',
+      status: 'INVITED',
+      invitedAt: '2025-12-15T10:00:00Z',
+      responseDeadline: '2026-01-15',
+      contentDeadline: '2026-02-01',
     };
-    mockSendInvitation.mockResolvedValue(mockResponse as never);
+    mockSendInvitation.mockResolvedValue(mockResponse);
 
     const { result } = renderHook(() => useSendInvitation('BAT142'), { wrapper: wrapper(qc) });
 
