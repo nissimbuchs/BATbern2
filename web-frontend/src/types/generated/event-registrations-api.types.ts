@@ -576,7 +576,7 @@ export interface components {
       emails: string[];
     };
     /**
-     * @description A registration as the organizer endpoints return it (`RegistrationResponse` in EMS): the registration, its event, and the attendee from user_profiles (ADR-004, ADR-006).
+     * @description A registration as EMS returns it (`RegistrationResponse`): the registration, its event, and the attendee from user_profiles (ADR-004, ADR-006). The organizer endpoints return it in full; the public lookup (`getRegistration`) returns it with `attendeeEmail` masked, which is why that field has no e-mail format.
      *     Anonymous users are in user_profiles too (cognito_user_id = NULL).
      */
     Registration: {
