@@ -6,7 +6,9 @@ import ch.batbern.events.core.dto.generated.EventType;
 import ch.batbern.events.domain.Event;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.domain.Session;
+import ch.batbern.events.entity.EventAgendaConfig;
 import ch.batbern.events.mailcenter.RequestConversations;
+import ch.batbern.events.repository.EventAgendaConfigRepository;
 import ch.batbern.events.repository.EventRepository;
 import ch.batbern.events.repository.RegistrationRepository;
 import ch.batbern.events.repository.SessionRepository;
@@ -74,6 +76,8 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     private RegistrationRepository registrationRepository;
     @Autowired
     private JdbcTemplate jdbc;
+    @Autowired
+    private EventAgendaConfigRepository agendaConfigRepository;
 
     @BeforeEach
     void seed() {
@@ -108,6 +112,7 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
                 RequestConversations.Kind.MERGE.groupId(MERGE_REQUEST),
                 RequestConversations.Kind.LOGO.groupId(LOGO_REQUEST));
         eventRepository.findByEventCode(CODE).ifPresent(e -> {
+            agendaConfigRepository.findByEventId(e.getId()).ifPresent(agendaConfigRepository::delete);
             registrationRepository.deleteAll(registrationRepository.findByEventId(e.getId()));
             sessionRepository.deleteAll(sessionRepository.findByEventId(e.getId()));
             eventRepository.delete(e);
@@ -161,24 +166,56 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     }
 
     @Test
-    @DisplayName("schedule: every timed session before the agenda is published, without a JWT")
-    void eventSchedule_listsUnpublishedSessions_withoutCaller() throws Exception {
-        // The public GET /api/v1/events/{code}?include=sessions shows these sessions to organizers
-        // only; partner-coordination calls without a JWT or as a partner (17.0 deferred work).
-        Event event = eventRepository.findByEventCode(CODE).orElseThrow();
-        event.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
-        eventRepository.save(event);
-
+    @DisplayName("schedule: the event's own times (EventTimeResolver), without a JWT")
+    void eventSchedule_hasTheEventsTimes_withoutCaller() throws Exception {
+        // Agenda published: the earliest session start and latest session end (seeded 16:00Z-16:45Z).
         internal(get("/internal/events/{eventCode}/schedule", CODE), 200);
         mockMvc.perform(get("/internal/events/{eventCode}/schedule", CODE))
                 .andExpect(jsonPath("$.eventCode").value(CODE))
                 .andExpect(jsonPath("$.date").value("2026-06-11T16:00:00Z"))
                 .andExpect(jsonPath("$.venueName").value("Kursaal Bern"))
-                .andExpect(jsonPath("$.eventType").value("EVENING"))
-                .andExpect(jsonPath("$.sessions.length()").value(1))
-                .andExpect(jsonPath("$.sessions[0].startTime").value("2026-06-11T16:00:00Z"))
-                .andExpect(jsonPath("$.sessions[0].endTime").value("2026-06-11T16:45:00Z"));
+                .andExpect(jsonPath("$.startTime").value("2026-06-11T16:00:00Z"))
+                .andExpect(jsonPath("$.endTime").value("2026-06-11T16:45:00Z"));
         internal(get("/internal/events/{eventCode}/schedule", "BATbern9999"), 404);
+    }
+
+    @Test
+    @DisplayName("schedule before the agenda is published: the evening times EMS configures, not a copy in PCS")
+    void eventSchedule_usesConfiguredTypeTimes_beforeAgendaPublished() throws Exception {
+        Event event = eventRepository.findByEventCode(CODE).orElseThrow();
+        event.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
+        eventRepository.save(event);
+        java.time.LocalTime start = jdbc.queryForObject(
+                "SELECT typical_start_time FROM event_types WHERE type = 'evening'", java.time.LocalTime.class);
+        java.time.LocalTime end = jdbc.queryForObject(
+                "SELECT typical_end_time FROM event_types WHERE type = 'evening'", java.time.LocalTime.class);
+
+        mockMvc.perform(get("/internal/events/{eventCode}/schedule", CODE))
+                .andExpect(jsonPath("$.startTime").value(zurich(start)))
+                .andExpect(jsonPath("$.endTime").value(zurich(end)));
+    }
+
+    @Test
+    @DisplayName("schedule with a per-event agenda override: the override's times (Story 15.2)")
+    void eventSchedule_usesPerEventOverride_beforeAgendaPublished() throws Exception {
+        Event event = eventRepository.findByEventCode(CODE).orElseThrow();
+        event.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
+        eventRepository.save(event);
+        agendaConfigRepository.save(EventAgendaConfig.builder()
+                .eventId(event.getId()).minSlots(1).maxSlots(4).slotDuration(45).defaultCapacity(200)
+                .typicalStartTime(java.time.LocalTime.of(17, 15)).typicalEndTime(java.time.LocalTime.of(21, 30))
+                .build());
+
+        internal(get("/internal/events/{eventCode}/schedule", CODE), 200);
+        mockMvc.perform(get("/internal/events/{eventCode}/schedule", CODE))
+                .andExpect(jsonPath("$.startTime").value("2026-06-11T15:15:00Z"))
+                .andExpect(jsonPath("$.endTime").value("2026-06-11T19:30:00Z"));
+    }
+
+    /** The event day (2026-06-11) at a Zurich local time, as the instant EMS serializes. */
+    private static String zurich(java.time.LocalTime time) {
+        return java.time.LocalDate.of(2026, 6, 11).atTime(time).atZone(java.time.ZoneId.of("Europe/Zurich"))
+                .toInstant().toString();
     }
 
     @Test

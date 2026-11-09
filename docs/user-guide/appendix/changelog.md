@@ -47,6 +47,9 @@ Only items that are not live yet. Everything else is listed under its release be
 - ✅ No-shows do not count as attendance: the analytics count confirmed and attended registrations only, so after an event the people who came are set to *Attended* and the others to *No-show*.
 - ✅ Mail Center: own text to the registrants can go to chosen statuses, for example the no-shows only. A template still goes to registered, confirmed and attended.
 
+**Bug Fix — Partner meeting invites show the event's real times (17.0)**:
+- ✅ The BATbern event entry in a partner meeting invite now has the same start and end as the registration confirmation and the event page. Before the agenda was published it used fixed times of its own (18:00–22:00 for an evening event) instead of the times set for the event.
+
 **Improvement — Search finds what you mean, everywhere (Story 17.17)**:
 - ✅ Every search box (users, participants, newsletter subscribers, companies, partners, topics, events and the archive) searches all records, not only the ones on the current page. The partner list and the topic picker used to search only the rows already loaded.
 - ✅ Spelling variants find each other: "Müller", "Mueller" and "Muller", "Zürich" and "Zurich", "Strasse" and "Straße". Capital letters and accents do not matter.

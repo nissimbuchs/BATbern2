@@ -96,7 +96,7 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
                 .respondWith(HttpStatus.OK, """
                         {"eventCode": "BATbern60", "title": "Digitale Souveränität", "date": "2026-11-06T15:00:00Z",
                          "venueName": "Bern", "venueAddress": "Bern", "eventType": "EVENING",
-                         "sessions": []}""");
+                         "startTime": "2026-11-06T17:00:00Z", "endTime": "2026-11-06T21:00:00Z"}""");
         var partner = new UserResponse();
         partner.setEmail("success+contact@simulator.amazonses.com");
         when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(partner));

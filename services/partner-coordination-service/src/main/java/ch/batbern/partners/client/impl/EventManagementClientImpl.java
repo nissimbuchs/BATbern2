@@ -96,10 +96,10 @@ public class EventManagementClientImpl implements EventManagementClient {
 
     /**
      * Get event summary from event-management-service for ICS generation, from the internal
-     * {@code GET /internal/events/{eventCode}/schedule} (ems-internal spec). It needs no JWT and lists
-     * every timed session whether or not the agenda is published, so a partner caller or a scheduler
-     * gets the same times as an organizer (17.0 deferred work; the public event read showed sessions
-     * to organizers only). Cached 1 hour (Story 8.3, AC8 performance).
+     * {@code GET /internal/events/{eventCode}/schedule} (ems-internal spec). It needs no JWT, and its
+     * start and end are the times EMS gives the event everywhere else ({@code EventTimeResolver}), so
+     * a partner caller or a scheduler gets the same times as an organizer, and the invite matches the
+     * registration mails (17.0 deferred work). Cached 1 hour (Story 8.3, AC8 performance).
      */
     @Override
     @Cacheable(value = "eventSummaryCache", key = "#eventCode")
@@ -126,11 +126,14 @@ public class EventManagementClientImpl implements EventManagementClient {
                     : ZonedDateTime.now(ZURICH);
             LocalDate eventDate = zurichDt.toLocalDate();
 
-            LocalTime[] times = deriveEventTimes(body);
+            // EMS resolves the times as it does for registration mails and event pages; the ICS wants
+            // Zurich local times (IcsGeneratorService.toUtc()).
+            LocalTime startTime = body.startTime().atZone(ZURICH).toLocalTime();
+            LocalTime endTime = body.endTime().atZone(ZURICH).toLocalTime();
             String venue = buildVenueString(body.venueName(), body.venueAddress());
 
             log.debug("Event summary fetched: eventCode={}, date={}, venue={}", eventCode, eventDate, venue);
-            return new EventSummaryDTO(eventCode, body.title(), eventDate, times[0], times[1], venue);
+            return new EventSummaryDTO(eventCode, body.title(), eventDate, startTime, endTime, venue);
 
         } catch (HttpClientErrorException.NotFound e) {
             log.warn("Event not found in event-management-service: eventCode={}", eventCode);
@@ -140,50 +143,6 @@ public class EventManagementClientImpl implements EventManagementClient {
             throw new RuntimeException(
                     "Failed to fetch event summary from event-management-service for: " + eventCode, e);
         }
-    }
-
-    /**
-     * Start/end of the BATbern event entry, as Zurich local times for IcsGeneratorService.toUtc():
-     * the earliest session start and latest session end; without timed sessions, the event type's
-     * typical times.
-     */
-    private LocalTime[] deriveEventTimes(EventSchedule body) {
-        LocalTime minStart = null;
-        LocalTime maxEnd = null;
-        for (SessionTimes session : body.sessions() == null ? List.<SessionTimes>of() : body.sessions()) {
-            if (session.startTime() != null) {
-                LocalTime st = session.startTime().atZone(ZURICH).toLocalTime();
-                if (minStart == null || st.isBefore(minStart)) {
-                    minStart = st;
-                }
-            }
-            if (session.endTime() != null) {
-                LocalTime et = session.endTime().atZone(ZURICH).toLocalTime();
-                if (maxEnd == null || et.isAfter(maxEnd)) {
-                    maxEnd = et;
-                }
-            }
-        }
-        if (minStart != null && maxEnd != null) {
-            log.debug("Derived event times from {} sessions: {}-{}", body.sessions().size(), minStart, maxEnd);
-            return new LocalTime[]{minStart, maxEnd};
-        }
-        return typicalTimesForType(body.eventType());
-    }
-
-    /**
-     * Typical start/end times by event type — mirrors the values in V10__Create_event_types_table.sql.
-     * Used when no sessions with times are available yet.
-     */
-    private LocalTime[] typicalTimesForType(String eventType) {
-        if (eventType == null) {
-            return new LocalTime[]{LocalTime.of(18, 0), LocalTime.of(22, 0)};
-        }
-        return switch (eventType.toLowerCase()) {
-            case "full_day"  -> new LocalTime[]{LocalTime.of(9, 0),  LocalTime.of(16, 0)};
-            case "afternoon" -> new LocalTime[]{LocalTime.of(13, 0), LocalTime.of(19, 0)};
-            default          -> new LocalTime[]{LocalTime.of(18, 0), LocalTime.of(22, 0)};
-        };
     }
 
     private String buildVenueString(String venueName, String venueAddress) {
@@ -227,11 +186,7 @@ public class EventManagementClientImpl implements EventManagementClient {
             String venueName,
             String venueAddress,
             String eventType,
-            List<SessionTimes> sessions) {
-    }
-
-    /** Schema {@code SessionTimes} of the ems-internal spec. */
-    @JsonIgnoreProperties(ignoreUnknown = true)
-    record SessionTimes(Instant startTime, Instant endTime) {
+            Instant startTime,
+            Instant endTime) {
     }
 }

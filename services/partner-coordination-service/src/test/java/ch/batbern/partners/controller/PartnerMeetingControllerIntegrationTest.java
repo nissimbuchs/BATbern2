@@ -118,7 +118,7 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
                 .respondWith(HttpStatus.OK, """
                         {"eventCode": "BATbern57", "title": "BATbern Spring 2026", "date": "2026-05-14T16:00:00Z",
                          "venueName": "Bern Congress Centre", "venueAddress": "Bern", "eventType": "EVENING",
-                         "sessions": []}""");
+                         "startTime": "2026-05-14T16:00:00Z", "endTime": "2026-05-14T20:00:00Z"}""");
 
         // Stub getUsersByRole so sendInvite can collect partner emails
         UserResponse mockPartner = new UserResponse();

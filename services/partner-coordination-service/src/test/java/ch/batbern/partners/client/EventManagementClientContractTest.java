@@ -101,17 +101,17 @@ class EventManagementClientContractTest {
     }
 
     @Test
-    @DisplayName("event summary: date, venue and session times from the internal schedule example")
+    @DisplayName("event summary: date, venue and EMS's start and end, in Zurich time")
     void should_buildEventSummary_fromSpecExample() {
         server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
-        server.expect(GET, "/internal/events/{eventCode}/schedule").respondWithExample("withSessions");
+        server.expect(GET, "/internal/events/{eventCode}/schedule").respondWithExample("agendaPublished");
 
         EventSummaryDTO summary = client.getEventSummary("BATbern142");
 
         assertThat(summary.eventCode()).isEqualTo("BATbern142");
         assertThat(summary.title()).isEqualTo("BATbern 142 - Cloud Native");
         assertThat(summary.eventDate()).isEqualTo(LocalDate.of(2026, 6, 11));
-        // Zurich is UTC+2 in June: earliest start 15:30Z -> 17:30, latest end 19:45Z -> 21:45.
+        // Zurich is UTC+2 in June: 15:30Z -> 17:30, 19:45Z -> 21:45.
         assertThat(summary.startTime()).isEqualTo(LocalTime.of(17, 30));
         assertThat(summary.endTime()).isEqualTo(LocalTime.of(21, 45));
         assertThat(summary.venue()).isEqualTo("Kursaal Bern, Kornhausstrasse 3, 3013 Bern");
@@ -119,33 +119,35 @@ class EventManagementClientContractTest {
     }
 
     @Test
-    @DisplayName("without a JWT (scheduler, partner caller) the session times still arrive: the call needs none")
-    void should_deriveEventTimes_when_noJwtToForward() {
+    @DisplayName("before the agenda: the times EMS configures for the event, not a copy of the type defaults in PCS")
+    void should_useEmsTimes_when_agendaNotPublished() {
+        server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
+        server.expect(GET, "/internal/events/{eventCode}/schedule").respondWithExample("beforeAgenda");
+
+        EventSummaryDTO summary = client.getEventSummary("BATbern143");
+
+        // EVENING as EMS configures it (V32: 16:00-19:00); Zurich is UTC+1 in November. The copy
+        // PCS kept gave 18:00-22:00.
+        assertThat(summary.startTime()).isEqualTo(LocalTime.of(16, 0));
+        assertThat(summary.endTime()).isEqualTo(LocalTime.of(19, 0));
+        assertThat(summary.eventDate()).isEqualTo(LocalDate.of(2026, 11, 5));
+        assertThat(summary.venue()).isEqualTo("Kursaal Bern");
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("without a JWT (scheduler, partner caller) the call works: it needs none")
+    void should_buildEventSummary_when_noJwtToForward() {
         SecurityContextHolder.clearContext();
         server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
         server.expect(GET, "/internal/events/{eventCode}/schedule")
                 .andExpect(r -> assertThat(r.getHeaders().containsHeader(HttpHeaders.AUTHORIZATION)).isFalse())
-                .respondWithExample("withSessions");
+                .respondWithExample("agendaPublished");
 
         EventSummaryDTO summary = client.getEventSummary("BATbern142");
 
         assertThat(summary.startTime()).isEqualTo(LocalTime.of(17, 30));
         assertThat(summary.endTime()).isEqualTo(LocalTime.of(21, 45));
-        server.verify();
-    }
-
-    @Test
-    @DisplayName("no timed session yet: the event type's typical times apply")
-    void should_useTypicalTimesOfEventType_when_noSessions() {
-        server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
-        server.expect(GET, "/internal/events/{eventCode}/schedule").respondWithExample("noSessions");
-
-        EventSummaryDTO summary = client.getEventSummary("BATbern143");
-
-        // FULL_DAY in the example: 09:00-16:00, distinguishable from the evening default.
-        assertThat(summary.startTime()).isEqualTo(LocalTime.of(9, 0));
-        assertThat(summary.endTime()).isEqualTo(LocalTime.of(16, 0));
-        assertThat(summary.venue()).isEqualTo("Kursaal Bern");
         server.verify();
     }
 

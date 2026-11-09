@@ -162,11 +162,13 @@ paths:
       summary: Date, venue and times of an event, for the partner meeting invite (ICS)
       description: |
         partner-coordination (`EventManagementClientImpl.getEventSummary`) builds the BATbern event
-        entry of a partner meeting invite from it. Every session with a time is listed, whether or
-        not the agenda is published, and the answer does not depend on a caller: it is called
-        without a JWT (schedulers, partner callers). The public `GET /api/v1/events/{eventCode}`
-        shows sessions to organizers only, so it gave other callers the default times (17.0
-        deferred work, 2026-11-09).
+        entry of a partner meeting invite from it. `startTime` and `endTime` are the times EMS gives
+        the event everywhere else (`EventTimeResolver`: registration mails, event pages): the
+        earliest session start and latest session end once the agenda is published, before that the
+        agenda config (per-event override, else the event type), else the type's conventional start
+        plus 3 hours. The answer does not depend on a caller: it is called without a JWT
+        (schedulers, partner callers). The public `GET /api/v1/events/{eventCode}` shows sessions
+        to organizers only (17.0 deferred work, 2026-11-09).
       parameters:
         - name: eventCode
           in: path
@@ -183,7 +185,7 @@ paths:
               schema:
                 $ref: '#/components/schemas/EventSchedule'
               examples:
-                withSessions:
+                agendaPublished:
                   value:
                     eventCode: BATbern142
                     title: BATbern 142 - Cloud Native
@@ -191,19 +193,17 @@ paths:
                     venueName: Kursaal Bern
                     venueAddress: Kornhausstrasse 3, 3013 Bern
                     eventType: EVENING
-                    sessions:
-                      - startTime: '2026-06-11T15:30:00Z'
-                        endTime: '2026-06-11T16:15:00Z'
-                      - startTime: '2026-06-11T18:00:00Z'
-                        endTime: '2026-06-11T19:45:00Z'
-                noSessions:
+                    startTime: '2026-06-11T15:30:00Z'
+                    endTime: '2026-06-11T19:45:00Z'
+                beforeAgenda:
                   value:
                     eventCode: BATbern143
                     title: BATbern 143 - Data
-                    date: '2026-11-05T16:00:00Z'
+                    date: '2026-11-05T15:00:00Z'
                     venueName: Kursaal Bern
-                    eventType: FULL_DAY
-                    sessions: []
+                    eventType: EVENING
+                    startTime: '2026-11-05T15:00:00Z'
+                    endTime: '2026-11-05T18:00:00Z'
         '404':
           description: No event with this code
           content:
@@ -377,7 +377,7 @@ components:
   schemas:
     EventSchedule:
       type: object
-      required: [eventCode, title, date, sessions]
+      required: [eventCode, title, date, startTime, endTime]
       description: >-
         Hand-written record `InternalEventScheduleController.EventSchedule`. Optional properties are
         `null` when unknown.
@@ -397,22 +397,14 @@ components:
         eventType:
           type: string
           enum: [FULL_DAY, AFTERNOON, EVENING]
-        sessions:
-          type: array
-          description: Every session of the event that has a start or an end time, published or not.
-          items:
-            $ref: '#/components/schemas/SessionTimes'
-      additionalProperties: false
-
-    SessionTimes:
-      type: object
-      properties:
         startTime:
           type: string
           format: date-time
+          description: Start of the event as EMS resolves it (`EventTimeResolver`).
         endTime:
           type: string
           format: date-time
+          description: End of the event as EMS resolves it (`EventTimeResolver`).
       additionalProperties: false
 
     Counts:
