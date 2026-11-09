@@ -466,8 +466,6 @@ export interface components {
       industry?: string | null;
       /** @description Company website URL */
       website?: string | null;
-      /** @description Company headquarters location */
-      location?: string | null;
     };
     PartnerStatistics: {
       /** @description Total number of partners */

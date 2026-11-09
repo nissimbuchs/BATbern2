@@ -1229,10 +1229,6 @@ components:
           nullable: true
           type: string
           description: Company website URL
-        location:
-          nullable: true
-          type: string
-          description: Company headquarters location
 
     PartnerStatistics:
       type: object

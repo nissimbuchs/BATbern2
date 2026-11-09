@@ -5,7 +5,7 @@
  * Displays comprehensive partner information in the header:
  * - Company logo or initials avatar
  * - Partnership tier badge with emoji
- * - Company information (name, industry, website, location)
+ * - Company information (name, industry, website)
  * - Engagement bar (placeholder for Epic 8)
  * - Action buttons (Edit, Add Note, and disabled Epic 8 buttons)
  * - Back button to partner directory
@@ -223,16 +223,6 @@ export const PartnerDetailHeader: React.FC<PartnerDetailHeaderProps> = ({
                     >
                       {partner.company.website.replace(/^https?:\/\/(www\.)?/, '')}
                     </Link>
-                  </>
-                )}
-                {partner.company.location && (
-                  <>
-                    <Typography variant="body2" color="text.secondary">
-                      •
-                    </Typography>
-                    <Typography variant="body2" color="text.secondary">
-                      {partner.company.location}
-                    </Typography>
                   </>
                 )}
               </Stack>

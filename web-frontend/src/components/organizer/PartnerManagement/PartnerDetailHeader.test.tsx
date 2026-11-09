@@ -8,7 +8,7 @@
  * - Company logo display with CloudFront CDN
  * - Fallback to initials avatar when logo missing
  * - Partnership tier badge with emoji
- * - Company name, industry, website, location
+ * - Company name, industry, website
  * - Engagement bar placeholder
  * - Action buttons (Edit, Add Note, disabled Epic 8 buttons)
  * - Back button navigation
@@ -68,7 +68,6 @@ const mockPartner: PartnerResponse = {
     name: 'Google Zurich',
     industry: 'Technology',
     website: 'https://www.google.ch',
-    location: 'Zurich, ZH',
     logoUrl: 'https://cdn.batbern.ch/logos/google-zh.png',
   },
 };
@@ -141,7 +140,6 @@ describe('PartnerDetailHeader Component', () => {
 
       expect(screen.getByText('Google Zurich')).toBeInTheDocument();
       expect(screen.getByText(/Technology/i)).toBeInTheDocument();
-      expect(screen.getByText(/Zurich, ZH/i)).toBeInTheDocument();
     });
 
     it('should_displayWebsiteLink_when_websiteExists', async () => {

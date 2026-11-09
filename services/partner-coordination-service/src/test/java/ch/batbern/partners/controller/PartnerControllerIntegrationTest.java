@@ -275,7 +275,10 @@ class PartnerControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.companyName").value("GoogleZH"))
                 .andExpect(jsonPath("$.company").exists())
                 .andExpect(jsonPath("$.company.companyName").value("GoogleZH"))
-                .andExpect(jsonPath("$.company.displayName").value("Google Zurich"));
+                .andExpect(jsonPath("$.company.displayName").value("Google Zurich"))
+                // CUMS has no company location; the field was declared but never filled
+                // (removed 2026-11-09, owner decision).
+                .andExpect(jsonPath("$.company", not(hasKey("location"))));
     }
 
     @Test

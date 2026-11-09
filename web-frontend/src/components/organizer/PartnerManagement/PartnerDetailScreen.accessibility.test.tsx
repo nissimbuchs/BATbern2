@@ -60,7 +60,6 @@ const mockPartnerDetail = {
     legalName: 'Google Switzerland GmbH',
     industry: 'Technology',
     website: 'https://www.google.ch',
-    location: 'Zurich, Switzerland',
     taxStatus: 'VAT Registered',
   },
   statistics: {
