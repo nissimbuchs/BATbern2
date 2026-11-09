@@ -488,9 +488,10 @@ describe('EventForm Component', () => {
   });
 
   describe.skip('Auto-Save Functionality (AC4, AC20) - NOT IMPLEMENTED (Task 16a/16b pending)', () => {
-    // SKIPPED: Auto-save feature not implemented yet
-    // Story 2.5.3 shows Task 16a/16b (Auto-Save Implementation) with unchecked [ ] boxes
-    // These are TDD RED phase tests waiting for GREEN phase implementation
+    // SKIPPED. The title is stale: EventForm has auto-save now (handleAutoSave, 5 s debounce).
+    // Unskipped (2026-11-09), the block hangs: vi.useFakeTimers() stalls userEvent.type, which
+    // waits on real timers. Reviving it needs userEvent.setup({ advanceTimers }) and the MSW
+    // harness instead of the eventApiClient mock (deferred-work.md, test fidelity).
     beforeEach(() => {
       vi.useFakeTimers();
     });
@@ -566,9 +567,15 @@ describe('EventForm Component', () => {
     });
 
     it('should_displaySavingIndicator_when_autoSaveTriggered', async () => {
+      // The test settles the save itself: a timer that resolved it after the test had ended let
+      // the form set state after the jsdom teardown (see the RegistrationWizard fix, 978198a7).
+      let finishSave: (event: Event) => void = () => {};
       const { eventApiClient } = await import('@/services/eventApiClient');
       (eventApiClient.patchEvent as ReturnType<typeof vi.fn>).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(mockEvent), 1000))
+        () =>
+          new Promise<Event>((resolve) => {
+            finishSave = resolve;
+          })
       );
 
       render(<EventForm mode="edit" open={true} onClose={vi.fn()} event={mockEvent} />, {
@@ -584,6 +591,11 @@ describe('EventForm Component', () => {
 
       await waitFor(() => {
         expect(screen.getByText(/saving/i)).toBeInTheDocument();
+      });
+
+      finishSave(mockEvent);
+      await waitFor(() => {
+        expect(screen.getByText(/last.*saved/i)).toBeInTheDocument();
       });
     });
 

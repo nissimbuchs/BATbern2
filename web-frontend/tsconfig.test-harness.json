@@ -40,7 +40,12 @@
     "src/components/organizer/EventPage/__tests__/EventSpeakersTab.test.tsx",
     "src/pages/public/__tests__/RegistrationConfirmationPage.test.tsx",
     "src/utils/registrationCode.test.ts",
-    "src/components/auth/ForgotPasswordForm/ForgotPasswordForm.test.tsx"
+    "src/components/auth/ForgotPasswordForm/ForgotPasswordForm.test.tsx",
+    "src/hooks/useTopics.test.tsx",
+    "src/hooks/useSpeakerPool.test.tsx",
+    "src/hooks/useUserManagement/__tests__/useUpdateUserRoles.test.tsx",
+    "src/hooks/usePublishing/usePublishing.test.tsx",
+    "src/hooks/useSlotAssignment/useSlotAssignment.test.ts"
   ],
   "exclude": []
 }

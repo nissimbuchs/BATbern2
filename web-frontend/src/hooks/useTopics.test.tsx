@@ -1,74 +1,76 @@
 /**
- * useTopics Hook Tests (Story 5.2 - Frontend Tests)
+ * useTopics Hook Tests (Story 5.2)
  *
- * Comprehensive tests for Topic React Query hooks
- * Tests all hooks: useTopics, useTopic, useSimilarTopics, useCreateTopic, useSelectTopicForEvent
- *
- * Coverage:
- * - Query hooks (data fetching, caching, error handling)
- * - Mutation hooks (optimistic updates, cache invalidation)
- * - React Query integration and behavior
+ * One file for the hooks (the former useTopics.test.ts mocked the same service a second time).
+ * The hooks run with the real topicService and apiClient against the MSW harness (Epic 17 test
+ * fidelity): every request is checked against topics-api, and each test answers it with a typed
+ * override or reads what went over the wire. A pending answer is a handler that waits for a
+ * promise the test settles itself, so no answer arrives after the test has ended.
  */
 
-import React, { ReactNode } from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
+import { HttpResponse } from 'msw';
+import { isAxiosError } from 'axios';
+import { api } from '@/test/msw/api';
 import {
   useTopics,
   useTopic,
   useSimilarTopics,
+  useTopicUsageHistory,
   useCreateTopic,
   useSelectTopicForEvent,
   topicKeys,
 } from './useTopics';
-import { topicService } from '@/services/topicService';
-import type {
-  Topic,
-  TopicListResponse,
-  CreateTopicRequest,
-  SelectTopicForEventRequest,
-} from '@/types/topic.types';
+import type { Topic, TopicListResponse, TopicUsageHistory } from '@/types/topic.types';
 
-// Mock the topic service
-vi.mock('@/services/topicService', () => ({
-  topicService: {
-    getTopics: vi.fn(),
-    getTopicById: vi.fn(),
-    getSimilarTopics: vi.fn(),
-    createTopic: vi.fn(),
-    selectTopicForEvent: vi.fn(),
-  },
-}));
+const LIST = 'topics-api/listTopics';
+
+const topic: Topic = {
+  topicCode: 'cloud-native-architecture',
+  title: 'Cloud Native Architecture',
+  description: 'Modern cloud patterns',
+  category: 'technical',
+  stalenessScore: 85,
+  usageCount: 3,
+  lastUsedDate: '2024-01-15T00:00:00Z',
+  createdDate: '2023-01-01T00:00:00Z',
+  active: true,
+};
+
+const topicList: TopicListResponse = {
+  data: [topic],
+  pagination: { page: 1, limit: 20, totalItems: 1, totalPages: 1, hasNext: false, hasPrev: false },
+};
+
+const problem = (status: number, message: string) =>
+  HttpResponse.json(
+    { timestamp: '2026-11-09T08:00:00Z', status, error: 'Error', message },
+    { status }
+  );
+
+const statusOf = (error: unknown) => (isAxiosError(error) ? error.response?.status : undefined);
 
 describe('useTopics hooks', () => {
   let queryClient: QueryClient;
 
-  // Create wrapper with QueryClient for hooks
-  const createWrapper = () => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false, // Disable retries for tests
-          gcTime: 0, // Disable cache for tests
-        },
-        mutations: {
-          retry: false,
-        },
-      },
-    });
-
-    return ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-  };
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, gcTime: 0 },
+        mutations: { retry: false },
+      },
+    });
   });
 
   afterEach(() => {
-    queryClient?.clear();
+    queryClient.clear();
   });
 
   describe('topicKeys', () => {
@@ -87,273 +89,240 @@ describe('useTopics hooks', () => {
   });
 
   describe('useTopics', () => {
-    const mockTopicListResponse: TopicListResponse = {
-      data: [
-        {
-          id: 'topic-123',
-          title: 'Cloud Native Architecture',
-          description: 'Modern cloud patterns',
-          category: 'technical',
-          stalenessScore: 85,
-          usageCount: 3,
-          lastUsedDate: '2024-01-15',
-          isActive: true,
-          createdDate: '2023-01-01',
-        },
-      ],
-      pagination: {
-        page: 1,
-        limit: 20,
-        total: 1,
-      },
-    };
-
     it('should fetch topics without filters', async () => {
-      vi.mocked(topicService.getTopics).mockResolvedValue(mockTopicListResponse);
+      api.on(LIST, () => topicList);
 
-      const { result } = renderHook(() => useTopics(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useTopics(), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(topicService.getTopics).toHaveBeenCalledWith(undefined);
-      expect(result.current.data).toEqual(mockTopicListResponse);
-      expect(result.current.data?.data).toHaveLength(1);
+      expect(result.current.data).toEqual(topicList);
+      expect([...api.calls(LIST)[0].query.keys()]).toEqual([]);
     });
 
-    it('should fetch topics with filters', async () => {
-      vi.mocked(topicService.getTopics).mockResolvedValue(mockTopicListResponse);
+    it('should send the filters as the spec names them', async () => {
+      api.on(LIST, () => topicList);
 
-      const filters = {
-        category: 'technical',
-        sort: '-stalenessScore',
-        page: 2,
-        limit: 50,
-      };
-
-      const { result } = renderHook(() => useTopics(filters), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(topicService.getTopics).toHaveBeenCalledWith(filters);
-      expect(result.current.data).toEqual(mockTopicListResponse);
-    });
-
-    it('should handle loading state', async () => {
-      vi.mocked(topicService.getTopics).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(mockTopicListResponse), 100))
+      const { result } = renderHook(
+        () => useTopics({ category: 'technical', sort: '-stalenessScore', page: 2, limit: 50 }),
+        { wrapper }
       );
 
-      const { result } = renderHook(() => useTopics(), {
-        wrapper: createWrapper(),
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      const query = api.calls(LIST)[0].query;
+      expect(JSON.parse(query.get('filter') ?? '{}')).toEqual({ category: 'technical' });
+      expect(query.get('sort')).toBe('-stalenessScore');
+      expect(query.get('page')).toBe('2');
+      expect(query.get('limit')).toBe('50');
+    });
+
+    it('should be loading until the answer arrives', async () => {
+      let answer: () => void = () => {};
+      const answered = new Promise<void>((resolve) => {
+        answer = resolve;
       });
+      api.on(LIST, async () => {
+        await answered;
+        return topicList;
+      });
+
+      const { result } = renderHook(() => useTopics(), { wrapper });
 
       expect(result.current.isLoading).toBe(true);
       expect(result.current.data).toBeUndefined();
 
+      answer();
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
       expect(result.current.isLoading).toBe(false);
-      expect(result.current.data).toBeDefined();
+      expect(result.current.data).toEqual(topicList);
     });
 
-    it('should handle errors gracefully', async () => {
-      const error = new Error('Network failure');
-      vi.mocked(topicService.getTopics).mockRejectedValue(error);
+    it('should report a server error', async () => {
+      api.on(LIST, () => problem(500, 'Network failure'));
 
-      const { result } = renderHook(() => useTopics(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useTopics(), { wrapper });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
+      expect(statusOf(result.current.error)).toBe(500);
       expect(result.current.data).toBeUndefined();
     });
 
-    it('should cache results with 5 minute stale time', async () => {
-      vi.mocked(topicService.getTopics).mockResolvedValue(mockTopicListResponse);
+    it('should serve a second reader from the cache (5 minute stale time)', async () => {
+      api.on(LIST, () => topicList);
 
-      const { result } = renderHook(() => useTopics(), {
-        wrapper: createWrapper(),
-      });
-
+      const { result } = renderHook(() => useTopics(), { wrapper });
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Second render should use cached data
-      const { result: result2 } = renderHook(() => useTopics(), {
-        wrapper: ({ children }: { children: ReactNode }) => (
-          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-        ),
-      });
+      const { result: second } = renderHook(() => useTopics(), { wrapper });
 
-      expect(result2.current.data).toEqual(mockTopicListResponse);
-      expect(topicService.getTopics).toHaveBeenCalledTimes(1); // Only called once due to cache
+      expect(second.current.data).toEqual(topicList);
+      expect(api.calls(LIST)).toHaveLength(1);
     });
   });
 
   describe('useTopic', () => {
-    const mockTopic: Topic = {
-      id: 'topic-123',
-      title: 'Cloud Native Architecture',
-      description: 'Modern cloud patterns',
-      category: 'technical',
-      stalenessScore: 85,
-      usageCount: 3,
-      lastUsedDate: '2024-01-15',
-      isActive: true,
-      createdDate: '2023-01-01',
-    };
+    it('should fetch a topic by its code without includes', async () => {
+      api.on('getTopicByCode', () => topic);
 
-    it('should fetch topic by ID without includes', async () => {
-      vi.mocked(topicService.getTopicById).mockResolvedValue(mockTopic);
-
-      const { result } = renderHook(() => useTopic('topic-123'), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useTopic(topic.topicCode), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(topicService.getTopicById).toHaveBeenCalledWith('topic-123', undefined);
-      expect(result.current.data).toEqual(mockTopic);
+      expect(result.current.data).toEqual(topic);
+      const [call] = api.calls('getTopicByCode');
+      expect(call.params.topicCode).toBe(topic.topicCode);
+      expect(call.query.has('include')).toBe(false);
     });
 
-    it('should fetch topic with includes parameter', async () => {
-      const topicWithSimilarity: Topic = {
-        ...mockTopic,
+    it('should send the include parameter', async () => {
+      const withSimilarity: Topic = {
+        ...topic,
         similarityScores: [{ topicCode: 'cloud-security', score: 0.75 }],
       };
+      api.on('getTopicByCode', () => withSimilarity);
 
-      vi.mocked(topicService.getTopicById).mockResolvedValue(topicWithSimilarity);
-
-      const { result } = renderHook(() => useTopic('topic-123', 'similarity,history'), {
-        wrapper: createWrapper(),
+      const { result } = renderHook(() => useTopic(topic.topicCode, 'similarity,history'), {
+        wrapper,
       });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(topicService.getTopicById).toHaveBeenCalledWith('topic-123', 'similarity,history');
-      expect(result.current.data?.similarityScores).toBeDefined();
+      expect(api.calls('getTopicByCode')[0].query.get('include')).toBe('similarity,history');
+      expect(result.current.data?.similarityScores).toEqual(withSimilarity.similarityScores);
     });
 
-    it('should not fetch when ID is empty', () => {
-      const { result } = renderHook(() => useTopic(''), {
-        wrapper: createWrapper(),
+    it('should not fetch while the code is empty, and fetch once it is set', async () => {
+      api.on('getTopicByCode', () => topic);
+
+      const { result, rerender } = renderHook(({ code }) => useTopic(code), {
+        wrapper,
+        initialProps: { code: '' },
       });
 
       expect(result.current.isFetching).toBe(false);
-      expect(topicService.getTopicById).not.toHaveBeenCalled();
+      expect(api.calls('getTopicByCode')).toHaveLength(0);
+
+      rerender({ code: topic.topicCode });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(api.calls('getTopicByCode')).toHaveLength(1);
     });
 
-    it('should handle 404 errors for non-existent topics', async () => {
-      const error = new Error('Topic not found');
-      vi.mocked(topicService.getTopicById).mockRejectedValue(error);
+    it('should report 404 for a topic that does not exist', async () => {
+      api.on('getTopicByCode', () => problem(404, 'Topic not found'));
 
-      const { result } = renderHook(() => useTopic('non-existent'), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useTopic('non-existent'), { wrapper });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
+      expect(statusOf(result.current.error)).toBe(404);
     });
   });
 
   describe('useSimilarTopics', () => {
-    const mockSimilarTopics: Topic[] = [
+    const similar: Topic[] = [
       {
-        id: 'topic-456',
+        ...topic,
+        topicCode: 'cloud-native-design-patterns',
         title: 'Cloud Native Design Patterns',
-        description: 'Similar topic',
-        category: 'technical',
         stalenessScore: 90,
-        usageCount: 2,
-        lastUsedDate: '2024-02-01',
-        isActive: true,
-        createdDate: '2023-06-01',
       },
     ];
 
-    it('should fetch similar topics for given ID', async () => {
-      vi.mocked(topicService.getSimilarTopics).mockResolvedValue(mockSimilarTopics);
+    it('should fetch similar topics for a code', async () => {
+      api.on('getSimilarTopics', () => similar);
 
-      const { result } = renderHook(() => useSimilarTopics('topic-123'), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSimilarTopics(topic.topicCode), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(topicService.getSimilarTopics).toHaveBeenCalledWith('topic-123');
-      expect(result.current.data).toEqual(mockSimilarTopics);
-      expect(result.current.data).toHaveLength(1);
+      expect(result.current.data).toEqual(similar);
+      expect(api.calls('getSimilarTopics')[0].params.topicCode).toBe(topic.topicCode);
     });
 
-    it('should not fetch when ID is empty', () => {
-      const { result } = renderHook(() => useSimilarTopics(''), {
-        wrapper: createWrapper(),
+    it('should not fetch while the code is empty, and fetch once it is set', async () => {
+      api.on('getSimilarTopics', () => similar);
+
+      const { result, rerender } = renderHook(({ code }) => useSimilarTopics(code), {
+        wrapper,
+        initialProps: { code: '' },
       });
 
       expect(result.current.isFetching).toBe(false);
-      expect(topicService.getSimilarTopics).not.toHaveBeenCalled();
+      expect(api.calls('getSimilarTopics')).toHaveLength(0);
+
+      rerender({ code: topic.topicCode });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(api.calls('getSimilarTopics')).toHaveLength(1);
     });
 
-    it('should cache similar topics with 1 hour stale time', async () => {
-      vi.mocked(topicService.getSimilarTopics).mockResolvedValue(mockSimilarTopics);
+    it('should serve a second reader from the cache (1 hour stale time)', async () => {
+      api.on('getSimilarTopics', () => similar);
 
-      const { result } = renderHook(() => useSimilarTopics('topic-123'), {
-        wrapper: createWrapper(),
-      });
-
+      const { result } = renderHook(() => useSimilarTopics(topic.topicCode), { wrapper });
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Second render should use cached data
-      const { result: result2 } = renderHook(() => useSimilarTopics('topic-123'), {
-        wrapper: ({ children }: { children: ReactNode }) => (
-          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-        ),
-      });
+      const { result: second } = renderHook(() => useSimilarTopics(topic.topicCode), { wrapper });
 
-      expect(result2.current.data).toEqual(mockSimilarTopics);
-      expect(topicService.getSimilarTopics).toHaveBeenCalledTimes(1);
+      expect(second.current.data).toEqual(similar);
+      expect(api.calls('getSimilarTopics')).toHaveLength(1);
     });
 
-    it('should return empty array when no similar topics found', async () => {
-      vi.mocked(topicService.getSimilarTopics).mockResolvedValue([]);
+    it('should return an empty list when nothing is similar', async () => {
+      api.on('getSimilarTopics', () => []);
 
-      const { result } = renderHook(() => useSimilarTopics('topic-unique'), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSimilarTopics('topic-unique'), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
       expect(result.current.data).toEqual([]);
     });
   });
 
+  describe('useTopicUsageHistory', () => {
+    const history: TopicUsageHistory[] = [
+      { eventNumber: 58, eventCode: 'BATbern58', usedDate: '2025-11-14', attendance: 182 },
+      { eventNumber: 41, eventCode: 'BATbern41', usedDate: '2017-05-05', attendance: null },
+    ];
+
+    it('should fetch the usage history of a code', async () => {
+      api.on('getTopicUsageHistory', () => history);
+
+      const { result } = renderHook(() => useTopicUsageHistory(topic.topicCode), { wrapper });
+
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(result.current.data).toEqual(history);
+      expect(api.calls('getTopicUsageHistory')[0].params.topicCode).toBe(topic.topicCode);
+    });
+
+    it('should not fetch while the code is empty, and fetch once it is set', async () => {
+      api.on('getTopicUsageHistory', () => history);
+
+      const { result, rerender } = renderHook(({ code }) => useTopicUsageHistory(code), {
+        wrapper,
+        initialProps: { code: '' },
+      });
+
+      expect(result.current.isFetching).toBe(false);
+      expect(api.calls('getTopicUsageHistory')).toHaveLength(0);
+
+      rerender({ code: topic.topicCode });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(api.calls('getTopicUsageHistory')).toHaveLength(1);
+    });
+  });
+
   describe('useCreateTopic', () => {
-    const mockCreatedTopic: Topic = {
-      id: 'topic-new',
+    const created: Topic = {
+      topicCode: 'ai-powered-devops',
       title: 'AI-Powered DevOps',
       description: 'Exploring AI in DevOps',
       category: 'technical',
       stalenessScore: 100,
       usageCount: 0,
-      isActive: true,
-      createdDate: '2025-12-13',
+      createdDate: '2025-12-13T00:00:00Z',
       lastUsedDate: null,
+      active: true,
     };
 
-    it('should create a new topic', async () => {
-      vi.mocked(topicService.createTopic).mockResolvedValue(mockCreatedTopic);
+    it('should create a topic with the request body', async () => {
+      api.on('createTopic', () => created, { status: 201 });
 
-      const { result } = renderHook(() => useCreateTopic(), {
-        wrapper: createWrapper(),
-      });
-
-      const request: CreateTopicRequest = {
+      const { result } = renderHook(() => useCreateTopic(), { wrapper });
+      const request = {
         title: 'AI-Powered DevOps',
         description: 'Exploring AI in DevOps',
         category: 'technical',
@@ -362,81 +331,64 @@ describe('useTopics hooks', () => {
       result.current.mutate(request);
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(topicService.createTopic).toHaveBeenCalledWith(request);
-      expect(result.current.data).toEqual(mockCreatedTopic);
+      expect(api.calls('createTopic')[0].body).toEqual(request);
+      expect(result.current.data).toEqual(created);
     });
 
-    it('should invalidate topic lists cache after creation', async () => {
-      vi.mocked(topicService.createTopic).mockResolvedValue(mockCreatedTopic);
+    it('should refetch the topic lists after a creation', async () => {
+      api.on(LIST, () => topicList);
+      api.on('createTopic', () => created, { status: 201 });
 
-      const wrapper = createWrapper();
-      const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
+      const { result } = renderHook(() => ({ list: useTopics(), create: useCreateTopic() }), {
+        wrapper,
+      });
+      await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
+      expect(api.calls(LIST)).toHaveLength(1);
+
+      result.current.create.mutate({ title: 'New Topic', category: 'technical' });
+
+      await waitFor(() => expect(result.current.create.isSuccess).toBe(true));
+      await waitFor(() => expect(api.calls(LIST)).toHaveLength(2));
+    });
+
+    it('should report a validation error', async () => {
+      api.on('createTopic', () => problem(400, 'Validation failed: title is required'));
 
       const { result } = renderHook(() => useCreateTopic(), { wrapper });
 
-      const request: CreateTopicRequest = {
-        title: 'New Topic',
-        description: 'Description',
-        category: 'technical',
-      };
-
-      result.current.mutate(request);
-
-      await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: topicKeys.lists() });
-    });
-
-    it('should handle validation errors', async () => {
-      const error = new Error('Validation failed: title is required');
-      vi.mocked(topicService.createTopic).mockRejectedValue(error);
-
-      const { result } = renderHook(() => useCreateTopic(), {
-        wrapper: createWrapper(),
-      });
-
-      const request: CreateTopicRequest = {
-        title: '',
-        description: 'Invalid',
-        category: 'technical',
-      };
-
-      result.current.mutate(request);
+      result.current.mutate({ title: '', description: 'Invalid', category: 'technical' });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
+      expect(statusOf(result.current.error)).toBe(400);
     });
   });
 
   describe('useSelectTopicForEvent', () => {
-    it('should select topic for event and transition workflow state', async () => {
-      vi.mocked(topicService.selectTopicForEvent).mockResolvedValue();
+    const selected = {
+      eventCode: 'BATbern56',
+      topicCode: 'mobile-iot',
+      workflowState: 'TOPIC_SELECTION',
+      message: 'Topic selected',
+    };
 
-      const { result } = renderHook(() => useSelectTopicForEvent(), {
-        wrapper: createWrapper(),
-      });
+    it('should select the topic for the event', async () => {
+      api.on('selectTopicForEvent', () => selected);
 
-      const request: SelectTopicForEventRequest = {
-        topicCode: 'mobile-iot',
-      };
+      const { result } = renderHook(() => useSelectTopicForEvent(), { wrapper });
 
-      result.current.mutate({ eventCode: 'BATbern56', request });
+      result.current.mutate({ eventCode: 'BATbern56', request: { topicCode: 'mobile-iot' } });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(topicService.selectTopicForEvent).toHaveBeenCalledWith('BATbern56', request);
+      const [call] = api.calls('selectTopicForEvent');
+      expect(call.params.eventCode).toBe('BATbern56');
+      expect(call.body).toEqual({ topicCode: 'mobile-iot' });
     });
 
-    it('should select topic with justification override', async () => {
-      vi.mocked(topicService.selectTopicForEvent).mockResolvedValue();
+    it('should send the justification override', async () => {
+      api.on('selectTopicForEvent', () => selected);
 
-      const { result } = renderHook(() => useSelectTopicForEvent(), {
-        wrapper: createWrapper(),
-      });
-
-      const request: SelectTopicForEventRequest = {
+      const { result } = renderHook(() => useSelectTopicForEvent(), { wrapper });
+      const request = {
         topicCode: 'mobile-iot',
         justification: 'Partner explicitly requested despite high similarity',
       };
@@ -444,67 +396,45 @@ describe('useTopics hooks', () => {
       result.current.mutate({ eventCode: 'BATbern56', request });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(topicService.selectTopicForEvent).toHaveBeenCalledWith('BATbern56', request);
+      expect(api.calls('selectTopicForEvent')[0].body).toEqual(request);
     });
 
-    it('should invalidate event and topic caches after selection', async () => {
-      vi.mocked(topicService.selectTopicForEvent).mockResolvedValue();
-
-      const wrapper = createWrapper();
+    it('should invalidate the event and topic caches after the selection', async () => {
+      api.on('selectTopicForEvent', () => selected);
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
       const { result } = renderHook(() => useSelectTopicForEvent(), { wrapper });
 
-      const request: SelectTopicForEventRequest = {
-        topicCode: 'mobile-iot',
-      };
-
-      result.current.mutate({ eventCode: 'BATbern56', request });
+      result.current.mutate({ eventCode: 'BATbern56', request: { topicCode: 'mobile-iot' } });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['event', 'BATbern56'] });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['events'] });
       expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: topicKeys.detail('mobile-iot') });
     });
 
-    it('should handle invalid workflow state errors', async () => {
-      const error = new Error('Invalid workflow state: Event must be in CREATED state');
-      vi.mocked(topicService.selectTopicForEvent).mockRejectedValue(error);
+    it('should report a refused workflow state', async () => {
+      api.on('selectTopicForEvent', () =>
+        problem(400, 'Invalid workflow state: Event must be in CREATED state')
+      );
 
-      const { result } = renderHook(() => useSelectTopicForEvent(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSelectTopicForEvent(), { wrapper });
 
-      const request: SelectTopicForEventRequest = {
-        topicCode: 'mobile-iot',
-      };
-
-      result.current.mutate({ eventCode: 'BATbern56', request });
+      result.current.mutate({ eventCode: 'BATbern56', request: { topicCode: 'mobile-iot' } });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
+      expect(statusOf(result.current.error)).toBe(400);
     });
 
-    it('should handle event not found errors', async () => {
-      const error = new Error('Event not found: BATbern999');
-      vi.mocked(topicService.selectTopicForEvent).mockRejectedValue(error);
+    it('should report an event that does not exist', async () => {
+      api.on('selectTopicForEvent', () => problem(404, 'Event not found: BATbern999'));
 
-      const { result } = renderHook(() => useSelectTopicForEvent(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSelectTopicForEvent(), { wrapper });
 
-      const request: SelectTopicForEventRequest = {
-        topicCode: 'mobile-iot',
-      };
-
-      result.current.mutate({ eventCode: 'BATbern999', request });
+      result.current.mutate({ eventCode: 'BATbern999', request: { topicCode: 'mobile-iot' } });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
+      expect(statusOf(result.current.error)).toBe(404);
     });
   });
 });

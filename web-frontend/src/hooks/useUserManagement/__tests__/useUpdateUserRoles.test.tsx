@@ -1,13 +1,26 @@
-import { describe, it, expect, vi, beforeEach } from 'vitest';
+/**
+ * useUpdateUserRoles Hook Tests (Story 2.5.2 AC3)
+ *
+ * The hook runs with the real userManagementApi and apiClient against the MSW harness (Epic 17
+ * test fidelity): the request is checked against users-api, and each test answers it or reads
+ * what went over the wire. The optimistic-update test holds the answer back with a promise it
+ * settles itself, so no answer arrives after the test has ended.
+ */
+
+import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
+import { HttpResponse } from 'msw';
+import { api } from '@/test/msw/api';
+import { aUser, shapes } from '@/test/fixtures';
 import { useUpdateUserRoles } from '../useUpdateUserRoles';
-import { updateUserRoles } from '@/services/api/userManagementApi';
-import React, { type ReactNode } from 'react';
+import type { Role } from '@/types/user.types';
 
-vi.mock('@/services/api/userManagementApi', () => ({
-  updateUserRoles: vi.fn(),
-}));
+const NEW_ROLES: Role[] = ['ATTENDEE', 'ORGANIZER'];
+
+const anna = aUser();
+const other = aUser({ id: shapes.vietnamese.id, email: shapes.vietnamese.email });
 
 describe('useUpdateUserRoles', () => {
   let queryClient: QueryClient;
@@ -19,97 +32,92 @@ describe('useUpdateUserRoles', () => {
         mutations: { retry: false },
       },
     });
-    vi.clearAllMocks();
+  });
+
+  afterEach(() => {
+    queryClient.clear();
   });
 
   const wrapper = ({ children }: { children: ReactNode }) => (
     <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
   );
 
-  const mockUpdatedUser = {
-    id: 'user-123',
-    email: 'test@example.com',
-    roles: ['USER', 'ORGANIZER'],
-  };
-
-  it('should_updateRoles_when_mutationCalled', async () => {
-    vi.mocked(updateUserRoles).mockResolvedValue(mockUpdatedUser);
+  it('should_sendTheRoles_when_mutationCalled', async () => {
+    api.on('updateUserRoles', ({ params, body }) => ({
+      username: params.username,
+      roles: body?.roles ?? [],
+    }));
 
     const { result } = renderHook(() => useUpdateUserRoles(), { wrapper });
 
-    result.current.mutate({ id: 'user-123', roles: ['USER', 'ORGANIZER'] });
+    result.current.mutate({ id: anna.id, roles: ['ATTENDEE', 'ORGANIZER'] });
 
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
-    expect(updateUserRoles).toHaveBeenCalledWith('user-123', ['USER', 'ORGANIZER']);
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
+    const [call] = api.calls('updateUserRoles');
+    expect(call.params.username).toBe(anna.id);
+    expect(call.body).toEqual({ roles: ['ATTENDEE', 'ORGANIZER'] });
   });
 
   it('should_invalidateQueries_when_updateSucceeds', async () => {
-    vi.mocked(updateUserRoles).mockResolvedValue(mockUpdatedUser);
-
+    api.on('updateUserRoles', () => ({ username: anna.id, roles: NEW_ROLES }));
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
     const { result } = renderHook(() => useUpdateUserRoles(), { wrapper });
 
-    result.current.mutate({ id: 'user-123', roles: ['USER', 'ORGANIZER'] });
+    result.current.mutate({ id: anna.id, roles: ['ATTENDEE', 'ORGANIZER'] });
 
-    await waitFor(() => {
-      expect(result.current.isSuccess).toBe(true);
-    });
-
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['users', 'list'] });
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: ['users', 'detail'] });
   });
 
   it('should_performOptimisticUpdate_when_mutating', async () => {
-    vi.mocked(updateUserRoles).mockImplementation(
-      () => new Promise((resolve) => setTimeout(() => resolve(mockUpdatedUser), 100))
-    );
-
-    // Pre-populate cache with user list
-    queryClient.setQueryData(['users', 'list'], {
-      data: [
-        { id: 'user-123', email: 'test@example.com', roles: ['USER'] },
-        { id: 'user-456', email: 'other@example.com', roles: ['USER'] },
-      ],
+    let answer: () => void = () => {};
+    const answered = new Promise<void>((resolve) => {
+      answer = resolve;
     });
+    api.on('updateUserRoles', async () => {
+      await answered;
+      return { username: anna.id, roles: NEW_ROLES };
+    });
+    queryClient.setQueryData(['users', 'list'], { data: [anna, other] });
 
     const { result } = renderHook(() => useUpdateUserRoles(), { wrapper });
 
-    result.current.mutate({ id: 'user-123', roles: ['USER', 'ORGANIZER'] });
+    result.current.mutate({ id: anna.id, roles: ['ATTENDEE', 'ORGANIZER'] });
 
-    // Check optimistic update
+    // The list shows the new roles while the request is still open; the other user is untouched.
     await waitFor(() => {
-      const cachedData = queryClient.getQueryData<{ data: unknown[] }>(['users', 'list']);
-      expect(cachedData?.data[0]).toMatchObject({
-        id: 'user-123',
-        roles: ['USER', 'ORGANIZER'],
-      });
+      const cached = queryClient.getQueryData<{ data: (typeof anna)[] }>(['users', 'list']);
+      expect(cached?.data[0]).toMatchObject({ id: anna.id, roles: ['ATTENDEE', 'ORGANIZER'] });
+      expect(cached?.data[1]).toMatchObject({ id: other.id, roles: ['ATTENDEE'] });
     });
+    expect(result.current.isPending).toBe(true);
+
+    answer();
+    await waitFor(() => expect(result.current.isSuccess).toBe(true));
   });
 
   it('should_rollbackOnError_when_updateFails', async () => {
-    const error = new Error('Update failed');
-    vi.mocked(updateUserRoles).mockRejectedValue(error);
-
-    // Pre-populate cache
-    const originalData = {
-      data: [{ id: 'user-123', email: 'test@example.com', roles: ['USER'] }],
-    };
+    api.on('updateUserRoles', () =>
+      HttpResponse.json(
+        {
+          timestamp: '2026-11-09T08:00:00Z',
+          status: 409,
+          error: 'Conflict',
+          message: 'Minimum 2 organizers',
+        },
+        { status: 409 }
+      )
+    );
+    const originalData = { data: [anna] };
     queryClient.setQueryData(['users', 'list'], originalData);
 
     const { result } = renderHook(() => useUpdateUserRoles(), { wrapper });
 
-    result.current.mutate({ id: 'user-123', roles: ['USER', 'ORGANIZER'] });
+    result.current.mutate({ id: anna.id, roles: ['ATTENDEE', 'ORGANIZER'] });
 
-    await waitFor(() => {
-      expect(result.current.isError).toBe(true);
-    });
-
-    // Verify rollback
-    const cachedData = queryClient.getQueryData(['users', 'list']);
-    expect(cachedData).toEqual(originalData);
+    await waitFor(() => expect(result.current.isError).toBe(true));
+    expect(queryClient.getQueryData(['users', 'list'])).toEqual(originalData);
   });
 });

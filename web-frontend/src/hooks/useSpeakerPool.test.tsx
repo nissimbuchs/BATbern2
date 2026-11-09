@@ -1,63 +1,77 @@
 /**
- * useSpeakerPool Hook Tests (Story 5.2 - Frontend Tests)
+ * useSpeakerPool Hook Tests (Story 5.2)
  *
- * Comprehensive tests for Speaker Pool React Query hooks
- * Tests all hooks: useSpeakerPool, useAddSpeakerToPool
- *
- * Coverage:
- * - Query hooks (data fetching, caching, error handling)
- * - Mutation hooks (optimistic updates, cache invalidation)
- * - React Query integration and behavior
+ * The hooks run with the real speakerPoolService and apiClient against the MSW harness (Epic 17
+ * test fidelity): every request is checked against event-speakers-api, and each test answers it
+ * with a typed override or reads what went over the wire. A pending answer is a handler that waits
+ * for a promise the test settles itself, so no answer arrives after the test has ended.
  */
 
-import React, { ReactNode } from 'react';
-import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
+import { describe, it, expect, beforeEach, afterEach, vi } from 'vitest';
 import { renderHook, waitFor } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
+import type { ReactNode } from 'react';
+import { HttpResponse } from 'msw';
+import { isAxiosError } from 'axios';
+import { api } from '@/test/msw/api';
 import { useSpeakerPool, useAddSpeakerToPool, speakerPoolKeys } from './useSpeakerPool';
-import { speakerPoolService } from '@/services/speakerPoolService';
-import type {
-  SpeakerPoolEntry,
-  AddSpeakerToPoolRequest,
-  SpeakerPoolResponse,
-} from '@/types/speakerPool.types';
+import type { SpeakerPoolEntry } from '@/types/speakerPool.types';
 
-// Mock the speaker pool service
-vi.mock('@/services/speakerPoolService', () => ({
-  speakerPoolService: {
-    getSpeakerPool: vi.fn(),
-    addSpeakerToPool: vi.fn(),
-  },
-}));
+const EVENT_ID = '7c9e6679-7425-40de-944b-e07fc1f90ae7';
+
+const entry = (overrides: Partial<SpeakerPoolEntry>): SpeakerPoolEntry => ({
+  id: '3fa85f64-5717-4562-b3fc-2c963f66afa6',
+  eventId: EVENT_ID,
+  speakerName: 'Hông Ân Nguyễn',
+  status: 'IDENTIFIED',
+  createdAt: '2025-12-13T10:00:00Z',
+  updatedAt: '2025-12-13T10:00:00Z',
+  ...overrides,
+});
+
+const pool: SpeakerPoolEntry[] = [
+  entry({
+    company: 'TechCorp Solutions AG',
+    expertise: 'Cloud Architecture, DevOps',
+    assignedOrganizerId: 'john.doe',
+    notes: 'Excellent speaker',
+  }),
+  entry({
+    id: '9b2d6c1e-1f4a-4f8e-8a3c-2d5e6f7a8b9c',
+    speakerName: 'Robert O’Neill',
+    company: 'Universität Bern',
+    status: 'CONTACTED',
+    createdAt: '2025-12-13T11:00:00Z',
+    updatedAt: '2025-12-13T12:00:00Z',
+  }),
+];
+
+const problem = (status: number, message: string) =>
+  HttpResponse.json(
+    { timestamp: '2026-11-09T08:00:00Z', status, error: 'Error', message },
+    { status }
+  );
+
+const statusOf = (error: unknown) => (isAxiosError(error) ? error.response?.status : undefined);
 
 describe('useSpeakerPool hooks', () => {
   let queryClient: QueryClient;
 
-  // Create wrapper with QueryClient for hooks
-  const createWrapper = () => {
-    queryClient = new QueryClient({
-      defaultOptions: {
-        queries: {
-          retry: false, // Disable retries for tests
-          gcTime: 0, // Disable cache for tests
-        },
-        mutations: {
-          retry: false,
-        },
-      },
-    });
-
-    return ({ children }: { children: ReactNode }) => (
-      <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-    );
-  };
+  const wrapper = ({ children }: { children: ReactNode }) => (
+    <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
+  );
 
   beforeEach(() => {
-    vi.clearAllMocks();
+    queryClient = new QueryClient({
+      defaultOptions: {
+        queries: { retry: false, gcTime: 0 },
+        mutations: { retry: false },
+      },
+    });
   });
 
   afterEach(() => {
-    queryClient?.clear();
+    queryClient.clear();
   });
 
   describe('speakerPoolKeys', () => {
@@ -69,383 +83,236 @@ describe('useSpeakerPool hooks', () => {
   });
 
   describe('useSpeakerPool', () => {
-    const mockSpeakerPool: SpeakerPoolEntry[] = [
-      {
-        id: 'pool-123',
-        eventId: 'event-456',
-        speakerName: 'Dr. Jane Smith',
-        company: 'TechCorp Solutions AG',
-        expertise: 'Cloud Architecture, DevOps',
-        assignedOrganizerId: 'org-john-doe',
-        status: 'identified',
-        notes: 'Excellent speaker',
-        createdAt: '2025-12-13T10:00:00Z',
-        updatedAt: '2025-12-13T10:00:00Z',
-      },
-      {
-        id: 'pool-124',
-        eventId: 'event-456',
-        speakerName: 'Prof. Robert Johnson',
-        company: 'University of Bern',
-        expertise: 'AI/ML, Data Science',
-        assignedOrganizerId: 'org-jane-doe',
-        status: 'contacted',
-        notes: 'Follow up next week',
-        createdAt: '2025-12-13T11:00:00Z',
-        updatedAt: '2025-12-13T12:00:00Z',
-      },
-    ];
+    it('should fetch the speaker pool of the event', async () => {
+      api.on('getSpeakerPool', () => pool);
 
-    it('should fetch speaker pool for event', async () => {
-      vi.mocked(speakerPoolService.getSpeakerPool).mockResolvedValue(mockSpeakerPool);
-
-      const { result } = renderHook(() => useSpeakerPool('BATbern56'), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSpeakerPool('BATbern56'), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(speakerPoolService.getSpeakerPool).toHaveBeenCalledWith('BATbern56');
-      expect(result.current.data).toEqual(mockSpeakerPool);
-      expect(result.current.data).toHaveLength(2);
+      expect(result.current.data).toEqual(pool);
+      expect(api.calls('getSpeakerPool')[0].params.eventCode).toBe('BATbern56');
     });
 
-    it('should return empty array when no speakers in pool', async () => {
-      vi.mocked(speakerPoolService.getSpeakerPool).mockResolvedValue([]);
+    it('should return an empty list when the pool is empty', async () => {
+      api.on('getSpeakerPool', () => []);
 
-      const { result } = renderHook(() => useSpeakerPool('BATbern56'), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSpeakerPool('BATbern56'), { wrapper });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
       expect(result.current.data).toEqual([]);
-      expect(result.current.data).toHaveLength(0);
     });
 
-    it('should handle loading state', async () => {
-      vi.mocked(speakerPoolService.getSpeakerPool).mockImplementation(
-        () => new Promise((resolve) => setTimeout(() => resolve(mockSpeakerPool), 100))
-      );
-
-      const { result } = renderHook(() => useSpeakerPool('BATbern56'), {
-        wrapper: createWrapper(),
+    it('should be loading until the answer arrives', async () => {
+      let answer: () => void = () => {};
+      const answered = new Promise<void>((resolve) => {
+        answer = resolve;
       });
+      api.on('getSpeakerPool', async () => {
+        await answered;
+        return pool;
+      });
+
+      const { result } = renderHook(() => useSpeakerPool('BATbern56'), { wrapper });
 
       expect(result.current.isLoading).toBe(true);
       expect(result.current.data).toBeUndefined();
 
+      answer();
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
       expect(result.current.isLoading).toBe(false);
-      expect(result.current.data).toBeDefined();
+      expect(result.current.data).toEqual(pool);
     });
 
-    it('should not fetch when event code is empty', () => {
-      const { result } = renderHook(() => useSpeakerPool(''), {
-        wrapper: createWrapper(),
+    it('should not fetch while the event code is empty, and fetch once it is set', async () => {
+      api.on('getSpeakerPool', () => pool);
+
+      const { result, rerender } = renderHook(({ code }) => useSpeakerPool(code), {
+        wrapper,
+        initialProps: { code: '' },
       });
 
       expect(result.current.isFetching).toBe(false);
-      expect(speakerPoolService.getSpeakerPool).not.toHaveBeenCalled();
+      expect(api.calls('getSpeakerPool')).toHaveLength(0);
+
+      rerender({ code: 'BATbern56' });
+      await waitFor(() => expect(result.current.isSuccess).toBe(true));
+      expect(api.calls('getSpeakerPool')).toHaveLength(1);
     });
 
-    it('should handle 404 errors for non-existent events', async () => {
-      const error = new Error('Event not found: BATbern999');
-      vi.mocked(speakerPoolService.getSpeakerPool).mockRejectedValue(error);
+    it('should report 404 for an event that does not exist', async () => {
+      api.on('getSpeakerPool', () => problem(404, 'Event not found: BATbern999'));
 
-      const { result } = renderHook(() => useSpeakerPool('BATbern999'), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSpeakerPool('BATbern999'), { wrapper });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
+      expect(statusOf(result.current.error)).toBe(404);
       expect(result.current.data).toBeUndefined();
     });
 
-    it('should handle authorization errors', async () => {
-      const error = new Error('Unauthorized: JWT token required');
-      vi.mocked(speakerPoolService.getSpeakerPool).mockRejectedValue(error);
+    it('should report a refused authorization', async () => {
+      api.on('getSpeakerPool', () => problem(403, 'ORGANIZER role required'));
 
-      const { result } = renderHook(() => useSpeakerPool('BATbern56'), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useSpeakerPool('BATbern56'), { wrapper });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
+      expect(statusOf(result.current.error)).toBe(403);
     });
 
-    it('should cache results with 2 minute stale time', async () => {
-      vi.mocked(speakerPoolService.getSpeakerPool).mockResolvedValue(mockSpeakerPool);
+    it('should serve a second reader from the cache (2 minute stale time)', async () => {
+      api.on('getSpeakerPool', () => pool);
 
-      const { result } = renderHook(() => useSpeakerPool('BATbern56'), {
-        wrapper: createWrapper(),
-      });
-
+      const { result } = renderHook(() => useSpeakerPool('BATbern56'), { wrapper });
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
 
-      // Second render should use cached data
-      const { result: result2 } = renderHook(() => useSpeakerPool('BATbern56'), {
-        wrapper: ({ children }: { children: ReactNode }) => (
-          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-        ),
-      });
+      const { result: second } = renderHook(() => useSpeakerPool('BATbern56'), { wrapper });
 
-      expect(result2.current.data).toEqual(mockSpeakerPool);
-      expect(speakerPoolService.getSpeakerPool).toHaveBeenCalledTimes(1); // Only called once due to cache
+      expect(second.current.data).toEqual(pool);
+      expect(api.calls('getSpeakerPool')).toHaveLength(1);
     });
 
-    it('should fetch different data for different events', async () => {
-      const pool1: SpeakerPoolEntry[] = [
-        {
-          id: 'pool-1',
-          eventId: 'event-1',
-          speakerName: 'Speaker 1',
-          status: 'identified',
-          createdAt: '2025-12-13T10:00:00Z',
-          updatedAt: '2025-12-13T10:00:00Z',
-        },
-      ];
+    it('should keep the pools of different events apart', async () => {
+      const pool56 = [entry({ speakerName: 'Speaker 56' })];
+      const pool57 = [entry({ speakerName: 'Speaker 57', status: 'CONTACTED' })];
+      api.on('getSpeakerPool', ({ params }) =>
+        params.eventCode === 'BATbern56' ? pool56 : pool57
+      );
 
-      const pool2: SpeakerPoolEntry[] = [
-        {
-          id: 'pool-2',
-          eventId: 'event-2',
-          speakerName: 'Speaker 2',
-          status: 'contacted',
-          createdAt: '2025-12-13T11:00:00Z',
-          updatedAt: '2025-12-13T11:00:00Z',
-        },
-      ];
+      const { result: first } = renderHook(() => useSpeakerPool('BATbern56'), { wrapper });
+      await waitFor(() => expect(first.current.isSuccess).toBe(true));
+      const { result: second } = renderHook(() => useSpeakerPool('BATbern57'), { wrapper });
+      await waitFor(() => expect(second.current.isSuccess).toBe(true));
 
-      vi.mocked(speakerPoolService.getSpeakerPool)
-        .mockResolvedValueOnce(pool1)
-        .mockResolvedValueOnce(pool2);
-
-      const { result: result1 } = renderHook(() => useSpeakerPool('BATbern56'), {
-        wrapper: createWrapper(),
-      });
-
-      await waitFor(() => expect(result1.current.isSuccess).toBe(true));
-
-      const { result: result2 } = renderHook(() => useSpeakerPool('BATbern57'), {
-        wrapper: ({ children }: { children: ReactNode }) => (
-          <QueryClientProvider client={queryClient}>{children}</QueryClientProvider>
-        ),
-      });
-
-      await waitFor(() => expect(result2.current.isSuccess).toBe(true));
-
-      expect(result1.current.data).toEqual(pool1);
-      expect(result2.current.data).toEqual(pool2);
-      expect(speakerPoolService.getSpeakerPool).toHaveBeenCalledTimes(2);
+      expect(first.current.data).toEqual(pool56);
+      expect(second.current.data).toEqual(pool57);
+      expect(api.calls('getSpeakerPool').map((c) => c.params.eventCode)).toEqual([
+        'BATbern56',
+        'BATbern57',
+      ]);
     });
   });
 
   describe('useAddSpeakerToPool', () => {
-    const mockResponse: SpeakerPoolResponse = {
-      id: 'pool-125',
-      eventId: 'event-456',
+    const added = entry({
       speakerName: 'Dr. Michael Chen',
       company: 'AI Research Lab',
       expertise: 'Machine Learning, Neural Networks',
-      assignedOrganizerId: 'org-john-doe',
-      status: 'identified',
+      assignedOrganizerId: 'john.doe',
       notes: 'Recommended by partner',
-      createdAt: '2025-12-13T13:00:00Z',
-      updatedAt: '2025-12-13T13:00:00Z',
-    };
+    });
 
-    it('should add speaker to event pool with all fields', async () => {
-      vi.mocked(speakerPoolService.addSpeakerToPool).mockResolvedValue(mockResponse);
+    it('should add a speaker with all fields', async () => {
+      api.on('addSpeakerToPool', () => added, { status: 201 });
 
-      const { result } = renderHook(() => useAddSpeakerToPool(), {
-        wrapper: createWrapper(),
-      });
-
-      const request: AddSpeakerToPoolRequest = {
+      const { result } = renderHook(() => useAddSpeakerToPool(), { wrapper });
+      const request = {
         speakerName: 'Dr. Michael Chen',
         company: 'AI Research Lab',
         expertise: 'Machine Learning, Neural Networks',
-        assignedOrganizerId: 'org-john-doe',
+        assignedOrganizerId: 'john.doe',
         notes: 'Recommended by partner',
       };
 
       result.current.mutate({ eventCode: 'BATbern56', request });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(speakerPoolService.addSpeakerToPool).toHaveBeenCalledWith('BATbern56', request);
-      expect(result.current.data).toEqual(mockResponse);
+      const [call] = api.calls('addSpeakerToPool');
+      expect(call.params.eventCode).toBe('BATbern56');
+      expect(call.body).toEqual(request);
+      expect(result.current.data).toEqual(added);
     });
 
-    it('should add speaker with minimal required fields', async () => {
-      const minimalResponse: SpeakerPoolResponse = {
-        id: 'pool-126',
-        eventId: 'event-456',
-        speakerName: 'John Doe',
-        status: 'identified',
-        createdAt: '2025-12-13T13:00:00Z',
-        updatedAt: '2025-12-13T13:00:00Z',
-      };
-
-      vi.mocked(speakerPoolService.addSpeakerToPool).mockResolvedValue(minimalResponse);
-
-      const { result } = renderHook(() => useAddSpeakerToPool(), {
-        wrapper: createWrapper(),
+    it('should add a speaker with only the required name', async () => {
+      api.on('addSpeakerToPool', ({ body }) => entry({ speakerName: body?.speakerName }), {
+        status: 201,
       });
 
-      const request: AddSpeakerToPoolRequest = {
-        speakerName: 'John Doe',
-      };
+      const { result } = renderHook(() => useAddSpeakerToPool(), { wrapper });
 
-      result.current.mutate({ eventCode: 'BATbern56', request });
+      result.current.mutate({ eventCode: 'BATbern56', request: { speakerName: 'John Doe' } });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
+      expect(api.calls('addSpeakerToPool')[0].body).toEqual({ speakerName: 'John Doe' });
       expect(result.current.data?.speakerName).toBe('John Doe');
       expect(result.current.data?.company).toBeUndefined();
     });
 
-    it('should invalidate speaker pool cache after adding speaker', async () => {
-      vi.mocked(speakerPoolService.addSpeakerToPool).mockResolvedValue(mockResponse);
+    it('should refetch the event pool after adding a speaker', async () => {
+      api.on('getSpeakerPool', () => pool);
+      api.on('addSpeakerToPool', () => added, { status: 201 });
 
-      const wrapper = createWrapper();
+      const { result } = renderHook(
+        () => ({ list: useSpeakerPool('BATbern56'), add: useAddSpeakerToPool() }),
+        { wrapper }
+      );
+      await waitFor(() => expect(result.current.list.isSuccess).toBe(true));
+      expect(api.calls('getSpeakerPool')).toHaveLength(1);
+
+      result.current.add.mutate({
+        eventCode: 'BATbern56',
+        request: { speakerName: 'New Speaker' },
+      });
+
+      await waitFor(() => expect(result.current.add.isSuccess).toBe(true));
+      await waitFor(() => expect(api.calls('getSpeakerPool')).toHaveLength(2));
+    });
+
+    it('should also invalidate the status summary of the event', async () => {
+      api.on('addSpeakerToPool', () => added, { status: 201 });
       const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries');
 
       const { result } = renderHook(() => useAddSpeakerToPool(), { wrapper });
 
-      const request: AddSpeakerToPoolRequest = {
-        speakerName: 'New Speaker',
-      };
-
-      result.current.mutate({ eventCode: 'BATbern56', request });
+      result.current.mutate({ eventCode: 'BATbern56', request: { speakerName: 'New Speaker' } });
 
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
       expect(invalidateSpy).toHaveBeenCalledWith({
-        queryKey: speakerPoolKeys.list('BATbern56'),
+        queryKey: ['speakerStatusSummary', 'BATbern56'],
       });
     });
 
-    it('should handle validation errors', async () => {
-      const error = new Error('Validation failed: speakerName is required');
-      vi.mocked(speakerPoolService.addSpeakerToPool).mockRejectedValue(error);
+    it.each([
+      [400, 'Validation failed: speakerName is required'],
+      [404, 'Event not found: BATbern999'],
+      [403, 'ORGANIZER role required'],
+    ])('should report a %i answer', async (status, message) => {
+      api.on('addSpeakerToPool', () => problem(status, message));
 
-      const { result } = renderHook(() => useAddSpeakerToPool(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useAddSpeakerToPool(), { wrapper });
 
-      const request: AddSpeakerToPoolRequest = {
-        speakerName: '',
-      };
-
-      result.current.mutate({ eventCode: 'BATbern56', request });
+      result.current.mutate({ eventCode: 'BATbern56', request: { speakerName: 'Jane Smith' } });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
+      expect(statusOf(result.current.error)).toBe(status);
     });
 
-    it('should handle event not found errors', async () => {
-      const error = new Error('Event not found: BATbern999');
-      vi.mocked(speakerPoolService.addSpeakerToPool).mockRejectedValue(error);
+    it('should report a network failure', async () => {
+      api.on('addSpeakerToPool', () => HttpResponse.error());
 
-      const { result } = renderHook(() => useAddSpeakerToPool(), {
-        wrapper: createWrapper(),
-      });
+      const { result } = renderHook(() => useAddSpeakerToPool(), { wrapper });
 
-      const request: AddSpeakerToPoolRequest = {
-        speakerName: 'Jane Smith',
-      };
-
-      result.current.mutate({ eventCode: 'BATbern999', request });
+      result.current.mutate({ eventCode: 'BATbern56', request: { speakerName: 'Jane Smith' } });
 
       await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
+      expect(isAxiosError(result.current.error)).toBe(true);
+      expect(statusOf(result.current.error)).toBeUndefined();
     });
 
-    it('should handle authorization errors', async () => {
-      const error = new Error('Forbidden: ORGANIZER role required');
-      vi.mocked(speakerPoolService.addSpeakerToPool).mockRejectedValue(error);
-
-      const { result } = renderHook(() => useAddSpeakerToPool(), {
-        wrapper: createWrapper(),
+    it('should send both of two concurrent additions', async () => {
+      api.on('addSpeakerToPool', ({ body }) => entry({ speakerName: body?.speakerName }), {
+        status: 201,
       });
 
-      const request: AddSpeakerToPoolRequest = {
-        speakerName: 'Jane Smith',
-      };
+      const { result } = renderHook(() => useAddSpeakerToPool(), { wrapper });
 
-      result.current.mutate({ eventCode: 'BATbern56', request });
+      result.current.mutate({ eventCode: 'BATbern56', request: { speakerName: 'Speaker 1' } });
+      result.current.mutate({ eventCode: 'BATbern56', request: { speakerName: 'Speaker 2' } });
 
-      await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
-    });
-
-    it('should handle network failures gracefully', async () => {
-      const error = new Error('Network error: timeout');
-      vi.mocked(speakerPoolService.addSpeakerToPool).mockRejectedValue(error);
-
-      const { result } = renderHook(() => useAddSpeakerToPool(), {
-        wrapper: createWrapper(),
-      });
-
-      const request: AddSpeakerToPoolRequest = {
-        speakerName: 'Jane Smith',
-      };
-
-      result.current.mutate({ eventCode: 'BATbern56', request });
-
-      await waitFor(() => expect(result.current.isError).toBe(true));
-
-      expect(result.current.error).toEqual(error);
-    });
-
-    it('should handle multiple concurrent mutations', async () => {
-      const response1: SpeakerPoolResponse = {
-        id: 'pool-1',
-        eventId: 'event-456',
-        speakerName: 'Speaker 1',
-        status: 'identified',
-        createdAt: '2025-12-13T13:00:00Z',
-        updatedAt: '2025-12-13T13:00:00Z',
-      };
-
-      const response2: SpeakerPoolResponse = {
-        id: 'pool-2',
-        eventId: 'event-456',
-        speakerName: 'Speaker 2',
-        status: 'identified',
-        createdAt: '2025-12-13T13:01:00Z',
-        updatedAt: '2025-12-13T13:01:00Z',
-      };
-
-      vi.mocked(speakerPoolService.addSpeakerToPool)
-        .mockResolvedValueOnce(response1)
-        .mockResolvedValueOnce(response2);
-
-      const { result } = renderHook(() => useAddSpeakerToPool(), {
-        wrapper: createWrapper(),
-      });
-
-      result.current.mutate({
-        eventCode: 'BATbern56',
-        request: { speakerName: 'Speaker 1' },
-      });
-
-      result.current.mutate({
-        eventCode: 'BATbern56',
-        request: { speakerName: 'Speaker 2' },
-      });
-
+      await waitFor(() => expect(api.calls('addSpeakerToPool')).toHaveLength(2));
       await waitFor(() => expect(result.current.isSuccess).toBe(true));
-
-      expect(speakerPoolService.addSpeakerToPool).toHaveBeenCalledTimes(2);
+      expect(api.calls('addSpeakerToPool').map((c) => c.body?.speakerName)).toEqual([
+        'Speaker 1',
+        'Speaker 2',
+      ]);
     });
   });
 });
