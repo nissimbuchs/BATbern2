@@ -218,12 +218,17 @@ export const updateUser = async (username: string, data: UpdateUserData): Promis
   return response.data;
 };
 
+/** What `PUT /users/{username}/roles` answers: the username and its roles, not the whole user. */
+export type UserRolesResponse = components['schemas']['UserRolesResponse'];
+
 /**
  * Update user roles with minimum organizers validation
  * AC3: Role Management
  */
-export const updateUserRoles = async (id: string, roles: Role[]): Promise<User> => {
-  const response = await apiClient.put<User>(`${USER_API_PATH}/${id}/roles`, { roles });
+export const updateUserRoles = async (id: string, roles: Role[]): Promise<UserRolesResponse> => {
+  const response = await apiClient.put<UserRolesResponse>(`${USER_API_PATH}/${id}/roles`, {
+    roles,
+  });
   return response.data;
 };
 
