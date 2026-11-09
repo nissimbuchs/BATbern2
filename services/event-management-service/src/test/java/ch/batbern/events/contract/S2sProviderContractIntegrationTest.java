@@ -40,9 +40,11 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
 /**
- * Provider half of the S2S contract (Story 17.0b1): the two EMS operations PCS calls on the public
- * API ({@code EventManagementClientImpl}) run through the real controller and must match the spec
- * PCS's contract test answers from; the spec examples must match the same schema.
+ * Provider half of the S2S contract (Story 17.0b1): the EMS operation PCS calls on the public API
+ * ({@code EventManagementClientImpl.getAttendanceSummary}) runs through the real controller and must
+ * match the spec PCS's contract test answers from; the spec examples must match the same schema.
+ * PCS reads the event schedule from {@code /internal/events/{eventCode}/schedule} (17.0 deferred
+ * work), no longer from the public {@code GET /api/v1/events/{eventCode}?include=sessions}.
  *
  * <p>Story 17.0b2: the same for every {@code /internal} operation in
  * {@code docs/api/internal/ems-internal.openapi.yml} (callers: CUMS merge and Mail Center clients,
@@ -53,7 +55,6 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
     private static final String ANALYTICS = "docs/api/event-analytics-api.openapi.yml";
-    private static final String EVENTS = "docs/api/events-core-api.openapi.yml";
     private static final String EMS_INTERNAL = "docs/api/internal/ems-internal.openapi.yml";
     private static final String MERGE_SOURCE = "contract.source";
     private static final String MERGE_TARGET = "contract.target";
@@ -116,7 +117,6 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
     @Test
     void should_haveValidExamples_forConsumedOperations() {
         assertExamplesMatchSchema(ANALYTICS, "GET", "/api/v1/events/attendance-summary");
-        assertExamplesMatchSchema(EVENTS, "GET", "/api/v1/events/{eventCode}");
     }
 
     @Test
@@ -131,22 +131,12 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
         assertResponseMatchesSpec(ANALYTICS, result);
     }
 
-    @Test
-    @WithMockUser(username = "organizer.alice", roles = "ORGANIZER")
-    void eventWithSessions_matchesSpec() throws Exception {
-        MvcResult result = mockMvc.perform(get("/api/v1/events/" + CODE).param("include", "sessions"))
-                .andExpect(status().isOk())
-                .andExpect(jsonPath("$.sessions[0].startTime").exists())
-                .andReturn();
-
-        assertResponseMatchesSpec(EVENTS, result);
-    }
-
     // ------------------------------------------------------------------ /internal (Story 17.0b2)
 
     @ParameterizedTest(name = "{0} {1}")
     @CsvSource({
         "GET,  /internal/users/merge-preview",
+        "GET,  /internal/events/{eventCode}/schedule",
         "POST, /internal/users/merge",
         "POST, /internal/users/primary-email",
         "POST, /internal/mails",
@@ -168,6 +158,27 @@ class S2sProviderContractIntegrationTest extends AbstractIntegrationTest {
 
     private static MockHttpServletRequestBuilder postJson(String path, String json, Object... vars) {
         return post(path, vars).contentType(MediaType.APPLICATION_JSON).content(json);
+    }
+
+    @Test
+    @DisplayName("schedule: every timed session before the agenda is published, without a JWT")
+    void eventSchedule_listsUnpublishedSessions_withoutCaller() throws Exception {
+        // The public GET /api/v1/events/{code}?include=sessions shows these sessions to organizers
+        // only; partner-coordination calls without a JWT or as a partner (17.0 deferred work).
+        Event event = eventRepository.findByEventCode(CODE).orElseThrow();
+        event.setWorkflowState(EventWorkflowState.SPEAKER_IDENTIFICATION);
+        eventRepository.save(event);
+
+        internal(get("/internal/events/{eventCode}/schedule", CODE), 200);
+        mockMvc.perform(get("/internal/events/{eventCode}/schedule", CODE))
+                .andExpect(jsonPath("$.eventCode").value(CODE))
+                .andExpect(jsonPath("$.date").value("2026-06-11T16:00:00Z"))
+                .andExpect(jsonPath("$.venueName").value("Kursaal Bern"))
+                .andExpect(jsonPath("$.eventType").value("EVENING"))
+                .andExpect(jsonPath("$.sessions.length()").value(1))
+                .andExpect(jsonPath("$.sessions[0].startTime").value("2026-06-11T16:00:00Z"))
+                .andExpect(jsonPath("$.sessions[0].endTime").value("2026-06-11T16:45:00Z"));
+        internal(get("/internal/events/{eventCode}/schedule", "BATbern9999"), 404);
     }
 
     @Test

@@ -64,7 +64,7 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
     RestTemplate restTemplate;
     @Autowired
     CacheManager cacheManager;
-    /** EMS behind the real EventManagementClient, answering per events-core-api (Story 17.0b1). */
+    /** EMS behind the real EventManagementClient, answering per ems-internal (Story 17.0b1, 17.0 deferred work). */
     ContractServer ems;
     @MockitoBean
     UserServiceClient userServiceClient;
@@ -90,15 +90,13 @@ class PartnerMeetingInviteFailureIntegrationTest extends AbstractIntegrationTest
                     return new ContractServer.Reply(HttpStatus.ACCEPTED, null);
                 });
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
-        // Callers are user(...) principals without a JWT to forward, hence ignoringMissingAuthorization.
-        ems = ContractServer.bindTo(restTemplate, "docs/api/events-core-api.openapi.yml")
-                .ignoringMissingAuthorization();
-        ems.expect(HttpMethod.GET, "/api/v1/events/{eventCode}").times(ExpectedCount.manyTimes())
+        // EMS's internal schedule read (ems-internal spec); it needs no JWT (17.0 deferred work).
+        ems = ContractServer.bindTo(restTemplate, "docs/api/internal/ems-internal.openapi.yml");
+        ems.expect(HttpMethod.GET, "/internal/events/{eventCode}/schedule").times(ExpectedCount.manyTimes())
                 .respondWith(HttpStatus.OK, """
-                        {"eventCode": "BATbern60", "title": "Digitale Souveränität", "eventNumber": 60,
-                         "date": "2026-11-06T15:00:00Z", "registrationDeadline": "2026-10-30T15:00:00Z",
-                         "venueName": "Bern", "venueAddress": "Bern", "venueCapacity": 200,
-                         "workflowState": "AGENDA_PUBLISHED", "eventType": "EVENING"}""");
+                        {"eventCode": "BATbern60", "title": "Digitale Souveränität", "date": "2026-11-06T15:00:00Z",
+                         "venueName": "Bern", "venueAddress": "Bern", "eventType": "EVENING",
+                         "sessions": []}""");
         var partner = new UserResponse();
         partner.setEmail("success+contact@simulator.amazonses.com");
         when(userServiceClient.getUsersByRole("PARTNER")).thenReturn(List.of(partner));

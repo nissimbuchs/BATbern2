@@ -82,7 +82,7 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
     RestTemplate restTemplate;
     @Autowired
     CacheManager cacheManager;
-    /** EMS behind the real EventManagementClient, answering per events-core-api (Story 17.0b1). */
+    /** EMS behind the real EventManagementClient, answering per ems-internal (Story 17.0b1, 17.0 deferred work). */
     ContractServer ems;
     @MockitoBean
     UserServiceClient userServiceClient;
@@ -110,17 +110,15 @@ class PartnerMeetingControllerIntegrationTest extends AbstractIntegrationTest {
                     return new ContractServer.Reply(HttpStatus.ACCEPTED, null);
                 });
 
-        // EMS answers any event code with a known event (validated against events-core-api).
+        // EMS answers any event code with a known event.
         cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
-        // Callers are user(...) principals without a JWT to forward, hence ignoringMissingAuthorization.
-        ems = ContractServer.bindTo(restTemplate, "docs/api/events-core-api.openapi.yml")
-                .ignoringMissingAuthorization();
-        ems.expect(HttpMethod.GET, "/api/v1/events/{eventCode}").times(ExpectedCount.manyTimes())
+        // EMS's internal schedule read (ems-internal spec); it needs no JWT (17.0 deferred work).
+        ems = ContractServer.bindTo(restTemplate, "docs/api/internal/ems-internal.openapi.yml");
+        ems.expect(HttpMethod.GET, "/internal/events/{eventCode}/schedule").times(ExpectedCount.manyTimes())
                 .respondWith(HttpStatus.OK, """
-                        {"eventCode": "BATbern57", "title": "BATbern Spring 2026", "eventNumber": 57,
-                         "date": "2026-05-14T16:00:00Z", "registrationDeadline": "2026-05-07T16:00:00Z",
-                         "venueName": "Bern Congress Centre", "venueAddress": "Bern", "venueCapacity": 200,
-                         "workflowState": "AGENDA_PUBLISHED", "eventType": "EVENING"}""");
+                        {"eventCode": "BATbern57", "title": "BATbern Spring 2026", "date": "2026-05-14T16:00:00Z",
+                         "venueName": "Bern Congress Centre", "venueAddress": "Bern", "eventType": "EVENING",
+                         "sessions": []}""");
 
         // Stub getUsersByRole so sendInvite can collect partner emails
         UserResponse mockPartner = new UserResponse();

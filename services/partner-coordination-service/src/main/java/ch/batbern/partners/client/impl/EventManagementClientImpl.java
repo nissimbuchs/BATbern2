@@ -27,14 +27,14 @@ import java.time.LocalTime;
 import java.time.ZoneId;
 import java.time.ZonedDateTime;
 import java.util.List;
-import java.util.Map;
 
 /**
  * Implementation of EventManagementClient using Spring RestTemplate.
  * Story 8.1: Partner Attendance Dashboard
  * Story 8.3: Partner Meeting Coordination — getEventSummary for ICS generation
  *
- * Communicates with event-management-service to retrieve attendance data and event summaries.
+ * Communicates with event-management-service to retrieve attendance data (public API, with the
+ * user's JWT) and event schedules (internal API, no JWT needed).
  * Results are Caffeine-cached (15 min attendance, 1 hour event summary).
  */
 @Component
@@ -95,50 +95,42 @@ public class EventManagementClientImpl implements EventManagementClient {
     }
 
     /**
-     * Get event summary from event-management-service for ICS generation.
-     * Cached 1 hour — event details rarely change (Story 8.3, AC8 performance).
+     * Get event summary from event-management-service for ICS generation, from the internal
+     * {@code GET /internal/events/{eventCode}/schedule} (ems-internal spec). It needs no JWT and lists
+     * every timed session whether or not the agenda is published, so a partner caller or a scheduler
+     * gets the same times as an organizer (17.0 deferred work; the public event read showed sessions
+     * to organizers only). Cached 1 hour (Story 8.3, AC8 performance).
      */
     @Override
     @Cacheable(value = "eventSummaryCache", key = "#eventCode")
     public EventSummaryDTO getEventSummary(String eventCode) {
-        log.debug("Fetching event summary from event-management-service: eventCode={}", eventCode);
+        log.debug("Fetching event schedule from event-management-service: eventCode={}", eventCode);
 
-        String url = eventManagementBaseUrl + "/api/v1/events/" + eventCode + "?include=sessions";
+        URI url = UriComponentsBuilder
+                .fromUriString(eventManagementBaseUrl + "/internal/events/{eventCode}/schedule")
+                .encode()
+                .buildAndExpand(eventCode)
+                .toUri();
 
         try {
-            HttpHeaders headers = createHeadersWithJwtToken();
-            HttpEntity<Void> request = new HttpEntity<>(headers);
-
-            ResponseEntity<EventResponse> response = restTemplate.exchange(
-                    url,
-                    HttpMethod.GET,
-                    request,
-                    EventResponse.class
-            );
-
-            EventResponse body = response.getBody();
+            // The user's JWT is forwarded when there is one (attribution); the operation needs none.
+            HttpEntity<Void> request = new HttpEntity<>(createHeadersWithJwtToken());
+            EventSchedule body = restTemplate.exchange(url, HttpMethod.GET, request, EventSchedule.class).getBody();
             if (body == null) {
                 throw new RuntimeException("Empty response from event-management-service for eventCode: " + eventCode);
             }
 
             // Derive LocalDate from the event's date Instant in Europe/Zurich zone
-            ZonedDateTime zurichDt = body.getDate() != null
-                    ? body.getDate().atZone(ZURICH)
+            ZonedDateTime zurichDt = body.date() != null
+                    ? body.date().atZone(ZURICH)
                     : ZonedDateTime.now(ZURICH);
-
             LocalDate eventDate = zurichDt.toLocalDate();
 
-            // Derive start/end: earliest/latest session times, falling back to event-type defaults
             LocalTime[] times = deriveEventTimes(body);
-            LocalTime startTime = times[0];
-            LocalTime endTime = times[1];
-
-            // Combine venue name + address for ICS location
-            String venue = buildVenueString(body.getVenueName(), body.getVenueAddress());
+            String venue = buildVenueString(body.venueName(), body.venueAddress());
 
             log.debug("Event summary fetched: eventCode={}, date={}, venue={}", eventCode, eventDate, venue);
-
-            return new EventSummaryDTO(eventCode, body.getTitle(), eventDate, startTime, endTime, venue);
+            return new EventSummaryDTO(eventCode, body.title(), eventDate, times[0], times[1], venue);
 
         } catch (HttpClientErrorException.NotFound e) {
             log.warn("Event not found in event-management-service: eventCode={}", eventCode);
@@ -151,47 +143,32 @@ public class EventManagementClientImpl implements EventManagementClient {
     }
 
     /**
-     * Derive start/end times for the BATbern event VEVENT:
-     * 1. Use min(session.startTime) / max(session.endTime) if sessions have times.
-     * 2. Fall back to the event type's typical start/end times.
-     *
-     * Times are returned as Zurich local time for use by IcsGeneratorService.toUtc().
+     * Start/end of the BATbern event entry, as Zurich local times for IcsGeneratorService.toUtc():
+     * the earliest session start and latest session end; without timed sessions, the event type's
+     * typical times.
      */
-    private LocalTime[] deriveEventTimes(EventResponse body) {
-        List<Map<String, Object>> sessions = body.getSessions();
-        if (sessions != null && !sessions.isEmpty()) {
-            LocalTime minStart = null;
-            LocalTime maxEnd = null;
-            for (Map<String, Object> session : sessions) {
-                Object startObj = session.get("startTime");
-                Object endObj = session.get("endTime");
-                if (startObj != null) {
-                    try {
-                        LocalTime st = Instant.parse(startObj.toString()).atZone(ZURICH).toLocalTime();
-                        if (minStart == null || st.isBefore(minStart)) {
-                            minStart = st;
-                        }
-                    } catch (Exception e) {
-                        log.debug("Could not parse session startTime: {}", startObj);
-                    }
-                }
-                if (endObj != null) {
-                    try {
-                        LocalTime et = Instant.parse(endObj.toString()).atZone(ZURICH).toLocalTime();
-                        if (maxEnd == null || et.isAfter(maxEnd)) {
-                            maxEnd = et;
-                        }
-                    } catch (Exception e) {
-                        log.debug("Could not parse session endTime: {}", endObj);
-                    }
+    private LocalTime[] deriveEventTimes(EventSchedule body) {
+        LocalTime minStart = null;
+        LocalTime maxEnd = null;
+        for (SessionTimes session : body.sessions() == null ? List.<SessionTimes>of() : body.sessions()) {
+            if (session.startTime() != null) {
+                LocalTime st = session.startTime().atZone(ZURICH).toLocalTime();
+                if (minStart == null || st.isBefore(minStart)) {
+                    minStart = st;
                 }
             }
-            if (minStart != null && maxEnd != null) {
-                log.debug("Derived event times from {} sessions: {}–{}", sessions.size(), minStart, maxEnd);
-                return new LocalTime[]{minStart, maxEnd};
+            if (session.endTime() != null) {
+                LocalTime et = session.endTime().atZone(ZURICH).toLocalTime();
+                if (maxEnd == null || et.isAfter(maxEnd)) {
+                    maxEnd = et;
+                }
             }
         }
-        return typicalTimesForType(body.getEventType());
+        if (minStart != null && maxEnd != null) {
+            log.debug("Derived event times from {} sessions: {}-{}", body.sessions().size(), minStart, maxEnd);
+            return new LocalTime[]{minStart, maxEnd};
+        }
+        return typicalTimesForType(body.eventType());
     }
 
     /**
@@ -233,7 +210,7 @@ public class EventManagementClientImpl implements EventManagementClient {
                 headers.set("Authorization", "Bearer " + jwt.getTokenValue());
                 log.trace("JWT token propagated to event-management-service");
             } else {
-                log.warn("No JWT token in SecurityContext for event-management-service call");
+                log.debug("No JWT token in SecurityContext for event-management-service call");
             }
         } catch (Exception e) {
             log.warn("Failed to extract JWT token for event-management-service: {}", e.getMessage());
@@ -241,74 +218,20 @@ public class EventManagementClientImpl implements EventManagementClient {
         return headers;
     }
 
-    /**
-     * Minimal response DTO for parsing GET /api/v1/events/{eventCode} response.
-     * Only the fields needed for ICS generation are mapped.
-     */
+    /** Schema {@code EventSchedule} of the ems-internal spec; unknown properties are ignored. */
     @JsonIgnoreProperties(ignoreUnknown = true)
-    private static class EventResponse {
-        private String title;
-        private String eventCode;
-        private Instant date;
-        private String venueName;
-        private String venueAddress;
-        private String eventType;
-        private List<Map<String, Object>> sessions;
+    record EventSchedule(
+            String eventCode,
+            String title,
+            Instant date,
+            String venueName,
+            String venueAddress,
+            String eventType,
+            List<SessionTimes> sessions) {
+    }
 
-        public String getTitle() {
-            return title;
-        }
-
-        public void setTitle(String title) {
-            this.title = title;
-        }
-
-        public String getEventCode() {
-            return eventCode;
-        }
-
-        public void setEventCode(String eventCode) {
-            this.eventCode = eventCode;
-        }
-
-        public Instant getDate() {
-            return date;
-        }
-
-        public void setDate(Instant date) {
-            this.date = date;
-        }
-
-        public String getVenueName() {
-            return venueName;
-        }
-
-        public void setVenueName(String venueName) {
-            this.venueName = venueName;
-        }
-
-        public String getVenueAddress() {
-            return venueAddress;
-        }
-
-        public void setVenueAddress(String venueAddress) {
-            this.venueAddress = venueAddress;
-        }
-
-        public String getEventType() {
-            return eventType;
-        }
-
-        public void setEventType(String eventType) {
-            this.eventType = eventType;
-        }
-
-        public List<Map<String, Object>> getSessions() {
-            return sessions;
-        }
-
-        public void setSessions(List<Map<String, Object>> sessions) {
-            this.sessions = sessions;
-        }
+    /** Schema {@code SessionTimes} of the ems-internal spec. */
+    @JsonIgnoreProperties(ignoreUnknown = true)
+    record SessionTimes(Instant startTime, Instant endTime) {
     }
 }

@@ -5,7 +5,8 @@ info:
   description: |
     Service-to-service operations of event-management under `/internal/**` (Story 17.0b2).
     Callers: company-user-management (`HttpEventManagementUserMergeClient`,
-    `HttpEventManagementMailCenterClient`) and partner-coordination (`HttpOutboundMailRecorder`).
+    `HttpEventManagementMailCenterClient`) and partner-coordination (`HttpOutboundMailRecorder`,
+    `EventManagementClientImpl.getEventSummary`).
 
     Not a public API: the API gateway does not route `/internal/**` and denies it explicitly; the
     services reach it inside the VPC through Service Connect, without a JWT. Public API tooling does
@@ -150,6 +151,61 @@ paths:
                   value: {updated: 2}
         '400':
           description: Invalid request body
+          content:
+            application/json:
+              schema:
+                $ref: '../_shared.openapi.yml#/components/schemas/ErrorResponse'
+
+  /internal/events/{eventCode}/schedule:
+    get:
+      operationId: getEventSchedule
+      summary: Date, venue and times of an event, for the partner meeting invite (ICS)
+      description: |
+        partner-coordination (`EventManagementClientImpl.getEventSummary`) builds the BATbern event
+        entry of a partner meeting invite from it. Every session with a time is listed, whether or
+        not the agenda is published, and the answer does not depend on a caller: it is called
+        without a JWT (schedulers, partner callers). The public `GET /api/v1/events/{eventCode}`
+        shows sessions to organizers only, so it gave other callers the default times (17.0
+        deferred work, 2026-11-09).
+      parameters:
+        - name: eventCode
+          in: path
+          required: true
+          schema:
+            type: string
+            maxLength: 50
+          example: BATbern142
+      responses:
+        '200':
+          description: The schedule
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/EventSchedule'
+              examples:
+                withSessions:
+                  value:
+                    eventCode: BATbern142
+                    title: BATbern 142 - Cloud Native
+                    date: '2026-06-11T16:00:00Z'
+                    venueName: Kursaal Bern
+                    venueAddress: Kornhausstrasse 3, 3013 Bern
+                    eventType: EVENING
+                    sessions:
+                      - startTime: '2026-06-11T15:30:00Z'
+                        endTime: '2026-06-11T16:15:00Z'
+                      - startTime: '2026-06-11T18:00:00Z'
+                        endTime: '2026-06-11T19:45:00Z'
+                noSessions:
+                  value:
+                    eventCode: BATbern143
+                    title: BATbern 143 - Data
+                    date: '2026-11-05T16:00:00Z'
+                    venueName: Kursaal Bern
+                    eventType: FULL_DAY
+                    sessions: []
+        '404':
+          description: No event with this code
           content:
             application/json:
               schema:
@@ -319,6 +375,46 @@ components:
       example: 2f6d8c1a-5b7e-4c3d-9a0f-1e2d3c4b5a69
 
   schemas:
+    EventSchedule:
+      type: object
+      required: [eventCode, title, date, sessions]
+      description: >-
+        Hand-written record `InternalEventScheduleController.EventSchedule`. Optional properties are
+        `null` when unknown.
+      properties:
+        eventCode:
+          type: string
+        title:
+          type: string
+        date:
+          type: string
+          format: date-time
+          description: Start of the event (instant).
+        venueName:
+          type: string
+        venueAddress:
+          type: string
+        eventType:
+          type: string
+          enum: [FULL_DAY, AFTERNOON, EVENING]
+        sessions:
+          type: array
+          description: Every session of the event that has a start or an end time, published or not.
+          items:
+            $ref: '#/components/schemas/SessionTimes'
+      additionalProperties: false
+
+    SessionTimes:
+      type: object
+      properties:
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+      additionalProperties: false
+
     Counts:
       type: object
       description: Row count per table (`moves`, `moved` and `removed` keyed `table.column`, `conflicts` by table).

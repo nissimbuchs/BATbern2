@@ -176,7 +176,8 @@ Organizer clicks "Send Calendar Invite"
 PartnerMeetingController (202 Accepted immediately)
        │
        ├─ EventManagementClient.getEventSummary(eventCode)
-       │    (Caffeine cache 1h)
+       │    (Caffeine cache 1h; EMS GET /internal/events/{eventCode}/schedule, no JWT needed:
+       │     earliest/latest session time, else the event type's typical times)
        ├─ IcsGeneratorService.generate() → byte[] (pure RFC 5545, no library)
        └─ @Async: SesEmailService.sendCalendarInvite(recipients, ics)
               → sends to all partner contacts on record (primary + each contact's

@@ -30,7 +30,8 @@ import static org.springframework.http.HttpMethod.GET;
 /**
  * Contract test of {@link EventManagementClient} against the EMS specs (Story 17.0b1):
  * {@code GET /events/attendance-summary} (event-analytics-api) and
- * {@code GET /events/{eventCode}?include=sessions} (events-core-api).
+ * {@code GET /internal/events/{eventCode}/schedule} (ems-internal; before the 17.0 deferred work the
+ * public {@code GET /events/{eventCode}?include=sessions}, which shows sessions to organizers only).
  */
 @RestClientTest(components = {
     ch.batbern.partners.client.impl.EventManagementClientImpl.class,
@@ -41,7 +42,7 @@ import static org.springframework.http.HttpMethod.GET;
 class EventManagementClientContractTest {
 
     private static final String ANALYTICS = "docs/api/event-analytics-api.openapi.yml";
-    private static final String EVENTS = "docs/api/events-core-api.openapi.yml";
+    private static final String EMS_INTERNAL = "docs/api/internal/ems-internal.openapi.yml";
 
     @Autowired
     private EventManagementClient client;
@@ -100,52 +101,58 @@ class EventManagementClientContractTest {
     }
 
     @Test
+    @DisplayName("event summary: date, venue and session times from the internal schedule example")
     void should_buildEventSummary_fromSpecExample() {
-        server = ContractServer.bindTo(restTemplate, EVENTS);
-        server.expect(GET, "/api/v1/events/{eventCode}").withQueryParam("include", "sessions")
-                .respondWithExample("expandedEvent");
+        server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
+        server.expect(GET, "/internal/events/{eventCode}/schedule").respondWithExample("withSessions");
 
         EventSummaryDTO summary = client.getEventSummary("BATbern142");
 
         assertThat(summary.eventCode()).isEqualTo("BATbern142");
-        assertThat(summary.title()).isEqualTo("Spring Conference 2025");
-        assertThat(summary.eventDate()).isEqualTo(LocalDate.of(2025, 5, 15));
-        // No sessions in the example: the evening default applies.
-        assertThat(summary.startTime()).isEqualTo(LocalTime.of(18, 0));
+        assertThat(summary.title()).isEqualTo("BATbern 142 - Cloud Native");
+        assertThat(summary.eventDate()).isEqualTo(LocalDate.of(2026, 6, 11));
+        // Zurich is UTC+2 in June: earliest start 15:30Z -> 17:30, latest end 19:45Z -> 21:45.
+        assertThat(summary.startTime()).isEqualTo(LocalTime.of(17, 30));
+        assertThat(summary.endTime()).isEqualTo(LocalTime.of(21, 45));
         assertThat(summary.venue()).isEqualTo("Kursaal Bern, Kornhausstrasse 3, 3013 Bern");
         server.verify();
     }
 
     @Test
-    @DisplayName("event times come from the earliest session start and latest session end, in Zurich time")
-    void should_deriveEventTimes_fromSessions() {
-        server = ContractServer.bindTo(restTemplate, EVENTS);
-        server.expect(GET, "/api/v1/events/{eventCode}").withQueryParam("include", "sessions")
-                .respondWith(HttpStatus.OK, """
-                        {"eventCode": "BATbern142", "title": "Spring Conference 2026", "eventNumber": 142,
-                         "date": "2026-06-11T16:00:00Z", "registrationDeadline": "2026-06-04T16:00:00Z",
-                         "venueName": "Kursaal Bern", "venueAddress": "Kornhausstrasse 3, 3013 Bern",
-                         "venueCapacity": 500, "eventType": "EVENING",
-                         "sessions": [
-                           {"sessionSlug": "keynote", "eventCode": "BATbern142", "title": "Keynote",
-                            "startTime": "2026-06-11T15:30:00Z", "endTime": "2026-06-11T16:15:00Z"},
-                           {"sessionSlug": "closing", "eventCode": "BATbern142", "title": "Closing",
-                            "startTime": "2026-06-11T18:00:00Z", "endTime": "2026-06-11T19:45:00Z"}
-                         ]}""");
+    @DisplayName("without a JWT (scheduler, partner caller) the session times still arrive: the call needs none")
+    void should_deriveEventTimes_when_noJwtToForward() {
+        SecurityContextHolder.clearContext();
+        server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
+        server.expect(GET, "/internal/events/{eventCode}/schedule")
+                .andExpect(r -> assertThat(r.getHeaders().containsHeader(HttpHeaders.AUTHORIZATION)).isFalse())
+                .respondWithExample("withSessions");
 
         EventSummaryDTO summary = client.getEventSummary("BATbern142");
 
-        // Zurich is UTC+2 in June: 15:30Z -> 17:30, 19:45Z -> 21:45.
         assertThat(summary.startTime()).isEqualTo(LocalTime.of(17, 30));
         assertThat(summary.endTime()).isEqualTo(LocalTime.of(21, 45));
-        assertThat(summary.eventDate()).isEqualTo(LocalDate.of(2026, 6, 11));
+        server.verify();
+    }
+
+    @Test
+    @DisplayName("no timed session yet: the event type's typical times apply")
+    void should_useTypicalTimesOfEventType_when_noSessions() {
+        server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
+        server.expect(GET, "/internal/events/{eventCode}/schedule").respondWithExample("noSessions");
+
+        EventSummaryDTO summary = client.getEventSummary("BATbern143");
+
+        // FULL_DAY in the example: 09:00-16:00, distinguishable from the evening default.
+        assertThat(summary.startTime()).isEqualTo(LocalTime.of(9, 0));
+        assertThat(summary.endTime()).isEqualTo(LocalTime.of(16, 0));
+        assertThat(summary.venue()).isEqualTo("Kursaal Bern");
         server.verify();
     }
 
     @Test
     void should_rejectUnknownEvent_when_emsAnswers404() {
-        server = ContractServer.bindTo(restTemplate, EVENTS);
-        server.expect(GET, "/api/v1/events/{eventCode}").respondWithStatus(HttpStatus.NOT_FOUND);
+        server = ContractServer.bindTo(restTemplate, EMS_INTERNAL);
+        server.expect(GET, "/internal/events/{eventCode}/schedule").respondWithStatus(HttpStatus.NOT_FOUND);
 
         assertThatThrownBy(() -> client.getEventSummary("BATbern999"))
                 .isInstanceOf(IllegalArgumentException.class)
