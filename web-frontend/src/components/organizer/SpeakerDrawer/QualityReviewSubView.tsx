@@ -63,7 +63,7 @@ export const QualityReviewSubView: React.FC<QualityReviewSubViewProps> = ({
   const [aiErrorMessage, setAiErrorMessage] = useState<string | null>(null);
 
   const { aiContentEnabled } = useFeatureFlags();
-  const analysisMutation = useAiAnalyzeAbstract(speaker.id);
+  const analysisMutation = useAiAnalyzeAbstract(eventCode, speaker.id);
 
   const { data: content, isLoading } = useQuery<SpeakerContentResponse>({
     queryKey: ['speakerContent', eventCode, speaker.id],

@@ -5,7 +5,9 @@
  * - useAiGenerateDescription: POST /events/{eventCode}/ai/description
  * - useAiGenerateThemeImage: POST /events/{eventCode}/ai/theme-image
  * - useAiApplyThemeImage: POST apply + cache invalidation
- * - useAiAnalyzeAbstract: POST /speakers/{id}/ai/analyze-abstract
+ * - useAiAnalyzeAbstract: POST /events/{eventCode}/speakers/{id}/abstract-analysis
+ *
+ * i18n is the real i18next with the en bundles (src/test/setup.ts).
  */
 
 import { describe, it, expect, vi, beforeEach, afterEach } from 'vitest';
@@ -13,10 +15,6 @@ import { renderHook, waitFor, act } from '@testing-library/react';
 import { QueryClient, QueryClientProvider } from '@tanstack/react-query';
 import React from 'react';
 import MockAdapter from 'axios-mock-adapter';
-
-vi.mock('react-i18next', () => ({
-  useTranslation: () => ({ t: (key: string) => key }),
-}));
 
 import apiClient from '@/services/api/apiClient';
 import {
@@ -87,7 +85,7 @@ describe('useAiGenerateDescription', () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error?.message).toBe('aiAssist.disabled');
+    expect(result.current.error?.message).toBe('AI feature is disabled');
   });
 
   it('should throw generic error on other failures', async () => {
@@ -180,7 +178,7 @@ describe('useAiGenerateThemeImage', () => {
     });
 
     await waitFor(() => expect(result.current.isError).toBe(true));
-    expect(result.current.error?.message).toBe('aiAssist.error');
+    expect(result.current.error?.message).toBe('AI generation failed, please write manually');
   });
 
   it('should give up when the job stays PENDING too long', async () => {
@@ -277,7 +275,7 @@ describe('useAiAnalyzeAbstract', () => {
     vi.clearAllMocks();
   });
 
-  it('should POST to speaker analyze-abstract endpoint', async () => {
+  it('should POST to the abstract analysis of the speaker under its event', async () => {
     const response = {
       noPromotionScore: 90,
       noPromotionFeedback: 'Good',
@@ -286,9 +284,9 @@ describe('useAiAnalyzeAbstract', () => {
       wordCount: 150,
       shortenedAbstract: null,
     };
-    http.onPost('/speakers/sp-pool-1/ai/analyze-abstract').reply(200, response);
+    http.onPost('/events/BATbern60/speakers/sp-pool-1/abstract-analysis').reply(200, response);
 
-    const { result } = renderHook(() => useAiAnalyzeAbstract('sp-pool-1'), {
+    const { result } = renderHook(() => useAiAnalyzeAbstract('BATbern60', 'sp-pool-1'), {
       wrapper: wrapper(qc),
     });
 
@@ -296,15 +294,15 @@ describe('useAiAnalyzeAbstract', () => {
       await result.current.mutateAsync();
     });
 
-    expect(posted()).toEqual(['/speakers/sp-pool-1/ai/analyze-abstract']);
+    expect(posted()).toEqual(['/events/BATbern60/speakers/sp-pool-1/abstract-analysis']);
     await waitFor(() => expect(result.current.isSuccess).toBe(true));
     expect(result.current.data?.noPromotionScore).toBe(90);
   });
 
   it('should set isError on failure', async () => {
-    http.onPost('/speakers/sp-pool-1/ai/analyze-abstract').reply(503);
+    http.onPost('/events/BATbern60/speakers/sp-pool-1/abstract-analysis').reply(503);
 
-    const { result } = renderHook(() => useAiAnalyzeAbstract('sp-pool-1'), {
+    const { result } = renderHook(() => useAiAnalyzeAbstract('BATbern60', 'sp-pool-1'), {
       wrapper: wrapper(qc),
     });
 

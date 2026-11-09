@@ -47,8 +47,10 @@ Data (EMS Flyway):
   output text is stored.
 
 API contract: `docs/api/event-ai-api.openapi.yml` (`/ai-prompts`, `/events/{eventCode}/ai/*`,
-`/speakers/{speakerId}/ai/analyze-abstract`). The Spring gateway routes `/api/v1/ai*`,
-`/api/v1/events/**` and `/api/v1/speakers/{id}/ai/**` to EMS (`DomainRouter`).
+`/events/{eventCode}/speakers/{speakerId}/abstract-analysis`). The abstract analysis loads the
+speaker pool entry scoped to the event (`findByIdAndEventId`): an entry of another event answers
+404 (Story 4.9, which moved it from `/speakers/{speakerId}/ai/analyze-abstract`). The Spring
+gateway routes `/api/v1/ai*` and `/api/v1/events/**` to EMS (`DomainRouter`).
 
 Runtime: the EMS CDK stack sets `AI_ENABLED=true` and injects the key from Secrets Manager
 (`batbern/{env}/openai/api-key`) only when `aiEnabled` is passed, which

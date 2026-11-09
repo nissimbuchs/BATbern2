@@ -20,7 +20,6 @@ no-personal-data-path-param	users-api.openapi.yml	POST /users/me/additional-emai
 no-verb-segment	companies-api.openapi.yml	POST /logos/cleanup/trigger
 no-verb-segment	companies-api.openapi.yml	POST /logos/upload-from-url
 no-verb-segment	event-ai-api.openapi.yml	POST /events/{eventCode}/ai/theme-image/apply
-no-verb-segment	event-ai-api.openapi.yml	POST /speakers/{speakerId}/ai/analyze-abstract
 no-verb-segment	event-mail-api.openapi.yml	GET /conversations/{conversationKey}/messages/{mailKey}/attachments/{index}/download
 no-verb-segment	event-mail-api.openapi.yml	POST /events/{eventCode}/mails/preview
 no-verb-segment	event-media-api.openapi.yml	POST /events/{eventCode}/photos/confirm
@@ -72,7 +71,7 @@ path-kebab-case	event-registrations-api.openapi.yml	POST /events/batch_registrat
 uuid-path-param	companies-api.openapi.yml	DELETE /logos/{uploadId}
 uuid-path-param	companies-api.openapi.yml	POST /logos/{uploadId}/confirm
 uuid-path-param	event-ai-api.openapi.yml	GET /events/{eventCode}/ai/theme-image/jobs/{jobId}
-uuid-path-param	event-ai-api.openapi.yml	POST /speakers/{speakerId}/ai/analyze-abstract
+uuid-path-param	event-ai-api.openapi.yml	POST /events/{eventCode}/speakers/{speakerId}/abstract-analysis
 uuid-path-param	event-media-api.openapi.yml	DELETE /events/{eventCode}/photos/{photoId}
 uuid-path-param	event-media-api.openapi.yml	POST /materials/{uploadId}/confirm
 uuid-path-param	event-newsletter-api.openapi.yml	DELETE /newsletter/subscribers/{id}

@@ -6,7 +6,7 @@
  *   - POST /events/{eventCode}/ai/theme-image            (starts a job, 202)
  *   - GET  /events/{eventCode}/ai/theme-image/jobs/{jobId}
  *   - POST /events/{eventCode}/ai/theme-image/apply
- *   - POST /speakers/{speakerId}/ai/analyze-abstract
+ *   - POST /events/{eventCode}/speakers/{speakerId}/abstract-analysis
  *
  * Prompt administration (`/ai-prompts`) is a different resource: aiPromptService.
  * Errors are passed through unchanged; the hooks in useAiAssist map them to messages.
@@ -54,11 +54,13 @@ export const applyThemeImage = async (eventCode: string, imageUrl: string): Prom
   await apiClient.post(`/events/${eventCode}/ai/theme-image/apply`, { imageUrl });
 };
 
+/** Reviews the abstract of a speaker pool entry of this event (an entry of another event: 404). */
 export const analyzeAbstract = async (
+  eventCode: string,
   speakerPoolId: string
 ): Promise<AiAbstractAnalysisResponse> => {
   const response = await apiClient.post<AiAbstractAnalysisResponse>(
-    `/speakers/${speakerPoolId}/ai/analyze-abstract`
+    `/events/${eventCode}/speakers/${speakerPoolId}/abstract-analysis`
   );
   return response.data;
 };

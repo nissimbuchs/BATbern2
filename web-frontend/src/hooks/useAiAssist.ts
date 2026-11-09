@@ -90,13 +90,13 @@ export function useAiApplyThemeImage(eventCode: string) {
   });
 }
 
-export function useAiAnalyzeAbstract(speakerPoolId: string) {
+export function useAiAnalyzeAbstract(eventCode: string, speakerPoolId: string) {
   const { t } = useTranslation('organizer');
 
   return useMutation<AbstractResponse, Error, void>({
     mutationFn: async () => {
       try {
-        return await analyzeAbstract(speakerPoolId);
+        return await analyzeAbstract(eventCode, speakerPoolId);
       } catch {
         throw new Error(t('aiAssist.error'));
       }

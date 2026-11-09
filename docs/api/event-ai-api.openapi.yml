@@ -420,18 +420,29 @@ paths:
           $ref: '#/components/responses/Unauthorized'
         '403':
           $ref: '#/components/responses/Forbidden'
-  /speakers/{speakerId}/ai/analyze-abstract:
+  /events/{eventCode}/speakers/{speakerId}/abstract-analysis:
     post:
       tags:
       - AI Assist
       operationId: analyzeAbstract
-      summary: Analyze speaker abstract quality (GPT-4o). speakerId is SpeakerPool UUID; backend looks up speaker name, session title and abstract.
+      summary: Analyze the abstract quality of a speaker of this event
+      description: >-
+        speakerId is the speaker pool entry of this event (UUID, loaded scoped to the event); the
+        backend looks up speaker name, session title and abstract and asks the configured chat
+        model for a review. An entry of another event answers 404. ORGANIZER role required.
       security:
       - BearerAuth: []
       parameters:
+      - name: eventCode
+        in: path
+        required: true
+        schema:
+          type: string
+          example: BATbern60
       - name: speakerId
         in: path
         required: true
+        description: Speaker pool entry ID of this event
         schema:
           type: string
           format: uuid
@@ -446,12 +457,18 @@ paths:
                 default:
                   summary: generated from the schema and captured sub-values
                   value:
-                    noPromotionScore: 1
-                    noPromotionFeedback: sample
-                    lessonsLearnedScore: 1
-                    lessonsLearnedFeedback: sample
-                    wordCount: 1
-                    shortenedAbstract: sample
+                    noPromotionScore: 8
+                    noPromotionFeedback: Kein Produktmarketing erkennbar.
+                    lessonsLearnedScore: 9
+                    lessonsLearnedFeedback: Klare Praxisreferenz vorhanden.
+                    wordCount: 120
+                    shortenedAbstract: null
+        '404':
+          description: Event not found, or the speaker pool entry belongs to no speaker of this event
+          content:
+            application/json:
+              schema:
+                $ref: ./_shared.openapi.yml#/components/schemas/ErrorResponse
         '503':
           description: AI service disabled or unavailable
           content:

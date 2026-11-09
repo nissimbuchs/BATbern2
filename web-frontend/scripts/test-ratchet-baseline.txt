@@ -4,7 +4,6 @@
 # Per test file: own-code mocks and class-level @Transactional ITs. Counts may only fall.
 # Format: <category> TAB <path> TAB <count>, sorted, zero counts omitted.
 be-mock-in-process	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/LogoControllerTest.java	2
-be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/AiAssistControllerIntegrationTest.java	5
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/DeregistrationControllerIntegrationTest.java	3
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/EventControllerIntegrationTest.java	1
 be-mock-in-process	services/event-management-service/src/test/java/ch/batbern/events/controller/EventPhotoControllerIntegrationTest.java	1
@@ -495,7 +494,6 @@ fe-mock-i18n	web-frontend/src/components/user/CompanyLogoRequest/__tests__/Compa
 fe-mock-i18n	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileEmailAddresses.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/user/ProfileEmailAddresses/__tests__/ProfileNewsletterAddresses.test.tsx	1
 fe-mock-i18n	web-frontend/src/components/user/UserSettingsTab/UserSettingsTab.test.tsx	1
-fe-mock-i18n	web-frontend/src/hooks/useAiAssist.test.ts	1
 fe-mock-i18n	web-frontend/src/hooks/useRegistration/useRegistration.test.ts	1
 fe-mock-i18n	web-frontend/src/pages/PartnerCompanyPage.test.tsx	1
 fe-mock-i18n	web-frontend/src/pages/attendee/__tests__/AttendeeDashboardPage.test.tsx	1
