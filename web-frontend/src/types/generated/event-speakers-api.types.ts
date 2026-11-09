@@ -1457,9 +1457,6 @@ export interface components {
       success?: boolean;
       speakerName?: string;
       eventName?: string;
-      /** @description Formatted event date (e.g. "20. November 2025") */
-      eventDate?: string | null;
-      sessionTitle?: string | null;
       /** @description Next steps for the speaker after responding */
       nextSteps?: string[];
       /**
@@ -1467,8 +1464,6 @@ export interface components {
        * @description Content submission deadline (if accepted)
        */
       contentDeadline?: string | null;
-      dashboardUrl?: string | null;
-      errorMessage?: string | null;
     };
     /** @description The speaker portal's content-submission state for one event (Story 6.3) */
     SpeakerContentInfo: {

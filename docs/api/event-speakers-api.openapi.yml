@@ -1507,13 +1507,9 @@ paths:
                     success: true
                     speakerName: Anna Muster
                     eventName: Sample name
-                    eventDate: sample
-                    sessionTitle: Sample title
                     nextSteps:
                       - sample
                     contentDeadline: "2026-05-14"
-                    dashboardUrl: https://www.batbern.ch/
-                    errorMessage: Sample text for the API example.
         '400':
           $ref: '#/components/responses/BadRequest'
         '401':
@@ -2953,13 +2949,6 @@ components:
           type: string
         eventName:
           type: string
-        eventDate:
-          nullable: true
-          type: string
-          description: Formatted event date (e.g. "20. November 2025")
-        sessionTitle:
-          nullable: true
-          type: string
         nextSteps:
           type: array
           items:
@@ -2970,12 +2959,6 @@ components:
           type: string
           format: date
           description: Content submission deadline (if accepted)
-        dashboardUrl:
-          nullable: true
-          type: string
-        errorMessage:
-          nullable: true
-          type: string
     SpeakerContentInfo:
       type: object
       description: The speaker portal's content-submission state for one event (Story 6.3)
