@@ -59,7 +59,7 @@ class AuthenticationIntegrationTest extends AbstractIntegrationTest {
                 .contentType(MediaType.APPLICATION_JSON)
                 .content(objectMapper.writeValueAsString(request)))
             .andExpect(status().isCreated())
-            .andExpect(jsonPath("$.name").value("Test Company Auth"))
+            .andExpect(jsonPath("$.name").value("testcompanya")) // slug of the typed name (owner 2026-11-09)
             .andReturn();
 
         // Verify createdBy is set from security context

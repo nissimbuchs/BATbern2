@@ -89,13 +89,13 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         assertThat(response).isNotNull();
         // Story 1.16.2: use company name instead of UUID
         assertThat(response.getName()).isNotNull();
-        assertThat(response.getName()).isEqualTo("New Company");
+        assertThat(response.getName()).isEqualTo("newcompany"); // slug of the typed name
 
         var savedCompany = companyRepository.findByName(response.getName());
         assertThat(savedCompany).isPresent();
         assertThat(applicationEvents.stream(CompanyCreatedEvent.class))
                 .singleElement()
-                .satisfies(e -> assertThat(e.getName()).isEqualTo("New Company"));
+                .satisfies(e -> assertThat(e.getName()).isEqualTo("newcompany"));
     }
 
     @Test
@@ -166,7 +166,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         // Verify all fields are present in the response (which would be in the event)
         // Story 1.16.2: use company name instead of UUID
         assertThat(response.getName()).isNotNull();
-        assertThat(response.getName()).isEqualTo("Event Test Company");
+        assertThat(response.getName()).isEqualTo("eventtestcom"); // slug of the typed name
         assertThat(response.getDisplayName()).isEqualTo("Event Test Co");
         assertThat(response.getWebsite()).isEqualTo("https://event.example.com");
         assertThat(response.getIndustry()).isEqualTo("Testing");
@@ -259,7 +259,7 @@ class EventPublishingIntegrationTest extends AbstractIntegrationTest {
         companyRepository.save(testCompany);
 
         CreateCompanyRequest request = CreateCompanyRequest.builder()
-                .name(testCompany.getName()) // Duplicate name
+                .name(testCompany.getDisplayName()) // Duplicate: the same name as people see it
                 .build();
 
         // When & Then
