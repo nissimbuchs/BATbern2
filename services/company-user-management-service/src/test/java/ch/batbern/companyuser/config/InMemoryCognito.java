@@ -54,7 +54,8 @@ import java.util.UUID;
  * pool's default), the pool's password policy (8 characters, lower, upper, digit, symbol), and the
  * errors Cognito answers: {@code UsernameExistsException} for a taken e-mail on create,
  * {@code UserNotFoundException} for an unknown user, {@code AliasExistsException} when an e-mail
- * moves onto another login's address, {@code InvalidPasswordException} for a weak password. Every
+ * moves onto another login's address, {@code InvalidPasswordException} for a weak password; a
+ * changed e-mail turns {@code email_verified} false unless the same call sets it. Every
  * other operation keeps the SDK default and throws {@link UnsupportedOperationException}.
  *
  * <p>Usage: {@code TestAwsConfig} registers one instance as the context's
@@ -259,7 +260,14 @@ public final class InMemoryCognito implements CognitoIdentityProviderClient {
                 throw invalidParameter("Cannot modify an immutable attribute: sub");
             }
         }
+        String emailBefore = login.email();
         request.userAttributes().forEach(a -> login.attributes.put(a.name(), a.value()));
+        // Cognito marks a changed e-mail unverified unless the same call sets email_verified
+        // (the pool has no keepOriginal: the new address is the login at once).
+        boolean setsVerified = request.userAttributes().stream().anyMatch(a -> "email_verified".equals(a.name()));
+        if (!setsVerified && login.email() != null && !login.email().equals(emailBefore)) {
+            login.attributes.put("email_verified", "false");
+        }
         return AdminUpdateUserAttributesResponse.builder().build();
     }
 
