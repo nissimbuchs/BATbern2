@@ -94,6 +94,24 @@ describe('useForgotPassword', () => {
     expect(result.current.error?.statusCode).toBe(400);
   });
 
+  it('should_throwNetworkError_when_cognitoUnreachable', async () => {
+    // Amplify v6 rejects with name 'NetworkError' (AmplifyErrorCode.NetworkError) when the
+    // request to Cognito fails. The form offers a retry button only for type 'networkError'.
+    const networkError = Object.assign(new Error('Network error'), { name: 'NetworkError' });
+    vi.mocked(resetPassword).mockRejectedValue(networkError);
+
+    const { result } = renderHook(() => useForgotPassword(), { wrapper });
+
+    result.current.mutate('test@example.com');
+
+    await waitFor(() => {
+      expect(result.current.isError).toBe(true);
+    });
+
+    expect(result.current.error?.type).toBe('networkError');
+    expect(result.current.error?.statusCode).toBe(0);
+  });
+
   it('should_throwUnknownError_when_unexpectedError', async () => {
     const unknownError = new Error('Something went wrong');
     vi.mocked(resetPassword).mockRejectedValue(unknownError);
