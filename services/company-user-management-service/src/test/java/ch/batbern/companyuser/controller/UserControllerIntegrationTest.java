@@ -9,6 +9,7 @@ import ch.batbern.companyuser.repository.UserRepository;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.fixtures.ProductionShapedPeople;
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
@@ -28,11 +29,11 @@ import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.test.context.support.WithMockUser;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.test.web.servlet.ResultActions;
-import org.springframework.transaction.annotation.Propagation;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.transaction.support.TransactionTemplate;
 
 import java.time.Instant;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Stream;
@@ -61,10 +62,14 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
  *
  * Story 1.14-2 Task 11: REST Controllers (RED phase)
  * AC: 1, 2, 3, 5
+ *
+ * <p>Every test commits, as production does (no class-level {@code @Transactional}, Epic 17 test
+ * fidelity): constraints, triggers and a rollback-only mark surface as they would for a caller.
+ * {@code @AfterEach} removes every row the test wrote (users with their child rows, companies it
+ * created) and clears the caches, so nothing leaks into the next class in the shared container.
  */
 @SpringBootTest
 @AutoConfigureMockMvc
-@Transactional
 @Import(TestAwsConfig.class)
 @DisplayName("UserController Integration Tests")
 class UserControllerIntegrationTest extends AbstractIntegrationTest {
@@ -78,15 +83,20 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Autowired
     private JdbcTemplate jdbcTemplate;
 
+    @Autowired
+    private TransactionTemplate transactionTemplate;
+
     /** JSON for request bodies: names with quotes or apostrophes must not break the body. */
     private static final ObjectMapper JSON = new ObjectMapper();
 
     private User testUser;
+    private List<String> companiesBefore;
 
     @BeforeEach
     void setUp() {
-        // Clean up before each test
-        userRepository.deleteAll();
+        // Start from no users; remember the companies that exist, so tearDown removes only ours
+        cleanUpUsers();
+        companiesBefore = jdbcTemplate.queryForList("SELECT name FROM companies", String.class);
 
         // Create test user
         // Note: @WithMockUser(username = "john.doe") returns "john.doe" from SecurityContextHelper.getCurrentUserId()
@@ -103,6 +113,21 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .build();
 
         testUser = userRepository.save(testUser);
+    }
+
+    @AfterEach
+    void tearDown() {
+        cleanUpUsers();
+        jdbcTemplate.queryForList("SELECT name FROM companies", String.class).stream()
+                .filter(name -> !companiesBefore.contains(name))
+                .forEach(name -> jdbcTemplate.update("DELETE FROM companies WHERE name = ?", name));
+        cacheManager.getCacheNames().forEach(name -> cacheManager.getCache(name).clear());
+    }
+
+    /** Users and their child rows (role assignments, addresses, history cascade with the user). */
+    private void cleanUpUsers() {
+        jdbcTemplate.update("DELETE FROM watch_pairings");
+        jdbcTemplate.update("DELETE FROM user_profiles");
     }
 
     // AC1: GET /api/v1/users/me returns authenticated user
@@ -147,25 +172,19 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     }
 
     /**
-     * #1142: a dangling company_id must not 500 the profile. Runs WITHOUT the test transaction:
-     * inside it, the controller joins the test transaction, which is rolled back anyway, so
-     * a rollback-only mark never surfaces as UnexpectedRollbackException. Production commits.
+     * #1142: a dangling company_id must not 500 the profile. The request commits as in production,
+     * so a rollback-only mark would surface as UnexpectedRollbackException.
      */
     @Test
     @WithMockUser(username = "john.doe")
-    @Transactional(propagation = Propagation.NOT_SUPPORTED)
     @DisplayName("should_return200_when_companyIdDoesNotResolve")
     void should_return200_when_companyIdDoesNotResolve() throws Exception {
-        try {
-            mockMvc.perform(get("/api/v1/users/me")
-                            .param("include", "roles,company,preferences")
-                            .contentType(MediaType.APPLICATION_JSON))
-                    .andExpect(status().isOk())
-                    .andExpect(jsonPath("$.company.id").value("GoogleZH"))
-                    .andExpect(jsonPath("$.company.name").value("GoogleZH"));
-        } finally {
-            userRepository.deleteAll();
-        }
+        mockMvc.perform(get("/api/v1/users/me")
+                        .param("include", "roles,company,preferences")
+                        .contentType(MediaType.APPLICATION_JSON))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.company.id").value("GoogleZH"))
+                .andExpect(jsonPath("$.company.name").value("GoogleZH"));
     }
 
     @Test
@@ -873,8 +892,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
                 .andExpect(jsonPath("$.user.firstName").value(person.firstName()))
                 .andExpect(jsonPath("$.user.lastName").value(person.lastName()));
 
-        // The class is @Transactional: the JPQL read flushes the insert, so chk_username_format
-        // and the other constraints run here (FlushBeforeRollback would also catch it later).
+        // The request committed, so chk_username_format and the other constraints already ran.
         assertThat(userRepository.findByUsername(person.username())).isPresent();
     }
 
@@ -968,13 +986,20 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     // rejects that insert, which surfaced as a 500 on the public registration form (2026-10-18).
 
     private void addAdditionalEmail(String email, Instant verifiedAt) {
-        User owner = userRepository.findByUsername("john.doe").orElseThrow();
-        owner.addAdditionalEmail(UserAdditionalEmail.builder()
+        addAdditionalEmailTo("john.doe", UserAdditionalEmail.builder()
                 .email(email)
                 .label("Work")
                 .verifiedAt(verifiedAt)
                 .build());
-        userRepository.saveAndFlush(owner);
+    }
+
+    /** The additional e-mails are a lazy collection: load and change the owner in one transaction. */
+    private void addAdditionalEmailTo(String username, UserAdditionalEmail email) {
+        transactionTemplate.executeWithoutResult(tx -> {
+            User owner = userRepository.findByUsername(username).orElseThrow();
+            owner.addAdditionalEmail(email);
+            userRepository.saveAndFlush(owner);
+        });
     }
 
     @Test
@@ -1089,7 +1114,7 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @Test
     @DisplayName("should_rejectAtDatabaseLevel_when_emailsDifferOnlyInCase")
     void should_rejectAtDatabaseLevel_when_emailsDifferOnlyInCase() {
-        // Native inserts bypass the entity normalisation (and the unflushed setUp row): the index
+        // Native inserts bypass the entity normalisation: the index
         // must hold on its own
         String insert = """
                 INSERT INTO user_profiles (id, username, email, first_name, last_name, created_at, updated_at)
@@ -1564,12 +1589,10 @@ class UserControllerIntegrationTest extends AbstractIntegrationTest {
     @DisplayName("should_findOwner_when_additionalEmailIsSearched (verified or not; list and picker)")
     void should_findOwner_when_additionalEmailIsSearched(String input, boolean verified) throws Exception {
         saveSearchUser("olga.owner", "Olga", "Owner", null);
-        User owner = userRepository.findByUsername("olga.owner").orElseThrow();
-        owner.addAdditionalEmail(UserAdditionalEmail.builder()
+        addAdditionalEmailTo("olga.owner", UserAdditionalEmail.builder()
                 .email("alt.address@x.ch")
                 .verifiedAt(verified ? Instant.now() : null)
                 .build());
-        userRepository.saveAndFlush(owner);
 
         mockMvc.perform(get("/api/v1/users").param("search", input))
                 .andExpect(status().isOk())

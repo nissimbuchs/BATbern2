@@ -7,14 +7,14 @@ import ch.batbern.companyuser.domain.UserPreferences;
 import ch.batbern.companyuser.domain.UserSettings;
 import ch.batbern.shared.test.AbstractIntegrationTest;
 import ch.batbern.shared.test.fixtures.ProductionShapedPeople;
-import jakarta.persistence.EntityManager;
+import org.junit.jupiter.api.AfterEach;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.DisplayName;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.context.annotation.Import;
 import org.springframework.data.domain.PageRequest;
-import org.springframework.transaction.annotation.Transactional;
+import org.springframework.jdbc.core.JdbcTemplate;
 
 import java.util.List;
 import java.util.Optional;
@@ -26,8 +26,11 @@ import static org.assertj.core.api.Assertions.assertThat;
  * Story 1.14-2, AC: 1, 3, 4, 5 (User CRUD and Queries)
  * Story 1.16.2: Username-based lookups (CRITICAL)
  * Uses Testcontainers PostgreSQL for production parity
+ *
+ * <p>Every repository call commits, as in production (no class-level {@code @Transactional},
+ * Epic 17 test fidelity). {@code @AfterEach} removes the users the test wrote (child rows
+ * cascade), so nothing leaks into the next class in the shared container.
  */
-@Transactional
 @Import(TestAwsConfig.class)
 @DisplayName("User Repository Tests")
 class UserRepositoryTest extends AbstractIntegrationTest {
@@ -36,11 +39,22 @@ class UserRepositoryTest extends AbstractIntegrationTest {
     private UserRepository userRepository;
 
     @Autowired
-    private EntityManager entityManager;
+    private JdbcTemplate jdbcTemplate;
 
     @BeforeEach
     void setUp() {
-        userRepository.deleteAll();
+        deleteAllUsers();
+    }
+
+    @AfterEach
+    void tearDown() {
+        deleteAllUsers();
+    }
+
+    /** Users and their child rows (role assignments, addresses, history cascade with the user). */
+    private void deleteAllUsers() {
+        jdbcTemplate.update("DELETE FROM watch_pairings");
+        jdbcTemplate.update("DELETE FROM user_profiles");
     }
 
     // AC1 Tests: User CRUD Operations
@@ -53,8 +67,6 @@ class UserRepositoryTest extends AbstractIntegrationTest {
 
         // When
         User saved = userRepository.save(user);
-        entityManager.flush();
-
         // Then
         assertThat(saved.getId()).isNotNull();
         assertThat(saved.getUsername()).isEqualTo("john.doe");
@@ -86,8 +98,6 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         user.setBio("New bio");
         user.onUpdate();
         User updated = userRepository.save(user);
-        entityManager.flush();
-
         // Then
         User retrieved = userRepository.findById(updated.getId()).orElseThrow();
         assertThat(retrieved.getFirstName()).isEqualTo("Updated");
@@ -103,8 +113,6 @@ class UserRepositoryTest extends AbstractIntegrationTest {
 
         // When
         userRepository.delete(user);
-        entityManager.flush();
-
         // Then
         Optional<User> deleted = userRepository.findById(user.getId());
         assertThat(deleted).isEmpty();
@@ -235,14 +243,12 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         attendee.addRole(Role.ATTENDEE);
         userRepository.save(attendee);
 
-        entityManager.flush();
-
         // When
         List<User> speakers = userRepository.findByRolesContaining(Role.SPEAKER);
 
         // Then
-        assertThat(speakers).hasSize(2);
-        assertThat(speakers).allMatch(u -> u.hasRole(Role.SPEAKER));
+        // The roles are a lazy collection and the query committed: assert who was found
+        assertThat(speakers).extracting(User::getUsername).containsExactlyInAnyOrder("speaker.one", "speaker.two");
     }
 
     // AC8 Tests: Name-based search
@@ -273,8 +279,6 @@ class UserRepositoryTest extends AbstractIntegrationTest {
         User inactiveUser = createAndSaveUser("inactive.user", "inactive@example.com");
         inactiveUser.setActive(false);
         userRepository.save(inactiveUser);
-
-        entityManager.flush();
 
         // When
         List<User> activeUsers = userRepository.findByIsActive(true);

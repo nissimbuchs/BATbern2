@@ -105,7 +105,6 @@ be-transactional-it	services/company-user-management-service/src/test/java/ch/ba
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PublicOrganizerControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/PublicUserControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserAdditionalEmailsIntegrationTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserMergeIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserPreferencesControllerIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/controller/UserSettingsControllerIntegrationTest.java	1
@@ -122,7 +121,6 @@ be-transactional-it	services/company-user-management-service/src/test/java/ch/ba
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/UserProvisioningAndPatchIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/integration/UserServiceIssueCredentialsIntegrationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/repository/CompanyRepositoryTest.java	1
-be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/repository/UserRepositoryTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/specification/CompanySpecificationTest.java	1
 be-transactional-it	services/company-user-management-service/src/test/java/ch/batbern/companyuser/watch/WatchPairingIntegrationTest.java	1
 be-transactional-it	services/event-management-service/src/test/java/ch/batbern/events/config/CaffeineCacheConfigIntegrationTest.java	1
