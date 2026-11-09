@@ -34,13 +34,11 @@ describe('MultiTopicHeatMap attendance in the tooltip', () => {
           eventNumber: 70,
           usedDate: `${year}-02-10T18:00:00Z`,
           attendance: 40,
-          engagementScore: null,
         },
         {
           eventNumber: 71,
           usedDate: `${year}-03-10T18:00:00Z`,
           attendance: null,
-          engagementScore: null,
         },
       ]),
       topic('Upcoming', [
@@ -48,7 +46,6 @@ describe('MultiTopicHeatMap attendance in the tooltip', () => {
           eventNumber: 72,
           usedDate: `${year}-02-20T18:00:00Z`,
           attendance: null,
-          engagementScore: null,
         },
       ]),
     ]);

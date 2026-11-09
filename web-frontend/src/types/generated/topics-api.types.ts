@@ -419,13 +419,6 @@ export interface components {
        * @example 120
        */
       attendance: number | null;
-      /**
-       * Format: float
-       * @description Engagement score (0-1), null when none is stored. Nothing measures engagement today;
-       *     rows from the V18 backfill carry an estimate derived from the event's workflow state.
-       * @example 0.78
-       */
-      engagementScore: number | null;
     };
     TopicListResponse: {
       data: components['schemas']['Topic'][];

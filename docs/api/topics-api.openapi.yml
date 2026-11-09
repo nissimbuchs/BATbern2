@@ -426,7 +426,6 @@ paths:
                       eventDate: "2025-03-15"
                       usedDate: "2026-05-14T16:00:00Z"
                       attendance: 120
-                      engagementScore: 0.78
         '404':
           $ref: '#/components/responses/NotFound'
         '401':
@@ -901,7 +900,6 @@ components:
         - eventNumber
         - usedDate
         - attendance
-        - engagementScore
       properties:
         eventNumber:
           type: integer
@@ -926,15 +924,6 @@ components:
             Confirmed and attended registrations of the event (as the analytics page counts them),
             once the event has taken place; null before.
           example: 120
-        engagementScore:
-          type: [number, 'null']
-          format: float
-          minimum: 0
-          maximum: 1
-          description: |
-            Engagement score (0-1), null when none is stored. Nothing measures engagement today;
-            rows from the V18 backfill carry an estimate derived from the event's workflow state.
-          example: 0.78
 
     TopicListResponse:
       type: object

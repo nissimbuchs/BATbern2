@@ -722,7 +722,7 @@ erDiagram
         uuid topic_id FK
         uuid event_id FK
         timestamptz used_date
-        int attendee_count
+        float feedback_score
     }
     event_photos {
         uuid id PK

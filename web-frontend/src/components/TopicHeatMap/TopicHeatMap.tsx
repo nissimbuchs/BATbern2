@@ -36,7 +36,7 @@ const TopicHeatMap: React.FC<TopicHeatMapProps> = ({
   const { t } = useTranslation('organizer');
   const theme = useTheme();
 
-  // Quarterly buckets; attendance and engagement count only where known
+  // Quarterly buckets; attendance counts only where known
   const heatMapData = useMemo(
     () => (usageHistory && usageHistory.length > 0 ? quarterlyUsage(usageHistory) : []),
     [usageHistory]
@@ -73,10 +73,6 @@ const TopicHeatMap: React.FC<TopicHeatMapProps> = ({
           <Typography variant="body2">
             {t('topicBacklog.heatMap.totalAttendance', 'Total Attendance')}:{' '}
             {data.totalAttendance ?? '–'}
-          </Typography>
-          <Typography variant="body2">
-            {t('topicBacklog.heatMap.avgEngagement', 'Avg Engagement')}:{' '}
-            {data.avgEngagement === null ? '–' : `${(data.avgEngagement * 100).toFixed(1)}%`}
           </Typography>
           <Typography variant="caption" color="text.secondary" sx={{ mt: 1 }}>
             {t('common:navigation.events')}: {data.events.length}

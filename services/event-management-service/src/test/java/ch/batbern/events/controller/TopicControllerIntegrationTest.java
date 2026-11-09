@@ -32,15 +32,18 @@ import java.util.Map;
 
 import static ch.batbern.shared.test.contract.ProviderContract.assertResponseMatchesSpec;
 import static org.hamcrest.Matchers.containsInAnyOrder;
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.everyItem;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.hasSize;
 import static org.hamcrest.Matchers.lessThanOrEqualTo;
+import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.nullValue;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
+import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.content;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.jsonPath;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.status;
 
@@ -187,9 +190,9 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Event eventB = createTestEvent("BATbern201", EventWorkflowState.ARCHIVED);
         Event eventC = createTestEvent("BATbern202", EventWorkflowState.ARCHIVED);
 
-        createTopicUsageHistory(topicA.getId(), eventA.getId(), LocalDateTime.now().minusMonths(30), null, null);
-        createTopicUsageHistory(topicB.getId(), eventB.getId(), LocalDateTime.now().minusMonths(6), null, null);
-        createTopicUsageHistory(topicC.getId(), eventC.getId(), LocalDateTime.now().minusMonths(15), null, null);
+        createTopicUsageHistory(topicA.getId(), eventA.getId(), LocalDateTime.now().minusMonths(30));
+        createTopicUsageHistory(topicB.getId(), eventB.getId(), LocalDateTime.now().minusMonths(6));
+        createTopicUsageHistory(topicC.getId(), eventC.getId(), LocalDateTime.now().minusMonths(15));
 
         mockMvc.perform(get("/api/v1/topics")
                 .param("sort", "-stalenessScore")
@@ -219,9 +222,9 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Event eventB = createTestEvent("BATbern211", EventWorkflowState.ARCHIVED);
         Event eventC = createTestEvent("BATbern212", EventWorkflowState.ARCHIVED);
 
-        createTopicUsageHistory(topicA.getId(), eventA.getId(), LocalDateTime.now().minusMonths(30), null, null);
-        createTopicUsageHistory(topicB.getId(), eventB.getId(), LocalDateTime.now().minusMonths(6), null, null);
-        createTopicUsageHistory(topicC.getId(), eventC.getId(), LocalDateTime.now().minusMonths(15), null, null);
+        createTopicUsageHistory(topicA.getId(), eventA.getId(), LocalDateTime.now().minusMonths(30));
+        createTopicUsageHistory(topicB.getId(), eventB.getId(), LocalDateTime.now().minusMonths(6));
+        createTopicUsageHistory(topicC.getId(), eventC.getId(), LocalDateTime.now().minusMonths(15));
 
         String[] expected = {"Stale Topic", "Moderate Topic", "Recent Topic"};
         for (int page = 1; page <= 3; page++) {
@@ -284,7 +287,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
 
         Event recentEvent = createTestEvent("BATbern301", EventWorkflowState.ARCHIVED);
         createTopicUsageHistory(recentTopic.getId(), recentEvent.getId(),
-                LocalDateTime.now().minusMonths(3), null, null);
+                LocalDateTime.now().minusMonths(3));
         // staleTopic has no history → staleness 100
 
         // Recent topic: used 3 months ago → staleness ~13 (red)
@@ -372,9 +375,9 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Event event2 = createTestEvent("BATbern101", EventWorkflowState.CREATED);
 
         createTopicUsageHistory(topic.getId(), event1.getId(),
-                LocalDateTime.now().minusMonths(6), 150, 0.85);
+                LocalDateTime.now().minusMonths(6));
         createTopicUsageHistory(topic.getId(), event2.getId(),
-                LocalDateTime.now().minusMonths(12), 200, 0.92);
+                LocalDateTime.now().minusMonths(12));
 
         mockMvc.perform(get("/api/v1/topics/{topicCode}/usage-history", topic.getTopicCode())
                 .contentType(MediaType.APPLICATION_JSON))
@@ -403,15 +406,16 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Event past = createTestEvent("BATbern102", EventWorkflowState.ARCHIVED);
         past.setDate(Instant.now().minusSeconds(30L * 24 * 3600));
         eventRepository.save(past);
-        createTopicUsageHistory(topic.getId(), past.getId(), LocalDateTime.now().minusMonths(1), null, null);
+        createTopicUsageHistory(topic.getId(), past.getId(), LocalDateTime.now().minusMonths(1));
         List<String> statuses = List.of("confirmed", "confirmed", "attended", "cancelled", "registered", "waitlist");
         statuses.forEach(status -> createRegistration(past, status));
 
         MvcResult result = mockMvc.perform(get("/api/v1/topics/{topicCode}/usage-history", topic.getTopicCode()))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$[0].attendance").value(3))
-                // Nothing measures engagement: null, not a made-up number
-                .andExpect(jsonPath("$[0].engagementScore").value(nullValue()))
+                // Owner 2026-11-09: nothing measured engagement, so the API no longer has it
+                // (doesNotExist() also passes for "engagementScore": null, so check the body)
+                .andExpect(content().string(not(containsString("engagementScore"))))
                 .andReturn();
 
         assertResponseMatchesSpec("docs/api/topics-api.openapi.yml", result);
@@ -422,7 +426,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     void should_returnNullAttendance_when_eventIsUpcoming() throws Exception {
         Topic topic = createTestTopic("Cloud Architecture", "technical");
         Event upcoming = createTestEvent("BATbern103", EventWorkflowState.CREATED);
-        createTopicUsageHistory(topic.getId(), upcoming.getId(), LocalDateTime.now().plusMonths(3), null, null);
+        createTopicUsageHistory(topic.getId(), upcoming.getId(), LocalDateTime.now().plusMonths(3));
         createRegistration(upcoming, "confirmed");
 
         MvcResult result = mockMvc.perform(get("/api/v1/topics/{topicCode}/usage-history", topic.getTopicCode()))
@@ -479,9 +483,9 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Event event2 = createTestEvent("BATbern57", EventWorkflowState.ARCHIVED);
 
         createTopicUsageHistory(topic1.getId(), event1.getId(),
-                LocalDateTime.now().minusMonths(6), 150, 0.85);
+                LocalDateTime.now().minusMonths(6));
         createTopicUsageHistory(topic2.getId(), event2.getId(),
-                LocalDateTime.now().minusMonths(3), 200, 0.92);
+                LocalDateTime.now().minusMonths(3));
 
         mockMvc.perform(get("/api/v1/topics")
                 .param("include", "history")
@@ -502,7 +506,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Topic topic = createTestTopic("Cloud Architecture", "technical");
         Event event = createTestEvent("BATbern56", EventWorkflowState.ARCHIVED);
         createTopicUsageHistory(topic.getId(), event.getId(),
-                LocalDateTime.now().minusMonths(6), 150, 0.85);
+                LocalDateTime.now().minusMonths(6));
 
         mockMvc.perform(get("/api/v1/topics")
                 .contentType(MediaType.APPLICATION_JSON))
@@ -531,7 +535,7 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
         Topic topic = createTestTopic("Cloud Architecture", "technical");
         Event event = createTestEvent("BATbern56", EventWorkflowState.ARCHIVED);
         createTopicUsageHistory(topic.getId(), event.getId(),
-                LocalDateTime.now().minusMonths(6), 150, 0.85);
+                LocalDateTime.now().minusMonths(6));
 
         mockMvc.perform(get("/api/v1/topics")
                 .param("include", "history,similarity")
@@ -596,15 +600,11 @@ class TopicControllerIntegrationTest extends AbstractIntegrationTest {
     private TopicUsageHistory createTopicUsageHistory(
             java.util.UUID topicId,
             java.util.UUID eventId,
-            LocalDateTime usedDate,
-            Integer attendance,
-            Double engagementScore) {
+            LocalDateTime usedDate) {
         TopicUsageHistory history = new TopicUsageHistory();
         history.setTopicId(topicId);
         history.setEventId(eventId);
         history.setUsedDate(usedDate);
-        history.setAttendeeCount(attendance);
-        history.setEngagementScore(engagementScore);
         return topicUsageHistoryRepository.save(history);
     }
 

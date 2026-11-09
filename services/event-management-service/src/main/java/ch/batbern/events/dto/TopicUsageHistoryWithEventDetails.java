@@ -18,7 +18,6 @@ public class TopicUsageHistoryWithEventDetails {
     private Instant eventDate;
     private LocalDateTime usedDate;
     private Integer attendeeCount;
-    private Double engagementScore;
 
     public TopicUsageHistoryWithEventDetails() {
     }
@@ -29,8 +28,7 @@ public class TopicUsageHistoryWithEventDetails {
             String eventCode,
             Instant eventDate,
             LocalDateTime usedDate,
-            Long attendeeCount,
-            Double engagementScore) {
+            Long attendeeCount) {
         this.topicId = topicId;
         this.eventNumber = eventNumber;
         this.eventCode = eventCode;
@@ -38,7 +36,6 @@ public class TopicUsageHistoryWithEventDetails {
         this.usedDate = usedDate;
         // null until the event has taken place (computed in the query)
         this.attendeeCount = attendeeCount != null ? attendeeCount.intValue() : null;
-        this.engagementScore = engagementScore;
     }
 
     // ==================== Getters and Setters ====================
@@ -89,14 +86,6 @@ public class TopicUsageHistoryWithEventDetails {
 
     public void setAttendeeCount(Integer attendeeCount) {
         this.attendeeCount = attendeeCount;
-    }
-
-    public Double getEngagementScore() {
-        return engagementScore;
-    }
-
-    public void setEngagementScore(Double engagementScore) {
-        this.engagementScore = engagementScore;
     }
 
 }

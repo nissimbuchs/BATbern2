@@ -539,13 +539,13 @@ public class TopicService {
         history.setTopicId(topicId);
         history.setEventId(eventId);
         history.setUsedDate(LocalDateTime.ofInstant(eventDate, java.time.ZoneId.systemDefault()));
-        // Note: attendeeCount and engagementScore are populated later after the event completes
+        // Attendance is read from the event's registrations, not stored here
         topicUsageHistoryRepository.save(history);
     }
 
     /**
      * One usage record as the API returns it. {@code attendance} is null until the event has
-     * taken place, {@code engagementScore} whenever none is stored (nothing measures it).
+     * taken place.
      */
     private static ch.batbern.events.dto.generated.topics.TopicUsageHistory toUsageHistoryDto(
             TopicUsageHistoryWithEventDetails h) {
@@ -560,7 +560,6 @@ public class TopicService {
                 ? h.getUsedDate().atZone(java.time.ZoneId.systemDefault()).toOffsetDateTime()
                 : null);
         dto.setAttendance(h.getAttendeeCount());
-        dto.setEngagementScore(h.getEngagementScore() != null ? h.getEngagementScore().floatValue() : null);
         return dto;
     }
 

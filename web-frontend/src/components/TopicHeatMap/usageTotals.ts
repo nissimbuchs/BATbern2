@@ -1,7 +1,7 @@
 /**
- * Totals over topic usage records. `attendance` is null until the event has taken place and
- * `engagementScore` is null when nothing is stored, so a total covers the known values only and
- * is null when none is known; an unknown value never counts as 0.
+ * Totals over topic usage records. `attendance` is null until the event has taken place, so a
+ * total covers the known values only and is null when none is known; an unknown value never
+ * counts as 0.
  */
 import type { TopicUsageHistory } from '@/types/topic.types';
 
@@ -11,19 +11,12 @@ export function knownSum(values: ReadonlyArray<number | null | undefined>): numb
   return known.length === 0 ? null : known.reduce((sum, v) => sum + v, 0);
 }
 
-/** Average of the known values; null when none is known. */
-export function knownAverage(values: ReadonlyArray<number | null | undefined>): number | null {
-  const known = values.filter((v): v is number => typeof v === 'number' && Number.isFinite(v));
-  return known.length === 0 ? null : known.reduce((sum, v) => sum + v, 0) / known.length;
-}
-
 export interface QuarterlyUsage {
   quarter: string; // e.g. "Q1 2024"
   year: number;
   quarterNum: number;
   usageCount: number;
   totalAttendance: number | null;
-  avgEngagement: number | null;
   events: number[]; // event numbers (GitHub Issue #379: no UUIDs in the API)
   intensity: number; // 0-100, usage count relative to the busiest quarter
 }
@@ -43,7 +36,6 @@ export function quarterlyUsage(usageHistory: ReadonlyArray<TopicUsageHistory>): 
         quarterNum,
         usageCount: 0,
         totalAttendance: null,
-        avgEngagement: null,
         events: [],
         intensity: 0,
       },
@@ -57,7 +49,6 @@ export function quarterlyUsage(usageHistory: ReadonlyArray<TopicUsageHistory>): 
     ...point,
     usageCount: usages.length,
     totalAttendance: knownSum(usages.map((u) => u.attendance)),
-    avgEngagement: knownAverage(usages.map((u) => u.engagementScore)),
   }));
   const maxUsage = Math.max(0, ...points.map((p) => p.usageCount));
   return points.map((p) => ({

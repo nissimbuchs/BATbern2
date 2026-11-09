@@ -45,25 +45,21 @@ describe('TopicHeatMap', () => {
       eventNumber: 56,
       usedDate: '2024-01-15T10:00:00Z',
       attendance: 150,
-      engagementScore: 0.85,
     },
     {
       eventNumber: 57,
       usedDate: '2024-04-20T10:00:00Z',
       attendance: 200,
-      engagementScore: 0.92,
     },
     {
       eventNumber: 58,
       usedDate: '2024-07-10T10:00:00Z',
       attendance: 180,
-      engagementScore: 0.88,
     },
     {
       eventNumber: 55,
       usedDate: '2023-10-05T10:00:00Z',
       attendance: 160,
-      engagementScore: 0.78,
     },
   ];
 
@@ -124,7 +120,6 @@ describe('TopicHeatMap', () => {
         eventNumber: 56,
         usedDate: '2024-01-15T10:00:00Z',
         attendance: 150,
-        engagementScore: 0.85,
       },
     ];
     renderComponent(singleUsage);
@@ -137,19 +132,16 @@ describe('TopicHeatMap', () => {
         eventNumber: 56,
         usedDate: '2024-01-15T10:00:00Z',
         attendance: 150,
-        engagementScore: 0.85,
       },
       {
         eventNumber: 57,
         usedDate: '2024-02-20T10:00:00Z',
         attendance: 200,
-        engagementScore: 0.92,
       },
       {
         eventNumber: 58,
         usedDate: '2024-03-10T10:00:00Z',
         attendance: 180,
-        engagementScore: 0.88,
       },
     ];
     renderComponent(sameQuarterUsage);

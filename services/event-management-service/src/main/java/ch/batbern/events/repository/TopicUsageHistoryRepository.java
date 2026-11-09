@@ -47,10 +47,9 @@ public interface TopicUsageHistoryRepository extends JpaRepository<TopicUsageHis
      *
      * This query JOINs topic_usage_history with events table to fetch:
      * - topicId, eventNumber, eventCode, eventDate (from events)
-     * - usedDate, engagementScore (from topic_usage_history)
+     * - usedDate (from topic_usage_history)
      * - attendance: the event's confirmed and attended registrations (as the analytics page counts
-     *   them) once the event date has passed, else null. topic_usage_history.attendee_count is
-     *   not read: no code writes it (17.0 deferred work).
+     *   them) once the event date has passed, else null.
      *
      * Returns eventNumber instead of UUID per architectural requirement.
      *
@@ -67,8 +66,7 @@ public interface TopicUsageHistoryRepository extends JpaRepository<TopicUsageHis
             CASE WHEN e.date <= CURRENT_TIMESTAMP THEN
                 (SELECT COUNT(r) FROM Registration r
                  WHERE r.eventId = e.id AND r.status IN ('confirmed', 'attended'))
-            END,
-            h.engagementScore
+            END
         )
         FROM TopicUsageHistory h
         JOIN Event e ON h.eventId = e.id
