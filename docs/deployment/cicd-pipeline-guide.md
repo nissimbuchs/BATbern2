@@ -89,7 +89,8 @@ The BATbern platform uses GitHub Actions for continuous integration and deployme
      file, then `npm run check:api-type-copies`): an `export interface` or object-literal
      `export type` in `web-frontend/src` named like a schema in `src/types/generated/` fails
      (NEW), as does a baselined copy that is gone (STALE); baseline
-     `web-frontend/scripts/api-type-copies-baseline.txt`, every line owned in
+     `web-frontend/scripts/api-type-copies-baseline.txt` (`--update` only removes lines, adding
+     one needs `--allow-growth`), every line owned in
      `scripts/api-type-copies-owners.txt`. Policy: `docs/architecture/coding-standards.md`,
      "Frontend: generated API type copies". Locally: `make check-api-type-copies`. Then the
      OpenAPI convention lint (Story 17.4: its Vitest

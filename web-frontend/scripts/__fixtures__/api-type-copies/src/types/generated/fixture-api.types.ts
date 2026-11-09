@@ -44,6 +44,9 @@ export interface components {
     TestOnly: {
       id: string;
     };
+    TemplateOne: {
+      id: string;
+    };
   };
   responses: never;
   parameters: {

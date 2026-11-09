@@ -1,11 +1,24 @@
 /**
  * Comment masking for JavaScript/TypeScript sources, shared by the frontend checks
- * (check-api-paths.ts, Story 17.3; test-ratchet.ts, Story 17.0a). No npm dependencies: plain
+ * (check-api-paths.ts, Story 17.3; test-ratchet.ts, Story 17.0a; check-api-type-copies.ts, Story
+ * 17.3c, which also masks strings). No npm dependencies: plain
  * TypeScript for Node 22 type stripping.
  */
 
-/** Replaces comments with spaces (newlines kept), leaving strings and templates intact. */
-export function maskComments(src: string): string {
+export interface MaskOptions {
+  /**
+   * Also blank the contents of string literals and the text of template literals (quotes,
+   * backticks and `${...}` expressions stay). For checks that look for declarations, not for
+   * string values: check-api-type-copies.ts.
+   */
+  strings?: boolean;
+}
+
+/**
+ * Replaces comments with spaces (newlines kept). Strings and templates stay intact unless
+ * `options.strings` is set.
+ */
+export function maskComments(src: string, options: MaskOptions = {}): string {
   const out = src.split('');
   let i = 0;
   // Stack of brace depths for `${` inside templates; top < 0 means "inside template text".
@@ -19,6 +32,7 @@ export function maskComments(src: string): string {
     const c = src[i];
     if (inTemplateText) {
       if (c === '\\') {
+        if (options.strings) blank(i, i + 2);
         i += 2;
       } else if (c === '`') {
         stack.pop();
@@ -29,6 +43,7 @@ export function maskComments(src: string): string {
         i += 2;
         lastSignificant = '{';
       } else {
+        if (options.strings) blank(i, i + 1);
         i++;
       }
       continue;
@@ -48,7 +63,9 @@ export function maskComments(src: string): string {
       continue;
     }
     if (c === '"' || c === "'") {
-      i = skipQuoted(src, i);
+      const end = skipQuoted(src, i);
+      if (options.strings) blank(i + 1, end - 1);
+      i = end;
       lastSignificant = c;
       continue;
     }

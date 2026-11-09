@@ -742,7 +742,10 @@ name, never a line number), and each line has exactly one owner group in
 `scripts/api-type-copies-owners.txt` (the story or issue that removes it, or
 `exception: <reason>`). A new copy fails NEW; a removed one fails STALE until the gain is locked
 in: `cd web-frontend && npm run check:api-type-copies -- --update`, commit the baseline in the same
-PR. UNOWNED, AMBIGUOUS, STALE OWNER and BAD OWNER work as in the API conventions lint.
+PR. `--update` only removes lines: it refuses (exit 1, baseline untouched) to write a copy the
+committed baseline does not list. `--update --allow-growth` adds one, for an owner-accepted
+exception only, with its owner group. UNOWNED, AMBIGUOUS, STALE OWNER and BAD OWNER work as in the
+API conventions lint.
 
 ### Lambda Handler Testing (Infrastructure)
 

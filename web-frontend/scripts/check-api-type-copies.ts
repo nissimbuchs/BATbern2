@@ -3,6 +3,7 @@
  *
  *   node scripts/check-api-type-copies.ts            (npm run check:api-type-copies, CI frontend-static)
  *   node scripts/check-api-type-copies.ts --update   rewrite the baseline after a copy was removed
+ *   ... --update --allow-growth                       also baseline new copies (owner decision only)
  *
  * The wire types come from `src/types/generated/*.types.ts` (generated from `docs/api/`). A
  * hand-written `export interface X { ... }` or object-literal `export type X = { ... }` (also
@@ -18,7 +19,9 @@
  *   NEW      a copy the baseline does not list: alias the generated type, or rename the type if it
  *            is a frontend model and not the wire shape
  *   STALE    a baselined copy that is gone or now an alias (good): run `--update` and commit
- * so the baseline only ever shrinks.
+ * so the baseline only ever shrinks. `--update` keeps it that way: it refuses (exit 1, baseline
+ * untouched) to write a copy the committed baseline does not list, unless `--allow-growth` is
+ * given, which is for an owner-accepted exception only.
  *
  * Every baseline line must also match exactly one group of the hand-maintained owner file
  * `scripts/api-type-copies-owners.txt` (the story or issue that removes it, or an
@@ -40,6 +43,7 @@ import { listSourceFiles } from './lib/source-files.ts';
 export const POLICY_POINTER =
   'docs/architecture/coding-standards.md, section "Frontend: generated API type copies"';
 export const UPDATE_COMMAND = 'cd web-frontend && npm run check:api-type-copies -- --update';
+export const ALLOW_GROWTH_FLAG = '--allow-growth';
 export const OWNERS_FILE = 'web-frontend/scripts/api-type-copies-owners.txt';
 export const BASELINE_FILE = 'web-frontend/scripts/api-type-copies-baseline.txt';
 export const GENERATED_DIR = 'src/types/generated';
@@ -120,7 +124,7 @@ function skipGenerics(src: string, i: number): number {
 
 /** The exported interfaces and object-literal types of one file whose name is a schema name. */
 export function scanSource(file: string, source: string, schemaNames: Set<string>): Copy[] {
-  const masked = maskComments(source);
+  const masked = maskComments(source, { strings: true });
   const copies: Copy[] = [];
   for (const m of masked.matchAll(DECLARATION)) {
     const kind = m[2] as CopyKind;
@@ -350,6 +354,19 @@ export function run(argv: string[], paths: RunPaths): number {
   const readText = (path: string) => (existsSync(path) ? readFileSync(path, 'utf8') : '');
   const ownersText = readText(paths.ownersPath);
   if (argv.includes('--update')) {
+    const committed = new Set(parseBaseline(readText(paths.baselinePath)).entries.map(copyKey));
+    const added = copies.filter((c) => !committed.has(copyKey(c)));
+    if (added.length && !argv.includes(ALLOW_GROWTH_FLAG)) {
+      for (const c of added) {
+        console.log(
+          `NEW          ${c.file}:${c.line}  ${c.name}  hand-written ${c.kind} named like a generated schema`
+        );
+      }
+      console.log(
+        `Baseline not written: --update only removes lines, and ${added.length} copy(ies) above are not in ${BASELINE_FILE}. Use the generated type or rename a frontend model (${POLICY_POINTER}). Only an owner-accepted exception is added with --update ${ALLOW_GROWTH_FLAG}, plus its owner group.`
+      );
+      return 1;
+    }
     writeFileSync(paths.baselinePath, formatBaseline(copies));
     console.log(summarize(copies));
     console.log(`Baseline written: ${BASELINE_FILE} (${copies.length} lines).`);

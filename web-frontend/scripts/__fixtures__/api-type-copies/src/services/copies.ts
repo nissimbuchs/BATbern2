@@ -32,5 +32,10 @@ export declare interface OptionalName {
   id: string;
 }
 
-const text = 'export interface Quoted-Name {}';
+// A declaration inside a template literal is text, not code.
+const text = `
+export interface TemplateOne {
+  id: string;
+}
+`;
 export const unused = text;

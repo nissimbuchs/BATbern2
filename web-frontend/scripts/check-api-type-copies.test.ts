@@ -4,7 +4,7 @@
  * never compiled).
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest';
-import { cpSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
+import { cpSync, existsSync, mkdtempSync, readFileSync, rmSync, writeFileSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { dirname, join } from 'node:path';
 import { fileURLToPath } from 'node:url';
@@ -52,6 +52,7 @@ describe('extractSchemaNames', () => {
       'Quoted-Name',
       'OptionalName',
       'TestOnly',
+      'TemplateOne',
     ]);
   });
 
@@ -96,7 +97,7 @@ describe('scanSource', () => {
     ).toEqual([]);
   });
 
-  it('passes other names, non-exported and commented declarations, and strings', () => {
+  it('passes other names, non-exported and commented declarations', () => {
     expect(
       scan(
         [
@@ -105,10 +106,38 @@ describe('scanSource', () => {
           'type PagedThing = { x: 1 };',
           '// export interface EventResponse { x: 1 }',
           '/* export type Other = { x: 1 }; */',
-          "const s = 'export interface Other {}';",
         ].join('\n')
       )
     ).toEqual([]);
+  });
+
+  it('passes declarations inside string and template literals', () => {
+    // Each of these would match the declaration pattern if string contents were scanned:
+    // the declaration starts a line (template) or follows a `;` (strings).
+    expect(
+      scan(
+        [
+          'const t = `',
+          'export interface EventResponse {',
+          '  x: string;',
+          '}',
+          '`;',
+          "const s = 'a; export interface Other { x: 1 }';",
+          'const d = "a; export type PagedThing = { x: 1 }";',
+          'const n = `${`',
+          'export interface Other {}',
+          '`}`;',
+        ].join('\n')
+      )
+    ).toEqual([]);
+  });
+
+  it('still scans code inside template expressions and after strings', () => {
+    expect(
+      scan(
+        ["const s = '}';", 'export interface Other { x: 1 }', 'const t = `${1}`;'].join('\n')
+      ).map((c) => [c.name, c.line])
+    ).toEqual([['Other', 2]]);
   });
 
   it('reports a declared interface', () => {
@@ -119,7 +148,7 @@ describe('scanSource', () => {
 describe('scanTree on the fixture', () => {
   it('finds the copies in production files, not in tests or the generated dir', () => {
     const { copies, schemaCount } = scanTree(fixtureRoot);
-    expect(schemaCount).toBe(10);
+    expect(schemaCount).toBe(11);
     expect(copies.map(copyKey)).toEqual(ALL);
   });
 });
@@ -265,18 +294,58 @@ describe('run', () => {
   });
   const OWNERS = 'F1\t#1\tcopies\\.ts$\t(EventResponse|OptionalName|PagedThing)\n';
 
-  it('--update writes a sorted baseline and checks the owners', () => {
-    writeFileSync(paths().ownersPath, OWNERS);
-    expect(run(['--update'], paths())).toBe(0);
-    const lines = readFileSync(paths().baselinePath, 'utf8')
+  const baselineLines = () =>
+    readFileSync(paths().baselinePath, 'utf8')
       .split('\n')
       .filter((l) => l && !l.startsWith('#'));
-    expect(lines).toEqual(ALL);
+
+  it('--update --allow-growth writes a sorted baseline and checks the owners', () => {
+    writeFileSync(paths().ownersPath, OWNERS);
+    expect(run(['--update', '--allow-growth'], paths())).toBe(0);
+    expect(baselineLines()).toEqual(ALL);
     expect(out.join('\n')).toContain('3 (2 interface(s), 1 object type(s)) in 1 file(s)');
   });
 
-  it('--update fails when the new baseline has an unowned line', () => {
+  it('--update shrinks the baseline without --allow-growth', () => {
+    writeFileSync(paths().ownersPath, OWNERS);
+    writeFileSync(paths().baselinePath, [...ALL, `${COPIES}\tGone`].join('\n') + '\n');
+    expect(run(['--update'], paths())).toBe(0);
+    expect(baselineLines()).toEqual(ALL);
+  });
+
+  it('--update refuses to add a copy the baseline lacks, and leaves the baseline as it was', () => {
+    writeFileSync(paths().ownersPath, OWNERS);
+    const before = [EVENT, PAGED].join('\n') + '\n';
+    writeFileSync(paths().baselinePath, before);
     expect(run(['--update'], paths())).toBe(1);
+    expect(readFileSync(paths().baselinePath, 'utf8')).toBe(before);
+    expect(out.join('\n')).toMatch(/NEW +src\/services\/copies\.ts:\d+ +OptionalName/);
+    expect(out.join('\n')).toContain('--allow-growth');
+  });
+
+  it('--update refuses a swap: same size, one name not listed before', () => {
+    writeFileSync(paths().ownersPath, OWNERS);
+    const before = [EVENT, PAGED, `${COPIES}\tGone`].join('\n') + '\n';
+    writeFileSync(paths().baselinePath, before);
+    expect(run(['--update'], paths())).toBe(1);
+    expect(readFileSync(paths().baselinePath, 'utf8')).toBe(before);
+  });
+
+  it('--update without a committed baseline needs --allow-growth', () => {
+    writeFileSync(paths().ownersPath, OWNERS);
+    expect(run(['--update'], paths())).toBe(1);
+    expect(existsSync(paths().baselinePath)).toBe(false);
+  });
+
+  it('--update --allow-growth adds the new copy', () => {
+    writeFileSync(paths().ownersPath, OWNERS);
+    writeFileSync(paths().baselinePath, [EVENT, PAGED].join('\n') + '\n');
+    expect(run(['--update', '--allow-growth'], paths())).toBe(0);
+    expect(baselineLines()).toEqual(ALL);
+  });
+
+  it('--update fails when the new baseline has an unowned line', () => {
+    expect(run(['--update', '--allow-growth'], paths())).toBe(1);
     expect(out.join('\n')).toMatch(/UNOWNED +src\/services\/copies\.ts +EventResponse/);
   });
 
