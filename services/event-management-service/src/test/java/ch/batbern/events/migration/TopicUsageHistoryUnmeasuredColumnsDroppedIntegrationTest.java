@@ -11,7 +11,7 @@ import static org.assertj.core.api.Assertions.assertThat;
 
 /**
  * Owner decision 2026-11-09 (17.0 deferred work): topic usage engagement was never measured and
- * {@code attendee_count} was written by nothing (attendance comes from registrations), so V148
+ * {@code attendee_count} was written by nothing (attendance comes from registrations), so V149
  * drops both columns from {@code topic_usage_history}.
  */
 class TopicUsageHistoryUnmeasuredColumnsDroppedIntegrationTest extends AbstractIntegrationTest {

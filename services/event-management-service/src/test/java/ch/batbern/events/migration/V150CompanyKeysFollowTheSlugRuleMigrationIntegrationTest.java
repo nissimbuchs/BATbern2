@@ -17,14 +17,14 @@ import java.util.UUID;
 import static org.assertj.core.api.Assertions.assertThat;
 
 /**
- * V149 (owner decision 2026-11-09, 17.0 deferred work): a registration's company follows its
+ * V150 (owner decision 2026-11-09, 17.0 deferred work): a registration's company follows its
  * company's new key. All services share one database and migrate in any order, so this test plays
  * the shared database: the {@code companies} stub of {@code db/testmigration} stands in for
  * company-user-management's table, and the two orders are run: event management migrates first (it computes the mapping), or
  * company-user-management already did (the mapping and the renamed companies are there).
  */
 @TestInstance(TestInstance.Lifecycle.PER_CLASS)
-class V149CompanyKeysFollowTheSlugRuleMigrationIntegrationTest {
+class V150CompanyKeysFollowTheSlugRuleMigrationIntegrationTest {
 
     private static final String HISTORY = "flyway_schema_history_event_management";
 
@@ -54,10 +54,10 @@ class V149CompanyKeysFollowTheSlugRuleMigrationIntegrationTest {
     }
 
     @BeforeEach
-    void migrateToV148AndSeed() {
+    void migrateToV149AndSeed() {
         jdbc.execute("DROP SCHEMA public CASCADE");
         jdbc.execute("CREATE SCHEMA public");
-        migrate("148");
+        migrate("149");
 
         eventId = UUID.randomUUID();
         jdbc.update("INSERT INTO events (id, event_code, event_number, title, event_date, registration_deadline, "
@@ -73,7 +73,7 @@ class V149CompanyKeysFollowTheSlugRuleMigrationIntegrationTest {
     void should_computeTheMappingAndMoveRegistrations_when_eventManagementMigratesFirst() {
         jdbc.update("INSERT INTO companies (name) VALUES ('Swisscom AG'), ('swisscomag'), ('testco')");
 
-        migrate("149");
+        migrate("150");
 
         assertThat(jdbc.queryForObject(
                 "SELECT new_key FROM company_key_changes WHERE old_key = 'Swisscom AG'", String.class))
@@ -91,7 +91,7 @@ class V149CompanyKeysFollowTheSlugRuleMigrationIntegrationTest {
                 + "new_key VARCHAR(12) NOT NULL UNIQUE, changed_at TIMESTAMPTZ NOT NULL DEFAULT now())");
         jdbc.update("INSERT INTO company_key_changes (old_key, new_key) VALUES ('Swisscom AG', 'swisscomag2')");
 
-        migrate("149");
+        migrate("150");
 
         assertThat(jdbc.queryForObject("SELECT count(*) FROM company_key_changes", Integer.class)).isEqualTo(1);
         assertThat(companiesOfRegistrations()).containsExactly("swisscomag2", "testco", null);
@@ -101,7 +101,7 @@ class V149CompanyKeysFollowTheSlugRuleMigrationIntegrationTest {
     void should_changeNothing_when_noCompaniesTableExists() {
         jdbc.execute("DROP TABLE companies");
 
-        migrate("149");
+        migrate("150");
 
         assertThat(jdbc.queryForObject("SELECT count(*) FROM company_key_changes", Integer.class)).isZero();
         assertThat(companiesOfRegistrations()).containsExactly("Swisscom AG", "testco", null);
@@ -109,7 +109,7 @@ class V149CompanyKeysFollowTheSlugRuleMigrationIntegrationTest {
 
     @Test
     void should_carryTheCanonicalReKeyBlock() {
-        CompanyKeyChangesContract.verify("db/migration/V149__company_keys_follow_the_slug_rule.sql");
+        CompanyKeyChangesContract.verify("db/migration/V150__company_keys_follow_the_slug_rule.sql");
     }
 
     private List<String> companiesOfRegistrations() {
