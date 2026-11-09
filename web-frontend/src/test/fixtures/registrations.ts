@@ -21,6 +21,7 @@ const STATUS_SET: Record<RegistrationStatus, true> = {
   CONFIRMED: true,
   CANCELLED: true,
   ATTENDED: true,
+  NO_SHOW: true,
 };
 export const REGISTRATION_STATUSES = Object.keys(STATUS_SET) as RegistrationStatus[];
 
@@ -54,6 +55,7 @@ export function registrations(eventCode = 'BATbern61'): Registration[] {
     CONFIRMED: shapes.mixedCaseEmail,
     CANCELLED: shapes.apostrophe,
     ATTENDED: shapes.cjk,
+    NO_SHOW: shapes.idnEmail,
   };
   return REGISTRATION_STATUSES.map((status, i) =>
     aRegistration(attendees[status], {

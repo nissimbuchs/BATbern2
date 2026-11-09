@@ -38,7 +38,7 @@ public final class ProductionShapedEvents {
 
     /**
      * One attendee per registration status, as the database stores the status (lower case).
-     * Past-event statuses ({@code attended}, {@code cancelled}) belong to the past event.
+     * Past-event statuses ({@code attended}, {@code no_show}, {@code cancelled}) belong to the past event.
      */
     public static final Map<String, Person> ATTENDEE_BY_STATUS;
 
@@ -49,11 +49,12 @@ public final class ProductionShapedEvents {
         byStatus.put("confirmed", ProductionShapedPeople.MIXED_CASE_EMAIL);
         byStatus.put("cancelled", ProductionShapedPeople.APOSTROPHE);
         byStatus.put("attended", ProductionShapedPeople.CJK);
+        byStatus.put("no_show", ProductionShapedPeople.IDN_EMAIL);
         ATTENDEE_BY_STATUS = Collections.unmodifiableMap(byStatus);
     }
 
     /** Statuses of registrations to the past event; every other status goes to the future event. */
-    private static final List<String> PAST_STATUSES = List.of("attended", "cancelled");
+    private static final List<String> PAST_STATUSES = List.of("attended", "no_show", "cancelled");
 
     private ProductionShapedEvents() {
     }
