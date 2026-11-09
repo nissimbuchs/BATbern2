@@ -60,9 +60,7 @@ class V28CompanyKeysFollowTheSlugRuleMigrationIntegrationTest {
     void startContainer() {
         @SuppressWarnings("resource") // stopped in @AfterAll
         PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:16-alpine")
-                .withDatabaseName("v28testdb")
-                .withUsername("v28test")
-                .withPassword("v28test");
+                .withDatabaseName("v28testdb");
         container.start();
         postgres = container;
         dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());

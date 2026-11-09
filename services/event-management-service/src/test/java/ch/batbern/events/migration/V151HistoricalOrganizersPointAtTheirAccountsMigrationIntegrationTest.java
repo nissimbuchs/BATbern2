@@ -32,9 +32,7 @@ class V151HistoricalOrganizersPointAtTheirAccountsMigrationIntegrationTest {
     void startContainer() {
         @SuppressWarnings("resource") // stopped in @AfterAll
         PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:16-alpine")
-                .withDatabaseName("v151testdb")
-                .withUsername("v151test")
-                .withPassword("v151test");
+                .withDatabaseName("v151testdb");
         container.start();
         postgres = container;
         dataSource = new DriverManagerDataSource(postgres.getJdbcUrl(), postgres.getUsername(), postgres.getPassword());

@@ -64,9 +64,7 @@ class V93LegacySpeakerStatesMigrationIntegrationTest {
     void startContainer() {
         @SuppressWarnings("resource")  // Container lifecycle managed in @AfterAll.
         PostgreSQLContainer<?> container = new PostgreSQLContainer<>("postgres:16-alpine")
-                .withDatabaseName("v93testdb")
-                .withUsername("v93test")
-                .withPassword("v93test");
+                .withDatabaseName("v93testdb");
         container.start();
         this.postgres = container;
         this.dataSource = new DriverManagerDataSource(
