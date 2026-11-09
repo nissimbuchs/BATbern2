@@ -202,7 +202,8 @@
     "attended": "Je hebt dit evenement bijgewoond. Bedankt voor je komst!",
     "manageLink": "Aanmelding beheren",
     "registerAgain": "Opnieuw aanmelden",
-    "waitlistWithPosition": "U staat op plaats {{position}} van de wachtlijst. We laten het u weten als er een plaats vrijkomt."
+    "waitlistWithPosition": "U staat op plaats {{position}} van de wachtlijst. We laten het u weten als er een plaats vrijkomt.",
+    "no_show": "Je was niet aanwezig bij dit evenement."
   },
   "registrationStatusGuard": {
     "alreadyRegistered": "U bent al aangemeld voor dit evenement",

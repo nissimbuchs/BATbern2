@@ -229,7 +229,8 @@
         "registered": "Registered",
         "attended": "Attended",
         "cancelled": "Cancelled",
-        "waitlisted": "Waitlisted"
+        "waitlisted": "Waitlisted",
+        "noShow": "No-show"
       },
       "clearAll": "Clear Filters"
     },
@@ -593,6 +594,16 @@
           "notes": "Notes",
           "organizerSignature": "Organizer signature",
           "companyName": "Company"
+        },
+        "registrants": {
+          "which": "Which registrants?",
+          "statusRequired": "Choose at least one status.",
+          "status": {
+            "REGISTERED": "Registered",
+            "CONFIRMED": "Confirmed",
+            "ATTENDED": "Attended",
+            "NO_SHOW": "No-show"
+          }
         }
       },
       "rsvpSummary": "RSVP: {{accepted}} accepted · {{declined}} declined · {{tentative}} tentative · {{noAnswer}} no answer",
@@ -1369,7 +1380,8 @@
       "registered": "Registered",
       "waitlist": "Waitlist",
       "cancelled": "Cancelled",
-      "attended": "Attended"
+      "attended": "Attended",
+      "no_show": "No-show"
     }
   },
   "capacity": {
@@ -1464,7 +1476,8 @@
         "registered": "Registered",
         "confirmed": "Confirmed",
         "waitlist": "Waitlist",
-        "attended": "Attended"
+        "attended": "Attended",
+        "no_show": "No-show"
       }
     }
   },

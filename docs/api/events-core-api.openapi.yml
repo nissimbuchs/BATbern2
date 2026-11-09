@@ -3260,7 +3260,7 @@ components:
         registrationStatus:
           type: string
           nullable: true
-          description: The attendee's registration status (registered|confirmed|waitlist|attended).
+          description: The attendee's registration status (registered|confirmed|waitlist|attended|no_show).
     AttendeeDashboardResponse:
       type: object
       description: 'Story 7.6: the attendee''s event history — every participated (non-cancelled) event, split

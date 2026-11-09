@@ -165,7 +165,8 @@
         "registered": "Registrà",
         "attended": "Preschent",
         "cancelled": "Annullà",
-        "waitlisted": "Lista d'spetga"
+        "waitlisted": "Lista d'spetga",
+        "noShow": "Betg cumparì"
       },
       "clearAll": "Stizzar filters"
     },
@@ -579,6 +580,16 @@
           "notes": "Notizias",
           "organizerSignature": "Suttascripziun da l’organisatur",
           "companyName": "Interpresa"
+        },
+        "registrants": {
+          "which": "Tge annunziads?",
+          "statusRequired": "Tscherna almain in status.",
+          "status": {
+            "REGISTERED": "Annunzià",
+            "CONFIRMED": "Confermà",
+            "ATTENDED": "Preschent",
+            "NO_SHOW": "Betg cumparì"
+          }
         }
       },
       "rsvpSummary": "Respostas: {{accepted}} acceptadas · {{declined}} refusadas · {{tentative}} provisoricas · {{noAnswer}} senza resposta",
@@ -1345,7 +1356,8 @@
       "registered": "Annunzià",
       "waitlist": "Glista da spetga",
       "cancelled": "Annullada",
-      "attended": "Participà"
+      "attended": "Participà",
+      "no_show": "Betg cumparì"
     }
   },
   "capacity": {
@@ -1440,7 +1452,8 @@
         "registered": "Annunzià",
         "confirmed": "Confermà",
         "waitlist": "Glista d'spetga",
-        "attended": "Participà"
+        "attended": "Participà",
+        "no_show": "Betg cumparì"
       }
     }
   },

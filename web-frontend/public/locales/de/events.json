@@ -229,7 +229,8 @@
         "registered": "Angemeldet",
         "attended": "Teilgenommen",
         "cancelled": "Abgesagt",
-        "waitlisted": "Warteliste"
+        "waitlisted": "Warteliste",
+        "noShow": "Nicht erschienen"
       },
       "clearAll": "Filter zurücksetzen"
     },
@@ -593,6 +594,16 @@
           "notes": "Notizen",
           "organizerSignature": "Signatur Organisator",
           "companyName": "Firma"
+        },
+        "registrants": {
+          "which": "Welche Angemeldeten?",
+          "statusRequired": "Mindestens einen Status wählen.",
+          "status": {
+            "REGISTERED": "Angemeldet",
+            "CONFIRMED": "Bestätigt",
+            "ATTENDED": "Teilgenommen",
+            "NO_SHOW": "Nicht erschienen"
+          }
         }
       },
       "rsvpSummary": "Rückmeldungen: {{accepted}} zugesagt · {{declined}} abgesagt · {{tentative}} vielleicht · {{noAnswer}} ohne Antwort",
@@ -1369,7 +1380,8 @@
       "registered": "Angemeldet",
       "waitlist": "Warteliste",
       "cancelled": "Storniert",
-      "attended": "Teilgenommen"
+      "attended": "Teilgenommen",
+      "no_show": "Nicht erschienen"
     }
   },
   "capacity": {
@@ -1464,7 +1476,8 @@
         "registered": "Angemeldet",
         "confirmed": "Bestätigt",
         "waitlist": "Warteliste",
-        "attended": "Teilgenommen"
+        "attended": "Teilgenommen",
+        "no_show": "Nicht erschienen"
       }
     }
   },

@@ -153,8 +153,11 @@ Switch from *Template* to *Own text* to write the subject and the text yourself,
   around it (registrants and speakers included).
 - **Newsletter.** If your text has no `{{unsubscribeLink}}`, the standard unsubscribe line is added
   at the end, with each subscriber's own link.
-- **Registrants.** Own text with the same subject goes to an event's registrants once. Sending it
-  again asks "Already sent on … Send again?".
+- **Registrants.** Choose by status: registered, confirmed, attended, no-show. Registered,
+  confirmed and attended are preselected; pick only *No-show* to write to the people who registered
+  and did not come. Own text with the same subject goes to an event's registrants once. Sending it
+  again asks "Already sent on … Send again?". A template (for example `slides-online`) always goes
+  to registered, confirmed and attended, never to the no-shows.
 - **Speakers.** Choose by status: invited, accepted, content submitted, quality reviewed. Each
   speaker gets their own values; replies go to the moderator. The speaker's history notes "Own text:
   {subject}". It is not a reminder: no reminder log, no escalation, and it also reaches speakers who

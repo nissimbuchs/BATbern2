@@ -42,6 +42,11 @@ Only items that are not live yet. Everything else is listed under its release be
 
 ### Unreleased — after BATbern60
 
+**Improvement — No-shows (after BATbern60)**:
+- ✅ A registration can be marked **No-show**: registered for the event and did not come. The participant list has a *No-show* filter and chip, and the attendee's own event history says so.
+- ✅ No-shows do not count as attendance: the analytics count confirmed and attended registrations only, so after an event the people who came are set to *Attended* and the others to *No-show*.
+- ✅ Mail Center: own text to the registrants can go to chosen statuses, for example the no-shows only. A template still goes to registered, confirmed and attended.
+
 **Improvement — Search finds what you mean, everywhere (Story 17.17)**:
 - ✅ Every search box (users, participants, newsletter subscribers, companies, partners, topics, events and the archive) searches all records, not only the ones on the current page. The partner list and the topic picker used to search only the rows already loaded.
 - ✅ Spelling variants find each other: "Müller", "Mueller" and "Muller", "Zürich" and "Zurich", "Strasse" and "Straße". Capital letters and accents do not matter.

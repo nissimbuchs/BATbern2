@@ -36,7 +36,7 @@ export interface paths {
      *     **Anonymous Registration**:
      *     - No authentication required
      *     - Email serves as identifier
-     *     - Registration code generated (BAT-YYYY-NNNNNN)
+     *     - Registration code generated ({eventCode}-reg-{suffix})
      *     - Confirmation email sent automatically
      *
      *     **Authenticated Registration**:
@@ -551,7 +551,7 @@ export interface components {
        * @example CONFIRMED
        * @enum {string}
        */
-      status?: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED';
+      status?: 'REGISTERED' | 'CONFIRMED' | 'WAITLIST' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW';
       /**
        * Format: date-time
        * @description ISO-8601 timestamp when registration was created. Present when registered=true.
@@ -583,8 +583,8 @@ export interface components {
      */
     Registration: {
       /**
-       * @description Unique registration code (BAT-YYYY-NNNNNN format) acts as access token
-       * @example BAT-2025-000123
+       * @description Unique registration code ({eventCode}-reg-{suffix}), acts as access token
+       * @example BATbern60-reg-R9UKZY
        */
       registrationCode: string;
       /**
@@ -618,8 +618,11 @@ export interface components {
       email?: string;
       /** @description Company name from user_profiles.company_id (FK to companies table) */
       company?: string;
-      /** @enum {string} */
-      status: 'REGISTERED' | 'WAITLIST' | 'CONFIRMED' | 'CANCELLED' | 'ATTENDED';
+      /**
+       * @description NO_SHOW = registered for a past event and did not come (not counted as attendance).
+       * @enum {string}
+       */
+      status: 'REGISTERED' | 'WAITLIST' | 'CONFIRMED' | 'CANCELLED' | 'ATTENDED' | 'NO_SHOW';
       /**
        * @description Story 10.11 — Position on the waitlist (1-based). Null when status is not WAITLIST.
        * @example 2
@@ -701,7 +704,7 @@ export interface components {
     /** @description Organizer status change for a registration (e.g. confirm/cancel). The deployed PATCH handler reads only `status`; a cancel triggers waitlist promotion. */
     UpdateRegistrationStatusRequest: {
       /**
-       * @description New registration status (e.g. confirmed, cancelled, registered, waitlist)
+       * @description New registration status (registered, waitlist, confirmed, cancelled, attended, no_show)
        * @example confirmed
        */
       status?: string;
@@ -1354,7 +1357,7 @@ export interface operations {
       path: {
         /** @description Event code in format BATbernXXX */
         eventCode: string;
-        /** @description Registration code in format BAT-YYYY-NNNNNN */
+        /** @description Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY) */
         registrationCode: string;
       };
       cookie?: never;
@@ -1387,7 +1390,7 @@ export interface operations {
       path: {
         /** @description Event code in format BATbernXXX */
         eventCode: string;
-        /** @description Registration code in format BAT-YYYY-NNNNNN */
+        /** @description Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY) */
         registrationCode: string;
       };
       cookie?: never;
@@ -1414,7 +1417,7 @@ export interface operations {
       path: {
         /** @description Event code in format BATbernXXX */
         eventCode: string;
-        /** @description Registration code in format BAT-YYYY-NNNNNN */
+        /** @description Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY) */
         registrationCode: string;
       };
       cookie?: never;

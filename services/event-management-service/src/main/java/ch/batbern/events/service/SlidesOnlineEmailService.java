@@ -8,7 +8,6 @@ import ch.batbern.events.domain.NewsletterSend;
 import ch.batbern.events.domain.Registration;
 import ch.batbern.events.exception.DuplicateNewsletterSendException;
 import ch.batbern.events.exception.SlidesOnlineAlreadySentException;
-import ch.batbern.events.mailcenter.compose.AlreadySentException;
 import ch.batbern.events.mailcenter.compose.OwnText;
 import ch.batbern.events.mailcenter.render.MailContent;
 import ch.batbern.events.mailcenter.render.MailPipeline;
@@ -85,6 +84,16 @@ public class SlidesOnlineEmailService {
      * {@code waitlist} (never got a seat) and {@code cancelled}.
      */
     static final List<String> ACTIVE_REGISTRANT_STATUSES = Registration.CONFIRMED_STATUSES;
+
+    /** The statuses an organizer may choose for own text to registrants (API values). */
+    public static final List<String> CHOOSABLE_REGISTRANT_STATUSES =
+            List.of("REGISTERED", "CONFIRMED", "ATTENDED", "NO_SHOW");
+
+    /** Chosen API statuses as stored on {@code registrations}; none chosen = the default audience. */
+    public static List<String> registrantStatuses(List<String> chosen) {
+        return chosen == null || chosen.isEmpty() ? ACTIVE_REGISTRANT_STATUSES
+                : chosen.stream().map(st -> st.toLowerCase(Locale.ROOT)).toList();
+    }
 
     static final String STATUS_PENDING = "PENDING";
     static final String STATUS_IN_PROGRESS = "IN_PROGRESS";
@@ -183,24 +192,19 @@ public class SlidesOnlineEmailService {
     }
 
     /**
-     * Story 16.5 AC9: own text to every active registrant. One-shot by subject: a completed send
-     * with the same subject needs {@code confirmResend}; any own-text send in progress is a 409.
+     * Story 16.5 AC9: own text to the registrants in {@code statuses}. Any own-text send in progress
+     * is a 409; the one-shot-by-subject question is asked by the composer before this is called.
      * Everyone gets the text as written, with the layout in {@code locale}.
      */
     public SlidesOnlineSendResponse sendRegistrantOwnText(Event event, String ownSubject, String ownBodyHtml,
-            String locale, String sentByUsername, boolean confirmResend) {
+            String locale, String sentByUsername, List<String> statuses) {
         UUID eventId = event.getId();
         sendRepository.findFirstByEventIdAndTemplateKeyAndStatus(eventId, OwnText.REGISTRANTS_ROW_KEY,
                 STATUS_IN_PROGRESS).ifPresent(active -> {
                     throw new DuplicateNewsletterSendException("An own-text send to the registrants of "
                             + event.getEventCode() + " is in progress (sendId=" + active.getId() + ")");
                 });
-        Optional<Instant> sentAt = ownTextAlreadySent(event, ownSubject);
-        if (sentAt.isPresent() && !confirmResend) {
-            throw new AlreadySentException(ownSubject, sentAt.get());
-        }
-        List<Registration> registrants =
-                registrationRepository.findByEventIdAndStatusIn(eventId, ACTIVE_REGISTRANT_STATUSES);
+        List<Registration> registrants = registrationRepository.findByEventIdAndStatusIn(eventId, statuses);
         NewsletterSend saved = sendRepository.save(NewsletterSend.builder()
                 .eventId(eventId)
                 .templateKey(OwnText.REGISTRANTS_ROW_KEY)
@@ -214,6 +218,7 @@ public class SlidesOnlineEmailService {
                 .contentSource("OWN_TEXT")
                 .ownSubject(ownSubject)
                 .ownBodyHtml(ownBodyHtml)
+                .registrantStatuses(statuses.equals(ACTIVE_REGISTRANT_STATUSES) ? null : String.join(",", statuses))
                 .build());
         self.executeSlidesOnlineSendAsync(saved.getId(), event, OwnText.REGISTRANTS_ROW_KEY);
         log.info("Registrant own-text send queued: sendId={}, event={}, registrants={}",
@@ -321,7 +326,10 @@ public class SlidesOnlineEmailService {
         int failedCount = 0;
 
         try {
-            for (RegistrantRecipient recipient : resolveRecipients(event).recipients()) {
+            List<String> statuses = ownRow.map(NewsletterSend::getRegistrantStatuses)
+                    .map(stored -> List.of(stored.split(",")))
+                    .orElse(ACTIVE_REGISTRANT_STATUSES);
+            for (RegistrantRecipient recipient : resolveRecipients(event, statuses).recipients()) {
                 Registration registration = recipient.registration();
                 String email = recipient.email();
                 String locale = ownRow.map(NewsletterSend::getLocale).orElseGet(() -> recipientLocale(registration));
@@ -375,11 +383,16 @@ public class SlidesOnlineEmailService {
      * opt-outs (AC3). The send and the composer's preview walk this same list.
      */
     public RegistrantAudience resolveRecipients(Event event) {
+        return resolveRecipients(event, ACTIVE_REGISTRANT_STATUSES);
+    }
+
+    /** As {@link #resolveRecipients(Event)}, for registrations in {@code statuses} (stored values). */
+    public RegistrantAudience resolveRecipients(Event event, List<String> statuses) {
         List<RegistrantRecipient> recipients = new java.util.ArrayList<>();
         List<SkippedRegistrant> skipped = new java.util.ArrayList<>();
         Set<String> seenEmails = new HashSet<>();
         for (Registration registration
-                : registrationRepository.findByEventIdAndStatusIn(event.getId(), ACTIVE_REGISTRANT_STATUSES)) {
+                : registrationRepository.findByEventIdAndStatusIn(event.getId(), statuses)) {
             String displayName = displayName(registration);
             String email = resolveEmail(registration);
             if (email == null || email.isBlank()) {

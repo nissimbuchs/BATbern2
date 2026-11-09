@@ -193,7 +193,8 @@
         "CONFIRMED": "Confermà",
         "ATTENDED": "Present",
         "CANCELLED": "Annullà",
-        "WAITLISTED": "En glista d'spetga"
+        "WAITLISTED": "En glista d'spetga",
+        "NO_SHOW": "Betg cumparì"
       }
     }
   },

@@ -118,7 +118,7 @@ paths:
 
         - Email serves as identifier
 
-        - Registration code generated (BAT-YYYY-NNNNNN)
+        - Registration code generated ({eventCode}-reg-{suffix})
 
         - Confirmation email sent automatically
 
@@ -554,12 +554,11 @@ paths:
           example: BATbern25
       - name: registrationCode
         in: path
-        description: Registration code in format BAT-YYYY-NNNNNN
+        description: Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY)
         required: true
         schema:
           type: string
-          pattern: ^BAT-[0-9]{4}-[0-9]{6}$
-          example: BAT-2025-000123
+          example: BATbern60-reg-R9UKZY
       responses:
         '200':
           description: Registration found
@@ -596,12 +595,11 @@ paths:
           example: BATbern25
       - name: registrationCode
         in: path
-        description: Registration code in format BAT-YYYY-NNNNNN
+        description: Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY)
         required: true
         schema:
           type: string
-          pattern: ^BAT-[0-9]{4}-[0-9]{6}$
-          example: BAT-2025-000123
+          example: BATbern60-reg-R9UKZY
       requestBody:
         required: true
         content:
@@ -649,12 +647,11 @@ paths:
           example: BATbern25
       - name: registrationCode
         in: path
-        description: Registration code in format BAT-YYYY-NNNNNN
+        description: Registration code, {eventCode}-reg-{suffix} (e.g. BATbern60-reg-R9UKZY)
         required: true
         schema:
           type: string
-          pattern: ^BAT-[0-9]{4}-[0-9]{6}$
-          example: BAT-2025-000123
+          example: BATbern60-reg-R9UKZY
       responses:
         '204':
           description: Registration deleted successfully
@@ -1268,6 +1265,7 @@ components:
           - WAITLIST
           - CANCELLED
           - ATTENDED
+          - NO_SHOW
           example: CONFIRMED
         registrationDate:
           type: string
@@ -1325,9 +1323,8 @@ components:
       properties:
         registrationCode:
           type: string
-          description: Unique registration code (BAT-YYYY-NNNNNN format) acts as access token
-          pattern: ^BAT-[0-9]{4}-[0-9]{6}$
-          example: BAT-2025-000123
+          description: Unique registration code ({eventCode}-reg-{suffix}), acts as access token
+          example: BATbern60-reg-R9UKZY
         eventCode:
           type: string
           description: Event code this registration belongs to
@@ -1374,6 +1371,8 @@ components:
           - CONFIRMED
           - CANCELLED
           - ATTENDED
+          - NO_SHOW
+          description: NO_SHOW = registered for a past event and did not come (not counted as attendance).
         waitlistPosition:
           type: integer
           nullable: true
@@ -1479,7 +1478,7 @@ components:
       properties:
         status:
           type: string
-          description: New registration status (e.g. confirmed, cancelled, registered, waitlist)
+          description: New registration status (registered, waitlist, confirmed, cancelled, attended, no_show)
           example: confirmed
     ResendConfirmationResponse:
       type: object

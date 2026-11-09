@@ -243,6 +243,45 @@ class OwnTextComposerIntegrationTest extends AbstractIntegrationTest {
         assertThat(other.get("alreadySent").isNull()).isTrue();
     }
 
+    @Test
+    @WithMockUser(username = "organizer1", roles = "ORGANIZER")
+    @DisplayName("registrants by status: own text to the no-shows only; without a choice no-shows are left out")
+    void registrants_ownText_byStatus() throws Exception {
+        String attended = "success+reg923att" + SIM;
+        String noShow = "success+reg923ns" + SIM;
+        registration("att.de", attended, "Dora", "attended");
+        registration("ns.de", noShow, "Nina", "no_show");
+
+        JsonNode byDefault = preview(ownText("REGISTRANTS", "Folien", "<p>Hallo {{recipientName}}</p>",
+                "\"locale\":\"de\""));
+        assertThat(byDefault.get("recipientCount").asInt()).isEqualTo(1);
+        assertThat(byDefault.at("/recipient/address").asText()).isEqualTo(attended);
+
+        String request = ownText("REGISTRANTS", "Schade, dass Sie fehlten", "<p>Hallo {{recipientName}}</p>",
+                "\"locale\":\"de\",\"registrantStatuses\":[\"NO_SHOW\"]");
+        JsonNode preview = preview(request);
+        assertThat(preview.get("recipientCount").asInt()).isEqualTo(1);
+        assertThat(preview.at("/recipient/address").asText()).isEqualTo(noShow);
+
+        JsonNode sent = send(request, "RECIPIENTS");
+        String mailKey = sent.get("mailKeys").get(0).asText();
+        awaitUntil(() -> "COMPLETED".equals(sendStatus()));
+        assertThat(jdbc.queryForList("SELECT r.address FROM mail_recipient r JOIN mail_message m"
+                + " ON m.id = r.mail_message_id WHERE m.mail_key = ?", String.class, mailKey))
+                .containsExactly(noShow);
+    }
+
+    @Test
+    @WithMockUser(username = "organizer1", roles = "ORGANIZER")
+    @DisplayName("registrant statuses are for own text only")
+    void registrants_statusesNeedOwnText() throws Exception {
+        registration("att.de", "success+reg923att" + SIM, "Dora", "attended");
+        mockMvc.perform(post(BASE + "/preview").contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"audience\":\"REGISTRANTS\",\"templateKey\":\"slides-online\","
+                                + "\"registrantStatuses\":[\"NO_SHOW\"]}"))
+                .andExpect(status().isBadRequest());
+    }
+
     // ── speakers ─────────────────────────────────────────────────────────────
 
     @Test

@@ -79,7 +79,11 @@ export const HeroSection = ({
   // API-based registration check for authenticated users (no sessionStorage required)
   const { data: myRegistration } = useMyRegistration(eventCode);
   const derivedStatus =
-    myRegistration != null && myRegistration.status !== 'ATTENDED' ? myRegistration.status : null;
+    myRegistration != null &&
+    myRegistration.status !== 'ATTENDED' &&
+    myRegistration.status !== 'NO_SHOW'
+      ? myRegistration.status
+      : null;
   const status = ownStatus !== undefined ? ownStatus : derivedStatus;
   const isAlreadyRegistered = status != null && status !== 'CANCELLED';
   const statusText =

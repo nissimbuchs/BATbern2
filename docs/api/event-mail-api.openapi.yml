@@ -1265,6 +1265,17 @@ components:
             - CONTENT_SUBMITTED
             - QUALITY_REVIEWED
           description: SPEAKERS with OWN_TEXT only, at least one. Which speakers get the mail.
+        registrantStatuses:
+          type: array
+          items:
+            type: string
+            enum:
+            - REGISTERED
+            - CONFIRMED
+            - ATTENDED
+            - NO_SHOW
+          description: REGISTRANTS with OWN_TEXT only. Which registrants get the mail, e.g. only the
+            no-shows of a past event. Absent or empty = REGISTERED, CONFIRMED and ATTENDED.
         confirmResend:
           type: boolean
           default: false

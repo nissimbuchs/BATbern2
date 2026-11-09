@@ -202,7 +202,8 @@
     "attended": "このイベントにご参加いただきました。ご参加ありがとうございました！",
     "manageLink": "登録を管理",
     "registerAgain": "再度登録する",
-    "waitlistWithPosition": "キャンセル待ち{{position}}番目です。空きが出た場合はお知らせします。"
+    "waitlistWithPosition": "キャンセル待ち{{position}}番目です。空きが出た場合はお知らせします。",
+    "no_show": "このイベントには出席されませんでした。"
   },
   "registrationStatusGuard": {
     "alreadyRegistered": "このイベントにはすでに登録済みです",

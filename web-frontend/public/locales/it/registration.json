@@ -202,7 +202,8 @@
     "attended": "Hai partecipato a questo evento. Grazie per essere stato con noi!",
     "manageLink": "Gestisci iscrizione",
     "registerAgain": "Iscriviti di nuovo",
-    "waitlistWithPosition": "Sei il n. {{position}} in lista d'attesa. Ti avviseremo se si libera un posto."
+    "waitlistWithPosition": "Sei il n. {{position}} in lista d'attesa. Ti avviseremo se si libera un posto.",
+    "no_show": "Non hai partecipato a questo evento."
   },
   "registrationStatusGuard": {
     "alreadyRegistered": "Sei già iscritto a questo evento",

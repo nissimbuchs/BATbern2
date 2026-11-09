@@ -48,6 +48,7 @@ const EventParticipantFilters: React.FC = () => {
     { value: 'CONFIRMED', label: t('eventPage.participantFilters.status.confirmed') },
     { value: 'REGISTERED', label: t('eventPage.participantFilters.status.registered') },
     { value: 'ATTENDED', label: t('eventPage.participantFilters.status.attended') },
+    { value: 'NO_SHOW', label: t('eventPage.participantFilters.status.noShow') },
     { value: 'CANCELLED', label: t('eventPage.participantFilters.status.cancelled') },
     { value: 'WAITLIST', label: t('eventPage.participantFilters.status.waitlisted') },
   ];

@@ -193,7 +193,8 @@
         "CONFIRMED": "確認済み",
         "ATTENDED": "参加済み",
         "CANCELLED": "キャンセル済み",
-        "WAITLISTED": "キャンセル待ち"
+        "WAITLISTED": "キャンセル待ち",
+        "NO_SHOW": "欠席"
       }
     }
   },

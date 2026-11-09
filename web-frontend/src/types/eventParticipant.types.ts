@@ -8,7 +8,8 @@
 /**
  * Registration status values
  */
-export type RegistrationStatus = 'REGISTERED' | 'CONFIRMED' | 'ATTENDED' | 'CANCELLED' | 'WAITLIST';
+export type RegistrationStatus =
+  'REGISTERED' | 'CONFIRMED' | 'ATTENDED' | 'NO_SHOW' | 'CANCELLED' | 'WAITLIST';
 
 /**
  * Company information for a participant

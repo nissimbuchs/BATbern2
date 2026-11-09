@@ -202,7 +202,8 @@
     "cancelled": "Your registration was cancelled.",
     "attended": "You attended this event. Thanks for joining us!",
     "manageLink": "Manage Registration",
-    "registerAgain": "Register again"
+    "registerAgain": "Register again",
+    "no_show": "You did not attend this event."
   },
   "registrationStatusGuard": {
     "alreadyRegistered": "You are already registered for this event",

@@ -149,6 +149,18 @@ describe('EventParticipantFilters', () => {
       );
     });
 
+    it('should filter by NO_SHOW for the No-show segment', () => {
+      render(<EventParticipantFilters />);
+
+      fireEvent.click(screen.getByTestId('participant-status-NO_SHOW'));
+
+      expect(mockSetFilters).toHaveBeenCalledWith(
+        expect.objectContaining({
+          status: ['NO_SHOW'],
+        })
+      );
+    });
+
     it('should clear the status filter when "All" is selected', () => {
       (useEventParticipantStore as ReturnType<typeof vi.fn>).mockReturnValue({
         filters: { status: ['CONFIRMED'] },

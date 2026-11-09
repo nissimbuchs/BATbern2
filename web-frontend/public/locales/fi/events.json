@@ -165,7 +165,8 @@
         "registered": "Rekisteröitynyt",
         "attended": "Osallistui",
         "cancelled": "Peruutettu",
-        "waitlisted": "Jonolistalla"
+        "waitlisted": "Jonolistalla",
+        "noShow": "Ei saapunut"
       },
       "clearAll": "Tyhjennä suodattimet"
     },
@@ -579,6 +580,16 @@
           "notes": "Muistiinpanot",
           "organizerSignature": "Järjestäjän allekirjoitus",
           "companyName": "Yritys"
+        },
+        "registrants": {
+          "which": "Mitkä ilmoittautuneet?",
+          "statusRequired": "Valitse vähintään yksi tila.",
+          "status": {
+            "REGISTERED": "Ilmoittautunut",
+            "CONFIRMED": "Vahvistettu",
+            "ATTENDED": "Osallistui",
+            "NO_SHOW": "Ei saapunut"
+          }
         }
       },
       "rsvpSummary": "Vastaukset: {{accepted}} hyväksytty · {{declined}} hylätty · {{tentative}} alustava · {{noAnswer}} ei vastausta",
@@ -1345,7 +1356,8 @@
       "registered": "Ilmoittautunut",
       "waitlist": "Jonotuslista",
       "cancelled": "Peruttu",
-      "attended": "Osallistunut"
+      "attended": "Osallistunut",
+      "no_show": "Ei saapunut"
     }
   },
   "capacity": {
@@ -1440,7 +1452,8 @@
         "registered": "Ilmoittautunut",
         "confirmed": "Vahvistettu",
         "waitlist": "Jonopaikka",
-        "attended": "Osallistui"
+        "attended": "Osallistui",
+        "no_show": "Ei saapunut"
       }
     }
   },
